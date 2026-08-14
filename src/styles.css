@@ -19,13 +19,19 @@
  */
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  /*
+    Escala de raio gerada por `src/lib/design/scale.ts`. Discreta de propósito:
+    a base anterior era 10px, com cards em 14px, e o arredondamento alto em
+    tudo é o que dava à interface cara de template.
+  */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
+  --radius-3xl: 12px;
+  --radius-4xl: 12px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -62,7 +68,30 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 8px;
+
+  /* Espaçamento — gerado por `src/lib/design/scale.ts`. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Tipografia por papel, não por medida. */
+  --text-meta: 11px;
+  --text-label: 12px;
+  --text-table: 13px;
+  --text-body: 14px;
+  --text-subtitle: 15px;
+  --text-section: 18px;
+  --text-page: 28px;
+  --text-kpi: 32px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
   --background: oklch(0.985 0.004 240);
   --foreground: oklch(0.22 0.03 250);
   --card: oklch(1 0 0);
@@ -107,16 +136,26 @@
   --level-2-fg: oklch(0.42 0.11 65);
   --level-3-fg: oklch(0.38 0.1 130);
   --level-4-fg: oklch(0.3 0.08 170);
-  --level-5-fg: oklch(0.99 0.005 200);
+  --level-5-fg: oklch(0.28 0.08 195);
+  --gap-ok: oklch(0.9 0.06 155);
+  --gap-low: oklch(0.91 0.06 95);
+  --gap-high: oklch(0.9 0.07 55);
+  --gap-ok-fg: oklch(0.38 0.12 155);
+  --gap-low-fg: oklch(0.4 0.11 95);
+  --gap-high-fg: oklch(0.4 0.14 55);
+  --gap-critical-fg: oklch(0.4 0.16 25);
+  --gap-critical: oklch(0.89 0.07 25);
 
-  --gap-ok: oklch(0.72 0.14 155);
-  --gap-low: oklch(0.78 0.14 95);
-  --gap-high: oklch(0.72 0.16 55);
-  --gap-critical: oklch(0.6 0.2 25);
-
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --shadow-card: 0 1px 2px oklch(0.24 0.035 250 / 6%), 0 8px 24px -16px oklch(0.24 0.035 250 / 25%);
+  /*
+    IBM Plex tem personalidade técnica e boa legibilidade em tabela densa — é o
+    que afasta a interface do "SaaS genérico" sem virar fonte futurista.
+    Display e corpo usam a mesma família: duas famílias criavam um contraste
+    decorativo que a hierarquia de tamanho e peso já resolve.
+  */
+  --font-display: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Mono para valor técnico: id, timestamp, métrica, nível. */
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .dark {
@@ -152,6 +191,32 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+
+  /*
+    Vocabulário visual do produto — escala de proficiência e severidade de
+    lacuna. Gerado por `src/lib/design/tokens.ts`: a variante escura é
+    derivada por regra e auditada em `design-tokens.test.ts`, não escrita à
+    mão. Para alterar, mude a definição lá e regenere.
+  */
+  --level-0: oklch(0.26 0.004 245);
+  --level-1: oklch(0.278 0.042 25);
+  --level-2: oklch(0.278 0.049 65);
+  --level-3: oklch(0.278 0.049 110);
+  --level-4: oklch(0.308 0.077 165);
+  --level-5: oklch(0.362 0.091 195);
+  --level-1-fg: oklch(0.88 0.077 25);
+  --level-2-fg: oklch(0.88 0.061 65);
+  --level-3-fg: oklch(0.88 0.055 130);
+  --level-4-fg: oklch(0.88 0.044 170);
+  --level-5-fg: oklch(0.88 0.044 195);
+  --gap-ok: oklch(0.278 0.042 155);
+  --gap-low: oklch(0.274 0.042 95);
+  --gap-high: oklch(0.278 0.049 55);
+  --gap-critical: oklch(0.282 0.049 25);
+  --gap-ok-fg: oklch(0.88 0.066 155);
+  --gap-low-fg: oklch(0.88 0.061 95);
+  --gap-high-fg: oklch(0.88 0.077 55);
+  --gap-critical-fg: oklch(0.88 0.088 25);
 }
 
 @layer base {
@@ -178,6 +243,7 @@
 @theme inline {
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
   --color-level-0: var(--level-0);
   --color-level-1: var(--level-1);
   --color-level-2: var(--level-2);
@@ -190,16 +256,67 @@
   --color-gap-critical: var(--gap-critical);
 }
 
+/*
+  Superfície sem sombra e sem borda.
+
+  Antes cada card acumulava fundo + borda + sombra + raio alto — quatro sinais
+  para dizer a mesma coisa. A profundidade agora vem só do contraste entre a
+  página e a superfície, que é o que funciona no tema escuro; a sombra fica
+  reservada ao que de fato flutua (menu, modal, tooltip).
+*/
 @utility surface-card {
   background-color: var(--color-card);
+  border-radius: var(--radius-lg);
+}
+
+/*
+  Bloco dentro de um card. Usa contraste de fundo em vez de borda: caixa com
+  contorno dentro de caixa com contorno é o padrão que mais pesa visualmente e
+  o que menos informa. Funciona nos dois temas — o `muted` é mais escuro que o
+  card no claro e mais claro no escuro.
+*/
+@utility surface-inset {
+  background-color: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+/* Quando a separação precisa ser explícita — tabela dentro de tabela, painel
+   sobre painel —, uma borda de baixo contraste basta. */
+@utility surface-outlined {
+  background-color: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
 }
 
 @utility page-title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: var(--text-page);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+/* Título de seção: um degrau abaixo da página, mesmo peso. A diferença de
+   tamanho já cria a hierarquia — subir o peso junto duplicaria o sinal. */
+@utility section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-section);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+/* Rótulo de KPI e de grupo: pequeno, espaçado, discreto. */
+@utility eyebrow {
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted-foreground);
+}
+
+/* Valor técnico — número, id, nível, data. Tabular para as colunas alinharem. */
+@utility technical {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
