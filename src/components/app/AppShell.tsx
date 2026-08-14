@@ -91,8 +91,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   /**
    * Ajusta a largura ao rótulo mais longo, se a pessoa ainda não escolheu uma.
-   * Largura fixa não serve: "Necessidades de Treinamento" cabe em português e
-   * estoura em espanhol, e o texto ficava cortado na abertura.
+   * Largura fixa não serve: um rótulo que cabe em português pode estourar em
+   * inglês, e o texto ficava cortado na abertura.
    *
    * Roda também quando o idioma muda, porque os rótulos mudam de tamanho junto.
    */

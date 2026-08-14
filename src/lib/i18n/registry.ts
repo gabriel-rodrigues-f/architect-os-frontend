@@ -14,9 +14,9 @@ import base from "@/locales/pt.json";
  *
  * `i18next` é a escolha padrão quando se precisa de plural por idioma, formato
  * ICU, detecção por servidor e carregamento remoto. Nada disso está em jogo
- * aqui: o app tem um conjunto fechado de textos e três idiomas com plural
- * regular. O `import.meta.glob` do Vite já entrega descoberta automática e
- * divisão de código, que é a parte difícil — o resto seria peso morto.
+ * aqui: o app tem um conjunto fechado de textos e idiomas com plural regular.
+ * O `import.meta.glob` do Vite já entrega descoberta automática e divisão de
+ * código, que é a parte difícil — o resto seria peso morto.
  *
  * Se um dia entrarem plurais complexos ou tradução vinda de um serviço, a
  * troca é contida: `MessageBundle` é a única interface que o app consome.
@@ -34,8 +34,7 @@ export const baseMessages = base as MessageBundle & { $label: string };
 
 /**
  * Um módulo por arquivo em `locales/`, carregado sob demanda. Sem `eager`, o
- * Vite gera um chunk separado por idioma: quem usa português não baixa
- * espanhol.
+ * Vite gera um chunk separado por idioma: quem usa português não baixa inglês.
  */
 const loaders = import.meta.glob<{ default: MessageBundle & { $label: string } }>(
   "../../locales/*.json",
