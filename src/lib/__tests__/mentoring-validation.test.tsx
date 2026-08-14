@@ -138,3 +138,52 @@ describe("Mentoria — campos obrigatórios", () => {
     expect(screen.queryByText(AVISO)).toBeNull();
   });
 });
+
+describe("Mentoria — ajuda dos campos", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    setAuthToken("token-de-teste");
+    fetchMock.mockImplementation((url: string) => {
+      const json = (body: unknown) =>
+        Promise.resolve(
+          new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }),
+        );
+      if (String(url).endsWith("/api/auth/me")) return json(usuario);
+      return json(fixtureState);
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    setAuthToken(null);
+  });
+
+  /**
+   * Cada um dos quatro campos que a pessoa pediu explicação — Tema, Notas,
+   * Decisões, Ações — precisa ter seu próprio botão de ajuda, e não um só
+   * genérico. Mentorado e Data ficam de fora: não foram pedidos.
+   */
+  it("Tema, Notas, Decisões e Ações têm botão de ajuda; Mentorado e Data não", async () => {
+    await abrirFormulario();
+
+    for (const campo of ["Tema", "Notas", "Decisões", "Ações"]) {
+      expect(screen.getByRole("button", { name: `O que é o campo ${campo}` })).toBeTruthy();
+    }
+    expect(screen.queryByRole("button", { name: /O que é o campo Mentorado/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /O que é o campo Data/ })).toBeNull();
+  });
+
+  it("passar o mouse no botão de ajuda mostra a explicação do campo", async () => {
+    await abrirFormulario();
+
+    await userEvent.hover(screen.getByRole("button", { name: "O que é o campo Tema" }));
+
+    expect(
+      await screen.findByText(
+        "O assunto técnico central da sessão — a competência ou o problema que motivou o encontro. Aparece como título na linha do tempo.",
+      ),
+    ).toBeTruthy();
+  });
+});

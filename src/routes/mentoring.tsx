@@ -3,7 +3,7 @@ import { AlertCircle, X } from "lucide-react";
 import { useState } from "react";
 
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
-import { Initials, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { FieldLabel, Initials, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -157,7 +157,9 @@ function MentoringPage() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="topic">{t("mentor.form.topic")}</Label>
+                    <FieldLabel htmlFor="topic" hint={t("mentor.form.topicHint")}>
+                      {t("mentor.form.topic")}
+                    </FieldLabel>
                     <Input
                       id="topic"
                       aria-invalid={isMissing("topic")}
@@ -167,7 +169,9 @@ function MentoringPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="notes">{t("mentor.form.notes")}</Label>
+                    <FieldLabel htmlFor="notes" hint={t("mentor.form.notesHint")}>
+                      {t("mentor.form.notes")}
+                    </FieldLabel>
                     <Textarea
                       id="notes"
                       aria-invalid={isMissing("notes")}
@@ -177,7 +181,9 @@ function MentoringPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="decisions">{t("mentor.form.decisions")}</Label>
+                    <FieldLabel htmlFor="decisions" hint={t("mentor.form.decisionsHint")}>
+                      {t("mentor.form.decisions")}
+                    </FieldLabel>
                     <Textarea
                       id="decisions"
                       aria-invalid={isMissing("decisions")}
@@ -187,7 +193,9 @@ function MentoringPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="actions">{t("mentor.form.actions")}</Label>
+                    <FieldLabel htmlFor="actions" hint={t("mentor.form.actionsHint")}>
+                      {t("mentor.form.actions")}
+                    </FieldLabel>
                     <Textarea
                       id="actions"
                       aria-invalid={isMissing("actions")}
