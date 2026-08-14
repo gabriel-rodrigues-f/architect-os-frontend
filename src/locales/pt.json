@@ -311,6 +311,7 @@
   "matrix.edit.title": "Editar competência",
   "matrix.edit.name": "Nome",
   "matrix.edit.levels": "Nível esperado por cargo",
+  "matrix.delete.toast": "{nome} excluída com sucesso",
   "gap.ok": "Adequado",
   "gap.recommended": "Recomendado",
   "gap.highPriority": "Prioridade alta",

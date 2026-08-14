@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Toaster } from "@/components/ui/sonner";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { setAuthToken, type AppState } from "../api";
 import { I18nProvider } from "../i18n";
@@ -32,6 +33,7 @@ function Wrapper({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <StoreProvider>{children}</StoreProvider>
+        <Toaster theme="light" position="bottom-right" duration={3000} />
       </I18nProvider>
     </QueryClientProvider>
   );
@@ -115,6 +117,36 @@ describe("Matriz de Competências — exclusão", () => {
     expect(screen.getByText("Serverless")).toBeTruthy();
     expect(screen.getByText("IAM")).toBeTruthy();
   });
+
+  /**
+   * A exclusão anterior era brusca: a linha sumia da tabela e nada mais
+   * acontecia. O cartão confirma que a ação teve efeito, sem exigir clique
+   * para fechar — ele mesmo se desfaz. Sem fake timers: o Sonner agenda o
+   * próprio dismiss com `setTimeout` real, e trocar o relógio no meio do
+   * teste também trava o `userEvent`, que depende de timers reais.
+   */
+  it("mostra um cartão de sucesso com o nome da competência e some sozinho", async () => {
+    renderMatrix();
+    await screen.findByText("Kubernetes");
+
+    await userEvent.click(screen.getByLabelText("Excluir Kubernetes"));
+    await userEvent.click(await screen.findByRole("button", { name: "Excluir" }));
+
+    /*
+      O Sonner duplica o texto: um `<li>` visível e uma região `aria-live`
+      só para leitor de tela anunciar a mesma mensagem. `findByText` (que
+      exige exatamente um) rejeitava por "múltiplos elementos" mesmo com o
+      cartão certo na tela.
+    */
+    expect((await screen.findAllByText("Kubernetes excluída com sucesso")).length).toBeGreaterThan(
+      0,
+    );
+
+    await waitFor(
+      () => expect(screen.queryAllByText("Kubernetes excluída com sucesso").length).toBe(0),
+      { timeout: 4000 },
+    );
+  }, 6000);
 
   /**
    * Regressão: o Radix foca o primeiro botão do rodapé ao abrir — o Cancelar,

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
@@ -222,7 +223,10 @@ function MatrixPage() {
         description="A competência sai da matriz e das avaliações em que aparece. Esta ação não pode ser desfeita."
         onCancel={() => setConfirmDelete(null)}
         onConfirm={() => {
-          if (confirmDelete) store.removeCompetency(confirmDelete.competency.id);
+          if (confirmDelete) {
+            store.removeCompetency(confirmDelete.competency.id);
+            toast.success(t("matrix.delete.toast", { nome: confirmDelete.competency.name }));
+          }
           setConfirmDelete(null);
         }}
       />

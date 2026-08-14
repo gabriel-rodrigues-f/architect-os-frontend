@@ -13,10 +13,11 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { I18nProvider } from "../lib/i18n";
-import { ThemeProvider } from "../lib/theme";
+import { ThemeProvider, useTheme } from "../lib/theme";
 import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
 import { LoginScreen } from "../components/app/LoginScreen";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -166,6 +167,7 @@ function RootComponent() {
                   {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
                   <Outlet />
                 </AppShell>
+                <AppToaster />
               </StoreProvider>
             </AuthGate>
           </AuthProvider>
@@ -173,6 +175,16 @@ function RootComponent() {
       </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * Um `<Toaster>` só, montado uma vez — cada tela chama `toast.success(...)` do
+ * `sonner` direto, sem montar o próprio portal. Duração fixa em 3s: é a
+ * confirmação de "deu certo", não um aviso que precise ser lido com calma.
+ */
+function AppToaster() {
+  const { resolved } = useTheme();
+  return <Toaster theme={resolved} position="bottom-right" duration={3000} richColors={false} />;
 }
 
 /** Sem sessão válida, nenhuma tela do app é montada — só o login. */
