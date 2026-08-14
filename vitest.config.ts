@@ -15,6 +15,7 @@ export default defineConfig({
   test: {
     // jsdom para os testes que renderizam componentes de tela.
     environment: "jsdom",
+    setupFiles: ["./src/test-setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
 });
