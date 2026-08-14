@@ -1,6 +1,7 @@
 import type {
   Architect,
   Assessment,
+  AssessmentComment,
   Certification,
   Competency,
   CompetencyCategory,
@@ -95,8 +96,10 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Sem corpo não vai content-type: o Fastify tenta parsear o JSON ausente e
+  // responde 400 (FST_ERR_CTP_EMPTY_JSON_BODY), quebrando todo DELETE.
   const headers: Record<string, string> = {
-    "content-type": "application/json",
+    ...(init?.body === undefined ? {} : { "content-type": "application/json" }),
     ...((init?.headers as Record<string, string> | undefined) ?? {}),
   };
   if (authToken) headers["authorization"] = `Bearer ${authToken}`;
@@ -132,9 +135,10 @@ export interface AssessmentItemPatch {
   leader?: Level;
   target?: Level;
   final?: Level;
-  selfComment?: string;
-  leaderComment?: string;
 }
+
+/** Os dois lados do par vão juntos — o backend recusa se algum vier vazio. */
+export type CommentInput = Pick<AssessmentComment, "architectText" | "techLeadText">;
 
 export interface AuthResult {
   token: string;
@@ -196,6 +200,21 @@ export const api = {
     patch<Assessment>(`/api/assessments/${id}/status`, { status }),
   patchAssessmentItem: (assessmentId: string, competencyId: string, body: AssessmentItemPatch) =>
     patch<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}`, body),
+
+  addAssessmentComment: (assessmentId: string, competencyId: string, body: CommentInput) =>
+    post<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}/comments`, body),
+  updateAssessmentComment: (
+    assessmentId: string,
+    competencyId: string,
+    commentId: string,
+    body: CommentInput,
+  ) =>
+    patch<Assessment>(
+      `/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`,
+      body,
+    ),
+  deleteAssessmentComment: (assessmentId: string, competencyId: string, commentId: string) =>
+    del<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`),
 
   putSwot: (
     architectId: string,
