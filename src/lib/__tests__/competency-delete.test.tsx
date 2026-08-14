@@ -115,4 +115,22 @@ describe("Matriz de Competências — exclusão", () => {
     expect(screen.getByText("Serverless")).toBeTruthy();
     expect(screen.getByText("IAM")).toBeTruthy();
   });
+
+  /**
+   * Regressão: o Radix foca o primeiro botão do rodapé ao abrir — o Cancelar,
+   * por vir primeiro no DOM. Enter aciona quem está em foco, então a tecla
+   * fechava o diálogo em vez de confirmar a exclusão.
+   */
+  it("Enter confirma a exclusão, não cancela", async () => {
+    renderMatrix();
+    await screen.findByText("Kubernetes");
+
+    await userEvent.click(screen.getByLabelText("Excluir Kubernetes"));
+    await screen.findByRole("button", { name: "Excluir" });
+    await userEvent.keyboard("{Enter}");
+
+    await waitFor(() => expect(screen.queryByText("Kubernetes")).toBeNull());
+    const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === "DELETE");
+    expect(deleteCall).toBeDefined();
+  });
 });

@@ -5,6 +5,7 @@ import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, ROLES, roleShort } from "@/lib/do
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
+import { formatDate } from "@/lib/text";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/settings")({
 function SettingsPage() {
   const store = useStore();
   const labels = useLabels();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   return (
     <>
@@ -59,7 +60,7 @@ function SettingsPage() {
                 <span>
                   <strong>{c.name}</strong>{" "}
                   <span className="text-muted-foreground">
-                    {c.start} → {c.end}
+                    {formatDate(c.start, locale)} → {formatDate(c.end, locale)}
                   </span>
                 </span>
                 <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">

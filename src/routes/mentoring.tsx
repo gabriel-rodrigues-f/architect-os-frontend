@@ -19,7 +19,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { todayIso } from "@/lib/text";
+import { formatDate, todayIso } from "@/lib/text";
 
 export const Route = createFileRoute("/mentoring")({
   head: () => ({
@@ -45,7 +45,7 @@ type RequiredField = (typeof REQUIRED_FIELDS)[number];
 
 function MentoringPage() {
   const store = useStore();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   // O mentor é quem está registrando a sessão, não um nome fixo no código.
   const user = useCurrentUser();
   const sel = useSelectors();
@@ -153,6 +153,7 @@ function MentoringPage() {
                         className={invalid("date")}
                         value={form.date}
                         onChange={(e) => setField("date", e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && submit()}
                       />
                     </div>
                   </div>
@@ -166,6 +167,7 @@ function MentoringPage() {
                       className={invalid("topic")}
                       value={form.topic}
                       onChange={(e) => setField("topic", e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && submit()}
                     />
                   </div>
                   <div>
@@ -251,8 +253,8 @@ function MentoringPage() {
                 <div>
                   <p className="text-sm font-medium">{s.topic}</p>
                   <p className="text-xs text-muted-foreground">
-                    {sel.architectById(s.menteeId)?.name} · mentor {s.mentor} · {s.date} ·{" "}
-                    {s.durationMin} min
+                    {sel.architectById(s.menteeId)?.name} · mentor {s.mentor} ·{" "}
+                    {formatDate(s.date, locale)} · {s.durationMin} min
                   </p>
                 </div>
               </div>
@@ -272,7 +274,7 @@ function MentoringPage() {
               )}
               {s.nextSession && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Próxima sessão: {s.nextSession}
+                  Próxima sessão: {formatDate(s.nextSession, locale)}
                 </p>
               )}
             </li>

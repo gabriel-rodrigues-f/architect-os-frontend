@@ -9,7 +9,7 @@ import { ACTION_TYPES, type ActionType, type PdiStatus } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { monthsFromTodayIso, todayIso } from "@/lib/text";
+import { formatDate, monthsFromTodayIso, todayIso } from "@/lib/text";
 
 export const Route = createFileRoute("/development-plans")({
   head: () => ({
@@ -45,7 +45,7 @@ function PlansPage() {
   const sel = useSelectors();
   const labels = useLabels();
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const architect = sel.architectById(architectId);
   const plan = sel.planFor(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
@@ -100,11 +100,19 @@ function PlansPage() {
         <div className="space-y-4">
           {(plan?.items ?? []).map((item) => {
             const comp = sel.competencyById(item.competencyId);
+            /*
+              A competência pode ter sido removida da matriz depois que o item
+              do PDI foi criado — o gap que o gerou já não existe mais para
+              recalcular o nome. Sem este retorno, `comp?.name` vira
+              `undefined` e a string literal "undefined" vazava para dentro de
+              frases inteiras (título, SMART goal), que é o bug relatado.
+            */
+            const competencyName = comp?.name ?? t("pdi.unknownCompetency");
             return (
               <div key={item.id} className="surface-card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-display text-base font-semibold">{comp?.name}</h3>
+                    <h3 className="font-display text-base font-semibold">{competencyName}</h3>
                     <p className="mt-1 text-sm text-muted-foreground">{item.objective}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -154,7 +162,9 @@ function PlansPage() {
                     <p className="py-1.5 text-sm">{labels.priority[item.priority]}</p>
                   </Field>
                   <Field label={t("pdi.field.deadline")}>
-                    <p className="py-1.5 text-sm tabular-nums">{item.targetDate}</p>
+                    <p className="py-1.5 text-sm tabular-nums">
+                      {formatDate(item.targetDate, locale)}
+                    </p>
                   </Field>
                 </div>
 
@@ -229,12 +239,12 @@ function PlansPage() {
                     onClick={() =>
                       store.updatePlanItem(plan!.id, item.id, {
                         smart: {
-                          specific: `Desenvolver ${comp?.name} até o nível ${item.targetLevel}`,
+                          specific: `Desenvolver ${competencyName} até o nível ${item.targetLevel}`,
                           measurable: "Duas entregas arquiteturais, um ADR e uma sessão técnica",
                           achievable: "Compatível com a alocação atual em projetos",
-                          relevant: `${comp?.name} é prioridade no roadmap técnico do time`,
-                          timeBound: `Até ${item.targetDate}`,
-                          statement: `Até ${item.targetDate}, aplicar ${comp?.name} em ao menos dois contextos reais, documentar as decisões em ADRs e apresentar os trade-offs ao time.`,
+                          relevant: `${competencyName} é prioridade no roadmap técnico do time`,
+                          timeBound: `Até ${formatDate(item.targetDate, locale)}`,
+                          statement: `Até ${formatDate(item.targetDate, locale)}, aplicar ${competencyName} em ao menos dois contextos reais, documentar as decisões em ADRs e apresentar os trade-offs ao time.`,
                         },
                       })
                     }

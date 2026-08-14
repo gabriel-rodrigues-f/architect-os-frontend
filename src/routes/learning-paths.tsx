@@ -59,7 +59,7 @@ function LearningPage() {
   const user = useCurrentUser();
   const labels = useLabels();
   const [name, setName] = useState("");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
 
   const create = () => {
@@ -116,7 +116,7 @@ function LearningPage() {
             ? Math.round(path.items.reduce((s, i) => s + i.progress, 0) / path.items.length)
             : 0;
           const editable = canEdit(path);
-          const createdAt = formatDate(path.createdAt);
+          const createdAt = formatDate(path.createdAt, locale);
 
           return (
             <SectionCard

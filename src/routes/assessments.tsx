@@ -10,6 +10,7 @@ import type { Assessment, AssessmentComment, CompetencyCategory, Level } from "@
 import type { CommentInput } from "@/lib/api";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
+import { formatDate } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/assessments")({
@@ -248,21 +249,6 @@ function commentCountLabel(total: number, t: I18nApi["t"]) {
 }
 
 /**
- * Data de salvamento no formato do idioma ativo — `dd/mm/aaaa` em português,
- * `mm/dd/yyyy` em inglês. Formato fixo obrigaria o leitor a traduzir a data de
- * cabeça, que é exatamente onde se troca dia por mês.
- */
-function formatSavedAt(iso: string, locale: string) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-}
-
-/**
  * Par de comentários de uma competência: a nota do arquiteto e a resposta do
  * Tech Lead entram juntas, num único Salvar. Salvar só é permitido com os dois
  * lados preenchidos — meia conversa registrada não serve de evidência depois.
@@ -317,9 +303,9 @@ function CommentSection({
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className="text-[11px] text-muted-foreground">
-                    {t("comment.savedAt", { data: formatSavedAt(comment.createdAt, locale) })}
+                    {t("comment.savedAt", { data: formatDate(comment.createdAt, locale) ?? "" })}
                     {comment.updatedAt &&
-                      ` · ${t("comment.editedAt", { data: formatSavedAt(comment.updatedAt, locale) })}`}
+                      ` · ${t("comment.editedAt", { data: formatDate(comment.updatedAt, locale) ?? "" })}`}
                   </p>
                   <div className="flex gap-3">
                     <button

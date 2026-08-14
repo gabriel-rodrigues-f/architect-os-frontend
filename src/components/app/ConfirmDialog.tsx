@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,9 +36,23 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
-      <DialogContent>
+      <DialogContent
+        /*
+          O Radix foca o primeiro elemento focável do conteúdo ao abrir — que
+          é o botão Cancelar, o primeiro no DOM. Enter aciona o elemento em
+          foco, então a tecla fechava o diálogo em vez de confirmar. Focar o
+          botão de ação aqui é o que faz Enter confirmar, como em qualquer
+          diálogo do sistema operacional.
+        */
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          confirmRef.current?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
@@ -47,7 +61,11 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={onCancel}>
             {cancelLabel}
           </Button>
-          <Button variant={destructive ? "destructive" : "default"} onClick={onConfirm}>
+          <Button
+            ref={confirmRef}
+            variant={destructive ? "destructive" : "default"}
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </Button>
         </DialogFooter>

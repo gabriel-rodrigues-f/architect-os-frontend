@@ -18,7 +18,7 @@ import type { DevelopmentCycle } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { slug } from "@/lib/text";
+import { formatDate, slug } from "@/lib/text";
 
 export const Route = createFileRoute("/cycles")({
   head: () => ({
@@ -44,7 +44,7 @@ function CyclesPage() {
   const sel = useSelectors();
   const labels = useLabels();
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
 
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
@@ -118,7 +118,7 @@ function CyclesPage() {
               </div>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {c.start} → {c.end}
+              {formatDate(c.start, locale)} → {formatDate(c.end, locale)}
             </p>
           </div>
         ))}
@@ -218,6 +218,7 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
               id="cycle-name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
