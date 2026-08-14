@@ -53,18 +53,8 @@ function CyclesPage() {
     for (const d of sel.domainAverages(architectId, c.id)) row[d.category.short] = d.avg;
     return row;
   });
-  const palette = [
-    "var(--chart-1)",
-    "var(--chart-2)",
-    "var(--chart-3)",
-    "var(--chart-4)",
-    "var(--chart-5)",
-  ];
-  const series = store.categories.slice(0, 5).map((c, i) => ({
-    key: c.short,
-    label: c.short,
-    color: palette[i % palette.length] ?? "var(--chart-1)",
-  }));
+  /* A cor de cada série é decisão da paleta do sistema; aqui só se diz o que plotar. */
+  const series = store.categories.map((c) => ({ key: c.short, label: c.name }));
 
   const compare = store.competencies.slice(0, 12).map((c) => {
     const levels = closedCycles.map((cy) => ({

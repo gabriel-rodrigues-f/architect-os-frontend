@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { CONTRAST, Oklch } from "../design/color";
@@ -64,14 +67,19 @@ describe("temas", () => {
   });
 
   it("o escuro dessatura, para a cor não vibrar no fundo escuro", () => {
-    for (const token of tokenRegistry.all()) {
-      expect(dark.resolve(token).c).toBeLessThanOrEqual(token.light.c);
+    for (const token of tokenRegistry.all().filter((t) => !t.darkOverride)) {
+      expect(dark.resolve(token).c, token.name).toBeLessThanOrEqual(token.light.c);
     }
   });
 
+  /**
+   * Override fica de fora: ele existe justamente para escapar da regra. O
+   * `chart-surface` é o caso — branco puro não tem matiz a preservar, e o
+   * escuro precisa cair exatamente no tom do `--card`.
+   */
   it("o escuro preserva o matiz — vermelho continua vermelho", () => {
-    for (const token of tokenRegistry.all()) {
-      expect(dark.resolve(token).h).toBeCloseTo(token.light.h);
+    for (const token of tokenRegistry.all().filter((t) => !t.darkOverride)) {
+      expect(dark.resolve(token).h, token.name).toBeCloseTo(token.light.h);
     }
   });
 
@@ -101,12 +109,119 @@ describe("contraste — auditoria WCAG", () => {
     }
   });
 
-  /** Nenhum token de cor pode ficar sem par declarado de contraste. */
+  /**
+   * Nenhum token de cor pode ficar sem par declarado de contraste.
+   *
+   * Os quadrantes da 9 Box ficam de fora porque nada é desenhado direto sobre
+   * eles: os cards de arquiteto trazem o próprio fundo e a própria borda. A
+   * exigência deles é outra — distinguir-se entre si — e está testada abaixo.
+   */
   it("todo preenchimento tingido declara com quem precisa contrastar", () => {
     const semRegra = tokenRegistry
       .all()
-      .filter((t) => t.role === "fill" && t.name !== "level-0" && !t.contrastAgainst);
+      .filter(
+        (t) =>
+          t.role === "fill" &&
+          t.name !== "level-0" &&
+          !t.name.startsWith("quadrant-") &&
+          !t.contrastAgainst,
+      );
     expect(semRegra.map((t) => t.name)).toEqual([]);
+  });
+
+  /** Toda série precisa se separar da superfície do gráfico — linha invisível é dado perdido. */
+  it("nenhuma série de gráfico fica sem regra de contraste", () => {
+    const series = tokenRegistry.byRole("series");
+    expect(series.length).toBeGreaterThan(0);
+    for (const token of series) {
+      expect(token.contrastAgainst, token.name).toBe("chart-surface");
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Gráficos                                                            */
+/* ------------------------------------------------------------------ */
+
+describe("paleta de gráficos", () => {
+  /** Só as categóricas: `chart-reference` é moldura, não série de dado. */
+  const series = () => tokenRegistry.byRole("series").filter((t) => /^chart-\d+$/.test(t.name));
+
+  /**
+   * O bug que originou esta suíte: o bloco `.dark` trocava `--chart-1..5` por
+   * outra paleta inteira. Azul virava roxo, âmbar virava violeta — a mesma
+   * série mudava de cor ao alternar o tema e a legenda memorizada deixava de
+   * valer.
+   */
+  it("o matiz da série é o mesmo nos dois temas", () => {
+    for (const token of series()) {
+      expect(dark.resolve(token).h, token.name).toBeCloseTo(light.resolve(token).h);
+    }
+  });
+
+  /** Série clareia no escuro — é o inverso de `fill`, que escurece por carregar texto. */
+  it("a série clareia no tema escuro, ao contrário do preenchimento", () => {
+    for (const token of series()) {
+      expect(dark.resolve(token).l, token.name).toBeGreaterThan(light.resolve(token).l);
+    }
+    const fill = tokenRegistry.get("gap-critical")!;
+    expect(dark.resolve(fill).l).toBeLessThan(light.resolve(fill).l);
+  });
+
+  /**
+   * Duas séries vizinhas com matiz quase igual são indistinguíveis num traço
+   * de 2px. A distância mínima aqui guarda a paleta de crescer para os lados
+   * e virar seis tons do mesmo azul.
+   */
+  it("as séries são distinguíveis entre si", () => {
+    const matizes = series().map((t) => t.light.h);
+    for (let i = 0; i < matizes.length; i++) {
+      for (let j = i + 1; j < matizes.length; j++) {
+        const bruto = Math.abs((matizes[i] as number) - (matizes[j] as number));
+        const distancia = Math.min(bruto, 360 - bruto);
+        expect(distancia, `séries ${String(i + 1)} e ${String(j + 1)}`).toBeGreaterThan(30);
+      }
+    }
+  });
+
+  /** Referência não pode competir com dado: quase acromática, por definição. */
+  it("a referência é praticamente sem cor", () => {
+    expect(tokenRegistry.get("chart-reference")!.light.c).toBeLessThan(0.05);
+  });
+
+  /**
+   * O tooltip do Recharts traz `background: #fff` no estilo inline. Sem uma
+   * superfície própria declarada, o tema escuro exibia caixa branca sobre o
+   * gráfico.
+   */
+  it("a superfície do gráfico acompanha o tema", () => {
+    const surface = tokenRegistry.get("chart-surface")!;
+    expect(light.resolve(surface).l).toBeGreaterThan(0.9);
+    expect(dark.resolve(surface).l).toBeLessThan(0.3);
+  });
+});
+
+describe("quadrantes da 9 Box", () => {
+  const quadrantes = () => tokenRegistry.all().filter((t) => t.name.startsWith("quadrant-"));
+
+  /**
+   * Antes a tela usava `bg-level-N/50`. Meia opacidade sobre fundo variável
+   * não é cor previsível: no escuro os cinco quadrantes compunham com a página
+   * e chegavam quase idênticos.
+   */
+  it("cada quadrante tem cor própria nos dois temas", () => {
+    for (const tema of [light, dark]) {
+      const cores = quadrantes().map((t) => tema.resolve(t).toCss());
+      expect(new Set(cores).size, tema.id).toBe(cores.length);
+    }
+  });
+
+  /** O card apoiado no quadrante precisa flutuar: o quadrante fica abaixo do `--card`. */
+  it("no escuro o quadrante recua atrás do card", () => {
+    const card = dark.resolve(tokenRegistry.get("chart-surface")!);
+    for (const q of quadrantes()) {
+      expect(dark.resolve(q).l, q.name).toBeLessThan(card.l);
+    }
   });
 });
 
@@ -121,5 +236,24 @@ describe("geração de CSS", () => {
 
   it("o claro é emitido em :root", () => {
     expect(renderTheme(light).startsWith(":root {")).toBe(true);
+  });
+
+  /**
+   * O `styles.css` é gerado a partir daqui e colado no arquivo — não há passo
+   * de build que o refaça. Sem esta guarda, mexer num token e esquecer de
+   * regenerar deixaria a lib e a folha de estilo dizendo coisas diferentes,
+   * com a auditoria de contraste aprovando cores que a tela não usa.
+   */
+  it("o styles.css está em dia com os tokens da lib", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+
+    for (const token of tokenRegistry.all()) {
+      for (const tema of [light, dark]) {
+        const linha = `--${token.name}: ${tema.resolve(token).toCss()};`;
+        expect(css, `${token.name} (${tema.id}) — rode a geração e cole em styles.css`).toContain(
+          linha,
+        );
+      }
+    }
   });
 });

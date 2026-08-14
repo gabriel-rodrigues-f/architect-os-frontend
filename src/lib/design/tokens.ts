@@ -1,4 +1,4 @@
-import { Oklch } from "./color";
+import { CONTRAST, Oklch } from "./color";
 
 /**
  * Sistema de tokens semânticos do Architect OS.
@@ -41,7 +41,17 @@ export type TokenRole =
   /** Preenchimento com cor de significado (badge, faixa, quadrante). */
   | "fill"
   /** Traço: borda, divisória, anel de foco. */
-  | "stroke";
+  | "stroke"
+  /**
+   * Tinta de dado num gráfico — linha, área, ponto, fatia.
+   *
+   * Não é `fill`: um preenchimento de badge carrega texto por cima e por isso
+   * escurece no tema escuro. Uma série é o oposto — precisa *saltar* da
+   * superfície do gráfico, então clareia. E, ao contrário de tudo mais, o
+   * matiz é a identidade da série: se o azul virar roxo ao trocar de tema, a
+   * pessoa perde a referência do que estava lendo.
+   */
+  | "series";
 
 export interface TokenDefinition {
   /** Nome da variável CSS, sem os hífens iniciais. */
@@ -92,6 +102,8 @@ abstract class BaseThemeStrategy implements ThemeStrategy {
         return this.fill(token.light);
       case "stroke":
         return this.stroke(token.light);
+      case "series":
+        return this.series(token.light);
     }
   }
 
@@ -100,6 +112,7 @@ abstract class BaseThemeStrategy implements ThemeStrategy {
   protected abstract content(base: Oklch): Oklch;
   protected abstract fill(base: Oklch): Oklch;
   protected abstract stroke(base: Oklch): Oklch;
+  protected abstract series(base: Oklch): Oklch;
 }
 
 /** No claro a definição já é o valor final — não há nada a derivar. */
@@ -120,6 +133,9 @@ export class LightTheme extends BaseThemeStrategy {
     return base;
   }
   protected stroke(base: Oklch) {
+    return base;
+  }
+  protected series(base: Oklch) {
     return base;
   }
 }
@@ -171,6 +187,24 @@ export class DarkTheme extends BaseThemeStrategy {
   protected stroke(base: Oklch): Oklch {
     return base.with({ l: clamp(1 - base.l, 0.24, 0.42) }).desaturate(0.35);
   }
+
+  protected series(base: Oklch): Oklch {
+    /*
+      Série clareia — ao contrário de `fill`, que escurece. A diferença é o que
+      está por cima: um badge carrega texto e por isso vira fundo; uma linha de
+      gráfico não carrega nada, ela *é* o dado, e precisa se destacar da
+      superfície escura do card.
+
+      O matiz não se move. É o ponto central: antes, o bloco `.dark` trocava a
+      paleta inteira por outra (azul virava roxo, âmbar virava violeta), de
+      modo que a mesma série mudava de cor ao alternar o tema e a legenda
+      memorizada deixava de valer.
+
+      Dessatura pouco (0.12): cor viva em traço fino é o que o separa do fundo,
+      enquanto área grande de fundo tingido é o que precisa acalmar.
+    */
+    return base.with({ l: clamp(base.l + 0.2, 0.62, 0.8) }).desaturate(0.12);
+  }
 }
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -198,6 +232,10 @@ class TokenRegistry {
   /** Só os que declaram exigência de contraste — o que a auditoria verifica. */
   withContrastRule(): TokenDefinition[] {
     return this.all().filter((t) => t.contrastAgainst);
+  }
+
+  byRole(role: TokenRole): TokenDefinition[] {
+    return this.all().filter((t) => t.role === role);
   }
 }
 
@@ -230,6 +268,35 @@ export class StylesheetBuilder {
 /* ------------------------------------------------------------------ */
 
 const o = (css: string) => Oklch.parse(css);
+
+/**
+ * Série de gráfico. Toda série carrega a mesma exigência — separar-se da
+ * superfície do gráfico —, então a regra fica na fábrica em vez de repetida em
+ * cada definição, onde uma omissão passaria despercebida.
+ *
+ * O mínimo é 3:1, e não 4.5:1: o critério do WCAG para linha e ponto é o de
+ * componente gráfico (1.4.11), não o de texto.
+ */
+const series = (name: string, light: string): TokenDefinition => ({
+  name,
+  role: "series",
+  light: o(light),
+  contrastAgainst: "chart-surface",
+  minContrast: CONTRAST.large,
+});
+
+/**
+ * Quadrante da 9 Box. O escuro é fixado, não derivado: a regra de `fill` mira
+ * badge (faixa tingida com texto por cima) e produziria fundos mais claros que
+ * o card apoiado neles, invertendo a leitura de profundidade. Aqui o quadrante
+ * precisa recuar para o card flutuar — daí um tom abaixo do `--card` (0.208).
+ */
+const quadrant = (name: string, hue: number, chromaClara: number): TokenDefinition => ({
+  name,
+  role: "fill",
+  light: new Oklch(0.95, chromaClara, hue),
+  darkOverride: new Oklch(0.165, chromaClara * 0.9, hue),
+});
 
 /**
  * Escala de proficiência e severidade de lacuna — o vocabulário visual próprio
@@ -332,6 +399,61 @@ export const tokenRegistry = new TokenRegistry().register(
   { name: "gap-low-fg", role: "content", light: o("oklch(0.4 0.11 95)") },
   { name: "gap-high-fg", role: "content", light: o("oklch(0.4 0.14 55)") },
   { name: "gap-critical-fg", role: "content", light: o("oklch(0.4 0.16 25)") },
+
+  /*
+    Fundo do gráfico — plano de fundo do tooltip e âncora de contraste das
+    séries. Existe como token próprio porque o tooltip do Recharts traz
+    `background: #fff` embutido no estilo inline: sem sobrescrever, o tema
+    escuro exibia uma caixa branca no meio do gráfico.
+
+    O escuro é fixado no mesmo valor de `--card` em vez de derivado, para o
+    tooltip não flutuar num tom ligeiramente diferente do card que o contém.
+  */
+  {
+    name: "chart-surface",
+    role: "surface",
+    light: o("oklch(1 0 0)"),
+    darkOverride: o("oklch(0.208 0.042 265.755)"),
+  },
+
+  /*
+    Paleta categórica.
+
+    A ordem não é estética, é de legibilidade: azul e âmbar vêm primeiro
+    porque são o par que continua distinguível na deuteranopia — a forma mais
+    comum de daltonismo. Verde só aparece na quinta posição, longe do
+    vermelho/magenta, justamente para não formar o par que some.
+
+    Todas contrastam com a superfície do gráfico nos dois temas (auditado em
+    `design-tokens.test.ts`), porque uma linha de 2px que não se separa do
+    fundo é um dado que não existe.
+  */
+  series("chart-1", "oklch(0.52 0.15 245)"),
+  series("chart-2", "oklch(0.58 0.14 65)"),
+  series("chart-3", "oklch(0.56 0.11 195)"),
+  series("chart-4", "oklch(0.55 0.18 340)"),
+  series("chart-5", "oklch(0.55 0.13 150)"),
+  series("chart-6", "oklch(0.5 0.15 290)"),
+
+  /*
+    Série de referência (o nível esperado, no radar). Fica quase acromática de
+    propósito: referência é pano de fundo contra o qual se lê o valor real, e
+    disputar cor com as séries faria o alvo competir com o dado.
+  */
+  series("chart-reference", "oklch(0.55 0.02 250)"),
+
+  /*
+    Quadrantes da matriz 9 Box. Reusam a progressão "ruim → bom" da escala de
+    proficiência, mas em tokens próprios porque a tela aplicava `bg-level-N/50`
+    — o mesmo erro de opacidade já corrigido no badge de lacuna. Meia
+    opacidade sobre fundo variável não é cor previsível: no escuro, os
+    quadrantes compunham com a página e viravam manchas quase idênticas.
+  */
+  quadrant("quadrant-1", 25, 0.03),
+  quadrant("quadrant-2", 65, 0.035),
+  quadrant("quadrant-3", 110, 0.035),
+  quadrant("quadrant-4", 165, 0.045),
+  quadrant("quadrant-5", 195, 0.055),
 );
 
 /** CSS de um tema, pronto para colar no stylesheet. */

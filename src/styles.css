@@ -52,11 +52,6 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -111,11 +106,6 @@
   --border: oklch(0.918 0.008 245);
   --input: oklch(0.918 0.008 245);
   --ring: oklch(0.55 0.11 235);
-  --chart-1: oklch(0.45 0.13 235);
-  --chart-2: oklch(0.66 0.13 190);
-  --chart-3: oklch(0.72 0.15 150);
-  --chart-4: oklch(0.75 0.15 75);
-  --chart-5: oklch(0.6 0.19 25);
   --sidebar: oklch(0.24 0.035 250);
   --sidebar-foreground: oklch(0.9 0.015 240);
   --sidebar-primary: oklch(0.68 0.13 195);
@@ -145,6 +135,19 @@
   --gap-high-fg: oklch(0.4 0.14 55);
   --gap-critical-fg: oklch(0.4 0.16 25);
   --gap-critical: oklch(0.89 0.07 25);
+  --chart-surface: oklch(1 0 0);
+  --chart-1: oklch(0.52 0.15 245);
+  --chart-2: oklch(0.58 0.14 65);
+  --chart-3: oklch(0.56 0.11 195);
+  --chart-4: oklch(0.55 0.18 340);
+  --chart-5: oklch(0.55 0.13 150);
+  --chart-6: oklch(0.5 0.15 290);
+  --chart-reference: oklch(0.55 0.02 250);
+  --quadrant-1: oklch(0.95 0.03 25);
+  --quadrant-2: oklch(0.95 0.035 65);
+  --quadrant-3: oklch(0.95 0.035 110);
+  --quadrant-4: oklch(0.95 0.045 165);
+  --quadrant-5: oklch(0.95 0.055 195);
 
   /*
     IBM Plex tem personalidade técnica e boa legibilidade em tabela densa — é o
@@ -178,11 +181,6 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.208 0.042 265.755);
   --sidebar-foreground: oklch(0.984 0.003 247.858);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -217,6 +215,19 @@
   --gap-low-fg: oklch(0.88 0.061 95);
   --gap-high-fg: oklch(0.88 0.077 55);
   --gap-critical-fg: oklch(0.88 0.088 25);
+  --chart-surface: oklch(0.208 0.042 265.755);
+  --chart-1: oklch(0.72 0.132 245);
+  --chart-2: oklch(0.78 0.123 65);
+  --chart-3: oklch(0.76 0.097 195);
+  --chart-4: oklch(0.75 0.158 340);
+  --chart-5: oklch(0.75 0.114 150);
+  --chart-6: oklch(0.7 0.132 290);
+  --chart-reference: oklch(0.75 0.018 250);
+  --quadrant-1: oklch(0.165 0.027 25);
+  --quadrant-2: oklch(0.165 0.032 65);
+  --quadrant-3: oklch(0.165 0.032 110);
+  --quadrant-4: oklch(0.165 0.041 165);
+  --quadrant-5: oklch(0.165 0.05 195);
 }
 
 @layer base {
@@ -254,6 +265,18 @@
   --color-gap-low: var(--gap-low);
   --color-gap-high: var(--gap-high);
   --color-gap-critical: var(--gap-critical);
+  --color-quadrant-1: var(--quadrant-1);
+  --color-quadrant-2: var(--quadrant-2);
+  --color-quadrant-3: var(--quadrant-3);
+  --color-quadrant-4: var(--quadrant-4);
+  --color-quadrant-5: var(--quadrant-5);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-surface: var(--chart-surface);
 }
 
 /*

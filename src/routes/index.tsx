@@ -121,7 +121,7 @@ function Dashboard() {
               <thead>
                 <tr>
                   <th className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Architect
+                    {t("cycle.architect")}
                   </th>
                   {store.categories.map((c) => (
                     <th

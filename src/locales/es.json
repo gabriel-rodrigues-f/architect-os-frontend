@@ -74,5 +74,13 @@
   "evidence.technicalArticle": "Artículo técnico",
   "complexity.low": "Baja",
   "complexity.medium": "Media",
-  "complexity.high": "Alta"
+  "complexity.high": "Alta",
+  "chart.series.current": "Actual",
+  "chart.series.target": "Esperado",
+  "chart.radar.label": "Radar de nivel actual frente al esperado, por dominio de competencia.",
+  "chart.evolution.label": "Evolución del nivel medio por dominio a lo largo de los ciclos.",
+  "chart.axis.domain": "Dominio",
+  "chart.axis.cycle": "Ciclo",
+  "chart.empty.radar": "Aún no hay niveles registrados. El radar aparece tras la primera evaluación del ciclo.",
+  "chart.empty.evolution": "Se necesita al menos un ciclo concluido para comparar la evolución."
 }
