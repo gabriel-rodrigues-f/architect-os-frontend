@@ -6,8 +6,10 @@ import { Bar, GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ACTION_TYPES, type ActionType, type PdiStatus } from "@/lib/domain";
-import { actionTypeLabel, planItemStatusLabel, priorityLabel } from "@/lib/labels";
+import { useLabels } from "@/lib/labels";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
+import { monthsFromTodayIso, todayIso } from "@/lib/text";
 
 export const Route = createFileRoute("/development-plans")({
   head: () => ({
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/development-plans")({
       { title: "Planos de Desenvolvimento — Architect OS" },
       {
         name: "description",
-        content: "PDI gerado a partir de gaps, SWOT e avaliação do líder, com metas SMART.",
+        content: "PDI gerado a partir de gaps, SWOT e avaliação do Tech Lead, com metas SMART.",
       },
       { property: "og:title", content: "Planos de Desenvolvimento — Architect OS" },
       {
@@ -30,10 +32,20 @@ export const Route = createFileRoute("/development-plans")({
 
 const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Completed"];
 
+/** Os quatro quadrantes da SWOT, na ordem clássica. */
+const SWOT_FIELDS = [
+  { key: "strengths", titleKey: "swot.strengths" },
+  { key: "weaknesses", titleKey: "swot.weaknesses" },
+  { key: "opportunities", titleKey: "swot.opportunities" },
+  { key: "threats", titleKey: "swot.threats" },
+] as const;
+
 function PlansPage() {
   const store = useStore();
   const sel = useSelectors();
+  const labels = useLabels();
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
+  const { t } = useI18n();
   const architect = sel.architectById(architectId);
   const plan = sel.planFor(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
@@ -54,8 +66,8 @@ function PlansPage() {
       objective: `Evoluir ${g.competency.name} do nível ${g.item.final} para o nível ${g.item.target}`,
       actionType: "Learn",
       actionPlan: "",
-      startDate: "2026-08-11",
-      targetDate: "2026-12-15",
+      startDate: todayIso(),
+      targetDate: monthsFromTodayIso(4),
       priority: g.gap >= 3 ? "Critical" : g.gap === 2 ? "High" : "Medium",
       owner: architect.name,
       status: "Not Started",
@@ -67,8 +79,8 @@ function PlansPage() {
   return (
     <>
       <PageHeader
-        title="Plano de Desenvolvimento"
-        description="O sistema sugere competências a partir da análise de lacunas, SWOT, nível esperado e avaliação do líder."
+        title={t("pdi.title")}
+        description="O sistema sugere competências a partir da análise de lacunas, SWOT, nível esperado e avaliação do Tech Lead."
         actions={
           <select
             className="rounded-md border border-input bg-card px-3 py-2 text-sm"
@@ -104,7 +116,7 @@ function PlansPage() {
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-4">
-                  <Field label="Tipo de ação">
+                  <Field label={t("pdi.field.actionType")}>
                     <select
                       className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
                       value={item.actionType}
@@ -116,12 +128,12 @@ function PlansPage() {
                     >
                       {ACTION_TYPES.map((t) => (
                         <option key={t} value={t}>
-                          {actionTypeLabel[t]}
+                          {labels.actionType[t]}
                         </option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="Status">
+                  <Field label={t("pdi.field.status")}>
                     <select
                       className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
                       value={item.status}
@@ -133,15 +145,15 @@ function PlansPage() {
                     >
                       {STATUSES.map((s) => (
                         <option key={s} value={s}>
-                          {planItemStatusLabel[s]}
+                          {labels.planItemStatus[s]}
                         </option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="Prioridade">
-                    <p className="py-1.5 text-sm">{priorityLabel[item.priority]}</p>
+                  <Field label={t("pdi.field.priority")}>
+                    <p className="py-1.5 text-sm">{labels.priority[item.priority]}</p>
                   </Field>
-                  <Field label="Prazo">
+                  <Field label={t("pdi.field.deadline")}>
                     <p className="py-1.5 text-sm tabular-nums">{item.targetDate}</p>
                   </Field>
                 </div>
@@ -161,7 +173,7 @@ function PlansPage() {
 
                 <div className="mt-4">
                   <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Progresso</span>
+                    <span>{t("pdi.progress")}</span>
                     <span className="tabular-nums">{item.progress}%</span>
                   </div>
                   <input
@@ -234,10 +246,7 @@ function PlansPage() {
             );
           })}
           {!plan?.items.length && (
-            <SectionCard
-              title="Nenhum item de PDI"
-              description="Adicione competências sugeridas ao lado."
-            >
+            <SectionCard title={t("pdi.empty.title")} description={t("pdi.empty.subtitle")}>
               <p className="text-sm text-muted-foreground">O plano deste ciclo ainda está vazio.</p>
             </SectionCard>
           )}
@@ -245,12 +254,12 @@ function PlansPage() {
 
         <div className="space-y-6">
           <SectionCard
-            title="Sugestões automáticas"
-            description="Baseadas em gap, SWOT e nível esperado do cargo."
+            title={t("pdi.suggestions.title")}
+            description={t("pdi.suggestions.subtitle")}
           >
             <ul className="space-y-2">
               {suggestions.map((g) => (
-                <li key={g.item.competencyId} className="rounded-lg border border-border p-3">
+                <li key={g.item.competencyId} className="surface-inset p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium">{g.competency?.name}</p>
                     <GapBadge gap={g.gap} />
@@ -266,27 +275,29 @@ function PlansPage() {
                 </li>
               ))}
               {!suggestions.length && (
-                <p className="text-sm text-muted-foreground">Todos os gaps já estão no plano.</p>
+                <p className="text-sm text-muted-foreground">{t("pdi.suggestions.none")}</p>
               )}
             </ul>
           </SectionCard>
 
-          <SectionCard title="SWOT Individual" description="Insumo qualitativo do ciclo.">
-            {swot ? (
-              <div className="grid gap-3 text-sm">
-                <SwotBlock title="Forças" items={swot.strengths} />
-                <SwotBlock title="Fraquezas" items={swot.weaknesses} />
-                <SwotBlock title="Oportunidades" items={swot.opportunities} />
-                <SwotBlock title="Ameaças" items={swot.threats} />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">SWOT não preenchida neste ciclo.</p>
-            )}
+          <SectionCard title={t("pdi.swot.title")} description={t("pdi.swot.subtitle")}>
+            <div className="grid gap-3 text-sm">
+              {SWOT_FIELDS.map(({ key, titleKey }) => (
+                <SwotBlock
+                  key={key}
+                  title={t(titleKey)}
+                  items={swot?.[key] ?? []}
+                  onChange={(items) =>
+                    store.updateSwot(architectId, store.activeCycleId, { [key]: items })
+                  }
+                />
+              ))}
+            </div>
           </SectionCard>
 
           <SectionCard
-            title="Modelo de Ações de Desenvolvimento"
-            description="Progressão de maturidade da ação."
+            title={t("pdi.actionModel.title")}
+            description={t("pdi.actionModel.subtitle")}
           >
             <div className="flex flex-wrap gap-1.5">
               {ACTION_TYPES.map((t, i) => (
@@ -313,15 +324,47 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function SwotBlock({ title, items }: { title: string; items: string[] }) {
+/**
+ * Um quadrante da SWOT. A lista é editada como texto — uma linha por item —
+ * porque é assim que as pessoas escrevem SWOT numa reunião; um formulário com
+ * "adicionar item" cobraria um clique por linha sem ganho nenhum.
+ *
+ * A gravação acontece no blur, não a cada tecla: salvar por caractere geraria
+ * uma escrita por letra digitada.
+ */
+function SwotBlock({
+  title,
+  items,
+  onChange,
+}: {
+  title: string;
+  items: string[];
+  onChange: (items: string[]) => void;
+}) {
+  const { t } = useI18n();
+  const [draft, setDraft] = useState<string | null>(null);
+  const texto = draft ?? items.join("\n");
+
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm">
-        {items.map((i) => (
-          <li key={i}>{i}</li>
-        ))}
-      </ul>
+      <Textarea
+        className="mt-1 min-h-16"
+        aria-label={title}
+        placeholder={t("pdi.swot.placeholder")}
+        value={texto}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          if (draft === null) return;
+          onChange(
+            draft
+              .split("\n")
+              .map((linha) => linha.trim())
+              .filter(Boolean),
+          );
+          setDraft(null);
+        }}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/training-needs")({
@@ -25,21 +26,19 @@ export const Route = createFileRoute("/training-needs")({
 function TrainingNeedsPage() {
   const store = useStore();
   const sel = useSelectors();
+  const { t } = useI18n();
   const needs = sel.teamTrainingNeeds();
   const top = needs.slice(0, 15);
   const collective = needs.filter((n) => n.people >= 3).slice(0, 6);
 
   return (
     <>
-      <PageHeader
-        title="Análise de Necessidades de Treinamento"
-        description="Agregação dos gaps de todo o time para priorizar investimentos de capacitação."
-      />
+      <PageHeader title={t("needs.title")} description={t("needs.subtitle")} />
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <SectionCard
-          title="Lacunas agregadas"
-          description="Ordenado pelo impacto total (soma das lacunas)."
+          title={t("needs.aggregated.title")}
+          description={t("needs.aggregated.subtitle")}
         >
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
@@ -47,8 +46,8 @@ function TrainingNeedsPage() {
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="py-2">Competência</th>
                   <th className="py-2">Domínio</th>
-                  <th className="py-2 text-center">Pessoas com lacuna</th>
-                  <th className="py-2 text-center">Lacuna média</th>
+                  <th className="py-2 text-center">{t("needs.col.peopleWithGap")}</th>
+                  <th className="py-2 text-center">{t("needs.col.avgGap")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,12 +67,12 @@ function TrainingNeedsPage() {
         </SectionCard>
 
         <SectionCard
-          title="Treinamentos Recomendados para o Time"
-          description="Competências com lacuna em 3 ou mais arquitetos — candidatas a treinamento coletivo."
+          title={t("needs.recommended.title")}
+          description={t("needs.recommended.subtitle")}
         >
           <ul className="space-y-3">
             {collective.map((n) => (
-              <li key={n.competency!.id} className="rounded-lg border border-border p-3">
+              <li key={n.competency!.id} className="surface-inset p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium">{n.competency!.name}</p>
                   <GapBadge gap={Math.round(n.avgGap)} />
@@ -84,7 +83,7 @@ function TrainingNeedsPage() {
               </li>
             ))}
             {!collective.length && (
-              <p className="text-sm text-muted-foreground">Nenhuma lacuna coletiva relevante.</p>
+              <p className="text-sm text-muted-foreground">{t("needs.recommended.none")}</p>
             )}
           </ul>
         </SectionCard>

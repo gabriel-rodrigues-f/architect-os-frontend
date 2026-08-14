@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import { levelName } from "@/lib/domain";
+import { useI18n } from "@/lib/i18n";
 
 const levelBg: Record<number, string> = {
   0: "bg-level-0 text-muted-foreground",
@@ -13,13 +14,14 @@ const levelBg: Record<number, string> = {
 };
 
 export function LevelBadge({ level, showName = false }: { level: number; showName?: boolean }) {
+  const { t } = useI18n();
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums",
         levelBg[level] ?? levelBg[0],
       )}
-      title={`Nível ${level} — ${levelName(level)}`}
+      title={t("level.tooltip", { n: level, nome: levelName(level) })}
     >
       L{level}
       {showName && <span className="font-medium opacity-80">{levelName(level)}</span>}
@@ -28,30 +30,44 @@ export function LevelBadge({ level, showName = false }: { level: number; showNam
 }
 
 export function LevelCell({ level }: { level: number }) {
+  const { t } = useI18n();
   return (
     <div
       className={cn(
         "flex h-9 w-full items-center justify-center rounded-md text-sm font-semibold tabular-nums",
         levelBg[level] ?? levelBg[0],
       )}
-      title={`${levelName(level)} (nível ${level})`}
+      title={t("level.cellTooltip", { nome: levelName(level), n: level })}
     >
       {level || "—"}
     </div>
   );
 }
 
+/*
+  Fundo e texto vêm de tokens, sem opacidade e sem cor literal. A versão
+  anterior fixava o texto em OKLCH no className — que ficava vermelho-escuro em
+  qualquer tema — e pintava o fundo com 20% do token, que no escuro compunha
+  com a página até virar vinho quase preto. O par ficava ilegível.
+*/
 const gapTone: Record<string, string> = {
-  ok: "bg-gap-ok/15 text-[oklch(0.4_0.12_155)]",
-  low: "bg-gap-low/20 text-[oklch(0.42_0.11_95)]",
-  high: "bg-gap-high/20 text-[oklch(0.44_0.14_55)]",
-  critical: "bg-gap-critical/20 text-[oklch(0.45_0.18_25)]",
+  ok: "bg-gap-ok text-[var(--gap-ok-fg)]",
+  low: "bg-gap-low text-[var(--gap-low-fg)]",
+  high: "bg-gap-high text-[var(--gap-high-fg)]",
+  critical: "bg-gap-critical text-[var(--gap-critical-fg)]",
 };
 
 export function GapBadge({ gap }: { gap: number }) {
+  const { t } = useI18n();
   const tone = gap <= 0 ? "ok" : gap === 1 ? "low" : gap === 2 ? "high" : "critical";
   const label =
-    gap <= 0 ? "Adequado" : gap === 1 ? "Recomendado" : gap === 2 ? "Prioridade alta" : "Crítico";
+    gap <= 0
+      ? t("gap.ok")
+      : gap === 1
+        ? t("gap.recommended")
+        : gap === 2
+          ? t("gap.highPriority")
+          : t("gap.critical");
   return (
     <span
       className={cn(
@@ -59,7 +75,7 @@ export function GapBadge({ gap }: { gap: number }) {
         gapTone[tone],
       )}
     >
-      Gap {Math.max(0, gap)} · {label}
+      {t("gap.badge", { n: Math.max(0, gap), rotulo: label })}
     </span>
   );
 }

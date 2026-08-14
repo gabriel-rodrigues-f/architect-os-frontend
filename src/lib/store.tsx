@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
-import { api, ApiError, type AppState, type DevelopmentPhilosophy } from "./api";
+import { api, ApiError, type AppState, type CommentInput, type DevelopmentPhilosophy } from "./api";
 import type {
   Architect,
   Assessment,
@@ -56,6 +56,22 @@ interface Api extends AppState {
   removeLearningPath: (id: string) => void;
   addLearningPathItem: (pathId: string, item: LearningPathItem) => void;
   removeLearningPathItem: (pathId: string, itemId: string) => void;
+  addAssessmentComment: (
+    assessmentId: string,
+    competencyId: string,
+    comment: CommentInput,
+  ) => Promise<Assessment>;
+  updateAssessmentComment: (
+    assessmentId: string,
+    competencyId: string,
+    commentId: string,
+    comment: CommentInput,
+  ) => Promise<Assessment>;
+  removeAssessmentComment: (
+    assessmentId: string,
+    competencyId: string,
+    commentId: string,
+  ) => Promise<Assessment>;
   updateAssessmentItem: (
     assessmentId: string,
     competencyId: string,
@@ -64,8 +80,6 @@ interface Api extends AppState {
       leader: Level;
       target: Level;
       final: Level;
-      selfComment: string;
-      leaderComment: string;
     }>,
   ) => void;
   updateSwot: (
@@ -223,6 +237,43 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         ),
       }));
       remote(api.patchAssessmentItem(assessmentId, competencyId, patch));
+    },
+
+    /**
+     * Sem resposta otimista: o id e a data de salvamento nascem no servidor, e
+     * exibir uma data chutada pelo navegador seria mentira até a resposta voltar.
+     * Vale para as três operações do par de comentários.
+     */
+    addAssessmentComment: async (assessmentId, competencyId, comment) => {
+      const updated = await api.addAssessmentComment(assessmentId, competencyId, comment);
+      local((s) => ({
+        ...s,
+        assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+      }));
+      return updated;
+    },
+
+    updateAssessmentComment: async (assessmentId, competencyId, commentId, comment) => {
+      const updated = await api.updateAssessmentComment(
+        assessmentId,
+        competencyId,
+        commentId,
+        comment,
+      );
+      local((s) => ({
+        ...s,
+        assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+      }));
+      return updated;
+    },
+
+    removeAssessmentComment: async (assessmentId, competencyId, commentId) => {
+      const updated = await api.deleteAssessmentComment(assessmentId, competencyId, commentId);
+      local((s) => ({
+        ...s,
+        assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+      }));
+      return updated;
     },
 
     updateSwot: (architectId, cycleId, patch) => {

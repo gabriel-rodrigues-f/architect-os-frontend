@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { DomainRadar } from "@/components/app/charts";
 import {
@@ -10,13 +11,23 @@ import {
   SectionCard,
   StatCard,
 } from "@/components/app/ui-bits";
+import { useLabels } from "@/lib/labels";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  actionTypeLabel,
-  complexityLabel,
-  evidenceTypeLabel,
-  planItemStatusLabel,
-} from "@/lib/labels";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { EVIDENCE_TYPES, type EvidenceType } from "@/lib/domain";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
+import { todayIso } from "@/lib/text";
 
 export const Route = createFileRoute("/architects/$architectId")({
   head: () => ({
@@ -35,15 +46,21 @@ export const Route = createFileRoute("/architects/$architectId")({
     ],
   }),
   component: ArchitectProfile,
-  notFoundComponent: () => (
-    <p className="text-sm text-muted-foreground">Arquiteto não encontrado.</p>
-  ),
+  notFoundComponent: ArchitectNotFound,
 });
+
+/** Componente próprio para poder usar o hook de idioma. */
+function ArchitectNotFound() {
+  const { t } = useI18n();
+  return <p className="text-sm text-muted-foreground">{t("arch.notFound")}</p>;
+}
 
 function ArchitectProfile() {
   const { architectId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
+  const labels = useLabels();
+  const { t } = useI18n();
   const architect = sel.architectById(architectId);
 
   if (!architect) {
@@ -64,6 +81,7 @@ function ArchitectProfile() {
   const okr = store.okrs.find((o) => o.architectId === architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
+  const certifications = store.certifications.filter((c) => c.architectId === architect.id);
   const paths = store.learningPaths.filter((p) => p.assignedTo.includes(architect.id));
   const score = sel.developmentScore(architect.id);
   const avg = domains.length ? domains.reduce((s, d) => s + d.avg, 0) / domains.length : 0;
@@ -78,50 +96,47 @@ function ArchitectProfile() {
             to="/team"
             className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent"
           >
-            Voltar
+            {t("arch.back")}
           </Link>
         }
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Índice de Desenvolvimento"
+          label={t("arch.stat.devIndex")}
           value={`${score}`}
-          hint="PDI, OKRs, trilhas, evidências e evolução"
+          hint={t("arch.stat.devIndexHint")}
         />
         <StatCard
-          label="Nível médio"
+          label={t("arch.stat.avgLevel")}
           value={avg.toFixed(2)}
-          hint="Média das competências avaliadas"
+          hint={t("arch.stat.avgLevelHint")}
         />
         <StatCard
-          label="Lacunas abertas"
+          label={t("arch.stat.openGaps")}
           value={`${gaps.length}`}
-          hint="Competências abaixo do nível esperado"
+          hint={t("arch.stat.openGapsHint")}
         />
         <StatCard
           label="9 Box"
           value={`${architect.performance}/${architect.potential}`}
-          hint="Desempenho / Potencial"
+          hint={t("arch.stat.nineboxHint")}
         />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <SectionCard title="Perfil por domínio" description="Nível atual versus nível esperado.">
+        <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <DomainRadar
             data={domains.map((d) => ({ domain: d.category.short, atual: d.avg, alvo: d.target }))}
           />
         </SectionCard>
 
-        <SectionCard
-          title="Principais lacunas"
-          description="Prioridades de desenvolvimento neste ciclo."
-        >
+        <SectionCard title={t("arch.gaps.title")} description={t("arch.gaps.subtitle")}>
           <ul className="space-y-2">
             {gaps.slice(0, 8).map((g) => (
               <li
                 key={g.item.competencyId}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border p-2.5"
+                className="flex items-center justify-between gap-3 surface-inset p-2.5"
               >
                 <span className="truncate text-sm">{g.competency?.name}</span>
                 <span className="flex items-center gap-2">
@@ -131,72 +146,83 @@ function ArchitectProfile() {
                 </span>
               </li>
             ))}
-            {!gaps.length && (
-              <p className="text-sm text-muted-foreground">Sem lacunas neste ciclo.</p>
-            )}
+            {!gaps.length && <p className="text-sm text-muted-foreground">{t("arch.gaps.none")}</p>}
           </ul>
         </SectionCard>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <SectionCard title="PDI" description="Plano de desenvolvimento individual do ciclo ativo.">
+        <SectionCard title="PDI" description={t("arch.plan.subtitle")}>
           <ul className="space-y-3">
             {(plan?.items ?? []).map((i) => (
-              <li key={i.id} className="rounded-lg border border-border p-3">
+              <li key={i.id} className="surface-inset p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium">{sel.competencyById(i.competencyId)?.name}</p>
                   <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
-                    {planItemStatusLabel[i.status]}
+                    {labels.planItemStatus[i.status]}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {actionTypeLabel[i.actionType]} · {i.actionPlan} · prazo {i.targetDate}
+                  {labels.actionType[i.actionType]} · {i.actionPlan} · prazo {i.targetDate}
                 </p>
                 <Bar value={i.progress} className="mt-2" />
               </li>
             ))}
             {!plan?.items.length && (
-              <p className="text-sm text-muted-foreground">Nenhum item de PDI.</p>
+              <p className="text-sm text-muted-foreground">{t("arch.plan.none")}</p>
             )}
           </ul>
         </SectionCard>
 
-        <SectionCard title="SWOT" description="Autoanálise do arquiteto no ciclo.">
+        <SectionCard title={t("arch.swot.title")} description={t("arch.swot.subtitle")}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Swot title="Forças" items={swot?.strengths ?? []} />
-            <Swot title="Fraquezas" items={swot?.weaknesses ?? []} />
-            <Swot title="Oportunidades" items={swot?.opportunities ?? []} />
-            <Swot title="Ameaças" items={swot?.threats ?? []} />
+            <Swot title={t("swot.strengths")} items={swot?.strengths ?? []} />
+            <Swot title={t("swot.weaknesses")} items={swot?.weaknesses ?? []} />
+            <Swot title={t("swot.opportunities")} items={swot?.opportunities ?? []} />
+            <Swot title={t("swot.threats")} items={swot?.threats ?? []} />
           </div>
         </SectionCard>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-3">
-        <SectionCard title="OKRs" description="Objetivos e resultados-chave do ciclo.">
+        <SectionCard title={t("arch.okr.title")} description={t("arch.okr.subtitle")}>
           {okr ? (
             <div>
               <p className="text-sm font-medium">{okr.objective}</p>
               <ul className="mt-2 space-y-2">
                 {okr.keyResults.map((k) => (
                   <li key={k.id}>
-                    <p className="text-xs text-muted-foreground">{k.title}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-muted-foreground">{k.title}</p>
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {k.progress}%
+                      </span>
+                    </div>
                     <Bar value={k.progress} className="mt-1" />
+                    {/* O progresso do KR é acompanhado aqui: antes só era exibido. */}
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={k.progress}
+                      aria-label={`Progresso de ${k.title}`}
+                      onChange={(e) => store.updateKeyResult(okr.id, k.id, Number(e.target.value))}
+                      className="mt-1 w-full accent-primary"
+                    />
                   </li>
                 ))}
               </ul>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Sem OKRs definidos.</p>
+            <p className="text-sm text-muted-foreground">{t("arch.okr.none")}</p>
           )}
         </SectionCard>
 
-        <SectionCard
-          title="Trilhas de aprendizagem"
-          description="Treinamentos e práticas atribuídas."
-        >
+        <SectionCard title={t("arch.paths.title")} description={t("arch.paths.subtitle")}>
           <ul className="space-y-2">
             {paths.map((p) => (
-              <li key={p.id} className="rounded-lg border border-border p-2.5">
+              <li key={p.id} className="surface-inset p-2.5">
                 <p className="text-sm font-medium">{p.name}</p>
                 <Bar
                   className="mt-1.5"
@@ -209,24 +235,48 @@ function ArchitectProfile() {
               </li>
             ))}
             {!paths.length && (
-              <p className="text-sm text-muted-foreground">Nenhuma trilha atribuída.</p>
+              <p className="text-sm text-muted-foreground">{t("arch.paths.none")}</p>
             )}
           </ul>
         </SectionCard>
 
-        <SectionCard title="Evidências" description="Provas concretas de aplicação prática.">
+        <SectionCard
+          title={t("arch.evidence.title")}
+          description={t("arch.evidence.subtitle")}
+          actions={<EvidenceDialog architectId={architect.id} />}
+        >
           <ul className="space-y-2">
             {evidences.map((e) => (
-              <li key={e.id} className="rounded-lg border border-border p-2.5">
+              <li key={e.id} className="surface-inset p-2.5">
                 <p className="text-sm font-medium">{e.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {evidenceTypeLabel[e.type]} · {e.date} · complexidade{" "}
-                  {complexityLabel[e.complexity]}
+                  {labels.evidenceType[e.type]} · {e.date} · complexidade{" "}
+                  {labels.complexity[e.complexity]}
                 </p>
               </li>
             ))}
             {!evidences.length && (
-              <p className="text-sm text-muted-foreground">Nenhuma evidência registrada.</p>
+              <p className="text-sm text-muted-foreground">{t("arch.evidence.none")}</p>
+            )}
+          </ul>
+        </SectionCard>
+
+        <SectionCard
+          title={t("arch.cert.title")}
+          description={t("arch.cert.subtitle")}
+          actions={<CertificationDialog architectId={architect.id} />}
+        >
+          <ul className="space-y-2">
+            {certifications.map((c) => (
+              <li key={c.id} className="surface-inset p-2.5">
+                <p className="text-sm font-medium">{c.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {c.issuer} · {c.year}
+                </p>
+              </li>
+            ))}
+            {!certifications.length && (
+              <p className="text-sm text-muted-foreground">{t("arch.cert.none")}</p>
             )}
           </ul>
         </SectionCard>
@@ -234,12 +284,12 @@ function ArchitectProfile() {
 
       <SectionCard
         className="mt-6"
-        title="Mentorias"
-        description={`${sessions.length} sessões registradas`}
+        title={t("arch.mentoring.title")}
+        description={t("arch.mentoring.count", { n: sessions.length })}
       >
         <ol className="space-y-3">
           {sessions.map((s) => (
-            <li key={s.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
+            <li key={s.id} className="flex items-start gap-3 surface-inset p-3">
               <Initials name={s.mentor} />
               <div>
                 <p className="text-sm font-medium">{s.topic}</p>
@@ -251,7 +301,7 @@ function ArchitectProfile() {
             </li>
           ))}
           {!sessions.length && (
-            <p className="text-sm text-muted-foreground">Nenhuma sessão registrada.</p>
+            <p className="text-sm text-muted-foreground">{t("arch.mentoring.none")}</p>
           )}
         </ol>
       </SectionCard>
@@ -261,7 +311,7 @@ function ArchitectProfile() {
 
 function Swot({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-lg border border-border p-3">
+    <div className="surface-inset p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
       <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm">
         {items.map((i) => (
@@ -270,5 +320,197 @@ function Swot({ title, items }: { title: string; items: string[] }) {
         {!items.length && <li className="list-none text-muted-foreground">—</li>}
       </ul>
     </div>
+  );
+}
+
+/**
+ * Registro de evidência. A entidade já existia no domínio e na API, mas não
+ * havia nenhuma tela para criá-la — só para listar.
+ */
+function EvidenceDialog({ architectId }: { architectId: string }) {
+  const { t } = useI18n();
+  const labels = useLabels();
+  const store = useStore();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState<EvidenceType>(EVIDENCE_TYPES[0] as EvidenceType);
+  const [date, setDate] = useState(todayIso());
+  const [complexity, setComplexity] = useState<"Low" | "Medium" | "High">("Medium");
+  const [description, setDescription] = useState("");
+  const [project, setProject] = useState("");
+  const [url, setUrl] = useState("");
+
+  const salvar = () => {
+    const nome = title.trim();
+    if (!nome) return;
+    store.addEvidence({
+      id: `ev-${Date.now()}`,
+      architectId,
+      title: nome,
+      description: description.trim(),
+      type,
+      competencyIds: [],
+      date,
+      complexity,
+      ...(project.trim() ? { project: project.trim() } : {}),
+      ...(url.trim() ? { url: url.trim() } : {}),
+    });
+    setTitle("");
+    setDescription("");
+    setProject("");
+    setUrl("");
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="secondary">
+          {t("arch.register")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("ev.dialog.title")}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="ev-title">{t("ev.field.title")}</Label>
+            <Input id="ev-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="ev-type">{t("ev.field.type")}</Label>
+              <select
+                id="ev-type"
+                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                value={type}
+                onChange={(e) => setType(e.target.value as EvidenceType)}
+              >
+                {EVIDENCE_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="ev-date">{t("ev.field.date")}</Label>
+              <Input
+                id="ev-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="ev-complexity">{t("ev.field.complexity")}</Label>
+            <select
+              id="ev-complexity"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={complexity}
+              onChange={(e) => setComplexity(e.target.value as "Low" | "Medium" | "High")}
+            >
+              <option value="Low">{labels.complexity.Low}</option>
+              <option value="Medium">{labels.complexity.Medium}</option>
+              <option value="High">{labels.complexity.High}</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="ev-project">{t("ev.field.project")}</Label>
+            <Input id="ev-project" value={project} onChange={(e) => setProject(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="ev-url">{t("ev.field.link")}</Label>
+            <Input id="ev-url" value={url} onChange={(e) => setUrl(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="ev-description">{t("ev.field.description")}</Label>
+            <Textarea
+              id="ev-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button disabled={!title.trim()} onClick={salvar}>
+            {t("ev.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Certificações não tinham tela nenhuma — nem listagem, nem cadastro. */
+function CertificationDialog({ architectId }: { architectId: string }) {
+  const { t } = useI18n();
+  const store = useStore();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [issuer, setIssuer] = useState("");
+  const [year, setYear] = useState(String(new Date().getFullYear()));
+
+  const salvar = () => {
+    if (!name.trim() || !issuer.trim()) return;
+    store.addCertification({
+      id: `cert-${Date.now()}`,
+      architectId,
+      name: name.trim(),
+      issuer: issuer.trim(),
+      year: Number(year) || new Date().getFullYear(),
+    });
+    setName("");
+    setIssuer("");
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="secondary">
+          {t("arch.register")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("cert.dialog.title")}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="cert-name">{t("cert.field.name")}</Label>
+            <Input id="cert-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="cert-issuer">{t("cert.field.issuer")}</Label>
+              <Input id="cert-issuer" value={issuer} onChange={(e) => setIssuer(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="cert-year">{t("cert.field.year")}</Label>
+              <Input
+                id="cert-year"
+                type="number"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button disabled={!name.trim() || !issuer.trim()} onClick={salvar}>
+            {t("cert.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

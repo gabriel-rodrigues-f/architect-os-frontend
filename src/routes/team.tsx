@@ -10,6 +10,7 @@ import {
   PageHeader,
   SectionCard,
 } from "@/components/app/ui-bits";
+import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ROLES, roleShort, type Architect, type Level, type RoleName } from "@/lib/domain";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
 
@@ -67,6 +69,7 @@ const emptyForm = (): ArchitectForm => ({
 
 function TeamPage() {
   const store = useStore();
+  const { t } = useI18n();
   const sel = useSelectors();
 
   /** `null` = diálogo fechado; string vazia = criação; id = edição. */
@@ -126,19 +129,17 @@ function TeamPage() {
   return (
     <>
       <PageHeader
-        title="Time"
-        description="Arquitetos de Soluções sob acompanhamento técnico da Liderança de Arquitetura."
-        actions={<Button onClick={openCreate}>Cadastrar arquiteto</Button>}
+        title={t("team.title")}
+        description={t("team.subtitle")}
+        actions={<Button onClick={openCreate}>{t("team.new")}</Button>}
       />
 
       {store.architects.length === 0 && (
         <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">Nenhum arquiteto cadastrado</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Cadastre o primeiro arquiteto para começar a acompanhar competências e gaps.
-          </p>
+          <p className="text-sm font-medium">{t("team.empty.title")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("team.empty.hint")}</p>
           <Button className="mt-4" onClick={openCreate}>
-            Cadastrar arquiteto
+            {t("team.empty.cta")}
           </Button>
         </div>
       )}
@@ -187,13 +188,13 @@ function TeamPage() {
               </div>
 
               <div className="mt-4 flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Nível médio</span>
+                <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
                 <LevelBadge level={Math.round(avg)} showName />
               </div>
 
               <div className="mt-3">
                 <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Evolução</span>
+                  <span>{t("team.card.progress")}</span>
                   <span className="tabular-nums">{sel.developmentScore(a.id)}%</span>
                 </div>
                 <Bar value={sel.developmentScore(a.id)} />
@@ -201,7 +202,7 @@ function TeamPage() {
 
               <div className="mt-4 space-y-1.5">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Principais lacunas
+                  {t("team.card.topGaps")}
                 </p>
                 {top.map((g) => (
                   <div
@@ -227,11 +228,11 @@ function TeamPage() {
       <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar arquiteto" : "Novo Arquiteto de Soluções"}</DialogTitle>
+            <DialogTitle>{editing ? t("team.form.edit") : t("team.form.create")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label htmlFor="name">Nome</Label>
+              <Label htmlFor="name">{t("team.form.name")}</Label>
               <Input
                 id="name"
                 value={form.name}
@@ -239,7 +240,7 @@ function TeamPage() {
               />
             </div>
             <div>
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">{t("team.form.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -249,7 +250,7 @@ function TeamPage() {
               />
             </div>
             <div>
-              <Label htmlFor="role">Cargo</Label>
+              <Label htmlFor="role">{t("team.form.role")}</Label>
               <select
                 id="role"
                 className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
@@ -263,7 +264,7 @@ function TeamPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="spec">Especialização principal</Label>
+                <Label htmlFor="spec">{t("team.form.spec")}</Label>
                 <Input
                   id="spec"
                   value={form.specialization}
@@ -271,7 +272,7 @@ function TeamPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="years">Tempo como arquiteto (anos)</Label>
+                <Label htmlFor="years">{t("team.form.years")}</Label>
                 <Input
                   id="years"
                   type="number"
@@ -283,7 +284,7 @@ function TeamPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="strong">Domínio forte</Label>
+                <Label htmlFor="strong">{t("team.form.strong")}</Label>
                 <select
                   id="strong"
                   className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
@@ -299,7 +300,7 @@ function TeamPage() {
                 </select>
               </div>
               <div>
-                <Label htmlFor="gap">Domínio a desenvolver</Label>
+                <Label htmlFor="gap">{t("team.form.gap")}</Label>
                 <select
                   id="gap"
                   className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
@@ -320,7 +321,7 @@ function TeamPage() {
             <Button variant="outline" onClick={() => setEditing(null)}>
               Cancelar
             </Button>
-            <Button onClick={submit}>Salvar</Button>
+            <Button onClick={submit}>{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -358,45 +359,55 @@ function TeamPage() {
  */
 export function RoleProfilesCard() {
   const store = useStore();
-  const [categoryId, setCategoryId] = useState("");
-  const activeCategory = categoryId || store.categories[0]?.id || "";
-  const competencies = store.competencies.filter((c) => c.categoryId === activeCategory);
+  const { t } = useI18n();
+  const [categoryIds, setCategoryIds] = useState<string[]>(() =>
+    store.categories[0] ? [store.categories[0].id] : [],
+  );
+
+  /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
+  const selected = store.categories.filter((c) => categoryIds.includes(c.id));
+
+  const toggleCategory = (id: string) =>
+    setCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+
+  /** Soma das competências de todas as capacidades marcadas. */
+  const competencies = store.competencies.filter((c) => categoryIds.includes(c.categoryId));
+
+  /** Com mais de uma capacidade aberta, a linha diz de qual ela veio. */
+  const showOrigin = selected.length > 1;
+  const categoryName = (id: string) => store.categories.find((c) => c.id === id)?.name ?? "";
 
   return (
     <SectionCard
       className="mt-6"
-      title="Perfis de Competência por Cargo"
-      description="Nível esperado por cargo em cada competência. Ajuste direto na tabela."
+      title={t("team.profiles.title")}
+      description={t("team.profiles.subtitle")}
       actions={
-        <select
-          className="rounded-md border border-input bg-card px-3 py-2 text-sm"
-          value={activeCategory}
-          onChange={(e) => setCategoryId(e.target.value)}
-          aria-label="Domínio"
-        >
-          {store.categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <CapabilityCombobox
+          categories={store.categories}
+          selected={selected}
+          onToggle={toggleCategory}
+          onSelectAll={setCategoryIds}
+        />
       }
     >
       <div className="grid gap-3 sm:grid-cols-3">
         {ROLES.map((r) => {
-          // A média acompanha o domínio escolhido no seletor: sem competências
-          // cadastradas nele, não há média a exibir.
+          // A média acompanha as capacidades escolhidas no seletor: sem
+          // competências cadastradas nelas, não há média a exibir.
           const average = competencies.length
             ? (
                 competencies.reduce((sum, c) => sum + (c.expected[r] ?? 0), 0) / competencies.length
               ).toFixed(1)
             : null;
           return (
-            <div key={r} className="rounded-lg border border-border p-4">
+            <div key={r} className="surface-inset p-4">
               <p className="text-sm font-medium">{r}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {store.architects.filter((a) => a.role === r).length} arquiteto(s) ·{" "}
-                {average ? `nível esperado médio ${average}` : "sem competências neste domínio"}
+                {average
+                  ? t("team.profiles.avgExpected", { media: average })
+                  : t("team.profiles.noComp")}
               </p>
             </div>
           );
@@ -418,7 +429,14 @@ export function RoleProfilesCard() {
           <tbody>
             {competencies.map((c) => (
               <tr key={c.id} className="border-b border-border/60 last:border-0">
-                <td className="py-2 font-medium">{c.name}</td>
+                <td className="py-2 font-medium">
+                  {c.name}
+                  {showOrigin && (
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {categoryName(c.categoryId)}
+                    </span>
+                  )}
+                </td>
                 {ROLES.map((r) => (
                   <td key={r} className="py-2 text-center">
                     <select
@@ -447,7 +465,9 @@ export function RoleProfilesCard() {
             {competencies.length === 0 && (
               <tr>
                 <td colSpan={4} className="py-3 text-sm text-muted-foreground">
-                  Nenhuma competência neste domínio. Cadastre em Matriz de Competências.
+                  {selected.length === 0
+                    ? t("team.profiles.pickCapability")
+                    : t("team.profiles.noneSelected")}
                 </td>
               </tr>
             )}

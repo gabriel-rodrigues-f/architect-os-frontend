@@ -19,6 +19,7 @@ import {
   Bar,
 } from "@/components/app/ui-bits";
 import { levelName } from "@/lib/domain";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const store = useStore();
   const sel = useSelectors();
+  const { t } = useI18n();
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
 
   const allGaps = store.architects.flatMap((a) =>
@@ -64,59 +66,56 @@ function Dashboard() {
   return (
     <>
       <PageHeader
-        title="Painel de Capacidades de Arquitetura"
-        description={`Ciclo ${cycle?.name ?? "—"} · Quais capacidades o time possui hoje, o que precisamos desenvolver e como cada arquiteto está evoluindo.`}
+        title={t("dash.title")}
+        description={t("dash.subtitle", { ciclo: cycle?.name ?? "—" })}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Arquitetos"
+          label={t("dash.stat.architects")}
           value={store.architects.length}
           icon={<Users className="h-4 w-4" />}
         />
         <StatCard
-          label="PDIs ativos"
+          label={t("dash.stat.activePlans")}
           value={store.plans.filter((p) => p.cycleId === store.activeCycleId).length}
           icon={<Target className="h-4 w-4" />}
         />
         <StatCard
-          label="Competências avaliadas"
+          label={t("dash.stat.competencies")}
           value={store.competencies.length}
           icon={<Layers className="h-4 w-4" />}
         />
         <StatCard
-          label="Lacunas críticas"
+          label={t("dash.stat.criticalGaps")}
           value={criticalGaps}
-          hint="Lacuna 3 ou superior"
+          hint={t("dash.stat.criticalGapsHint")}
           icon={<TriangleAlert className="h-4 w-4" />}
         />
         <StatCard
-          label="Metas em andamento"
+          label={t("dash.stat.goalsInProgress")}
           value={goalsInProgress}
           icon={<Activity className="h-4 w-4" />}
         />
         <StatCard
-          label="Metas concluídas"
+          label={t("dash.stat.goalsDone")}
           value={goalsDone}
           icon={<Target className="h-4 w-4" />}
         />
         <StatCard
-          label="Mentorias realizadas"
+          label={t("dash.stat.mentoring")}
           value={store.mentoringSessions.length}
           icon={<GraduationCap className="h-4 w-4" />}
         />
         <StatCard
-          label="Trilhas em andamento"
+          label={t("dash.stat.paths")}
           value={pathsInProgress}
           icon={<BookOpen className="h-4 w-4" />}
         />
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <SectionCard
-          title="Mapa de Calor de Competências do Time"
-          description="Média por domínio de competência (escala 1 Consciência → 5 Especialista)."
-        >
+        <SectionCard title={t("dash.heatmap.title")} description={t("dash.heatmap.subtitle")}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
               <thead>
@@ -169,8 +168,8 @@ function Dashboard() {
 
         <div className="space-y-6">
           <SectionCard
-            title="Principais Prioridades de Desenvolvimento"
-            description="Maiores lacunas do time no ciclo atual."
+            title={t("dash.priorities.title")}
+            description={t("dash.priorities.subtitle")}
           >
             <ul className="space-y-3">
               {topGaps.map((g, i) => (
@@ -188,10 +187,7 @@ function Dashboard() {
             </ul>
           </SectionCard>
 
-          <SectionCard
-            title="Evolução do Desenvolvimento"
-            description="Indicador de evolução, não de avaliação punitiva."
-          >
+          <SectionCard title={t("dash.progress.title")} description={t("dash.progress.subtitle")}>
             <ul className="space-y-3">
               {store.architects.map((a) => {
                 const score = sel.developmentScore(a.id);

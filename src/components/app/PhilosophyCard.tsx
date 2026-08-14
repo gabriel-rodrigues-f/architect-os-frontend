@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { DevelopmentPhilosophy, PhilosophyStage } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
 
@@ -18,6 +19,7 @@ import { slug } from "@/lib/text";
 export function PhilosophyCard() {
   const store = useStore();
   const [editing, setEditing] = useState(false);
+  const { t } = useI18n();
   const [draft, setDraft] = useState<DevelopmentPhilosophy>(store.philosophy);
 
   const startEditing = () => {
@@ -77,7 +79,7 @@ export function PhilosophyCard() {
             </span>
           ))}
           {store.philosophy.stages.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhuma etapa cadastrada.</p>
+            <p className="text-sm text-muted-foreground">{t("phil.empty")}</p>
           )}
         </div>
         {store.philosophy.footer && (
@@ -90,22 +92,22 @@ export function PhilosophyCard() {
   return (
     <SectionCard
       className="mt-6"
-      title="Editando a filosofia"
-      description="Ajuste os textos e as etapas do fluxo de desenvolvimento."
+      title={t("phil.edit.title")}
+      description={t("phil.edit.subtitle")}
       actions={
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setEditing(false)}>
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button size="sm" onClick={save}>
-            Salvar
+            {t("common.save")}
           </Button>
         </div>
       }
     >
       <div className="space-y-4">
         <div>
-          <Label htmlFor="philosophy-title">Título</Label>
+          <Label htmlFor="philosophy-title">{t("phil.field.title")}</Label>
           <Input
             id="philosophy-title"
             value={draft.title}
@@ -114,7 +116,7 @@ export function PhilosophyCard() {
         </div>
 
         <div>
-          <Label htmlFor="philosophy-description">Chamada</Label>
+          <Label htmlFor="philosophy-description">{t("phil.field.tagline")}</Label>
           <Input
             id="philosophy-description"
             value={draft.description}
@@ -124,7 +126,7 @@ export function PhilosophyCard() {
 
         <div>
           <div className="flex items-center justify-between">
-            <Label>Etapas</Label>
+            <Label>{t("phil.field.stages")}</Label>
             <Button variant="outline" size="sm" onClick={addStage}>
               <Plus className="h-3.5 w-3.5" />
               Nova etapa

@@ -3,7 +3,8 @@ import { useState } from "react";
 
 import { GapBadge, Initials, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import type { Architect } from "@/lib/domain";
-import { planItemStatusLabel, ratingLabel } from "@/lib/labels";
+import { useLabels } from "@/lib/labels";
+import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/talent-matrix")({
@@ -27,9 +28,38 @@ export const Route = createFileRoute("/talent-matrix")({
 
 const LEVELS3 = ["High", "Medium", "Low"] as const;
 
+/** Posição no eixo: 0 = Baixo, 2 = Alto. */
+const RANK: Record<Architect["performance"], number> = { Low: 0, Medium: 1, High: 2 };
+
+/**
+ * Cor do quadrante: soma das duas posições (0 a 4), do vermelho no canto
+ * inferior esquerdo ao verde no superior direito, passando pelo amarelo na
+ * diagonal central.
+ *
+ * Reusa a escala `level-1..5` do app — a mesma que pinta lacunas e níveis de
+ * competência —, para que "ruim → bom" tenha uma única linguagem visual na
+ * aplicação inteira.
+ */
+const QUADRANT_TONE = [
+  "bg-level-1/50",
+  "bg-level-2/50",
+  "bg-level-3/50",
+  "bg-level-4/50",
+  "bg-level-5/50",
+] as const;
+
+function quadrantTone(
+  performance: Architect["performance"],
+  potential: Architect["potential"],
+): string {
+  return QUADRANT_TONE[RANK[performance] + RANK[potential]] ?? QUADRANT_TONE[2];
+}
+
 function TalentMatrixPage() {
   const store = useStore();
   const sel = useSelectors();
+  const labels = useLabels();
+  const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
 
@@ -44,16 +74,10 @@ function TalentMatrixPage() {
 
   return (
     <>
-      <PageHeader
-        title="Matriz de Talentos (9 Box)"
-        description="Complementar à matriz de competências — nunca substitui a avaliação técnica. Arraste os arquitetos entre quadrantes."
-      />
+      <PageHeader title={t("talent.title")} description={t("talent.subtitle")} />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-        <SectionCard
-          title="Desempenho × Potencial"
-          description="Eixo X: Desempenho · Eixo Y: Potencial"
-        >
+        <SectionCard title={t("talent.grid.title")} description={t("talent.grid.subtitle")}>
           <div className="grid grid-cols-[auto_repeat(3,1fr)] gap-2">
             <div />
             {(["Low", "Medium", "High"] as const).map((p) => (
@@ -61,13 +85,13 @@ function TalentMatrixPage() {
                 key={p}
                 className="pb-1 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground"
               >
-                Performance {p}
+                {labels.rating[p]}
               </div>
             ))}
             {LEVELS3.map((potential) => (
               <Row key={potential}>
                 <div className="flex items-center pr-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Pot. {ratingLabel[potential]}
+                  {labels.rating[potential]}
                 </div>
                 {(["Low", "Medium", "High"] as const).map((performance) => {
                   const people = store.architects.filter(
@@ -81,7 +105,7 @@ function TalentMatrixPage() {
                         if (dragging) store.moveNineBox(dragging, performance, potential);
                         setDragging(null);
                       }}
-                      className="min-h-28 rounded-lg border border-dashed border-border bg-secondary/40 p-2"
+                      className={`min-h-28 rounded-lg border border-dashed border-border p-2 ${quadrantTone(performance, potential)}`}
                     >
                       {people.map((a) => (
                         <button
@@ -103,12 +127,9 @@ function TalentMatrixPage() {
           </div>
         </SectionCard>
 
-        <SectionCard
-          title="Detalhe"
-          description="Clique em um arquiteto para ver o contexto de desenvolvimento."
-        >
+        <SectionCard title={t("talent.detail.title")} description={t("talent.detail.subtitle")}>
           {!architect ? (
-            <p className="text-sm text-muted-foreground">Nenhum arquiteto selecionado.</p>
+            <p className="text-sm text-muted-foreground">{t("talent.detail.none")}</p>
           ) : (
             <div className="space-y-4 text-sm">
               <div>
@@ -116,12 +137,13 @@ function TalentMatrixPage() {
                 <p className="text-xs text-muted-foreground">{architect.role}</p>
               </div>
               <p>
-                Posição: <strong>Desempenho {ratingLabel[architect.performance]}</strong> ·{" "}
-                <strong>Potencial {ratingLabel[architect.potential]}</strong>
+                {t("talent.detail.position")}{" "}
+                <strong>Desempenho {labels.rating[architect.performance]}</strong> ·{" "}
+                <strong>Potencial {labels.rating[architect.potential]}</strong>
               </p>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Principais lacunas
+                  {t("talent.detail.topGaps")}
                 </p>
                 <ul className="mt-1 space-y-1">
                   {gaps.map((g) => (
@@ -137,19 +159,19 @@ function TalentMatrixPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  PDI ativo
+                  {t("talent.detail.activePlan")}
                 </p>
                 <ul className="mt-1 list-disc pl-4">
                   {(plan?.items ?? []).map((i) => (
                     <li key={i.id}>
-                      {sel.competencyById(i.competencyId)?.name} — {planItemStatusLabel[i.status]} (
-                      {i.progress}%)
+                      {sel.competencyById(i.competencyId)?.name} — {labels.planItemStatus[i.status]}{" "}
+                      ({i.progress}%)
                     </li>
                   ))}
                 </ul>
               </div>
               <p className="rounded-lg bg-secondary p-3 text-xs text-muted-foreground">
-                Recomendação: {recommendation(architect)}
+                {t("talent.detail.recommendation", { texto: recommendation(architect, t) })}
               </p>
             </div>
           )}
@@ -163,12 +185,9 @@ function Row({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function recommendation(a: Architect) {
-  if (a.potential === "High" && a.performance === "High")
-    return "Ampliar escopo de liderança técnica, conduzir architecture reviews e mentorar outros arquitetos.";
-  if (a.potential === "High")
-    return "Acelerar exposição prática em projetos estratégicos e reforçar o PDI com ações Apply e Teach.";
-  if (a.performance === "High")
-    return "Consolidar profundidade técnica e transformar experiência em evidências e documentação.";
-  return "Focar em fundamentos, pair architecture e mentoria semanal com metas SMART curtas.";
+function recommendation(a: Architect, t: I18nApi["t"]) {
+  if (a.potential === "High" && a.performance === "High") return t("talent.rec.highHigh");
+  if (a.potential === "High") return t("talent.rec.highPotential");
+  if (a.performance === "High") return t("talent.rec.consolidate");
+  return t("talent.rec.fundamentals");
 }

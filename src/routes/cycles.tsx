@@ -15,7 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DevelopmentCycle } from "@/lib/domain";
-import { cycleStatusLabel } from "@/lib/labels";
+import { useLabels } from "@/lib/labels";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
 
@@ -41,7 +42,9 @@ export const Route = createFileRoute("/cycles")({
 function CyclesPage() {
   const store = useStore();
   const sel = useSelectors();
+  const labels = useLabels();
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
+  const { t } = useI18n();
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
 
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
@@ -76,7 +79,7 @@ function CyclesPage() {
   return (
     <>
       <PageHeader
-        title="Ciclos de Desenvolvimento"
+        title={t("cycle.title")}
         description="Cada ciclo agrupa avaliação, SWOT, PDI, metas SMART, OKRs, trilhas, mentorias e evidências."
         actions={
           <div className="flex gap-2">
@@ -84,7 +87,7 @@ function CyclesPage() {
               className="rounded-md border border-input bg-card px-3 py-2 text-sm"
               value={architectId}
               onChange={(e) => setArchitectId(e.target.value)}
-              aria-label="Arquiteto"
+              aria-label={t("cycle.architect")}
             >
               {store.architects.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -92,7 +95,7 @@ function CyclesPage() {
                 </option>
               ))}
             </select>
-            <Button onClick={() => setEditing(emptyCycle())}>Novo ciclo</Button>
+            <Button onClick={() => setEditing(emptyCycle())}>{t("cycle.new")}</Button>
           </div>
         }
       />
@@ -104,7 +107,7 @@ function CyclesPage() {
               <p className="font-display text-base font-semibold">{c.name}</p>
               <div className="flex items-center gap-1">
                 <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
-                  {cycleStatusLabel[c.status]}
+                  {labels.cycleStatus[c.status]}
                 </span>
                 <button
                   type="button"
@@ -131,7 +134,7 @@ function CyclesPage() {
         ))}
         {store.cycles.length === 0 && (
           <div className="surface-card p-6 text-center sm:col-span-3">
-            <p className="text-sm font-medium">Nenhum ciclo cadastrado</p>
+            <p className="text-sm font-medium">{t("cycle.empty")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
               O ciclo delimita o período de avaliação, PDI e metas.
             </p>
@@ -144,10 +147,7 @@ function CyclesPage() {
 
       {editing && <CycleDialog cycle={editing} onClose={() => setEditing(null)} />}
 
-      <SectionCard
-        title="Evolução por domínio"
-        description="Comparativo entre ciclos concluídos e o ciclo atual."
-      >
+      <SectionCard title={t("cycle.evolution.title")} description={t("cycle.evolution.subtitle")}>
         <EvolutionLine data={chartData} series={series} />
       </SectionCard>
 

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RoleProfilesCard } from "@/routes/team";
 import { setAuthToken, type AppState } from "../api";
+import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
 import { fixtureState } from "./fixtures";
 
@@ -29,7 +30,9 @@ function Wrapper({ children }: { children: ReactNode }) {
   });
   return (
     <QueryClientProvider client={queryClient}>
-      <StoreProvider>{children}</StoreProvider>
+      <I18nProvider>
+        <StoreProvider>{children}</StoreProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }
@@ -67,7 +70,7 @@ describe("Perfis de Competência por Cargo", () => {
     expect(screen.getByText(/nível esperado médio 3\.0/)).toBeTruthy();
   });
 
-  it("zera o resumo ao escolher um domínio sem competências", async () => {
+  it("zera o resumo ao deixar só uma capacidade sem competências", async () => {
     render(
       <Wrapper>
         <RoleProfilesCard />
@@ -75,10 +78,32 @@ describe("Perfis de Competência por Cargo", () => {
     );
     await screen.findByText("Perfis de Competência por Cargo");
 
-    await userEvent.selectOptions(screen.getByLabelText("Domínio"), "vazio");
+    // marca a capacidade vazia e desmarca a Cloud, que vem selecionada
+    await userEvent.click(screen.getByRole("combobox", { name: "Capacidades" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Domínio Vazio" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Cloud Architecture" }));
 
     expect(screen.queryByText(/nível esperado médio/)).toBeNull();
     expect(screen.getAllByText(/sem competências neste domínio/).length).toBe(3);
+  });
+
+  /** A soma atravessa capacidades: as competências das duas aparecem juntas. */
+  it("soma as competências de várias capacidades selecionadas", async () => {
+    render(
+      <Wrapper>
+        <RoleProfilesCard />
+      </Wrapper>,
+    );
+    await screen.findByText("Perfis de Competência por Cargo");
+
+    expect(screen.queryByText("IAM")).toBeNull();
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Capacidades" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Security" }));
+
+    expect(await screen.findByText("IAM")).toBeTruthy();
+    expect(screen.getByText("Kubernetes")).toBeTruthy();
+    expect(screen.getByText("Serverless")).toBeTruthy();
   });
 
   it("usa 'Nível I/II/III' nos cabeçalhos, sem sigla em inglês", async () => {

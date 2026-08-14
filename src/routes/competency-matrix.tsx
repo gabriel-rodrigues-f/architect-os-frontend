@@ -15,6 +15,7 @@ import {
   type Level,
   type RoleName,
 } from "@/lib/domain";
+import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
 
@@ -49,6 +50,7 @@ const competencyId = (category: CompetencyCategory, name: string) => slug(`${cat
 function MatrixPage() {
   const store = useStore();
   const [newCategory, setNewCategory] = useState("");
+  const { t } = useI18n();
   const [newComp, setNewComp] = useState<Record<string, string>>({});
   const [confirmDelete, setConfirmDelete] = useState<{
     competency: Competency;
@@ -58,12 +60,12 @@ function MatrixPage() {
   return (
     <>
       <PageHeader
-        title="Matriz de Competências"
-        description="Competências necessárias para um Arquiteto de Soluções, agrupadas por domínio técnico e de negócio."
+        title={t("matrix.title")}
+        description={t("matrix.subtitle")}
         actions={
           <div className="flex gap-2">
             <Input
-              placeholder="Novo domínio"
+              placeholder={t("matrix.newDomain")}
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               className="w-48"
@@ -80,26 +82,33 @@ function MatrixPage() {
                 setNewCategory("");
               }}
             >
-              Adicionar
+              {t("matrix.add")}
             </Button>
           </div>
         }
       />
 
       <SectionCard
-        title="Níveis de Proficiência"
-        description="Escala única utilizada em toda a plataforma."
+        title={t("matrix.levels.title")}
+        description={t("matrix.levels.subtitle")}
         className="mb-6"
       >
         <div className="grid gap-3 md:grid-cols-5">
           {LEVELS.map((l) => (
-            <div key={l.level} className="rounded-lg border border-border p-3">
+            <div key={l.level} className="surface-inset p-3">
               <LevelBadge level={l.level} showName />
               <p className="mt-2 text-xs text-muted-foreground">{l.description}</p>
             </div>
           ))}
         </div>
       </SectionCard>
+
+      {store.categories.length === 0 && (
+        <div className="surface-card p-8 text-center">
+          <p className="text-sm font-medium">{t("matrix.empty.title")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("matrix.empty.hint")}</p>
+        </div>
+      )}
 
       <div className="space-y-4">
         {store.categories.map((cat) => {
@@ -108,11 +117,11 @@ function MatrixPage() {
             <SectionCard
               key={cat.id}
               title={cat.name}
-              description={`${comps.length} competências`}
+              description={t("matrix.competencyCount", { n: comps.length })}
               actions={
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Nova competência"
+                    placeholder={t("matrix.newCompetency")}
                     className="w-52"
                     value={newComp[cat.id] ?? ""}
                     onChange={(e) => setNewComp({ ...newComp, [cat.id]: e.target.value })}
@@ -136,7 +145,7 @@ function MatrixPage() {
                       setNewComp({ ...newComp, [cat.id]: "" });
                     }}
                   >
-                    Adicionar
+                    {t("matrix.add")}
                   </Button>
                 </div>
               }
@@ -145,7 +154,7 @@ function MatrixPage() {
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="py-2">Competência</th>
+                      <th className="py-2">{t("col.competency")}</th>
                       {ROLES.map((r) => (
                         <th key={r} className="py-2 text-center">
                           {roleShort(r)}

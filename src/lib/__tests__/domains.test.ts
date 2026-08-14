@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { levelName, LEVELS, ROLES, roleShort } from "../domain";
-import {
-  actionTypeLabel,
-  assessmentStatusLabel,
-  cycleStatusLabel,
-  evidenceTypeLabel,
-  learningStatusLabel,
-  planItemStatusLabel,
-  priorityLabel,
-  ratingLabel,
-} from "../labels";
+import en from "@/locales/en.json";
+import pt from "@/locales/pt.json";
 
 /** Mesma comparação usada pela store para ordenar os domínios. */
 const byName = (a: { name: string }, b: { name: string }) =>
@@ -84,34 +76,49 @@ describe("interface em português", () => {
     expect(levelName(4)).toBe("Avançado");
   });
 
-  it("todo valor persistido em inglês tem rótulo em português", () => {
-    const maps = [
-      assessmentStatusLabel,
-      planItemStatusLabel,
-      learningStatusLabel,
-      priorityLabel,
-      ratingLabel,
-      cycleStatusLabel,
-      actionTypeLabel,
-      evidenceTypeLabel,
-    ];
+  /**
+   * Os rótulos deixaram de ser strings fixas: agora são chaves resolvidas pelo
+   * idioma ativo. O que precisa continuar garantido é que cada valor canônico
+   * do domínio tenha texto nos dois idiomas.
+   */
+  it("todo valor de domínio tem rótulo em português e em inglês", () => {
+    const canonicos = [
+      "status.draft",
+      "status.approved",
+      "status.completed",
+      "status.notStarted",
+      "status.inProgress",
+      "status.blocked",
+      "status.active",
+      "status.closed",
+      "status.planned",
+      "priority.low",
+      "priority.medium",
+      "priority.high",
+      "priority.critical",
+      "rating.low",
+      "rating.medium",
+      "rating.high",
+      "action.learn",
+      "action.practice",
+      "action.apply",
+      "action.teach",
+      "action.mentor",
+      "action.lead",
+      "complexity.low",
+      "complexity.medium",
+      "complexity.high",
+    ] as const;
 
-    for (const map of maps) {
-      for (const [canonical, label] of Object.entries(map)) {
-        expect(label.length).toBeGreaterThan(0);
-        // ADR e Workshop são siglas/estrangeirismos consagrados e ficam como estão.
-        if (["ADR", "Workshop"].includes(canonical)) continue;
-        expect(label).not.toBe(canonical);
-      }
+    for (const chave of canonicos) {
+      expect((pt as Record<string, string>)[chave], `pt: ${chave}`).toBeTruthy();
+      expect((en as Record<string, string>)[chave], `en: ${chave}`).toBeTruthy();
     }
   });
 
-  it("traduz os status que aparecem com mais frequência", () => {
-    expect(assessmentStatusLabel["In Review"]).toBe("Em revisão");
-    expect(planItemStatusLabel["Not Started"]).toBe("Não iniciado");
-    expect(learningStatusLabel.Completed).toBe("Concluído");
-    expect(cycleStatusLabel.Active).toBe("Ativo");
-    expect(priorityLabel.Critical).toBe("Crítica");
-    expect(ratingLabel.High).toBe("Alto");
+  it("o português não deixou texto igual ao valor canônico em inglês", () => {
+    expect((pt as Record<string, string>)["status.notStarted"]).toBe("Não iniciado");
+    expect((pt as Record<string, string>)["priority.critical"]).toBe("Crítica");
+    expect((en as Record<string, string>)["status.notStarted"]).toBe("Not started");
   });
 });

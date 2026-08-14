@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { useCurrentUser } from "@/lib/auth";
 import { formatDate } from "@/lib/text";
-import { learningStatusLabel } from "@/lib/labels";
+import { useLabels } from "@/lib/labels";
 import type { LearningItemType, LearningPath, LearningPathItem } from "@/lib/domain";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/learning-paths")({
@@ -56,7 +57,9 @@ function LearningPage() {
   const store = useStore();
   const sel = useSelectors();
   const user = useCurrentUser();
+  const labels = useLabels();
   const [name, setName] = useState("");
+  const { t } = useI18n();
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
 
   const create = () => {
@@ -82,18 +85,18 @@ function LearningPage() {
   return (
     <>
       <PageHeader
-        title="Trilhas de Aprendizagem"
+        title={t("path.title")}
         description="Trilhas combinam teoria e prática: cursos, laboratórios, projetos reais, apresentações e reviews."
         actions={
           <div className="flex gap-2">
             <Input
-              placeholder="Nova trilha"
+              placeholder={t("path.new.placeholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && create()}
               className="w-52"
             />
-            <Button onClick={create}>Criar trilha</Button>
+            <Button onClick={create}>{t("path.new.action")}</Button>
           </div>
         }
       />
@@ -124,7 +127,7 @@ function LearningPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-40">
                     <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                      <span>Progresso</span>
+                      <span>{t("path.progress")}</span>
                       <span className="tabular-nums">{total}%</span>
                     </div>
                     <Bar value={total} />
@@ -147,7 +150,9 @@ function LearningPage() {
               }
             >
               <p className="mb-3 text-xs text-muted-foreground">
-                {path.createdBy ? `Criada por ${path.createdBy}` : "Trilha sem autor registrado"}
+                {path.createdBy
+                  ? t("path.createdBy", { autor: path.createdBy })
+                  : t("path.noAuthor")}
                 {createdAt ? ` · ${createdAt}` : ""}
               </p>
 
@@ -173,7 +178,7 @@ function LearningPage() {
                     <div className="min-w-40 flex-1">
                       <p className="text-sm font-medium">{item.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {item.hours}h estimadas · {learningStatusLabel[item.status]}
+                        {item.hours}h estimadas · {labels.learningStatus[item.status]}
                       </p>
                     </div>
                     <div className="flex w-52 items-center gap-2">
@@ -217,6 +222,7 @@ function LearningPage() {
 /** Edição completa da trilha: dados, competências, atribuições e itens. */
 function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => void }) {
   const store = useStore();
+  const { t } = useI18n();
   const [form, setForm] = useState({ name: path.name, description: path.description });
   const [newItem, setNewItem] = useState({
     title: "",
@@ -258,12 +264,12 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar trilha</DialogTitle>
+          <DialogTitle>{t("path.edit.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="path-name">Nome</Label>
+            <Label htmlFor="path-name">{t("path.edit.name")}</Label>
             <Input
               id="path-name"
               value={form.name}
@@ -271,7 +277,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
             />
           </div>
           <div>
-            <Label htmlFor="path-description">Descrição</Label>
+            <Label htmlFor="path-description">{t("path.edit.description")}</Label>
             <Textarea
               id="path-description"
               rows={2}
@@ -281,13 +287,37 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
           </div>
 
           <div>
-            <Label>Itens da trilha</Label>
+            <Label>{t("path.edit.items")}</Label>
             <ul className="mt-2 divide-y divide-border rounded-lg border border-border">
+              {path.items.length > 0 && (
+                <li className="flex items-center gap-2 px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <span className="w-32 shrink-0">{t("path.col.type")}</span>
+                  <span className="flex-1">{t("path.col.name")}</span>
+                  <span className="w-20 shrink-0">{t("path.col.hours")}</span>
+                  {/* espaço da lixeira, para as colunas alinharem com as linhas */}
+                  <span className="w-9 shrink-0" aria-hidden="true" />
+                </li>
+              )}
               {path.items.map((item) => (
                 <li key={item.id} className="flex items-center gap-2 px-3 py-2">
-                  <span className="w-24 shrink-0 rounded-md bg-secondary px-2 py-0.5 text-center text-xs">
-                    {item.type}
-                  </span>
+                  <select
+                    className="w-32 shrink-0 rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+                    value={item.type}
+                    aria-label={`Tipo de ${item.title}`}
+                    onChange={(e) =>
+                      store.updateLearningPath(path.id, {
+                        items: path.items.map((i) =>
+                          i.id === item.id ? { ...i, type: e.target.value as LearningItemType } : i,
+                        ),
+                      })
+                    }
+                  >
+                    {ITEM_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                   <Input
                     value={item.title}
                     aria-label={`Título de ${item.title}`}
@@ -324,16 +354,16 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                 </li>
               ))}
               {path.items.length === 0 && (
-                <p className="px-3 py-2 text-sm text-muted-foreground">Nenhum item ainda.</p>
+                <p className="px-3 py-2 text-sm text-muted-foreground">{t("path.edit.noItems")}</p>
               )}
             </ul>
 
             <div className="mt-2 flex flex-wrap items-end gap-2">
               <div className="flex-1">
-                <Label htmlFor="item-title">Novo item</Label>
+                <Label htmlFor="item-title">{t("path.edit.newItem")}</Label>
                 <Input
                   id="item-title"
-                  placeholder="Título"
+                  placeholder={t("path.edit.itemTitle")}
                   value={newItem.title}
                   onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
                 />
@@ -341,7 +371,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
               <select
                 className="h-9 rounded-md border border-input bg-card px-2 text-sm"
                 value={newItem.type}
-                aria-label="Tipo do item"
+                aria-label={t("path.edit.itemType")}
                 onChange={(e) =>
                   setNewItem({ ...newItem, type: e.target.value as LearningItemType })
                 }
@@ -355,7 +385,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                 min={0}
                 className="w-20"
                 value={newItem.hours}
-                aria-label="Horas"
+                aria-label={t("path.edit.itemHours")}
                 onChange={(e) => setNewItem({ ...newItem, hours: e.target.value })}
               />
               <Button variant="outline" onClick={addItem}>
@@ -367,8 +397,8 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label>Competências</Label>
-              <div className="mt-2 max-h-40 overflow-y-auto rounded-lg border border-border p-2">
+              <Label>{t("path.edit.competencies")}</Label>
+              <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
                 {store.competencies.map((c) => (
                   <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
@@ -382,8 +412,8 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
               </div>
             </div>
             <div>
-              <Label>Atribuída a</Label>
-              <div className="mt-2 max-h-40 overflow-y-auto rounded-lg border border-border p-2">
+              <Label>{t("path.edit.assignedTo")}</Label>
+              <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
                 {store.architects.map((a) => (
                   <label key={a.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
@@ -416,7 +446,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
             <Button variant="outline" onClick={onClose}>
               Fechar
             </Button>
-            <Button onClick={saveDetails}>Salvar</Button>
+            <Button onClick={saveDetails}>{t("path.edit.save")}</Button>
           </div>
         </DialogFooter>
       </DialogContent>

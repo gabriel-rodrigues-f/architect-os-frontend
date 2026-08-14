@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { CompetencyCategory } from "@/lib/domain";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
 
@@ -42,18 +43,21 @@ export const Route = createFileRoute("/capability-map")({
 /**
  * Faixas padrão de toda capacidade. Uma capacidade recém-criada já nasce com as
  * quatro, ainda vazias, e vai se preenchendo conforme as avaliações evoluem.
+ *
+ * A ordem é crescente — da menor proficiência para a maior — para a leitura
+ * ocidental da esquerda para a direita acompanhar a evolução do time.
  */
 const BANDS = [
-  { key: "experts", label: "Especialistas (4,5+)", tone: "bg-level-5/60", min: 4.5, max: Infinity },
-  { key: "advanced", label: "Avançados (3,5+)", tone: "bg-level-4/60", min: 3.5, max: 4.5 },
+  { key: "gaps", labelKey: "cap.band.gaps", tone: "bg-level-1/60", min: -Infinity, max: 2.5 },
   {
     key: "practitioners",
-    label: "Praticantes (2,5+)",
+    labelKey: "cap.band.practitioners",
     tone: "bg-level-3/60",
     min: 2.5,
     max: 3.5,
   },
-  { key: "gaps", label: "Lacunas (<2,5)", tone: "bg-level-1/60", min: -Infinity, max: 2.5 },
+  { key: "advanced", labelKey: "cap.band.advanced", tone: "bg-level-4/60", min: 3.5, max: 4.5 },
+  { key: "experts", labelKey: "cap.band.experts", tone: "bg-level-5/60", min: 4.5, max: Infinity },
 ] as const;
 
 function CapabilityMapPage() {
@@ -61,9 +65,11 @@ function CapabilityMapPage() {
   const sel = useSelectors();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const { t } = useI18n();
   const [editing, setEditing] = useState<CompetencyCategory | null>(null);
   const [editName, setEditName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<CompetencyCategory | null>(null);
+  const [blockedDelete, setBlockedDelete] = useState<CompetencyCategory | null>(null);
 
   const areas = store.categories.map((cat) => {
     const people = store.architects.map((a) => ({
@@ -113,22 +119,43 @@ function CapabilityMapPage() {
   const competencyCount = (categoryId: string) =>
     store.competencies.filter((c) => c.categoryId === categoryId).length;
 
+  /**
+   * Arquitetos que têm a capacidade como domínio forte ou de lacuna. Enquanto
+   * houver algum, a exclusão fica bloqueada (o backend também recusa com 409):
+   * apagar zeraria esse campo no perfil de quem depende dele.
+   */
+  const linkedArchitects = (categoryId: string) =>
+    store.architects
+      .filter((a) => a.strongDomain === categoryId || a.gapDomain === categoryId)
+      .map((a) => ({
+        architect: a,
+        as: [
+          a.strongDomain === categoryId ? t("cap.linked.strong") : null,
+          a.gapDomain === categoryId ? t("cap.linked.gap") : null,
+        ]
+          .filter(Boolean)
+          .join(" e "),
+      }));
+
+  const askDelete = (category: CompetencyCategory) => {
+    if (linkedArchitects(category.id).length > 0) setBlockedDelete(category);
+    else setConfirmDelete(category);
+  };
+
   return (
     <>
       <PageHeader
-        title="Mapa de Capacidades de Arquitetura"
-        description="Quais capacidades técnicas existem no time hoje, onde há dependência de poucas pessoas e onde faltam especialistas."
-        actions={<Button onClick={() => setOpen(true)}>Nova capacidade</Button>}
+        title={t("cap.title")}
+        description={t("cap.subtitle")}
+        actions={<Button onClick={() => setOpen(true)}>{t("cap.new")}</Button>}
       />
 
       {store.categories.length === 0 && (
         <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">Nenhuma capacidade cadastrada</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Cadastre a primeira capacidade para montar o mapa do time.
-          </p>
+          <p className="text-sm font-medium">{t("cap.empty.title")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.hint")}</p>
           <Button className="mt-4" onClick={() => setOpen(true)}>
-            Nova capacidade
+            {t("cap.new")}
           </Button>
         </div>
       )}
@@ -144,10 +171,10 @@ function CapabilityMapPage() {
               title={area.cat.name}
               description={
                 mentors.length === 0
-                  ? "Risco: nenhum especialista disponível nesta área"
+                  ? t("cap.risk.noExpert")
                   : experts.length === 1
-                    ? "Atenção: conhecimento concentrado em uma pessoa"
-                    : `${mentors.length} profissionais em nível avançado ou superior`
+                    ? t("cap.risk.singlePerson")
+                    : t("cap.risk.healthy", { n: mentors.length })
               }
               actions={
                 <div className="flex gap-1">
@@ -161,7 +188,7 @@ function CapabilityMapPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setConfirmDelete(area.cat)}
+                    onClick={() => askDelete(area.cat)}
                     aria-label={`Excluir ${area.cat.name}`}
                     className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   >
@@ -174,14 +201,16 @@ function CapabilityMapPage() {
                 {area.bands.map((band) => (
                   <Group
                     key={band.key}
-                    label={band.label}
+                    label={t(band.labelKey)}
                     people={band.people.map((p) => p.architect.name)}
                     tone={band.tone}
                   />
                 ))}
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                Mentores potenciais: {mentors.map((p) => p.architect.name).join(", ") || "nenhum"}
+                {t("cap.mentors", {
+                  nomes: mentors.map((p) => p.architect.name).join(", ") || t("common.none"),
+                })}
               </p>
             </SectionCard>
           );
@@ -191,10 +220,10 @@ function CapabilityMapPage() {
       <Dialog open={editing !== null} onOpenChange={(v) => !v && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar capacidade</DialogTitle>
+            <DialogTitle>{t("cap.edit.title")}</DialogTitle>
           </DialogHeader>
           <div>
-            <Label htmlFor="capability-edit-name">Nome</Label>
+            <Label htmlFor="capability-edit-name">{t("cap.field.name")}</Label>
             <Input
               id="capability-edit-name"
               value={editName}
@@ -223,13 +252,41 @@ function CapabilityMapPage() {
         onConfirm={remove}
       />
 
+      <Dialog open={blockedDelete !== null} onOpenChange={(v) => !v && setBlockedDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("cap.blocked.title", { nome: blockedDelete?.name ?? "" })}</DialogTitle>
+            <DialogDescription>
+              Esta capacidade está vinculada ao perfil dos arquitetos abaixo. Abra cada um em{" "}
+              <strong>Time</strong>, troque o domínio forte ou de lacuna, e depois exclua a
+              capacidade.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2">
+            {blockedDelete &&
+              linkedArchitects(blockedDelete.id).map(({ architect, as }) => (
+                <li
+                  key={architect.id}
+                  className="flex items-center justify-between gap-3 surface-inset p-3"
+                >
+                  <span className="text-sm font-medium">{architect.name}</span>
+                  <span className="text-xs text-muted-foreground">{as}</span>
+                </li>
+              ))}
+          </ul>
+          <DialogFooter>
+            <Button onClick={() => setBlockedDelete(null)}>Entendi</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nova capacidade</DialogTitle>
+            <DialogTitle>{t("cap.create.title")}</DialogTitle>
             <DialogDescription>
-              A capacidade nasce com as quatro faixas padrão — Especialistas, Avançados, Praticantes
-              e Lacunas — e passa a receber pessoas conforme as avaliações do time.
+              A capacidade nasce com as quatro faixas padrão — Lacunas, Praticantes, Avançados e
+              Especialistas — e passa a receber pessoas conforme as avaliações do time.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -243,14 +300,14 @@ function CapabilityMapPage() {
                 onKeyDown={(e) => e.key === "Enter" && create()}
               />
             </div>
-            <div className="rounded-lg border border-border p-3">
+            <div className="surface-inset p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Faixas padrão
+                {t("cap.bands.label")}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {BANDS.map((band) => (
                   <span key={band.key} className={`rounded-md px-2 py-0.5 text-xs ${band.tone}`}>
-                    {band.label}
+                    {t(band.labelKey)}
                   </span>
                 ))}
               </div>
@@ -260,7 +317,7 @@ function CapabilityMapPage() {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={create}>Criar capacidade</Button>
+            <Button onClick={create}>{t("cap.create.action")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -270,7 +327,7 @@ function CapabilityMapPage() {
 
 function Group({ label, people, tone }: { label: string; people: string[]; tone: string }) {
   return (
-    <div className="rounded-lg border border-border p-3">
+    <div className="surface-inset p-3">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {label}

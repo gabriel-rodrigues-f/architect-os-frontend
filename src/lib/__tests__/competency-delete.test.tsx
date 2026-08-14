@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { setAuthToken, type AppState } from "../api";
+import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
 import { fixtureState } from "./fixtures";
 
@@ -29,7 +30,9 @@ function Wrapper({ children }: { children: ReactNode }) {
   });
   return (
     <QueryClientProvider client={queryClient}>
-      <StoreProvider>{children}</StoreProvider>
+      <I18nProvider>
+        <StoreProvider>{children}</StoreProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

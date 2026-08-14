@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
 import { DomainRadar } from "@/components/app/charts";
 import { GapBadge, LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/gap-analysis")({
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/gap-analysis")({
 function GapPage() {
   const store = useStore();
   const sel = useSelectors();
+  const { t } = useI18n();
   const [selected, setSelected] = useState<string[]>([]);
 
   /** Toda a tela lê deste recorte — filtro vazio significa o time inteiro. */
@@ -110,8 +112,8 @@ function GapPage() {
   return (
     <>
       <PageHeader
-        title="Análise de Lacunas"
-        description="Lacuna 0 adequado · Lacuna 1 desenvolvimento recomendado · Lacuna 2 prioridade alta · Lacuna 3+ crítico."
+        title={t("gap.title")}
+        description={t("gap.subtitle")}
         actions={
           <ArchitectFilter
             architects={store.architects}
@@ -123,7 +125,7 @@ function GapPage() {
 
       {architects.length === 0 ? (
         <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">Nenhum arquiteto para analisar</p>
+          <p className="text-sm font-medium">{t("gap.empty")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Cadastre arquitetos em Time e abra uma avaliação do ciclo para ver as lacunas aqui.
           </p>
@@ -132,15 +134,15 @@ function GapPage() {
         <>
           <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
             <SectionCard
-              title="Radar de Arquitetura"
-              description={`Nível atual versus esperado por domínio — ${scopeLabel}.`}
+              title={t("gap.radar.title")}
+              description={t("gap.radar.subtitle", { escopo: scopeLabel })}
             >
               <DomainRadar data={radar} />
             </SectionCard>
 
             <SectionCard
-              title="Principais Prioridades de Desenvolvimento"
-              description={`Maiores lacunas considerando ${architects.length} arquiteto(s) no filtro.`}
+              title={t("gap.priorities.title")}
+              description={t("gap.priorities.subtitle", { n: architects.length })}
             >
               <ol className="space-y-2">
                 {consolidated.slice(0, 8).map((row, i) => (
@@ -157,11 +159,20 @@ function GapPage() {
                         </span>
                       )}
                     </span>
-                    <GapBadge gap={row.maxGap} />
+                    <div className="flex shrink-0 items-center gap-2">
+                      <GapBadge gap={row.maxGap} />
+                      {/* Diagnóstico precisa levar a algum lugar: daqui se vai tratar a lacuna. */}
+                      <Link
+                        to="/development-plans"
+                        className="whitespace-nowrap text-xs text-primary hover:underline"
+                      >
+                        {t("gap.priorities.action")}
+                      </Link>
+                    </div>
                   </li>
                 ))}
                 {consolidated.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Nenhuma lacuna identificada.</p>
+                  <p className="text-sm text-muted-foreground">{t("gap.priorities.none")}</p>
                 )}
               </ol>
             </SectionCard>
@@ -169,8 +180,8 @@ function GapPage() {
 
           <SectionCard
             className="mt-6"
-            title="Mapa de Calor de Lacunas do Time"
-            description={`Médias por domínio — ${scopeLabel}.`}
+            title={t("gap.heatmap.title")}
+            description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}
           >
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
@@ -204,19 +215,19 @@ function GapPage() {
 
           <SectionCard
             className="mt-6"
-            title="Tabela de Lacunas"
-            description={`Competências com lacuna identificada — ${scopeLabel}.`}
+            title={t("gap.table.title")}
+            description={t("gap.table.subtitle", { escopo: scopeLabel })}
           >
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="py-2">Competência</th>
-                    <th className="py-2">Domínio</th>
-                    <th className="py-2 text-center">Pessoas</th>
-                    <th className="py-2 text-center">Atual (méd.)</th>
-                    <th className="py-2 text-center">Alvo (méd.)</th>
-                    <th className="py-2">Classificação</th>
+                    <th className="py-2">{t("col.competency")}</th>
+                    <th className="py-2">{t("col.domain")}</th>
+                    <th className="py-2 text-center">{t("col.people")}</th>
+                    <th className="py-2 text-center">{t("col.currentAvg")}</th>
+                    <th className="py-2 text-center">{t("col.targetAvg")}</th>
+                    <th className="py-2">{t("col.classification")}</th>
                   </tr>
                 </thead>
                 <tbody>

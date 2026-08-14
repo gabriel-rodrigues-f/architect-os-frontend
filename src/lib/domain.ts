@@ -75,14 +75,27 @@ export interface Architect {
   potential: "Low" | "Medium" | "High";
 }
 
+/**
+ * Comentário de uma competência avaliada. É sempre um par — a nota do arquiteto
+ * e a resposta do Tech Lead entram juntas, como um turno de conversa. Salvar
+ * exige os dois lados preenchidos, então nenhum dos textos é opcional.
+ */
+export interface AssessmentComment {
+  id: string;
+  architectText: string;
+  techLeadText: string;
+  /** ISO 8601, gerados pelo servidor. */
+  createdAt: string;
+  updatedAt?: string | undefined;
+}
+
 export interface AssessmentItem {
   competencyId: string;
   self: Level;
   leader: Level;
   target: Level;
   final: Level;
-  selfComment?: string | undefined;
-  leaderComment?: string | undefined;
+  comments: AssessmentComment[];
 }
 
 export interface Assessment {

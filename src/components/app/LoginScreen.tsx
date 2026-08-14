@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { authErrorMessage, useAuth } from "@/lib/auth";
 
 /**
@@ -13,6 +14,7 @@ import { authErrorMessage, useAuth } from "@/lib/auth";
  */
 export function LoginScreen() {
   const { login, register } = useAuth();
+  const { t } = useI18n();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [checkedInstance, setCheckedInstance] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -23,7 +25,7 @@ export function LoginScreen() {
     authApi
       .status()
       .then(({ hasUsers }) => setMode(hasUsers ? "login" : "register"))
-      .catch(() => setError("Backend indisponível. Suba a API com `docker compose up -d`."))
+      .catch(() => setError(t("login.offline")))
       .finally(() => setCheckedInstance(true));
   }, []);
 
@@ -59,7 +61,7 @@ export function LoginScreen() {
           </span>
           <div className="leading-tight">
             <p className="font-display text-base font-semibold">Architect OS</p>
-            <p className="text-xs text-muted-foreground">Desenvolvimento de Capacidades</p>
+            <p className="text-xs text-muted-foreground">{t("login.subtitle")}</p>
           </div>
         </div>
 
@@ -76,7 +78,7 @@ export function LoginScreen() {
           <form className="mt-5 space-y-3" onSubmit={submit}>
             {firstAccess && (
               <div>
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="name">{t("login.name")}</Label>
                 <Input
                   id="name"
                   autoComplete="name"
@@ -88,7 +90,7 @@ export function LoginScreen() {
             )}
 
             <div>
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">{t("login.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -100,7 +102,7 @@ export function LoginScreen() {
             </div>
 
             <div>
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{t("login.password")}</Label>
               <Input
                 id="password"
                 type="password"

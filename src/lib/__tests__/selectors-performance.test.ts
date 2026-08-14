@@ -59,6 +59,7 @@ function buildLargeState(): AppState {
       leader: 3 as Level,
       target: 4 as Level,
       final: ((i % 4) + 1) as Level,
+      comments: [],
     })),
   }));
 

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AlertCircle, X } from "lucide-react";
 import { useState } from "react";
 
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
@@ -15,7 +16,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useCurrentUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
+import { todayIso } from "@/lib/text";
 
 export const Route = createFileRoute("/mentoring")({
   head: () => ({
@@ -35,20 +39,68 @@ export const Route = createFileRoute("/mentoring")({
   component: MentoringPage,
 });
 
+/** Campos que o usuário preenche e que não podem ficar vazios. */
+const REQUIRED_FIELDS = ["menteeId", "date", "topic", "notes", "decisions", "actions"] as const;
+type RequiredField = (typeof REQUIRED_FIELDS)[number];
+
 function MentoringPage() {
   const store = useStore();
+  const { t } = useI18n();
+  // O mentor é quem está registrando a sessão, não um nome fixo no código.
+  const user = useCurrentUser();
   const sel = useSelectors();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    mentor: "Gabriel Rodrigues",
     menteeId: store.architects[0]?.id ?? "",
-    date: "2026-08-11",
+    date: todayIso(),
     durationMin: "60",
     topic: "",
     notes: "",
     decisions: "",
     actions: "",
   });
+
+  /** Campos vazios apontados no último Salvar; some assim que o campo é preenchido. */
+  const [missing, setMissing] = useState<RequiredField[]>([]);
+  const [showToast, setShowToast] = useState(false);
+
+  /** Escrever num campo destacado limpa o destaque na hora. */
+  const setField = (field: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setMissing((prev) => prev.filter((f) => f !== field));
+  };
+
+  const isMissing = (field: RequiredField) => missing.includes(field);
+
+  /** Borda vermelha nos campos que o usuário precisa revisar. */
+  const invalid = (field: RequiredField) =>
+    isMissing(field) ? "border-destructive ring-1 ring-destructive" : "";
+
+  const submit = () => {
+    const vazios = REQUIRED_FIELDS.filter((f) => !form[f].trim());
+    if (vazios.length > 0) {
+      setMissing(vazios);
+      setShowToast(true);
+      return;
+    }
+
+    store.addMentoringSession({
+      id: `m-${Date.now()}`,
+      mentor: user.name,
+      menteeId: form.menteeId,
+      date: form.date,
+      durationMin: Number(form.durationMin) || 60,
+      topic: form.topic,
+      competencyIds: [],
+      notes: form.notes,
+      decisions: form.decisions,
+      actions: form.actions,
+    });
+    setForm({ ...form, topic: "", notes: "", decisions: "", actions: "" });
+    setMissing([]);
+    setShowToast(false);
+    setOpen(false);
+  };
 
   const [filter, setFilter] = useState<string[]>([]);
 
@@ -61,28 +113,29 @@ function MentoringPage() {
   return (
     <>
       <PageHeader
-        title="Mentoria"
-        description="Mentoria é parte central do modelo de desenvolvimento técnico do time."
+        title={t("mentor.title")}
+        description={t("mentor.subtitle")}
         actions={
           <div className="flex items-center gap-2">
             <ArchitectFilter architects={store.architects} selected={filter} onChange={setFilter} />
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button>Registrar sessão</Button>
+                <Button>{t("mentor.new")}</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Nova sessão de mentoria</DialogTitle>
+                  <DialogTitle>{t("mentor.form.title")}</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="mentee">Mentorado</Label>
+                      <Label htmlFor="mentee">{t("mentor.form.mentee")}</Label>
                       <select
                         id="mentee"
-                        className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                        aria-invalid={isMissing("menteeId")}
+                        className={`mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ${invalid("menteeId")}`}
                         value={form.menteeId}
-                        onChange={(e) => setForm({ ...form, menteeId: e.target.value })}
+                        onChange={(e) => setField("menteeId", e.target.value)}
                       >
                         {store.architects.map((a) => (
                           <option key={a.id} value={a.id}>
@@ -92,70 +145,77 @@ function MentoringPage() {
                       </select>
                     </div>
                     <div>
-                      <Label htmlFor="date">Data</Label>
+                      <Label htmlFor="date">{t("mentor.form.date")}</Label>
                       <Input
                         id="date"
                         type="date"
+                        aria-invalid={isMissing("date")}
+                        className={invalid("date")}
                         value={form.date}
-                        onChange={(e) => setForm({ ...form, date: e.target.value })}
+                        onChange={(e) => setField("date", e.target.value)}
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="topic">Tema</Label>
+                    <Label htmlFor="topic">{t("mentor.form.topic")}</Label>
                     <Input
                       id="topic"
+                      aria-invalid={isMissing("topic")}
+                      className={invalid("topic")}
                       value={form.topic}
-                      onChange={(e) => setForm({ ...form, topic: e.target.value })}
+                      onChange={(e) => setField("topic", e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="notes">Notas</Label>
+                    <Label htmlFor="notes">{t("mentor.form.notes")}</Label>
                     <Textarea
                       id="notes"
+                      aria-invalid={isMissing("notes")}
+                      className={invalid("notes")}
                       value={form.notes}
-                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                      onChange={(e) => setField("notes", e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="decisions">Decisões</Label>
+                    <Label htmlFor="decisions">{t("mentor.form.decisions")}</Label>
                     <Textarea
                       id="decisions"
+                      aria-invalid={isMissing("decisions")}
+                      className={invalid("decisions")}
                       value={form.decisions}
-                      onChange={(e) => setForm({ ...form, decisions: e.target.value })}
+                      onChange={(e) => setField("decisions", e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="actions">Ações</Label>
+                    <Label htmlFor="actions">{t("mentor.form.actions")}</Label>
                     <Textarea
                       id="actions"
+                      aria-invalid={isMissing("actions")}
+                      className={invalid("actions")}
                       value={form.actions}
-                      onChange={(e) => setForm({ ...form, actions: e.target.value })}
+                      onChange={(e) => setField("actions", e.target.value)}
                     />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button
-                    onClick={() => {
-                      if (!form.topic.trim()) return;
-                      store.addMentoringSession({
-                        id: `m-${Date.now()}`,
-                        mentor: form.mentor,
-                        menteeId: form.menteeId,
-                        date: form.date,
-                        durationMin: Number(form.durationMin) || 60,
-                        topic: form.topic,
-                        competencyIds: [],
-                        notes: form.notes,
-                        decisions: form.decisions,
-                        actions: form.actions,
-                      });
-                      setForm({ ...form, topic: "", notes: "", decisions: "", actions: "" });
-                      setOpen(false);
-                    }}
+                {showToast && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3"
                   >
-                    Salvar sessão
-                  </Button>
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                    <p className="flex-1 text-sm">{t("mentor.required")}</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowToast(false)}
+                      aria-label={t("mentor.closeWarning")}
+                      className="rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button onClick={submit}>{t("mentor.form.save")}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -164,17 +224,15 @@ function MentoringPage() {
       />
 
       <SectionCard
-        title="Linha do Tempo"
+        title={t("mentor.timeline.title")}
         description={
           filter.length === 0
-            ? `${sessions.length} sessões registradas`
-            : `${sessions.length} sessões de ${filter.length} arquiteto(s) filtrado(s)`
+            ? t("mentor.timeline.all", { n: sessions.length })
+            : t("mentor.timeline.filtered", { n: sessions.length, p: filter.length })
         }
       >
         {sessions.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Nenhuma sessão registrada para o filtro atual.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("mentor.timeline.empty")}</p>
         )}
         <ol className="relative space-y-6 border-l border-border pl-6">
           {sessions.map((s) => (
@@ -191,9 +249,9 @@ function MentoringPage() {
                 </div>
               </div>
               <div className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
-                <Block title="Notas" text={s.notes} />
-                <Block title="Decisões" text={s.decisions} />
-                <Block title="Ações" text={s.actions} />
+                <Block title={t("mentor.block.notes")} text={s.notes} />
+                <Block title={t("mentor.block.decisions")} text={s.decisions} />
+                <Block title={t("mentor.block.actions")} text={s.actions} />
               </div>
               {s.competencyIds.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
@@ -219,7 +277,7 @@ function MentoringPage() {
 
 function Block({ title, text }: { title: string; text: string }) {
   return (
-    <div className="rounded-lg border border-border p-3">
+    <div className="surface-inset p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
       <p className="mt-1 text-sm">{text || "—"}</p>
     </div>
