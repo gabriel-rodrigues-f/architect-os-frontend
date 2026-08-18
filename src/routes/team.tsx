@@ -30,13 +30,13 @@ import { slug } from "@/lib/text";
 export const Route = createFileRoute("/team")({
   head: () => ({
     meta: [
-      { title: "Time — Architect OS" },
+      { title: "Time — Synapse" },
       {
         name: "description",
         content:
           "Time de Arquitetos de Soluções, níveis médios, gaps e progresso de desenvolvimento.",
       },
-      { property: "og:title", content: "Time — Architect OS" },
+      { property: "og:title", content: "Time — Synapse" },
       {
         property: "og:description",
         content: "Gestão do time de arquitetura: perfis, níveis e desenvolvimento.",

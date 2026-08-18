@@ -23,13 +23,13 @@ import { formatDate, slug } from "@/lib/text";
 export const Route = createFileRoute("/cycles")({
   head: () => ({
     meta: [
-      { title: "Ciclos de Desenvolvimento — Architect OS" },
+      { title: "Ciclos de Desenvolvimento — Synapse" },
       {
         name: "description",
         content:
           "Ciclos semestrais de desenvolvimento com avaliação, PDI, metas, trilhas e evidências.",
       },
-      { property: "og:title", content: "Ciclos de Desenvolvimento — Architect OS" },
+      { property: "og:title", content: "Ciclos de Desenvolvimento — Synapse" },
       {
         property: "og:description",
         content: "Compare a evolução de competências entre ciclos de desenvolvimento.",

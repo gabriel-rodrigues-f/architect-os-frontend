@@ -24,13 +24,13 @@ import { useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/learning-paths")({
   head: () => ({
     meta: [
-      { title: "Trilhas de Aprendizagem — Architect OS" },
+      { title: "Trilhas de Aprendizagem — Synapse" },
       {
         name: "description",
         content:
           "Trilhas de desenvolvimento com cursos, labs, projetos, workshops e certificações.",
       },
-      { property: "og:title", content: "Trilhas de Aprendizagem — Architect OS" },
+      { property: "og:title", content: "Trilhas de Aprendizagem — Synapse" },
       {
         property: "og:description",
         content: "Trilhas técnicas com progresso, evidências e responsáveis.",

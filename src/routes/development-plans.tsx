@@ -14,12 +14,12 @@ import { formatDate, monthsFromTodayIso, todayIso } from "@/lib/text";
 export const Route = createFileRoute("/development-plans")({
   head: () => ({
     meta: [
-      { title: "Planos de Desenvolvimento — Architect OS" },
+      { title: "Planos de Desenvolvimento — Synapse" },
       {
         name: "description",
         content: "PDI gerado a partir de gaps, SWOT e avaliação do Tech Lead, com metas SMART.",
       },
-      { property: "og:title", content: "Planos de Desenvolvimento — Architect OS" },
+      { property: "og:title", content: "Planos de Desenvolvimento — Synapse" },
       {
         property: "og:description",
         content:

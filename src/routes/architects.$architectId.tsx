@@ -32,13 +32,13 @@ import { formatDate, todayIso } from "@/lib/text";
 export const Route = createFileRoute("/architects/$architectId")({
   head: () => ({
     meta: [
-      { title: "Architect Profile — Architect OS" },
+      { title: "Architect Profile — Synapse" },
       {
         name: "description",
         content:
           "Perfil completo do arquiteto: competências, gaps, PDI, metas, mentorias e evidências.",
       },
-      { property: "og:title", content: "Architect Profile — Architect OS" },
+      { property: "og:title", content: "Architect Profile — Synapse" },
       {
         property: "og:description",
         content: "Visão 360 do desenvolvimento técnico individual do Arquiteto de Soluções.",

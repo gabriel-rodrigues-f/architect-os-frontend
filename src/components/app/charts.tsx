@@ -20,7 +20,7 @@ import { axisTick, CHART_INK, ChartPalette, tooltipStyle } from "@/lib/design/ch
 import { useI18n } from "@/lib/i18n";
 
 /**
- * Gráficos do Architect OS.
+ * Gráficos do Synapse.
  *
  * ## Acessibilidade
  *

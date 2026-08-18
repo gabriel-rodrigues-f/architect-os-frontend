@@ -16,12 +16,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/assessments")({
   head: () => ({
     meta: [
-      { title: "Avaliações — Architect OS" },
+      { title: "Avaliações — Synapse" },
       {
         name: "description",
         content: "Autoavaliação, avaliação do Tech Lead, nível alvo e nível final por competência.",
       },
-      { property: "og:title", content: "Avaliações — Architect OS" },
+      { property: "og:title", content: "Avaliações — Synapse" },
       {
         property: "og:description",
         content: "Conduza assessments de competências com comentários do arquiteto e do Tech Lead.",

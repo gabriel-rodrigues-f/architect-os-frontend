@@ -10,13 +10,13 @@ import { useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/talent-matrix")({
   head: () => ({
     meta: [
-      { title: "Matriz de Talentos — Architect OS" },
+      { title: "Matriz de Talentos — Synapse" },
       {
         name: "description",
         content:
           "Matriz 9 Box de desempenho e potencial como ferramenta complementar de desenvolvimento.",
       },
-      { property: "og:title", content: "Matriz de Talentos — Architect OS" },
+      { property: "og:title", content: "Matriz de Talentos — Synapse" },
       {
         property: "og:description",
         content: "Posicione arquitetos na 9 Box e conecte a discussão ao PDI e aos gaps técnicos.",

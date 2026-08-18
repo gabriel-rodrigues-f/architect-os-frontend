@@ -31,13 +31,13 @@ import { slug } from "@/lib/text";
 export const Route = createFileRoute("/competency-matrix")({
   head: () => ({
     meta: [
-      { title: "Matriz de Competências — Architect OS" },
+      { title: "Matriz de Competências — Synapse" },
       {
         name: "description",
         content:
           "Catálogo de competências de arquitetura agrupadas por domínio, com níveis esperados por cargo.",
       },
-      { property: "og:title", content: "Matriz de Competências — Architect OS" },
+      { property: "og:title", content: "Matriz de Competências — Synapse" },
       {
         property: "og:description",
         content: "Crie, edite e organize as competências esperadas de um Arquiteto de Soluções.",

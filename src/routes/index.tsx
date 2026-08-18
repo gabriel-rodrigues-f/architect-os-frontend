@@ -25,13 +25,13 @@ import { useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel — Architect OS" },
+      { title: "Painel — Synapse" },
       {
         name: "description",
         content:
           "Visão executiva das capacidades técnicas do time de Arquitetos de Soluções: gaps, PDIs, metas e evolução.",
       },
-      { property: "og:title", content: "Painel — Architect OS" },
+      { property: "og:title", content: "Painel — Synapse" },
       {
         property: "og:description",
         content:

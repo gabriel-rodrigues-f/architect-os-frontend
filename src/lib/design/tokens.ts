@@ -1,7 +1,7 @@
 import { CONTRAST, Oklch } from "./color";
 
 /**
- * Sistema de tokens semânticos do Architect OS.
+ * Sistema de tokens semânticos do Synapse.
  *
  * ## Por que assim
  *
@@ -300,7 +300,7 @@ const quadrant = (name: string, hue: number, chromaClara: number): TokenDefiniti
 
 /**
  * Escala de proficiência e severidade de lacuna — o vocabulário visual próprio
- * do Architect OS. Eram justamente estes os tokens que o bloco `.dark` do
+ * do Synapse. Eram justamente estes os tokens que o bloco `.dark` do
  * projeto não redefinia, e por isso apareciam em pastel claro sobre fundo
  * escuro.
  */

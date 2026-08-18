@@ -24,12 +24,12 @@ import { formatDate, todayIso } from "@/lib/text";
 export const Route = createFileRoute("/mentoring")({
   head: () => ({
     meta: [
-      { title: "Mentoria — Architect OS" },
+      { title: "Mentoria — Synapse" },
       {
         name: "description",
         content: "Registro e timeline das sessões de mentoria técnica entre arquitetos.",
       },
-      { property: "og:title", content: "Mentoria — Architect OS" },
+      { property: "og:title", content: "Mentoria — Synapse" },
       {
         property: "og:description",
         content: "Temas, decisões, ações e próximos passos de cada sessão de mentoria.",

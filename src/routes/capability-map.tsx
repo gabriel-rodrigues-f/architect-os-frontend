@@ -23,13 +23,13 @@ import { slug } from "@/lib/text";
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
     meta: [
-      { title: "Mapa de Capacidades — Architect OS" },
+      { title: "Mapa de Capacidades — Synapse" },
       {
         name: "description",
         content:
           "Mapa das capacidades técnicas disponíveis no time de arquitetura, com especialistas, riscos e lacunas.",
       },
-      { property: "og:title", content: "Mapa de Capacidades — Architect OS" },
+      { property: "og:title", content: "Mapa de Capacidades — Synapse" },
       {
         property: "og:description",
         content:

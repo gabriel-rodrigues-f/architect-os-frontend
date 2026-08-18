@@ -10,12 +10,12 @@ import { useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/gap-analysis")({
   head: () => ({
     meta: [
-      { title: "Análise de Lacunas — Architect OS" },
+      { title: "Análise de Lacunas — Synapse" },
       {
         name: "description",
         content: "Análise automática de gaps entre nível atual e nível esperado por competência.",
       },
-      { property: "og:title", content: "Análise de Lacunas — Architect OS" },
+      { property: "og:title", content: "Análise de Lacunas — Synapse" },
       {
         property: "og:description",
         content: "Tabela, radar, heatmap e ranking de prioridades de desenvolvimento.",
