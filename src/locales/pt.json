@@ -274,6 +274,7 @@
   "path.new.placeholder": "Nova trilha",
   "path.new.action": "Criar trilha",
   "path.progress": "Progresso",
+  "path.item.noAssignee": "Ninguém atribuído a esta trilha ainda.",
   "path.createdBy": "Criada por {autor}",
   "path.noAuthor": "Trilha sem autor registrado",
   "path.edit.title": "Editar trilha",

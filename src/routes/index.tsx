@@ -58,7 +58,7 @@ function Dashboard() {
   const goalsInProgress = planItems.filter((i) => i.status === "In Progress").length;
   const goalsDone = planItems.filter((i) => i.status === "Completed").length;
   const pathsInProgress = store.learningPaths.filter((p) =>
-    p.items.some((i) => i.status === "In Progress"),
+    p.progress.some((entry) => entry.status === "In Progress"),
   ).length;
 
   const topGaps = [...allGaps].sort((a, b) => b.gap - a.gap).slice(0, 6);

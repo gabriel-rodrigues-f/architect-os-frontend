@@ -274,6 +274,7 @@
   "path.new.placeholder": "New path",
   "path.new.action": "Create path",
   "path.progress": "Progress",
+  "path.item.noAssignee": "Nobody assigned to this path yet.",
   "path.createdBy": "Created by {autor}",
   "path.noAuthor": "Path without a recorded author",
   "path.edit.title": "Edit path",

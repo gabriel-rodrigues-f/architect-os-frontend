@@ -191,6 +191,7 @@ export type LearningItemType =
   | "Apresentação"
   | "Workshop";
 
+/** Catálogo do item — o que a trilha oferece, não o que uma pessoa já fez dele. */
 export interface LearningPathItem {
   id: string;
   title: string;
@@ -198,9 +199,19 @@ export interface LearningPathItem {
   url?: string | undefined;
   description?: string | undefined;
   hours: number;
+}
+
+/**
+ * Execução de um item por uma pessoa específica. Antes, `status`/`progress`
+ * viviam dentro do próprio `LearningPathItem` — uma trilha com Ana e Bruno
+ * atribuídos tinha um progresso só, e o slider de um mexia no do outro. Ver
+ * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 11.
+ */
+export interface LearningItemProgress {
+  architectId: string;
+  itemId: string;
   status: "Not Started" | "In Progress" | "Completed";
   progress: number;
-  evidence?: string | undefined;
 }
 
 export interface LearningPath {
@@ -210,10 +221,28 @@ export interface LearningPath {
   competencyIds: string[];
   assignedTo: string[];
   items: LearningPathItem[];
+  /** Uma entrada por (architectId, itemId) já tocado — nunca um valor global. */
+  progress: LearningItemProgress[];
   /** E-mail de quem criou a trilha; nulo nas trilhas anteriores à autenticação. */
   createdBy?: string | null | undefined;
   /** ISO 8601 com data e hora de criação. */
   createdAt?: string | undefined;
+}
+
+/** Progresso de uma pessoa num item — {status:"Not Started", progress:0} se ainda não tocou. */
+export function progressFor(
+  path: Pick<LearningPath, "progress">,
+  architectId: string,
+  itemId: string,
+): LearningItemProgress {
+  return (
+    path.progress.find((p) => p.architectId === architectId && p.itemId === itemId) ?? {
+      architectId,
+      itemId,
+      status: "Not Started",
+      progress: 0,
+    }
+  );
 }
 
 export interface MentoringSession {

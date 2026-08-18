@@ -201,22 +201,12 @@ export const fixtureState: AppState = {
       competencyIds: ["security-iam"],
       assignedTo: ["ana"],
       items: [
-        {
-          id: "lp-sec-1",
-          title: "IAM Essentials",
-          type: "Curso",
-          hours: 8,
-          status: "Completed",
-          progress: 100,
-        },
-        {
-          id: "lp-sec-2",
-          title: "OAuth",
-          type: "Curso",
-          hours: 6,
-          status: "In Progress",
-          progress: 20,
-        },
+        { id: "lp-sec-1", title: "IAM Essentials", type: "Curso", hours: 8 },
+        { id: "lp-sec-2", title: "OAuth", type: "Curso", hours: 6 },
+      ],
+      progress: [
+        { architectId: "ana", itemId: "lp-sec-1", status: "Completed", progress: 100 },
+        { architectId: "ana", itemId: "lp-sec-2", status: "In Progress", progress: 20 },
       ],
     },
   ],
