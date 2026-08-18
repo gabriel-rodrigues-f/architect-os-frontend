@@ -76,14 +76,16 @@ export interface Architect {
 }
 
 /**
- * Comentário de uma competência avaliada. É sempre um par — a nota do arquiteto
- * e a resposta do Tech Lead entram juntas, como um turno de conversa. Salvar
- * exige os dois lados preenchidos, então nenhum dos textos é opcional.
+ * Comentário de uma competência avaliada. Pertence a quem escreveu — não é
+ * mais um par arquiteto+Tech Lead salvo junto (isso fabricava conversa que às
+ * vezes ninguém teve). `authorUserId` fica nulo só em comentário herdado do
+ * formato antigo cuja autoria não deu para reconstruir.
  */
 export interface AssessmentComment {
   id: string;
-  architectText: string;
-  techLeadText: string;
+  authorUserId: string | null;
+  authorRole: "member" | "admin";
+  text: string;
   /** ISO 8601, gerados pelo servidor. */
   createdAt: string;
   updatedAt?: string | undefined;
