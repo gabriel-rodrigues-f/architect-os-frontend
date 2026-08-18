@@ -60,11 +60,21 @@ function AssessmentsPage() {
    */
   const isAdmin = user.role === "admin";
   const isOwner = user.architectId === architectId;
-  const isCompleted = assessment?.status === "Completed";
-  const canEditSelf = !isAdmin && isOwner && !isCompleted;
-  const canEditLeaderFinal = isAdmin && !isCompleted;
-  const canSubmit = !isAdmin && isOwner && assessment?.status === "Draft";
-  const canComplete = isAdmin && assessment && assessment.status !== "Completed";
+  const status = assessment?.status;
+  const isCompleted = status === "Completed";
+  /**
+   * Cada campo só abre na etapa certa do lifecycle, não em qualquer momento
+   * "antes de Completed": a autoavaliação fecha assim que vai para revisão
+   * (senão a pessoa continuaria ajustando a própria nota depois de pedir
+   * avaliação do Tech Lead); líder/final só abrem quando a revisão já
+   * começou (senão o Tech Lead calibraria a nota final antes de a
+   * autoavaliação existir). Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
+   * Seção 2–4.
+   */
+  const canEditSelf = !isAdmin && isOwner && status === "Draft";
+  const canEditLeaderFinal = isAdmin && status === "In Review";
+  const canSubmit = !isAdmin && isOwner && status === "Draft";
+  const canComplete = isAdmin && status === "In Review";
 
   /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
   const selected = store.categories.filter((c) => categoryIds.includes(c.id));
@@ -301,6 +311,7 @@ function AssessmentsPage() {
                                   <td colSpan={7} className="p-3">
                                     <CommentSection
                                       comments={item.comments}
+                                      currentUserId={user.id}
                                       onCreate={(input) =>
                                         store.addAssessmentComment(assessment.id, c.id, input)
                                       }
@@ -346,20 +357,24 @@ function commentCountLabel(total: number, t: I18nApi["t"]) {
 }
 
 /**
- * Par de comentários de uma competência: a nota do arquiteto e a resposta do
- * Tech Lead entram juntas, num único Salvar. Salvar só é permitido com os dois
- * lados preenchidos — meia conversa registrada não serve de evidência depois.
+ * Comentários de uma competência: cada mensagem pertence a quem escreveu — não
+ * é mais um par obrigatório salvo junto (ver AUDITORIA-RIGIDA-SEGUNDA-
+ * REVISAO-SYNAPSE.md, Seção 5). Só o autor edita ou exclui a própria fala; um
+ * comentário herdado do formato antigo, sem autor conhecido, fica só leitura
+ * para todo mundo.
  *
  * O texto novo só aparece na lista após o servidor confirmar, porque é ele quem
  * carimba a data.
  */
 function CommentSection({
   comments,
+  currentUserId,
   onCreate,
   onUpdate,
   onDelete,
 }: {
   comments: readonly AssessmentComment[];
+  currentUserId: string;
   onCreate: (input: CommentInput) => Promise<unknown>;
   onUpdate: (commentId: string, input: CommentInput) => Promise<unknown>;
   onDelete: (commentId: string) => Promise<unknown>;
@@ -372,8 +387,14 @@ function CommentSection({
     <div className="space-y-3">
       {comments.length > 0 && (
         <ul className="space-y-2">
-          {comments.map((comment) =>
-            editing === comment.id ? (
+          {comments.map((comment) => {
+            const mine = comment.authorUserId !== null && comment.authorUserId === currentUserId;
+            const authorLabel = mine
+              ? t("comment.you")
+              : comment.authorRole === "admin"
+                ? t("comment.author.admin")
+                : t("comment.author.member");
+            return editing === comment.id ? (
               <li key={comment.id}>
                 <CommentForm
                   initial={comment}
@@ -384,46 +405,38 @@ function CommentSection({
               </li>
             ) : (
               <li key={comment.id} className="rounded-md border border-border bg-card p-3">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {t("comment.architect")}
-                    </p>
-                    <p className="mt-0.5 whitespace-pre-wrap text-sm">{comment.architectText}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {t("comment.techLead")}
-                    </p>
-                    <p className="mt-0.5 whitespace-pre-wrap text-sm">{comment.techLeadText}</p>
-                  </div>
-                </div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {authorLabel}
+                </p>
+                <p className="mt-0.5 whitespace-pre-wrap text-sm">{comment.text}</p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className="text-[11px] text-muted-foreground">
                     {t("comment.savedAt", { data: formatDate(comment.createdAt, locale) ?? "" })}
                     {comment.updatedAt &&
                       ` · ${t("comment.editedAt", { data: formatDate(comment.updatedAt, locale) ?? "" })}`}
                   </p>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      className="text-xs text-primary hover:underline"
-                      onClick={() => setEditing(comment.id)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      className="text-xs text-destructive hover:underline"
-                      onClick={() => setConfirmDelete(comment)}
-                    >
-                      Excluir
-                    </button>
-                  </div>
+                  {mine && (
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => setEditing(comment.id)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs text-destructive hover:underline"
+                        onClick={() => setConfirmDelete(comment)}
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  )}
                 </div>
               </li>
-            ),
-          )}
+            );
+          })}
         </ul>
       )}
 
@@ -444,11 +457,7 @@ function CommentSection({
   );
 }
 
-/**
- * Formulário do par. A regra de "os dois preenchidos" é validada aqui e também
- * no backend; a mensagem diz exatamente qual lado falta, em vez de só bloquear
- * o botão sem explicar.
- */
+/** Formulário de um comentário — criação ou edição da própria fala. */
 function CommentForm({
   initial,
   submitLabel,
@@ -461,34 +470,19 @@ function CommentForm({
   onCancel?: () => void;
 }) {
   const { t } = useI18n();
-  const [architectText, setArchitectText] = useState(initial?.architectText ?? "");
-  const [techLeadText, setTechLeadText] = useState(initial?.techLeadText ?? "");
+  const [text, setText] = useState(initial?.text ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const arquiteto = architectText.trim();
-  const techLead = techLeadText.trim();
-
-  /** Mensagem do que falta, ou null quando o par está completo. */
-  const faltando =
-    !arquiteto && !techLead
-      ? t("comment.needBoth")
-      : !arquiteto
-        ? t("comment.needArchitect")
-        : !techLead
-          ? t("comment.needTechLead")
-          : null;
+  const trimmed = text.trim();
 
   const submit = () => {
-    if (faltando || saving) return;
+    if (!trimmed || saving) return;
     setError(null);
     setSaving(true);
-    onSubmit({ architectText: arquiteto, techLeadText: techLead })
+    onSubmit({ text: trimmed })
       .then(() => {
-        if (!initial) {
-          setArchitectText("");
-          setTechLeadText("");
-        }
+        if (!initial) setText("");
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : t("comment.saveError")))
       .finally(() => setSaving(false));
@@ -496,30 +490,19 @@ function CommentForm({
 
   return (
     <div className="rounded-md border border-border bg-card p-3">
-      <div className="grid gap-3 md:grid-cols-2">
-        <div>
-          <p className="mb-1 text-xs font-medium text-muted-foreground">Comentário do arquiteto</p>
-          <Textarea
-            value={architectText}
-            onChange={(e) => setArchitectText(e.target.value)}
-            placeholder={t("comment.architectPlaceholder")}
-            aria-label="Comentário do arquiteto"
-          />
-        </div>
-        <div>
-          <p className="mb-1 text-xs font-medium text-muted-foreground">Comentário do Tech Lead</p>
-          <Textarea
-            value={techLeadText}
-            onChange={(e) => setTechLeadText(e.target.value)}
-            placeholder={t("comment.techLeadPlaceholder")}
-            aria-label="Comentário do Tech Lead"
-          />
-        </div>
-      </div>
-
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={t("comment.placeholder")}
+        aria-label={t("comment.placeholder")}
+      />
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground" role="status">
-          {error ? <span className="text-destructive">{error}</span> : faltando}
+          {error ? (
+            <span className="text-destructive">{error}</span>
+          ) : !trimmed ? (
+            t("comment.needText")
+          ) : null}
         </p>
         <div className="flex gap-2">
           {onCancel && (
@@ -527,7 +510,7 @@ function CommentForm({
               Cancelar
             </Button>
           )}
-          <Button size="sm" disabled={saving || faltando !== null} onClick={submit}>
+          <Button size="sm" disabled={saving || !trimmed} onClick={submit}>
             {saving ? t("comment.saving") : submitLabel}
           </Button>
         </div>

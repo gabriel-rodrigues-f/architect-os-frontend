@@ -137,8 +137,8 @@ export interface AssessmentItemPatch {
   final?: Level;
 }
 
-/** Os dois lados do par vão juntos — o backend recusa se algum vier vazio. */
-export type CommentInput = Pick<AssessmentComment, "architectText" | "techLeadText">;
+/** Autor, papel e datas são preenchidos pelo servidor a partir da sessão. */
+export type CommentInput = Pick<AssessmentComment, "text">;
 
 export interface AuthResult {
   token: string;

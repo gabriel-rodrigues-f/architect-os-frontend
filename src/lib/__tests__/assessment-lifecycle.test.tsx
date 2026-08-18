@@ -85,7 +85,15 @@ describe("Avaliações — campos por papel e status", () => {
     ),
   };
 
-  it("member vê a autoavaliação editável e a nota do Tech Lead travada", async () => {
+  // Mesma avaliação, já enviada para revisão.
+  const inReviewState: AppState = {
+    ...fixtureState,
+    assessments: fixtureState.assessments.map((a) =>
+      a.id === "ana-h2" ? { ...a, status: "In Review" } : a,
+    ),
+  };
+
+  it("member vê a autoavaliação editável (Rascunho) e a nota do Tech Lead travada", async () => {
     mockSession(fixtureMemberUser, draftState);
     render(
       <Wrapper>
@@ -103,8 +111,40 @@ describe("Avaliações — campos por papel e status", () => {
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
   });
 
-  it("admin (Tech Lead) vê líder e final editáveis, autoavaliação travada", async () => {
+  // AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 2 — a autoavaliação
+  // congela assim que sai do Rascunho; a pessoa não pode mais ajustá-la
+  // enquanto o Tech Lead revisa.
+  it("member não edita mais a autoavaliação depois de Em Revisão", async () => {
+    mockSession(fixtureMemberUser, inReviewState);
+    render(
+      <Wrapper>
+        <AssessmentsPage />
+      </Wrapper>,
+    );
+
+    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
+    expect(linha.querySelectorAll("select")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Enviar para revisão" })).toBeNull();
+  });
+
+  // Seção 4 — líder/final ainda não abrem enquanto a avaliação está em
+  // Rascunho, mesmo para o administrador.
+  it("admin não edita líder nem final enquanto ainda é Rascunho", async () => {
     mockSession(fixtureAdminUser, draftState);
+    render(
+      <Wrapper>
+        <AssessmentsPage />
+      </Wrapper>,
+    );
+
+    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
+    expect(linha.querySelectorAll("select")).toHaveLength(0);
+    // Seção 3 — nem administrador pode concluir direto do Rascunho.
+    expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
+  });
+
+  it("admin (Tech Lead) vê líder e final editáveis quando Em Revisão", async () => {
+    mockSession(fixtureAdminUser, inReviewState);
     render(
       <Wrapper>
         <AssessmentsPage />
