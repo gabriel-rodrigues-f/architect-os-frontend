@@ -5,6 +5,7 @@ import { ArchitectFilter, applyArchitectFilter } from "@/components/app/Architec
 import { DomainRadar } from "@/components/app/charts";
 import { GapBadge, LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
+import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/gap-analysis")({
@@ -34,21 +35,37 @@ function GapPage() {
   /** Toda a tela lê deste recorte — filtro vazio significa o time inteiro. */
   const architects = applyArchitectFilter(store.architects, selected);
 
-  /** Radar: média das médias por domínio entre os arquitetos filtrados. */
+  /**
+   * Radar: média por domínio só entre quem tem assessment oficial cobrindo
+   * aquele domínio — quem não tem simplesmente não entra na média, em vez de
+   * puxá-la para baixo como um nível 0 fictício faria. `coverage` guarda
+   * quantos de quantos contribuíram, para a legenda avisar quando a média é
+   * de uma fração pequena do grupo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-
+   * SYNAPSE.md, Seção 9.
+   */
   const radar = useMemo(
     () =>
       store.categories.map((cat) => {
-        const rows = architects.map(
-          (a) =>
-            sel.domainAverages(a.id).find((d) => d.category.id === cat.id) ?? { avg: 0, target: 0 },
+        const rows = architects.map((a) =>
+          sel.domainAverages(a.id).find((d) => d.category.id === cat.id),
         );
-        const mean = (pick: (r: { avg: number; target: number }) => number) =>
-          rows.length
-            ? Number((rows.reduce((s, r) => s + pick(r), 0) / rows.length).toFixed(2))
-            : 0;
-        return { domain: cat.short, atual: mean((r) => r.avg), alvo: mean((r) => r.target) };
+        const atual = averageWithCoverage(rows.map((r) => r?.avg));
+        const alvo = averageWithCoverage(rows.map((r) => r?.target));
+        return {
+          domain: cat.short,
+          atual: Number((atual.avg ?? 0).toFixed(2)),
+          alvo: Number((alvo.avg ?? 0).toFixed(2)),
+          covered: atual.covered,
+          total: atual.total,
+        };
       }),
     [architects, store.categories, sel],
+  );
+
+  /** Pior cobertura entre os domínios do radar — sinaliza quando a leitura é de poucos. */
+  const radarCoverage = radar.reduce(
+    (min, r) => (r.covered < min.covered ? r : min),
+    radar[0] ?? { covered: 0, total: 0 },
   );
 
   /**
@@ -138,6 +155,14 @@ function GapPage() {
               description={t("gap.radar.subtitle", { escopo: scopeLabel })}
             >
               <DomainRadar data={radar} />
+              {radarCoverage.total > 0 && radarCoverage.covered < radarCoverage.total && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t("gap.radar.coverage", {
+                    covered: radarCoverage.covered,
+                    total: radarCoverage.total,
+                  })}
+                </p>
+              )}
             </SectionCard>
 
             <SectionCard
@@ -203,7 +228,7 @@ function GapPage() {
                       <td className="text-sm font-medium">{a.name}</td>
                       {sel.domainAverages(a.id).map((d) => (
                         <td key={d.category.id} className="min-w-[52px]">
-                          <LevelCell level={Math.round(d.avg)} />
+                          <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
                         </td>
                       ))}
                     </tr>

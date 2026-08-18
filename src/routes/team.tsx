@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { ROLES, roleShort, type Architect, type Level, type RoleName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
 
@@ -149,9 +150,8 @@ function TeamPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {store.architects.map((a) => {
           const top = sel.gapsFor(a.id).slice(0, 3);
-          const avg =
-            sel.domainAverages(a.id).reduce((s, d) => s + d.avg, 0) /
-            Math.max(1, store.categories.length);
+          const { avg } = averageWithCoverage(sel.domainAverages(a.id).map((d) => d.avg));
+          const hasOfficial = sel.officialAssessmentFor(a.id) !== undefined;
           return (
             <div key={a.id} className="surface-card p-5">
               <div className="flex items-start gap-3">
@@ -191,7 +191,7 @@ function TeamPage() {
 
               <div className="mt-4 flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
-                <LevelBadge level={Math.round(avg)} showName />
+                <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
               </div>
 
               <div className="mt-3">
@@ -216,7 +216,9 @@ function TeamPage() {
                   </div>
                 ))}
                 {top.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Sem avaliação neste ciclo.</p>
+                  <p className="text-sm text-muted-foreground">
+                    {hasOfficial ? t("team.card.noGaps") : t("team.card.notAssessed")}
+                  </p>
                 )}
               </div>
             </div>

@@ -50,7 +50,11 @@ function CyclesPage() {
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
   const chartData = closedCycles.map((c) => {
     const row: Record<string, string | number> = { cycle: c.name };
-    for (const d of sel.domainAverages(architectId, c.id)) row[d.category.short] = d.avg;
+    // Domínio sem assessment oficial no ciclo não entra na linha — nada de
+    // plotar um 0 fictício que pareceria uma queda real de nível.
+    for (const d of sel.domainAverages(architectId, c.id)) {
+      if (d.avg !== undefined) row[d.category.short] = d.avg;
+    }
     return row;
   });
   /* A cor de cada série é decisão da paleta do sistema; aqui só se diz o que plotar. */

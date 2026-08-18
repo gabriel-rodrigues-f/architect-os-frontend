@@ -63,6 +63,24 @@ function Dashboard() {
 
   const topGaps = [...allGaps].sort((a, b) => b.gap - a.gap).slice(0, 6);
 
+  /**
+   * Cobertura das avaliações do ciclo ativo — sem isto, o heatmap e as
+   * médias do painel podem parecer representar o time inteiro quando na
+   * verdade só cobrem quem já tem assessment `Completed`. Ver AUDITORIA-
+   * RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 42.
+   */
+  const assessmentCoverage = store.architects.reduce(
+    (acc, a) => {
+      const status = sel.assessmentFor(a.id)?.status;
+      if (status === "Completed") acc.completed += 1;
+      else if (status === "In Review") acc.inReview += 1;
+      else if (status === "Draft") acc.draft += 1;
+      else acc.notStarted += 1;
+      return acc;
+    },
+    { completed: 0, inReview: 0, draft: 0, notStarted: 0 },
+  );
+
   return (
     <>
       <PageHeader
@@ -116,6 +134,15 @@ function Dashboard() {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[2fr_1fr]">
         <SectionCard title={t("dash.heatmap.title")} description={t("dash.heatmap.subtitle")}>
+          <p className="mb-3 text-xs text-muted-foreground">
+            {t("dash.coverage", {
+              completed: assessmentCoverage.completed,
+              total: store.architects.length,
+              inReview: assessmentCoverage.inReview,
+              draft: assessmentCoverage.draft,
+              notStarted: assessmentCoverage.notStarted,
+            })}
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
               <thead>
@@ -148,7 +175,7 @@ function Dashboard() {
                     </td>
                     {sel.domainAverages(a.id).map((d) => (
                       <td key={d.category.id} className="min-w-[52px]">
-                        <LevelCell level={Math.round(d.avg)} />
+                        <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
                       </td>
                     ))}
                   </tr>

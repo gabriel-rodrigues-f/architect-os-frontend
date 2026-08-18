@@ -16,8 +16,28 @@ const levelBg: Record<number, string> = {
   5: "bg-level-5 text-[var(--level-5-fg)]",
 };
 
-export function LevelBadge({ level, showName = false }: { level: number; showName?: boolean }) {
+/** `level` undefined = sem assessment oficial; mostra "—", nunca "L0" fictício. */
+export function LevelBadge({
+  level,
+  showName = false,
+}: {
+  level: number | undefined;
+  showName?: boolean;
+}) {
   const { t } = useI18n();
+  if (level === undefined) {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums",
+          levelBg[0],
+        )}
+        title={t("level.cellTooltip.none")}
+      >
+        —
+      </span>
+    );
+  }
   return (
     <span
       className={cn(
@@ -32,17 +52,27 @@ export function LevelBadge({ level, showName = false }: { level: number; showNam
   );
 }
 
-export function LevelCell({ level }: { level: number }) {
+/**
+ * `level` vem `undefined` quando a pessoa não tem assessment oficial cobrindo
+ * o domínio no ciclo — nunca `0`. A célula mostra "—" sem tooltip de nível,
+ * porque não há nível nenhum para explicar (não é o mesmo caso de nível 0,
+ * que a escala nem define).
+ */
+export function LevelCell({ level }: { level: number | undefined }) {
   const { t } = useI18n();
   return (
     <div
       className={cn(
         "flex h-9 w-full items-center justify-center rounded-md text-sm font-semibold tabular-nums",
-        levelBg[level] ?? levelBg[0],
+        level === undefined ? levelBg[0] : (levelBg[level] ?? levelBg[0]),
       )}
-      title={t("level.cellTooltip", { nome: levelName(level), n: level })}
+      title={
+        level === undefined
+          ? t("level.cellTooltip.none")
+          : t("level.cellTooltip", { nome: levelName(level), n: level })
+      }
     >
-      {level || "—"}
+      {level ?? "—"}
     </div>
   );
 }
