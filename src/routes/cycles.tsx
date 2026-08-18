@@ -18,7 +18,7 @@ import type { DevelopmentCycle } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate, slug } from "@/lib/text";
+import { formatDate } from "@/lib/text";
 
 export const Route = createFileRoute("/cycles")({
   head: () => ({
@@ -85,7 +85,7 @@ function CyclesPage() {
                 </option>
               ))}
             </select>
-            <Button onClick={() => setEditing(emptyCycle())}>{t("cycle.new")}</Button>
+            <Button onClick={() => setEditing(emptyCycle(store.cycles))}>{t("cycle.new")}</Button>
           </div>
         }
       />
@@ -128,7 +128,7 @@ function CyclesPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               O ciclo delimita o período de avaliação, PDI e metas.
             </p>
-            <Button className="mt-4" onClick={() => setEditing(emptyCycle())}>
+            <Button className="mt-4" onClick={() => setEditing(emptyCycle(store.cycles))}>
               Novo ciclo
             </Button>
           </div>
@@ -177,30 +177,77 @@ function CyclesPage() {
   );
 }
 
-const emptyCycle = (): DevelopmentCycle => {
-  const year = new Date().getFullYear();
-  return {
-    id: "",
-    name: `${year} H1`,
-    start: `${year}-01-01`,
-    end: `${year}-06-30`,
-    status: "Planned",
-  };
+type Half = "H1" | "H2";
+
+/** Rótulo e id nascem do par ano/semestre — nunca de texto livre. */
+const cycleName = (year: number, half: Half) => `${year} ${half}`;
+const cycleId = (year: number, half: Half) => `${year}-${half.toLowerCase()}`;
+
+/** Extrai ano/semestre de um nome existente; cai no ano corrente se não casar o padrão. */
+function parseCycleName(name: string): { year: number; half: Half } {
+  const match = /^(\d{4}) (H[12])$/.exec(name);
+  if (match) return { year: Number(match[1]), half: match[2] as Half };
+  return { year: new Date().getFullYear(), half: "H1" };
+}
+
+/** Primeiro par ano/semestre ainda não usado, a partir do ciclo mais recente. */
+function nextAvailableCycle(existing: DevelopmentCycle[]): { year: number; half: Half } {
+  const used = new Set(existing.map((c) => c.id));
+  let { year, half } = { year: new Date().getFullYear(), half: "H1" as Half };
+  while (used.has(cycleId(year, half))) {
+    if (half === "H1") half = "H2";
+    else {
+      half = "H1";
+      year += 1;
+    }
+  }
+  return { year, half };
+}
+
+const datesFor = (year: number, half: Half) =>
+  half === "H1"
+    ? { start: `${year}-01-01`, end: `${year}-06-30` }
+    : { start: `${year}-07-01`, end: `${year}-12-31` };
+
+const emptyCycle = (existing: DevelopmentCycle[]): DevelopmentCycle => {
+  const { year, half } = nextAvailableCycle(existing);
+  return { id: "", name: cycleName(year, half), ...datesFor(year, half), status: "Planned" };
 };
 
-/** Criação e edição de ciclo. `cycle.id` vazio indica criação. */
+/**
+ * Criação e edição de ciclo. `cycle.id` vazio indica criação.
+ *
+ * Ano e semestre não são texto livre: são a identidade do ciclo (viram `id`
+ * e `name` juntos), então em criação são um par de seletores com checagem de
+ * duplicidade — não dá para ter dois "2026 H1". Em edição ficam fixos: mudar
+ * o período de um ciclo já em uso desalinharia `id` de tudo que referencia
+ * `cycle_id` (avaliações, PDI, OKRs).
+ */
 function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () => void }) {
   const store = useStore();
-  const [form, setForm] = useState(cycle);
   const isNew = cycle.id === "";
+  const parsed = parseCycleName(cycle.name);
+  const [year, setYear] = useState(parsed.year);
+  const [half, setHalf] = useState<Half>(parsed.half);
+  const [start, setStart] = useState(cycle.start);
+  const [end, setEnd] = useState(cycle.end);
+  const [status, setStatus] = useState(cycle.status);
+
+  const duplicate = isNew && store.cycles.some((c) => c.id === cycleId(year, half));
+
+  const changePeriod = (nextYear: number, nextHalf: Half) => {
+    setYear(nextYear);
+    setHalf(nextHalf);
+    setStart(datesFor(nextYear, nextHalf).start);
+    setEnd(datesFor(nextYear, nextHalf).end);
+  };
 
   const save = () => {
-    if (!form.name.trim()) return;
+    if (duplicate) return;
     if (isNew) {
-      store.addCycle({ ...form, id: slug(form.name) });
+      store.addCycle({ id: cycleId(year, half), name: cycleName(year, half), start, end, status });
     } else {
-      const { id: _id, ...changes } = form;
-      store.updateCycle(cycle.id, changes);
+      store.updateCycle(cycle.id, { start, end, status });
     }
     onClose();
   };
@@ -213,13 +260,36 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label htmlFor="cycle-name">Nome</Label>
-            <Input
-              id="cycle-name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && save()}
-            />
+            <Label htmlFor="cycle-year">Ciclo</Label>
+            {isNew ? (
+              <div className="mt-1 flex gap-2">
+                <Input
+                  id="cycle-year"
+                  type="number"
+                  className="w-28"
+                  value={year}
+                  onChange={(e) => changePeriod(Number(e.target.value) || year, half)}
+                />
+                <select
+                  aria-label="Semestre"
+                  className="rounded-md border border-input bg-card px-3 py-2 text-sm"
+                  value={half}
+                  onChange={(e) => changePeriod(year, e.target.value as Half)}
+                >
+                  <option value="H1">H1</option>
+                  <option value="H2">H2</option>
+                </select>
+              </div>
+            ) : (
+              <p id="cycle-year" className="mt-1 text-sm font-medium">
+                {cycle.name}
+              </p>
+            )}
+            {duplicate && (
+              <p className="mt-1 text-xs text-destructive" role="alert">
+                Já existe um ciclo {cycleName(year, half)}.
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -227,8 +297,8 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
               <Input
                 id="cycle-start"
                 type="date"
-                value={form.start}
-                onChange={(e) => setForm({ ...form, start: e.target.value })}
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
               />
             </div>
             <div>
@@ -236,8 +306,8 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
               <Input
                 id="cycle-end"
                 type="date"
-                value={form.end}
-                onChange={(e) => setForm({ ...form, end: e.target.value })}
+                value={end}
+                onChange={(e) => setEnd(e.target.value)}
               />
             </div>
           </div>
@@ -246,10 +316,8 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
             <select
               id="cycle-status"
               className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={form.status}
-              onChange={(e) =>
-                setForm({ ...form, status: e.target.value as DevelopmentCycle["status"] })
-              }
+              value={status}
+              onChange={(e) => setStatus(e.target.value as DevelopmentCycle["status"])}
             >
               <option value="Planned">Planejado</option>
               <option value="Active">Ativo</option>
@@ -261,7 +329,9 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={save}>Salvar</Button>
+          <Button onClick={save} disabled={duplicate}>
+            Salvar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

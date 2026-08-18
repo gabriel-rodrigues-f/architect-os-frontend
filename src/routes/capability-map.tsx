@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
@@ -106,12 +107,14 @@ function CapabilityMapPage() {
     const trimmed = editName.trim();
     if (!trimmed) return;
     store.updateCategory(editing.id, { name: trimmed, short: trimmed.split(" ")[0] ?? trimmed });
+    toast.success(t("cap.edit.toast", { nome: trimmed }));
     setEditing(null);
   };
 
   const remove = () => {
     if (!confirmDelete) return;
     store.removeCategory(confirmDelete.id);
+    toast.success(t("cap.delete.toast", { nome: confirmDelete.name }));
     setConfirmDelete(null);
   };
 

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import {
   Bar,
@@ -108,6 +109,7 @@ function TeamPage() {
 
     if (editing) {
       store.updateArchitect(editing, payload);
+      toast.success(t("team.edit.toast", { nome: payload.name }));
     } else {
       store.addArchitect({
         id: slug(form.name),
@@ -122,6 +124,7 @@ function TeamPage() {
   const remove = () => {
     if (!confirmDelete) return;
     store.removeArchitect(confirmDelete.id);
+    toast.success(t("team.delete.toast", { nome: confirmDelete.name }));
     setConfirmDelete(null);
   };
 

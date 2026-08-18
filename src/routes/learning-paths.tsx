@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Bar, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -231,10 +232,12 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
   });
 
   const saveDetails = () => {
+    const nome = form.name.trim() || path.name;
     store.updateLearningPath(path.id, {
-      name: form.name.trim() || path.name,
+      name: nome,
       description: form.description,
     });
+    toast.success(t("path.edit.toast", { nome }));
     onClose();
   };
 
@@ -437,6 +440,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
             variant="destructive"
             onClick={() => {
               store.removeLearningPath(path.id);
+              toast.success(t("path.delete.toast", { nome: path.name }));
               onClose();
             }}
           >
