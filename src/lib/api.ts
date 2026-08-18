@@ -243,8 +243,16 @@ export const api = {
     post<LearningPath>(`/api/learning-paths/${pathId}/items`, item),
   removeLearningItem: (pathId: string, itemId: string) =>
     del<LearningPath>(`/api/learning-paths/${pathId}/items/${itemId}`),
-  patchLearningItem: (pathId: string, itemId: string, progress: number) =>
-    patch<LearningPath>(`/api/learning-paths/${pathId}/items/${itemId}`, { progress }),
+  /** Progresso é por pessoa: só a própria pessoa (ou admin) pode registrar o dela. */
+  patchLearningItemProgress: (
+    pathId: string,
+    architectId: string,
+    itemId: string,
+    progress: number,
+  ) =>
+    patch<LearningPath>(`/api/learning-paths/${pathId}/progress/${architectId}/${itemId}`, {
+      progress,
+    }),
 
   /* registros */
   createMentoringSession: (session: MentoringSession) =>

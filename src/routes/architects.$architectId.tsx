@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { EVIDENCE_TYPES, type EvidenceType } from "@/lib/domain";
+import { EVIDENCE_TYPES, progressFor, type EvidenceType } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -237,19 +237,18 @@ function ArchitectProfile() {
 
         <SectionCard title={t("arch.paths.title")} description={t("arch.paths.subtitle")}>
           <ul className="space-y-2">
-            {paths.map((p) => (
-              <li key={p.id} className="surface-inset p-2.5">
-                <p className="text-sm font-medium">{p.name}</p>
-                <Bar
-                  className="mt-1.5"
-                  value={
-                    p.items.length
-                      ? Math.round(p.items.reduce((s, i) => s + i.progress, 0) / p.items.length)
-                      : 0
-                  }
-                />
-              </li>
-            ))}
+            {paths.map((p) => {
+              const values = p.items.map((i) => progressFor(p, architect.id, i.id).progress);
+              const value = values.length
+                ? Math.round(values.reduce((s, v) => s + v, 0) / values.length)
+                : 0;
+              return (
+                <li key={p.id} className="surface-inset p-2.5">
+                  <p className="text-sm font-medium">{p.name}</p>
+                  <Bar className="mt-1.5" value={value} />
+                </li>
+              );
+            })}
             {!paths.length && (
               <p className="text-sm text-muted-foreground">{t("arch.paths.none")}</p>
             )}

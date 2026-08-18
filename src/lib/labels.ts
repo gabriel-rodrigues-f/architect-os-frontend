@@ -7,7 +7,7 @@ import type {
   DevelopmentPlan,
   DevelopmentPlanItem,
   EvidenceType,
-  LearningPathItem,
+  LearningItemProgress,
 } from "./domain";
 
 /**
@@ -35,7 +35,7 @@ const planItemStatusKey: Record<DevelopmentPlanItem["status"], MessageKey> = {
   Completed: "status.completed",
 };
 
-const learningStatusKey: Record<LearningPathItem["status"], MessageKey> = {
+const learningStatusKey: Record<LearningItemProgress["status"], MessageKey> = {
   "Not Started": "status.notStarted",
   "In Progress": "status.inProgress",
   Completed: "status.completed",

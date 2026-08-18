@@ -11,6 +11,7 @@ import type {
   DevelopmentCycle,
   DevelopmentPlanItem,
   Evidence,
+  LearningItemProgress,
   LearningPath,
   LearningPathItem,
   Level,
@@ -92,7 +93,12 @@ interface Api extends AppState {
   addEvidence: (e: Evidence) => void;
   addCertification: (c: Certification) => void;
   addMentoringSession: (m: MentoringSession) => void;
-  updateLearningItem: (pathId: string, itemId: string, progress: number) => void;
+  updateLearningItemProgress: (
+    pathId: string,
+    architectId: string,
+    itemId: string,
+    progress: number,
+  ) => void;
   addLearningPath: (p: LearningPath) => void;
   updateKeyResult: (okrId: string, krId: string, progress: number) => void;
   moveNineBox: (
@@ -362,7 +368,10 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.createLearningPath(p));
     },
 
-    updateLearningItem: (pathId, itemId, progress) => {
+    /** Progresso é por pessoa: só a entrada de (architectId, itemId) muda, nunca o item inteiro. */
+    updateLearningItemProgress: (pathId, architectId, itemId, progress) => {
+      const status: LearningItemProgress["status"] =
+        progress >= 100 ? "Completed" : progress > 0 ? "In Progress" : "Not Started";
       local((s) => ({
         ...s,
         learningPaths: s.learningPaths.map((p) =>
@@ -370,24 +379,19 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
             ? p
             : {
                 ...p,
-                items: p.items.map((i) =>
-                  i.id === itemId
-                    ? {
-                        ...i,
-                        progress,
-                        status:
-                          progress >= 100
-                            ? "Completed"
-                            : progress > 0
-                              ? "In Progress"
-                              : "Not Started",
-                      }
-                    : i,
-                ),
+                progress: p.progress.some(
+                  (e) => e.architectId === architectId && e.itemId === itemId,
+                )
+                  ? p.progress.map((e) =>
+                      e.architectId === architectId && e.itemId === itemId
+                        ? { ...e, progress, status }
+                        : e,
+                    )
+                  : [...p.progress, { architectId, itemId, progress, status }],
               },
         ),
       }));
-      remote(api.patchLearningItem(pathId, itemId, progress));
+      remote(api.patchLearningItemProgress(pathId, architectId, itemId, progress));
     },
 
     updateKeyResult: (okrId, krId, progress) => {

@@ -18,7 +18,12 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { formatDate } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
-import type { LearningItemType, LearningPath, LearningPathItem } from "@/lib/domain";
+import {
+  progressFor,
+  type LearningItemType,
+  type LearningPath,
+  type LearningPathItem,
+} from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -73,6 +78,7 @@ function LearningPage() {
       competencyIds: [],
       assignedTo: [],
       items: [],
+      progress: [],
       createdBy: user.email,
       createdAt: new Date().toISOString(),
     });
@@ -82,6 +88,14 @@ function LearningPage() {
   /** Trilha sem autor registrado fica aberta para qualquer pessoa logada. */
   const canEdit = (path: LearningPath) =>
     !path.createdBy || path.createdBy.toLowerCase() === user.email.toLowerCase();
+
+  /**
+   * Progresso é execução, não edição da trilha: só a própria pessoa (ou um
+   * administrador) registra o progresso dela — nunca quem só está de
+   * passagem pela tela de outra pessoa.
+   */
+  const canEditProgress = (architectId: string) =>
+    user.role === "admin" || user.architectId === architectId;
 
   return (
     <>
@@ -113,8 +127,19 @@ function LearningPage() {
 
       <div className="space-y-6">
         {store.learningPaths.map((path) => {
-          const total = path.items.length
-            ? Math.round(path.items.reduce((s, i) => s + i.progress, 0) / path.items.length)
+          /**
+           * Progresso do card é a média entre as pessoas atribuídas — cada
+           * uma com a própria média entre os itens. Antes, `item.progress`
+           * era um valor só; agora cada pessoa tem o dela (progressFor).
+           */
+          const perPerson = path.assignedTo.map((architectId) => {
+            const values = path.items.map(
+              (item) => progressFor(path, architectId, item.id).progress,
+            );
+            return values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+          });
+          const total = perPerson.length
+            ? Math.round(perPerson.reduce((s, v) => s + v, 0) / perPerson.length)
             : 0;
           const editable = canEdit(path);
           const createdAt = formatDate(path.createdAt, locale);
@@ -172,32 +197,58 @@ function LearningPage() {
 
               <ul className="divide-y divide-border">
                 {path.items.map((item) => (
-                  <li key={item.id} className="flex flex-wrap items-center gap-3 py-3">
-                    <span className="w-24 shrink-0 rounded-md bg-secondary px-2 py-0.5 text-center text-xs">
-                      {item.type}
-                    </span>
-                    <div className="min-w-40 flex-1">
-                      <p className="text-sm font-medium">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.hours}h estimadas · {labels.learningStatus[item.status]}
-                      </p>
-                    </div>
-                    <div className="flex w-52 items-center gap-2">
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={10}
-                        value={item.progress}
-                        aria-label={`Progresso de ${item.title}`}
-                        onChange={(e) =>
-                          store.updateLearningItem(path.id, item.id, Number(e.target.value))
-                        }
-                        className="w-full accent-[var(--primary)]"
-                      />
-                      <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">
-                        {item.progress}%
+                  <li key={item.id} className="py-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="w-24 shrink-0 rounded-md bg-secondary px-2 py-0.5 text-center text-xs">
+                        {item.type}
                       </span>
+                      <div className="min-w-40 flex-1">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <p className="text-xs text-muted-foreground">{item.hours}h estimadas</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 space-y-1.5">
+                      {path.assignedTo.map((architectId) => {
+                        const person = sel.architectById(architectId);
+                        const prog = progressFor(path, architectId, item.id);
+                        const nome = person?.name ?? architectId;
+                        return (
+                          <div key={architectId} className="flex items-center gap-2 pl-2">
+                            <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">
+                              {nome}
+                            </span>
+                            {canEditProgress(architectId) ? (
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={10}
+                                value={prog.progress}
+                                aria-label={`Progresso de ${nome} em ${item.title}`}
+                                onChange={(e) =>
+                                  store.updateLearningItemProgress(
+                                    path.id,
+                                    architectId,
+                                    item.id,
+                                    Number(e.target.value),
+                                  )
+                                }
+                                className="w-full accent-[var(--primary)]"
+                              />
+                            ) : (
+                              <Bar value={prog.progress} className="flex-1" />
+                            )}
+                            <span className="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                              {prog.progress}% · {labels.learningStatus[prog.status]}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {path.assignedTo.length === 0 && (
+                        <p className="pl-2 text-xs text-muted-foreground">
+                          {t("path.item.noAssignee")}
+                        </p>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -256,8 +307,6 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
       title,
       type: newItem.type,
       hours: Number(newItem.hours) || 1,
-      status: "Not Started",
-      progress: 0,
     };
     store.addLearningPathItem(path.id, item);
     setNewItem({ title: "", type: ITEM_TYPES[0] as LearningItemType, hours: "4" });
