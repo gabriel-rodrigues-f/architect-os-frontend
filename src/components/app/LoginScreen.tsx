@@ -1,4 +1,3 @@
-import { Sparkles } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -55,14 +54,9 @@ export function LoginScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-6 flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Sparkles className="h-4 w-4" />
-          </span>
-          <div className="leading-tight">
-            <p className="font-display text-base font-semibold">Architect OS</p>
-            <p className="text-xs text-muted-foreground">{t("login.subtitle")}</p>
-          </div>
+        <div className="mb-6 leading-tight">
+          <p className="font-display text-xl font-semibold">Synapse</p>
+          <p className="text-xs text-muted-foreground">{t("login.subtitle")}</p>
         </div>
 
         <div className="surface-card p-6">

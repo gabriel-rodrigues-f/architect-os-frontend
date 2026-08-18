@@ -3,7 +3,7 @@ import { AlertCircle, X } from "lucide-react";
 import { useState } from "react";
 
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
-import { Initials, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { FieldLabel, Initials, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,17 +19,17 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { todayIso } from "@/lib/text";
+import { formatDate, todayIso } from "@/lib/text";
 
 export const Route = createFileRoute("/mentoring")({
   head: () => ({
     meta: [
-      { title: "Mentoria — Architect OS" },
+      { title: "Mentoria — Synapse" },
       {
         name: "description",
         content: "Registro e timeline das sessões de mentoria técnica entre arquitetos.",
       },
-      { property: "og:title", content: "Mentoria — Architect OS" },
+      { property: "og:title", content: "Mentoria — Synapse" },
       {
         property: "og:description",
         content: "Temas, decisões, ações e próximos passos de cada sessão de mentoria.",
@@ -45,7 +45,7 @@ type RequiredField = (typeof REQUIRED_FIELDS)[number];
 
 function MentoringPage() {
   const store = useStore();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   // O mentor é quem está registrando a sessão, não um nome fixo no código.
   const user = useCurrentUser();
   const sel = useSelectors();
@@ -153,21 +153,27 @@ function MentoringPage() {
                         className={invalid("date")}
                         value={form.date}
                         onChange={(e) => setField("date", e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && submit()}
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="topic">{t("mentor.form.topic")}</Label>
+                    <FieldLabel htmlFor="topic" hint={t("mentor.form.topicHint")}>
+                      {t("mentor.form.topic")}
+                    </FieldLabel>
                     <Input
                       id="topic"
                       aria-invalid={isMissing("topic")}
                       className={invalid("topic")}
                       value={form.topic}
                       onChange={(e) => setField("topic", e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && submit()}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="notes">{t("mentor.form.notes")}</Label>
+                    <FieldLabel htmlFor="notes" hint={t("mentor.form.notesHint")}>
+                      {t("mentor.form.notes")}
+                    </FieldLabel>
                     <Textarea
                       id="notes"
                       aria-invalid={isMissing("notes")}
@@ -177,7 +183,9 @@ function MentoringPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="decisions">{t("mentor.form.decisions")}</Label>
+                    <FieldLabel htmlFor="decisions" hint={t("mentor.form.decisionsHint")}>
+                      {t("mentor.form.decisions")}
+                    </FieldLabel>
                     <Textarea
                       id="decisions"
                       aria-invalid={isMissing("decisions")}
@@ -187,7 +195,9 @@ function MentoringPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="actions">{t("mentor.form.actions")}</Label>
+                    <FieldLabel htmlFor="actions" hint={t("mentor.form.actionsHint")}>
+                      {t("mentor.form.actions")}
+                    </FieldLabel>
                     <Textarea
                       id="actions"
                       aria-invalid={isMissing("actions")}
@@ -243,8 +253,8 @@ function MentoringPage() {
                 <div>
                   <p className="text-sm font-medium">{s.topic}</p>
                   <p className="text-xs text-muted-foreground">
-                    {sel.architectById(s.menteeId)?.name} · mentor {s.mentor} · {s.date} ·{" "}
-                    {s.durationMin} min
+                    {sel.architectById(s.menteeId)?.name} · mentor {s.mentor} ·{" "}
+                    {formatDate(s.date, locale)} · {s.durationMin} min
                   </p>
                 </div>
               </div>
@@ -264,7 +274,7 @@ function MentoringPage() {
               )}
               {s.nextSession && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Próxima sessão: {s.nextSession}
+                  Próxima sessão: {formatDate(s.nextSession, locale)}
                 </p>
               )}
             </li>

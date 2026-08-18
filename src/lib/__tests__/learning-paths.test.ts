@@ -6,12 +6,16 @@ import type { LearningPath } from "../domain";
 const canEdit = (path: LearningPath, userEmail: string) =>
   !path.createdBy || path.createdBy.toLowerCase() === userEmail.toLowerCase();
 
-/** Mesmo formatador usado na listagem de trilhas. */
-const formatDate = (iso?: string) => {
+/** Mesma ideia do formatador usado na listagem de trilhas — locale-aware, não fixo em pt-BR. */
+const formatDate = (iso: string | undefined, locale: string) => {
   if (!iso) return null;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 };
 
 const path = (overrides: Partial<LearningPath> = {}): LearningPath => ({
@@ -44,16 +48,20 @@ describe("permissão de edição na tela de trilhas", () => {
 });
 
 describe("data de criação da trilha", () => {
-  it("formata o ISO em dd/mm/aaaa", () => {
-    expect(formatDate("2026-08-11T14:35:00.000Z")).toBe("11/08/2026");
+  it("formata o ISO em dd/mm/aaaa em português", () => {
+    expect(formatDate("2026-08-11T14:35:00.000Z", "pt")).toBe("11/08/2026");
+  });
+
+  it("formata o ISO em mm/dd/aaaa em inglês", () => {
+    expect(formatDate("2026-08-11T14:35:00.000Z", "en")).toBe("08/11/2026");
   });
 
   it("devolve null quando não há data", () => {
-    expect(formatDate(undefined)).toBeNull();
+    expect(formatDate(undefined, "pt")).toBeNull();
   });
 
   it("devolve null para data inválida em vez de 'Invalid Date'", () => {
-    expect(formatDate("nao-e-data")).toBeNull();
+    expect(formatDate("nao-e-data", "pt")).toBeNull();
   });
 });
 

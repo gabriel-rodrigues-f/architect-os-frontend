@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
+import { Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const levelBg: Record<number, string> = {
   0: "bg-level-0 text-muted-foreground",
@@ -164,6 +167,56 @@ export function SectionCard({
       </div>
       {children}
     </section>
+  );
+}
+
+/**
+ * Rótulo de campo com uma bolinha de ajuda à direita.
+ *
+ * Existe como componente próprio, e não como `<Label>` + `<Tooltip>` repetido
+ * em cada form, porque a dúvida "o que esse campo espera" se repete em
+ * qualquer formulário do app — Mentoria foi só o primeiro a pedir. Um lugar
+ * só também impede que o botão de ajuda saia com foco, alvo de toque ou
+ * `aria-label` levemente diferentes em cada tela.
+ *
+ * O botão é focável e responde a teclado (é um `<button>`, não um `<span>`
+ * com `onMouseEnter`): quem navega sem mouse também precisa ler a explicação.
+ *
+ * Traz seu próprio `TooltipProvider`: o `AppShell` já mantém um para os
+ * ícones da coluna lateral, mas este componente não deve depender de estar
+ * dentro dele — um form em teste isolado, ou fora do shell no futuro, precisa
+ * continuar funcionando sozinho. Providers do Radix aninham sem conflito.
+ */
+export function FieldLabel({
+  htmlFor,
+  children,
+  hint,
+}: {
+  htmlFor: string;
+  children: ReactNode;
+  hint: string;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="flex items-center gap-1.5">
+      <Label htmlFor={htmlFor}>{children}</Label>
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={t("field.hint", { campo: String(children) })}
+            >
+              <Info className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-64 text-center">
+            {hint}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
   );
 }
 

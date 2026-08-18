@@ -10,13 +10,13 @@ import { useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/talent-matrix")({
   head: () => ({
     meta: [
-      { title: "Matriz de Talentos — Architect OS" },
+      { title: "Matriz de Talentos — Synapse" },
       {
         name: "description",
         content:
           "Matriz 9 Box de desempenho e potencial como ferramenta complementar de desenvolvimento.",
       },
-      { property: "og:title", content: "Matriz de Talentos — Architect OS" },
+      { property: "og:title", content: "Matriz de Talentos — Synapse" },
       {
         property: "og:description",
         content: "Posicione arquitetos na 9 Box e conecte a discussão ao PDI e aos gaps técnicos.",
@@ -34,18 +34,19 @@ const RANK: Record<Architect["performance"], number> = { Low: 0, Medium: 1, High
 /**
  * Cor do quadrante: soma das duas posições (0 a 4), do vermelho no canto
  * inferior esquerdo ao verde no superior direito, passando pelo amarelo na
- * diagonal central.
+ * diagonal central — a mesma progressão "ruim → bom" que pinta lacunas e
+ * níveis, para o app ter uma linguagem visual só.
  *
- * Reusa a escala `level-1..5` do app — a mesma que pinta lacunas e níveis de
- * competência —, para que "ruim → bom" tenha uma única linguagem visual na
- * aplicação inteira.
+ * Os tokens são próprios, e não `bg-level-N/50`. Meia opacidade sobre fundo
+ * variável não é cor previsível: no tema escuro os cinco quadrantes compunham
+ * com a página e chegavam quase indistinguíveis entre si.
  */
 const QUADRANT_TONE = [
-  "bg-level-1/50",
-  "bg-level-2/50",
-  "bg-level-3/50",
-  "bg-level-4/50",
-  "bg-level-5/50",
+  "bg-quadrant-1",
+  "bg-quadrant-2",
+  "bg-quadrant-3",
+  "bg-quadrant-4",
+  "bg-quadrant-5",
 ] as const;
 
 function quadrantTone(

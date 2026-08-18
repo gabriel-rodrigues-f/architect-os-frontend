@@ -18,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -31,13 +30,13 @@ import { slug } from "@/lib/text";
 export const Route = createFileRoute("/team")({
   head: () => ({
     meta: [
-      { title: "Time — Architect OS" },
+      { title: "Time — Synapse" },
       {
         name: "description",
         content:
           "Time de Arquitetos de Soluções, níveis médios, gaps e progresso de desenvolvimento.",
       },
-      { property: "og:title", content: "Time — Architect OS" },
+      { property: "og:title", content: "Time — Synapse" },
       {
         property: "og:description",
         content: "Gestão do time de arquitetura: perfis, níveis e desenvolvimento.",
@@ -237,6 +236,7 @@ function TeamPage() {
                 id="name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
               />
             </div>
             <div>
@@ -247,6 +247,7 @@ function TeamPage() {
                 placeholder="nome@empresa.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
               />
             </div>
             <div>
@@ -269,6 +270,7 @@ function TeamPage() {
                   id="spec"
                   value={form.specialization}
                   onChange={(e) => setForm({ ...form, specialization: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && submit()}
                 />
               </div>
               <div>
@@ -279,6 +281,7 @@ function TeamPage() {
                   min={0}
                   value={form.years}
                   onChange={(e) => setForm({ ...form, years: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && submit()}
                 />
               </div>
             </div>
@@ -326,29 +329,13 @@ function TeamPage() {
         </DialogContent>
       </Dialog>
 
-      {/* confirmação de exclusão */}
-      <Dialog
+      <ConfirmDialog
         open={confirmDelete !== null}
-        onOpenChange={(open) => !open && setConfirmDelete(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir {confirmDelete?.name}?</DialogTitle>
-            <DialogDescription>
-              Avaliações, PDIs, OKRs, SWOT, mentorias, evidências e certificações deste arquiteto
-              também serão removidos. As trilhas permanecem, apenas sem a atribuição.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDelete(null)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={remove}>
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title={`Excluir ${confirmDelete?.name}?`}
+        description="Avaliações, PDIs, OKRs, SWOT, mentorias, evidências e certificações deste arquiteto também serão removidos. As trilhas permanecem, apenas sem a atribuição."
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={remove}
+      />
     </>
   );
 }

@@ -7,13 +7,13 @@ import { useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/training-needs")({
   head: () => ({
     meta: [
-      { title: "Necessidades de Treinamento — Architect OS" },
+      { title: "Necessidades de Treinamento — Synapse" },
       {
         name: "description",
         content:
           "Análise agregada de necessidades de treinamento do time (LNT) a partir dos gaps individuais.",
       },
-      { property: "og:title", content: "Necessidades de Treinamento — Architect OS" },
+      { property: "og:title", content: "Necessidades de Treinamento — Synapse" },
       {
         property: "og:description",
         content: "Treinamentos recomendados que atendem várias pessoas simultaneamente.",

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import en from "@/locales/en.json";
-import es from "@/locales/es.json";
 import pt from "@/locales/pt.json";
 import { availableLocales, BASE_LOCALE, detectLocale, interpolate, isKnownLocale } from "../i18n";
 
@@ -16,7 +15,12 @@ describe("catálogo de idiomas", () => {
     const codigos = availableLocales().map((l) => l.code);
     expect(codigos).toContain("pt");
     expect(codigos).toContain("en");
-    expect(codigos).toContain("es");
+  });
+
+  /** Só português e inglês estão habilitados nesta etapa — espanhol foi retirado. */
+  it("não lista idioma sem arquivo correspondente", () => {
+    const codigos = availableLocales().map((l) => l.code);
+    expect(codigos).toEqual(["pt", "en"]);
   });
 
   it("põe o idioma base primeiro", () => {
@@ -41,11 +45,11 @@ describe("catálogo de idiomas", () => {
   it("cada idioma aparece no próprio idioma", () => {
     const porCodigo = new Map(availableLocales().map((l) => [l.code, l.label]));
     expect(porCodigo.get("en")).toBe("English");
-    expect(porCodigo.get("es")).toBe("Español");
   });
 
   it("reconhece só os idiomas que existem", () => {
     expect(isKnownLocale("en")).toBe(true);
+    expect(isKnownLocale("es")).toBe(false);
     expect(isKnownLocale("de")).toBe(false);
   });
 });
@@ -53,11 +57,11 @@ describe("catálogo de idiomas", () => {
 describe("detecção pelo navegador", () => {
   it("casa a região com o idioma: pt-BR → pt", () => {
     expect(detectLocale(["pt-BR", "pt"])).toBe("pt");
-    expect(detectLocale(["es-AR"])).toBe("es");
   });
 
+  /** Espanhol foi retirado do catálogo: deixa de casar e cai no primeiro idioma conhecido. */
   it("pula idiomas que não existem e fica no primeiro conhecido", () => {
-    expect(detectLocale(["de-DE", "ja", "en-US"])).toBe("en");
+    expect(detectLocale(["es-AR", "ja", "en-US"])).toBe("en");
   });
 
   it("sem nenhum conhecido, cai no base", () => {
@@ -87,7 +91,7 @@ describe("integridade das traduções", () => {
   const chaves = (arquivo: object) => Object.keys(arquivo).filter((k) => k !== "$label");
 
   it("todo idioma declara seu rótulo de exibição", () => {
-    for (const [nome, arquivo] of Object.entries({ pt, en, es })) {
+    for (const [nome, arquivo] of Object.entries({ pt, en })) {
       expect(typeof (arquivo as { $label?: string }).$label, nome).toBe("string");
     }
   });
@@ -95,27 +99,13 @@ describe("integridade das traduções", () => {
   /** Chave a mais num idioma é chave que ninguém usa — ou erro de digitação. */
   it("nenhum idioma tem chave que não exista no base", () => {
     const base = new Set(chaves(pt));
-    for (const [nome, arquivo] of Object.entries({ en, es })) {
-      const sobrando = chaves(arquivo).filter((k) => !base.has(k));
-      expect(sobrando, `${nome} tem chaves fora do base`).toEqual([]);
-    }
+    const sobrando = chaves(en).filter((k) => !base.has(k));
+    expect(sobrando, "en tem chaves fora do base").toEqual([]);
   });
 
   /** O inglês é o idioma alvo desta etapa: precisa cobrir tudo. */
   it("o inglês cobre todas as chaves do base", () => {
     const faltando = chaves(pt).filter((k) => !(k in en));
     expect(faltando, `en não traduz: ${faltando.slice(0, 8).join(", ")}`).toEqual([]);
-  });
-
-  /**
-   * O espanhol ainda está incompleto — por decisão de ordem, não por descuido.
-   * Falta de chave não quebra a tela: cai no português. O teste registra a
-   * lacuna em vez de escondê-la.
-   */
-  it("registra a cobertura do espanhol, que ainda está parcial", () => {
-    const total = chaves(pt).length;
-    const cobertura = chaves(es).length / total;
-    expect(cobertura).toBeGreaterThan(0);
-    console.info(`[i18n] espanhol cobre ${Math.round(cobertura * 100)}% das ${total} chaves`);
   });
 });

@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
-import { BrandMark } from "@/components/app/BrandMark";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -91,8 +90,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   /**
    * Ajusta a largura ao rótulo mais longo, se a pessoa ainda não escolheu uma.
-   * Largura fixa não serve: "Necessidades de Treinamento" cabe em português e
-   * estoura em espanhol, e o texto ficava cortado na abertura.
+   * Largura fixa não serve: um rótulo que cabe em português pode estourar em
+   * inglês, e o texto ficava cortado na abertura.
    *
    * Roda também quando o idioma muda, porque os rótulos mudam de tamanho junto.
    */
@@ -221,10 +220,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               collapsed ? "justify-center px-0" : "px-5",
             )}
           >
-            <BrandMark className="h-8 w-8 shrink-0 rounded-lg" />
             {/*
-              O texto sai de cena por opacidade e largura, não por `hidden`:
-              assim ele acompanha a animação da coluna em vez de piscar.
+              Sem marca gráfica — só o nome. Recolhida, a coluna não tem onde
+              pôr "Synapse" por extenso, então o nome some junto com o texto
+              (opacidade e largura, não `hidden`, para acompanhar a animação
+              da coluna em vez de piscar): a trilha de ícones fica só com o
+              botão de reabrir, sem nada no lugar da marca.
             */}
             <div
               className={cn(
@@ -232,7 +233,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 collapsed ? "w-0 opacity-0" : "w-auto flex-1 opacity-100",
               )}
             >
-              <p className="whitespace-nowrap font-display text-sm font-semibold">Architect OS</p>
+              <p className="whitespace-nowrap font-display text-sm font-semibold">Synapse</p>
               <p className="whitespace-nowrap text-[11px] text-sidebar-foreground/60">
                 {t("shell.subtitle")}
               </p>

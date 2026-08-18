@@ -18,18 +18,18 @@ import type { DevelopmentCycle } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { slug } from "@/lib/text";
+import { formatDate, slug } from "@/lib/text";
 
 export const Route = createFileRoute("/cycles")({
   head: () => ({
     meta: [
-      { title: "Ciclos de Desenvolvimento — Architect OS" },
+      { title: "Ciclos de Desenvolvimento — Synapse" },
       {
         name: "description",
         content:
           "Ciclos semestrais de desenvolvimento com avaliação, PDI, metas, trilhas e evidências.",
       },
-      { property: "og:title", content: "Ciclos de Desenvolvimento — Architect OS" },
+      { property: "og:title", content: "Ciclos de Desenvolvimento — Synapse" },
       {
         property: "og:description",
         content: "Compare a evolução de competências entre ciclos de desenvolvimento.",
@@ -44,7 +44,7 @@ function CyclesPage() {
   const sel = useSelectors();
   const labels = useLabels();
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
 
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
@@ -53,18 +53,8 @@ function CyclesPage() {
     for (const d of sel.domainAverages(architectId, c.id)) row[d.category.short] = d.avg;
     return row;
   });
-  const palette = [
-    "var(--chart-1)",
-    "var(--chart-2)",
-    "var(--chart-3)",
-    "var(--chart-4)",
-    "var(--chart-5)",
-  ];
-  const series = store.categories.slice(0, 5).map((c, i) => ({
-    key: c.short,
-    label: c.short,
-    color: palette[i % palette.length] ?? "var(--chart-1)",
-  }));
+  /* A cor de cada série é decisão da paleta do sistema; aqui só se diz o que plotar. */
+  const series = store.categories.map((c) => ({ key: c.short, label: c.name }));
 
   const compare = store.competencies.slice(0, 12).map((c) => {
     const levels = closedCycles.map((cy) => ({
@@ -128,7 +118,7 @@ function CyclesPage() {
               </div>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {c.start} → {c.end}
+              {formatDate(c.start, locale)} → {formatDate(c.end, locale)}
             </p>
           </div>
         ))}
@@ -228,6 +218,7 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
               id="cycle-name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">

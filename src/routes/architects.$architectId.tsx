@@ -27,18 +27,18 @@ import {
 import { EVIDENCE_TYPES, type EvidenceType } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { todayIso } from "@/lib/text";
+import { formatDate, todayIso } from "@/lib/text";
 
 export const Route = createFileRoute("/architects/$architectId")({
   head: () => ({
     meta: [
-      { title: "Architect Profile — Architect OS" },
+      { title: "Architect Profile — Synapse" },
       {
         name: "description",
         content:
           "Perfil completo do arquiteto: competências, gaps, PDI, metas, mentorias e evidências.",
       },
-      { property: "og:title", content: "Architect Profile — Architect OS" },
+      { property: "og:title", content: "Architect Profile — Synapse" },
       {
         property: "og:description",
         content: "Visão 360 do desenvolvimento técnico individual do Arquiteto de Soluções.",
@@ -60,7 +60,7 @@ function ArchitectProfile() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const architect = sel.architectById(architectId);
 
   if (!architect) {
@@ -157,13 +157,16 @@ function ArchitectProfile() {
             {(plan?.items ?? []).map((i) => (
               <li key={i.id} className="surface-inset p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{sel.competencyById(i.competencyId)?.name}</p>
+                  <p className="text-sm font-medium">
+                    {sel.competencyById(i.competencyId)?.name ?? t("pdi.unknownCompetency")}
+                  </p>
                   <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
                     {labels.planItemStatus[i.status]}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {labels.actionType[i.actionType]} · {i.actionPlan} · prazo {i.targetDate}
+                  {labels.actionType[i.actionType]} · {i.actionPlan} · prazo{" "}
+                  {formatDate(i.targetDate, locale)}
                 </p>
                 <Bar value={i.progress} className="mt-2" />
               </li>
@@ -250,7 +253,7 @@ function ArchitectProfile() {
               <li key={e.id} className="surface-inset p-2.5">
                 <p className="text-sm font-medium">{e.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {labels.evidenceType[e.type]} · {e.date} · complexidade{" "}
+                  {labels.evidenceType[e.type]} · {formatDate(e.date, locale)} · complexidade{" "}
                   {labels.complexity[e.complexity]}
                 </p>
               </li>
@@ -294,7 +297,7 @@ function ArchitectProfile() {
               <div>
                 <p className="text-sm font-medium">{s.topic}</p>
                 <p className="text-xs text-muted-foreground">
-                  {s.date} · {s.durationMin} min · mentor {s.mentor}
+                  {formatDate(s.date, locale)} · {s.durationMin} min · mentor {s.mentor}
                 </p>
                 <p className="mt-1 text-sm">{s.actions}</p>
               </div>
@@ -376,7 +379,12 @@ function EvidenceDialog({ architectId }: { architectId: string }) {
         <div className="grid gap-3">
           <div>
             <Label htmlFor="ev-title">{t("ev.field.title")}</Label>
-            <Input id="ev-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input
+              id="ev-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && salvar()}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -401,6 +409,7 @@ function EvidenceDialog({ architectId }: { architectId: string }) {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && salvar()}
               />
             </div>
           </div>
@@ -419,11 +428,21 @@ function EvidenceDialog({ architectId }: { architectId: string }) {
           </div>
           <div>
             <Label htmlFor="ev-project">{t("ev.field.project")}</Label>
-            <Input id="ev-project" value={project} onChange={(e) => setProject(e.target.value)} />
+            <Input
+              id="ev-project"
+              value={project}
+              onChange={(e) => setProject(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && salvar()}
+            />
           </div>
           <div>
             <Label htmlFor="ev-url">{t("ev.field.link")}</Label>
-            <Input id="ev-url" value={url} onChange={(e) => setUrl(e.target.value)} />
+            <Input
+              id="ev-url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && salvar()}
+            />
           </div>
           <div>
             <Label htmlFor="ev-description">{t("ev.field.description")}</Label>
@@ -484,12 +503,22 @@ function CertificationDialog({ architectId }: { architectId: string }) {
         <div className="grid gap-3">
           <div>
             <Label htmlFor="cert-name">{t("cert.field.name")}</Label>
-            <Input id="cert-name" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input
+              id="cert-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && salvar()}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="cert-issuer">{t("cert.field.issuer")}</Label>
-              <Input id="cert-issuer" value={issuer} onChange={(e) => setIssuer(e.target.value)} />
+              <Input
+                id="cert-issuer"
+                value={issuer}
+                onChange={(e) => setIssuer(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && salvar()}
+              />
             </div>
             <div>
               <Label htmlFor="cert-year">{t("cert.field.year")}</Label>
@@ -498,6 +527,7 @@ function CertificationDialog({ architectId }: { architectId: string }) {
                 type="number"
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && salvar()}
               />
             </div>
           </div>

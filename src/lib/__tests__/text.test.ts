@@ -40,14 +40,29 @@ describe("byName", () => {
 });
 
 describe("formatDate", () => {
-  it("converte ISO em dd/mm/aaaa", () => {
-    expect(formatDate("2026-08-11T14:35:00.000Z")).toBe("11/08/2026");
+  it("converte ISO em dd/mm/aaaa no idioma pt", () => {
+    expect(formatDate("2026-08-11T14:35:00.000Z", "pt")).toBe("11/08/2026");
+  });
+
+  /** A mesma data sai com dia e mês trocados — é o bug que este formato existe para evitar. */
+  it("converte ISO em mm/dd/aaaa no idioma en", () => {
+    expect(formatDate("2026-08-11T14:35:00.000Z", "en")).toBe("08/11/2026");
   });
 
   it("devolve null para ausente ou inválida", () => {
-    expect(formatDate(undefined)).toBeNull();
-    expect(formatDate(null)).toBeNull();
-    expect(formatDate("não é data")).toBeNull();
+    expect(formatDate(undefined, "pt")).toBeNull();
+    expect(formatDate(null, "pt")).toBeNull();
+    expect(formatDate("não é data", "pt")).toBeNull();
+  });
+
+  /**
+   * `new Date("2026-01-01")` é meia-noite UTC. Sem travar o fuso em UTC, um
+   * fuso atrás (Brasil, por exemplo) mostraria 31/12 — a mesma armadilha que
+   * `todayIso()` documenta e evita ao montar a data à mão.
+   */
+  it("data sem hora não desliza um dia num fuso atrás de UTC", () => {
+    expect(formatDate("2026-01-01", "pt")).toBe("01/01/2026");
+    expect(formatDate("2026-01-01", "en")).toBe("01/01/2026");
   });
 });
 

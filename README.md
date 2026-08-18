@@ -1,4 +1,4 @@
-# Architect OS — Frontend
+# Synapse — Frontend
 
 Interface de gestão de capacidades técnicas de um time de Arquitetos de Soluções: matriz de
 competências, assessments, gaps, PDIs, OKRs, trilhas, mentorias, evidências e 9-box.
@@ -55,7 +55,13 @@ npm test                  # unitários
 RUN_INTEGRATION=1 npm test  # inclui contrato contra a API real (backend no ar)
 npm run typecheck
 npm run lint
+npm run screenshots       # captura cada tela em docs/screenshots (ver docs/FUNCIONAL.md)
 ```
+
+## Documentação funcional
+
+[`docs/FUNCIONAL.md`](docs/FUNCIONAL.md) — o que cada tela faz, com captura de tela, do
+ponto de vista de quem usa o produto (não de arquitetura de código).
 
 ## Built with
 

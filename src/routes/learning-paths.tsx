@@ -24,13 +24,13 @@ import { useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/learning-paths")({
   head: () => ({
     meta: [
-      { title: "Trilhas de Aprendizagem — Architect OS" },
+      { title: "Trilhas de Aprendizagem — Synapse" },
       {
         name: "description",
         content:
           "Trilhas de desenvolvimento com cursos, labs, projetos, workshops e certificações.",
       },
-      { property: "og:title", content: "Trilhas de Aprendizagem — Architect OS" },
+      { property: "og:title", content: "Trilhas de Aprendizagem — Synapse" },
       {
         property: "og:description",
         content: "Trilhas técnicas com progresso, evidências e responsáveis.",
@@ -59,7 +59,7 @@ function LearningPage() {
   const user = useCurrentUser();
   const labels = useLabels();
   const [name, setName] = useState("");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
 
   const create = () => {
@@ -116,7 +116,7 @@ function LearningPage() {
             ? Math.round(path.items.reduce((s, i) => s + i.progress, 0) / path.items.length)
             : 0;
           const editable = canEdit(path);
-          const createdAt = formatDate(path.createdAt);
+          const createdAt = formatDate(path.createdAt, locale);
 
           return (
             <SectionCard

@@ -17,12 +17,35 @@ export const slug = (value: string): string =>
 export const byName = <T extends { name: string }>(a: T, b: T): number =>
   a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
 
-/** Data ISO em dd/mm/aaaa; `null` quando ausente ou inválida. */
-export const formatDate = (iso?: string | null): string | null => {
+/** `AAAA-MM-DD` puro, sem hora — um calendário, não um instante. */
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Data ISO no formato do idioma ativo — `dd/mm/aaaa` em português, `mm/dd/aaaa`
+ * em inglês. `null` quando ausente ou inválida.
+ *
+ * Formato fixo obrigaria quem lê em inglês a traduzir a data de cabeça, e é
+ * justamente onde se troca dia por mês sem perceber. O locale é obrigatório, e
+ * não um padrão silencioso — quem chama já está dentro de um componente com
+ * `useI18n()`, então esquecer de passá-lo é um erro de digitação a mais, não
+ * uma escolha razoável de fallback.
+ *
+ * Datas sem hora (`targetDate`, início/fim de ciclo) precisam do fuso travado
+ * em UTC: `new Date("2026-01-01")` vira meia-noite UTC, e à noite no Brasil
+ * (UTC-3) isso já é 31/12 no fuso local — o mesmo problema que `todayIso()`
+ * evita ao montar a data à mão. Timestamp completo (com hora) já carrega o
+ * instante certo e usa o fuso local, que é o que faz sentido para "salvo às".
+ */
+export const formatDate = (iso: string | null | undefined, locale: string): string | null => {
   if (!iso) return null;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    ...(DATE_ONLY.test(iso) ? { timeZone: "UTC" } : {}),
+  }).format(date);
 };
 
 /** Primeira palavra do nome — usada como sigla nas colunas dos mapas de calor. */
