@@ -21,6 +21,21 @@ if (!Element.prototype.hasPointerCapture) {
   Element.prototype.releasePointerCapture = () => {};
 }
 
+/** `useReducedMotion` (gráficos) chama isto direto — sem mock, qualquer tela com chart quebra no mount. */
+if (!window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+}
+
 /**
  * Idioma fixo nos testes. Sem isto o provider detecta o idioma do jsdom
  * (`en-US`) e as asserções de texto passariam a depender do ambiente em vez do

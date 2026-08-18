@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertCircle, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
 import { FieldLabel, Initials, PageHeader, SectionCard } from "@/components/app/ui-bits";
@@ -96,6 +97,7 @@ function MentoringPage() {
       decisions: form.decisions,
       actions: form.actions,
     });
+    toast.success(t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }));
     setForm({ ...form, topic: "", notes: "", decisions: "", actions: "" });
     setMissing([]);
     setShowToast(false);
