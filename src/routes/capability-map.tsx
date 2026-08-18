@@ -72,16 +72,29 @@ function CapabilityMapPage() {
   const [confirmDelete, setConfirmDelete] = useState<CompetencyCategory | null>(null);
   const [blockedDelete, setBlockedDelete] = useState<CompetencyCategory | null>(null);
 
+  /**
+   * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para o
+   * domínio simplesmente não entra em nenhuma faixa de proficiência — entra
+   * na contagem separada `notAssessed`. Antes, `?? 0` empurrava essas
+   * pessoas para "Lacunas" junto de quem foi avaliado e está fraco de
+   * verdade, os dois casos ficando indistinguíveis na tela. Ver
+   * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 7.
+   */
   const areas = store.categories.map((cat) => {
     const people = store.architects.map((a) => ({
       architect: a,
-      level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg ?? 0,
+      level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg,
     }));
+    const assessed = people.filter(
+      (p): p is { architect: (typeof people)[number]["architect"]; level: number } =>
+        p.level !== undefined,
+    );
+    const notAssessed = people.length - assessed.length;
     const bands = BANDS.map((band) => ({
       ...band,
-      people: people.filter((p) => p.level >= band.min && p.level < band.max),
+      people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
     }));
-    return { cat, bands };
+    return { cat, bands, notAssessed };
   });
 
   const create = () => {
@@ -215,6 +228,11 @@ function CapabilityMapPage() {
                   nomes: mentors.map((p) => p.architect.name).join(", ") || t("common.none"),
                 })}
               </p>
+              {area.notAssessed > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("cap.notAssessed", { n: area.notAssessed })}
+                </p>
+              )}
             </SectionCard>
           );
         })}

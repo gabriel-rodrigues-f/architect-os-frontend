@@ -1,7 +1,25 @@
 import { describe, expect, it } from "vitest";
 
-import { createSelectors, emptyState } from "../selectors";
+import { averageWithCoverage, createSelectors, emptyState } from "../selectors";
 import { fixtureState } from "./fixtures";
+
+describe("averageWithCoverage", () => {
+  it("ignora undefined na média, mas conta na cobertura", () => {
+    expect(averageWithCoverage([4, undefined, 2])).toEqual({ avg: 3, covered: 2, total: 3 });
+  });
+
+  it("fica undefined quando ninguém contribuiu — nunca 0", () => {
+    expect(averageWithCoverage([undefined, undefined])).toEqual({
+      avg: undefined,
+      covered: 0,
+      total: 2,
+    });
+  });
+
+  it("lista vazia também fica undefined, sem dividir por zero", () => {
+    expect(averageWithCoverage([])).toEqual({ avg: undefined, covered: 0, total: 0 });
+  });
+});
 
 describe("createSelectors", () => {
   const s = createSelectors(fixtureState);
@@ -81,7 +99,7 @@ describe("createSelectors", () => {
 
     it("Draft: gapsFor, domainAverages e developmentScore ignoram", () => {
       expect(rascunho.gapsFor("diego")).toEqual([]);
-      expect(rascunho.domainAverages("diego").every((d) => d.avg === 0)).toBe(true);
+      expect(rascunho.domainAverages("diego").every((d) => d.avg === undefined)).toBe(true);
       expect(rascunho.officialAssessmentFor("diego")).toBeUndefined();
     });
 
@@ -105,8 +123,10 @@ describe("createSelectors", () => {
     expect(security).toMatchObject({ avg: 2, target: 3 });
   });
 
-  it("média por domínio é zero quando não há assessment", () => {
-    expect(s.domainAverages("ninguem").every((d) => d.avg === 0 && d.target === 0)).toBe(true);
+  it("média por domínio fica indefinida (não zero) quando não há assessment", () => {
+    expect(
+      s.domainAverages("ninguem").every((d) => d.avg === undefined && d.target === undefined),
+    ).toBe(true);
   });
 
   it("agrega necessidades de treinamento do time ignorando gaps não positivos", () => {

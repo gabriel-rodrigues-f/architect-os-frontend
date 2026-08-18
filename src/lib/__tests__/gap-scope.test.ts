@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
-import { createSelectors } from "../selectors";
+import { averageWithCoverage, createSelectors } from "../selectors";
 import { fixtureState } from "./fixtures";
 
 /**
@@ -25,16 +25,22 @@ describe("recorte por arquitetos selecionados", () => {
     expect(applyArchitectFilter(fixtureState.architects, ["ninguem"])).toEqual([]);
   });
 
+  /** Espelha exatamente o radar de gap-analysis.tsx — mesma função exportada, não uma cópia da regra. */
   const radarFor = (ids: string[]) => {
     const architects = applyArchitectFilter(fixtureState.architects, ids);
     return fixtureState.categories.map((cat) => {
-      const rows = architects.map(
-        (a) =>
-          sel.domainAverages(a.id).find((d) => d.category.id === cat.id) ?? { avg: 0, target: 0 },
+      const rows = architects.map((a) =>
+        sel.domainAverages(a.id).find((d) => d.category.id === cat.id),
       );
-      const mean = (pick: (r: { avg: number; target: number }) => number) =>
-        rows.length ? Number((rows.reduce((s, r) => s + pick(r), 0) / rows.length).toFixed(2)) : 0;
-      return { domain: cat.short, atual: mean((r) => r.avg), alvo: mean((r) => r.target) };
+      const atual = averageWithCoverage(rows.map((r) => r?.avg));
+      const alvo = averageWithCoverage(rows.map((r) => r?.target));
+      return {
+        domain: cat.short,
+        atual: Number((atual.avg ?? 0).toFixed(2)),
+        alvo: Number((alvo.avg ?? 0).toFixed(2)),
+        covered: atual.covered,
+        total: atual.total,
+      };
     });
   };
 
@@ -53,8 +59,29 @@ describe("recorte por arquitetos selecionados", () => {
     for (const row of radarFor(["ninguem"])) {
       expect(row.atual).toBe(0);
       expect(row.alvo).toBe(0);
+      expect(row.covered).toBe(0);
       expect(Number.isNaN(row.atual)).toBe(false);
     }
+  });
+
+  // AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 9 — quem não tem
+  // assessment oficial não pode puxar a média do grupo para baixo como se
+  // tivesse nível 0.
+  it("pessoa sem assessment oficial não entra na média do domínio, só na cobertura", () => {
+    const semAssessment = createSelectors({
+      ...fixtureState,
+      architects: [...fixtureState.architects, { ...fixtureState.architects[0]!, id: "diego" }],
+    });
+    const rows = fixtureState.categories.map((cat) => {
+      const pontos = ["ana", "diego"].map((id) =>
+        semAssessment.domainAverages(id).find((d) => d.category.id === cat.id),
+      );
+      return { domain: cat.short, ...averageWithCoverage(pontos.map((p) => p?.avg)) };
+    });
+    const cloud = rows.find((r) => r.domain === "Cloud");
+    // Ana tem 4 em Cloud; "diego" não tem assessment — média real é 4, não (4+0)/2=2.
+    expect(cloud?.avg).toBe(4);
+    expect(cloud).toMatchObject({ covered: 1, total: 2 });
   });
 
   const consolidate = (ids: string[]) => {

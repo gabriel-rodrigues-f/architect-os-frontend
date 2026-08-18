@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { EVIDENCE_TYPES, type EvidenceType } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, todayIso } from "@/lib/text";
 
@@ -84,7 +85,11 @@ function ArchitectProfile() {
   const certifications = store.certifications.filter((c) => c.architectId === architect.id);
   const paths = store.learningPaths.filter((p) => p.assignedTo.includes(architect.id));
   const score = sel.developmentScore(architect.id);
-  const avg = domains.length ? domains.reduce((s, d) => s + d.avg, 0) / domains.length : 0;
+  const {
+    avg,
+    covered: coveredDomains,
+    total: totalDomains,
+  } = averageWithCoverage(domains.map((d) => d.avg));
 
   return (
     <>
@@ -109,8 +114,12 @@ function ArchitectProfile() {
         />
         <StatCard
           label={t("arch.stat.avgLevel")}
-          value={avg.toFixed(2)}
-          hint={t("arch.stat.avgLevelHint")}
+          value={avg === undefined ? "—" : avg.toFixed(2)}
+          hint={
+            coveredDomains < totalDomains
+              ? t("arch.stat.avgLevelHintPartial", { covered: coveredDomains, total: totalDomains })
+              : t("arch.stat.avgLevelHint")
+          }
         />
         <StatCard
           label={t("arch.stat.openGaps")}
@@ -127,7 +136,11 @@ function ArchitectProfile() {
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <DomainRadar
-            data={domains.map((d) => ({ domain: d.category.short, atual: d.avg, alvo: d.target }))}
+            data={domains.map((d) => ({
+              domain: d.category.short,
+              atual: d.avg ?? 0,
+              alvo: d.target ?? 0,
+            }))}
           />
         </SectionCard>
 
