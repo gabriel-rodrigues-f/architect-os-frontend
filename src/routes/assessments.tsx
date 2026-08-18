@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AlertTriangle } from "lucide-react";
 import { Fragment, useState } from "react";
 
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
@@ -8,7 +9,9 @@ import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { Assessment, AssessmentComment, CompetencyCategory, Level } from "@/lib/domain";
 import type { CommentInput } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
+import { useLabels } from "@/lib/labels";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -36,20 +39,54 @@ function AssessmentsPage() {
   const sel = useSelectors();
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
   const { t } = useI18n();
+  const labels = useLabels();
+  const user = useCurrentUser();
   const [categoryIds, setCategoryIds] = useState<string[]>(() =>
     store.categories[0] ? [store.categories[0].id] : [],
   );
   const [openComment, setOpenComment] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const [transitionError, setTransitionError] = useState<string | null>(null);
 
   const assessment = sel.assessmentFor(architectId);
+
+  /**
+   * Quem pode escrever o quê agora — espelha a regra do backend
+   * (`checkAssessmentWrite` em `assessments.ts`), para o campo já nascer
+   * desabilitado em vez de deixar a pessoa preencher e só depois descobrir,
+   * pelo 403, que não podia. Ver PLANO-360-AGENTES-SYNAPSE.md, Seção 9.
+   */
+  const isAdmin = user.role === "admin";
+  const isOwner = user.architectId === architectId;
+  const isCompleted = assessment?.status === "Completed";
+  const canEditSelf = !isAdmin && isOwner && !isCompleted;
+  const canEditLeaderFinal = isAdmin && !isCompleted;
+  const canSubmit = !isAdmin && isOwner && assessment?.status === "Draft";
+  const canComplete = isAdmin && assessment && assessment.status !== "Completed";
 
   /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
   const selected = store.categories.filter((c) => categoryIds.includes(c.id));
 
   const toggleCategory = (id: string) =>
     setCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+
+  const transition = (status: Assessment["status"]) => {
+    if (!assessment) return;
+    setTransitionError(null);
+    setTransitioning(true);
+    store
+      .setAssessmentStatus(assessment.id, status)
+      .catch((error: unknown) =>
+        setTransitionError(
+          error instanceof Error
+            ? error.message
+            : t(status === "Completed" ? "asmt.completeError" : "asmt.submitError"),
+        ),
+      )
+      .finally(() => setTransitioning(false));
+  };
 
   return (
     <>
@@ -79,6 +116,41 @@ function AssessmentsPage() {
           </div>
         }
       />
+
+      {assessment && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 surface-inset px-3 py-2 text-sm">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {t("asmt.status")}
+          </span>
+          <AssessmentStatusBadge
+            status={assessment.status}
+            label={labels.assessmentStatus[assessment.status]}
+          />
+          {isCompleted && <span className="text-xs text-muted-foreground">{t("asmt.locked")}</span>}
+          <div className="ml-auto flex items-center gap-2">
+            {canSubmit && (
+              <Button size="sm" disabled={transitioning} onClick={() => transition("In Review")}>
+                {transitioning ? t("asmt.submitting") : t("asmt.submit")}
+              </Button>
+            )}
+            {canComplete && (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={transitioning}
+                onClick={() => transition("Completed")}
+              >
+                {transitioning ? t("asmt.completing") : t("asmt.complete")}
+              </Button>
+            )}
+          </div>
+          {transitionError && (
+            <p className="w-full text-xs text-destructive" role="alert">
+              {transitionError}
+            </p>
+          )}
+        </div>
+      )}
 
       {!assessment ? (
         <SectionCard
@@ -154,36 +226,61 @@ function AssessmentsPage() {
                           const item = assessment.items.find((i) => i.competencyId === c.id);
                           if (!item) return null;
                           const gap = item.target - item.final;
+                          const diverges = item.self !== item.leader;
                           return (
                             <Fragment key={c.id}>
                               <tr className="border-b border-border/60">
                                 <td className="py-2 font-medium">{c.name}</td>
                                 <td className="px-1 py-2">
-                                  <LevelSelect
-                                    value={item.self}
-                                    onChange={(v) =>
-                                      store.updateAssessmentItem(assessment.id, c.id, { self: v })
-                                    }
-                                  />
+                                  {canEditSelf ? (
+                                    <LevelSelect
+                                      value={item.self}
+                                      onChange={(v) =>
+                                        store.updateAssessmentItem(assessment.id, c.id, { self: v })
+                                      }
+                                    />
+                                  ) : (
+                                    <LevelBadge level={item.self} />
+                                  )}
                                 </td>
                                 <td className="px-1 py-2">
-                                  <LevelSelect
-                                    value={item.leader}
-                                    onChange={(v) =>
-                                      store.updateAssessmentItem(assessment.id, c.id, { leader: v })
-                                    }
-                                  />
+                                  <div className="flex items-center gap-1">
+                                    {canEditLeaderFinal ? (
+                                      <LevelSelect
+                                        value={item.leader}
+                                        onChange={(v) =>
+                                          store.updateAssessmentItem(assessment.id, c.id, {
+                                            leader: v,
+                                          })
+                                        }
+                                      />
+                                    ) : (
+                                      <LevelBadge level={item.leader} />
+                                    )}
+                                    {diverges && (
+                                      <AlertTriangle
+                                        className="h-3.5 w-3.5 shrink-0 text-[var(--gap-high-fg)]"
+                                        aria-label={t("asmt.divergence")}
+                                      />
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-1 py-2 text-center">
                                   <LevelBadge level={item.target} />
                                 </td>
                                 <td className="px-1 py-2">
-                                  <LevelSelect
-                                    value={item.final}
-                                    onChange={(v) =>
-                                      store.updateAssessmentItem(assessment.id, c.id, { final: v })
-                                    }
-                                  />
+                                  {canEditLeaderFinal ? (
+                                    <LevelSelect
+                                      value={item.final}
+                                      onChange={(v) =>
+                                        store.updateAssessmentItem(assessment.id, c.id, {
+                                          final: v,
+                                        })
+                                      }
+                                    />
+                                  ) : (
+                                    <LevelBadge level={item.final} />
+                                  )}
                                 </td>
                                 <td className="py-2">
                                   <GapBadge gap={gap} />
@@ -436,6 +533,30 @@ function CommentForm({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Reaproveita a mesma linguagem visual da escala de proficiência — apagado →
+ * ácido — em vez de inventar uma paleta própria só para status: `Draft`
+ * recebe o tom neutro de nível 0, `Completed` o tom de topo da escala
+ * (nível 5), e `In Review` fica no meio.
+ */
+function AssessmentStatusBadge({ status, label }: { status: Assessment["status"]; label: string }) {
+  const tone: Record<Assessment["status"], string> = {
+    Draft: "bg-level-0 text-muted-foreground",
+    "In Review": "bg-level-3 text-[var(--level-3-fg)]",
+    Completed: "bg-level-5 text-[var(--level-5-fg)]",
+  };
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
+        tone[status],
+      )}
+    >
+      {label}
+    </span>
   );
 }
 

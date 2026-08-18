@@ -7,20 +7,28 @@ código — para arquitetura e decisões técnicas, veja o `README.md` da pasta
 
 As capturas abaixo foram geradas com dados de demonstração: seis arquitetos
 fictícios avaliados nas 100 competências do catálogo, em dois ciclos (o
-anterior fechado, o atual em revisão), com PDI, OKRs, trilhas, mentorias,
-evidências e certificações coerentes entre si — o gap que aparece na Análise
-de Lacunas de uma pessoa é o mesmo que motivou o item de PDI dela. Os níveis
-não são fixos à mão: cada arquiteto tem um domínio forte e um domínio de
-lacuna declarados, e a nota de cada competência é gerada a partir disso, então
-a distribuição varia de pessoa para pessoa como aconteceria de verdade — veja
-`generateDemo()` em `backend/src/db/seed-demo.ts` para a regra exata.
+anterior sempre concluído; no atual, a situação varia por pessoa — de
+propósito, ver abaixo), com PDI, OKRs, trilhas, mentorias, evidências e
+certificações coerentes entre si — o gap que aparece na Análise de Lacunas de
+uma pessoa é o mesmo que motivou o item de PDI dela. Os níveis não são fixos
+à mão: cada arquiteto tem um domínio forte e um domínio de lacuna declarados,
+e a nota de cada competência é gerada a partir disso, então a distribuição
+varia de pessoa para pessoa como aconteceria de verdade — veja `seedDemo()`
+em `backend/src/db/seed-demo.ts` para a regra exata.
 
-Uma exceção deliberada aparece nas capturas: **Daniel Zibordi**, em Time e no
-Painel, mostra "—" e "sem avaliação neste ciclo". Ele não é dado de
-demonstração — é um arquiteto real, cadastrado à mão durante o
-desenvolvimento, sem avaliação lançada. Preservei-o de propósito: apagar dado
-que o time cadastrou (mesmo que de teste) para "limpar a demonstração" seria
-destruir algo que não me pertence decidir descartar.
+Duas razões diferentes fazem uma tela mostrar "—" no lugar de um nível, e as
+capturas têm as duas de propósito:
+
+1. **Avaliação ainda não oficial** — Carla Souza está com a autoavaliação em
+   revisão e Diego Rocha ainda em rascunho no ciclo atual; até o Tech Lead
+   concluir, o Painel e a Análise de Lacunas não contam a nota deles (ver
+   Seção 6, "Avaliações"). É o comportamento correto, não dado faltando.
+2. **Dado real de desenvolvimento** — **Daniel Zibordi**, em Time e no
+   Painel, não é dado de demonstração: é um arquiteto real, cadastrado à mão
+   durante o desenvolvimento, sem avaliação lançada. Preservei-o de
+   propósito: apagar dado que o time cadastrou (mesmo que de teste) para
+   "limpar a demonstração" seria destruir algo que não me pertence decidir
+   descartar.
 
 ## O que é o Synapse
 
@@ -119,8 +127,25 @@ O formulário central do ciclo: para um arquiteto e um domínio, cada
 competência recebe autoavaliação, avaliação do Tech Lead, nível alvo (do
 Perfil por Cargo) e nível final acordado entre as duas partes — mais um
 espaço de notas por competência, com histórico de quando cada comentário foi
-salvo. A lacuna (diferença entre final e alvo) é o dado que alimenta a
-Análise de Lacunas e o Mapa de Capacidades.
+salvo.
+
+**A avaliação é um processo, não um formulário solto**, com três situações:
+
+- **Rascunho** — o próprio arquiteto preenche a autoavaliação; a nota do Tech
+  Lead e a final ficam bloqueadas até lá. Um botão **Enviar para revisão**
+  fecha essa etapa.
+- **Em revisão** — o Tech Lead (hoje, quem tem papel de administrador) avalia
+  e concilia; a autoavaliação já enviada fica só leitura para o arquiteto. Um
+  ícone de divergência aparece quando a nota do arquiteto e a do Tech Lead
+  discordam.
+- **Concluído** — um botão **Concluir avaliação**, do Tech Lead, fecha o
+  ciclo: a nota final vira oficial e a tela inteira passa a somente leitura.
+
+**Só avaliação `Concluído` conta para o resto do produto.** O Painel, a
+Análise de Lacunas, o Mapa de Capacidades e o índice de evolução de cada
+pessoa ignoram avaliação em rascunho ou em revisão — por isso é normal ver
+"—" no lugar do nível de alguém que ainda não fechou a própria avaliação no
+ciclo: não é dado faltando, é dado ainda não oficial.
 
 ## 7. Análise de Lacunas
 

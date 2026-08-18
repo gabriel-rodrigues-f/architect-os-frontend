@@ -6,9 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { setAuthToken } from "../api";
+import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
-import { fixtureState } from "./fixtures";
+import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
  * O seletor de capacidades virou combobox de seleção múltipla: dá para abrir
@@ -27,10 +28,27 @@ function Wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <StoreProvider>{children}</StoreProvider>
+        <AuthProvider>
+          <AuthReady>
+            <StoreProvider>{children}</StoreProvider>
+          </AuthReady>
+        </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * O app real só monta a árvore autenticada depois do `AuthGate` (em
+ * `__root.tsx`) resolver a sessão guardada no navegador. Este teste não passa
+ * por ele, então precisa do mesmo corte: sem isto, `AssessmentsPage` chamaria
+ * `useCurrentUser()` no primeiro render, antes do `AuthProvider` terminar de
+ * buscar `/api/auth/me`, e quebraria com "nenhuma sessão ativa".
+ */
+function AuthReady({ children }: { children: ReactNode }) {
+  const { loading } = useAuth();
+  if (loading) return null;
+  return <>{children}</>;
 }
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
@@ -49,6 +67,14 @@ describe("Avaliações — seleção de capacidades", () => {
     setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string) => {
+      if (String(url).endsWith("/api/auth/me")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
       if (String(url).endsWith("/api/state")) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureState), {
@@ -120,14 +146,20 @@ describe("Avaliações — seleção de capacidades", () => {
     expect(screen.queryByText("Kubernetes")).toBeNull();
   });
 
-  /** O estado da avaliação saiu da tela: não governava nada fora dela. */
-  it("não exibe estado nem ações de ciclo de vida da avaliação", async () => {
+  /**
+   * PLANO-360-AGENTES-SYNAPSE.md, Seção 9 (EPIC 01): o estado da avaliação
+   * voltou a governar a tela — reverte a decisão anterior deste projeto de
+   * tirá-lo daqui. A avaliação de Ana no ciclo ativo (fixture "ana-h2") é
+   * `Completed`; para um admin, já concluída não sobra ação de transição.
+   */
+  it("mostra a situação da avaliação e trava a edição quando concluída", async () => {
     renderPage();
     await screen.findByText("Kubernetes");
 
-    expect(screen.queryByText(/Avaliação (em aberto|concluída)/)).toBeNull();
+    expect(await screen.findByText("Concluído")).toBeTruthy();
+    expect(screen.getByText(/somente leitura/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Concluir avaliação/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /Reabrir/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Enviar para revisão/ })).toBeNull();
   });
 
   /** As opções passaram a ter caixinha, e há uma para marcar todas de uma vez. */

@@ -1,4 +1,29 @@
-import type { AppState } from "../api";
+import type { AppState, SessionUser } from "../api";
+
+/**
+ * Sessão de admin — o Tech Lead surrogate do modelo de contas atual (ver
+ * `assessments.ts` no backend). Usada nos testes que exercitam telas atrás
+ * de `useCurrentUser()`: dá acesso total, sem prender o teste a ser dono de
+ * um arquiteto específico.
+ */
+export const fixtureAdminUser: SessionUser = {
+  id: "test-admin",
+  email: "admin@teste.local",
+  name: "Admin de teste",
+  role: "admin",
+  architectId: null,
+  createdAt: "2026-01-01T00:00:00Z",
+};
+
+/** Sessão de member — a própria Ana Martins, dona da autoavaliação dela. */
+export const fixtureMemberUser: SessionUser = {
+  id: "test-member",
+  email: "ana@company.com",
+  name: "Ana Martins",
+  role: "member",
+  architectId: "ana",
+  createdAt: "2026-01-01T00:00:00Z",
+};
 
 /** Estado mínimo, porém coerente, para exercitar os selectors. */
 export const fixtureState: AppState = {
@@ -80,7 +105,8 @@ export const fixtureState: AppState = {
       id: "ana-h2",
       architectId: "ana",
       cycleId: "2026-h2",
-      status: "In Review",
+      // Completed: gapsFor/domainAverages/developmentScore só usam assessment oficial.
+      status: "Completed",
       items: [
         { competencyId: "cloud-k8s", self: 4, leader: 4, target: 4, final: 4, comments: [] },
         { competencyId: "cloud-serverless", self: 4, leader: 3, target: 4, final: 4, comments: [] },
@@ -91,7 +117,7 @@ export const fixtureState: AppState = {
       id: "bruno-h2",
       architectId: "bruno",
       cycleId: "2026-h2",
-      status: "In Review",
+      status: "Completed",
       items: [
         { competencyId: "cloud-k8s", self: 2, leader: 2, target: 3, final: 2, comments: [] },
         { competencyId: "cloud-serverless", self: 3, leader: 3, target: 3, final: 3, comments: [] },

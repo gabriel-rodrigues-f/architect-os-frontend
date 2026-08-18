@@ -34,6 +34,68 @@ describe("createSelectors", () => {
     expect(s.gapsFor("ninguem")).toEqual([]);
   });
 
+  describe("Draft e In Review não alimentam indicador oficial", () => {
+    /**
+     * PLANO-360-AGENTES-SYNAPSE.md, Seção 9 — "Regra crítica": gapsFor() e
+     * companhia não podem tratar uma avaliação ainda em curso como fotografia
+     * oficial do ciclo. Uma autoavaliação em rascunho nasce com todo item em
+     * nível 1 — se contasse, pintaria todo mundo como lacuna crítica antes
+     * mesmo de a pessoa ter respondido.
+     */
+    const rascunho = createSelectors({
+      ...fixtureState,
+      assessments: [
+        {
+          ...fixtureState.assessments[0]!,
+          id: "draft-1",
+          architectId: "diego",
+          cycleId: "2026-h2",
+          status: "Draft",
+        },
+      ],
+    });
+    const emRevisao = createSelectors({
+      ...fixtureState,
+      assessments: [
+        {
+          ...fixtureState.assessments[0]!,
+          id: "review-1",
+          architectId: "diego",
+          cycleId: "2026-h2",
+          status: "In Review",
+        },
+      ],
+    });
+    const concluida = createSelectors({
+      ...fixtureState,
+      assessments: [
+        {
+          ...fixtureState.assessments[0]!,
+          id: "done-1",
+          architectId: "diego",
+          cycleId: "2026-h2",
+          status: "Completed",
+        },
+      ],
+    });
+
+    it("Draft: gapsFor, domainAverages e developmentScore ignoram", () => {
+      expect(rascunho.gapsFor("diego")).toEqual([]);
+      expect(rascunho.domainAverages("diego").every((d) => d.avg === 0)).toBe(true);
+      expect(rascunho.officialAssessmentFor("diego")).toBeUndefined();
+    });
+
+    it("In Review: mesma exclusão — calibração ainda não fechou a nota", () => {
+      expect(emRevisao.gapsFor("diego")).toEqual([]);
+      expect(emRevisao.officialAssessmentFor("diego")).toBeUndefined();
+    });
+
+    it("Completed: passa a alimentar gap, média e score", () => {
+      expect(concluida.gapsFor("diego").length).toBeGreaterThan(0);
+      expect(concluida.officialAssessmentFor("diego")?.id).toBe("done-1");
+    });
+  });
+
   it("média por domínio agrupa competências da categoria", () => {
     const averages = s.domainAverages("ana");
     const cloud = averages.find((d) => d.category.id === "cloud");

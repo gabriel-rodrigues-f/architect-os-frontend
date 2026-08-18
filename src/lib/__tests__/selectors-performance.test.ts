@@ -52,7 +52,8 @@ function buildLargeState(): AppState {
     id: `${a.id}-ciclo`,
     architectId: a.id,
     cycleId: "ciclo",
-    status: "In Review",
+    // Completed: gapsFor/teamTrainingNeeds só contam assessment oficial.
+    status: "Completed",
     items: competencies.map((c, i) => ({
       competencyId: c.id,
       self: 3 as Level,

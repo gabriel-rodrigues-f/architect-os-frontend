@@ -2,6 +2,7 @@ import { useI18n, type MessageKey } from "./i18n";
 import type {
   ActionType,
   Architect,
+  Assessment,
   DevelopmentCycle,
   DevelopmentPlan,
   DevelopmentPlanItem,
@@ -60,6 +61,12 @@ const cycleStatusKey: Record<DevelopmentCycle["status"], MessageKey> = {
   Planned: "status.planned",
 };
 
+const assessmentStatusKey: Record<Assessment["status"], MessageKey> = {
+  Draft: "status.draft",
+  "In Review": "status.inReview",
+  Completed: "status.completed",
+};
+
 const actionTypeKey: Record<ActionType, MessageKey> = {
   Learn: "action.learn",
   Practice: "action.practice",
@@ -110,6 +117,7 @@ export function useLabels() {
     priority: traduzir(priorityKey),
     rating: traduzir(ratingKey),
     cycleStatus: traduzir(cycleStatusKey),
+    assessmentStatus: traduzir(assessmentStatusKey),
     actionType: traduzir(actionTypeKey),
     evidenceType: traduzir(evidenceTypeKey),
     complexity: traduzir(complexityKey),

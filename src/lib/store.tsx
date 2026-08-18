@@ -45,7 +45,7 @@ interface Api extends AppState {
   updateCycle: (id: string, patch: Partial<Omit<DevelopmentCycle, "id">>) => void;
   removeCycle: (id: string) => void;
   openAssessment: (architectId: string, cycleId: string) => Promise<Assessment>;
-  setAssessmentStatus: (id: string, status: Assessment["status"]) => void;
+  setAssessmentStatus: (id: string, status: Assessment["status"]) => Promise<Assessment>;
   savePhilosophy: (philosophy: DevelopmentPhilosophy) => void;
   updateLearningPath: (
     id: string,
@@ -438,12 +438,20 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return assessment;
     },
 
-    setAssessmentStatus: (id, status) => {
+    /*
+      Awaitable, e não otimista: enviar para revisão ou concluir é uma
+      transição de negócio que pode ser negada (quem não é Tech Lead não
+      finaliza; avaliação já concluída não reabre) — a tela precisa do erro
+      de verdade para mostrar, não só reverter em silêncio depois de já ter
+      pintado o novo status na hora do clique.
+    */
+    setAssessmentStatus: async (id, status) => {
+      const updated = await api.setAssessmentStatus(id, status);
       local((s) => ({
         ...s,
-        assessments: s.assessments.map((a) => (a.id === id ? { ...a, status } : a)),
+        assessments: s.assessments.map((a) => (a.id === id ? updated : a)),
       }));
-      remote(api.setAssessmentStatus(id, status));
+      return updated;
     },
 
     savePhilosophy: (philosophy) => {
