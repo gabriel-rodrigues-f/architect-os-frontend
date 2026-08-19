@@ -88,8 +88,8 @@ describe("Mentoria — campos obrigatórios", () => {
 
     expect(await screen.findByText(AVISO)).toBeTruthy();
 
-    // Tema, Notas, Decisões e Ações nascem vazios e ficam marcados
-    for (const campo of ["Tema", "Notas", "Decisões", "Ações"]) {
+    // Tema, Notas, Decisões, Ações e Duração nascem vazios e ficam marcados
+    for (const campo of ["Tema", "Notas", "Decisões", "Ações", "Duração (min)"]) {
       expect(screen.getByLabelText(campo).getAttribute("aria-invalid")).toBe("true");
     }
     // Mentorado e Data têm valor padrão, então não são apontados
@@ -129,6 +129,7 @@ describe("Mentoria — campos obrigatórios", () => {
     await userEvent.type(screen.getByLabelText("Notas"), "Discutimos o trade-off");
     await userEvent.type(screen.getByLabelText("Decisões"), "Seguir com event-driven");
     await userEvent.type(screen.getByLabelText("Ações"), "Escrever o ADR");
+    await userEvent.type(screen.getByLabelText("Duração (min)"), "45");
 
     await userEvent.click(screen.getByRole("button", { name: "Salvar sessão" }));
 

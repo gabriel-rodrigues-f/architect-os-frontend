@@ -104,6 +104,8 @@ interface Api extends AppState {
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => Promise<void>;
   addMentoringSession: (m: MentoringSession) => void;
+  /** Sem otimismo: agendar follow-up é escrita autorizada (só quem registrou a sessão). */
+  scheduleMentoringFollowUp: (id: string, nextSession: string | null) => Promise<MentoringSession>;
   updateLearningItemProgress: (
     pathId: string,
     architectId: string,
@@ -396,6 +398,15 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     addMentoringSession: (m) => {
       local((s) => ({ ...s, mentoringSessions: [m, ...s.mentoringSessions] }));
       remote(api.createMentoringSession(m));
+    },
+
+    scheduleMentoringFollowUp: async (id, nextSession) => {
+      const updated = await api.scheduleMentoringFollowUp(id, nextSession);
+      local((s) => ({
+        ...s,
+        mentoringSessions: s.mentoringSessions.map((m) => (m.id === id ? updated : m)),
+      }));
+      return updated;
     },
 
     /** Trilha nova entra no topo da lista, igual à ordenação do servidor. */
