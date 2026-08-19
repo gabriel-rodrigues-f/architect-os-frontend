@@ -442,5 +442,10 @@
   "mentor.form.competencies": "Competências discutidas",
   "mentor.form.competenciesHint": "Vincula a sessão a competências do catálogo — habilita transformar uma ação em item de PDI depois.",
   "mentor.toPdi.action": "Criar ação no PDI — {competencia}",
-  "mentor.toPdi.toast": "Ação de {competencia} adicionada ao PDI"
+  "mentor.toPdi.toast": "Ação de {competencia} adicionada ao PDI",
+  "needs.intervention.create": "Criar trilha coletiva",
+  "needs.intervention.view": "Ver trilha criada",
+  "needs.intervention.toast": "Trilha coletiva de {competencia} criada",
+  "needs.intervention.pathName": "Intervenção coletiva — {competencia}",
+  "needs.intervention.pathDescription": "Trilha criada a partir da Necessidade de Treinamento — atribuída às {n} pessoas com lacuna nesta competência."
 }

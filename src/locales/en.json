@@ -442,5 +442,10 @@
   "mentor.form.competencies": "Competencies discussed",
   "mentor.form.competenciesHint": "Links the session to catalog competencies — enables turning an action into a PDI item later.",
   "mentor.toPdi.action": "Create PDI action — {competencia}",
-  "mentor.toPdi.toast": "{competencia} action added to the PDI"
+  "mentor.toPdi.toast": "{competencia} action added to the PDI",
+  "needs.intervention.create": "Create collective path",
+  "needs.intervention.view": "View created path",
+  "needs.intervention.toast": "{competencia} collective path created",
+  "needs.intervention.pathName": "Collective intervention — {competencia}",
+  "needs.intervention.pathDescription": "Path created from Training Needs — assigned to the {n} people with a gap in this competency."
 }

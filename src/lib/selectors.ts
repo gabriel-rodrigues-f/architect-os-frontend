@@ -50,6 +50,8 @@ export interface TrainingNeed {
   people: number;
   avgGap: number;
   totalGap: number;
+  /** Quem tem essa lacuna — para poder atribuir uma trilha coletiva a eles de verdade, não só contar. */
+  architectIds: string[];
 }
 
 const byId = <T extends { id: string }>(items: T[]): Map<string, T> =>
@@ -185,14 +187,19 @@ export function createSelectors(s: AppState) {
 
   /** LNT: lacunas positivas agregadas por competência, ordenadas pelo impacto — só time atual. */
   const teamTrainingNeeds = (): TrainingNeed[] => {
-    const totals = new Map<string, { people: number; totalGap: number }>();
+    const totals = new Map<string, { people: number; totalGap: number; architectIds: string[] }>();
     for (const architect of activeArchitects) {
       for (const gap of gapsFor(architect.id)) {
         if (gap.gap <= 0) continue;
-        const acc = totals.get(gap.item.competencyId) ?? { people: 0, totalGap: 0 };
+        const acc = totals.get(gap.item.competencyId) ?? {
+          people: 0,
+          totalGap: 0,
+          architectIds: [],
+        };
         totals.set(gap.item.competencyId, {
           people: acc.people + 1,
           totalGap: acc.totalGap + gap.gap,
+          architectIds: [...acc.architectIds, architect.id],
         });
       }
     }
@@ -203,6 +210,7 @@ export function createSelectors(s: AppState) {
         people: v.people,
         avgGap: Number((v.totalGap / v.people).toFixed(1)),
         totalGap: v.totalGap,
+        architectIds: v.architectIds,
       }))
       .filter((need) => !!need.competency)
       .sort((x, y) => y.totalGap - x.totalGap);
