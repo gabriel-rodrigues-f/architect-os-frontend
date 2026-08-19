@@ -49,8 +49,8 @@ const priorityKey: Record<DevelopmentPlanItem["priority"], MessageKey> = {
   Critical: "priority.critical",
 };
 
-/** Usado em desempenho e potencial (matriz 9-box). */
-const ratingKey: Record<Architect["performance"], MessageKey> = {
+/** Usado em desempenho e potencial (matriz 9-box) — só para valor já calibrado, nunca `null`. */
+const ratingKey: Record<Exclude<Architect["performance"], null>, MessageKey> = {
   Low: "rating.low",
   Medium: "rating.medium",
   High: "rating.high",

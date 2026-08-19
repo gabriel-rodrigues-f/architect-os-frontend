@@ -29,9 +29,10 @@ export const Route = createFileRoute("/talent-matrix")({
 });
 
 const LEVELS3 = ["High", "Medium", "Low"] as const;
+type Rating = "Low" | "Medium" | "High";
 
 /** Posição no eixo: 0 = Baixo, 2 = Alto. */
-const RANK: Record<Architect["performance"], number> = { Low: 0, Medium: 1, High: 2 };
+const RANK: Record<Rating, number> = { Low: 0, Medium: 1, High: 2 };
 
 /**
  * Cor do quadrante: soma das duas posições (0 a 4), do vermelho no canto
@@ -51,10 +52,7 @@ const QUADRANT_TONE = [
   "bg-quadrant-5",
 ] as const;
 
-function quadrantTone(
-  performance: Architect["performance"],
-  potential: Architect["potential"],
-): string {
+function quadrantTone(performance: Rating, potential: Rating): string {
   return QUADRANT_TONE[RANK[performance] + RANK[potential]] ?? QUADRANT_TONE[2];
 }
 
@@ -76,6 +74,8 @@ function TalentMatrixPage() {
         .slice(0, 3)
     : [];
   const plan = architect ? sel.planFor(architect.id) : undefined;
+  /** Nasce sem calibração — não entra na grade até um Tech Lead posicionar. */
+  const uncalibrated = store.architects.filter((a) => !a.performance || !a.potential);
 
   return (
     <>
@@ -98,6 +98,32 @@ function TalentMatrixPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <SectionCard title={t("talent.grid.title")} description={t("talent.grid.subtitle")}>
+          {uncalibrated.length > 0 && (
+            <div className="mb-4 rounded-lg border border-dashed border-border p-2.5">
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("talent.uncalibrated.title")}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {uncalibrated.map((a) => (
+                  <button
+                    key={a.id}
+                    draggable={isAdmin}
+                    onDragStart={() => setDragging(a.id)}
+                    onClick={() => setSelected(a.id)}
+                    className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-left text-xs hover:border-primary"
+                  >
+                    <Initials name={a.name} />
+                    <span className="truncate">{a.name}</span>
+                  </button>
+                ))}
+              </div>
+              {isAdmin && (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {t("talent.uncalibrated.hint")}
+                </p>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-[auto_repeat(3,1fr)] gap-2">
             <div />
             {(["Low", "Medium", "High"] as const).map((p) => (
@@ -158,9 +184,15 @@ function TalentMatrixPage() {
                 <p className="text-xs text-muted-foreground">{architect.role}</p>
               </div>
               <p>
-                {t("talent.detail.position")}{" "}
-                <strong>Desempenho {labels.rating[architect.performance]}</strong> ·{" "}
-                <strong>Potencial {labels.rating[architect.potential]}</strong>
+                {architect.performance && architect.potential ? (
+                  <>
+                    {t("talent.detail.position")}{" "}
+                    <strong>Desempenho {labels.rating[architect.performance]}</strong> ·{" "}
+                    <strong>Potencial {labels.rating[architect.potential]}</strong>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">{t("talent.uncalibrated.detail")}</span>
+                )}
               </p>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -191,9 +223,11 @@ function TalentMatrixPage() {
                   ))}
                 </ul>
               </div>
-              <p className="rounded-lg bg-secondary p-3 text-xs text-muted-foreground">
-                {t("talent.detail.recommendation", { texto: recommendation(architect, t) })}
-              </p>
+              {architect.performance && architect.potential && (
+                <p className="rounded-lg bg-secondary p-3 text-xs text-muted-foreground">
+                  {t("talent.detail.recommendation", { texto: recommendation(architect, t) })}
+                </p>
+              )}
             </div>
           )}
         </SectionCard>

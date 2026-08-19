@@ -63,12 +63,12 @@ function MatrixPage() {
   const isAdmin = useCurrentUser().role === "admin";
   const [newCategory, setNewCategory] = useState("");
   const { t } = useI18n();
-  const [newComp, setNewComp] = useState<Record<string, string>>({});
   const [confirmDelete, setConfirmDelete] = useState<{
     competency: Competency;
     category: CompetencyCategory;
   } | null>(null);
   const [editing, setEditing] = useState<Competency | null>(null);
+  const [creatingIn, setCreatingIn] = useState<CompetencyCategory | null>(null);
 
   return (
     <>
@@ -135,35 +135,9 @@ function MatrixPage() {
               description={t("matrix.competencyCount", { n: comps.length })}
               actions={
                 isAdmin ? (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={t("matrix.newCompetency")}
-                      className="w-52"
-                      value={newComp[cat.id] ?? ""}
-                      onChange={(e) => setNewComp({ ...newComp, [cat.id]: e.target.value })}
-                    />
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        const name = (newComp[cat.id] ?? "").trim();
-                        if (!name) return;
-                        store.addCompetency({
-                          id: competencyId(cat, name),
-                          name,
-                          categoryId: cat.id,
-                          expected: {
-                            "Arquiteto de Soluções I": 3 as Level,
-                            "Arquiteto de Soluções II": 4 as Level,
-                            "Arquiteto de Soluções III": 5 as Level,
-                          },
-                        });
-                        setNewComp({ ...newComp, [cat.id]: "" });
-                      }}
-                    >
-                      {t("matrix.add")}
-                    </Button>
-                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
+                    {t("matrix.newCompetency")}
+                  </Button>
                 ) : undefined
               }
             >
@@ -241,7 +215,97 @@ function MatrixPage() {
       />
 
       {editing && <CompetencyEditDialog competency={editing} onClose={() => setEditing(null)} />}
+      {creatingIn && (
+        <CompetencyCreateDialog category={creatingIn} onClose={() => setCreatingIn(null)} />
+      )}
     </>
+  );
+}
+
+/**
+ * Nível esperado por cargo nasce em branco — nunca 3/4/5 fabricado só para
+ * satisfazer o formulário. Admin escolhe os três níveis antes de conseguir
+ * salvar. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 39.
+ */
+function CompetencyCreateDialog({
+  category,
+  onClose,
+}: {
+  category: CompetencyCategory;
+  onClose: () => void;
+}) {
+  const store = useStore();
+  const { t } = useI18n();
+  const [name, setName] = useState("");
+  const [levels, setLevels] = useState<Partial<Record<RoleName, Level>>>({});
+  const canSave = name.trim().length > 0 && ROLES.every((r) => levels[r] !== undefined);
+
+  const save = () => {
+    if (!canSave) return;
+    store.addCompetency({
+      id: competencyId(category, name.trim()),
+      name: name.trim(),
+      categoryId: category.id,
+      expected: levels as Record<RoleName, Level>,
+    });
+    onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("matrix.create.title", { dominio: category.name })}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="new-competency-name">{t("matrix.edit.name")}</Label>
+            <Input
+              id="new-competency-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && save()}
+            />
+          </div>
+          <div>
+            <Label>{t("matrix.edit.levels")}</Label>
+            <div className="mt-1 grid grid-cols-3 gap-3">
+              {ROLES.map((r) => (
+                <div key={r}>
+                  <span className="block text-xs text-muted-foreground">{roleShort(r)}</span>
+                  <select
+                    className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2 text-sm"
+                    value={levels[r] ?? ""}
+                    aria-label={`${t("matrix.edit.levels")} — ${roleShort(r)}`}
+                    onChange={(e) =>
+                      setLevels({
+                        ...levels,
+                        [r]: e.target.value ? (Number(e.target.value) as Level) : undefined,
+                      })
+                    }
+                  >
+                    <option value="">—</option>
+                    {LEVELS.map((l) => (
+                      <option key={l.level} value={l.level}>
+                        L{l.level} · {l.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={save} disabled={!canSave}>
+            {t("matrix.add")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
