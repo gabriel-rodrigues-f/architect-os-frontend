@@ -438,5 +438,9 @@
   "pdi.gap.remove": "Remover GAP",
   "pdi.gap.removed.toast": "{nome} voltou para as sugestões",
   "asmt.evidence.badge": "{n} evidência aceita nesta competência",
-  "asmt.evidence.title": "Evidências aceitas"
+  "asmt.evidence.title": "Evidências aceitas",
+  "mentor.form.competencies": "Competências discutidas",
+  "mentor.form.competenciesHint": "Vincula a sessão a competências do catálogo — habilita transformar uma ação em item de PDI depois.",
+  "mentor.toPdi.action": "Criar ação no PDI — {competencia}",
+  "mentor.toPdi.toast": "Ação de {competencia} adicionada ao PDI"
 }

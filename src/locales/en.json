@@ -438,5 +438,9 @@
   "pdi.gap.remove": "Remove gap",
   "pdi.gap.removed.toast": "{nome} is back in suggestions",
   "asmt.evidence.badge": "{n} accepted evidence for this competency",
-  "asmt.evidence.title": "Accepted evidence"
+  "asmt.evidence.title": "Accepted evidence",
+  "mentor.form.competencies": "Competencies discussed",
+  "mentor.form.competenciesHint": "Links the session to catalog competencies — enables turning an action into a PDI item later.",
+  "mentor.toPdi.action": "Create PDI action — {competencia}",
+  "mentor.toPdi.toast": "{competencia} action added to the PDI"
 }
