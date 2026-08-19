@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isLeadCapable } from "@/lib/api";
-import { useCurrentUser } from "@/lib/auth";
+import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { formatDate } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
 import {
@@ -76,22 +76,30 @@ function LearningPage() {
    */
   const canCreatePath = isLeadCapable(user.role);
 
-  const create = () => {
+  /**
+   * Sem id local nem sucesso otimista: o servidor gera o id de verdade — ver
+   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001.
+   */
+  const create = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    store.addLearningPath({
-      id: `lp-${Date.now()}`,
-      name: trimmed,
-      description: "",
-      competencyIds: [],
-      assignedTo: [],
-      items: [],
-      progress: [],
-      createdBy: user.email,
-      createdByUserId: user.id,
-      createdAt: new Date().toISOString(),
-    });
-    setName("");
+    try {
+      await store.addLearningPath({
+        id: "",
+        name: trimmed,
+        description: "",
+        competencyIds: [],
+        assignedTo: [],
+        items: [],
+        progress: [],
+        createdBy: user.email,
+        createdByUserId: user.id,
+        createdAt: new Date().toISOString(),
+      });
+      setName("");
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    }
   };
 
   /**

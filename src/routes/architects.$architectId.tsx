@@ -385,37 +385,49 @@ function EvidenceDialog({
   const [url, setUrl] = useState("");
   const [issuer, setIssuer] = useState("");
   const [pdiItemId, setPdiItemId] = useState("");
+  const [saving, setSaving] = useState(false);
   const isCertification = type === "Certification";
 
-  const salvar = () => {
+  /**
+   * Sem id local nem sucesso otimista: o servidor gera o id de verdade e é
+   * quem decide se o registro vale — só fecha o diálogo depois da resposta.
+   * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001/EVD-001.
+   */
+  const salvar = async () => {
     const nome = title.trim();
     if (!nome) return;
-    const id = `ev-${Date.now()}`;
-    store.addEvidence({
-      id,
-      architectId,
-      title: nome,
-      description: description.trim(),
-      type,
-      // Sem competência escolhida na tela: se ligada a um item do PDI, o
-      // servidor herda a competência do item automaticamente (EPIC 2).
-      competencyIds: [],
-      date,
-      complexity,
-      status: "Pending",
-      ...(project.trim() ? { project: project.trim() } : {}),
-      ...(url.trim() ? { url: url.trim() } : {}),
-      ...(isCertification && issuer.trim() ? { issuer: issuer.trim() } : {}),
-      ...(pdiItemId ? { developmentPlanItemId: pdiItemId } : {}),
-    });
-    toast.success(t("ev.toast", { titulo: nome }));
-    setTitle("");
-    setDescription("");
-    setProject("");
-    setUrl("");
-    setIssuer("");
-    setPdiItemId("");
-    setOpen(false);
+    setSaving(true);
+    try {
+      await store.addEvidence({
+        id: "",
+        architectId,
+        title: nome,
+        description: description.trim(),
+        type,
+        // Sem competência escolhida na tela: se ligada a um item do PDI, o
+        // servidor herda a competência do item automaticamente (EPIC 2).
+        competencyIds: [],
+        date,
+        complexity,
+        status: "Pending",
+        ...(project.trim() ? { project: project.trim() } : {}),
+        ...(url.trim() ? { url: url.trim() } : {}),
+        ...(isCertification && issuer.trim() ? { issuer: issuer.trim() } : {}),
+        ...(pdiItemId ? { developmentPlanItemId: pdiItemId } : {}),
+      });
+      toast.success(t("ev.toast", { titulo: nome }));
+      setTitle("");
+      setDescription("");
+      setProject("");
+      setUrl("");
+      setIssuer("");
+      setPdiItemId("");
+      setOpen(false);
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

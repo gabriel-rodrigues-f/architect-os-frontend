@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useCurrentUser } from "@/lib/auth";
+import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import type { MentoringSession } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
@@ -94,8 +94,14 @@ function MentoringPage() {
   const durationValue = Number(form.durationMin);
   const durationInvalid =
     form.durationMin.trim().length > 0 && (!Number.isInteger(durationValue) || durationValue <= 0);
+  const [saving, setSaving] = useState(false);
 
-  const submit = () => {
+  /**
+   * Sem id local nem sucesso otimista: o servidor gera o id de verdade e é
+   * quem decide se o registro vale — só fecha o diálogo depois da resposta.
+   * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-002/EVD-001.
+   */
+  const submit = async () => {
     const vazios = REQUIRED_FIELDS.filter((f) => !form[f].trim());
     if (vazios.length > 0 || durationInvalid) {
       setMissing(
@@ -105,33 +111,42 @@ function MentoringPage() {
       return;
     }
 
-    store.addMentoringSession({
-      id: `m-${Date.now()}`,
-      mentor: user.name,
-      menteeId: form.menteeId,
-      date: form.date,
-      durationMin: durationValue,
-      topic: form.topic,
-      competencyIds,
-      notes: form.notes,
-      decisions: form.decisions,
-      actions: form.actions,
-      ...(form.nextSession ? { nextSession: form.nextSession } : {}),
-    });
-    toast.success(t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }));
-    setForm({
-      ...form,
-      durationMin: "",
-      topic: "",
-      notes: "",
-      decisions: "",
-      actions: "",
-      nextSession: "",
-    });
-    setCompetencyIds([]);
-    setMissing([]);
-    setShowToast(false);
-    setOpen(false);
+    setSaving(true);
+    try {
+      await store.addMentoringSession({
+        id: "",
+        mentor: user.name,
+        menteeId: form.menteeId,
+        date: form.date,
+        durationMin: durationValue,
+        topic: form.topic,
+        competencyIds,
+        notes: form.notes,
+        decisions: form.decisions,
+        actions: form.actions,
+        ...(form.nextSession ? { nextSession: form.nextSession } : {}),
+      });
+      toast.success(
+        t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }),
+      );
+      setForm({
+        ...form,
+        durationMin: "",
+        topic: "",
+        notes: "",
+        decisions: "",
+        actions: "",
+        nextSession: "",
+      });
+      setCompetencyIds([]);
+      setMissing([]);
+      setShowToast(false);
+      setOpen(false);
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const [filter, setFilter] = useState<string[]>([]);
@@ -308,7 +323,9 @@ function MentoringPage() {
                   </div>
                 )}
                 <DialogFooter>
-                  <Button onClick={submit}>{t("mentor.form.save")}</Button>
+                  <Button disabled={saving} onClick={() => void submit()}>
+                    {saving ? t("mentor.followUp.saving") : t("mentor.form.save")}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

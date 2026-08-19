@@ -111,7 +111,20 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
         );
       }
       if (init?.method === "POST" && href.endsWith("/api/learning-paths")) {
-        return Promise.resolve(new Response("{}", { status: 201 }));
+        // O servidor gera o id de verdade e devolve o recurso completo — a
+        // store não insere mais o objeto local otimista (ver AUDITORIA-
+        // QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001/EVD-001).
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              ...body,
+              id: "lp-intervencao-criada",
+              createdAt: new Date().toISOString(),
+            }),
+            { status: 201, headers: { "content-type": "application/json" } },
+          ),
+        );
       }
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
@@ -150,7 +163,7 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
       </Wrapper>,
     );
     await userEvent.click(await screen.findByRole("button", { name: /Criar trilha coletiva/ }));
-    // A store aplica a mudança local antes da resposta da API — a tela já reflete.
+    // Sem otimismo: a tela só reflete a trilha nova depois que o servidor confirma.
     expect(await screen.findByText("Ver trilha criada")).toBeTruthy();
   });
 });

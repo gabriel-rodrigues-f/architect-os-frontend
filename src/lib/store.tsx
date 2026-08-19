@@ -93,7 +93,12 @@ interface Api extends AppState {
    * reabre o próprio plano) — a tela precisa do erro de verdade.
    */
   updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) => Promise<DevelopmentPlan>;
-  addEvidence: (e: Evidence) => void;
+  /**
+   * Sem otimismo: o servidor gera o id de verdade (nunca mais aceita o `id`
+   * do cliente). Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md,
+   * IDOR-001.
+   */
+  addEvidence: (e: Evidence) => Promise<Evidence>;
   /**
    * Sem otimismo: aprovar/rejeitar evidência é decisão do Tech Lead, e a UI só
    * pode dizer "aprovado" depois que o servidor confirmou de verdade — ver
@@ -103,7 +108,8 @@ interface Api extends AppState {
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => Promise<void>;
-  addMentoringSession: (m: MentoringSession) => void;
+  /** Sem otimismo — mesmo motivo de `addEvidence`. Ver IDOR-002. */
+  addMentoringSession: (m: MentoringSession) => Promise<MentoringSession>;
   /** Sem otimismo: agendar follow-up é escrita autorizada (só quem registrou a sessão). */
   scheduleMentoringFollowUp: (id: string, nextSession: string | null) => Promise<MentoringSession>;
   updateLearningItemProgress: (
@@ -112,7 +118,8 @@ interface Api extends AppState {
     itemId: string,
     progress: number,
   ) => void;
-  addLearningPath: (p: LearningPath) => void;
+  /** Sem otimismo — mesmo motivo de `addEvidence`. Ver IDOR-001. */
+  addLearningPath: (p: LearningPath) => Promise<LearningPath>;
 }
 
 const Ctx = createContext<Api | null>(null);
@@ -382,9 +389,17 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return updated;
     },
 
-    addEvidence: (e) => {
-      local((s) => ({ ...s, evidences: [e, ...s.evidences] }));
-      remote(api.createEvidence(e));
+    /**
+     * Sem otimismo: o servidor gera o id de verdade (nunca mais o `id`
+     * enviado pelo cliente — ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
+     * 08-19.md, IDOR-001). Inserir a evidência localmente com um id
+     * inventado antes da resposta deixaria o item com um id que nunca vai
+     * bater com o do servidor, permanentemente, até o próximo refresh.
+     */
+    addEvidence: async (e) => {
+      const created = await api.createEvidence(e);
+      local((s) => ({ ...s, evidences: [created, ...s.evidences] }));
+      return created;
     },
 
     reviewEvidence: async (id, review) => {
@@ -395,9 +410,11 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       }));
     },
 
-    addMentoringSession: (m) => {
-      local((s) => ({ ...s, mentoringSessions: [m, ...s.mentoringSessions] }));
-      remote(api.createMentoringSession(m));
+    /** Sem otimismo — mesmo motivo de `addEvidence`: o id de verdade só existe depois da resposta. */
+    addMentoringSession: async (m) => {
+      const created = await api.createMentoringSession(m);
+      local((s) => ({ ...s, mentoringSessions: [created, ...s.mentoringSessions] }));
+      return created;
     },
 
     scheduleMentoringFollowUp: async (id, nextSession) => {
@@ -409,10 +426,15 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return updated;
     },
 
-    /** Trilha nova entra no topo da lista, igual à ordenação do servidor. */
-    addLearningPath: (p) => {
-      local((s) => ({ ...s, learningPaths: [p, ...s.learningPaths] }));
-      remote(api.createLearningPath(p));
+    /**
+     * Trilha nova entra no topo da lista, igual à ordenação do servidor.
+     * Sem otimismo — mesmo motivo de `addEvidence`: o id de verdade só
+     * existe depois da resposta.
+     */
+    addLearningPath: async (p) => {
+      const created = await api.createLearningPath(p);
+      local((s) => ({ ...s, learningPaths: [created, ...s.learningPaths] }));
+      return created;
     },
 
     /** Progresso é por pessoa: só a entrada de (architectId, itemId) muda, nunca o item inteiro. */

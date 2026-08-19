@@ -3,10 +3,9 @@ import { toast } from "sonner";
 
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
-import { useCurrentUser } from "@/lib/auth";
+import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { slug } from "@/lib/text";
 
 export const Route = createFileRoute("/training-needs")({
   head: () => ({
@@ -44,20 +43,29 @@ function TrainingNeedsPage() {
    * mesmos ids que `teamTrainingNeeds` já contou, não um número solto). Ver
    * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC K.
    */
-  const createIntervention = (need: (typeof needs)[number]) => {
+  /**
+   * Sem id local nem sucesso otimista: o servidor gera o id de verdade — ver
+   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001.
+   */
+  const createIntervention = async (need: (typeof needs)[number]) => {
     if (!need.competency) return;
-    store.addLearningPath({
-      id: `lp-${slug(need.competency.name)}-${Date.now()}`,
-      name: t("needs.intervention.pathName", { competencia: need.competency.name }),
-      description: t("needs.intervention.pathDescription", { n: need.people }),
-      competencyIds: [need.competency.id],
-      assignedTo: need.architectIds,
-      items: [],
-      progress: [],
-      createdBy: user.email,
-      createdAt: new Date().toISOString(),
-    });
-    toast.success(t("needs.intervention.toast", { competencia: need.competency.name }));
+    try {
+      await store.addLearningPath({
+        id: "",
+        name: t("needs.intervention.pathName", { competencia: need.competency.name }),
+        description: t("needs.intervention.pathDescription", { n: need.people }),
+        competencyIds: [need.competency.id],
+        assignedTo: need.architectIds,
+        items: [],
+        progress: [],
+        createdBy: user.email,
+        createdByUserId: user.id,
+        createdAt: new Date().toISOString(),
+      });
+      toast.success(t("needs.intervention.toast", { competencia: need.competency.name }));
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    }
   };
 
   /**
