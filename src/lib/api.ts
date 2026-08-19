@@ -2,7 +2,6 @@ import type {
   Architect,
   Assessment,
   AssessmentComment,
-  Certification,
   Competency,
   CompetencyCategory,
   DevelopmentCycle,
@@ -39,7 +38,6 @@ export interface AppState {
   learningPaths: LearningPath[];
   mentoringSessions: MentoringSession[];
   evidences: Evidence[];
-  certifications: Certification[];
   activeCycleId: string;
   philosophy: DevelopmentPhilosophy;
 }
@@ -245,6 +243,4 @@ export const api = {
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => patch<Evidence>(`/api/evidences/${id}/review`, review),
-  createCertification: (certification: Certification) =>
-    post<Certification>("/api/certifications", certification),
 };

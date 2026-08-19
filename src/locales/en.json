@@ -363,9 +363,6 @@
   "arch.evidence.title": "Evidence",
   "arch.evidence.subtitle": "Concrete proof of practical application.",
   "arch.evidence.none": "No evidence recorded.",
-  "arch.cert.title": "Certifications",
-  "arch.cert.subtitle": "Technical certifications earned.",
-  "arch.cert.none": "No certifications recorded.",
   "arch.register": "Add",
   "arch.mentoring.title": "Mentoring",
   "arch.mentoring.count": "{n} sessions logged",
@@ -387,6 +384,7 @@
   "ev.field.complexity": "Complexity",
   "ev.field.project": "Project",
   "ev.field.link": "Link",
+  "ev.field.issuer": "Issuer",
   "ev.field.description": "Description",
   "ev.field.pdiLink": "Link to a PDI item (optional)",
   "ev.field.pdiLink.none": "None",
@@ -398,10 +396,5 @@
   "ev.review.comment": "Tech Lead comment",
   "ev.review.save": "Save review",
   "ev.review.toast": "Evidence \"{titulo}\" marked as {status}.",
-  "cert.dialog.title": "New certification",
-  "cert.field.name": "Name",
-  "cert.field.issuer": "Issuer",
-  "cert.field.year": "Year",
-  "cert.save": "Save certification",
   "error.notFound.title": "Page not found"
 }

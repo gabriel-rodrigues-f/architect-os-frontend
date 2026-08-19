@@ -275,14 +275,8 @@ export interface Evidence {
   leaderComment?: string | undefined;
   /** Nasce "Pending" — nunca aceita implicitamente só por existir. */
   status: "Pending" | "Accepted" | "Needs Improvement" | "Rejected";
-}
-
-export interface Certification {
-  id: string;
-  architectId: string;
-  name: string;
-  issuer: string;
-  year: number;
+  /** Quem emitiu — relevante quando `type === "Certification"`. */
+  issuer?: string | undefined;
 }
 
 export const gapSeverity = (gap: number) => {

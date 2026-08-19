@@ -71,7 +71,7 @@ function ArchitectProfile() {
   const labels = useLabels();
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  /** Evidência e certificação são da pessoa — só ela (ou admin) registra; backend já recusa o resto. */
+  /** Evidência é da pessoa — só ela (ou admin) registra; backend já recusa o resto. */
   const isAdmin = user.role === "admin";
   const canEditOwn = isAdmin || user.architectId === architectId;
   const architect = sel.architectById(architectId);
@@ -92,7 +92,6 @@ function ArchitectProfile() {
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
-  const certifications = store.certifications.filter((c) => c.architectId === architect.id);
   const paths = store.learningPaths.filter((p) => p.assignedTo.includes(architect.id));
   const {
     avg,
@@ -190,7 +189,7 @@ function ArchitectProfile() {
         </SectionCard>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-3">
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <SectionCard title={t("arch.paths.title")} description={t("arch.paths.subtitle")}>
           <ul className="space-y-2">
             {paths.map((p) => {
@@ -226,7 +225,8 @@ function ArchitectProfile() {
                   <EvidenceStatusBadge status={e.status} labels={labels} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {labels.evidenceType[e.type]} · {formatDate(e.date, locale)} · complexidade{" "}
+                  {labels.evidenceType[e.type]}
+                  {e.issuer ? ` · ${e.issuer}` : ""} · {formatDate(e.date, locale)} · complexidade{" "}
                   {labels.complexity[e.complexity]}
                 </p>
                 {e.leaderComment && (
@@ -237,26 +237,6 @@ function ArchitectProfile() {
             ))}
             {!evidences.length && (
               <p className="text-sm text-muted-foreground">{t("arch.evidence.none")}</p>
-            )}
-          </ul>
-        </SectionCard>
-
-        <SectionCard
-          title={t("arch.cert.title")}
-          description={t("arch.cert.subtitle")}
-          actions={canEditOwn ? <CertificationDialog architectId={architect.id} /> : undefined}
-        >
-          <ul className="space-y-2">
-            {certifications.map((c) => (
-              <li key={c.id} className="surface-inset p-2.5">
-                <p className="text-sm font-medium">{c.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {c.issuer} · {c.year}
-                </p>
-              </li>
-            ))}
-            {!certifications.length && (
-              <p className="text-sm text-muted-foreground">{t("arch.cert.none")}</p>
             )}
           </ul>
         </SectionCard>
@@ -337,7 +317,9 @@ function EvidenceDialog({
   const [description, setDescription] = useState("");
   const [project, setProject] = useState("");
   const [url, setUrl] = useState("");
+  const [issuer, setIssuer] = useState("");
   const [pdiItemId, setPdiItemId] = useState("");
+  const isCertification = type === "Certification";
 
   const salvar = () => {
     const nome = title.trim();
@@ -355,6 +337,7 @@ function EvidenceDialog({
       status: "Pending",
       ...(project.trim() ? { project: project.trim() } : {}),
       ...(url.trim() ? { url: url.trim() } : {}),
+      ...(isCertification && issuer.trim() ? { issuer: issuer.trim() } : {}),
     });
     if (pdiItemId && plan) {
       const item = planItems.find((i) => i.id === pdiItemId);
@@ -367,6 +350,7 @@ function EvidenceDialog({
     setDescription("");
     setProject("");
     setUrl("");
+    setIssuer("");
     setPdiItemId("");
     setOpen(false);
   };
@@ -419,6 +403,17 @@ function EvidenceDialog({
               />
             </div>
           </div>
+          {isCertification && (
+            <div>
+              <Label htmlFor="ev-issuer">{t("ev.field.issuer")}</Label>
+              <Input
+                id="ev-issuer"
+                value={issuer}
+                onChange={(e) => setIssuer(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && salvar()}
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="ev-complexity">{t("ev.field.complexity")}</Label>
             <select
@@ -561,85 +556,6 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
             Cancelar
           </Button>
           <Button onClick={salvar}>{t("ev.review.save")}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/** Certificações não tinham tela nenhuma — nem listagem, nem cadastro. */
-function CertificationDialog({ architectId }: { architectId: string }) {
-  const { t } = useI18n();
-  const store = useStore();
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [issuer, setIssuer] = useState("");
-  const [year, setYear] = useState(String(new Date().getFullYear()));
-
-  const salvar = () => {
-    if (!name.trim() || !issuer.trim()) return;
-    store.addCertification({
-      id: `cert-${Date.now()}`,
-      architectId,
-      name: name.trim(),
-      issuer: issuer.trim(),
-      year: Number(year) || new Date().getFullYear(),
-    });
-    setName("");
-    setIssuer("");
-    setOpen(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="secondary">
-          {t("arch.register")}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("cert.dialog.title")}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="cert-name">{t("cert.field.name")}</Label>
-            <Input
-              id="cert-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && salvar()}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="cert-issuer">{t("cert.field.issuer")}</Label>
-              <Input
-                id="cert-issuer"
-                value={issuer}
-                onChange={(e) => setIssuer(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && salvar()}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cert-year">{t("cert.field.year")}</Label>
-              <Input
-                id="cert-year"
-                type="number"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && salvar()}
-              />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
-          </Button>
-          <Button disabled={!name.trim() || !issuer.trim()} onClick={salvar}>
-            {t("cert.save")}
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

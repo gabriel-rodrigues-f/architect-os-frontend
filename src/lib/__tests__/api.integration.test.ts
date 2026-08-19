@@ -46,7 +46,6 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
       "learningPaths",
       "mentoringSessions",
       "evidences",
-      "certifications",
     ] as const) {
       expect(Array.isArray(state[key])).toBe(true);
     }

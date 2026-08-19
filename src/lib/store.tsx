@@ -5,7 +5,6 @@ import { api, ApiError, type AppState, type CommentInput, type DevelopmentPhilos
 import type {
   Architect,
   Assessment,
-  Certification,
   Competency,
   CompetencyCategory,
   DevelopmentCycle,
@@ -88,7 +87,6 @@ interface Api extends AppState {
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => void;
-  addCertification: (c: Certification) => void;
   addMentoringSession: (m: MentoringSession) => void;
   updateLearningItemProgress: (
     pathId: string,
@@ -308,11 +306,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         evidences: s.evidences.map((e) => (e.id === id ? { ...e, ...review } : e)),
       }));
       remote(api.reviewEvidence(id, review));
-    },
-
-    addCertification: (c) => {
-      local((s) => ({ ...s, certifications: [c, ...s.certifications] }));
-      remote(api.createCertification(c));
     },
 
     addMentoringSession: (m) => {

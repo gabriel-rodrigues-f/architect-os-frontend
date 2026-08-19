@@ -16,7 +16,6 @@ export const emptyState: AppState = {
   learningPaths: [],
   mentoringSessions: [],
   evidences: [],
-  certifications: [],
   activeCycleId: "",
   philosophy: { title: "", description: "", stages: [], footer: "" },
 };

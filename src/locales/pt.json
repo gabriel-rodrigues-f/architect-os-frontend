@@ -363,9 +363,6 @@
   "arch.evidence.title": "Evidências",
   "arch.evidence.subtitle": "Provas concretas de aplicação prática.",
   "arch.evidence.none": "Nenhuma evidência registrada.",
-  "arch.cert.title": "Certificações",
-  "arch.cert.subtitle": "Certificações técnicas conquistadas.",
-  "arch.cert.none": "Nenhuma certificação registrada.",
   "arch.register": "Registrar",
   "arch.mentoring.title": "Mentorias",
   "arch.mentoring.count": "{n} sessões registradas",
@@ -387,6 +384,7 @@
   "ev.field.complexity": "Complexidade",
   "ev.field.project": "Projeto",
   "ev.field.link": "Link",
+  "ev.field.issuer": "Emissor",
   "ev.field.description": "Descrição",
   "ev.field.pdiLink": "Vincular a um item do PDI (opcional)",
   "ev.field.pdiLink.none": "Nenhum",
@@ -398,10 +396,5 @@
   "ev.review.comment": "Comentário do Tech Lead",
   "ev.review.save": "Salvar revisão",
   "ev.review.toast": "Evidência \"{titulo}\" marcada como {status}.",
-  "cert.dialog.title": "Nova certificação",
-  "cert.field.name": "Nome",
-  "cert.field.issuer": "Emissor",
-  "cert.field.year": "Ano",
-  "cert.save": "Salvar certificação",
   "error.notFound.title": "Página não encontrada"
 }

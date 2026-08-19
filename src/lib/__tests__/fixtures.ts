@@ -196,7 +196,6 @@ export const fixtureState: AppState = {
       status: "Pending",
     },
   ],
-  certifications: [],
   activeCycleId: "2026-h2",
   philosophy: {
     title: "Filosofia de Desenvolvimento",
