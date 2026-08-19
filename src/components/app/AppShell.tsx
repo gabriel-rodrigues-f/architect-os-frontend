@@ -66,7 +66,7 @@ const THEME_OPTIONS: { value: Theme; labelKey: MessageKey; icon: typeof Sun }[] 
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { cycles, activeCycleId, setActiveCycle, philosophy } = useStore();
+  const { cycles, activeCycleId, setActiveCycle } = useStore();
   const { user, logout } = useAuth();
   const { t } = useI18n();
 
@@ -162,9 +162,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       });
     }
   };
-
-  // O fluxo do cabeçalho vem da filosofia cadastrada no dashboard.
-  const flow = philosophy.stages.map((stage) => stage.name).join(" → ");
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -352,7 +349,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/85 px-5 py-3 backdrop-blur lg:px-8">
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              {flow}
+              {t("shell.flow")}
             </p>
             <div className="flex items-center gap-2">
               <label className="text-xs text-muted-foreground" htmlFor="cycle">

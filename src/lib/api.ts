@@ -14,19 +14,6 @@ import type {
   MentoringSession,
 } from "./domain";
 
-/** Etapa da filosofia de desenvolvimento exibida no dashboard. */
-export interface PhilosophyStage {
-  id: string;
-  name: string;
-}
-
-export interface DevelopmentPhilosophy {
-  title: string;
-  description: string;
-  stages: PhilosophyStage[];
-  footer: string;
-}
-
 /** Snapshot devolvido por GET /api/state — espelha o AppState do backend. */
 export interface AppState {
   categories: CompetencyCategory[];
@@ -39,7 +26,6 @@ export interface AppState {
   mentoringSessions: MentoringSession[];
   evidences: Evidence[];
   activeCycleId: string;
-  philosophy: DevelopmentPhilosophy;
 }
 
 export interface SessionUser {
@@ -176,10 +162,6 @@ export const api = {
   updateCycle: (id: string, patch_: Partial<Omit<DevelopmentCycle, "id">>) =>
     patch<DevelopmentCycle>(`/api/cycles/${id}`, patch_),
   deleteCycle: (id: string) => del<void>(`/api/cycles/${id}`),
-
-  /* filosofia */
-  savePhilosophy: (philosophy: DevelopmentPhilosophy) =>
-    put<DevelopmentPhilosophy>("/api/philosophy", philosophy),
 
   /* assessments */
   openAssessment: (architectId: string, cycleId: string) =>

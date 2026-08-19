@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
-import { api, ApiError, type AppState, type CommentInput, type DevelopmentPhilosophy } from "./api";
+import { api, ApiError, type AppState, type CommentInput } from "./api";
 import type {
   Architect,
   Assessment,
@@ -44,7 +44,6 @@ interface Api extends AppState {
   removeCycle: (id: string) => void;
   openAssessment: (architectId: string, cycleId: string) => Promise<Assessment>;
   setAssessmentStatus: (id: string, status: Assessment["status"]) => Promise<Assessment>;
-  savePhilosophy: (philosophy: DevelopmentPhilosophy) => void;
   updateLearningPath: (
     id: string,
     patch: Partial<
@@ -392,11 +391,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         assessments: s.assessments.map((a) => (a.id === id ? updated : a)),
       }));
       return updated;
-    },
-
-    savePhilosophy: (philosophy) => {
-      local((s) => ({ ...s, philosophy }));
-      remote(api.savePhilosophy(philosophy));
     },
 
     updateLearningPath: (id, patch) => {

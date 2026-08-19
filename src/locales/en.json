@@ -12,6 +12,7 @@
   "nav.trainingNeeds": "Training Needs",
   "nav.cycles": "Development Cycles",
   "shell.subtitle": "Capability Development",
+  "shell.flow": "Assess → Prioritize → Develop → Evidence → Feedback → Evolve",
   "shell.cycle": "Cycle",
   "shell.logout": "Sign out",
   "shell.hideMenu": "Hide sidebar",

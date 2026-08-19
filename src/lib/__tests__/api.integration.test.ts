@@ -50,7 +50,6 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
       expect(Array.isArray(state[key])).toBe(true);
     }
     expect(typeof state.activeCycleId).toBe("string");
-    expect(Array.isArray(state.philosophy.stages)).toBe(true);
   });
 
   it("os ciclos chegam com datas ISO (sem deslocamento de fuso)", () => {

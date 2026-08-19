@@ -9,7 +9,6 @@ import {
   Users,
 } from "lucide-react";
 
-import { PhilosophyCard } from "@/components/app/PhilosophyCard";
 import { LevelCell, PageHeader, SectionCard, StatCard, GapBadge } from "@/components/app/ui-bits";
 import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
@@ -212,8 +211,6 @@ function Dashboard() {
           </SectionCard>
         </div>
       </div>
-
-      <PhilosophyCard />
     </>
   );
 }

@@ -17,7 +17,6 @@ export const emptyState: AppState = {
   mentoringSessions: [],
   evidences: [],
   activeCycleId: "",
-  philosophy: { title: "", description: "", stages: [], footer: "" },
 };
 
 export interface Gap {

@@ -197,13 +197,4 @@ export const fixtureState: AppState = {
     },
   ],
   activeCycleId: "2026-h2",
-  philosophy: {
-    title: "Filosofia de Desenvolvimento",
-    description: "O desenvolvimento técnico não se sustenta apenas em cursos.",
-    stages: [
-      { id: "aprender", name: "Aprender" },
-      { id: "praticar", name: "Praticar" },
-    ],
-    footer: "",
-  },
 };
