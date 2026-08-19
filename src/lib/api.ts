@@ -13,7 +13,6 @@ import type {
   LearningPathItem,
   Level,
   MentoringSession,
-  Okr,
 } from "./domain";
 
 /** Etapa da filosofia de desenvolvimento exibida no dashboard. */
@@ -37,7 +36,6 @@ export interface AppState {
   assessments: Assessment[];
   cycles: DevelopmentCycle[];
   plans: DevelopmentPlan[];
-  okrs: Okr[];
   learningPaths: LearningPath[];
   mentoringSessions: MentoringSession[];
   evidences: Evidence[];
@@ -208,13 +206,11 @@ export const api = {
   deleteAssessmentComment: (assessmentId: string, competencyId: string, commentId: string) =>
     del<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`),
 
-  /* PDI e OKR */
+  /* PDI */
   addPlanItem: (architectId: string, cycleId: string, item: DevelopmentPlanItem) =>
     post<DevelopmentPlan>(`/api/plans/${architectId}/items`, { cycleId, item }),
   patchPlanItem: (planId: string, itemId: string, body: Partial<DevelopmentPlanItem>) =>
     patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, body),
-  patchKeyResult: (okrId: string, keyResultId: string, progress: number) =>
-    patch<Okr>(`/api/okrs/${okrId}/key-results/${keyResultId}`, { progress }),
 
   /* trilhas */
   createLearningPath: (path: LearningPath) => post<LearningPath>("/api/learning-paths", path),

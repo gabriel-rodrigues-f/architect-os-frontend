@@ -129,8 +129,8 @@ function TeamPage() {
 
   /**
    * "Excluir" virou "Desativar": apaga o cadastro em cascata (avaliações,
-   * PDI, OKR, SWOT, mentorias, evidências, certificações) sempre destruiu
-   * histórico de gente que só saiu do time. `active: false` some do roster
+   * PDI, mentorias, evidências, certificações) sempre destruiu histórico de
+   * gente que só saiu do time. `active: false` some do roster
    * e dos agregados do Painel sem apagar nada — o perfil e o histórico
    * continuam abertos em /architects/:id. Ver AUDITORIA-RIGIDA-SEGUNDA-
    * REVISAO-SYNAPSE.md, Seção 18.
@@ -352,7 +352,7 @@ function TeamPage() {
       <ConfirmDialog
         open={confirmDeactivate !== null}
         title={`Desativar ${confirmDeactivate?.name}?`}
-        description="A pessoa some do roster e dos números do Painel, mas nada é apagado: avaliações, PDI, OKR, SWOT, mentorias, evidências e certificações continuam no perfil dela. Dá para reativar depois."
+        description="A pessoa some do roster e dos números do Painel, mas nada é apagado: avaliações, PDI, mentorias, evidências e certificações continuam no perfil dela. Dá para reativar depois."
         confirmLabel={t("team.deactivate.action")}
         destructive={false}
         onCancel={() => setConfirmDeactivate(null)}

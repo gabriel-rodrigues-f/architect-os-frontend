@@ -165,18 +165,6 @@ export const fixtureState: AppState = {
       ],
     },
   ],
-  okrs: [
-    {
-      id: "okr-ana",
-      architectId: "ana",
-      cycleId: "2026-h2",
-      objective: "Referência em segurança",
-      keyResults: [
-        { id: "kr-1", title: "Curso", progress: 100 },
-        { id: "kr-2", title: "ADR", progress: 0 },
-      ],
-    },
-  ],
   learningPaths: [
     {
       id: "lp-sec",

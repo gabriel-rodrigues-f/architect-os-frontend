@@ -97,7 +97,6 @@ interface Api extends AppState {
     progress: number,
   ) => void;
   addLearningPath: (p: LearningPath) => void;
-  updateKeyResult: (okrId: string, krId: string, progress: number) => void;
 }
 
 const Ctx = createContext<Api | null>(null);
@@ -351,21 +350,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         ),
       }));
       remote(api.patchLearningItemProgress(pathId, architectId, itemId, progress));
-    },
-
-    updateKeyResult: (okrId, krId, progress) => {
-      local((s) => ({
-        ...s,
-        okrs: s.okrs.map((o) =>
-          o.id !== okrId
-            ? o
-            : {
-                ...o,
-                keyResults: o.keyResults.map((k) => (k.id === krId ? { ...k, progress } : k)),
-              },
-        ),
-      }));
-      remote(api.patchKeyResult(okrId, krId, progress));
     },
 
     addCycle: (c) => {

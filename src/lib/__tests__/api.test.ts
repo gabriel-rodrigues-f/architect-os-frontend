@@ -43,7 +43,9 @@ describe("cliente da API", () => {
       ),
     );
 
-    const error = await api.patchKeyResult("okr-ana", "kr-1", 500).catch((e: unknown) => e);
+    const error = await api
+      .patchPlanItem("pdi-ana", "pdi-ana-0", { progress: 500 })
+      .catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 400, message: "progresso inválido" });

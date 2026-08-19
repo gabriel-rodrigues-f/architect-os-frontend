@@ -54,15 +54,14 @@ function CyclesPage() {
   const [blockedDelete, setBlockedDelete] = useState<DevelopmentCycle | null>(null);
 
   /**
-   * Ciclo com avaliação, PDI ou OKR vinculado não é deletável — o backend já
+   * Ciclo com avaliação ou PDI vinculado não é deletável — o backend já
    * recusa com 409, mas checar aqui evita abrir "tem certeza?" para uma ação
    * que nunca teria efeito, e explica o motivo na hora. Ver AUDITORIA-RIGIDA-
    * SEGUNDA-REVISAO-SYNAPSE.md, Seção 23.
    */
   const cycleInUse = (cycleId: string) =>
     store.assessments.some((a) => a.cycleId === cycleId) ||
-    store.plans.some((p) => p.cycleId === cycleId) ||
-    store.okrs.some((o) => o.cycleId === cycleId);
+    store.plans.some((p) => p.cycleId === cycleId);
 
   const askDeleteCycle = (cycle: DevelopmentCycle) => {
     if (cycleInUse(cycle.id)) setBlockedDelete(cycle);
@@ -104,7 +103,7 @@ function CyclesPage() {
     <>
       <PageHeader
         title={t("cycle.title")}
-        description="Cada ciclo agrupa avaliação, SWOT, PDI e OKRs. Trilhas, mentorias e evidências não têm ciclo — valem para a pessoa em qualquer período."
+        description="Cada ciclo agrupa avaliação e PDI. Trilhas, mentorias e evidências não têm ciclo — valem para a pessoa em qualquer período."
         actions={
           <div className="flex gap-2">
             <select
@@ -182,7 +181,7 @@ function CyclesPage() {
       <ConfirmDialog
         open={confirmDelete !== null}
         title={`Excluir ${confirmDelete?.name}?`}
-        description="O ciclo não tem avaliação, PDI nem OKR vinculado — pode ser excluído sem perder histórico. Esta ação não pode ser desfeita."
+        description="O ciclo não tem avaliação nem PDI vinculado — pode ser excluído sem perder histórico. Esta ação não pode ser desfeita."
         onCancel={() => setConfirmDelete(null)}
         onConfirm={() => {
           if (confirmDelete) store.removeCycle(confirmDelete.id);
@@ -196,8 +195,8 @@ function CyclesPage() {
             <DialogTitle>Não é possível excluir {blockedDelete?.name}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Este ciclo tem avaliação, PDI ou OKR vinculado — excluí-lo destruiria esse histórico.
-            Ciclos usados só podem ser encerrados (situação "Encerrado"), não excluídos.
+            Este ciclo tem avaliação ou PDI vinculado — excluí-lo destruiria esse histórico. Ciclos
+            usados só podem ser encerrados (situação "Encerrado"), não excluídos.
           </p>
           <DialogFooter>
             <Button onClick={() => setBlockedDelete(null)}>Entendi</Button>
@@ -289,7 +288,7 @@ const emptyCycle = (existing: DevelopmentCycle[]): DevelopmentCycle => {
  * e `name` juntos), então em criação são um par de seletores com checagem de
  * duplicidade — não dá para ter dois "2026 H1". Em edição ficam fixos: mudar
  * o período de um ciclo já em uso desalinharia `id` de tudo que referencia
- * `cycle_id` (avaliações, PDI, OKRs).
+ * `cycle_id` (avaliações, PDI).
  */
 function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () => void }) {
   const store = useStore();

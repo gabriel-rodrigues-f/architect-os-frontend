@@ -154,20 +154,6 @@ export interface DevelopmentPlan {
   items: DevelopmentPlanItem[];
 }
 
-export interface KeyResult {
-  id: string;
-  title: string;
-  progress: number;
-}
-
-export interface Okr {
-  id: string;
-  architectId: string;
-  cycleId: string;
-  objective: string;
-  keyResults: KeyResult[];
-}
-
 export type LearningItemType =
   | "Curso"
   | "Vídeo"

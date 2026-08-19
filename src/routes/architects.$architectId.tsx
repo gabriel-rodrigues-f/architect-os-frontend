@@ -71,7 +71,7 @@ function ArchitectProfile() {
   const labels = useLabels();
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  /** OKR, evidência e certificação são da pessoa — só ela (ou admin) registra; backend já recusa o resto. */
+  /** Evidência e certificação são da pessoa — só ela (ou admin) registra; backend já recusa o resto. */
   const isAdmin = user.role === "admin";
   const canEditOwn = isAdmin || user.architectId === architectId;
   const architect = sel.architectById(architectId);
@@ -90,12 +90,6 @@ function ArchitectProfile() {
   const gaps = sel.gapsFor(architect.id).filter((g) => g.gap > 0);
   const domains = sel.domainAverages(architect.id);
   const plan = sel.planFor(architect.id);
-  // Sem o cycleId, uma pessoa com OKR em mais de um ciclo podia mostrar o
-  // objetivo errado — o primeiro que o array trouxesse, não o do ciclo em
-  // foco. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 25.
-  const okr = store.okrs.find(
-    (o) => o.architectId === architect.id && o.cycleId === store.activeCycleId,
-  );
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
   const certifications = store.certifications.filter((c) => c.architectId === architect.id);
@@ -197,44 +191,6 @@ function ArchitectProfile() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-3">
-        <SectionCard title={t("arch.okr.title")} description={t("arch.okr.subtitle")}>
-          {okr ? (
-            <div>
-              <p className="text-sm font-medium">{okr.objective}</p>
-              <ul className="mt-2 space-y-2">
-                {okr.keyResults.map((k) => (
-                  <li key={k.id}>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs text-muted-foreground">{k.title}</p>
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {k.progress}%
-                      </span>
-                    </div>
-                    <Bar value={k.progress} className="mt-1" />
-                    {/* O progresso do KR é acompanhado aqui: antes só era exibido. */}
-                    {canEditOwn && (
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={5}
-                        value={k.progress}
-                        aria-label={`Progresso de ${k.title}`}
-                        onChange={(e) =>
-                          store.updateKeyResult(okr.id, k.id, Number(e.target.value))
-                        }
-                        className="mt-1 w-full accent-primary"
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t("arch.okr.none")}</p>
-          )}
-        </SectionCard>
-
         <SectionCard title={t("arch.paths.title")} description={t("arch.paths.subtitle")}>
           <ul className="space-y-2">
             {paths.map((p) => {

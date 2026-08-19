@@ -13,7 +13,6 @@ export const emptyState: AppState = {
   assessments: [],
   cycles: [],
   plans: [],
-  okrs: [],
   learningPaths: [],
   mentoringSessions: [],
   evidences: [],
