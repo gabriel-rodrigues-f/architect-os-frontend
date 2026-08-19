@@ -20,6 +20,7 @@ import {
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import type { MentoringSession } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, todayIso } from "@/lib/text";
 
@@ -59,9 +60,18 @@ function MentoringPage() {
   // O mentor é quem está registrando a sessão, não um nome fixo no código.
   const user = useCurrentUser();
   const sel = useSelectors();
+  /**
+   * MENT-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — o
+   * backend (`canActFor`, `POST /api/mentoring-sessions`) só aceita a
+   * própria pessoa mentorada, o Tech Lead dela, ou admin como autor da
+   * sessão; a lista de mentorados nasce restrita ao mesmo escopo, em vez de
+   * oferecer qualquer pessoa do roster e devolver 403 só depois de
+   * preencher o formulário inteiro.
+   */
+  const menteeOptions = sel.activeArchitects.filter((a) => canActFor(user, a));
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    menteeId: sel.activeArchitects[0]?.id ?? "",
+    menteeId: menteeOptions[0]?.id ?? "",
     date: todayIso(),
     durationMin: "",
     topic: "",
@@ -184,7 +194,7 @@ function MentoringPage() {
                         value={form.menteeId}
                         onChange={(e) => setField("menteeId", e.target.value)}
                       >
-                        {sel.activeArchitects.map((a) => (
+                        {menteeOptions.map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.name}
                           </option>

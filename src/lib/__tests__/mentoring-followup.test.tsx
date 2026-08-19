@@ -167,4 +167,25 @@ describe("Mentoria — agendar follow-up", () => {
     ) as [string, RequestInit];
     expect(JSON.parse(String(call[1].body))).toEqual({ nextSession: "2026-09-01" });
   });
+
+  /**
+   * MENT-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — o
+   * backend só aceita a própria pessoa, o Tech Lead dela, ou admin como
+   * mentor; a lista de mentorados no formulário de nova sessão precisa
+   * nascer restrita ao mesmo escopo, não oferecer o roster inteiro
+   * (`outsider` só tem relação com "bruno", ele mesmo — nunca com "ana").
+   */
+  it("formulário de nova sessão só oferece mentorados sob o escopo real de quem registra", async () => {
+    mockSession(outsider);
+    render(
+      <Wrapper>
+        <MentoringPage />
+      </Wrapper>,
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
+    const select = screen.getByLabelText("Mentorado") as HTMLSelectElement;
+    const options = [...select.options].map((o) => o.textContent);
+    expect(options).toEqual(["Bruno Almeida"]);
+  });
 });
