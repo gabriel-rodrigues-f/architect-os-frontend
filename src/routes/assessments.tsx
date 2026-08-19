@@ -37,7 +37,7 @@ export const Route = createFileRoute("/assessments")({
 function AssessmentsPage() {
   const store = useStore();
   const sel = useSelectors();
-  const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
+  const [architectId, setArchitectId] = useState(sel.activeArchitects[0]?.id ?? "");
   const { t } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();
@@ -51,6 +51,7 @@ function AssessmentsPage() {
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
   const assessment = sel.assessmentFor(architectId);
+  const selectedArchitect = sel.architectById(architectId);
 
   /**
    * Quem pode escrever o quê agora — espelha a regra do backend
@@ -120,11 +121,24 @@ function AssessmentsPage() {
               value={architectId}
               onChange={(e) => setArchitectId(e.target.value)}
             >
-              {store.architects.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
+              <optgroup label={t("asmt.architect.active")}>
+                {sel.activeArchitects.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </optgroup>
+              {store.architects.some((a) => !a.active) && (
+                <optgroup label={t("asmt.architect.inactive")}>
+                  {store.architects
+                    .filter((a) => !a.active)
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                </optgroup>
+              )}
             </select>
             <CapabilityCombobox
               categories={store.categories}
@@ -190,6 +204,8 @@ function AssessmentsPage() {
             <p className="text-sm text-muted-foreground">
               Cadastre um arquiteto em Time antes de abrir avaliações.
             </p>
+          ) : selectedArchitect && !selectedArchitect.active ? (
+            <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.inactive")}</p>
           ) : (
             <>
               <p className="text-sm text-muted-foreground">

@@ -85,7 +85,7 @@ function CapabilityMapPage() {
   const areas = store.categories
     .filter((cat) => cat.active)
     .map((cat) => {
-      const people = store.architects.map((a) => ({
+      const people = sel.activeArchitects.map((a) => ({
         architect: a,
         level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg,
       }));

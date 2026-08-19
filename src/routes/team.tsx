@@ -68,7 +68,7 @@ function TeamPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<ArchitectForm>(emptyForm());
   const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
-  const activeArchitects = store.architects.filter((a) => a.active);
+  const activeArchitects = sel.activeArchitects;
   const inactiveArchitects = store.architects.filter((a) => !a.active);
 
   const openCreate = () => {

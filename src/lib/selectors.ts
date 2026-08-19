@@ -1,5 +1,12 @@
 import type { AppState } from "./api";
-import type { Assessment, Competency, CompetencyCategory, Level, RoleName } from "./domain";
+import type {
+  Architect,
+  Assessment,
+  Competency,
+  CompetencyCategory,
+  Level,
+  RoleName,
+} from "./domain";
 
 /**
  * Derivações puras sobre o snapshot da API. Ficam fora do componente para poderem
@@ -71,6 +78,16 @@ export function createSelectors(s: AppState) {
   const competencyById = (id: string) => competencyIndex.get(id);
   const categoryById = (id: string) => categoryIndex.get(id);
   const architectById = (id: string) => architectIndex.get(id);
+
+  /**
+   * Time atual — quem já saiu não conta em análise de capacidade, lacuna,
+   * necessidade de treinamento nem em atribuição nova de trilha/mentoria/PDI/
+   * avaliação. Uma tela que quer incluir gente inativa explicitamente (ex.:
+   * Time, que separa ativos/inativos) usa `s.architects` direto, não este
+   * selector. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md,
+   * EPIC E.
+   */
+  const activeArchitects: Architect[] = s.architects.filter((a) => a.active);
 
   /**
    * Nome/domínio de um item de assessment: catálogo atual quando a competência
@@ -166,10 +183,10 @@ export function createSelectors(s: AppState) {
     return averages;
   };
 
-  /** LNT: lacunas positivas agregadas por competência, ordenadas pelo impacto. */
+  /** LNT: lacunas positivas agregadas por competência, ordenadas pelo impacto — só time atual. */
   const teamTrainingNeeds = (): TrainingNeed[] => {
     const totals = new Map<string, { people: number; totalGap: number }>();
-    for (const architect of s.architects) {
+    for (const architect of activeArchitects) {
       for (const gap of gapsFor(architect.id)) {
         if (gap.gap <= 0) continue;
         const acc = totals.get(gap.item.competencyId) ?? { people: 0, totalGap: 0 };
@@ -195,6 +212,7 @@ export function createSelectors(s: AppState) {
     competencyById,
     categoryById,
     architectById,
+    activeArchitects,
     assessmentFor,
     officialAssessmentFor,
     planFor,

@@ -39,7 +39,7 @@ function PlansPage() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
-  const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
+  const [architectId, setArchitectId] = useState(sel.activeArchitects[0]?.id ?? "");
   /** Item cujo formulário de meta SMART está aberto — nunca mais que um por vez. */
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
   const { t, locale } = useI18n();
@@ -86,7 +86,7 @@ function PlansPage() {
             value={architectId}
             onChange={(e) => setArchitectId(e.target.value)}
           >
-            {store.architects.map((a) => (
+            {sel.activeArchitects.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
               </option>

@@ -422,5 +422,8 @@
   "users.architect.none": "Nenhum",
   "users.loading": "Carregando contas…",
   "users.error.load": "Não foi possível carregar as contas.",
-  "users.toast.updated": "Conta de {nome} atualizada"
+  "users.toast.updated": "Conta de {nome} atualizada",
+  "asmt.architect.active": "Time atual",
+  "asmt.architect.inactive": "Inativos",
+  "asmt.noAssessment.inactive": "Esta pessoa não está mais no time ativo — não é possível abrir uma nova avaliação. As avaliações que ela já tinha continuam acessíveis pelo seletor acima."
 }

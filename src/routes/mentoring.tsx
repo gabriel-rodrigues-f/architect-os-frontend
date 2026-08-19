@@ -52,7 +52,7 @@ function MentoringPage() {
   const sel = useSelectors();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    menteeId: store.architects[0]?.id ?? "",
+    menteeId: sel.activeArchitects[0]?.id ?? "",
     date: todayIso(),
     durationMin: "60",
     topic: "",
@@ -139,7 +139,7 @@ function MentoringPage() {
                         value={form.menteeId}
                         onChange={(e) => setField("menteeId", e.target.value)}
                       >
-                        {store.architects.map((a) => (
+                        {sel.activeArchitects.map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.name}
                           </option>

@@ -143,4 +143,34 @@ describe("createSelectors", () => {
     expect(empty.teamTrainingNeeds()).toEqual([]);
     expect(empty.domainAverages("ana")).toEqual([]);
   });
+
+  /**
+   * EPIC E — quem já saiu do time não conta como time atual: nem na lista
+   * de `activeArchitects`, nem na Necessidade de Treinamento agregada.
+   * `gapsFor`/`domainAverages` continuam funcionando por id explícito (uma
+   * tela histórica pode pedir o gap de alguém inativo de propósito).
+   */
+  describe("activeArchitects — time atual exclui quem saiu", () => {
+    const comInativo = createSelectors({
+      ...fixtureState,
+      architects: fixtureState.architects.map((a) =>
+        a.id === "bruno" ? { ...a, active: false } : a,
+      ),
+    });
+
+    it("activeArchitects não lista bruno", () => {
+      expect(comInativo.activeArchitects.map((a) => a.id)).toEqual(["ana"]);
+    });
+
+    it("teamTrainingNeeds ignora as lacunas de bruno", () => {
+      const needs = comInativo.teamTrainingNeeds();
+      // Sem o bruno, só a lacuna de segurança da ana permanece.
+      expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam"]);
+      expect(needs[0]).toMatchObject({ people: 1, totalGap: 1 });
+    });
+
+    it("gapsFor ainda funciona para quem está inativo — histórico continua acessível", () => {
+      expect(comInativo.gapsFor("bruno").length).toBeGreaterThan(0);
+    });
+  });
 });

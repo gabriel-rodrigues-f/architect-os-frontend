@@ -42,9 +42,10 @@ function Dashboard() {
   /**
    * Quem desativou (saiu do time) não conta nos agregados do Painel — ver
    * histórico dela continua em /architects/:id, só não representa mais o
-   * time atual. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18.
+   * time atual. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18, e
+   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC E.
    */
-  const architects = store.architects.filter((a) => a.active);
+  const architects = sel.activeArchitects;
 
   const allGaps = architects.flatMap((a) => sel.gapsFor(a.id).map((g) => ({ ...g, architect: a })));
   const criticalGaps = allGaps.filter((g) => g.gap >= 3).length;
