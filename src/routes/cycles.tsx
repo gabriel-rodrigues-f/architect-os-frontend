@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { EvolutionLine } from "@/components/app/charts";
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,24 @@ function CyclesPage() {
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
   const { t, locale } = useI18n();
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<DevelopmentCycle | null>(null);
+  const [blockedDelete, setBlockedDelete] = useState<DevelopmentCycle | null>(null);
+
+  /**
+   * Ciclo com avaliação, PDI ou OKR vinculado não é deletável — o backend já
+   * recusa com 409, mas checar aqui evita abrir "tem certeza?" para uma ação
+   * que nunca teria efeito, e explica o motivo na hora. Ver AUDITORIA-RIGIDA-
+   * SEGUNDA-REVISAO-SYNAPSE.md, Seção 23.
+   */
+  const cycleInUse = (cycleId: string) =>
+    store.assessments.some((a) => a.cycleId === cycleId) ||
+    store.plans.some((p) => p.cycleId === cycleId) ||
+    store.okrs.some((o) => o.cycleId === cycleId);
+
+  const askDeleteCycle = (cycle: DevelopmentCycle) => {
+    if (cycleInUse(cycle.id)) setBlockedDelete(cycle);
+    else setConfirmDelete(cycle);
+  };
 
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
   const chartData = closedCycles.map((c) => {
@@ -120,7 +139,7 @@ function CyclesPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => store.removeCycle(c.id)}
+                      onClick={() => askDeleteCycle(c)}
                       aria-label={`Excluir ${c.name}`}
                       className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                     >
@@ -151,6 +170,32 @@ function CyclesPage() {
       </div>
 
       {editing && <CycleDialog cycle={editing} onClose={() => setEditing(null)} />}
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title={`Excluir ${confirmDelete?.name}?`}
+        description="O ciclo não tem avaliação, PDI nem OKR vinculado — pode ser excluído sem perder histórico. Esta ação não pode ser desfeita."
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={() => {
+          if (confirmDelete) store.removeCycle(confirmDelete.id);
+          setConfirmDelete(null);
+        }}
+      />
+
+      <Dialog open={blockedDelete !== null} onOpenChange={(v) => !v && setBlockedDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Não é possível excluir {blockedDelete?.name}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Este ciclo tem avaliação, PDI ou OKR vinculado — excluí-lo destruiria esse histórico.
+            Ciclos usados só podem ser encerrados (situação "Encerrado"), não excluídos.
+          </p>
+          <DialogFooter>
+            <Button onClick={() => setBlockedDelete(null)}>Entendi</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <SectionCard title={t("cycle.evolution.title")} description={t("cycle.evolution.subtitle")}>
         <EvolutionLine data={chartData} series={series} />

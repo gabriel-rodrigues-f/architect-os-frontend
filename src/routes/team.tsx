@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -79,7 +79,9 @@ function TeamPage() {
   /** `null` = diálogo fechado; string vazia = criação; id = edição. */
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<ArchitectForm>(emptyForm());
-  const [confirmDelete, setConfirmDelete] = useState<Architect | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
+  const activeArchitects = store.architects.filter((a) => a.active);
+  const inactiveArchitects = store.architects.filter((a) => !a.active);
 
   const openCreate = () => {
     setForm(emptyForm());
@@ -120,16 +122,30 @@ function TeamPage() {
         ...payload,
         performance: "Medium",
         potential: "Medium",
+        active: true,
       });
     }
     setEditing(null);
   };
 
-  const remove = () => {
-    if (!confirmDelete) return;
-    store.removeArchitect(confirmDelete.id);
-    toast.success(t("team.delete.toast", { nome: confirmDelete.name }));
-    setConfirmDelete(null);
+  /**
+   * "Excluir" virou "Desativar": apaga o cadastro em cascata (avaliações,
+   * PDI, OKR, SWOT, mentorias, evidências, certificações) sempre destruiu
+   * histórico de gente que só saiu do time. `active: false` some do roster
+   * e dos agregados do Painel sem apagar nada — o perfil e o histórico
+   * continuam abertos em /architects/:id. Ver AUDITORIA-RIGIDA-SEGUNDA-
+   * REVISAO-SYNAPSE.md, Seção 18.
+   */
+  const deactivate = () => {
+    if (!confirmDeactivate) return;
+    store.updateArchitect(confirmDeactivate.id, { active: false });
+    toast.success(t("team.deactivate.toast", { nome: confirmDeactivate.name }));
+    setConfirmDeactivate(null);
+  };
+
+  const reactivate = (a: Architect) => {
+    store.updateArchitect(a.id, { active: true });
+    toast.success(t("team.reactivate.toast", { nome: a.name }));
   };
 
   return (
@@ -153,7 +169,7 @@ function TeamPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {store.architects.map((a) => {
+        {activeArchitects.map((a) => {
           const top = sel.gapsFor(a.id).slice(0, 3);
           const { avg } = averageWithCoverage(sel.domainAverages(a.id).map((d) => d.avg));
           const hasOfficial = sel.officialAssessmentFor(a.id) !== undefined;
@@ -186,11 +202,12 @@ function TeamPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setConfirmDelete(a)}
-                      aria-label={`Excluir ${a.name}`}
+                      onClick={() => setConfirmDeactivate(a)}
+                      aria-label={`Desativar ${a.name}`}
+                      title={t("team.deactivate.action")}
                       className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <UserX className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 )}
@@ -232,6 +249,37 @@ function TeamPage() {
           );
         })}
       </div>
+
+      {isAdmin && inactiveArchitects.length > 0 && (
+        <SectionCard
+          className="mt-6"
+          title={t("team.inactive.title")}
+          description={t("team.inactive.subtitle")}
+        >
+          <ul className="divide-y divide-border">
+            {inactiveArchitects.map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <Link
+                    to="/architects/$architectId"
+                    params={{ architectId: a.id }}
+                    className="truncate text-sm font-medium hover:text-primary"
+                  >
+                    {a.name}
+                  </Link>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {a.role} · {a.specialization}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => reactivate(a)}>
+                  <UserCheck className="h-3.5 w-3.5" />
+                  {t("team.reactivate.action")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
 
       <RoleProfilesCard />
 
@@ -342,11 +390,13 @@ function TeamPage() {
       </Dialog>
 
       <ConfirmDialog
-        open={confirmDelete !== null}
-        title={`Excluir ${confirmDelete?.name}?`}
-        description="Avaliações, PDIs, OKRs, SWOT, mentorias, evidências e certificações deste arquiteto também serão removidos. As trilhas permanecem, apenas sem a atribuição."
-        onCancel={() => setConfirmDelete(null)}
-        onConfirm={remove}
+        open={confirmDeactivate !== null}
+        title={`Desativar ${confirmDeactivate?.name}?`}
+        description="A pessoa some do roster e dos números do Painel, mas nada é apagado: avaliações, PDI, OKR, SWOT, mentorias, evidências e certificações continuam no perfil dela. Dá para reativar depois."
+        confirmLabel={t("team.deactivate.action")}
+        destructive={false}
+        onCancel={() => setConfirmDeactivate(null)}
+        onConfirm={deactivate}
       />
     </>
   );

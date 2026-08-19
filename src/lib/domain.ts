@@ -73,6 +73,8 @@ export interface Architect {
   gapDomain: string;
   performance: "Low" | "Medium" | "High";
   potential: "Low" | "Medium" | "High";
+  /** Fora do time hoje, mas o histórico (assessments, PDI, OKR...) permanece. */
+  active: boolean;
 }
 
 /**
