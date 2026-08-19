@@ -75,6 +75,13 @@ export interface Architect {
   email: string;
   /** Fora do time hoje, mas o histórico (assessments, PDI, OKR...) permanece. */
   active: boolean;
+  /**
+   * Id da conta `lead` responsável por esta pessoa — quem pode agir como Tech
+   * Lead dela (revisar avaliação/evidência, escrever PDI/progresso de
+   * trilha). `null`/ausente = sem Lead atribuído ainda; só a própria pessoa e
+   * um admin têm acesso. Só admin atribui.
+   */
+  leadUserId?: string | null | undefined;
 }
 
 /**
@@ -234,7 +241,9 @@ export function progressFor(
 
 export interface MentoringSession {
   id: string;
+  /** Nome do mentor — só apresentação; o servidor sempre deriva do usuário autenticado. */
   mentor: string;
+  mentorUserId?: string | null | undefined;
   menteeId: string;
   date: string;
   durationMin: number;

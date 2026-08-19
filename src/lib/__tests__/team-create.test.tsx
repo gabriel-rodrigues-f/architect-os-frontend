@@ -79,6 +79,11 @@ describe("Time — cadastro sem dado fabricado", () => {
           }),
         );
       }
+      if (href.endsWith("/api/auth/users")) {
+        return Promise.resolve(
+          new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
+        );
+      }
       if (init?.method === "POST" && href.endsWith("/api/architects")) {
         const body = JSON.parse(String(init.body)) as Record<string, unknown>;
         return Promise.resolve(

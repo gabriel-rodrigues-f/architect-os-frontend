@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Pencil, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ROLES, type Architect, type RoleName } from "@/lib/domain";
+import { authApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
@@ -47,6 +49,7 @@ interface ArchitectForm {
   specialization: string;
   years: string;
   email: string;
+  leadUserId: string;
 }
 
 const emptyForm = (): ArchitectForm => ({
@@ -55,6 +58,7 @@ const emptyForm = (): ArchitectForm => ({
   specialization: "",
   years: "",
   email: "",
+  leadUserId: "",
 });
 
 function TeamPage() {
@@ -63,6 +67,14 @@ function TeamPage() {
   const sel = useSelectors();
   /** Cadastro do roster é decisão administrativa — backend já recusa o resto. */
   const isAdmin = useCurrentUser().role === "admin";
+  /** Só para montar o seletor de "Lead responsável" — a rota já é admin-only no backend. */
+  const { data: users } = useQuery({
+    queryKey: ["auth-users"],
+    queryFn: authApi.users,
+    staleTime: 30_000,
+    enabled: isAdmin,
+  });
+  const leadOptions = (users ?? []).filter((u) => u.role === "lead" || u.role === "admin");
 
   /** `null` = diálogo fechado; string vazia = criação; id = edição. */
   const [editing, setEditing] = useState<string | null>(null);
@@ -83,6 +95,7 @@ function TeamPage() {
       specialization: architect.specialization,
       years: String(architect.yearsAsArchitect),
       email: architect.email,
+      leadUserId: architect.leadUserId ?? "",
     });
     setEditing(architect.id);
   };
@@ -112,6 +125,7 @@ function TeamPage() {
       yearsAsArchitect: Number(form.years),
       specialization: form.specialization.trim(),
       email: form.email.trim(),
+      leadUserId: form.leadUserId || null,
     };
 
     if (editing) {
@@ -312,6 +326,25 @@ function TeamPage() {
                 ))}
               </select>
             </div>
+            {editing && (
+              <div>
+                <Label htmlFor="leadUserId">{t("team.form.lead")}</Label>
+                <select
+                  id="leadUserId"
+                  className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                  value={form.leadUserId}
+                  onChange={(e) => setForm({ ...form, leadUserId: e.target.value })}
+                >
+                  <option value="">{t("team.form.lead.none")}</option>
+                  {leadOptions.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">{t("team.form.lead.hint")}</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="spec">{t("team.form.spec")}</Label>

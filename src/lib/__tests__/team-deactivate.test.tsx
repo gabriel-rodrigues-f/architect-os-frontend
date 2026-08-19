@@ -79,6 +79,11 @@ describe("Time — desativar preserva histórico", () => {
           }),
         );
       }
+      if (href.endsWith("/api/auth/users")) {
+        return Promise.resolve(
+          new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
+        );
+      }
       if (init?.method === "PATCH" && href.includes("/api/architects/")) {
         const body = JSON.parse(String(init.body)) as { active: boolean };
         return Promise.resolve(

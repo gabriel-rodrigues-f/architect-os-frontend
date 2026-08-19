@@ -448,5 +448,9 @@
   "needs.intervention.toast": "Trilha coletiva de {competencia} criada",
   "needs.intervention.pathName": "Intervenção coletiva — {competencia}",
   "needs.intervention.pathDescription": "Trilha criada a partir da Necessidade de Treinamento — atribuída às {n} pessoas com lacuna nesta competência.",
-  "ev.review.saving": "Salvando…"
+  "ev.review.saving": "Salvando…",
+  "users.adminOnly": "Diretório de contas é restrito a administradores.",
+  "team.form.lead": "Lead responsável",
+  "team.form.lead.none": "Nenhum",
+  "team.form.lead.hint": "Quem pode revisar avaliação/evidência e escrever no PDI desta pessoa como Tech Lead."
 }
