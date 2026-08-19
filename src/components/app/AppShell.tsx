@@ -7,6 +7,7 @@ import {
   GraduationCap,
   Grid3x3,
   LayoutDashboard,
+  Library,
   LogOut,
   Map,
   Monitor,
@@ -30,20 +31,57 @@ import { useI18n, type MessageKey } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { useTheme, type Theme } from "@/lib/theme";
 
-const NAV: { to: string; labelKey: MessageKey; icon: typeof LayoutDashboard }[] = [
-  { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { to: "/team", labelKey: "nav.team", icon: Users },
-  { to: "/capability-map", labelKey: "nav.capabilityMap", icon: Map },
-  { to: "/competency-matrix", labelKey: "nav.competencyMatrix", icon: Grid3x3 },
-  { to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck },
-  { to: "/gap-analysis", labelKey: "nav.gapAnalysis", icon: TrendingDown },
-  { to: "/development-plans", labelKey: "nav.developmentPlans", icon: Target },
-  { to: "/learning-paths", labelKey: "nav.learningPaths", icon: BookOpen },
-  { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
-  { to: "/training-needs", labelKey: "nav.trainingNeeds", icon: BarChart3 },
-  { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
-  { to: "/users", labelKey: "nav.users", icon: UserCog },
+interface NavItem {
+  to: string;
+  labelKey: MessageKey;
+  icon: typeof LayoutDashboard;
+}
+
+interface NavGroup {
+  /** `undefined` = grupo de um item só, sem cabeçalho (Home, Pessoas, Avaliações). */
+  labelKey?: MessageKey;
+  items: NavItem[];
+}
+
+/**
+ * Home / Pessoas / Capacidades / Avaliações / Desenvolvimento / Administração
+ * — os seis agrupamentos substituem a lista plana de páginas que a barra
+ * lateral tinha antes. Cada URL continua a mesma (nenhuma página mudou de
+ * rota, só de posição no menu), então não há redirecionamento para manter.
+ * Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC F.
+ */
+const NAV_GROUPS: NavGroup[] = [
+  { items: [{ to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard }] },
+  { items: [{ to: "/team", labelKey: "nav.team", icon: Users }] },
+  {
+    labelKey: "nav.group.capabilities",
+    items: [
+      { to: "/capability-map", labelKey: "nav.capabilityMap", icon: Map },
+      { to: "/gap-analysis", labelKey: "nav.gapAnalysis", icon: TrendingDown },
+      { to: "/training-needs", labelKey: "nav.trainingNeeds", icon: BarChart3 },
+    ],
+  },
+  { items: [{ to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck }] },
+  {
+    labelKey: "nav.group.development",
+    items: [
+      { to: "/development-plans", labelKey: "nav.developmentPlans", icon: Target },
+      { to: "/learning-paths", labelKey: "nav.learningPaths", icon: BookOpen },
+      { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
+    ],
+  },
+  {
+    labelKey: "nav.group.admin",
+    items: [
+      { to: "/competency-matrix", labelKey: "nav.competencyMatrix", icon: Grid3x3 },
+      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
+      { to: "/users", labelKey: "nav.users", icon: UserCog },
+      { to: "/settings", labelKey: "nav.reference", icon: Library },
+    ],
+  },
 ];
+
+const NAV: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
 
 const SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";
 const SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
@@ -268,45 +306,60 @@ export function AppShell({ children }: { children: ReactNode }) {
               collapsed ? "px-2" : "px-3",
             )}
           >
-            {NAV.map((item) => {
-              const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
-              const label = t(item.labelKey);
-              const link = (
-                <Link
-                  to={item.to}
-                  aria-label={label}
-                  className={cn(
-                    "flex items-center rounded-lg py-2 text-sm transition-colors",
-                    collapsed ? "justify-center px-0" : "gap-2.5 px-3",
-                    active
-                      ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-                  )}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  <span
-                    data-nav-label
-                    className={cn(
-                      "overflow-hidden whitespace-nowrap transition-all duration-300",
-                      collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                    )}
-                  >
-                    {label}
-                  </span>
-                </Link>
-              );
+            {NAV_GROUPS.map((group, groupIndex) => (
+              <div
+                key={group.labelKey ?? `group-${groupIndex}`}
+                className={groupIndex > 0 ? "pt-2" : ""}
+              >
+                {group.labelKey && !collapsed && (
+                  <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50">
+                    {t(group.labelKey)}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active =
+                      item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+                    const label = t(item.labelKey);
+                    const link = (
+                      <Link
+                        to={item.to}
+                        aria-label={label}
+                        className={cn(
+                          "flex items-center rounded-lg py-2 text-sm transition-colors",
+                          collapsed ? "justify-center px-0" : "gap-2.5 px-3",
+                          active
+                            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                        )}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span
+                          data-nav-label
+                          className={cn(
+                            "overflow-hidden whitespace-nowrap transition-all duration-300",
+                            collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+                          )}
+                        >
+                          {label}
+                        </span>
+                      </Link>
+                    );
 
-              // Minimizada, o nome aparece ao passar o mouse — é o que devolve
-              // a legibilidade que o rótulo dava.
-              return collapsed ? (
-                <Tooltip key={item.to}>
-                  <TooltipTrigger asChild>{link}</TooltipTrigger>
-                  <TooltipContent side="right">{label}</TooltipContent>
-                </Tooltip>
-              ) : (
-                <div key={item.to}>{link}</div>
-              );
-            })}
+                    // Minimizada, o nome aparece ao passar o mouse — é o que devolve
+                    // a legibilidade que o rótulo dava.
+                    return collapsed ? (
+                      <Tooltip key={item.to}>
+                        <TooltipTrigger asChild>{link}</TooltipTrigger>
+                        <TooltipContent side="right">{label}</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <div key={item.to}>{link}</div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
 
           <div

@@ -425,5 +425,9 @@
   "users.toast.updated": "{nome}'s account updated",
   "asmt.architect.active": "Current team",
   "asmt.architect.inactive": "Inactive",
-  "asmt.noAssessment.inactive": "This person is no longer on the active team — a new assessment can't be opened. Assessments they already had remain accessible from the selector above."
+  "asmt.noAssessment.inactive": "This person is no longer on the active team — a new assessment can't be opened. Assessments they already had remain accessible from the selector above.",
+  "nav.group.capabilities": "Capabilities",
+  "nav.group.development": "Development",
+  "nav.group.admin": "Administration",
+  "nav.reference": "Model Reference"
 }

@@ -425,5 +425,9 @@
   "users.toast.updated": "Conta de {nome} atualizada",
   "asmt.architect.active": "Time atual",
   "asmt.architect.inactive": "Inativos",
-  "asmt.noAssessment.inactive": "Esta pessoa não está mais no time ativo — não é possível abrir uma nova avaliação. As avaliações que ela já tinha continuam acessíveis pelo seletor acima."
+  "asmt.noAssessment.inactive": "Esta pessoa não está mais no time ativo — não é possível abrir uma nova avaliação. As avaliações que ela já tinha continuam acessíveis pelo seletor acima.",
+  "nav.group.capabilities": "Capacidades",
+  "nav.group.development": "Desenvolvimento",
+  "nav.group.admin": "Administração",
+  "nav.reference": "Referência do Modelo"
 }
