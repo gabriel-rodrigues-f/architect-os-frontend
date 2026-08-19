@@ -223,6 +223,7 @@ export const fixtureState: AppState = {
       competencyIds: ["security-iam"],
       date: "2026-08-06",
       complexity: "High",
+      status: "Pending",
     },
   ],
   certifications: [],
