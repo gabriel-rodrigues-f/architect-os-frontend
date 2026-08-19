@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -118,6 +119,7 @@ function CapabilityMapPage() {
 
   return (
     <>
+      <CapabilitiesTabs />
       <PageHeader title={t("cap.title")} description={t("cap.subtitle")} />
 
       {store.categories.length === 0 && (

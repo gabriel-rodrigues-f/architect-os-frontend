@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  BarChart3,
   BookOpen,
   CalendarRange,
   ClipboardCheck,
@@ -17,7 +16,6 @@ import {
   Settings,
   Sun,
   Target,
-  TrendingDown,
   UserCog,
   Users,
 } from "lucide-react";
@@ -35,6 +33,8 @@ interface NavItem {
   to: string;
   labelKey: MessageKey;
   icon: typeof LayoutDashboard;
+  /** Rotas extras que também contam como "este item está ativo" (abas internas). */
+  activePrefixes?: string[];
 }
 
 interface NavGroup {
@@ -49,16 +49,27 @@ interface NavGroup {
  * lateral tinha antes. Cada URL continua a mesma (nenhuma página mudou de
  * rota, só de posição no menu), então não há redirecionamento para manter.
  * Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC F.
+ *
+ * FASE 2 (quinta rodada) — Mapa de Capacidades, Análise de Lacunas e
+ * Necessidades de Treinamento eram três itens de primeiro nível para o
+ * mesmo momento de decisão; a auditoria chamava Training Needs de
+ * "redundante como tela standalone" e recomendava consolidar em
+ * "Capacidades". Os três viram um item só aqui — a navegação entre eles
+ * agora é por abas dentro da própria tela (`CapabilitiesTabs`), não mais
+ * três entradas concorrendo no menu. Ver AUDITORIA-QUINTA-RODADA-360-
+ * SYNAPSE-2026-08-19.md, Seção 6 e 33.
  */
 const NAV_GROUPS: NavGroup[] = [
   { items: [{ to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard }] },
   { items: [{ to: "/team", labelKey: "nav.team", icon: Users }] },
   {
-    labelKey: "nav.group.capabilities",
     items: [
-      { to: "/capability-map", labelKey: "nav.capabilityMap", icon: Map },
-      { to: "/gap-analysis", labelKey: "nav.gapAnalysis", icon: TrendingDown },
-      { to: "/training-needs", labelKey: "nav.trainingNeeds", icon: BarChart3 },
+      {
+        to: "/capability-map",
+        labelKey: "nav.capabilities",
+        icon: Map,
+        activePrefixes: ["/gap-analysis", "/training-needs"],
+      },
     ],
   },
   { items: [{ to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck }] },
@@ -319,7 +330,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <div className="space-y-0.5">
                   {group.items.map((item) => {
                     const active =
-                      item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+                      item.to === "/"
+                        ? pathname === "/"
+                        : pathname.startsWith(item.to) ||
+                          (item.activePrefixes?.some((p) => pathname.startsWith(p)) ?? false);
                     const label = t(item.labelKey);
                     const link = (
                       <Link

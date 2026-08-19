@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
+import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { DomainRadar } from "@/components/app/charts";
 import { GapBadge, LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useCurrentUser } from "@/lib/auth";
@@ -146,6 +147,7 @@ function GapPage() {
 
   return (
     <>
+      <CapabilitiesTabs />
       <PageHeader
         title={t("gap.title")}
         description={t("gap.subtitle")}

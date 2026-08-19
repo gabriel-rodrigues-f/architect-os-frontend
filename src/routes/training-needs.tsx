@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
+import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
@@ -96,6 +97,7 @@ function TrainingNeedsPage() {
 
   return (
     <>
+      <CapabilitiesTabs />
       <PageHeader title={t("needs.title")} description={t("needs.subtitle")} />
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">

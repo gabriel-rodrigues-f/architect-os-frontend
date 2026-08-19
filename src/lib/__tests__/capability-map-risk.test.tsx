@@ -1,7 +1,24 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * `<Link>` do TanStack Router precisa de um `RouterProvider` real. A tela de
+ * Capacidades ganhou `CapabilitiesTabs` (FASE 2, quinta rodada), que usa
+ * `<Link>` para as três abas — como este teste não monta o router da
+ * aplicação, troca por uma âncora comum. Mesmo padrão de
+ * team-deactivate.test.tsx.
+ */
+vi.mock("@tanstack/react-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
+  return {
+    ...actual,
+    Link: ({ children, to: _to, ...rest }: ComponentProps<"a"> & { to?: string }) => (
+      <a {...rest}>{children}</a>
+    ),
+  };
+});
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "../api";
