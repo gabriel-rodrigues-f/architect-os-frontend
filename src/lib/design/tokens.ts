@@ -286,19 +286,6 @@ const series = (name: string, light: string): TokenDefinition => ({
 });
 
 /**
- * Quadrante da 9 Box. O escuro é fixado, não derivado: a regra de `fill` mira
- * badge (faixa tingida com texto por cima) e produziria fundos mais claros que
- * o card apoiado neles, invertendo a leitura de profundidade. Aqui o quadrante
- * precisa recuar para o card flutuar — daí um tom abaixo do `--card` (0.208).
- */
-const quadrant = (name: string, hue: number, chromaClara: number): TokenDefinition => ({
-  name,
-  role: "fill",
-  light: new Oklch(0.95, chromaClara, hue),
-  darkOverride: new Oklch(0.165, chromaClara * 0.9, hue),
-});
-
-/**
  * Escala de proficiência e severidade de lacuna — o vocabulário visual próprio
  * do Synapse. Eram justamente estes os tokens que o bloco `.dark` do
  * projeto não redefinia, e por isso apareciam em pastel claro sobre fundo
@@ -441,19 +428,6 @@ export const tokenRegistry = new TokenRegistry().register(
     disputar cor com as séries faria o alvo competir com o dado.
   */
   series("chart-reference", "oklch(0.55 0.02 250)"),
-
-  /*
-    Quadrantes da matriz 9 Box. Reusam a progressão "ruim → bom" da escala de
-    proficiência, mas em tokens próprios porque a tela aplicava `bg-level-N/50`
-    — o mesmo erro de opacidade já corrigido no badge de lacuna. Meia
-    opacidade sobre fundo variável não é cor previsível: no escuro, os
-    quadrantes compunham com a página e viravam manchas quase idênticas.
-  */
-  quadrant("quadrant-1", 25, 0.03),
-  quadrant("quadrant-2", 65, 0.035),
-  quadrant("quadrant-3", 110, 0.035),
-  quadrant("quadrant-4", 165, 0.045),
-  quadrant("quadrant-5", 195, 0.055),
 );
 
 /** CSS de um tema, pronto para colar no stylesheet. */

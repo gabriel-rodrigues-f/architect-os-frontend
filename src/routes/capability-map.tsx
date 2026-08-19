@@ -73,7 +73,6 @@ function CapabilityMapPage() {
   const [editing, setEditing] = useState<CompetencyCategory | null>(null);
   const [editName, setEditName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<CompetencyCategory | null>(null);
-  const [blockedDelete, setBlockedDelete] = useState<CompetencyCategory | null>(null);
 
   /**
    * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para o
@@ -83,22 +82,24 @@ function CapabilityMapPage() {
    * verdade, os dois casos ficando indistinguíveis na tela. Ver
    * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 7.
    */
-  const areas = store.categories.map((cat) => {
-    const people = store.architects.map((a) => ({
-      architect: a,
-      level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg,
-    }));
-    const assessed = people.filter(
-      (p): p is { architect: (typeof people)[number]["architect"]; level: number } =>
-        p.level !== undefined,
-    );
-    const notAssessed = people.length - assessed.length;
-    const bands = BANDS.map((band) => ({
-      ...band,
-      people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
-    }));
-    return { cat, bands, notAssessed };
-  });
+  const areas = store.categories
+    .filter((cat) => cat.active)
+    .map((cat) => {
+      const people = sel.activeArchitects.map((a) => ({
+        architect: a,
+        level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg,
+      }));
+      const assessed = people.filter(
+        (p): p is { architect: (typeof people)[number]["architect"]; level: number } =>
+          p.level !== undefined,
+      );
+      const notAssessed = people.length - assessed.length;
+      const bands = BANDS.map((band) => ({
+        ...band,
+        people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
+      }));
+      return { cat, bands, notAssessed };
+    });
 
   const create = () => {
     const trimmed = name.trim();
@@ -108,6 +109,7 @@ function CapabilityMapPage() {
       name: trimmed,
       // A sigla das colunas dos mapas de calor sai da primeira palavra do nome.
       short: trimmed.split(" ")[0] ?? trimmed,
+      active: true,
     });
     setName("");
     setOpen(false);
@@ -127,10 +129,14 @@ function CapabilityMapPage() {
     setEditing(null);
   };
 
-  const remove = () => {
+  const remove = async () => {
     if (!confirmDelete) return;
-    store.removeCategory(confirmDelete.id);
-    toast.success(t("cap.delete.toast", { nome: confirmDelete.name }));
+    const { archived } = await store.removeCategory(confirmDelete.id);
+    toast.success(
+      archived
+        ? t("cap.archive.toast", { nome: confirmDelete.name })
+        : t("cap.delete.toast", { nome: confirmDelete.name }),
+    );
     setConfirmDelete(null);
   };
 
@@ -138,28 +144,7 @@ function CapabilityMapPage() {
   const competencyCount = (categoryId: string) =>
     store.competencies.filter((c) => c.categoryId === categoryId).length;
 
-  /**
-   * Arquitetos que têm a capacidade como domínio forte ou de lacuna. Enquanto
-   * houver algum, a exclusão fica bloqueada (o backend também recusa com 409):
-   * apagar zeraria esse campo no perfil de quem depende dele.
-   */
-  const linkedArchitects = (categoryId: string) =>
-    store.architects
-      .filter((a) => a.strongDomain === categoryId || a.gapDomain === categoryId)
-      .map((a) => ({
-        architect: a,
-        as: [
-          a.strongDomain === categoryId ? t("cap.linked.strong") : null,
-          a.gapDomain === categoryId ? t("cap.linked.gap") : null,
-        ]
-          .filter(Boolean)
-          .join(" e "),
-      }));
-
-  const askDelete = (category: CompetencyCategory) => {
-    if (linkedArchitects(category.id).length > 0) setBlockedDelete(category);
-    else setConfirmDelete(category);
-  };
+  const askDelete = (category: CompetencyCategory) => setConfirmDelete(category);
 
   return (
     <>
@@ -275,40 +260,12 @@ function CapabilityMapPage() {
         title={`Excluir ${confirmDelete?.name}?`}
         description={
           confirmDelete && competencyCount(confirmDelete.id) > 0
-            ? `As ${competencyCount(confirmDelete.id)} competências desta capacidade também serão excluídas, junto com as avaliações e as referências em trilhas.`
+            ? `Se alguma das ${competencyCount(confirmDelete.id)} competências desta capacidade já foi usada em avaliação, PDI, evidência ou trilha, a capacidade e as competências dela são arquivadas em vez de excluídas — o histórico continua íntegro.`
             : "Esta capacidade não tem competências cadastradas."
         }
         onCancel={() => setConfirmDelete(null)}
         onConfirm={remove}
       />
-
-      <Dialog open={blockedDelete !== null} onOpenChange={(v) => !v && setBlockedDelete(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("cap.blocked.title", { nome: blockedDelete?.name ?? "" })}</DialogTitle>
-            <DialogDescription>
-              Esta capacidade está vinculada ao perfil dos arquitetos abaixo. Abra cada um em{" "}
-              <strong>Time</strong>, troque o domínio forte ou de lacuna, e depois exclua a
-              capacidade.
-            </DialogDescription>
-          </DialogHeader>
-          <ul className="space-y-2">
-            {blockedDelete &&
-              linkedArchitects(blockedDelete.id).map(({ architect, as }) => (
-                <li
-                  key={architect.id}
-                  className="flex items-center justify-between gap-3 surface-inset p-3"
-                >
-                  <span className="text-sm font-medium">{architect.name}</span>
-                  <span className="text-xs text-muted-foreground">{as}</span>
-                </li>
-              ))}
-          </ul>
-          <DialogFooter>
-            <Button onClick={() => setBlockedDelete(null)}>Entendi</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -351,7 +308,44 @@ function CapabilityMapPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {isAdmin && <ArchivedCategories categories={store.categories} />}
     </>
+  );
+}
+
+/**
+ * Capacidades arquivadas: fora do mapa ativo (já tinham histórico quando
+ * alguém tentou excluí-las), restauráveis a qualquer momento. Ver
+ * `deleteCategory` no backend.
+ */
+function ArchivedCategories({ categories }: { categories: CompetencyCategory[] }) {
+  const store = useStore();
+  const { t } = useI18n();
+  const archived = categories.filter((c) => !c.active);
+  if (!archived.length) return null;
+
+  return (
+    <SectionCard
+      className="mt-6"
+      title={t("cap.archived.title")}
+      description={t("cap.archived.hint")}
+    >
+      <ul className="space-y-2 text-sm">
+        {archived.map((cat) => (
+          <li key={cat.id} className="flex items-center justify-between gap-2">
+            <span>{cat.name}</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => store.updateCategory(cat.id, { active: true })}
+            >
+              {t("cap.restore")}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </SectionCard>
   );
 }
 

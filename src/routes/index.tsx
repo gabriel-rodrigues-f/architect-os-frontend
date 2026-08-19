@@ -9,15 +9,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { PhilosophyCard } from "@/components/app/PhilosophyCard";
-import {
-  LevelCell,
-  PageHeader,
-  SectionCard,
-  StatCard,
-  GapBadge,
-  Bar,
-} from "@/components/app/ui-bits";
+import { LevelCell, PageHeader, SectionCard, StatCard, GapBadge } from "@/components/app/ui-bits";
 import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
@@ -50,9 +42,10 @@ function Dashboard() {
   /**
    * Quem desativou (saiu do time) não conta nos agregados do Painel — ver
    * histórico dela continua em /architects/:id, só não representa mais o
-   * time atual. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18.
+   * time atual. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18, e
+   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC E.
    */
-  const architects = store.architects.filter((a) => a.active);
+  const architects = sel.activeArchitects;
 
   const allGaps = architects.flatMap((a) => sel.gapsFor(a.id).map((g) => ({ ...g, architect: a })));
   const criticalGaps = allGaps.filter((g) => g.gap >= 3).length;
@@ -217,27 +210,8 @@ function Dashboard() {
               ))}
             </ul>
           </SectionCard>
-
-          <SectionCard title={t("dash.progress.title")} description={t("dash.progress.subtitle")}>
-            <ul className="space-y-3">
-              {architects.map((a) => {
-                const score = sel.developmentScore(a.id);
-                return (
-                  <li key={a.id}>
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span>{a.name}</span>
-                      <span className="tabular-nums text-muted-foreground">{score}%</span>
-                    </div>
-                    <Bar value={score} />
-                  </li>
-                );
-              })}
-            </ul>
-          </SectionCard>
         </div>
       </div>
-
-      <PhilosophyCard />
     </>
   );
 }

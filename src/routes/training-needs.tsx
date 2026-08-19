@@ -1,8 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { Button } from "@/components/ui/button";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
+import { slug } from "@/lib/text";
 
 export const Route = createFileRoute("/training-needs")({
   head: () => ({
@@ -26,10 +30,38 @@ export const Route = createFileRoute("/training-needs")({
 function TrainingNeedsPage() {
   const store = useStore();
   const sel = useSelectors();
+  const user = useCurrentUser();
   const { t } = useI18n();
   const needs = sel.teamTrainingNeeds();
   const top = needs.slice(0, 15);
   const collective = needs.filter((n) => n.people >= 3).slice(0, 6);
+
+  /**
+   * "Intervenção coletiva" não é uma entidade nova — é a mesma Trilha de
+   * Aprendizagem que já existe, atribuída de uma vez a todo mundo com a
+   * mesma lacuna. Isso evita inventar um conceito/tabela nova só para
+   * reembalar o que a Trilha já faz, e mantém a lista de pessoas real (os
+   * mesmos ids que `teamTrainingNeeds` já contou, não um número solto). Ver
+   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC K.
+   */
+  const createIntervention = (need: (typeof needs)[number]) => {
+    if (!need.competency) return;
+    store.addLearningPath({
+      id: `lp-${slug(need.competency.name)}-${Date.now()}`,
+      name: t("needs.intervention.pathName", { competencia: need.competency.name }),
+      description: t("needs.intervention.pathDescription", { n: need.people }),
+      competencyIds: [need.competency.id],
+      assignedTo: need.architectIds,
+      items: [],
+      progress: [],
+      createdBy: user.email,
+      createdAt: new Date().toISOString(),
+    });
+    toast.success(t("needs.intervention.toast", { competencia: need.competency.name }));
+  };
+
+  const interventionExists = (competencyId: string) =>
+    store.learningPaths.some((p) => p.competencyIds.includes(competencyId));
 
   return (
     <>
@@ -80,6 +112,17 @@ function TrainingNeedsPage() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {n.people} arquitetos · formato sugerido: workshop prático + architecture review
                 </p>
+                <div className="mt-2">
+                  {interventionExists(n.competency!.id) ? (
+                    <Link to="/learning-paths" className="text-xs text-primary hover:underline">
+                      {t("needs.intervention.view")}
+                    </Link>
+                  ) : (
+                    <Button size="sm" variant="secondary" onClick={() => createIntervention(n)}>
+                      {t("needs.intervention.create")}
+                    </Button>
+                  )}
+                </div>
               </li>
             ))}
             {!collective.length && (

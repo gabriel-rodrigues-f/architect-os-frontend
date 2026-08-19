@@ -42,18 +42,14 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
       "architects",
       "assessments",
       "cycles",
-      "swots",
       "plans",
-      "okrs",
       "learningPaths",
       "mentoringSessions",
       "evidences",
-      "certifications",
     ] as const) {
       expect(Array.isArray(state[key])).toBe(true);
     }
     expect(typeof state.activeCycleId).toBe("string");
-    expect(Array.isArray(state.philosophy.stages)).toBe(true);
   });
 
   it("os ciclos chegam com datas ISO (sem deslocamento de fuso)", () => {
@@ -85,9 +81,6 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
 
     for (const architect of state.architects) {
       expect(sel.domainAverages(architect.id)).toHaveLength(state.categories.length);
-      const score = sel.developmentScore(architect.id);
-      expect(score).toBeGreaterThanOrEqual(0);
-      expect(score).toBeLessThanOrEqual(100);
     }
   });
 });

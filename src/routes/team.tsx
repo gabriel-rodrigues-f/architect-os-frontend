@@ -3,15 +3,7 @@ import { Pencil, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import {
-  Bar,
-  GapBadge,
-  Initials,
-  LevelBadge,
-  PageHeader,
-  SectionCard,
-} from "@/components/app/ui-bits";
-import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
+import { GapBadge, Initials, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ROLES, roleShort, type Architect, type Level, type RoleName } from "@/lib/domain";
+import { ROLES, type Architect, type RoleName } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
@@ -55,8 +47,6 @@ interface ArchitectForm {
   specialization: string;
   years: string;
   email: string;
-  strongDomain: string;
-  gapDomain: string;
 }
 
 const emptyForm = (): ArchitectForm => ({
@@ -65,8 +55,6 @@ const emptyForm = (): ArchitectForm => ({
   specialization: "",
   years: "",
   email: "",
-  strongDomain: "",
-  gapDomain: "",
 });
 
 function TeamPage() {
@@ -80,7 +68,7 @@ function TeamPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<ArchitectForm>(emptyForm());
   const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
-  const activeArchitects = store.architects.filter((a) => a.active);
+  const activeArchitects = sel.activeArchitects;
   const inactiveArchitects = store.architects.filter((a) => !a.active);
 
   const openCreate = () => {
@@ -95,17 +83,18 @@ function TeamPage() {
       specialization: architect.specialization,
       years: String(architect.yearsAsArchitect),
       email: architect.email,
-      strongDomain: architect.strongDomain,
-      gapDomain: architect.gapDomain,
     });
     setEditing(architect.id);
   };
 
   /**
-   * Nada aqui tem fallback: e-mail inventado do nome, domínio forte/fraco
-   * herdado da ordem da lista e "1 ano" fantasma escondiam dado que ninguém
-   * preencheu como se fosse real. Falta um campo, o cadastro não salva — sem
-   * exceção. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 16 e 17.
+   * Nada aqui tem fallback: e-mail inventado do nome e "1 ano" fantasma
+   * escondiam dado que ninguém preencheu como se fosse real. Falta um campo,
+   * o cadastro não salva — sem exceção. `strongDomain`/`gapDomain` saíram do
+   * cadastro: força e lacuna são resultado do assessment (final × target),
+   * não uma opinião prévia coletada antes de qualquer avaliação existir. Ver
+   * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 16 e 17, e AUDITORIA-
+   * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, Seção 11.
    */
   const yearsValid =
     form.years.trim() !== "" && Number.isInteger(Number(form.years)) && Number(form.years) >= 0;
@@ -113,8 +102,6 @@ function TeamPage() {
     form.name.trim().length > 0 &&
     form.email.trim().length > 0 &&
     form.email.includes("@") &&
-    form.strongDomain !== "" &&
-    form.gapDomain !== "" &&
     yearsValid;
 
   const submit = () => {
@@ -125,8 +112,6 @@ function TeamPage() {
       yearsAsArchitect: Number(form.years),
       specialization: form.specialization.trim(),
       email: form.email.trim(),
-      strongDomain: form.strongDomain,
-      gapDomain: form.gapDomain,
     };
 
     if (editing) {
@@ -136,9 +121,6 @@ function TeamPage() {
       store.addArchitect({
         id: slug(form.name),
         ...payload,
-        /** Não calibrado até um Tech Lead posicionar a pessoa na 9 Box de verdade. */
-        performance: null,
-        potential: null,
         active: true,
       });
     }
@@ -147,8 +129,8 @@ function TeamPage() {
 
   /**
    * "Excluir" virou "Desativar": apaga o cadastro em cascata (avaliações,
-   * PDI, OKR, SWOT, mentorias, evidências, certificações) sempre destruiu
-   * histórico de gente que só saiu do time. `active: false` some do roster
+   * PDI, mentorias, evidências, certificações) sempre destruiu histórico de
+   * gente que só saiu do time. `active: false` some do roster
    * e dos agregados do Painel sem apagar nada — o perfil e o histórico
    * continuam abertos em /architects/:id. Ver AUDITORIA-RIGIDA-SEGUNDA-
    * REVISAO-SYNAPSE.md, Seção 18.
@@ -235,14 +217,6 @@ function TeamPage() {
                 <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
               </div>
 
-              <div className="mt-3">
-                <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{t("team.card.progress")}</span>
-                  <span className="tabular-nums">{sel.developmentScore(a.id)}%</span>
-                </div>
-                <Bar value={sel.developmentScore(a.id)} />
-              </div>
-
               <div className="mt-4 space-y-1.5">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {t("team.card.topGaps")}
@@ -297,8 +271,6 @@ function TeamPage() {
           </ul>
         </SectionCard>
       )}
-
-      <RoleProfilesCard />
 
       {/* cadastro e edição */}
       <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
@@ -362,40 +334,6 @@ function TeamPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="strong">{t("team.form.strong")}</Label>
-                <select
-                  id="strong"
-                  className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                  value={form.strongDomain}
-                  onChange={(e) => setForm({ ...form, strongDomain: e.target.value })}
-                >
-                  <option value="">—</option>
-                  {store.categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="gap">{t("team.form.gap")}</Label>
-                <select
-                  id="gap"
-                  className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                  value={form.gapDomain}
-                  onChange={(e) => setForm({ ...form, gapDomain: e.target.value })}
-                >
-                  <option value="">—</option>
-                  {store.categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
           </div>
           {!canSubmit && (
             <p className="mt-3 text-xs text-muted-foreground">{t("team.form.requiredHint")}</p>
@@ -414,145 +352,12 @@ function TeamPage() {
       <ConfirmDialog
         open={confirmDeactivate !== null}
         title={`Desativar ${confirmDeactivate?.name}?`}
-        description="A pessoa some do roster e dos números do Painel, mas nada é apagado: avaliações, PDI, OKR, SWOT, mentorias, evidências e certificações continuam no perfil dela. Dá para reativar depois."
+        description="A pessoa some do roster e dos números do Painel, mas nada é apagado: avaliações, PDI, mentorias, evidências e certificações continuam no perfil dela. Dá para reativar depois."
         confirmLabel={t("team.deactivate.action")}
         destructive={false}
         onCancel={() => setConfirmDeactivate(null)}
         onConfirm={deactivate}
       />
     </>
-  );
-}
-
-/**
- * Perfis de Competência por Cargo: nível esperado de cada competência por cargo.
- * A edição salva competência a competência (PATCH com merge no backend).
- */
-export function RoleProfilesCard() {
-  const store = useStore();
-  const { t } = useI18n();
-  /** Role Competency Profile é a régua de avaliação do time — só admin ajusta. */
-  const isAdmin = useCurrentUser().role === "admin";
-  const [categoryIds, setCategoryIds] = useState<string[]>(() =>
-    store.categories[0] ? [store.categories[0].id] : [],
-  );
-
-  /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
-  const selected = store.categories.filter((c) => categoryIds.includes(c.id));
-
-  const toggleCategory = (id: string) =>
-    setCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
-
-  /** Soma das competências de todas as capacidades marcadas. */
-  const competencies = store.competencies.filter((c) => categoryIds.includes(c.categoryId));
-
-  /** Com mais de uma capacidade aberta, a linha diz de qual ela veio. */
-  const showOrigin = selected.length > 1;
-  const categoryName = (id: string) => store.categories.find((c) => c.id === id)?.name ?? "";
-
-  return (
-    <SectionCard
-      className="mt-6"
-      title={t("team.profiles.title")}
-      description={t("team.profiles.subtitle")}
-      actions={
-        <CapabilityCombobox
-          categories={store.categories}
-          selected={selected}
-          onToggle={toggleCategory}
-          onSelectAll={setCategoryIds}
-        />
-      }
-    >
-      <div className="grid gap-3 sm:grid-cols-3">
-        {ROLES.map((r) => {
-          // A média acompanha as capacidades escolhidas no seletor: sem
-          // competências cadastradas nelas, não há média a exibir.
-          const average = competencies.length
-            ? (
-                competencies.reduce((sum, c) => sum + (c.expected[r] ?? 0), 0) / competencies.length
-              ).toFixed(1)
-            : null;
-          return (
-            <div key={r} className="surface-inset p-4">
-              <p className="text-sm font-medium">{r}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {store.architects.filter((a) => a.role === r).length} arquiteto(s) ·{" "}
-                {average
-                  ? t("team.profiles.avgExpected", { media: average })
-                  : t("team.profiles.noComp")}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[560px] text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="py-2">Competência</th>
-              {ROLES.map((r) => (
-                <th key={r} className="py-2 text-center">
-                  {roleShort(r)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {competencies.map((c) => (
-              <tr key={c.id} className="border-b border-border/60 last:border-0">
-                <td className="py-2 font-medium">
-                  {c.name}
-                  {showOrigin && (
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      {categoryName(c.categoryId)}
-                    </span>
-                  )}
-                </td>
-                {ROLES.map((r) =>
-                  isAdmin ? (
-                    <td key={r} className="py-2 text-center">
-                      <select
-                        className="w-16 rounded-md border border-input bg-card px-2 py-1 text-sm"
-                        value={c.expected[r] ?? 3}
-                        aria-label={`${c.name} — ${r}`}
-                        onChange={(e) =>
-                          store.updateCompetency(c.id, {
-                            expected: { [r]: Number(e.target.value) as Level } as Record<
-                              RoleName,
-                              Level
-                            >,
-                          })
-                        }
-                      >
-                        {[1, 2, 3, 4, 5].map((l) => (
-                          <option key={l} value={l}>
-                            {l}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  ) : (
-                    <td key={r} className="py-2 text-center tabular-nums text-muted-foreground">
-                      {c.expected[r] ?? 3}
-                    </td>
-                  ),
-                )}
-              </tr>
-            ))}
-            {competencies.length === 0 && (
-              <tr>
-                <td colSpan={4} className="py-3 text-sm text-muted-foreground">
-                  {selected.length === 0
-                    ? t("team.profiles.pickCapability")
-                    : t("team.profiles.noneSelected")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </SectionCard>
   );
 }

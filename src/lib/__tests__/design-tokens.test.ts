@@ -109,23 +109,11 @@ describe("contraste — auditoria WCAG", () => {
     }
   });
 
-  /**
-   * Nenhum token de cor pode ficar sem par declarado de contraste.
-   *
-   * Os quadrantes da 9 Box ficam de fora porque nada é desenhado direto sobre
-   * eles: os cards de arquiteto trazem o próprio fundo e a própria borda. A
-   * exigência deles é outra — distinguir-se entre si — e está testada abaixo.
-   */
+  /** Nenhum token de cor pode ficar sem par declarado de contraste. */
   it("todo preenchimento tingido declara com quem precisa contrastar", () => {
     const semRegra = tokenRegistry
       .all()
-      .filter(
-        (t) =>
-          t.role === "fill" &&
-          t.name !== "level-0" &&
-          !t.name.startsWith("quadrant-") &&
-          !t.contrastAgainst,
-      );
+      .filter((t) => t.role === "fill" && t.name !== "level-0" && !t.contrastAgainst);
     expect(semRegra.map((t) => t.name)).toEqual([]);
   });
 
@@ -198,30 +186,6 @@ describe("paleta de gráficos", () => {
     const surface = tokenRegistry.get("chart-surface")!;
     expect(light.resolve(surface).l).toBeGreaterThan(0.9);
     expect(dark.resolve(surface).l).toBeLessThan(0.3);
-  });
-});
-
-describe("quadrantes da 9 Box", () => {
-  const quadrantes = () => tokenRegistry.all().filter((t) => t.name.startsWith("quadrant-"));
-
-  /**
-   * Antes a tela usava `bg-level-N/50`. Meia opacidade sobre fundo variável
-   * não é cor previsível: no escuro os cinco quadrantes compunham com a página
-   * e chegavam quase idênticos.
-   */
-  it("cada quadrante tem cor própria nos dois temas", () => {
-    for (const tema of [light, dark]) {
-      const cores = quadrantes().map((t) => tema.resolve(t).toCss());
-      expect(new Set(cores).size, tema.id).toBe(cores.length);
-    }
-  });
-
-  /** O card apoiado no quadrante precisa flutuar: o quadrante fica abaixo do `--card`. */
-  it("no escuro o quadrante recua atrás do card", () => {
-    const card = dark.resolve(tokenRegistry.get("chart-surface")!);
-    for (const q of quadrantes()) {
-      expect(dark.resolve(q).l, q.name).toBeLessThan(card.l);
-    }
   });
 });
 

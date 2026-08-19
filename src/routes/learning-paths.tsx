@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { isLeadCapable } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { formatDate } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
@@ -90,12 +91,12 @@ function LearningPage() {
     !path.createdBy || path.createdBy.toLowerCase() === user.email.toLowerCase();
 
   /**
-   * Progresso é execução, não edição da trilha: só a própria pessoa (ou um
-   * administrador) registra o progresso dela — nunca quem só está de
+   * Progresso é execução, não edição da trilha: só a própria pessoa (ou o
+   * Tech Lead dela) registra o progresso dela — nunca quem só está de
    * passagem pela tela de outra pessoa.
    */
   const canEditProgress = (architectId: string) =>
-    user.role === "admin" || user.architectId === architectId;
+    isLeadCapable(user.role) || user.architectId === architectId;
 
   return (
     <>
@@ -299,6 +300,16 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
     });
   };
 
+  /**
+   * Atribuir trilha nova é para o time atual — quem já saiu não é opção nova.
+   * Quem já estava atribuído antes de sair continua na lista (senão a
+   * atribuição existente ficaria invisível, sem jeito de desmarcar). Ver
+   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC E.
+   */
+  const assignableArchitects = store.architects.filter(
+    (a) => a.active || path.assignedTo.includes(a.id),
+  );
+
   const addItem = () => {
     const title = newItem.title.trim();
     if (!title) return;
@@ -466,7 +477,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
             <div>
               <Label>{t("path.edit.assignedTo")}</Label>
               <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
-                {store.architects.map((a) => (
+                {assignableArchitects.map((a) => (
                   <label key={a.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
                       type="checkbox"
@@ -476,7 +487,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                     <span className="truncate">{a.name}</span>
                   </label>
                 ))}
-                {store.architects.length === 0 && (
+                {assignableArchitects.length === 0 && (
                   <p className="text-sm text-muted-foreground">Nenhum arquiteto cadastrado.</p>
                 )}
               </div>

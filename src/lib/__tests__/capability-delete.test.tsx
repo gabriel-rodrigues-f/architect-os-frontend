@@ -16,22 +16,12 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
  * store, com `fetch` interceptado — o caminho que o usuário percorre ao clicar
  * na lixeira de uma capacidade.
  *
- * Na fixture, Ana e Bruno têm `strongDomain: "cloud"` e `gapDomain: "security"`,
- * então as duas capacidades nascem vinculadas. `freeState` solta a Cloud para
- * exercitar o caminho em que a exclusão é permitida.
+ * `strongDomain`/`gapDomain` saíram do cadastro de arquiteto (AUDITORIA-
+ * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, Seção 11), então excluir
+ * uma capacidade não bloqueia mais por vínculo — só pede confirmação.
  */
 
 const fetchMock = vi.fn();
-
-/** Ninguém aponta para "cloud": a exclusão deve passar. */
-const freeState: AppState = {
-  ...fixtureState,
-  architects: fixtureState.architects.map((a) => ({
-    ...a,
-    strongDomain: "security",
-    gapDomain: "security",
-  })),
-};
 
 function Wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({
@@ -112,8 +102,8 @@ describe("Mapa de Capacidades — exclusão", () => {
     setAuthToken(null);
   });
 
-  it("exclui quando nenhum arquiteto está vinculado", async () => {
-    renderPage(freeState);
+  it("exclui a capacidade após confirmar", async () => {
+    renderPage(fixtureState);
     await screen.findByText("Cloud Architecture");
 
     await userEvent.click(screen.getByLabelText("Excluir Cloud Architecture"));
@@ -132,7 +122,7 @@ describe("Mapa de Capacidades — exclusão", () => {
    * remoção otimista e a capacidade reaparecia na tela.
    */
   it("não manda content-type em requisição sem corpo", async () => {
-    renderPage(freeState);
+    renderPage(fixtureState);
     await screen.findByText("Cloud Architecture");
 
     await userEvent.click(screen.getByLabelText("Excluir Cloud Architecture"));
@@ -150,31 +140,12 @@ describe("Mapa de Capacidades — exclusão", () => {
     }
   });
 
-  it("bloqueia e lista os arquitetos quando a capacidade está vinculada", async () => {
-    renderPage(fixtureState);
-    await screen.findByText("Cloud Architecture");
-
-    await userEvent.click(screen.getByLabelText("Excluir Cloud Architecture"));
-
-    expect(await screen.findByText(/Não é possível excluir Cloud Architecture/)).toBeTruthy();
-
-    // escopado ao modal: os nomes também aparecem nas faixas do card
-    const modal = within(await screen.findByRole("dialog"));
-    expect(modal.getByText("Ana Martins")).toBeTruthy();
-    expect(modal.getByText("Bruno Almeida")).toBeTruthy();
-    expect(modal.getAllByText("domínio forte").length).toBe(2);
-
-    // nada foi enviado e a capacidade continua na tela
-    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "DELETE")).toBe(false);
-    expect(screen.getAllByText("Cloud Architecture").length).toBeGreaterThan(0);
-  });
-
   /**
    * Leitura ocidental: as faixas sobem da esquerda para a direita, da menor
    * proficiência para a maior, no card e nos chips da nova capacidade.
    */
   it("mostra as faixas em ordem crescente de proficiência", async () => {
-    renderPage(freeState);
+    renderPage(fixtureState);
     await screen.findByText("Cloud Architecture");
 
     const ordem = [
@@ -195,17 +166,5 @@ describe("Mapa de Capacidades — exclusão", () => {
       .getAllByText(/^(Lacunas|Praticantes|Avançados|Especialistas) \(/)
       .map((el) => el.textContent);
     expect(chips).toEqual(ordem);
-  });
-
-  it("indica quando a capacidade é forte e de lacuna do mesmo arquiteto", async () => {
-    renderPage({
-      ...fixtureState,
-      architects: [{ ...fixtureState.architects[0]!, strongDomain: "cloud", gapDomain: "cloud" }],
-    });
-    await screen.findByText("Cloud Architecture");
-
-    await userEvent.click(screen.getByLabelText("Excluir Cloud Architecture"));
-
-    expect(await screen.findByText("domínio forte e domínio de lacuna")).toBeTruthy();
   });
 });

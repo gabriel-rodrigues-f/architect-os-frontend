@@ -52,7 +52,7 @@ function MentoringPage() {
   const sel = useSelectors();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    menteeId: store.architects[0]?.id ?? "",
+    menteeId: sel.activeArchitects[0]?.id ?? "",
     date: todayIso(),
     durationMin: "60",
     topic: "",
@@ -60,6 +60,9 @@ function MentoringPage() {
     decisions: "",
     actions: "",
   });
+  const [competencyIds, setCompetencyIds] = useState<string[]>([]);
+  const toggleCompetency = (id: string) =>
+    setCompetencyIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
   /** Campos vazios apontados no último Salvar; some assim que o campo é preenchido. */
   const [missing, setMissing] = useState<RequiredField[]>([]);
@@ -92,13 +95,14 @@ function MentoringPage() {
       date: form.date,
       durationMin: Number(form.durationMin) || 60,
       topic: form.topic,
-      competencyIds: [],
+      competencyIds,
       notes: form.notes,
       decisions: form.decisions,
       actions: form.actions,
     });
     toast.success(t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }));
     setForm({ ...form, topic: "", notes: "", decisions: "", actions: "" });
+    setCompetencyIds([]);
     setMissing([]);
     setShowToast(false);
     setOpen(false);
@@ -139,7 +143,7 @@ function MentoringPage() {
                         value={form.menteeId}
                         onChange={(e) => setField("menteeId", e.target.value)}
                       >
-                        {store.architects.map((a) => (
+                        {sel.activeArchitects.map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.name}
                           </option>
@@ -208,6 +212,29 @@ function MentoringPage() {
                       onChange={(e) => setField("actions", e.target.value)}
                     />
                   </div>
+                  <div>
+                    <FieldLabel
+                      htmlFor="mentor-competencies"
+                      hint={t("mentor.form.competenciesHint")}
+                    >
+                      {t("mentor.form.competencies")}
+                    </FieldLabel>
+                    <div
+                      id="mentor-competencies"
+                      className="mt-1 max-h-40 overflow-y-auto surface-inset p-2"
+                    >
+                      {store.competencies.map((c) => (
+                        <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={competencyIds.includes(c.id)}
+                            onChange={() => toggleCompetency(c.id)}
+                          />
+                          <span className="truncate">{c.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 {showToast && (
                   <div
@@ -247,40 +274,89 @@ function MentoringPage() {
           <p className="text-sm text-muted-foreground">{t("mentor.timeline.empty")}</p>
         )}
         <ol className="relative space-y-6 border-l border-border pl-6">
-          {sessions.map((s) => (
-            <li key={s.id} className="relative">
-              <span className="absolute -left-[31px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
-              <div className="flex flex-wrap items-center gap-2">
-                <Initials name={sel.architectById(s.menteeId)?.name ?? "?"} />
-                <div>
-                  <p className="text-sm font-medium">{s.topic}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {sel.architectById(s.menteeId)?.name} · mentor {s.mentor} ·{" "}
-                    {formatDate(s.date, locale)} · {s.durationMin} min
+          {sessions.map((s) => {
+            /**
+             * Fecha o loop da mentoria: "ações" era texto morto — ninguém
+             * virava PDI de verdade. Só oferece o botão quando dá para criar
+             * o item sem inventar nível: precisa de uma competência da
+             * sessão com gap já avaliado (`sel.gapsFor`), e de a pessoa ainda
+             * não ter aquele item no plano. Ver AUDITORIA-TERCEIRA-RODADA-
+             * RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC J.
+             */
+            const plan = sel.planFor(s.menteeId);
+            const gaps = sel.gapsFor(s.menteeId);
+            const eligible = s.competencyIds
+              .map((cid) => gaps.find((g) => g.item.competencyId === cid))
+              .find((g) => g && !plan?.items.some((i) => i.competencyId === g.item.competencyId));
+
+            return (
+              <li key={s.id} className="relative">
+                <span className="absolute -left-[31px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Initials name={sel.architectById(s.menteeId)?.name ?? "?"} />
+                  <div>
+                    <p className="text-sm font-medium">{s.topic}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {sel.architectById(s.menteeId)?.name} · mentor {s.mentor} ·{" "}
+                      {formatDate(s.date, locale)} · {s.durationMin} min
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
+                  <Block title={t("mentor.block.notes")} text={s.notes} />
+                  <Block title={t("mentor.block.decisions")} text={s.decisions} />
+                  <Block title={t("mentor.block.actions")} text={s.actions} />
+                </div>
+                {s.actions.trim() && eligible?.competency && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      const mentee = sel.architectById(s.menteeId);
+                      if (!mentee || !eligible.competency) return;
+                      store.addPlanItem(s.menteeId, {
+                        id: `pdi-${s.menteeId}-${eligible.competency.id}-${Date.now()}`,
+                        competencyId: eligible.competency.id,
+                        currentLevel: eligible.item.final,
+                        targetLevel: eligible.item.target,
+                        objective: s.topic,
+                        actionType: "Mentor",
+                        actionPlan: s.actions,
+                        startDate: todayIso(),
+                        targetDate: s.nextSession ?? todayIso(),
+                        priority:
+                          eligible.gap >= 3 ? "Critical" : eligible.gap === 2 ? "High" : "Medium",
+                        owner: mentee.name,
+                        status: "Not Started",
+                        progress: 0,
+                        evidenceIds: [],
+                      });
+                      toast.success(
+                        t("mentor.toPdi.toast", { competencia: eligible.competency.name }),
+                      );
+                    }}
+                  >
+                    {t("mentor.toPdi.action", { competencia: eligible.competency.name })}
+                  </Button>
+                )}
+                {s.competencyIds.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                    {s.competencyIds.map((c) => (
+                      <span key={c} className="rounded-md bg-secondary px-2 py-0.5">
+                        {sel.competencyById(c)?.name ?? c}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {s.nextSession && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Próxima sessão: {formatDate(s.nextSession, locale)}
                   </p>
-                </div>
-              </div>
-              <div className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
-                <Block title={t("mentor.block.notes")} text={s.notes} />
-                <Block title={t("mentor.block.decisions")} text={s.decisions} />
-                <Block title={t("mentor.block.actions")} text={s.actions} />
-              </div>
-              {s.competencyIds.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-                  {s.competencyIds.map((c) => (
-                    <span key={c} className="rounded-md bg-secondary px-2 py-0.5">
-                      {sel.competencyById(c)?.name ?? c}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {s.nextSession && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Próxima sessão: {formatDate(s.nextSession, locale)}
-                </p>
-              )}
-            </li>
-          ))}
+                )}
+              </li>
+            );
+          })}
         </ol>
       </SectionCard>
     </>

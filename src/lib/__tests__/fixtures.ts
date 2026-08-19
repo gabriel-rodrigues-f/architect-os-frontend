@@ -28,8 +28,8 @@ export const fixtureMemberUser: SessionUser = {
 /** Estado mínimo, porém coerente, para exercitar os selectors. */
 export const fixtureState: AppState = {
   categories: [
-    { id: "cloud", name: "Cloud Architecture", short: "Cloud" },
-    { id: "security", name: "Security", short: "Security" },
+    { id: "cloud", name: "Cloud Architecture", short: "Cloud", active: true },
+    { id: "security", name: "Security", short: "Security", active: true },
   ],
   competencies: [
     {
@@ -41,6 +41,7 @@ export const fixtureState: AppState = {
         "Arquiteto de Soluções II": 4,
         "Arquiteto de Soluções III": 5,
       },
+      active: true,
     },
     {
       id: "cloud-serverless",
@@ -51,6 +52,7 @@ export const fixtureState: AppState = {
         "Arquiteto de Soluções II": 4,
         "Arquiteto de Soluções III": 5,
       },
+      active: true,
     },
     {
       id: "security-iam",
@@ -61,6 +63,7 @@ export const fixtureState: AppState = {
         "Arquiteto de Soluções II": 3,
         "Arquiteto de Soluções III": 4,
       },
+      active: true,
     },
   ],
   architects: [
@@ -71,10 +74,6 @@ export const fixtureState: AppState = {
       yearsAsArchitect: 6,
       specialization: "Integration",
       email: "ana@company.com",
-      strongDomain: "cloud",
-      gapDomain: "security",
-      performance: "High",
-      potential: "High",
       active: true,
     },
     {
@@ -84,10 +83,6 @@ export const fixtureState: AppState = {
       yearsAsArchitect: 3,
       specialization: "Cloud",
       email: "bruno@company.com",
-      strongDomain: "cloud",
-      gapDomain: "security",
-      performance: "Medium",
-      potential: "High",
       active: true,
     },
   ],
@@ -107,7 +102,7 @@ export const fixtureState: AppState = {
       id: "ana-h2",
       architectId: "ana",
       cycleId: "2026-h2",
-      // Completed: gapsFor/domainAverages/developmentScore só usam assessment oficial.
+      // Completed: gapsFor/domainAverages só usam assessment oficial.
       status: "Completed",
       items: [
         { competencyId: "cloud-k8s", self: 4, leader: 4, target: 4, final: 4, comments: [] },
@@ -130,16 +125,6 @@ export const fixtureState: AppState = {
   cycles: [
     { id: "2026-h1", name: "2026 H1", start: "2026-01-01", end: "2026-06-30", status: "Closed" },
     { id: "2026-h2", name: "2026 H2", start: "2026-07-01", end: "2026-12-31", status: "Active" },
-  ],
-  swots: [
-    {
-      architectId: "ana",
-      cycleId: "2026-h2",
-      strengths: ["Cloud"],
-      weaknesses: ["IAM"],
-      opportunities: [],
-      threats: [],
-    },
   ],
   plans: [
     {
@@ -183,18 +168,6 @@ export const fixtureState: AppState = {
       ],
     },
   ],
-  okrs: [
-    {
-      id: "okr-ana",
-      architectId: "ana",
-      cycleId: "2026-h2",
-      objective: "Referência em segurança",
-      keyResults: [
-        { id: "kr-1", title: "Curso", progress: 100 },
-        { id: "kr-2", title: "ADR", progress: 0 },
-      ],
-    },
-  ],
   learningPaths: [
     {
       id: "lp-sec",
@@ -226,15 +199,5 @@ export const fixtureState: AppState = {
       status: "Pending",
     },
   ],
-  certifications: [],
   activeCycleId: "2026-h2",
-  philosophy: {
-    title: "Filosofia de Desenvolvimento",
-    description: "O desenvolvimento técnico não se sustenta apenas em cursos.",
-    stages: [
-      { id: "aprender", name: "Aprender" },
-      { id: "praticar", name: "Praticar" },
-    ],
-    footer: "",
-  },
 };

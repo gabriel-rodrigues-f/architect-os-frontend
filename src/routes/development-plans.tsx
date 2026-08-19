@@ -1,18 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
 
 import { Bar, GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { isLeadCapable } from "@/lib/api";
 import { ACTION_TYPES, type ActionType, type PdiStatus, type SmartGoal } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate, monthsFromTodayIso, todayIso } from "@/lib/text";
+import { formatDate, initialSearchParam, monthsFromTodayIso, todayIso } from "@/lib/text";
+
+/**
+ * `architectId` na URL — quem chega de outra tela (o perfil da pessoa, uma
+ * lacuna específica) continua olhando para a mesma pessoa, em vez de cair no
+ * primeiro arquiteto da lista e perder o contexto que trouxe até aqui. Ver
+ * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
+ */
+const developmentPlansSearchSchema = z.object({
+  architectId: z.string().optional(),
+});
 
 export const Route = createFileRoute("/development-plans")({
+  validateSearch: developmentPlansSearchSchema,
   head: () => ({
     meta: [
       { title: "Planos de Desenvolvimento — Synapse" },
@@ -34,29 +48,22 @@ export const Route = createFileRoute("/development-plans")({
 
 const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Completed"];
 
-/** Os quatro quadrantes da SWOT, na ordem clássica. */
-const SWOT_FIELDS = [
-  { key: "strengths", titleKey: "swot.strengths" },
-  { key: "weaknesses", titleKey: "swot.weaknesses" },
-  { key: "opportunities", titleKey: "swot.opportunities" },
-  { key: "threats", titleKey: "swot.threats" },
-] as const;
-
 function PlansPage() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
-  const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
+  const [architectId, setArchitectId] = useState(
+    () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
+  );
   /** Item cujo formulário de meta SMART está aberto — nunca mais que um por vez. */
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  /** PDI e SWOT são da pessoa — só ela (ou admin) escreve; backend já recusa o resto. */
-  const canEdit = user.role === "admin" || user.architectId === architectId;
+  /** PDI é da pessoa — só ela (ou o Tech Lead dela) escreve; backend já recusa o resto. */
+  const canEdit = isLeadCapable(user.role) || user.architectId === architectId;
   const architect = sel.architectById(architectId);
   const plan = sel.planFor(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
-  const swot = sel.swotFor(architectId);
 
   const suggestions = gaps
     .filter((g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId))
@@ -94,7 +101,7 @@ function PlansPage() {
             value={architectId}
             onChange={(e) => setArchitectId(e.target.value)}
           >
-            {store.architects.map((a) => (
+            {sel.activeArchitects.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
               </option>
@@ -252,14 +259,26 @@ function PlansPage() {
                 )}
 
                 {!item.smart && canEdit && smartEditingId !== item.id && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => setSmartEditingId(item.id)}
-                  >
-                    {t("pdi.smart.define")}
-                  </Button>
+                  <div className="mt-4 flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setSmartEditingId(item.id)}
+                    >
+                      {t("pdi.smart.define")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        store.removePlanItem(plan!.id, item.id);
+                        toast.success(t("pdi.gap.removed.toast", { nome: competencyName }));
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t("pdi.gap.remove")}
+                    </Button>
+                  </div>
                 )}
 
                 {!item.smart && canEdit && smartEditingId === item.id && (
@@ -309,22 +328,6 @@ function PlansPage() {
                 <p className="text-sm text-muted-foreground">{t("pdi.suggestions.none")}</p>
               )}
             </ul>
-          </SectionCard>
-
-          <SectionCard title={t("pdi.swot.title")} description={t("pdi.swot.subtitle")}>
-            <div className="grid gap-3 text-sm">
-              {SWOT_FIELDS.map(({ key, titleKey }) => (
-                <SwotBlock
-                  key={key}
-                  title={t(titleKey)}
-                  items={swot?.[key] ?? []}
-                  disabled={!canEdit}
-                  onChange={(items) =>
-                    store.updateSwot(architectId, store.activeCycleId, { [key]: items })
-                  }
-                />
-              ))}
-            </div>
           </SectionCard>
 
           <SectionCard
@@ -427,54 +430,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         {label}
       </p>
       {children}
-    </div>
-  );
-}
-
-/**
- * Um quadrante da SWOT. A lista é editada como texto — uma linha por item —
- * porque é assim que as pessoas escrevem SWOT numa reunião; um formulário com
- * "adicionar item" cobraria um clique por linha sem ganho nenhum.
- *
- * A gravação acontece no blur, não a cada tecla: salvar por caractere geraria
- * uma escrita por letra digitada.
- */
-function SwotBlock({
-  title,
-  items,
-  disabled = false,
-  onChange,
-}: {
-  title: string;
-  items: string[];
-  disabled?: boolean;
-  onChange: (items: string[]) => void;
-}) {
-  const { t } = useI18n();
-  const [draft, setDraft] = useState<string | null>(null);
-  const texto = draft ?? items.join("\n");
-
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <Textarea
-        className="mt-1 min-h-16"
-        aria-label={title}
-        placeholder={t("pdi.swot.placeholder")}
-        value={texto}
-        disabled={disabled}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          if (draft === null) return;
-          onChange(
-            draft
-              .split("\n")
-              .map((linha) => linha.trim())
-              .filter(Boolean),
-          );
-          setDraft(null);
-        }}
-      />
     </div>
   );
 }

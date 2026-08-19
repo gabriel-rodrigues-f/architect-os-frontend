@@ -2,7 +2,6 @@ import type {
   Architect,
   Assessment,
   AssessmentComment,
-  Certification,
   Competency,
   CompetencyCategory,
   DevelopmentCycle,
@@ -13,22 +12,7 @@ import type {
   LearningPathItem,
   Level,
   MentoringSession,
-  Okr,
-  Swot,
 } from "./domain";
-
-/** Etapa da filosofia de desenvolvimento exibida no dashboard. */
-export interface PhilosophyStage {
-  id: string;
-  name: string;
-}
-
-export interface DevelopmentPhilosophy {
-  title: string;
-  description: string;
-  stages: PhilosophyStage[];
-  footer: string;
-}
 
 /** Snapshot devolvido por GET /api/state — espelha o AppState do backend. */
 export interface AppState {
@@ -37,25 +21,33 @@ export interface AppState {
   architects: Architect[];
   assessments: Assessment[];
   cycles: DevelopmentCycle[];
-  swots: Swot[];
   plans: DevelopmentPlan[];
-  okrs: Okr[];
   learningPaths: LearningPath[];
   mentoringSessions: MentoringSession[];
   evidences: Evidence[];
-  certifications: Certification[];
   activeCycleId: string;
-  philosophy: DevelopmentPhilosophy;
 }
+
+/**
+ * `admin` administra o sistema (catálogo, ciclos, roster, contas). `lead`
+ * exerce o papel de Tech Lead — revisa avaliação, evidência, PDI e trilha de
+ * quem não é ele mesmo — sem as rotas de administração. `admin` também é
+ * lead-capable (ver `isLeadCapable`): a distinção existe para permitir uma
+ * conta que só revisa, não para impedir quem administra de revisar também.
+ */
+export type UserRole = "admin" | "lead" | "member";
 
 export interface SessionUser {
   id: string;
   email: string;
   name: string;
-  role: "admin" | "member";
+  role: UserRole;
   architectId: string | null;
   createdAt: string;
 }
+
+/** Quem pode agir como Tech Lead: revisar avaliação/evidência, escrever no PDI de outra pessoa. */
+export const isLeadCapable = (role: UserRole): boolean => role === "admin" || role === "lead";
 
 export const API_URL = (import.meta.env["VITE_API_URL"] ?? "http://localhost:4000").replace(
   /\/$/,
@@ -153,6 +145,10 @@ export const authApi = {
   register: (input: { name: string; email: string; password: string }) =>
     post<AuthResult>("/api/auth/register", input),
   me: () => request<SessionUser>("/api/auth/me"),
+  users: () => request<SessionUser[]>("/api/auth/users"),
+  /** Papel e vínculo com arquiteto de outra conta — admin-only no backend. */
+  updateUser: (id: string, patch_: Partial<{ role: UserRole; architectId: string | null }>) =>
+    patch<SessionUser>(`/api/auth/users/${id}`, patch_),
 };
 
 export const api = {
@@ -165,33 +161,27 @@ export const api = {
   createArchitect: (architect: Architect) => post<Architect>("/api/architects", architect),
   updateArchitect: (id: string, patch_: Partial<Omit<Architect, "id">>) =>
     patch<Architect>(`/api/architects/${id}`, patch_),
-  deleteArchitect: (id: string) => del<void>(`/api/architects/${id}`),
-  moveNineBox: (
-    architectId: string,
-    performance: Architect["performance"],
-    potential: Architect["potential"],
-  ) => patch<Architect>(`/api/architects/${architectId}/nine-box`, { performance, potential }),
 
   /* catálogo */
   createCategory: (category: CompetencyCategory) =>
     post<CompetencyCategory>("/api/categories", category),
   updateCategory: (id: string, patch_: Partial<Omit<CompetencyCategory, "id">>) =>
     patch<CompetencyCategory>(`/api/categories/${id}`, patch_),
-  deleteCategory: (id: string) => del<{ competenciesRemoved: number }>(`/api/categories/${id}`),
+  /** `archived: true` quando o domínio já tinha histórico e foi arquivado em vez de apagado. */
+  deleteCategory: (id: string) =>
+    del<{ archived: boolean; competenciesRemoved: number }>(`/api/categories/${id}`),
   createCompetency: (competency: Competency) => post<Competency>("/api/competencies", competency),
   updateCompetency: (id: string, patch_: Partial<Omit<Competency, "id">>) =>
     patch<Competency>(`/api/competencies/${id}`, patch_),
-  deleteCompetency: (id: string) => del<void>(`/api/competencies/${id}`),
+  /** `undefined` (204) = apagada de verdade; `{archived:true}` (200) = arquivada por já ter histórico. */
+  deleteCompetency: (id: string) =>
+    del<{ archived: boolean } | undefined>(`/api/competencies/${id}`),
 
   /* ciclos */
   createCycle: (cycle: DevelopmentCycle) => post<DevelopmentCycle>("/api/cycles", cycle),
   updateCycle: (id: string, patch_: Partial<Omit<DevelopmentCycle, "id">>) =>
     patch<DevelopmentCycle>(`/api/cycles/${id}`, patch_),
   deleteCycle: (id: string) => del<void>(`/api/cycles/${id}`),
-
-  /* filosofia */
-  savePhilosophy: (philosophy: DevelopmentPhilosophy) =>
-    put<DevelopmentPhilosophy>("/api/philosophy", philosophy),
 
   /* assessments */
   openAssessment: (architectId: string, cycleId: string) =>
@@ -216,19 +206,13 @@ export const api = {
   deleteAssessmentComment: (assessmentId: string, competencyId: string, commentId: string) =>
     del<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`),
 
-  putSwot: (
-    architectId: string,
-    cycleId: string,
-    body: Partial<Omit<Swot, "architectId" | "cycleId">>,
-  ) => put<Swot>(`/api/swots/${architectId}/${cycleId}`, body),
-
-  /* PDI e OKR */
+  /* PDI */
   addPlanItem: (architectId: string, cycleId: string, item: DevelopmentPlanItem) =>
     post<DevelopmentPlan>(`/api/plans/${architectId}/items`, { cycleId, item }),
   patchPlanItem: (planId: string, itemId: string, body: Partial<DevelopmentPlanItem>) =>
     patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, body),
-  patchKeyResult: (okrId: string, keyResultId: string, progress: number) =>
-    patch<Okr>(`/api/okrs/${okrId}/key-results/${keyResultId}`, { progress }),
+  removePlanItem: (planId: string, itemId: string) =>
+    del<void>(`/api/plans/${planId}/items/${itemId}`),
 
   /* trilhas */
   createLearningPath: (path: LearningPath) => post<LearningPath>("/api/learning-paths", path),
@@ -263,6 +247,4 @@ export const api = {
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => patch<Evidence>(`/api/evidences/${id}/review`, review),
-  createCertification: (certification: Certification) =>
-    post<Certification>("/api/certifications", certification),
 };

@@ -73,3 +73,19 @@ export const monthsFromTodayIso = (months: number): string => {
   const dia = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${mes}-${dia}`;
 };
+
+/**
+ * Lê um parâmetro da query string na primeira montagem, sem depender de
+ * `Route.useSearch()` — esse hook exige `RouterProvider` de verdade, que os
+ * testes de componente isolado (`render(<Page />)` sem o app inteiro) não
+ * montam. Ler direto de `window.location` funciona nos dois: no app real,
+ * onde a URL já reflete `search` antes do primeiro render de uma rota nova
+ * (TanStack Router atualiza a URL antes de montar o destino); e no teste,
+ * onde simplesmente não há parâmetro nenhum e cai no `undefined`. `undefined`
+ * no SSR (sem `window`) — a página cai no valor padrão do chamador. Ver
+ * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
+ */
+export const initialSearchParam = (name: string): string | undefined => {
+  if (typeof window === "undefined") return undefined;
+  return new URLSearchParams(window.location.search).get(name) ?? undefined;
+};

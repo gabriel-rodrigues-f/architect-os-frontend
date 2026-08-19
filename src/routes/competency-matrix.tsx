@@ -92,6 +92,7 @@ function MatrixPage() {
                     id: slug(newCategory),
                     name: newCategory,
                     short: newCategory.split(" ")[0] ?? newCategory,
+                    active: true,
                   });
                   setNewCategory("");
                 }}
@@ -126,73 +127,75 @@ function MatrixPage() {
       )}
 
       <div className="space-y-4">
-        {store.categories.map((cat) => {
-          const comps = store.competencies.filter((c) => c.categoryId === cat.id);
-          return (
-            <SectionCard
-              key={cat.id}
-              title={cat.name}
-              description={t("matrix.competencyCount", { n: comps.length })}
-              actions={
-                isAdmin ? (
-                  <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
-                    {t("matrix.newCompetency")}
-                  </Button>
-                ) : undefined
-              }
-            >
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="py-2">{t("col.competency")}</th>
-                      {ROLES.map((r) => (
-                        <th key={r} className="py-2 text-center">
-                          {roleShort(r)}
-                        </th>
-                      ))}
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {comps.map((c) => (
-                      <tr key={c.id} className="border-b border-border/60 last:border-0">
-                        <td className="py-2 font-medium">{c.name}</td>
+        {store.categories
+          .filter((cat) => cat.active)
+          .map((cat) => {
+            const comps = store.competencies.filter((c) => c.categoryId === cat.id && c.active);
+            return (
+              <SectionCard
+                key={cat.id}
+                title={cat.name}
+                description={t("matrix.competencyCount", { n: comps.length })}
+                actions={
+                  isAdmin ? (
+                    <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
+                      {t("matrix.newCompetency")}
+                    </Button>
+                  ) : undefined
+                }
+              >
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                        <th className="py-2">{t("col.competency")}</th>
                         {ROLES.map((r) => (
-                          <td key={r} className="py-2 text-center">
-                            <LevelBadge level={c.expected[r]} />
-                          </td>
+                          <th key={r} className="py-2 text-center">
+                            {roleShort(r)}
+                          </th>
                         ))}
-                        <td className="py-2 text-right">
-                          {isAdmin && (
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                type="button"
-                                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                                onClick={() => setEditing(c)}
-                                aria-label={t("matrix.edit.action", { nome: c.name })}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                                onClick={() => setConfirmDelete({ competency: c, category: cat })}
-                                aria-label={`Excluir ${c.name}`}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          )}
-                        </td>
+                        <th />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-          );
-        })}
+                    </thead>
+                    <tbody>
+                      {comps.map((c) => (
+                        <tr key={c.id} className="border-b border-border/60 last:border-0">
+                          <td className="py-2 font-medium">{c.name}</td>
+                          {ROLES.map((r) => (
+                            <td key={r} className="py-2 text-center">
+                              <LevelBadge level={c.expected[r]} />
+                            </td>
+                          ))}
+                          <td className="py-2 text-right">
+                            {isAdmin && (
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                                  onClick={() => setEditing(c)}
+                                  aria-label={t("matrix.edit.action", { nome: c.name })}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                  onClick={() => setConfirmDelete({ competency: c, category: cat })}
+                                  aria-label={`Excluir ${c.name}`}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </SectionCard>
+            );
+          })}
       </div>
 
       <ConfirmDialog
@@ -203,22 +206,90 @@ function MatrixPage() {
             {confirmDelete?.category.name}?
           </>
         }
-        description="A competência sai da matriz e das avaliações em que aparece. Esta ação não pode ser desfeita."
+        description="Se a competência já foi usada em alguma avaliação, PDI, evidência ou trilha, ela é arquivada (some da matriz ativa, mas o histórico continua íntegro) em vez de excluída."
         onCancel={() => setConfirmDelete(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (confirmDelete) {
-            store.removeCompetency(confirmDelete.competency.id);
-            toast.success(t("matrix.delete.toast", { nome: confirmDelete.competency.name }));
+            const { archived } = await store.removeCompetency(confirmDelete.competency.id);
+            toast.success(
+              archived
+                ? t("matrix.archive.toast", { nome: confirmDelete.competency.name })
+                : t("matrix.delete.toast", { nome: confirmDelete.competency.name }),
+            );
           }
           setConfirmDelete(null);
         }}
       />
+
+      {isAdmin && (
+        <ArchivedCompetencies categories={store.categories} competencies={store.competencies} />
+      )}
 
       {editing && <CompetencyEditDialog competency={editing} onClose={() => setEditing(null)} />}
       {creatingIn && (
         <CompetencyCreateDialog category={creatingIn} onClose={() => setCreatingIn(null)} />
       )}
     </>
+  );
+}
+
+/**
+ * Domínios e competências arquivados: fora da matriz ativa (não entram em
+ * avaliação nova), mas não desaparecem — ficam aqui, restauráveis a
+ * qualquer momento. Só existem porque já têm histórico vinculado; ver
+ * `deleteCompetency`/`deleteCategory` no backend.
+ */
+function ArchivedCompetencies({
+  categories,
+  competencies,
+}: {
+  categories: CompetencyCategory[];
+  competencies: Competency[];
+}) {
+  const store = useStore();
+  const { t } = useI18n();
+  const archivedCategories = categories.filter((c) => !c.active);
+  const archivedCompetencies = competencies.filter(
+    (c) => !c.active && archivedCategories.every((cat) => cat.id !== c.categoryId),
+  );
+  if (!archivedCategories.length && !archivedCompetencies.length) return null;
+
+  return (
+    <SectionCard
+      className="mt-6"
+      title={t("matrix.archived.title")}
+      description={t("matrix.archived.hint")}
+    >
+      <ul className="space-y-2 text-sm">
+        {archivedCategories.map((cat) => (
+          <li key={cat.id} className="flex items-center justify-between gap-2">
+            <span>
+              {cat.name}{" "}
+              <span className="text-xs text-muted-foreground">({t("matrix.archived.domain")})</span>
+            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => store.updateCategory(cat.id, { active: true })}
+            >
+              {t("matrix.restore")}
+            </Button>
+          </li>
+        ))}
+        {archivedCompetencies.map((c) => (
+          <li key={c.id} className="flex items-center justify-between gap-2">
+            <span>{c.name}</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => store.updateCompetency(c.id, { active: true })}
+            >
+              {t("matrix.restore")}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </SectionCard>
   );
 }
 
@@ -247,6 +318,7 @@ function CompetencyCreateDialog({
       name: name.trim(),
       categoryId: category.id,
       expected: levels as Record<RoleName, Level>,
+      active: true,
     });
     onClose();
   };

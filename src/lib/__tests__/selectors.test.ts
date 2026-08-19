@@ -97,7 +97,7 @@ describe("createSelectors", () => {
       ],
     });
 
-    it("Draft: gapsFor, domainAverages e developmentScore ignoram", () => {
+    it("Draft: gapsFor e domainAverages ignoram", () => {
       expect(rascunho.gapsFor("diego")).toEqual([]);
       expect(rascunho.domainAverages("diego").every((d) => d.avg === undefined)).toBe(true);
       expect(rascunho.officialAssessmentFor("diego")).toBeUndefined();
@@ -108,7 +108,7 @@ describe("createSelectors", () => {
       expect(emRevisao.officialAssessmentFor("diego")).toBeUndefined();
     });
 
-    it("Completed: passa a alimentar gap, média e score", () => {
+    it("Completed: passa a alimentar gap e média", () => {
       expect(concluida.gapsFor("diego").length).toBeGreaterThan(0);
       expect(concluida.officialAssessmentFor("diego")?.id).toBe("done-1");
     });
@@ -138,20 +138,39 @@ describe("createSelectors", () => {
     expect(needs.some((n) => n.competency?.id === "cloud-serverless")).toBe(false);
   });
 
-  it("developmentScore combina PDI, OKR, trilhas, evidências e evolução", () => {
-    // PDI 50*.3 + OKR 50*.15 + trilha 60*.15 + evidências 25*.2 + evolução 66,7*.2 ≈ 50
-    expect(s.developmentScore("ana")).toBe(50);
-  });
-
-  it("developmentScore é 0 para quem não tem nada registrado", () => {
-    expect(s.developmentScore("bruno")).toBe(0);
-  });
-
   it("opera sobre o estado vazio sem quebrar", () => {
     const empty = createSelectors(emptyState);
     expect(empty.teamTrainingNeeds()).toEqual([]);
     expect(empty.domainAverages("ana")).toEqual([]);
-    expect(empty.developmentScore("ana")).toBe(0);
-    expect(empty.swotFor("ana")).toBeUndefined();
+  });
+
+  /**
+   * EPIC E — quem já saiu do time não conta como time atual: nem na lista
+   * de `activeArchitects`, nem na Necessidade de Treinamento agregada.
+   * `gapsFor`/`domainAverages` continuam funcionando por id explícito (uma
+   * tela histórica pode pedir o gap de alguém inativo de propósito).
+   */
+  describe("activeArchitects — time atual exclui quem saiu", () => {
+    const comInativo = createSelectors({
+      ...fixtureState,
+      architects: fixtureState.architects.map((a) =>
+        a.id === "bruno" ? { ...a, active: false } : a,
+      ),
+    });
+
+    it("activeArchitects não lista bruno", () => {
+      expect(comInativo.activeArchitects.map((a) => a.id)).toEqual(["ana"]);
+    });
+
+    it("teamTrainingNeeds ignora as lacunas de bruno", () => {
+      const needs = comInativo.teamTrainingNeeds();
+      // Sem o bruno, só a lacuna de segurança da ana permanece.
+      expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam"]);
+      expect(needs[0]).toMatchObject({ people: 1, totalGap: 1 });
+    });
+
+    it("gapsFor ainda funciona para quem está inativo — histórico continua acessível", () => {
+      expect(comInativo.gapsFor("bruno").length).toBeGreaterThan(0);
+    });
   });
 });

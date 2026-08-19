@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { toast } from "sonner";
 
-import { api, ApiError, type AppState, type CommentInput, type DevelopmentPhilosophy } from "./api";
+import { api, ApiError, type AppState, type CommentInput } from "./api";
 import type {
   Architect,
   Assessment,
-  Certification,
   Competency,
   CompetencyCategory,
   DevelopmentCycle,
@@ -16,7 +16,6 @@ import type {
   LearningPathItem,
   Level,
   MentoringSession,
-  Swot,
 } from "./domain";
 import { createSelectors, emptyState } from "./selectors";
 import { byName } from "./text";
@@ -35,19 +34,19 @@ interface Api extends AppState {
   setActiveCycle: (id: string) => void;
   addArchitect: (a: Architect) => void;
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id">>) => void;
-  removeArchitect: (id: string) => void;
   addCompetency: (c: Competency) => void;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
-  removeCompetency: (id: string) => void;
+  /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
+  removeCompetency: (id: string) => Promise<{ archived: boolean }>;
   addCategory: (c: CompetencyCategory) => void;
   updateCategory: (id: string, patch: Partial<Omit<CompetencyCategory, "id">>) => void;
-  removeCategory: (id: string) => void;
+  /** Apaga se nenhuma competência do domínio já foi usada; senão arquiva o domínio e as competências dele. */
+  removeCategory: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
   addCycle: (c: DevelopmentCycle) => void;
   updateCycle: (id: string, patch: Partial<Omit<DevelopmentCycle, "id">>) => void;
   removeCycle: (id: string) => void;
   openAssessment: (architectId: string, cycleId: string) => Promise<Assessment>;
   setAssessmentStatus: (id: string, status: Assessment["status"]) => Promise<Assessment>;
-  savePhilosophy: (philosophy: DevelopmentPhilosophy) => void;
   updateLearningPath: (
     id: string,
     patch: Partial<
@@ -83,19 +82,20 @@ interface Api extends AppState {
       final: Level;
     }>,
   ) => void;
-  updateSwot: (
-    architectId: string,
-    cycleId: string,
-    patch: Partial<Omit<Swot, "architectId" | "cycleId">>,
-  ) => void;
   addPlanItem: (architectId: string, item: DevelopmentPlanItem) => void;
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
+  /** Tira o item do PDI — a lacuna dele volta a aparecer como sugestão. */
+  removePlanItem: (planId: string, itemId: string) => void;
   addEvidence: (e: Evidence) => void;
+  /**
+   * Sem otimismo: aprovar/rejeitar evidência é decisão do Tech Lead, e a UI só
+   * pode dizer "aprovado" depois que o servidor confirmou de verdade — ver
+   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC L.
+   */
   reviewEvidence: (
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
-  ) => void;
-  addCertification: (c: Certification) => void;
+  ) => Promise<void>;
   addMentoringSession: (m: MentoringSession) => void;
   updateLearningItemProgress: (
     pathId: string,
@@ -104,12 +104,6 @@ interface Api extends AppState {
     progress: number,
   ) => void;
   addLearningPath: (p: LearningPath) => void;
-  updateKeyResult: (okrId: string, krId: string, progress: number) => void;
-  moveNineBox: (
-    architectId: string,
-    performance: Architect["performance"],
-    potential: Architect["potential"],
-  ) => void;
 }
 
 const Ctx = createContext<Api | null>(null);
@@ -120,11 +114,22 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) => (prev ? fn(prev) : prev));
   };
 
-  /** Dispara a chamada de escrita; em erro, revalida a partir do servidor. */
+  /**
+   * Dispara a chamada de escrita. A UI já mudou otimisticamente (`local`)
+   * antes desta função ser chamada; em erro, essa mudança otimista não pode
+   * ficar mentindo sozinha na tela — revalida a partir do servidor (volta o
+   * dado real) e avisa quem clicou, em vez de falhar em silêncio como antes.
+   * Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC L.
+   */
   const remote = (call: Promise<unknown>) => {
     void call.catch((error: unknown) => {
       if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
       else console.error(error);
+      toast.error(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.",
+      );
       void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
     });
   };
@@ -151,26 +156,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.updateArchitect(id, patch));
     },
 
-    /** Remover o arquiteto tira junto tudo que dependia dele (cascade no banco). */
-    removeArchitect: (id) => {
-      local((s) => ({
-        ...s,
-        architects: s.architects.filter((a) => a.id !== id),
-        assessments: s.assessments.filter((a) => a.architectId !== id),
-        plans: s.plans.filter((p) => p.architectId !== id),
-        okrs: s.okrs.filter((o) => o.architectId !== id),
-        swots: s.swots.filter((w) => w.architectId !== id),
-        evidences: s.evidences.filter((e) => e.architectId !== id),
-        certifications: s.certifications.filter((c) => c.architectId !== id),
-        mentoringSessions: s.mentoringSessions.filter((m) => m.menteeId !== id),
-        learningPaths: s.learningPaths.map((p) => ({
-          ...p,
-          assignedTo: p.assignedTo.filter((aid) => aid !== id),
-        })),
-      }));
-      remote(api.deleteArchitect(id));
-    },
-
     addCompetency: (c) => {
       local((s) => ({ ...s, competencies: [...s.competencies, c] }));
       remote(api.createCompetency(c));
@@ -188,9 +173,29 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.updateCompetency(id, patch));
     },
 
-    removeCompetency: (id) => {
-      local((s) => ({ ...s, competencies: s.competencies.filter((c) => c.id !== id) }));
-      remote(api.deleteCompetency(id));
+    /**
+     * Sem otimismo aqui: o resultado só é conhecido depois que o servidor
+     * responde (apagou ou arquivou), então a UI não pode decidir de antemão o
+     * que remover da tela. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
+     * SYNAPSE.md, EPIC C.
+     */
+    removeCompetency: async (id) => {
+      try {
+        const result = await api.deleteCompetency(id);
+        const archived = result?.archived === true;
+        local((s) => ({
+          ...s,
+          competencies: archived
+            ? s.competencies.map((c) => (c.id === id ? { ...c, active: false } : c))
+            : s.competencies.filter((c) => c.id !== id),
+        }));
+        return { archived };
+      } catch (error) {
+        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
+        else console.error(error);
+        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+        throw error;
+      }
     },
 
     addCategory: (c) => {
@@ -218,25 +223,39 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * realmente tem salvo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
      * Seção 19.
      */
-    removeCategory: (id) => {
-      local((s) => {
-        const doomed = new Set(s.competencies.filter((c) => c.categoryId === id).map((c) => c.id));
-        return {
-          ...s,
-          categories: s.categories.filter((c) => c.id !== id),
-          competencies: s.competencies.filter((c) => c.categoryId !== id),
-          learningPaths: s.learningPaths.map((p) => ({
-            ...p,
-            competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),
-          })),
-          architects: s.architects.map((a) => ({
-            ...a,
-            strongDomain: a.strongDomain === id ? "" : a.strongDomain,
-            gapDomain: a.gapDomain === id ? "" : a.gapDomain,
-          })),
-        };
-      });
-      remote(api.deleteCategory(id));
+    removeCategory: async (id) => {
+      try {
+        const result = await api.deleteCategory(id);
+        local((s) => {
+          if (result.archived) {
+            return {
+              ...s,
+              categories: s.categories.map((c) => (c.id === id ? { ...c, active: false } : c)),
+              competencies: s.competencies.map((c) =>
+                c.categoryId === id ? { ...c, active: false } : c,
+              ),
+            };
+          }
+          const doomed = new Set(
+            s.competencies.filter((c) => c.categoryId === id).map((c) => c.id),
+          );
+          return {
+            ...s,
+            categories: s.categories.filter((c) => c.id !== id),
+            competencies: s.competencies.filter((c) => c.categoryId !== id),
+            learningPaths: s.learningPaths.map((p) => ({
+              ...p,
+              competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),
+            })),
+          };
+        });
+        return result;
+      } catch (error) {
+        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
+        else console.error(error);
+        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+        throw error;
+      }
     },
 
     updateAssessmentItem: (assessmentId, competencyId, patch) => {
@@ -293,29 +312,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return updated;
     },
 
-    updateSwot: (architectId, cycleId, patch) => {
-      local((s) => {
-        const exists = s.swots.some((w) => w.architectId === architectId && w.cycleId === cycleId);
-        const base: Swot = {
-          architectId,
-          cycleId,
-          strengths: [],
-          weaknesses: [],
-          opportunities: [],
-          threats: [],
-        };
-        return {
-          ...s,
-          swots: exists
-            ? s.swots.map((w) =>
-                w.architectId === architectId && w.cycleId === cycleId ? { ...w, ...patch } : w,
-              )
-            : [...s.swots, { ...base, ...patch }],
-        };
-      });
-      remote(api.putSwot(architectId, cycleId, patch));
-    },
-
     addPlanItem: (architectId, item) => {
       local((s) => {
         const existing = s.plans.find(
@@ -358,22 +354,27 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.patchPlanItem(planId, itemId, patch));
     },
 
+    removePlanItem: (planId, itemId) => {
+      local((s) => ({
+        ...s,
+        plans: s.plans.map((p) =>
+          p.id !== planId ? p : { ...p, items: p.items.filter((i) => i.id !== itemId) },
+        ),
+      }));
+      remote(api.removePlanItem(planId, itemId));
+    },
+
     addEvidence: (e) => {
       local((s) => ({ ...s, evidences: [e, ...s.evidences] }));
       remote(api.createEvidence(e));
     },
 
-    reviewEvidence: (id, review) => {
+    reviewEvidence: async (id, review) => {
+      const updated = await api.reviewEvidence(id, review);
       local((s) => ({
         ...s,
-        evidences: s.evidences.map((e) => (e.id === id ? { ...e, ...review } : e)),
+        evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
       }));
-      remote(api.reviewEvidence(id, review));
-    },
-
-    addCertification: (c) => {
-      local((s) => ({ ...s, certifications: [c, ...s.certifications] }));
-      remote(api.createCertification(c));
     },
 
     addMentoringSession: (m) => {
@@ -411,21 +412,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         ),
       }));
       remote(api.patchLearningItemProgress(pathId, architectId, itemId, progress));
-    },
-
-    updateKeyResult: (okrId, krId, progress) => {
-      local((s) => ({
-        ...s,
-        okrs: s.okrs.map((o) =>
-          o.id !== okrId
-            ? o
-            : {
-                ...o,
-                keyResults: o.keyResults.map((k) => (k.id === krId ? { ...k, progress } : k)),
-              },
-        ),
-      }));
-      remote(api.patchKeyResult(okrId, krId, progress));
     },
 
     addCycle: (c) => {
@@ -477,11 +463,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return updated;
     },
 
-    savePhilosophy: (philosophy) => {
-      local((s) => ({ ...s, philosophy }));
-      remote(api.savePhilosophy(philosophy));
-    },
-
     updateLearningPath: (id, patch) => {
       local((s) => ({
         ...s,
@@ -513,16 +494,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         ),
       }));
       remote(api.removeLearningItem(pathId, itemId));
-    },
-
-    moveNineBox: (architectId, performance, potential) => {
-      local((s) => ({
-        ...s,
-        architects: s.architects.map((a) =>
-          a.id === architectId ? { ...a, performance, potential } : a,
-        ),
-      }));
-      remote(api.moveNineBox(architectId, performance, potential));
     },
   };
 }

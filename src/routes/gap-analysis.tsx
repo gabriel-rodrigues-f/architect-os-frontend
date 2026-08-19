@@ -32,8 +32,16 @@ function GapPage() {
   const { t } = useI18n();
   const [selected, setSelected] = useState<string[]>([]);
 
-  /** Toda a tela lê deste recorte — filtro vazio significa o time inteiro. */
-  const architects = applyArchitectFilter(store.architects, selected);
+  /**
+   * Toda a tela lê deste recorte. Filtro vazio significa o time atual — quem
+   * já saiu não conta como lacuna do time ativo. Selecionar alguém
+   * explicitamente no filtro (incluindo gente inativa) ainda funciona: a
+   * lista de opções do `ArchitectFilter` continua sendo `store.architects`
+   * inteiro. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md,
+   * EPIC E.
+   */
+  const architects =
+    selected.length === 0 ? sel.activeArchitects : applyArchitectFilter(store.architects, selected);
 
   /**
    * Radar: média por domínio só entre quem tem assessment oficial cobrindo

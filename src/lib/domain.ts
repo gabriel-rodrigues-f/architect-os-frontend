@@ -52,6 +52,8 @@ export interface CompetencyCategory {
   id: string;
   name: string;
   short: string;
+  /** Fora do catálogo ativo, mas os assessments que já usaram este domínio permanecem legíveis. */
+  active: boolean;
 }
 
 export interface Competency {
@@ -60,6 +62,8 @@ export interface Competency {
   categoryId: string;
   /** Role Competency Profile: expected level per role */
   expected: Record<RoleName, Level>;
+  /** Fora do catálogo ativo — não entra em novo assessment nem em opção nova de PDI/trilha/evidência. */
+  active: boolean;
 }
 
 export interface Architect {
@@ -69,11 +73,6 @@ export interface Architect {
   yearsAsArchitect: number;
   specialization: string;
   email: string;
-  strongDomain: string;
-  gapDomain: string;
-  /** `null` = ainda não calibrado — nasce assim, nunca com Medium/Medium fabricado. */
-  performance: "Low" | "Medium" | "High" | null;
-  potential: "Low" | "Medium" | "High" | null;
   /** Fora do time hoje, mas o histórico (assessments, PDI, OKR...) permanece. */
   active: boolean;
 }
@@ -101,6 +100,14 @@ export interface AssessmentItem {
   target: Level;
   final: Level;
   comments: AssessmentComment[];
+  /**
+   * Fotografia do nome/domínio da competência no momento em que o assessment
+   * foi aberto — ausente em assessments criados antes desta migração, quando
+   * quem renderiza cai de volta no catálogo atual.
+   */
+  competencyName?: string | undefined;
+  categoryId?: string | undefined;
+  categoryName?: string | undefined;
 }
 
 export interface Assessment {
@@ -117,15 +124,6 @@ export interface DevelopmentCycle {
   start: string;
   end: string;
   status: "Active" | "Closed" | "Planned";
-}
-
-export interface Swot {
-  architectId: string;
-  cycleId: string;
-  strengths: string[];
-  weaknesses: string[];
-  opportunities: string[];
-  threats: string[];
 }
 
 export type ActionType = "Learn" | "Practice" | "Apply" | "Teach" | "Mentor" | "Lead";
@@ -166,20 +164,6 @@ export interface DevelopmentPlan {
   cycleId: string;
   status: "Draft" | "Approved" | "Completed";
   items: DevelopmentPlanItem[];
-}
-
-export interface KeyResult {
-  id: string;
-  title: string;
-  progress: number;
-}
-
-export interface Okr {
-  id: string;
-  architectId: string;
-  cycleId: string;
-  objective: string;
-  keyResults: KeyResult[];
 }
 
 export type LearningItemType =
@@ -303,14 +287,8 @@ export interface Evidence {
   leaderComment?: string | undefined;
   /** Nasce "Pending" — nunca aceita implicitamente só por existir. */
   status: "Pending" | "Accepted" | "Needs Improvement" | "Rejected";
-}
-
-export interface Certification {
-  id: string;
-  architectId: string;
-  name: string;
-  issuer: string;
-  year: number;
+  /** Quem emitiu — relevante quando `type === "Certification"`. */
+  issuer?: string | undefined;
 }
 
 export const gapSeverity = (gap: number) => {

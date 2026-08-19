@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, BadgeCheck } from "lucide-react";
 import { Fragment, useState } from "react";
+import { z } from "zod";
 
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -8,15 +9,26 @@ import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { Assessment, AssessmentComment, CompetencyCategory, Level } from "@/lib/domain";
-import type { CommentInput } from "@/lib/api";
+import { isLeadCapable, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate } from "@/lib/text";
+import { formatDate, initialSearchParam } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
+/**
+ * `architectId` na URL — quem chega de outra tela (o perfil da pessoa)
+ * continua olhando para a mesma pessoa, em vez de cair no primeiro
+ * arquiteto ativo e perder o contexto que trouxe até aqui. Ver AUDITORIA-
+ * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
+ */
+const assessmentsSearchSchema = z.object({
+  architectId: z.string().optional(),
+});
+
 export const Route = createFileRoute("/assessments")({
+  validateSearch: assessmentsSearchSchema,
   head: () => ({
     meta: [
       { title: "Avaliações — Synapse" },
@@ -37,8 +49,10 @@ export const Route = createFileRoute("/assessments")({
 function AssessmentsPage() {
   const store = useStore();
   const sel = useSelectors();
-  const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
-  const { t } = useI18n();
+  const [architectId, setArchitectId] = useState(
+    () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
+  );
+  const { t, locale } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();
   const [categoryIds, setCategoryIds] = useState<string[]>(() =>
@@ -51,6 +65,7 @@ function AssessmentsPage() {
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
   const assessment = sel.assessmentFor(architectId);
+  const selectedArchitect = sel.architectById(architectId);
 
   /**
    * Quem pode escrever o quê agora — espelha a regra do backend
@@ -58,7 +73,7 @@ function AssessmentsPage() {
    * desabilitado em vez de deixar a pessoa preencher e só depois descobrir,
    * pelo 403, que não podia. Ver PLANO-360-AGENTES-SYNAPSE.md, Seção 9.
    */
-  const isAdmin = user.role === "admin";
+  const isLead = isLeadCapable(user.role);
   const isOwner = user.architectId === architectId;
   const status = assessment?.status;
   const isCompleted = status === "Completed";
@@ -71,12 +86,12 @@ function AssessmentsPage() {
    * autoavaliação existir). Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
    * Seção 2–4.
    */
-  const canEditSelf = !isAdmin && isOwner && status === "Draft";
-  const canEditLeaderFinal = isAdmin && status === "In Review";
-  const canSubmit = !isAdmin && isOwner && status === "Draft";
-  const canComplete = isAdmin && status === "In Review";
+  const canEditSelf = !isLead && isOwner && status === "Draft";
+  const canEditLeaderFinal = isLead && status === "In Review";
+  const canSubmit = !isLead && isOwner && status === "Draft";
+  const canComplete = isLead && status === "In Review";
   /** Só o Tech Lead reabre — devolve a `In Review` para corrigir e concluir de novo. */
-  const canReopen = isAdmin && status === "Completed";
+  const canReopen = isLead && status === "Completed";
 
   /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
   const selected = store.categories.filter((c) => categoryIds.includes(c.id));
@@ -120,11 +135,24 @@ function AssessmentsPage() {
               value={architectId}
               onChange={(e) => setArchitectId(e.target.value)}
             >
-              {store.architects.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
+              <optgroup label={t("asmt.architect.active")}>
+                {sel.activeArchitects.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </optgroup>
+              {store.architects.some((a) => !a.active) && (
+                <optgroup label={t("asmt.architect.inactive")}>
+                  {store.architects
+                    .filter((a) => !a.active)
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                </optgroup>
+              )}
             </select>
             <CapabilityCombobox
               categories={store.categories}
@@ -190,6 +218,8 @@ function AssessmentsPage() {
             <p className="text-sm text-muted-foreground">
               Cadastre um arquiteto em Time antes de abrir avaliações.
             </p>
+          ) : selectedArchitect && !selectedArchitect.active ? (
+            <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.inactive")}</p>
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
@@ -256,10 +286,35 @@ function AssessmentsPage() {
                           if (!item) return null;
                           const gap = item.target - item.final;
                           const diverges = item.self !== item.leader;
+                          /**
+                           * Fecha o loop da evidência: quando o Tech Lead já aceitou uma
+                           * evidência para esta competência desta pessoa, ela aparece aqui
+                           * como contexto — sem alterar nota nenhuma sozinha, a calibração
+                           * continua sendo decisão de quem revisa. Ver AUDITORIA-TERCEIRA-
+                           * RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC I.
+                           */
+                          const acceptedEvidence = store.evidences.filter(
+                            (e) =>
+                              e.architectId === architectId &&
+                              e.status === "Accepted" &&
+                              e.competencyIds.includes(c.id),
+                          );
                           return (
                             <Fragment key={c.id}>
                               <tr className="border-b border-border/60">
-                                <td className="py-2 font-medium">{c.name}</td>
+                                <td className="py-2 font-medium">
+                                  <span className="flex items-center gap-1.5">
+                                    {c.name}
+                                    {acceptedEvidence.length > 0 && (
+                                      <BadgeCheck
+                                        className="h-3.5 w-3.5 shrink-0 text-[var(--level-5-fg)]"
+                                        aria-label={t("asmt.evidence.badge", {
+                                          n: acceptedEvidence.length,
+                                        })}
+                                      />
+                                    )}
+                                  </span>
+                                </td>
                                 <td className="px-1 py-2">
                                   {canEditSelf ? (
                                     <LevelSelect
@@ -328,6 +383,24 @@ function AssessmentsPage() {
                               {openComment === c.id && (
                                 <tr className="border-b border-border/60 bg-secondary/40">
                                   <td colSpan={7} className="p-3">
+                                    {acceptedEvidence.length > 0 && (
+                                      <div className="mb-3 space-y-1.5 border-b border-border pb-3">
+                                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                          {t("asmt.evidence.title")}
+                                        </p>
+                                        <ul className="space-y-1">
+                                          {acceptedEvidence.map((e) => (
+                                            <li key={e.id} className="text-sm">
+                                              <span className="font-medium">{e.title}</span>{" "}
+                                              <span className="text-xs text-muted-foreground">
+                                                {labels.evidenceType[e.type]} ·{" "}
+                                                {formatDate(e.date, locale)}
+                                              </span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
                                     <CommentSection
                                       comments={item.comments}
                                       currentUserId={user.id}
