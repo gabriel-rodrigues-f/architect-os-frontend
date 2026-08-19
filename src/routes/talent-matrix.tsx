@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 
 import { GapBadge, Initials, PageHeader, SectionCard } from "@/components/app/ui-bits";
@@ -79,6 +80,21 @@ function TalentMatrixPage() {
   return (
     <>
       <PageHeader title={t("talent.title")} description={t("talent.subtitle")} />
+
+      {/*
+        AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 35 — arrastar um
+        card sobrescreve a classificação da pessoa sem ciclo, justificativa,
+        autoria visível ou histórico. Suspenso para uso decisório até essa
+        governança existir de verdade: o aviso fica sempre visível, não só
+        num tooltip.
+      */}
+      <div
+        role="alert"
+        className="mb-4 flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3"
+      >
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+        <p className="text-sm">{t("talent.governanceWarning")}</p>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <SectionCard title={t("talent.grid.title")} description={t("talent.grid.subtitle")}>
