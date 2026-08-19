@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { GapBadge, Initials, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import type { Architect } from "@/lib/domain";
+import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
@@ -61,6 +62,8 @@ function TalentMatrixPage() {
   const sel = useSelectors();
   const labels = useLabels();
   const { t } = useI18n();
+  /** Calibração de talento é decisão do Tech Lead — member só visualiza. */
+  const isAdmin = useCurrentUser().role === "admin";
   const [selected, setSelected] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
 
@@ -101,9 +104,10 @@ function TalentMatrixPage() {
                   return (
                     <div
                       key={`${potential}-${performance}`}
-                      onDragOver={(e) => e.preventDefault()}
+                      onDragOver={(e) => isAdmin && e.preventDefault()}
                       onDrop={() => {
-                        if (dragging) store.moveNineBox(dragging, performance, potential);
+                        if (isAdmin && dragging)
+                          store.moveNineBox(dragging, performance, potential);
                         setDragging(null);
                       }}
                       className={`min-h-28 rounded-lg border border-dashed border-border p-2 ${quadrantTone(performance, potential)}`}
@@ -111,7 +115,7 @@ function TalentMatrixPage() {
                       {people.map((a) => (
                         <button
                           key={a.id}
-                          draggable
+                          draggable={isAdmin}
                           onDragStart={() => setDragging(a.id)}
                           onClick={() => setSelected(a.id)}
                           className="mb-1.5 flex w-full items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-left text-xs hover:border-primary"

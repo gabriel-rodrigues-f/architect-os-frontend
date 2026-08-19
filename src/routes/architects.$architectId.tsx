@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { EVIDENCE_TYPES, progressFor, type EvidenceType } from "@/lib/domain";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -62,6 +63,9 @@ function ArchitectProfile() {
   const sel = useSelectors();
   const labels = useLabels();
   const { t, locale } = useI18n();
+  const user = useCurrentUser();
+  /** OKR, evidência e certificação são da pessoa — só ela (ou admin) registra; backend já recusa o resto. */
+  const canEditOwn = user.role === "admin" || user.architectId === architectId;
   const architect = sel.architectById(architectId);
 
   if (!architect) {
@@ -216,16 +220,20 @@ function ArchitectProfile() {
                     </div>
                     <Bar value={k.progress} className="mt-1" />
                     {/* O progresso do KR é acompanhado aqui: antes só era exibido. */}
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={5}
-                      value={k.progress}
-                      aria-label={`Progresso de ${k.title}`}
-                      onChange={(e) => store.updateKeyResult(okr.id, k.id, Number(e.target.value))}
-                      className="mt-1 w-full accent-primary"
-                    />
+                    {canEditOwn && (
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={k.progress}
+                        aria-label={`Progresso de ${k.title}`}
+                        onChange={(e) =>
+                          store.updateKeyResult(okr.id, k.id, Number(e.target.value))
+                        }
+                        className="mt-1 w-full accent-primary"
+                      />
+                    )}
                   </li>
                 ))}
               </ul>
@@ -258,7 +266,7 @@ function ArchitectProfile() {
         <SectionCard
           title={t("arch.evidence.title")}
           description={t("arch.evidence.subtitle")}
-          actions={<EvidenceDialog architectId={architect.id} />}
+          actions={canEditOwn ? <EvidenceDialog architectId={architect.id} /> : undefined}
         >
           <ul className="space-y-2">
             {evidences.map((e) => (
@@ -279,7 +287,7 @@ function ArchitectProfile() {
         <SectionCard
           title={t("arch.cert.title")}
           description={t("arch.cert.subtitle")}
-          actions={<CertificationDialog architectId={architect.id} />}
+          actions={canEditOwn ? <CertificationDialog architectId={architect.id} /> : undefined}
         >
           <ul className="space-y-2">
             {certifications.map((c) => (

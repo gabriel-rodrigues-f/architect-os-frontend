@@ -6,6 +6,7 @@ import { Bar, GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ACTION_TYPES, type ActionType, type PdiStatus } from "@/lib/domain";
+import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
@@ -46,6 +47,9 @@ function PlansPage() {
   const labels = useLabels();
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
   const { t, locale } = useI18n();
+  const user = useCurrentUser();
+  /** PDI e SWOT são da pessoa — só ela (ou admin) escreve; backend já recusa o resto. */
+  const canEdit = user.role === "admin" || user.architectId === architectId;
   const architect = sel.architectById(architectId);
   const plan = sel.planFor(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
@@ -125,38 +129,46 @@ function PlansPage() {
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-4">
                   <Field label={t("pdi.field.actionType")}>
-                    <select
-                      className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-                      value={item.actionType}
-                      onChange={(e) =>
-                        store.updatePlanItem(plan!.id, item.id, {
-                          actionType: e.target.value as ActionType,
-                        })
-                      }
-                    >
-                      {ACTION_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                          {labels.actionType[t]}
-                        </option>
-                      ))}
-                    </select>
+                    {canEdit ? (
+                      <select
+                        className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+                        value={item.actionType}
+                        onChange={(e) =>
+                          store.updatePlanItem(plan!.id, item.id, {
+                            actionType: e.target.value as ActionType,
+                          })
+                        }
+                      >
+                        {ACTION_TYPES.map((t) => (
+                          <option key={t} value={t}>
+                            {labels.actionType[t]}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="py-1.5 text-sm">{labels.actionType[item.actionType]}</p>
+                    )}
                   </Field>
                   <Field label={t("pdi.field.status")}>
-                    <select
-                      className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-                      value={item.status}
-                      onChange={(e) =>
-                        store.updatePlanItem(plan!.id, item.id, {
-                          status: e.target.value as PdiStatus,
-                        })
-                      }
-                    >
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {labels.planItemStatus[s]}
-                        </option>
-                      ))}
-                    </select>
+                    {canEdit ? (
+                      <select
+                        className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+                        value={item.status}
+                        onChange={(e) =>
+                          store.updatePlanItem(plan!.id, item.id, {
+                            status: e.target.value as PdiStatus,
+                          })
+                        }
+                      >
+                        {STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {labels.planItemStatus[s]}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="py-1.5 text-sm">{labels.planItemStatus[item.status]}</p>
+                    )}
                   </Field>
                   <Field label={t("pdi.field.priority")}>
                     <p className="py-1.5 text-sm">{labels.priority[item.priority]}</p>
@@ -174,6 +186,7 @@ function PlansPage() {
                   </p>
                   <Textarea
                     value={item.actionPlan}
+                    disabled={!canEdit}
                     onChange={(e) =>
                       store.updatePlanItem(plan!.id, item.id, { actionPlan: e.target.value })
                     }
@@ -186,17 +199,21 @@ function PlansPage() {
                     <span>{t("pdi.progress")}</span>
                     <span className="tabular-nums">{item.progress}%</span>
                   </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={item.progress}
-                    onChange={(e) =>
-                      store.updatePlanItem(plan!.id, item.id, { progress: Number(e.target.value) })
-                    }
-                    className="w-full accent-[var(--primary)]"
-                  />
+                  {canEdit && (
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={item.progress}
+                      onChange={(e) =>
+                        store.updatePlanItem(plan!.id, item.id, {
+                          progress: Number(e.target.value),
+                        })
+                      }
+                      className="w-full accent-[var(--primary)]"
+                    />
+                  )}
                   <Bar value={item.progress} />
                 </div>
 
@@ -231,7 +248,7 @@ function PlansPage() {
                   </div>
                 )}
 
-                {!item.smart && (
+                {!item.smart && canEdit && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -274,14 +291,16 @@ function PlansPage() {
                     <p className="text-sm font-medium">{g.competency?.name}</p>
                     <GapBadge gap={g.gap} />
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="mt-2 px-0"
-                    onClick={() => addSuggestion(g.item.competencyId)}
-                  >
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Adicionar ao PDI
-                  </Button>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="mt-2 px-0"
+                      onClick={() => addSuggestion(g.item.competencyId)}
+                    >
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Adicionar ao PDI
+                    </Button>
+                  )}
                 </li>
               ))}
               {!suggestions.length && (
@@ -297,6 +316,7 @@ function PlansPage() {
                   key={key}
                   title={t(titleKey)}
                   items={swot?.[key] ?? []}
+                  disabled={!canEdit}
                   onChange={(items) =>
                     store.updateSwot(architectId, store.activeCycleId, { [key]: items })
                   }
@@ -345,10 +365,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function SwotBlock({
   title,
   items,
+  disabled = false,
   onChange,
 }: {
   title: string;
   items: string[];
+  disabled?: boolean;
   onChange: (items: string[]) => void;
 }) {
   const { t } = useI18n();
@@ -363,6 +385,7 @@ function SwotBlock({
         aria-label={title}
         placeholder={t("pdi.swot.placeholder")}
         value={texto}
+        disabled={disabled}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
           if (draft === null) return;

@@ -24,6 +24,7 @@ import {
   type Level,
   type RoleName,
 } from "@/lib/domain";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
@@ -58,6 +59,8 @@ const competencyId = (category: CompetencyCategory, name: string) => slug(`${cat
 
 function MatrixPage() {
   const store = useStore();
+  /** Catálogo mestre é administrativo — backend já recusa o resto. */
+  const isAdmin = useCurrentUser().role === "admin";
   const [newCategory, setNewCategory] = useState("");
   const { t } = useI18n();
   const [newComp, setNewComp] = useState<Record<string, string>>({});
@@ -73,28 +76,30 @@ function MatrixPage() {
         title={t("matrix.title")}
         description={t("matrix.subtitle")}
         actions={
-          <div className="flex gap-2">
-            <Input
-              placeholder={t("matrix.newDomain")}
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              className="w-48"
-            />
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (!newCategory.trim()) return;
-                store.addCategory({
-                  id: slug(newCategory),
-                  name: newCategory,
-                  short: newCategory.split(" ")[0] ?? newCategory,
-                });
-                setNewCategory("");
-              }}
-            >
-              {t("matrix.add")}
-            </Button>
-          </div>
+          isAdmin ? (
+            <div className="flex gap-2">
+              <Input
+                placeholder={t("matrix.newDomain")}
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                className="w-48"
+              />
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  if (!newCategory.trim()) return;
+                  store.addCategory({
+                    id: slug(newCategory),
+                    name: newCategory,
+                    short: newCategory.split(" ")[0] ?? newCategory,
+                  });
+                  setNewCategory("");
+                }}
+              >
+                {t("matrix.add")}
+              </Button>
+            </div>
+          ) : undefined
         }
       />
 
@@ -129,35 +134,37 @@ function MatrixPage() {
               title={cat.name}
               description={t("matrix.competencyCount", { n: comps.length })}
               actions={
-                <div className="flex gap-2">
-                  <Input
-                    placeholder={t("matrix.newCompetency")}
-                    className="w-52"
-                    value={newComp[cat.id] ?? ""}
-                    onChange={(e) => setNewComp({ ...newComp, [cat.id]: e.target.value })}
-                  />
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const name = (newComp[cat.id] ?? "").trim();
-                      if (!name) return;
-                      store.addCompetency({
-                        id: competencyId(cat, name),
-                        name,
-                        categoryId: cat.id,
-                        expected: {
-                          "Arquiteto de Soluções I": 3 as Level,
-                          "Arquiteto de Soluções II": 4 as Level,
-                          "Arquiteto de Soluções III": 5 as Level,
-                        },
-                      });
-                      setNewComp({ ...newComp, [cat.id]: "" });
-                    }}
-                  >
-                    {t("matrix.add")}
-                  </Button>
-                </div>
+                isAdmin ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder={t("matrix.newCompetency")}
+                      className="w-52"
+                      value={newComp[cat.id] ?? ""}
+                      onChange={(e) => setNewComp({ ...newComp, [cat.id]: e.target.value })}
+                    />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        const name = (newComp[cat.id] ?? "").trim();
+                        if (!name) return;
+                        store.addCompetency({
+                          id: competencyId(cat, name),
+                          name,
+                          categoryId: cat.id,
+                          expected: {
+                            "Arquiteto de Soluções I": 3 as Level,
+                            "Arquiteto de Soluções II": 4 as Level,
+                            "Arquiteto de Soluções III": 5 as Level,
+                          },
+                        });
+                        setNewComp({ ...newComp, [cat.id]: "" });
+                      }}
+                    >
+                      {t("matrix.add")}
+                    </Button>
+                  </div>
+                ) : undefined
               }
             >
               <div className="overflow-x-auto">
@@ -183,24 +190,26 @@ function MatrixPage() {
                           </td>
                         ))}
                         <td className="py-2 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              type="button"
-                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                              onClick={() => setEditing(c)}
-                              aria-label={t("matrix.edit.action", { nome: c.name })}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => setConfirmDelete({ competency: c, category: cat })}
-                              aria-label={`Excluir ${c.name}`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
+                          {isAdmin && (
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                                onClick={() => setEditing(c)}
+                                aria-label={t("matrix.edit.action", { nome: c.name })}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => setConfirmDelete({ competency: c, category: cat })}
+                                aria-label={`Excluir ${c.name}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -7,9 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Toaster } from "@/components/ui/sonner";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { setAuthToken, type AppState } from "../api";
+import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
-import { fixtureState } from "./fixtures";
+import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
  * Exercita a Matriz de Competências de verdade: o componente da rota, ligado à
@@ -32,11 +33,21 @@ function Wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <StoreProvider>{children}</StoreProvider>
-        <Toaster theme="light" position="bottom-right" duration={3000} />
+        <AuthProvider>
+          <AuthReady>
+            <StoreProvider>{children}</StoreProvider>
+            <Toaster theme="light" position="bottom-right" duration={3000} />
+          </AuthReady>
+        </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+function AuthReady({ children }: { children: ReactNode }) {
+  const { loading } = useAuth();
+  if (loading) return null;
+  return <>{children}</>;
 }
 
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
@@ -55,6 +66,14 @@ describe("Matriz de Competências — exclusão", () => {
     setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (String(url).endsWith("/api/auth/me")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
       if (init?.method === "DELETE") return Promise.resolve(new Response(null, { status: 204 }));
       if (String(url).endsWith("/api/state")) {
         return Promise.resolve(
