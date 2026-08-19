@@ -6,7 +6,6 @@ import {
   GraduationCap,
   Grid3x3,
   LayoutDashboard,
-  Library,
   LogOut,
   Map,
   Monitor,
@@ -35,6 +34,8 @@ interface NavItem {
   icon: typeof LayoutDashboard;
   /** Rotas extras que também contam como "este item está ativo" (abas internas). */
   activePrefixes?: string[];
+  /** Só aparece para quem administra o sistema — Member/Lead nem veem o destino. */
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
@@ -58,8 +59,20 @@ interface NavGroup {
  * agora é por abas dentro da própria tela (`CapabilitiesTabs`), não mais
  * três entradas concorrendo no menu. Ver AUDITORIA-QUINTA-RODADA-360-
  * SYNAPSE-2026-08-19.md, Seção 6 e 33.
+ *
+ * QW-01/QW-02 (Seção 32, Quick Wins) — "esconder destinos administrativos"
+ * e "remover `/settings` da navegação primária". Antes, Competência,
+ * Usuários e Referência apareciam pra qualquer papel, mesmo sem
+ * conseguir fazer nada ali (as próprias telas já recusavam a ação, só a
+ * navegação não escondia o link) — Member/Lead viam destinos que não são
+ * deles. Ciclos continua visível a todos: a tela já é "Admin + leitura"
+ * (comparar evolução entre ciclos é legítimo pra qualquer papel), só a
+ * criação/edição é admin-only, resolvida dentro da própria tela.
+ * Referência (`/settings`) sai da navegação primária de vez, não só pra
+ * quem não administra — era um glossário read-only competindo por espaço
+ * com o resto do menu sem ganhar nada em troca.
  */
-const NAV_GROUPS: NavGroup[] = [
+export const NAV_GROUPS: NavGroup[] = [
   { items: [{ to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard }] },
   { items: [{ to: "/team", labelKey: "nav.team", icon: Users }] },
   {
@@ -84,15 +97,35 @@ const NAV_GROUPS: NavGroup[] = [
   {
     labelKey: "nav.group.admin",
     items: [
-      { to: "/competency-matrix", labelKey: "nav.competencyMatrix", icon: Grid3x3 },
+      {
+        to: "/competency-matrix",
+        labelKey: "nav.competencyMatrix",
+        icon: Grid3x3,
+        adminOnly: true,
+      },
       { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
-      { to: "/users", labelKey: "nav.users", icon: UserCog },
-      { to: "/settings", labelKey: "nav.reference", icon: Library },
+      { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
 ];
 
-const NAV: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
+/**
+ * QW-01 (Seção 32, Quick Wins, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
+ * 08-19.md) — destinos `adminOnly` somem do menu pra quem não administra;
+ * um grupo que fica sem item nenhum (nada restou pra este papel) some
+ * junto, em vez de mostrar um cabeçalho sem conteúdo debaixo. Função pura
+ * — sem depender de montar o componente — pra poder testar o recorte por
+ * papel sem precisar de um `RouterProvider` real (`useRouterState`, usado
+ * no resto do componente, exige um).
+ */
+export function filterNavGroups(groups: NavGroup[], role: string | undefined): NavGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.adminOnly || role === "admin"),
+    }))
+    .filter((group) => group.items.length > 0);
+}
 
 const SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";
 const SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
@@ -120,6 +153,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { cycles, activeCycleId, setActiveCycle } = useStore();
   const { user, logout } = useAuth();
   const { t } = useI18n();
+
+  const navGroups = filterNavGroups(NAV_GROUPS, user?.role);
+  const navFlat = navGroups.flatMap((group) => group.items);
 
   /**
    * Começa expandida e só lê a preferência depois da montagem: no SSR não há
@@ -317,7 +353,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               collapsed ? "px-2" : "px-3",
             )}
           >
-            {NAV_GROUPS.map((group, groupIndex) => (
+            {navGroups.map((group, groupIndex) => (
               <div
                 key={group.labelKey ?? `group-${groupIndex}`}
                 className={groupIndex > 0 ? "pt-2" : ""}
@@ -447,7 +483,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </header>
 
           <nav className="flex gap-1 overflow-x-auto border-b border-border bg-card px-4 py-2 lg:hidden">
-            {NAV.map((item) => (
+            {navFlat.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
