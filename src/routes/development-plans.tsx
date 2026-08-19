@@ -86,7 +86,6 @@ function PlansPage() {
       owner: architect.name,
       status: "Not Started",
       progress: 0,
-      evidenceIds: [],
     });
   };
 

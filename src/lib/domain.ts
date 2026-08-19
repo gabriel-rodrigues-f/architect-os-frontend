@@ -152,7 +152,6 @@ export interface DevelopmentPlanItem {
   owner: string;
   status: PdiStatus;
   progress: number;
-  evidenceIds: string[];
   smart?: SmartGoal | undefined;
 }
 
@@ -298,6 +297,19 @@ export interface Evidence {
   status: "Pending" | "Accepted" | "Needs Improvement" | "Rejected";
   /** Quem emitiu — relevante quando `type === "Certification"`. */
   issuer?: string | undefined;
+  /**
+   * Item do PDI que esta evidência sustenta — fonte única do vínculo
+   * PDI↔Evidência (nenhum array espelhado do outro lado). Ver
+   * AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 2.
+   */
+  developmentPlanItemId?: string | null | undefined;
+  reviewedByUserId?: string | null | undefined;
+  reviewedAt?: string | null | undefined;
+}
+
+/** Evidências que sustentam um item do PDI — sempre uma consulta, nunca um array guardado. */
+export function evidencesForPlanItem(evidences: Evidence[], itemId: string): Evidence[] {
+  return evidences.filter((e) => e.developmentPlanItemId === itemId);
 }
 
 export const gapSeverity = (gap: number) => {

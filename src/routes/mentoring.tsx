@@ -330,7 +330,6 @@ function MentoringPage() {
                         owner: mentee.name,
                         status: "Not Started",
                         progress: 0,
-                        evidenceIds: [],
                       });
                       toast.success(
                         t("mentor.toPdi.toast", { competencia: eligible.competency.name }),

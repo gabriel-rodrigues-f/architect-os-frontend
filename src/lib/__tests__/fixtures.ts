@@ -147,7 +147,6 @@ export const fixtureState: AppState = {
           owner: "Ana Martins",
           status: "In Progress",
           progress: 60,
-          evidenceIds: [],
         },
         {
           id: "pdi-ana-1",
@@ -163,7 +162,6 @@ export const fixtureState: AppState = {
           owner: "Ana Martins",
           status: "In Progress",
           progress: 40,
-          evidenceIds: [],
         },
       ],
     },
