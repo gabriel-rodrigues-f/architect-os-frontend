@@ -142,6 +142,5 @@ describe("createSelectors", () => {
     const empty = createSelectors(emptyState);
     expect(empty.teamTrainingNeeds()).toEqual([]);
     expect(empty.domainAverages("ana")).toEqual([]);
-    expect(empty.swotFor("ana")).toBeUndefined();
   });
 });

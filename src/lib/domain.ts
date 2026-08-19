@@ -69,8 +69,6 @@ export interface Architect {
   yearsAsArchitect: number;
   specialization: string;
   email: string;
-  strongDomain: string;
-  gapDomain: string;
   /** Fora do time hoje, mas o histórico (assessments, PDI, OKR...) permanece. */
   active: boolean;
 }
@@ -114,15 +112,6 @@ export interface DevelopmentCycle {
   start: string;
   end: string;
   status: "Active" | "Closed" | "Planned";
-}
-
-export interface Swot {
-  architectId: string;
-  cycleId: string;
-  strengths: string[];
-  weaknesses: string[];
-  opportunities: string[];
-  threats: string[];
 }
 
 export type ActionType = "Learn" | "Practice" | "Apply" | "Teach" | "Mentor" | "Lead";

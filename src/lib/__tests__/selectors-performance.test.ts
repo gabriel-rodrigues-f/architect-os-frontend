@@ -42,8 +42,6 @@ function buildLargeState(): AppState {
     yearsAsArchitect: 5,
     specialization: "Arquitetura de Soluções",
     email: `arq-${i}@empresa.com`,
-    strongDomain: categories[0]!.id,
-    gapDomain: categories[1]!.id,
     active: true,
   }));
 

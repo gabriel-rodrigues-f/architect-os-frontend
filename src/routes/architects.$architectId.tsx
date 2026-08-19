@@ -90,7 +90,6 @@ function ArchitectProfile() {
   const gaps = sel.gapsFor(architect.id).filter((g) => g.gap > 0);
   const domains = sel.domainAverages(architect.id);
   const plan = sel.planFor(architect.id);
-  const swot = sel.swotFor(architect.id);
   // Sem o cycleId, uma pessoa com OKR em mais de um ciclo podia mostrar o
   // objetivo errado — o primeiro que o array trouxesse, não o do ciclo em
   // foco. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 25.
@@ -170,7 +169,7 @@ function ArchitectProfile() {
         </SectionCard>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+      <div className="mt-6">
         <SectionCard title="PDI" description={t("arch.plan.subtitle")}>
           <ul className="space-y-3">
             {(plan?.items ?? []).map((i) => (
@@ -194,15 +193,6 @@ function ArchitectProfile() {
               <p className="text-sm text-muted-foreground">{t("arch.plan.none")}</p>
             )}
           </ul>
-        </SectionCard>
-
-        <SectionCard title={t("arch.swot.title")} description={t("arch.swot.subtitle")}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Swot title={t("swot.strengths")} items={swot?.strengths ?? []} />
-            <Swot title={t("swot.weaknesses")} items={swot?.weaknesses ?? []} />
-            <Swot title={t("swot.opportunities")} items={swot?.opportunities ?? []} />
-            <Swot title={t("swot.threats")} items={swot?.threats ?? []} />
-          </div>
         </SectionCard>
       </div>
 
@@ -340,20 +330,6 @@ function ArchitectProfile() {
         </ol>
       </SectionCard>
     </>
-  );
-}
-
-function Swot({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="surface-inset p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm">
-        {items.map((i) => (
-          <li key={i}>{i}</li>
-        ))}
-        {!items.length && <li className="list-none text-muted-foreground">—</li>}
-      </ul>
-    </div>
   );
 }
 

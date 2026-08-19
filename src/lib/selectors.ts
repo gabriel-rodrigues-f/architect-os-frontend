@@ -12,7 +12,6 @@ export const emptyState: AppState = {
   architects: [],
   assessments: [],
   cycles: [],
-  swots: [],
   plans: [],
   okrs: [],
   learningPaths: [],
@@ -71,7 +70,6 @@ export function createSelectors(s: AppState) {
   const architectIndex = byId(s.architects);
   const assessmentIndex = indexByArchitectAndCycle(s.assessments);
   const planIndex = indexByArchitectAndCycle(s.plans);
-  const swotIndex = indexByArchitectAndCycle(s.swots);
 
   const competencyById = (id: string) => competencyIndex.get(id);
   const categoryById = (id: string) => categoryIndex.get(id);
@@ -81,8 +79,6 @@ export function createSelectors(s: AppState) {
     assessmentIndex.get(cycleKey(architectId, cycleId));
   const planFor = (architectId: string, cycleId = s.activeCycleId) =>
     planIndex.get(cycleKey(architectId, cycleId));
-  const swotFor = (architectId: string, cycleId = s.activeCycleId) =>
-    swotIndex.get(cycleKey(architectId, cycleId));
 
   /**
    * A mesma busca de `assessmentFor`, mas só devolve o assessment quando ele
@@ -184,7 +180,6 @@ export function createSelectors(s: AppState) {
     assessmentFor,
     officialAssessmentFor,
     planFor,
-    swotFor,
     gapsFor,
     domainAverages,
     teamTrainingNeeds,

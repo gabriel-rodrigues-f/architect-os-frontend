@@ -30,9 +30,12 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seções 16, 17 e 26/27 — nada
- * no cadastro pode fabricar dado: e-mail inventado do nome, domínio herdado
- * da ordem da lista, "1 ano" fantasma, ou Medium/Medium no 9-Box sem
- * calibração real. Falta um campo, o cadastro não salva.
+ * no cadastro pode fabricar dado: e-mail inventado do nome, "1 ano" fantasma,
+ * ou Medium/Medium no 9-Box sem calibração real. Falta um campo, o cadastro
+ * não salva. `strongDomain`/`gapDomain` saíram do formulário por inteiro
+ * (AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, Seção 11):
+ * força e lacuna passam a ser lidas do assessment, não de uma opinião prévia
+ * coletada no cadastro.
  */
 
 const fetchMock = vi.fn();
@@ -103,7 +106,7 @@ describe("Time — cadastro sem dado fabricado", () => {
     setAuthToken(null);
   });
 
-  it("mantém 'Salvar' desabilitado até nome, e-mail, os dois domínios e um tempo válido estarem preenchidos", async () => {
+  it("mantém 'Salvar' desabilitado até nome, e-mail e um tempo válido estarem preenchidos", async () => {
     render(
       <Wrapper>
         <TeamPage />
@@ -122,16 +125,10 @@ describe("Time — cadastro sem dado fabricado", () => {
     expect((salvar as HTMLButtonElement).disabled).toBe(true);
 
     await userEvent.type(screen.getByLabelText("Tempo como arquiteto (anos)"), "2");
-    expect((salvar as HTMLButtonElement).disabled).toBe(true);
-
-    await userEvent.selectOptions(screen.getByLabelText("Domínio forte"), "cloud");
-    expect((salvar as HTMLButtonElement).disabled).toBe(true);
-
-    await userEvent.selectOptions(screen.getByLabelText("Domínio a desenvolver"), "security");
     expect((salvar as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("salva só com o que a pessoa digitou — sem e-mail ou domínio fabricados", async () => {
+  it("salva só com o que a pessoa digitou — sem e-mail fabricado, sem domínio forte/lacuna no cadastro", async () => {
     render(
       <Wrapper>
         <TeamPage />
@@ -143,8 +140,6 @@ describe("Time — cadastro sem dado fabricado", () => {
     await userEvent.type(screen.getByLabelText("Nome"), "Nova Pessoa");
     await userEvent.type(screen.getByLabelText("E-mail"), "nova.pessoa@company.com");
     await userEvent.type(screen.getByLabelText("Tempo como arquiteto (anos)"), "2");
-    await userEvent.selectOptions(screen.getByLabelText("Domínio forte"), "cloud");
-    await userEvent.selectOptions(screen.getByLabelText("Domínio a desenvolver"), "security");
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
 
     const isCreateCall = (call: unknown[]) => {
@@ -158,9 +153,9 @@ describe("Time — cadastro sem dado fabricado", () => {
     const body = JSON.parse(String(init.body)) as Record<string, unknown>;
 
     expect(body["email"]).toBe("nova.pessoa@company.com");
-    expect(body["strongDomain"]).toBe("cloud");
-    expect(body["gapDomain"]).toBe("security");
     expect(body["yearsAsArchitect"]).toBe(2);
+    expect(body).not.toHaveProperty("strongDomain");
+    expect(body).not.toHaveProperty("gapDomain");
     expect(body).not.toHaveProperty("performance");
     expect(body).not.toHaveProperty("potential");
   });

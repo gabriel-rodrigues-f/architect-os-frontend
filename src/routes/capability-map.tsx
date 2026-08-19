@@ -73,7 +73,6 @@ function CapabilityMapPage() {
   const [editing, setEditing] = useState<CompetencyCategory | null>(null);
   const [editName, setEditName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<CompetencyCategory | null>(null);
-  const [blockedDelete, setBlockedDelete] = useState<CompetencyCategory | null>(null);
 
   /**
    * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para o
@@ -138,28 +137,7 @@ function CapabilityMapPage() {
   const competencyCount = (categoryId: string) =>
     store.competencies.filter((c) => c.categoryId === categoryId).length;
 
-  /**
-   * Arquitetos que têm a capacidade como domínio forte ou de lacuna. Enquanto
-   * houver algum, a exclusão fica bloqueada (o backend também recusa com 409):
-   * apagar zeraria esse campo no perfil de quem depende dele.
-   */
-  const linkedArchitects = (categoryId: string) =>
-    store.architects
-      .filter((a) => a.strongDomain === categoryId || a.gapDomain === categoryId)
-      .map((a) => ({
-        architect: a,
-        as: [
-          a.strongDomain === categoryId ? t("cap.linked.strong") : null,
-          a.gapDomain === categoryId ? t("cap.linked.gap") : null,
-        ]
-          .filter(Boolean)
-          .join(" e "),
-      }));
-
-  const askDelete = (category: CompetencyCategory) => {
-    if (linkedArchitects(category.id).length > 0) setBlockedDelete(category);
-    else setConfirmDelete(category);
-  };
+  const askDelete = (category: CompetencyCategory) => setConfirmDelete(category);
 
   return (
     <>
@@ -281,34 +259,6 @@ function CapabilityMapPage() {
         onCancel={() => setConfirmDelete(null)}
         onConfirm={remove}
       />
-
-      <Dialog open={blockedDelete !== null} onOpenChange={(v) => !v && setBlockedDelete(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("cap.blocked.title", { nome: blockedDelete?.name ?? "" })}</DialogTitle>
-            <DialogDescription>
-              Esta capacidade está vinculada ao perfil dos arquitetos abaixo. Abra cada um em{" "}
-              <strong>Time</strong>, troque o domínio forte ou de lacuna, e depois exclua a
-              capacidade.
-            </DialogDescription>
-          </DialogHeader>
-          <ul className="space-y-2">
-            {blockedDelete &&
-              linkedArchitects(blockedDelete.id).map(({ architect, as }) => (
-                <li
-                  key={architect.id}
-                  className="flex items-center justify-between gap-3 surface-inset p-3"
-                >
-                  <span className="text-sm font-medium">{architect.name}</span>
-                  <span className="text-xs text-muted-foreground">{as}</span>
-                </li>
-              ))}
-          </ul>
-          <DialogFooter>
-            <Button onClick={() => setBlockedDelete(null)}>Entendi</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

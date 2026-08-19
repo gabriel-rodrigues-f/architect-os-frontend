@@ -14,7 +14,6 @@ import type {
   Level,
   MentoringSession,
   Okr,
-  Swot,
 } from "./domain";
 
 /** Etapa da filosofia de desenvolvimento exibida no dashboard. */
@@ -37,7 +36,6 @@ export interface AppState {
   architects: Architect[];
   assessments: Assessment[];
   cycles: DevelopmentCycle[];
-  swots: Swot[];
   plans: DevelopmentPlan[];
   okrs: Okr[];
   learningPaths: LearningPath[];
@@ -165,7 +163,6 @@ export const api = {
   createArchitect: (architect: Architect) => post<Architect>("/api/architects", architect),
   updateArchitect: (id: string, patch_: Partial<Omit<Architect, "id">>) =>
     patch<Architect>(`/api/architects/${id}`, patch_),
-  deleteArchitect: (id: string) => del<void>(`/api/architects/${id}`),
 
   /* catálogo */
   createCategory: (category: CompetencyCategory) =>
@@ -210,12 +207,6 @@ export const api = {
     ),
   deleteAssessmentComment: (assessmentId: string, competencyId: string, commentId: string) =>
     del<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`),
-
-  putSwot: (
-    architectId: string,
-    cycleId: string,
-    body: Partial<Omit<Swot, "architectId" | "cycleId">>,
-  ) => put<Swot>(`/api/swots/${architectId}/${cycleId}`, body),
 
   /* PDI e OKR */
   addPlanItem: (architectId: string, cycleId: string, item: DevelopmentPlanItem) =>

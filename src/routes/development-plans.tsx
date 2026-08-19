@@ -34,14 +34,6 @@ export const Route = createFileRoute("/development-plans")({
 
 const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Completed"];
 
-/** Os quatro quadrantes da SWOT, na ordem clássica. */
-const SWOT_FIELDS = [
-  { key: "strengths", titleKey: "swot.strengths" },
-  { key: "weaknesses", titleKey: "swot.weaknesses" },
-  { key: "opportunities", titleKey: "swot.opportunities" },
-  { key: "threats", titleKey: "swot.threats" },
-] as const;
-
 function PlansPage() {
   const store = useStore();
   const sel = useSelectors();
@@ -51,12 +43,11 @@ function PlansPage() {
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  /** PDI e SWOT são da pessoa — só ela (ou admin) escreve; backend já recusa o resto. */
+  /** PDI é da pessoa — só ela (ou admin) escreve; backend já recusa o resto. */
   const canEdit = user.role === "admin" || user.architectId === architectId;
   const architect = sel.architectById(architectId);
   const plan = sel.planFor(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
-  const swot = sel.swotFor(architectId);
 
   const suggestions = gaps
     .filter((g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId))
@@ -311,22 +302,6 @@ function PlansPage() {
             </ul>
           </SectionCard>
 
-          <SectionCard title={t("pdi.swot.title")} description={t("pdi.swot.subtitle")}>
-            <div className="grid gap-3 text-sm">
-              {SWOT_FIELDS.map(({ key, titleKey }) => (
-                <SwotBlock
-                  key={key}
-                  title={t(titleKey)}
-                  items={swot?.[key] ?? []}
-                  disabled={!canEdit}
-                  onChange={(items) =>
-                    store.updateSwot(architectId, store.activeCycleId, { [key]: items })
-                  }
-                />
-              ))}
-            </div>
-          </SectionCard>
-
           <SectionCard
             title={t("pdi.actionModel.title")}
             description={t("pdi.actionModel.subtitle")}
@@ -427,54 +402,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         {label}
       </p>
       {children}
-    </div>
-  );
-}
-
-/**
- * Um quadrante da SWOT. A lista é editada como texto — uma linha por item —
- * porque é assim que as pessoas escrevem SWOT numa reunião; um formulário com
- * "adicionar item" cobraria um clique por linha sem ganho nenhum.
- *
- * A gravação acontece no blur, não a cada tecla: salvar por caractere geraria
- * uma escrita por letra digitada.
- */
-function SwotBlock({
-  title,
-  items,
-  disabled = false,
-  onChange,
-}: {
-  title: string;
-  items: string[];
-  disabled?: boolean;
-  onChange: (items: string[]) => void;
-}) {
-  const { t } = useI18n();
-  const [draft, setDraft] = useState<string | null>(null);
-  const texto = draft ?? items.join("\n");
-
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <Textarea
-        className="mt-1 min-h-16"
-        aria-label={title}
-        placeholder={t("pdi.swot.placeholder")}
-        value={texto}
-        disabled={disabled}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          if (draft === null) return;
-          onChange(
-            draft
-              .split("\n")
-              .map((linha) => linha.trim())
-              .filter(Boolean),
-          );
-          setDraft(null);
-        }}
-      />
     </div>
   );
 }

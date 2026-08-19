@@ -47,8 +47,6 @@ interface ArchitectForm {
   specialization: string;
   years: string;
   email: string;
-  strongDomain: string;
-  gapDomain: string;
 }
 
 const emptyForm = (): ArchitectForm => ({
@@ -57,8 +55,6 @@ const emptyForm = (): ArchitectForm => ({
   specialization: "",
   years: "",
   email: "",
-  strongDomain: "",
-  gapDomain: "",
 });
 
 function TeamPage() {
@@ -87,17 +83,18 @@ function TeamPage() {
       specialization: architect.specialization,
       years: String(architect.yearsAsArchitect),
       email: architect.email,
-      strongDomain: architect.strongDomain,
-      gapDomain: architect.gapDomain,
     });
     setEditing(architect.id);
   };
 
   /**
-   * Nada aqui tem fallback: e-mail inventado do nome, domínio forte/fraco
-   * herdado da ordem da lista e "1 ano" fantasma escondiam dado que ninguém
-   * preencheu como se fosse real. Falta um campo, o cadastro não salva — sem
-   * exceção. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 16 e 17.
+   * Nada aqui tem fallback: e-mail inventado do nome e "1 ano" fantasma
+   * escondiam dado que ninguém preencheu como se fosse real. Falta um campo,
+   * o cadastro não salva — sem exceção. `strongDomain`/`gapDomain` saíram do
+   * cadastro: força e lacuna são resultado do assessment (final × target),
+   * não uma opinião prévia coletada antes de qualquer avaliação existir. Ver
+   * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 16 e 17, e AUDITORIA-
+   * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, Seção 11.
    */
   const yearsValid =
     form.years.trim() !== "" && Number.isInteger(Number(form.years)) && Number(form.years) >= 0;
@@ -105,8 +102,6 @@ function TeamPage() {
     form.name.trim().length > 0 &&
     form.email.trim().length > 0 &&
     form.email.includes("@") &&
-    form.strongDomain !== "" &&
-    form.gapDomain !== "" &&
     yearsValid;
 
   const submit = () => {
@@ -117,8 +112,6 @@ function TeamPage() {
       yearsAsArchitect: Number(form.years),
       specialization: form.specialization.trim(),
       email: form.email.trim(),
-      strongDomain: form.strongDomain,
-      gapDomain: form.gapDomain,
     };
 
     if (editing) {
@@ -339,40 +332,6 @@ function TeamPage() {
                   onChange={(e) => setForm({ ...form, years: e.target.value })}
                   onKeyDown={(e) => e.key === "Enter" && submit()}
                 />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="strong">{t("team.form.strong")}</Label>
-                <select
-                  id="strong"
-                  className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                  value={form.strongDomain}
-                  onChange={(e) => setForm({ ...form, strongDomain: e.target.value })}
-                >
-                  <option value="">—</option>
-                  {store.categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="gap">{t("team.form.gap")}</Label>
-                <select
-                  id="gap"
-                  className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                  value={form.gapDomain}
-                  onChange={(e) => setForm({ ...form, gapDomain: e.target.value })}
-                >
-                  <option value="">—</option>
-                  {store.categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           </div>

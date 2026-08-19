@@ -71,8 +71,6 @@ export const fixtureState: AppState = {
       yearsAsArchitect: 6,
       specialization: "Integration",
       email: "ana@company.com",
-      strongDomain: "cloud",
-      gapDomain: "security",
       active: true,
     },
     {
@@ -82,8 +80,6 @@ export const fixtureState: AppState = {
       yearsAsArchitect: 3,
       specialization: "Cloud",
       email: "bruno@company.com",
-      strongDomain: "cloud",
-      gapDomain: "security",
       active: true,
     },
   ],
@@ -126,16 +122,6 @@ export const fixtureState: AppState = {
   cycles: [
     { id: "2026-h1", name: "2026 H1", start: "2026-01-01", end: "2026-06-30", status: "Closed" },
     { id: "2026-h2", name: "2026 H2", start: "2026-07-01", end: "2026-12-31", status: "Active" },
-  ],
-  swots: [
-    {
-      architectId: "ana",
-      cycleId: "2026-h2",
-      strengths: ["Cloud"],
-      weaknesses: ["IAM"],
-      opportunities: [],
-      threats: [],
-    },
   ],
   plans: [
     {

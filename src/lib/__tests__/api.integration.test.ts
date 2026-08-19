@@ -42,7 +42,6 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
       "architects",
       "assessments",
       "cycles",
-      "swots",
       "plans",
       "okrs",
       "learningPaths",

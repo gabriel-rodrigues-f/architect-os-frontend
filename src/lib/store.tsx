@@ -16,7 +16,6 @@ import type {
   LearningPathItem,
   Level,
   MentoringSession,
-  Swot,
 } from "./domain";
 import { createSelectors, emptyState } from "./selectors";
 import { byName } from "./text";
@@ -35,7 +34,6 @@ interface Api extends AppState {
   setActiveCycle: (id: string) => void;
   addArchitect: (a: Architect) => void;
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id">>) => void;
-  removeArchitect: (id: string) => void;
   addCompetency: (c: Competency) => void;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
   removeCompetency: (id: string) => void;
@@ -82,11 +80,6 @@ interface Api extends AppState {
       target: Level;
       final: Level;
     }>,
-  ) => void;
-  updateSwot: (
-    architectId: string,
-    cycleId: string,
-    patch: Partial<Omit<Swot, "architectId" | "cycleId">>,
   ) => void;
   addPlanItem: (architectId: string, item: DevelopmentPlanItem) => void;
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
@@ -144,26 +137,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         architects: s.architects.map((a) => (a.id === id ? { ...a, ...patch } : a)),
       }));
       remote(api.updateArchitect(id, patch));
-    },
-
-    /** Remover o arquiteto tira junto tudo que dependia dele (cascade no banco). */
-    removeArchitect: (id) => {
-      local((s) => ({
-        ...s,
-        architects: s.architects.filter((a) => a.id !== id),
-        assessments: s.assessments.filter((a) => a.architectId !== id),
-        plans: s.plans.filter((p) => p.architectId !== id),
-        okrs: s.okrs.filter((o) => o.architectId !== id),
-        swots: s.swots.filter((w) => w.architectId !== id),
-        evidences: s.evidences.filter((e) => e.architectId !== id),
-        certifications: s.certifications.filter((c) => c.architectId !== id),
-        mentoringSessions: s.mentoringSessions.filter((m) => m.menteeId !== id),
-        learningPaths: s.learningPaths.map((p) => ({
-          ...p,
-          assignedTo: p.assignedTo.filter((aid) => aid !== id),
-        })),
-      }));
-      remote(api.deleteArchitect(id));
     },
 
     addCompetency: (c) => {
@@ -224,11 +197,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
             ...p,
             competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),
           })),
-          architects: s.architects.map((a) => ({
-            ...a,
-            strongDomain: a.strongDomain === id ? "" : a.strongDomain,
-            gapDomain: a.gapDomain === id ? "" : a.gapDomain,
-          })),
         };
       });
       remote(api.deleteCategory(id));
@@ -286,29 +254,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
       }));
       return updated;
-    },
-
-    updateSwot: (architectId, cycleId, patch) => {
-      local((s) => {
-        const exists = s.swots.some((w) => w.architectId === architectId && w.cycleId === cycleId);
-        const base: Swot = {
-          architectId,
-          cycleId,
-          strengths: [],
-          weaknesses: [],
-          opportunities: [],
-          threats: [],
-        };
-        return {
-          ...s,
-          swots: exists
-            ? s.swots.map((w) =>
-                w.architectId === architectId && w.cycleId === cycleId ? { ...w, ...patch } : w,
-              )
-            : [...s.swots, { ...base, ...patch }],
-        };
-      });
-      remote(api.putSwot(architectId, cycleId, patch));
     },
 
     addPlanItem: (architectId, item) => {
