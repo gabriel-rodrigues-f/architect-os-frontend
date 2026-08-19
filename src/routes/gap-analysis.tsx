@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
 import { DomainRadar } from "@/components/app/charts";
 import { GapBadge, LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
+import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/gap-analysis")({
@@ -29,19 +31,27 @@ export const Route = createFileRoute("/gap-analysis")({
 function GapPage() {
   const store = useStore();
   const sel = useSelectors();
+  const user = useCurrentUser();
   const { t } = useI18n();
   const [selected, setSelected] = useState<string[]>([]);
 
   /**
-   * Toda a tela lê deste recorte. Filtro vazio significa o time atual — quem
-   * já saiu não conta como lacuna do time ativo. Selecionar alguém
-   * explicitamente no filtro (incluindo gente inativa) ainda funciona: a
-   * lista de opções do `ArchitectFilter` continua sendo `store.architects`
-   * inteiro. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md,
-   * EPIC E.
+   * Toda a tela lê deste recorte. Filtro vazio significa o time que este
+   * viewer de fato enxerga (`canActFor`) — quem já saiu não conta como
+   * lacuna do time ativo, e quem está fora do escopo não conta como "sem
+   * lacuna" só por não ter registro visível (roster é dado de diretório sem
+   * filtro; ver `auth/scope.ts`). Selecionar alguém explicitamente no filtro
+   * (incluindo gente inativa ou fora do escopo) ainda funciona — a lista de
+   * opções do `ArchitectFilter` continua sendo `store.architects` inteiro; a
+   * própria falta de dado visível já degrada de forma transparente via
+   * `coverage`. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
+   * SYNAPSE.md, EPIC E, e ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
+   * 08-19.md.
    */
   const architects =
-    selected.length === 0 ? sel.activeArchitects : applyArchitectFilter(store.architects, selected);
+    selected.length === 0
+      ? sel.activeArchitects.filter((a) => canActFor(user, a))
+      : applyArchitectFilter(store.architects, selected);
 
   /**
    * Radar: média por domínio só entre quem tem assessment oficial cobrindo

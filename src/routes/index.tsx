@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 
 import { LevelCell, PageHeader, SectionCard, StatCard, GapBadge } from "@/components/app/ui-bits";
+import { useCurrentUser } from "@/lib/auth";
 import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -37,6 +39,7 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const store = useStore();
   const sel = useSelectors();
+  const user = useCurrentUser();
   const { t } = useI18n();
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
   /**
@@ -44,8 +47,16 @@ function Dashboard() {
    * histórico dela continua em /architects/:id, só não representa mais o
    * time atual. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18, e
    * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC E.
+   *
+   * `canActFor` recorta pra quem este viewer de fato enxerga (própria
+   * pessoa, ou quem está sob a liderança dela) — sem isto, o roster inteiro
+   * (que chega sem filtro por ser dado de diretório, não de carreira, ver
+   * `auth/scope.ts`) virava a população do heatmap e da cobertura, e quem
+   * está fora do escopo aparecia como "não iniciado" por não ter registro
+   * visível, não por realmente não ter avaliação. Ver ANA-001, AUDITORIA-
+   * QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
    */
-  const architects = sel.activeArchitects;
+  const architects = sel.activeArchitects.filter((a) => canActFor(user, a));
 
   const allGaps = architects.flatMap((a) => sel.gapsFor(a.id).map((g) => ({ ...g, architect: a })));
   const criticalGaps = allGaps.filter((g) => g.gap >= 3).length;

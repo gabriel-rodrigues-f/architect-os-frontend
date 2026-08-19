@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/capability-map")({
@@ -77,7 +79,17 @@ function classifyRisk(assessedCount: number, referenceCount: number): RiskState 
 function CapabilityMapPage() {
   const store = useStore();
   const sel = useSelectors();
+  const user = useCurrentUser();
   const { t } = useI18n();
+
+  /**
+   * População: só quem este viewer de fato enxerga o registro — sem isto,
+   * gente fora do escopo (dado de diretório, sempre presente no roster) caía
+   * em `notAssessed` por não ter registro visível, não por realmente não ter
+   * avaliação, distorcendo a classificação de risco de concentração. Ver
+   * ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   */
+  const population = sel.activeArchitects.filter((a) => canActFor(user, a));
 
   /**
    * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para o
@@ -88,7 +100,7 @@ function CapabilityMapPage() {
   const areas = store.categories
     .filter((cat) => cat.active)
     .map((cat) => {
-      const people = sel.activeArchitects.map((a) => ({
+      const people = population.map((a) => ({
         architect: a,
         level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg,
       }));

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
+import type { SessionUser } from "../api";
 import { setAuthToken, type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
@@ -43,12 +44,12 @@ function AuthReady({ children }: { children: ReactNode }) {
 
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 
-const renderPage = (state: AppState) => {
+const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
   fetchMock.mockImplementation((url: string) => {
     const href = String(url);
     if (href.endsWith("/api/auth/me")) {
       return Promise.resolve(
-        new Response(JSON.stringify(fixtureAdminUser), {
+        new Response(JSON.stringify(user), {
           status: 200,
           headers: { "content-type": "application/json" },
         }),
@@ -145,6 +146,60 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
     renderPage(state);
     const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
     expect(within(card).getByText(/Cobertura distribuída/)).toBeTruthy();
+  });
+
+  /**
+   * ANA-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — mesmo
+   * estado do teste anterior (3 pessoas avançadas/especialistas em Cloud:
+   * "cobertura distribuída" para o admin, que enxerga todo mundo), mas
+   * lido por um Lead atribuído só à Ana. Bruno e Carla continuam no roster
+   * (dado de diretório, sem filtro), mas fora do escopo de carreira deste
+   * Lead — a população da análise de risco não pode contá-los como
+   * "referência técnica" só porque o nome deles aparece na lista.
+   */
+  it("Lead sem Bruno/Carla atribuídos vê risco de concentração, não a cobertura distribuída que o admin vê", async () => {
+    const leadUser: SessionUser = {
+      id: "test-lead-de-ana",
+      email: "lead-de-ana@company.com",
+      name: "Lead de Ana",
+      role: "lead",
+      architectId: null,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    const state: AppState = {
+      ...fixtureState,
+      architects: [
+        ...fixtureState.architects.map((a) =>
+          a.id === "ana" ? { ...a, leadUserId: leadUser.id } : a,
+        ),
+        {
+          id: "carla",
+          name: "Carla Souza",
+          role: "Arquiteto de Soluções III",
+          yearsAsArchitect: 8,
+          specialization: "Cloud",
+          email: "carla@company.com",
+          active: true,
+        },
+      ],
+      assessments: [
+        ...fixtureState.assessments,
+        {
+          id: "carla-h2",
+          architectId: "carla",
+          cycleId: "2026-h2",
+          status: "Completed",
+          items: [
+            { competencyId: "cloud-k8s", self: 5, leader: 5, target: 4, final: 5, comments: [] },
+          ],
+        },
+      ],
+    };
+
+    renderPage(state, leadUser);
+    const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
+    expect(within(card).getByText(/Risco de concentração/)).toBeTruthy();
+    expect(within(card).queryByText(/Cobertura distribuída/)).toBeNull();
   });
 
   it("não mostra nenhuma ação de criar, editar ou excluir domínio — isso migrou para a Matriz de Competências", async () => {

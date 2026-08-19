@@ -204,10 +204,24 @@ export function createSelectors(s: AppState) {
     return averages;
   };
 
-  /** LNT: lacunas positivas agregadas por competência, ordenadas pelo impacto — só time atual. */
-  const teamTrainingNeeds = (): TrainingNeed[] => {
+  /**
+   * LNT: lacunas positivas agregadas por competência, ordenadas pelo
+   * impacto — só time atual.
+   *
+   * `population` (padrão: `activeArchitects`, o time inteiro) existe porque
+   * `s.architects` chega inteiro do backend mesmo para quem só enxerga uma
+   * fatia dos registros individuais (roster é dado público de diretório, não
+   * de carreira — ver `auth/scope.ts`, `scopeAppState`). Agregar sobre o
+   * roster inteiro sem filtrar a população faz `gapsFor()` devolver `[]`
+   * para quem está fora do escopo (não por não ter lacuna — por não ser
+   * visível), e a lacuna real vira estatisticamente invisível: ausência de
+   * autorização virando ausência de dado. Quem chama por uma população já
+   * restrita ao próprio escopo (ex.: `canActFor`) evita isso. Ver ANA-001,
+   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   */
+  const teamTrainingNeeds = (population: Architect[] = activeArchitects): TrainingNeed[] => {
     const totals = new Map<string, { people: number; totalGap: number; architectIds: string[] }>();
-    for (const architect of activeArchitects) {
+    for (const architect of population) {
       for (const gap of gapsFor(architect.id)) {
         if (gap.gap <= 0) continue;
         const acc = totals.get(gap.item.competencyId) ?? {

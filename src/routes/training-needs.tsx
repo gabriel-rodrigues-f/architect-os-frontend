@@ -5,6 +5,7 @@ import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/training-needs")({
@@ -31,7 +32,16 @@ function TrainingNeedsPage() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const { t } = useI18n();
-  const needs = sel.teamTrainingNeeds();
+  /**
+   * População da análise: quem este viewer de fato enxerga o registro
+   * (própria pessoa, ou quem está sob a liderança dela) — nunca o roster
+   * inteiro da empresa, que chega sem filtro por ser dado de diretório, não
+   * de carreira. Sem isto, quem está fora do escopo entrava na conta como
+   * "sem lacuna" (ausência de dado, não ausência de lacuna). Ver ANA-001,
+   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   */
+  const population = sel.activeArchitects.filter((a) => canActFor(user, a));
+  const needs = sel.teamTrainingNeeds(population);
   const top = needs.slice(0, 15);
   const collective = needs.filter((n) => n.people >= 3).slice(0, 6);
 
