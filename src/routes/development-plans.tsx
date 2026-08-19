@@ -97,6 +97,16 @@ function PlansPage() {
   const canReopenPlan = plan && planStatus === "Approved" && isLeadOfArchitect;
   const canCompletePlan = plan && planStatus === "Approved" && canEdit;
 
+  /**
+   * Espelha o backend (DOM-001): depois de `Approved`, item não muda mais de
+   * escopo — nem cria item novo, nem edita competência/nível/objetivo/tipo/
+   * prazo/prioridade, nem remove. Só os campos de execução (status, plano de
+   * ação, meta SMART) continuam abertos até `Completed`, quando tudo trava.
+   * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   */
+  const canEditDiagnostic = canEdit && planStatus === "Draft";
+  const canEditExecution = canEdit && planStatus !== "Completed";
+
   const suggestions = gaps
     .filter((g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId))
     .slice(0, 5);
@@ -149,6 +159,9 @@ function PlansPage() {
           </span>
           {planStatus === "Completed" && (
             <span className="text-xs text-muted-foreground">{t("pdi.plan.locked")}</span>
+          )}
+          {planStatus === "Approved" && (
+            <span className="text-xs text-muted-foreground">{t("pdi.plan.approvedHint")}</span>
           )}
           <div className="ml-auto flex items-center gap-2">
             {canApprovePlan && (
@@ -216,7 +229,7 @@ function PlansPage() {
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-4">
                   <Field label={t("pdi.field.actionType")}>
-                    {canEdit ? (
+                    {canEditDiagnostic ? (
                       <select
                         className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
                         value={item.actionType}
@@ -237,7 +250,7 @@ function PlansPage() {
                     )}
                   </Field>
                   <Field label={t("pdi.field.status")}>
-                    {canEdit ? (
+                    {canEditExecution ? (
                       <select
                         className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
                         value={item.status}
@@ -269,7 +282,7 @@ function PlansPage() {
 
                 <ActionPlanField
                   value={item.actionPlan}
-                  disabled={!canEdit}
+                  disabled={!canEditExecution}
                   onSave={(actionPlan) => store.updatePlanItem(plan!.id, item.id, { actionPlan })}
                 />
 
@@ -304,30 +317,36 @@ function PlansPage() {
                   </div>
                 )}
 
-                {!item.smart && canEdit && smartEditingId !== item.id && (
-                  <div className="mt-4 flex items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setSmartEditingId(item.id)}
-                    >
-                      {t("pdi.smart.define")}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        store.removePlanItem(plan!.id, item.id);
-                        toast.success(t("pdi.gap.removed.toast", { nome: competencyName }));
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      {t("pdi.gap.remove")}
-                    </Button>
-                  </div>
-                )}
+                {!item.smart &&
+                  (canEditExecution || canEditDiagnostic) &&
+                  smartEditingId !== item.id && (
+                    <div className="mt-4 flex items-center gap-2">
+                      {canEditExecution && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setSmartEditingId(item.id)}
+                        >
+                          {t("pdi.smart.define")}
+                        </Button>
+                      )}
+                      {canEditDiagnostic && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            store.removePlanItem(plan!.id, item.id);
+                            toast.success(t("pdi.gap.removed.toast", { nome: competencyName }));
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          {t("pdi.gap.remove")}
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
-                {!item.smart && canEdit && smartEditingId === item.id && (
+                {!item.smart && canEditExecution && smartEditingId === item.id && (
                   <SmartGoalEditor
                     onCancel={() => setSmartEditingId(null)}
                     onSave={(smart) => {
@@ -358,7 +377,7 @@ function PlansPage() {
                     <p className="text-sm font-medium">{g.competency?.name}</p>
                     <GapBadge gap={g.gap} />
                   </div>
-                  {canEdit && (
+                  {canEditDiagnostic && (
                     <Button
                       size="sm"
                       variant="ghost"

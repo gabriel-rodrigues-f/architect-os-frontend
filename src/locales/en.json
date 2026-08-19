@@ -263,6 +263,7 @@
   "pdi.plan.reopen": "Reopen PDI",
   "pdi.plan.reopening": "Reopening…",
   "pdi.plan.locked": "PDI completed — read only.",
+  "pdi.plan.approvedHint": "PDI agreed — only status, action plan and SMART goal remain editable. New items and removal require reopening.",
   "pdi.plan.transitionError": "Could not update the PDI status.",
   "pdi.newItem.title": "New action — {competencia}",
   "pdi.newItem.cancel": "Cancel",

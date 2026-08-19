@@ -263,6 +263,7 @@
   "pdi.plan.reopen": "Reabrir PDI",
   "pdi.plan.reopening": "Reabrindo…",
   "pdi.plan.locked": "PDI concluído — somente leitura.",
+  "pdi.plan.approvedHint": "PDI acordado — só status, plano de ação e meta SMART continuam editáveis. Novos itens e remoção exigem reabrir.",
   "pdi.plan.transitionError": "Não foi possível atualizar a situação do PDI.",
   "pdi.newItem.title": "Nova ação — {competencia}",
   "pdi.newItem.cancel": "Cancelar",

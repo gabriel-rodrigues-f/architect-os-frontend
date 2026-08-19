@@ -185,4 +185,26 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     expect(body.item.targetDate).toBe("2026-12-20");
     expect(body.item).not.toHaveProperty("progress");
   });
+
+  /**
+   * DOM-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — depois de
+   * `Approved`, item não muda mais de escopo: campo de diagnóstico
+   * (tipo de ação) vira texto, campo de execução (status) continua editável,
+   * e não há botão de remover. `pdi-ana`, na fixture, já está `Approved`.
+   */
+  it("plano Approved: tipo de ação vira texto, status continua editável, sem botão de remover", async () => {
+    window.history.pushState({}, "", "?architectId=ana");
+    render(
+      <Wrapper>
+        <PlansPage />
+      </Wrapper>,
+    );
+    await screen.findByText("Evoluir IAM");
+
+    const card = (await screen.findByText("Evoluir IAM")).closest(".surface-card")!;
+    // Só um select no card (Status, campo de execução) — Tipo de ação virou texto.
+    expect(card.querySelectorAll("select")).toHaveLength(1);
+    // "Remover GAP" não aparece — item já acordado não desaparece.
+    expect(screen.queryByRole("button", { name: /Remover GAP/ })).toBeNull();
+  });
 });
