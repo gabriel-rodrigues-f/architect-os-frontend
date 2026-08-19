@@ -462,11 +462,11 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     /*
-      Awaitable, e não otimista: enviar para revisão ou concluir é uma
-      transição de negócio que pode ser negada (quem não é Tech Lead não
-      finaliza; avaliação já concluída não reabre) — a tela precisa do erro
-      de verdade para mostrar, não só reverter em silêncio depois de já ter
-      pintado o novo status na hora do clique.
+      Awaitable, e não otimista: enviar para revisão, concluir ou reabrir é
+      uma transição de negócio que pode ser negada (quem não é Tech Lead não
+      finaliza nem reabre) — a tela precisa do erro de verdade para mostrar,
+      não só reverter em silêncio depois de já ter pintado o novo status na
+      hora do clique.
     */
     setAssessmentStatus: async (id, status) => {
       const updated = await api.setAssessmentStatus(id, status);
