@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ROLES, roleShort, type Architect, type Level, type RoleName } from "@/lib/domain";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -72,6 +73,8 @@ function TeamPage() {
   const store = useStore();
   const { t } = useI18n();
   const sel = useSelectors();
+  /** Cadastro do roster é decisão administrativa — backend já recusa o resto. */
+  const isAdmin = useCurrentUser().role === "admin";
 
   /** `null` = diálogo fechado; string vazia = criação; id = edição. */
   const [editing, setEditing] = useState<string | null>(null);
@@ -134,16 +137,18 @@ function TeamPage() {
       <PageHeader
         title={t("team.title")}
         description={t("team.subtitle")}
-        actions={<Button onClick={openCreate}>{t("team.new")}</Button>}
+        actions={isAdmin ? <Button onClick={openCreate}>{t("team.new")}</Button> : undefined}
       />
 
       {store.architects.length === 0 && (
         <div className="surface-card p-8 text-center">
           <p className="text-sm font-medium">{t("team.empty.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t("team.empty.hint")}</p>
-          <Button className="mt-4" onClick={openCreate}>
-            {t("team.empty.cta")}
-          </Button>
+          {isAdmin && (
+            <Button className="mt-4" onClick={openCreate}>
+              {t("team.empty.cta")}
+            </Button>
+          )}
         </div>
       )}
 
@@ -169,24 +174,26 @@ function TeamPage() {
                   </p>
                   <p className="truncate text-xs text-muted-foreground">{a.email}</p>
                 </div>
-                <div className="flex shrink-0 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => openEdit(a)}
-                    aria-label={`Editar ${a.name}`}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(a)}
-                    aria-label={`Excluir ${a.name}`}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                {isAdmin && (
+                  <div className="flex shrink-0 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(a)}
+                      aria-label={`Editar ${a.name}`}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(a)}
+                      aria-label={`Excluir ${a.name}`}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 flex items-center justify-between text-sm">
@@ -352,6 +359,8 @@ function TeamPage() {
 export function RoleProfilesCard() {
   const store = useStore();
   const { t } = useI18n();
+  /** Role Competency Profile é a régua de avaliação do time — só admin ajusta. */
+  const isAdmin = useCurrentUser().role === "admin";
   const [categoryIds, setCategoryIds] = useState<string[]>(() =>
     store.categories[0] ? [store.categories[0].id] : [],
   );
@@ -429,29 +438,35 @@ export function RoleProfilesCard() {
                     </span>
                   )}
                 </td>
-                {ROLES.map((r) => (
-                  <td key={r} className="py-2 text-center">
-                    <select
-                      className="w-16 rounded-md border border-input bg-card px-2 py-1 text-sm"
-                      value={c.expected[r] ?? 3}
-                      aria-label={`${c.name} — ${r}`}
-                      onChange={(e) =>
-                        store.updateCompetency(c.id, {
-                          expected: { [r]: Number(e.target.value) as Level } as Record<
-                            RoleName,
-                            Level
-                          >,
-                        })
-                      }
-                    >
-                      {[1, 2, 3, 4, 5].map((l) => (
-                        <option key={l} value={l}>
-                          {l}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                ))}
+                {ROLES.map((r) =>
+                  isAdmin ? (
+                    <td key={r} className="py-2 text-center">
+                      <select
+                        className="w-16 rounded-md border border-input bg-card px-2 py-1 text-sm"
+                        value={c.expected[r] ?? 3}
+                        aria-label={`${c.name} — ${r}`}
+                        onChange={(e) =>
+                          store.updateCompetency(c.id, {
+                            expected: { [r]: Number(e.target.value) as Level } as Record<
+                              RoleName,
+                              Level
+                            >,
+                          })
+                        }
+                      >
+                        {[1, 2, 3, 4, 5].map((l) => (
+                          <option key={l} value={l}>
+                            {l}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  ) : (
+                    <td key={r} className="py-2 text-center tabular-nums text-muted-foreground">
+                      {c.expected[r] ?? 3}
+                    </td>
+                  ),
+                )}
               </tr>
             ))}
             {competencies.length === 0 && (

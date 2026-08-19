@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { CompetencyCategory } from "@/lib/domain";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
@@ -64,6 +65,8 @@ const BANDS = [
 function CapabilityMapPage() {
   const store = useStore();
   const sel = useSelectors();
+  /** Catálogo de capacidades é administrativo — backend já recusa o resto. */
+  const isAdmin = useCurrentUser().role === "admin";
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const { t } = useI18n();
@@ -163,16 +166,20 @@ function CapabilityMapPage() {
       <PageHeader
         title={t("cap.title")}
         description={t("cap.subtitle")}
-        actions={<Button onClick={() => setOpen(true)}>{t("cap.new")}</Button>}
+        actions={
+          isAdmin ? <Button onClick={() => setOpen(true)}>{t("cap.new")}</Button> : undefined
+        }
       />
 
       {store.categories.length === 0 && (
         <div className="surface-card p-8 text-center">
           <p className="text-sm font-medium">{t("cap.empty.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.hint")}</p>
-          <Button className="mt-4" onClick={() => setOpen(true)}>
-            {t("cap.new")}
-          </Button>
+          {isAdmin && (
+            <Button className="mt-4" onClick={() => setOpen(true)}>
+              {t("cap.new")}
+            </Button>
+          )}
         </div>
       )}
 
@@ -193,24 +200,26 @@ function CapabilityMapPage() {
                     : t("cap.risk.healthy", { n: mentors.length })
               }
               actions={
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => startEditing(area.cat)}
-                    aria-label={`Editar ${area.cat.name}`}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => askDelete(area.cat)}
-                    aria-label={`Excluir ${area.cat.name}`}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                isAdmin && (
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => startEditing(area.cat)}
+                      aria-label={`Editar ${area.cat.name}`}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => askDelete(area.cat)}
+                      aria-label={`Excluir ${area.cat.name}`}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )
               }
             >
               <div className="grid gap-3 sm:grid-cols-2">

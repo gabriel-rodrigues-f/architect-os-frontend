@@ -6,9 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import { setAuthToken, type AppState } from "../api";
+import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
-import { fixtureState } from "./fixtures";
+import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
  * Exercita o Mapa de Capacidades de verdade: o componente da rota, ligado à
@@ -39,16 +40,41 @@ function Wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <StoreProvider>{children}</StoreProvider>
+        <AuthProvider>
+          <AuthReady>
+            <StoreProvider>{children}</StoreProvider>
+          </AuthReady>
+        </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * O app real só monta a árvore autenticada depois do `AuthGate` (em
+ * `__root.tsx`) resolver a sessão guardada no navegador. Este teste não passa
+ * por ele, então precisa do mesmo corte: sem isto, a tela chamaria
+ * `useCurrentUser()` no primeiro render, antes do `AuthProvider` terminar de
+ * buscar `/api/auth/me`, e quebraria com "nenhuma sessão ativa".
+ */
+function AuthReady({ children }: { children: ReactNode }) {
+  const { loading } = useAuth();
+  if (loading) return null;
+  return <>{children}</>;
 }
 
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 
 const renderPage = (state: AppState) => {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    if (String(url).endsWith("/api/auth/me")) {
+      return Promise.resolve(
+        new Response(JSON.stringify(fixtureAdminUser), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    }
     if (init?.method === "DELETE")
       return Promise.resolve(
         new Response(JSON.stringify({ competenciesRemoved: 0 }), {

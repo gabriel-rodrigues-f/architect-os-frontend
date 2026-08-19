@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DevelopmentCycle } from "@/lib/domain";
+import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
@@ -43,6 +44,8 @@ function CyclesPage() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
+  /** Ciclo é decisão administrativa — muda o que o time inteiro está avaliando. */
+  const isAdmin = useCurrentUser().role === "admin";
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
   const { t, locale } = useI18n();
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
@@ -89,7 +92,9 @@ function CyclesPage() {
                 </option>
               ))}
             </select>
-            <Button onClick={() => setEditing(emptyCycle(store.cycles))}>{t("cycle.new")}</Button>
+            {isAdmin && (
+              <Button onClick={() => setEditing(emptyCycle(store.cycles))}>{t("cycle.new")}</Button>
+            )}
           </div>
         }
       />
@@ -103,22 +108,26 @@ function CyclesPage() {
                 <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
                   {labels.cycleStatus[c.status]}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setEditing(c)}
-                  aria-label={`Editar ${c.name}`}
-                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => store.removeCycle(c.id)}
-                  aria-label={`Excluir ${c.name}`}
-                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(c)}
+                      aria-label={`Editar ${c.name}`}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => store.removeCycle(c.id)}
+                      aria-label={`Excluir ${c.name}`}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -132,9 +141,11 @@ function CyclesPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               O ciclo delimita o período de avaliação, PDI e metas.
             </p>
-            <Button className="mt-4" onClick={() => setEditing(emptyCycle(store.cycles))}>
-              Novo ciclo
-            </Button>
+            {isAdmin && (
+              <Button className="mt-4" onClick={() => setEditing(emptyCycle(store.cycles))}>
+                Novo ciclo
+              </Button>
+            )}
           </div>
         )}
       </div>

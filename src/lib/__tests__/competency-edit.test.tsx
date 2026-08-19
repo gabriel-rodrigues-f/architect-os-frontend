@@ -6,9 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { setAuthToken, type AppState } from "../api";
+import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
-import { fixtureState } from "./fixtures";
+import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
  * O lápis ao lado da lixeira: editar nome e nível esperado por cargo sem sair
@@ -26,10 +27,20 @@ function Wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <StoreProvider>{children}</StoreProvider>
+        <AuthProvider>
+          <AuthReady>
+            <StoreProvider>{children}</StoreProvider>
+          </AuthReady>
+        </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+function AuthReady({ children }: { children: ReactNode }) {
+  const { loading } = useAuth();
+  if (loading) return null;
+  return <>{children}</>;
 }
 
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
@@ -48,6 +59,14 @@ describe("Matriz de Competências — edição", () => {
     setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (String(url).endsWith("/api/auth/me")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
       if (init?.method === "PATCH") return Promise.resolve(new Response(null, { status: 204 }));
       if (String(url).endsWith("/api/state")) {
         return Promise.resolve(

@@ -361,18 +361,24 @@ export function AppShell({ children }: { children: ReactNode }) {
               <label className="text-xs text-muted-foreground" htmlFor="cycle">
                 {t("shell.cycle")}
               </label>
-              <select
-                id="cycle"
-                value={activeCycleId}
-                onChange={(e) => setActiveCycle(e.target.value)}
-                className="rounded-md border border-input bg-card px-2.5 py-1.5 text-sm"
-              >
-                {cycles.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              {user?.role === "admin" ? (
+                <select
+                  id="cycle"
+                  value={activeCycleId}
+                  onChange={(e) => setActiveCycle(e.target.value)}
+                  className="rounded-md border border-input bg-card px-2.5 py-1.5 text-sm"
+                >
+                  {cycles.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span id="cycle" className="px-1 text-sm font-medium">
+                  {cycles.find((c) => c.id === activeCycleId)?.name ?? "—"}
+                </span>
+              )}
               <PreferencesMenu />
             </div>
           </header>

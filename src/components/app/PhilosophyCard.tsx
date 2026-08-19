@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { DevelopmentPhilosophy, PhilosophyStage } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
@@ -15,9 +16,14 @@ import { slug } from "@/lib/text";
  * Filosofia de desenvolvimento do dashboard. Em modo de edição, título,
  * descrição, rodapé e etapas ficam todos editáveis — dá para renomear, remover
  * e acrescentar etapas antes de salvar.
+ *
+ * Texto institucional visível a todo mundo, editável só por admin — o botão
+ * some para quem não pode, e o backend recusa de qualquer forma. Ver
+ * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 15.
  */
 export function PhilosophyCard() {
   const store = useStore();
+  const isAdmin = useCurrentUser().role === "admin";
   const [editing, setEditing] = useState(false);
   const { t } = useI18n();
   const [draft, setDraft] = useState<DevelopmentPhilosophy>(store.philosophy);
@@ -61,10 +67,12 @@ export function PhilosophyCard() {
         title={store.philosophy.title || "Filosofia de Desenvolvimento"}
         description={store.philosophy.description}
         actions={
-          <Button variant="outline" size="sm" onClick={startEditing}>
-            <Pencil className="h-3.5 w-3.5" />
-            Editar
-          </Button>
+          isAdmin ? (
+            <Button variant="outline" size="sm" onClick={startEditing}>
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Button>
+          ) : undefined
         }
       >
         <div className="flex flex-wrap items-center gap-2">
