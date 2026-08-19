@@ -30,7 +30,7 @@ describe("cliente da API", () => {
   it("monta a rota aninhada de item de PDI", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: "pdi-ana" }));
 
-    await api.patchPlanItem("pdi-ana", "pdi-ana-0", { progress: 80 });
+    await api.patchPlanItem("pdi-ana", "pdi-ana-0", { status: "In Progress" });
 
     expect(fetchMock.mock.calls[0]![0]).toBe(`${API_URL}/api/plans/pdi-ana/items/pdi-ana-0`);
   });
@@ -38,18 +38,18 @@ describe("cliente da API", () => {
   it("transforma resposta de erro em ApiError com status e detalhes", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(
-        { error: "ValidationError", message: "progresso inválido", details: { progress: 500 } },
+        { error: "ValidationError", message: "status inválido", details: { status: "Invalid" } },
         400,
       ),
     );
 
     const error = await api
-      .patchPlanItem("pdi-ana", "pdi-ana-0", { progress: 500 })
+      .patchPlanItem("pdi-ana", "pdi-ana-0", { status: "In Progress" })
       .catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).toMatchObject({ status: 400, message: "progresso inválido" });
-    expect((error as ApiError).details).toEqual({ progress: 500 });
+    expect(error).toMatchObject({ status: 400, message: "status inválido" });
+    expect((error as ApiError).details).toEqual({ status: "Invalid" });
   });
 
   it("usa mensagem padrão quando o erro não traz corpo JSON", async () => {

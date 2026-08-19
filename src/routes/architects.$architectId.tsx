@@ -235,7 +235,6 @@ function ArchitectProfile() {
                     {labels.actionType[i.actionType]} · {i.actionPlan} · prazo{" "}
                     {formatDate(i.targetDate, locale)}
                   </p>
-                  <Bar value={i.progress} className="mt-2" />
                   {itemEvidences.length > 0 && (
                     <ul className="mt-2 flex flex-wrap gap-1.5">
                       {itemEvidences.map((e) => (

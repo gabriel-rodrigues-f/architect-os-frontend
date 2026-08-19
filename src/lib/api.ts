@@ -213,6 +213,8 @@ export const api = {
     patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, body),
   removePlanItem: (planId: string, itemId: string) =>
     del<void>(`/api/plans/${planId}/items/${itemId}`),
+  updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) =>
+    patch<DevelopmentPlan>(`/api/plans/${planId}/status`, { status }),
 
   /* trilhas */
   createLearningPath: (path: LearningPath) => post<LearningPath>("/api/learning-paths", path),

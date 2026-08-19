@@ -146,7 +146,6 @@ export const fixtureState: AppState = {
           priority: "High",
           owner: "Ana Martins",
           status: "In Progress",
-          progress: 60,
         },
         {
           id: "pdi-ana-1",
@@ -161,7 +160,6 @@ export const fixtureState: AppState = {
           priority: "Medium",
           owner: "Ana Martins",
           status: "In Progress",
-          progress: 40,
         },
       ],
     },

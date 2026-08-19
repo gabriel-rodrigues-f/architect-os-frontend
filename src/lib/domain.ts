@@ -150,8 +150,8 @@ export interface DevelopmentPlanItem {
   targetDate: string;
   priority: "Low" | "Medium" | "High" | "Critical";
   owner: string;
+  /** Único indicador de andamento do item — sem percentual paralelo. Ver EPIC 3. */
   status: PdiStatus;
-  progress: number;
   smart?: SmartGoal | undefined;
 }
 

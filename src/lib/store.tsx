@@ -9,6 +9,7 @@ import type {
   Competency,
   CompetencyCategory,
   DevelopmentCycle,
+  DevelopmentPlan,
   DevelopmentPlanItem,
   Evidence,
   LearningItemProgress,
@@ -86,6 +87,12 @@ interface Api extends AppState {
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
   /** Tira o item do PDI — a lacuna dele volta a aparecer como sugestão. */
   removePlanItem: (planId: string, itemId: string) => void;
+  /**
+   * Sem otimismo, como `setAssessmentStatus`: aprovar/reabrir/concluir o PDI
+   * é uma transição de negócio que pode ser negada (dono não aprova nem
+   * reabre o próprio plano) — a tela precisa do erro de verdade.
+   */
+  updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) => Promise<DevelopmentPlan>;
   addEvidence: (e: Evidence) => void;
   /**
    * Sem otimismo: aprovar/rejeitar evidência é decisão do Tech Lead, e a UI só
@@ -362,6 +369,15 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         ),
       }));
       remote(api.removePlanItem(planId, itemId));
+    },
+
+    updatePlanStatus: async (planId, status) => {
+      const updated = await api.updatePlanStatus(planId, status);
+      local((s) => ({
+        ...s,
+        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+      }));
+      return updated;
     },
 
     addEvidence: (e) => {

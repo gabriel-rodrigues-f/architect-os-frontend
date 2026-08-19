@@ -1,19 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Sparkles, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { Bar, GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { isLeadCapable } from "@/lib/api";
-import { ACTION_TYPES, type ActionType, type PdiStatus, type SmartGoal } from "@/lib/domain";
+import { ApiError, isLeadCapable } from "@/lib/api";
+import {
+  ACTION_TYPES,
+  type ActionType,
+  type DevelopmentPlan,
+  type PdiStatus,
+  type SmartGoal,
+} from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
+import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate, initialSearchParam, monthsFromTodayIso, todayIso } from "@/lib/text";
+import { formatDate, initialSearchParam, todayIso } from "@/lib/text";
 
 /**
  * `architectId` na URL — quem chega de outra tela (o perfil da pessoa, uma
@@ -57,6 +72,10 @@ function PlansPage() {
   );
   /** Item cujo formulário de meta SMART está aberto — nunca mais que um por vez. */
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
+  /** Gap escolhido para virar item de PDI — abre o formulário de ação real. */
+  const [creatingForCompetencyId, setCreatingForCompetencyId] = useState<string | null>(null);
+  const [planTransitioning, setPlanTransitioning] = useState(false);
+  const [planTransitionError, setPlanTransitionError] = useState<string | null>(null);
   const { t, locale } = useI18n();
   const user = useCurrentUser();
   /** PDI é da pessoa — só ela (ou o Tech Lead dela) escreve; backend já recusa o resto. */
@@ -65,28 +84,39 @@ function PlansPage() {
   const plan = sel.planFor(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
 
+  /**
+   * Espelha `isLeadOf` do backend: só o Tech Lead atribuído (ou admin), nunca
+   * a própria pessoa por ter conta lead/admin em outro contexto — usado para
+   * decidir quais botões de aprovar/reabrir mostrar, não para autorizar nada
+   * de verdade (o servidor recusa de qualquer forma).
+   */
+  const isLeadOfArchitect =
+    user.role === "admin" || (user.role === "lead" && architect?.leadUserId === user.id);
+  const planStatus = plan?.status ?? "Draft";
+  const canApprovePlan = plan && planStatus === "Draft" && isLeadOfArchitect;
+  const canReopenPlan = plan && planStatus === "Approved" && isLeadOfArchitect;
+  const canCompletePlan = plan && planStatus === "Approved" && canEdit;
+
   const suggestions = gaps
     .filter((g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId))
     .slice(0, 5);
 
-  const addSuggestion = (competencyId: string) => {
-    const g = gaps.find((x) => x.item.competencyId === competencyId);
-    if (!g || !g.competency || !architect) return;
-    store.addPlanItem(architectId, {
-      id: `pdi-${architectId}-${competencyId}-${Date.now()}`,
-      competencyId,
-      currentLevel: g.item.final,
-      targetLevel: g.item.target,
-      objective: `Evoluir ${g.competency.name} do nível ${g.item.final} para o nível ${g.item.target}`,
-      actionType: "Learn",
-      actionPlan: "",
-      startDate: todayIso(),
-      targetDate: monthsFromTodayIso(4),
-      priority: g.gap >= 3 ? "Critical" : g.gap === 2 ? "High" : "Medium",
-      owner: architect.name,
-      status: "Not Started",
-      progress: 0,
-    });
+  const creatingForGap = creatingForCompetencyId
+    ? gaps.find((g) => g.item.competencyId === creatingForCompetencyId)
+    : undefined;
+
+  const transitionPlan = (nextStatus: DevelopmentPlan["status"]) => {
+    if (!plan) return;
+    setPlanTransitionError(null);
+    setPlanTransitioning(true);
+    store
+      .updatePlanStatus(plan.id, nextStatus)
+      .catch((error: unknown) =>
+        setPlanTransitionError(
+          error instanceof ApiError ? error.message : t("pdi.plan.transitionError"),
+        ),
+      )
+      .finally(() => setPlanTransitioning(false));
   };
 
   return (
@@ -108,6 +138,54 @@ function PlansPage() {
           </select>
         }
       />
+
+      {plan && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 surface-inset px-3 py-2 text-sm">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {t("pdi.plan.status")}
+          </span>
+          <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium">
+            {labels.planStatus[planStatus]}
+          </span>
+          {planStatus === "Completed" && (
+            <span className="text-xs text-muted-foreground">{t("pdi.plan.locked")}</span>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            {canApprovePlan && (
+              <Button
+                size="sm"
+                disabled={planTransitioning}
+                onClick={() => transitionPlan("Approved")}
+              >
+                {planTransitioning ? t("pdi.plan.approving") : t("pdi.plan.approve")}
+              </Button>
+            )}
+            {canCompletePlan && (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={planTransitioning}
+                onClick={() => transitionPlan("Completed")}
+              >
+                {planTransitioning ? t("pdi.plan.completing") : t("pdi.plan.complete")}
+              </Button>
+            )}
+            {canReopenPlan && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={planTransitioning}
+                onClick={() => transitionPlan("Draft")}
+              >
+                {planTransitioning ? t("pdi.plan.reopening") : t("pdi.plan.reopen")}
+              </Button>
+            )}
+          </div>
+          {planTransitionError && (
+            <p className="w-full text-xs text-destructive">{planTransitionError}</p>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <div className="space-y-4">
@@ -189,42 +267,11 @@ function PlansPage() {
                   </Field>
                 </div>
 
-                <div className="mt-4">
-                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Plano de ação
-                  </p>
-                  <Textarea
-                    value={item.actionPlan}
-                    disabled={!canEdit}
-                    onChange={(e) =>
-                      store.updatePlanItem(plan!.id, item.id, { actionPlan: e.target.value })
-                    }
-                    placeholder="Aprender, Praticar, Aplicar, Ensinar, Mentorar, Liderar — descreva as atividades práticas"
-                  />
-                </div>
-
-                <div className="mt-4">
-                  <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{t("pdi.progress")}</span>
-                    <span className="tabular-nums">{item.progress}%</span>
-                  </div>
-                  {canEdit && (
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={5}
-                      value={item.progress}
-                      onChange={(e) =>
-                        store.updatePlanItem(plan!.id, item.id, {
-                          progress: Number(e.target.value),
-                        })
-                      }
-                      className="w-full accent-[var(--primary)]"
-                    />
-                  )}
-                  <Bar value={item.progress} />
-                </div>
+                <ActionPlanField
+                  value={item.actionPlan}
+                  disabled={!canEdit}
+                  onSave={(actionPlan) => store.updatePlanItem(plan!.id, item.id, { actionPlan })}
+                />
 
                 {item.smart && (
                   <div className="mt-4 rounded-lg border border-border bg-secondary/50 p-4">
@@ -316,9 +363,9 @@ function PlansPage() {
                       size="sm"
                       variant="ghost"
                       className="mt-2 px-0"
-                      onClick={() => addSuggestion(g.item.competencyId)}
+                      onClick={() => setCreatingForCompetencyId(g.item.competencyId)}
                     >
-                      <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Adicionar ao PDI
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5" /> {t("pdi.suggestions.add")}
                     </Button>
                   )}
                 </li>
@@ -343,7 +390,167 @@ function PlansPage() {
           </SectionCard>
         </div>
       </div>
+
+      {creatingForGap && creatingForGap.competency && architect && (
+        <NewPlanItemDialog
+          gap={creatingForGap}
+          onCancel={() => setCreatingForCompetencyId(null)}
+          onSave={(draft) => {
+            store.addPlanItem(architectId, {
+              id: `pdi-${architectId}-${creatingForGap.item.competencyId}-${Date.now()}`,
+              competencyId: creatingForGap.item.competencyId,
+              currentLevel: creatingForGap.item.final,
+              targetLevel: creatingForGap.item.target,
+              objective: `Evoluir ${creatingForGap.competency?.name} do nível ${creatingForGap.item.final} para o nível ${creatingForGap.item.target}`,
+              actionType: draft.actionType,
+              actionPlan: draft.actionPlan,
+              startDate: todayIso(),
+              targetDate: draft.targetDate,
+              priority:
+                creatingForGap.gap >= 3 ? "Critical" : creatingForGap.gap === 2 ? "High" : "Medium",
+              owner: architect.name,
+              status: "Not Started",
+            });
+            setCreatingForCompetencyId(null);
+          }}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * Plano de ação: salva ao sair do campo (blur), não a cada tecla — antes
+ * cada caractere digitado disparava um PATCH, inundando a API e deixando o
+ * indicador de estado sem sentido (sempre "salvando"). O rascunho local só
+ * é gravado quando a pessoa termina de editar; falha de rede já aparece via
+ * toast global (`remote()` na store), este indicador é só o retorno visual
+ * rápido de que o campo específico foi salvo. Ver AUDITORIA-QUARTA-REVISAO-
+ * ESTADO-ATUAL-SYNAPSE.md, EPIC 3.
+ */
+function ActionPlanField({
+  value,
+  disabled,
+  onSave,
+}: {
+  value: string;
+  disabled: boolean;
+  onSave: (value: string) => void;
+}) {
+  const { t } = useI18n();
+  const [draft, setDraft] = useState(value);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => setDraft(value), [value]);
+
+  const commit = () => {
+    if (draft === value) return;
+    onSave(draft);
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="mt-4">
+      <div className="mb-1 flex items-center justify-between">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t("pdi.field.actionPlan")}
+        </p>
+        {saved && <span className="text-xs text-emerald-600">{t("pdi.saved")}</span>}
+      </div>
+      <Textarea
+        value={draft}
+        disabled={disabled}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        placeholder={t("pdi.field.actionPlan.placeholder")}
+      />
+    </div>
+  );
+}
+
+/**
+ * Item de PDI real: tipo de ação, plano e prazo são escolhidos pela própria
+ * pessoa aqui — antes um clique em "Adicionar ao PDI" já criava o item com
+ * `actionType: "Learn"` e prazo de +4 meses fabricados, sem ninguém ter
+ * decidido nada disso. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-
+ * SYNAPSE.md, EPIC 3.
+ */
+function NewPlanItemDialog({
+  gap,
+  onSave,
+  onCancel,
+}: {
+  gap: Gap;
+  onSave: (draft: { actionType: ActionType; actionPlan: string; targetDate: string }) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useI18n();
+  const labels = useLabels();
+  const [actionType, setActionType] = useState<ActionType>("Learn");
+  const [actionPlan, setActionPlan] = useState("");
+  const [targetDate, setTargetDate] = useState("");
+  const canSave = actionPlan.trim().length > 0 && targetDate.length > 0;
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {t("pdi.newItem.title", { competencia: gap.competency?.name ?? "" })}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="new-item-action-type">{t("pdi.field.actionType")}</Label>
+            <select
+              id="new-item-action-type"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={actionType}
+              onChange={(e) => setActionType(e.target.value as ActionType)}
+            >
+              {ACTION_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {labels.actionType[type]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="new-item-action-plan">{t("pdi.field.actionPlan")}</Label>
+            <Textarea
+              id="new-item-action-plan"
+              className="mt-1"
+              value={actionPlan}
+              onChange={(e) => setActionPlan(e.target.value)}
+              placeholder={t("pdi.field.actionPlan.placeholder")}
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-item-target-date">{t("pdi.field.deadline")}</Label>
+            <input
+              id="new-item-target-date"
+              type="date"
+              min={todayIso()}
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>
+            {t("pdi.newItem.cancel")}
+          </Button>
+          <Button
+            disabled={!canSave}
+            onClick={() => onSave({ actionType, actionPlan: actionPlan.trim(), targetDate })}
+          >
+            {t("pdi.newItem.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
