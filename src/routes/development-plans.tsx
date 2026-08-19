@@ -168,6 +168,16 @@ function PlansPage() {
           {planStatus === "Approved" && (
             <span className="text-xs text-muted-foreground">{t("pdi.plan.approvedHint")}</span>
           )}
+          {plan.approvedAt && (planStatus === "Approved" || planStatus === "Completed") && (
+            <span className="text-xs text-muted-foreground">
+              {t("pdi.plan.approvedAt", { data: formatDate(plan.approvedAt, locale) ?? "" })}
+            </span>
+          )}
+          {plan.completedAt && planStatus === "Completed" && (
+            <span className="text-xs text-muted-foreground">
+              {t("pdi.plan.completedAt", { data: formatDate(plan.completedAt, locale) ?? "" })}
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             {canApprovePlan && (
               <Button

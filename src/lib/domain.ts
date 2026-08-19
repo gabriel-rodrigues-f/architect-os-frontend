@@ -178,6 +178,12 @@ export interface DevelopmentPlan {
   cycleId: string;
   status: "Draft" | "Approved" | "Completed";
   items: DevelopmentPlanItem[];
+  /** Quem aprovou e quando — `null` enquanto não aprovado, ou depois de reaberto. */
+  approvedByUserId?: string | null | undefined;
+  approvedAt?: string | null | undefined;
+  /** Quem concluiu e quando — estado final, nunca reaberto. */
+  completedByUserId?: string | null | undefined;
+  completedAt?: string | null | undefined;
 }
 
 export type LearningItemType =
