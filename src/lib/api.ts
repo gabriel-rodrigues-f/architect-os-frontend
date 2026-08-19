@@ -258,6 +258,11 @@ export const api = {
   createMentoringSession: (session: MentoringSession) =>
     post<MentoringSession>("/api/mentoring-sessions", session),
   createEvidence: (evidence: Evidence) => post<Evidence>("/api/evidences", evidence),
+  /** Revisão (status + comentário) é decisão do Tech Lead — rota admin-only no backend. */
+  reviewEvidence: (
+    id: string,
+    review: { status: Evidence["status"]; leaderComment?: string | undefined },
+  ) => patch<Evidence>(`/api/evidences/${id}/review`, review),
   createCertification: (certification: Certification) =>
     post<Certification>("/api/certifications", certification),
 };

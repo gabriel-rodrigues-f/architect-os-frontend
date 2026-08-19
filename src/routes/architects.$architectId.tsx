@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { DomainRadar } from "@/components/app/charts";
 import {
@@ -24,7 +25,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { EVIDENCE_TYPES, progressFor, type EvidenceType } from "@/lib/domain";
+import {
+  EVIDENCE_TYPES,
+  progressFor,
+  type DevelopmentPlan,
+  type Evidence,
+  type EvidenceType,
+} from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
@@ -65,7 +72,8 @@ function ArchitectProfile() {
   const { t, locale } = useI18n();
   const user = useCurrentUser();
   /** OKR, evidência e certificação são da pessoa — só ela (ou admin) registra; backend já recusa o resto. */
-  const canEditOwn = user.role === "admin" || user.architectId === architectId;
+  const isAdmin = user.role === "admin";
+  const canEditOwn = isAdmin || user.architectId === architectId;
   const architect = sel.architectById(architectId);
 
   if (!architect) {
@@ -271,16 +279,25 @@ function ArchitectProfile() {
         <SectionCard
           title={t("arch.evidence.title")}
           description={t("arch.evidence.subtitle")}
-          actions={canEditOwn ? <EvidenceDialog architectId={architect.id} /> : undefined}
+          actions={
+            canEditOwn ? <EvidenceDialog architectId={architect.id} plan={plan} /> : undefined
+          }
         >
           <ul className="space-y-2">
             {evidences.map((e) => (
               <li key={e.id} className="surface-inset p-2.5">
-                <p className="text-sm font-medium">{e.title}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium">{e.title}</p>
+                  <EvidenceStatusBadge status={e.status} labels={labels} />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {labels.evidenceType[e.type]} · {formatDate(e.date, locale)} · complexidade{" "}
                   {labels.complexity[e.complexity]}
                 </p>
+                {e.leaderComment && (
+                  <p className="mt-1 text-xs text-muted-foreground">"{e.leaderComment}"</p>
+                )}
+                {isAdmin && <EvidenceReviewDialog evidence={e} />}
               </li>
             ))}
             {!evidences.length && (
@@ -351,11 +368,43 @@ function Swot({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+const EVIDENCE_STATUS_TONE: Record<Evidence["status"], string> = {
+  Pending: "bg-secondary text-muted-foreground",
+  Accepted: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  "Needs Improvement": "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  Rejected: "bg-destructive/15 text-destructive",
+};
+
+function EvidenceStatusBadge({
+  status,
+  labels,
+}: {
+  status: Evidence["status"];
+  labels: ReturnType<typeof useLabels>;
+}) {
+  return (
+    <span
+      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${EVIDENCE_STATUS_TONE[status]}`}
+    >
+      {labels.evidenceStatus[status]}
+    </span>
+  );
+}
+
 /**
  * Registro de evidência. A entidade já existia no domínio e na API, mas não
- * havia nenhuma tela para criá-la — só para listar.
+ * havia nenhuma tela para criá-la — só para listar. O vínculo opcional com um
+ * item do PDI fecha o loop Gap → PDI → Atividade → Evidência. Ver AUDITORIA-
+ * RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 30.
  */
-function EvidenceDialog({ architectId }: { architectId: string }) {
+function EvidenceDialog({
+  architectId,
+  plan,
+}: {
+  architectId: string;
+  plan: DevelopmentPlan | undefined;
+}) {
+  const planItems = plan?.items ?? [];
   const { t } = useI18n();
   const labels = useLabels();
   const store = useStore();
@@ -367,12 +416,14 @@ function EvidenceDialog({ architectId }: { architectId: string }) {
   const [description, setDescription] = useState("");
   const [project, setProject] = useState("");
   const [url, setUrl] = useState("");
+  const [pdiItemId, setPdiItemId] = useState("");
 
   const salvar = () => {
     const nome = title.trim();
     if (!nome) return;
+    const id = `ev-${Date.now()}`;
     store.addEvidence({
-      id: `ev-${Date.now()}`,
+      id,
       architectId,
       title: nome,
       description: description.trim(),
@@ -380,13 +431,22 @@ function EvidenceDialog({ architectId }: { architectId: string }) {
       competencyIds: [],
       date,
       complexity,
+      status: "Pending",
       ...(project.trim() ? { project: project.trim() } : {}),
       ...(url.trim() ? { url: url.trim() } : {}),
     });
+    if (pdiItemId && plan) {
+      const item = planItems.find((i) => i.id === pdiItemId);
+      if (item) {
+        store.updatePlanItem(plan.id, pdiItemId, { evidenceIds: [...item.evidenceIds, id] });
+      }
+    }
+    toast.success(t("ev.toast", { titulo: nome }));
     setTitle("");
     setDescription("");
     setProject("");
     setUrl("");
+    setPdiItemId("");
     setOpen(false);
   };
 
@@ -477,6 +537,24 @@ function EvidenceDialog({ architectId }: { architectId: string }) {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+          {planItems.length > 0 && (
+            <div>
+              <Label htmlFor="ev-pdi">{t("ev.field.pdiLink")}</Label>
+              <select
+                id="ev-pdi"
+                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                value={pdiItemId}
+                onChange={(e) => setPdiItemId(e.target.value)}
+              >
+                <option value="">{t("ev.field.pdiLink.none")}</option>
+                {planItems.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.objective || i.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
@@ -485,6 +563,83 @@ function EvidenceDialog({ architectId }: { architectId: string }) {
           <Button disabled={!title.trim()} onClick={salvar}>
             {t("ev.save")}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Revisão da evidência é decisão do Tech Lead — só admin vê este controle. */
+function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
+  const { t } = useI18n();
+  const labels = useLabels();
+  const store = useStore();
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<Evidence["status"]>(evidence.status);
+  const [comment, setComment] = useState(evidence.leaderComment ?? "");
+
+  const salvar = () => {
+    store.reviewEvidence(evidence.id, {
+      status,
+      ...(comment.trim() ? { leaderComment: comment.trim() } : {}),
+    });
+    toast.success(
+      t("ev.review.toast", { titulo: evidence.title, status: labels.evidenceStatus[status] }),
+    );
+    setOpen(false);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setStatus(evidence.status);
+          setComment(evidence.leaderComment ?? "");
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost" className="mt-1 h-auto px-0 text-xs">
+          {t("ev.review.action")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("ev.review.title")}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="ev-review-status">{t("ev.review.status")}</Label>
+            <select
+              id="ev-review-status"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as Evidence["status"])}
+            >
+              <option value="Pending">{labels.evidenceStatus.Pending}</option>
+              <option value="Accepted">{labels.evidenceStatus.Accepted}</option>
+              <option value="Needs Improvement">
+                {labels.evidenceStatus["Needs Improvement"]}
+              </option>
+              <option value="Rejected">{labels.evidenceStatus.Rejected}</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="ev-review-comment">{t("ev.review.comment")}</Label>
+            <Textarea
+              id="ev-review-comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={salvar}>{t("ev.review.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

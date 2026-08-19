@@ -300,6 +300,8 @@ export interface Evidence {
   url?: string | undefined;
   complexity: "Low" | "Medium" | "High";
   leaderComment?: string | undefined;
+  /** Nasce "Pending" — nunca aceita implicitamente só por existir. */
+  status: "Pending" | "Accepted" | "Needs Improvement" | "Rejected";
 }
 
 export interface Certification {

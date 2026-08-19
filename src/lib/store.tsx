@@ -91,6 +91,10 @@ interface Api extends AppState {
   addPlanItem: (architectId: string, item: DevelopmentPlanItem) => void;
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
   addEvidence: (e: Evidence) => void;
+  reviewEvidence: (
+    id: string,
+    review: { status: Evidence["status"]; leaderComment?: string | undefined },
+  ) => void;
   addCertification: (c: Certification) => void;
   addMentoringSession: (m: MentoringSession) => void;
   updateLearningItemProgress: (
@@ -357,6 +361,14 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     addEvidence: (e) => {
       local((s) => ({ ...s, evidences: [e, ...s.evidences] }));
       remote(api.createEvidence(e));
+    },
+
+    reviewEvidence: (id, review) => {
+      local((s) => ({
+        ...s,
+        evidences: s.evidences.map((e) => (e.id === id ? { ...e, ...review } : e)),
+      }));
+      remote(api.reviewEvidence(id, review));
     },
 
     addCertification: (c) => {

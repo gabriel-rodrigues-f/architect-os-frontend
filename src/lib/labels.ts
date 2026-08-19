@@ -6,6 +6,7 @@ import type {
   DevelopmentCycle,
   DevelopmentPlan,
   DevelopmentPlanItem,
+  Evidence,
   EvidenceType,
   LearningItemProgress,
 } from "./domain";
@@ -97,6 +98,14 @@ const complexityKey: Record<"Low" | "Medium" | "High", MessageKey> = {
   High: "complexity.high",
 };
 
+/** Status da revisão da evidência pelo Tech Lead. */
+const evidenceStatusKey: Record<Evidence["status"], MessageKey> = {
+  Pending: "evidence.status.pending",
+  Accepted: "evidence.status.accepted",
+  "Needs Improvement": "evidence.status.needsImprovement",
+  Rejected: "evidence.status.rejected",
+};
+
 /**
  * Rótulos já traduzidos para o idioma ativo. É hook porque depende do contexto
  * de i18n — a alternativa seria passar `t` para cada chamada, o que poluiria
@@ -121,5 +130,6 @@ export function useLabels() {
     actionType: traduzir(actionTypeKey),
     evidenceType: traduzir(evidenceTypeKey),
     complexity: traduzir(complexityKey),
+    evidenceStatus: traduzir(evidenceStatusKey),
   };
 }
