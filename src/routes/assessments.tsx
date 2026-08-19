@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import { Fragment, useState } from "react";
+import { z } from "zod";
 
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,21 @@ import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate } from "@/lib/text";
+import { formatDate, initialSearchParam } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
+/**
+ * `architectId` na URL — quem chega de outra tela (o perfil da pessoa)
+ * continua olhando para a mesma pessoa, em vez de cair no primeiro
+ * arquiteto ativo e perder o contexto que trouxe até aqui. Ver AUDITORIA-
+ * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
+ */
+const assessmentsSearchSchema = z.object({
+  architectId: z.string().optional(),
+});
+
 export const Route = createFileRoute("/assessments")({
+  validateSearch: assessmentsSearchSchema,
   head: () => ({
     meta: [
       { title: "Avaliações — Synapse" },
@@ -37,7 +49,9 @@ export const Route = createFileRoute("/assessments")({
 function AssessmentsPage() {
   const store = useStore();
   const sel = useSelectors();
-  const [architectId, setArchitectId] = useState(sel.activeArchitects[0]?.id ?? "");
+  const [architectId, setArchitectId] = useState(
+    () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
+  );
   const { t } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();

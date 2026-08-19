@@ -93,6 +93,16 @@ function ArchitectProfile() {
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
+  /**
+   * Histórico de avaliações: um assessment por ciclo já concluído, mais
+   * recente primeiro. Sem isto o workspace da pessoa não tinha nenhuma vista
+   * de "como ela evoluiu" — só o ciclo atual. Ver AUDITORIA-TERCEIRA-RODADA-
+   * RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC G.
+   */
+  const assessmentHistory = store.assessments
+    .filter((a) => a.architectId === architect.id)
+    .map((a) => ({ assessment: a, cycle: store.cycles.find((c) => c.id === a.cycleId) }))
+    .sort((x, y) => (y.cycle?.start ?? "").localeCompare(x.cycle?.start ?? ""));
   const paths = store.learningPaths.filter((p) => p.assignedTo.includes(architect.id));
   const {
     avg,
@@ -145,20 +155,62 @@ function ArchitectProfile() {
 
         <SectionCard title={t("arch.gaps.title")} description={t("arch.gaps.subtitle")}>
           <ul className="space-y-2">
-            {gaps.slice(0, 8).map((g) => (
+            {gaps.slice(0, 8).map((g) => {
+              const inPlan = plan?.items.some((i) => i.competencyId === g.item.competencyId);
+              return (
+                <li
+                  key={g.item.competencyId}
+                  className="flex items-center justify-between gap-3 surface-inset p-2.5"
+                >
+                  <span className="truncate text-sm">{g.competency?.name}</span>
+                  <span className="flex items-center gap-2">
+                    <LevelBadge level={g.item.final} />
+                    <span className="text-xs text-muted-foreground">→ {g.item.target}</span>
+                    <GapBadge gap={g.gap} />
+                    {canEditOwn && !inPlan && (
+                      <Link
+                        to="/development-plans"
+                        search={{ architectId: architect.id }}
+                        className="whitespace-nowrap text-xs text-primary hover:underline"
+                      >
+                        {t("arch.gaps.addToPlan")}
+                      </Link>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+            {!gaps.length && <p className="text-sm text-muted-foreground">{t("arch.gaps.none")}</p>}
+          </ul>
+        </SectionCard>
+      </div>
+
+      <div className="mt-6">
+        <SectionCard title={t("arch.history.title")} description={t("arch.history.subtitle")}>
+          <ul className="space-y-2">
+            {assessmentHistory.map(({ assessment, cycle }) => (
               <li
-                key={g.item.competencyId}
+                key={assessment.id}
                 className="flex items-center justify-between gap-3 surface-inset p-2.5"
               >
-                <span className="truncate text-sm">{g.competency?.name}</span>
+                <span className="text-sm font-medium">{cycle?.name ?? assessment.cycleId}</span>
                 <span className="flex items-center gap-2">
-                  <LevelBadge level={g.item.final} />
-                  <span className="text-xs text-muted-foreground">→ {g.item.target}</span>
-                  <GapBadge gap={g.gap} />
+                  <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
+                    {labels.assessmentStatus[assessment.status]}
+                  </span>
+                  <Link
+                    to="/assessments"
+                    search={{ architectId: architect.id }}
+                    className="whitespace-nowrap text-xs text-primary hover:underline"
+                  >
+                    {t("arch.history.view")}
+                  </Link>
                 </span>
               </li>
             ))}
-            {!gaps.length && <p className="text-sm text-muted-foreground">{t("arch.gaps.none")}</p>}
+            {!assessmentHistory.length && (
+              <p className="text-sm text-muted-foreground">{t("arch.history.none")}</p>
+            )}
           </ul>
         </SectionCard>
       </div>

@@ -211,6 +211,8 @@ export const api = {
     post<DevelopmentPlan>(`/api/plans/${architectId}/items`, { cycleId, item }),
   patchPlanItem: (planId: string, itemId: string, body: Partial<DevelopmentPlanItem>) =>
     patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, body),
+  removePlanItem: (planId: string, itemId: string) =>
+    del<void>(`/api/plans/${planId}/items/${itemId}`),
 
   /* trilhas */
   createLearningPath: (path: LearningPath) => post<LearningPath>("/api/learning-paths", path),

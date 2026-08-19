@@ -429,5 +429,12 @@
   "nav.group.capabilities": "Capabilities",
   "nav.group.development": "Development",
   "nav.group.admin": "Administration",
-  "nav.reference": "Model Reference"
+  "nav.reference": "Model Reference",
+  "arch.gaps.addToPlan": "+ PDI",
+  "arch.history.title": "Assessment history",
+  "arch.history.subtitle": "One assessment per cycle, most recent first.",
+  "arch.history.view": "View",
+  "arch.history.none": "No assessment recorded yet.",
+  "pdi.gap.remove": "Remove gap",
+  "pdi.gap.removed.toast": "{nome} is back in suggestions"
 }

@@ -429,5 +429,12 @@
   "nav.group.capabilities": "Capacidades",
   "nav.group.development": "Desenvolvimento",
   "nav.group.admin": "Administração",
-  "nav.reference": "Referência do Modelo"
+  "nav.reference": "Referência do Modelo",
+  "arch.gaps.addToPlan": "+ PDI",
+  "arch.history.title": "Histórico de avaliações",
+  "arch.history.subtitle": "Um assessment por ciclo, do mais recente ao mais antigo.",
+  "arch.history.view": "Ver",
+  "arch.history.none": "Nenhuma avaliação registrada ainda.",
+  "pdi.gap.remove": "Remover GAP",
+  "pdi.gap.removed.toast": "{nome} voltou para as sugestões"
 }

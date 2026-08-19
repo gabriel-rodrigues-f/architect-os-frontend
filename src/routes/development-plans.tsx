@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
 
 import { Bar, GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -11,9 +13,20 @@ import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate, monthsFromTodayIso, todayIso } from "@/lib/text";
+import { formatDate, initialSearchParam, monthsFromTodayIso, todayIso } from "@/lib/text";
+
+/**
+ * `architectId` na URL — quem chega de outra tela (o perfil da pessoa, uma
+ * lacuna específica) continua olhando para a mesma pessoa, em vez de cair no
+ * primeiro arquiteto da lista e perder o contexto que trouxe até aqui. Ver
+ * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
+ */
+const developmentPlansSearchSchema = z.object({
+  architectId: z.string().optional(),
+});
 
 export const Route = createFileRoute("/development-plans")({
+  validateSearch: developmentPlansSearchSchema,
   head: () => ({
     meta: [
       { title: "Planos de Desenvolvimento — Synapse" },
@@ -39,7 +52,9 @@ function PlansPage() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
-  const [architectId, setArchitectId] = useState(sel.activeArchitects[0]?.id ?? "");
+  const [architectId, setArchitectId] = useState(
+    () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
+  );
   /** Item cujo formulário de meta SMART está aberto — nunca mais que um por vez. */
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
   const { t, locale } = useI18n();
@@ -244,14 +259,26 @@ function PlansPage() {
                 )}
 
                 {!item.smart && canEdit && smartEditingId !== item.id && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => setSmartEditingId(item.id)}
-                  >
-                    {t("pdi.smart.define")}
-                  </Button>
+                  <div className="mt-4 flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setSmartEditingId(item.id)}
+                    >
+                      {t("pdi.smart.define")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        store.removePlanItem(plan!.id, item.id);
+                        toast.success(t("pdi.gap.removed.toast", { nome: competencyName }));
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t("pdi.gap.remove")}
+                    </Button>
+                  </div>
                 )}
 
                 {!item.smart && canEdit && smartEditingId === item.id && (

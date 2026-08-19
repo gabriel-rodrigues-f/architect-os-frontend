@@ -83,6 +83,8 @@ interface Api extends AppState {
   ) => void;
   addPlanItem: (architectId: string, item: DevelopmentPlanItem) => void;
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
+  /** Tira o item do PDI — a lacuna dele volta a aparecer como sugestão. */
+  removePlanItem: (planId: string, itemId: string) => void;
   addEvidence: (e: Evidence) => void;
   reviewEvidence: (
     id: string,
@@ -333,6 +335,16 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         ),
       }));
       remote(api.patchPlanItem(planId, itemId, patch));
+    },
+
+    removePlanItem: (planId, itemId) => {
+      local((s) => ({
+        ...s,
+        plans: s.plans.map((p) =>
+          p.id !== planId ? p : { ...p, items: p.items.filter((i) => i.id !== itemId) },
+        ),
+      }));
+      remote(api.removePlanItem(planId, itemId));
     },
 
     addEvidence: (e) => {
