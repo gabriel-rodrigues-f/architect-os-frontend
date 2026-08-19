@@ -447,5 +447,6 @@
   "needs.intervention.view": "View created path",
   "needs.intervention.toast": "{competencia} collective path created",
   "needs.intervention.pathName": "Collective intervention — {competencia}",
-  "needs.intervention.pathDescription": "Path created from Training Needs — assigned to the {n} people with a gap in this competency."
+  "needs.intervention.pathDescription": "Path created from Training Needs — assigned to the {n} people with a gap in this competency.",
+  "ev.review.saving": "Saving…"
 }

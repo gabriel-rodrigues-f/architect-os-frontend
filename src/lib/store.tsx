@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { api, ApiError, type AppState, type CommentInput } from "./api";
 import type {
@@ -86,10 +87,15 @@ interface Api extends AppState {
   /** Tira o item do PDI — a lacuna dele volta a aparecer como sugestão. */
   removePlanItem: (planId: string, itemId: string) => void;
   addEvidence: (e: Evidence) => void;
+  /**
+   * Sem otimismo: aprovar/rejeitar evidência é decisão do Tech Lead, e a UI só
+   * pode dizer "aprovado" depois que o servidor confirmou de verdade — ver
+   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC L.
+   */
   reviewEvidence: (
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
-  ) => void;
+  ) => Promise<void>;
   addMentoringSession: (m: MentoringSession) => void;
   updateLearningItemProgress: (
     pathId: string,
@@ -108,11 +114,22 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) => (prev ? fn(prev) : prev));
   };
 
-  /** Dispara a chamada de escrita; em erro, revalida a partir do servidor. */
+  /**
+   * Dispara a chamada de escrita. A UI já mudou otimisticamente (`local`)
+   * antes desta função ser chamada; em erro, essa mudança otimista não pode
+   * ficar mentindo sozinha na tela — revalida a partir do servidor (volta o
+   * dado real) e avisa quem clicou, em vez de falhar em silêncio como antes.
+   * Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC L.
+   */
   const remote = (call: Promise<unknown>) => {
     void call.catch((error: unknown) => {
       if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
       else console.error(error);
+      toast.error(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.",
+      );
       void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
     });
   };
@@ -352,12 +369,12 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.createEvidence(e));
     },
 
-    reviewEvidence: (id, review) => {
+    reviewEvidence: async (id, review) => {
+      const updated = await api.reviewEvidence(id, review);
       local((s) => ({
         ...s,
-        evidences: s.evidences.map((e) => (e.id === id ? { ...e, ...review } : e)),
+        evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
       }));
-      remote(api.reviewEvidence(id, review));
     },
 
     addMentoringSession: (m) => {

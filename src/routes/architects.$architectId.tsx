@@ -33,7 +33,7 @@ import {
   type EvidenceType,
 } from "@/lib/domain";
 import { isLeadCapable } from "@/lib/api";
-import { useCurrentUser } from "@/lib/auth";
+import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -546,16 +546,30 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Evidence["status"]>(evidence.status);
   const [comment, setComment] = useState(evidence.leaderComment ?? "");
+  const [saving, setSaving] = useState(false);
 
-  const salvar = () => {
-    store.reviewEvidence(evidence.id, {
-      status,
-      ...(comment.trim() ? { leaderComment: comment.trim() } : {}),
-    });
-    toast.success(
-      t("ev.review.toast", { titulo: evidence.title, status: labels.evidenceStatus[status] }),
-    );
-    setOpen(false);
+  /**
+   * Sem otimismo: só fecha o diálogo e avisa sucesso depois que o servidor
+   * confirmou a revisão — decisão de Tech Lead não pode aparecer "salva" e
+   * não estar. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
+   * SYNAPSE.md, EPIC L.
+   */
+  const salvar = async () => {
+    setSaving(true);
+    try {
+      await store.reviewEvidence(evidence.id, {
+        status,
+        ...(comment.trim() ? { leaderComment: comment.trim() } : {}),
+      });
+      toast.success(
+        t("ev.review.toast", { titulo: evidence.title, status: labels.evidenceStatus[status] }),
+      );
+      setOpen(false);
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -605,10 +619,12 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
             Cancelar
           </Button>
-          <Button onClick={salvar}>{t("ev.review.save")}</Button>
+          <Button onClick={() => void salvar()} disabled={saving}>
+            {saving ? t("ev.review.saving") : t("ev.review.save")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
