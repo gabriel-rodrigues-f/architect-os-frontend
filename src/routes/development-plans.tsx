@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError, isLeadCapable } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import {
   ACTION_TYPES,
   type ActionType,
@@ -26,6 +26,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
+import { canActFor, isLeadOf } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, initialSearchParam, todayIso } from "@/lib/text";
@@ -78,9 +79,14 @@ function PlansPage() {
   const [planTransitionError, setPlanTransitionError] = useState<string | null>(null);
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  /** PDI é da pessoa — só ela (ou o Tech Lead dela) escreve; backend já recusa o resto. */
-  const canEdit = isLeadCapable(user.role) || user.architectId === architectId;
   const architect = sel.architectById(architectId);
+  /**
+   * PDI é da pessoa — só ela, o Tech Lead responsável por ela (não Lead de
+   * qualquer equipe), ou admin escreve; backend já recusa o resto
+   * (`canActFor`, `auth/scope.ts`). Ver UX-001, AUDITORIA-QUINTA-RODADA-360-
+   * SYNAPSE-2026-08-19.md.
+   */
+  const canEdit = canActFor(user, architect);
   const plan = sel.planFor(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
 
@@ -90,8 +96,7 @@ function PlansPage() {
    * decidir quais botões de aprovar/reabrir mostrar, não para autorizar nada
    * de verdade (o servidor recusa de qualquer forma).
    */
-  const isLeadOfArchitect =
-    user.role === "admin" || (user.role === "lead" && architect?.leadUserId === user.id);
+  const isLeadOfArchitect = isLeadOf(user, architect);
   const planStatus = plan?.status ?? "Draft";
   const canApprovePlan = plan && planStatus === "Draft" && isLeadOfArchitect;
   const canReopenPlan = plan && planStatus === "Approved" && isLeadOfArchitect;

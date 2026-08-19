@@ -134,6 +134,26 @@ function CyclesPage() {
                 <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
                   {labels.cycleStatus[c.status]}
                 </span>
+                {isAdmin && c.status === "Planned" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => store.setActiveCycle(c.id)}
+                  >
+                    {t("cycle.activate")}
+                  </Button>
+                )}
+                {isAdmin && c.status === "Active" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => store.updateCycle(c.id, { status: "Closed" })}
+                  >
+                    {t("cycle.close")}
+                  </Button>
+                )}
                 {isAdmin && (
                   <>
                     <button
@@ -289,6 +309,11 @@ const emptyCycle = (existing: DevelopmentCycle[]): DevelopmentCycle => {
  * duplicidade — não dá para ter dois "2026 H1". Em edição ficam fixos: mudar
  * o período de um ciclo já em uso desalinharia `id` de tudo que referencia
  * `cycle_id` (avaliações, PDI).
+ *
+ * Não existe mais campo de "situação" aqui — virar `Active` é uma decisão de
+ * negócio (fecha o ciclo ativo anterior atomicamente), feita pelo botão
+ * "Ativar" do card, nunca por este CRUD genérico de data/nome. Ver CYC-001,
+ * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
  */
 function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () => void }) {
   const store = useStore();
@@ -298,7 +323,6 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
   const [half, setHalf] = useState<Half>(parsed.half);
   const [start, setStart] = useState(cycle.start);
   const [end, setEnd] = useState(cycle.end);
-  const [status, setStatus] = useState(cycle.status);
 
   const duplicate = isNew && store.cycles.some((c) => c.id === cycleId(year, half));
 
@@ -312,9 +336,15 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
   const save = () => {
     if (duplicate) return;
     if (isNew) {
-      store.addCycle({ id: cycleId(year, half), name: cycleName(year, half), start, end, status });
+      store.addCycle({
+        id: cycleId(year, half),
+        name: cycleName(year, half),
+        start,
+        end,
+        status: "Planned",
+      });
     } else {
-      store.updateCycle(cycle.id, { start, end, status });
+      store.updateCycle(cycle.id, { start, end });
     }
     onClose();
   };
@@ -377,19 +407,6 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
                 onChange={(e) => setEnd(e.target.value)}
               />
             </div>
-          </div>
-          <div>
-            <Label htmlFor="cycle-status">Situação</Label>
-            <select
-              id="cycle-status"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as DevelopmentCycle["status"])}
-            >
-              <option value="Planned">Planejado</option>
-              <option value="Active">Ativo</option>
-              <option value="Closed">Encerrado</option>
-            </select>
           </div>
         </div>
         <DialogFooter>

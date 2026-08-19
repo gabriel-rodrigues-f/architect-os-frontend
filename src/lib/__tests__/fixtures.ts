@@ -25,6 +25,21 @@ export const fixtureMemberUser: SessionUser = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
+/**
+ * Sessão de lead sem nenhum arquiteto atribuído (`architect.leadUserId` não
+ * aponta para ela em nenhum arquiteto da fixture) — usada para provar que
+ * `isLeadOf` nega por padrão sem a atribuição real, em vez de liberar campo
+ * pra qualquer conta `lead` da empresa (UX-001).
+ */
+export const fixtureUnassignedLeadUser: SessionUser = {
+  id: "test-lead-sem-atribuicao",
+  email: "lead-sem-atribuicao@company.com",
+  name: "Lead sem atribuição",
+  role: "lead",
+  architectId: null,
+  createdAt: "2026-01-01T00:00:00Z",
+};
+
 /** Estado mínimo, porém coerente, para exercitar os selectors. */
 export const fixtureState: AppState = {
   categories: [

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { isLeadCapable } from "@/lib/api";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { canActFor } from "@/lib/scope";
 import { formatDate } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
 import {
@@ -115,12 +116,14 @@ function LearningPage() {
   };
 
   /**
-   * Progresso é execução, não edição da trilha: só a própria pessoa (ou o
-   * Tech Lead dela) registra o progresso dela — nunca quem só está de
-   * passagem pela tela de outra pessoa.
+   * Progresso é execução, não edição da trilha: só a própria pessoa, ou o
+   * Tech Lead responsável por ela (não qualquer Lead da empresa), registra o
+   * progresso dela — espelha `canActFor` do backend (`PATCH .../progress`),
+   * não o `isLeadCapable(role)` genérico que liberava o campo pra Lead de
+   * outra equipe. Ver UX-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-
+   * 19.md.
    */
-  const canEditProgress = (architectId: string) =>
-    isLeadCapable(user.role) || user.architectId === architectId;
+  const canEditProgress = (architectId: string) => canActFor(user, sel.architectById(architectId));
 
   return (
     <>

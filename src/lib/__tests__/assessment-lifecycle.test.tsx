@@ -9,7 +9,12 @@ import { setAuthToken, type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "./fixtures";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureState,
+  fixtureUnassignedLeadUser,
+} from "./fixtures";
 
 /**
  * PLANO-360-AGENTES-SYNAPSE.md, Seção 9 e 39 — o campo certo precisa nascer
@@ -42,7 +47,10 @@ function AuthReady({ children }: { children: ReactNode }) {
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
-function mockSession(user: typeof fixtureAdminUser | typeof fixtureMemberUser, state: AppState) {
+function mockSession(
+  user: typeof fixtureAdminUser | typeof fixtureMemberUser | typeof fixtureUnassignedLeadUser,
+  state: AppState,
+) {
   fetchMock.mockImplementation((url: string) => {
     const href = String(url);
     if (href.endsWith("/api/auth/me")) {
@@ -202,6 +210,27 @@ describe("Avaliações — campos por papel e status", () => {
     expect(screen.queryByRole("button", { name: "Enviar para revisão" })).toBeNull();
   });
 
+  /**
+   * UX-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — antes,
+   * `isLeadCapable(role)` liberava líder/final para QUALQUER conta `lead` da
+   * empresa, não só o Tech Lead responsável por esta pessoa (`ana` não tem
+   * `leadUserId` na fixture). O backend já recusava (`isLeadOf`); a tela
+   * precisa nascer coerente com isso, não deixar preencher e devolver 403
+   * tarde.
+   */
+  it("lead sem atribuição a esta pessoa não vê líder/final editáveis", async () => {
+    mockSession(fixtureUnassignedLeadUser, inReviewState);
+    render(
+      <Wrapper>
+        <AssessmentsPage />
+      </Wrapper>,
+    );
+
+    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
+    expect(linha.querySelectorAll("select")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
+  });
+
   it("avaliação concluída: nenhum campo editável para ninguém", async () => {
     // "ana-h2" já é Completed na fixture original — sem sobrescrever o status.
     mockSession(fixtureAdminUser, fixtureState);
@@ -272,5 +301,32 @@ describe("Avaliações — campos por papel e status", () => {
       expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull(),
     );
     expect(await screen.findByRole("button", { name: "Reabrir avaliação" })).toBeTruthy();
+  });
+
+  /**
+   * HIST-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — o link
+   * "Ver" do histórico do perfil passa `cycleId` na URL; a tela precisa abrir
+   * o assessment daquele ciclo específico, não sempre o do ciclo ativo do
+   * time. Na fixture, Ana tem "ana-h1" (2026-h1, final=3 em Kubernetes) e
+   * "ana-h2" (2026-h2, o ciclo ativo, final=4 em Kubernetes) — valores
+   * diferentes, então o teste prova qual dos dois realmente abriu.
+   */
+  it("deep-link com cycleId abre o assessment do ciclo do link, não o ciclo ativo", async () => {
+    window.history.pushState({}, "", "?architectId=ana&cycleId=2026-h1");
+    mockSession(fixtureAdminUser, fixtureState);
+    render(
+      <Wrapper>
+        <AssessmentsPage />
+      </Wrapper>,
+    );
+
+    expect(await screen.findByText(/2026 H1/)).toBeTruthy();
+    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
+    // Colunas: competência, self, líder, alvo, final, gap, notas.
+    const finalCell = linha.querySelectorAll("td")[4];
+    // final=3 é de "ana-h1"; se tivesse caído no ciclo ativo (ana-h2), seria 4.
+    expect(finalCell?.textContent).toContain("3");
+
+    window.history.pushState({}, "", "/");
   });
 });

@@ -33,9 +33,9 @@ import {
   type Evidence,
   type EvidenceType,
 } from "@/lib/domain";
-import { isLeadCapable } from "@/lib/api";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { canActFor, isLeadOf } from "@/lib/scope";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, todayIso } from "@/lib/text";
@@ -73,10 +73,18 @@ function ArchitectProfile() {
   const labels = useLabels();
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  /** Evidência é da pessoa — só ela (ou o Tech Lead dela) registra; backend já recusa o resto. */
-  const isLead = isLeadCapable(user.role);
-  const canEditOwn = isLead || user.architectId === architectId;
   const architect = sel.architectById(architectId);
+  /**
+   * Evidência é da pessoa — só ela (ou o Tech Lead responsável por ela, não
+   * qualquer Lead da empresa) registra; backend já recusa o resto
+   * (`canActFor`). Revisão é uma ação diferente da criação — só o Tech Lead
+   * revisa, nunca a própria pessoa (`isLeadOf`, sem o bypass de dono). Um
+   * `isLeadCapable(role)` genérico misturava as duas coisas e liberava campo
+   * pra Lead de outra equipe. Ver UX-001, AUDITORIA-QUINTA-RODADA-360-
+   * SYNAPSE-2026-08-19.md.
+   */
+  const canEditOwn = canActFor(user, architect);
+  const canReviewEvidence = isLeadOf(user, architect);
 
   if (!architect) {
     return (
@@ -201,7 +209,7 @@ function ArchitectProfile() {
                   </span>
                   <Link
                     to="/assessments"
-                    search={{ architectId: architect.id }}
+                    search={{ architectId: architect.id, cycleId: assessment.cycleId }}
                     className="whitespace-nowrap text-xs text-primary hover:underline"
                   >
                     {t("arch.history.view")}
@@ -298,7 +306,7 @@ function ArchitectProfile() {
                 {e.leaderComment && (
                   <p className="mt-1 text-xs text-muted-foreground">"{e.leaderComment}"</p>
                 )}
-                {isLead && <EvidenceReviewDialog evidence={e} />}
+                {canReviewEvidence && <EvidenceReviewDialog evidence={e} />}
               </li>
             ))}
             {!evidences.length && (

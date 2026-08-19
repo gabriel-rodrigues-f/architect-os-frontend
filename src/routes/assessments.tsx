@@ -9,10 +9,11 @@ import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { Assessment, AssessmentComment, CompetencyCategory, Level } from "@/lib/domain";
-import { isLeadCapable, type CommentInput } from "@/lib/api";
+import type { CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
+import { isLeadOf } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, initialSearchParam } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -22,9 +23,15 @@ import { cn } from "@/lib/utils";
  * continua olhando para a mesma pessoa, em vez de cair no primeiro
  * arquiteto ativo e perder o contexto que trouxe até aqui. Ver AUDITORIA-
  * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
+ *
+ * `cycleId` na URL — sem isto, o link "Ver" do histórico do perfil sempre
+ * caía no ciclo ativo, não no ciclo que o histórico realmente mostrava (o
+ * usuário pedia para ver 2025 H2 e a tela abria 2026 H1). Ver HIST-001,
+ * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
  */
 const assessmentsSearchSchema = z.object({
   architectId: z.string().optional(),
+  cycleId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/assessments")({
@@ -52,6 +59,10 @@ function AssessmentsPage() {
   const [architectId, setArchitectId] = useState(
     () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
   );
+  /** Ciclo pedido pelo link de origem (histórico) — cai no ativo se nenhum vier na URL. */
+  const [cycleId] = useState(() => initialSearchParam("cycleId") ?? store.activeCycleId);
+  const isActiveCycle = cycleId === store.activeCycleId;
+  const viewedCycle = store.cycles.find((c) => c.id === cycleId);
   const { t, locale } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();
@@ -64,17 +75,22 @@ function AssessmentsPage() {
   const [transitioning, setTransitioning] = useState(false);
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
-  const assessment = sel.assessmentFor(architectId);
+  const assessment = sel.assessmentFor(architectId, cycleId);
   const selectedArchitect = sel.architectById(architectId);
 
   /**
-   * Quem pode escrever o quê agora — espelha a regra do backend
-   * (`checkAssessmentWrite` em `assessments.ts`), para o campo já nascer
-   * desabilitado em vez de deixar a pessoa preencher e só depois descobrir,
-   * pelo 403, que não podia. Ver PLANO-360-AGENTES-SYNAPSE.md, Seção 9.
+   * Quem pode escrever o quê agora — espelha `checkAssessmentWrite` do
+   * backend exatamente: dono primeiro (`isOwner`), e `isLead` só considera o
+   * vínculo real (`architect.leadUserId`) — nunca só o papel da conta — e é
+   * mutuamente exclusivo com `isOwner` (a mesma pessoa nunca é "dono e Lead"
+   * ao mesmo tempo, mesmo se a conta também administra ou lidera outras
+   * equipes; evita autorrevisão de líder/final). Sem isto, o campo nascia
+   * editável para um Lead de outra equipe, que só descobria pelo 403 tardio
+   * que não podia. Ver PLANO-360-AGENTES-SYNAPSE.md, Seção 9, e UX-001,
+   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
    */
-  const isLead = isLeadCapable(user.role);
   const isOwner = user.architectId === architectId;
+  const isLead = !isOwner && isLeadOf(user, selectedArchitect);
   const status = assessment?.status;
   const isCompleted = status === "Completed";
   /**
@@ -174,6 +190,12 @@ function AssessmentsPage() {
         }
       />
 
+      {!isActiveCycle && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          {t("asmt.historicalCycle", { cycle: viewedCycle?.name ?? cycleId })}
+        </p>
+      )}
+
       {assessment && (
         <div className="mb-4 flex flex-wrap items-center gap-3 surface-inset px-3 py-2 text-sm">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -244,6 +266,12 @@ function AssessmentsPage() {
             </p>
           ) : selectedArchitect && !selectedArchitect.active ? (
             <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.inactive")}</p>
+          ) : !isActiveCycle ? (
+            // Ciclo histórico sem avaliação registrada: não há "abrir" aqui — só o
+            // ciclo ativo pode nascer uma avaliação nova (HIST-001).
+            <p className="text-sm text-muted-foreground">
+              {t("asmt.noAssessment.historicalCycle", { cycle: viewedCycle?.name ?? cycleId })}
+            </p>
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
