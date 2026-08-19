@@ -112,6 +112,47 @@ describe("Avaliações — campos por papel e status", () => {
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
   });
 
+  /**
+   * DOM-002 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — item ainda
+   * não avaliado nasce `self: null`, nunca um nível fabricado; o botão de
+   * envio para revisão precisa nascer desabilitado até todos os itens
+   * estarem preenchidos, espelhando a completude que o backend já exige.
+   */
+  it("não avaliado mostra '—' e desabilita o envio até todos os itens terem self", async () => {
+    const incompleteDraft: AppState = {
+      ...draftState,
+      assessments: draftState.assessments.map((a) =>
+        a.id === "ana-h2"
+          ? {
+              ...a,
+              items: a.items.map((i) =>
+                i.competencyId === "cloud-serverless" ? { ...i, self: null } : i,
+              ),
+            }
+          : a,
+      ),
+    };
+    mockSession(fixtureMemberUser, incompleteDraft);
+    render(
+      <Wrapper>
+        <AssessmentsPage />
+      </Wrapper>,
+    );
+
+    const linha = (await screen.findByText("Serverless")).closest("tr")!;
+    // O select do item não avaliado não tem valor numérico selecionado.
+    const select = linha.querySelector("select") as HTMLSelectElement;
+    expect(select.value).toBe("");
+
+    const submit = screen.getByRole("button", { name: "Enviar para revisão" });
+    expect((submit as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen.getByText(
+        "Preencha a autoavaliação de todas as competências antes de enviar para revisão.",
+      ),
+    ).toBeTruthy();
+  });
+
   // AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 2 — a autoavaliação
   // congela assim que sai do Rascunho; a pessoa não pode mais ajustá-la
   // enquanto o Tech Lead revisa.

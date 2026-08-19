@@ -92,9 +92,9 @@ function CyclesPage() {
   const compare = store.competencies.slice(0, 12).map((c) => {
     const levels = closedCycles.map((cy) => ({
       cycle: cy.name,
-      level: sel
-        .officialAssessmentFor(architectId, cy.id)
-        ?.items.find((i) => i.competencyId === c.id)?.final,
+      level:
+        sel.officialAssessmentFor(architectId, cy.id)?.items.find((i) => i.competencyId === c.id)
+          ?.final ?? undefined,
     }));
     return { competency: c, levels };
   });

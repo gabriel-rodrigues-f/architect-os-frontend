@@ -152,6 +152,8 @@
   "asmt.reopening": "Reabrindo…",
   "asmt.reopenError": "Não foi possível reabrir",
   "asmt.divergence": "Autoavaliação e Tech Lead divergem",
+  "asmt.incompleteSelf": "Preencha a autoavaliação de todas as competências antes de enviar para revisão.",
+  "asmt.incompleteLeaderFinal": "Preencha a nota do Tech Lead e a nota final de todas as competências antes de concluir.",
   "asmt.selfLockedHint": "Só o próprio arquiteto edita a autoavaliação.",
   "asmt.leaderLockedHint": "Só o Tech Lead edita esta nota.",
   "comment.count.none": "Comentar",

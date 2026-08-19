@@ -102,10 +102,18 @@ export interface AssessmentComment {
 
 export interface AssessmentItem {
   competencyId: string;
-  self: Level;
-  leader: Level;
+  /**
+   * `null` até a pessoa/Tech Lead de fato avaliar — nunca um nível
+   * fabricado (1) representando "ainda não avaliado". Garantidamente
+   * preenchido quando `Assessment.status === "Completed"`: o servidor
+   * exige completude antes de deixar a transição passar. Ver AUDITORIA-
+   * QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, DOM-002.
+   */
+  self: Level | null;
+  leader: Level | null;
+  /** Sempre um nível real — competência sem nível esperado para o cargo não entra no assessment. */
   target: Level;
-  final: Level;
+  final: Level | null;
   comments: AssessmentComment[];
   /**
    * Fotografia do nome/domínio da competência no momento em que o assessment

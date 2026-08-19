@@ -152,6 +152,8 @@
   "asmt.reopening": "Reopening…",
   "asmt.reopenError": "Could not reopen",
   "asmt.divergence": "Self-assessment and Tech Lead disagree",
+  "asmt.incompleteSelf": "Fill in the self-assessment for every competency before sending for review.",
+  "asmt.incompleteLeaderFinal": "Fill in the Tech Lead and final scores for every competency before completing.",
   "asmt.selfLockedHint": "Only the architect themselves can edit the self-assessment.",
   "asmt.leaderLockedHint": "Only the Tech Lead can edit this rating.",
   "comment.count.none": "Comment",

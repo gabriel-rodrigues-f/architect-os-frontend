@@ -26,9 +26,26 @@ export const emptyState: AppState = {
   activeCycleId: "",
 };
 
+/**
+ * Item de assessment com `self`/`leader`/`final` garantidamente preenchidos
+ * — o backend só deixa um assessment virar `Completed` quando todos os
+ * itens têm os três campos preenchidos (ver AUDITORIA-QUINTA-RODADA-360-
+ * SYNAPSE-2026-08-19.md, DOM-002), então filtrar por `officialAssessmentFor`
+ * (só `Completed`) e por item preenchido garante este tipo sem precisar de
+ * `!` espalhado pelas telas que consomem gap.
+ */
+export type EvaluatedAssessmentItem = Assessment["items"][number] & {
+  self: Level;
+  leader: Level;
+  final: Level;
+};
+
+const isEvaluated = (item: Assessment["items"][number]): item is EvaluatedAssessmentItem =>
+  item.final !== null;
+
 export interface Gap {
   competency: Competency | undefined;
-  item: Assessment["items"][number];
+  item: EvaluatedAssessmentItem;
   gap: number;
 }
 
@@ -144,6 +161,7 @@ export function createSelectors(s: AppState) {
     const gaps = !assessment
       ? []
       : assessment.items
+          .filter(isEvaluated)
           .map((item) => ({
             competency: resolveCompetency(item),
             item,
@@ -165,6 +183,7 @@ export function createSelectors(s: AppState) {
     // uma vez para cada domínio.
     const totals = new Map<string, { final: number; target: number; count: number }>();
     for (const item of officialAssessmentFor(architectId, cycleId)?.items ?? []) {
+      if (item.final === null) continue;
       const categoryId = competencyIndex.get(item.competencyId)?.categoryId ?? item.categoryId;
       if (!categoryId) continue;
       const acc = totals.get(categoryId) ?? { final: 0, target: 0, count: 0 };

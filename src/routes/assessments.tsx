@@ -93,6 +93,16 @@ function AssessmentsPage() {
   /** Só o Tech Lead reabre — devolve a `In Review` para corrigir e concluir de novo. */
   const canReopen = isLead && status === "Completed";
 
+  /**
+   * Espelha a completude que o backend já exige na transição (DOM-002): o
+   * botão nasce desabilitado com uma explicação em vez de deixar a pessoa
+   * tentar e só descobrir pelo erro do servidor que faltou preencher algo.
+   * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   */
+  const incompleteSelf = assessment?.items.some((i) => i.self === null) ?? false;
+  const incompleteLeaderFinal =
+    assessment?.items.some((i) => i.leader === null || i.final === null) ?? false;
+
   /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
   const selected = store.categories.filter((c) => categoryIds.includes(c.id));
 
@@ -176,7 +186,12 @@ function AssessmentsPage() {
           {isCompleted && <span className="text-xs text-muted-foreground">{t("asmt.locked")}</span>}
           <div className="ml-auto flex items-center gap-2">
             {canSubmit && (
-              <Button size="sm" disabled={transitioning} onClick={() => transition("In Review")}>
+              <Button
+                size="sm"
+                disabled={transitioning || incompleteSelf}
+                title={incompleteSelf ? t("asmt.incompleteSelf") : undefined}
+                onClick={() => transition("In Review")}
+              >
                 {transitioning ? t("asmt.submitting") : t("asmt.submit")}
               </Button>
             )}
@@ -184,7 +199,8 @@ function AssessmentsPage() {
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={transitioning}
+                disabled={transitioning || incompleteLeaderFinal}
+                title={incompleteLeaderFinal ? t("asmt.incompleteLeaderFinal") : undefined}
                 onClick={() => transition("Completed")}
               >
                 {transitioning ? t("asmt.completing") : t("asmt.complete")}
@@ -201,6 +217,14 @@ function AssessmentsPage() {
               </Button>
             )}
           </div>
+          {canSubmit && incompleteSelf && (
+            <p className="w-full text-xs text-muted-foreground">{t("asmt.incompleteSelf")}</p>
+          )}
+          {canComplete && incompleteLeaderFinal && (
+            <p className="w-full text-xs text-muted-foreground">
+              {t("asmt.incompleteLeaderFinal")}
+            </p>
+          )}
           {transitionError && (
             <p className="w-full text-xs text-destructive" role="alert">
               {transitionError}
@@ -284,8 +308,10 @@ function AssessmentsPage() {
                         {comps.map((c) => {
                           const item = assessment.items.find((i) => i.competencyId === c.id);
                           if (!item) return null;
-                          const gap = item.target - item.final;
-                          const diverges = item.self !== item.leader;
+                          // Sem final ainda: não há gap para mostrar (não é gap zero, é indefinido).
+                          const gap = item.final === null ? undefined : item.target - item.final;
+                          const diverges =
+                            item.self !== null && item.leader !== null && item.self !== item.leader;
                           /**
                            * Fecha o loop da evidência: quando o Tech Lead já aceitou uma
                            * evidência para esta competência desta pessoa, ela aparece aqui
@@ -324,7 +350,7 @@ function AssessmentsPage() {
                                       }
                                     />
                                   ) : (
-                                    <LevelBadge level={item.self} />
+                                    <LevelBadge level={item.self ?? undefined} />
                                   )}
                                 </td>
                                 <td className="px-1 py-2">
@@ -339,7 +365,7 @@ function AssessmentsPage() {
                                         }
                                       />
                                     ) : (
-                                      <LevelBadge level={item.leader} />
+                                      <LevelBadge level={item.leader ?? undefined} />
                                     )}
                                     {diverges && (
                                       <AlertTriangle
@@ -363,7 +389,7 @@ function AssessmentsPage() {
                                       }
                                     />
                                   ) : (
-                                    <LevelBadge level={item.final} />
+                                    <LevelBadge level={item.final ?? undefined} />
                                   )}
                                 </td>
                                 <td className="py-2">
@@ -635,13 +661,22 @@ function AssessmentStatusBadge({ status, label }: { status: Assessment["status"]
   );
 }
 
-function LevelSelect({ value, onChange }: { value: number; onChange: (v: Level) => void }) {
+/**
+ * `value: Level | null` — `null` é "ainda não avaliado", nunca um nível
+ * fabricado. O placeholder "—" fica selecionado até a pessoa escolher de
+ * verdade; não existe valor padrão que o componente empurre sozinho. Ver
+ * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, DOM-002.
+ */
+function LevelSelect({ value, onChange }: { value: Level | null; onChange: (v: Level) => void }) {
   return (
     <select
       className="w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
-      value={value}
+      value={value ?? ""}
       onChange={(e) => onChange(Number(e.target.value) as Level)}
     >
+      <option value="" disabled>
+        —
+      </option>
       {[1, 2, 3, 4, 5].map((l) => (
         <option key={l} value={l}>
           {l}

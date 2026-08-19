@@ -90,8 +90,19 @@ const gapTone: Record<string, string> = {
   critical: "bg-gap-critical text-[var(--gap-critical-fg)]",
 };
 
-export function GapBadge({ gap }: { gap: number }) {
+/** `gap` undefined = sem nível final ainda (não avaliado); mostra "—", nunca um gap fabricado. */
+export function GapBadge({ gap }: { gap: number | undefined }) {
   const { t } = useI18n();
+  if (gap === undefined) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground"
+        title={t("level.cellTooltip.none")}
+      >
+        —
+      </span>
+    );
+  }
   const tone = gap <= 0 ? "ok" : gap === 1 ? "low" : gap === 2 ? "high" : "critical";
   const label =
     gap <= 0
