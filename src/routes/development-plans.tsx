@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Bar, GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { isLeadCapable } from "@/lib/api";
 import { ACTION_TYPES, type ActionType, type PdiStatus, type SmartGoal } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
@@ -43,8 +44,8 @@ function PlansPage() {
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  /** PDI é da pessoa — só ela (ou admin) escreve; backend já recusa o resto. */
-  const canEdit = user.role === "admin" || user.architectId === architectId;
+  /** PDI é da pessoa — só ela (ou o Tech Lead dela) escreve; backend já recusa o resto. */
+  const canEdit = isLeadCapable(user.role) || user.architectId === architectId;
   const architect = sel.architectById(architectId);
   const plan = sel.planFor(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);

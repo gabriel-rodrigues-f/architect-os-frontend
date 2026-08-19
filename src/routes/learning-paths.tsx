@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { isLeadCapable } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { formatDate } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
@@ -90,12 +91,12 @@ function LearningPage() {
     !path.createdBy || path.createdBy.toLowerCase() === user.email.toLowerCase();
 
   /**
-   * Progresso é execução, não edição da trilha: só a própria pessoa (ou um
-   * administrador) registra o progresso dela — nunca quem só está de
+   * Progresso é execução, não edição da trilha: só a própria pessoa (ou o
+   * Tech Lead dela) registra o progresso dela — nunca quem só está de
    * passagem pela tela de outra pessoa.
    */
   const canEditProgress = (architectId: string) =>
-    user.role === "admin" || user.architectId === architectId;
+    isLeadCapable(user.role) || user.architectId === architectId;
 
   return (
     <>

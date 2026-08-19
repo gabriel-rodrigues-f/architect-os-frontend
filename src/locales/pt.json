@@ -406,5 +406,21 @@
   "matrix.archived.title": "Arquivadas",
   "matrix.archived.hint": "Fora da matriz ativa — não entram em avaliação nova. O histórico com elas continua íntegro.",
   "matrix.archived.domain": "domínio",
-  "matrix.restore": "Restaurar"
+  "matrix.restore": "Restaurar",
+  "nav.users": "Usuários",
+  "users.title": "Usuários",
+  "users.subtitle": "Contas de acesso: quem administra o sistema, quem revisa como Tech Lead, e a quem cada conta pertence.",
+  "users.list.title": "Contas cadastradas",
+  "users.list.subtitle": "Papel e vínculo com o time. Só um administrador altera.",
+  "users.col.name": "Nome",
+  "users.col.email": "E-mail",
+  "users.col.role": "Papel",
+  "users.col.architect": "Vínculo com o time",
+  "users.role.admin": "Administrador",
+  "users.role.lead": "Tech Lead",
+  "users.role.member": "Membro",
+  "users.architect.none": "Nenhum",
+  "users.loading": "Carregando contas…",
+  "users.error.load": "Não foi possível carregar as contas.",
+  "users.toast.updated": "Conta de {nome} atualizada"
 }

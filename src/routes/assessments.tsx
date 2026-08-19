@@ -8,7 +8,7 @@ import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { Assessment, AssessmentComment, CompetencyCategory, Level } from "@/lib/domain";
-import type { CommentInput } from "@/lib/api";
+import { isLeadCapable, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
@@ -58,7 +58,7 @@ function AssessmentsPage() {
    * desabilitado em vez de deixar a pessoa preencher e só depois descobrir,
    * pelo 403, que não podia. Ver PLANO-360-AGENTES-SYNAPSE.md, Seção 9.
    */
-  const isAdmin = user.role === "admin";
+  const isLead = isLeadCapable(user.role);
   const isOwner = user.architectId === architectId;
   const status = assessment?.status;
   const isCompleted = status === "Completed";
@@ -71,12 +71,12 @@ function AssessmentsPage() {
    * autoavaliação existir). Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
    * Seção 2–4.
    */
-  const canEditSelf = !isAdmin && isOwner && status === "Draft";
-  const canEditLeaderFinal = isAdmin && status === "In Review";
-  const canSubmit = !isAdmin && isOwner && status === "Draft";
-  const canComplete = isAdmin && status === "In Review";
+  const canEditSelf = !isLead && isOwner && status === "Draft";
+  const canEditLeaderFinal = isLead && status === "In Review";
+  const canSubmit = !isLead && isOwner && status === "Draft";
+  const canComplete = isLead && status === "In Review";
   /** Só o Tech Lead reabre — devolve a `In Review` para corrigir e concluir de novo. */
-  const canReopen = isAdmin && status === "Completed";
+  const canReopen = isLead && status === "Completed";
 
   /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
   const selected = store.categories.filter((c) => categoryIds.includes(c.id));

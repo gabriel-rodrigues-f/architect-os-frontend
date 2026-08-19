@@ -28,14 +28,26 @@ export interface AppState {
   activeCycleId: string;
 }
 
+/**
+ * `admin` administra o sistema (catálogo, ciclos, roster, contas). `lead`
+ * exerce o papel de Tech Lead — revisa avaliação, evidência, PDI e trilha de
+ * quem não é ele mesmo — sem as rotas de administração. `admin` também é
+ * lead-capable (ver `isLeadCapable`): a distinção existe para permitir uma
+ * conta que só revisa, não para impedir quem administra de revisar também.
+ */
+export type UserRole = "admin" | "lead" | "member";
+
 export interface SessionUser {
   id: string;
   email: string;
   name: string;
-  role: "admin" | "member";
+  role: UserRole;
   architectId: string | null;
   createdAt: string;
 }
+
+/** Quem pode agir como Tech Lead: revisar avaliação/evidência, escrever no PDI de outra pessoa. */
+export const isLeadCapable = (role: UserRole): boolean => role === "admin" || role === "lead";
 
 export const API_URL = (import.meta.env["VITE_API_URL"] ?? "http://localhost:4000").replace(
   /\/$/,
@@ -133,6 +145,10 @@ export const authApi = {
   register: (input: { name: string; email: string; password: string }) =>
     post<AuthResult>("/api/auth/register", input),
   me: () => request<SessionUser>("/api/auth/me"),
+  users: () => request<SessionUser[]>("/api/auth/users"),
+  /** Papel e vínculo com arquiteto de outra conta — admin-only no backend. */
+  updateUser: (id: string, patch_: Partial<{ role: UserRole; architectId: string | null }>) =>
+    patch<SessionUser>(`/api/auth/users/${id}`, patch_),
 };
 
 export const api = {

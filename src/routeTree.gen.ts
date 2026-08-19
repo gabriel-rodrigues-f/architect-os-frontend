@@ -21,6 +21,7 @@ import { Route as MentoringRouteImport } from './routes/mentoring'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as ArchitectsArchitectIdRouteImport } from './routes/architects.$architectId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const TrainingNeedsRoute = TrainingNeedsRouteImport.update({
   path: '/training-needs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ArchitectsArchitectIdRoute = ArchitectsArchitectIdRouteImport.update({
   id: '/architects/$architectId',
   path: '/architects/$architectId',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
+  '/users': typeof UsersRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRoute
 }
 export interface FileRoutesByTo {
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
+  '/users': typeof UsersRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRoute
 }
 export interface FileRoutesById {
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
+  '/users': typeof UsersRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRoute
 }
 export interface FileRouteTypes {
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/training-needs'
+    | '/users'
     | '/architects/$architectId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/training-needs'
+    | '/users'
     | '/architects/$architectId'
   id:
     | '__root__'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/training-needs'
+    | '/users'
     | '/architects/$architectId'
   fileRoutesById: FileRoutesById
 }
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   TeamRoute: typeof TeamRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
+  UsersRoute: typeof UsersRoute
   ArchitectsArchitectIdRoute: typeof ArchitectsArchitectIdRoute
 }
 
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrainingNeedsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/architects/$architectId': {
       id: '/architects/$architectId'
       path: '/architects/$architectId'
@@ -308,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   TeamRoute: TeamRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
+  UsersRoute: UsersRoute,
   ArchitectsArchitectIdRoute: ArchitectsArchitectIdRoute,
 }
 export const routeTree = rootRouteImport

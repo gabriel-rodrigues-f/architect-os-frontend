@@ -32,6 +32,7 @@ import {
   type Evidence,
   type EvidenceType,
 } from "@/lib/domain";
+import { isLeadCapable } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
@@ -71,9 +72,9 @@ function ArchitectProfile() {
   const labels = useLabels();
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  /** Evidência é da pessoa — só ela (ou admin) registra; backend já recusa o resto. */
-  const isAdmin = user.role === "admin";
-  const canEditOwn = isAdmin || user.architectId === architectId;
+  /** Evidência é da pessoa — só ela (ou o Tech Lead dela) registra; backend já recusa o resto. */
+  const isLead = isLeadCapable(user.role);
+  const canEditOwn = isLead || user.architectId === architectId;
   const architect = sel.architectById(architectId);
 
   if (!architect) {
@@ -232,7 +233,7 @@ function ArchitectProfile() {
                 {e.leaderComment && (
                   <p className="mt-1 text-xs text-muted-foreground">"{e.leaderComment}"</p>
                 )}
-                {isAdmin && <EvidenceReviewDialog evidence={e} />}
+                {isLead && <EvidenceReviewDialog evidence={e} />}
               </li>
             ))}
             {!evidences.length && (

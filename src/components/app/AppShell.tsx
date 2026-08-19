@@ -17,6 +17,7 @@ import {
   Sun,
   Target,
   TrendingDown,
+  UserCog,
   Users,
 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -41,6 +42,7 @@ const NAV: { to: string; labelKey: MessageKey; icon: typeof LayoutDashboard }[] 
   { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
   { to: "/training-needs", labelKey: "nav.trainingNeeds", icon: BarChart3 },
   { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
+  { to: "/users", labelKey: "nav.users", icon: UserCog },
 ];
 
 const SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";

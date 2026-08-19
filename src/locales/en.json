@@ -406,5 +406,21 @@
   "matrix.archived.title": "Archived",
   "matrix.archived.hint": "Out of the active matrix — won't enter a new assessment. History with them stays intact.",
   "matrix.archived.domain": "domain",
-  "matrix.restore": "Restore"
+  "matrix.restore": "Restore",
+  "nav.users": "Users",
+  "users.title": "Users",
+  "users.subtitle": "Access accounts: who administers the system, who reviews as Tech Lead, and who each account belongs to.",
+  "users.list.title": "Registered accounts",
+  "users.list.subtitle": "Role and link to the team. Only an administrator changes this.",
+  "users.col.name": "Name",
+  "users.col.email": "Email",
+  "users.col.role": "Role",
+  "users.col.architect": "Linked to",
+  "users.role.admin": "Administrator",
+  "users.role.lead": "Tech Lead",
+  "users.role.member": "Member",
+  "users.architect.none": "None",
+  "users.loading": "Loading accounts…",
+  "users.error.load": "Could not load accounts.",
+  "users.toast.updated": "{nome}'s account updated"
 }
