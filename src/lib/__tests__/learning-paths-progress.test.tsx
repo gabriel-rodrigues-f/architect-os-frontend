@@ -141,4 +141,33 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
     await screen.findByText("Curso X");
     expect(screen.getAllByRole("slider")).toHaveLength(2);
   });
+
+  /**
+   * EPIC 4 (quarta rodada) — catálogo é curadoria de Lead/Admin, não
+   * autoatendimento: um membro comum não vê o campo de criar trilha nova.
+   * Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md.
+   */
+  it("membro comum não vê o campo de criar trilha nova", async () => {
+    mockSession(fixtureMemberUser);
+    render(
+      <Wrapper>
+        <LearningPage />
+      </Wrapper>,
+    );
+
+    await screen.findByText("Curso X");
+    expect(screen.queryByPlaceholderText("Nova trilha")).toBeNull();
+  });
+
+  it("admin vê o campo de criar trilha nova", async () => {
+    mockSession(fixtureAdminUser);
+    render(
+      <Wrapper>
+        <LearningPage />
+      </Wrapper>,
+    );
+
+    await screen.findByText("Curso X");
+    expect(screen.getByPlaceholderText("Nova trilha")).toBeTruthy();
+  });
 });

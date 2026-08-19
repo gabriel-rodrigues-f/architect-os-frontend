@@ -216,8 +216,10 @@ export interface LearningPath {
   items: LearningPathItem[];
   /** Uma entrada por (architectId, itemId) já tocado — nunca um valor global. */
   progress: LearningItemProgress[];
-  /** E-mail de quem criou a trilha; nulo nas trilhas anteriores à autenticação. */
+  /** E-mail de quem criou — só apresentação; a autoria de verdade é `createdByUserId`. */
   createdBy?: string | null | undefined;
+  /** Conta de quem criou — servidor deriva da sessão. `null` só em trilha anterior a esta migração. */
+  createdByUserId?: string | null | undefined;
   /** ISO 8601 com data e hora de criação. */
   createdAt?: string | undefined;
 }
