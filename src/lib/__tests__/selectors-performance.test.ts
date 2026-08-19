@@ -46,6 +46,7 @@ function buildLargeState(): AppState {
     gapDomain: categories[1]!.id,
     performance: "Medium",
     potential: "Medium",
+    active: true,
   }));
 
   const assessments: Assessment[] = architects.map((a) => ({

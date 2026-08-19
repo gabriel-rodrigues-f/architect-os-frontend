@@ -47,10 +47,14 @@ function Dashboard() {
   const sel = useSelectors();
   const { t } = useI18n();
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
+  /**
+   * Quem desativou (saiu do time) não conta nos agregados do Painel — ver
+   * histórico dela continua em /architects/:id, só não representa mais o
+   * time atual. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18.
+   */
+  const architects = store.architects.filter((a) => a.active);
 
-  const allGaps = store.architects.flatMap((a) =>
-    sel.gapsFor(a.id).map((g) => ({ ...g, architect: a })),
-  );
+  const allGaps = architects.flatMap((a) => sel.gapsFor(a.id).map((g) => ({ ...g, architect: a })));
   const criticalGaps = allGaps.filter((g) => g.gap >= 3).length;
   const planItems = store.plans
     .filter((p) => p.cycleId === store.activeCycleId)
@@ -69,7 +73,7 @@ function Dashboard() {
    * verdade só cobrem quem já tem assessment `Completed`. Ver AUDITORIA-
    * RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 42.
    */
-  const assessmentCoverage = store.architects.reduce(
+  const assessmentCoverage = architects.reduce(
     (acc, a) => {
       const status = sel.assessmentFor(a.id)?.status;
       if (status === "Completed") acc.completed += 1;
@@ -91,7 +95,7 @@ function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={t("dash.stat.architects")}
-          value={store.architects.length}
+          value={architects.length}
           icon={<Users className="h-4 w-4" />}
         />
         <StatCard
@@ -137,7 +141,7 @@ function Dashboard() {
           <p className="mb-3 text-xs text-muted-foreground">
             {t("dash.coverage", {
               completed: assessmentCoverage.completed,
-              total: store.architects.length,
+              total: architects.length,
               inReview: assessmentCoverage.inReview,
               draft: assessmentCoverage.draft,
               notStarted: assessmentCoverage.notStarted,
@@ -162,7 +166,7 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {store.architects.map((a) => (
+                {architects.map((a) => (
                   <tr key={a.id}>
                     <td className="py-1">
                       <Link
@@ -216,7 +220,7 @@ function Dashboard() {
 
           <SectionCard title={t("dash.progress.title")} description={t("dash.progress.subtitle")}>
             <ul className="space-y-3">
-              {store.architects.map((a) => {
+              {architects.map((a) => {
                 const score = sel.developmentScore(a.id);
                 return (
                   <li key={a.id}>

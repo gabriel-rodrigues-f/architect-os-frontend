@@ -203,6 +203,17 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     /** Excluir o domínio remove junto as competências que pertenciam a ele. */
+    /**
+     * Excluir o domínio nunca mexe em `assessments`: o backend não altera
+     * avaliação histórica quando o catálogo muda (não há FK entre a linha
+     * JSONB do item e a competência — a competência pode deixar de existir
+     * sem que o registro do que foi perguntado na época mude). Antes, a
+     * atualização otimista aqui apagava o item também da tela, na frente do
+     * servidor — via de regra corrigido no próximo refetch, mas mostrando
+     * por alguns instantes uma avaliação passada com menos itens do que ela
+     * realmente tem salvo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
+     * Seção 19.
+     */
     removeCategory: (id) => {
       local((s) => {
         const doomed = new Set(s.competencies.filter((c) => c.categoryId === id).map((c) => c.id));
@@ -210,10 +221,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
           ...s,
           categories: s.categories.filter((c) => c.id !== id),
           competencies: s.competencies.filter((c) => c.categoryId !== id),
-          assessments: s.assessments.map((a) => ({
-            ...a,
-            items: a.items.filter((i) => !doomed.has(i.competencyId)),
-          })),
           learningPaths: s.learningPaths.map((p) => ({
             ...p,
             competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),

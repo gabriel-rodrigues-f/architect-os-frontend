@@ -75,6 +75,7 @@ export const fixtureState: AppState = {
       gapDomain: "security",
       performance: "High",
       potential: "High",
+      active: true,
     },
     {
       id: "bruno",
@@ -87,6 +88,7 @@ export const fixtureState: AppState = {
       gapDomain: "security",
       performance: "Medium",
       potential: "High",
+      active: true,
     },
   ],
   assessments: [
