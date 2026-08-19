@@ -192,6 +192,55 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
    * (tipo de ação) vira texto, campo de execução (status) continua editável,
    * e não há botão de remover. `pdi-ana`, na fixture, já está `Approved`.
    */
+  /**
+   * FASE 1 (quinta rodada) — "conclusão de PDI com regras de negócio":
+   * concluir sem nenhum item ter saído de "Not Started" deixaria o PDI
+   * parecer um resultado que não existe. O botão nasce desabilitado nesse
+   * caso, espelhando a régua que o backend já aplica. Ver AUDITORIA-
+   * QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   */
+  it("plano Approved com item ainda Not Started desabilita Concluir PDI", async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const href = String(url);
+      if (href.endsWith("/api/auth/me")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      if (href.endsWith("/api/state")) {
+        const state: AppState = {
+          ...fixtureState,
+          plans: fixtureState.plans.map((p) =>
+            p.id === "pdi-ana"
+              ? { ...p, items: p.items.map((i) => ({ ...i, status: "Not Started" })) }
+              : p,
+          ),
+        };
+        return Promise.resolve(
+          new Response(JSON.stringify(state satisfies AppState), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    window.history.pushState({}, "", "?architectId=ana");
+    render(
+      <Wrapper>
+        <PlansPage />
+      </Wrapper>,
+    );
+    await screen.findByText("Evoluir IAM");
+
+    const complete = screen.getByRole("button", { name: "Concluir PDI" });
+    expect((complete as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it("plano Approved: tipo de ação vira texto, status continua editável, sem botão de remover", async () => {
     window.history.pushState({}, "", "?architectId=ana");
     render(

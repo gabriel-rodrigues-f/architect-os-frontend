@@ -103,6 +103,22 @@ function PlansPage() {
   const canCompletePlan = plan && planStatus === "Approved" && canEdit;
 
   /**
+   * Espelha a régua de conclusão do backend (FASE 1 — "conclusão de PDI com
+   * regras de negócio"): sem item nenhum, ou com algum item ainda "Não
+   * iniciado", concluir deixaria o PDI parecer um resultado que não existe.
+   * O botão nasce desabilitado nesses casos, em vez de deixar clicar e só
+   * depois descobrir pelo 409. Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-
+   * 2026-08-19.md.
+   */
+  const incompletePlanReason = !plan
+    ? undefined
+    : plan.items.length === 0
+      ? t("pdi.plan.incomplete.noItems")
+      : plan.items.some((i) => i.status === "Not Started")
+        ? t("pdi.plan.incomplete.notStarted")
+        : undefined;
+
+  /**
    * Espelha o backend (DOM-001): depois de `Approved`, item não muda mais de
    * escopo — nem cria item novo, nem edita competência/nível/objetivo/tipo/
    * prazo/prioridade, nem remove. Só os campos de execução (status, plano de
@@ -192,7 +208,8 @@ function PlansPage() {
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={planTransitioning}
+                disabled={planTransitioning || !!incompletePlanReason}
+                title={incompletePlanReason}
                 onClick={() => transitionPlan("Completed")}
               >
                 {planTransitioning ? t("pdi.plan.completing") : t("pdi.plan.complete")}
@@ -209,6 +226,9 @@ function PlansPage() {
               </Button>
             )}
           </div>
+          {canCompletePlan && incompletePlanReason && (
+            <p className="w-full text-xs text-muted-foreground">{incompletePlanReason}</p>
+          )}
           {planTransitionError && (
             <p className="w-full text-xs text-destructive">{planTransitionError}</p>
           )}

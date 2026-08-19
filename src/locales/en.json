@@ -268,6 +268,8 @@
   "pdi.plan.approvedHint": "PDI agreed — only status, action plan and SMART goal remain editable. New items and removal require reopening.",
   "pdi.plan.approvedAt": "Approved on {data}",
   "pdi.plan.completedAt": "Completed on {data}",
+  "pdi.plan.incomplete.noItems": "This PDI has no items — there is nothing to complete.",
+  "pdi.plan.incomplete.notStarted": "There are still item(s) not started — complete or block each action before completing the PDI.",
   "pdi.plan.transitionError": "Could not update the PDI status.",
   "pdi.newItem.title": "New action — {competencia}",
   "pdi.newItem.cancel": "Cancel",
