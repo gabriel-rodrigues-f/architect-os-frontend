@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -172,5 +173,63 @@ describe("Avaliações — campos por papel e status", () => {
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     expect(linha.querySelectorAll("select")).toHaveLength(0);
     expect(await screen.findByText(/somente leitura/)).toBeTruthy();
+  });
+
+  // Correção pedida pelo usuário — depois de concluída, o Tech Lead precisa
+  // conseguir reabrir a avaliação (Completed → In Review) e concluí-la de
+  // novo, em vez de ficar travada para sempre.
+  it("admin reabre avaliação concluída e volta a concluir depois", async () => {
+    const completedAssessment = fixtureState.assessments.find((a) => a.id === "ana-h2")!;
+
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const href = String(url);
+      if (href.endsWith("/api/auth/me")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      if (init?.method === "PATCH" && href.endsWith("/api/assessments/ana-h2/status")) {
+        const body = JSON.parse(String(init.body)) as { status: string };
+        return Promise.resolve(
+          new Response(JSON.stringify({ ...completedAssessment, status: body.status }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      if (href.endsWith("/api/state")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureState satisfies AppState), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    render(
+      <Wrapper>
+        <AssessmentsPage />
+      </Wrapper>,
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "Reabrir avaliação" }));
+
+    expect(await screen.findByRole("button", { name: "Concluir avaliação" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Reabrir avaliação" })).toBeNull();
+
+    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
+    // Reaberta (In Review), líder e final voltam a ser <select> editável.
+    expect(linha.querySelectorAll("select")).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole("button", { name: "Concluir avaliação" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull(),
+    );
+    expect(await screen.findByRole("button", { name: "Reabrir avaliação" })).toBeTruthy();
   });
 });

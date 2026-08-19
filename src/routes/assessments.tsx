@@ -75,6 +75,8 @@ function AssessmentsPage() {
   const canEditLeaderFinal = isAdmin && status === "In Review";
   const canSubmit = !isAdmin && isOwner && status === "Draft";
   const canComplete = isAdmin && status === "In Review";
+  /** Só o Tech Lead reabre — devolve a `In Review` para corrigir e concluir de novo. */
+  const canReopen = isAdmin && status === "Completed";
 
   /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
   const selected = store.categories.filter((c) => categoryIds.includes(c.id));
@@ -82,17 +84,24 @@ function AssessmentsPage() {
   const toggleCategory = (id: string) =>
     setCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
-  const transition = (status: Assessment["status"]) => {
+  const transition = (nextStatus: Assessment["status"]) => {
     if (!assessment) return;
     setTransitionError(null);
     setTransitioning(true);
+    const isReopen = status === "Completed" && nextStatus === "In Review";
     store
-      .setAssessmentStatus(assessment.id, status)
+      .setAssessmentStatus(assessment.id, nextStatus)
       .catch((error: unknown) =>
         setTransitionError(
           error instanceof Error
             ? error.message
-            : t(status === "Completed" ? "asmt.completeError" : "asmt.submitError"),
+            : t(
+                isReopen
+                  ? "asmt.reopenError"
+                  : nextStatus === "Completed"
+                    ? "asmt.completeError"
+                    : "asmt.submitError",
+              ),
         ),
       )
       .finally(() => setTransitioning(false));
@@ -151,6 +160,16 @@ function AssessmentsPage() {
                 onClick={() => transition("Completed")}
               >
                 {transitioning ? t("asmt.completing") : t("asmt.complete")}
+              </Button>
+            )}
+            {canReopen && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={transitioning}
+                onClick={() => transition("In Review")}
+              >
+                {transitioning ? t("asmt.reopening") : t("asmt.reopen")}
               </Button>
             )}
           </div>
