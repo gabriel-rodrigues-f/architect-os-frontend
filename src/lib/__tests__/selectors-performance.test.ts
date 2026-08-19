@@ -20,6 +20,7 @@ function buildLargeState(): AppState {
     id: `dominio-${i}`,
     name: `Domínio ${i}`,
     short: `D${i}`,
+    active: true,
   }));
 
   const competencies: Competency[] = categories.flatMap((cat, ci) =>
@@ -32,6 +33,7 @@ function buildLargeState(): AppState {
         "Arquiteto de Soluções II": 4 as Level,
         "Arquiteto de Soluções III": 5 as Level,
       },
+      active: true,
     })),
   );
 

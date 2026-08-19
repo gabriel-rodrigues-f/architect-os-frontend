@@ -397,5 +397,14 @@
   "ev.review.comment": "Tech Lead comment",
   "ev.review.save": "Save review",
   "ev.review.toast": "Evidence \"{titulo}\" marked as {status}.",
-  "error.notFound.title": "Page not found"
+  "error.notFound.title": "Page not found",
+  "cap.archive.toast": "Capability {nome} archived — had linked history",
+  "cap.archived.title": "Archived capabilities",
+  "cap.archived.hint": "Out of the active map — already had linked history when removed. Restorable anytime.",
+  "cap.restore": "Restore",
+  "matrix.archive.toast": "{nome} archived — had linked history",
+  "matrix.archived.title": "Archived",
+  "matrix.archived.hint": "Out of the active matrix — won't enter a new assessment. History with them stays intact.",
+  "matrix.archived.domain": "domain",
+  "matrix.restore": "Restore"
 }

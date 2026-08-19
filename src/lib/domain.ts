@@ -52,6 +52,8 @@ export interface CompetencyCategory {
   id: string;
   name: string;
   short: string;
+  /** Fora do catálogo ativo, mas os assessments que já usaram este domínio permanecem legíveis. */
+  active: boolean;
 }
 
 export interface Competency {
@@ -60,6 +62,8 @@ export interface Competency {
   categoryId: string;
   /** Role Competency Profile: expected level per role */
   expected: Record<RoleName, Level>;
+  /** Fora do catálogo ativo — não entra em novo assessment nem em opção nova de PDI/trilha/evidência. */
+  active: boolean;
 }
 
 export interface Architect {
@@ -96,6 +100,14 @@ export interface AssessmentItem {
   target: Level;
   final: Level;
   comments: AssessmentComment[];
+  /**
+   * Fotografia do nome/domínio da competência no momento em que o assessment
+   * foi aberto — ausente em assessments criados antes desta migração, quando
+   * quem renderiza cai de volta no catálogo atual.
+   */
+  competencyName?: string | undefined;
+  categoryId?: string | undefined;
+  categoryName?: string | undefined;
 }
 
 export interface Assessment {

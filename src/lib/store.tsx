@@ -35,10 +35,12 @@ interface Api extends AppState {
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id">>) => void;
   addCompetency: (c: Competency) => void;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
-  removeCompetency: (id: string) => void;
+  /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
+  removeCompetency: (id: string) => Promise<{ archived: boolean }>;
   addCategory: (c: CompetencyCategory) => void;
   updateCategory: (id: string, patch: Partial<Omit<CompetencyCategory, "id">>) => void;
-  removeCategory: (id: string) => void;
+  /** Apaga se nenhuma competência do domínio já foi usada; senão arquiva o domínio e as competências dele. */
+  removeCategory: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
   addCycle: (c: DevelopmentCycle) => void;
   updateCycle: (id: string, patch: Partial<Omit<DevelopmentCycle, "id">>) => void;
   removeCycle: (id: string) => void;
@@ -152,9 +154,29 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.updateCompetency(id, patch));
     },
 
-    removeCompetency: (id) => {
-      local((s) => ({ ...s, competencies: s.competencies.filter((c) => c.id !== id) }));
-      remote(api.deleteCompetency(id));
+    /**
+     * Sem otimismo aqui: o resultado só é conhecido depois que o servidor
+     * responde (apagou ou arquivou), então a UI não pode decidir de antemão o
+     * que remover da tela. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
+     * SYNAPSE.md, EPIC C.
+     */
+    removeCompetency: async (id) => {
+      try {
+        const result = await api.deleteCompetency(id);
+        const archived = result?.archived === true;
+        local((s) => ({
+          ...s,
+          competencies: archived
+            ? s.competencies.map((c) => (c.id === id ? { ...c, active: false } : c))
+            : s.competencies.filter((c) => c.id !== id),
+        }));
+        return { archived };
+      } catch (error) {
+        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
+        else console.error(error);
+        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+        throw error;
+      }
     },
 
     addCategory: (c) => {
@@ -182,20 +204,39 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * realmente tem salvo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
      * Seção 19.
      */
-    removeCategory: (id) => {
-      local((s) => {
-        const doomed = new Set(s.competencies.filter((c) => c.categoryId === id).map((c) => c.id));
-        return {
-          ...s,
-          categories: s.categories.filter((c) => c.id !== id),
-          competencies: s.competencies.filter((c) => c.categoryId !== id),
-          learningPaths: s.learningPaths.map((p) => ({
-            ...p,
-            competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),
-          })),
-        };
-      });
-      remote(api.deleteCategory(id));
+    removeCategory: async (id) => {
+      try {
+        const result = await api.deleteCategory(id);
+        local((s) => {
+          if (result.archived) {
+            return {
+              ...s,
+              categories: s.categories.map((c) => (c.id === id ? { ...c, active: false } : c)),
+              competencies: s.competencies.map((c) =>
+                c.categoryId === id ? { ...c, active: false } : c,
+              ),
+            };
+          }
+          const doomed = new Set(
+            s.competencies.filter((c) => c.categoryId === id).map((c) => c.id),
+          );
+          return {
+            ...s,
+            categories: s.categories.filter((c) => c.id !== id),
+            competencies: s.competencies.filter((c) => c.categoryId !== id),
+            learningPaths: s.learningPaths.map((p) => ({
+              ...p,
+              competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),
+            })),
+          };
+        });
+        return result;
+      } catch (error) {
+        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
+        else console.error(error);
+        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+        throw error;
+      }
     },
 
     updateAssessmentItem: (assessmentId, competencyId, patch) => {

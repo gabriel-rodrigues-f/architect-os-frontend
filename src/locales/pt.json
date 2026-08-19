@@ -397,5 +397,14 @@
   "ev.review.comment": "Comentário do Tech Lead",
   "ev.review.save": "Salvar revisão",
   "ev.review.toast": "Evidência \"{titulo}\" marcada como {status}.",
-  "error.notFound.title": "Página não encontrada"
+  "error.notFound.title": "Página não encontrada",
+  "cap.archive.toast": "Capacidade {nome} arquivada — tinha histórico vinculado",
+  "cap.archived.title": "Capacidades arquivadas",
+  "cap.archived.hint": "Fora do mapa ativo — já tinham histórico vinculado quando foram removidas. Restauráveis a qualquer momento.",
+  "cap.restore": "Restaurar",
+  "matrix.archive.toast": "{nome} arquivada — tinha histórico vinculado",
+  "matrix.archived.title": "Arquivadas",
+  "matrix.archived.hint": "Fora da matriz ativa — não entram em avaliação nova. O histórico com elas continua íntegro.",
+  "matrix.archived.domain": "domínio",
+  "matrix.restore": "Restaurar"
 }

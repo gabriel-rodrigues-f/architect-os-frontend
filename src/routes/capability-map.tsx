@@ -82,22 +82,24 @@ function CapabilityMapPage() {
    * verdade, os dois casos ficando indistinguíveis na tela. Ver
    * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 7.
    */
-  const areas = store.categories.map((cat) => {
-    const people = store.architects.map((a) => ({
-      architect: a,
-      level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg,
-    }));
-    const assessed = people.filter(
-      (p): p is { architect: (typeof people)[number]["architect"]; level: number } =>
-        p.level !== undefined,
-    );
-    const notAssessed = people.length - assessed.length;
-    const bands = BANDS.map((band) => ({
-      ...band,
-      people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
-    }));
-    return { cat, bands, notAssessed };
-  });
+  const areas = store.categories
+    .filter((cat) => cat.active)
+    .map((cat) => {
+      const people = store.architects.map((a) => ({
+        architect: a,
+        level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg,
+      }));
+      const assessed = people.filter(
+        (p): p is { architect: (typeof people)[number]["architect"]; level: number } =>
+          p.level !== undefined,
+      );
+      const notAssessed = people.length - assessed.length;
+      const bands = BANDS.map((band) => ({
+        ...band,
+        people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
+      }));
+      return { cat, bands, notAssessed };
+    });
 
   const create = () => {
     const trimmed = name.trim();
@@ -107,6 +109,7 @@ function CapabilityMapPage() {
       name: trimmed,
       // A sigla das colunas dos mapas de calor sai da primeira palavra do nome.
       short: trimmed.split(" ")[0] ?? trimmed,
+      active: true,
     });
     setName("");
     setOpen(false);
@@ -126,10 +129,14 @@ function CapabilityMapPage() {
     setEditing(null);
   };
 
-  const remove = () => {
+  const remove = async () => {
     if (!confirmDelete) return;
-    store.removeCategory(confirmDelete.id);
-    toast.success(t("cap.delete.toast", { nome: confirmDelete.name }));
+    const { archived } = await store.removeCategory(confirmDelete.id);
+    toast.success(
+      archived
+        ? t("cap.archive.toast", { nome: confirmDelete.name })
+        : t("cap.delete.toast", { nome: confirmDelete.name }),
+    );
     setConfirmDelete(null);
   };
 
@@ -253,7 +260,7 @@ function CapabilityMapPage() {
         title={`Excluir ${confirmDelete?.name}?`}
         description={
           confirmDelete && competencyCount(confirmDelete.id) > 0
-            ? `As ${competencyCount(confirmDelete.id)} competências desta capacidade também serão excluídas, junto com as avaliações e as referências em trilhas.`
+            ? `Se alguma das ${competencyCount(confirmDelete.id)} competências desta capacidade já foi usada em avaliação, PDI, evidência ou trilha, a capacidade e as competências dela são arquivadas em vez de excluídas — o histórico continua íntegro.`
             : "Esta capacidade não tem competências cadastradas."
         }
         onCancel={() => setConfirmDelete(null)}
@@ -301,7 +308,44 @@ function CapabilityMapPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {isAdmin && <ArchivedCategories categories={store.categories} />}
     </>
+  );
+}
+
+/**
+ * Capacidades arquivadas: fora do mapa ativo (já tinham histórico quando
+ * alguém tentou excluí-las), restauráveis a qualquer momento. Ver
+ * `deleteCategory` no backend.
+ */
+function ArchivedCategories({ categories }: { categories: CompetencyCategory[] }) {
+  const store = useStore();
+  const { t } = useI18n();
+  const archived = categories.filter((c) => !c.active);
+  if (!archived.length) return null;
+
+  return (
+    <SectionCard
+      className="mt-6"
+      title={t("cap.archived.title")}
+      description={t("cap.archived.hint")}
+    >
+      <ul className="space-y-2 text-sm">
+        {archived.map((cat) => (
+          <li key={cat.id} className="flex items-center justify-between gap-2">
+            <span>{cat.name}</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => store.updateCategory(cat.id, { active: true })}
+            >
+              {t("cap.restore")}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </SectionCard>
   );
 }
 

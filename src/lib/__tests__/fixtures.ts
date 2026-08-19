@@ -28,8 +28,8 @@ export const fixtureMemberUser: SessionUser = {
 /** Estado mínimo, porém coerente, para exercitar os selectors. */
 export const fixtureState: AppState = {
   categories: [
-    { id: "cloud", name: "Cloud Architecture", short: "Cloud" },
-    { id: "security", name: "Security", short: "Security" },
+    { id: "cloud", name: "Cloud Architecture", short: "Cloud", active: true },
+    { id: "security", name: "Security", short: "Security", active: true },
   ],
   competencies: [
     {
@@ -41,6 +41,7 @@ export const fixtureState: AppState = {
         "Arquiteto de Soluções II": 4,
         "Arquiteto de Soluções III": 5,
       },
+      active: true,
     },
     {
       id: "cloud-serverless",
@@ -51,6 +52,7 @@ export const fixtureState: AppState = {
         "Arquiteto de Soluções II": 4,
         "Arquiteto de Soluções III": 5,
       },
+      active: true,
     },
     {
       id: "security-iam",
@@ -61,6 +63,7 @@ export const fixtureState: AppState = {
         "Arquiteto de Soluções II": 3,
         "Arquiteto de Soluções III": 4,
       },
+      active: true,
     },
   ],
   architects: [

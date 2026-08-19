@@ -1,5 +1,5 @@
 import type { AppState } from "./api";
-import type { Assessment, Competency, CompetencyCategory } from "./domain";
+import type { Assessment, Competency, CompetencyCategory, Level, RoleName } from "./domain";
 
 /**
  * Derivações puras sobre o snapshot da API. Ficam fora do componente para poderem
@@ -72,6 +72,27 @@ export function createSelectors(s: AppState) {
   const categoryById = (id: string) => categoryIndex.get(id);
   const architectById = (id: string) => architectIndex.get(id);
 
+  /**
+   * Nome/domínio de um item de assessment: catálogo atual quando a competência
+   * ainda existe lá (é o caso comum), senão a fotografia gravada no próprio
+   * item (`competencyName`/`categoryId`) — histórico não pode depender de uma
+   * linha do catálogo que foi apagada ou renomeada depois. Itens de antes desta
+   * migração não têm fotografia; nesse caso, sem catálogo vivo, não há nome a
+   * mostrar. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC C.
+   */
+  const resolveCompetency = (item: Assessment["items"][number]): Competency | undefined => {
+    const live = competencyIndex.get(item.competencyId);
+    if (live) return live;
+    if (!item.competencyName) return undefined;
+    return {
+      id: item.competencyId,
+      name: item.competencyName,
+      categoryId: item.categoryId ?? "",
+      expected: {} as Record<RoleName, Level>,
+      active: false,
+    };
+  };
+
   const assessmentFor = (architectId: string, cycleId = s.activeCycleId) =>
     assessmentIndex.get(cycleKey(architectId, cycleId));
   const planFor = (architectId: string, cycleId = s.activeCycleId) =>
@@ -105,7 +126,7 @@ export function createSelectors(s: AppState) {
       ? []
       : assessment.items
           .map((item) => ({
-            competency: competencyIndex.get(item.competencyId),
+            competency: resolveCompetency(item),
             item,
             gap: item.target - item.final,
           }))
@@ -125,7 +146,7 @@ export function createSelectors(s: AppState) {
     // uma vez para cada domínio.
     const totals = new Map<string, { final: number; target: number; count: number }>();
     for (const item of officialAssessmentFor(architectId, cycleId)?.items ?? []) {
-      const categoryId = competencyIndex.get(item.competencyId)?.categoryId;
+      const categoryId = competencyIndex.get(item.competencyId)?.categoryId ?? item.categoryId;
       if (!categoryId) continue;
       const acc = totals.get(categoryId) ?? { final: 0, target: 0, count: 0 };
       acc.final += item.final;

@@ -151,11 +151,15 @@ export const api = {
     post<CompetencyCategory>("/api/categories", category),
   updateCategory: (id: string, patch_: Partial<Omit<CompetencyCategory, "id">>) =>
     patch<CompetencyCategory>(`/api/categories/${id}`, patch_),
-  deleteCategory: (id: string) => del<{ competenciesRemoved: number }>(`/api/categories/${id}`),
+  /** `archived: true` quando o domínio já tinha histórico e foi arquivado em vez de apagado. */
+  deleteCategory: (id: string) =>
+    del<{ archived: boolean; competenciesRemoved: number }>(`/api/categories/${id}`),
   createCompetency: (competency: Competency) => post<Competency>("/api/competencies", competency),
   updateCompetency: (id: string, patch_: Partial<Omit<Competency, "id">>) =>
     patch<Competency>(`/api/competencies/${id}`, patch_),
-  deleteCompetency: (id: string) => del<void>(`/api/competencies/${id}`),
+  /** `undefined` (204) = apagada de verdade; `{archived:true}` (200) = arquivada por já ter histórico. */
+  deleteCompetency: (id: string) =>
+    del<{ archived: boolean } | undefined>(`/api/competencies/${id}`),
 
   /* ciclos */
   createCycle: (cycle: DevelopmentCycle) => post<DevelopmentCycle>("/api/cycles", cycle),
