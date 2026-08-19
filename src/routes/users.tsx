@@ -34,10 +34,18 @@ function UsersPage() {
   const store = useStore();
   const isAdmin = useCurrentUser().role === "admin";
   const queryClient = useQueryClient();
+  /**
+   * `GET /api/auth/users` é admin-only no backend (diretório completo de
+   * contas é dado administrativo, não catálogo público) — a query nem
+   * dispara para quem não é admin, senão a tela mostraria um erro genérico
+   * de rede em vez de deixar claro que é uma tela restrita. Ver AUDITORIA-
+   * QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 0.
+   */
   const { data, isPending, isError } = useQuery({
     queryKey: USERS_QUERY_KEY,
     queryFn: authApi.users,
     staleTime: 30_000,
+    enabled: isAdmin,
   });
 
   const updatePatch = async (
@@ -60,8 +68,11 @@ function UsersPage() {
       <PageHeader title={t("users.title")} description={t("users.subtitle")} />
 
       <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
-        {isPending && <p className="text-sm text-muted-foreground">{t("users.loading")}</p>}
-        {isError && <p className="text-sm text-destructive">{t("users.error.load")}</p>}
+        {!isAdmin && <p className="text-sm text-muted-foreground">{t("users.adminOnly")}</p>}
+        {isAdmin && isPending && (
+          <p className="text-sm text-muted-foreground">{t("users.loading")}</p>
+        )}
+        {isAdmin && isError && <p className="text-sm text-destructive">{t("users.error.load")}</p>}
         {data && (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">

@@ -213,6 +213,8 @@ export const api = {
     patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, body),
   removePlanItem: (planId: string, itemId: string) =>
     del<void>(`/api/plans/${planId}/items/${itemId}`),
+  updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) =>
+    patch<DevelopmentPlan>(`/api/plans/${planId}/status`, { status }),
 
   /* trilhas */
   createLearningPath: (path: LearningPath) => post<LearningPath>("/api/learning-paths", path),
@@ -241,6 +243,8 @@ export const api = {
   /* registros */
   createMentoringSession: (session: MentoringSession) =>
     post<MentoringSession>("/api/mentoring-sessions", session),
+  scheduleMentoringFollowUp: (id: string, nextSession: string | null) =>
+    patch<MentoringSession>(`/api/mentoring-sessions/${id}`, { nextSession }),
   createEvidence: (evidence: Evidence) => post<Evidence>("/api/evidences", evidence),
   /** Revisão (status + comentário) é decisão do Tech Lead — rota admin-only no backend. */
   reviewEvidence: (

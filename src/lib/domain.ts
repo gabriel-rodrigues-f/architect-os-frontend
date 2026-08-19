@@ -75,6 +75,13 @@ export interface Architect {
   email: string;
   /** Fora do time hoje, mas o histórico (assessments, PDI, OKR...) permanece. */
   active: boolean;
+  /**
+   * Id da conta `lead` responsável por esta pessoa — quem pode agir como Tech
+   * Lead dela (revisar avaliação/evidência, escrever PDI/progresso de
+   * trilha). `null`/ausente = sem Lead atribuído ainda; só a própria pessoa e
+   * um admin têm acesso. Só admin atribui.
+   */
+  leadUserId?: string | null | undefined;
 }
 
 /**
@@ -143,9 +150,8 @@ export interface DevelopmentPlanItem {
   targetDate: string;
   priority: "Low" | "Medium" | "High" | "Critical";
   owner: string;
+  /** Único indicador de andamento do item — sem percentual paralelo. Ver EPIC 3. */
   status: PdiStatus;
-  progress: number;
-  evidenceIds: string[];
   smart?: SmartGoal | undefined;
 }
 
@@ -210,8 +216,10 @@ export interface LearningPath {
   items: LearningPathItem[];
   /** Uma entrada por (architectId, itemId) já tocado — nunca um valor global. */
   progress: LearningItemProgress[];
-  /** E-mail de quem criou a trilha; nulo nas trilhas anteriores à autenticação. */
+  /** E-mail de quem criou — só apresentação; a autoria de verdade é `createdByUserId`. */
   createdBy?: string | null | undefined;
+  /** Conta de quem criou — servidor deriva da sessão. `null` só em trilha anterior a esta migração. */
+  createdByUserId?: string | null | undefined;
   /** ISO 8601 com data e hora de criação. */
   createdAt?: string | undefined;
 }
@@ -234,7 +242,9 @@ export function progressFor(
 
 export interface MentoringSession {
   id: string;
+  /** Nome do mentor — só apresentação; o servidor sempre deriva do usuário autenticado. */
   mentor: string;
+  mentorUserId?: string | null | undefined;
   menteeId: string;
   date: string;
   durationMin: number;
@@ -289,6 +299,19 @@ export interface Evidence {
   status: "Pending" | "Accepted" | "Needs Improvement" | "Rejected";
   /** Quem emitiu — relevante quando `type === "Certification"`. */
   issuer?: string | undefined;
+  /**
+   * Item do PDI que esta evidência sustenta — fonte única do vínculo
+   * PDI↔Evidência (nenhum array espelhado do outro lado). Ver
+   * AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 2.
+   */
+  developmentPlanItemId?: string | null | undefined;
+  reviewedByUserId?: string | null | undefined;
+  reviewedAt?: string | null | undefined;
+}
+
+/** Evidências que sustentam um item do PDI — sempre uma consulta, nunca um array guardado. */
+export function evidencesForPlanItem(evidences: Evidence[], itemId: string): Evidence[] {
+  return evidences.filter((e) => e.developmentPlanItemId === itemId);
 }
 
 export const gapSeverity = (gap: number) => {

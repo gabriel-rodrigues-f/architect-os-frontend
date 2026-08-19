@@ -9,6 +9,7 @@ import type {
   Competency,
   CompetencyCategory,
   DevelopmentCycle,
+  DevelopmentPlan,
   DevelopmentPlanItem,
   Evidence,
   LearningItemProgress,
@@ -86,6 +87,12 @@ interface Api extends AppState {
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
   /** Tira o item do PDI — a lacuna dele volta a aparecer como sugestão. */
   removePlanItem: (planId: string, itemId: string) => void;
+  /**
+   * Sem otimismo, como `setAssessmentStatus`: aprovar/reabrir/concluir o PDI
+   * é uma transição de negócio que pode ser negada (dono não aprova nem
+   * reabre o próprio plano) — a tela precisa do erro de verdade.
+   */
+  updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) => Promise<DevelopmentPlan>;
   addEvidence: (e: Evidence) => void;
   /**
    * Sem otimismo: aprovar/rejeitar evidência é decisão do Tech Lead, e a UI só
@@ -97,6 +104,8 @@ interface Api extends AppState {
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => Promise<void>;
   addMentoringSession: (m: MentoringSession) => void;
+  /** Sem otimismo: agendar follow-up é escrita autorizada (só quem registrou a sessão). */
+  scheduleMentoringFollowUp: (id: string, nextSession: string | null) => Promise<MentoringSession>;
   updateLearningItemProgress: (
     pathId: string,
     architectId: string,
@@ -364,6 +373,15 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.removePlanItem(planId, itemId));
     },
 
+    updatePlanStatus: async (planId, status) => {
+      const updated = await api.updatePlanStatus(planId, status);
+      local((s) => ({
+        ...s,
+        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+      }));
+      return updated;
+    },
+
     addEvidence: (e) => {
       local((s) => ({ ...s, evidences: [e, ...s.evidences] }));
       remote(api.createEvidence(e));
@@ -380,6 +398,15 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     addMentoringSession: (m) => {
       local((s) => ({ ...s, mentoringSessions: [m, ...s.mentoringSessions] }));
       remote(api.createMentoringSession(m));
+    },
+
+    scheduleMentoringFollowUp: async (id, nextSession) => {
+      const updated = await api.scheduleMentoringFollowUp(id, nextSession);
+      local((s) => ({
+        ...s,
+        mentoringSessions: s.mentoringSessions.map((m) => (m.id === id ? updated : m)),
+      }));
+      return updated;
     },
 
     /** Trilha nova entra no topo da lista, igual à ordenação do servidor. */

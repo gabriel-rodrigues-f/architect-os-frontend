@@ -76,6 +76,11 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
           }),
         );
       }
+      if (href.endsWith("/api/auth/users")) {
+        return Promise.resolve(
+          new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
+        );
+      }
       if (href.endsWith("/api/state")) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureState satisfies AppState), {

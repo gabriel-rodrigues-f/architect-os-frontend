@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   EVIDENCE_TYPES,
+  evidencesForPlanItem,
   progressFor,
   type DevelopmentPlan,
   type Evidence,
@@ -218,23 +219,35 @@ function ArchitectProfile() {
       <div className="mt-6">
         <SectionCard title="PDI" description={t("arch.plan.subtitle")}>
           <ul className="space-y-3">
-            {(plan?.items ?? []).map((i) => (
-              <li key={i.id} className="surface-inset p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">
-                    {sel.competencyById(i.competencyId)?.name ?? t("pdi.unknownCompetency")}
+            {(plan?.items ?? []).map((i) => {
+              const itemEvidences = evidencesForPlanItem(evidences, i.id);
+              return (
+                <li key={i.id} className="surface-inset p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">
+                      {sel.competencyById(i.competencyId)?.name ?? t("pdi.unknownCompetency")}
+                    </p>
+                    <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
+                      {labels.planItemStatus[i.status]}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {labels.actionType[i.actionType]} · {i.actionPlan} · prazo{" "}
+                    {formatDate(i.targetDate, locale)}
                   </p>
-                  <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
-                    {labels.planItemStatus[i.status]}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {labels.actionType[i.actionType]} · {i.actionPlan} · prazo{" "}
-                  {formatDate(i.targetDate, locale)}
-                </p>
-                <Bar value={i.progress} className="mt-2" />
-              </li>
-            ))}
+                  {itemEvidences.length > 0 && (
+                    <ul className="mt-2 flex flex-wrap gap-1.5">
+                      {itemEvidences.map((e) => (
+                        <li key={e.id} className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground">{e.title}</span>
+                          <EvidenceStatusBadge status={e.status} labels={labels} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
             {!plan?.items.length && (
               <p className="text-sm text-muted-foreground">{t("arch.plan.none")}</p>
             )}
@@ -384,6 +397,8 @@ function EvidenceDialog({
       title: nome,
       description: description.trim(),
       type,
+      // Sem competência escolhida na tela: se ligada a um item do PDI, o
+      // servidor herda a competência do item automaticamente (EPIC 2).
       competencyIds: [],
       date,
       complexity,
@@ -391,13 +406,8 @@ function EvidenceDialog({
       ...(project.trim() ? { project: project.trim() } : {}),
       ...(url.trim() ? { url: url.trim() } : {}),
       ...(isCertification && issuer.trim() ? { issuer: issuer.trim() } : {}),
+      ...(pdiItemId ? { developmentPlanItemId: pdiItemId } : {}),
     });
-    if (pdiItemId && plan) {
-      const item = planItems.find((i) => i.id === pdiItemId);
-      if (item) {
-        store.updatePlanItem(plan.id, pdiItemId, { evidenceIds: [...item.evidenceIds, id] });
-      }
-    }
     toast.success(t("ev.toast", { titulo: nome }));
     setTitle("");
     setDescription("");

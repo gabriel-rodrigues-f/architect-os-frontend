@@ -60,8 +60,21 @@ function TrainingNeedsPage() {
     toast.success(t("needs.intervention.toast", { competencia: need.competency.name }));
   };
 
-  const interventionExists = (competencyId: string) =>
-    store.learningPaths.some((p) => p.competencyIds.includes(competencyId));
+  /**
+   * Antes checava só se a competência aparecia em QUALQUER trilha, alguma
+   * vez — uma trilha antiga, para outras pessoas, de outro ciclo, já
+   * concluída, bloqueava para sempre uma intervenção nova para o grupo
+   * atual. Agora só considera "já existe" quando a trilha cobre a
+   * competência E está atribuída a pelo menos uma das pessoas que têm essa
+   * lacuna agora. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md,
+   * EPIC 6.
+   */
+  const interventionExists = (need: (typeof needs)[number]) =>
+    store.learningPaths.some(
+      (p) =>
+        p.competencyIds.includes(need.competency!.id) &&
+        p.assignedTo.some((id) => need.architectIds.includes(id)),
+    );
 
   return (
     <>
@@ -113,7 +126,7 @@ function TrainingNeedsPage() {
                   {n.people} arquitetos · formato sugerido: workshop prático + architecture review
                 </p>
                 <div className="mt-2">
-                  {interventionExists(n.competency!.id) ? (
+                  {interventionExists(n) ? (
                     <Link to="/learning-paths" className="text-xs text-primary hover:underline">
                       {t("needs.intervention.view")}
                     </Link>

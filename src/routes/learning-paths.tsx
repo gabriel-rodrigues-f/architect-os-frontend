@@ -69,6 +69,13 @@ function LearningPage() {
   const { t, locale } = useI18n();
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
 
+  /**
+   * Catálogo é curadoria de Lead/Admin — antes qualquer autenticado criava
+   * uma trilha global, misturando iniciativa individual com o catálogo
+   * oficial. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 4.
+   */
+  const canCreatePath = isLeadCapable(user.role);
+
   const create = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -81,14 +88,23 @@ function LearningPage() {
       items: [],
       progress: [],
       createdBy: user.email,
+      createdByUserId: user.id,
       createdAt: new Date().toISOString(),
     });
     setName("");
   };
 
-  /** Trilha sem autor registrado fica aberta para qualquer pessoa logada. */
-  const canEdit = (path: LearningPath) =>
-    !path.createdBy || path.createdBy.toLowerCase() === user.email.toLowerCase();
+  /**
+   * Espelha `canEditPath` do backend: autor (por id, não mais por e-mail) ou
+   * admin; trilha sem autor (dado anterior a esta migração) fica restrita a
+   * quem já tem poder de curadoria — Lead ou Admin, nunca "qualquer pessoa
+   * logada" como antes.
+   */
+  const canEdit = (path: LearningPath) => {
+    if (user.role === "admin") return true;
+    if (path.createdByUserId) return path.createdByUserId === user.id;
+    return user.role === "lead";
+  };
 
   /**
    * Progresso é execução, não edição da trilha: só a própria pessoa (ou o
@@ -104,16 +120,18 @@ function LearningPage() {
         title={t("path.title")}
         description="Trilhas combinam teoria e prática: cursos, laboratórios, projetos reais, apresentações e reviews."
         actions={
-          <div className="flex gap-2">
-            <Input
-              placeholder={t("path.new.placeholder")}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && create()}
-              className="w-52"
-            />
-            <Button onClick={create}>{t("path.new.action")}</Button>
-          </div>
+          canCreatePath ? (
+            <div className="flex gap-2">
+              <Input
+                placeholder={t("path.new.placeholder")}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && create()}
+                className="w-52"
+              />
+              <Button onClick={create}>{t("path.new.action")}</Button>
+            </div>
+          ) : undefined
         }
       />
 

@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Route as CapabilityRoute } from "@/routes/capability-map";
+import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { setAuthToken, type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
@@ -12,9 +12,15 @@ import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
- * Exercita o Mapa de Capacidades de verdade: o componente da rota, ligado à
- * store, com `fetch` interceptado — o caminho que o usuário percorre ao clicar
- * na lixeira de uma capacidade.
+ * Exercita a Matriz de Competências de verdade: o componente da rota, ligado
+ * à store, com `fetch` interceptado — o caminho que o usuário percorre ao
+ * clicar na lixeira de um domínio.
+ *
+ * Excluir domínio/capacidade migrou do Mapa de Capacidades (agora só
+ * leitura de risco/cobertura) para a Matriz de Competências, que já é a
+ * página administrativa do catálogo — curadoria não deveria viver numa tela
+ * de leitura de risco. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-
+ * SYNAPSE.md, EPIC 6.
  *
  * `strongDomain`/`gapDomain` saíram do cadastro de arquiteto (AUDITORIA-
  * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, Seção 11), então excluir
@@ -53,7 +59,7 @@ function AuthReady({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
+const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 
 const renderPage = (state: AppState) => {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
@@ -84,12 +90,12 @@ const renderPage = (state: AppState) => {
   });
   return render(
     <Wrapper>
-      <CapabilityPage />
+      <MatrixPage />
     </Wrapper>,
   );
 };
 
-describe("Mapa de Capacidades — exclusão", () => {
+describe("Matriz de Competências — exclusão de domínio", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -102,7 +108,7 @@ describe("Mapa de Capacidades — exclusão", () => {
     setAuthToken(null);
   });
 
-  it("exclui a capacidade após confirmar", async () => {
+  it("exclui o domínio após confirmar", async () => {
     renderPage(fixtureState);
     await screen.findByText("Cloud Architecture");
 
@@ -138,33 +144,5 @@ describe("Mapa de Capacidades — exclusão", () => {
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers["content-type"]).toBeUndefined();
     }
-  });
-
-  /**
-   * Leitura ocidental: as faixas sobem da esquerda para a direita, da menor
-   * proficiência para a maior, no card e nos chips da nova capacidade.
-   */
-  it("mostra as faixas em ordem crescente de proficiência", async () => {
-    renderPage(fixtureState);
-    await screen.findByText("Cloud Architecture");
-
-    const ordem = [
-      "Lacunas (<2,5)",
-      "Praticantes (2,5+)",
-      "Avançados (3,5+)",
-      "Especialistas (4,5+)",
-    ];
-
-    const noCard = screen
-      .getAllByText(/^(Lacunas|Praticantes|Avançados|Especialistas) \(/)
-      .map((el) => el.textContent);
-    expect(noCard.slice(0, 4)).toEqual(ordem);
-
-    await userEvent.click(screen.getByRole("button", { name: "Nova capacidade" }));
-    const modal = within(await screen.findByRole("dialog"));
-    const chips = modal
-      .getAllByText(/^(Lacunas|Praticantes|Avançados|Especialistas) \(/)
-      .map((el) => el.textContent);
-    expect(chips).toEqual(ordem);
   });
 });

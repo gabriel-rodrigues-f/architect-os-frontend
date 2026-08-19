@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useCurrentUser } from "@/lib/auth";
+import type { MentoringSession } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, todayIso } from "@/lib/text";
@@ -41,7 +42,15 @@ export const Route = createFileRoute("/mentoring")({
 });
 
 /** Campos que o usuário preenche e que não podem ficar vazios. */
-const REQUIRED_FIELDS = ["menteeId", "date", "topic", "notes", "decisions", "actions"] as const;
+const REQUIRED_FIELDS = [
+  "menteeId",
+  "date",
+  "durationMin",
+  "topic",
+  "notes",
+  "decisions",
+  "actions",
+] as const;
 type RequiredField = (typeof REQUIRED_FIELDS)[number];
 
 function MentoringPage() {
@@ -54,11 +63,12 @@ function MentoringPage() {
   const [form, setForm] = useState({
     menteeId: sel.activeArchitects[0]?.id ?? "",
     date: todayIso(),
-    durationMin: "60",
+    durationMin: "",
     topic: "",
     notes: "",
     decisions: "",
     actions: "",
+    nextSession: "",
   });
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
   const toggleCompetency = (id: string) =>
@@ -80,10 +90,17 @@ function MentoringPage() {
   const invalid = (field: RequiredField) =>
     isMissing(field) ? "border-destructive ring-1 ring-destructive" : "";
 
+  /** Duração precisa ser um número real de minutos — nunca um padrão escondendo entrada inválida. */
+  const durationValue = Number(form.durationMin);
+  const durationInvalid =
+    form.durationMin.trim().length > 0 && (!Number.isInteger(durationValue) || durationValue <= 0);
+
   const submit = () => {
     const vazios = REQUIRED_FIELDS.filter((f) => !form[f].trim());
-    if (vazios.length > 0) {
-      setMissing(vazios);
+    if (vazios.length > 0 || durationInvalid) {
+      setMissing(
+        durationInvalid && !vazios.includes("durationMin") ? [...vazios, "durationMin"] : vazios,
+      );
       setShowToast(true);
       return;
     }
@@ -93,15 +110,24 @@ function MentoringPage() {
       mentor: user.name,
       menteeId: form.menteeId,
       date: form.date,
-      durationMin: Number(form.durationMin) || 60,
+      durationMin: durationValue,
       topic: form.topic,
       competencyIds,
       notes: form.notes,
       decisions: form.decisions,
       actions: form.actions,
+      ...(form.nextSession ? { nextSession: form.nextSession } : {}),
     });
     toast.success(t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }));
-    setForm({ ...form, topic: "", notes: "", decisions: "", actions: "" });
+    setForm({
+      ...form,
+      durationMin: "",
+      topic: "",
+      notes: "",
+      decisions: "",
+      actions: "",
+      nextSession: "",
+    });
     setCompetencyIds([]);
     setMissing([]);
     setShowToast(false);
@@ -160,6 +186,34 @@ function MentoringPage() {
                         value={form.date}
                         onChange={(e) => setField("date", e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && submit()}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="duration">{t("mentor.form.duration")}</Label>
+                      <Input
+                        id="duration"
+                        type="number"
+                        min={1}
+                        step={1}
+                        aria-invalid={isMissing("durationMin") || durationInvalid}
+                        className={
+                          invalid("durationMin") ||
+                          (durationInvalid ? "border-destructive ring-1 ring-destructive" : "")
+                        }
+                        value={form.durationMin}
+                        onChange={(e) => setField("durationMin", e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && submit()}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="next-session">{t("mentor.form.nextSession")}</Label>
+                      <Input
+                        id="next-session"
+                        type="date"
+                        value={form.nextSession}
+                        onChange={(e) => setField("nextSession", e.target.value)}
                       />
                     </div>
                   </div>
@@ -329,8 +383,6 @@ function MentoringPage() {
                           eligible.gap >= 3 ? "Critical" : eligible.gap === 2 ? "High" : "Medium",
                         owner: mentee.name,
                         status: "Not Started",
-                        progress: 0,
-                        evidenceIds: [],
                       });
                       toast.success(
                         t("mentor.toPdi.toast", { competencia: eligible.competency.name }),
@@ -349,9 +401,14 @@ function MentoringPage() {
                     ))}
                   </div>
                 )}
-                {s.nextSession && (
+                {(s.mentorUserId === user.id || user.role === "admin") && (
+                  <FollowUpScheduler session={s} />
+                )}
+                {s.nextSession && s.mentorUserId !== user.id && user.role !== "admin" && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Próxima sessão: {formatDate(s.nextSession, locale)}
+                    {t("mentor.followUp.scheduled", {
+                      data: formatDate(s.nextSession, locale) ?? "",
+                    })}
                   </p>
                 )}
               </li>
@@ -360,6 +417,74 @@ function MentoringPage() {
         </ol>
       </SectionCard>
     </>
+  );
+}
+
+/**
+ * Agendar follow-up depois que a sessão já aconteceu — antes só dava para
+ * definir `nextSession` no instante da criação, sem como voltar numa sessão
+ * antiga. Só quem registrou a sessão (ou admin) vê a ação. Ver AUDITORIA-
+ * QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 5.
+ */
+function FollowUpScheduler({ session }: { session: MentoringSession }) {
+  const { t, locale } = useI18n();
+  const store = useStore();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(session.nextSession ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const save = () => {
+    setSaving(true);
+    store
+      .scheduleMentoringFollowUp(session.id, value || null)
+      .then(() => {
+        toast.success(t("mentor.followUp.toast"));
+        setEditing(false);
+      })
+      .catch((error: unknown) => {
+        toast.error(error instanceof Error ? error.message : t("mentor.followUp.error"));
+      })
+      .finally(() => setSaving(false));
+  };
+
+  if (!editing) {
+    return (
+      <div className="mt-2 flex items-center gap-2 text-xs">
+        <span className="text-muted-foreground">
+          {session.nextSession
+            ? t("mentor.followUp.scheduled", {
+                data: formatDate(session.nextSession, locale) ?? "",
+              })
+            : t("mentor.followUp.none")}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-1.5 text-xs"
+          onClick={() => setEditing(true)}
+        >
+          {t("mentor.followUp.action")}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <Input
+        type="date"
+        className="h-8 w-40 text-xs"
+        aria-label={t("mentor.followUp.action")}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <Button size="sm" disabled={saving} onClick={save}>
+        {saving ? t("mentor.followUp.saving") : t("mentor.followUp.save")}
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => setEditing(false)}>
+        {t("mentor.followUp.cancel")}
+      </Button>
+    </div>
   );
 }
 
