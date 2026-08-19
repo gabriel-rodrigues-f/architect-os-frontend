@@ -83,7 +83,12 @@ function ArchitectProfile() {
   const domains = sel.domainAverages(architect.id);
   const plan = sel.planFor(architect.id);
   const swot = sel.swotFor(architect.id);
-  const okr = store.okrs.find((o) => o.architectId === architect.id);
+  // Sem o cycleId, uma pessoa com OKR em mais de um ciclo podia mostrar o
+  // objetivo errado — o primeiro que o array trouxesse, não o do ciclo em
+  // foco. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 25.
+  const okr = store.okrs.find(
+    (o) => o.architectId === architect.id && o.cycleId === store.activeCycleId,
+  );
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
   const certifications = store.certifications.filter((c) => c.architectId === architect.id);

@@ -82,12 +82,20 @@ function CyclesPage() {
   /* A cor de cada série é decisão da paleta do sistema; aqui só se diz o que plotar. */
   const series = store.categories.map((c) => ({ key: c.short, label: c.name }));
 
+  /**
+   * Mesma fonte que o gráfico acima: só assessment `Completed` conta como
+   * nível oficial do ciclo. Antes, o gráfico já usava `domainAverages()`
+   * (oficial) e esta tabela lia de `assessmentFor()` (aceita Draft/In
+   * Review) — a mesma pessoa podia aparecer "sem nível oficial" no gráfico
+   * e com um L4 na tabela ao lado. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-
+   * SYNAPSE.md, Seção 20.
+   */
   const compare = store.competencies.slice(0, 12).map((c) => {
     const levels = closedCycles.map((cy) => ({
       cycle: cy.name,
-      level:
-        sel.assessmentFor(architectId, cy.id)?.items.find((i) => i.competencyId === c.id)?.final ??
-        0,
+      level: sel
+        .officialAssessmentFor(architectId, cy.id)
+        ?.items.find((i) => i.competencyId === c.id)?.final,
     }));
     return { competency: c, levels };
   });
@@ -96,7 +104,7 @@ function CyclesPage() {
     <>
       <PageHeader
         title={t("cycle.title")}
-        description="Cada ciclo agrupa avaliação, SWOT, PDI, metas SMART, OKRs, trilhas, mentorias e evidências."
+        description="Cada ciclo agrupa avaliação, SWOT, PDI e OKRs. Trilhas, mentorias e evidências não têm ciclo — valem para a pessoa em qualquer período."
         actions={
           <div className="flex gap-2">
             <select
