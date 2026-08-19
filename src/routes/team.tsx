@@ -63,7 +63,7 @@ const emptyForm = (): ArchitectForm => ({
   name: "",
   role: ROLES[0] as RoleName,
   specialization: "",
-  years: "1",
+  years: "",
   email: "",
   strongDomain: "",
   gapDomain: "",
@@ -101,16 +101,32 @@ function TeamPage() {
     setEditing(architect.id);
   };
 
+  /**
+   * Nada aqui tem fallback: e-mail inventado do nome, domínio forte/fraco
+   * herdado da ordem da lista e "1 ano" fantasma escondiam dado que ninguém
+   * preencheu como se fosse real. Falta um campo, o cadastro não salva — sem
+   * exceção. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 16 e 17.
+   */
+  const yearsValid =
+    form.years.trim() !== "" && Number.isInteger(Number(form.years)) && Number(form.years) >= 0;
+  const canSubmit =
+    form.name.trim().length > 0 &&
+    form.email.trim().length > 0 &&
+    form.email.includes("@") &&
+    form.strongDomain !== "" &&
+    form.gapDomain !== "" &&
+    yearsValid;
+
   const submit = () => {
-    if (!form.name.trim()) return;
+    if (!canSubmit) return;
     const payload = {
       name: form.name.trim(),
       role: form.role,
-      yearsAsArchitect: Number(form.years) || 1,
-      specialization: form.specialization.trim() || "Arquitetura de Soluções",
-      email: form.email.trim() || `${slug(form.name)}@company.com`,
-      strongDomain: form.strongDomain || store.categories[0]?.id || "",
-      gapDomain: form.gapDomain || store.categories[1]?.id || "",
+      yearsAsArchitect: Number(form.years),
+      specialization: form.specialization.trim(),
+      email: form.email.trim(),
+      strongDomain: form.strongDomain,
+      gapDomain: form.gapDomain,
     };
 
     if (editing) {
@@ -120,8 +136,9 @@ function TeamPage() {
       store.addArchitect({
         id: slug(form.name),
         ...payload,
-        performance: "Medium",
-        potential: "Medium",
+        /** Não calibrado até um Tech Lead posicionar a pessoa na 9 Box de verdade. */
+        performance: null,
+        potential: null,
         active: true,
       });
     }
@@ -380,11 +397,16 @@ function TeamPage() {
               </div>
             </div>
           </div>
+          {!canSubmit && (
+            <p className="mt-3 text-xs text-muted-foreground">{t("team.form.requiredHint")}</p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)}>
               Cancelar
             </Button>
-            <Button onClick={submit}>{t("common.save")}</Button>
+            <Button onClick={submit} disabled={!canSubmit}>
+              {t("common.save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

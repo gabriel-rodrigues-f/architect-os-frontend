@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Bar, GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ACTION_TYPES, type ActionType, type PdiStatus } from "@/lib/domain";
+import { ACTION_TYPES, type ActionType, type PdiStatus, type SmartGoal } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
@@ -18,7 +18,8 @@ export const Route = createFileRoute("/development-plans")({
       { title: "Planos de Desenvolvimento — Synapse" },
       {
         name: "description",
-        content: "PDI gerado a partir de gaps, SWOT e avaliação do Tech Lead, com metas SMART.",
+        content:
+          "Plano de desenvolvimento individual: maiores gaps como ponto de partida, SMART goal e plano de ação escritos pela pessoa e pelo Tech Lead.",
       },
       { property: "og:title", content: "Planos de Desenvolvimento — Synapse" },
       {
@@ -46,6 +47,8 @@ function PlansPage() {
   const sel = useSelectors();
   const labels = useLabels();
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
+  /** Item cujo formulário de meta SMART está aberto — nunca mais que um por vez. */
+  const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
   const { t, locale } = useI18n();
   const user = useCurrentUser();
   /** PDI e SWOT são da pessoa — só ela (ou admin) escreve; backend já recusa o resto. */
@@ -84,7 +87,7 @@ function PlansPage() {
     <>
       <PageHeader
         title={t("pdi.title")}
-        description="O sistema sugere competências a partir da análise de lacunas, SWOT, nível esperado e avaliação do Tech Lead."
+        description={t("pdi.subtitle")}
         actions={
           <select
             className="rounded-md border border-input bg-card px-3 py-2 text-sm"
@@ -248,26 +251,25 @@ function PlansPage() {
                   </div>
                 )}
 
-                {!item.smart && canEdit && (
+                {!item.smart && canEdit && smartEditingId !== item.id && (
                   <Button
                     variant="secondary"
                     size="sm"
                     className="mt-4"
-                    onClick={() =>
-                      store.updatePlanItem(plan!.id, item.id, {
-                        smart: {
-                          specific: `Desenvolver ${competencyName} até o nível ${item.targetLevel}`,
-                          measurable: "Duas entregas arquiteturais, um ADR e uma sessão técnica",
-                          achievable: "Compatível com a alocação atual em projetos",
-                          relevant: `${competencyName} é prioridade no roadmap técnico do time`,
-                          timeBound: `Até ${formatDate(item.targetDate, locale)}`,
-                          statement: `Até ${formatDate(item.targetDate, locale)}, aplicar ${competencyName} em ao menos dois contextos reais, documentar as decisões em ADRs e apresentar os trade-offs ao time.`,
-                        },
-                      })
-                    }
+                    onClick={() => setSmartEditingId(item.id)}
                   >
-                    Transformar em meta SMART
+                    {t("pdi.smart.define")}
                   </Button>
+                )}
+
+                {!item.smart && canEdit && smartEditingId === item.id && (
+                  <SmartGoalEditor
+                    onCancel={() => setSmartEditingId(null)}
+                    onSave={(smart) => {
+                      store.updatePlanItem(plan!.id, item.id, { smart });
+                      setSmartEditingId(null);
+                    }}
+                  />
                 )}
               </div>
             );
@@ -340,6 +342,81 @@ function PlansPage() {
         </div>
       </div>
     </>
+  );
+}
+
+const SMART_FIELDS = [
+  { key: "specific", label: "Specific" },
+  { key: "measurable", label: "Measurable" },
+  { key: "achievable", label: "Achievable" },
+  { key: "relevant", label: "Relevant" },
+  { key: "timeBound", label: "Time-bound" },
+] as const;
+
+/**
+ * Formulário da meta SMART: cada campo é escrito pela própria pessoa (ou pelo
+ * Tech Lead), nada é preenchido sozinho. Antes um clique fabricava um texto
+ * genérico idêntico para qualquer competência ("Duas entregas arquiteturais,
+ * um ADR e uma sessão técnica" valia pra tudo) — a meta parecia elaborada sem
+ * ninguém ter pensado nela. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
+ * Seção 33.
+ */
+function SmartGoalEditor({
+  onSave,
+  onCancel,
+}: {
+  onSave: (smart: SmartGoal) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useI18n();
+  const [draft, setDraft] = useState<SmartGoal>({
+    specific: "",
+    measurable: "",
+    achievable: "",
+    relevant: "",
+    timeBound: "",
+    statement: "",
+  });
+  const canSave = Object.values(draft).every((v) => v.trim().length > 0);
+
+  return (
+    <div className="mt-4 space-y-2 rounded-lg border border-border bg-secondary/50 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        SMART Goal
+      </p>
+      {SMART_FIELDS.map(({ key, label }) => (
+        <div key={key}>
+          <label className="text-xs font-medium text-foreground" htmlFor={`smart-${key}`}>
+            {label}
+          </label>
+          <Textarea
+            id={`smart-${key}`}
+            className="mt-1 min-h-12 text-sm"
+            value={draft[key]}
+            onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
+          />
+        </div>
+      ))}
+      <div>
+        <label className="text-xs font-medium text-foreground" htmlFor="smart-statement">
+          {t("pdi.smart.statement")}
+        </label>
+        <Textarea
+          id="smart-statement"
+          className="mt-1 min-h-16 text-sm"
+          value={draft.statement}
+          onChange={(e) => setDraft({ ...draft, statement: e.target.value })}
+        />
+      </div>
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" variant="outline" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button size="sm" disabled={!canSave} onClick={() => onSave(draft)}>
+          {t("pdi.smart.save")}
+        </Button>
+      </div>
+    </div>
   );
 }
 

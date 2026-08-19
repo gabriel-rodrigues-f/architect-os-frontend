@@ -145,7 +145,11 @@ function ArchitectProfile() {
         />
         <StatCard
           label="9 Box"
-          value={`${architect.performance}/${architect.potential}`}
+          value={
+            architect.performance && architect.potential
+              ? `${architect.performance}/${architect.potential}`
+              : t("arch.stat.nineboxUncalibrated")
+          }
           hint={t("arch.stat.nineboxHint")}
         />
       </div>
