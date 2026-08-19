@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, BadgeCheck } from "lucide-react";
 import { Fragment, useState } from "react";
 import { z } from "zod";
 
@@ -52,7 +52,7 @@ function AssessmentsPage() {
   const [architectId, setArchitectId] = useState(
     () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
   );
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();
   const [categoryIds, setCategoryIds] = useState<string[]>(() =>
@@ -286,10 +286,35 @@ function AssessmentsPage() {
                           if (!item) return null;
                           const gap = item.target - item.final;
                           const diverges = item.self !== item.leader;
+                          /**
+                           * Fecha o loop da evidência: quando o Tech Lead já aceitou uma
+                           * evidência para esta competência desta pessoa, ela aparece aqui
+                           * como contexto — sem alterar nota nenhuma sozinha, a calibração
+                           * continua sendo decisão de quem revisa. Ver AUDITORIA-TERCEIRA-
+                           * RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC I.
+                           */
+                          const acceptedEvidence = store.evidences.filter(
+                            (e) =>
+                              e.architectId === architectId &&
+                              e.status === "Accepted" &&
+                              e.competencyIds.includes(c.id),
+                          );
                           return (
                             <Fragment key={c.id}>
                               <tr className="border-b border-border/60">
-                                <td className="py-2 font-medium">{c.name}</td>
+                                <td className="py-2 font-medium">
+                                  <span className="flex items-center gap-1.5">
+                                    {c.name}
+                                    {acceptedEvidence.length > 0 && (
+                                      <BadgeCheck
+                                        className="h-3.5 w-3.5 shrink-0 text-[var(--level-5-fg)]"
+                                        aria-label={t("asmt.evidence.badge", {
+                                          n: acceptedEvidence.length,
+                                        })}
+                                      />
+                                    )}
+                                  </span>
+                                </td>
                                 <td className="px-1 py-2">
                                   {canEditSelf ? (
                                     <LevelSelect
@@ -358,6 +383,24 @@ function AssessmentsPage() {
                               {openComment === c.id && (
                                 <tr className="border-b border-border/60 bg-secondary/40">
                                   <td colSpan={7} className="p-3">
+                                    {acceptedEvidence.length > 0 && (
+                                      <div className="mb-3 space-y-1.5 border-b border-border pb-3">
+                                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                          {t("asmt.evidence.title")}
+                                        </p>
+                                        <ul className="space-y-1">
+                                          {acceptedEvidence.map((e) => (
+                                            <li key={e.id} className="text-sm">
+                                              <span className="font-medium">{e.title}</span>{" "}
+                                              <span className="text-xs text-muted-foreground">
+                                                {labels.evidenceType[e.type]} ·{" "}
+                                                {formatDate(e.date, locale)}
+                                              </span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
                                     <CommentSection
                                       comments={item.comments}
                                       currentUserId={user.id}

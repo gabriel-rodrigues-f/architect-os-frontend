@@ -436,5 +436,7 @@
   "arch.history.view": "Ver",
   "arch.history.none": "Nenhuma avaliação registrada ainda.",
   "pdi.gap.remove": "Remover GAP",
-  "pdi.gap.removed.toast": "{nome} voltou para as sugestões"
+  "pdi.gap.removed.toast": "{nome} voltou para as sugestões",
+  "asmt.evidence.badge": "{n} evidência aceita nesta competência",
+  "asmt.evidence.title": "Evidências aceitas"
 }
