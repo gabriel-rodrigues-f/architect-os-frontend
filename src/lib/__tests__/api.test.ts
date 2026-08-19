@@ -27,18 +27,6 @@ describe("cliente da API", () => {
     expect(init?.method ?? "GET").toBe("GET");
   });
 
-  it("envia PATCH com JSON no corpo para o 9-box", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ id: "bruno" }));
-
-    await api.moveNineBox("bruno", "High", "Low");
-
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe(`${API_URL}/api/architects/bruno/nine-box`);
-    expect(init.method).toBe("PATCH");
-    expect(JSON.parse(init.body as string)).toEqual({ performance: "High", potential: "Low" });
-    expect((init.headers as Record<string, string>)["content-type"]).toBe("application/json");
-  });
-
   it("monta a rota aninhada de item de PDI", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: "pdi-ana" }));
 

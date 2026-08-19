@@ -85,9 +85,6 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
 
     for (const architect of state.architects) {
       expect(sel.domainAverages(architect.id)).toHaveLength(state.categories.length);
-      const score = sel.developmentScore(architect.id);
-      expect(score).toBeGreaterThanOrEqual(0);
-      expect(score).toBeLessThanOrEqual(100);
     }
   });
 });

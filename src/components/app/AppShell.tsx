@@ -4,7 +4,6 @@ import {
   BookOpen,
   CalendarRange,
   ClipboardCheck,
-  Compass,
   GraduationCap,
   Grid3x3,
   LayoutDashboard,
@@ -41,9 +40,7 @@ const NAV: { to: string; labelKey: MessageKey; icon: typeof LayoutDashboard }[] 
   { to: "/learning-paths", labelKey: "nav.learningPaths", icon: BookOpen },
   { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
   { to: "/training-needs", labelKey: "nav.trainingNeeds", icon: BarChart3 },
-  { to: "/talent-matrix", labelKey: "nav.talentMatrix", icon: Compass },
   { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
-  { to: "/settings", labelKey: "nav.reference", icon: Settings },
 ];
 
 const SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";

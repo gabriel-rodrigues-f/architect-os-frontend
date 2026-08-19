@@ -73,8 +73,6 @@ export const fixtureState: AppState = {
       email: "ana@company.com",
       strongDomain: "cloud",
       gapDomain: "security",
-      performance: "High",
-      potential: "High",
       active: true,
     },
     {
@@ -86,8 +84,6 @@ export const fixtureState: AppState = {
       email: "bruno@company.com",
       strongDomain: "cloud",
       gapDomain: "security",
-      performance: "Medium",
-      potential: "High",
       active: true,
     },
   ],
@@ -107,7 +103,7 @@ export const fixtureState: AppState = {
       id: "ana-h2",
       architectId: "ana",
       cycleId: "2026-h2",
-      // Completed: gapsFor/domainAverages/developmentScore só usam assessment oficial.
+      // Completed: gapsFor/domainAverages só usam assessment oficial.
       status: "Completed",
       items: [
         { competencyId: "cloud-k8s", self: 4, leader: 4, target: 4, final: 4, comments: [] },

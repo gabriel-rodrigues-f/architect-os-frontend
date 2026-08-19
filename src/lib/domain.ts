@@ -71,9 +71,6 @@ export interface Architect {
   email: string;
   strongDomain: string;
   gapDomain: string;
-  /** `null` = ainda não calibrado — nasce assim, nunca com Medium/Medium fabricado. */
-  performance: "Low" | "Medium" | "High" | null;
-  potential: "Low" | "Medium" | "High" | null;
   /** Fora do time hoje, mas o histórico (assessments, PDI, OKR...) permanece. */
   active: boolean;
 }

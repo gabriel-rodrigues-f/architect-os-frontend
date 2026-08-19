@@ -44,8 +44,6 @@ function buildLargeState(): AppState {
     email: `arq-${i}@empresa.com`,
     strongDomain: categories[0]!.id,
     gapDomain: categories[1]!.id,
-    performance: "Medium",
-    potential: "Medium",
     active: true,
   }));
 

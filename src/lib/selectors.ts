@@ -1,11 +1,5 @@
 import type { AppState } from "./api";
-import {
-  progressFor,
-  type Architect,
-  type Assessment,
-  type Competency,
-  type CompetencyCategory,
-} from "./domain";
+import type { Assessment, Competency, CompetencyCategory } from "./domain";
 
 /**
  * Derivações puras sobre o snapshot da API. Ficam fora do componente para poderem
@@ -78,21 +72,6 @@ export function createSelectors(s: AppState) {
   const assessmentIndex = indexByArchitectAndCycle(s.assessments);
   const planIndex = indexByArchitectAndCycle(s.plans);
   const swotIndex = indexByArchitectAndCycle(s.swots);
-
-  /** OKRs, trilhas e evidências agrupados por arquiteto, também numa passada. */
-  const okrByArchitect = new Map(s.okrs.map((o) => [o.architectId, o]));
-  const evidenceCount = new Map<string, number>();
-  for (const evidence of s.evidences) {
-    evidenceCount.set(evidence.architectId, (evidenceCount.get(evidence.architectId) ?? 0) + 1);
-  }
-  const pathsByArchitect = new Map<string, (typeof s.learningPaths)[number][]>();
-  for (const path of s.learningPaths) {
-    for (const architectId of path.assignedTo) {
-      const list = pathsByArchitect.get(architectId);
-      if (list) list.push(path);
-      else pathsByArchitect.set(architectId, [path]);
-    }
-  }
 
   const competencyById = (id: string) => competencyIndex.get(id);
   const categoryById = (id: string) => categoryIndex.get(id);
@@ -173,42 +152,6 @@ export function createSelectors(s: AppState) {
     return averages;
   };
 
-  const average = (values: number[]) =>
-    values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
-
-  /**
-   * Índice composto de desenvolvimento: PDI 30%, OKR 15%, trilhas 15%,
-   * evidências 20% e evolução entre ciclos 20%.
-   */
-  const developmentScore = (architectId: string) => {
-    const pdi = average(planFor(architectId)?.items.map((i) => i.progress) ?? []);
-    const okr = average(okrByArchitect.get(architectId)?.keyResults.map((k) => k.progress) ?? []);
-    // Progresso é por pessoa agora — cada item conta o progresso desta
-    // pessoa nele, não um valor compartilhado com quem mais está atribuído.
-    const learning = average(
-      (pathsByArchitect.get(architectId) ?? []).flatMap((p) =>
-        p.items.map((i) => progressFor(p, architectId, i.id).progress),
-      ),
-    );
-    const evidence = Math.min(100, (evidenceCount.get(architectId) ?? 0) * 25);
-
-    const cycleIndex = s.cycles.findIndex((c) => c.id === s.activeCycleId);
-    const previousCycleId = cycleIndex > 0 ? s.cycles[cycleIndex - 1]?.id : undefined;
-    const previous = previousCycleId
-      ? officialAssessmentFor(architectId, previousCycleId)
-      : undefined;
-    const current = officialAssessmentFor(architectId);
-
-    let growth = 0;
-    if (previous?.items.length && current?.items.length) {
-      const before = average(previous.items.map((i) => i.final));
-      const after = average(current.items.map((i) => i.final));
-      growth = Math.max(0, Math.min(100, (after - before) * 100));
-    }
-
-    return Math.round(pdi * 0.3 + okr * 0.15 + learning * 0.15 + evidence * 0.2 + growth * 0.2);
-  };
-
   /** LNT: lacunas positivas agregadas por competência, ordenadas pelo impacto. */
   const teamTrainingNeeds = (): TrainingNeed[] => {
     const totals = new Map<string, { people: number; totalGap: number }>();
@@ -244,7 +187,6 @@ export function createSelectors(s: AppState) {
     swotFor,
     gapsFor,
     domainAverages,
-    developmentScore,
     teamTrainingNeeds,
   };
 }
@@ -269,6 +211,3 @@ export function averageWithCoverage(values: (number | undefined)[]): {
     total: values.length,
   };
 }
-
-/** Posição na matriz 9-box a partir de desempenho × potencial. */
-export const nineBoxCell = (a: Architect) => `${a.performance}-${a.potential}`;

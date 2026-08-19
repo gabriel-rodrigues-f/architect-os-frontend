@@ -105,11 +105,6 @@ interface Api extends AppState {
   ) => void;
   addLearningPath: (p: LearningPath) => void;
   updateKeyResult: (okrId: string, krId: string, progress: number) => void;
-  moveNineBox: (
-    architectId: string,
-    performance: Architect["performance"],
-    potential: Architect["potential"],
-  ) => void;
 }
 
 const Ctx = createContext<Api | null>(null);
@@ -513,16 +508,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         ),
       }));
       remote(api.removeLearningItem(pathId, itemId));
-    },
-
-    moveNineBox: (architectId, performance, potential) => {
-      local((s) => ({
-        ...s,
-        architects: s.architects.map((a) =>
-          a.id === architectId ? { ...a, performance, potential } : a,
-        ),
-      }));
-      remote(api.moveNineBox(architectId, performance, potential));
     },
   };
 }

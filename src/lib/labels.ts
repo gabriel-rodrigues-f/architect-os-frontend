@@ -1,7 +1,6 @@
 import { useI18n, type MessageKey } from "./i18n";
 import type {
   ActionType,
-  Architect,
   Assessment,
   DevelopmentCycle,
   DevelopmentPlan,
@@ -47,13 +46,6 @@ const priorityKey: Record<DevelopmentPlanItem["priority"], MessageKey> = {
   Medium: "priority.medium",
   High: "priority.high",
   Critical: "priority.critical",
-};
-
-/** Usado em desempenho e potencial (matriz 9-box) — só para valor já calibrado, nunca `null`. */
-const ratingKey: Record<Exclude<Architect["performance"], null>, MessageKey> = {
-  Low: "rating.low",
-  Medium: "rating.medium",
-  High: "rating.high",
 };
 
 const cycleStatusKey: Record<DevelopmentCycle["status"], MessageKey> = {
@@ -124,7 +116,6 @@ export function useLabels() {
     planItemStatus: traduzir(planItemStatusKey),
     learningStatus: traduzir(learningStatusKey),
     priority: traduzir(priorityKey),
-    rating: traduzir(ratingKey),
     cycleStatus: traduzir(cycleStatusKey),
     assessmentStatus: traduzir(assessmentStatusKey),
     actionType: traduzir(actionTypeKey),

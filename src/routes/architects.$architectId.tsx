@@ -101,7 +101,6 @@ function ArchitectProfile() {
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
   const certifications = store.certifications.filter((c) => c.architectId === architect.id);
   const paths = store.learningPaths.filter((p) => p.assignedTo.includes(architect.id));
-  const score = sel.developmentScore(architect.id);
   const {
     avg,
     covered: coveredDomains,
@@ -123,12 +122,7 @@ function ArchitectProfile() {
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t("arch.stat.devIndex")}
-          value={`${score}`}
-          hint={t("arch.stat.devIndexHint")}
-        />
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <StatCard
           label={t("arch.stat.avgLevel")}
           value={avg === undefined ? "—" : avg.toFixed(2)}
@@ -142,15 +136,6 @@ function ArchitectProfile() {
           label={t("arch.stat.openGaps")}
           value={`${gaps.length}`}
           hint={t("arch.stat.openGapsHint")}
-        />
-        <StatCard
-          label="9 Box"
-          value={
-            architect.performance && architect.potential
-              ? `${architect.performance}/${architect.potential}`
-              : t("arch.stat.nineboxUncalibrated")
-          }
-          hint={t("arch.stat.nineboxHint")}
         />
       </div>
 

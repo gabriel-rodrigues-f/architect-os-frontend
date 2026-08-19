@@ -19,7 +19,6 @@ import { Route as GapAnalysisRouteImport } from './routes/gap-analysis'
 import { Route as LearningPathsRouteImport } from './routes/learning-paths'
 import { Route as MentoringRouteImport } from './routes/mentoring'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as TalentMatrixRouteImport } from './routes/talent-matrix'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
 import { Route as ArchitectsArchitectIdRouteImport } from './routes/architects.$architectId'
@@ -74,11 +73,6 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TalentMatrixRoute = TalentMatrixRouteImport.update({
-  id: '/talent-matrix',
-  path: '/talent-matrix',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TeamRoute = TeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -106,7 +100,6 @@ export interface FileRoutesByFullPath {
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
   '/settings': typeof SettingsRoute
-  '/talent-matrix': typeof TalentMatrixRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRoute
@@ -122,7 +115,6 @@ export interface FileRoutesByTo {
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
   '/settings': typeof SettingsRoute
-  '/talent-matrix': typeof TalentMatrixRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRoute
@@ -139,7 +131,6 @@ export interface FileRoutesById {
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
   '/settings': typeof SettingsRoute
-  '/talent-matrix': typeof TalentMatrixRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRoute
@@ -157,7 +148,6 @@ export interface FileRouteTypes {
     | '/learning-paths'
     | '/mentoring'
     | '/settings'
-    | '/talent-matrix'
     | '/team'
     | '/training-needs'
     | '/architects/$architectId'
@@ -173,7 +163,6 @@ export interface FileRouteTypes {
     | '/learning-paths'
     | '/mentoring'
     | '/settings'
-    | '/talent-matrix'
     | '/team'
     | '/training-needs'
     | '/architects/$architectId'
@@ -189,7 +178,6 @@ export interface FileRouteTypes {
     | '/learning-paths'
     | '/mentoring'
     | '/settings'
-    | '/talent-matrix'
     | '/team'
     | '/training-needs'
     | '/architects/$architectId'
@@ -206,7 +194,6 @@ export interface RootRouteChildren {
   LearningPathsRoute: typeof LearningPathsRoute
   MentoringRoute: typeof MentoringRoute
   SettingsRoute: typeof SettingsRoute
-  TalentMatrixRoute: typeof TalentMatrixRoute
   TeamRoute: typeof TeamRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
   ArchitectsArchitectIdRoute: typeof ArchitectsArchitectIdRoute
@@ -284,13 +271,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/talent-matrix': {
-      id: '/talent-matrix'
-      path: '/talent-matrix'
-      fullPath: '/talent-matrix'
-      preLoaderRoute: typeof TalentMatrixRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/team': {
       id: '/team'
       path: '/team'
@@ -326,7 +306,6 @@ const rootRouteChildren: RootRouteChildren = {
   LearningPathsRoute: LearningPathsRoute,
   MentoringRoute: MentoringRoute,
   SettingsRoute: SettingsRoute,
-  TalentMatrixRoute: TalentMatrixRoute,
   TeamRoute: TeamRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
   ArchitectsArchitectIdRoute: ArchitectsArchitectIdRoute,

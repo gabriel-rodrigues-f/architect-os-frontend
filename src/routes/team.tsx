@@ -3,15 +3,7 @@ import { Pencil, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import {
-  Bar,
-  GapBadge,
-  Initials,
-  LevelBadge,
-  PageHeader,
-  SectionCard,
-} from "@/components/app/ui-bits";
-import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
+import { GapBadge, Initials, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ROLES, roleShort, type Architect, type Level, type RoleName } from "@/lib/domain";
+import { ROLES, type Architect, type RoleName } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
@@ -136,9 +128,6 @@ function TeamPage() {
       store.addArchitect({
         id: slug(form.name),
         ...payload,
-        /** Não calibrado até um Tech Lead posicionar a pessoa na 9 Box de verdade. */
-        performance: null,
-        potential: null,
         active: true,
       });
     }
@@ -235,14 +224,6 @@ function TeamPage() {
                 <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
               </div>
 
-              <div className="mt-3">
-                <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{t("team.card.progress")}</span>
-                  <span className="tabular-nums">{sel.developmentScore(a.id)}%</span>
-                </div>
-                <Bar value={sel.developmentScore(a.id)} />
-              </div>
-
               <div className="mt-4 space-y-1.5">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {t("team.card.topGaps")}
@@ -297,8 +278,6 @@ function TeamPage() {
           </ul>
         </SectionCard>
       )}
-
-      <RoleProfilesCard />
 
       {/* cadastro e edição */}
       <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
@@ -421,138 +400,5 @@ function TeamPage() {
         onConfirm={deactivate}
       />
     </>
-  );
-}
-
-/**
- * Perfis de Competência por Cargo: nível esperado de cada competência por cargo.
- * A edição salva competência a competência (PATCH com merge no backend).
- */
-export function RoleProfilesCard() {
-  const store = useStore();
-  const { t } = useI18n();
-  /** Role Competency Profile é a régua de avaliação do time — só admin ajusta. */
-  const isAdmin = useCurrentUser().role === "admin";
-  const [categoryIds, setCategoryIds] = useState<string[]>(() =>
-    store.categories[0] ? [store.categories[0].id] : [],
-  );
-
-  /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
-  const selected = store.categories.filter((c) => categoryIds.includes(c.id));
-
-  const toggleCategory = (id: string) =>
-    setCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
-
-  /** Soma das competências de todas as capacidades marcadas. */
-  const competencies = store.competencies.filter((c) => categoryIds.includes(c.categoryId));
-
-  /** Com mais de uma capacidade aberta, a linha diz de qual ela veio. */
-  const showOrigin = selected.length > 1;
-  const categoryName = (id: string) => store.categories.find((c) => c.id === id)?.name ?? "";
-
-  return (
-    <SectionCard
-      className="mt-6"
-      title={t("team.profiles.title")}
-      description={t("team.profiles.subtitle")}
-      actions={
-        <CapabilityCombobox
-          categories={store.categories}
-          selected={selected}
-          onToggle={toggleCategory}
-          onSelectAll={setCategoryIds}
-        />
-      }
-    >
-      <div className="grid gap-3 sm:grid-cols-3">
-        {ROLES.map((r) => {
-          // A média acompanha as capacidades escolhidas no seletor: sem
-          // competências cadastradas nelas, não há média a exibir.
-          const average = competencies.length
-            ? (
-                competencies.reduce((sum, c) => sum + (c.expected[r] ?? 0), 0) / competencies.length
-              ).toFixed(1)
-            : null;
-          return (
-            <div key={r} className="surface-inset p-4">
-              <p className="text-sm font-medium">{r}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {store.architects.filter((a) => a.role === r).length} arquiteto(s) ·{" "}
-                {average
-                  ? t("team.profiles.avgExpected", { media: average })
-                  : t("team.profiles.noComp")}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[560px] text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="py-2">Competência</th>
-              {ROLES.map((r) => (
-                <th key={r} className="py-2 text-center">
-                  {roleShort(r)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {competencies.map((c) => (
-              <tr key={c.id} className="border-b border-border/60 last:border-0">
-                <td className="py-2 font-medium">
-                  {c.name}
-                  {showOrigin && (
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      {categoryName(c.categoryId)}
-                    </span>
-                  )}
-                </td>
-                {ROLES.map((r) =>
-                  isAdmin ? (
-                    <td key={r} className="py-2 text-center">
-                      <select
-                        className="w-16 rounded-md border border-input bg-card px-2 py-1 text-sm"
-                        value={c.expected[r] ?? 3}
-                        aria-label={`${c.name} — ${r}`}
-                        onChange={(e) =>
-                          store.updateCompetency(c.id, {
-                            expected: { [r]: Number(e.target.value) as Level } as Record<
-                              RoleName,
-                              Level
-                            >,
-                          })
-                        }
-                      >
-                        {[1, 2, 3, 4, 5].map((l) => (
-                          <option key={l} value={l}>
-                            {l}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  ) : (
-                    <td key={r} className="py-2 text-center tabular-nums text-muted-foreground">
-                      {c.expected[r] ?? 3}
-                    </td>
-                  ),
-                )}
-              </tr>
-            ))}
-            {competencies.length === 0 && (
-              <tr>
-                <td colSpan={4} className="py-3 text-sm text-muted-foreground">
-                  {selected.length === 0
-                    ? t("team.profiles.pickCapability")
-                    : t("team.profiles.noneSelected")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </SectionCard>
   );
 }

@@ -166,11 +166,6 @@ export const api = {
   updateArchitect: (id: string, patch_: Partial<Omit<Architect, "id">>) =>
     patch<Architect>(`/api/architects/${id}`, patch_),
   deleteArchitect: (id: string) => del<void>(`/api/architects/${id}`),
-  moveNineBox: (
-    architectId: string,
-    performance: Architect["performance"],
-    potential: Architect["potential"],
-  ) => patch<Architect>(`/api/architects/${architectId}/nine-box`, { performance, potential }),
 
   /* catálogo */
   createCategory: (category: CompetencyCategory) =>

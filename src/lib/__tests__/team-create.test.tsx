@@ -131,7 +131,7 @@ describe("Time — cadastro sem dado fabricado", () => {
     expect((salvar as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("salva só com o que a pessoa digitou — sem e-mail, domínio ou 9-Box fabricados", async () => {
+  it("salva só com o que a pessoa digitou — sem e-mail ou domínio fabricados", async () => {
     render(
       <Wrapper>
         <TeamPage />
@@ -161,7 +161,7 @@ describe("Time — cadastro sem dado fabricado", () => {
     expect(body["strongDomain"]).toBe("cloud");
     expect(body["gapDomain"]).toBe("security");
     expect(body["yearsAsArchitect"]).toBe(2);
-    expect(body["performance"]).toBeNull();
-    expect(body["potential"]).toBeNull();
+    expect(body).not.toHaveProperty("performance");
+    expect(body).not.toHaveProperty("potential");
   });
 });

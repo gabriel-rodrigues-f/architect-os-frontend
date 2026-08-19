@@ -97,7 +97,7 @@ describe("createSelectors", () => {
       ],
     });
 
-    it("Draft: gapsFor, domainAverages e developmentScore ignoram", () => {
+    it("Draft: gapsFor e domainAverages ignoram", () => {
       expect(rascunho.gapsFor("diego")).toEqual([]);
       expect(rascunho.domainAverages("diego").every((d) => d.avg === undefined)).toBe(true);
       expect(rascunho.officialAssessmentFor("diego")).toBeUndefined();
@@ -108,7 +108,7 @@ describe("createSelectors", () => {
       expect(emRevisao.officialAssessmentFor("diego")).toBeUndefined();
     });
 
-    it("Completed: passa a alimentar gap, média e score", () => {
+    it("Completed: passa a alimentar gap e média", () => {
       expect(concluida.gapsFor("diego").length).toBeGreaterThan(0);
       expect(concluida.officialAssessmentFor("diego")?.id).toBe("done-1");
     });
@@ -138,20 +138,10 @@ describe("createSelectors", () => {
     expect(needs.some((n) => n.competency?.id === "cloud-serverless")).toBe(false);
   });
 
-  it("developmentScore combina PDI, OKR, trilhas, evidências e evolução", () => {
-    // PDI 50*.3 + OKR 50*.15 + trilha 60*.15 + evidências 25*.2 + evolução 66,7*.2 ≈ 50
-    expect(s.developmentScore("ana")).toBe(50);
-  });
-
-  it("developmentScore é 0 para quem não tem nada registrado", () => {
-    expect(s.developmentScore("bruno")).toBe(0);
-  });
-
   it("opera sobre o estado vazio sem quebrar", () => {
     const empty = createSelectors(emptyState);
     expect(empty.teamTrainingNeeds()).toEqual([]);
     expect(empty.domainAverages("ana")).toEqual([]);
-    expect(empty.developmentScore("ana")).toBe(0);
     expect(empty.swotFor("ana")).toBeUndefined();
   });
 });
