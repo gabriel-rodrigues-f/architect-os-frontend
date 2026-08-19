@@ -1,26 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
 
 import { PageHeader, SectionCard } from "@/components/app/ui-bits";
-import { ConfirmDialog } from "@/components/app/ConfirmDialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import type { CompetencyCategory } from "@/lib/domain";
-import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
-import { slug } from "@/lib/text";
 
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
@@ -29,13 +11,13 @@ export const Route = createFileRoute("/capability-map")({
       {
         name: "description",
         content:
-          "Mapa das capacidades técnicas disponíveis no time de arquitetura, com especialistas, riscos e lacunas.",
+          "Mapa das capacidades técnicas disponíveis no time de arquitetura, com risco de concentração e lacunas de proficiência.",
       },
       { property: "og:title", content: "Mapa de Capacidades — Synapse" },
       {
         property: "og:description",
         content:
-          "Onde há concentração de conhecimento, dependência de pessoas e ausência de especialistas.",
+          "Onde há concentração de conhecimento, dependência de pessoas e ausência de referência técnica.",
       },
     ],
   }),
@@ -43,14 +25,26 @@ export const Route = createFileRoute("/capability-map")({
 });
 
 /**
- * Faixas padrão de toda capacidade. Uma capacidade recém-criada já nasce com as
- * quatro, ainda vazias, e vai se preenchendo conforme as avaliações evoluem.
+ * Faixas de proficiência absoluta dentro do domínio — não é a mesma coisa
+ * que "gap" (que é relativo ao nível esperado do cargo da pessoa). Um
+ * arquiteto júnior em nível 2 pode não ter gap nenhum (é o nível esperado
+ * para o cargo dele), mesmo caindo aqui na faixa mais baixa. Por isso a
+ * primeira faixa chama "Em desenvolvimento", não "Lacunas" — "lacuna" é
+ * conceito de avaliação individual (`gapsFor`), não de proficiência
+ * absoluta agregada por domínio. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-
+ * ATUAL-SYNAPSE.md, EPIC 6.
  *
  * A ordem é crescente — da menor proficiência para a maior — para a leitura
  * ocidental da esquerda para a direita acompanhar a evolução do time.
  */
 const BANDS = [
-  { key: "gaps", labelKey: "cap.band.gaps", tone: "bg-level-1/60", min: -Infinity, max: 2.5 },
+  {
+    key: "developing",
+    labelKey: "cap.band.developing",
+    tone: "bg-level-1/60",
+    min: -Infinity,
+    max: 2.5,
+  },
   {
     key: "practitioners",
     labelKey: "cap.band.practitioners",
@@ -62,25 +56,34 @@ const BANDS = [
   { key: "experts", labelKey: "cap.band.experts", tone: "bg-level-5/60", min: 4.5, max: Infinity },
 ] as const;
 
+/**
+ * Estados explícitos de risco de concentração — antes um `else` genérico
+ * classificava "0 Experts + 3 Avançados" como "healthy" (mesma etiqueta de
+ * um domínio com especialista de verdade), e "0 Experts + 1 Avançado" caía
+ * no mesmo `else` mesmo sendo literalmente uma única pessoa segurando o
+ * domínio sozinha. Cada combinação agora cai numa categoria com nome e
+ * critério explícitos. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-
+ * SYNAPSE.md, EPIC 6.
+ */
+type RiskState = "insufficientData" | "noReference" | "concentrationRisk" | "distributedCoverage";
+
+function classifyRisk(assessedCount: number, referenceCount: number): RiskState {
+  if (assessedCount === 0) return "insufficientData";
+  if (referenceCount === 0) return "noReference";
+  if (referenceCount === 1) return "concentrationRisk";
+  return "distributedCoverage";
+}
+
 function CapabilityMapPage() {
   const store = useStore();
   const sel = useSelectors();
-  /** Catálogo de capacidades é administrativo — backend já recusa o resto. */
-  const isAdmin = useCurrentUser().role === "admin";
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
   const { t } = useI18n();
-  const [editing, setEditing] = useState<CompetencyCategory | null>(null);
-  const [editName, setEditName] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState<CompetencyCategory | null>(null);
 
   /**
    * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para o
    * domínio simplesmente não entra em nenhuma faixa de proficiência — entra
-   * na contagem separada `notAssessed`. Antes, `?? 0` empurrava essas
-   * pessoas para "Lacunas" junto de quem foi avaliado e está fraco de
-   * verdade, os dois casos ficando indistinguíveis na tela. Ver
-   * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 7.
+   * na contagem separada `notAssessed`. Ver AUDITORIA-RIGIDA-SEGUNDA-
+   * REVISAO-SYNAPSE.md, Seção 7.
    */
   const areas = store.categories
     .filter((cat) => cat.active)
@@ -98,73 +101,17 @@ function CapabilityMapPage() {
         ...band,
         people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
       }));
-      return { cat, bands, notAssessed };
+      return { cat, bands, assessedCount: assessed.length, notAssessed };
     });
-
-  const create = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    store.addCategory({
-      id: slug(trimmed),
-      name: trimmed,
-      // A sigla das colunas dos mapas de calor sai da primeira palavra do nome.
-      short: trimmed.split(" ")[0] ?? trimmed,
-      active: true,
-    });
-    setName("");
-    setOpen(false);
-  };
-
-  const startEditing = (category: CompetencyCategory) => {
-    setEditing(category);
-    setEditName(category.name);
-  };
-
-  const saveEditing = () => {
-    if (!editing) return;
-    const trimmed = editName.trim();
-    if (!trimmed) return;
-    store.updateCategory(editing.id, { name: trimmed, short: trimmed.split(" ")[0] ?? trimmed });
-    toast.success(t("cap.edit.toast", { nome: trimmed }));
-    setEditing(null);
-  };
-
-  const remove = async () => {
-    if (!confirmDelete) return;
-    const { archived } = await store.removeCategory(confirmDelete.id);
-    toast.success(
-      archived
-        ? t("cap.archive.toast", { nome: confirmDelete.name })
-        : t("cap.delete.toast", { nome: confirmDelete.name }),
-    );
-    setConfirmDelete(null);
-  };
-
-  /** Quantas competências caem junto se a capacidade for excluída. */
-  const competencyCount = (categoryId: string) =>
-    store.competencies.filter((c) => c.categoryId === categoryId).length;
-
-  const askDelete = (category: CompetencyCategory) => setConfirmDelete(category);
 
   return (
     <>
-      <PageHeader
-        title={t("cap.title")}
-        description={t("cap.subtitle")}
-        actions={
-          isAdmin ? <Button onClick={() => setOpen(true)}>{t("cap.new")}</Button> : undefined
-        }
-      />
+      <PageHeader title={t("cap.title")} description={t("cap.subtitle")} />
 
       {store.categories.length === 0 && (
         <div className="surface-card p-8 text-center">
           <p className="text-sm font-medium">{t("cap.empty.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.hint")}</p>
-          {isAdmin && (
-            <Button className="mt-4" onClick={() => setOpen(true)}>
-              {t("cap.new")}
-            </Button>
-          )}
         </div>
       )}
 
@@ -172,40 +119,14 @@ function CapabilityMapPage() {
         {areas.map((area) => {
           const experts = area.bands.find((b) => b.key === "experts")?.people ?? [];
           const advanced = area.bands.find((b) => b.key === "advanced")?.people ?? [];
-          const mentors = [...experts, ...advanced];
+          const references = [...experts, ...advanced];
+          const risk = classifyRisk(area.assessedCount, references.length);
+
           return (
             <SectionCard
               key={area.cat.id}
               title={area.cat.name}
-              description={
-                mentors.length === 0
-                  ? t("cap.risk.noExpert")
-                  : experts.length === 1
-                    ? t("cap.risk.singlePerson")
-                    : t("cap.risk.healthy", { n: mentors.length })
-              }
-              actions={
-                isAdmin && (
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => startEditing(area.cat)}
-                      aria-label={`Editar ${area.cat.name}`}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => askDelete(area.cat)}
-                      aria-label={`Excluir ${area.cat.name}`}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                )
-              }
+              description={t(`cap.risk.${risk}`, { n: references.length })}
             >
               <div className="grid gap-3 sm:grid-cols-2">
                 {area.bands.map((band) => (
@@ -218,8 +139,8 @@ function CapabilityMapPage() {
                 ))}
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                {t("cap.mentors", {
-                  nomes: mentors.map((p) => p.architect.name).join(", ") || t("common.none"),
+                {t("cap.references", {
+                  nomes: references.map((p) => p.architect.name).join(", ") || t("common.none"),
                 })}
               </p>
               {area.notAssessed > 0 && (
@@ -231,121 +152,7 @@ function CapabilityMapPage() {
           );
         })}
       </div>
-
-      <Dialog open={editing !== null} onOpenChange={(v) => !v && setEditing(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("cap.edit.title")}</DialogTitle>
-          </DialogHeader>
-          <div>
-            <Label htmlFor="capability-edit-name">{t("cap.field.name")}</Label>
-            <Input
-              id="capability-edit-name"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveEditing()}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={saveEditing}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
-        open={confirmDelete !== null}
-        title={`Excluir ${confirmDelete?.name}?`}
-        description={
-          confirmDelete && competencyCount(confirmDelete.id) > 0
-            ? `Se alguma das ${competencyCount(confirmDelete.id)} competências desta capacidade já foi usada em avaliação, PDI, evidência ou trilha, a capacidade e as competências dela são arquivadas em vez de excluídas — o histórico continua íntegro.`
-            : "Esta capacidade não tem competências cadastradas."
-        }
-        onCancel={() => setConfirmDelete(null)}
-        onConfirm={remove}
-      />
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("cap.create.title")}</DialogTitle>
-            <DialogDescription>
-              A capacidade nasce com as quatro faixas padrão — Lacunas, Praticantes, Avançados e
-              Especialistas — e passa a receber pessoas conforme as avaliações do time.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="capability-name">Nome</Label>
-              <Input
-                id="capability-name"
-                placeholder="Ex.: Engenharia de Plataforma"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && create()}
-              />
-            </div>
-            <div className="surface-inset p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("cap.bands.label")}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {BANDS.map((band) => (
-                  <span key={band.key} className={`rounded-md px-2 py-0.5 text-xs ${band.tone}`}>
-                    {t(band.labelKey)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={create}>{t("cap.create.action")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {isAdmin && <ArchivedCategories categories={store.categories} />}
     </>
-  );
-}
-
-/**
- * Capacidades arquivadas: fora do mapa ativo (já tinham histórico quando
- * alguém tentou excluí-las), restauráveis a qualquer momento. Ver
- * `deleteCategory` no backend.
- */
-function ArchivedCategories({ categories }: { categories: CompetencyCategory[] }) {
-  const store = useStore();
-  const { t } = useI18n();
-  const archived = categories.filter((c) => !c.active);
-  if (!archived.length) return null;
-
-  return (
-    <SectionCard
-      className="mt-6"
-      title={t("cap.archived.title")}
-      description={t("cap.archived.hint")}
-    >
-      <ul className="space-y-2 text-sm">
-        {archived.map((cat) => (
-          <li key={cat.id} className="flex items-center justify-between gap-2">
-            <span>{cat.name}</span>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => store.updateCategory(cat.id, { active: true })}
-            >
-              {t("cap.restore")}
-            </Button>
-          </li>
-        ))}
-      </ul>
-    </SectionCard>
   );
 }
 

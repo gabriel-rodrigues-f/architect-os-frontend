@@ -69,6 +69,42 @@ function MatrixPage() {
   } | null>(null);
   const [editing, setEditing] = useState<Competency | null>(null);
   const [creatingIn, setCreatingIn] = useState<CompetencyCategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<CompetencyCategory | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [confirmDeleteCategory, setConfirmDeleteCategory] = useState<CompetencyCategory | null>(
+    null,
+  );
+
+  const startEditingCategory = (category: CompetencyCategory) => {
+    setEditingCategory(category);
+    setEditCategoryName(category.name);
+  };
+
+  const saveEditingCategory = () => {
+    if (!editingCategory) return;
+    const trimmed = editCategoryName.trim();
+    if (!trimmed) return;
+    store.updateCategory(editingCategory.id, {
+      name: trimmed,
+      short: trimmed.split(" ")[0] ?? trimmed,
+    });
+    toast.success(t("cap.edit.toast", { nome: trimmed }));
+    setEditingCategory(null);
+  };
+
+  const removeCategory = async () => {
+    if (!confirmDeleteCategory) return;
+    const { archived } = await store.removeCategory(confirmDeleteCategory.id);
+    toast.success(
+      archived
+        ? t("cap.archive.toast", { nome: confirmDeleteCategory.name })
+        : t("cap.delete.toast", { nome: confirmDeleteCategory.name }),
+    );
+    setConfirmDeleteCategory(null);
+  };
+
+  const categoryCompetencyCount = (categoryId: string) =>
+    store.competencies.filter((c) => c.categoryId === categoryId).length;
 
   return (
     <>
@@ -138,9 +174,27 @@ function MatrixPage() {
                 description={t("matrix.competencyCount", { n: comps.length })}
                 actions={
                   isAdmin ? (
-                    <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
-                      {t("matrix.newCompetency")}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
+                        {t("matrix.newCompetency")}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => startEditingCategory(cat)}
+                        aria-label={`Editar ${cat.name}`}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteCategory(cat)}
+                        aria-label={`Excluir ${cat.name}`}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   ) : undefined
                 }
               >
@@ -219,6 +273,41 @@ function MatrixPage() {
           }
           setConfirmDelete(null);
         }}
+      />
+
+      <Dialog open={editingCategory !== null} onOpenChange={(v) => !v && setEditingCategory(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("cap.edit.title")}</DialogTitle>
+          </DialogHeader>
+          <div>
+            <Label htmlFor="category-edit-name">{t("cap.field.name")}</Label>
+            <Input
+              id="category-edit-name"
+              value={editCategoryName}
+              onChange={(e) => setEditCategoryName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveEditingCategory()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingCategory(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={saveEditingCategory}>{t("common.save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={confirmDeleteCategory !== null}
+        title={`Excluir ${confirmDeleteCategory?.name}?`}
+        description={
+          confirmDeleteCategory && categoryCompetencyCount(confirmDeleteCategory.id) > 0
+            ? `Se alguma das ${categoryCompetencyCount(confirmDeleteCategory.id)} competências deste domínio já foi usada em avaliação, PDI, evidência ou trilha, o domínio e as competências dele são arquivados em vez de excluídos — o histórico continua íntegro.`
+            : "Este domínio não tem competências cadastradas."
+        }
+        onCancel={() => setConfirmDeleteCategory(null)}
+        onConfirm={removeCategory}
       />
 
       {isAdmin && (
