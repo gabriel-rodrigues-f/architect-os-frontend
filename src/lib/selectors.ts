@@ -9,6 +9,8 @@ import type { Architect, Assessment, Competency, Capability, Level, RoleName } f
 export const emptyState: AppState = {
   capabilities: [],
   competencies: [],
+  careerLevels: [],
+  careerLevelPolicies: [],
   architects: [],
   assessments: [],
   cycles: [],

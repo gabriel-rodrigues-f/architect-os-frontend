@@ -2,6 +2,8 @@ import type {
   Architect,
   Assessment,
   AssessmentComment,
+  CareerLevel,
+  CareerLevelPolicy,
   Competency,
   Capability,
   DevelopmentCycle,
@@ -19,6 +21,8 @@ import type {
 export interface AppState {
   capabilities: Capability[];
   competencies: Competency[];
+  careerLevels: CareerLevel[];
+  careerLevelPolicies: CareerLevelPolicy[];
   architects: Architect[];
   assessments: Assessment[];
   cycles: DevelopmentCycle[];

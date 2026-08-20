@@ -48,6 +48,23 @@ export const ROLES: RoleName[] = [
 export const roleShort = (role: RoleName): string =>
   `Nível ${role.replace("Arquiteto de Soluções ", "")}`;
 
+/**
+ * ENT-CAR-013 — `rank` ordena os níveis (I=1, II=2, III=3) para calcular
+ * "o próximo nível"; ainda não é o que decide o alvo de um assessment
+ * (isso é o motor de elegibilidade, Fase D, ainda não construído).
+ */
+export interface CareerLevel {
+  id: string;
+  name: string;
+  rank: number;
+}
+
+/** Quantas capacidades precisam estar qualificadas para elegibilidade a este nível. */
+export interface CareerLevelPolicy {
+  careerLevelId: string;
+  minimumQualifiedCapabilities: number;
+}
+
 export interface Capability {
   id: string;
   name: string;

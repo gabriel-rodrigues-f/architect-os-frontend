@@ -52,6 +52,16 @@ export const fixtureState: AppState = {
     { id: "cloud", name: "Cloud Architecture", short: "Cloud", active: true },
     { id: "security", name: "Security", short: "Security", active: true },
   ],
+  careerLevels: [
+    { id: "arquiteto-de-solucoes-i", name: "Arquiteto de Soluções I", rank: 1 },
+    { id: "arquiteto-de-solucoes-ii", name: "Arquiteto de Soluções II", rank: 2 },
+    { id: "arquiteto-de-solucoes-iii", name: "Arquiteto de Soluções III", rank: 3 },
+  ],
+  careerLevelPolicies: [
+    { careerLevelId: "arquiteto-de-solucoes-i", minimumQualifiedCapabilities: 3 },
+    { careerLevelId: "arquiteto-de-solucoes-ii", minimumQualifiedCapabilities: 3 },
+    { careerLevelId: "arquiteto-de-solucoes-iii", minimumQualifiedCapabilities: 3 },
+  ],
   competencies: [
     {
       id: "cloud-k8s",
