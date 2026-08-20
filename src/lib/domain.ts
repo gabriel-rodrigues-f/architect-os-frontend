@@ -161,6 +161,20 @@ export interface DevelopmentPlanItem {
   /** Único indicador de andamento do item — sem percentual paralelo. Ver EPIC 3. */
   status: PdiStatus;
   smart?: SmartGoal | undefined;
+  /**
+   * Acompanhamento explícito — mudar `status` já registra o resultado;
+   * check-in registra o processo (uma nota datada, de quem escreveu), sem
+   * mudar nenhum campo do item. Ver FASE 2, AUDITORIA-QUINTA-RODADA-360-
+   * SYNAPSE-2026-08-19.md.
+   */
+  checkins: PlanItemCheckin[];
+}
+
+export interface PlanItemCheckin {
+  id: string;
+  authorUserId: string;
+  text: string;
+  createdAt: string;
 }
 
 export interface SmartGoal {

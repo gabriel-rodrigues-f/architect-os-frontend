@@ -20,6 +20,7 @@ import {
   ACTION_TYPES,
   type ActionType,
   type DevelopmentPlan,
+  type DevelopmentPlanItem,
   type PdiStatus,
   type SmartGoal,
 } from "@/lib/domain";
@@ -390,6 +391,8 @@ function PlansPage() {
                     }}
                   />
                 )}
+
+                <CheckinTimeline planId={plan!.id} item={item} canCheckin={canEditExecution} />
               </div>
             );
           })}
@@ -464,6 +467,7 @@ function PlansPage() {
                 creatingForGap.gap >= 3 ? "Critical" : creatingForGap.gap === 2 ? "High" : "Medium",
               owner: architect.name,
               status: "Not Started",
+              checkins: [],
             });
             setCreatingForCompetencyId(null);
           }}
@@ -519,6 +523,87 @@ function ActionPlanField({
         onBlur={commit}
         placeholder={t("pdi.field.actionPlan.placeholder")}
       />
+    </div>
+  );
+}
+
+/**
+ * FASE 2 (quinta rodada) — "não há formalização de check-in. PDI é
+ * atualizado, mas acompanhamento é implícito." Mudar `status` já
+ * registrava o resultado; check-in registra o processo — uma nota datada,
+ * de quem escreveu, sem mudar nenhum campo do item. Autor e data vêm
+ * sempre do servidor (mesmo padrão de `CommentSection` em assessments.tsx):
+ * a lista só reflete o que o servidor confirmou, sem otimismo. Ver
+ * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, Seção 11.
+ */
+function CheckinTimeline({
+  planId,
+  item,
+  canCheckin,
+}: {
+  planId: string;
+  item: DevelopmentPlanItem;
+  canCheckin: boolean;
+}) {
+  const { t, locale } = useI18n();
+  const user = useCurrentUser();
+  const store = useStore();
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    const trimmed = text.trim();
+    if (!trimmed || saving) return;
+    setError(null);
+    setSaving(true);
+    try {
+      await store.addPlanItemCheckin(planId, item.id, trimmed);
+      setText("");
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t("pdi.checkin.error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 border-t border-border pt-3">
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {t("pdi.checkin.title", { n: item.checkins.length })}
+      </p>
+      {item.checkins.length > 0 && (
+        <ul className="mb-2 space-y-1.5">
+          {item.checkins.map((c) => (
+            <li key={c.id} className="text-sm">
+              <span className="text-muted-foreground">
+                {c.authorUserId === user.id ? t("comment.you") : t("pdi.checkin.someone")} ·{" "}
+                {formatDate(c.createdAt, locale)}:
+              </span>{" "}
+              {c.text}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canCheckin && (
+        <div className="flex items-center gap-2">
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={t("pdi.checkin.placeholder")}
+            aria-label={t("pdi.checkin.placeholder")}
+            className="min-h-9 flex-1"
+          />
+          <Button size="sm" disabled={saving || !text.trim()} onClick={() => void submit()}>
+            {saving ? t("pdi.checkin.saving") : t("pdi.checkin.save")}
+          </Button>
+        </div>
+      )}
+      {error && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

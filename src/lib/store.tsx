@@ -94,6 +94,11 @@ interface Api extends AppState {
    */
   updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) => Promise<DevelopmentPlan>;
   /**
+   * Sem otimismo: autor e data são gerados pelo servidor (nunca aceitos do
+   * cliente) — a lista de check-ins só reflete o que o servidor confirmou.
+   */
+  addPlanItemCheckin: (planId: string, itemId: string, text: string) => Promise<DevelopmentPlan>;
+  /**
    * Sem otimismo: o servidor gera o id de verdade (nunca mais aceita o `id`
    * do cliente). Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md,
    * IDOR-001.
@@ -382,6 +387,15 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
 
     updatePlanStatus: async (planId, status) => {
       const updated = await api.updatePlanStatus(planId, status);
+      local((s) => ({
+        ...s,
+        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+      }));
+      return updated;
+    },
+
+    addPlanItemCheckin: async (planId, itemId, text) => {
+      const updated = await api.addPlanItemCheckin(planId, itemId, text);
       local((s) => ({
         ...s,
         plans: s.plans.map((p) => (p.id === planId ? updated : p)),

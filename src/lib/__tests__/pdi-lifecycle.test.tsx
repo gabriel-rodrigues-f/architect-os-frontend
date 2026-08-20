@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -239,6 +239,97 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
     const complete = screen.getByRole("button", { name: "Concluir PDI" });
     expect((complete as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  /**
+   * FASE 2 (quinta rodada) — "não há formalização de check-in. PDI é
+   * atualizado, mas acompanhamento é implícito." O check-in existente na
+   * fixture (`pdi-ana-0`) precisa aparecer na timeline, e registrar um
+   * novo precisa chamar a rota certa — sem otimismo (autor/data vêm do
+   * servidor). Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   */
+  it("mostra o check-in existente e registra um novo pela rota certa", async () => {
+    const updatedPlan = {
+      ...fixtureState.plans[0]!,
+      items: fixtureState.plans[0]!.items.map((i) =>
+        i.id === "pdi-ana-0"
+          ? {
+              ...i,
+              checkins: [
+                ...i.checkins,
+                {
+                  id: "checkin-novo",
+                  authorUserId: fixtureAdminUser.id,
+                  text: "Feedback do Tech Lead: no caminho certo.",
+                  createdAt: "2026-08-10T12:00:00Z",
+                },
+              ],
+            }
+          : i,
+      ),
+    };
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const href = String(url);
+      if (href.endsWith("/api/auth/me")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      if (href.endsWith("/api/state")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureState satisfies AppState), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      if (init?.method === "POST" && href.endsWith("/api/plans/pdi-ana/items/pdi-ana-0/checkins")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(updatedPlan), {
+            status: 201,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    window.history.pushState({}, "", "?architectId=ana");
+    render(
+      <Wrapper>
+        <PlansPage />
+      </Wrapper>,
+    );
+    await screen.findByText("Evoluir IAM");
+
+    expect(await screen.findByText("Concluiu o módulo introdutório do curso.")).toBeTruthy();
+
+    const card = (await screen.findByText("Evoluir IAM")).closest(".surface-card") as HTMLElement;
+    const textarea = within(card).getByLabelText("Registrar um check-in sobre o andamento...");
+    await userEvent.type(textarea, "Combinamos o próximo passo em 1:1.");
+    await userEvent.click(within(card).getByRole("button", { name: "Registrar" }));
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) =>
+            String(url).endsWith("/api/plans/pdi-ana/items/pdi-ana-0/checkins") &&
+            (init as RequestInit)?.method === "POST",
+        ),
+      ).toBe(true),
+    );
+    const call = fetchMock.mock.calls.find(
+      ([url, init]) =>
+        String(url).endsWith("/api/plans/pdi-ana/items/pdi-ana-0/checkins") &&
+        (init as RequestInit)?.method === "POST",
+    ) as [string, RequestInit];
+    expect(JSON.parse(String(call[1].body))).toEqual({
+      text: "Combinamos o próximo passo em 1:1.",
+    });
+    expect(await screen.findByText("Feedback do Tech Lead: no caminho certo.")).toBeTruthy();
   });
 
   it("plano Approved: tipo de ação vira texto, status continua editável, sem botão de remover", async () => {

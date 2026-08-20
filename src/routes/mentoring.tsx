@@ -410,6 +410,7 @@ function MentoringPage() {
                           eligible.gap >= 3 ? "Critical" : eligible.gap === 2 ? "High" : "Medium",
                         owner: mentee.name,
                         status: "Not Started",
+                        checkins: [],
                       });
                       toast.success(
                         t("mentor.toPdi.toast", { competencia: eligible.competency.name }),

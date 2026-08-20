@@ -161,6 +161,14 @@ export const fixtureState: AppState = {
           priority: "High",
           owner: "Ana Martins",
           status: "In Progress",
+          checkins: [
+            {
+              id: "checkin-pdi-ana-0-1",
+              authorUserId: "test-admin",
+              text: "Concluiu o módulo introdutório do curso.",
+              createdAt: "2026-08-01T10:00:00Z",
+            },
+          ],
         },
         {
           id: "pdi-ana-1",
@@ -175,6 +183,7 @@ export const fixtureState: AppState = {
           priority: "Medium",
           owner: "Ana Martins",
           status: "In Progress",
+          checkins: [],
         },
       ],
     },

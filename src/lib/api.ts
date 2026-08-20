@@ -215,6 +215,8 @@ export const api = {
     del<void>(`/api/plans/${planId}/items/${itemId}`),
   updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) =>
     patch<DevelopmentPlan>(`/api/plans/${planId}/status`, { status }),
+  addPlanItemCheckin: (planId: string, itemId: string, text: string) =>
+    post<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}/checkins`, { text }),
 
   /* trilhas */
   createLearningPath: (path: LearningPath) => post<LearningPath>("/api/learning-paths", path),
