@@ -54,7 +54,7 @@ export function LevelBadge({
 
 /**
  * `level` vem `undefined` quando a pessoa não tem assessment oficial cobrindo
- * o domínio no ciclo — nunca `0`. A célula mostra "—" sem tooltip de nível,
+ * a capacidade no ciclo — nunca `0`. A célula mostra "—" sem tooltip de nível,
  * porque não há nível nenhum para explicar (não é o mesmo caso de nível 0,
  * que a escala nem define).
  */

@@ -71,19 +71,19 @@ function CyclesPage() {
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
   const chartData = closedCycles.map((c) => {
     const row: Record<string, string | number> = { cycle: c.name };
-    // Domínio sem assessment oficial no ciclo não entra na linha — nada de
+    // Capacidade sem assessment oficial no ciclo não entra na linha — nada de
     // plotar um 0 fictício que pareceria uma queda real de nível.
-    for (const d of sel.domainAverages(architectId, c.id)) {
-      if (d.avg !== undefined) row[d.category.short] = d.avg;
+    for (const d of sel.capabilityAverages(architectId, c.id)) {
+      if (d.avg !== undefined) row[d.capability.short] = d.avg;
     }
     return row;
   });
   /* A cor de cada série é decisão da paleta do sistema; aqui só se diz o que plotar. */
-  const series = store.categories.map((c) => ({ key: c.short, label: c.name }));
+  const series = store.capabilities.map((c) => ({ key: c.short, label: c.name }));
 
   /**
    * Mesma fonte que o gráfico acima: só assessment `Completed` conta como
-   * nível oficial do ciclo. Antes, o gráfico já usava `domainAverages()`
+   * nível oficial do ciclo. Antes, o gráfico já usava `capabilityAverages()`
    * (oficial) e esta tabela lia de `assessmentFor()` (aceita Draft/In
    * Review) — a mesma pessoa podia aparecer "sem nível oficial" no gráfico
    * e com um L4 na tabela ao lado. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-

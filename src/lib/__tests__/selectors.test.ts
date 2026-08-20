@@ -26,7 +26,7 @@ describe("createSelectors", () => {
 
   it("resolve entidades por id", () => {
     expect(s.competencyById("cloud-k8s")?.name).toBe("Kubernetes");
-    expect(s.categoryById("security")?.short).toBe("Security");
+    expect(s.capabilityById("security")?.short).toBe("Security");
     expect(s.architectById("ana")?.name).toBe("Ana Martins");
     expect(s.competencyById("nao-existe")).toBeUndefined();
   });
@@ -97,9 +97,9 @@ describe("createSelectors", () => {
       ],
     });
 
-    it("Draft: gapsFor e domainAverages ignoram", () => {
+    it("Draft: gapsFor e capabilityAverages ignoram", () => {
       expect(rascunho.gapsFor("diego")).toEqual([]);
-      expect(rascunho.domainAverages("diego").every((d) => d.avg === undefined)).toBe(true);
+      expect(rascunho.capabilityAverages("diego").every((d) => d.avg === undefined)).toBe(true);
       expect(rascunho.officialAssessmentFor("diego")).toBeUndefined();
     });
 
@@ -114,18 +114,18 @@ describe("createSelectors", () => {
     });
   });
 
-  it("média por domínio agrupa competências da categoria", () => {
-    const averages = s.domainAverages("ana");
-    const cloud = averages.find((d) => d.category.id === "cloud");
-    const security = averages.find((d) => d.category.id === "security");
+  it("média por capacidade agrupa competências da capacidade", () => {
+    const averages = s.capabilityAverages("ana");
+    const cloud = averages.find((d) => d.capability.id === "cloud");
+    const security = averages.find((d) => d.capability.id === "security");
 
     expect(cloud).toMatchObject({ avg: 4, target: 4 });
     expect(security).toMatchObject({ avg: 2, target: 3 });
   });
 
-  it("média por domínio fica indefinida (não zero) quando não há assessment", () => {
+  it("média por capacidade fica indefinida (não zero) quando não há assessment", () => {
     expect(
-      s.domainAverages("ninguem").every((d) => d.avg === undefined && d.target === undefined),
+      s.capabilityAverages("ninguem").every((d) => d.avg === undefined && d.target === undefined),
     ).toBe(true);
   });
 
@@ -141,13 +141,13 @@ describe("createSelectors", () => {
   it("opera sobre o estado vazio sem quebrar", () => {
     const empty = createSelectors(emptyState);
     expect(empty.teamTrainingNeeds()).toEqual([]);
-    expect(empty.domainAverages("ana")).toEqual([]);
+    expect(empty.capabilityAverages("ana")).toEqual([]);
   });
 
   /**
    * EPIC E — quem já saiu do time não conta como time atual: nem na lista
    * de `activeArchitects`, nem na Necessidade de Treinamento agregada.
-   * `gapsFor`/`domainAverages` continuam funcionando por id explícito (uma
+   * `gapsFor`/`capabilityAverages` continuam funcionando por id explícito (uma
    * tela histórica pode pedir o gap de alguém inativo de propósito).
    */
   describe("activeArchitects — time atual exclui quem saiu", () => {

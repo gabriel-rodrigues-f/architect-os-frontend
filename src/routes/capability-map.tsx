@@ -28,13 +28,13 @@ export const Route = createFileRoute("/capability-map")({
 });
 
 /**
- * Faixas de proficiência absoluta dentro do domínio — não é a mesma coisa
+ * Faixas de proficiência absoluta dentro da capacidade — não é a mesma coisa
  * que "gap" (que é relativo ao nível esperado do cargo da pessoa). Um
  * arquiteto júnior em nível 2 pode não ter gap nenhum (é o nível esperado
  * para o cargo dele), mesmo caindo aqui na faixa mais baixa. Por isso a
  * primeira faixa chama "Em desenvolvimento", não "Lacunas" — "lacuna" é
  * conceito de avaliação individual (`gapsFor`), não de proficiência
- * absoluta agregada por domínio. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-
+ * absoluta agregada por capacidade. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-
  * ATUAL-SYNAPSE.md, EPIC 6.
  *
  * A ordem é crescente — da menor proficiência para a maior — para a leitura
@@ -62,9 +62,9 @@ const BANDS = [
 /**
  * Estados explícitos de risco de concentração — antes um `else` genérico
  * classificava "0 Experts + 3 Avançados" como "healthy" (mesma etiqueta de
- * um domínio com especialista de verdade), e "0 Experts + 1 Avançado" caía
- * no mesmo `else` mesmo sendo literalmente uma única pessoa segurando o
- * domínio sozinha. Cada combinação agora cai numa categoria com nome e
+ * uma capacidade com especialista de verdade), e "0 Experts + 1 Avançado" caía
+ * no mesmo `else` mesmo sendo literalmente uma única pessoa segurando a
+ * capacidade sozinha. Cada combinação agora cai numa categoria com nome e
  * critério explícitos. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-
  * SYNAPSE.md, EPIC 6.
  */
@@ -93,17 +93,17 @@ function CapabilityMapPage() {
   const population = sel.activeArchitects.filter((a) => canActFor(user, a));
 
   /**
-   * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para o
-   * domínio simplesmente não entra em nenhuma faixa de proficiência — entra
+   * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para a
+   * capacidade simplesmente não entra em nenhuma faixa de proficiência — entra
    * na contagem separada `notAssessed`. Ver AUDITORIA-RIGIDA-SEGUNDA-
    * REVISAO-SYNAPSE.md, Seção 7.
    */
-  const areas = store.categories
+  const areas = store.capabilities
     .filter((cat) => cat.active)
     .map((cat) => {
       const people = population.map((a) => ({
         architect: a,
-        level: sel.domainAverages(a.id).find((d) => d.category.id === cat.id)?.avg,
+        level: sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id)?.avg,
       }));
       const assessed = people.filter(
         (p): p is { architect: (typeof people)[number]["architect"]; level: number } =>
@@ -122,7 +122,7 @@ function CapabilityMapPage() {
       <CapabilitiesTabs />
       <PageHeader title={t("cap.title")} description={t("cap.subtitle")} />
 
-      {store.categories.length === 0 && (
+      {store.capabilities.length === 0 && (
         <div className="surface-card p-8 text-center">
           <p className="text-sm font-medium">{t("cap.empty.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.hint")}</p>

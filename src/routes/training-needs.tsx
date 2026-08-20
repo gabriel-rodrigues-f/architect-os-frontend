@@ -110,7 +110,7 @@ function TrainingNeedsPage() {
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="py-2">Competência</th>
-                  <th className="py-2">Domínio</th>
+                  <th className="py-2">Capacidade</th>
                   <th className="py-2 text-center">{t("needs.col.peopleWithGap")}</th>
                   <th className="py-2 text-center">{t("needs.col.avgGap")}</th>
                 </tr>
@@ -120,7 +120,7 @@ function TrainingNeedsPage() {
                   <tr key={n.competency!.id} className="border-b border-border/60 last:border-0">
                     <td className="py-2 font-medium">{n.competency!.name}</td>
                     <td className="py-2 text-muted-foreground">
-                      {store.categories.find((c) => c.id === n.competency!.categoryId)?.short}
+                      {store.capabilities.find((c) => c.id === n.competency!.capabilityId)?.short}
                     </td>
                     <td className="py-2 text-center tabular-nums">{n.people}</td>
                     <td className="py-2 text-center tabular-nums">{n.avgGap}</td>

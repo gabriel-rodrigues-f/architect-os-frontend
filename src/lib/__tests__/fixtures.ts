@@ -48,7 +48,7 @@ export const fixtureUnassignedLeadUser: SessionUser = {
 
 /** Estado mínimo, porém coerente, para exercitar os selectors. */
 export const fixtureState: AppState = {
-  categories: [
+  capabilities: [
     { id: "cloud", name: "Cloud Architecture", short: "Cloud", active: true },
     { id: "security", name: "Security", short: "Security", active: true },
   ],
@@ -56,7 +56,7 @@ export const fixtureState: AppState = {
     {
       id: "cloud-k8s",
       name: "Kubernetes",
-      categoryId: "cloud",
+      capabilityId: "cloud",
       expected: {
         "Arquiteto de Soluções I": 3,
         "Arquiteto de Soluções II": 4,
@@ -67,7 +67,7 @@ export const fixtureState: AppState = {
     {
       id: "cloud-serverless",
       name: "Serverless",
-      categoryId: "cloud",
+      capabilityId: "cloud",
       expected: {
         "Arquiteto de Soluções I": 3,
         "Arquiteto de Soluções II": 4,
@@ -78,7 +78,7 @@ export const fixtureState: AppState = {
     {
       id: "security-iam",
       name: "IAM",
-      categoryId: "security",
+      capabilityId: "security",
       expected: {
         "Arquiteto de Soluções I": 2,
         "Arquiteto de Soluções II": 3,
@@ -123,7 +123,7 @@ export const fixtureState: AppState = {
       id: "ana-h2",
       architectId: "ana",
       cycleId: "2026-h2",
-      // Completed: gapsFor/domainAverages só usam assessment oficial.
+      // Completed: gapsFor/capabilityAverages só usam assessment oficial.
       status: "Completed",
       items: [
         { competencyId: "cloud-k8s", self: 4, leader: 4, target: 4, final: 4, comments: [] },

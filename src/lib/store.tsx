@@ -7,7 +7,7 @@ import type {
   Architect,
   Assessment,
   Competency,
-  CompetencyCategory,
+  Capability,
   DevelopmentCycle,
   DevelopmentPlan,
   DevelopmentPlanItem,
@@ -39,10 +39,10 @@ interface Api extends AppState {
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
   /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
-  addCategory: (c: CompetencyCategory) => void;
-  updateCategory: (id: string, patch: Partial<Omit<CompetencyCategory, "id">>) => void;
-  /** Apaga se nenhuma competência do domínio já foi usada; senão arquiva o domínio e as competências dele. */
-  removeCategory: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
+  addCapability: (c: Capability) => void;
+  updateCapability: (id: string, patch: Partial<Omit<Capability, "id">>) => void;
+  /** Apaga se nenhuma competência da capacidade já foi usada; senão arquiva a capacidade e as competências dela. */
+  removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
   addCycle: (c: DevelopmentCycle) => void;
   updateCycle: (id: string, patch: Partial<Omit<DevelopmentCycle, "id">>) => void;
   removeCycle: (id: string) => void;
@@ -167,7 +167,7 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
 
   return {
     ...state,
-    categories: [...state.categories].sort(byName),
+    capabilities: [...state.capabilities].sort(byName),
 
     setActiveCycle: (id) => {
       local((s) => ({ ...s, activeCycleId: id }));
@@ -229,22 +229,24 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       }
     },
 
-    addCategory: (c) => {
-      local((s) => ({ ...s, categories: [...s.categories, c].sort(byName) }));
-      remote(api.createCategory(c));
+    addCapability: (c) => {
+      local((s) => ({ ...s, capabilities: [...s.capabilities, c].sort(byName) }));
+      remote(api.createCapability(c));
     },
 
-    updateCategory: (id, patch) => {
+    updateCapability: (id, patch) => {
       local((s) => ({
         ...s,
-        categories: s.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)).sort(byName),
+        capabilities: s.capabilities
+          .map((c) => (c.id === id ? { ...c, ...patch } : c))
+          .sort(byName),
       }));
-      remote(api.updateCategory(id, patch));
+      remote(api.updateCapability(id, patch));
     },
 
-    /** Excluir o domínio remove junto as competências que pertenciam a ele. */
+    /** Excluir a capacidade remove junto as competências que pertenciam a ela. */
     /**
-     * Excluir o domínio nunca mexe em `assessments`: o backend não altera
+     * Excluir a capacidade nunca mexe em `assessments`: o backend não altera
      * avaliação histórica quando o catálogo muda (não há FK entre a linha
      * JSONB do item e a competência — a competência pode deixar de existir
      * sem que o registro do que foi perguntado na época mude). Antes, a
@@ -254,26 +256,26 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * realmente tem salvo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
      * Seção 19.
      */
-    removeCategory: async (id) => {
+    removeCapability: async (id) => {
       try {
-        const result = await api.deleteCategory(id);
+        const result = await api.deleteCapability(id);
         local((s) => {
           if (result.archived) {
             return {
               ...s,
-              categories: s.categories.map((c) => (c.id === id ? { ...c, active: false } : c)),
+              capabilities: s.capabilities.map((c) => (c.id === id ? { ...c, active: false } : c)),
               competencies: s.competencies.map((c) =>
-                c.categoryId === id ? { ...c, active: false } : c,
+                c.capabilityId === id ? { ...c, active: false } : c,
               ),
             };
           }
           const doomed = new Set(
-            s.competencies.filter((c) => c.categoryId === id).map((c) => c.id),
+            s.competencies.filter((c) => c.capabilityId === id).map((c) => c.id),
           );
           return {
             ...s,
-            categories: s.categories.filter((c) => c.id !== id),
-            competencies: s.competencies.filter((c) => c.categoryId !== id),
+            capabilities: s.capabilities.filter((c) => c.id !== id),
+            competencies: s.competencies.filter((c) => c.capabilityId !== id),
             learningPaths: s.learningPaths.map((p) => ({
               ...p,
               competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
-import { DomainRadar } from "@/components/app/charts";
+import { CapabilityRadar } from "@/components/app/charts";
 import { GapBadge, LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -55,8 +55,8 @@ function GapPage() {
       : applyArchitectFilter(store.architects, selected);
 
   /**
-   * Radar: média por domínio só entre quem tem assessment oficial cobrindo
-   * aquele domínio — quem não tem simplesmente não entra na média, em vez de
+   * Radar: média por capacidade só entre quem tem assessment oficial cobrindo
+   * aquela capacidade — quem não tem simplesmente não entra na média, em vez de
    * puxá-la para baixo como um nível 0 fictício faria. `coverage` guarda
    * quantos de quantos contribuíram, para a legenda avisar quando a média é
    * de uma fração pequena do grupo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-
@@ -64,24 +64,24 @@ function GapPage() {
    */
   const radar = useMemo(
     () =>
-      store.categories.map((cat) => {
+      store.capabilities.map((cat) => {
         const rows = architects.map((a) =>
-          sel.domainAverages(a.id).find((d) => d.category.id === cat.id),
+          sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
         );
         const atual = averageWithCoverage(rows.map((r) => r?.avg));
         const alvo = averageWithCoverage(rows.map((r) => r?.target));
         return {
-          domain: cat.short,
+          capability: cat.short,
           atual: Number((atual.avg ?? 0).toFixed(2)),
           alvo: Number((alvo.avg ?? 0).toFixed(2)),
           covered: atual.covered,
           total: atual.total,
         };
       }),
-    [architects, store.categories, sel],
+    [architects, store.capabilities, sel],
   );
 
-  /** Pior cobertura entre os domínios do radar — sinaliza quando a leitura é de poucos. */
+  /** Pior cobertura entre as capacidades do radar — sinaliza quando a leitura é de poucos. */
   const radarCoverage = radar.reduce(
     (min, r) => (r.covered < min.covered ? r : min),
     radar[0] ?? { covered: 0, total: 0 },
@@ -97,7 +97,7 @@ function GapPage() {
       {
         competencyId: string;
         name: string;
-        categoryId: string;
+        capabilityId: string;
         people: number;
         totalGap: number;
         maxGap: number;
@@ -112,7 +112,7 @@ function GapPage() {
         const current = map.get(gap.competency.id) ?? {
           competencyId: gap.competency.id,
           name: gap.competency.name,
-          categoryId: gap.competency.categoryId,
+          capabilityId: gap.competency.capabilityId,
           people: 0,
           totalGap: 0,
           maxGap: 0,
@@ -174,7 +174,7 @@ function GapPage() {
               title={t("gap.radar.title")}
               description={t("gap.radar.subtitle", { escopo: scopeLabel })}
             >
-              <DomainRadar data={radar} />
+              <CapabilityRadar data={radar} />
               {radarCoverage.total > 0 && radarCoverage.covered < radarCoverage.total && (
                 <p className="mt-2 text-xs text-muted-foreground">
                   {t("gap.radar.coverage", {
@@ -235,7 +235,7 @@ function GapPage() {
                     <th className="w-44 text-left text-xs uppercase tracking-wide text-muted-foreground">
                       Architect
                     </th>
-                    {store.categories.map((c) => (
+                    {store.capabilities.map((c) => (
                       <th key={c.id} className="text-center text-[11px] text-muted-foreground">
                         {c.short}
                       </th>
@@ -246,8 +246,8 @@ function GapPage() {
                   {architects.map((a) => (
                     <tr key={a.id}>
                       <td className="text-sm font-medium">{a.name}</td>
-                      {sel.domainAverages(a.id).map((d) => (
-                        <td key={d.category.id} className="min-w-[52px]">
+                      {sel.capabilityAverages(a.id).map((d) => (
+                        <td key={d.capability.id} className="min-w-[52px]">
                           <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
                         </td>
                       ))}
@@ -268,7 +268,7 @@ function GapPage() {
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="py-2">{t("col.competency")}</th>
-                    <th className="py-2">{t("col.domain")}</th>
+                    <th className="py-2">{t("col.capability")}</th>
                     <th className="py-2 text-center">{t("col.people")}</th>
                     <th className="py-2 text-center">{t("col.currentAvg")}</th>
                     <th className="py-2 text-center">{t("col.targetAvg")}</th>
@@ -280,7 +280,7 @@ function GapPage() {
                     <tr key={row.competencyId} className="border-b border-border/60 last:border-0">
                       <td className="py-2 font-medium">{row.name}</td>
                       <td className="py-2 text-muted-foreground">
-                        {store.categories.find((c) => c.id === row.categoryId)?.name}
+                        {store.capabilities.find((c) => c.id === row.capabilityId)?.name}
                       </td>
                       <td className="py-2 text-center tabular-nums">{row.people}</td>
                       <td className="py-2 text-center tabular-nums">{row.avgFinal}</td>

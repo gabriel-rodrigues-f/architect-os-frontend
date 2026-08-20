@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { DomainRadar } from "@/components/app/charts";
+import { CapabilityRadar } from "@/components/app/charts";
 import {
   Bar,
   GapBadge,
@@ -140,7 +140,7 @@ function ArchitectProfile() {
   }
 
   const gaps = sel.gapsFor(architect.id).filter((g) => g.gap > 0);
-  const domains = sel.domainAverages(architect.id);
+  const capabilityAvgs = sel.capabilityAverages(architect.id);
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
@@ -181,9 +181,9 @@ function ArchitectProfile() {
   const paths = store.learningPaths.filter((p) => p.assignedTo.includes(architect.id));
   const {
     avg,
-    covered: coveredDomains,
-    total: totalDomains,
-  } = averageWithCoverage(domains.map((d) => d.avg));
+    covered: coveredCapabilities,
+    total: totalCapabilities,
+  } = averageWithCoverage(capabilityAvgs.map((d) => d.avg));
 
   return (
     <>
@@ -205,8 +205,11 @@ function ArchitectProfile() {
           label={t("arch.stat.avgLevel")}
           value={avg === undefined ? "—" : avg.toFixed(2)}
           hint={
-            coveredDomains < totalDomains
-              ? t("arch.stat.avgLevelHintPartial", { covered: coveredDomains, total: totalDomains })
+            coveredCapabilities < totalCapabilities
+              ? t("arch.stat.avgLevelHintPartial", {
+                  covered: coveredCapabilities,
+                  total: totalCapabilities,
+                })
               : t("arch.stat.avgLevelHint")
           }
         />
@@ -268,9 +271,9 @@ function ArchitectProfile() {
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
-          <DomainRadar
-            data={domains.map((d) => ({
-              domain: d.category.short,
+          <CapabilityRadar
+            data={capabilityAvgs.map((d) => ({
+              capability: d.capability.short,
               atual: d.avg ?? 0,
               alvo: d.target ?? 0,
             }))}

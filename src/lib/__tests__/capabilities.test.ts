@@ -4,12 +4,12 @@ import { levelName, LEVELS, ROLES, roleShort } from "../domain";
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 
-/** Mesma comparação usada pela store para ordenar os domínios. */
+/** Mesma comparação usada pela store para ordenar as capacidades. */
 const byName = (a: { name: string }, b: { name: string }) =>
   a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
 
-describe("ordem alfabética dos domínios", () => {
-  const domains = [
+describe("ordem alfabética das capacidades", () => {
+  const capabilities = [
     { name: "Infraestrutura e Tecnologia" },
     { name: "Arquitetura de Software" },
     { name: "DevOps" },
@@ -24,7 +24,7 @@ describe("ordem alfabética dos domínios", () => {
   ];
 
   it("ordena em pt-BR, com 'Corporativa' antes de 'de Aplicações'", () => {
-    expect([...domains].sort(byName).map((d) => d.name)).toEqual([
+    expect([...capabilities].sort(byName).map((d) => d.name)).toEqual([
       "Arquitetura Corporativa",
       "Arquitetura de Aplicações Integradas",
       "Arquitetura de Aplicações Web",

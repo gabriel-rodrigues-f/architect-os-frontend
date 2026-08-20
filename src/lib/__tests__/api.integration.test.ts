@@ -37,7 +37,7 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
 
   it("o snapshot traz todas as coleções que a store espera", () => {
     for (const key of [
-      "categories",
+      "capabilities",
       "competencies",
       "architects",
       "assessments",
@@ -80,7 +80,7 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
     expect(sel.teamTrainingNeeds()).toBeInstanceOf(Array);
 
     for (const architect of state.architects) {
-      expect(sel.domainAverages(architect.id)).toHaveLength(state.categories.length);
+      expect(sel.capabilityAverages(architect.id)).toHaveLength(state.capabilities.length);
     }
   });
 });

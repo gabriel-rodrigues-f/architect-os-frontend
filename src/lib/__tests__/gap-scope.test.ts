@@ -28,9 +28,9 @@ describe("recorte por arquitetos selecionados", () => {
   /** Espelha exatamente o radar de gap-analysis.tsx — mesma função exportada, não uma cópia da regra. */
   const radarFor = (ids: string[]) => {
     const architects = applyArchitectFilter(fixtureState.architects, ids);
-    return fixtureState.categories.map((cat) => {
+    return fixtureState.capabilities.map((cat) => {
       const rows = architects.map((a) =>
-        sel.domainAverages(a.id).find((d) => d.category.id === cat.id),
+        sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
       );
       const atual = averageWithCoverage(rows.map((r) => r?.avg));
       const alvo = averageWithCoverage(rows.map((r) => r?.target));
@@ -67,14 +67,14 @@ describe("recorte por arquitetos selecionados", () => {
   // AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 9 — quem não tem
   // assessment oficial não pode puxar a média do grupo para baixo como se
   // tivesse nível 0.
-  it("pessoa sem assessment oficial não entra na média do domínio, só na cobertura", () => {
+  it("pessoa sem assessment oficial não entra na média da capacidade, só na cobertura", () => {
     const semAssessment = createSelectors({
       ...fixtureState,
       architects: [...fixtureState.architects, { ...fixtureState.architects[0]!, id: "diego" }],
     });
-    const rows = fixtureState.categories.map((cat) => {
+    const rows = fixtureState.capabilities.map((cat) => {
       const pontos = ["ana", "diego"].map((id) =>
-        semAssessment.domainAverages(id).find((d) => d.category.id === cat.id),
+        semAssessment.capabilityAverages(id).find((d) => d.capability.id === cat.id),
       );
       return { domain: cat.short, ...averageWithCoverage(pontos.map((p) => p?.avg)) };
     });

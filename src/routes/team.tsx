@@ -184,7 +184,7 @@ function TeamPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {activeArchitects.map((a) => {
           const top = sel.gapsFor(a.id).slice(0, 3);
-          const { avg } = averageWithCoverage(sel.domainAverages(a.id).map((d) => d.avg));
+          const { avg } = averageWithCoverage(sel.capabilityAverages(a.id).map((d) => d.avg));
           const hasOfficial = sel.officialAssessmentFor(a.id) !== undefined;
           return (
             <div key={a.id} className="surface-card p-5">

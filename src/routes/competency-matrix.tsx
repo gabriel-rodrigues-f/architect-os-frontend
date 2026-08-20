@@ -20,7 +20,7 @@ import {
   ROLES,
   roleShort,
   type Competency,
-  type CompetencyCategory,
+  type Capability,
   type Level,
   type RoleName,
 } from "@/lib/domain";
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/competency-matrix")({
       {
         name: "description",
         content:
-          "Catálogo de competências de arquitetura agrupadas por domínio, com níveis esperados por cargo.",
+          "Catálogo de competências de arquitetura agrupadas por capacidade, com níveis esperados por cargo.",
       },
       { property: "og:title", content: "Matriz de Competências — Synapse" },
       {
@@ -55,56 +55,54 @@ export const Route = createFileRoute("/competency-matrix")({
  * dom\u00ednios distintos colidiriam no mesmo id \u2014 a segunda sobrescreveria a
  * primeira e excluir uma delas apagaria as duas.
  */
-const competencyId = (category: CompetencyCategory, name: string) => slug(`${category.id}-${name}`);
+const competencyId = (capability: Capability, name: string) => slug(`${capability.id}-${name}`);
 
 function MatrixPage() {
   const store = useStore();
   /** Catálogo mestre é administrativo — backend já recusa o resto. */
   const isAdmin = useCurrentUser().role === "admin";
-  const [newCategory, setNewCategory] = useState("");
+  const [newCapability, setNewCapability] = useState("");
   const { t } = useI18n();
   const [confirmDelete, setConfirmDelete] = useState<{
     competency: Competency;
-    category: CompetencyCategory;
+    capability: Capability;
   } | null>(null);
   const [editing, setEditing] = useState<Competency | null>(null);
-  const [creatingIn, setCreatingIn] = useState<CompetencyCategory | null>(null);
-  const [editingCategory, setEditingCategory] = useState<CompetencyCategory | null>(null);
-  const [editCategoryName, setEditCategoryName] = useState("");
-  const [confirmDeleteCategory, setConfirmDeleteCategory] = useState<CompetencyCategory | null>(
-    null,
-  );
+  const [creatingIn, setCreatingIn] = useState<Capability | null>(null);
+  const [editingCapability, setEditingCapability] = useState<Capability | null>(null);
+  const [editCapabilityName, setEditCapabilityName] = useState("");
+  const [confirmDeleteCapability, setConfirmDeleteCapability] = useState<Capability | null>(null);
 
-  const startEditingCategory = (category: CompetencyCategory) => {
-    setEditingCategory(category);
-    setEditCategoryName(category.name);
+  const startEditingCapability = (capability: Capability) => {
+    setEditingCapability(capability);
+    setEditCapabilityName(capability.name);
   };
 
-  const saveEditingCategory = () => {
-    if (!editingCategory) return;
-    const trimmed = editCategoryName.trim();
+  const saveEditingCapability = () => {
+    if (!editingCapability) return;
+    const trimmed = editCapabilityName.trim();
     if (!trimmed) return;
-    store.updateCategory(editingCategory.id, {
+    store.updateCapability(editingCapability.id, {
       name: trimmed,
       short: trimmed.split(" ")[0] ?? trimmed,
     });
     toast.success(t("cap.edit.toast", { nome: trimmed }));
-    setEditingCategory(null);
+    setEditingCapability(null);
   };
 
-  const removeCategory = async () => {
-    if (!confirmDeleteCategory) return;
-    const { archived } = await store.removeCategory(confirmDeleteCategory.id);
+  const removeCapability = async () => {
+    if (!confirmDeleteCapability) return;
+    const { archived } = await store.removeCapability(confirmDeleteCapability.id);
     toast.success(
       archived
-        ? t("cap.archive.toast", { nome: confirmDeleteCategory.name })
-        : t("cap.delete.toast", { nome: confirmDeleteCategory.name }),
+        ? t("cap.archive.toast", { nome: confirmDeleteCapability.name })
+        : t("cap.delete.toast", { nome: confirmDeleteCapability.name }),
     );
-    setConfirmDeleteCategory(null);
+    setConfirmDeleteCapability(null);
   };
 
-  const categoryCompetencyCount = (categoryId: string) =>
-    store.competencies.filter((c) => c.categoryId === categoryId).length;
+  const capabilityCompetencyCount = (capabilityId: string) =>
+    store.competencies.filter((c) => c.capabilityId === capabilityId).length;
 
   return (
     <>
@@ -115,22 +113,22 @@ function MatrixPage() {
           isAdmin ? (
             <div className="flex gap-2">
               <Input
-                placeholder={t("matrix.newDomain")}
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder={t("matrix.newCapability")}
+                value={newCapability}
+                onChange={(e) => setNewCapability(e.target.value)}
                 className="w-48"
               />
               <Button
                 variant="secondary"
                 onClick={() => {
-                  if (!newCategory.trim()) return;
-                  store.addCategory({
-                    id: slug(newCategory),
-                    name: newCategory,
-                    short: newCategory.split(" ")[0] ?? newCategory,
+                  if (!newCapability.trim()) return;
+                  store.addCapability({
+                    id: slug(newCapability),
+                    name: newCapability,
+                    short: newCapability.split(" ")[0] ?? newCapability,
                     active: true,
                   });
-                  setNewCategory("");
+                  setNewCapability("");
                 }}
               >
                 {t("matrix.add")}
@@ -155,7 +153,7 @@ function MatrixPage() {
         </div>
       </SectionCard>
 
-      {store.categories.length === 0 && (
+      {store.capabilities.length === 0 && (
         <div className="surface-card p-8 text-center">
           <p className="text-sm font-medium">{t("matrix.empty.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t("matrix.empty.hint")}</p>
@@ -163,10 +161,10 @@ function MatrixPage() {
       )}
 
       <div className="space-y-4">
-        {store.categories
+        {store.capabilities
           .filter((cat) => cat.active)
           .map((cat) => {
-            const comps = store.competencies.filter((c) => c.categoryId === cat.id && c.active);
+            const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
             return (
               <SectionCard
                 key={cat.id}
@@ -180,7 +178,7 @@ function MatrixPage() {
                       </Button>
                       <button
                         type="button"
-                        onClick={() => startEditingCategory(cat)}
+                        onClick={() => startEditingCapability(cat)}
                         aria-label={`Editar ${cat.name}`}
                         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                       >
@@ -188,7 +186,7 @@ function MatrixPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setConfirmDeleteCategory(cat)}
+                        onClick={() => setConfirmDeleteCapability(cat)}
                         aria-label={`Excluir ${cat.name}`}
                         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       >
@@ -234,7 +232,9 @@ function MatrixPage() {
                                 <button
                                   type="button"
                                   className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                                  onClick={() => setConfirmDelete({ competency: c, category: cat })}
+                                  onClick={() =>
+                                    setConfirmDelete({ competency: c, capability: cat })
+                                  }
                                   aria-label={`Excluir ${c.name}`}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -257,7 +257,7 @@ function MatrixPage() {
         title={
           <>
             Tem certeza que deseja excluir {confirmDelete?.competency.name} de{" "}
-            {confirmDelete?.category.name}?
+            {confirmDelete?.capability.name}?
           </>
         }
         description="Se a competência já foi usada em alguma avaliação, PDI, evidência ou trilha, ela é arquivada (some da matriz ativa, mas o histórico continua íntegro) em vez de excluída."
@@ -275,73 +275,76 @@ function MatrixPage() {
         }}
       />
 
-      <Dialog open={editingCategory !== null} onOpenChange={(v) => !v && setEditingCategory(null)}>
+      <Dialog
+        open={editingCapability !== null}
+        onOpenChange={(v) => !v && setEditingCapability(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("cap.edit.title")}</DialogTitle>
           </DialogHeader>
           <div>
-            <Label htmlFor="category-edit-name">{t("cap.field.name")}</Label>
+            <Label htmlFor="capability-edit-name">{t("cap.field.name")}</Label>
             <Input
-              id="category-edit-name"
-              value={editCategoryName}
-              onChange={(e) => setEditCategoryName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveEditingCategory()}
+              id="capability-edit-name"
+              value={editCapabilityName}
+              onChange={(e) => setEditCapabilityName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveEditingCapability()}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingCategory(null)}>
+            <Button variant="outline" onClick={() => setEditingCapability(null)}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={saveEditingCategory}>{t("common.save")}</Button>
+            <Button onClick={saveEditingCapability}>{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <ConfirmDialog
-        open={confirmDeleteCategory !== null}
-        title={`Excluir ${confirmDeleteCategory?.name}?`}
+        open={confirmDeleteCapability !== null}
+        title={`Excluir ${confirmDeleteCapability?.name}?`}
         description={
-          confirmDeleteCategory && categoryCompetencyCount(confirmDeleteCategory.id) > 0
-            ? `Se alguma das ${categoryCompetencyCount(confirmDeleteCategory.id)} competências deste domínio já foi usada em avaliação, PDI, evidência ou trilha, o domínio e as competências dele são arquivados em vez de excluídos — o histórico continua íntegro.`
-            : "Este domínio não tem competências cadastradas."
+          confirmDeleteCapability && capabilityCompetencyCount(confirmDeleteCapability.id) > 0
+            ? `Se alguma das ${capabilityCompetencyCount(confirmDeleteCapability.id)} competências desta capacidade já foi usada em avaliação, PDI, evidência ou trilha, a capacidade e as competências dela são arquivadas em vez de excluídas — o histórico continua íntegro.`
+            : "Esta capacidade não tem competências cadastradas."
         }
-        onCancel={() => setConfirmDeleteCategory(null)}
-        onConfirm={removeCategory}
+        onCancel={() => setConfirmDeleteCapability(null)}
+        onConfirm={removeCapability}
       />
 
       {isAdmin && (
-        <ArchivedCompetencies categories={store.categories} competencies={store.competencies} />
+        <ArchivedCompetencies capabilities={store.capabilities} competencies={store.competencies} />
       )}
 
       {editing && <CompetencyEditDialog competency={editing} onClose={() => setEditing(null)} />}
       {creatingIn && (
-        <CompetencyCreateDialog category={creatingIn} onClose={() => setCreatingIn(null)} />
+        <CompetencyCreateDialog capability={creatingIn} onClose={() => setCreatingIn(null)} />
       )}
     </>
   );
 }
 
 /**
- * Domínios e competências arquivados: fora da matriz ativa (não entram em
+ * Capacidades e competências arquivados: fora da matriz ativa (não entram em
  * avaliação nova), mas não desaparecem — ficam aqui, restauráveis a
  * qualquer momento. Só existem porque já têm histórico vinculado; ver
- * `deleteCompetency`/`deleteCategory` no backend.
+ * `deleteCompetency`/`deleteCapability` no backend.
  */
 function ArchivedCompetencies({
-  categories,
+  capabilities,
   competencies,
 }: {
-  categories: CompetencyCategory[];
+  capabilities: Capability[];
   competencies: Competency[];
 }) {
   const store = useStore();
   const { t } = useI18n();
-  const archivedCategories = categories.filter((c) => !c.active);
+  const archivedCapabilities = capabilities.filter((c) => !c.active);
   const archivedCompetencies = competencies.filter(
-    (c) => !c.active && archivedCategories.every((cat) => cat.id !== c.categoryId),
+    (c) => !c.active && archivedCapabilities.every((cat) => cat.id !== c.capabilityId),
   );
-  if (!archivedCategories.length && !archivedCompetencies.length) return null;
+  if (!archivedCapabilities.length && !archivedCompetencies.length) return null;
 
   return (
     <SectionCard
@@ -350,16 +353,18 @@ function ArchivedCompetencies({
       description={t("matrix.archived.hint")}
     >
       <ul className="space-y-2 text-sm">
-        {archivedCategories.map((cat) => (
+        {archivedCapabilities.map((cat) => (
           <li key={cat.id} className="flex items-center justify-between gap-2">
             <span>
               {cat.name}{" "}
-              <span className="text-xs text-muted-foreground">({t("matrix.archived.domain")})</span>
+              <span className="text-xs text-muted-foreground">
+                ({t("matrix.archived.capability")})
+              </span>
             </span>
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => store.updateCategory(cat.id, { active: true })}
+              onClick={() => store.updateCapability(cat.id, { active: true })}
             >
               {t("matrix.restore")}
             </Button>
@@ -388,10 +393,10 @@ function ArchivedCompetencies({
  * salvar. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 39.
  */
 function CompetencyCreateDialog({
-  category,
+  capability,
   onClose,
 }: {
-  category: CompetencyCategory;
+  capability: Capability;
   onClose: () => void;
 }) {
   const store = useStore();
@@ -403,9 +408,9 @@ function CompetencyCreateDialog({
   const save = () => {
     if (!canSave) return;
     store.addCompetency({
-      id: competencyId(category, name.trim()),
+      id: competencyId(capability, name.trim()),
       name: name.trim(),
-      categoryId: category.id,
+      capabilityId: capability.id,
       expected: levels as Record<RoleName, Level>,
       active: true,
     });
@@ -416,7 +421,7 @@ function CompetencyCreateDialog({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("matrix.create.title", { dominio: category.name })}</DialogTitle>
+          <DialogTitle>{t("matrix.create.title", { dominio: capability.name })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -472,8 +477,8 @@ function CompetencyCreateDialog({
 
 /**
  * Nome e nível esperado por cargo são as únicas colunas que a matriz mostra —
- * então são as únicas que o diálogo edita. Trocar de domínio é uma decisão de
- * reorganização maior (afeta relatórios agrupados por categoria), não um
+ * então são as únicas que o diálogo edita. Trocar de capacidade é uma decisão de
+ * reorganização maior (afeta relatórios agrupados por capacidade), não um
  * ajuste pontual; fica fora daqui.
  */
 function CompetencyEditDialog({

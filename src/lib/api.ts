@@ -3,7 +3,7 @@ import type {
   Assessment,
   AssessmentComment,
   Competency,
-  CompetencyCategory,
+  Capability,
   DevelopmentCycle,
   DevelopmentPlan,
   DevelopmentPlanEvent,
@@ -17,7 +17,7 @@ import type {
 
 /** Snapshot devolvido por GET /api/state — espelha o AppState do backend. */
 export interface AppState {
-  categories: CompetencyCategory[];
+  capabilities: Capability[];
   competencies: Competency[];
   architects: Architect[];
   assessments: Assessment[];
@@ -182,13 +182,12 @@ export const api = {
     patch<Architect>(`/api/architects/${id}`, patch_),
 
   /* catálogo */
-  createCategory: (category: CompetencyCategory) =>
-    post<CompetencyCategory>("/api/categories", category),
-  updateCategory: (id: string, patch_: Partial<Omit<CompetencyCategory, "id">>) =>
-    patch<CompetencyCategory>(`/api/categories/${id}`, patch_),
-  /** `archived: true` quando o domínio já tinha histórico e foi arquivado em vez de apagado. */
-  deleteCategory: (id: string) =>
-    del<{ archived: boolean; competenciesRemoved: number }>(`/api/categories/${id}`),
+  createCapability: (capability: Capability) => post<Capability>("/api/capabilities", capability),
+  updateCapability: (id: string, patch_: Partial<Omit<Capability, "id">>) =>
+    patch<Capability>(`/api/capabilities/${id}`, patch_),
+  /** `archived: true` quando a capacidade já tinha histórico e foi arquivada em vez de apagada. */
+  deleteCapability: (id: string) =>
+    del<{ archived: boolean; competenciesRemoved: number }>(`/api/capabilities/${id}`),
   createCompetency: (competency: Competency) => post<Competency>("/api/competencies", competency),
   updateCompetency: (id: string, patch_: Partial<Omit<Competency, "id">>) =>
     patch<Competency>(`/api/competencies/${id}`, patch_),

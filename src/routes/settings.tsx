@@ -76,7 +76,7 @@ function SettingsPage() {
             <table className="w-full min-w-[420px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2">{t("ref.domain")}</th>
+                  <th className="py-2">{t("ref.capability")}</th>
                   {ROLES.map((r) => (
                     <th key={r} className="py-2 text-center">
                       {roleShort(r)}
@@ -85,8 +85,8 @@ function SettingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {store.categories.map((cat) => {
-                  const comps = store.competencies.filter((c) => c.categoryId === cat.id);
+                {store.capabilities.map((cat) => {
+                  const comps = store.competencies.filter((c) => c.capabilityId === cat.id);
                   return (
                     <tr key={cat.id} className="border-b border-border/60 last:border-0">
                       <td className="py-2 font-medium">{cat.name}</td>

@@ -19,7 +19,7 @@ import {
   SectionCard,
   StatCard,
 } from "@/components/app/ui-bits";
-import { DomainRadar } from "@/components/app/charts";
+import { CapabilityRadar } from "@/components/app/charts";
 import { useCurrentUser } from "@/lib/auth";
 import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
@@ -190,7 +190,7 @@ function AdminHome() {
                   <th className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {t("cycle.architect")}
                   </th>
-                  {store.categories.map((c) => (
+                  {store.capabilities.map((c) => (
                     <th
                       key={c.id}
                       className="px-1 text-center text-[11px] font-medium text-muted-foreground"
@@ -213,8 +213,8 @@ function AdminHome() {
                         {a.name}
                       </Link>
                     </td>
-                    {sel.domainAverages(a.id).map((d) => (
-                      <td key={d.category.id} className="min-w-[52px]">
+                    {sel.capabilityAverages(a.id).map((d) => (
+                      <td key={d.capability.id} className="min-w-[52px]">
                         <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
                       </td>
                     ))}
@@ -285,9 +285,9 @@ function MemberHome() {
     );
   }
 
-  const domains = sel.domainAverages(architectId);
+  const capabilityAvgs = sel.capabilityAverages(architectId);
   const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
-  const { avg, covered, total } = averageWithCoverage(domains.map((d) => d.avg));
+  const { avg, covered, total } = averageWithCoverage(capabilityAvgs.map((d) => d.avg));
   const assessment = sel.assessmentFor(architectId);
   const plan = sel.planFor(architectId);
   const planStatus = plan?.status;
@@ -340,9 +340,9 @@ function MemberHome() {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
-          <DomainRadar
-            data={domains.map((d) => ({
-              domain: d.category.short,
+          <CapabilityRadar
+            data={capabilityAvgs.map((d) => ({
+              capability: d.capability.short,
               atual: d.avg ?? 0,
               alvo: d.target ?? 0,
             }))}

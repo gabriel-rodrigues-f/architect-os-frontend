@@ -14,9 +14,9 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 /**
  * Exercita a Matriz de Competências de verdade: o componente da rota, ligado
  * à store, com `fetch` interceptado — o caminho que o usuário percorre ao
- * clicar na lixeira de um domínio.
+ * clicar na lixeira de uma capacidade.
  *
- * Excluir domínio/capacidade migrou do Mapa de Capacidades (agora só
+ * Excluir capacidade migrou do Mapa de Capacidades (agora só
  * leitura de risco/cobertura) para a Matriz de Competências, que já é a
  * página administrativa do catálogo — curadoria não deveria viver numa tela
  * de leitura de risco. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-
@@ -95,7 +95,7 @@ const renderPage = (state: AppState) => {
   );
 };
 
-describe("Matriz de Competências — exclusão de domínio", () => {
+describe("Matriz de Competências — exclusão de capacidade", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -108,7 +108,7 @@ describe("Matriz de Competências — exclusão de domínio", () => {
     setAuthToken(null);
   });
 
-  it("exclui o domínio após confirmar", async () => {
+  it("exclui a capacidade após confirmar", async () => {
     renderPage(fixtureState);
     await screen.findByText("Cloud Architecture");
 
@@ -119,7 +119,7 @@ describe("Matriz de Competências — exclusão de domínio", () => {
 
     const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === "DELETE");
     expect(deleteCall).toBeDefined();
-    expect(String(deleteCall?.[0])).toContain("/api/categories/cloud");
+    expect(String(deleteCall?.[0])).toContain("/api/capabilities/cloud");
   });
 
   /**

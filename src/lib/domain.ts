@@ -48,18 +48,18 @@ export const ROLES: RoleName[] = [
 export const roleShort = (role: RoleName): string =>
   `Nível ${role.replace("Arquiteto de Soluções ", "")}`;
 
-export interface CompetencyCategory {
+export interface Capability {
   id: string;
   name: string;
   short: string;
-  /** Fora do catálogo ativo, mas os assessments que já usaram este domínio permanecem legíveis. */
+  /** Fora do catálogo ativo, mas os assessments que já usaram este capacidade permanecem legíveis. */
   active: boolean;
 }
 
 export interface Competency {
   id: string;
   name: string;
-  categoryId: string;
+  capabilityId: string;
   /** Role Competency Profile: expected level per role */
   expected: Record<RoleName, Level>;
   /** Fora do catálogo ativo — não entra em novo assessment nem em opção nova de PDI/trilha/evidência. */
@@ -116,13 +116,13 @@ export interface AssessmentItem {
   final: Level | null;
   comments: AssessmentComment[];
   /**
-   * Fotografia do nome/domínio da competência no momento em que o assessment
+   * Fotografia do nome/capacidade da competência no momento em que o assessment
    * foi aberto — ausente em assessments criados antes desta migração, quando
    * quem renderiza cai de volta no catálogo atual.
    */
   competencyName?: string | undefined;
-  categoryId?: string | undefined;
-  categoryName?: string | undefined;
+  capabilityId?: string | undefined;
+  capabilityName?: string | undefined;
 }
 
 export interface Assessment {

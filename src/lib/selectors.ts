@@ -1,12 +1,5 @@
 import type { AppState } from "./api";
-import type {
-  Architect,
-  Assessment,
-  Competency,
-  CompetencyCategory,
-  Level,
-  RoleName,
-} from "./domain";
+import type { Architect, Assessment, Competency, Capability, Level, RoleName } from "./domain";
 
 /**
  * Derivações puras sobre o snapshot da API. Ficam fora do componente para poderem
@@ -14,7 +7,7 @@ import type {
  */
 
 export const emptyState: AppState = {
-  categories: [],
+  capabilities: [],
   competencies: [],
   architects: [],
   assessments: [],
@@ -51,13 +44,13 @@ export interface Gap {
 
 /**
  * `avg`/`target` ficam `undefined` quando não há assessment oficial cobrindo
- * o domínio para essa pessoa/ciclo — nunca `0`. Um `0` aqui seria
+ * a capacidade para essa pessoa/ciclo — nunca `0`. Um `0` aqui seria
  * indistinguível de "avaliado e no nível mais baixo", e cada tela que soma
  * ou classifica por nível herdaria esse erro silenciosamente (ver
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 6).
  */
-export interface DomainAverage {
-  category: CompetencyCategory;
+export interface CapabilityAverage {
+  capability: Capability;
   avg: number | undefined;
   target: number | undefined;
 }
@@ -83,19 +76,19 @@ const indexByArchitectAndCycle = <T extends { architectId: string; cycleId: stri
 
 /**
  * Os índices são construídos uma vez por versão do estado. Antes cada busca era
- * um `find` linear dentro de laços — `domainAverages` chegava a ser O(domínios ×
+ * um `find` linear dentro de laços — `capabilityAverages` chegava a ser O(capacidades ×
  * competências²) por arquiteto, e o painel repete isso para o time inteiro a
  * cada render.
  */
 export function createSelectors(s: AppState) {
   const competencyIndex = byId(s.competencies);
-  const categoryIndex = byId(s.categories);
+  const capabilityIndex = byId(s.capabilities);
   const architectIndex = byId(s.architects);
   const assessmentIndex = indexByArchitectAndCycle(s.assessments);
   const planIndex = indexByArchitectAndCycle(s.plans);
 
   const competencyById = (id: string) => competencyIndex.get(id);
-  const categoryById = (id: string) => categoryIndex.get(id);
+  const capabilityById = (id: string) => capabilityIndex.get(id);
   const architectById = (id: string) => architectIndex.get(id);
 
   /**
@@ -109,9 +102,9 @@ export function createSelectors(s: AppState) {
   const activeArchitects: Architect[] = s.architects.filter((a) => a.active);
 
   /**
-   * Nome/domínio de um item de assessment: catálogo atual quando a competência
+   * Nome/capacidade de um item de assessment: catálogo atual quando a competência
    * ainda existe lá (é o caso comum), senão a fotografia gravada no próprio
-   * item (`competencyName`/`categoryId`) — histórico não pode depender de uma
+   * item (`competencyName`/`capabilityId`) — histórico não pode depender de uma
    * linha do catálogo que foi apagada ou renomeada depois. Itens de antes desta
    * migração não têm fotografia; nesse caso, sem catálogo vivo, não há nome a
    * mostrar. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC C.
@@ -123,7 +116,7 @@ export function createSelectors(s: AppState) {
     return {
       id: item.competencyId,
       name: item.competencyName,
-      categoryId: item.categoryId ?? "",
+      capabilityId: item.capabilityId ?? "",
       expected: {} as Record<RoleName, Level>,
       active: false,
     };
@@ -136,7 +129,7 @@ export function createSelectors(s: AppState) {
 
   /**
    * A mesma busca de `assessmentFor`, mas só devolve o assessment quando ele
-   * é `Completed` — a fotografia oficial do ciclo. Gap, cobertura de domínio,
+   * é `Completed` — a fotografia oficial do ciclo. Gap, cobertura de capacidade,
    * índice de desenvolvimento e necessidade de treinamento usam esta versão:
    * uma autoavaliação em rascunho (todo item nasce em nível 1) não pode
    * aparecer como lacuna real, e uma avaliação em revisão ainda não foi
@@ -150,7 +143,7 @@ export function createSelectors(s: AppState) {
   // As telas pedem os mesmos recortes várias vezes no mesmo render; o cache vive
   // enquanto esta versão do estado existir.
   const gapsCache = new Map<string, Gap[]>();
-  const averagesCache = new Map<string, DomainAverage[]>();
+  const averagesCache = new Map<string, CapabilityAverage[]>();
 
   const gapsFor = (architectId: string, cycleId = s.activeCycleId): Gap[] => {
     const cacheKey = cycleKey(architectId, cycleId);
@@ -174,30 +167,34 @@ export function createSelectors(s: AppState) {
     return gaps;
   };
 
-  const domainAverages = (architectId: string, cycleId = s.activeCycleId): DomainAverage[] => {
+  const capabilityAverages = (
+    architectId: string,
+    cycleId = s.activeCycleId,
+  ): CapabilityAverage[] => {
     const cacheKey = cycleKey(architectId, cycleId);
     const cached = averagesCache.get(cacheKey);
     if (cached) return cached;
 
-    // Uma passada pelos itens acumulando por domínio, em vez de varrer os itens
-    // uma vez para cada domínio.
+    // Uma passada pelos itens acumulando por capacidade, em vez de varrer os itens
+    // uma vez para cada capacidade.
     const totals = new Map<string, { final: number; target: number; count: number }>();
     for (const item of officialAssessmentFor(architectId, cycleId)?.items ?? []) {
       if (item.final === null) continue;
-      const categoryId = competencyIndex.get(item.competencyId)?.categoryId ?? item.categoryId;
-      if (!categoryId) continue;
-      const acc = totals.get(categoryId) ?? { final: 0, target: 0, count: 0 };
+      const capabilityId =
+        competencyIndex.get(item.competencyId)?.capabilityId ?? item.capabilityId;
+      if (!capabilityId) continue;
+      const acc = totals.get(capabilityId) ?? { final: 0, target: 0, count: 0 };
       acc.final += item.final;
       acc.target += item.target;
       acc.count += 1;
-      totals.set(categoryId, acc);
+      totals.set(capabilityId, acc);
     }
 
-    const averages = s.categories.map((category) => {
-      const acc = totals.get(category.id);
-      if (!acc?.count) return { category, avg: undefined, target: undefined };
+    const averages = s.capabilities.map((capability) => {
+      const acc = totals.get(capability.id);
+      if (!acc?.count) return { capability, avg: undefined, target: undefined };
       const mean = (value: number) => Number((value / acc.count).toFixed(2));
-      return { category, avg: mean(acc.final), target: mean(acc.target) };
+      return { capability, avg: mean(acc.final), target: mean(acc.target) };
     });
 
     averagesCache.set(cacheKey, averages);
@@ -251,14 +248,14 @@ export function createSelectors(s: AppState) {
 
   return {
     competencyById,
-    categoryById,
+    capabilityById,
     architectById,
     activeArchitects,
     assessmentFor,
     officialAssessmentFor,
     planFor,
     gapsFor,
-    domainAverages,
+    capabilityAverages,
     teamTrainingNeeds,
   };
 }
@@ -268,7 +265,7 @@ export type Selectors = ReturnType<typeof createSelectors>;
 /**
  * Média só de quem tem valor, mais cobertura (quantos de quantos) — nunca
  * trata ausência como zero. Toda tela que soma `avg`/`target` de várias
- * pessoas ou vários domínios passa por aqui, para não repetir o mesmo erro
+ * pessoas ou vários capacidades passa por aqui, para não repetir o mesmo erro
  * em cada lugar. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 9.
  */
 export function averageWithCoverage(values: (number | undefined)[]): {

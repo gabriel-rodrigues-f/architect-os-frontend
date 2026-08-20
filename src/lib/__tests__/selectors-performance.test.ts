@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { AppState } from "../api";
-import type { Assessment, Competency, CompetencyCategory, Architect, Level } from "../domain";
+import type { Assessment, Competency, Capability, Architect, Level } from "../domain";
 import { createSelectors, emptyState } from "../selectors";
 
 /**
@@ -16,18 +16,18 @@ const COMPETENCIES_PER_DOMAIN = 25; // 300 competências
 const ARCHITECTS = 40;
 
 function buildLargeState(): AppState {
-  const categories: CompetencyCategory[] = Array.from({ length: DOMAINS }, (_, i) => ({
+  const capabilities: Capability[] = Array.from({ length: DOMAINS }, (_, i) => ({
     id: `dominio-${i}`,
-    name: `Domínio ${i}`,
+    name: `Capacidade ${i}`,
     short: `D${i}`,
     active: true,
   }));
 
-  const competencies: Competency[] = categories.flatMap((cat, ci) =>
+  const competencies: Competency[] = capabilities.flatMap((cat, ci) =>
     Array.from({ length: COMPETENCIES_PER_DOMAIN }, (_, i) => ({
       id: `comp-${ci}-${i}`,
       name: `Competência ${ci}.${i}`,
-      categoryId: cat.id,
+      capabilityId: cat.id,
       expected: {
         "Arquiteto de Soluções I": 3 as Level,
         "Arquiteto de Soluções II": 4 as Level,
@@ -65,7 +65,7 @@ function buildLargeState(): AppState {
 
   return {
     ...emptyState,
-    categories,
+    capabilities,
     competencies,
     architects,
     assessments,
@@ -84,11 +84,11 @@ describe("selectors em escala", () => {
 
     const started = performance.now();
     for (const architect of state.architects) {
-      sel.domainAverages(architect.id);
+      sel.capabilityAverages(architect.id);
     }
     const elapsed = performance.now() - started;
 
-    // 40 arquitetos × 300 competências × 12 domínios. Com busca linear em laço
+    // 40 arquitetos × 300 competências × 12 capacidades. Com busca linear em laço
     // isso passava de segundos; indexado fica na casa das dezenas de ms.
     expect(elapsed).toBeLessThan(250);
   });
@@ -106,7 +106,7 @@ describe("selectors em escala", () => {
 
   it("mantém o resultado correto na escala grande", () => {
     const sel = createSelectors(state);
-    const averages = sel.domainAverages("arq-0");
+    const averages = sel.capabilityAverages("arq-0");
 
     expect(averages).toHaveLength(DOMAINS);
     for (const domain of averages) {

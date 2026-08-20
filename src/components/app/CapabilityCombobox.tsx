@@ -12,7 +12,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { CompetencyCategory } from "@/lib/domain";
+import type { Capability } from "@/lib/domain";
 
 /**
  * Seleção múltipla de capacidades. Diferente de um `<select multiple>`, permite
@@ -27,14 +27,14 @@ import type { CompetencyCategory } from "@/lib/domain";
  * ficam indistinguíveis para leitor de tela.
  */
 export function CapabilityCombobox({
-  categories,
+  capabilities,
   selected,
   onToggle,
   onSelectAll,
   label = "Capacidades",
 }: {
-  categories: readonly CompetencyCategory[];
-  selected: readonly CompetencyCategory[];
+  capabilities: readonly Capability[];
+  selected: readonly Capability[];
   onToggle: (id: string) => void;
   /** Recebe todos os ids quando marca, e lista vazia quando desmarca. */
   onSelectAll: (ids: string[]) => void;
@@ -42,14 +42,14 @@ export function CapabilityCombobox({
 }) {
   const [open, setOpen] = useState(false);
 
-  const todasMarcadas = categories.length > 0 && selected.length === categories.length;
+  const todasMarcadas = capabilities.length > 0 && selected.length === capabilities.length;
   const algumaMarcada = selected.length > 0;
 
   const resumo =
     selected.length === 0
       ? "Selecione capacidades"
       : todasMarcadas
-        ? `Todas (${categories.length})`
+        ? `Todas (${capabilities.length})`
         : selected.length === 1
           ? (selected[0]?.name ?? "")
           : `${selected.length} capacidades`;
@@ -74,12 +74,12 @@ export function CapabilityCombobox({
           <CommandList>
             <CommandEmpty>Nenhuma capacidade encontrada.</CommandEmpty>
 
-            {categories.length > 0 && (
+            {capabilities.length > 0 && (
               <>
                 <CommandGroup>
                   <CommandItem
                     value="__todas__"
-                    onSelect={() => onSelectAll(todasMarcadas ? [] : categories.map((c) => c.id))}
+                    onSelect={() => onSelectAll(todasMarcadas ? [] : capabilities.map((c) => c.id))}
                   >
                     <Checkbox
                       // Meio-marcada quando há seleção parcial: comunica que
@@ -97,7 +97,7 @@ export function CapabilityCombobox({
             )}
 
             <CommandGroup>
-              {categories.map((c) => {
+              {capabilities.map((c) => {
                 const marcada = selected.some((s) => s.id === c.id);
                 return (
                   <CommandItem key={c.id} value={c.name} onSelect={() => onToggle(c.id)}>

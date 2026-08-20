@@ -130,16 +130,16 @@ function DataTable({
 }
 
 /* ------------------------------------------------------------------ */
-/* Radar por domínio                                                   */
+/* Radar por capacidade                                                   */
 /* ------------------------------------------------------------------ */
 
 export interface RadarPoint {
-  domain: string;
+  capability: string;
   atual: number;
   alvo: number;
 }
 
-export function DomainRadar({ data, height = 320 }: { data: RadarPoint[]; height?: number }) {
+export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; height?: number }) {
   const { t } = useI18n();
   const semMovimento = useReducedMotion();
 
@@ -155,14 +155,14 @@ export function DomainRadar({ data, height = 320 }: { data: RadarPoint[]; height
       dataTable={
         <DataTable
           caption={t("chart.radar.label")}
-          columns={[t("chart.axis.domain"), atual, alvo]}
-          rows={data.map((d) => [d.domain, d.atual, d.alvo])}
+          columns={[t("chart.axis.capability"), atual, alvo]}
+          rows={data.map((d) => [d.capability, d.atual, d.alvo])}
         />
       }
     >
       <RadarChart data={data} outerRadius="72%">
         <PolarGrid stroke={CHART_INK.grid} />
-        <PolarAngleAxis dataKey="domain" tick={axisTick} />
+        <PolarAngleAxis dataKey="capability" tick={axisTick} />
         {/*
           Os rótulos do eixo radial saem: numeravam 0..5 por cima do polígono,
           competindo com o dado. A escala continua legível pelos anéis da grade
@@ -227,7 +227,7 @@ export function EvolutionLine({
   /*
     A paleta é criada aqui, e não recebida por prop: a cor de uma série é
     decisão do sistema de design, não de quem chama. Antes cada tela montava o
-    próprio array de `var(--chart-N)` e o mesmo domínio saía de cores
+    próprio array de `var(--chart-N)` e o mesmo capacidade saía de cores
     diferentes em telas diferentes.
   */
   const palette = new ChartPalette();

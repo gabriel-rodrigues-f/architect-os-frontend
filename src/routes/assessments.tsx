@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Textarea } from "@/components/ui/textarea";
-import type { Assessment, AssessmentComment, CompetencyCategory, Level } from "@/lib/domain";
+import type { Assessment, AssessmentComment, Capability, Level } from "@/lib/domain";
 import type { CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
@@ -66,8 +66,8 @@ function AssessmentsPage() {
   const { t, locale } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();
-  const [categoryIds, setCategoryIds] = useState<string[]>(() =>
-    store.categories[0] ? [store.categories[0].id] : [],
+  const [capabilityIds, setCapabilityIds] = useState<string[]>(() =>
+    store.capabilities[0] ? [store.capabilities[0].id] : [],
   );
   const [openComment, setOpenComment] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
@@ -120,10 +120,10 @@ function AssessmentsPage() {
     assessment?.items.some((i) => i.leader === null || i.final === null) ?? false;
 
   /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
-  const selected = store.categories.filter((c) => categoryIds.includes(c.id));
+  const selected = store.capabilities.filter((c) => capabilityIds.includes(c.id));
 
-  const toggleCategory = (id: string) =>
-    setCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+  const toggleCapability = (id: string) =>
+    setCapabilityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
   const transition = (nextStatus: Assessment["status"]) => {
     if (!assessment) return;
@@ -181,10 +181,10 @@ function AssessmentsPage() {
               )}
             </select>
             <CapabilityCombobox
-              categories={store.categories}
+              capabilities={store.capabilities}
               selected={selected}
-              onToggle={toggleCategory}
-              onSelectAll={setCategoryIds}
+              onToggle={toggleCapability}
+              onSelectAll={setCapabilityIds}
             />
           </div>
         }
@@ -305,7 +305,7 @@ function AssessmentsPage() {
       ) : (
         <div className="space-y-4">
           {selected.map((cat) => {
-            const comps = store.competencies.filter((c) => c.categoryId === cat.id);
+            const comps = store.competencies.filter((c) => c.capabilityId === cat.id);
             return (
               <SectionCard
                 key={cat.id}
