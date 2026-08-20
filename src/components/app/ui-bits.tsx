@@ -190,15 +190,17 @@ export function SectionCard({
   actions,
   children,
   className,
+  id,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
-    <section className={cn("surface-card p-5", className)}>
+    <section id={id} className={cn("surface-card p-5", className)}>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-base font-semibold">{title}</h2>

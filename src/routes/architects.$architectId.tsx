@@ -66,6 +66,48 @@ function ArchitectNotFound() {
   return <p className="text-sm text-muted-foreground">{t("arch.notFound")}</p>;
 }
 
+export type NextStep =
+  | { kind: "itemsNotStarted"; count: number }
+  | { kind: "gapsNotInPlan"; count: number }
+  | { kind: "evidencesPending"; count: number }
+  | { kind: "assessmentAwaiting" };
+
+/**
+ * Função pura — sem depender de montar a página — pra poder testar quais
+ * "próximos passos" aparecem sem precisar de `RouterProvider`
+ * (`Route.useParams()`, usado no resto do componente, exige um real).
+ * Cada passo só entra na lista se quem está vendo a página tem a
+ * permissão correspondente (`canEditOwn` pros passos de dono, `canReviewEvidence`
+ * pros de revisão) — mesma regra que já autoriza as ações em si.
+ */
+export function computeNextSteps(input: {
+  canEditOwn: boolean;
+  canReviewEvidence: boolean;
+  itemsNotStartedCount: number;
+  gapsNotInPlanCount: number;
+  evidencesPendingCount: number;
+  assessmentAwaitingCalibration: boolean;
+}): NextStep[] {
+  const steps: NextStep[] = [];
+  if (input.canEditOwn) {
+    if (input.itemsNotStartedCount > 0) {
+      steps.push({ kind: "itemsNotStarted", count: input.itemsNotStartedCount });
+    }
+    if (input.gapsNotInPlanCount > 0) {
+      steps.push({ kind: "gapsNotInPlan", count: input.gapsNotInPlanCount });
+    }
+  }
+  if (input.canReviewEvidence) {
+    if (input.evidencesPendingCount > 0) {
+      steps.push({ kind: "evidencesPending", count: input.evidencesPendingCount });
+    }
+    if (input.assessmentAwaitingCalibration) {
+      steps.push({ kind: "assessmentAwaiting" });
+    }
+  }
+  return steps;
+}
+
 function ArchitectProfile() {
   const { architectId } = Route.useParams();
   const store = useStore();
@@ -102,6 +144,30 @@ function ArchitectProfile() {
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
+  const assessment = sel.assessmentFor(architect.id);
+
+  /**
+   * FASE 2 (quinta rodada) — "perfil deveria ser o centro da jornada... boa
+   * organização por cards; precisa priorizar pendências/próximo passo sobre
+   * inventário." Antes, a tela era só inventário: radar, gaps, histórico,
+   * PDI, trilhas, evidências e mentoria em sequência fixa, sem indicar o
+   * que precisa de uma ação agora. `computeNextSteps` reaproveita sinais
+   * que já existem na página (gap fora do PDI, item nunca iniciado,
+   * evidência Pending, avaliação em revisão) para liderar com "o que
+   * fazer", antes do resto virar inventário abaixo. Ver AUDITORIA-QUINTA-
+   * RODADA-360-SYNAPSE-2026-08-19.md, Seção 7 (Perfil da pessoa) e 33
+   * (FASE 2).
+   */
+  const nextSteps = computeNextSteps({
+    canEditOwn,
+    canReviewEvidence,
+    itemsNotStartedCount: plan?.items.filter((i) => i.status === "Not Started").length ?? 0,
+    gapsNotInPlanCount: gaps.filter(
+      (g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId),
+    ).length,
+    evidencesPendingCount: evidences.filter((e) => e.status === "Pending").length,
+    assessmentAwaitingCalibration: assessment?.status === "In Review",
+  });
   /**
    * Histórico de avaliações: um assessment por ciclo já concluído, mais
    * recente primeiro. Sem isto o workspace da pessoa não tinha nenhuma vista
@@ -150,6 +216,55 @@ function ArchitectProfile() {
           hint={t("arch.stat.openGapsHint")}
         />
       </div>
+
+      {(canEditOwn || canReviewEvidence) && (
+        <SectionCard
+          className="mb-6"
+          title={t("arch.nextSteps.title")}
+          description={t("arch.nextSteps.subtitle")}
+        >
+          {nextSteps.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("arch.nextSteps.none")}</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {nextSteps.map((step) => (
+                <li
+                  key={step.kind}
+                  className="flex items-center justify-between gap-3 surface-inset p-2.5"
+                >
+                  <span>
+                    {step.kind === "itemsNotStarted" &&
+                      t("arch.nextSteps.itemsNotStarted", { n: step.count })}
+                    {step.kind === "gapsNotInPlan" &&
+                      t("arch.nextSteps.gapsNotInPlan", { n: step.count })}
+                    {step.kind === "evidencesPending" &&
+                      t("arch.nextSteps.evidencesPending", { n: step.count })}
+                    {step.kind === "assessmentAwaiting" && t("arch.nextSteps.assessmentAwaiting")}
+                  </span>
+                  {step.kind === "evidencesPending" ? (
+                    <a
+                      href="#arch-evidence"
+                      className="whitespace-nowrap text-xs text-primary hover:underline"
+                    >
+                      {t("arch.nextSteps.cta")}
+                    </a>
+                  ) : (
+                    <Link
+                      to={
+                        step.kind === "assessmentAwaiting" ? "/assessments" : "/development-plans"
+                      }
+                      search={{ architectId: architect.id }}
+                      className="whitespace-nowrap text-xs text-primary hover:underline"
+                    >
+                      {t("arch.nextSteps.cta")}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
@@ -285,6 +400,7 @@ function ArchitectProfile() {
         </SectionCard>
 
         <SectionCard
+          id="arch-evidence"
           title={t("arch.evidence.title")}
           description={t("arch.evidence.subtitle")}
           actions={
