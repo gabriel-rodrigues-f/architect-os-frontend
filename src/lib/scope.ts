@@ -33,3 +33,18 @@ export function isLeadOf(user: SessionUser, architect: ScopedArchitect | undefin
   if (!architect) return false;
   return user.role === "lead" && architect.leadUserId === user.id;
 }
+
+/**
+ * Espelha `isAssignedTechLeadOf` do backend (ENT-AUTH-002/003,
+ * AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md, Seção 5/6) — o
+ * mesmo `isLeadOf`, mas **sem** o bypass de admin. Usado só para decidir se
+ * o botão "Reabrir PDI" (reabertura de plano concluído) aparece: a regra
+ * pede explicitamente que admin não reabra só por ser administrador.
+ */
+export function isAssignedTechLeadOf(
+  user: SessionUser,
+  architect: ScopedArchitect | undefined,
+): boolean {
+  if (!architect) return false;
+  return user.role === "lead" && architect.leadUserId === user.id;
+}

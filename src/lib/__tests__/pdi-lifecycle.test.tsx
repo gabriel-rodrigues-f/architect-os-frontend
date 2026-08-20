@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as PlansRoute } from "@/routes/development-plans";
-import { setAuthToken, type AppState } from "../api";
+import { setAuthToken, type AppState, type SessionUser } from "../api";
 import { AuthProvider } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -346,5 +346,116 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     expect(card.querySelectorAll("select")).toHaveLength(1);
     // "Remover GAP" não aparece — item já acordado não desaparece.
     expect(screen.queryByRole("button", { name: /Remover GAP/ })).toBeNull();
+  });
+
+  /**
+   * ENT-PDI-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
+   * Seção 5) — reabrir um PDI concluído é exclusivo do Tech Lead
+   * responsável; admin (o `fixtureAdminUser` usado no resto deste arquivo)
+   * não vê o botão, mesmo podendo tudo o mais.
+   */
+  describe("reabertura de PDI concluído (ENT-PDI-001)", () => {
+    const completedState: AppState = {
+      ...fixtureState,
+      architects: fixtureState.architects.map((a) =>
+        a.id === "ana" ? { ...a, leadUserId: "test-lead-ana" } : a,
+      ),
+      plans: fixtureState.plans.map((p) =>
+        p.architectId === "ana" ? { ...p, status: "Completed" as const } : p,
+      ),
+    };
+    const fixtureLeadOfAna: SessionUser = {
+      id: "test-lead-ana",
+      email: "lead-ana@company.com",
+      name: "Tech Lead da Ana",
+      role: "lead",
+      architectId: null,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+
+    function mockFetchAs(user: SessionUser, state: AppState) {
+      fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+        const href = String(url);
+        if (href.endsWith("/api/auth/me")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(user), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }),
+          );
+        }
+        if (href.endsWith("/api/state")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(state), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }),
+          );
+        }
+        if (init?.method === "POST" && href.includes("/reopen")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: "pdi-ana", status: "Draft", items: [] }), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }),
+          );
+        }
+        return Promise.resolve(new Response("{}", { status: 200 }));
+      });
+    }
+
+    it("admin não vê o botão Reabrir PDI — só o Tech Lead responsável reabre", async () => {
+      mockFetchAs(fixtureAdminUser, completedState);
+      window.history.pushState({}, "", "?architectId=ana");
+      render(
+        <Wrapper>
+          <PlansPage />
+        </Wrapper>,
+      );
+      await screen.findByText("Evoluir IAM");
+      expect(screen.getByText("Concluído")).toBeTruthy();
+      expect(screen.queryByRole("button", { name: "Reabrir PDI" })).toBeNull();
+    });
+
+    it("Tech Lead responsável reabre com motivo obrigatório", async () => {
+      mockFetchAs(fixtureLeadOfAna, completedState);
+      window.history.pushState({}, "", "?architectId=ana");
+      render(
+        <Wrapper>
+          <PlansPage />
+        </Wrapper>,
+      );
+      await screen.findByText("Evoluir IAM");
+
+      await userEvent.click(screen.getByRole("button", { name: "Reabrir PDI" }));
+      const dialog = await screen.findByRole("dialog");
+      const confirmButton = within(dialog).getByRole("button", { name: "Reabrir PDI" }) as HTMLButtonElement;
+      expect(confirmButton.disabled).toBe(true);
+
+      await userEvent.type(
+        within(dialog).getByLabelText("Motivo da reabertura"),
+        "Nova responsabilidade técnica adicionada ao escopo.",
+      );
+      expect(confirmButton.disabled).toBe(false);
+      await userEvent.click(confirmButton);
+
+      await waitFor(() =>
+        expect(
+          fetchMock.mock.calls.some(
+            ([url, init]) =>
+              String(url).endsWith("/api/plans/pdi-ana/reopen") &&
+              (init as RequestInit)?.method === "POST",
+          ),
+        ).toBe(true),
+      );
+      const call = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          String(url).endsWith("/api/plans/pdi-ana/reopen") && (init as RequestInit)?.method === "POST",
+      ) as [string, RequestInit];
+      expect(JSON.parse(String(call[1].body))).toEqual({
+        reason: "Nova responsabilidade técnica adicionada ao escopo.",
+        expectedVersion: 1,
+      });
+    });
   });
 });

@@ -27,7 +27,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
-import { canActFor, isLeadOf } from "@/lib/scope";
+import { canActFor, isAssignedTechLeadOf, isLeadOf } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, initialSearchParam, todayIso } from "@/lib/text";
@@ -100,8 +100,19 @@ function PlansPage() {
   const isLeadOfArchitect = isLeadOf(user, architect);
   const planStatus = plan?.status ?? "Draft";
   const canApprovePlan = plan && planStatus === "Draft" && isLeadOfArchitect;
-  const canReopenPlan = plan && planStatus === "Approved" && isLeadOfArchitect;
+  const canReturnToDraft = plan && planStatus === "Approved" && isLeadOfArchitect;
   const canCompletePlan = plan && planStatus === "Approved" && canEdit;
+  /**
+   * ENT-PDI-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
+   * Seção 5) — reabrir um PDI concluído é ação exclusiva do Tech Lead
+   * RESPONSÁVEL por esta pessoa; `isAssignedTechLeadOf` não tem o bypass de
+   * admin que `isLeadOf` tem. A própria pessoa (dona do PDI) só vê a
+   * informação de que está bloqueado, nunca o botão.
+   */
+  const canReopenCompletedPlan = plan && planStatus === "Completed" && isAssignedTechLeadOf(user, architect);
+  const ownerSeesLockedMessage =
+    plan && planStatus === "Completed" && canEdit && !isAssignedTechLeadOf(user, architect);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
 
   /**
    * Espelha a régua de conclusão do backend (FASE 1 — "conclusão de PDI com
@@ -216,24 +227,55 @@ function PlansPage() {
                 {planTransitioning ? t("pdi.plan.completing") : t("pdi.plan.complete")}
               </Button>
             )}
-            {canReopenPlan && (
+            {canReturnToDraft && (
               <Button
                 size="sm"
                 variant="outline"
                 disabled={planTransitioning}
                 onClick={() => transitionPlan("Draft")}
               >
-                {planTransitioning ? t("pdi.plan.reopening") : t("pdi.plan.reopen")}
+                {planTransitioning ? t("pdi.plan.returningToDraft") : t("pdi.plan.returnToDraft")}
+              </Button>
+            )}
+            {canReopenCompletedPlan && (
+              <Button size="sm" variant="outline" onClick={() => setReopenDialogOpen(true)}>
+                {t("pdi.plan.reopen")}
               </Button>
             )}
           </div>
           {canCompletePlan && incompletePlanReason && (
             <p className="w-full text-xs text-muted-foreground">{incompletePlanReason}</p>
           )}
+          {ownerSeesLockedMessage && (
+            <p className="w-full text-xs text-muted-foreground">{t("pdi.plan.lockedForOwner")}</p>
+          )}
           {planTransitionError && (
             <p className="w-full text-xs text-destructive">{planTransitionError}</p>
           )}
         </div>
+      )}
+
+      {plan && reopenDialogOpen && (
+        <ReopenPlanDialog
+          onCancel={() => setReopenDialogOpen(false)}
+          onConfirm={(reason) => {
+            setPlanTransitionError(null);
+            setPlanTransitioning(true);
+            store
+              .reopenPlan(plan.id, reason)
+              .then(() => {
+                setReopenDialogOpen(false);
+                toast.success(t("pdi.plan.reopenDialog.success"));
+              })
+              .catch((error: unknown) =>
+                setPlanTransitionError(
+                  error instanceof ApiError ? error.message : t("pdi.plan.transitionError"),
+                ),
+              )
+              .finally(() => setPlanTransitioning(false));
+          }}
+          submitting={planTransitioning}
+        />
       )}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
@@ -687,6 +729,54 @@ function NewPlanItemDialog({
             onClick={() => onSave({ actionType, actionPlan: actionPlan.trim(), targetDate })}
           >
             {t("pdi.newItem.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * ENT-PDI-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
+ * Seção 5) — motivo obrigatório: reabrir algo concluído é um comando de
+ * negócio, não uma troca de campo qualquer, e o histórico (`PlanReopened`)
+ * precisa desse motivo para fazer sentido depois.
+ */
+function ReopenPlanDialog({
+  onConfirm,
+  onCancel,
+  submitting,
+}: {
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+  submitting: boolean;
+}) {
+  const { t } = useI18n();
+  const [reason, setReason] = useState("");
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("pdi.plan.reopenDialog.title")}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">{t("pdi.plan.reopenDialog.body")}</p>
+        <div>
+          <Label htmlFor="reopen-reason">{t("pdi.plan.reopenDialog.reasonLabel")}</Label>
+          <Textarea
+            id="reopen-reason"
+            className="mt-1"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={t("pdi.plan.reopenDialog.reasonPlaceholder")}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>
+            {t("pdi.plan.reopenDialog.cancel")}
+          </Button>
+          <Button disabled={!reason.trim() || submitting} onClick={() => onConfirm(reason.trim())}>
+            {submitting ? t("pdi.plan.reopening") : t("pdi.plan.reopenDialog.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>
