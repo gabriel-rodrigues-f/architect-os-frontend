@@ -7,10 +7,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { I18nProvider } from "../lib/i18n";
 import { ThemeProvider, useTheme } from "../lib/theme";
@@ -44,9 +43,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -98,23 +94,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Visão executiva das capacidades técnicas do time de Arquitetos de Soluções: gaps, PDIs, metas e evolução.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Painel — Synapse" },
       {
         name: "twitter:description",
         content:
           "Visão executiva das capacidades técnicas do time de Arquitetos de Soluções: gaps, PDIs, metas e evolução.",
-      },
-      {
-        property: "og:image",
-        content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/1de5f62c-0f00-4720-bf94-54a5e8a949f3",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/1de5f62c-0f00-4720-bf94-54a5e8a949f3",
       },
     ],
     links: [
@@ -140,8 +125,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // `pt` — BASE_LOCALE do app (i18n/registry.ts). O valor real do idioma
+  // detectado (`navigator.languages`) só existe client-side, e o próprio
+  // `I18nProvider` já corrige `document.documentElement.lang` assim que
+  // monta; isto é só o fallback estático do primeiro paint/SSR, que não
+  // pode mais ficar hardcoded em inglês para um app em português. Ver
+  // ENT-A11Y-001, AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
+  // Seção 37.1.
   return (
-    <html lang="en">
+    <html lang="pt">
       <head>
         <HeadContent />
       </head>

@@ -431,7 +431,9 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Reabrir PDI" }));
       const dialog = await screen.findByRole("dialog");
-      const confirmButton = within(dialog).getByRole("button", { name: "Reabrir PDI" }) as HTMLButtonElement;
+      const confirmButton = within(dialog).getByRole("button", {
+        name: "Reabrir PDI",
+      }) as HTMLButtonElement;
       expect(confirmButton.disabled).toBe(true);
 
       await userEvent.type(
@@ -452,7 +454,8 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
       );
       const call = fetchMock.mock.calls.find(
         ([url, init]) =>
-          String(url).endsWith("/api/plans/pdi-ana/reopen") && (init as RequestInit)?.method === "POST",
+          String(url).endsWith("/api/plans/pdi-ana/reopen") &&
+          (init as RequestInit)?.method === "POST",
       ) as [string, RequestInit];
       expect(JSON.parse(String(call[1].body))).toEqual({
         reason: "Nova responsabilidade técnica adicionada ao escopo.",

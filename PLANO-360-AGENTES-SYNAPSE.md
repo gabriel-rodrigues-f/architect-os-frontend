@@ -1,4 +1,5 @@
 # SYNAPSE — Plano 360 de Atuação para Agentes
+
 ## Reconstrução de Produto, UX, Jornadas e Arquitetura de Experiência
 
 > Documento operacional para agentes de Produto, UX, Frontend, Backend e QA atuarem sobre o Synapse sem reinterpretar livremente a auditoria.
@@ -406,13 +407,13 @@ Deve poder:
 Hoje `SessionUser.role` é:
 
 ```ts
-"admin" | "member"
+"admin" | "member";
 ```
 
 e existe:
 
 ```ts
-architectId: string | null
+architectId: string | null;
 ```
 
 Antes de implementar autorização completa de Tech Lead, verificar o backend.
@@ -566,7 +567,7 @@ COMPLETED
 O domínio atual possui:
 
 ```ts
-"Draft" | "In Review" | "Completed"
+"Draft" | "In Review" | "Completed";
 ```
 
 Se for desejável evitar migração imediata:
@@ -768,6 +769,7 @@ O agente deve:
 > **Threat Modeling — prioridade alta**
 >
 > Motivos:
+>
 > - nível atual 2; esperado 4;
 > - gap de 2 níveis;
 > - somente 1 pessoa do time está em nível ≥ 4;
@@ -955,7 +957,7 @@ Todos os itens encerrados ou plano formalmente finalizado.
 A aplicação registra evidência, mas a evidência pode nascer com:
 
 ```ts
-competencyIds: []
+competencyIds: [];
 ```
 
 e `DevelopmentPlanItem.evidenceIds` não fecha o ciclo.
@@ -2115,42 +2117,54 @@ Ao finalizar uma tarefa, responder com:
 ## Entrega
 
 ### Problema atacado
+
 ...
 
 ### Jornada antes
+
 ...
 
 ### Jornada depois
+
 ...
 
 ### Arquivos alterados
+
 - ...
 
 ### Contratos alterados
+
 - ...
 
 ### Migrações
+
 - ...
 
 ### Decisões de produto aplicadas
+
 - ...
 
 ### Testes adicionados
+
 - ...
 
 ### Validações executadas
+
 - npm test
 - npm run typecheck
 - npm run lint
 - npm run build
 
 ### Evidências
+
 - ...
 
 ### Riscos / pendências
+
 - ...
 
 ### Próxima dependência recomendada
+
 - ...
 ```
 
@@ -2641,6 +2655,7 @@ Deve registrar:
 
 ```md
 ### Bloqueio
+
 Decisão necessária:
 ...
 

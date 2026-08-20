@@ -141,14 +141,14 @@ expectativa do papel
 
 ## 3. Veredito Executivo
 
-| Pergunta | Veredito | Justificativa |
-|---|---|---|
-| Produto é útil? | **PARCIALMENTE** | Resolve um problema real e o core é pertinente, mas falhas de integridade impedem confiança plena. |
-| Produto é coerente? | **PARCIALMENTE** | O domínio está mais limpo, porém a navegação continua orientada a módulos e o escopo por papel diverge dos analytics. |
-| Produto está completo? | **NÃO** | Faltam fechamento governado do PDI, histórico longitudinal consistente, work queues e integridade mais forte. |
-| Produto está pronto? | **NÃO** | P0 de identidade/cadastro e P0 de mutabilidade do PDI bloqueiam produção corporativa. |
-| Principal risco | **Confiança nos dados e autorização** | A aplicação pode apresentar ou persistir informação com semântica mais forte do que a evidência real suporta. |
-| Principal oportunidade | **Transformar módulos em jornada** | O backend já possui elementos suficientes para uma experiência forte de "Minha Evolução" e "Pendências do Lead". |
+| Pergunta               | Veredito                              | Justificativa                                                                                                         |
+| ---------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Produto é útil?        | **PARCIALMENTE**                      | Resolve um problema real e o core é pertinente, mas falhas de integridade impedem confiança plena.                    |
+| Produto é coerente?    | **PARCIALMENTE**                      | O domínio está mais limpo, porém a navegação continua orientada a módulos e o escopo por papel diverge dos analytics. |
+| Produto está completo? | **NÃO**                               | Faltam fechamento governado do PDI, histórico longitudinal consistente, work queues e integridade mais forte.         |
+| Produto está pronto?   | **NÃO**                               | P0 de identidade/cadastro e P0 de mutabilidade do PDI bloqueiam produção corporativa.                                 |
+| Principal risco        | **Confiança nos dados e autorização** | A aplicação pode apresentar ou persistir informação com semântica mais forte do que a evidência real suporta.         |
+| Principal oportunidade | **Transformar módulos em jornada**    | O backend já possui elementos suficientes para uma experiência forte de "Minha Evolução" e "Pendências do Lead".      |
 
 **Principal razão para adoção:** conexão entre modelo técnico de capacidades, assessment, gap, PDI e evidência em um único sistema.
 
@@ -225,26 +225,26 @@ O dado está mais conectado do que a navegação. O usuário ainda precisa conhe
 
 ## 6. Mapa de Telas
 
-| Tela | Rota | Finalidade | Usuário principal | Papel na jornada | Estado |
-|---|---|---|---|---|---|
-| Login / Primeiro acesso | gate | autenticação e criação de conta | todos | entrada | **INCONSISTENTE / P0** |
-| Dashboard | `/` | visão executiva do ciclo | hoje todos | orientar | **INCONSISTENTE por escopo** |
-| Pessoas | `/team` | roster e acesso a perfis | Lead/Admin; Member apenas contexto | entrada para pessoa | **PARCIALMENTE VALIDADO** |
-| Perfil da pessoa | `/architects/:id` | workspace consolidado | pessoa/Lead/Admin | desenvolvimento individual | **PARCIALMENTE VALIDADO** |
-| Capability Map | `/capability-map` | cobertura/risco por capacidade | Lead/Admin | diagnóstico coletivo | **PARCIALMENTE VALIDADO** |
-| Gap Analysis | `/gap-analysis` | gaps por pessoa/time | pessoa/Lead/Admin | priorização | **PARCIALMENTE VALIDADO** |
-| Training Needs | `/training-needs` | agregação de gaps para intervenção | Lead/Admin | priorização coletiva | **REDUNDANTE como tela própria** |
-| Assessments | `/assessments` | avaliação/calibração | Member/Lead | diagnóstico oficial | **PARCIALMENTE VALIDADO** |
-| Development Plans | `/development-plans` | plano e ações | Member/Lead | execução | **INCONSISTENTE / P0** |
-| Learning Paths | `/learning-paths` | trilhas e progresso | Member/Lead | intervenção | **PARCIALMENTE VALIDADO** |
-| Mentoring | `/mentoring` | sessões e follow-up | todos/Lead | intervenção | **PARCIALMENTE VALIDADO** |
-| Competency Matrix | `/competency-matrix` | modelo de capacidades | Admin | configuração | **VALIDADO com ressalvas** |
-| Cycles | `/cycles` | períodos e evolução | Admin + leitura | governança temporal | **INCONSISTENTE** |
-| Users | `/users` | acessos e vínculos | Admin | administração | **VALIDADO com ressalvas** |
-| Reference | `/settings` | glossário read-only | todos | auxílio | **SEM VALOR COMO MÓDULO PRIMÁRIO** |
-| Loading auth | gate | espera de sessão | todos | estado sistêmico | **PARCIALMENTE VALIDADO** |
-| 404 / Error boundary | root | recuperação | todos | estado sistêmico | **VALIDADO estaticamente** |
-| Erro de backend/store | StoreProvider | indisponibilidade | todos | recuperação | **PARCIALMENTE VALIDADO** |
+| Tela                    | Rota                 | Finalidade                         | Usuário principal                  | Papel na jornada           | Estado                             |
+| ----------------------- | -------------------- | ---------------------------------- | ---------------------------------- | -------------------------- | ---------------------------------- |
+| Login / Primeiro acesso | gate                 | autenticação e criação de conta    | todos                              | entrada                    | **INCONSISTENTE / P0**             |
+| Dashboard               | `/`                  | visão executiva do ciclo           | hoje todos                         | orientar                   | **INCONSISTENTE por escopo**       |
+| Pessoas                 | `/team`              | roster e acesso a perfis           | Lead/Admin; Member apenas contexto | entrada para pessoa        | **PARCIALMENTE VALIDADO**          |
+| Perfil da pessoa        | `/architects/:id`    | workspace consolidado              | pessoa/Lead/Admin                  | desenvolvimento individual | **PARCIALMENTE VALIDADO**          |
+| Capability Map          | `/capability-map`    | cobertura/risco por capacidade     | Lead/Admin                         | diagnóstico coletivo       | **PARCIALMENTE VALIDADO**          |
+| Gap Analysis            | `/gap-analysis`      | gaps por pessoa/time               | pessoa/Lead/Admin                  | priorização                | **PARCIALMENTE VALIDADO**          |
+| Training Needs          | `/training-needs`    | agregação de gaps para intervenção | Lead/Admin                         | priorização coletiva       | **REDUNDANTE como tela própria**   |
+| Assessments             | `/assessments`       | avaliação/calibração               | Member/Lead                        | diagnóstico oficial        | **PARCIALMENTE VALIDADO**          |
+| Development Plans       | `/development-plans` | plano e ações                      | Member/Lead                        | execução                   | **INCONSISTENTE / P0**             |
+| Learning Paths          | `/learning-paths`    | trilhas e progresso                | Member/Lead                        | intervenção                | **PARCIALMENTE VALIDADO**          |
+| Mentoring               | `/mentoring`         | sessões e follow-up                | todos/Lead                         | intervenção                | **PARCIALMENTE VALIDADO**          |
+| Competency Matrix       | `/competency-matrix` | modelo de capacidades              | Admin                              | configuração               | **VALIDADO com ressalvas**         |
+| Cycles                  | `/cycles`            | períodos e evolução                | Admin + leitura                    | governança temporal        | **INCONSISTENTE**                  |
+| Users                   | `/users`             | acessos e vínculos                 | Admin                              | administração              | **VALIDADO com ressalvas**         |
+| Reference               | `/settings`          | glossário read-only                | todos                              | auxílio                    | **SEM VALOR COMO MÓDULO PRIMÁRIO** |
+| Loading auth            | gate                 | espera de sessão                   | todos                              | estado sistêmico           | **PARCIALMENTE VALIDADO**          |
+| 404 / Error boundary    | root                 | recuperação                        | todos                              | estado sistêmico           | **VALIDADO estaticamente**         |
+| Erro de backend/store   | StoreProvider        | indisponibilidade                  | todos                              | recuperação                | **PARCIALMENTE VALIDADO**          |
 
 **Origem de dados predominante:** `/api/state` hidrata snapshot do frontend; operações de escrita usam endpoints específicos.
 **Dependência transversal:** `activeCycleId` define Assessment/PDI/gaps atuais.
@@ -688,22 +688,22 @@ O produto afirma evolução por ciclo, mas parte relevante das intervenções n�
 
 ## 10. Análise de Produto / PO
 
-| Capacidade | Classificação | Valor | Decisão |
-|---|---|---|---|
-| Assessment | **CORE** | diagnóstico confiável | manter e corrigir completude |
-| Modelo de Capacidades | **CORE / ADMIN** | define expectativa técnica | manter |
-| Gap Analysis | **CORE** | identifica necessidade | manter, integrar em Prioridades |
-| PDI | **CORE** | transforma gap em ação | manter e reconstruir governança |
-| Evidence + Review | **CORE** | demonstra execução/aprendizado | manter e fortalecer |
-| Cycles | **CORE** | cria temporalidade | manter e corrigir state machine |
-| Learning Paths | **IMPORTANTE** | intervenção estruturada | manter como meio, não fim |
-| Mentoring | **IMPORTANTE** | intervenção relacional | manter com governança |
-| Capability Map | **IMPORTANTE** | gestão coletiva de capacidade | integrar em Capacidades |
-| Training Needs | **REDUNDANTE como módulo** | agrega gap | incorporar em Capacidades/Desenvolvimento |
-| Team/Pessoas | **IMPORTANTE** | navegação e administração | tornar role-aware |
-| Users | **CORE ADMIN** | segurança/acesso | manter |
-| Reference | **COMPLEMENTAR** | ajuda conceitual | retirar da navegação primária |
-| 9-Box / Development Score / SWOT / OKR nativo | **NÃO FAZER agora** | valor insuficiente/governança fraca | manter removidos |
+| Capacidade                                    | Classificação              | Valor                               | Decisão                                   |
+| --------------------------------------------- | -------------------------- | ----------------------------------- | ----------------------------------------- |
+| Assessment                                    | **CORE**                   | diagnóstico confiável               | manter e corrigir completude              |
+| Modelo de Capacidades                         | **CORE / ADMIN**           | define expectativa técnica          | manter                                    |
+| Gap Analysis                                  | **CORE**                   | identifica necessidade              | manter, integrar em Prioridades           |
+| PDI                                           | **CORE**                   | transforma gap em ação              | manter e reconstruir governança           |
+| Evidence + Review                             | **CORE**                   | demonstra execução/aprendizado      | manter e fortalecer                       |
+| Cycles                                        | **CORE**                   | cria temporalidade                  | manter e corrigir state machine           |
+| Learning Paths                                | **IMPORTANTE**             | intervenção estruturada             | manter como meio, não fim                 |
+| Mentoring                                     | **IMPORTANTE**             | intervenção relacional              | manter com governança                     |
+| Capability Map                                | **IMPORTANTE**             | gestão coletiva de capacidade       | integrar em Capacidades                   |
+| Training Needs                                | **REDUNDANTE como módulo** | agrega gap                          | incorporar em Capacidades/Desenvolvimento |
+| Team/Pessoas                                  | **IMPORTANTE**             | navegação e administração           | tornar role-aware                         |
+| Users                                         | **CORE ADMIN**             | segurança/acesso                    | manter                                    |
+| Reference                                     | **COMPLEMENTAR**           | ajuda conceitual                    | retirar da navegação primária             |
+| 9-Box / Development Score / SWOT / OKR nativo | **NÃO FAZER agora**        | valor insuficiente/governança fraca | manter removidos                          |
 
 **Pergunta:** se Training Needs ou Reference fossem removidos como páginas, o produto perderia valor?
 **Resposta:** não materialmente; o conteúdo pode viver em contextos mais naturais.
@@ -942,18 +942,18 @@ Fastify + TypeScript + Zod + Postgres + Redis + repositories + auth scope helper
 
 ### Achados relevantes
 
-| Endpoint/área | Achado | Prioridade |
-|---|---|---:|
-| `POST /api/auth/register` | público + `architectId` controlado pelo cliente | **P0** |
-| `POST/PATCH/DELETE /api/plans/.../items` | não respeitam status do PDI | **P0** |
-| `GET /api/learning-paths` | não aplica scope | **P1** |
-| `POST /api/evidences` | ID do cliente + upsert permite colisão/overwrite de recurso conhecido | **P1** |
-| `POST /api/mentoring-sessions` | qualquer autenticado pode criar para qualquer mentee; upsert por ID | **P1** |
-| `POST /api/learning-paths` | criação recebe `progress` e usa upsert | **P2** |
-| `PUT /api/settings/active-cycle` | não valida existência antes de gravar setting | **P1** |
-| `POST/PATCH /api/cycles` | permite status Active direto e potencial múltiplo Active | **P1** |
-| `/api/cache/stats`, `/api/cache/flush` | qualquer autenticado | **P2** |
-| listagens/snapshot | sem paginação/versionamento/concurrency token | **P2** para escala |
+| Endpoint/área                            | Achado                                                                |         Prioridade |
+| ---------------------------------------- | --------------------------------------------------------------------- | -----------------: |
+| `POST /api/auth/register`                | público + `architectId` controlado pelo cliente                       |             **P0** |
+| `POST/PATCH/DELETE /api/plans/.../items` | não respeitam status do PDI                                           |             **P0** |
+| `GET /api/learning-paths`                | não aplica scope                                                      |             **P1** |
+| `POST /api/evidences`                    | ID do cliente + upsert permite colisão/overwrite de recurso conhecido |             **P1** |
+| `POST /api/mentoring-sessions`           | qualquer autenticado pode criar para qualquer mentee; upsert por ID   |             **P1** |
+| `POST /api/learning-paths`               | criação recebe `progress` e usa upsert                                |             **P2** |
+| `PUT /api/settings/active-cycle`         | não valida existência antes de gravar setting                         |             **P1** |
+| `POST/PATCH /api/cycles`                 | permite status Active direto e potencial múltiplo Active              |             **P1** |
+| `/api/cache/stats`, `/api/cache/flush`   | qualquer autenticado                                                  |             **P2** |
+| listagens/snapshot                       | sem paginação/versionamento/concurrency token                         | **P2** para escala |
 
 ### API versioning
 
@@ -1139,33 +1139,33 @@ Member/Lead recebem roster inteiro, inclusive e-mail. Validar base legal/políti
 
 ### Dívidas
 
-| Dívida | Impacto | Urgência | Recomendação |
-|---|---|---:|---|
-| regras de domínio espalhadas entre route/frontend | regressão semântica | alta | domain services/state machines |
-| route components >500–650 linhas | manutenção/testes | média | separar orchestration/presentation |
-| optimistic writes de dados críticos | confiança | alta | mutations aguardadas |
-| IDs client-side | segurança/integridade | alta | UUID servidor |
-| JSONB com identidade própria | integridade/concorrência | alta | normalização seletiva |
-| docs/screenshots desatualizados | reintrodução de feature morta | média | docs as-code/ADRs |
-| sem E2E encontrado | regressão de jornada | média | Playwright critical paths |
+| Dívida                                            | Impacto                       | Urgência | Recomendação                       |
+| ------------------------------------------------- | ----------------------------- | -------: | ---------------------------------- |
+| regras de domínio espalhadas entre route/frontend | regressão semântica           |     alta | domain services/state machines     |
+| route components >500–650 linhas                  | manutenção/testes             |    média | separar orchestration/presentation |
+| optimistic writes de dados críticos               | confiança                     |     alta | mutations aguardadas               |
+| IDs client-side                                   | segurança/integridade         |     alta | UUID servidor                      |
+| JSONB com identidade própria                      | integridade/concorrência      |     alta | normalização seletiva              |
+| docs/screenshots desatualizados                   | reintrodução de feature morta |    média | docs as-code/ADRs                  |
+| sem E2E encontrado                                | regressão de jornada          |    média | Playwright critical paths          |
 
 ---
 
 ## 25. Estados da Aplicação
 
-| Estado | Assessment | PDI | Evidence | Learning | Mentoring | Observação |
-|---|---|---|---|---|---|---|
-| Loading | parcial | parcial | parcial | parcial | parcial | global existe, por ação é desigual |
-| Empty | sim | sim | sim | sim | sim | boa cobertura local |
-| Success | sim | sim | sim | sim | sim | alguns são falsamente otimistas |
-| Error | sim/parcial | sim/parcial | global/rollback | global | global | falta padrão uniforme |
-| Partial success | não explícito | não | não | não | não | **GAP** |
-| Validation error | sim | parcial | parcial | parcial | UI melhor que API | backend precisa alinhar |
-| Permission denied | backend sim | backend sim | backend sim | parcial | parcial | UI frequentemente mostra ação proibida |
-| Not found | sim | sim | sim | sim | sim | adequado |
-| Conflict | sim | lifecycle parcial | pouco | pouco | pouco | concurrency não tratada |
-| Expired session | 401/AuthGate | transversal | transversal | transversal | transversal | existe tecnicamente |
-| Offline/intermitência | não específico | não específico | não específico | não específico | não específico | não requisito declarado; falha de rede deve ser clara |
+| Estado                | Assessment     | PDI               | Evidence        | Learning       | Mentoring         | Observação                                            |
+| --------------------- | -------------- | ----------------- | --------------- | -------------- | ----------------- | ----------------------------------------------------- |
+| Loading               | parcial        | parcial           | parcial         | parcial        | parcial           | global existe, por ação é desigual                    |
+| Empty                 | sim            | sim               | sim             | sim            | sim               | boa cobertura local                                   |
+| Success               | sim            | sim               | sim             | sim            | sim               | alguns são falsamente otimistas                       |
+| Error                 | sim/parcial    | sim/parcial       | global/rollback | global         | global            | falta padrão uniforme                                 |
+| Partial success       | não explícito  | não               | não             | não            | não               | **GAP**                                               |
+| Validation error      | sim            | parcial           | parcial         | parcial        | UI melhor que API | backend precisa alinhar                               |
+| Permission denied     | backend sim    | backend sim       | backend sim     | parcial        | parcial           | UI frequentemente mostra ação proibida                |
+| Not found             | sim            | sim               | sim             | sim            | sim               | adequado                                              |
+| Conflict              | sim            | lifecycle parcial | pouco           | pouco          | pouco             | concurrency não tratada                               |
+| Expired session       | 401/AuthGate   | transversal       | transversal     | transversal    | transversal       | existe tecnicamente                                   |
+| Offline/intermitência | não específico | não específico    | não específico  | não específico | não específico    | não requisito declarado; falha de rede deve ser clara |
 
 ---
 
@@ -1184,24 +1184,24 @@ Member/Lead recebem roster inteiro, inclusive e-mail. Validar base legal/políti
 
 ## 27. Glossário Canônico
 
-| Termo recomendado | Definição | Evitar/confundir com |
-|---|---|---|
-| **Pessoa / Profissional** | indivíduo técnico que possui histórico | "Architect" na UI se produto for além de arquitetura |
-| **Modelo de Capacidades** | catálogo de capacidades e expectativa por papel | "Competency Matrix" como nome técnico |
-| **Capacidade / Competência** | habilidade/conhecimento avaliado | alternância Skill/Competency sem regra |
-| **Assessment / Avaliação** | fotografia do ciclo, com self e revisão | score informal |
-| **Nível esperado** | expectativa para o papel | "meta" genérica |
-| **Gap / Lacuna** | esperado − nível final oficial | prioridade automática |
-| **Prioridade de desenvolvimento** | gap escolhido para agir, com rationale | todo gap |
-| **PDI / Plano de Desenvolvimento** | acordo de objetivos e ações | lista de tarefas |
-| **Ação de desenvolvimento** | unidade executável do PDI | "atividade" quando significar algo diferente |
-| **Trilha de aprendizagem** | intervenção estruturada de itens | progresso de competência |
-| **Mentoria** | intervenção relacional com decisão/ação | feedback avulso |
-| **Evidência** | artefato/realização que sustenta evolução | prova automática de nível |
-| **Review de evidência** | decisão do Lead sobre qualidade/adequação | Assessment de competência |
-| **Check-in** | revisão periódica de execução do PDI | conclusão |
-| **Ciclo de desenvolvimento** | janela temporal de Assessment/PDI | ciclo técnico do sistema |
-| **Evolução** | mudança demonstrada entre avaliações, contextualizada por evidências | score composto |
+| Termo recomendado                  | Definição                                                            | Evitar/confundir com                                 |
+| ---------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
+| **Pessoa / Profissional**          | indivíduo técnico que possui histórico                               | "Architect" na UI se produto for além de arquitetura |
+| **Modelo de Capacidades**          | catálogo de capacidades e expectativa por papel                      | "Competency Matrix" como nome técnico                |
+| **Capacidade / Competência**       | habilidade/conhecimento avaliado                                     | alternância Skill/Competency sem regra               |
+| **Assessment / Avaliação**         | fotografia do ciclo, com self e revisão                              | score informal                                       |
+| **Nível esperado**                 | expectativa para o papel                                             | "meta" genérica                                      |
+| **Gap / Lacuna**                   | esperado − nível final oficial                                       | prioridade automática                                |
+| **Prioridade de desenvolvimento**  | gap escolhido para agir, com rationale                               | todo gap                                             |
+| **PDI / Plano de Desenvolvimento** | acordo de objetivos e ações                                          | lista de tarefas                                     |
+| **Ação de desenvolvimento**        | unidade executável do PDI                                            | "atividade" quando significar algo diferente         |
+| **Trilha de aprendizagem**         | intervenção estruturada de itens                                     | progresso de competência                             |
+| **Mentoria**                       | intervenção relacional com decisão/ação                              | feedback avulso                                      |
+| **Evidência**                      | artefato/realização que sustenta evolução                            | prova automática de nível                            |
+| **Review de evidência**            | decisão do Lead sobre qualidade/adequação                            | Assessment de competência                            |
+| **Check-in**                       | revisão periódica de execução do PDI                                 | conclusão                                            |
+| **Ciclo de desenvolvimento**       | janela temporal de Assessment/PDI                                    | ciclo técnico do sistema                             |
+| **Evolução**                       | mudança demonstrada entre avaliações, contextualizada por evidências | score composto                                       |
 
 ---
 
@@ -1293,70 +1293,70 @@ Member/Lead recebem roster inteiro, inclusive e-mail. Validar base legal/políti
 
 ## 30. Problemas por Prioridade
 
-| ID | Prioridade | Categoria | Localização / evidência | Problema | Impacto | Causa provável | Recomendação |
-|---|---:|---|---|---|---|---|---|
-| SEC-001 | P0 | Segurança | `auth.ts:23-45`; `users.ts:80-90`; `schema.sql:131-140` | Registro público pode reivindicar `architectId` | takeover/duplicidade de identidade profissional | bootstrap tratado como self-service permanente | convite/SSO + vínculo server-side + unique link |
-| DOM-001 | P0 | PDI | `development.ts:50-87,135-148`; `development-plans.tsx:81-99,217-337` | Approved/Completed continuam mutáveis | histórico e acordo não confiáveis | state machine aplicada só ao status do agregado | governar item por status no backend e UI |
-| DOM-002 | P1 | Assessment | `repositories/assessments.ts:248-260`; `routes/api/assessments.ts:175-204` | defaults 1/1/1 podem virar avaliação oficial | gaps falsos/decisão errada | ausência modelada como nível real | `null`/touched + completeness server-side |
-| ANA-001 | P1 | Analytics | `scope.ts:54-91`; `selectors.ts:84-92,188-216`; `index.tsx:48-79` | dados invisíveis viram "não avaliados" | indicadores incorretos | roster e records usam populações diferentes | população canônica/aggregates role-aware |
-| AUTH-002 | P1 | Segurança | `routes/api/learning.ts:14-16` | listagem de trilhas ignora scope | exposição de assignments/progress | endpoint ficou fora da política transversal | aplicar `visibleArchitectIds`/filtro de recurso |
-| IDOR-001 | P1 | Segurança | `repositories/learning.ts:324-355` | create de Evidence sobrescreve ID existente | alteração indevida de recurso | POST modelado como upsert com ID do cliente | UUID servidor + INSERT-only + PATCH autorizado |
-| IDOR-002 | P1 | Integridade | `repositories/learning.ts:239-267` | create de Mentoring é upsert por ID | corrupção de histórico | client ID como chave de autoridade | UUID servidor + INSERT-only |
-| MENT-001 | P1 | Negócio | `routes/api/learning.ts:156-168` | qualquer autenticado registra mentoria para qualquer mentee | poluição de histórico profissional | autoria foi corrigida, escopo do mentee não | definir relação/consentimento/canActFor |
-| AUTH-003 | P1 | Identidade | `schema.sql:131-140` | múltiplos usuários podem possuir o mesmo perfil | ownership ambíguo | FK sem unicidade | unique partial index + regra de provisionamento |
-| CYC-001 | P1 | Ciclos | `routes/api/cycles.ts:16-35,53-57`; `catalog.ts:284-294,340-353` | status Active pode ser alterado por caminhos independentes | ciclos incoerentes | CRUD genérico coexistindo com ação de negócio | state machine transacional única |
-| CYC-002 | P1 | Ciclos | `repositories/catalog.ts:340-353` | activeCycleId aceita ID inexistente | contexto global inválido | setting textual sem FK/lookup prévio | validar existência + transação |
-| HIST-001 | P1 | Jornada | `architects.$architectId.tsx:190-208` | histórico abre Assessment do ciclo ativo | usuário vê contexto errado | search param não inclui ciclo | deep-link com `architectId+cycleId` |
-| PDI-002 | P1 | Domínio | `routes/schemas.ts:70-89` | cliente controla fatos derivados do diagnóstico | PDI pode contradizer Assessment | contrato espelha objeto UI em vez de comando de domínio | derivar/validar current/target/owner/datas |
-| DATA-001 | P1 | Dados | `schema.sql:61-68,584-587` | Evidence aponta por TEXT para item dentro de JSONB | órfãos/integridade não garantida | item ganhou identidade externa sem normalização | normalizar `development_plan_items` + FK |
-| SEC-002 | P1 | Segurança | `config/env.ts:26-28` | produção pode usar secret default | falsificação de token se default conhecido | configuração permissiva | hard-fail se prod + secret default/ausente |
-| SEC-003 | P1/P2 | Segurança | `app.ts`; dependências do backend | login/register sem anti-abuse observado | brute force/abuso | auth MVP sem controles operacionais | rate limit + SSO/MFA conforme contexto |
-| UX-001 | P1/P2 | UX | `api.ts:49-50`; `assessments.tsx:76-94`; `development-plans.tsx:81-99` | UI autoriza por role onde backend autoriza por relação | 403 tardio/confusão | helper genérico reutilizado além do escopo | helper contextual por pessoa/recurso |
-| EVD-001 | P1/P2 | UX/Integridade | `architects.$architectId.tsx:390-419`; `store.tsx:385-388` | sucesso exibido antes do servidor | falsa confiança/perda de dado | fire-and-forget optimistic mutation | await server + pending/error local |
-| DATA-002 | P2 | Concorrência | `repositories/learning.ts:181-213` | atualização grava array inteiro | lost update concorrente | progresso modelado como blob | tabela por assignment/item + UPSERT atômico |
-| OPS-001 | P2 | Segurança | `routes/api/analytics.ts:14-20` | qualquer autenticado acessa/limpa cache | disponibilidade/operacional | endpoint técnico herdou guard genérico | Admin/ops only |
-| PRIV-001 | P2 | Privacidade | `auth/scope.ts:62-65` + objeto Architect | roster inteiro inclui e-mail/perfil | exposição além da necessidade | comentário assume roster menos sensível que objeto real | minimização/redaction/política explícita |
-| CYC-003 | P2 | Domínio | `routes/cycles.tsx:104-106` | intervenções não têm contexto temporal de ciclo | evolução difícil de explicar | ciclo modelado só para Assessment/PDI | registrar ocorrência/período/ciclo opcional |
-| DATA-003 | P2 | Dados | `db/schema.sql` | estados/roles/datas pouco protegidos no DB | integridade depende só da app | schema MVP permissivo | CHECKs, timestamps, approver/reviewer metadata |
-| DATA-004 | P2 | Dados | `schema.sql:51-76,117-149` e comentários posteriores | banco novo nasce com features mortas | dívida/confusão | baseline e migrações históricas misturados | baseline ativo separado de migrations legadas |
-| DATA-005 | P2 | Histórico | `schema.sql:491-510` | ano histórico vira data exata inventada | precisão falsa | schema destino exige DATE | armazenar precisão (`year`/`day`) |
-| PERF-001 | P2 | Performance | `repositories/state.ts:39-77` | servidor carrega estado completo antes de filtrar | escala/latência/memória | snapshot global como estratégia de hidratação | endpoints paginados/queries por escopo |
-| FRONT-001 | P2 | Manutenção | `assessments.tsx`, perfil, PDI, learning >500 linhas | manutenção/regressão | lógica de domínio + UI no mesmo módulo | extrair hooks/use cases/components |
-| IA-001 | P2 | Produto | `AppShell.tsx:53-84` | todos os papéis veem a mesma arquitetura | carga cognitiva/rotas sem valor | menu derivado de módulos, não jobs-to-be-done | IA role-aware |
-| RESP-001 | P2 | Mobile | `AppShell.tsx:435-445` | mobile expõe 13 links em scroll horizontal | descoberta/eficiência ruim | réplica direta da navegação desktop | menu condensado role-aware |
-| ACC-001 | P2 | A11y | `__root.tsx:142-153` | idioma do documento não acompanha UI | pronúncia/leitor de tela incorretos | shell estático | bind de `lang` ao locale |
-| DOC-001 | P2 | Governança | `docs/FUNCIONAL.md` ainda referencia 9-Box/SWOT/OKR | agentes/equipe podem recriar feature removida | documentation drift | atualizar docs/screenshots + ADRs |
-| API-001 | P2 | API | `routes/schemas.ts:130-138,167-214`; repositories | comandos de create aceitam estado demais | bypass de regras/colisões | schema de entidade reutilizado como comando | DTOs de create mínimos + IDs server-side |
-| OBS-001 | P2 | Operação | logger Fastify + audit existem; tracing/metrics não encontrados | diagnóstico de produção limitado | observabilidade parcial | métricas, tracing e alertas por SLO |
-| ACC-002 | P3 | A11y | `__root.tsx:194-199` | spinner sem anúncio acessível | espera invisível a leitor de tela | loading puramente visual | `role=status` + texto sr-only |
-| IA-002 | P4 | Produto | `settings.tsx` | glossário ocupa destino primário | ruído de navegação | ajuda concebida como página | ajuda contextual/tooltips |
+| ID        | Prioridade | Categoria      | Localização / evidência                                                    | Problema                                                    | Impacto                                         | Causa provável                                          | Recomendação                                    |
+| --------- | ---------: | -------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------- |
+| SEC-001   |         P0 | Segurança      | `auth.ts:23-45`; `users.ts:80-90`; `schema.sql:131-140`                    | Registro público pode reivindicar `architectId`             | takeover/duplicidade de identidade profissional | bootstrap tratado como self-service permanente          | convite/SSO + vínculo server-side + unique link |
+| DOM-001   |         P0 | PDI            | `development.ts:50-87,135-148`; `development-plans.tsx:81-99,217-337`      | Approved/Completed continuam mutáveis                       | histórico e acordo não confiáveis               | state machine aplicada só ao status do agregado         | governar item por status no backend e UI        |
+| DOM-002   |         P1 | Assessment     | `repositories/assessments.ts:248-260`; `routes/api/assessments.ts:175-204` | defaults 1/1/1 podem virar avaliação oficial                | gaps falsos/decisão errada                      | ausência modelada como nível real                       | `null`/touched + completeness server-side       |
+| ANA-001   |         P1 | Analytics      | `scope.ts:54-91`; `selectors.ts:84-92,188-216`; `index.tsx:48-79`          | dados invisíveis viram "não avaliados"                      | indicadores incorretos                          | roster e records usam populações diferentes             | população canônica/aggregates role-aware        |
+| AUTH-002  |         P1 | Segurança      | `routes/api/learning.ts:14-16`                                             | listagem de trilhas ignora scope                            | exposição de assignments/progress               | endpoint ficou fora da política transversal             | aplicar `visibleArchitectIds`/filtro de recurso |
+| IDOR-001  |         P1 | Segurança      | `repositories/learning.ts:324-355`                                         | create de Evidence sobrescreve ID existente                 | alteração indevida de recurso                   | POST modelado como upsert com ID do cliente             | UUID servidor + INSERT-only + PATCH autorizado  |
+| IDOR-002  |         P1 | Integridade    | `repositories/learning.ts:239-267`                                         | create de Mentoring é upsert por ID                         | corrupção de histórico                          | client ID como chave de autoridade                      | UUID servidor + INSERT-only                     |
+| MENT-001  |         P1 | Negócio        | `routes/api/learning.ts:156-168`                                           | qualquer autenticado registra mentoria para qualquer mentee | poluição de histórico profissional              | autoria foi corrigida, escopo do mentee não             | definir relação/consentimento/canActFor         |
+| AUTH-003  |         P1 | Identidade     | `schema.sql:131-140`                                                       | múltiplos usuários podem possuir o mesmo perfil             | ownership ambíguo                               | FK sem unicidade                                        | unique partial index + regra de provisionamento |
+| CYC-001   |         P1 | Ciclos         | `routes/api/cycles.ts:16-35,53-57`; `catalog.ts:284-294,340-353`           | status Active pode ser alterado por caminhos independentes  | ciclos incoerentes                              | CRUD genérico coexistindo com ação de negócio           | state machine transacional única                |
+| CYC-002   |         P1 | Ciclos         | `repositories/catalog.ts:340-353`                                          | activeCycleId aceita ID inexistente                         | contexto global inválido                        | setting textual sem FK/lookup prévio                    | validar existência + transação                  |
+| HIST-001  |         P1 | Jornada        | `architects.$architectId.tsx:190-208`                                      | histórico abre Assessment do ciclo ativo                    | usuário vê contexto errado                      | search param não inclui ciclo                           | deep-link com `architectId+cycleId`             |
+| PDI-002   |         P1 | Domínio        | `routes/schemas.ts:70-89`                                                  | cliente controla fatos derivados do diagnóstico             | PDI pode contradizer Assessment                 | contrato espelha objeto UI em vez de comando de domínio | derivar/validar current/target/owner/datas      |
+| DATA-001  |         P1 | Dados          | `schema.sql:61-68,584-587`                                                 | Evidence aponta por TEXT para item dentro de JSONB          | órfãos/integridade não garantida                | item ganhou identidade externa sem normalização         | normalizar `development_plan_items` + FK        |
+| SEC-002   |         P1 | Segurança      | `config/env.ts:26-28`                                                      | produção pode usar secret default                           | falsificação de token se default conhecido      | configuração permissiva                                 | hard-fail se prod + secret default/ausente      |
+| SEC-003   |      P1/P2 | Segurança      | `app.ts`; dependências do backend                                          | login/register sem anti-abuse observado                     | brute force/abuso                               | auth MVP sem controles operacionais                     | rate limit + SSO/MFA conforme contexto          |
+| UX-001    |      P1/P2 | UX             | `api.ts:49-50`; `assessments.tsx:76-94`; `development-plans.tsx:81-99`     | UI autoriza por role onde backend autoriza por relação      | 403 tardio/confusão                             | helper genérico reutilizado além do escopo              | helper contextual por pessoa/recurso            |
+| EVD-001   |      P1/P2 | UX/Integridade | `architects.$architectId.tsx:390-419`; `store.tsx:385-388`                 | sucesso exibido antes do servidor                           | falsa confiança/perda de dado                   | fire-and-forget optimistic mutation                     | await server + pending/error local              |
+| DATA-002  |         P2 | Concorrência   | `repositories/learning.ts:181-213`                                         | atualização grava array inteiro                             | lost update concorrente                         | progresso modelado como blob                            | tabela por assignment/item + UPSERT atômico     |
+| OPS-001   |         P2 | Segurança      | `routes/api/analytics.ts:14-20`                                            | qualquer autenticado acessa/limpa cache                     | disponibilidade/operacional                     | endpoint técnico herdou guard genérico                  | Admin/ops only                                  |
+| PRIV-001  |         P2 | Privacidade    | `auth/scope.ts:62-65` + objeto Architect                                   | roster inteiro inclui e-mail/perfil                         | exposição além da necessidade                   | comentário assume roster menos sensível que objeto real | minimização/redaction/política explícita        |
+| CYC-003   |         P2 | Domínio        | `routes/cycles.tsx:104-106`                                                | intervenções não têm contexto temporal de ciclo             | evolução difícil de explicar                    | ciclo modelado só para Assessment/PDI                   | registrar ocorrência/período/ciclo opcional     |
+| DATA-003  |         P2 | Dados          | `db/schema.sql`                                                            | estados/roles/datas pouco protegidos no DB                  | integridade depende só da app                   | schema MVP permissivo                                   | CHECKs, timestamps, approver/reviewer metadata  |
+| DATA-004  |         P2 | Dados          | `schema.sql:51-76,117-149` e comentários posteriores                       | banco novo nasce com features mortas                        | dívida/confusão                                 | baseline e migrações históricas misturados              | baseline ativo separado de migrations legadas   |
+| DATA-005  |         P2 | Histórico      | `schema.sql:491-510`                                                       | ano histórico vira data exata inventada                     | precisão falsa                                  | schema destino exige DATE                               | armazenar precisão (`year`/`day`)               |
+| PERF-001  |         P2 | Performance    | `repositories/state.ts:39-77`                                              | servidor carrega estado completo antes de filtrar           | escala/latência/memória                         | snapshot global como estratégia de hidratação           | endpoints paginados/queries por escopo          |
+| FRONT-001 |         P2 | Manutenção     | `assessments.tsx`, perfil, PDI, learning >500 linhas                       | manutenção/regressão                                        | lógica de domínio + UI no mesmo módulo          | extrair hooks/use cases/components                      |
+| IA-001    |         P2 | Produto        | `AppShell.tsx:53-84`                                                       | todos os papéis veem a mesma arquitetura                    | carga cognitiva/rotas sem valor                 | menu derivado de módulos, não jobs-to-be-done           | IA role-aware                                   |
+| RESP-001  |         P2 | Mobile         | `AppShell.tsx:435-445`                                                     | mobile expõe 13 links em scroll horizontal                  | descoberta/eficiência ruim                      | réplica direta da navegação desktop                     | menu condensado role-aware                      |
+| ACC-001   |         P2 | A11y           | `__root.tsx:142-153`                                                       | idioma do documento não acompanha UI                        | pronúncia/leitor de tela incorretos             | shell estático                                          | bind de `lang` ao locale                        |
+| DOC-001   |         P2 | Governança     | `docs/FUNCIONAL.md` ainda referencia 9-Box/SWOT/OKR                        | agentes/equipe podem recriar feature removida               | documentation drift                             | atualizar docs/screenshots + ADRs                       |
+| API-001   |         P2 | API            | `routes/schemas.ts:130-138,167-214`; repositories                          | comandos de create aceitam estado demais                    | bypass de regras/colisões                       | schema de entidade reutilizado como comando             | DTOs de create mínimos + IDs server-side        |
+| OBS-001   |         P2 | Operação       | logger Fastify + audit existem; tracing/metrics não encontrados            | diagnóstico de produção limitado                            | observabilidade parcial                         | métricas, tracing e alertas por SLO                     |
+| ACC-002   |         P3 | A11y           | `__root.tsx:194-199`                                                       | spinner sem anúncio acessível                               | espera invisível a leitor de tela               | loading puramente visual                                | `role=status` + texto sr-only                   |
+| IA-002    |         P4 | Produto        | `settings.tsx`                                                             | glossário ocupa destino primário                            | ruído de navegação                              | ajuda concebida como página                             | ajuda contextual/tooltips                       |
 
 ---
 
 ## 31. Matriz de Notas
 
-| Dimensão | Nota | Justificativa |
-|---|---:|---|
-| Clareza do produto | **7,0** | tese e core agora são discerníveis; IA ainda fragmenta |
-| Valor de negócio | **7,0** | problema real e relevante para organizações técnicas |
-| Modelo de PDI | **5,5** | boas entidades, mas lifecycle/integridade ainda falham |
-| Jornada do usuário | **5,0** | fluxo existe, porém depende de módulos e contexto manual |
-| UX | **6,0** | telas locais boas; arquitetura de tarefa ainda mediana |
-| Usabilidade | **6,0** | utilizável, mas não autoexplicativo ponta a ponta |
-| UI | **7,5** | consistente e corporativa por inspeção estática |
-| Design System | **7,5** | primitives/tokens/reuso/testes bons |
-| Acessibilidade | **6,0** | boa base; locale/loading/gráficos e validação real pendentes |
-| Frontend | **6,5** | tipado/testado/organizado, mas permissões e mutations frágeis |
-| Backend | **6,0** | boa base Fastify/Zod/repos, invariantes ainda incompletas |
-| API | **4,5** | contratos coerentes em parte; P0/P1 de criação/scoping |
-| Modelagem de dados | **5,0** | representa domínio, JSONB já limita integridade |
-| Segurança | **2,5** | P0 de identity binding + upserts/secret/rate limit |
-| Performance | **6,0** | aceitável para escala pequena por desenho, riscos claros de state global |
-| Testabilidade | **7,0** | boa suíte existente; sem reprodução nem E2E encontrado |
-| Manutenibilidade | **6,0** | padrões bons, arquivos grandes e regras distribuídas |
-| Consistência | **4,5** | divergências UI/API/domain importantes |
-| Completude | **5,0** | core existe; experiências de governança/fechamento faltam |
-| Prontidão para produção | **2,0** | P0s bloqueiam uso corporativo real |
+| Dimensão                |    Nota | Justificativa                                                            |
+| ----------------------- | ------: | ------------------------------------------------------------------------ |
+| Clareza do produto      | **7,0** | tese e core agora são discerníveis; IA ainda fragmenta                   |
+| Valor de negócio        | **7,0** | problema real e relevante para organizações técnicas                     |
+| Modelo de PDI           | **5,5** | boas entidades, mas lifecycle/integridade ainda falham                   |
+| Jornada do usuário      | **5,0** | fluxo existe, porém depende de módulos e contexto manual                 |
+| UX                      | **6,0** | telas locais boas; arquitetura de tarefa ainda mediana                   |
+| Usabilidade             | **6,0** | utilizável, mas não autoexplicativo ponta a ponta                        |
+| UI                      | **7,5** | consistente e corporativa por inspeção estática                          |
+| Design System           | **7,5** | primitives/tokens/reuso/testes bons                                      |
+| Acessibilidade          | **6,0** | boa base; locale/loading/gráficos e validação real pendentes             |
+| Frontend                | **6,5** | tipado/testado/organizado, mas permissões e mutations frágeis            |
+| Backend                 | **6,0** | boa base Fastify/Zod/repos, invariantes ainda incompletas                |
+| API                     | **4,5** | contratos coerentes em parte; P0/P1 de criação/scoping                   |
+| Modelagem de dados      | **5,0** | representa domínio, JSONB já limita integridade                          |
+| Segurança               | **2,5** | P0 de identity binding + upserts/secret/rate limit                       |
+| Performance             | **6,0** | aceitável para escala pequena por desenho, riscos claros de state global |
+| Testabilidade           | **7,0** | boa suíte existente; sem reprodução nem E2E encontrado                   |
+| Manutenibilidade        | **6,0** | padrões bons, arquivos grandes e regras distribuídas                     |
+| Consistência            | **4,5** | divergências UI/API/domain importantes                                   |
+| Completude              | **5,0** | core existe; experiências de governança/fechamento faltam                |
+| Prontidão para produção | **2,0** | P0s bloqueiam uso corporativo real                                       |
 
 > **Nota média não deve ser usada como gate.** Um produto pode ter UI 7,5 e ainda ser impróprio para produção por segurança 2,5 e prontidão 2,0.
 
@@ -1445,25 +1445,25 @@ Somente após confiança do core:
 
 ## 34. Roadmap Recomendado
 
-| ID | Título | Categoria | Problema | Impacto | Esforço estimado | Prioridade | Dependências | Recomendação | Classe |
-|---|---|---|---|---|---|---|---|---|---|
-| R-001 | Fechar self-registration corporativo | Segurança | identidade pode ser reivindicada pelo cliente | crítico | M | P0 | nenhuma | convite/SSO e vínculo server-side | **ESTRUTURAL** |
-| R-002 | State machine real do PDI | Domínio | Approved/Completed ainda mutáveis | crítico | M | P0 | testes | centralizar invariantes e lock | **ESTRUTURAL** |
-| R-003 | Assessment sem defaults factuais | Domínio | nível default representa ausência como fato | crítico | M/H | P1 | migração | nullable/touched + completeness | **ESTRUTURAL** |
-| R-004 | IDs servidor + create sem upsert | API | colisões podem sobrescrever recursos | crítico | M | P1 | clients | UUID servidor + INSERT-only | **REFATORAÇÃO** |
-| R-005 | Role-aware data scope | Produto/Auth | analytics misturam roster completo com dados parciais | muito alto | M/H | P1 | selectors/API | população canônica por papel | **ESTRUTURAL** |
-| R-006 | Minha Evolução / Pendências | UX/Produto | produto não orienta próximo passo por papel | muito alto | M | P1 | R-005 | homes/work queues específicas | **IMPORTANTE** |
-| R-007 | Workspace da Pessoa | UX/Produto | desenvolvimento está fragmentado em módulos | muito alto | H | P1 | R-002/R-005 | consolidar prioridade→ação→evidência | **ESTRUTURAL** |
-| R-008 | Ciclo transacional | Domínio | Active/status possuem fontes concorrentes | alto | M | P1 | DB | ações de negócio transacionais | **ESTRUTURAL** |
-| R-009 | Normalizar PDI items | Dados | Evidence não pode ter FK para item JSONB | alto | H | P1/P2 | R-002 | tabela `development_plan_items` | **REFATORAÇÃO** |
-| R-010 | Normalizar Learning assignment/progress | Dados | progress JSONB sofre lost update e baixa integridade | alto | M/H | P2 | API | linhas por assignment/item | **REFATORAÇÃO** |
-| R-011 | Histórico de review/check-in | PDI | acompanhamento e reviews são sobrescritos/implícitos | alto | M | P2 | R-009 | timeline auditável de decisões | **IMPORTANTE** |
-| R-012 | Consolidar Capacidades | IA | Map/Gap/Training duplicam momento de decisão | alto | M | P2 | R-005 | uma jornada Capacidades/Prioridades | **IMPORTANTE** |
-| R-013 | Remover Reference da nav | IA | glossário não é jornada | médio | L | P4 | nenhuma | ajuda contextual | **QUICK WIN** |
-| R-014 | Atualizar docs/ADRs | Governança | docs podem reintroduzir features removidas | alto | L | P2 | decisões atuais | docs atuais + ADRs | **QUICK WIN** |
-| R-015 | E2E das 3 personas | QA | jornada não tem E2E encontrado | alto | M | P1/P2 | core estabilizado | Playwright Member/Lead/Admin | **IMPORTANTE** |
-| R-016 | Reintroduzir 9-Box | Produto | não há governança de talent calibration necessária | baixo/agora negativo | H | — | governança futura | não reintroduzir no core atual | **NÃO FAZER** |
-| R-017 | Novo Development Score | Produto | score composto mascara sinais factuais | negativo agora | M | — | modelo validado futuro | manter indicadores factuais | **NÃO FAZER** |
+| ID    | Título                                  | Categoria    | Problema                                              | Impacto              | Esforço estimado | Prioridade | Dependências           | Recomendação                         | Classe          |
+| ----- | --------------------------------------- | ------------ | ----------------------------------------------------- | -------------------- | ---------------- | ---------- | ---------------------- | ------------------------------------ | --------------- |
+| R-001 | Fechar self-registration corporativo    | Segurança    | identidade pode ser reivindicada pelo cliente         | crítico              | M                | P0         | nenhuma                | convite/SSO e vínculo server-side    | **ESTRUTURAL**  |
+| R-002 | State machine real do PDI               | Domínio      | Approved/Completed ainda mutáveis                     | crítico              | M                | P0         | testes                 | centralizar invariantes e lock       | **ESTRUTURAL**  |
+| R-003 | Assessment sem defaults factuais        | Domínio      | nível default representa ausência como fato           | crítico              | M/H              | P1         | migração               | nullable/touched + completeness      | **ESTRUTURAL**  |
+| R-004 | IDs servidor + create sem upsert        | API          | colisões podem sobrescrever recursos                  | crítico              | M                | P1         | clients                | UUID servidor + INSERT-only          | **REFATORAÇÃO** |
+| R-005 | Role-aware data scope                   | Produto/Auth | analytics misturam roster completo com dados parciais | muito alto           | M/H              | P1         | selectors/API          | população canônica por papel         | **ESTRUTURAL**  |
+| R-006 | Minha Evolução / Pendências             | UX/Produto   | produto não orienta próximo passo por papel           | muito alto           | M                | P1         | R-005                  | homes/work queues específicas        | **IMPORTANTE**  |
+| R-007 | Workspace da Pessoa                     | UX/Produto   | desenvolvimento está fragmentado em módulos           | muito alto           | H                | P1         | R-002/R-005            | consolidar prioridade→ação→evidência | **ESTRUTURAL**  |
+| R-008 | Ciclo transacional                      | Domínio      | Active/status possuem fontes concorrentes             | alto                 | M                | P1         | DB                     | ações de negócio transacionais       | **ESTRUTURAL**  |
+| R-009 | Normalizar PDI items                    | Dados        | Evidence não pode ter FK para item JSONB              | alto                 | H                | P1/P2      | R-002                  | tabela `development_plan_items`      | **REFATORAÇÃO** |
+| R-010 | Normalizar Learning assignment/progress | Dados        | progress JSONB sofre lost update e baixa integridade  | alto                 | M/H              | P2         | API                    | linhas por assignment/item           | **REFATORAÇÃO** |
+| R-011 | Histórico de review/check-in            | PDI          | acompanhamento e reviews são sobrescritos/implícitos  | alto                 | M                | P2         | R-009                  | timeline auditável de decisões       | **IMPORTANTE**  |
+| R-012 | Consolidar Capacidades                  | IA           | Map/Gap/Training duplicam momento de decisão          | alto                 | M                | P2         | R-005                  | uma jornada Capacidades/Prioridades  | **IMPORTANTE**  |
+| R-013 | Remover Reference da nav                | IA           | glossário não é jornada                               | médio                | L                | P4         | nenhuma                | ajuda contextual                     | **QUICK WIN**   |
+| R-014 | Atualizar docs/ADRs                     | Governança   | docs podem reintroduzir features removidas            | alto                 | L                | P2         | decisões atuais        | docs atuais + ADRs                   | **QUICK WIN**   |
+| R-015 | E2E das 3 personas                      | QA           | jornada não tem E2E encontrado                        | alto                 | M                | P1/P2      | core estabilizado      | Playwright Member/Lead/Admin         | **IMPORTANTE**  |
+| R-016 | Reintroduzir 9-Box                      | Produto      | não há governança de talent calibration necessária    | baixo/agora negativo | H                | —          | governança futura      | não reintroduzir no core atual       | **NÃO FAZER**   |
+| R-017 | Novo Development Score                  | Produto      | score composto mascara sinais factuais                | negativo agora       | M                | —          | modelo validado futuro | manter indicadores factuais          | **NÃO FAZER**   |
 
 ---
 
@@ -1471,22 +1471,22 @@ Somente após confiança do core:
 
 ### Simulação: profissional técnico entra pela primeira vez
 
-| Passo | Estado atual | Avaliação |
-|---|---|---|
-| 1. Ele entra | **EXISTE**, mas cadastro corporativo está inseguro | **EXISTE MAS ESTÁ MAL IMPLEMENTADO** |
-| 2. Entende seu contexto | Dashboard genérico de time | **EXISTE PARCIALMENTE** |
-| 3. Identifica onde está | ciclo aparece no header | **EXISTE** |
-| 4. Entende seu desenvolvimento | precisa navegar entre módulos | **EXISTE PARCIALMENTE** |
-| 5. Identifica um gap | Gap Analysis + perfil | **EXISTE** |
-| 6. Define um objetivo | item de PDI | **EXISTE** |
-| 7. Cria ações | PDI/SMART/ação | **EXISTE**, mas governança fraca |
-| 8. Executa ações | status, Learning, Mentoring | **EXISTE** |
-| 9. Registra evidências | Evidence | **EXISTE** |
-| 10. Acompanha progresso | PDI + trilhas | **EXISTE PARCIALMENTE** |
-| 11. Recebe feedback | Assessment comments + Evidence review | **EXISTE PARCIALMENTE** |
-| 12. Demonstra evolução | ciclos + novo Assessment + evidências | **EXISTE PARCIALMENTE** |
-| 13. Encerra/revisa PDI | status Completed existe, mas não é imutável nem valida resultado | **EXISTE MAS ESTÁ MAL IMPLEMENTADO** |
-| 14. Inicia novo ciclo | ciclos e Assessment novo | **EXISTE PARCIALMENTE**, intervenções não são bem temporalizadas |
+| Passo                          | Estado atual                                                     | Avaliação                                                        |
+| ------------------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 1. Ele entra                   | **EXISTE**, mas cadastro corporativo está inseguro               | **EXISTE MAS ESTÁ MAL IMPLEMENTADO**                             |
+| 2. Entende seu contexto        | Dashboard genérico de time                                       | **EXISTE PARCIALMENTE**                                          |
+| 3. Identifica onde está        | ciclo aparece no header                                          | **EXISTE**                                                       |
+| 4. Entende seu desenvolvimento | precisa navegar entre módulos                                    | **EXISTE PARCIALMENTE**                                          |
+| 5. Identifica um gap           | Gap Analysis + perfil                                            | **EXISTE**                                                       |
+| 6. Define um objetivo          | item de PDI                                                      | **EXISTE**                                                       |
+| 7. Cria ações                  | PDI/SMART/ação                                                   | **EXISTE**, mas governança fraca                                 |
+| 8. Executa ações               | status, Learning, Mentoring                                      | **EXISTE**                                                       |
+| 9. Registra evidências         | Evidence                                                         | **EXISTE**                                                       |
+| 10. Acompanha progresso        | PDI + trilhas                                                    | **EXISTE PARCIALMENTE**                                          |
+| 11. Recebe feedback            | Assessment comments + Evidence review                            | **EXISTE PARCIALMENTE**                                          |
+| 12. Demonstra evolução         | ciclos + novo Assessment + evidências                            | **EXISTE PARCIALMENTE**                                          |
+| 13. Encerra/revisa PDI         | status Completed existe, mas não é imutável nem valida resultado | **EXISTE MAS ESTÁ MAL IMPLEMENTADO**                             |
+| 14. Inicia novo ciclo          | ciclos e Assessment novo                                         | **EXISTE PARCIALMENTE**, intervenções não são bem temporalizadas |
 
 ### Narrativa comparada
 

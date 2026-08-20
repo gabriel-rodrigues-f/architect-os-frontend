@@ -210,7 +210,8 @@ export interface DevelopmentPlan {
  * mais recente; depois de Approved → Completed → Reopened → Approved →
  * Completed, a primeira conclusão só sobrevive aqui.
  */
-export type PlanEventType = "PlanApproved" | "PlanReturnedToDraft" | "PlanCompleted" | "PlanReopened";
+export type PlanEventType =
+  "PlanApproved" | "PlanReturnedToDraft" | "PlanCompleted" | "PlanReopened";
 
 export interface DevelopmentPlanEvent {
   id: string;

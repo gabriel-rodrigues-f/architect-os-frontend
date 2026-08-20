@@ -181,7 +181,10 @@ function UsersPage() {
                             : t("users.status.disable")}
                         </Button>
                       ) : (
-                        <StatusBadge status={user.status} label={t(`users.status.${user.status}`)} />
+                        <StatusBadge
+                          status={user.status}
+                          label={t(`users.status.${user.status}`)}
+                        />
                       )}
                     </td>
                   </tr>

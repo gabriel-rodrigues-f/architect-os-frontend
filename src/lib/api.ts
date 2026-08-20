@@ -160,8 +160,12 @@ export const authApi = {
    * bootstrap. `temporaryPassword` só vem nesta resposta — o admin repassa
    * por um canal fora da aplicação.
    */
-  createUser: (input: { name: string; email: string; role: UserRole; architectId?: string | null }) =>
-    post<{ user: SessionUser; temporaryPassword: string }>("/api/auth/users", input),
+  createUser: (input: {
+    name: string;
+    email: string;
+    role: UserRole;
+    architectId?: string | null;
+  }) => post<{ user: SessionUser; temporaryPassword: string }>("/api/auth/users", input),
   changePassword: (currentPassword: string, newPassword: string) =>
     post<void>("/api/auth/change-password", { currentPassword, newPassword }),
 };

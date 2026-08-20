@@ -77,11 +77,11 @@ const canEditSelf = !isAdmin && isOwner && !isCompleted;
 
 Isso significa:
 
-| Estado | Member pode editar Self? |
-|---|---:|
-| Draft | Sim |
-| In Review | **Sim** |
-| Completed | Não |
+| Estado    | Member pode editar Self? |
+| --------- | -----------------------: |
+| Draft     |                      Sim |
+| In Review |                  **Sim** |
+| Completed |                      Não |
 
 Depois de clicar em **Enviar para revisão**, a autoavaliação deveria ficar congelada.
 
@@ -90,7 +90,7 @@ Depois de clicar em **Enviar para revisão**, a autoavaliação deveria ficar co
 Semântica equivalente a:
 
 ```ts
-canEditSelf = isOwner && assessment.status === "Draft"
+canEditSelf = isOwner && assessment.status === "Draft";
 ```
 
 ### Prioridade
@@ -106,8 +106,7 @@ canEditSelf = isOwner && assessment.status === "Draft"
 Hoje:
 
 ```ts
-const canComplete =
-  isAdmin && assessment && assessment.status !== "Completed";
+const canComplete = isAdmin && assessment && assessment.status !== "Completed";
 ```
 
 `src/routes/assessments.tsx:67`
@@ -163,11 +162,11 @@ Isso permite editar `leader` e `final` ainda durante o Draft da autoavaliação.
 
 ### Estado desejado
 
-| Campo | Draft | In Review | Completed |
-|---|---|---|---|
-| Self | Arquiteto edita | Bloqueado | Bloqueado |
-| Leader | Bloqueado | Lead edita | Bloqueado |
-| Final | Bloqueado | Lead/calibração | Bloqueado |
+| Campo  | Draft           | In Review       | Completed |
+| ------ | --------------- | --------------- | --------- |
+| Self   | Arquiteto edita | Bloqueado       | Bloqueado |
+| Leader | Bloqueado       | Lead edita      | Bloqueado |
+| Final  | Bloqueado       | Lead/calibração | Bloqueado |
 
 ### Prioridade
 
@@ -242,8 +241,8 @@ Essa é uma das falhas sistêmicas mais importantes da revisão.
 Mas na ausência de assessment oficial retorna:
 
 ```ts
-avg: 0
-target: 0
+avg: 0;
+target: 0;
 ```
 
 `src/lib/selectors.ts:152-159`
@@ -261,14 +260,14 @@ de:
 Representar ausência com:
 
 ```ts
-undefined
+undefined;
 ```
 
 ou:
 
 ```ts
 {
-  assessed: false
+  assessed: false;
 }
 ```
 
@@ -390,7 +389,7 @@ Quem não possui Completed vira:
 Depois a média é dividida por:
 
 ```ts
-rows.length
+rows.length;
 ```
 
 `src/routes/gap-analysis.tsx:37-50`
@@ -440,9 +439,9 @@ Exemplo:
 No card do time:
 
 ```tsx
-{top.length === 0 && (
-  <p>Sem avaliação neste ciclo.</p>
-)}
+{
+  top.length === 0 && <p>Sem avaliação neste ciclo.</p>;
+}
 ```
 
 `src/routes/team.tsx:202-217`
@@ -515,8 +514,7 @@ Bruno → 10%
 `developmentScore()` usa:
 
 ```ts
-pathsByArchitect
-  .flatMap(p => p.items.map(i => i.progress))
+pathsByArchitect.flatMap((p) => p.items.map((i) => i.progress));
 ```
 
 `src/lib/selectors.ts:173-179`
@@ -684,9 +682,7 @@ Se sim, esconder controles no frontend não resolve privacidade.
 `PhilosophyCard` possui:
 
 ```tsx
-<Button onClick={startEditing}>
-  Editar
-</Button>
+<Button onClick={startEditing}>Editar</Button>
 ```
 
 `src/components/app/PhilosophyCard.tsx:57-67`
@@ -779,7 +775,7 @@ sem avaliação.
 Usar estado nulo:
 
 ```ts
-null
+null;
 ```
 
 até existir processo de Talent Calibration.
@@ -795,13 +791,13 @@ até existir processo de Talent Calibration.
 O store remove em cascata:
 
 ```ts
-assessments
-plans
-okrs
-swots
-evidences
-certifications
-mentoringSessions
+assessments;
+plans;
+okrs;
+swots;
+evidences;
+certifications;
+mentoringSessions;
 ```
 
 `src/lib/store.tsx:144-162`
@@ -945,7 +941,7 @@ DevelopmentCycle.status:
 e:
 
 ```ts
-activeCycleId
+activeCycleId;
 ```
 
 Sem invariantes claros.
@@ -1021,7 +1017,7 @@ Growth     20%
 ### Problema 1 — Evidence
 
 ```ts
-evidenceCount * 25
+evidenceCount * 25;
 ```
 
 4 evidências = 100%.
@@ -1045,7 +1041,7 @@ Há inconsistências de ciclo.
 ### Problema 4 — Growth
 
 ```ts
-(after - before) * 100
+(after - before) * 100;
 ```
 
 Evolução média de +1 nível satura 100%.
@@ -1071,19 +1067,19 @@ Não ajustar pesos arbitrariamente.
 O domínio possui:
 
 ```ts
-cycleId
+cycleId;
 ```
 
 Mas há seleções apenas por:
 
 ```ts
-architectId
+architectId;
 ```
 
 No perfil:
 
 ```ts
-store.okrs.find((o) => o.architectId === architect.id)
+store.okrs.find((o) => o.architectId === architect.id);
 ```
 
 Isso pode mostrar o OKR errado quando existem múltiplos ciclos.
@@ -1245,13 +1241,13 @@ elaborar
 Ao criar evidência:
 
 ```ts
-competencyIds: []
+competencyIds: [];
 ```
 
 O PDI possui:
 
 ```ts
-evidenceIds: []
+evidenceIds: [];
 ```
 
 mas a jornada não conecta os dois.
@@ -1303,7 +1299,7 @@ e dados como:
 Sessão continua criada com:
 
 ```ts
-competencyIds: []
+competencyIds: [];
 ```
 
 Ações e decisões continuam registradas como texto.
@@ -1327,7 +1323,7 @@ Não viram:
 `useCurrentUser()` é utilizado principalmente para preencher:
 
 ```ts
-mentor: user.name
+mentor: user.name;
 ```
 
 Não há governança clara sobre:
@@ -1415,7 +1411,7 @@ Além disso, a cor é derivada da soma de ordinais, reduzindo a matriz bidimensi
 O código usa:
 
 ```ts
-mentors = [...experts, ...advanced]
+mentors = [...experts, ...advanced];
 ```
 
 `src/routes/capability-map.tsx:163-177`
@@ -1446,11 +1442,7 @@ até haver confirmação.
 Lógica:
 
 ```ts
-mentors.length === 0
-  ? noExpert
-  : experts.length === 1
-    ? singlePerson
-    : healthy
+mentors.length === 0 ? noExpert : experts.length === 1 ? singlePerson : healthy;
 ```
 
 Se existirem:
@@ -1477,7 +1469,7 @@ mesmo sem expert.
 Na criação do domínio:
 
 ```ts
-short: trimmed.split(" ")[0]
+short: trimmed.split(" ")[0];
 ```
 
 Exemplo:
@@ -1490,7 +1482,7 @@ Cloud Platform → Cloud
 Na tela Ciclos:
 
 ```ts
-row[d.category.short] = d.avg
+row[d.category.short] = d.avg;
 ```
 
 `short` é utilizado como chave de série.
@@ -1659,7 +1651,7 @@ O produto ainda não decide se deve gerar:
 Exemplo:
 
 ```ts
-id: slug(form.name)
+id: slug(form.name);
 ```
 
 `src/routes/team.tsx:112-117`
@@ -1703,7 +1695,7 @@ Para produto multiusuário, backend deve ser autoridade.
 Learning Paths usa:
 
 ```ts
-createdBy: user.email
+createdBy: user.email;
 ```
 
 e compara email para permitir edição.
@@ -1860,21 +1852,21 @@ Precisa ser verificado se o backend filtra entidades por role.
 
 # 52. Nova classificação
 
-| Dimensão | Avaliação |
-|---|---:|
-| Proposta de valor | 3/5 |
-| Coerência das jornadas | 2/5 |
-| Assessment / governança | 2/5 |
-| Integridade dos dados | 1/5 |
-| Integridade temporal | 1/5 |
-| Modelo de permissões | 1/5 |
-| Continuidade entre telas | 1/5 |
-| Evidência / feedback loop | 1/5 |
-| Trilhas | 1/5 |
-| Qualidade das métricas | 1/5 |
-| Testes de comportamento | 2/5 |
-| Automação / inteligência real | 1–2/5 |
-| Maturidade geral | **2/5** |
+| Dimensão                      | Avaliação |
+| ----------------------------- | --------: |
+| Proposta de valor             |       3/5 |
+| Coerência das jornadas        |       2/5 |
+| Assessment / governança       |       2/5 |
+| Integridade dos dados         |       1/5 |
+| Integridade temporal          |       1/5 |
+| Modelo de permissões          |       1/5 |
+| Continuidade entre telas      |       1/5 |
+| Evidência / feedback loop     |       1/5 |
+| Trilhas                       |       1/5 |
+| Qualidade das métricas        |       1/5 |
+| Testes de comportamento       |       2/5 |
+| Automação / inteligência real |     1–2/5 |
+| Maturidade geral              |   **2/5** |
 
 ---
 

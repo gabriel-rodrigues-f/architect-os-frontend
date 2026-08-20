@@ -109,7 +109,8 @@ function PlansPage() {
    * admin que `isLeadOf` tem. A própria pessoa (dona do PDI) só vê a
    * informação de que está bloqueado, nunca o botão.
    */
-  const canReopenCompletedPlan = plan && planStatus === "Completed" && isAssignedTechLeadOf(user, architect);
+  const canReopenCompletedPlan =
+    plan && planStatus === "Completed" && isAssignedTechLeadOf(user, architect);
   const ownerSeesLockedMessage =
     plan && planStatus === "Completed" && canEdit && !isAssignedTechLeadOf(user, architect);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
