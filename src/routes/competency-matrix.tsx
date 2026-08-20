@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +23,7 @@ import {
   type Competency,
   type Capability,
   type Level,
+  type RequirementType,
   type RoleName,
 } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
@@ -165,11 +167,14 @@ function MatrixPage() {
           .filter((cat) => cat.active)
           .map((cat) => {
             const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
+            const restrictiveCount = comps.filter(
+              (c) => c.requirementType === "RESTRICTIVE",
+            ).length;
             return (
               <SectionCard
                 key={cat.id}
                 title={cat.name}
-                description={t("matrix.competencyCount", { n: comps.length })}
+                description={`${t("matrix.competencyCount", { n: comps.length })} · ${t("matrix.requirement.count", { restrictive: restrictiveCount })}`}
                 actions={
                   isAdmin ? (
                     <div className="flex items-center gap-1">
@@ -212,7 +217,14 @@ function MatrixPage() {
                     <tbody>
                       {comps.map((c) => (
                         <tr key={c.id} className="border-b border-border/60 last:border-0">
-                          <td className="py-2 font-medium">{c.name}</td>
+                          <td className="py-2 font-medium">
+                            {c.name}
+                            {c.requirementType === "RESTRICTIVE" && (
+                              <Badge variant="outline" className="ml-2 align-middle text-[10px]">
+                                {t("matrix.requirement.badge")}
+                              </Badge>
+                            )}
+                          </td>
                           {ROLES.map((r) => (
                             <td key={r} className="py-2 text-center">
                               <LevelBadge level={c.expected[r]} />
@@ -403,6 +415,7 @@ function CompetencyCreateDialog({
   const { t } = useI18n();
   const [name, setName] = useState("");
   const [levels, setLevels] = useState<Partial<Record<RoleName, Level>>>({});
+  const [requirementType, setRequirementType] = useState<RequirementType>("NON_RESTRICTIVE");
   const canSave = name.trim().length > 0 && ROLES.every((r) => levels[r] !== undefined);
 
   const save = () => {
@@ -411,6 +424,7 @@ function CompetencyCreateDialog({
       id: competencyId(capability, name.trim()),
       name: name.trim(),
       capabilityId: capability.id,
+      requirementType,
       expected: levels as Record<RoleName, Level>,
       active: true,
     });
@@ -421,7 +435,7 @@ function CompetencyCreateDialog({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("matrix.create.title", { dominio: capability.name })}</DialogTitle>
+          <DialogTitle>{t("matrix.create.title", { capacidade: capability.name })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -461,6 +475,19 @@ function CompetencyCreateDialog({
               ))}
             </div>
           </div>
+          <div>
+            <Label htmlFor="new-competency-requirement">{t("matrix.requirement.label")}</Label>
+            <select
+              id="new-competency-requirement"
+              className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2 text-sm"
+              value={requirementType}
+              onChange={(e) => setRequirementType(e.target.value as RequirementType)}
+            >
+              <option value="NON_RESTRICTIVE">{t("matrix.requirement.nonRestrictive")}</option>
+              <option value="RESTRICTIVE">{t("matrix.requirement.restrictive")}</option>
+            </select>
+            <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
@@ -476,10 +503,10 @@ function CompetencyCreateDialog({
 }
 
 /**
- * Nome e nível esperado por cargo são as únicas colunas que a matriz mostra —
- * então são as únicas que o diálogo edita. Trocar de capacidade é uma decisão de
- * reorganização maior (afeta relatórios agrupados por capacidade), não um
- * ajuste pontual; fica fora daqui.
+ * Nome, nível esperado por cargo e exigência (ENT-CAR-011) são o que o
+ * diálogo edita. Trocar de capacidade é uma decisão de reorganização maior
+ * (afeta relatórios agrupados por capacidade), não um ajuste pontual; fica
+ * fora daqui.
  */
 function CompetencyEditDialog({
   competency,
@@ -492,10 +519,13 @@ function CompetencyEditDialog({
   const { t } = useI18n();
   const [name, setName] = useState(competency.name);
   const [levels, setLevels] = useState<Record<RoleName, Level>>(competency.expected);
+  const [requirementType, setRequirementType] = useState<RequirementType>(
+    competency.requirementType,
+  );
 
   const save = () => {
     if (!name.trim()) return;
-    store.updateCompetency(competency.id, { name: name.trim(), expected: levels });
+    store.updateCompetency(competency.id, { name: name.trim(), expected: levels, requirementType });
     onClose();
   };
 
@@ -536,6 +566,19 @@ function CompetencyEditDialog({
                 </div>
               ))}
             </div>
+          </div>
+          <div>
+            <Label htmlFor="edit-competency-requirement">{t("matrix.requirement.label")}</Label>
+            <select
+              id="edit-competency-requirement"
+              className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2 text-sm"
+              value={requirementType}
+              onChange={(e) => setRequirementType(e.target.value as RequirementType)}
+            >
+              <option value="NON_RESTRICTIVE">{t("matrix.requirement.nonRestrictive")}</option>
+              <option value="RESTRICTIVE">{t("matrix.requirement.restrictive")}</option>
+            </select>
+            <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
           </div>
         </div>
         <DialogFooter>

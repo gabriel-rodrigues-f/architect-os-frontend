@@ -369,7 +369,7 @@
   "matrix.competencyCount": "{n} competências",
   "matrix.col.competency": "COMPETÊNCIA",
   "matrix.newCompetency": "Nova competência",
-  "matrix.create.title": "Nova competência em {dominio}",
+  "matrix.create.title": "Nova competência em {capacidade}",
   "matrix.edit.action": "Editar {nome}",
   "matrix.edit.title": "Editar competência",
   "matrix.edit.name": "Nome",
@@ -555,5 +555,11 @@
   "users.adminOnly": "Diretório de contas é restrito a administradores.",
   "team.form.lead": "Lead responsável",
   "team.form.lead.none": "Nenhum",
-  "team.form.lead.hint": "Quem pode revisar avaliação/evidência e escrever no PDI desta pessoa como Tech Lead."
+  "team.form.lead.hint": "Quem pode revisar avaliação/evidência e escrever no PDI desta pessoa como Tech Lead.",
+  "matrix.requirement.label": "Exigência",
+  "matrix.requirement.restrictive": "Restritiva",
+  "matrix.requirement.nonRestrictive": "Não restritiva",
+  "matrix.requirement.hint": "Restritiva: se não atingir o alvo, bloqueia a capacidade para progressão de carreira. Não restritiva: entra na média, mas nunca bloqueia sozinha.",
+  "matrix.requirement.count": "{restrictive}/3 restritivas",
+  "matrix.requirement.badge": "Restritiva"
 }

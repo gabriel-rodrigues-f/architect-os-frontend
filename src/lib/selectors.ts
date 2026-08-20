@@ -117,6 +117,10 @@ export function createSelectors(s: AppState) {
       id: item.competencyId,
       name: item.competencyName,
       capabilityId: item.capabilityId ?? "",
+      // Sem fotografia de exigência no item histórico (ENT-CAR-011 é
+      // posterior a esses assessments) — NON_RESTRICTIVE é o valor neutro,
+      // e este objeto só existe para exibição, nunca para decidir gap.
+      requirementType: "NON_RESTRICTIVE",
       expected: {} as Record<RoleName, Level>,
       active: false,
     };

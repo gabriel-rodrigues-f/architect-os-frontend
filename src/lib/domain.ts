@@ -52,14 +52,25 @@ export interface Capability {
   id: string;
   name: string;
   short: string;
-  /** Fora do catálogo ativo, mas os assessments que já usaram este capacidade permanecem legíveis. */
+  /** Fora do catálogo ativo, mas os assessments que já usaram esta capacidade permanecem legíveis. */
   active: boolean;
 }
+
+/**
+ * ENT-CAR-011 — uma capacidade só é "qualificada" para progressão de
+ * carreira (motor ainda não implementado, Fase D) quando TODAS as suas
+ * competências RESTRICTIVE atingem o alvo; NON_RESTRICTIVE nunca bloqueia
+ * sozinha. Backend valida o limite (até 6 por capacidade, até 3
+ * RESTRICTIVE) em `createCompetency`/`updateCompetency` — o front só
+ * espelha o estado, nunca decide sozinho se algo passa do limite.
+ */
+export type RequirementType = "RESTRICTIVE" | "NON_RESTRICTIVE";
 
 export interface Competency {
   id: string;
   name: string;
   capabilityId: string;
+  requirementType: RequirementType;
   /** Role Competency Profile: expected level per role */
   expected: Record<RoleName, Level>;
   /** Fora do catálogo ativo — não entra em novo assessment nem em opção nova de PDI/trilha/evidência. */

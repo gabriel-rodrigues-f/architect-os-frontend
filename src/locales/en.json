@@ -369,7 +369,7 @@
   "matrix.competencyCount": "{n} competencies",
   "matrix.col.competency": "COMPETENCY",
   "matrix.newCompetency": "New competency",
-  "matrix.create.title": "New competency in {dominio}",
+  "matrix.create.title": "New competency in {capacidade}",
   "matrix.edit.action": "Edit {nome}",
   "matrix.edit.title": "Edit competency",
   "matrix.edit.name": "Name",
@@ -555,5 +555,11 @@
   "users.adminOnly": "The account directory is restricted to administrators.",
   "team.form.lead": "Responsible Lead",
   "team.form.lead.none": "None",
-  "team.form.lead.hint": "Who can review this person's assessment/evidence and write in their PDI as Tech Lead."
+  "team.form.lead.hint": "Who can review this person's assessment/evidence and write in their PDI as Tech Lead.",
+  "matrix.requirement.label": "Requirement",
+  "matrix.requirement.restrictive": "Restrictive",
+  "matrix.requirement.nonRestrictive": "Non-restrictive",
+  "matrix.requirement.hint": "Restrictive: missing the target blocks the capability for career progression. Non-restrictive: counts toward the average, but never blocks on its own.",
+  "matrix.requirement.count": "{restrictive}/3 restrictive",
+  "matrix.requirement.badge": "Restrictive"
 }

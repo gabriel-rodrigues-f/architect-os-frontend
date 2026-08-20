@@ -57,6 +57,7 @@ export const fixtureState: AppState = {
       id: "cloud-k8s",
       name: "Kubernetes",
       capabilityId: "cloud",
+      requirementType: "NON_RESTRICTIVE",
       expected: {
         "Arquiteto de Soluções I": 3,
         "Arquiteto de Soluções II": 4,
@@ -68,6 +69,7 @@ export const fixtureState: AppState = {
       id: "cloud-serverless",
       name: "Serverless",
       capabilityId: "cloud",
+      requirementType: "NON_RESTRICTIVE",
       expected: {
         "Arquiteto de Soluções I": 3,
         "Arquiteto de Soluções II": 4,
@@ -79,6 +81,7 @@ export const fixtureState: AppState = {
       id: "security-iam",
       name: "IAM",
       capabilityId: "security",
+      requirementType: "NON_RESTRICTIVE",
       expected: {
         "Arquiteto de Soluções I": 2,
         "Arquiteto de Soluções II": 3,

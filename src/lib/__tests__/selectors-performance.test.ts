@@ -11,23 +11,24 @@ import { createSelectors, emptyState } from "../selectors";
  * realista para que uma regressão apareça como lentidão no teste, não em produção.
  */
 
-const DOMAINS = 12;
-const COMPETENCIES_PER_DOMAIN = 25; // 300 competências
+const CAPABILITIES_COUNT = 12;
+const COMPETENCIES_PER_CAPABILITY = 25; // 300 competências
 const ARCHITECTS = 40;
 
 function buildLargeState(): AppState {
-  const capabilities: Capability[] = Array.from({ length: DOMAINS }, (_, i) => ({
-    id: `dominio-${i}`,
+  const capabilities: Capability[] = Array.from({ length: CAPABILITIES_COUNT }, (_, i) => ({
+    id: `capacidade-${i}`,
     name: `Capacidade ${i}`,
     short: `D${i}`,
     active: true,
   }));
 
   const competencies: Competency[] = capabilities.flatMap((cat, ci) =>
-    Array.from({ length: COMPETENCIES_PER_DOMAIN }, (_, i) => ({
+    Array.from({ length: COMPETENCIES_PER_CAPABILITY }, (_, i) => ({
       id: `comp-${ci}-${i}`,
       name: `Competência ${ci}.${i}`,
       capabilityId: cat.id,
+      requirementType: "NON_RESTRICTIVE",
       expected: {
         "Arquiteto de Soluções I": 3 as Level,
         "Arquiteto de Soluções II": 4 as Level,
@@ -108,7 +109,7 @@ describe("selectors em escala", () => {
     const sel = createSelectors(state);
     const averages = sel.capabilityAverages("arq-0");
 
-    expect(averages).toHaveLength(DOMAINS);
+    expect(averages).toHaveLength(CAPABILITIES_COUNT);
     for (const domain of averages) {
       expect(domain.target).toBe(4);
       expect(domain.avg).toBeGreaterThan(0);
