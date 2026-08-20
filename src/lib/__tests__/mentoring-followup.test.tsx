@@ -27,6 +27,8 @@ const mentor: SessionUser = {
   name: "Mentor da Sessão",
   role: "admin",
   architectId: null,
+  status: "active",
+  mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
 };
 
@@ -36,6 +38,8 @@ const outsider: SessionUser = {
   name: "Sem Vínculo",
   role: "member",
   architectId: "bruno",
+  status: "active",
+  mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
 };
 

@@ -37,6 +37,7 @@ export interface AppState {
  * conta que só revisa, não para impedir quem administra de revisar também.
  */
 export type UserRole = "admin" | "lead" | "member";
+export type UserStatus = "active" | "disabled";
 
 export interface SessionUser {
   id: string;
@@ -44,6 +45,8 @@ export interface SessionUser {
   name: string;
   role: UserRole;
   architectId: string | null;
+  status: UserStatus;
+  mustChangePassword: boolean;
   createdAt: string;
 }
 
@@ -147,9 +150,20 @@ export const authApi = {
     post<AuthResult>("/api/auth/register", input),
   me: () => request<SessionUser>("/api/auth/me"),
   users: () => request<SessionUser[]>("/api/auth/users"),
-  /** Papel e vínculo com arquiteto de outra conta — admin-only no backend. */
-  updateUser: (id: string, patch_: Partial<{ role: UserRole; architectId: string | null }>) =>
-    patch<SessionUser>(`/api/auth/users/${id}`, patch_),
+  /** Papel, vínculo com arquiteto e status (ativa/desabilitada) de outra conta — admin-only no backend. */
+  updateUser: (
+    id: string,
+    patch_: Partial<{ role: UserRole; architectId: string | null; status: UserStatus }>,
+  ) => patch<SessionUser>(`/api/auth/users/${id}`, patch_),
+  /**
+   * ENT-AUTH-001 — única forma de entrar conta na instância depois do
+   * bootstrap. `temporaryPassword` só vem nesta resposta — o admin repassa
+   * por um canal fora da aplicação.
+   */
+  createUser: (input: { name: string; email: string; role: UserRole; architectId?: string | null }) =>
+    post<{ user: SessionUser; temporaryPassword: string }>("/api/auth/users", input),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    post<void>("/api/auth/change-password", { currentPassword, newPassword }),
 };
 
 export const api = {

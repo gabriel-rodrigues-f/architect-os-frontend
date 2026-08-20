@@ -12,6 +12,8 @@ export const fixtureAdminUser: SessionUser = {
   name: "Admin de teste",
   role: "admin",
   architectId: null,
+  status: "active",
+  mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
 };
 
@@ -22,6 +24,8 @@ export const fixtureMemberUser: SessionUser = {
   name: "Ana Martins",
   role: "member",
   architectId: "ana",
+  status: "active",
+  mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
 };
 
@@ -37,6 +41,8 @@ export const fixtureUnassignedLeadUser: SessionUser = {
   name: "Lead sem atribuição",
   role: "lead",
   architectId: null,
+  status: "active",
+  mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
 };
 

@@ -10,11 +10,19 @@ import { authErrorMessage, useAuth } from "@/lib/auth";
 /**
  * Porta de entrada do app. Quando a instância ainda não tem nenhuma conta, o
  * formulário vira "primeiro acesso" e cria o usuário administrador.
+ *
+ * ENT-AUTH-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
+ * Seção 7.1) — o backend fecha `/register` assim que a instância já tem
+ * alguma conta; o botão "Criar uma nova conta" não pode continuar
+ * oferecendo um caminho que só devolve 403. `hasUsers` guarda o estado real
+ * da instância (não só o modo do formulário no momento), então o toggle só
+ * aparece enquanto a instância ainda está vazia.
  */
 export function LoginScreen() {
   const { login, register } = useAuth();
   const { t } = useI18n();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [hasUsers, setHasUsers] = useState(true);
   const [checkedInstance, setCheckedInstance] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +31,10 @@ export function LoginScreen() {
   useEffect(() => {
     authApi
       .status()
-      .then(({ hasUsers }) => setMode(hasUsers ? "login" : "register"))
+      .then(({ hasUsers: instanceHasUsers }) => {
+        setHasUsers(instanceHasUsers);
+        setMode(instanceHasUsers ? "login" : "register");
+      })
       .catch(() => setError(t("login.offline")))
       .finally(() => setCheckedInstance(true));
   }, []);
@@ -102,12 +113,12 @@ export function LoginScreen() {
                 type="password"
                 autoComplete={firstAccess ? "new-password" : "current-password"}
                 required
-                minLength={8}
+                minLength={firstAccess ? 12 : 1}
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
               {firstAccess && (
-                <p className="mt-1 text-xs text-muted-foreground">Mínimo de 8 caracteres.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Mínimo de 12 caracteres.</p>
               )}
             </div>
 
@@ -122,7 +133,7 @@ export function LoginScreen() {
             </Button>
           </form>
 
-          {checkedInstance && (
+          {checkedInstance && !hasUsers && (
             <button
               type="button"
               onClick={() => {
@@ -133,6 +144,11 @@ export function LoginScreen() {
             >
               {firstAccess ? "Já tenho conta" : "Criar uma nova conta"}
             </button>
+          )}
+          {checkedInstance && hasUsers && (
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              {t("login.closedRegistration")}
+            </p>
           )}
         </div>
       </div>

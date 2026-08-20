@@ -45,6 +45,8 @@ const fixtureLeadOfAna: SessionUser = {
   name: "Lead de Ana",
   role: "lead",
   architectId: null,
+  status: "active",
+  mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
 };
 
