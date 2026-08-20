@@ -118,6 +118,11 @@ interface Api extends AppState {
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => Promise<void>;
+  /**
+   * ENT-EVD-002 — reenvio depois de "Needs Improvement", fechando o loop de
+   * feedback. Sem otimismo — mesmo motivo de `reviewEvidence`.
+   */
+  resubmitEvidence: (id: string, patch: { description?: string; url?: string }) => Promise<void>;
   /** Sem otimismo — mesmo motivo de `addEvidence`. Ver IDOR-002. */
   addMentoringSession: (m: MentoringSession) => Promise<MentoringSession>;
   /** Sem otimismo: agendar follow-up é escrita autorizada (só quem registrou a sessão). */
@@ -445,6 +450,14 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
 
     reviewEvidence: async (id, review) => {
       const updated = await api.reviewEvidence(id, review);
+      local((s) => ({
+        ...s,
+        evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
+      }));
+    },
+
+    resubmitEvidence: async (id, patch) => {
+      const updated = await api.resubmitEvidence(id, patch);
       local((s) => ({
         ...s,
         evidences: s.evidences.map((e) => (e.id === id ? updated : e)),

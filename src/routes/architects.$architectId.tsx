@@ -423,6 +423,9 @@ function ArchitectProfile() {
                   <p className="mt-1 text-xs text-muted-foreground">"{e.leaderComment}"</p>
                 )}
                 {canReviewEvidence && <EvidenceReviewDialog evidence={e} />}
+                {canEditOwn && e.status === "Needs Improvement" && (
+                  <ResubmitEvidenceDialog evidence={e} />
+                )}
               </li>
             ))}
             {!evidences.length && (
@@ -684,13 +687,104 @@ function EvidenceDialog({
   );
 }
 
-/** Revisão da evidência é decisão do Tech Lead — só admin vê este controle. */
+/**
+ * ENT-EVD-002 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
+ * Seção 14) — reenvio depois de "Precisa de melhoria": a própria pessoa
+ * corrige o que o Tech Lead apontou (descrição/link, os campos mais
+ * prováveis de precisar ajuste) e a evidência volta para "Pendente",
+ * fechando o loop em vez de ficar parada esperando alguém perceber.
+ */
+function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
+  const { t } = useI18n();
+  const store = useStore();
+  const [open, setOpen] = useState(false);
+  const [description, setDescription] = useState(evidence.description);
+  const [url, setUrl] = useState(evidence.url ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    setSaving(true);
+    try {
+      await store.resubmitEvidence(evidence.id, {
+        ...(description.trim() !== evidence.description ? { description: description.trim() } : {}),
+        ...(url.trim() !== (evidence.url ?? "") ? { url: url.trim() } : {}),
+      });
+      toast.success(t("ev.resubmit.toast", { titulo: evidence.title }));
+      setOpen(false);
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setDescription(evidence.description);
+          setUrl(evidence.url ?? "");
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost" className="mt-1 h-auto px-0 text-xs">
+          {t("ev.resubmit.action")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("ev.resubmit.title")}</DialogTitle>
+        </DialogHeader>
+        {evidence.leaderComment && (
+          <p className="rounded-md bg-secondary px-3 py-2 text-sm text-muted-foreground">
+            "{evidence.leaderComment}"
+          </p>
+        )}
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="ev-resubmit-description">{t("ev.field.description")}</Label>
+            <Textarea
+              id="ev-resubmit-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="ev-resubmit-url">{t("ev.field.link")}</Label>
+            <Input id="ev-resubmit-url" value={url} onChange={(e) => setUrl(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+            {t("ev.resubmit.cancel")}
+          </Button>
+          <Button onClick={() => void submit()} disabled={saving}>
+            {saving ? t("ev.resubmit.saving") : t("ev.resubmit.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Revisão da evidência é decisão do Tech Lead — só admin vê este controle.
+ * `Pending` não é uma decisão de revisão (ENT-EVD-001/002, AUDITORIA-
+ * ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md, Seção 14): é o estado
+ * inicial, ou o que `ResubmitEvidenceForm` devolve depois de "Precisa de
+ * melhoria" — o backend recusa a revisão tentar voltar pra lá diretamente.
+ */
 function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const { t } = useI18n();
   const labels = useLabels();
   const store = useStore();
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<Evidence["status"]>(evidence.status);
+  const [status, setStatus] = useState<Exclude<Evidence["status"], "Pending">>(
+    evidence.status === "Pending" ? "Accepted" : evidence.status,
+  );
   const [comment, setComment] = useState(evidence.leaderComment ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -724,7 +818,7 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
       onOpenChange={(next) => {
         setOpen(next);
         if (next) {
-          setStatus(evidence.status);
+          setStatus(evidence.status === "Pending" ? "Accepted" : evidence.status);
           setComment(evidence.leaderComment ?? "");
         }
       }}
@@ -745,9 +839,8 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
               id="ev-review-status"
               className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
               value={status}
-              onChange={(e) => setStatus(e.target.value as Evidence["status"])}
+              onChange={(e) => setStatus(e.target.value as Exclude<Evidence["status"], "Pending">)}
             >
-              <option value="Pending">{labels.evidenceStatus.Pending}</option>
               <option value="Accepted">{labels.evidenceStatus.Accepted}</option>
               <option value="Needs Improvement">
                 {labels.evidenceStatus["Needs Improvement"]}

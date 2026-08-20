@@ -284,4 +284,20 @@ export const api = {
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => patch<Evidence>(`/api/evidences/${id}/review`, review),
+  /**
+   * ENT-EVD-002 — reenvio depois de "Needs Improvement": a própria pessoa
+   * (ou o Tech Lead dela) corrige e a evidência volta para Pending.
+   */
+  resubmitEvidence: (id: string, patch_: { description?: string; url?: string }) =>
+    post<Evidence>(`/api/evidences/${id}/resubmit`, patch_),
+  evidenceReviews: (id: string) =>
+    request<
+      Array<{
+        id: string;
+        reviewerUserId: string;
+        status: Evidence["status"];
+        comment: string | null;
+        reviewedAt: string;
+      }>
+    >(`/api/evidences/${id}/reviews`),
 };
