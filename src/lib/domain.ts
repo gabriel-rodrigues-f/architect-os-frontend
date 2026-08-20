@@ -151,6 +151,8 @@ export interface AssessmentItem {
   competencyName?: string | undefined;
   capabilityId?: string | undefined;
   capabilityName?: string | undefined;
+  /** ENT-CAR-011/015 — mesma lógica de fotografia, para `Competency.requirementType`. */
+  requirementType?: RequirementType | undefined;
 }
 
 export interface Assessment {
