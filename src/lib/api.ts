@@ -6,6 +6,7 @@ import type {
   CompetencyCategory,
   DevelopmentCycle,
   DevelopmentPlan,
+  DevelopmentPlanEvent,
   DevelopmentPlanItem,
   Evidence,
   LearningPath,
@@ -209,12 +210,24 @@ export const api = {
   /* PDI */
   addPlanItem: (architectId: string, cycleId: string, item: DevelopmentPlanItem) =>
     post<DevelopmentPlan>(`/api/plans/${architectId}/items`, { cycleId, item }),
-  patchPlanItem: (planId: string, itemId: string, body: Partial<DevelopmentPlanItem>) =>
-    patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, body),
+  /** `expectedVersion` sustenta concorrência otimista (ENT-DATA-012) — sempre a versão do item já lido. */
+  patchPlanItem: (
+    planId: string,
+    itemId: string,
+    body: Partial<Omit<DevelopmentPlanItem, "version">>,
+    expectedVersion: number,
+  ) => patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, { ...body, expectedVersion }),
   removePlanItem: (planId: string, itemId: string) =>
     del<void>(`/api/plans/${planId}/items/${itemId}`),
-  updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) =>
-    patch<DevelopmentPlan>(`/api/plans/${planId}/status`, { status }),
+  updatePlanStatus: (planId: string, status: DevelopmentPlan["status"], expectedVersion: number) =>
+    patch<DevelopmentPlan>(`/api/plans/${planId}/status`, { status, expectedVersion }),
+  /**
+   * Reabertura de PDI concluído (ENT-PDI-001) — comando dedicado, não um
+   * PATCH de status: exige motivo, e só o Tech Lead responsável.
+   */
+  reopenPlan: (planId: string, reason: string, expectedVersion: number) =>
+    post<DevelopmentPlan>(`/api/plans/${planId}/reopen`, { reason, expectedVersion }),
+  planEvents: (planId: string) => request<DevelopmentPlanEvent[]>(`/api/plans/${planId}/events`),
   addPlanItemCheckin: (planId: string, itemId: string, text: string) =>
     post<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}/checkins`, { text }),
 

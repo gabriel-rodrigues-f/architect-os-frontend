@@ -468,6 +468,7 @@ function PlansPage() {
               owner: architect.name,
               status: "Not Started",
               checkins: [],
+              version: 1,
             });
             setCreatingForCompetencyId(null);
           }}

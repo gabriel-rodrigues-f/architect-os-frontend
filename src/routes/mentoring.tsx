@@ -411,6 +411,7 @@ function MentoringPage() {
                         owner: mentee.name,
                         status: "Not Started",
                         checkins: [],
+                        version: 1,
                       });
                       toast.success(
                         t("mentor.toPdi.toast", { competencia: eligible.competency.name }),

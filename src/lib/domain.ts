@@ -168,6 +168,8 @@ export interface DevelopmentPlanItem {
    * SYNAPSE-2026-08-19.md.
    */
   checkins: PlanItemCheckin[];
+  /** Concorrência otimista (ENT-DATA-012) — PATCH exige `expectedVersion`. */
+  version: number;
 }
 
 export interface PlanItemCheckin {
@@ -195,9 +197,31 @@ export interface DevelopmentPlan {
   /** Quem aprovou e quando — `null` enquanto não aprovado, ou depois de reaberto. */
   approvedByUserId?: string | null | undefined;
   approvedAt?: string | null | undefined;
-  /** Quem concluiu e quando — estado final, nunca reaberto. */
+  /** Quem concluiu e quando — reflete só a conclusão atual, não o histórico completo. */
   completedByUserId?: string | null | undefined;
   completedAt?: string | null | undefined;
+  /** Concorrência otimista (ENT-DATA-012) — status e reabertura exigem `expectedVersion`. */
+  version: number;
+}
+
+/**
+ * Histórico append-only do lifecycle do PDI (ENT-PDI-002) — nunca editado
+ * nem apagado. `approvedAt`/`completedAt` no plano só guardam a ocorrência
+ * mais recente; depois de Approved → Completed → Reopened → Approved →
+ * Completed, a primeira conclusão só sobrevive aqui.
+ */
+export type PlanEventType = "PlanApproved" | "PlanReturnedToDraft" | "PlanCompleted" | "PlanReopened";
+
+export interface DevelopmentPlanEvent {
+  id: string;
+  planId: string;
+  eventType: PlanEventType;
+  fromStatus: DevelopmentPlan["status"] | null;
+  toStatus: DevelopmentPlan["status"];
+  actorUserId: string;
+  reason: string | null;
+  occurredAt: string;
+  planVersion: number;
 }
 
 export type LearningItemType =

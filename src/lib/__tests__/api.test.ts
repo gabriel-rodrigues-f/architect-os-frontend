@@ -30,7 +30,7 @@ describe("cliente da API", () => {
   it("monta a rota aninhada de item de PDI", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: "pdi-ana" }));
 
-    await api.patchPlanItem("pdi-ana", "pdi-ana-0", { status: "In Progress" });
+    await api.patchPlanItem("pdi-ana", "pdi-ana-0", { status: "In Progress" }, 1);
 
     expect(fetchMock.mock.calls[0]![0]).toBe(`${API_URL}/api/plans/pdi-ana/items/pdi-ana-0`);
   });
@@ -44,7 +44,7 @@ describe("cliente da API", () => {
     );
 
     const error = await api
-      .patchPlanItem("pdi-ana", "pdi-ana-0", { status: "In Progress" })
+      .patchPlanItem("pdi-ana", "pdi-ana-0", { status: "In Progress" }, 1)
       .catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiError);

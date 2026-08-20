@@ -131,7 +131,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
         String(url).endsWith("/api/plans/pdi-ana/status") &&
         (init as RequestInit)?.method === "PATCH",
     ) as [string, RequestInit];
-    expect(JSON.parse(String(call[1].body))).toEqual({ status: "Completed" });
+    expect(JSON.parse(String(call[1].body))).toEqual({ status: "Completed", expectedVersion: 1 });
   });
 
   it("adicionar uma sugestão ao PDI abre um formulário — não cria com tipo/prazo fabricados", async () => {

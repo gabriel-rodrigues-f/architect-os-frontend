@@ -94,6 +94,11 @@ interface Api extends AppState {
    */
   updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) => Promise<DevelopmentPlan>;
   /**
+   * ENT-PDI-001 — reabertura de PDI concluído. Só o Tech Lead responsável
+   * (sem bypass de admin), motivo obrigatório.
+   */
+  reopenPlan: (planId: string, reason: string) => Promise<DevelopmentPlan>;
+  /**
    * Sem otimismo: autor e data são gerados pelo servidor (nunca aceitos do
    * cliente) — a lista de check-ins só reflete o que o servidor confirmou.
    */
@@ -356,6 +361,7 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
               cycleId: s.activeCycleId,
               status: "Draft",
               items: [item],
+              version: 1,
             },
           ],
         };
@@ -364,6 +370,11 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     updatePlanItem: (planId, itemId, patch) => {
+      // `expectedVersion` vem do estado que a tela está mostrando agora —
+      // concorrência otimista (ENT-DATA-012): se outra pessoa já escreveu
+      // neste item, o servidor recusa com 409 e `remote()` revalida.
+      const expectedVersion =
+        state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
       local((s) => ({
         ...s,
         plans: s.plans.map((p) =>
@@ -372,7 +383,7 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
             : { ...p, items: p.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) },
         ),
       }));
-      remote(api.patchPlanItem(planId, itemId, patch));
+      remote(api.patchPlanItem(planId, itemId, patch, expectedVersion));
     },
 
     removePlanItem: (planId, itemId) => {
@@ -386,7 +397,23 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     updatePlanStatus: async (planId, status) => {
-      const updated = await api.updatePlanStatus(planId, status);
+      const expectedVersion = state.plans.find((p) => p.id === planId)?.version ?? 1;
+      const updated = await api.updatePlanStatus(planId, status, expectedVersion);
+      local((s) => ({
+        ...s,
+        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+      }));
+      return updated;
+    },
+
+    /**
+     * Reabertura de PDI concluído (ENT-PDI-001) — comando dedicado, sem
+     * otimismo: exige motivo e só o Tech Lead responsável, então a tela
+     * precisa do erro de verdade se a autorização ou o motivo falharem.
+     */
+    reopenPlan: async (planId, reason) => {
+      const expectedVersion = state.plans.find((p) => p.id === planId)?.version ?? 1;
+      const updated = await api.reopenPlan(planId, reason, expectedVersion);
       local((s) => ({
         ...s,
         plans: s.plans.map((p) => (p.id === planId ? updated : p)),

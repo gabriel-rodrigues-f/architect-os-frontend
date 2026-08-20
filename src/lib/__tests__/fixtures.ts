@@ -147,6 +147,7 @@ export const fixtureState: AppState = {
       architectId: "ana",
       cycleId: "2026-h2",
       status: "Approved",
+      version: 1,
       items: [
         {
           id: "pdi-ana-0",
@@ -169,6 +170,7 @@ export const fixtureState: AppState = {
               createdAt: "2026-08-01T10:00:00Z",
             },
           ],
+          version: 1,
         },
         {
           id: "pdi-ana-1",
@@ -184,6 +186,7 @@ export const fixtureState: AppState = {
           owner: "Ana Martins",
           status: "In Progress",
           checkins: [],
+          version: 1,
         },
       ],
     },
