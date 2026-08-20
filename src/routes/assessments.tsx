@@ -1,15 +1,17 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, BadgeCheck } from "lucide-react";
 import { Fragment, useState } from "react";
 import { z } from "zod";
 
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { Assessment, AssessmentComment, Capability, Level } from "@/lib/domain";
-import type { CommentInput } from "@/lib/api";
+import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
@@ -253,6 +255,10 @@ function AssessmentsPage() {
             </p>
           )}
         </div>
+      )}
+
+      {assessment && (
+        <CareerPortfolioSection assessment={assessment} isOwner={isOwner} isLead={isLead} />
       )}
 
       {!assessment ? (
@@ -686,6 +692,188 @@ function AssessmentStatusBadge({ status, label }: { status: Assessment["status"]
     >
       {label}
     </span>
+  );
+}
+
+/**
+ * ENT-CAR-014/015/016 — portfólio individual de capacidades: quais contam
+ * para elegibilidade de carreira NESTE assessment (mínimo 3, orientação
+ * de UI por enquanto — o backend ainda não bloqueia a submissão por isso,
+ * ver o comentário em `routes/api/assessments.ts`). "Profissional propõe"
+ * (dono adiciona/remove enquanto `Draft`), "Tech Lead confirma" (enquanto
+ * `In Review`) — mesma governança do resto do assessment, só que aplicada
+ * a um recorte adicional, não às notas em si.
+ */
+function CareerPortfolioSection({
+  assessment,
+  isOwner,
+  isLead,
+}: {
+  assessment: Assessment;
+  isOwner: boolean;
+  isLead: boolean;
+}) {
+  const store = useStore();
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const [selectedCapabilityId, setSelectedCapabilityId] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const queryKey = ["assessment-eligibility", assessment.id];
+  const {
+    data: eligibility,
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey,
+    queryFn: () => api.assessmentEligibility(assessment.id),
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+
+  // `!eligibility?.capabilities`, não só `!eligibility`: testes que ainda não
+  // conhecem esta rota (mock de fetch genérico) devolvem `{}` com 200 em vez
+  // de 404 — `eligibility` fica um objeto truthy sem o formato esperado.
+  if (isPending || isError || !eligibility?.capabilities) return null;
+
+  const availableToAdd = store.capabilities.filter(
+    (cap) => cap.active && !eligibility.capabilities.some((c) => c.capabilityId === cap.id),
+  );
+
+  const canPropose = isOwner && assessment.status === "Draft";
+  const canConfirm = isLead && assessment.status === "In Review";
+
+  const addCapability = () => {
+    if (!selectedCapabilityId) return;
+    setActionError(null);
+    api
+      .addAssessmentCapability(assessment.id, selectedCapabilityId)
+      .then(() => {
+        setSelectedCapabilityId("");
+        void invalidate();
+      })
+      .catch((error: unknown) =>
+        setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
+      );
+  };
+
+  const removeCapability = (capabilityId: string) => {
+    setActionError(null);
+    api
+      .removeAssessmentCapability(assessment.id, capabilityId)
+      .then(() => void invalidate())
+      .catch((error: unknown) =>
+        setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
+      );
+  };
+
+  const confirmCapability = (capabilityId: string) => {
+    setActionError(null);
+    api
+      .confirmAssessmentCapability(assessment.id, capabilityId)
+      .then(() => void invalidate())
+      .catch((error: unknown) =>
+        setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
+      );
+  };
+
+  return (
+    <SectionCard
+      className="mb-4"
+      title={t("asmt.portfolio.title")}
+      description={t("asmt.portfolio.subtitle")}
+    >
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+        {eligibility.nextCareerLevel ? (
+          <>
+            <span className="text-muted-foreground">
+              {t("asmt.portfolio.progressTo", { nivel: eligibility.nextCareerLevel.name })}
+            </span>
+            <Badge variant={eligibility.eligible ? "default" : "outline"}>
+              {t("asmt.portfolio.qualifiedCount", {
+                qualified: eligibility.qualifiedConfirmedCount,
+                required: eligibility.policy?.minimumQualifiedCapabilities ?? 3,
+              })}
+            </Badge>
+          </>
+        ) : (
+          <span className="text-muted-foreground">{t("asmt.portfolio.topLevel")}</span>
+        )}
+      </div>
+
+      <ul className="space-y-1.5">
+        {eligibility.capabilities.map((entry) => {
+          const capability = store.capabilities.find((c) => c.id === entry.capabilityId);
+          return (
+            <li
+              key={entry.capabilityId}
+              className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
+            >
+              <span>{capability?.name ?? entry.capabilityId}</span>
+              <div className="flex items-center gap-2">
+                {entry.confirmed ? (
+                  <Badge variant={entry.qualified ? "default" : "outline"}>
+                    {entry.qualified
+                      ? t("asmt.portfolio.qualified")
+                      : t("asmt.portfolio.notQualified")}
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">{t("asmt.portfolio.pendingConfirmation")}</Badge>
+                )}
+                {canConfirm && !entry.confirmed && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => confirmCapability(entry.capabilityId)}
+                  >
+                    {t("asmt.portfolio.confirm")}
+                  </Button>
+                )}
+                {canPropose && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => removeCapability(entry.capabilityId)}
+                  >
+                    {t("common.remove")}
+                  </Button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+        {eligibility.capabilities.length === 0 && (
+          <p className="text-sm text-muted-foreground">{t("asmt.portfolio.empty")}</p>
+        )}
+      </ul>
+
+      {canPropose && (
+        <div className="mt-3 flex gap-2">
+          <select
+            aria-label={t("asmt.portfolio.addLabel")}
+            className="flex-1 rounded-md border border-input bg-card px-3 py-2 text-sm"
+            value={selectedCapabilityId}
+            onChange={(e) => setSelectedCapabilityId(e.target.value)}
+          >
+            <option value="">{t("asmt.portfolio.addPlaceholder")}</option>
+            {availableToAdd.map((cap) => (
+              <option key={cap.id} value={cap.id}>
+                {cap.name}
+              </option>
+            ))}
+          </select>
+          <Button size="sm" disabled={!selectedCapabilityId} onClick={addCapability}>
+            {t("asmt.portfolio.add")}
+          </Button>
+        </div>
+      )}
+
+      {actionError && (
+        <p className="mt-2 text-xs text-destructive" role="alert">
+          {actionError}
+        </p>
+      )}
+    </SectionCard>
   );
 }
 

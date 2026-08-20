@@ -1,7 +1,9 @@
 import type {
   Architect,
   Assessment,
+  AssessmentCapability,
   AssessmentComment,
+  AssessmentEligibility,
   CareerLevel,
   CareerLevelPolicy,
   CareerLevelTransition,
@@ -247,6 +249,26 @@ export const api = {
     ),
   deleteAssessmentComment: (assessmentId: string, competencyId: string, commentId: string) =>
     del<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`),
+
+  /**
+   * ENT-CAR-014 — portfólio individual de capacidades. "Profissional
+   * propõe" (`addAssessmentCapability`, só `Draft`), "Tech Lead confirma"
+   * (`confirmAssessmentCapability`, só `In Review`).
+   */
+  assessmentCapabilities: (assessmentId: string) =>
+    request<AssessmentCapability[]>(`/api/assessments/${assessmentId}/capabilities`),
+  addAssessmentCapability: (assessmentId: string, capabilityId: string) =>
+    post<AssessmentCapability>(`/api/assessments/${assessmentId}/capabilities`, { capabilityId }),
+  removeAssessmentCapability: (assessmentId: string, capabilityId: string) =>
+    del<void>(`/api/assessments/${assessmentId}/capabilities/${capabilityId}`),
+  confirmAssessmentCapability: (assessmentId: string, capabilityId: string) =>
+    post<AssessmentCapability>(
+      `/api/assessments/${assessmentId}/capabilities/${capabilityId}/confirm`,
+      {},
+    ),
+  /** ENT-CAR-015/016 — portfólio + qualificação + política do próximo nível, já juntos. */
+  assessmentEligibility: (assessmentId: string) =>
+    request<AssessmentEligibility>(`/api/assessments/${assessmentId}/eligibility`),
 
   /* PDI */
   addPlanItem: (architectId: string, cycleId: string, item: DevelopmentPlanItem) =>

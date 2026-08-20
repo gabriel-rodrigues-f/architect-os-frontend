@@ -185,6 +185,36 @@ export interface Assessment {
   items: AssessmentItem[];
 }
 
+/**
+ * ENT-CAR-014 — quais capacidades contam para elegibilidade de carreira
+ * NESTE assessment (mínimo 3). "Profissional propõe, Tech Lead confirma":
+ * `confirmedByUserId`/`confirmedAt` só depois que o Tech Lead confirma.
+ */
+export interface AssessmentCapability {
+  id: string;
+  assessmentId: string;
+  capabilityId: string;
+  addedByUserId: string;
+  addedAt: string;
+  confirmedByUserId: string | null;
+  confirmedAt: string | null;
+}
+
+/**
+ * ENT-CAR-014/015/016 — portfólio + qualificação + política do próximo
+ * nível, já juntos. `eligible` é `null` (não `false`) quando não há
+ * próximo nível — quem já está no topo não tem "elegibilidade", tem
+ * "oportunidades de desenvolvimento".
+ */
+export interface AssessmentEligibility {
+  currentCareerLevel: CareerLevel | undefined;
+  nextCareerLevel: CareerLevel | undefined;
+  policy: CareerLevelPolicy | undefined;
+  capabilities: { capabilityId: string; confirmed: boolean; qualified: boolean }[];
+  qualifiedConfirmedCount: number;
+  eligible: boolean | null;
+}
+
 export interface DevelopmentCycle {
   id: string;
   name: string;
