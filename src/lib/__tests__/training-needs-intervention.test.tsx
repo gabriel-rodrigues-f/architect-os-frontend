@@ -39,6 +39,7 @@ const carla: AppState["architects"][number] = {
   specialization: "Segurança",
   email: "carla@company.com",
   active: true,
+  version: 1,
 };
 
 const state: AppState = {

@@ -110,6 +110,28 @@ export interface Architect {
    * um admin têm acesso. Só admin atribui.
    */
   leadUserId?: string | null | undefined;
+  /**
+   * ENT-CAR-017 — concorrência otimista só para `role`: mudar nível de
+   * carreira exige `expectedVersion`, igual a `DevelopmentPlan.version`.
+   * Demais campos do cadastro não usam isto.
+   */
+  version: number;
+}
+
+/**
+ * ENT-CAR-017 — histórico append-only de mudança de nível de carreira.
+ * `fromRole`/`toRole` são `RoleName` — sem FK para `CareerLevel` ainda
+ * (ENT-DATA-011, separado).
+ */
+export interface CareerLevelTransition {
+  id: string;
+  architectId: string;
+  fromRole: RoleName;
+  toRole: RoleName;
+  actorUserId: string;
+  reason: string;
+  occurredAt: string;
+  architectVersion: number;
 }
 
 /**

@@ -4,6 +4,7 @@ import type {
   AssessmentComment,
   CareerLevel,
   CareerLevelPolicy,
+  CareerLevelTransition,
   Competency,
   Capability,
   DevelopmentCycle,
@@ -181,9 +182,28 @@ export const api = {
     put<{ cycleId: string }>("/api/settings/active-cycle", { cycleId }),
 
   /* arquitetos */
-  createArchitect: (architect: Architect) => post<Architect>("/api/architects", architect),
-  updateArchitect: (id: string, patch_: Partial<Omit<Architect, "id">>) =>
+  createArchitect: (architect: Omit<Architect, "version">) =>
+    post<Architect>("/api/architects", architect),
+  /** `role`/`version` ficam de fora — ENT-CAR-017: nível de carreira só muda por `transitionCareerLevel`. */
+  updateArchitect: (id: string, patch_: Partial<Omit<Architect, "id" | "role" | "version">>) =>
     patch<Architect>(`/api/architects/${id}`, patch_),
+  /**
+   * ENT-CAR-017 — comando dedicado, não um PATCH de `role`: exige motivo e
+   * concorrência otimista, mesmo padrão de `reopenPlan`.
+   */
+  transitionCareerLevel: (
+    id: string,
+    toRole: Architect["role"],
+    reason: string,
+    expectedVersion: number,
+  ) =>
+    post<Architect>(`/api/architects/${id}/career-level-transition`, {
+      toRole,
+      reason,
+      expectedVersion,
+    }),
+  careerLevelTransitions: (id: string) =>
+    request<CareerLevelTransition[]>(`/api/architects/${id}/career-level-transitions`),
 
   /* catálogo */
   createCapability: (capability: Capability) => post<Capability>("/api/capabilities", capability),

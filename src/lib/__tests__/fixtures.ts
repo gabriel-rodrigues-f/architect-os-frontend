@@ -109,6 +109,7 @@ export const fixtureState: AppState = {
       specialization: "Integration",
       email: "ana@company.com",
       active: true,
+      version: 1,
     },
     {
       id: "bruno",
@@ -118,6 +119,7 @@ export const fixtureState: AppState = {
       specialization: "Cloud",
       email: "bruno@company.com",
       active: true,
+      version: 1,
     },
   ],
   assessments: [

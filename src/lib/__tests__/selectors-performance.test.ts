@@ -46,6 +46,7 @@ function buildLargeState(): AppState {
     specialization: "Arquitetura de Soluções",
     email: `arq-${i}@empresa.com`,
     active: true,
+    version: 1,
   }));
 
   const assessments: Assessment[] = architects.map((a) => ({

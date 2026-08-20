@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, UserCheck, UserX } from "lucide-react";
+import { Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ROLES, type Architect, type RoleName } from "@/lib/domain";
-import { authApi } from "@/lib/api";
+import { ApiError, authApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage } from "@/lib/selectors";
@@ -80,6 +81,8 @@ function TeamPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<ArchitectForm>(emptyForm());
   const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
+  /** ENT-CAR-017 — quem está com o diálogo de transição de nível aberto. */
+  const [transitioning, setTransitioning] = useState<Architect | null>(null);
   const activeArchitects = sel.activeArchitects;
   const inactiveArchitects = store.architects.filter((a) => !a.active);
 
@@ -117,11 +120,17 @@ function TeamPage() {
     form.email.includes("@") &&
     yearsValid;
 
+  /**
+   * `role` só entra no payload ao criar — ENT-CAR-017: depois de criado, nível
+   * de carreira muda só pelo comando dedicado (`transitionCareerLevel`),
+   * nunca por este PATCH genérico de cadastro (o backend já recusa `role`
+   * aqui de qualquer forma, mas nem monta o campo para não sugerir que
+   * funcionaria).
+   */
   const submit = () => {
     if (!canSubmit) return;
     const payload = {
       name: form.name.trim(),
-      role: form.role,
       yearsAsArchitect: Number(form.years),
       specialization: form.specialization.trim(),
       email: form.email.trim(),
@@ -135,6 +144,7 @@ function TeamPage() {
       store.addArchitect({
         id: slug(form.name),
         ...payload,
+        role: form.role,
         active: true,
       });
     }
@@ -205,6 +215,15 @@ function TeamPage() {
                 </div>
                 {isAdmin && (
                   <div className="flex shrink-0 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setTransitioning(a)}
+                      aria-label={t("team.transition.action", { nome: a.name })}
+                      title={t("team.transition.action", { nome: a.name })}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <TrendingUp className="h-3.5 w-3.5" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => openEdit(a)}
@@ -313,19 +332,26 @@ function TeamPage() {
                 onKeyDown={(e) => e.key === "Enter" && submit()}
               />
             </div>
-            <div>
-              <Label htmlFor="role">{t("team.form.role")}</Label>
-              <select
-                id="role"
-                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value as RoleName })}
-              >
-                {ROLES.map((r) => (
-                  <option key={r}>{r}</option>
-                ))}
-              </select>
-            </div>
+            {/*
+              ENT-CAR-017 — nível de carreira só é escolhido na criação. Depois
+              disso muda pelo botão dedicado (ícone de seta no card), que exige
+              motivo — nunca por este formulário de cadastro.
+            */}
+            {!editing && (
+              <div>
+                <Label htmlFor="role">{t("team.form.role")}</Label>
+                <select
+                  id="role"
+                  className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value as RoleName })}
+                >
+                  {ROLES.map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {editing && (
               <div>
                 <Label htmlFor="leadUserId">{t("team.form.lead")}</Label>
@@ -391,6 +417,99 @@ function TeamPage() {
         onCancel={() => setConfirmDeactivate(null)}
         onConfirm={deactivate}
       />
+
+      {transitioning && (
+        <CareerLevelTransitionDialog
+          architect={transitioning}
+          onClose={() => setTransitioning(null)}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * ENT-CAR-017 — único jeito de mudar nível de carreira: pede o nível de
+ * destino e um motivo (obrigatório), nunca um campo solto de formulário.
+ * Sem otimismo: se a versão estiver desatualizada (409, alguém mais mudou
+ * o cadastro nesse meio-tempo), a tela precisa mostrar o erro de verdade,
+ * não fingir que funcionou. Mesmo padrão de `ReopenPlanDialog`
+ * (`development-plans.tsx`).
+ */
+function CareerLevelTransitionDialog({
+  architect,
+  onClose,
+}: {
+  architect: Architect;
+  onClose: () => void;
+}) {
+  const store = useStore();
+  const { t } = useI18n();
+  const [toRole, setToRole] = useState<RoleName>(architect.role);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = () => {
+    setError(null);
+    setSubmitting(true);
+    store
+      .transitionCareerLevel(architect.id, toRole, reason.trim())
+      .then(() => {
+        toast.success(t("team.transition.success", { nome: architect.name }));
+        onClose();
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof ApiError ? err.message : t("team.transition.error"));
+      })
+      .finally(() => setSubmitting(false));
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("team.transition.title", { nome: architect.name })}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          {t("team.transition.body", { atual: architect.role })}
+        </p>
+        <div>
+          <Label htmlFor="transition-to-role">{t("team.transition.toRole")}</Label>
+          <select
+            id="transition-to-role"
+            className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+            value={toRole}
+            onChange={(e) => setToRole(e.target.value as RoleName)}
+          >
+            {ROLES.map((r) => (
+              <option key={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="transition-reason">{t("team.transition.reasonLabel")}</Label>
+          <Textarea
+            id="transition-reason"
+            className="mt-1"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={t("team.transition.reasonPlaceholder")}
+          />
+        </div>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={!reason.trim() || toRole === architect.role || submitting}
+            onClick={submit}
+          >
+            {submitting ? t("team.transition.submitting") : t("team.transition.confirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -33,8 +33,18 @@ export const STATE_QUERY_KEY = ["app-state"] as const;
  */
 interface Api extends AppState {
   setActiveCycle: (id: string) => void;
-  addArchitect: (a: Architect) => void;
-  updateArchitect: (id: string, patch: Partial<Omit<Architect, "id">>) => void;
+  addArchitect: (a: Omit<Architect, "version">) => void;
+  updateArchitect: (id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>) => void;
+  /**
+   * ENT-CAR-017 — comando dedicado, sem otimismo: exige motivo e concorrência
+   * otimista, mesmo motivo de `reopenPlan` (a tela precisa do erro de
+   * verdade se a versão estiver desatualizada).
+   */
+  transitionCareerLevel: (
+    id: string,
+    toRole: Architect["role"],
+    reason: string,
+  ) => Promise<Architect>;
   addCompetency: (c: Competency) => void;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
   /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
@@ -175,7 +185,9 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     addArchitect: (a) => {
-      local((s) => ({ ...s, architects: [...s.architects, a] }));
+      // `version` nasce 1 no servidor (DEFAULT da coluna) — só o otimismo
+      // local precisa do valor antes da resposta chegar.
+      local((s) => ({ ...s, architects: [...s.architects, { ...a, version: 1 }] }));
       remote(api.createArchitect(a));
     },
 
@@ -185,6 +197,16 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         architects: s.architects.map((a) => (a.id === id ? { ...a, ...patch } : a)),
       }));
       remote(api.updateArchitect(id, patch));
+    },
+
+    transitionCareerLevel: async (id, toRole, reason) => {
+      const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
+      const updated = await api.transitionCareerLevel(id, toRole, reason, expectedVersion);
+      local((s) => ({
+        ...s,
+        architects: s.architects.map((a) => (a.id === id ? updated : a)),
+      }));
+      return updated;
     },
 
     addCompetency: (c) => {

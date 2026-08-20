@@ -145,6 +145,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
           specialization: "Cloud",
           email: "carla@company.com",
           active: true,
+          version: 1,
         },
       ],
       assessments: [
@@ -199,6 +200,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
           specialization: "Cloud",
           email: "carla@company.com",
           active: true,
+          version: 1,
         },
       ],
       assessments: [
