@@ -115,6 +115,17 @@ export interface Architect {
   id: string;
   name: string;
   role: RoleName;
+  /**
+   * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 11 — FK real para
+   * `career_levels` (backend a mantém em sincronia com `role` em toda
+   * escrita). O frontend nunca precisou resolver nível de carreira por
+   * nome sozinho — telas que precisam do nível atual já recebem um
+   * `CareerLevel` pronto do servidor (`AssessmentEligibility.
+   * currentCareerLevel`); este campo existe para espelhar o contrato da
+   * API por completude, opcional para não forçar toda fixture/formulário
+   * existente a declará-lo.
+   */
+  careerLevelId?: string | null | undefined;
   yearsAsArchitect: number;
   specialization: string;
   /**
