@@ -4,12 +4,85 @@ import { useMemo, useState } from "react";
 import { ArchitectFilter, applyArchitectFilter } from "@/components/app/ArchitectFilter";
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { CapabilityRadar } from "@/components/app/charts";
+import { Badge } from "@/components/ui/badge";
 import { GapBadge, LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import type { Architect } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { averageWithCoverage } from "@/lib/selectors";
+import { averageWithCoverage, type Gap } from "@/lib/selectors";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
+
+/**
+ * ORIENTACAO-NONA-RODADA ENT-09-012 — uma linha consolidada por competência
+ * com todos os números secundários (Seção 33): quantas pessoas, gap médio e
+ * máximo, e as médias que compõem esse gap — nunca só o pior caso.
+ * `requirementType` vem junto porque separar bloqueante de oportunidade é a
+ * própria reestruturação pedida, não um detalhe da tabela.
+ */
+interface ConsolidatedGapRow {
+  competencyId: string;
+  name: string;
+  capabilityId: string;
+  requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
+  people: number;
+  totalGap: number;
+  maxGap: number;
+  avgGap: number;
+  avgFinal: number;
+  avgTarget: number;
+}
+
+function consolidateGaps(architects: Architect[], gapsFor: (architectId: string) => Gap[]): ConsolidatedGapRow[] {
+  const map = new Map<
+    string,
+    {
+      competencyId: string;
+      name: string;
+      capabilityId: string;
+      requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
+      people: number;
+      totalGap: number;
+      maxGap: number;
+      sumFinal: number;
+      sumTarget: number;
+    }
+  >();
+
+  for (const architect of architects) {
+    for (const gap of gapsFor(architect.id)) {
+      if (gap.gap <= 0 || !gap.competency) continue;
+      const current = map.get(gap.competency.id) ?? {
+        competencyId: gap.competency.id,
+        name: gap.competency.name,
+        capabilityId: gap.competency.capabilityId,
+        requirementType: gap.competency.requirementType,
+        people: 0,
+        totalGap: 0,
+        maxGap: 0,
+        sumFinal: 0,
+        sumTarget: 0,
+      };
+      map.set(gap.competency.id, {
+        ...current,
+        people: current.people + 1,
+        totalGap: current.totalGap + gap.gap,
+        maxGap: Math.max(current.maxGap, gap.gap),
+        sumFinal: current.sumFinal + gap.item.final,
+        sumTarget: current.sumTarget + gap.item.target,
+      });
+    }
+  }
+
+  return [...map.values()]
+    .map((row) => ({
+      ...row,
+      avgFinal: Number((row.sumFinal / row.people).toFixed(1)),
+      avgTarget: Number((row.sumTarget / row.people).toFixed(1)),
+      avgGap: Number((row.totalGap / row.people).toFixed(1)),
+    }))
+    .sort((a, b) => b.totalGap - a.totalGap || b.maxGap - a.maxGap);
+}
 
 export const Route = createFileRoute("/gap-analysis")({
   head: () => ({
@@ -88,57 +161,36 @@ function GapPage() {
   );
 
   /**
-   * Prioridades e tabela consolidam os gaps de todos os arquitetos filtrados,
-   * somando o impacto por competência.
+   * ORIENTACAO-NONA-RODADA ENT-09-012 — bloqueante (RESTRICTIVE: impede a
+   * progressão enquanto não fechar) e oportunidade (NON_RESTRICTIVE: entra
+   * na média, mas nunca bloqueia sozinha) nunca aparecem na mesma lista —
+   * misturar os dois é exatamente o problema que a Seção 33 aponta, porque
+   * esconde qual lacuna de fato trava alguém.
    */
-  const consolidated = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        competencyId: string;
-        name: string;
-        capabilityId: string;
-        people: number;
-        totalGap: number;
-        maxGap: number;
-        sumFinal: number;
-        sumTarget: number;
-      }
-    >();
+  const progression = useMemo(
+    () => consolidateGaps(architects, (id) => sel.progressionGapsFor(id)),
+    [architects, sel],
+  );
+  const blocking = useMemo(
+    () => progression.filter((r) => r.requirementType === "RESTRICTIVE"),
+    [progression],
+  );
+  const opportunity = useMemo(
+    () => progression.filter((r) => r.requirementType === "NON_RESTRICTIVE"),
+    [progression],
+  );
 
-    for (const architect of architects) {
-      for (const gap of sel.progressionGapsFor(architect.id)) {
-        if (gap.gap <= 0 || !gap.competency) continue;
-        const current = map.get(gap.competency.id) ?? {
-          competencyId: gap.competency.id,
-          name: gap.competency.name,
-          capabilityId: gap.competency.capabilityId,
-          people: 0,
-          totalGap: 0,
-          maxGap: 0,
-          sumFinal: 0,
-          sumTarget: 0,
-        };
-        map.set(gap.competency.id, {
-          ...current,
-          people: current.people + 1,
-          totalGap: current.totalGap + gap.gap,
-          maxGap: Math.max(current.maxGap, gap.gap),
-          sumFinal: current.sumFinal + gap.item.final,
-          sumTarget: current.sumTarget + gap.item.target,
-        });
-      }
-    }
-
-    return [...map.values()]
-      .map((row) => ({
-        ...row,
-        avgFinal: Number((row.sumFinal / row.people).toFixed(1)),
-        avgTarget: Number((row.sumTarget / row.people).toFixed(1)),
-        avgGap: Math.round(row.totalGap / row.people),
-      }))
-      .sort((a, b) => b.totalGap - a.totalGap || b.maxGap - a.maxGap);
-  }, [architects, sel]);
+  /**
+   * Nível III (topo da carreira): nunca "gap para o Nível IV" — não existe
+   * próximo nível para essa régua. `masteryOpportunitiesFor` já isola esses
+   * itens (Seção 17.1/18 de `selectors.ts`); aqui só consolidam por
+   * competência, com a mesma forma da tabela de progressão, para reaproveitar
+   * o mesmo componente de exibição sem herdar a linguagem de "bloqueio".
+   */
+  const mastery = useMemo(
+    () => consolidateGaps(architects, (id) => sel.masteryOpportunitiesFor(id)),
+    [architects, sel],
+  );
 
   const scopeLabel =
     selected.length === 0
@@ -189,37 +241,23 @@ function GapPage() {
               title={t("gap.priorities.title")}
               description={t("gap.priorities.subtitle", { n: architects.length })}
             >
-              <ol className="space-y-2">
-                {consolidated.slice(0, 8).map((row, i) => (
-                  <li
-                    key={row.competencyId}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
-                  >
-                    <span className="text-sm">
-                      <span className="mr-2 tabular-nums text-muted-foreground">{i + 1}.</span>
-                      {row.name}
-                      {row.people > 1 && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {row.people} pessoas
-                        </span>
-                      )}
-                    </span>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <GapBadge gap={row.maxGap} />
-                      {/* Diagnóstico precisa levar a algum lugar: daqui se vai tratar a lacuna. */}
-                      <Link
-                        to="/development-plans"
-                        className="whitespace-nowrap text-xs text-primary hover:underline"
-                      >
-                        {t("gap.priorities.action")}
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-                {consolidated.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("gap.priorities.none")}</p>
-                )}
-              </ol>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-destructive">
+                    {t("gap.priorities.blocking.title")}
+                  </h3>
+                  <GapPriorityList rows={blocking} emptyLabel={t("gap.priorities.blocking.none")} />
+                </div>
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("gap.priorities.opportunity.title")}
+                  </h3>
+                  <GapPriorityList
+                    rows={opportunity}
+                    emptyLabel={t("gap.priorities.opportunity.none")}
+                  />
+                </div>
+              </div>
             </SectionCard>
           </div>
 
@@ -263,46 +301,132 @@ function GapPage() {
             title={t("gap.table.title")}
             description={t("gap.table.subtitle", { escopo: scopeLabel })}
           >
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="py-2">{t("col.competency")}</th>
-                    <th className="py-2">{t("col.capability")}</th>
-                    <th className="py-2 text-center">{t("col.people")}</th>
-                    <th className="py-2 text-center">{t("col.currentAvg")}</th>
-                    <th className="py-2 text-center">{t("col.targetAvg")}</th>
-                    <th className="py-2">{t("col.classification")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {consolidated.map((row) => (
-                    <tr key={row.competencyId} className="border-b border-border/60 last:border-0">
-                      <td className="py-2 font-medium">{row.name}</td>
-                      <td className="py-2 text-muted-foreground">
-                        {store.capabilities.find((c) => c.id === row.capabilityId)?.name}
-                      </td>
-                      <td className="py-2 text-center tabular-nums">{row.people}</td>
-                      <td className="py-2 text-center tabular-nums">{row.avgFinal}</td>
-                      <td className="py-2 text-center tabular-nums">{row.avgTarget}</td>
-                      <td className="py-2">
-                        <GapBadge gap={row.maxGap} />
-                      </td>
-                    </tr>
-                  ))}
-                  {consolidated.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-3 text-sm text-muted-foreground">
-                        Nenhuma lacuna para o filtro atual.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <GapTable rows={[...blocking, ...opportunity]} capabilities={store.capabilities} />
           </SectionCard>
+
+          {mastery.length > 0 && (
+            <SectionCard
+              className="mt-6"
+              title={t("gap.mastery.title")}
+              description={t("gap.mastery.subtitle", { escopo: scopeLabel })}
+            >
+              <GapTable rows={mastery} capabilities={store.capabilities} mastery />
+            </SectionCard>
+          )}
         </>
       )}
     </>
+  );
+}
+
+/**
+ * ORIENTACAO-NONA-RODADA ENT-09-012 — os números secundários que compõem o
+ * gap (médio, máximo, atual, alvo, pessoas afetadas) sempre juntos: o
+ * `GapBadge` sozinho só mostra o pior caso, e a Seção 33 pede que a média
+ * apareça lado a lado, nunca escondida atrás do máximo.
+ */
+function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emptyLabel: string }) {
+  const { t } = useI18n();
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
+  return (
+    <ol className="space-y-2">
+      {rows.slice(0, 8).map((row, i) => (
+        <li
+          key={row.competencyId}
+          className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
+        >
+          <span className="text-sm">
+            <span className="mr-2 tabular-nums text-muted-foreground">{i + 1}.</span>
+            {row.name}
+            <span className="ml-2 text-xs text-muted-foreground">
+              {t("gap.priorities.peopleAndAvg", { n: row.people, avg: row.avgGap })}
+            </span>
+          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            <GapBadge gap={row.maxGap} />
+            {/* Diagnóstico precisa levar a algum lugar: daqui se vai tratar a lacuna. */}
+            <Link
+              to="/development-plans"
+              className="whitespace-nowrap text-xs text-primary hover:underline"
+            >
+              {t("gap.priorities.action")}
+            </Link>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * Tabela compartilhada por progressão (bloqueante + oportunidade, com coluna
+ * de tipo) e por maestria (Nível III, sem coluna de tipo — a distinção
+ * bloqueante/oportunidade só faz sentido quando existe um próximo nível para
+ * travar).
+ */
+function GapTable({
+  rows,
+  capabilities,
+  mastery = false,
+}: {
+  rows: ConsolidatedGapRow[];
+  capabilities: { id: string; name: string }[];
+  mastery?: boolean;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[820px] text-sm">
+        <thead>
+          <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <th className="py-2">{t("col.competency")}</th>
+            <th className="py-2">{t("col.capability")}</th>
+            {!mastery && <th className="py-2">{t("col.type")}</th>}
+            <th className="py-2 text-center">{t("col.people")}</th>
+            <th className="py-2 text-center">{t("col.currentAvg")}</th>
+            <th className="py-2 text-center">{t("col.targetAvg")}</th>
+            <th className="py-2 text-center">{t("col.avgGap")}</th>
+            <th className="py-2">{t("col.classification")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.competencyId} className="border-b border-border/60 last:border-0">
+              <td className="py-2 font-medium">{row.name}</td>
+              <td className="py-2 text-muted-foreground">
+                {capabilities.find((c) => c.id === row.capabilityId)?.name}
+              </td>
+              {!mastery && (
+                <td className="py-2">
+                  <Badge variant={row.requirementType === "RESTRICTIVE" ? "outline" : "secondary"}>
+                    {row.requirementType === "RESTRICTIVE"
+                      ? t("gap.type.blocking")
+                      : t("gap.type.opportunity")}
+                  </Badge>
+                </td>
+              )}
+              <td className="py-2 text-center tabular-nums">{row.people}</td>
+              <td className="py-2 text-center tabular-nums">{row.avgFinal}</td>
+              <td className="py-2 text-center tabular-nums">{row.avgTarget}</td>
+              <td className="py-2 text-center tabular-nums">{row.avgGap}</td>
+              <td className="py-2">
+                {mastery ? (
+                  <Badge variant="outline">{t("gap.mastery.badge", { n: row.maxGap })}</Badge>
+                ) : (
+                  <GapBadge gap={row.maxGap} />
+                )}
+              </td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={mastery ? 6 : 7} className="py-3 text-sm text-muted-foreground">
+                {t("gap.table.empty")}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
