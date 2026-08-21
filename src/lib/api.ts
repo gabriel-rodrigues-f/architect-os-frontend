@@ -1,8 +1,10 @@
 import type {
+  ActionType,
   Architect,
   Assessment,
   AssessmentCapability,
   AssessmentComment,
+  AssessmentDevelopmentSummary,
   AssessmentEligibility,
   CareerLevel,
   CareerLevelPolicy,
@@ -13,6 +15,7 @@ import type {
   DevelopmentPlan,
   DevelopmentPlanEvent,
   DevelopmentPlanItem,
+  DevelopmentPlanItemEvent,
   Evidence,
   LearningPath,
   LearningPathItem,
@@ -208,8 +211,10 @@ export const api = {
     request<CareerLevelTransition[]>(`/api/architects/${id}/career-level-transitions`),
 
   /* catálogo */
-  createCapability: (capability: Capability) => post<Capability>("/api/capabilities", capability),
-  updateCapability: (id: string, patch_: Partial<Omit<Capability, "id">>) =>
+  /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. */
+  createCapability: (capability: Omit<Capability, "curation">) =>
+    post<Capability>("/api/capabilities", capability),
+  updateCapability: (id: string, patch_: Partial<Omit<Capability, "id" | "curation">>) =>
     patch<Capability>(`/api/capabilities/${id}`, patch_),
   /** `archived: true` quando a capacidade já tinha histórico e foi arquivada em vez de apagada. */
   deleteCapability: (id: string) =>
@@ -270,14 +275,62 @@ export const api = {
   assessmentEligibility: (assessmentId: string) =>
     request<AssessmentEligibility>(`/api/assessments/${assessmentId}/eligibility`),
 
+  /**
+   * ESPECIFICACAO-OITAVA-RODADA, Seção 18 — "Começar/Parar/Continuar".
+   * `expectedVersion` sempre a versão já lida (0 quando `GET` ainda não
+   * devolveu nenhuma escrita — sentinel de "ainda não existe").
+   */
+  assessmentDevelopmentSummary: (assessmentId: string) =>
+    request<AssessmentDevelopmentSummary>(`/api/assessments/${assessmentId}/development-summary`),
+  updateAssessmentDevelopmentSummary: (
+    assessmentId: string,
+    body: Pick<AssessmentDevelopmentSummary, "startDoing" | "stopDoing" | "continueDoing">,
+    expectedVersion: number,
+  ) =>
+    put<AssessmentDevelopmentSummary>(`/api/assessments/${assessmentId}/development-summary`, {
+      ...body,
+      expectedVersion,
+    }),
+
   /* PDI */
   addPlanItem: (architectId: string, cycleId: string, item: DevelopmentPlanItem) =>
     post<DevelopmentPlan>(`/api/plans/${architectId}/items`, { cycleId, item }),
-  /** `expectedVersion` sustenta concorrência otimista (ENT-DATA-012) — sempre a versão do item já lido. */
+  /**
+   * ESPECIFICACAO-OITAVA-RODADA, Seção 15/25/28/34 — criação source-driven:
+   * o cliente referencia o gap (assessment + competência); o servidor
+   * deriva `currentLevel`/`targetLevel`/`priority` a partir do assessment
+   * oficial. Nunca aceitar esses três do cliente aqui — não é só
+   * convenção, o schema do backend nem tem esses campos.
+   */
+  createPlanItemFromGap: (
+    architectId: string,
+    item: {
+      id: string;
+      assessmentId: string;
+      competencyId: string;
+      objective: string;
+      actionType: ActionType;
+      actionPlan: string;
+      startDate: string;
+      targetDate: string;
+      owner: string;
+      dedicationHoursPerWeek?: number | null;
+    },
+  ) => post<DevelopmentPlan>(`/api/plans/${architectId}/items/from-gap`, item),
+  /**
+   * `expectedVersion` sustenta concorrência otimista (ENT-DATA-012) —
+   * sempre a versão do item já lido. `currentLevel`/`targetLevel`/
+   * `priority`/`sourceAssessmentId` ficam de fora do tipo: são derivados
+   * na criação (`createPlanItemFromGap`) e o backend nem aceita PATCH
+   * neles (Seção 15/28) — o tipo aqui só espelha o que a rota de fato
+   * recebe, para não sugerir uma escrita que sempre seria ignorada.
+   */
   patchPlanItem: (
     planId: string,
     itemId: string,
-    body: Partial<Omit<DevelopmentPlanItem, "version">>,
+    body: Partial<
+      Omit<DevelopmentPlanItem, "version" | "currentLevel" | "targetLevel" | "priority" | "sourceAssessmentId">
+    >,
     expectedVersion: number,
   ) => patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, { ...body, expectedVersion }),
   removePlanItem: (planId: string, itemId: string) =>
@@ -293,6 +346,27 @@ export const api = {
   planEvents: (planId: string) => request<DevelopmentPlanEvent[]>(`/api/plans/${planId}/events`),
   addPlanItemCheckin: (planId: string, itemId: string, text: string) =>
     post<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}/checkins`, { text }),
+  /**
+   * Seção 17 — reprogramar prazo depois de `Approved` (quando o PATCH
+   * genérico já bloqueia `targetDate`) é um comando dedicado: motivo
+   * obrigatório, `expectedVersion` sustenta a mesma concorrência otimista
+   * do resto do PDI.
+   */
+  reschedulePlanItem: (
+    planId: string,
+    itemId: string,
+    targetDate: string,
+    reason: string,
+    expectedVersion: number,
+  ) =>
+    post<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}/reschedule`, {
+      targetDate,
+      reason,
+      expectedVersion,
+    }),
+  /** Histórico append-only de reprogramações de um item — prazos anteriores, com motivo. */
+  planItemEvents: (planId: string, itemId: string) =>
+    request<DevelopmentPlanItemEvent[]>(`/api/plans/${planId}/items/${itemId}/events`),
 
   /* trilhas */
   createLearningPath: (path: LearningPath) => post<LearningPath>("/api/learning-paths", path),

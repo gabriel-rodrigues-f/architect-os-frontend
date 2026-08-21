@@ -49,8 +49,9 @@ interface Api extends AppState {
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
   /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
-  addCapability: (c: Capability) => void;
-  updateCapability: (id: string, patch: Partial<Omit<Capability, "id">>) => void;
+  /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. */
+  addCapability: (c: Omit<Capability, "curation">) => void;
+  updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
   /** Apaga se nenhuma competência da capacidade já foi usada; senão arquiva a capacidade e as competências dela. */
   removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
   addCycle: (c: DevelopmentCycle) => void;
@@ -252,7 +253,23 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     addCapability: (c) => {
-      local((s) => ({ ...s, capabilities: [...s.capabilities, c].sort(byName) }));
+      // Recém-criada: zero competências ainda — não é um placeholder
+      // inventado, é o estado real até a primeira competência entrar.
+      local((s) => ({
+        ...s,
+        capabilities: [
+          ...s.capabilities,
+          {
+            ...c,
+            curation: {
+              activeCompetencyCount: 0,
+              restrictiveCompetencyCount: 0,
+              nonRestrictiveCompetencyCount: 0,
+              status: "REQUIRES_CURATION" as const,
+            },
+          },
+        ].sort(byName),
+      }));
       remote(api.createCapability(c));
     },
 

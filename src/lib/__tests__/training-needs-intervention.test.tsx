@@ -55,6 +55,9 @@ const state: AppState = {
       architectId: "carla",
       cycleId: "2026-h2",
       status: "Completed",
+      modelVersion: 1,
+      targetCareerLevelId: null,
+      targetSemantics: null,
       items: [
         { competencyId: "cloud-k8s", self: 4, leader: 4, target: 4, final: 4, comments: [] },
         { competencyId: "cloud-serverless", self: 4, leader: 4, target: 4, final: 4, comments: [] },

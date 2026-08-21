@@ -65,12 +65,29 @@ export interface CareerLevelPolicy {
   minimumQualifiedCapabilities: number;
 }
 
+/**
+ * ESPECIFICACAO-OITAVA-RODADA, Seção 1.1/11 — computado pelo servidor a
+ * cada leitura (nunca armazenado, nunca calculado no front): só
+ * `status === "READY"` (exatamente 6 competências ativas, 3 restritivas,
+ * 3 não restritivas) pode entrar no portfólio de um assessment novo.
+ * `REQUIRES_CURATION` é o estado normal do catálogo legado até alguém do
+ * negócio escolher as seis oficiais — nunca escondido, sempre mostrado
+ * como orientação de curadoria.
+ */
+export interface CapabilityCuration {
+  activeCompetencyCount: number;
+  restrictiveCompetencyCount: number;
+  nonRestrictiveCompetencyCount: number;
+  status: "READY" | "REQUIRES_CURATION";
+}
+
 export interface Capability {
   id: string;
   name: string;
   short: string;
   /** Fora do catálogo ativo, mas os assessments que já usaram esta capacidade permanecem legíveis. */
   active: boolean;
+  curation: CapabilityCuration;
 }
 
 /**
@@ -100,6 +117,14 @@ export interface Architect {
   role: RoleName;
   yearsAsArchitect: number;
   specialization: string;
+  /**
+   * ESPECIFICACAO-OITAVA-RODADA, Seção 13 — especialização principal como
+   * competência real do catálogo, não mais texto livre. `specialization`
+   * (acima) continua existindo durante a migração (Seção 37, passo 6): só
+   * é substituído quando houver correspondência validada, nunca mapeado
+   * automaticamente. `null`/ausente = pendência administrativa.
+   */
+  primarySpecializationCompetencyId?: string | null | undefined;
   email: string;
   /** Fora do time hoje, mas o histórico (assessments, PDI, OKR...) permanece. */
   active: boolean;
@@ -177,12 +202,50 @@ export interface AssessmentItem {
   requirementType?: RequirementType | undefined;
 }
 
+/**
+ * ESPECIFICACAO-OITAVA-RODADA, Seção 6/7 — `1` é todo assessment já
+ * existente (comportamento legado: nasce com o catálogo inteiro, alvo é
+ * sempre o cargo atual). `2` é "Assessment V2": nasce vazio (`items: []`),
+ * só ganha itens quando uma capacidade READY entra no portfólio, e o alvo
+ * é o PRÓXIMO nível de carreira (ENT-CAR-016). Um `Completed` nunca muda
+ * de versão — histórico fechado nunca é reinterpretado.
+ */
+export type AssessmentModelVersion = 1 | 2;
+
+/**
+ * `NEXT_ROLE`: alvo é o próximo nível (caso comum de Assessment V2).
+ * `MASTERY`: pessoa já está no Nível III — sem próximo nível, os itens
+ * usam o alvo do próprio nível atual, mas nunca viram "gap de progressão"
+ * (Seção 7). `CURRENT_ROLE`/`null`: assessment V1, cargo atual.
+ */
+export type AssessmentTargetSemantics = "CURRENT_ROLE" | "NEXT_ROLE" | "MASTERY";
+
 export interface Assessment {
   id: string;
   architectId: string;
   cycleId: string;
   status: "Draft" | "In Review" | "Completed";
   items: AssessmentItem[];
+  modelVersion: AssessmentModelVersion;
+  targetCareerLevelId: string | null;
+  targetSemantics: AssessmentTargetSemantics | null;
+}
+
+/**
+ * ESPECIFICACAO-OITAVA-RODADA, Seção 18 — "Começar/Parar/Continuar",
+ * agregado por assessment (não por pessoa: pertence ao ciclo, não ao
+ * cadastro estático). `version: 0` é o sentinel de "ninguém escreveu
+ * ainda" que `GET .../development-summary` devolve antes da primeira
+ * escrita — nunca 404.
+ */
+export interface AssessmentDevelopmentSummary {
+  assessmentId: string;
+  startDoing: string;
+  stopDoing: string;
+  continueDoing: string;
+  updatedByUserId: string | null;
+  updatedAt: string | null;
+  version: number;
 }
 
 /**
@@ -252,6 +315,40 @@ export interface DevelopmentPlanItem {
   checkins: PlanItemCheckin[];
   /** Concorrência otimista (ENT-DATA-012) — PATCH exige `expectedVersion`. */
   version: number;
+  /**
+   * ESPECIFICACAO-OITAVA-RODADA, Seção 15/25 — de qual assessment este
+   * item foi derivado (`POST /api/plans/:architectId/items/from-gap`).
+   * `currentLevel`/`targetLevel`/`priority` são calculados pelo servidor
+   * a partir deste assessment no momento da criação — nunca editáveis
+   * depois. `null`/ausente em item manual (não derivado de gap) ou
+   * anterior a esta migração.
+   */
+  sourceAssessmentId?: string | null | undefined;
+  /**
+   * Seção 16 — esforço planejado (horas/semana), conceito distinto de
+   * `priority`/severidade do GAP. Nunca entra em cálculo de elegibilidade
+   * ou GAP — é atributo do plano de execução.
+   */
+  dedicationHoursPerWeek?: number | null | undefined;
+}
+
+/**
+ * Seção 17 — histórico append-only de reprogramação de prazo. Existe
+ * porque `targetDate` deixa de ser editável livremente depois de
+ * `Approved`: mudar o prazo de um compromisso já aprovado precisa de
+ * motivo e fica registrado (`POST /api/plans/:planId/items/:itemId/
+ * reschedule`), nunca um PATCH silencioso.
+ */
+export interface DevelopmentPlanItemEvent {
+  id: string;
+  itemId: string;
+  eventType: "ItemRescheduled";
+  fromTargetDate: string | null;
+  toTargetDate: string;
+  actorUserId: string;
+  reason: string;
+  occurredAt: string;
+  itemVersion: number;
 }
 
 export interface PlanItemCheckin {

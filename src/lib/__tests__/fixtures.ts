@@ -49,8 +49,30 @@ export const fixtureUnassignedLeadUser: SessionUser = {
 /** Estado mínimo, porém coerente, para exercitar os selectors. */
 export const fixtureState: AppState = {
   capabilities: [
-    { id: "cloud", name: "Cloud Architecture", short: "Cloud", active: true },
-    { id: "security", name: "Security", short: "Security", active: true },
+    {
+      id: "cloud",
+      name: "Cloud Architecture",
+      short: "Cloud",
+      active: true,
+      curation: {
+        activeCompetencyCount: 2,
+        restrictiveCompetencyCount: 0,
+        nonRestrictiveCompetencyCount: 2,
+        status: "REQUIRES_CURATION",
+      },
+    },
+    {
+      id: "security",
+      name: "Security",
+      short: "Security",
+      active: true,
+      curation: {
+        activeCompetencyCount: 1,
+        restrictiveCompetencyCount: 0,
+        nonRestrictiveCompetencyCount: 1,
+        status: "REQUIRES_CURATION",
+      },
+    },
   ],
   careerLevels: [
     { id: "arquiteto-de-solucoes-i", name: "Arquiteto de Soluções I", rank: 1 },
@@ -128,6 +150,9 @@ export const fixtureState: AppState = {
       architectId: "ana",
       cycleId: "2026-h1",
       status: "Completed",
+      modelVersion: 1,
+      targetCareerLevelId: null,
+      targetSemantics: null,
       items: [
         { competencyId: "cloud-k8s", self: 3, leader: 3, target: 4, final: 3, comments: [] },
         { competencyId: "cloud-serverless", self: 3, leader: 3, target: 4, final: 3, comments: [] },
@@ -140,6 +165,9 @@ export const fixtureState: AppState = {
       cycleId: "2026-h2",
       // Completed: gapsFor/capabilityAverages só usam assessment oficial.
       status: "Completed",
+      modelVersion: 1,
+      targetCareerLevelId: null,
+      targetSemantics: null,
       items: [
         { competencyId: "cloud-k8s", self: 4, leader: 4, target: 4, final: 4, comments: [] },
         { competencyId: "cloud-serverless", self: 4, leader: 3, target: 4, final: 4, comments: [] },
@@ -151,6 +179,9 @@ export const fixtureState: AppState = {
       architectId: "bruno",
       cycleId: "2026-h2",
       status: "Completed",
+      modelVersion: 1,
+      targetCareerLevelId: null,
+      targetSemantics: null,
       items: [
         { competencyId: "cloud-k8s", self: 2, leader: 2, target: 3, final: 2, comments: [] },
         { competencyId: "cloud-serverless", self: 3, leader: 3, target: 3, final: 3, comments: [] },
