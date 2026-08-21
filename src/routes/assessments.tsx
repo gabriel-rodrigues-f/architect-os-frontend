@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, BadgeCheck } from "lucide-react";
 import { Fragment, useState } from "react";
@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Assessment, AssessmentComment, Capability, Level } from "@/lib/domain";
+import type { Assessment, AssessmentComment, AssessmentDevelopmentSummary, Capability, Level } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
@@ -259,6 +260,10 @@ function AssessmentsPage() {
 
       {assessment && (
         <CareerPortfolioSection assessment={assessment} isOwner={isOwner} isLead={isLead} />
+      )}
+
+      {assessment && (
+        <DevelopmentSummarySection assessment={assessment} isOwner={isOwner} isLead={isLead} />
       )}
 
       {!assessment ? (
@@ -976,6 +981,255 @@ function CareerPortfolioSection({
         onConfirm={() => pendingRemoval && attemptRemove(pendingRemoval.id, pendingRemoval.name, true)}
         onCancel={() => setPendingRemoval(null)}
       />
+    </SectionCard>
+  );
+}
+
+/**
+ * ESPECIFICACAO-OITAVA-RODADA, Seção 18 / ORIENTACAO-NONA-RODADA ENT-09-011
+ * — "Começar/Parar/Continuar", mesma governança de escrita do resto do
+ * assessment: só o dono escreve em `Draft`, só o Tech Lead complementa em
+ * `In Review`, e tudo trava em `Completed` (o backend já bloqueia; aqui só
+ * espelha para não abrir campo editável que vai apanhar 403).
+ */
+function DevelopmentSummarySection({
+  assessment,
+  isOwner,
+  isLead,
+}: {
+  assessment: Assessment;
+  isOwner: boolean;
+  isLead: boolean;
+}) {
+  const { t } = useI18n();
+  const status = assessment.status;
+  const canEdit = status === "Draft" ? isOwner && !isLead : status === "In Review" ? isLead : false;
+
+  const queryKey: QueryKey = ["assessment-development-summary", assessment.id];
+  const {
+    data,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey,
+    queryFn: () => api.assessmentDevelopmentSummary(assessment.id),
+    /**
+     * Sem refetch automático em segundo plano (foco de janela, por exemplo):
+     * o formulário guarda texto digitado localmente até um Salvar explícito,
+     * e uma reconsulta silenciosa sobrescreveria esse texto sem aviso —
+     * exatamente o problema que ENT-09-011 pede para evitar.
+     */
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+
+  if (isPending) {
+    return (
+      <SectionCard
+        className="mb-4"
+        title={t("asmt.devSummary.title")}
+        description={t("asmt.devSummary.subtitle")}
+      >
+        <div className="grid gap-3 md:grid-cols-3" aria-busy="true" aria-live="polite">
+          <span className="sr-only">{t("common.loading")}</span>
+          <div className="h-24 animate-pulse rounded-md bg-secondary" />
+          <div className="h-24 animate-pulse rounded-md bg-secondary" />
+          <div className="h-24 animate-pulse rounded-md bg-secondary" />
+        </div>
+      </SectionCard>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <SectionCard
+        className="mb-4"
+        title={t("asmt.devSummary.title")}
+        description={t("asmt.devSummary.subtitle")}
+      >
+        <p className="text-sm text-destructive" role="alert">
+          {t("asmt.devSummary.loadError")}
+        </p>
+        <Button size="sm" variant="outline" className="mt-2" onClick={() => void refetch()}>
+          {t("common.retry")}
+        </Button>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <DevelopmentSummaryForm
+      key={data.version}
+      assessmentId={assessment.id}
+      data={data}
+      canEdit={canEdit}
+      queryKey={queryKey}
+      onReload={() => void refetch()}
+    />
+  );
+}
+
+/**
+ * `key={data.version}` no componente pai (acima) força remontar este
+ * formulário sempre que a versão salva no servidor muda — depois de um
+ * Salvar bem-sucedido, ou quando a pessoa pede explicitamente a versão mais
+ * recente após um conflito de edição concorrente. Fora esses dois momentos
+ * pedidos pelo próprio usuário, o texto digitado nunca some sozinho: o
+ * componente pai não reconsulta em segundo plano (`staleTime: Infinity`),
+ * e este formulário lê `data` só uma vez, no valor inicial do `useState`.
+ */
+function DevelopmentSummaryForm({
+  assessmentId,
+  data,
+  canEdit,
+  queryKey,
+  onReload,
+}: {
+  assessmentId: string;
+  data: AssessmentDevelopmentSummary;
+  canEdit: boolean;
+  queryKey: QueryKey;
+  onReload: () => void;
+}) {
+  const { t, locale } = useI18n();
+  const queryClient = useQueryClient();
+  const [startDoing, setStartDoing] = useState(data.startDoing);
+  const [stopDoing, setStopDoing] = useState(data.stopDoing);
+  const [continueDoing, setContinueDoing] = useState(data.continueDoing);
+  const [saveState, setSaveState] = useState<"clean" | "dirty" | "saving" | "saved" | "error">(
+    "clean",
+  );
+  const [conflict, setConflict] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const markDirty = () => {
+    setConflict(false);
+    setSaveState((prev) => (prev === "saving" ? prev : "dirty"));
+  };
+
+  const save = () => {
+    setSaveState("saving");
+    setErrorMessage(null);
+    api
+      .updateAssessmentDevelopmentSummary(
+        assessmentId,
+        { startDoing, stopDoing, continueDoing },
+        data.version,
+      )
+      .then(() => {
+        setSaveState("saved");
+        void queryClient.invalidateQueries({ queryKey });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 409) {
+          setConflict(true);
+          setSaveState("error");
+          return;
+        }
+        setErrorMessage(error instanceof ApiError ? error.message : t("asmt.devSummary.saveError"));
+        setSaveState("error");
+      });
+  };
+
+  return (
+    <SectionCard
+      className="mb-4"
+      title={t("asmt.devSummary.title")}
+      description={t("asmt.devSummary.subtitle")}
+    >
+      {conflict && (
+        <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          <p>{t("asmt.devSummary.conflict")}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2"
+            onClick={() => {
+              setConflict(false);
+              onReload();
+            }}
+          >
+            {t("asmt.devSummary.reload")}
+          </Button>
+        </div>
+      )}
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <div>
+          <Label htmlFor="dev-summary-start">{t("asmt.devSummary.start")}</Label>
+          <Textarea
+            id="dev-summary-start"
+            className="mt-1"
+            value={startDoing}
+            disabled={!canEdit}
+            onChange={(e) => {
+              setStartDoing(e.target.value);
+              markDirty();
+            }}
+            placeholder={t("asmt.devSummary.start.placeholder")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="dev-summary-stop">{t("asmt.devSummary.stop")}</Label>
+          <Textarea
+            id="dev-summary-stop"
+            className="mt-1"
+            value={stopDoing}
+            disabled={!canEdit}
+            onChange={(e) => {
+              setStopDoing(e.target.value);
+              markDirty();
+            }}
+            placeholder={t("asmt.devSummary.stop.placeholder")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="dev-summary-continue">{t("asmt.devSummary.continue")}</Label>
+          <Textarea
+            id="dev-summary-continue"
+            className="mt-1"
+            value={continueDoing}
+            disabled={!canEdit}
+            onChange={(e) => {
+              setContinueDoing(e.target.value);
+              markDirty();
+            }}
+            placeholder={t("asmt.devSummary.continue.placeholder")}
+          />
+        </div>
+      </div>
+
+      {canEdit && (
+        <div className="mt-3 flex items-center gap-3">
+          <Button
+            size="sm"
+            disabled={saveState === "saving" || saveState === "clean"}
+            onClick={save}
+          >
+            {saveState === "saving" ? t("asmt.devSummary.saving") : t("common.save")}
+          </Button>
+          <p className="text-xs" role="status">
+            {saveState === "saved" && (
+              <span className="text-emerald-600">{t("asmt.devSummary.saved")}</span>
+            )}
+            {saveState === "dirty" && (
+              <span className="text-muted-foreground">{t("asmt.devSummary.unsaved")}</span>
+            )}
+            {saveState === "error" && !conflict && errorMessage && (
+              <span className="text-destructive" role="alert">
+                {errorMessage}
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+
+      {!canEdit && data.updatedAt && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t("asmt.devSummary.lastUpdated", { data: formatDate(data.updatedAt, locale) ?? "" })}
+        </p>
+      )}
     </SectionCard>
   );
 }
