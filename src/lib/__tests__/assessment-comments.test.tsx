@@ -23,7 +23,7 @@ const fetchMock = vi.fn();
 const comentarioDoAdmin: AssessmentComment = {
   id: "cmt-1",
   authorUserId: fixtureAdminUser.id,
-  authorRole: "admin",
+  authorRole: "TECH_LEAD",
   text: "Confirmo, liderou a execução",
   createdAt: "2026-03-05T14:30:00Z",
 };
@@ -31,7 +31,7 @@ const comentarioDoAdmin: AssessmentComment = {
 const comentarioDeOutraPessoa: AssessmentComment = {
   id: "cmt-2",
   authorUserId: "outro-usuario",
-  authorRole: "member",
+  authorRole: "PROFESSIONAL",
   text: "Conduzi a migração do cluster",
   createdAt: "2026-03-04T14:00:00Z",
 };
@@ -133,7 +133,7 @@ describe("Avaliações — comentários por autor", () => {
                 {
                   id: "cmt-novo",
                   authorUserId: fixtureAdminUser.id,
-                  authorRole: "admin",
+                  authorRole: "TECH_LEAD",
                   text: body.text,
                   createdAt: "2026-08-13T09:00:00Z",
                 },

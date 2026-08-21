@@ -160,6 +160,13 @@ export interface CareerLevelTransition {
 }
 
 /**
+ * Qual LADO da conversa escreveu — nunca a role de acesso da conta
+ * (`UserRole`). Um Lead também escreve como `TECH_LEAD`, mesmo sem a role
+ * "admin" — ver ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 14.
+ */
+export type AssessmentParticipantRole = "PROFESSIONAL" | "TECH_LEAD";
+
+/**
  * Comentário de uma competência avaliada. Pertence a quem escreveu — não é
  * mais um par arquiteto+Tech Lead salvo junto (isso fabricava conversa que às
  * vezes ninguém teve). `authorUserId` fica nulo só em comentário herdado do
@@ -168,7 +175,7 @@ export interface CareerLevelTransition {
 export interface AssessmentComment {
   id: string;
   authorUserId: string | null;
-  authorRole: "member" | "admin";
+  authorRole: AssessmentParticipantRole;
   text: string;
   /** ISO 8601, gerados pelo servidor. */
   createdAt: string;
