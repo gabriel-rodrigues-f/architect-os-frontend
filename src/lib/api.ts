@@ -237,6 +237,17 @@ export const api = {
   /** `undefined` (204) = apagada de verdade; `{archived:true}` (200) = arquivada por já ter histórico. */
   deleteCompetency: (id: string) =>
     del<{ archived: boolean } | undefined>(`/api/competencies/${id}`),
+  /**
+   * ORIENTACAO-NONA-RODADA — troca RESTRICTIVE ↔ NON_RESTRICTIVE entre duas
+   * competências da mesma capacidade, numa transação só. Único jeito de
+   * mudar o tipo de uma quando os dois lados já estão em 3/3 (READY) — um
+   * `PATCH` comum é sempre recusado nesse caso, porque o destino já está no
+   * teto.
+   */
+  swapCompetencyRequirement: (id: string, withCompetencyId: string) =>
+    post<{ a: Competency; b: Competency }>(`/api/competencies/${id}/swap-requirement`, {
+      withCompetencyId,
+    }),
 
   /* ciclos */
   createCycle: (cycle: DevelopmentCycle) => post<DevelopmentCycle>("/api/cycles", cycle),

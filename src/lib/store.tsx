@@ -60,6 +60,12 @@ interface Api extends AppState {
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
   /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
+  /**
+   * Troca RESTRICTIVE ↔ NON_RESTRICTIVE entre duas competências da mesma
+   * capacidade — único jeito de sair de 3/3 (READY) sem passar por um
+   * `PATCH` recusado. Ver `api.swapCompetencyRequirement`.
+   */
+  swapCompetencyRequirement: (id: string, withCompetencyId: string) => Promise<void>;
   /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. */
   addCapability: (c: Omit<Capability, "curation">) => void;
   updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
@@ -304,6 +310,30 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
             : s.competencies.filter((c) => c.id !== id),
         }));
         return { archived };
+      } catch (error) {
+        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
+        else console.error(error);
+        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+        throw error;
+      }
+    },
+
+    /**
+     * Sem otimismo, mesma razão de `removeCompetency`: as duas competências
+     * só mudam de tipo se o servidor confirmar a troca das duas juntas — a
+     * UI não pode adivinhar isso antes.
+     */
+    swapCompetencyRequirement: async (id, withCompetencyId) => {
+      try {
+        const { a, b } = await api.swapCompetencyRequirement(id, withCompetencyId);
+        local((s) => ({
+          ...s,
+          competencies: s.competencies.map((c) => {
+            if (c.id === a.id) return a;
+            if (c.id === b.id) return b;
+            return c;
+          }),
+        }));
       } catch (error) {
         if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
         else console.error(error);

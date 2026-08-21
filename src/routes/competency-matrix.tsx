@@ -27,6 +27,7 @@ import {
   type RoleName,
 } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
+import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
@@ -627,6 +628,49 @@ function CompetencyEditDialog({
     competency.requirementType,
   );
 
+  /**
+   * ORIENTACAO-NONA-RODADA — quando o lado de destino já está em 3/3, um
+   * PATCH comum sempre recusa (por isso a opção continua desabilitada
+   * abaixo). A única saída é trocar de lugar com uma competência existente
+   * do outro tipo — `swap-requirement` no servidor, numa transação só, para
+   * nunca passar por um estado fora de 3+3.
+   */
+  const [swapTargetId, setSwapTargetId] = useState("");
+  const [swapping, setSwapping] = useState(false);
+  const [swapError, setSwapError] = useState<string | null>(null);
+
+  const restrictiveSiblings = store.competencies.filter(
+    (c) =>
+      c.capabilityId === competency.capabilityId &&
+      c.active &&
+      c.requirementType === "RESTRICTIVE" &&
+      c.id !== competency.id,
+  );
+  const nonRestrictiveSiblings = store.competencies.filter(
+    (c) =>
+      c.capabilityId === competency.capabilityId &&
+      c.active &&
+      c.requirementType === "NON_RESTRICTIVE" &&
+      c.id !== competency.id,
+  );
+
+  const swapWith = async () => {
+    if (!swapTargetId) return;
+    setSwapping(true);
+    setSwapError(null);
+    try {
+      await store.swapCompetencyRequirement(competency.id, swapTargetId);
+      // O servidor já confirmou a troca — esta competência agora É o tipo
+      // que estava travado, sem precisar de um segundo PATCH para o campo.
+      setRequirementType((prev) => (prev === "RESTRICTIVE" ? "NON_RESTRICTIVE" : "RESTRICTIVE"));
+      setSwapTargetId("");
+    } catch (error) {
+      setSwapError(error instanceof ApiError ? error.message : t("matrix.requirement.swapError"));
+    } finally {
+      setSwapping(false);
+    }
+  };
+
   const save = () => {
     if (!name.trim()) return;
     store.updateCompetency(competency.id, { name: name.trim(), expected: levels, requirementType });
@@ -688,11 +732,32 @@ function CompetencyEditDialog({
             </select>
             <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
             {restrictiveFull && requirementType !== "RESTRICTIVE" && (
-              <p className="mt-1 text-xs text-amber-600">{t("matrix.requirement.restrictiveFull")}</p>
+              <SwapPicker
+                hint={t("matrix.requirement.restrictiveFull")}
+                label={t("matrix.requirement.swapPickRestrictive")}
+                action={t("matrix.requirement.swapAction")}
+                candidates={restrictiveSiblings}
+                value={swapTargetId}
+                onChange={setSwapTargetId}
+                onSwap={swapWith}
+                swapping={swapping}
+              />
             )}
             {nonRestrictiveFull && requirementType !== "NON_RESTRICTIVE" && (
-              <p className="mt-1 text-xs text-amber-600">
-                {t("matrix.requirement.nonRestrictiveFull")}
+              <SwapPicker
+                hint={t("matrix.requirement.nonRestrictiveFull")}
+                label={t("matrix.requirement.swapPickNonRestrictive")}
+                action={t("matrix.requirement.swapAction")}
+                candidates={nonRestrictiveSiblings}
+                value={swapTargetId}
+                onChange={setSwapTargetId}
+                onSwap={swapWith}
+                swapping={swapping}
+              />
+            )}
+            {swapError && (
+              <p className="mt-1 text-xs text-destructive" role="alert">
+                {swapError}
               </p>
             )}
           </div>
@@ -705,5 +770,55 @@ function CompetencyEditDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Escolher com quem trocar de tipo, quando o lado de destino já está em
+ * 3/3. Reaproveitado pelos dois sentidos (restritiva↔não restritiva) —
+ * mesma UI, candidatos diferentes.
+ */
+function SwapPicker({
+  hint,
+  label,
+  action,
+  candidates,
+  value,
+  onChange,
+  onSwap,
+  swapping,
+}: {
+  hint: string;
+  label: string;
+  action: string;
+  candidates: Competency[];
+  value: string;
+  onChange: (id: string) => void;
+  onSwap: () => void;
+  swapping: boolean;
+}) {
+  return (
+    <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
+      <p className="text-xs text-amber-700">{hint}</p>
+      <div className="mt-1.5 flex gap-2">
+        <select
+          className="flex-1 rounded-md border border-input bg-card px-2 py-1.5 text-xs"
+          aria-label={label}
+          value={value}
+          disabled={swapping}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          <option value="">{label}</option>
+          {candidates.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <Button size="sm" variant="secondary" disabled={!value || swapping} onClick={onSwap}>
+          {action}
+        </Button>
+      </div>
+    </div>
   );
 }
