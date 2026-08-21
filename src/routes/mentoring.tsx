@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { ApiError } from "@/lib/api";
 import type { MentoringSession } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { canActFor } from "@/lib/scope";
@@ -81,6 +82,8 @@ function MentoringPage() {
     nextSession: "",
   });
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
+  /** Sessão cujo "Enviar ao PDI" está em voo — evita duplo clique e mostra o estado de carregamento certo. */
+  const [sendingSessionId, setSendingSessionId] = useState<string | null>(null);
   const toggleCompetency = (id: string) =>
     setCompetencyIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
@@ -159,9 +162,9 @@ function MentoringPage() {
     }
   };
 
-  const [filter, setFilter] = useState<string[]>([]);
+  // `ArchitectFilter` trata `selected` como sempre explícito — nasce com todo mundo marcado.
+  const [filter, setFilter] = useState<string[]>(() => store.architects.map((a) => a.id));
 
-  // Filtro vazio = todo o time; caso contrário, só as sessões dos selecionados.
   const filteredIds = new Set(applyArchitectFilter(store.architects, filter).map((a) => a.id));
   const sessions = [...store.mentoringSessions]
     .filter((s) => filteredIds.has(s.menteeId))
@@ -347,8 +350,10 @@ function MentoringPage() {
         title={t("mentor.timeline.title")}
         description={
           filter.length === 0
-            ? t("mentor.timeline.all", { n: sessions.length })
-            : t("mentor.timeline.filtered", { n: sessions.length, p: filter.length })
+            ? t("mentor.timeline.none")
+            : filter.length === store.architects.length
+              ? t("mentor.timeline.all", { n: sessions.length })
+              : t("mentor.timeline.filtered", { n: sessions.length, p: filter.length })
         }
       >
         {sessions.length === 0 && (
@@ -360,12 +365,18 @@ function MentoringPage() {
              * Fecha o loop da mentoria: "ações" era texto morto — ninguém
              * virava PDI de verdade. Só oferece o botão quando dá para criar
              * o item sem inventar nível: precisa de uma competência da
-             * sessão com gap já avaliado (`sel.gapsFor`), e de a pessoa ainda
-             * não ter aquele item no plano. Ver AUDITORIA-TERCEIRA-RODADA-
+             * sessão com gap já avaliado, e de a pessoa ainda não ter
+             * aquele item no plano. Ver AUDITORIA-TERCEIRA-RODADA-
              * RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC J.
+             *
+             * ORIENTACAO-NONA-RODADA, Seção 12/17.1 (ENT-09-006) —
+             * `progressionGapsFor`, nunca `gapsFor` bruta: um gap de
+             * Maestria (Nível III) não tem assessment oficial do qual
+             * `/from-gap` possa derivar nível/prioridade — o servidor
+             * rejeitaria mesmo assim, mas o botão nem deve aparecer.
              */
             const plan = sel.planFor(s.menteeId);
-            const gaps = sel.gapsFor(s.menteeId);
+            const gaps = sel.progressionGapsFor(s.menteeId);
             const eligible = s.competencyIds
               .map((cid) => gaps.find((g) => g.item.competencyId === cid))
               .find((g) => g && !plan?.items.some((i) => i.competencyId === g.item.competencyId));
@@ -393,32 +404,46 @@ function MentoringPage() {
                     variant="secondary"
                     size="sm"
                     className="mt-2"
-                    onClick={() => {
+                    disabled={sendingSessionId === s.id}
+                    onClick={async () => {
                       const mentee = sel.architectById(s.menteeId);
                       if (!mentee || !eligible.competency) return;
-                      store.addPlanItem(s.menteeId, {
-                        id: `pdi-${s.menteeId}-${eligible.competency.id}-${Date.now()}`,
-                        competencyId: eligible.competency.id,
-                        currentLevel: eligible.item.final,
-                        targetLevel: eligible.item.target,
-                        objective: s.topic,
-                        actionType: "Mentor",
-                        actionPlan: s.actions,
-                        startDate: todayIso(),
-                        targetDate: s.nextSession ?? todayIso(),
-                        priority:
-                          eligible.gap >= 3 ? "Critical" : eligible.gap === 2 ? "High" : "Medium",
-                        owner: mentee.name,
-                        status: "Not Started",
-                        checkins: [],
-                        version: 1,
-                      });
-                      toast.success(
-                        t("mentor.toPdi.toast", { competencia: eligible.competency.name }),
-                      );
+                      setSendingSessionId(s.id);
+                      try {
+                        /**
+                         * ORIENTACAO-NONA-RODADA, Seção 4/12 (ENT-09-001/006)
+                         * — único caminho para criar item de PDI a partir de
+                         * um GAP oficial: currentLevel/targetLevel/priority
+                         * nunca são calculados aqui, o servidor deriva os
+                         * três a partir do assessment referenciado por
+                         * `eligible.assessmentId`.
+                         */
+                        await store.createPlanItemFromGap(s.menteeId, {
+                          id: `pdi-${s.menteeId}-${eligible.competency.id}-${Date.now()}`,
+                          assessmentId: eligible.assessmentId,
+                          competencyId: eligible.competency.id,
+                          objective: s.topic,
+                          actionType: "Mentor",
+                          actionPlan: s.actions,
+                          startDate: todayIso(),
+                          targetDate: s.nextSession ?? todayIso(),
+                          owner: mentee.name,
+                        });
+                        toast.success(
+                          t("mentor.toPdi.toast", { competencia: eligible.competency.name }),
+                        );
+                      } catch (error) {
+                        toast.error(
+                          error instanceof ApiError ? error.message : t("mentor.toPdi.error"),
+                        );
+                      } finally {
+                        setSendingSessionId(null);
+                      }
                     }}
                   >
-                    {t("mentor.toPdi.action", { competencia: eligible.competency.name })}
+                    {sendingSessionId === s.id
+                      ? t("mentor.toPdi.sending")
+                      : t("mentor.toPdi.action", { competencia: eligible.competency.name })}
                   </Button>
                 )}
                 {s.competencyIds.length > 0 && (

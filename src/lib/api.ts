@@ -210,6 +210,18 @@ export const api = {
   careerLevelTransitions: (id: string) =>
     request<CareerLevelTransition[]>(`/api/architects/${id}/career-level-transitions`),
 
+  /* carreira */
+  careerLevels: () => request<CareerLevel[]>("/api/career-levels"),
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — Política de Progressão:
+   * mínimo global >=3 já é validado no backend (`policyPatchSchema`,
+   * `routes/api/career.ts`); admin-only lá também.
+   */
+  updateCareerLevelPolicy: (careerLevelId: string, minimumQualifiedCapabilities: number) =>
+    patch<CareerLevelPolicy>(`/api/career-levels/${careerLevelId}/policy`, {
+      minimumQualifiedCapabilities,
+    }),
+
   /* catálogo */
   /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. */
   createCapability: (capability: Omit<Capability, "curation">) =>
@@ -225,6 +237,17 @@ export const api = {
   /** `undefined` (204) = apagada de verdade; `{archived:true}` (200) = arquivada por já ter histórico. */
   deleteCompetency: (id: string) =>
     del<{ archived: boolean } | undefined>(`/api/competencies/${id}`),
+  /**
+   * ORIENTACAO-NONA-RODADA — troca RESTRICTIVE ↔ NON_RESTRICTIVE entre duas
+   * competências da mesma capacidade, numa transação só. Único jeito de
+   * mudar o tipo de uma quando os dois lados já estão em 3/3 (READY) — um
+   * `PATCH` comum é sempre recusado nesse caso, porque o destino já está no
+   * teto.
+   */
+  swapCompetencyRequirement: (id: string, withCompetencyId: string) =>
+    post<{ a: Competency; b: Competency }>(`/api/competencies/${id}/swap-requirement`, {
+      withCompetencyId,
+    }),
 
   /* ciclos */
   createCycle: (cycle: DevelopmentCycle) => post<DevelopmentCycle>("/api/cycles", cycle),
@@ -264,8 +287,16 @@ export const api = {
     request<AssessmentCapability[]>(`/api/assessments/${assessmentId}/capabilities`),
   addAssessmentCapability: (assessmentId: string, capabilityId: string) =>
     post<AssessmentCapability>(`/api/assessments/${assessmentId}/capabilities`, { capabilityId }),
-  removeAssessmentCapability: (assessmentId: string, capabilityId: string) =>
-    del<void>(`/api/assessments/${assessmentId}/capabilities/${capabilityId}`),
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 8, problema 3 — remover uma capacidade
+   * com competência já respondida devolve 409 (`hadAnsweredItems: true`)
+   * sem `force`; a tela precisa pedir confirmação explícita e reenviar
+   * com `force=true` antes de descartar as respostas.
+   */
+  removeAssessmentCapability: (assessmentId: string, capabilityId: string, force = false) =>
+    del<void>(
+      `/api/assessments/${assessmentId}/capabilities/${capabilityId}${force ? "?force=true" : ""}`,
+    ),
   confirmAssessmentCapability: (assessmentId: string, capabilityId: string) =>
     post<AssessmentCapability>(
       `/api/assessments/${assessmentId}/capabilities/${capabilityId}/confirm`,

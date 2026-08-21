@@ -131,7 +131,13 @@ describe("Mentoria — converter ação em item de PDI", () => {
     expect(screen.getAllByRole("button", { name: /Criar ação no PDI/ })).toHaveLength(1);
   });
 
-  it("clicar chama a API de PDI com o nível já avaliado (final/alvo), não inventado", async () => {
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 4/12 (ENT-09-001/006) — único caminho é
+   * `/from-gap`: o cliente referencia `assessmentId`/`competencyId`, nunca
+   * calcula ou envia `currentLevel`/`targetLevel`/`priority` — o servidor
+   * deriva os três a partir do assessment oficial.
+   */
+  it("clicar chama /from-gap referenciando o assessment oficial, sem inventar nível/prioridade", async () => {
     render(
       <Wrapper>
         <MentoringPage />
@@ -144,12 +150,13 @@ describe("Mentoria — converter ação em item de PDI", () => {
       ([url, init]) => String(url).includes("/api/plans/") && init?.method === "POST",
     );
     expect(postToPlans).toBeDefined();
-    const body = JSON.parse(String(postToPlans?.[1]?.body)) as {
-      item: { competencyId: string; currentLevel: number; targetLevel: number; actionType: string };
-    };
-    expect(body.item.competencyId).toBe("cloud-k8s");
-    expect(body.item.currentLevel).toBe(2);
-    expect(body.item.targetLevel).toBe(3);
-    expect(body.item.actionType).toBe("Mentor");
+    expect(String(postToPlans?.[0])).toContain("/from-gap");
+    const body = JSON.parse(String(postToPlans?.[1]?.body)) as Record<string, unknown>;
+    expect(body["competencyId"]).toBe("cloud-k8s");
+    expect(body["actionType"]).toBe("Mentor");
+    expect(body["assessmentId"]).toBeTruthy();
+    expect(body).not.toHaveProperty("currentLevel");
+    expect(body).not.toHaveProperty("targetLevel");
+    expect(body).not.toHaveProperty("priority");
   });
 });

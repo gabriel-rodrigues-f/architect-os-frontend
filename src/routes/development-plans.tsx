@@ -21,6 +21,7 @@ import {
   type ActionType,
   type DevelopmentPlan,
   type DevelopmentPlanItem,
+  type DevelopmentPlanItemEvent,
   type PdiStatus,
   type SmartGoal,
 } from "@/lib/domain";
@@ -76,6 +77,8 @@ function PlansPage() {
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
   /** Gap escolhido para virar item de PDI — abre o formulário de ação real. */
   const [creatingForCompetencyId, setCreatingForCompetencyId] = useState<string | null>(null);
+  const [creatingSubmitting, setCreatingSubmitting] = useState(false);
+  const [creatingError, setCreatingError] = useState<string | null>(null);
   const [planTransitioning, setPlanTransitioning] = useState(false);
   const [planTransitionError, setPlanTransitionError] = useState<string | null>(null);
   const { t, locale } = useI18n();
@@ -89,7 +92,14 @@ function PlansPage() {
    */
   const canEdit = canActFor(user, architect);
   const plan = sel.planFor(architectId);
-  const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 5/11 (ENT-09-006) — só GAP de progressão
+   * de verdade (`targetSemantics === "NEXT_ROLE"`) pode virar sugestão de
+   * PDI aqui: o item nasce via `/from-gap`, que o servidor já rejeita para
+   * assessments MASTERY. Usar `gapsFor` bruta ofereceria "Adicionar ao PDI"
+   * para uma diferença que nunca vai conseguir criar o item.
+   */
+  const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
 
   /**
    * Espelha `isLeadOf` do backend: só o Tech Lead atribuído (ou admin), nunca
@@ -306,7 +316,7 @@ function PlansPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                <div className="mt-4 grid gap-3 sm:grid-cols-5">
                   <Field label={t("pdi.field.actionType")}>
                     {canEditDiagnostic ? (
                       <select
@@ -352,11 +362,20 @@ function PlansPage() {
                   <Field label={t("pdi.field.priority")}>
                     <p className="py-1.5 text-sm">{labels.priority[item.priority]}</p>
                   </Field>
-                  <Field label={t("pdi.field.deadline")}>
+                  <Field label={t("pdi.field.dedication")}>
                     <p className="py-1.5 text-sm tabular-nums">
-                      {formatDate(item.targetDate, locale)}
+                      {item.dedicationHoursPerWeek != null
+                        ? t("pdi.field.dedication.value", { horas: item.dedicationHoursPerWeek })
+                        : "—"}
                     </p>
                   </Field>
+                  <DeadlineField
+                    planId={plan!.id}
+                    item={item}
+                    locale={locale}
+                    canEditDraft={canEditDiagnostic}
+                    canReschedule={canEditExecution && planStatus === "Approved"}
+                  />
                 </div>
 
                 <ActionPlanField
@@ -494,26 +513,42 @@ function PlansPage() {
       {creatingForGap && creatingForGap.competency && architect && (
         <NewPlanItemDialog
           gap={creatingForGap}
-          onCancel={() => setCreatingForCompetencyId(null)}
-          onSave={(draft) => {
-            store.addPlanItem(architectId, {
-              id: `pdi-${architectId}-${creatingForGap.item.competencyId}-${Date.now()}`,
-              competencyId: creatingForGap.item.competencyId,
-              currentLevel: creatingForGap.item.final,
-              targetLevel: creatingForGap.item.target,
-              objective: `Evoluir ${creatingForGap.competency?.name} do nível ${creatingForGap.item.final} para o nível ${creatingForGap.item.target}`,
-              actionType: draft.actionType,
-              actionPlan: draft.actionPlan,
-              startDate: todayIso(),
-              targetDate: draft.targetDate,
-              priority:
-                creatingForGap.gap >= 3 ? "Critical" : creatingForGap.gap === 2 ? "High" : "Medium",
-              owner: architect.name,
-              status: "Not Started",
-              checkins: [],
-              version: 1,
-            });
+          submitting={creatingSubmitting}
+          error={creatingError}
+          onCancel={() => {
+            setCreatingError(null);
             setCreatingForCompetencyId(null);
+          }}
+          onSave={async (draft) => {
+            setCreatingError(null);
+            setCreatingSubmitting(true);
+            try {
+              /**
+               * ORIENTACAO-NONA-RODADA, Seção 4/11 (ENT-09-001/006) — único
+               * caminho para criar item de PDI a partir de GAP:
+               * currentLevel/targetLevel/priority nunca são enviados — o
+               * servidor deriva os três do assessment oficial
+               * (`assessmentId` + `competencyId`), nunca do que esta tela
+               * calcularia sozinha.
+               */
+              await store.createPlanItemFromGap(architectId, {
+                id: `pdi-${architectId}-${creatingForGap.item.competencyId}-${Date.now()}`,
+                assessmentId: creatingForGap.assessmentId,
+                competencyId: creatingForGap.item.competencyId,
+                objective: `Evoluir ${creatingForGap.competency?.name} do nível ${creatingForGap.item.final} para o nível ${creatingForGap.item.target}`,
+                actionType: draft.actionType,
+                actionPlan: draft.actionPlan,
+                startDate: todayIso(),
+                targetDate: draft.targetDate,
+                owner: architect.name,
+                dedicationHoursPerWeek: draft.dedicationHoursPerWeek,
+              });
+              setCreatingForCompetencyId(null);
+            } catch (error) {
+              setCreatingError(error instanceof ApiError ? error.message : t("pdi.newItem.error"));
+            } finally {
+              setCreatingSubmitting(false);
+            }
           }}
         />
       )}
@@ -568,6 +603,218 @@ function ActionPlanField({
         placeholder={t("pdi.field.actionPlan.placeholder")}
       />
     </div>
+  );
+}
+
+/**
+ * ORIENTACAO-NONA-RODADA, Seção 7/14 (GES-007/ENT-09-010) — prazo é
+ * editável em `Draft` como qualquer campo diagnóstico normal (o PATCH
+ * genérico já aceita `targetDate` até aqui); em `Approved`, o mesmo PATCH
+ * já bloqueia o campo no backend (`EXECUTION_FIELDS`), então a única forma
+ * de mudar o prazo passa a ser o comando dedicado `Reprogramar prazo`
+ * (motivo obrigatório, evento auditável). Nunca um input silencioso depois
+ * de aprovado.
+ */
+function DeadlineField({
+  planId,
+  item,
+  locale,
+  canEditDraft,
+  canReschedule,
+}: {
+  planId: string;
+  item: DevelopmentPlanItem;
+  locale: string;
+  canEditDraft: boolean;
+  canReschedule: boolean;
+}) {
+  const { t } = useI18n();
+  const store = useStore();
+  const [rescheduling, setRescheduling] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  if (canEditDraft) {
+    return (
+      <Field label={t("pdi.field.deadline")}>
+        <input
+          type="date"
+          className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+          value={item.targetDate}
+          onChange={(e) => store.updatePlanItem(planId, item.id, { targetDate: e.target.value })}
+        />
+      </Field>
+    );
+  }
+
+  return (
+    <Field label={t("pdi.field.deadline")}>
+      <div className="flex flex-wrap items-center gap-2 py-1.5">
+        <p className="text-sm tabular-nums">{formatDate(item.targetDate, locale)}</p>
+        {canReschedule && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-auto px-1.5 py-0.5 text-xs"
+            onClick={() => setRescheduling(true)}
+          >
+            {t("pdi.reschedule.action")}
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-auto px-1.5 py-0.5 text-xs text-muted-foreground"
+          onClick={() => setHistoryOpen((open) => !open)}
+        >
+          {historyOpen ? t("pdi.reschedule.history.hide") : t("pdi.reschedule.history.show")}
+        </Button>
+      </div>
+      {historyOpen && <ItemHistory planId={planId} itemId={item.id} locale={locale} />}
+      {rescheduling && (
+        <RescheduleDialog
+          planId={planId}
+          item={item}
+          onCancel={() => setRescheduling(false)}
+          onSaved={() => setRescheduling(false)}
+        />
+      )}
+    </Field>
+  );
+}
+
+/**
+ * Histórico append-only de reprogramações — `GET /api/plans/:planId/items/
+ * :itemId/events`. Sem otimismo (é leitura), buscado só quando a pessoa
+ * pede para ver, não em toda renderização do card.
+ */
+function ItemHistory({ planId, itemId, locale }: { planId: string; itemId: string; locale: string }) {
+  const { t } = useI18n();
+  const store = useStore();
+  const [events, setEvents] = useState<DevelopmentPlanItemEvent[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    store
+      .planItemEvents(planId, itemId)
+      .then((result) => {
+        if (!cancelled) setEvents(result);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(e instanceof ApiError ? e.message : t("pdi.reschedule.history.error"));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [planId, itemId, store, t]);
+
+  if (error) return <p className="mt-1 text-xs text-destructive">{error}</p>;
+  if (!events) return <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.loading")}</p>;
+  if (events.length === 0) {
+    return <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.empty")}</p>;
+  }
+
+  return (
+    <ul className="mt-1 space-y-1.5 border-t border-border pt-2">
+      {events.map((e) => (
+        <li key={e.id} className="text-xs text-muted-foreground">
+          <p>
+            {t("pdi.reschedule.history.entry", {
+              de: e.fromTargetDate ? formatDate(e.fromTargetDate, locale) ?? "" : "—",
+              para: formatDate(e.toTargetDate, locale) ?? "",
+            })}
+          </p>
+          <p>
+            {t("pdi.reschedule.history.reason", { motivo: e.reason })} ·{" "}
+            {formatDate(e.occurredAt, locale)}
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RescheduleDialog({
+  planId,
+  item,
+  onCancel,
+  onSaved,
+}: {
+  planId: string;
+  item: DevelopmentPlanItem;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const { t, locale } = useI18n();
+  const store = useStore();
+  const [targetDate, setTargetDate] = useState(item.targetDate);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canSave = targetDate.length > 0 && reason.trim().length > 0 && !submitting;
+
+  const submit = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await store.reschedulePlanItem(planId, item.id, targetDate, reason.trim());
+      onSaved();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t("pdi.reschedule.error"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && !submitting && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("pdi.reschedule.title")}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label>{t("pdi.reschedule.current")}</Label>
+            <p className="mt-1 text-sm tabular-nums">{formatDate(item.targetDate, locale)}</p>
+          </div>
+          <div>
+            <Label htmlFor="reschedule-target-date">{t("pdi.reschedule.new")}</Label>
+            <input
+              id="reschedule-target-date"
+              type="date"
+              disabled={submitting}
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="reschedule-reason">{t("pdi.reschedule.reasonLabel")}</Label>
+            <Textarea
+              id="reschedule-reason"
+              className="mt-1"
+              disabled={submitting}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={t("pdi.reschedule.reasonPlaceholder")}
+            />
+          </div>
+          {error && (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>
+            {t("pdi.newItem.cancel")}
+          </Button>
+          <Button disabled={!canSave} onClick={() => void submit()}>
+            {submitting ? t("pdi.reschedule.saving") : t("pdi.reschedule.confirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -661,11 +908,20 @@ function CheckinTimeline({
  */
 function NewPlanItemDialog({
   gap,
+  submitting,
+  error,
   onSave,
   onCancel,
 }: {
   gap: Gap;
-  onSave: (draft: { actionType: ActionType; actionPlan: string; targetDate: string }) => void;
+  submitting: boolean;
+  error: string | null;
+  onSave: (draft: {
+    actionType: ActionType;
+    actionPlan: string;
+    targetDate: string;
+    dedicationHoursPerWeek: number | null;
+  }) => void;
   onCancel: () => void;
 }) {
   const { t } = useI18n();
@@ -673,10 +929,11 @@ function NewPlanItemDialog({
   const [actionType, setActionType] = useState<ActionType>("Learn");
   const [actionPlan, setActionPlan] = useState("");
   const [targetDate, setTargetDate] = useState("");
-  const canSave = actionPlan.trim().length > 0 && targetDate.length > 0;
+  const [dedication, setDedication] = useState("");
+  const canSave = actionPlan.trim().length > 0 && targetDate.length > 0 && !submitting;
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+    <Dialog open onOpenChange={(open) => !open && !submitting && onCancel()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -684,12 +941,29 @@ function NewPlanItemDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
+          {/**
+           * ORIENTACAO-NONA-RODADA, Seção 11 — GAP oficial em read-only,
+           * como contexto de origem; nunca prioridade calculada aqui — "não
+           * duplicar o algoritmo de prioridade no frontend sequer para
+           * preview antes da resposta do servidor" (Seção 11). A prioridade
+           * de verdade só aparece no card do item, depois que o servidor
+           * confirmou a criação.
+           */}
+          <div className="rounded-md border border-border bg-secondary/40 px-3 py-2 text-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t("pdi.newItem.officialGap")}
+            </p>
+            <p className="mt-1">
+              {t("pdi.newItem.officialGapValue", { atual: gap.item.final, alvo: gap.item.target })}
+            </p>
+          </div>
           <div>
             <Label htmlFor="new-item-action-type">{t("pdi.field.actionType")}</Label>
             <select
               id="new-item-action-type"
               className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
               value={actionType}
+              disabled={submitting}
               onChange={(e) => setActionType(e.target.value as ActionType)}
             >
               {ACTION_TYPES.map((type) => (
@@ -705,31 +979,61 @@ function NewPlanItemDialog({
               id="new-item-action-plan"
               className="mt-1"
               value={actionPlan}
+              disabled={submitting}
               onChange={(e) => setActionPlan(e.target.value)}
               placeholder={t("pdi.field.actionPlan.placeholder")}
             />
           </div>
-          <div>
-            <Label htmlFor="new-item-target-date">{t("pdi.field.deadline")}</Label>
-            <input
-              id="new-item-target-date"
-              type="date"
-              min={todayIso()}
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={targetDate}
-              onChange={(e) => setTargetDate(e.target.value)}
-            />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="new-item-target-date">{t("pdi.field.deadline")}</Label>
+              <input
+                id="new-item-target-date"
+                type="date"
+                min={todayIso()}
+                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                value={targetDate}
+                disabled={submitting}
+                onChange={(e) => setTargetDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-item-dedication">{t("pdi.field.dedication")}</Label>
+              <input
+                id="new-item-dedication"
+                type="number"
+                min={0}
+                step="0.5"
+                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                value={dedication}
+                disabled={submitting}
+                placeholder={t("pdi.field.dedication.placeholder")}
+                onChange={(e) => setDedication(e.target.value)}
+              />
+            </div>
           </div>
+          {error && (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>
             {t("pdi.newItem.cancel")}
           </Button>
           <Button
             disabled={!canSave}
-            onClick={() => onSave({ actionType, actionPlan: actionPlan.trim(), targetDate })}
+            onClick={() =>
+              onSave({
+                actionType,
+                actionPlan: actionPlan.trim(),
+                targetDate,
+                dedicationHoursPerWeek: dedication.trim() ? Number(dedication) : null,
+              })
+            }
           >
-            {t("pdi.newItem.save")}
+            {submitting ? t("pdi.newItem.saving") : t("pdi.newItem.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

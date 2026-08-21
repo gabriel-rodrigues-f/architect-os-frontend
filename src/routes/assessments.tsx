@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, BadgeCheck } from "lucide-react";
 import { Fragment, useState } from "react";
@@ -9,14 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import type { Assessment, AssessmentComment, Capability, Level } from "@/lib/domain";
+import type { Assessment, AssessmentComment, AssessmentDevelopmentSummary, Capability, Level } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { isLeadOf } from "@/lib/scope";
-import { useSelectors, useStore } from "@/lib/store";
+import { STATE_QUERY_KEY, useSelectors, useStore } from "@/lib/store";
 import { formatDate, initialSearchParam } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
@@ -259,6 +261,10 @@ function AssessmentsPage() {
 
       {assessment && (
         <CareerPortfolioSection assessment={assessment} isOwner={isOwner} isLead={isLead} />
+      )}
+
+      {assessment && (
+        <DevelopmentSummarySection assessment={assessment} isOwner={isOwner} isLead={isLead} />
       )}
 
       {!assessment ? (
@@ -697,12 +703,21 @@ function AssessmentStatusBadge({ status, label }: { status: Assessment["status"]
 
 /**
  * ENT-CAR-014/015/016 — portfólio individual de capacidades: quais contam
- * para elegibilidade de carreira NESTE assessment (mínimo 3, orientação
- * de UI por enquanto — o backend ainda não bloqueia a submissão por isso,
- * ver o comentário em `routes/api/assessments.ts`). "Profissional propõe"
+ * para elegibilidade de carreira NESTE assessment. "Profissional propõe"
  * (dono adiciona/remove enquanto `Draft`), "Tech Lead confirma" (enquanto
  * `In Review`) — mesma governança do resto do assessment, só que aplicada
- * a um recorte adicional, não às notas em si.
+ * a um recorte adicional, não às notas em si. Mínimo de 3 é regra real do
+ * backend desde a oitava rodada (não mais só orientação de UI).
+ *
+ * ORIENTACAO-NONA-RODADA, Seção 8 — cinco problemas corrigidos nesta
+ * versão: (1) só oferece capacidade `READY` para propor; (2) invalida
+ * também o estado principal do app depois de add/remove, não só a
+ * elegibilidade — sem isto o Assessment em `store` continuava com `items`
+ * antigos até um reload manual; (3) remover capacidade já respondida pede
+ * confirmação explícita antes de `force=true`; (4) loading/error de
+ * verdade em vez de `return null`; (5) dois números claramente
+ * distintos — tamanho do portfólio do ciclo (mínimo 3) × quantas estão
+ * qualificadas para o próximo nível.
  */
 function CareerPortfolioSection({
   assessment,
@@ -718,63 +733,129 @@ function CareerPortfolioSection({
   const queryClient = useQueryClient();
   const [selectedCapabilityId, setSelectedCapabilityId] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [pendingRemoval, setPendingRemoval] = useState<{ id: string; name: string } | null>(null);
 
   const queryKey = ["assessment-eligibility", assessment.id];
   const {
     data: eligibility,
     isPending,
     isError,
+    refetch,
   } = useQuery({
     queryKey,
     queryFn: () => api.assessmentEligibility(assessment.id),
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+  const invalidateAll = () => {
+    void queryClient.invalidateQueries({ queryKey });
+    // Problema 2 — add/remove materializa/remove itens no Assessment no
+    // backend; sem revalidar o estado principal, a tela continuava
+    // mostrando os `items` de antes até um reload manual.
+    void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+  };
+
+  if (isPending) {
+    return (
+      <SectionCard
+        className="mb-4"
+        title={t("asmt.portfolio.title")}
+        description={t("asmt.portfolio.subtitle")}
+      >
+        <div className="space-y-2" aria-busy="true" aria-live="polite">
+          <span className="sr-only">{t("common.loading")}</span>
+          <div className="h-9 animate-pulse rounded-md bg-secondary" />
+          <div className="h-9 animate-pulse rounded-md bg-secondary" />
+          <div className="h-9 w-2/3 animate-pulse rounded-md bg-secondary" />
+        </div>
+      </SectionCard>
+    );
+  }
 
   // `!eligibility?.capabilities`, não só `!eligibility`: testes que ainda não
   // conhecem esta rota (mock de fetch genérico) devolvem `{}` com 200 em vez
   // de 404 — `eligibility` fica um objeto truthy sem o formato esperado.
-  if (isPending || isError || !eligibility?.capabilities) return null;
+  if (isError || !eligibility?.capabilities) {
+    return (
+      <SectionCard
+        className="mb-4"
+        title={t("asmt.portfolio.title")}
+        description={t("asmt.portfolio.subtitle")}
+      >
+        <p className="text-sm text-destructive" role="alert">
+          {t("asmt.portfolio.loadError")}
+        </p>
+        <Button size="sm" variant="outline" className="mt-2" onClick={() => void refetch()}>
+          {t("common.retry")}
+        </Button>
+      </SectionCard>
+    );
+  }
 
+  // Problema 1 — só capacidade `READY` (curadoria completa) pode entrar no
+  // portfólio; o backend já recusa o resto, mas oferecer a opção aqui só
+  // para devolver erro depois é a experiência ruim que a Seção 8 aponta.
   const availableToAdd = store.capabilities.filter(
-    (cap) => cap.active && !eligibility.capabilities.some((c) => c.capabilityId === cap.id),
+    (cap) =>
+      cap.curation.status === "READY" &&
+      !eligibility.capabilities.some((c) => c.capabilityId === cap.id),
   );
 
   const canPropose = isOwner && assessment.status === "Draft";
   const canConfirm = isLead && assessment.status === "In Review";
+  const portfolioSize = eligibility.capabilities.length;
 
   const addCapability = () => {
     if (!selectedCapabilityId) return;
     setActionError(null);
+    setBusy(true);
     api
       .addAssessmentCapability(assessment.id, selectedCapabilityId)
       .then(() => {
         setSelectedCapabilityId("");
-        void invalidate();
+        invalidateAll();
       })
       .catch((error: unknown) =>
         setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
-      );
+      )
+      .finally(() => setBusy(false));
   };
 
-  const removeCapability = (capabilityId: string) => {
+  /**
+   * Problema 3 — sem `force`, o backend devolve 409 quando a capacidade já
+   * tem competência respondida. Nesse caso (e só nesse), abre o diálogo de
+   * confirmação em vez de mostrar o erro cru; qualquer outro erro (403 de
+   * quem não é dono, por exemplo) vai direto para `actionError`.
+   */
+  const attemptRemove = (capabilityId: string, capabilityName: string, force = false) => {
     setActionError(null);
+    setBusy(true);
     api
-      .removeAssessmentCapability(assessment.id, capabilityId)
-      .then(() => void invalidate())
-      .catch((error: unknown) =>
-        setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
-      );
+      .removeAssessmentCapability(assessment.id, capabilityId, force)
+      .then(() => {
+        invalidateAll();
+        setPendingRemoval(null);
+      })
+      .catch((error: unknown) => {
+        if (!force && error instanceof ApiError && error.status === 409) {
+          setPendingRemoval({ id: capabilityId, name: capabilityName });
+          return;
+        }
+        setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error"));
+      })
+      .finally(() => setBusy(false));
   };
 
   const confirmCapability = (capabilityId: string) => {
     setActionError(null);
+    setBusy(true);
     api
       .confirmAssessmentCapability(assessment.id, capabilityId)
-      .then(() => void invalidate())
+      .then(() => invalidateAll())
       .catch((error: unknown) =>
         setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
-      );
+      )
+      .finally(() => setBusy(false));
   };
 
   return (
@@ -783,7 +864,19 @@ function CareerPortfolioSection({
       title={t("asmt.portfolio.title")}
       description={t("asmt.portfolio.subtitle")}
     >
+      {/* Problema 5 — dois números, nunca confundidos: quantas capacidades
+          o ciclo exige no mínimo (3) versus quantas já qualificam para o
+          próximo nível. */}
       <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+        <Badge variant={portfolioSize >= 3 ? "default" : "outline"}>
+          {t("asmt.portfolio.size", { n: portfolioSize })}
+        </Badge>
+        {/* ENT-09-016 — indicador visual do mínimo de 3, além do número no badge. */}
+        <Progress
+          value={Math.min(100, (portfolioSize / 3) * 100)}
+          className="h-1.5 w-24"
+          aria-label={t("asmt.portfolio.size", { n: portfolioSize })}
+        />
         {eligibility.nextCareerLevel ? (
           <>
             <span className="text-muted-foreground">
@@ -800,16 +893,20 @@ function CareerPortfolioSection({
           <span className="text-muted-foreground">{t("asmt.portfolio.topLevel")}</span>
         )}
       </div>
+      {canPropose && portfolioSize < 3 && (
+        <p className="mb-3 text-xs text-muted-foreground">{t("asmt.portfolio.minimumHint")}</p>
+      )}
 
       <ul className="space-y-1.5">
         {eligibility.capabilities.map((entry) => {
           const capability = store.capabilities.find((c) => c.id === entry.capabilityId);
+          const name = capability?.name ?? entry.capabilityId;
           return (
             <li
               key={entry.capabilityId}
               className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
             >
-              <span>{capability?.name ?? entry.capabilityId}</span>
+              <span>{name}</span>
               <div className="flex items-center gap-2">
                 {entry.confirmed ? (
                   <Badge variant={entry.qualified ? "default" : "outline"}>
@@ -824,6 +921,7 @@ function CareerPortfolioSection({
                   <Button
                     size="sm"
                     variant="secondary"
+                    disabled={busy}
                     onClick={() => confirmCapability(entry.capabilityId)}
                   >
                     {t("asmt.portfolio.confirm")}
@@ -833,7 +931,8 @@ function CareerPortfolioSection({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => removeCapability(entry.capabilityId)}
+                    disabled={busy}
+                    onClick={() => attemptRemove(entry.capabilityId, name)}
                   >
                     {t("common.remove")}
                   </Button>
@@ -853,6 +952,7 @@ function CareerPortfolioSection({
             aria-label={t("asmt.portfolio.addLabel")}
             className="flex-1 rounded-md border border-input bg-card px-3 py-2 text-sm"
             value={selectedCapabilityId}
+            disabled={busy}
             onChange={(e) => setSelectedCapabilityId(e.target.value)}
           >
             <option value="">{t("asmt.portfolio.addPlaceholder")}</option>
@@ -862,15 +962,279 @@ function CareerPortfolioSection({
               </option>
             ))}
           </select>
-          <Button size="sm" disabled={!selectedCapabilityId} onClick={addCapability}>
+          <Button size="sm" disabled={!selectedCapabilityId || busy} onClick={addCapability}>
             {t("asmt.portfolio.add")}
           </Button>
         </div>
+      )}
+      {canPropose && availableToAdd.length === 0 && (
+        <p className="mt-2 text-xs text-muted-foreground">{t("asmt.portfolio.noneReady")}</p>
       )}
 
       {actionError && (
         <p className="mt-2 text-xs text-destructive" role="alert">
           {actionError}
+        </p>
+      )}
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        title={t("asmt.portfolio.removeConfirm.title")}
+        description={t("asmt.portfolio.removeConfirm.description", {
+          nome: pendingRemoval?.name ?? "",
+        })}
+        confirmLabel={t("asmt.portfolio.removeConfirm.confirm")}
+        cancelLabel={t("pdi.newItem.cancel")}
+        onConfirm={() => pendingRemoval && attemptRemove(pendingRemoval.id, pendingRemoval.name, true)}
+        onCancel={() => setPendingRemoval(null)}
+      />
+    </SectionCard>
+  );
+}
+
+/**
+ * ESPECIFICACAO-OITAVA-RODADA, Seção 18 / ORIENTACAO-NONA-RODADA ENT-09-011
+ * — "Começar/Parar/Continuar", mesma governança de escrita do resto do
+ * assessment: só o dono escreve em `Draft`, só o Tech Lead complementa em
+ * `In Review`, e tudo trava em `Completed` (o backend já bloqueia; aqui só
+ * espelha para não abrir campo editável que vai apanhar 403).
+ */
+function DevelopmentSummarySection({
+  assessment,
+  isOwner,
+  isLead,
+}: {
+  assessment: Assessment;
+  isOwner: boolean;
+  isLead: boolean;
+}) {
+  const { t } = useI18n();
+  const status = assessment.status;
+  const canEdit = status === "Draft" ? isOwner && !isLead : status === "In Review" ? isLead : false;
+
+  const queryKey: QueryKey = ["assessment-development-summary", assessment.id];
+  const {
+    data,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey,
+    queryFn: () => api.assessmentDevelopmentSummary(assessment.id),
+    /**
+     * Sem refetch automático em segundo plano (foco de janela, por exemplo):
+     * o formulário guarda texto digitado localmente até um Salvar explícito,
+     * e uma reconsulta silenciosa sobrescreveria esse texto sem aviso —
+     * exatamente o problema que ENT-09-011 pede para evitar.
+     */
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+
+  if (isPending) {
+    return (
+      <SectionCard
+        className="mb-4"
+        title={t("asmt.devSummary.title")}
+        description={t("asmt.devSummary.subtitle")}
+      >
+        <div className="grid gap-3 md:grid-cols-3" aria-busy="true" aria-live="polite">
+          <span className="sr-only">{t("common.loading")}</span>
+          <div className="h-24 animate-pulse rounded-md bg-secondary" />
+          <div className="h-24 animate-pulse rounded-md bg-secondary" />
+          <div className="h-24 animate-pulse rounded-md bg-secondary" />
+        </div>
+      </SectionCard>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <SectionCard
+        className="mb-4"
+        title={t("asmt.devSummary.title")}
+        description={t("asmt.devSummary.subtitle")}
+      >
+        <p className="text-sm text-destructive" role="alert">
+          {t("asmt.devSummary.loadError")}
+        </p>
+        <Button size="sm" variant="outline" className="mt-2" onClick={() => void refetch()}>
+          {t("common.retry")}
+        </Button>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <DevelopmentSummaryForm
+      key={data.version}
+      assessmentId={assessment.id}
+      data={data}
+      canEdit={canEdit}
+      queryKey={queryKey}
+      onReload={() => void refetch()}
+    />
+  );
+}
+
+/**
+ * `key={data.version}` no componente pai (acima) força remontar este
+ * formulário sempre que a versão salva no servidor muda — depois de um
+ * Salvar bem-sucedido, ou quando a pessoa pede explicitamente a versão mais
+ * recente após um conflito de edição concorrente. Fora esses dois momentos
+ * pedidos pelo próprio usuário, o texto digitado nunca some sozinho: o
+ * componente pai não reconsulta em segundo plano (`staleTime: Infinity`),
+ * e este formulário lê `data` só uma vez, no valor inicial do `useState`.
+ */
+function DevelopmentSummaryForm({
+  assessmentId,
+  data,
+  canEdit,
+  queryKey,
+  onReload,
+}: {
+  assessmentId: string;
+  data: AssessmentDevelopmentSummary;
+  canEdit: boolean;
+  queryKey: QueryKey;
+  onReload: () => void;
+}) {
+  const { t, locale } = useI18n();
+  const queryClient = useQueryClient();
+  const [startDoing, setStartDoing] = useState(data.startDoing);
+  const [stopDoing, setStopDoing] = useState(data.stopDoing);
+  const [continueDoing, setContinueDoing] = useState(data.continueDoing);
+  const [saveState, setSaveState] = useState<"clean" | "dirty" | "saving" | "saved" | "error">(
+    "clean",
+  );
+  const [conflict, setConflict] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const markDirty = () => {
+    setConflict(false);
+    setSaveState((prev) => (prev === "saving" ? prev : "dirty"));
+  };
+
+  const save = () => {
+    setSaveState("saving");
+    setErrorMessage(null);
+    api
+      .updateAssessmentDevelopmentSummary(
+        assessmentId,
+        { startDoing, stopDoing, continueDoing },
+        data.version,
+      )
+      .then(() => {
+        setSaveState("saved");
+        void queryClient.invalidateQueries({ queryKey });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 409) {
+          setConflict(true);
+          setSaveState("error");
+          return;
+        }
+        setErrorMessage(error instanceof ApiError ? error.message : t("asmt.devSummary.saveError"));
+        setSaveState("error");
+      });
+  };
+
+  return (
+    <SectionCard
+      className="mb-4"
+      title={t("asmt.devSummary.title")}
+      description={t("asmt.devSummary.subtitle")}
+    >
+      {conflict && (
+        <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          <p>{t("asmt.devSummary.conflict")}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2"
+            onClick={() => {
+              setConflict(false);
+              onReload();
+            }}
+          >
+            {t("asmt.devSummary.reload")}
+          </Button>
+        </div>
+      )}
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <div>
+          <Label htmlFor="dev-summary-start">{t("asmt.devSummary.start")}</Label>
+          <Textarea
+            id="dev-summary-start"
+            className="mt-1"
+            value={startDoing}
+            disabled={!canEdit}
+            onChange={(e) => {
+              setStartDoing(e.target.value);
+              markDirty();
+            }}
+            placeholder={t("asmt.devSummary.start.placeholder")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="dev-summary-stop">{t("asmt.devSummary.stop")}</Label>
+          <Textarea
+            id="dev-summary-stop"
+            className="mt-1"
+            value={stopDoing}
+            disabled={!canEdit}
+            onChange={(e) => {
+              setStopDoing(e.target.value);
+              markDirty();
+            }}
+            placeholder={t("asmt.devSummary.stop.placeholder")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="dev-summary-continue">{t("asmt.devSummary.continue")}</Label>
+          <Textarea
+            id="dev-summary-continue"
+            className="mt-1"
+            value={continueDoing}
+            disabled={!canEdit}
+            onChange={(e) => {
+              setContinueDoing(e.target.value);
+              markDirty();
+            }}
+            placeholder={t("asmt.devSummary.continue.placeholder")}
+          />
+        </div>
+      </div>
+
+      {canEdit && (
+        <div className="mt-3 flex items-center gap-3">
+          <Button
+            size="sm"
+            disabled={saveState === "saving" || saveState === "clean"}
+            onClick={save}
+          >
+            {saveState === "saving" ? t("asmt.devSummary.saving") : t("common.save")}
+          </Button>
+          <p className="text-xs" role="status">
+            {saveState === "saved" && (
+              <span className="text-emerald-600">{t("asmt.devSummary.saved")}</span>
+            )}
+            {saveState === "dirty" && (
+              <span className="text-muted-foreground">{t("asmt.devSummary.unsaved")}</span>
+            )}
+            {saveState === "error" && !conflict && errorMessage && (
+              <span className="text-destructive" role="alert">
+                {errorMessage}
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+
+      {!canEdit && data.updatedAt && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t("asmt.devSummary.lastUpdated", { data: formatDate(data.updatedAt, locale) ?? "" })}
         </p>
       )}
     </SectionCard>

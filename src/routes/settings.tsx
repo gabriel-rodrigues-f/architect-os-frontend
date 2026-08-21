@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
-import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, ROLES, roleShort } from "@/lib/domain";
+import { Button } from "@/components/ui/button";
+import { ApiError } from "@/lib/api";
+import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, ROLES, roleShort, type CareerLevel } from "@/lib/domain";
+import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
@@ -30,15 +35,18 @@ function SettingsPage() {
   const store = useStore();
   const labels = useLabels();
   const { t, locale } = useI18n();
+  const isAdmin = useCurrentUser().role === "admin";
 
   return (
     <>
       <PageHeader
         title={t("ref.title")}
-        description="Glossário do modelo: escala de proficiência, cargos, tipos de ação e de evidência. Somente leitura — o que é editável fica na tela do respectivo cadastro."
+        description="Glossário do modelo: escala de proficiência, cargos, tipos de ação e de evidência. Somente leitura, exceto a Política de Progressão — o restante do que é editável fica na tela do respectivo cadastro."
       />
 
       <div className="grid gap-6 xl:grid-cols-2">
+        <CareerPolicySection isAdmin={isAdmin} />
+
         <SectionCard title={t("ref.scale")} description="5 níveis usados em todos os assessments.">
           <ul className="space-y-2">
             {LEVELS.map((l) => (
@@ -135,5 +143,153 @@ function SettingsPage() {
         </SectionCard>
       </div>
     </>
+  );
+}
+
+/**
+ * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — "Política de Progressão":
+ * existia API (`PATCH /api/career-levels/:id/policy`) desde a rodada
+ * anterior, mas nenhuma tela administrativa. Cada nível edita só a própria
+ * linha — otimista o bastante para não precisar de um formulário separado,
+ * mas com estado de erro de verdade (o piso global de 3 é aplicado no
+ * servidor, `career_level_policies` CHECK, Seção 9).
+ */
+function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
+  const store = useStore();
+  const readyCapabilities = store.capabilities.filter((c) => c.curation.status === "READY").length;
+
+  return (
+    <SectionCard
+      title="Política de Progressão"
+      description="Quantidade mínima de capacidades qualificadas para elegibilidade a cada nível de carreira. Elegibilidade nunca promove sozinha — a mudança de nível continua uma decisão explícita e auditada."
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <th className="py-2">Nível de carreira</th>
+              <th className="py-2 text-center">Mínimo de capacidades qualificadas</th>
+              {isAdmin && <th className="py-2" />}
+            </tr>
+          </thead>
+          <tbody>
+            {store.careerLevels.map((level) => {
+              const policy = store.careerLevelPolicies.find((p) => p.careerLevelId === level.id);
+              return (
+                <CareerPolicyRow
+                  key={level.id}
+                  level={level}
+                  minimum={policy?.minimumQualifiedCapabilities}
+                  readyCapabilities={readyCapabilities}
+                  isAdmin={isAdmin}
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </SectionCard>
+  );
+}
+
+function CareerPolicyRow({
+  level,
+  minimum,
+  readyCapabilities,
+  isAdmin,
+}: {
+  level: CareerLevel;
+  minimum: number | undefined;
+  readyCapabilities: number;
+  isAdmin: boolean;
+}) {
+  const store = useStore();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(minimum ?? 3));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const draftValue = Number(draft);
+  const canSave = Number.isInteger(draftValue) && draftValue >= 3;
+  const impossible = minimum !== undefined && minimum > readyCapabilities;
+
+  const save = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await store.updateCareerLevelPolicy(level.id, draftValue);
+      toast.success(`Política do ${level.name} atualizada.`);
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Não foi possível salvar a política.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <tr className="border-b border-border/60 last:border-0 align-top">
+      <td className="py-2">
+        <p className="font-medium">{level.name}</p>
+        <p className="text-xs text-muted-foreground">
+          Para estar elegível ao {level.name}: é necessário qualificar pelo menos{" "}
+          {minimum ?? "—"} capacidade(s) do portfólio confirmado.
+        </p>
+        {impossible && (
+          <p className="mt-1 text-xs text-destructive" role="alert">
+            A política exige {minimum} capacidades qualificadas, mas atualmente apenas{" "}
+            {readyCapabilities} capacidade(s) estão prontas (READY) para uso.
+          </p>
+        )}
+      </td>
+      <td className="py-2 text-center">
+        {editing ? (
+          <input
+            type="number"
+            min={3}
+            step={1}
+            disabled={saving}
+            className="w-20 rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        ) : (
+          <span className="tabular-nums">{minimum ?? "—"}</span>
+        )}
+        {error && (
+          <p className="mt-1 text-xs text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+      </td>
+      {isAdmin && (
+        <td className="py-2 text-right">
+          {editing ? (
+            <div className="flex justify-end gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={saving}
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(String(minimum ?? 3));
+                  setError(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button size="sm" disabled={!canSave || saving} onClick={() => void save()}>
+                {saving ? "Salvando…" : "Salvar"}
+              </Button>
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+              Editar
+            </Button>
+          )}
+        </td>
+      )}
+    </tr>
   );
 }

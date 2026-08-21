@@ -6,11 +6,13 @@ import { api, ApiError, type AppState, type CommentInput } from "./api";
 import type {
   Architect,
   Assessment,
+  CareerLevelPolicy,
   Competency,
   Capability,
   DevelopmentCycle,
   DevelopmentPlan,
   DevelopmentPlanItem,
+  DevelopmentPlanItemEvent,
   Evidence,
   LearningItemProgress,
   LearningPath,
@@ -45,10 +47,25 @@ interface Api extends AppState {
     toRole: Architect["role"],
     reason: string,
   ) => Promise<Architect>;
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — Política de Progressão.
+   * Sem otimismo: só admin altera, e a tela de configuração precisa do
+   * erro de verdade (ex.: abaixo do piso global de 3) para mostrar.
+   */
+  updateCareerLevelPolicy: (
+    careerLevelId: string,
+    minimumQualifiedCapabilities: number,
+  ) => Promise<CareerLevelPolicy>;
   addCompetency: (c: Competency) => void;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
   /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
+  /**
+   * Troca RESTRICTIVE ↔ NON_RESTRICTIVE entre duas competências da mesma
+   * capacidade — único jeito de sair de 3/3 (READY) sem passar por um
+   * `PATCH` recusado. Ver `api.swapCompetencyRequirement`.
+   */
+  swapCompetencyRequirement: (id: string, withCompetencyId: string) => Promise<void>;
   /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. */
   addCapability: (c: Omit<Capability, "curation">) => void;
   updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
@@ -95,9 +112,47 @@ interface Api extends AppState {
     }>,
   ) => void;
   addPlanItem: (architectId: string, item: DevelopmentPlanItem) => void;
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 4/11/30 (ENT-09-001/006) — único caminho
+   * para criar um item de PDI a partir de um GAP oficial. O tipo do payload
+   * nem tem `currentLevel`/`targetLevel`/`priority`: o servidor deriva os
+   * três do assessment referenciado por `assessmentId`. Sem otimismo — o
+   * servidor pode recusar (capacidade não confirmada, gap <= 0, MASTERY
+   * sem próximo nível), e a tela precisa do erro de verdade, não de um item
+   * que "aparece" na tela e depois some quando a chamada falhar.
+   */
+  createPlanItemFromGap: (
+    architectId: string,
+    item: {
+      id: string;
+      assessmentId: string;
+      competencyId: string;
+      objective: string;
+      actionType: DevelopmentPlanItem["actionType"];
+      actionPlan: string;
+      startDate: string;
+      targetDate: string;
+      owner: string;
+      dedicationHoursPerWeek?: number | null;
+    },
+  ) => Promise<DevelopmentPlan>;
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
   /** Tira o item do PDI — a lacuna dele volta a aparecer como sugestão. */
   removePlanItem: (planId: string, itemId: string) => void;
+  /**
+   * Seção 14 (ENT-09-010) — reprogramar prazo depois de `Approved` é um
+   * comando dedicado (motivo obrigatório), não um PATCH do campo. Sem
+   * otimismo: a tela precisa saber se o servidor recusou (409 de versão,
+   * 400 sem motivo) antes de mostrar o novo prazo como salvo.
+   */
+  reschedulePlanItem: (
+    planId: string,
+    itemId: string,
+    targetDate: string,
+    reason: string,
+  ) => Promise<DevelopmentPlan>;
+  /** Histórico append-only de reprogramações de um item. */
+  planItemEvents: (planId: string, itemId: string) => Promise<DevelopmentPlanItemEvent[]>;
   /**
    * Sem otimismo, como `setAssessmentStatus`: aprovar/reabrir/concluir o PDI
    * é uma transição de negócio que pode ser negada (dono não aprova nem
@@ -200,6 +255,17 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.updateArchitect(id, patch));
     },
 
+    updateCareerLevelPolicy: async (careerLevelId, minimumQualifiedCapabilities) => {
+      const updated = await api.updateCareerLevelPolicy(careerLevelId, minimumQualifiedCapabilities);
+      local((s) => ({
+        ...s,
+        careerLevelPolicies: s.careerLevelPolicies.map((p) =>
+          p.careerLevelId === careerLevelId ? updated : p,
+        ),
+      }));
+      return updated;
+    },
+
     transitionCareerLevel: async (id, toRole, reason) => {
       const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
       const updated = await api.transitionCareerLevel(id, toRole, reason, expectedVersion);
@@ -244,6 +310,30 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
             : s.competencies.filter((c) => c.id !== id),
         }));
         return { archived };
+      } catch (error) {
+        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
+        else console.error(error);
+        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+        throw error;
+      }
+    },
+
+    /**
+     * Sem otimismo, mesma razão de `removeCompetency`: as duas competências
+     * só mudam de tipo se o servidor confirmar a troca das duas juntas — a
+     * UI não pode adivinhar isso antes.
+     */
+    swapCompetencyRequirement: async (id, withCompetencyId) => {
+      try {
+        const { a, b } = await api.swapCompetencyRequirement(id, withCompetencyId);
+        local((s) => ({
+          ...s,
+          competencies: s.competencies.map((c) => {
+            if (c.id === a.id) return a;
+            if (c.id === b.id) return b;
+            return c;
+          }),
+        }));
       } catch (error) {
         if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
         else console.error(error);
@@ -415,6 +505,24 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.addPlanItem(architectId, state.activeCycleId, item));
     },
 
+    /**
+     * ENT-09-001/006 — sem otimismo, ao contrário de `addPlanItem`: o
+     * servidor pode recusar por várias razões de negócio (capacidade não
+     * confirmada, gap <= 0, MASTERY), e o item só existe de fato depois da
+     * resposta. `currentLevel`/`targetLevel`/`priority` nunca aparecem
+     * aqui — nem o tipo do parâmetro os tem.
+     */
+    createPlanItemFromGap: async (architectId, item) => {
+      const updated = await api.createPlanItemFromGap(architectId, item);
+      local((s) => ({
+        ...s,
+        plans: s.plans.some((p) => p.id === updated.id)
+          ? s.plans.map((p) => (p.id === updated.id ? updated : p))
+          : [...s.plans, updated],
+      }));
+      return updated;
+    },
+
     updatePlanItem: (planId, itemId, patch) => {
       // `expectedVersion` vem do estado que a tela está mostrando agora —
       // concorrência otimista (ENT-DATA-012): se outra pessoa já escreveu
@@ -441,6 +549,19 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       }));
       remote(api.removePlanItem(planId, itemId));
     },
+
+    reschedulePlanItem: async (planId, itemId, targetDate, reason) => {
+      const expectedVersion =
+        state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
+      const updated = await api.reschedulePlanItem(planId, itemId, targetDate, reason, expectedVersion);
+      local((s) => ({
+        ...s,
+        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+      }));
+      return updated;
+    },
+
+    planItemEvents: (planId, itemId) => api.planItemEvents(planId, itemId),
 
     updatePlanStatus: async (planId, status) => {
       const expectedVersion = state.plans.find((p) => p.id === planId)?.version ?? 1;

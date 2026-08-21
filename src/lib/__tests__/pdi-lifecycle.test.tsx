@@ -165,25 +165,31 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
     await userEvent.click(dialogSaveButton);
 
+    // ORIENTACAO-NONA-RODADA, Seção 4/11 (ENT-09-001/006) — único caminho
+    // de criação a partir de gap é /from-gap; o payload é achatado (sem
+    // wrapper `item`) e nunca contém currentLevel/targetLevel/priority.
     await waitFor(() =>
       expect(
         fetchMock.mock.calls.some(
           ([url, init]) =>
-            String(url).includes("/api/plans/bruno/items") &&
+            String(url).includes("/api/plans/bruno/items/from-gap") &&
             (init as RequestInit)?.method === "POST",
         ),
       ).toBe(true),
     );
     const call = fetchMock.mock.calls.find(
       ([url, init]) =>
-        String(url).includes("/api/plans/bruno/items") && (init as RequestInit)?.method === "POST",
+        String(url).includes("/api/plans/bruno/items/from-gap") &&
+        (init as RequestInit)?.method === "POST",
     ) as [string, RequestInit];
-    const body = JSON.parse(String(call[1].body)) as {
-      item: { actionType: string; actionPlan: string; targetDate: string };
-    };
-    expect(body.item.actionPlan).toBe("Curso de IAM e aplicação num projeto real.");
-    expect(body.item.targetDate).toBe("2026-12-20");
-    expect(body.item).not.toHaveProperty("progress");
+    const body = JSON.parse(String(call[1].body)) as Record<string, unknown>;
+    expect(body["actionPlan"]).toBe("Curso de IAM e aplicação num projeto real.");
+    expect(body["targetDate"]).toBe("2026-12-20");
+    expect(body).not.toHaveProperty("currentLevel");
+    expect(body).not.toHaveProperty("targetLevel");
+    expect(body).not.toHaveProperty("priority");
+    expect(body).not.toHaveProperty("progress");
+    expect(body["assessmentId"]).toBeTruthy();
   });
 
   /**

@@ -137,6 +137,9 @@ export interface RadarPoint {
   capability: string;
   atual: number;
   alvo: number;
+  /** Quantas pessoas do recorte contribuíram para `atual`, de quantas no recorte total. */
+  covered?: number;
+  total?: number;
 }
 
 export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; height?: number }) {
@@ -145,6 +148,8 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
 
   const atual = t("chart.series.current");
   const alvo = t("chart.series.target");
+  /** Só entra a coluna quando quem chamou de fato manda cobertura — os outros dois usos do componente não mandam. */
+  const withCoverage = data.some((d) => d.covered !== undefined);
 
   return (
     <ChartFrame
@@ -155,8 +160,16 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
       dataTable={
         <DataTable
           caption={t("chart.radar.label")}
-          columns={[t("chart.axis.capability"), atual, alvo]}
-          rows={data.map((d) => [d.capability, d.atual, d.alvo])}
+          columns={
+            withCoverage
+              ? [t("chart.axis.capability"), atual, alvo, t("chart.radar.coverageColumn")]
+              : [t("chart.axis.capability"), atual, alvo]
+          }
+          rows={data.map((d) =>
+            withCoverage
+              ? [d.capability, d.atual, d.alvo, `${d.covered ?? 0}/${d.total ?? 0}`]
+              : [d.capability, d.atual, d.alvo],
+          )}
         />
       }
     >

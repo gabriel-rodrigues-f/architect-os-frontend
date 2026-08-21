@@ -1,5 +1,13 @@
 import type { AppState } from "./api";
-import type { Architect, Assessment, Competency, Capability, Level, RoleName } from "./domain";
+import type {
+  Architect,
+  Assessment,
+  AssessmentTargetSemantics,
+  Competency,
+  Capability,
+  Level,
+  RoleName,
+} from "./domain";
 
 /**
  * Derivações puras sobre o snapshot da API. Ficam fora do componente para poderem
@@ -38,10 +46,22 @@ export type EvaluatedAssessmentItem = Assessment["items"][number] & {
 const isEvaluated = (item: Assessment["items"][number]): item is EvaluatedAssessmentItem =>
   item.final !== null;
 
+/**
+ * ORIENTACAO-NONA-RODADA, Seção 17/18 (BLOCO B/F) — um `gap` sozinho não diz
+ * se é uma lacuna de progressão de verdade (`targetSemantics: "NEXT_ROLE"`,
+ * o assessment mirou o PRÓXIMO nível), se é oportunidade de maestria (Nível
+ * III, sem próximo nível — `"MASTERY"`) ou histórico de um assessment V1
+ * (mirava o cargo ATUAL — `null`/`"CURRENT_ROLE"`). Misturar os três sob o
+ * mesmo rótulo "GAP" é exatamente o que a Seção 18 pede para não fazer.
+ * `assessmentId` é obrigatório para poder chamar `/from-gap` (Seção 4) — sem
+ * ele, quem consome `Gap` não tem como criar o item source-driven.
+ */
 export interface Gap {
   competency: Competency | undefined;
   item: EvaluatedAssessmentItem;
   gap: number;
+  assessmentId: string;
+  targetSemantics: AssessmentTargetSemantics | null;
 }
 
 /**
@@ -151,6 +171,12 @@ export function createSelectors(s: AppState) {
   const gapsCache = new Map<string, Gap[]>();
   const averagesCache = new Map<string, CapabilityAverage[]>();
 
+  /**
+   * Base bruta — todas as semânticas juntas (NEXT_ROLE/MASTERY/V1
+   * histórico). Uso direto é raro: quase todo consumidor quer
+   * `progressionGapsFor` (lacuna de progressão de verdade) ou
+   * `masteryOpportunitiesFor` (Nível III). Ver Seção 17.1/18.
+   */
   const gapsFor = (architectId: string, cycleId = s.activeCycleId): Gap[] => {
     const cacheKey = cycleKey(architectId, cycleId);
     const cached = gapsCache.get(cacheKey);
@@ -165,6 +191,8 @@ export function createSelectors(s: AppState) {
             competency: resolveCompetency(item),
             item,
             gap: item.target - item.final,
+            assessmentId: assessment.id,
+            targetSemantics: assessment.targetSemantics,
           }))
           .filter((g) => !!g.competency)
           .sort((x, y) => y.gap - x.gap);
@@ -172,6 +200,31 @@ export function createSelectors(s: AppState) {
     gapsCache.set(cacheKey, gaps);
     return gaps;
   };
+
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 5/17.1/18 — "GAP" no sentido acionável
+   * (badge, prioridade, sugestão de PDI, `/from-gap`) é qualquer diferença
+   * contra um alvo real de progressão: o próximo nível
+   * (`targetSemantics === "NEXT_ROLE"`) OU um assessment V1 histórico
+   * (`null`/`"CURRENT_ROLE"`, que mirava o cargo atual — o único alvo que
+   * existia antes desta migração, mas ainda um alvo real, não fabricado).
+   * O que fica de fora é só Maestria (`"MASTERY"`, Nível III): aí não há
+   * "próximo nível" para o qual progredir, então a diferença não é GAP de
+   * progressão — é oportunidade de aprofundamento (`masteryOpportunitiesFor`).
+   * `/from-gap` no servidor só rejeita MASTERY pela mesma razão — nunca
+   * V1, que continua com alvo válido para derivar um item.
+   */
+  const progressionGapsFor = (architectId: string, cycleId = s.activeCycleId): Gap[] =>
+    gapsFor(architectId, cycleId).filter((g) => g.targetSemantics !== "MASTERY");
+
+  /**
+   * Nível III (topo da carreira): a diferença contra a própria régua atual
+   * não é "GAP de progressão" — é oportunidade de aprofundamento/maestria.
+   * Nunca usar para alimentar `/from-gap` (o servidor rejeita mesmo assim,
+   * mas o produto não deve nem oferecer o CTA nesse caso).
+   */
+  const masteryOpportunitiesFor = (architectId: string, cycleId = s.activeCycleId): Gap[] =>
+    gapsFor(architectId, cycleId).filter((g) => g.targetSemantics === "MASTERY");
 
   const capabilityAverages = (
     architectId: string,
@@ -225,7 +278,7 @@ export function createSelectors(s: AppState) {
   const teamTrainingNeeds = (population: Architect[] = activeArchitects): TrainingNeed[] => {
     const totals = new Map<string, { people: number; totalGap: number; architectIds: string[] }>();
     for (const architect of population) {
-      for (const gap of gapsFor(architect.id)) {
+      for (const gap of progressionGapsFor(architect.id)) {
         if (gap.gap <= 0) continue;
         const acc = totals.get(gap.item.competencyId) ?? {
           people: 0,
@@ -261,12 +314,34 @@ export function createSelectors(s: AppState) {
     officialAssessmentFor,
     planFor,
     gapsFor,
+    progressionGapsFor,
+    masteryOpportunitiesFor,
     capabilityAverages,
     teamTrainingNeeds,
   };
 }
 
 export type Selectors = ReturnType<typeof createSelectors>;
+
+/**
+ * ORIENTACAO-NONA-RODADA, Seção 10 (ENT-09-008/GES-010) — FK resolvida
+ * quando existe; senão, fallback pro texto legado com indicação discreta
+ * de pendência (nunca os dois juntos, e nunca a FK escondendo que ainda
+ * não foi definida). Compartilhado entre Time e Perfil — as duas telas
+ * que mostram a especialização de alguém.
+ */
+export function specializationLabel(
+  architect: Pick<Architect, "specialization" | "primarySpecializationCompetencyId">,
+  competencyById: (id: string) => { name: string } | undefined,
+): string {
+  if (architect.primarySpecializationCompetencyId) {
+    const competency = competencyById(architect.primarySpecializationCompetencyId);
+    if (competency) return competency.name;
+  }
+  return architect.specialization
+    ? `${architect.specialization} (pendente de migração)`
+    : "Especialização não definida";
+}
 
 /**
  * Média só de quem tem valor, mais cobertura (quantos de quantos) — nunca

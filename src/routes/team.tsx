@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { GapBadge, Initials, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { SpecializationCombobox } from "@/components/app/SpecializationCombobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ import { ROLES, type Architect, type RoleName } from "@/lib/domain";
 import { ApiError, authApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { averageWithCoverage } from "@/lib/selectors";
+import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { slug } from "@/lib/text";
 
@@ -47,7 +48,9 @@ export const Route = createFileRoute("/team")({
 interface ArchitectForm {
   name: string;
   role: RoleName;
+  /** Legado — só preservado para quem ainda não migrou (Seção 10, passo 6: nunca gravado numa edição nova). */
   specialization: string;
+  primarySpecializationCompetencyId: string | null;
   years: string;
   email: string;
   leadUserId: string;
@@ -57,10 +60,12 @@ const emptyForm = (): ArchitectForm => ({
   name: "",
   role: ROLES[0] as RoleName,
   specialization: "",
+  primarySpecializationCompetencyId: null,
   years: "",
   email: "",
   leadUserId: "",
 });
+
 
 function TeamPage() {
   const store = useStore();
@@ -96,6 +101,7 @@ function TeamPage() {
       name: architect.name,
       role: architect.role,
       specialization: architect.specialization,
+      primarySpecializationCompetencyId: architect.primarySpecializationCompetencyId ?? null,
       years: String(architect.yearsAsArchitect),
       email: architect.email,
       leadUserId: architect.leadUserId ?? "",
@@ -132,18 +138,25 @@ function TeamPage() {
     const payload = {
       name: form.name.trim(),
       yearsAsArchitect: Number(form.years),
-      specialization: form.specialization.trim(),
+      // Legado nunca é gravado numa edição nova (Seção 10, passo 6) — só a
+      // FK. `specialization` (texto livre) permanece intocado no backend
+      // até uma migração administrativa validada mapear o resto.
+      primarySpecializationCompetencyId: form.primarySpecializationCompetencyId,
       email: form.email.trim(),
       leadUserId: form.leadUserId || null,
     };
 
     if (editing) {
+      // `specialization` legado nunca sai daqui — a edição só grava a FK
+      // nova, preservando (ou não) o texto antigo que já estava salvo.
       store.updateArchitect(editing, payload);
       toast.success(t("team.edit.toast", { nome: payload.name }));
     } else {
       store.addArchitect({
         id: slug(form.name),
         ...payload,
+        // Novo cadastro nasce sem o campo legado — só a FK, quando definida.
+        specialization: "",
         role: form.role,
         active: true,
       });
@@ -193,7 +206,7 @@ function TeamPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {activeArchitects.map((a) => {
-          const top = sel.gapsFor(a.id).slice(0, 3);
+          const top = sel.progressionGapsFor(a.id).slice(0, 3);
           const { avg } = averageWithCoverage(sel.capabilityAverages(a.id).map((d) => d.avg));
           const hasOfficial = sel.officialAssessmentFor(a.id) !== undefined;
           return (
@@ -209,7 +222,8 @@ function TeamPage() {
                     {a.name}
                   </Link>
                   <p className="truncate text-xs text-muted-foreground">
-                    {a.role} · {a.yearsAsArchitect} anos · {a.specialization}
+                    {a.role} · {a.yearsAsArchitect} anos ·{" "}
+                    {specializationLabel(a, sel.competencyById)}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">{a.email}</p>
                 </div>
@@ -292,7 +306,7 @@ function TeamPage() {
                     {a.name}
                   </Link>
                   <p className="truncate text-xs text-muted-foreground">
-                    {a.role} · {a.specialization}
+                    {a.role} · {specializationLabel(a, sel.competencyById)}
                   </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => reactivate(a)}>
@@ -374,12 +388,20 @@ function TeamPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="spec">{t("team.form.spec")}</Label>
-                <Input
-                  id="spec"
-                  value={form.specialization}
-                  onChange={(e) => setForm({ ...form, specialization: e.target.value })}
-                  onKeyDown={(e) => e.key === "Enter" && submit()}
-                />
+                <div className="mt-1">
+                  <SpecializationCombobox
+                    label={t("team.form.spec")}
+                    competencies={store.competencies}
+                    capabilities={store.capabilities}
+                    selectedId={form.primarySpecializationCompetencyId}
+                    onSelect={(id) => setForm({ ...form, primarySpecializationCompetencyId: id })}
+                  />
+                </div>
+                {!form.primarySpecializationCompetencyId && form.specialization && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("team.form.spec.legacyPending", { texto: form.specialization })}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="years">{t("team.form.years")}</Label>
