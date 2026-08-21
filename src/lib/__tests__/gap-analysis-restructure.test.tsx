@@ -183,6 +183,75 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
     expect(masterySection.textContent).not.toContain("Crítico");
   });
 
+  /**
+   * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 36 (A3) — mais de uma pessoa
+   * com a mesma lacuna: os nomes aparecem todos (não só o primeiro), e a
+   * contagem de pessoas bate com a quantidade de nomes únicos.
+   */
+  it("mostra todos os nomes quando mais de uma pessoa tem a mesma lacuna", async () => {
+    const carlaState: AppState = {
+      ...state,
+      architects: [
+        ...state.architects,
+        {
+          id: "carla",
+          name: "Carla Souza",
+          role: "Arquiteto de Soluções II",
+          yearsAsArchitect: 5,
+          specialization: "Dados",
+          email: "carla@company.com",
+          active: true,
+          version: 1,
+        },
+      ],
+      assessments: [
+        ...state.assessments,
+        {
+          id: "carla-h2",
+          architectId: "carla",
+          cycleId: "2026-h2",
+          status: "Completed",
+          modelVersion: 1,
+          targetCareerLevelId: null,
+          targetSemantics: null,
+          items: [
+            { competencyId: "security-iam", self: 2, leader: 2, target: 3, final: 2, comments: [] },
+          ],
+        },
+      ],
+    };
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).endsWith("/api/auth/me")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      if (String(url).endsWith("/api/state")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(carlaState), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    renderGap();
+    await screen.findByText("Oportunidades de desenvolvimento");
+
+    const opportunitySection = screen
+      .getByText("Oportunidades de desenvolvimento")
+      .closest("div") as HTMLElement;
+    // IAM tem gap para Ana e Carla (2 pessoas) — os dois nomes aparecem, não só o primeiro.
+    expect(within(opportunitySection).getByText(/Ana Martins/)).toBeTruthy();
+    expect(within(opportunitySection).getByText(/Carla Souza/)).toBeTruthy();
+    expect(within(opportunitySection).getByText(/2 pessoa\(s\)/)).toBeTruthy();
+  });
+
   it("o radar inclui uma coluna de cobertura na tabela equivalente acessível", async () => {
     renderGap();
     await screen.findByText("Radar de Arquitetura");

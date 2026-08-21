@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
@@ -20,6 +21,11 @@ import { I18nProvider } from "../i18n";
 const architects: Architect[] = [
   { id: "ana", name: "Ana Martins", role: "Arquiteto de Soluções II", yearsAsArchitect: 4, specialization: "", email: "a@a.com", active: true, version: 1 },
   { id: "bruno", name: "Bruno Almeida", role: "Arquiteto de Soluções I", yearsAsArchitect: 2, specialization: "", email: "b@b.com", active: true, version: 1 },
+];
+
+const threeArchitects: Architect[] = [
+  ...architects,
+  { id: "carla", name: "Carla Souza", role: "Arquiteto de Soluções II", yearsAsArchitect: 3, specialization: "", email: "c@c.com", active: true, version: 1 },
 ];
 
 const renderFilter = (selected: string[]) => {
@@ -82,5 +88,86 @@ describe("ArchitectFilter — 'Todo o time' como alternador de verdade", () => {
     await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
 
     expect(onChange).toHaveBeenCalledWith(["bruno"]);
+  });
+
+  /** ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 36 (A1) — individual → parcial. */
+  it("com uma pessoa já selecionada, marcar outra amplia para parcial (mestre indeterminado)", async () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider>
+        <ArchitectFilter architects={threeArchitects} selected={["ana"]} onChange={onChange} />
+      </I18nProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+
+    const master = screen
+      .getByRole("button", { name: "Todo o time" })
+      .querySelector('[role="checkbox"]');
+    expect(master?.getAttribute("data-state")).toBe("indeterminate");
+
+    await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
+    expect(onChange).toHaveBeenCalledWith(["ana", "bruno"]);
+  });
+
+  /**
+   * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 28/36 (A1) — roster alterado
+   * com seleção stale: `selected` guarda um id de alguém que já saiu da
+   * lista (desativado, por exemplo). Sem filtrar por quem está visível,
+   * `selected.length === architects.length` podia coincidir por acidente
+   * (um id de gente real a menos, um id fantasma a mais) e mostrar "Todo o
+   * time" marcado quando não estava todo mundo real selecionado.
+   */
+  it("com um id de seleção que não está mais no roster, o mestre não aparece marcado por engano", async () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider>
+        {/* "ninguem-mais" não existe em `architects` (só 2 pessoas) — mesma
+            contagem que "todos selecionados" (2), mas não é o caso. */}
+        <ArchitectFilter architects={architects} selected={["ana", "ninguem-mais"]} onChange={onChange} />
+      </I18nProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+
+    const master = screen
+      .getByRole("button", { name: "Todo o time" })
+      .querySelector('[role="checkbox"]');
+    // "mixed" (não "true") é o que importa: com só 1 de 2 pessoas reais
+    // selecionada, o mestre nunca deveria aparecer como totalmente marcado.
+    expect(master?.getAttribute("aria-checked")).toBe("mixed");
+    expect(master?.getAttribute("data-state")).toBe("indeterminate");
+
+    // O resumo também conta só quem está de fato visível (1), não os 2 ids brutos.
+    expect(screen.getByRole("button", { expanded: true }).textContent).toContain("Ana Martins");
+  });
+
+  /**
+   * O mesmo roster-stale, mas visto como transição: a lista de arquitetos
+   * encolhe (alguém saiu) enquanto a seleção do componente pai continua
+   * intacta — o componente precisa se recompor sozinho a partir das novas
+   * props, sem exigir que o pai limpe o id órfão primeiro.
+   */
+  it("quando o roster encolhe e deixa a seleção com um id órfão, o resumo se recalcula sozinho", async () => {
+    function Harness() {
+      const [roster, setRoster] = useState(threeArchitects);
+      const [selected, setSelected] = useState(["ana", "bruno", "carla"]);
+      return (
+        <div>
+          <button type="button" onClick={() => setRoster(architects)}>
+            Remover Carla do roster
+          </button>
+          <ArchitectFilter architects={roster} selected={selected} onChange={setSelected} />
+        </div>
+      );
+    }
+    render(
+      <I18nProvider>
+        <Harness />
+      </I18nProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: /Todo o time \(3\)/ })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Remover Carla do roster" }));
+    // 2 ids visíveis de 2 arquitetos reais — ainda é "todo o time", só que (2), não (3).
+    expect(screen.getByRole("button", { name: /Todo o time \(2\)/ })).toBeTruthy();
   });
 });

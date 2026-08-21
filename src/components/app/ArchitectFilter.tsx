@@ -45,16 +45,28 @@ export function ArchitectFilter({
   const toggle = (id: string) =>
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
 
-  const allSelected = architects.length > 0 && selected.length === architects.length;
+  /**
+   * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 28 — `selected.length ===
+   * architects.length` por si só pressupõe que todo id de `selected`
+   * pertence à lista atual de `architects`. Depois de uma desativação, uma
+   * resposta assíncrona atrasada, ou uma seleção persistida de uma sessão
+   * anterior, `selected` pode ter um id que já saiu do roster — nesse caso
+   * as duas contagens podem coincidir por acidente (um id a menos de gente
+   * real, um id a mais de gente que não está mais na lista) e "Todo o
+   * time" apareceria marcado sem estar. Contar só quem de fato está
+   * visível evita esse falso positivo.
+   */
+  const selectedVisible = selected.filter((id) => architects.some((a) => a.id === id));
+  const allSelected = architects.length > 0 && selectedVisible.length === architects.length;
 
   const summary =
-    selected.length === 0
+    selectedVisible.length === 0
       ? t("filter.none")
       : allSelected
         ? t("filter.wholeTeam", { n: architects.length })
-        : selected.length === 1
-          ? (architects.find((a) => a.id === selected[0])?.name ?? t("filter.oneArchitect"))
-          : t("filter.nArchitects", { n: selected.length });
+        : selectedVisible.length === 1
+          ? (architects.find((a) => a.id === selectedVisible[0])?.name ?? t("filter.oneArchitect"))
+          : t("filter.nArchitects", { n: selectedVisible.length });
 
   return (
     <div className="relative" ref={container}>
@@ -88,7 +100,7 @@ export function ArchitectFilter({
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary"
           >
             <Checkbox
-              checked={allSelected ? true : selected.length === 0 ? false : "indeterminate"}
+              checked={allSelected ? true : selectedVisible.length === 0 ? false : "indeterminate"}
               aria-hidden="true"
               tabIndex={-1}
               className="pointer-events-none"
