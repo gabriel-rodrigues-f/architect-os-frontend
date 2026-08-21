@@ -85,20 +85,27 @@ export function ArchitectFilter({
           <div className="my-1 border-t border-border" />
           {architects.map((a) => {
             const active = selected.includes(a.id);
+            /**
+             * Lista vazia = todo o time (ver `toggle`/`applyArchitectFilter`) — mas
+             * "Todo o time" marcado precisa mostrar cada pessoa como marcada
+             * também, senão parece que ninguém está selecionado. Clicar em uma
+             * pessoa específica ainda estreita para só ela (`toggle` não muda).
+             */
+            const visuallyChecked = selected.length === 0 || active;
             return (
               <button
                 key={a.id}
                 type="button"
                 role="option"
-                aria-selected={active}
+                aria-selected={visuallyChecked}
                 onClick={() => toggle(a.id)}
                 className={cn(
                   "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary",
-                  active && "font-medium",
+                  visuallyChecked && "font-medium",
                 )}
               >
                 <Checkbox
-                  checked={active}
+                  checked={visuallyChecked}
                   aria-hidden="true"
                   tabIndex={-1}
                   className="pointer-events-none"

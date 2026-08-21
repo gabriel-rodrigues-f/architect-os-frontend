@@ -26,6 +26,8 @@ interface ConsolidatedGapRow {
   capabilityId: string;
   requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
   people: number;
+  /** Nomes de quem tem essa lacuna — a lista de prioridades mostrava só a contagem, e quem lê queria saber quem. */
+  architectNames: string[];
   totalGap: number;
   maxGap: number;
   avgGap: number;
@@ -42,6 +44,7 @@ function consolidateGaps(architects: Architect[], gapsFor: (architectId: string)
       capabilityId: string;
       requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
       people: number;
+      architectNames: string[];
       totalGap: number;
       maxGap: number;
       sumFinal: number;
@@ -58,6 +61,7 @@ function consolidateGaps(architects: Architect[], gapsFor: (architectId: string)
         capabilityId: gap.competency.capabilityId,
         requirementType: gap.competency.requirementType,
         people: 0,
+        architectNames: [],
         totalGap: 0,
         maxGap: 0,
         sumFinal: 0,
@@ -66,6 +70,7 @@ function consolidateGaps(architects: Architect[], gapsFor: (architectId: string)
       map.set(gap.competency.id, {
         ...current,
         people: current.people + 1,
+        architectNames: [...current.architectNames, architect.name],
         totalGap: current.totalGap + gap.gap,
         maxGap: Math.max(current.maxGap, gap.gap),
         sumFinal: current.sumFinal + gap.item.final,
@@ -345,6 +350,10 @@ function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emp
             <span className="ml-2 text-xs text-muted-foreground">
               {t("gap.priorities.peopleAndAvg", { n: row.people, avg: row.avgGap })}
             </span>
+            {/* Quem tem essa lacuna, por nome — a contagem sozinha não dizia quem tratar no PDI. */}
+            <span className="block text-xs text-muted-foreground">
+              {row.architectNames.join(", ")}
+            </span>
           </span>
           <div className="flex shrink-0 items-center gap-2">
             <GapBadge gap={row.maxGap} />
@@ -416,7 +425,12 @@ function GapTable({
                   </Badge>
                 </td>
               )}
-              <td className="py-2 text-center tabular-nums">{row.people}</td>
+              <td
+                className="py-2 text-center tabular-nums"
+                title={row.architectNames.join(", ")}
+              >
+                {row.people}
+              </td>
               <td className="py-2 text-center tabular-nums">{row.avgFinal}</td>
               <td className="py-2 text-center tabular-nums">{row.avgTarget}</td>
               <td className="py-2 text-center tabular-nums">{row.avgGap}</td>
