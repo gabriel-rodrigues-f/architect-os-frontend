@@ -16,7 +16,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
-import { setAuthToken, type AppState, type SessionUser } from "../api";
+import { type AppState, type SessionUser } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -94,7 +94,6 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
@@ -137,7 +136,6 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("com 3 pessoas na mesma lacuna, cria trilha atribuída a elas — não a um número solto", async () => {

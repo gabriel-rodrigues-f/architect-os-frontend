@@ -20,7 +20,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Toaster } from "@/components/ui/sonner";
 import { Route as TeamRoute } from "@/routes/team";
-import { setAuthToken, type AppState } from "../api";
+import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -64,7 +64,6 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
@@ -105,7 +104,6 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("desativar que falha no servidor mostra a mensagem de erro e mantém a pessoa ativa", async () => {

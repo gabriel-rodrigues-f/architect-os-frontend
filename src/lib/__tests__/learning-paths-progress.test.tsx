@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as LearningRoute } from "@/routes/learning-paths";
-import { setAuthToken, type AppState } from "../api";
+import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -89,13 +89,11 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("member vê a própria linha editável e a de outra pessoa só leitura", async () => {

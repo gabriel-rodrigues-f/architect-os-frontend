@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { setAuthToken, type AppState } from "../api";
+import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import type { AssessmentDevelopmentSummary } from "../domain";
 import { I18nProvider } from "../i18n";
@@ -116,13 +116,11 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("dono edita em Rascunho; campos nascem vazios e Salvar desabilitado até haver mudança", async () => {

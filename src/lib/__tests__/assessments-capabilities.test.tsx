@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { setAuthToken } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -64,7 +63,6 @@ describe("Avaliações — seleção de capacidades", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string) => {
       if (String(url).endsWith("/api/auth/me")) {
@@ -90,7 +88,6 @@ describe("Avaliações — seleção de capacidades", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("começa com a primeira capacidade e mostra só as competências dela", async () => {

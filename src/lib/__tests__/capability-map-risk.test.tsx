@@ -22,7 +22,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "../api";
-import { setAuthToken, type AppState } from "../api";
+import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -93,13 +93,11 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("mostra as faixas em ordem crescente de proficiência, sem chamar a primeira de 'Lacunas'", async () => {

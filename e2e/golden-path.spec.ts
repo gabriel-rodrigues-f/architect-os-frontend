@@ -44,14 +44,18 @@ async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>)
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
 
-  const adminLogin = await json<{ token: string }>(
+  // ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 24 — a sessão agora vive num
+  // cookie HttpOnly; não há mais token para extrair do corpo. O
+  // `APIRequestContext` do Playwright tem cookie jar própria (como um
+  // browser de verdade) — o cookie que este login grava é reenviado
+  // automaticamente nas chamadas seguintes deste mesmo `api`, sem precisar
+  // montar nenhum header na mão.
+  await json(
     await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
   );
-  const adminHeaders = { authorization: `Bearer ${adminLogin.token}` };
 
   await json(
     await api.post("/api/architects", {
-      headers: adminHeaders,
       data: {
         id: ARCHITECT_ID,
         name: "E2E Golden Path",
@@ -63,34 +67,38 @@ test.beforeAll(async ({ playwright }) => {
     }),
   );
 
+  // Registro TAMBÉM grava sessão no cookie (Seção 24) — se reusasse o `api`
+  // do admin, cada registro trocaria de sessão no meio da fixture. Contexto
+  // isolado só para os cadastros: cookie jar própria, não interfere na
+  // sessão admin usada nos PATCHes abaixo.
+  const guest = await playwright.request.newContext({ baseURL: API_URL });
+
   const memberRegister = await json<{ user: { id: string } }>(
-    await api.post("/api/auth/register", {
+    await guest.post("/api/auth/register", {
       data: { name: "E2E Member", email: MEMBER_EMAIL, password: PASSWORD },
     }),
   );
   memberUserId = memberRegister.user.id;
   await json(
     await api.patch(`/api/auth/users/${memberUserId}`, {
-      headers: adminHeaders,
       data: { architectId: ARCHITECT_ID },
     }),
   );
 
   const leadRegister = await json<{ user: { id: string } }>(
-    await api.post("/api/auth/register", {
+    await guest.post("/api/auth/register", {
       data: { name: "E2E Lead", email: LEAD_EMAIL, password: PASSWORD },
     }),
   );
+  await guest.dispose();
   leadUserId = leadRegister.user.id;
   await json(
     await api.patch(`/api/auth/users/${leadUserId}`, {
-      headers: adminHeaders,
       data: { role: "lead" },
     }),
   );
   await json(
     await api.patch(`/api/architects/${ARCHITECT_ID}`, {
-      headers: adminHeaders,
       data: { leadUserId },
     }),
   );

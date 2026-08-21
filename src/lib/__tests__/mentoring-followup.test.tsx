@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { setAuthToken, type AppState, type SessionUser } from "../api";
+import { type AppState, type SessionUser } from "../api";
 import { AuthProvider } from "../auth";
 import type { MentoringSession } from "../domain";
 import { I18nProvider } from "../i18n";
@@ -109,13 +109,11 @@ describe("Mentoria — agendar follow-up", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("quem registrou a sessão vê a ação de agendar follow-up", async () => {

@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as CyclesRoute } from "@/routes/cycles";
-import { setAuthToken } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -45,7 +44,6 @@ describe("Ciclos — identidade matemática (ano + semestre)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string) => {
       const href = String(url);
@@ -72,7 +70,6 @@ describe("Ciclos — identidade matemática (ano + semestre)", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("sugere o próximo período livre ao abrir 'Novo ciclo' (2026 H1 e H2 já existem)", async () => {

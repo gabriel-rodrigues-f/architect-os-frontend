@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { setAuthToken, type AppState, type SessionUser } from "../api";
+import { type AppState, type SessionUser } from "../api";
 import { AuthProvider } from "../auth";
 import type { MentoringSession } from "../domain";
 import { I18nProvider } from "../i18n";
@@ -85,7 +85,6 @@ describe("Mentoria — converter ação em item de PDI", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
@@ -115,7 +114,6 @@ describe("Mentoria — converter ação em item de PDI", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("mostra o botão só na sessão com competência já avaliada", async () => {

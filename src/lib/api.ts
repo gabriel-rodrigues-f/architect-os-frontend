@@ -68,28 +68,6 @@ export const API_URL = (import.meta.env["VITE_API_URL"] ?? "http://localhost:400
   "",
 );
 
-const TOKEN_STORAGE_KEY = "architect-os.token";
-
-/**
- * O token vive no localStorage e numa variável em memória — a variável evita
- * ler o storage a cada requisição e mantém o SSR funcionando (onde não há
- * `window`).
- */
-let authToken: string | null = null;
-
-export function loadStoredToken(): string | null {
-  if (typeof window === "undefined") return null;
-  authToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
-  return authToken;
-}
-
-export function setAuthToken(token: string | null): void {
-  authToken = token;
-  if (typeof window === "undefined") return;
-  if (token) window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
-  else window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-}
-
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -108,9 +86,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.body === undefined ? {} : { "content-type": "application/json" }),
     ...((init?.headers as Record<string, string> | undefined) ?? {}),
   };
-  if (authToken) headers["authorization"] = `Bearer ${authToken}`;
 
-  const response = await fetch(`${API_URL}${path}`, { ...init, headers });
+  // ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 24 — sessão vive num cookie
+  // HttpOnly, não em localStorage/JS. `credentials: "include"` é o que faz o
+  // browser anexar esse cookie em requisição cross-port (localhost:5175 →
+  // localhost:4000 é cross-origin do ponto de vista do fetch, mesmo "same
+  // site"); sem isto o cookie simplesmente não sai, mesmo já gravado.
+  const response = await fetch(`${API_URL}${path}`, { ...init, headers, credentials: "include" });
 
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as {
@@ -147,7 +129,6 @@ export interface AssessmentItemPatch {
 export type CommentInput = Pick<AssessmentComment, "text">;
 
 export interface AuthResult {
-  token: string;
   user: SessionUser;
 }
 
@@ -158,6 +139,8 @@ export const authApi = {
     post<AuthResult>("/api/auth/login", { email, password }),
   register: (input: { name: string; email: string; password: string }) =>
     post<AuthResult>("/api/auth/register", input),
+  /** Só o servidor apaga um cookie HttpOnly — sem isto a sessão nunca de fato encerra. */
+  logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   me: () => request<SessionUser>("/api/auth/me"),
   users: () => request<SessionUser[]>("/api/auth/users"),
   /** Papel, vínculo com arquiteto e status (ativa/desabilitada) de outra conta — admin-only no backend. */

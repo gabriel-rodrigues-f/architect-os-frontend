@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { api, API_URL, authApi, setAuthToken, type AppState } from "../api";
+import { api, API_URL, authApi, type AppState } from "../api";
 import { createSelectors } from "../selectors";
 
 /**
@@ -9,29 +9,49 @@ import { createSelectors } from "../selectors";
  */
 const enabled = process.env["RUN_INTEGRATION"] === "1";
 
+/**
+ * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 24 — a sessão agora vive num
+ * cookie HttpOnly; `api.ts` conta com o navegador reenviar esse cookie
+ * sozinho (`credentials: "include"`). O `fetch` global do Node (undici),
+ * ao contrário do browser, não mantém cookie jar nenhum — sem isto, toda
+ * chamada autenticada deste teste veria 401 mesmo logo depois do login.
+ * Isto imita só o comportamento do browser para este processo de teste; não
+ * é um mecanismo do app (`api.ts` não ganha nenhuma forma de token/cookie
+ * manual) — o `Set-Cookie` também não é escondido de `.headers` no Node
+ * como seria num browser, então dá para ler e reenviar na mão.
+ */
+let storedCookie: string | undefined;
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (input, init) => {
+  const headers = new Headers(init?.headers);
+  if (storedCookie) headers.set("cookie", storedCookie);
+  const response = await realFetch(input, { ...init, headers });
+  const setCookie = response.headers.get("set-cookie");
+  if (setCookie) storedCookie = setCookie.split(";")[0];
+  return response;
+};
+
 describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
   let state: AppState;
-  let token: string;
 
   beforeAll(async () => {
     // Conta descartável só para este teste — o backend exige autenticação.
     const email = `front-teste-${Date.now()}@architect-os.local`;
-    const session = await authApi.register({
+    await authApi.register({
       name: "Teste do front",
       email,
       password: "senha-de-teste-123",
     });
-    token = session.token;
-    setAuthToken(token);
     state = await api.getState();
   }, 30_000);
 
-  it("sem token, a API recusa o snapshot", async () => {
-    setAuthToken(null);
+  it("sem cookie de sessão, a API recusa o snapshot", async () => {
+    const savedCookie = storedCookie;
+    storedCookie = undefined;
     try {
       await expect(api.getState()).rejects.toMatchObject({ status: 401 });
     } finally {
-      setAuthToken(token);
+      storedCookie = savedCookie;
     }
   });
 

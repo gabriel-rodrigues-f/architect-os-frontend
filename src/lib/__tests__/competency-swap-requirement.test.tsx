@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { setAuthToken, type AppState } from "../api";
+import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import type { Capability, Competency } from "../domain";
 import { I18nProvider } from "../i18n";
@@ -104,7 +104,6 @@ describe("Matriz de Competências — trocar RESTRICTIVE ↔ NON_RESTRICTIVE qua
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
@@ -143,7 +142,6 @@ describe("Matriz de Competências — trocar RESTRICTIVE ↔ NON_RESTRICTIVE qua
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("mostra o seletor de troca quando o tipo alvo já está em 3/3, e troca ao confirmar", async () => {

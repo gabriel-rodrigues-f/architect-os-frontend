@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { setAuthToken, type AppState } from "../api";
+import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import type { Assessment, AssessmentEligibility } from "../domain";
 import { I18nProvider } from "../i18n";
@@ -81,7 +81,6 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
@@ -134,7 +133,6 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("só oferece capacidade READY para propor — REQUIRES_CURATION não aparece", async () => {
