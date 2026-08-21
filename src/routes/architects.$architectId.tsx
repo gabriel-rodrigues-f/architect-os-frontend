@@ -36,7 +36,7 @@ import {
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { canActFor, isLeadOf } from "@/lib/scope";
-import { averageWithCoverage } from "@/lib/selectors";
+import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, todayIso } from "@/lib/text";
 
@@ -189,7 +189,7 @@ function ArchitectProfile() {
     <>
       <PageHeader
         title={architect.name}
-        description={`${architect.role} · ${architect.specialization} · ${architect.yearsAsArchitect} anos como arquiteto`}
+        description={`${architect.role} · ${specializationLabel(architect, sel.competencyById)} · ${architect.yearsAsArchitect} anos como arquiteto`}
         actions={
           <Link
             to="/team"

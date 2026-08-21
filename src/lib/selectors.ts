@@ -324,6 +324,26 @@ export function createSelectors(s: AppState) {
 export type Selectors = ReturnType<typeof createSelectors>;
 
 /**
+ * ORIENTACAO-NONA-RODADA, Seção 10 (ENT-09-008/GES-010) — FK resolvida
+ * quando existe; senão, fallback pro texto legado com indicação discreta
+ * de pendência (nunca os dois juntos, e nunca a FK escondendo que ainda
+ * não foi definida). Compartilhado entre Time e Perfil — as duas telas
+ * que mostram a especialização de alguém.
+ */
+export function specializationLabel(
+  architect: Pick<Architect, "specialization" | "primarySpecializationCompetencyId">,
+  competencyById: (id: string) => { name: string } | undefined,
+): string {
+  if (architect.primarySpecializationCompetencyId) {
+    const competency = competencyById(architect.primarySpecializationCompetencyId);
+    if (competency) return competency.name;
+  }
+  return architect.specialization
+    ? `${architect.specialization} (pendente de migração)`
+    : "Especialização não definida";
+}
+
+/**
  * Média só de quem tem valor, mais cobertura (quantos de quantos) — nunca
  * trata ausência como zero. Toda tela que soma `avg`/`target` de várias
  * pessoas ou vários capacidades passa por aqui, para não repetir o mesmo erro

@@ -132,6 +132,7 @@
   "team.form.email": "Email",
   "team.form.role": "Role",
   "team.form.spec": "Main specialization",
+  "team.form.spec.legacyPending": "Previous specialization (free text, pending migration): {texto}",
   "team.form.years": "Years as architect",
   "team.form.requiredHint": "Fill in name, email and a valid tenure to save.",
   "team.edit.toast": "{nome}'s data updated",

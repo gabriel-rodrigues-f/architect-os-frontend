@@ -132,6 +132,7 @@
   "team.form.email": "E-mail",
   "team.form.role": "Cargo",
   "team.form.spec": "Especialização principal",
+  "team.form.spec.legacyPending": "Especialização anterior (texto livre, pendente de migração): {texto}",
   "team.form.years": "Tempo como arquiteto (anos)",
   "team.form.requiredHint": "Preencha nome, e-mail e um tempo válido como arquiteto para salvar.",
   "team.edit.toast": "Dados de {nome} atualizados",
