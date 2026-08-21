@@ -21,6 +21,12 @@ function buildLargeState(): AppState {
     name: `Capacidade ${i}`,
     short: `D${i}`,
     active: true,
+    curation: {
+      activeCompetencyCount: COMPETENCIES_PER_CAPABILITY,
+      restrictiveCompetencyCount: 0,
+      nonRestrictiveCompetencyCount: COMPETENCIES_PER_CAPABILITY,
+      status: "REQUIRES_CURATION",
+    },
   }));
 
   const competencies: Competency[] = capabilities.flatMap((cat, ci) =>
@@ -55,6 +61,9 @@ function buildLargeState(): AppState {
     cycleId: "ciclo",
     // Completed: gapsFor/teamTrainingNeeds só contam assessment oficial.
     status: "Completed",
+    modelVersion: 1,
+    targetCareerLevelId: null,
+    targetSemantics: null,
     items: competencies.map((c, i) => ({
       competencyId: c.id,
       self: 3 as Level,
