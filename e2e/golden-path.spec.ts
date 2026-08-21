@@ -41,6 +41,38 @@ async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>)
   return response.json();
 }
 
+/**
+ * Admin cria a conta (nasce com senha temporária e mustChangePassword=true),
+ * e a própria conta troca pra `PASSWORD` numa sessão isolada — reusar `api`
+ * (sessão do admin) pro login trocaria a sessão no meio da fixture, já que
+ * login também grava cookie (Seção 24).
+ */
+async function createAndActivateUser(
+  playwright: typeof import("playwright-core"),
+  api: APIRequestContext,
+  input: { name: string; email: string; role: "member" | "lead"; architectId?: string },
+): Promise<string> {
+  const created = await json<{ user: { id: string }; temporaryPassword: string }>(
+    await api.post("/api/auth/users", { data: input }),
+  );
+
+  const guest = await playwright.request.newContext({ baseURL: API_URL });
+  await json(
+    await guest.post("/api/auth/login", {
+      data: { email: input.email, password: created.temporaryPassword },
+    }),
+  );
+  const changed = await guest.post("/api/auth/change-password", {
+    data: { currentPassword: created.temporaryPassword, newPassword: PASSWORD },
+  });
+  if (!changed.ok()) {
+    throw new Error(`troca de senha de ${input.email} falhou: ${changed.status()}`);
+  }
+  await guest.dispose();
+
+  return created.user.id;
+}
+
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
 
@@ -67,36 +99,28 @@ test.beforeAll(async ({ playwright }) => {
     }),
   );
 
-  // Registro TAMBÉM grava sessão no cookie (Seção 24) — se reusasse o `api`
-  // do admin, cada registro trocaria de sessão no meio da fixture. Contexto
-  // isolado só para os cadastros: cookie jar própria, não interfere na
-  // sessão admin usada nos PATCHes abaixo.
-  const guest = await playwright.request.newContext({ baseURL: API_URL });
+  // SEC-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — cadastro
+  // público (`/api/auth/register`) só funciona na instância vazia; com o
+  // admin já existindo, toda tentativa de registro público recusa com 403.
+  // A única forma de entrar conta nova a partir daqui é o admin criar
+  // (`POST /api/auth/users`), que devolve senha temporária e nasce com
+  // mustChangePassword=true — mesma jornada real de alguém convidado.
+  // Resolve isso já na fixture (troca pra `PASSWORD`) porque os testes de
+  // UI abaixo logam direto esperando o dashboard, não uma tela de troca de
+  // senha obrigatória.
+  memberUserId = await createAndActivateUser(playwright, api, {
+    name: "E2E Member",
+    email: MEMBER_EMAIL,
+    role: "member",
+    architectId: ARCHITECT_ID,
+  });
 
-  const memberRegister = await json<{ user: { id: string } }>(
-    await guest.post("/api/auth/register", {
-      data: { name: "E2E Member", email: MEMBER_EMAIL, password: PASSWORD },
-    }),
-  );
-  memberUserId = memberRegister.user.id;
-  await json(
-    await api.patch(`/api/auth/users/${memberUserId}`, {
-      data: { architectId: ARCHITECT_ID },
-    }),
-  );
+  leadUserId = await createAndActivateUser(playwright, api, {
+    name: "E2E Lead",
+    email: LEAD_EMAIL,
+    role: "lead",
+  });
 
-  const leadRegister = await json<{ user: { id: string } }>(
-    await guest.post("/api/auth/register", {
-      data: { name: "E2E Lead", email: LEAD_EMAIL, password: PASSWORD },
-    }),
-  );
-  await guest.dispose();
-  leadUserId = leadRegister.user.id;
-  await json(
-    await api.patch(`/api/auth/users/${leadUserId}`, {
-      data: { role: "lead" },
-    }),
-  );
   await json(
     await api.patch(`/api/architects/${ARCHITECT_ID}`, {
       data: { leadUserId },
