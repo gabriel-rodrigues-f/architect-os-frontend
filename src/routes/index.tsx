@@ -90,7 +90,7 @@ function AdminHome() {
    */
   const architects = sel.activeArchitects.filter((a) => canActFor(user, a));
 
-  const allGaps = architects.flatMap((a) => sel.gapsFor(a.id).map((g) => ({ ...g, architect: a })));
+  const allGaps = architects.flatMap((a) => sel.progressionGapsFor(a.id).map((g) => ({ ...g, architect: a })));
   const criticalGaps = allGaps.filter((g) => g.gap >= 3).length;
   const planItems = store.plans
     .filter((p) => p.cycleId === store.activeCycleId)
@@ -286,7 +286,7 @@ function MemberHome() {
   }
 
   const capabilityAvgs = sel.capabilityAverages(architectId);
-  const gaps = sel.gapsFor(architectId).filter((g) => g.gap > 0);
+  const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
   const { avg, covered, total } = averageWithCoverage(capabilityAvgs.map((d) => d.avg));
   const assessment = sel.assessmentFor(architectId);
   const plan = sel.planFor(architectId);

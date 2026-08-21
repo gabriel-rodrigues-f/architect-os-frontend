@@ -139,7 +139,7 @@ function ArchitectProfile() {
     );
   }
 
-  const gaps = sel.gapsFor(architect.id).filter((g) => g.gap > 0);
+  const gaps = sel.progressionGapsFor(architect.id).filter((g) => g.gap > 0);
   const capabilityAvgs = sel.capabilityAverages(architect.id);
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);

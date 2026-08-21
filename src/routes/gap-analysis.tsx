@@ -107,7 +107,7 @@ function GapPage() {
     >();
 
     for (const architect of architects) {
-      for (const gap of sel.gapsFor(architect.id)) {
+      for (const gap of sel.progressionGapsFor(architect.id)) {
         if (gap.gap <= 0 || !gap.competency) continue;
         const current = map.get(gap.competency.id) ?? {
           competencyId: gap.competency.id,

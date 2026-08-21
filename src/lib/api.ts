@@ -210,6 +210,18 @@ export const api = {
   careerLevelTransitions: (id: string) =>
     request<CareerLevelTransition[]>(`/api/architects/${id}/career-level-transitions`),
 
+  /* carreira */
+  careerLevels: () => request<CareerLevel[]>("/api/career-levels"),
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — Política de Progressão:
+   * mínimo global >=3 já é validado no backend (`policyPatchSchema`,
+   * `routes/api/career.ts`); admin-only lá também.
+   */
+  updateCareerLevelPolicy: (careerLevelId: string, minimumQualifiedCapabilities: number) =>
+    patch<CareerLevelPolicy>(`/api/career-levels/${careerLevelId}/policy`, {
+      minimumQualifiedCapabilities,
+    }),
+
   /* catálogo */
   /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. */
   createCapability: (capability: Omit<Capability, "curation">) =>
