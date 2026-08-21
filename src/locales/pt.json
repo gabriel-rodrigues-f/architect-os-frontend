@@ -250,6 +250,7 @@
   "col.targetAvg": "Alvo (méd.)",
   "col.avgGap": "Gap (méd.)",
   "col.type": "Tipo",
+  "col.architect": "Arquiteto",
   "col.classification": "Classificação",
   "needs.title": "Análise de Necessidades de Treinamento",
   "needs.subtitle": "Agregação dos gaps de todo o time para priorizar investimentos de capacitação.",

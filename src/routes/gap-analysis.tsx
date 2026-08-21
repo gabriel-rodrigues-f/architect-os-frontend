@@ -266,15 +266,19 @@ function GapPage() {
             title={t("gap.heatmap.title")}
             description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}
           >
-            <div className="overflow-x-auto">
+            {/* ENT-09-016 — cabeçalho fixo: o heatmap cresce uma linha por arquiteto do time. */}
+            <div className="max-h-[480px] overflow-auto">
               <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
                 <thead>
                   <tr>
-                    <th className="w-44 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      Architect
+                    <th className="sticky top-0 z-10 w-44 bg-card text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      {t("col.architect")}
                     </th>
                     {store.capabilities.map((c) => (
-                      <th key={c.id} className="text-center text-[11px] text-muted-foreground">
+                      <th
+                        key={c.id}
+                        className="sticky top-0 z-10 bg-card text-center text-[11px] text-muted-foreground"
+                      >
                         {c.short}
                       </th>
                     ))}
@@ -374,19 +378,26 @@ function GapTable({
   mastery?: boolean;
 }) {
   const { t } = useI18n();
+  /**
+   * ORIENTACAO-NONA-RODADA ENT-09-016 — cabeçalho fixo dentro de uma altura
+   * máxima: esta tabela cresce com o time e o catálogo (uma linha por
+   * competência com gap), e sem isto rolar a lista perde de vista qual
+   * coluna é qual. `sticky` fica em cada `<th>`, não em `<thead>` — suporte
+   * mais consistente entre navegadores.
+   */
   return (
-    <div className="overflow-x-auto">
+    <div className="max-h-[480px] overflow-auto">
       <table className="w-full min-w-[820px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <th className="py-2">{t("col.competency")}</th>
-            <th className="py-2">{t("col.capability")}</th>
-            {!mastery && <th className="py-2">{t("col.type")}</th>}
-            <th className="py-2 text-center">{t("col.people")}</th>
-            <th className="py-2 text-center">{t("col.currentAvg")}</th>
-            <th className="py-2 text-center">{t("col.targetAvg")}</th>
-            <th className="py-2 text-center">{t("col.avgGap")}</th>
-            <th className="py-2">{t("col.classification")}</th>
+            <th className="sticky top-0 z-10 bg-card py-2">{t("col.competency")}</th>
+            <th className="sticky top-0 z-10 bg-card py-2">{t("col.capability")}</th>
+            {!mastery && <th className="sticky top-0 z-10 bg-card py-2">{t("col.type")}</th>}
+            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.people")}</th>
+            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.currentAvg")}</th>
+            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.targetAvg")}</th>
+            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.avgGap")}</th>
+            <th className="sticky top-0 z-10 bg-card py-2">{t("col.classification")}</th>
           </tr>
         </thead>
         <tbody>

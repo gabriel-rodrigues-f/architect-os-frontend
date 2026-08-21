@@ -163,6 +163,15 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     expect(screen.getByText(/Selecione pelo menos 3 capacidades/)).toBeTruthy();
   });
 
+  /** ENT-09-016 — indicador visual do mínimo de 3, além do número no badge. */
+  it("mostra uma barra de progresso do portfólio em direção ao mínimo de 3", async () => {
+    renderPage();
+    await screen.findByText(/Portfólio do ciclo: 0 capacidade/);
+
+    const progress = screen.getByRole("progressbar");
+    expect(progress.getAttribute("aria-valuenow")).toBe("0");
+  });
+
   it("loading aparece antes da resposta, e error com Tentar novamente quando a rota falha", async () => {
     fetchMock.mockImplementationOnce((url: string) => {
       if (String(url).endsWith("/api/auth/me")) {

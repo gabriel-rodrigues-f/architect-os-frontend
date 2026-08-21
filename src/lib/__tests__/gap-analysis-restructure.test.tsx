@@ -188,4 +188,21 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
     await screen.findByText("Radar de Arquitetura");
     expect(screen.getByRole("columnheader", { name: "Cobertura" })).toBeTruthy();
   });
+
+  /** ENT-09-016 — cabeçalho fixo nas tabelas que crescem com o time/catálogo. */
+  it("o cabeçalho da tabela de progressão e do heatmap fica fixo ao rolar (sticky)", async () => {
+    renderGap();
+    await screen.findByText("Tabela de Lacunas de Progressão");
+
+    const progressionTable = screen
+      .getByText("Tabela de Lacunas de Progressão")
+      .closest(".surface-card") as HTMLElement;
+    const competencyHeader = within(progressionTable).getByRole("columnheader", {
+      name: "Competência",
+    });
+    expect(competencyHeader.className).toContain("sticky");
+
+    const architectHeader = screen.getByRole("columnheader", { name: "Arquiteto" });
+    expect(architectHeader.className).toContain("sticky");
+  });
 });

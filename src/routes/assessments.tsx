@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import type { Assessment, AssessmentComment, AssessmentDevelopmentSummary, Capability, Level } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
@@ -870,6 +871,12 @@ function CareerPortfolioSection({
         <Badge variant={portfolioSize >= 3 ? "default" : "outline"}>
           {t("asmt.portfolio.size", { n: portfolioSize })}
         </Badge>
+        {/* ENT-09-016 — indicador visual do mínimo de 3, além do número no badge. */}
+        <Progress
+          value={Math.min(100, (portfolioSize / 3) * 100)}
+          className="h-1.5 w-24"
+          aria-label={t("asmt.portfolio.size", { n: portfolioSize })}
+        />
         {eligibility.nextCareerLevel ? (
           <>
             <span className="text-muted-foreground">

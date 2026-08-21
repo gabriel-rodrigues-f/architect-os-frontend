@@ -250,6 +250,7 @@
   "col.targetAvg": "Target (avg.)",
   "col.avgGap": "Gap (avg.)",
   "col.type": "Type",
+  "col.architect": "Architect",
   "col.classification": "Classification",
   "needs.title": "Training Needs Analysis",
   "needs.subtitle": "Aggregated team gaps to prioritise training investment.",
