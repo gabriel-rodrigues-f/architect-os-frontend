@@ -403,7 +403,7 @@
   "matrix.levels.subtitle": "Escala única utilizada em toda a plataforma.",
   "matrix.empty.title": "Nenhuma capacidade cadastrada",
   "matrix.empty.hint": "A matriz começa pelas capacidades. Crie a primeira no campo acima — depois adicione as competências de cada uma.",
-  "matrix.competencyCount": "{n} competências",
+  "matrix.competencyCount": "{n}/6 competências",
   "matrix.col.competency": "COMPETÊNCIA",
   "matrix.newCompetency": "Nova competência",
   "matrix.create.title": "Nova competência em {capacidade}",
@@ -621,5 +621,15 @@
   "matrix.requirement.nonRestrictive": "Não restritiva",
   "matrix.requirement.hint": "Restritiva: se não atingir o alvo, bloqueia a capacidade para progressão de carreira. Não restritiva: entra na média, mas nunca bloqueia sozinha.",
   "matrix.requirement.count": "{restrictive}/3 restritivas",
-  "matrix.requirement.badge": "Restritiva"
+  "matrix.requirement.nonRestrictiveCount": "{n}/3 não restritivas",
+  "matrix.requirement.badge": "Restritiva",
+  "matrix.requirement.restrictiveFull": "Limite de 3 competências restritivas atingido — arquive uma antes de trocar outra para restritiva.",
+  "matrix.requirement.nonRestrictiveFull": "Limite de 3 competências não restritivas atingido — arquive uma antes de trocar outra para não restritiva.",
+  "matrix.curation.ready": "Pronta",
+  "matrix.curation.requiresCuration": "Requer curadoria",
+  "matrix.atCapacity.hint": "Esta capacidade já tem 6 competências ativas (limite máximo) — arquive uma antes de adicionar outra.",
+  "matrix.search.placeholder": "Buscar capacidade ou competência…",
+  "matrix.search.empty": "Nenhuma capacidade encontrada para \"{termo}\".",
+  "matrix.collapse.expand": "Expandir {nome}",
+  "matrix.collapse.collapse": "Recolher {nome}"
 }

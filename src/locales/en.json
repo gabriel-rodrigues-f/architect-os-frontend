@@ -403,7 +403,7 @@
   "matrix.levels.subtitle": "A single scale used across the whole platform.",
   "matrix.empty.title": "No capabilities yet",
   "matrix.empty.hint": "The matrix starts with capabilities. Create the first one in the field above — then add each one's competencies.",
-  "matrix.competencyCount": "{n} competencies",
+  "matrix.competencyCount": "{n}/6 competencies",
   "matrix.col.competency": "COMPETENCY",
   "matrix.newCompetency": "New competency",
   "matrix.create.title": "New competency in {capacidade}",
@@ -621,5 +621,15 @@
   "matrix.requirement.nonRestrictive": "Non-restrictive",
   "matrix.requirement.hint": "Restrictive: missing the target blocks the capability for career progression. Non-restrictive: counts toward the average, but never blocks on its own.",
   "matrix.requirement.count": "{restrictive}/3 restrictive",
-  "matrix.requirement.badge": "Restrictive"
+  "matrix.requirement.nonRestrictiveCount": "{n}/3 non-restrictive",
+  "matrix.requirement.badge": "Restrictive",
+  "matrix.requirement.restrictiveFull": "Limit of 3 restrictive competencies reached — archive one before switching another to restrictive.",
+  "matrix.requirement.nonRestrictiveFull": "Limit of 3 non-restrictive competencies reached — archive one before switching another to non-restrictive.",
+  "matrix.curation.ready": "Ready",
+  "matrix.curation.requiresCuration": "Needs curation",
+  "matrix.atCapacity.hint": "This capability already has 6 active competencies (maximum limit) — archive one before adding another.",
+  "matrix.search.placeholder": "Search capability or competency…",
+  "matrix.search.empty": "No capability found for \"{termo}\".",
+  "matrix.collapse.expand": "Expand {nome}",
+  "matrix.collapse.collapse": "Collapse {nome}"
 }

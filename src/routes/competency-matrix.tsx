@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -74,6 +74,16 @@ function MatrixPage() {
   const [editingCapability, setEditingCapability] = useState<Capability | null>(null);
   const [editCapabilityName, setEditCapabilityName] = useState("");
   const [confirmDeleteCapability, setConfirmDeleteCapability] = useState<Capability | null>(null);
+  const [search, setSearch] = useState("");
+  /** Vazio por padrão: nenhuma seção começa recolhida — evita telas que já dependem de ver a tabela sem interação extra. */
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggleCollapsed = (id: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const startEditingCapability = (capability: Capability) => {
     setEditingCapability(capability);
@@ -162,107 +172,175 @@ function MatrixPage() {
         </div>
       )}
 
-      <div className="space-y-4">
-        {store.capabilities
-          .filter((cat) => cat.active)
-          .map((cat) => {
-            const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
-            const restrictiveCount = comps.filter(
-              (c) => c.requirementType === "RESTRICTIVE",
-            ).length;
-            return (
-              <SectionCard
-                key={cat.id}
-                title={cat.name}
-                description={`${t("matrix.competencyCount", { n: comps.length })} · ${t("matrix.requirement.count", { restrictive: restrictiveCount })}`}
-                actions={
-                  isAdmin ? (
-                    <div className="flex items-center gap-1">
-                      <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
-                        {t("matrix.newCompetency")}
-                      </Button>
+      {store.capabilities.length > 0 && (
+        <div className="mb-4">
+          <Input
+            placeholder={t("matrix.search.placeholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label={t("matrix.search.placeholder")}
+            className="max-w-sm"
+          />
+        </div>
+      )}
+
+      {(() => {
+        const term = search.trim().toLowerCase();
+        const activeCapabilities = store.capabilities.filter((cat) => cat.active);
+        const visibleCapabilities = term
+          ? activeCapabilities.filter(
+              (cat) =>
+                cat.name.toLowerCase().includes(term) ||
+                store.competencies.some(
+                  (c) => c.capabilityId === cat.id && c.active && c.name.toLowerCase().includes(term),
+                ),
+            )
+          : activeCapabilities;
+
+        if (term && visibleCapabilities.length === 0) {
+          return (
+            <div className="surface-card p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                {t("matrix.search.empty", { termo: search.trim() })}
+              </p>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-4">
+            {visibleCapabilities.map((cat) => {
+              const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
+              const isCollapsed = collapsed.has(cat.id);
+              const atCapacity = cat.curation.activeCompetencyCount >= 6;
+              return (
+                <SectionCard
+                  key={cat.id}
+                  title={cat.name}
+                  description={`${t("matrix.competencyCount", { n: cat.curation.activeCompetencyCount })} · ${t("matrix.requirement.count", { restrictive: cat.curation.restrictiveCompetencyCount })} · ${t("matrix.requirement.nonRestrictiveCount", { n: cat.curation.nonRestrictiveCompetencyCount })}`}
+                  actions={
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={cat.curation.status === "READY" ? "default" : "outline"}
+                        className="text-[10px]"
+                      >
+                        {cat.curation.status === "READY"
+                          ? t("matrix.curation.ready")
+                          : t("matrix.curation.requiresCuration")}
+                      </Badge>
+                      {isAdmin && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setCreatingIn(cat)}
+                            disabled={atCapacity}
+                            title={atCapacity ? t("matrix.atCapacity.hint") : undefined}
+                          >
+                            {t("matrix.newCompetency")}
+                          </Button>
+                          <button
+                            type="button"
+                            onClick={() => startEditingCapability(cat)}
+                            aria-label={`Editar ${cat.name}`}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteCapability(cat)}
+                            aria-label={`Excluir ${cat.name}`}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
                       <button
                         type="button"
-                        onClick={() => startEditingCapability(cat)}
-                        aria-label={`Editar ${cat.name}`}
+                        onClick={() => toggleCollapsed(cat.id)}
+                        aria-label={
+                          isCollapsed ? t("matrix.collapse.expand", { nome: cat.name }) : t("matrix.collapse.collapse", { nome: cat.name })
+                        }
+                        aria-expanded={!isCollapsed}
                         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDeleteCapability(cat)}
-                        aria-label={`Excluir ${cat.name}`}
-                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        {isCollapsed ? (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        )}
                       </button>
                     </div>
-                  ) : undefined
-                }
-              >
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="py-2">{t("col.competency")}</th>
-                        {ROLES.map((r) => (
-                          <th key={r} className="py-2 text-center">
-                            {roleShort(r)}
-                          </th>
-                        ))}
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comps.map((c) => (
-                        <tr key={c.id} className="border-b border-border/60 last:border-0">
-                          <td className="py-2 font-medium">
-                            {c.name}
-                            {c.requirementType === "RESTRICTIVE" && (
-                              <Badge variant="outline" className="ml-2 align-middle text-[10px]">
-                                {t("matrix.requirement.badge")}
-                              </Badge>
-                            )}
-                          </td>
-                          {ROLES.map((r) => (
-                            <td key={r} className="py-2 text-center">
-                              <LevelBadge level={c.expected[r]} />
-                            </td>
+                  }
+                >
+                  {!isCollapsed && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[640px] text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                            <th className="py-2">{t("col.competency")}</th>
+                            {ROLES.map((r) => (
+                              <th key={r} className="py-2 text-center">
+                                {roleShort(r)}
+                              </th>
+                            ))}
+                            <th />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {comps.map((c) => (
+                            <tr key={c.id} className="border-b border-border/60 last:border-0">
+                              <td className="py-2 font-medium">
+                                {c.name}
+                                {c.requirementType === "RESTRICTIVE" && (
+                                  <Badge variant="outline" className="ml-2 align-middle text-[10px]">
+                                    {t("matrix.requirement.badge")}
+                                  </Badge>
+                                )}
+                              </td>
+                              {ROLES.map((r) => (
+                                <td key={r} className="py-2 text-center">
+                                  <LevelBadge level={c.expected[r]} />
+                                </td>
+                              ))}
+                              <td className="py-2 text-right">
+                                {isAdmin && (
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      type="button"
+                                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                                      onClick={() => setEditing(c)}
+                                      aria-label={t("matrix.edit.action", { nome: c.name })}
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                      onClick={() =>
+                                        setConfirmDelete({ competency: c, capability: cat })
+                                      }
+                                      aria-label={`Excluir ${c.name}`}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
                           ))}
-                          <td className="py-2 text-right">
-                            {isAdmin && (
-                              <div className="flex items-center justify-end gap-1">
-                                <button
-                                  type="button"
-                                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                                  onClick={() => setEditing(c)}
-                                  aria-label={t("matrix.edit.action", { nome: c.name })}
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                                  onClick={() =>
-                                    setConfirmDelete({ competency: c, capability: cat })
-                                  }
-                                  aria-label={`Excluir ${c.name}`}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </SectionCard>
-            );
-          })}
-      </div>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </SectionCard>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <ConfirmDialog
         open={confirmDelete !== null}
@@ -413,9 +491,13 @@ function CompetencyCreateDialog({
 }) {
   const store = useStore();
   const { t } = useI18n();
+  const restrictiveFull = capability.curation.restrictiveCompetencyCount >= 3;
+  const nonRestrictiveFull = capability.curation.nonRestrictiveCompetencyCount >= 3;
   const [name, setName] = useState("");
   const [levels, setLevels] = useState<Partial<Record<RoleName, Level>>>({});
-  const [requirementType, setRequirementType] = useState<RequirementType>("NON_RESTRICTIVE");
+  const [requirementType, setRequirementType] = useState<RequirementType>(
+    nonRestrictiveFull ? "RESTRICTIVE" : "NON_RESTRICTIVE",
+  );
   const canSave = name.trim().length > 0 && ROLES.every((r) => levels[r] !== undefined);
 
   const save = () => {
@@ -483,10 +565,22 @@ function CompetencyCreateDialog({
               value={requirementType}
               onChange={(e) => setRequirementType(e.target.value as RequirementType)}
             >
-              <option value="NON_RESTRICTIVE">{t("matrix.requirement.nonRestrictive")}</option>
-              <option value="RESTRICTIVE">{t("matrix.requirement.restrictive")}</option>
+              <option value="NON_RESTRICTIVE" disabled={nonRestrictiveFull}>
+                {t("matrix.requirement.nonRestrictive")}
+              </option>
+              <option value="RESTRICTIVE" disabled={restrictiveFull}>
+                {t("matrix.requirement.restrictive")}
+              </option>
             </select>
             <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
+            {restrictiveFull && (
+              <p className="mt-1 text-xs text-amber-600">{t("matrix.requirement.restrictiveFull")}</p>
+            )}
+            {nonRestrictiveFull && (
+              <p className="mt-1 text-xs text-amber-600">
+                {t("matrix.requirement.nonRestrictiveFull")}
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter>
@@ -517,6 +611,16 @@ function CompetencyEditDialog({
 }) {
   const store = useStore();
   const { t } = useI18n();
+  const capability = store.capabilities.find((c) => c.id === competency.capabilityId);
+  /** Subtrai a própria competência da contagem: ela já ocupa uma vaga do tipo atual. */
+  const restrictiveFull =
+    (capability?.curation.restrictiveCompetencyCount ?? 0) -
+      (competency.requirementType === "RESTRICTIVE" ? 1 : 0) >=
+    3;
+  const nonRestrictiveFull =
+    (capability?.curation.nonRestrictiveCompetencyCount ?? 0) -
+      (competency.requirementType === "NON_RESTRICTIVE" ? 1 : 0) >=
+    3;
   const [name, setName] = useState(competency.name);
   const [levels, setLevels] = useState<Record<RoleName, Level>>(competency.expected);
   const [requirementType, setRequirementType] = useState<RequirementType>(
@@ -575,10 +679,22 @@ function CompetencyEditDialog({
               value={requirementType}
               onChange={(e) => setRequirementType(e.target.value as RequirementType)}
             >
-              <option value="NON_RESTRICTIVE">{t("matrix.requirement.nonRestrictive")}</option>
-              <option value="RESTRICTIVE">{t("matrix.requirement.restrictive")}</option>
+              <option value="NON_RESTRICTIVE" disabled={nonRestrictiveFull}>
+                {t("matrix.requirement.nonRestrictive")}
+              </option>
+              <option value="RESTRICTIVE" disabled={restrictiveFull}>
+                {t("matrix.requirement.restrictive")}
+              </option>
             </select>
             <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
+            {restrictiveFull && requirementType !== "RESTRICTIVE" && (
+              <p className="mt-1 text-xs text-amber-600">{t("matrix.requirement.restrictiveFull")}</p>
+            )}
+            {nonRestrictiveFull && requirementType !== "NON_RESTRICTIVE" && (
+              <p className="mt-1 text-xs text-amber-600">
+                {t("matrix.requirement.nonRestrictiveFull")}
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter>
