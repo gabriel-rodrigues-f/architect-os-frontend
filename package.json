@@ -91,7 +91,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "jsdom": "^30.0.1",
+    "jsdom": "27.0.0",
     "nitro": "3.0.260603-beta",
     "pg": "^8.23.0",
     "playwright": "^1.62.1",
@@ -100,5 +100,8 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^8.2.0",
     "vitest": "^3.2.7"
+  },
+  "overrides": {
+    "cssstyle": "4.1.0"
   }
 }

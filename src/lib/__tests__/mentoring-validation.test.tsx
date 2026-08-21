@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { setAuthToken, type SessionUser } from "../api";
+import { type SessionUser } from "../api";
 import { AuthProvider } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -63,7 +63,6 @@ describe("Mentoria — campos obrigatórios", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const json = (body: unknown, status = 200) =>
         Promise.resolve(
@@ -81,7 +80,6 @@ describe("Mentoria — campos obrigatórios", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("salvar em branco avisa e marca os campos vazios", async () => {
@@ -146,7 +144,6 @@ describe("Mentoria — ajuda dos campos", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
     fetchMock.mockImplementation((url: string) => {
       const json = (body: unknown) =>
         Promise.resolve(
@@ -160,7 +157,6 @@ describe("Mentoria — ajuda dos campos", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   /**

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { setAuthToken, type AppState } from "../api";
+import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import type { AssessmentComment } from "../domain";
 import { I18nProvider } from "../i18n";
@@ -23,7 +23,7 @@ const fetchMock = vi.fn();
 const comentarioDoAdmin: AssessmentComment = {
   id: "cmt-1",
   authorUserId: fixtureAdminUser.id,
-  authorRole: "admin",
+  authorRole: "TECH_LEAD",
   text: "Confirmo, liderou a execução",
   createdAt: "2026-03-05T14:30:00Z",
 };
@@ -31,7 +31,7 @@ const comentarioDoAdmin: AssessmentComment = {
 const comentarioDeOutraPessoa: AssessmentComment = {
   id: "cmt-2",
   authorUserId: "outro-usuario",
-  authorRole: "member",
+  authorRole: "PROFESSIONAL",
   text: "Conduzi a migração do cluster",
   createdAt: "2026-03-04T14:00:00Z",
 };
@@ -116,7 +116,6 @@ describe("Avaliações — comentários por autor", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
@@ -133,7 +132,7 @@ describe("Avaliações — comentários por autor", () => {
                 {
                   id: "cmt-novo",
                   authorUserId: fixtureAdminUser.id,
-                  authorRole: "admin",
+                  authorRole: "TECH_LEAD",
                   text: body.text,
                   createdAt: "2026-08-13T09:00:00Z",
                 },
@@ -188,7 +187,6 @@ describe("Avaliações — comentários por autor", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("mostra os comentários existentes com autor e data em dd/mm/aaaa", async () => {

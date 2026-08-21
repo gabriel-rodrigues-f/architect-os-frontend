@@ -9,15 +9,15 @@ import {
   type ReactNode,
 } from "react";
 
-import { ApiError, authApi, loadStoredToken, setAuthToken, type SessionUser } from "./api";
+import { ApiError, authApi, type SessionUser } from "./api";
 
 interface AuthContextValue {
   user: SessionUser | null;
-  /** `true` enquanto a sessão guardada no navegador ainda está sendo validada. */
+  /** `true` enquanto a sessão (cookie HttpOnly) ainda está sendo validada. */
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (input: { name: string; email: string; password: string }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthContextValue | null>(null);
@@ -27,14 +27,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Na carga, tenta reaproveitar o token do navegador; se estiver expirado ou
-  // a conta não existir mais, a sessão é descartada.
+  // ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 24 — a sessão agora vive num
+  // cookie HttpOnly, invisível para este JS: não há mais token nenhum para
+  // checar antes de decidir chamar `/me`. Sempre chama; sem cookie válido o
+  // backend devolve 401 e o catch abaixo só confirma "sem sessão".
   useEffect(() => {
-    const token = loadStoredToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     let active = true;
     authApi
       .me()
@@ -42,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) setUser(me);
       })
       .catch(() => {
-        setAuthToken(null);
+        // 401 esperado sem sessão — nada para limpar no cliente.
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -55,7 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const result = await authApi.login(email, password);
-      setAuthToken(result.token);
       setUser(result.user);
       await queryClient.invalidateQueries();
     },
@@ -65,17 +61,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (input: { name: string; email: string; password: string }) => {
       const result = await authApi.register(input);
-      setAuthToken(result.token);
       setUser(result.user);
       await queryClient.invalidateQueries();
     },
     [queryClient],
   );
 
-  const logout = useCallback(() => {
-    setAuthToken(null);
-    setUser(null);
-    queryClient.clear();
+  const logout = useCallback(async () => {
+    // Só o servidor apaga um cookie HttpOnly — mas o estado local precisa
+    // limpar mesmo que a chamada de rede falhe (rede fora do ar, 401 por
+    // sessão já expirada), senão a UI fica presa "logada" sem sessão real.
+    try {
+      await authApi.logout();
+    } catch {
+      // segue para limpar o estado local de qualquer forma.
+    } finally {
+      setUser(null);
+      queryClient.clear();
+    }
   }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(

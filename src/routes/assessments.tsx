@@ -549,9 +549,9 @@ function CommentSection({
             const mine = comment.authorUserId !== null && comment.authorUserId === currentUserId;
             const authorLabel = mine
               ? t("comment.you")
-              : comment.authorRole === "admin"
-                ? t("comment.author.admin")
-                : t("comment.author.member");
+              : comment.authorRole === "TECH_LEAD"
+                ? t("comment.author.techLead")
+                : t("comment.author.professional");
             return editing === comment.id ? (
               <li key={comment.id}>
                 <CommentForm

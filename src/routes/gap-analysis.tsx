@@ -197,10 +197,20 @@ function GapPage() {
     [architects, sel],
   );
 
+  /**
+   * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 4.2/17/36 (A1/B2) — texto
+   * ficou obsoleto depois que `selected: []` passou a significar "ninguém"
+   * (não mais "todo o time implícito", ver `ArchitectFilter`). Compara com
+   * `architects.length` (já resolvido por `applyArchitectFilter`), não com
+   * `store.architects.length` diretamente — assim um id de seleção que não
+   * existe mais no roster não faz a contagem bater por acidente.
+   */
   const scopeLabel =
     selected.length === 0
-      ? "todo o time"
-      : architects.map((a) => a.name.split(" ")[0]).join(", ") || "seleção vazia";
+      ? t("gap.scope.none")
+      : architects.length === store.architects.length
+        ? t("gap.scope.wholeTeam")
+        : architects.map((a) => a.name.split(" ")[0]).join(", ") || t("gap.scope.empty");
 
   return (
     <>

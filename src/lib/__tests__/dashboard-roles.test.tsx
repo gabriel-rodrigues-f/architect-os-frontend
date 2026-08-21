@@ -21,7 +21,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as DashboardRoute } from "@/routes/index";
-import { setAuthToken, type AppState, type SessionUser } from "../api";
+import { type AppState, type SessionUser } from "../api";
 import { AuthProvider } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -97,13 +97,11 @@ describe("Painel — Home por papel", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
   });
 
   it("admin vê a visão executiva de time (inalterada)", async () => {

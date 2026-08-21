@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as PlansRoute } from "@/routes/development-plans";
-import { setAuthToken, type AppState, type SessionUser } from "../api";
+import { type AppState, type SessionUser } from "../api";
 import { AuthProvider } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
@@ -45,7 +45,6 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    setAuthToken("token-de-teste");
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
@@ -88,7 +87,6 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    setAuthToken(null);
     window.history.pushState({}, "", "/");
   });
 
