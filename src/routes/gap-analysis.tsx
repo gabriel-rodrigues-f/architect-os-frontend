@@ -112,25 +112,25 @@ function GapPage() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const { t } = useI18n();
-  const [selected, setSelected] = useState<string[]>([]);
-
   /**
-   * Toda a tela lê deste recorte. Filtro vazio significa o time que este
-   * viewer de fato enxerga (`canActFor`) — quem já saiu não conta como
-   * lacuna do time ativo, e quem está fora do escopo não conta como "sem
-   * lacuna" só por não ter registro visível (roster é dado de diretório sem
-   * filtro; ver `auth/scope.ts`). Selecionar alguém explicitamente no filtro
-   * (incluindo gente inativa ou fora do escopo) ainda funciona — a lista de
-   * opções do `ArchitectFilter` continua sendo `store.architects` inteiro; a
+   * Nasce com o time que este viewer de fato enxerga (`canActFor`) — quem já
+   * saiu não conta como lacuna do time ativo, e quem está fora do escopo não
+   * conta como "sem lacuna" só por não ter registro visível (roster é dado
+   * de diretório sem filtro; ver `auth/scope.ts`). Depois disso `selected` é
+   * sempre explícito (ver `ArchitectFilter`): selecionar alguém fora desse
+   * recorte inicial (gente inativa ou fora do escopo) ainda funciona — a
+   * lista de opções do filtro continua sendo `store.architects` inteiro; a
    * própria falta de dado visível já degrada de forma transparente via
    * `coverage`. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
    * SYNAPSE.md, EPIC E, e ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
    * 08-19.md.
    */
-  const architects =
-    selected.length === 0
-      ? sel.activeArchitects.filter((a) => canActFor(user, a))
-      : applyArchitectFilter(store.architects, selected);
+  const [selected, setSelected] = useState<string[]>(() =>
+    sel.activeArchitects.filter((a) => canActFor(user, a)).map((a) => a.id),
+  );
+
+  /** Toda a tela lê deste recorte. */
+  const architects = applyArchitectFilter(store.architects, selected);
 
   /**
    * Radar: média por capacidade só entre quem tem assessment oficial cobrindo
@@ -221,7 +221,9 @@ function GapPage() {
         <div className="surface-card p-8 text-center">
           <p className="text-sm font-medium">{t("gap.empty")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Cadastre arquitetos em Time e abra uma avaliação do ciclo para ver as lacunas aqui.
+            {store.architects.length === 0
+              ? "Cadastre arquitetos em Time e abra uma avaliação do ciclo para ver as lacunas aqui."
+              : t("gap.empty.filterHint")}
           </p>
         </div>
       ) : (

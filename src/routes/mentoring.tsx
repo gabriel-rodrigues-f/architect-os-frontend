@@ -162,9 +162,9 @@ function MentoringPage() {
     }
   };
 
-  const [filter, setFilter] = useState<string[]>([]);
+  // `ArchitectFilter` trata `selected` como sempre explícito — nasce com todo mundo marcado.
+  const [filter, setFilter] = useState<string[]>(() => store.architects.map((a) => a.id));
 
-  // Filtro vazio = todo o time; caso contrário, só as sessões dos selecionados.
   const filteredIds = new Set(applyArchitectFilter(store.architects, filter).map((a) => a.id));
   const sessions = [...store.mentoringSessions]
     .filter((s) => filteredIds.has(s.menteeId))
@@ -350,8 +350,10 @@ function MentoringPage() {
         title={t("mentor.timeline.title")}
         description={
           filter.length === 0
-            ? t("mentor.timeline.all", { n: sessions.length })
-            : t("mentor.timeline.filtered", { n: sessions.length, p: filter.length })
+            ? t("mentor.timeline.none")
+            : filter.length === store.architects.length
+              ? t("mentor.timeline.all", { n: sessions.length })
+              : t("mentor.timeline.filtered", { n: sessions.length, p: filter.length })
         }
       >
         {sessions.length === 0 && (

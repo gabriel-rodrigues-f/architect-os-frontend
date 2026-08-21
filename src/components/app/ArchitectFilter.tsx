@@ -7,8 +7,16 @@ import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
- * Filtro de arquitetos com seleção múltipla. Lista vazia = todo o time, para
- * que a tela nunca fique sem dados por engano.
+ * Filtro de arquitetos com seleção múltipla. `selected` é sempre explícito:
+ * lista vazia significa "ninguém selecionado" (a tela mostra o estado vazio
+ * dela), e "Todo o time" marcado é a lista inteira de `architects` escrita
+ * por extenso — nunca um vazio-como-atalho. Isso é o que torna o clique em
+ * "Todo o time" um alternador de verdade (marca tudo → clique de novo
+ * desmarca tudo), em vez de um clique morto quando já estava tudo marcado.
+ *
+ * Quem chama decide o valor inicial de `selected` (normalmente "todo mundo
+ * que este viewer pode ver" — nunca a tela nasce mostrando ninguém por
+ * engano); este componente só reflete e altera o que já está ali.
  */
 export function ArchitectFilter({
   architects,
@@ -37,12 +45,16 @@ export function ArchitectFilter({
   const toggle = (id: string) =>
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
 
+  const allSelected = architects.length > 0 && selected.length === architects.length;
+
   const summary =
     selected.length === 0
-      ? t("filter.wholeTeam", { n: architects.length })
-      : selected.length === 1
-        ? (architects.find((a) => a.id === selected[0])?.name ?? t("filter.oneArchitect"))
-        : t("filter.nArchitects", { n: selected.length });
+      ? t("filter.none")
+      : allSelected
+        ? t("filter.wholeTeam", { n: architects.length })
+        : selected.length === 1
+          ? (architects.find((a) => a.id === selected[0])?.name ?? t("filter.oneArchitect"))
+          : t("filter.nArchitects", { n: selected.length });
 
   return (
     <div className="relative" ref={container}>
@@ -65,17 +77,18 @@ export function ArchitectFilter({
           className="absolute right-0 z-30 mt-1 max-h-72 w-64 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-lg"
         >
           {/*
-            Marcar equivale a limpar a seleção: lista vazia já significa "todo o
-            time" no resto da aplicação, e manter as duas representações em
-            sincronia seria fonte de divergência.
+            Alternador de verdade: tudo já marcado → clique desmarca tudo;
+            nada ou parte marcada → clique marca todo mundo. Sem isto, clicar
+            em "Todo o time" já marcado não tinha efeito nenhum visível — o
+            clique parecia morto.
           */}
           <button
             type="button"
-            onClick={() => onChange([])}
+            onClick={() => onChange(allSelected ? [] : architects.map((a) => a.id))}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary"
           >
             <Checkbox
-              checked={selected.length === 0 ? true : "indeterminate"}
+              checked={allSelected ? true : selected.length === 0 ? false : "indeterminate"}
               aria-hidden="true"
               tabIndex={-1}
               className="pointer-events-none"
@@ -85,27 +98,20 @@ export function ArchitectFilter({
           <div className="my-1 border-t border-border" />
           {architects.map((a) => {
             const active = selected.includes(a.id);
-            /**
-             * Lista vazia = todo o time (ver `toggle`/`applyArchitectFilter`) — mas
-             * "Todo o time" marcado precisa mostrar cada pessoa como marcada
-             * também, senão parece que ninguém está selecionado. Clicar em uma
-             * pessoa específica ainda estreita para só ela (`toggle` não muda).
-             */
-            const visuallyChecked = selected.length === 0 || active;
             return (
               <button
                 key={a.id}
                 type="button"
                 role="option"
-                aria-selected={visuallyChecked}
+                aria-selected={active}
                 onClick={() => toggle(a.id)}
                 className={cn(
                   "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary",
-                  visuallyChecked && "font-medium",
+                  active && "font-medium",
                 )}
               >
                 <Checkbox
-                  checked={visuallyChecked}
+                  checked={active}
                   aria-hidden="true"
                   tabIndex={-1}
                   className="pointer-events-none"
@@ -123,8 +129,12 @@ export function ArchitectFilter({
   );
 }
 
-/** Aplica a seleção: vazio significa "todos". */
+/**
+ * Aplica a seleção: sempre por pertencimento explícito. Vazio significa
+ * "ninguém" — quem chama decide o valor inicial de `selected` para a tela
+ * nunca nascer mostrando ninguém por engano (ver doc do componente acima).
+ */
 export const applyArchitectFilter = <T extends { id: string }>(
   architects: T[],
   selected: string[],
-): T[] => (selected.length === 0 ? architects : architects.filter((a) => selected.includes(a.id)));
+): T[] => architects.filter((a) => selected.includes(a.id));

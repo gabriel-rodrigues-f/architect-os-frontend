@@ -12,8 +12,15 @@ import { fixtureState } from "./fixtures";
 describe("recorte por arquitetos selecionados", () => {
   const sel = createSelectors(fixtureState);
 
-  it("filtro vazio significa o time inteiro", () => {
-    expect(applyArchitectFilter(fixtureState.architects, [])).toHaveLength(2);
+  /**
+   * `selected` é sempre explícito (ver doc de `ArchitectFilter.tsx`): vazio
+   * significa ninguém selecionado, não "todo o time". Quem chama decide o
+   * valor inicial (normalmente todo mundo já marcado) para a tela nunca
+   * nascer mostrando ninguém por engano — mas isso é responsabilidade de
+   * quem inicializa o `useState`, não desta função.
+   */
+  it("filtro vazio significa ninguém selecionado", () => {
+    expect(applyArchitectFilter(fixtureState.architects, [])).toHaveLength(0);
   });
 
   it("mantém apenas os arquitetos escolhidos, na ordem da lista", () => {
@@ -113,6 +120,7 @@ describe("recorte por arquitetos selecionados", () => {
   });
 
   it("competência adequada para todos não aparece na consolidação", () => {
-    expect(consolidate([]).has("cloud-serverless")).toBe(false);
+    // Todo mundo explicitamente selecionado — vazio agora significa "ninguém", não "todos".
+    expect(consolidate(["ana", "bruno"]).has("cloud-serverless")).toBe(false);
   });
 });

@@ -7,11 +7,14 @@ import type { Architect } from "@/lib/domain";
 import { I18nProvider } from "../i18n";
 
 /**
- * Pedido do usuário revisando o app rodando: com "Todo o time" marcado
- * (seleção vazia = todo o time, ver `applyArchitectFilter`), as caixinhas de
- * cada pessoa apareciam desmarcadas — parecia que ninguém estava
- * selecionado. Mesma correção vale para o `ArchitectFilter` usado em
- * gap-analysis.tsx e mentoring.tsx (componente único).
+ * Pedido do usuário revisando o app rodando, em duas rodadas:
+ * (1) com "Todo o time" marcado, as caixinhas de cada pessoa apareciam
+ * desmarcadas; (2) clicar em "Todo o time" já marcado não tinha efeito
+ * nenhum visível. A resolução das duas juntas: `selected` passa a ser
+ * sempre explícito (vazio = ninguém, nunca mais "todo o time" implícito), e
+ * "Todo o time" vira um alternador de verdade — marca tudo, clique de novo
+ * desmarca tudo. Mesmo componente usado em gap-analysis.tsx e
+ * mentoring.tsx.
  */
 
 const architects: Architect[] = [
@@ -29,31 +32,51 @@ const renderFilter = (selected: string[]) => {
   return onChange;
 };
 
-describe("ArchitectFilter — 'Todo o time' marca visualmente cada pessoa", () => {
+describe("ArchitectFilter — 'Todo o time' como alternador de verdade", () => {
   afterEach(() => cleanup());
 
-  it("com seleção vazia (todo o time), cada checkbox individual aparece marcado", async () => {
-    renderFilter([]);
+  it("com todo mundo explicitamente selecionado, o mestre e cada pessoa aparecem marcados", async () => {
+    renderFilter(["ana", "bruno"]);
     await userEvent.click(screen.getByRole("button", { expanded: false }));
 
-    const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(2);
-    for (const option of options) {
+    const master = screen.getByRole("button", { name: "Todo o time" }).querySelector('[role="checkbox"]');
+    expect(master?.getAttribute("aria-checked")).toBe("true");
+
+    for (const option of screen.getAllByRole("option")) {
       expect(option.querySelector('[role="checkbox"]')?.getAttribute("aria-checked")).toBe("true");
     }
   });
 
-  it("com uma pessoa selecionada, só a dela aparece marcada", async () => {
-    renderFilter(["ana"]);
+  it("com seleção vazia, o mestre e cada pessoa aparecem desmarcados", async () => {
+    renderFilter([]);
     await userEvent.click(screen.getByRole("button", { expanded: false }));
 
-    const anaCheckbox = screen.getByRole("option", { name: "Ana Martins" }).querySelector('[role="checkbox"]');
-    const brunoCheckbox = screen.getByRole("option", { name: "Bruno Almeida" }).querySelector('[role="checkbox"]');
-    expect(anaCheckbox?.getAttribute("aria-checked")).toBe("true");
-    expect(brunoCheckbox?.getAttribute("aria-checked")).toBe("false");
+    const master = screen.getByRole("button", { name: "Todo o time" }).querySelector('[role="checkbox"]');
+    expect(master?.getAttribute("aria-checked")).toBe("false");
+
+    for (const option of screen.getAllByRole("option")) {
+      expect(option.querySelector('[role="checkbox"]')?.getAttribute("aria-checked")).toBe("false");
+    }
+    expect(screen.getByText("Nenhum arquiteto selecionado")).toBeTruthy();
   });
 
-  it("clicar numa pessoa enquanto 'todo o time' está implícito estreita para só ela", async () => {
+  it("clicar em 'Todo o time' já marcado (todos selecionados) desmarca tudo", async () => {
+    const onChange = renderFilter(["ana", "bruno"]);
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+    await userEvent.click(screen.getByRole("button", { name: "Todo o time" }));
+
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it("clicar em 'Todo o time' com seleção vazia ou parcial marca todo mundo", async () => {
+    const onChange = renderFilter(["ana"]);
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+    await userEvent.click(screen.getByRole("button", { name: "Todo o time" }));
+
+    expect(onChange).toHaveBeenCalledWith(["ana", "bruno"]);
+  });
+
+  it("clicar numa pessoa específica alterna só ela, sem depender do estado do mestre", async () => {
     const onChange = renderFilter([]);
     await userEvent.click(screen.getByRole("button", { expanded: false }));
     await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
