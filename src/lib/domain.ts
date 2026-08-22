@@ -218,6 +218,14 @@ export interface AssessmentItem {
   capabilityName?: string | undefined;
   /** ENT-CAR-011/015 — mesma lógica de fotografia, para `Competency.requirementType`. */
   requirementType?: RequirementType | undefined;
+  /**
+   * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-18 — concorrência
+   * otimista por item: duas escritas na mesma competência (duas abas do
+   * Tech Lead) eram last-write-wins silencioso. Opcional (sem backfill no
+   * banco — vive dentro do JSONB de itens): item sem o campo (assessment
+   * anterior a esta correção) é tratado como `1` por quem lê.
+   */
+  version?: number | undefined;
 }
 
 /**
@@ -247,6 +255,8 @@ export interface Assessment {
   modelVersion: AssessmentModelVersion;
   targetCareerLevelId: string | null;
   targetSemantics: AssessmentTargetSemantics | null;
+  /** AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-18 — concorrência otimista da transição de status. */
+  version: number;
 }
 
 /**

@@ -114,6 +114,7 @@ const assessmentItem = z.object({
   capabilityId: z.string().optional(),
   capabilityName: z.string().optional(),
   requirementType: requirementType.optional(),
+  version: z.number().optional(),
 });
 
 const assessment = z.object({
@@ -125,6 +126,7 @@ const assessment = z.object({
   modelVersion: z.union([z.literal(1), z.literal(2)]),
   targetCareerLevelId: z.string().nullable(),
   targetSemantics: z.enum(["CURRENT_ROLE", "NEXT_ROLE", "MASTERY"]).nullable(),
+  version: z.number(),
 });
 
 const developmentCycle = z.object({

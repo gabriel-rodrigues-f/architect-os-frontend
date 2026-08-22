@@ -438,7 +438,17 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       }
     },
 
+    // B-09/B-18 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) —
+    // `expectedVersion` vem do estado que a tela está mostrando agora;
+    // reconcilia com a resposta real do servidor no sucesso (mesmo
+    // raciocínio de `updatePlanItem`: sem isto, o `version` do cache
+    // nunca avança, e a PRÓXIMA edição manda uma versão já defasada,
+    // levando a um 409 sem conflito real nenhum).
     updateAssessmentItem: (assessmentId, competencyId, patch) => {
+      const expectedVersion =
+        state.assessments
+          .find((a) => a.id === assessmentId)
+          ?.items.find((i) => i.competencyId === competencyId)?.version ?? 1;
       local((s) => ({
         ...s,
         assessments: s.assessments.map((a) =>
@@ -452,7 +462,14 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
               },
         ),
       }));
-      remote(api.patchAssessmentItem(assessmentId, competencyId, patch));
+      remote(
+        api.patchAssessmentItem(assessmentId, competencyId, patch, expectedVersion),
+        (updated) =>
+          local((s) => ({
+            ...s,
+            assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+          })),
+      );
     },
 
     /**
@@ -750,7 +767,11 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       hora do clique.
     */
     setAssessmentStatus: async (id, status) => {
-      const updated = await api.setAssessmentStatus(id, status);
+      // B-18 — mesmo raciocínio de `updateAssessmentItem`: `expectedVersion`
+      // vem do estado atual, não de um valor fixo que o chamador precisaria
+      // rastrear.
+      const expectedVersion = state.assessments.find((a) => a.id === id)?.version ?? 1;
+      const updated = await api.setAssessmentStatus(id, status, expectedVersion);
       local((s) => ({
         ...s,
         assessments: s.assessments.map((a) => (a.id === id ? updated : a)),

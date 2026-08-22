@@ -298,10 +298,20 @@ export const api = {
   /* assessments */
   openAssessment: (architectId: string, cycleId: string) =>
     post<Assessment>("/api/assessments", { architectId, cycleId }),
-  setAssessmentStatus: (id: string, status: Assessment["status"]) =>
-    patch<Assessment>(`/api/assessments/${id}/status`, { status }),
-  patchAssessmentItem: (assessmentId: string, competencyId: string, body: AssessmentItemPatch) =>
-    patch<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}`, body),
+  /** AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-18 — `expectedVersion` obrigatório: concorrência otimista na transição de status. */
+  setAssessmentStatus: (id: string, status: Assessment["status"], expectedVersion: number) =>
+    patch<Assessment>(`/api/assessments/${id}/status`, { status, expectedVersion }),
+  /** B-18 — idem, por item: concorrência otimista independente por competência. */
+  patchAssessmentItem: (
+    assessmentId: string,
+    competencyId: string,
+    body: AssessmentItemPatch,
+    expectedVersion: number,
+  ) =>
+    patch<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}`, {
+      ...body,
+      expectedVersion,
+    }),
 
   addAssessmentComment: (assessmentId: string, competencyId: string, body: CommentInput) =>
     post<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}/comments`, body),

@@ -181,6 +181,7 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
           modelVersion: 1,
           targetCareerLevelId: null,
           targetSemantics: null,
+          version: 1,
           items: [
             { competencyId: "security-iam", self: 2, leader: 2, target: 3, final: 2, comments: [] },
           ],
