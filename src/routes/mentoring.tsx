@@ -237,7 +237,7 @@ function MentoringPage() {
               <DialogTrigger asChild>
                 <Button>{t("mentor.new")}</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{t("mentor.form.title")}</DialogTitle>
                 </DialogHeader>
