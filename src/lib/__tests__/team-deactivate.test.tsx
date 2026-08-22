@@ -109,7 +109,7 @@ describe("Time — desativar preserva histórico", () => {
     vi.unstubAllGlobals();
   });
 
-  it("desativar tira do roster ativo e move para a lista de inativos, sem excluir nada", async () => {
+  it("desativar tira do roster ativo, sem excluir nada, e continua acessível pelo filtro de status", async () => {
     render(
       <Wrapper>
         <TeamPage />
@@ -122,10 +122,11 @@ describe("Time — desativar preserva histórico", () => {
     expect(dialogo.getByText(/nada é apagado/)).toBeTruthy();
     await userEvent.click(dialogo.getByRole("button", { name: "Desativar" }));
 
-    // some do roster ativo (o link deixa de existir na grade principal)...
-    await waitFor(() => expect(screen.queryByText("Ana Martins")).toBeTruthy());
-    // ...e aparece na seção de inativos, com opção de reativar.
-    expect(await screen.findByText("Arquitetos inativos")).toBeTruthy();
+    // some do roster ativo — o filtro de Status padrão é "Ativos"...
+    await waitFor(() => expect(screen.queryByText("Ana Martins")).toBeNull());
+    // ...mas continua acessível trocando pra "Inativos", com opção de reativar.
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "inactive");
+    expect(await screen.findByText("Ana Martins")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Reativar/ })).toBeTruthy();
 
     const patches = fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH");
@@ -143,11 +144,17 @@ describe("Time — desativar preserva histórico", () => {
     await userEvent.click(screen.getByLabelText("Desativar Ana Martins"));
     const dialogo = within(await screen.findByRole("dialog"));
     await userEvent.click(dialogo.getByRole("button", { name: "Desativar" }));
-    await screen.findByText("Arquitetos inativos");
+    await waitFor(() => expect(screen.queryByText("Ana Martins")).toBeNull());
 
-    await userEvent.click(screen.getByRole("button", { name: /Reativar/ }));
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "inactive");
+    await userEvent.click(await screen.findByRole("button", { name: /Reativar/ }));
 
-    await waitFor(() => expect(screen.queryByText("Arquitetos inativos")).toBeNull());
+    // reativada, some da visão "Inativos" sem precisar recarregar nada...
+    await waitFor(() => expect(screen.queryByRole("button", { name: /Reativar/ })).toBeNull());
+    // ...e volta a aparecer assim que o filtro volta pra "Ativos".
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "active");
+    expect(await screen.findByText("Ana Martins")).toBeTruthy();
+
     const patches = fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH");
     expect(JSON.parse(String((patches[1]?.[1] as RequestInit).body))).toEqual({ active: true });
   });
