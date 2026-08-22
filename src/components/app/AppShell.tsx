@@ -315,10 +315,27 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             />
           )}
+          {/*
+            AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-41 (§41,
+            Fase 4/5) — antes eram DOIS botões em dois pontos do layout:
+            expandida, `PanelLeftClose` vivia dentro desta linha; ao
+            recolher, esse botão desmontava e um segundo (`PanelLeftOpen`)
+            montava num bloco novo ABAIXO do cabeçalho — que ficava com a
+            altura intacta (o texto só perde largura via `w-0 opacity-0`,
+            nunca altura), então o botão "descia" exatamente a altura do
+            cabeçalho a cada alternância. Efeito colateral: o botão focado
+            era desmontado, perdendo o foco de teclado (cai pro `body`).
+            Um único botão sempre montado, trocando só ícone/rótulo,
+            desliza horizontalmente junto com a animação de largura da
+            coluna — sem deslocamento vertical, sem remontagem, foco
+            preservado. `gap-2.5` só quando expandida: recolhida, o bloco
+            de texto (largura zero) não deveria empurrar o botão para fora
+            do centro.
+          */}
           <div
             className={cn(
-              "flex items-center gap-2.5 py-5 transition-[padding] duration-300",
-              collapsed ? "justify-center px-0" : "px-5",
+              "flex items-center py-5 transition-[padding] duration-300",
+              collapsed ? "justify-center px-0" : "gap-2.5 px-5",
             )}
           >
             {/*
@@ -339,32 +356,25 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {t("shell.subtitle")}
               </p>
             </div>
-            {!collapsed && (
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                aria-label={t("shell.hideMenu")}
-                title={t("shell.hideMenu")}
-                className="-mr-1.5 shrink-0 rounded-md p-1.5 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              >
-                <PanelLeftClose className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
-          {collapsed && (
-            <div className="flex justify-center pb-2">
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                aria-label={t("shell.showMenu")}
-                title={t("shell.showMenu")}
-                className="rounded-md p-1.5 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              >
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
+              title={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
+              aria-expanded={!collapsed}
+              className={cn(
+                "shrink-0 rounded-md p-1.5 text-sidebar-foreground/70 transition-colors",
+                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                !collapsed && "-mr-1.5",
+              )}
+            >
+              {collapsed ? (
                 <PanelLeftOpen className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
+          </div>
 
           <nav
             ref={navRef}
