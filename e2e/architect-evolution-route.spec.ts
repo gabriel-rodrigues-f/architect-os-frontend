@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
+import { Client } from "pg";
 
 /**
  * R10-BUG-001 — `architects.$architectId.evolution.tsx` é rota-filha de
@@ -12,15 +13,22 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
  * `architects.$architectId.index.tsx`. Este teste cobre as duas formas de
  * chegar na aba (deep-link direto e clique) pra não regredir.
  *
- * Massa de teste via API, prefixo `e2e-`, removida no afterAll — mesmo
- * padrão de `golden-path.spec.ts` / `competency-matrix-responsive.spec.ts`.
+ * Massa de teste via API, prefixo `e2e-`, removida no afterAll direto no
+ * Postgres — mesmo padrão de `golden-path.spec.ts`. Diferente de
+ * `competency-matrix-responsive.spec.ts` (competência/capacidade têm
+ * `DELETE` de verdade na API): arquiteto não tem — só desativa
+ * (`PATCH .../active=false`) — então a limpeza de teste precisa ir direto
+ * no banco, não por um endpoint que não existe.
  *
  * Requer:
  *   E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD — conta administradora já existente
+ *   E2E_DATABASE_URL — opcional, default aponta pro Postgres de dev local
  */
 const API_URL = process.env["E2E_API_URL"] ?? "http://localhost:4000";
 const ADMIN_EMAIL = process.env["E2E_ADMIN_EMAIL"];
 const ADMIN_PASSWORD = process.env["E2E_ADMIN_PASSWORD"];
+const DATABASE_URL =
+  process.env["E2E_DATABASE_URL"] ?? "postgres://architect:architect@localhost:5433/architect_os";
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
@@ -54,13 +62,14 @@ test.beforeAll(async ({ playwright }) => {
   await api.dispose();
 });
 
-test.afterAll(async ({ playwright }) => {
-  const api = await playwright.request.newContext({ baseURL: API_URL });
-  await json(
-    await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
-  );
-  await api.delete(`/api/architects/${ARCHITECT_ID}`);
-  await api.dispose();
+test.afterAll(async () => {
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
+  try {
+    await client.query("DELETE FROM architects WHERE id = $1", [ARCHITECT_ID]);
+  } finally {
+    await client.end();
+  }
 });
 
 test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair na Visão geral", async ({
@@ -72,9 +81,13 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
   await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
   await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible();
 
-  // Deep-link direto na URL da aba — era exatamente o caminho quebrado.
+  // Deep-link direto na URL da aba — era exatamente o caminho quebrado. É
+  // um reload de página cheia (não navegação client-side): a SPA remonta do
+  // zero e refaz auth+/api/state antes de saber se o arquiteto existe, o
+  // que pode passar dos 5s padrão do Playwright sob carga — timeout maior
+  // só nesta primeira asserção pós-reload, não porque a rota é lenta.
   await page.goto(`/architects/${ARCHITECT_ID}/evolution`);
-  await expect(page.getByRole("heading", { name: /^Evolução —/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Evolução —/ })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText("Comparativo início × fim")).toBeVisible();
   await expect(page.getByText("Perfil por capacidade")).not.toBeVisible();
 
