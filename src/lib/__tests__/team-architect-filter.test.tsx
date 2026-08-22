@@ -26,10 +26,12 @@ import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12/B-13 — "achar a
- * Marina" entre dezenas de cards não tinha como ser resolvido pelos filtros
- * de composição por caixinha (Status/Papel/Especialização/Capacidade); o
- * `DataViewToolbar` já tinha um campo de busca pronto, só não conectado.
+ * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-43 (§41, Fase 4/5) —
+ * a busca livre por nome (B-13, `team-name-search.test.tsx`, removida) foi
+ * substituída pela faceta "Arquiteto" (`ArchitectFilter`): mesmo contrato de
+ * composição das outras facetas da toolbar (1, n ou todos), nunca texto
+ * livre. O teste abaixo cobre exatamente o cenário que a busca resolvia
+ * ("achar a Marina" entre vários cards) através do novo mecanismo.
  */
 const fetchMock = vi.fn();
 
@@ -56,7 +58,7 @@ function AuthReady({ children }: { children: ReactNode }) {
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
-describe("Time — busca por nome", () => {
+describe("Time — filtro de Arquiteto (B-43)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -93,7 +95,7 @@ describe("Time — busca por nome", () => {
     vi.unstubAllGlobals();
   });
 
-  it("filtra a lista pelo nome digitado e o chip 'Buscar por nome' limpa a busca", async () => {
+  it("recorta a lista por composição (1 pessoa) e o chip 'Arquiteto' devolve o time inteiro", async () => {
     render(
       <Wrapper>
         <TeamPage />
@@ -102,14 +104,33 @@ describe("Time — busca por nome", () => {
     await screen.findByText("Ana Martins");
     expect(screen.getByText("Bruno Almeida")).toBeTruthy();
 
-    await userEvent.type(screen.getByLabelText("Buscar por nome"), "ana");
+    // Nasce com todo o time selecionado ("Todo o time (N)"); desmarca tudo,
+    // depois marca só a Ana — exatamente o alternador de composição, nunca
+    // um campo de texto livre.
+    await userEvent.click(screen.getByLabelText("Arquiteto"));
+    await userEvent.click(screen.getByRole("button", { name: "Todo o time" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Ana Martins" }));
+    await userEvent.keyboard("{Escape}");
 
+    // A partir daqui o próprio gatilho do filtro também mostra "Ana Martins"
+    // (resumo de 1 selecionada) — duas ocorrências do texto confirmam que o
+    // card continua lá, não só o resumo do gatilho.
     await waitFor(() => expect(screen.queryByText("Bruno Almeida")).toBeNull());
-    expect(screen.getByText("Ana Martins")).toBeTruthy();
+    expect(screen.getAllByText("Ana Martins")).toHaveLength(2);
 
-    await userEvent.click(screen.getByRole("button", { name: /Buscar por nome: ana/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Arquiteto: Ana Martins/ }));
 
     expect(await screen.findByText("Bruno Almeida")).toBeTruthy();
     expect(screen.getByText("Ana Martins")).toBeTruthy();
+  });
+
+  it("não existe mais campo de busca por texto livre na toolbar", async () => {
+    render(
+      <Wrapper>
+        <TeamPage />
+      </Wrapper>,
+    );
+    await screen.findByText("Ana Martins");
+    expect(screen.queryByLabelText("Buscar por nome")).toBeNull();
   });
 });
