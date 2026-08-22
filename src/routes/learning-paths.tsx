@@ -498,7 +498,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                       checked={path.competencyIds.includes(c.id)}
                       onChange={() => toggle("competencyIds", c.id)}
                     />
-                    <span className="truncate">{c.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   </label>
                 ))}
               </div>
@@ -513,7 +513,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                       checked={path.assignedTo.includes(a.id)}
                       onChange={() => toggle("assignedTo", a.id)}
                     />
-                    <span className="truncate">{a.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
                 {assignableArchitects.length === 0 && (

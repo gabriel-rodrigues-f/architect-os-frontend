@@ -344,7 +344,7 @@ function MentoringPage() {
                       onChange={(e) => setField("actions", e.target.value)}
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <FieldLabel
                       htmlFor="mentor-competencies"
                       hint={t("mentor.form.competenciesHint")}
@@ -353,7 +353,7 @@ function MentoringPage() {
                     </FieldLabel>
                     <div
                       id="mentor-competencies"
-                      className="mt-1 max-h-40 overflow-y-auto surface-inset p-2"
+                      className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
                     >
                       {/* REVISAO-360-FRONTEND, FE-360-003 — competência arquivada não é mais
                           identidade profissional válida daqui pra frente (mesmo critério já
@@ -367,17 +367,17 @@ function MentoringPage() {
                             checked={competencyIds.includes(c.id)}
                             onChange={() => toggleCompetency(c.id)}
                           />
-                          <span className="truncate">{c.name}</span>
+                          <span className="min-w-0 flex-1 truncate">{c.name}</span>
                         </label>
                       ))}
                     </div>
                   </div>
                   {isAssignedTechLeadOf(user, sel.architectById(form.menteeId)) && (
-                    <div>
+                    <div className="min-w-0">
                       <FieldLabel htmlFor="mentor-proficiency" hint={t("mentor.form.proficiencyHint")}>
                         {t("mentor.form.proficiency")}
                       </FieldLabel>
-                      <div id="mentor-proficiency" className="mt-1 max-h-48 overflow-y-auto surface-inset p-2">
+                      <div id="mentor-proficiency" className="mt-1 max-h-48 overflow-y-auto overflow-x-hidden surface-inset p-2">
                         {store.competencies
                           .filter((c) => c.active)
                           .map((c) => {
@@ -390,7 +390,7 @@ function MentoringPage() {
                                     checked={!!update}
                                     onChange={() => toggleProficiencyUpdate(c.id)}
                                   />
-                                  <span className="flex-1 truncate">{c.name}</span>
+                                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
                                 </label>
                                 {update && (
                                   <div className="ml-6 mt-1">

@@ -128,7 +128,7 @@ export function ArchitectFilter({
                   tabIndex={-1}
                   className="pointer-events-none"
                 />
-                <span className="truncate">{a.name}</span>
+                <span className="min-w-0 flex-1 truncate">{a.name}</span>
               </button>
             );
           })}

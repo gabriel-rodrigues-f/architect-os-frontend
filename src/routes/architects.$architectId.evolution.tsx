@@ -402,7 +402,7 @@ function ArchitectEvolution() {
                         key={c.competencyId}
                         className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
                       >
-                        <span className="truncate">{c.competencyName}</span>
+                        <span className="min-w-0 flex-1 truncate">{c.competencyName}</span>
                         <span className="flex shrink-0 items-center gap-2 tabular-nums">
                           {c.initialLevel ? `L${c.initialLevel}` : "—"} → {c.currentLevel ? `L${c.currentLevel}` : "—"}
                           <span className={c.delta! > 0 ? "text-emerald-600" : "text-destructive"}>

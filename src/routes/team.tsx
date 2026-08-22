@@ -273,7 +273,7 @@ function TeamPage() {
                     key={g.item.competencyId}
                     className="flex items-center justify-between gap-2 text-sm"
                   >
-                    <span className="truncate">{g.competency?.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{g.competency?.name}</span>
                     <GapBadge gap={g.gap} />
                   </div>
                 ))}
