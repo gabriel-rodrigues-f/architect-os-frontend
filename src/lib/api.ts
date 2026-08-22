@@ -27,6 +27,7 @@ import type {
   SelectionScope,
   TeamEvolutionResult,
 } from "./domain";
+import { appStateSchema } from "./api-schemas";
 
 /** Snapshot devolvido por GET /api/state — espelha o AppState do backend. */
 export interface AppState {
@@ -194,7 +195,15 @@ export const authApi = {
 };
 
 export const api = {
-  getState: () => request<AppState>("/api/state"),
+  /**
+   * B-11 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10) — único
+   * ponto do app que valida a resposta em runtime (`appStateSchema`, gerado
+   * à mão a partir de `AppState`/`domain.ts`) em vez de um cast puro. Falha
+   * de validação joga um `ZodError`, que `useQuery` (`store.tsx`) já trata
+   * como qualquer outro erro de rede — drift vira erro visível, não
+   * `undefined` se propagando silenciosamente pela UI.
+   */
+  getState: () => request<AppState>("/api/state").then((data) => appStateSchema.parse(data)),
 
   setActiveCycle: (cycleId: string) =>
     put<{ cycleId: string }>("/api/settings/active-cycle", { cycleId }),
