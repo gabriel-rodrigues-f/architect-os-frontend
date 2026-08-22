@@ -139,7 +139,11 @@ function ArchitectEvolution() {
     <>
       <PageHeader
         title={t("evolution.title", { nome: architect.name })}
-        description={`${architect.role}${data?.architect.careerLevelName ? ` · ${data.architect.careerLevelName}` : ""}`}
+        description={`${architect.role}${
+          data?.architect.careerLevelName && data.architect.careerLevelName !== architect.role
+            ? ` · ${data.architect.careerLevelName}`
+            : ""
+        }`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="secondary" disabled={exporting || !data} onClick={() => void exportPdf()}>
