@@ -34,20 +34,24 @@ export function CapabilitiesTabs() {
   const pathname = typeof window === "undefined" ? "" : window.location.pathname;
   const { t } = useI18n();
 
+  /**
+   * B-30 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §10 achado #4)
+   * — `role="tablist"`/`role="tab"` era semântica incorreta: cada item aqui
+   * é um link para uma ROTA diferente (o conteúdo não troca dentro da
+   * mesma página), não um painel que aparece/desaparece sob o mesmo
+   * `tabpanel`. Um leitor de tela anunciava "aba" e esperava navegação por
+   * setas, que nunca existiu. `<nav>` + `aria-current="page"` é a
+   * semântica correta pra navegação entre páginas.
+   */
   return (
-    <div
-      className="mb-6 flex gap-1 border-b border-border"
-      role="tablist"
-      aria-label={t("nav.capabilities")}
-    >
+    <nav className="mb-6 flex gap-1 border-b border-border" aria-label={t("nav.capabilities")}>
       {TABS.map((tab) => {
         const active = pathname.startsWith(tab.to);
         return (
           <Link
             key={tab.to}
             to={tab.to}
-            role="tab"
-            aria-selected={active}
+            aria-current={active ? "page" : undefined}
             className={cn(
               "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
               active
@@ -59,6 +63,6 @@ export function CapabilitiesTabs() {
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

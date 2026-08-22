@@ -190,6 +190,12 @@ export function PageHeader({
  * própria (deep link, filtros, menos scroll), não como painel escondido
  * dentro da mesma página. `<Link>`, não um componente de abas com estado —
  * é navegação de verdade entre duas rotas.
+ *
+ * B-30 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §10 achado #4) —
+ * mesmo raciocínio de `CapabilitiesTabs`: `<nav>` + `aria-current="page"`,
+ * nunca `role="tablist"`/`role="tab"` (isto navega entre rotas, não troca
+ * painel na mesma página). O estado ativo já era só visual (cor da borda)
+ * — `aria-current` é o que faltava para chegar a quem usa leitor de tela.
  */
 export function ProfileTabs({
   architectId,
@@ -207,10 +213,11 @@ export function ProfileTabs({
         : "border-transparent text-muted-foreground hover:text-foreground",
     );
   return (
-    <div className="mb-6 flex gap-6 border-b border-border">
+    <nav className="mb-6 flex gap-6 border-b border-border">
       <Link
         to="/architects/$architectId"
         params={{ architectId }}
+        aria-current={active === "overview" ? "page" : undefined}
         className={tabClass(active === "overview")}
       >
         {t("arch.tabs.overview")}
@@ -218,11 +225,12 @@ export function ProfileTabs({
       <Link
         to="/architects/$architectId/evolution"
         params={{ architectId }}
+        aria-current={active === "evolution" ? "page" : undefined}
         className={tabClass(active === "evolution")}
       >
         {t("arch.tabs.evolution")}
       </Link>
-    </div>
+    </nav>
   );
 }
 
