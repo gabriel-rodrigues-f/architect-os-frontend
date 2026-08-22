@@ -52,12 +52,20 @@ function AuthReady({ children }: { children: ReactNode }) {
 
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 
-const renderMatrix = () =>
+/**
+ * REVISAO-360-FRONTEND, Seção 40-42 — a matriz virou um acordeão recolhido
+ * por padrão (Cloud Architecture nasce fechado); "Expandir tudo" abre todos
+ * os grupos de uma vez, exatamente como o comportamento antigo (sempre
+ * expandido) que este teste pressupõe.
+ */
+const renderMatrix = async () => {
   render(
     <Wrapper>
       <MatrixPage />
     </Wrapper>,
   );
+  await userEvent.click(await screen.findByRole("button", { name: "Expandir tudo" }));
+};
 
 describe("Matriz de Competências — exclusão", () => {
   beforeEach(() => {
@@ -92,7 +100,7 @@ describe("Matriz de Competências — exclusão", () => {
   });
 
   it("pede confirmação antes de excluir", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Excluir Kubernetes"));
@@ -107,7 +115,7 @@ describe("Matriz de Competências — exclusão", () => {
   });
 
   it("cancelar mantém a competência", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Excluir Kubernetes"));
@@ -118,7 +126,7 @@ describe("Matriz de Competências — exclusão", () => {
   });
 
   it("confirmar remove da tela e chama DELETE na API", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Excluir Kubernetes"));
@@ -143,7 +151,7 @@ describe("Matriz de Competências — exclusão", () => {
    * teste também trava o `userEvent`, que depende de timers reais.
    */
   it("mostra um cartão de sucesso com o nome da competência e some sozinho", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Excluir Kubernetes"));
@@ -171,7 +179,7 @@ describe("Matriz de Competências — exclusão", () => {
    * fechava o diálogo em vez de confirmar a exclusão.
    */
   it("Enter confirma a exclusão, não cancela", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Excluir Kubernetes"));

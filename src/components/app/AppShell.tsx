@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Map,
+  Menu,
   Monitor,
   Moon,
   PanelLeftClose,
@@ -21,6 +22,7 @@ import {
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -155,7 +157,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
 
   const navGroups = filterNavGroups(NAV_GROUPS, user?.role);
-  const navFlat = navGroups.flatMap((group) => group.items);
 
   /**
    * Começa expandida e só lê a preferência depois da montagem: no SSR não há
@@ -165,6 +166,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [resizing, setResizing] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+  /**
+   * REVISAO-360-FRONTEND, Seção 15 — a faixa horizontal de abas (`navFlat`,
+   * sem grupos) obrigava rolagem lateral pra achar itens do fim da lista e
+   * escondia a hierarquia por seção que a barra lateral do desktop mostra.
+   * O drawer mobile reusa `navGroups` (a mesma fonte, com seção/rótulo) em
+   * vez de uma lista achatada à parte.
+   */
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
@@ -453,9 +462,20 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/85 px-5 py-3 backdrop-blur lg:px-8">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              {t("shell.flow")}
-            </p>
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(true)}
+                aria-label={t("shell.openMenu")}
+                title={t("shell.openMenu")}
+                className="-ml-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <p className="truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                {t("shell.flow")}
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <label className="text-xs text-muted-foreground" htmlFor="cycle">
                 {t("shell.cycle")}
@@ -482,22 +502,69 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <nav className="flex gap-1 overflow-x-auto border-b border-border bg-card px-4 py-2 lg:hidden">
-            {navFlat.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs text-muted-foreground"
-                activeProps={{ className: "bg-secondary text-foreground" }}
-              >
-                {t(item.labelKey)}
-              </Link>
-            ))}
-          </nav>
-
           <main className="flex-1 px-5 py-6 lg:px-8 lg:py-8">{children}</main>
         </div>
       </div>
+
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <SheetContent side="left" className="flex w-[85vw] max-w-xs flex-col gap-0 p-0 sm:max-w-xs">
+          <SheetHeader className="border-b border-border px-5 py-4 text-left">
+            <SheetTitle className="font-display text-sm font-semibold">Synapse</SheetTitle>
+            <p className="text-[11px] text-muted-foreground">{t("shell.subtitle")}</p>
+          </SheetHeader>
+          <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
+            {navGroups.map((group, groupIndex) => (
+              <div
+                key={group.labelKey ?? `mobile-group-${groupIndex}`}
+                className={groupIndex > 0 ? "pt-2" : ""}
+              >
+                {group.labelKey && (
+                  <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+                    {t(group.labelKey)}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active =
+                      item.to === "/"
+                        ? pathname === "/"
+                        : pathname.startsWith(item.to) ||
+                          (item.activePrefixes?.some((p) => pathname.startsWith(p)) ?? false);
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setMobileNavOpen(false)}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                          active
+                            ? "bg-secondary font-medium text-foreground"
+                            : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                        )}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {t(item.labelKey)}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+          <div className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
+            <p className="truncate font-medium text-foreground">{user?.name}</p>
+            <p className="truncate">{user?.email}</p>
+            <button
+              type="button"
+              onClick={logout}
+              className="mt-2 flex items-center gap-1.5 transition-colors hover:text-foreground"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              {t("shell.logout")}
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </TooltipProvider>
   );
 }

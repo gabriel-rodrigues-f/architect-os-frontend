@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Lock, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -69,6 +69,22 @@ function LearningPage() {
   const [name, setName] = useState("");
   const { t, locale } = useI18n();
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
+  const [search, setSearch] = useState("");
+  /**
+   * REVISAO-360-FRONTEND, Seção 34 — cada trilha sempre renderizava a lista
+   * inteira de itens × pessoas atribuídas (o que chegava a ~2500px com
+   * poucas trilhas de tamanho médio). Nasce recolhida — mesmo padrão da
+   * Matriz de Competências (Seção 40-42): resumo sempre visível, detalhe só
+   * sob demanda, um card por vez ou "Expandir tudo".
+   */
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   /**
    * Catálogo é curadoria de Lead/Admin — antes qualquer autenticado criava
@@ -155,141 +171,223 @@ function LearningPage() {
         </div>
       )}
 
-      <div className="space-y-6">
-        {store.learningPaths.map((path) => {
-          /**
-           * Progresso do card é a média entre as pessoas atribuídas — cada
-           * uma com a própria média entre os itens. Antes, `item.progress`
-           * era um valor só; agora cada pessoa tem o dela (progressFor).
-           */
-          const perPerson = path.assignedTo.map((architectId) => {
-            const values = path.items.map(
-              (item) => progressFor(path, architectId, item.id).progress,
-            );
-            return values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
-          });
-          const total = perPerson.length
-            ? Math.round(perPerson.reduce((s, v) => s + v, 0) / perPerson.length)
-            : 0;
-          const editable = canEdit(path);
-          const createdAt = formatDate(path.createdAt, locale);
-
-          return (
-            <SectionCard
-              key={path.id}
-              title={path.name}
-              description={path.description}
-              actions={
-                <div className="flex items-center gap-3">
-                  <div className="w-40">
-                    <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                      <span>{t("path.progress")}</span>
-                      <span className="tabular-nums">{total}%</span>
-                    </div>
-                    <Bar value={total} />
-                  </div>
-                  {editable ? (
-                    <Button variant="outline" size="sm" onClick={() => setEditingPath(path)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                      Editar
-                    </Button>
-                  ) : (
-                    <span
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                      title={`Somente ${path.createdBy} pode editar esta trilha`}
-                    >
-                      <Lock className="h-3.5 w-3.5" />
-                      Somente leitura
-                    </span>
-                  )}
-                </div>
-              }
+      {store.learningPaths.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <div className="min-w-[220px] flex-1">
+            <Input
+              placeholder={t("path.search.placeholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label={t("path.search.placeholder")}
+              className="max-w-sm"
+            />
+          </div>
+          <div className="ml-auto flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExpandedIds(new Set(store.learningPaths.map((p) => p.id)))}
             >
-              <p className="mb-3 text-xs text-muted-foreground">
-                {path.createdBy
-                  ? t("path.createdBy", { autor: path.createdBy })
-                  : t("path.noAuthor")}
-                {createdAt ? ` · ${createdAt}` : ""}
+              {t("path.expandAll")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setExpandedIds(new Set())}>
+              {t("path.collapseAll")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {(() => {
+        const term = search.trim().toLowerCase();
+        const visiblePaths = term
+          ? store.learningPaths.filter(
+              (path) =>
+                path.name.toLowerCase().includes(term) ||
+                path.competencyIds.some((cid) =>
+                  (sel.competencyById(cid)?.name ?? "").toLowerCase().includes(term),
+                ) ||
+                path.assignedTo.some((aid) =>
+                  (sel.architectById(aid)?.name ?? "").toLowerCase().includes(term),
+                ),
+            )
+          : store.learningPaths;
+
+        if (term && visiblePaths.length === 0) {
+          return (
+            <div className="surface-card p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                {t("path.search.empty", { termo: search.trim() })}
               </p>
+            </div>
+          );
+        }
 
-              <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
-                {path.competencyIds.map((cid) => (
-                  <span key={cid} className="rounded-md bg-secondary px-2 py-0.5">
-                    {sel.competencyById(cid)?.name ?? cid}
-                  </span>
-                ))}
-                {path.assignedTo.map((aid) => (
-                  <span key={aid} className="rounded-md border border-border px-2 py-0.5">
-                    {sel.architectById(aid)?.name ?? aid}
-                  </span>
-                ))}
-              </div>
+        return (
+          <div className="space-y-4">
+            {visiblePaths.map((path) => {
+              /**
+               * Progresso do card é a média entre as pessoas atribuídas — cada
+               * uma com a própria média entre os itens. Antes, `item.progress`
+               * era um valor só; agora cada pessoa tem o dela (progressFor).
+               */
+              const perPerson = path.assignedTo.map((architectId) => {
+                const values = path.items.map(
+                  (item) => progressFor(path, architectId, item.id).progress,
+                );
+                return values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+              });
+              const total = perPerson.length
+                ? Math.round(perPerson.reduce((s, v) => s + v, 0) / perPerson.length)
+                : 0;
+              const editable = canEdit(path);
+              const createdAt = formatDate(path.createdAt, locale);
+              const isExpanded = expandedIds.has(path.id) || term.length > 0;
 
-              <ul className="divide-y divide-border">
-                {path.items.map((item) => (
-                  <li key={item.id} className="py-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-24 shrink-0 rounded-md bg-secondary px-2 py-0.5 text-center text-xs">
-                        {item.type}
-                      </span>
-                      <div className="min-w-40 flex-1">
-                        <p className="text-sm font-medium">{item.title}</p>
-                        <p className="text-xs text-muted-foreground">{item.hours}h estimadas</p>
+              return (
+                <SectionCard
+                  key={path.id}
+                  title={path.name}
+                  description={path.description}
+                  actions={
+                    <div className="flex items-center gap-3">
+                      <div className="w-40">
+                        <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                          <span>{t("path.progress")}</span>
+                          <span className="tabular-nums">{total}%</span>
+                        </div>
+                        <Bar value={total} />
                       </div>
+                      {editable ? (
+                        <Button variant="outline" size="sm" onClick={() => setEditingPath(path)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar
+                        </Button>
+                      ) : (
+                        <span
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                          title={`Somente ${path.createdBy} pode editar esta trilha`}
+                        >
+                          <Lock className="h-3.5 w-3.5" />
+                          Somente leitura
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(path.id)}
+                        aria-label={
+                          isExpanded
+                            ? t("path.collapse.collapse", { nome: path.name })
+                            : t("path.collapse.expand", { nome: path.name })
+                        }
+                        aria-expanded={isExpanded}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        )}
+                      </button>
                     </div>
-                    <div className="mt-2 space-y-1.5">
-                      {path.assignedTo.map((architectId) => {
-                        const person = sel.architectById(architectId);
-                        const prog = progressFor(path, architectId, item.id);
-                        const nome = person?.name ?? architectId;
-                        return (
-                          <div key={architectId} className="flex items-center gap-2 pl-2">
-                            <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">
-                              {nome}
+                  }
+                >
+                  <p className="mb-3 text-xs text-muted-foreground">
+                    {path.createdBy
+                      ? t("path.createdBy", { autor: path.createdBy })
+                      : t("path.noAuthor")}
+                    {createdAt ? ` · ${createdAt}` : ""}
+                    {" · "}
+                    {t("path.summary.items", { n: path.items.length })}
+                    {" · "}
+                    {t("path.summary.people", { n: path.assignedTo.length })}
+                  </p>
+
+                  <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
+                    {path.competencyIds.map((cid) => (
+                      <span key={cid} className="rounded-md bg-secondary px-2 py-0.5">
+                        {sel.competencyById(cid)?.name ?? cid}
+                      </span>
+                    ))}
+                    {path.assignedTo.map((aid) => (
+                      <span key={aid} className="rounded-md border border-border px-2 py-0.5">
+                        {sel.architectById(aid)?.name ?? aid}
+                      </span>
+                    ))}
+                  </div>
+
+                  {isExpanded && (
+                    <ul className="divide-y divide-border">
+                      {path.items.map((item) => (
+                        <li key={item.id} className="py-3">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="w-24 shrink-0 rounded-md bg-secondary px-2 py-0.5 text-center text-xs">
+                              {item.type}
                             </span>
-                            {canEditProgress(architectId) ? (
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={10}
-                                value={prog.progress}
-                                aria-label={`Progresso de ${nome} em ${item.title}`}
-                                onChange={(e) =>
-                                  store.updateLearningItemProgress(
-                                    path.id,
-                                    architectId,
-                                    item.id,
-                                    Number(e.target.value),
-                                  )
-                                }
-                                className="w-full accent-[var(--primary)]"
-                              />
-                            ) : (
-                              <Bar value={prog.progress} className="flex-1" />
-                            )}
-                            <span className="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                              {prog.progress}% · {labels.learningStatus[prog.status]}
-                            </span>
+                            <div className="min-w-40 flex-1">
+                              <p className="text-sm font-medium">{item.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.hours}h estimadas
+                              </p>
+                            </div>
                           </div>
-                        );
-                      })}
-                      {path.assignedTo.length === 0 && (
-                        <p className="pl-2 text-xs text-muted-foreground">
-                          {t("path.item.noAssignee")}
+                          <div className="mt-2 space-y-1.5">
+                            {path.assignedTo.map((architectId) => {
+                              const person = sel.architectById(architectId);
+                              const prog = progressFor(path, architectId, item.id);
+                              const nome = person?.name ?? architectId;
+                              return (
+                                <div key={architectId} className="flex items-center gap-2 pl-2">
+                                  <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">
+                                    {nome}
+                                  </span>
+                                  {canEditProgress(architectId) ? (
+                                    <input
+                                      type="range"
+                                      min={0}
+                                      max={100}
+                                      step={10}
+                                      value={prog.progress}
+                                      aria-label={`Progresso de ${nome} em ${item.title}`}
+                                      onChange={(e) =>
+                                        store.updateLearningItemProgress(
+                                          path.id,
+                                          architectId,
+                                          item.id,
+                                          Number(e.target.value),
+                                        )
+                                      }
+                                      className="w-full accent-[var(--primary)]"
+                                    />
+                                  ) : (
+                                    <Bar value={prog.progress} className="flex-1" />
+                                  )}
+                                  <span className="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                                    {prog.progress}% · {labels.learningStatus[prog.status]}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                            {path.assignedTo.length === 0 && (
+                              <p className="pl-2 text-xs text-muted-foreground">
+                                {t("path.item.noAssignee")}
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                      {!path.items.length && (
+                        <p className="py-2 text-sm text-muted-foreground">
+                          Trilha ainda sem itens.
                         </p>
                       )}
-                    </div>
-                  </li>
-                ))}
-                {!path.items.length && (
-                  <p className="py-2 text-sm text-muted-foreground">Trilha ainda sem itens.</p>
-                )}
-              </ul>
-            </SectionCard>
-          );
-        })}
-      </div>
+                    </ul>
+                  )}
+                </SectionCard>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {editingPath && (
         <EditPathDialog
@@ -498,7 +596,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                       checked={path.competencyIds.includes(c.id)}
                       onChange={() => toggle("competencyIds", c.id)}
                     />
-                    <span className="truncate">{c.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   </label>
                 ))}
               </div>
@@ -513,7 +611,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                       checked={path.assignedTo.includes(a.id)}
                       onChange={() => toggle("assignedTo", a.id)}
                     />
-                    <span className="truncate">{a.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
                 {assignableArchitects.length === 0 && (

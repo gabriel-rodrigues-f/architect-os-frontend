@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "../api";
@@ -37,9 +37,7 @@ const LEAD_USER: SessionUser = {
 function stateWithAnaLedBy(leadUserId: string): AppState {
   return {
     ...fixtureState,
-    architects: fixtureState.architects.map((a) =>
-      a.id === "ana" ? { ...a, leadUserId } : a,
-    ),
+    architects: fixtureState.architects.map((a) => (a.id === "ana" ? { ...a, leadUserId } : a)),
   };
 }
 
@@ -142,11 +140,16 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
     await userEvent.type(within(dialog).getByLabelText("Decisões"), "Adotar RBAC.");
     await userEvent.type(within(dialog).getByLabelText("Ações"), "Documentar o ADR.");
 
-    const proficiencySection = screen.getByText("Evolução observada").closest("div")!.parentElement!;
+    const proficiencySection = screen
+      .getByText("Evolução observada")
+      .closest("div")!.parentElement!;
     await userEvent.click(within(proficiencySection).getByText("IAM"));
     const levelSelect = screen.getByLabelText("Nível observado — IAM");
     await userEvent.selectOptions(levelSelect, "4");
-    await userEvent.type(screen.getByPlaceholderText("Nota (opcional)"), "Salto após o projeto real.");
+    await userEvent.type(
+      screen.getByPlaceholderText("Nota (opcional)"),
+      "Salto após o projeto real.",
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Salvar sessão" }));
 
@@ -163,6 +166,55 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
     expect(body.proficiencyUpdates).toEqual([
       { competencyId: "security-iam", observedLevel: 4, note: "Salto após o projeto real." },
     ]);
+  });
+
+  /**
+   * REVISAO-360-FRONTEND-UI-UX-ENTERPRISE-SYNAPSE-2026-08-22.md, FE-360-002
+   * (P1) — marcar a competência não pode gravar L1 silenciosamente. O
+   * select nasce sem nível escolhido (placeholder desabilitado), e salvar
+   * nesse estado é recusado no cliente, sem nem chegar a chamar a API.
+   */
+  it("marcar uma competência sem escolher o nível bloqueia o salvar — nunca grava L1 por padrão", async () => {
+    mockBackend(LEAD_USER, stateWithAnaLedBy(LEAD_USER.id));
+    render(
+      <Wrapper>
+        <MentoringPage />
+      </Wrapper>,
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.selectOptions(within(dialog).getByLabelText("Mentorado"), "ana");
+    await userEvent.type(within(dialog).getByLabelText("Duração (min)"), "30");
+    await userEvent.type(within(dialog).getByLabelText("Tema"), "Follow-up rápido");
+    await userEvent.type(within(dialog).getByLabelText("Notas"), "Sem novidades.");
+    await userEvent.type(within(dialog).getByLabelText("Decisões"), "Manter o rumo.");
+    await userEvent.type(within(dialog).getByLabelText("Ações"), "Nenhuma.");
+
+    const proficiencySection = screen
+      .getByText("Evolução observada")
+      .closest("div")!.parentElement!;
+    await userEvent.click(within(proficiencySection).getByText("IAM"));
+
+    const levelSelect = screen.getByLabelText("Nível observado — IAM") as HTMLSelectElement;
+    expect(levelSelect.value).toBe("");
+
+    await userEvent.click(screen.getByRole("button", { name: "Salvar sessão" }));
+
+    await screen.findByText("Escolha o nível observado ou desmarque esta competência.");
+    const isCreateCall = (call: unknown[]) => {
+      const [url, init] = call as [string, RequestInit?];
+      return String(url).endsWith("/api/mentoring-sessions") && init?.method === "POST";
+    };
+    expect(fetchMock.mock.calls.some(isCreateCall)).toBe(false);
+
+    // Escolher o nível limpa o erro e libera o salvar.
+    await userEvent.selectOptions(levelSelect, "3");
+    expect(
+      screen.queryByText("Escolha o nível observado ou desmarque esta competência."),
+    ).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Salvar sessão" }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(isCreateCall)).toBe(true));
   });
 
   it("salva normalmente com 'Evolução observada' vazia — o campo é opcional", async () => {

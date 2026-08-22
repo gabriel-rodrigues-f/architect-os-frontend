@@ -88,8 +88,15 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
   // só nesta primeira asserção pós-reload, não porque a rota é lenta.
   await page.goto(`/architects/${ARCHITECT_ID}/evolution`);
   await expect(page.getByRole("heading", { name: /^Evolução —/ })).toBeVisible({ timeout: 15000 });
-  await expect(page.getByText("Comparativo início × fim")).toBeVisible();
+  // FE-360-005 — a tela virou 4 subvisões (Resumo/Capacidades/Competências/
+  // Linha do tempo); "Comparativo início × fim" mora na aba Competências,
+  // não aparece mais direto no Resumo (que é a aba padrão).
+  await expect(page.getByRole("tab", { name: "Resumo" })).toBeVisible();
+  await expect(page.getByText("Comparativo início × fim")).not.toBeVisible();
   await expect(page.getByText("Perfil por capacidade")).not.toBeVisible();
+
+  await page.getByRole("tab", { name: "Competências" }).click();
+  await expect(page.getByText("Comparativo início × fim")).toBeVisible();
 
   // Clique de volta pra "Visão geral" — troca de aba client-side.
   await page.getByRole("link", { name: "Visão geral" }).click();
@@ -100,5 +107,5 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
   // E de novo pra "Evolução" por clique, não só deep-link.
   await page.getByRole("link", { name: "Evolução" }).click();
   await expect(page).toHaveURL(new RegExp(`/architects/${ARCHITECT_ID}/evolution$`));
-  await expect(page.getByText("Comparativo início × fim")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Resumo" })).toBeVisible();
 });

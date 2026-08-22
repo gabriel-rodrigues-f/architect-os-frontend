@@ -17,7 +17,6 @@ import { Label } from "@/components/ui/label";
 import { authApi, ApiError, isLeadCapable, type SessionUser, type UserRole } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/users")({
   head: () => ({
@@ -25,13 +24,12 @@ export const Route = createFileRoute("/users")({
       { title: "Usuários — Synapse" },
       {
         name: "description",
-        content: "Contas de acesso: papel (administrador, Tech Lead, membro) e vínculo com o time.",
+        content: "Contas de acesso: papel (administrador, Tech Lead, membro) e status.",
       },
       { property: "og:title", content: "Usuários — Synapse" },
       {
         property: "og:description",
-        content:
-          "Quem administra o sistema, quem revisa como Tech Lead, e a quem cada conta pertence.",
+        content: "Quem administra o sistema e quem revisa como Tech Lead.",
       },
     ],
   }),
@@ -42,10 +40,19 @@ const USERS_QUERY_KEY = ["auth-users"] as const;
 
 function UsersPage() {
   const { t } = useI18n();
-  const store = useStore();
   const isAdmin = useCurrentUser().role === "admin";
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
+  /**
+   * REVISAO-360-FRONTEND, FE-360-009 (P1 UX/Security) — papel, vínculo e
+   * status trocavam de valor no exato `onChange` de um `<select>`/clique de
+   * botão inline, sem nenhuma etapa de confirmação antes de persistir.
+   * Numa tabela densa, um clique errado (linha vizinha, elemento errado)
+   * já tinha efeito real. Agora abre um diálogo — Cancelar/Salvar
+   * alterações — e conceder Admin especificamente exige uma confirmação
+   * extra antes do Salvar valer.
+   */
+  const [editing, setEditing] = useState<SessionUser | null>(null);
   /**
    * GET /api/auth/users é admin-only no backend (diretório completo de
    * contas é dado administrativo, não catálogo público) — a query nem
@@ -62,7 +69,7 @@ function UsersPage() {
 
   const updatePatch = async (
     user: SessionUser,
-    patch: Partial<{ role: UserRole; architectId: string | null; status: "active" | "disabled" }>,
+    patch: Partial<{ role: UserRole; status: "active" | "disabled" }>,
   ) => {
     try {
       await authApi.updateUser(user.id, patch);
@@ -103,8 +110,8 @@ function UsersPage() {
                   <th className="py-2">{t("users.col.name")}</th>
                   <th className="py-2">{t("users.col.email")}</th>
                   <th className="py-2">{t("users.col.role")}</th>
-                  <th className="py-2">{t("users.col.architect")}</th>
                   <th className="py-2">{t("users.col.status")}</th>
+                  {isAdmin && <th className="py-2">{t("users.col.actions")}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -123,70 +130,23 @@ function UsersPage() {
                     </td>
                     <td className="py-2 text-muted-foreground">{user.email}</td>
                     <td className="py-2">
-                      {isAdmin ? (
-                        <select
-                          className="rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-                          value={user.role}
-                          aria-label={`${t("users.col.role")} — ${user.name}`}
-                          onChange={(e) =>
-                            void updatePatch(user, { role: e.target.value as UserRole })
-                          }
-                        >
-                          <option value="member">{t("users.role.member")}</option>
-                          <option value="lead">{t("users.role.lead")}</option>
-                          <option value="admin">{t("users.role.admin")}</option>
-                        </select>
-                      ) : (
-                        <RoleBadge role={user.role} label={t(`users.role.${user.role}`)} />
-                      )}
+                      <RoleBadge role={user.role} label={t(`users.role.${user.role}`)} />
                     </td>
                     <td className="py-2">
-                      {isAdmin ? (
-                        <select
-                          className="rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-                          value={user.architectId ?? ""}
-                          aria-label={`${t("users.col.architect")} — ${user.name}`}
-                          onChange={(e) =>
-                            void updatePatch(user, { architectId: e.target.value || null })
-                          }
-                        >
-                          <option value="">{t("users.architect.none")}</option>
-                          {store.architects.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="text-muted-foreground">
-                          {store.architects.find((a) => a.id === user.architectId)?.name ??
-                            t("users.architect.none")}
-                        </span>
-                      )}
+                      <StatusBadge status={user.status} label={t(`users.status.${user.status}`)} />
                     </td>
-                    <td className="py-2">
-                      {isAdmin ? (
+                    {isAdmin && (
+                      <td className="py-2">
                         <Button
                           size="sm"
-                          variant={user.status === "disabled" ? "secondary" : "outline"}
-                          aria-label={`${t("users.col.status")} — ${user.name}`}
-                          onClick={() =>
-                            void updatePatch(user, {
-                              status: user.status === "disabled" ? "active" : "disabled",
-                            })
-                          }
+                          variant="outline"
+                          aria-label={`${t("users.edit.action")} ${user.name}`}
+                          onClick={() => setEditing(user)}
                         >
-                          {user.status === "disabled"
-                            ? t("users.status.enable")
-                            : t("users.status.disable")}
+                          {t("users.edit.action")}
                         </Button>
-                      ) : (
-                        <StatusBadge
-                          status={user.status}
-                          label={t(`users.status.${user.status}`)}
-                        />
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -201,6 +161,17 @@ function UsersPage() {
           onCreated={() => {
             setCreating(false);
             void queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
+          }}
+        />
+      )}
+
+      {editing && (
+        <EditUserDialog
+          user={editing}
+          onCancel={() => setEditing(null)}
+          onSave={async (patch) => {
+            await updatePatch(editing, patch);
+            setEditing(null);
           }}
         />
       )}
@@ -220,6 +191,120 @@ function StatusBadge({ status, label }: { status: "active" | "disabled"; label: 
 }
 
 /**
+ * REVISAO-360-FRONTEND, FE-360-009 — um diálogo só pros três campos
+ * sensíveis (papel, vínculo, status), com um segundo passo obrigatório
+ * quando a alteração concede Admin. `step` troca o footer inteiro pro modo
+ * de confirmação em vez de abrir um segundo `<Dialog>` por cima — mais
+ * simples de gerenciar foco/Escape que dois diálogos empilhados.
+ */
+function EditUserDialog({
+  user,
+  onCancel,
+  onSave,
+}: {
+  user: SessionUser;
+  onCancel: () => void;
+  onSave: (patch: Partial<{ role: UserRole; status: "active" | "disabled" }>) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const [role, setRole] = useState<UserRole>(user.role);
+  const [status, setStatus] = useState<"active" | "disabled">(user.status);
+  const [step, setStep] = useState<"edit" | "confirm-admin">("edit");
+  const [saving, setSaving] = useState(false);
+
+  const grantsAdmin = user.role !== "admin" && role === "admin";
+  const changed = role !== user.role || status !== user.status;
+
+  const persist = async () => {
+    setSaving(true);
+    try {
+      await onSave({
+        ...(role !== user.role ? { role } : {}),
+        ...(status !== user.status ? { status } : {}),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveClick = () => {
+    if (grantsAdmin) {
+      setStep("confirm-admin");
+      return;
+    }
+    void persist();
+  };
+
+  if (step === "confirm-admin") {
+    return (
+      <Dialog open onOpenChange={(open) => !open && onCancel()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("users.edit.confirmAdminTitle")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("users.edit.confirmAdminBody", { nome: user.name })}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStep("edit")} disabled={saving}>
+              {t("users.edit.back")}
+            </Button>
+            <Button variant="destructive" onClick={() => void persist()} disabled={saving}>
+              {saving ? t("users.edit.saving") : t("users.edit.confirmAdminAction")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("users.edit.title", { nome: user.name })}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="edit-user-role">{t("users.col.role")}</Label>
+            <select
+              id="edit-user-role"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={role}
+              onChange={(e) => setRole(e.target.value as UserRole)}
+            >
+              <option value="member">{t("users.role.member")}</option>
+              <option value="lead">{t("users.role.lead")}</option>
+              <option value="admin">{t("users.role.admin")}</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="edit-user-status">{t("users.col.status")}</Label>
+            <select
+              id="edit-user-status"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as "active" | "disabled")}
+            >
+              <option value="active">{t("users.status.active")}</option>
+              <option value="disabled">{t("users.status.disabled")}</option>
+            </select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={saving}>
+            {t("users.edit.cancel")}
+          </Button>
+          <Button onClick={handleSaveClick} disabled={!changed || saving}>
+            {saving ? t("users.edit.saving") : t("users.edit.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
  * ENT-AUTH-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
  * Seção 7.1) — self-registration fechou depois do bootstrap; esta é a
  * única forma de entrar conta nova na instância. A senha temporária só
@@ -235,11 +320,9 @@ function CreateUserDialog({
   onCreated: () => void;
 }) {
   const { t } = useI18n();
-  const store = useStore();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("member");
-  const [architectId, setArchitectId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ email: string; temporaryPassword: string } | null>(null);
@@ -254,7 +337,6 @@ function CreateUserDialog({
         name: name.trim(),
         email: email.trim(),
         role,
-        architectId: architectId || null,
       });
       setResult({ email: email.trim(), temporaryPassword });
     } catch (err) {
@@ -319,22 +401,6 @@ function CreateUserDialog({
               <option value="member">{t("users.role.member")}</option>
               <option value="lead">{t("users.role.lead")}</option>
               <option value="admin">{t("users.role.admin")}</option>
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="new-user-architect">{t("users.col.architect")}</Label>
-            <select
-              id="new-user-architect"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={architectId}
-              onChange={(e) => setArchitectId(e.target.value)}
-            >
-              <option value="">{t("users.architect.none")}</option>
-              {store.architects.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
             </select>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}

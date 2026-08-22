@@ -99,6 +99,16 @@ e especialização principal. Cada card permite editar ou desativar a pessoa
 (arquiteto nunca é excluído de verdade — só desativado, pra preservar o
 histórico de avaliações e PDI que já existe ligado a ele).
 
+Os filtros (Status, Nível de carreira, Especialização, Capacidade) são todos
+por **composição**: cada um abre uma lista de caixinhas — marca um valor, vários,
+ou "selecionar tudo"/"remover tudo" de uma vez — em vez de um único valor
+escolhido por vez ou uma busca por texto livre. Todo filtro nasce com tudo
+marcado (nenhuma filtragem de fato) exceto Status, que nasce só em "Ativos".
+Acima de 12 pessoas visíveis a lista alterna sozinha de cartões para uma
+tabela mais densa (o botão no canto superior direito troca manualmente a
+qualquer momento); ordenação por nome, nível médio ou atualização recente, e
+paginação quando o recorte é grande.
+
 ## 4. Capacidades
 
 A antiga trinca "Mapa de Capacidades / Análise de Lacunas / Necessidades de
@@ -196,6 +206,13 @@ com tipo, nome, carga horária e status por item. Uma trilha pode ficar
 associada a uma ou mais competências, fechando o elo entre "o que falta
 desenvolver" e "o que fazer a respeito".
 
+Cada trilha nasce recolhida, mostrando só o resumo (progresso médio, nº de
+itens, nº de pessoas, competências e atribuições) — o detalhe completo (cada
+item com o slider de progresso por pessoa) só aparece ao expandir o card,
+individualmente ou com "Expandir tudo". A busca por nome da trilha,
+competência ou pessoa expande automaticamente as trilhas que casam com o
+termo, sem precisar de um clique extra.
+
 ## 8. Mentoria
 
 ![Mentoria](screenshots/10-mentoria.png)
@@ -221,6 +238,13 @@ criar competência dentro dela, editar (nome, tipo e níveis esperados) e
 arquivar — uma competência com histórico de avaliação nunca é excluída de
 verdade, só sai do catálogo ativo.
 
+Cada capacidade nasce recolhida (contagem 6/3/3 e status de curadoria sempre
+visíveis no cabeçalho do card) — a tabela de competências só aparece ao
+expandir, individualmente ou com "Expandir tudo"/"Recolher tudo". Além da
+busca (que também expande automaticamente o que casa com o termo), um filtro
+por status de curadoria (Todas / Prontas / Requer curadoria) ajuda a achar
+rápido o que ainda falta revisar.
+
 ## 10. Ciclos de Desenvolvimento
 
 ![Ciclos de Desenvolvimento](screenshots/12-ciclos-de-desenvolvimento.png)
@@ -236,11 +260,10 @@ histórico inteiro, de todos os ciclos.
 
 ![Usuários](screenshots/13-usuarios.png)
 
-Contas de acesso: quem administra o sistema, quem revisa como Tech Lead, e a
-quem cada conta pertence (para contas de arquiteto, o vínculo com o próprio
-registro em Time). Um administrador cria conta nova, muda papel e vínculo, e
-habilita ou desabilita — nunca exclui uma conta que já tem histórico de
-ações no sistema.
+Contas de acesso: quem administra o sistema e quem revisa como Tech Lead. Um
+administrador cria conta nova, muda papel e status (ativa/desabilitada) —
+nunca exclui uma conta que já tem histórico de ações no sistema. Conceder
+Admin a alguém exige uma etapa extra de confirmação antes de salvar.
 
 ## 12. Detalhe do Arquiteto
 
@@ -287,6 +310,15 @@ tirar dúvida sem precisar perguntar: "o que muda de um nível 3 para um nível
 4?". Não aparece na barra lateral (o menu de preferências, ícone de
 engrenagem no cabeçalho, cobre tema e idioma), mas continua acessível
 diretamente em `/settings`.
+
+## 14. Navegação mobile
+
+![Navegação mobile](screenshots/17-navegacao-mobile.png)
+
+Abaixo de um certo tamanho de tela, a barra lateral some e vira um botão de
+hambúrguer no cabeçalho. Ele abre um drawer com a mesma hierarquia por seção
+da barra lateral do desktop (grupos, ícones, item ativo destacado) — nunca
+uma lista achatada à parte. Tocar num item navega e fecha o drawer sozinho.
 
 ---
 

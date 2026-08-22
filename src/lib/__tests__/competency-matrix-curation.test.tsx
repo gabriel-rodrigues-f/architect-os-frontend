@@ -131,14 +131,19 @@ describe("Matriz de Competências — curadoria e escala", () => {
 
   it("mostra contagens 6/3/3 e status de curadoria por capacidade", async () => {
     renderMatrix();
-    await screen.findByText("Kubernetes");
+    // Contagens e status de curadoria moram no cabeçalho do card — visíveis mesmo com a seção recolhida (Seção 40-42).
+    await screen.findByText("Cloud Architecture");
 
     // Security: REQUIRES_CURATION, 1 competência não restritiva só.
-    expect(screen.getByText("1/6 competências · 0/3 restritivas · 1/3 não restritivas")).toBeTruthy();
+    expect(
+      screen.getByText("1/6 competências · 0/3 restritivas · 1/3 não restritivas"),
+    ).toBeTruthy();
     expect(screen.getAllByText("Requer curadoria").length).toBeGreaterThan(0);
 
     // Full Capability: READY, 6/3/3.
-    expect(screen.getByText("6/6 competências · 3/3 restritivas · 3/3 não restritivas")).toBeTruthy();
+    expect(
+      screen.getByText("6/6 competências · 3/3 restritivas · 3/3 não restritivas"),
+    ).toBeTruthy();
     expect(screen.getByText("Pronta")).toBeTruthy();
   });
 
@@ -156,38 +161,43 @@ describe("Matriz de Competências — curadoria e escala", () => {
 
   it("desabilita a opção restritiva no diálogo de nova competência quando a capacidade já tem 3 restritivas", async () => {
     renderMatrix();
-    await screen.findByText("Kubernetes");
+    await screen.findByText("Cloud Architecture");
 
     const cloudCard = screen.getByText("Cloud Architecture").closest(".surface-card");
     expect(cloudCard).toBeTruthy();
     // "cloud" só tem NON_RESTRICTIVE — abre o diálogo por essa capacidade para checar que RESTRICTIVE está livre.
     await userEvent.click(
-      screen.getAllByRole("button", { name: "Nova competência" }).find((btn) => cloudCard?.contains(btn))!,
+      screen
+        .getAllByRole("button", { name: "Nova competência" })
+        .find((btn) => cloudCard?.contains(btn))!,
     );
     await screen.findByText("Nova competência em Cloud Architecture");
-    const restrictiveOption = screen.getByRole("option", { name: "Restritiva" }) as HTMLOptionElement;
+    const restrictiveOption = screen.getByRole("option", {
+      name: "Restritiva",
+    }) as HTMLOptionElement;
     expect(restrictiveOption.disabled).toBe(false);
   });
 
-  it("filtro de busca esconde capacidades que não combinam com o termo", async () => {
+  it("filtro de busca esconde capacidades que não combinam com o termo e expande as que casam", async () => {
     renderMatrix();
-    await screen.findByText("Kubernetes");
+    await screen.findByText("Cloud Architecture");
 
-    await userEvent.type(
-      screen.getByLabelText("Buscar capacidade ou competência…"),
-      "Security",
-    );
+    await userEvent.type(screen.getByLabelText("Buscar capacidade ou competência…"), "Security");
 
     expect(screen.getByText("Security")).toBeTruthy();
     expect(screen.queryByText("Cloud Architecture")).toBeNull();
   });
 
-  it("recolher uma seção esconde a tabela mas mantém o título visível", async () => {
+  it("expandir uma seção mostra a tabela; recolher de novo esconde, mas mantém o título visível", async () => {
     renderMatrix();
-    await screen.findByText("Kubernetes");
+    // Seção 40-42 — a matriz nasce com todo grupo recolhido.
+    await screen.findByText("Cloud Architecture");
+    expect(screen.queryByText("Kubernetes")).toBeNull();
+
+    await userEvent.click(screen.getByLabelText("Expandir Cloud Architecture"));
+    expect(await screen.findByText("Kubernetes")).toBeTruthy();
 
     await userEvent.click(screen.getByLabelText("Recolher Cloud Architecture"));
-
     expect(screen.getByText("Cloud Architecture")).toBeTruthy();
     expect(screen.queryByText("Kubernetes")).toBeNull();
   });

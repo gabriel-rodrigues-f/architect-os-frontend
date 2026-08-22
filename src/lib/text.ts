@@ -75,6 +75,22 @@ export const monthsFromTodayIso = (months: number): string => {
 };
 
 /**
+ * Mesma ideia de `todayIso`, deslocada pra trás em dias — usada pelos
+ * presets de período (últimos 30/60/90 dias etc.). Achado na REVISAO-360-
+ * FRONTEND (FE-360-001): a tela de Evolução tinha sua própria versão local
+ * com `toISOString().slice(0, 10)`, que converte pra UTC e, à noite no
+ * Brasil, já é o dia seguinte — o mesmo problema que `todayIso` existe pra
+ * evitar.
+ */
+export const daysAgoIso = (days: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mes}-${dia}`;
+};
+
+/**
  * Lê um parâmetro da query string na primeira montagem, sem depender de
  * `Route.useSearch()` — esse hook exige `RouterProvider` de verdade, que os
  * testes de componente isolado (`render(<Page />)` sem o app inteiro) não

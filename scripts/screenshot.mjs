@@ -118,6 +118,29 @@ if (await firstArchitect.isVisible({ timeout: 3000 }).catch(() => false)) {
   console.log("  (sem arquitetos cadastrados — pulei estas capturas)");
 }
 
+// REVISAO-360-FRONTEND, Seção 15 — o drawer mobile (hambúrguer no
+// cabeçalho, abaixo do breakpoint `lg`) é uma superfície nova, não uma rota:
+// contexto e sessão à parte, só pra esta captura, num viewport de celular.
+console.log("17-navegacao-mobile …");
+const mobileContext = await browser.newContext({
+  viewport: { width: 390, height: 844 },
+  locale: "pt-BR",
+});
+await mobileContext.addInitScript(() => {
+  window.localStorage.setItem("architect-os:locale", "pt");
+});
+const mobilePage = await mobileContext.newPage();
+await mobilePage.goto(BASE_URL, { waitUntil: "networkidle" });
+await mobilePage.locator('input[type="email"], input[name="email"]').first().fill(EMAIL);
+await mobilePage.locator('input[type="password"], input[name="password"]').first().fill(PASSWORD);
+await mobilePage.locator('button[type="submit"]').first().click();
+await mobilePage.waitForLoadState("networkidle");
+await mobilePage.waitForTimeout(500);
+await mobilePage.getByRole("button", { name: /menu/i }).click();
+await mobilePage.waitForTimeout(400);
+await mobilePage.screenshot({ path: `${OUT_DIR}/17-navegacao-mobile.png` });
+await mobileContext.close();
+
 await context.close();
 await browser.close();
 

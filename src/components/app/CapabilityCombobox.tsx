@@ -64,7 +64,7 @@ export function CapabilityCombobox({
           aria-expanded={open}
           className="flex min-w-56 max-w-72 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
         >
-          <span className="truncate">{resumo}</span>
+          <span className="min-w-0 flex-1 truncate">{resumo}</span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </button>
       </PopoverTrigger>

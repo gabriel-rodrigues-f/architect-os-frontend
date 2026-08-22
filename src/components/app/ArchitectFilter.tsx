@@ -1,5 +1,5 @@
 import { ChevronDown, Users } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Architect } from "@/lib/domain";
@@ -32,6 +32,16 @@ export function ArchitectFilter({
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  /**
+   * REVISAO-360-FRONTEND, Seção 80 — índice 0 é "Todo o time", 1..N são os
+   * arquitetos; um `role="listbox"` navegável só de mouse não é operável por
+   * teclado. Foco real em cada botão (não `aria-activedescendant`): já são
+   * `<button>`s de verdade, então Enter/Espaço continuam funcionando sem
+   * handler extra — só as setas/Home/End/Escape precisam de tratamento.
+   */
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const optionCount = architects.length + 1;
 
   useEffect(() => {
     if (!open) return;
@@ -41,6 +51,63 @@ export function ArchitectFilter({
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open]);
+
+  useEffect(() => {
+    if (open) optionRefs.current[0]?.focus();
+  }, [open]);
+
+  const close = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const focusOption = (index: number) => {
+    const clamped = (index + optionCount) % optionCount;
+    optionRefs.current[clamped]?.focus();
+  };
+
+  const onListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = optionRefs.current.findIndex((el) => el === document.activeElement);
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        focusOption(currentIndex + 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        focusOption(currentIndex - 1);
+        break;
+      case "Home":
+        event.preventDefault();
+        focusOption(0);
+        break;
+      case "End":
+        event.preventDefault();
+        focusOption(optionCount - 1);
+        break;
+      case "Escape":
+        event.preventDefault();
+        close();
+        break;
+    }
+  };
+
+  /**
+   * Tab sai do widget inteiro num passo só (não deveria parar em cada
+   * opção) — em vez de interceptar a tecla Tab (frágil: brigaria com o
+   * cálculo nativo de próximo elemento focável), fecha reativamente sempre
+   * que o foco sai do container por completo, pra onde for.
+   */
+  const onListBlur = (event: FocusEvent<HTMLDivElement>) => {
+    if (!container.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
+  };
+
+  const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+    }
+  };
 
   const toggle = (id: string) =>
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
@@ -71,8 +138,10 @@ export function ArchitectFilter({
   return (
     <div className="relative" ref={container}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
+        onKeyDown={onTriggerKeyDown}
         aria-expanded={open}
         aria-haspopup="listbox"
         className="flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
@@ -85,7 +154,10 @@ export function ArchitectFilter({
       {open && (
         <div
           role="listbox"
+          aria-multiselectable="true"
           aria-label={label ?? t("filter.architects")}
+          onKeyDown={onListKeyDown}
+          onBlur={onListBlur}
           className="absolute right-0 z-30 mt-1 max-h-72 w-64 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-lg"
         >
           {/*
@@ -95,9 +167,12 @@ export function ArchitectFilter({
             clique parecia morto.
           */}
           <button
+            ref={(el) => {
+              optionRefs.current[0] = el;
+            }}
             type="button"
             onClick={() => onChange(allSelected ? [] : architects.map((a) => a.id))}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
           >
             <Checkbox
               checked={allSelected ? true : selectedVisible.length === 0 ? false : "indeterminate"}
@@ -108,17 +183,20 @@ export function ArchitectFilter({
             <span className="font-medium">{t("filter.wholeTeamOption")}</span>
           </button>
           <div className="my-1 border-t border-border" />
-          {architects.map((a) => {
+          {architects.map((a, index) => {
             const active = selected.includes(a.id);
             return (
               <button
                 key={a.id}
+                ref={(el) => {
+                  optionRefs.current[index + 1] = el;
+                }}
                 type="button"
                 role="option"
                 aria-selected={active}
                 onClick={() => toggle(a.id)}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary",
+                  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none",
                   active && "font-medium",
                 )}
               >
@@ -128,7 +206,7 @@ export function ArchitectFilter({
                   tabIndex={-1}
                   className="pointer-events-none"
                 />
-                <span className="truncate">{a.name}</span>
+                <span className="min-w-0 flex-1 truncate">{a.name}</span>
               </button>
             );
           })}
