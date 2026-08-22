@@ -314,8 +314,15 @@ export interface DevelopmentCycle {
   status: "Active" | "Closed" | "Planned";
 }
 
-export type ActionType = "Learn" | "Practice" | "Apply" | "Teach" | "Mentor" | "Lead";
-export const ACTION_TYPES: ActionType[] = ["Learn", "Practice", "Apply", "Teach", "Mentor", "Lead"];
+/**
+ * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12.2/§20 — fonte
+ * única: `ActionType` deriva de `ACTION_TYPES`, e `api-schemas.ts` deriva
+ * `z.enum(ACTION_TYPES)` do mesmo array (mesmo fix do backend), em vez das
+ * listas escritas à mão que a auditoria cita como exemplo de enum
+ * duplicado.
+ */
+export const ACTION_TYPES = ["Learn", "Practice", "Apply", "Teach", "Mentor", "Lead"] as const;
+export type ActionType = (typeof ACTION_TYPES)[number];
 
 export type PdiStatus = "Not Started" | "In Progress" | "Blocked" | "Completed";
 

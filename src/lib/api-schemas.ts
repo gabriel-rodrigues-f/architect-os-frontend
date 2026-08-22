@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { ACTION_TYPES } from "./domain";
+
 /**
  * B-11 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10) — os tipos
  * de domínio são espelhados à mão entre front e back (`domain.ts` ×
@@ -159,7 +161,7 @@ const developmentPlanItem = z.object({
   currentLevel: level,
   targetLevel: level,
   objective: z.string(),
-  actionType: z.enum(["Learn", "Practice", "Apply", "Teach", "Mentor", "Lead"]),
+  actionType: z.enum(ACTION_TYPES),
   actionPlan: z.string(),
   startDate: z.string(),
   targetDate: z.string(),
