@@ -681,11 +681,11 @@ function EvidenceDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
             Cancelar
           </Button>
-          <Button disabled={!title.trim()} onClick={salvar}>
-            {t("ev.save")}
+          <Button disabled={!title.trim() || saving} onClick={() => void salvar()}>
+            {saving ? t("ev.saving") : t("ev.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

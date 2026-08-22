@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "../api";
@@ -37,9 +37,7 @@ const LEAD_USER: SessionUser = {
 function stateWithAnaLedBy(leadUserId: string): AppState {
   return {
     ...fixtureState,
-    architects: fixtureState.architects.map((a) =>
-      a.id === "ana" ? { ...a, leadUserId } : a,
-    ),
+    architects: fixtureState.architects.map((a) => (a.id === "ana" ? { ...a, leadUserId } : a)),
   };
 }
 
@@ -142,11 +140,16 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
     await userEvent.type(within(dialog).getByLabelText("Decisões"), "Adotar RBAC.");
     await userEvent.type(within(dialog).getByLabelText("Ações"), "Documentar o ADR.");
 
-    const proficiencySection = screen.getByText("Evolução observada").closest("div")!.parentElement!;
+    const proficiencySection = screen
+      .getByText("Evolução observada")
+      .closest("div")!.parentElement!;
     await userEvent.click(within(proficiencySection).getByText("IAM"));
     const levelSelect = screen.getByLabelText("Nível observado — IAM");
     await userEvent.selectOptions(levelSelect, "4");
-    await userEvent.type(screen.getByPlaceholderText("Nota (opcional)"), "Salto após o projeto real.");
+    await userEvent.type(
+      screen.getByPlaceholderText("Nota (opcional)"),
+      "Salto após o projeto real.",
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Salvar sessão" }));
 
@@ -188,7 +191,9 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
     await userEvent.type(within(dialog).getByLabelText("Decisões"), "Manter o rumo.");
     await userEvent.type(within(dialog).getByLabelText("Ações"), "Nenhuma.");
 
-    const proficiencySection = screen.getByText("Evolução observada").closest("div")!.parentElement!;
+    const proficiencySection = screen
+      .getByText("Evolução observada")
+      .closest("div")!.parentElement!;
     await userEvent.click(within(proficiencySection).getByText("IAM"));
 
     const levelSelect = screen.getByLabelText("Nível observado — IAM") as HTMLSelectElement;

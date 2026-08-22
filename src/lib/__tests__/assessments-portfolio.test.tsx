@@ -148,9 +148,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     // é oferecida, e o aviso de curadoria pendente aparece.
     expect(optionLabels).not.toContain("Cloud Architecture");
     expect(optionLabels).not.toContain("Security");
-    expect(
-      screen.getByText(/curadoria do catálogo precisa ser concluída/),
-    ).toBeTruthy();
+    expect(screen.getByText(/curadoria do catálogo precisa ser concluída/)).toBeTruthy();
   });
 
   it("mostra o tamanho do portfólio do ciclo separado da contagem de elegibilidade", async () => {
@@ -184,7 +182,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     });
     // Reaplica o mock genérico para as chamadas seguintes, mas força a
     // primeira consulta de elegibilidade a falhar.
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    fetchMock.mockImplementation((url: string) => {
       const href = String(url);
       if (href.endsWith("/api/auth/me")) {
         return Promise.resolve(
@@ -211,7 +209,9 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     renderPage();
     await screen.findByText("Portfólio de Capacidades do Ciclo");
     await waitFor(() =>
-      expect(screen.getByText("Não foi possível carregar o portfólio e a elegibilidade.")).toBeTruthy(),
+      expect(
+        screen.getByText("Não foi possível carregar o portfólio e a elegibilidade."),
+      ).toBeTruthy(),
     );
     expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeTruthy();
   });
@@ -286,7 +286,9 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
       "Adicionar capacidade ao portfólio",
     )) as HTMLSelectElement;
 
-    const stateCallsBefore = fetchMock.mock.calls.filter(([u]) => String(u).endsWith("/api/state")).length;
+    const stateCallsBefore = fetchMock.mock.calls.filter(([u]) =>
+      String(u).endsWith("/api/state"),
+    ).length;
 
     await userEvent.selectOptions(select, "cloud");
     await userEvent.click(screen.getByRole("button", { name: "Adicionar" }));
@@ -304,7 +306,9 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     // A revalidação depois de adicionar precisa incluir o estado principal
     // do app (Problema 2), não só a query de elegibilidade.
     await waitFor(() => {
-      const stateCallsAfter = fetchMock.mock.calls.filter(([u]) => String(u).endsWith("/api/state")).length;
+      const stateCallsAfter = fetchMock.mock.calls.filter(([u]) =>
+        String(u).endsWith("/api/state"),
+      ).length;
       expect(stateCallsAfter).toBeGreaterThan(stateCallsBefore);
     });
   });

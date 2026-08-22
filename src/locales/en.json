@@ -637,6 +637,7 @@
   "ev.field.pdiLink": "Link to a PDI item (optional)",
   "ev.field.pdiLink.none": "None",
   "ev.save": "Save evidence",
+  "ev.saving": "Saving…",
   "ev.toast": "Evidence \"{titulo}\" registered.",
   "ev.review.action": "Review",
   "ev.review.title": "Review evidence",

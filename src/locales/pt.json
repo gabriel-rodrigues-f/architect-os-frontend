@@ -637,6 +637,7 @@
   "ev.field.pdiLink": "Vincular a um item do PDI (opcional)",
   "ev.field.pdiLink.none": "Nenhum",
   "ev.save": "Salvar evidência",
+  "ev.saving": "Salvando…",
   "ev.toast": "Evidência \"{titulo}\" registrada.",
   "ev.review.action": "Revisar",
   "ev.review.title": "Revisar evidência",

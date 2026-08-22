@@ -12,7 +12,12 @@ import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import type { Assessment, AssessmentComment, AssessmentDevelopmentSummary, Capability, Level } from "@/lib/domain";
+import type {
+  Assessment,
+  AssessmentComment,
+  AssessmentDevelopmentSummary,
+  Level,
+} from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
@@ -985,7 +990,9 @@ function CareerPortfolioSection({
         })}
         confirmLabel={t("asmt.portfolio.removeConfirm.confirm")}
         cancelLabel={t("pdi.newItem.cancel")}
-        onConfirm={() => pendingRemoval && attemptRemove(pendingRemoval.id, pendingRemoval.name, true)}
+        onConfirm={() =>
+          pendingRemoval && attemptRemove(pendingRemoval.id, pendingRemoval.name, true)
+        }
         onCancel={() => setPendingRemoval(null)}
       />
     </SectionCard>
@@ -1013,12 +1020,7 @@ function DevelopmentSummarySection({
   const canEdit = status === "Draft" ? isOwner && !isLead : status === "In Review" ? isLead : false;
 
   const queryKey: QueryKey = ["assessment-development-summary", assessment.id];
-  const {
-    data,
-    isPending,
-    isError,
-    refetch,
-  } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey,
     queryFn: () => api.assessmentDevelopmentSummary(assessment.id),
     /**
