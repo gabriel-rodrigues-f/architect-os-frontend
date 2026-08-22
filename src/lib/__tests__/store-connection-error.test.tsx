@@ -90,7 +90,9 @@ describe("Tela de conexão indisponível — sem instrução de desenvolvedor em
       </Wrapper>,
     );
 
-    expect(await screen.findByText("Não foi possível acessar o serviço", {}, { timeout: 5000 })).toBeTruthy();
+    expect(
+      await screen.findByText("Não foi possível acessar o serviço", {}, { timeout: 5000 }),
+    ).toBeTruthy();
     expect(screen.queryByText(/docker compose/i)).toBeNull();
     expect(screen.queryByText(/VITE_API_URL/)).toBeNull();
     expect(screen.getByRole("button", { name: "Recarregar" })).toBeTruthy();

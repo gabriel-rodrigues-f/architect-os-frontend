@@ -27,6 +27,7 @@ import type {
   SelectionScope,
   TeamEvolutionResult,
 } from "./domain";
+import { appStateSchema } from "./api-schemas";
 
 /** Snapshot devolvido por GET /api/state — espelha o AppState do backend. */
 export interface AppState {
@@ -73,15 +74,42 @@ export const API_URL = (import.meta.env["VITE_API_URL"] ?? "http://localhost:400
   "",
 );
 
+/**
+ * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-16 (§26) — `code`
+ * (estável por regra, ex. `PLAN_VERSION_CONFLICT`) e `correlationId` (id da
+ * requisição, útil pra achar a linha certa no log do servidor ao investigar
+ * um erro relatado) vêm do novo envelope `{code, message, details?,
+ * correlationId}`. Aditivo: `.message`/`.status`/`.details` continuam
+ * exatamente como antes — nenhum call site existente precisa mudar.
+ */
 export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
     readonly details?: unknown,
+    readonly code?: string,
+    readonly correlationId?: string,
   ) {
     super(message);
     this.name = "ApiError";
   }
+}
+
+/**
+ * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12 — "sem
+ * tratamento global de 401") — sessão expirando NO MEIO do uso (não o
+ * `/api/auth/me` inicial, nem um 401 de senha errada no próprio formulário
+ * de login) caía como qualquer outro erro de rede: `store.tsx` mostrava
+ * "Não foi possível acessar o serviço" e a pessoa nunca era levada de volta
+ * ao login. `api.ts` é um módulo comum (não um hook) — não pode chamar
+ * `setUser(null)` direto —, então só notifica quem registrar interesse;
+ * `AuthProvider` (`auth.tsx`) é quem decide se um 401 específico significa
+ * "sessão que existia caiu" (só quando já havia usuário autenticado) ou é
+ * irrelevante (login/register/me sem sessão nenhuma ainda).
+ */
+let unauthorizedHandler: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -103,11 +131,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const body = (await response.json().catch(() => null)) as {
       message?: string;
       details?: unknown;
+      code?: string;
+      correlationId?: string;
     } | null;
+    if (response.status === 401) unauthorizedHandler?.();
     throw new ApiError(
       body?.message ?? `${init?.method ?? "GET"} ${path} falhou (${response.status})`,
       response.status,
       body?.details,
+      body?.code,
+      body?.correlationId,
     );
   }
 
@@ -129,8 +162,18 @@ async function requestBlob(path: string, body: unknown): Promise<{ blob: Blob; f
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-    throw new ApiError(errorBody?.message ?? `POST ${path} falhou (${response.status})`, response.status);
+    const errorBody = (await response.json().catch(() => null)) as {
+      message?: string;
+      code?: string;
+      correlationId?: string;
+    } | null;
+    throw new ApiError(
+      errorBody?.message ?? `POST ${path} falhou (${response.status})`,
+      response.status,
+      undefined,
+      errorBody?.code,
+      errorBody?.correlationId,
+    );
   }
   const disposition = response.headers.get("content-disposition") ?? "";
   const match = /filename="?([^"]+)"?/.exec(disposition);
@@ -191,7 +234,15 @@ export const authApi = {
 };
 
 export const api = {
-  getState: () => request<AppState>("/api/state"),
+  /**
+   * B-11 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10) — único
+   * ponto do app que valida a resposta em runtime (`appStateSchema`, gerado
+   * à mão a partir de `AppState`/`domain.ts`) em vez de um cast puro. Falha
+   * de validação joga um `ZodError`, que `useQuery` (`store.tsx`) já trata
+   * como qualquer outro erro de rede — drift vira erro visível, não
+   * `undefined` se propagando silenciosamente pela UI.
+   */
+  getState: () => request<AppState>("/api/state").then((data) => appStateSchema.parse(data)),
 
   setActiveCycle: (cycleId: string) =>
     put<{ cycleId: string }>("/api/settings/active-cycle", { cycleId }),
@@ -268,10 +319,20 @@ export const api = {
   /* assessments */
   openAssessment: (architectId: string, cycleId: string) =>
     post<Assessment>("/api/assessments", { architectId, cycleId }),
-  setAssessmentStatus: (id: string, status: Assessment["status"]) =>
-    patch<Assessment>(`/api/assessments/${id}/status`, { status }),
-  patchAssessmentItem: (assessmentId: string, competencyId: string, body: AssessmentItemPatch) =>
-    patch<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}`, body),
+  /** AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-18 — `expectedVersion` obrigatório: concorrência otimista na transição de status. */
+  setAssessmentStatus: (id: string, status: Assessment["status"], expectedVersion: number) =>
+    patch<Assessment>(`/api/assessments/${id}/status`, { status, expectedVersion }),
+  /** B-18 — idem, por item: concorrência otimista independente por competência. */
+  patchAssessmentItem: (
+    assessmentId: string,
+    competencyId: string,
+    body: AssessmentItemPatch,
+    expectedVersion: number,
+  ) =>
+    patch<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}`, {
+      ...body,
+      expectedVersion,
+    }),
 
   addAssessmentComment: (assessmentId: string, competencyId: string, body: CommentInput) =>
     post<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}/comments`, body),
@@ -370,7 +431,10 @@ export const api = {
     planId: string,
     itemId: string,
     body: Partial<
-      Omit<DevelopmentPlanItem, "version" | "currentLevel" | "targetLevel" | "priority" | "sourceAssessmentId">
+      Omit<
+        DevelopmentPlanItem,
+        "version" | "currentLevel" | "targetLevel" | "priority" | "sourceAssessmentId"
+      >
     >,
     expectedVersion: number,
   ) => patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, { ...body, expectedVersion }),

@@ -17,31 +17,51 @@ import { cn } from "@/lib/utils";
  * Quem chama decide o valor inicial de `selected` (normalmente "todo mundo
  * que este viewer pode ver" — nunca a tela nasce mostrando ninguém por
  * engano); este componente só reflete e altera o que já está ali.
+ *
+ * B-42/B-43 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §41) — largura
+ * fixa + truncamento no gatilho (mesma razão do `MultiSelectFilter`: o nome
+ * de uma pessoa não pode ditar a geometria do controle), e busca interna no
+ * popover quando há mais de 10 arquitetos (achar um nome numa lista longa de
+ * caixinhas é mais lento que digitar). `id` é opcional: só desenha o rótulo
+ * visível acima do gatilho quando informado — os usos existentes (ação de
+ * `PageHeader`, sem rótulo visível) continuam pixel-idênticos.
  */
 export function ArchitectFilter({
+  id,
   architects,
   selected,
   onChange,
   label = undefined,
+  triggerClassName = "w-40",
 }: {
+  id?: string;
   architects: Architect[];
   selected: string[];
   onChange: (ids: string[]) => void;
   label?: string;
+  triggerClassName?: string;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const container = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   /**
    * REVISAO-360-FRONTEND, Seção 80 — índice 0 é "Todo o time", 1..N são os
-   * arquitetos; um `role="listbox"` navegável só de mouse não é operável por
-   * teclado. Foco real em cada botão (não `aria-activedescendant`): já são
-   * `<button>`s de verdade, então Enter/Espaço continuam funcionando sem
-   * handler extra — só as setas/Home/End/Escape precisam de tratamento.
+   * arquitetos visíveis (após a busca); um `role="listbox"` navegável só de
+   * mouse não é operável por teclado. Foco real em cada botão (não
+   * `aria-activedescendant`): já são `<button>`s de verdade, então
+   * Enter/Espaço continuam funcionando sem handler extra — só as
+   * setas/Home/End/Escape precisam de tratamento.
    */
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const optionCount = architects.length + 1;
+  const searchable = architects.length > 10;
+  const visibleArchitects =
+    searchable && query.trim()
+      ? architects.filter((a) => a.name.toLowerCase().includes(query.trim().toLowerCase()))
+      : architects;
+  const optionCount = visibleArchitects.length + 1;
 
   useEffect(() => {
     if (!open) return;
@@ -53,8 +73,13 @@ export function ArchitectFilter({
   }, [open]);
 
   useEffect(() => {
-    if (open) optionRefs.current[0]?.focus();
-  }, [open]);
+    if (!open) {
+      setQuery("");
+      return;
+    }
+    if (searchable) inputRef.current?.focus();
+    else optionRefs.current[0]?.focus();
+  }, [open, searchable]);
 
   const close = () => {
     setOpen(false);
@@ -137,82 +162,119 @@ export function ArchitectFilter({
 
   return (
     <div className="relative" ref={container}>
+      {id && (
+        <label className="block text-xs text-muted-foreground" htmlFor={id}>
+          {label ?? t("filter.architects")}
+        </label>
+      )}
       <button
+        id={id}
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         onKeyDown={onTriggerKeyDown}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
+        title={summary}
+        className={cn(
+          "flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm",
+          id && "mt-1",
+          triggerClassName,
+        )}
       >
-        <Users className="h-3.5 w-3.5 text-muted-foreground" />
-        <span>{summary}</span>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </button>
 
       {open && (
         <div
-          role="listbox"
-          aria-multiselectable="true"
-          aria-label={label ?? t("filter.architects")}
           onKeyDown={onListKeyDown}
           onBlur={onListBlur}
-          className="absolute right-0 z-30 mt-1 max-h-72 w-64 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-lg"
+          className="absolute right-0 z-30 mt-1 w-64 overflow-hidden rounded-md border border-border bg-card shadow-lg"
         >
-          {/*
-            Alternador de verdade: tudo já marcado → clique desmarca tudo;
-            nada ou parte marcada → clique marca todo mundo. Sem isto, clicar
-            em "Todo o time" já marcado não tinha efeito nenhum visível — o
-            clique parecia morto.
-          */}
-          <button
-            ref={(el) => {
-              optionRefs.current[0] = el;
-            }}
-            type="button"
-            onClick={() => onChange(allSelected ? [] : architects.map((a) => a.id))}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
-          >
-            <Checkbox
-              checked={allSelected ? true : selectedVisible.length === 0 ? false : "indeterminate"}
-              aria-hidden="true"
-              tabIndex={-1}
-              className="pointer-events-none"
-            />
-            <span className="font-medium">{t("filter.wholeTeamOption")}</span>
-          </button>
-          <div className="my-1 border-t border-border" />
-          {architects.map((a, index) => {
-            const active = selected.includes(a.id);
-            return (
-              <button
-                key={a.id}
-                ref={(el) => {
-                  optionRefs.current[index + 1] = el;
-                }}
-                type="button"
-                role="option"
-                aria-selected={active}
-                onClick={() => toggle(a.id)}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none",
-                  active && "font-medium",
-                )}
-              >
-                <Checkbox
-                  checked={active}
-                  aria-hidden="true"
-                  tabIndex={-1}
-                  className="pointer-events-none"
-                />
-                <span className="min-w-0 flex-1 truncate">{a.name}</span>
-              </button>
-            );
-          })}
-          {architects.length === 0 && (
-            <p className="px-2 py-1.5 text-sm text-muted-foreground">{t("filter.noArchitects")}</p>
+          {searchable && (
+            <div className="border-b border-border p-1">
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("filter.typeahead.placeholder")}
+                aria-label={t("filter.typeahead.label")}
+                className="w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
+              />
+            </div>
           )}
+          <div
+            role="listbox"
+            aria-multiselectable="true"
+            aria-label={label ?? t("filter.architects")}
+            className="max-h-72 overflow-y-auto p-1"
+          >
+            {/*
+              Alternador de verdade: tudo já marcado → clique desmarca tudo;
+              nada ou parte marcada → clique marca todo mundo. Sem isto, clicar
+              em "Todo o time" já marcado não tinha efeito nenhum visível — o
+              clique parecia morto.
+            */}
+            <button
+              ref={(el) => {
+                optionRefs.current[0] = el;
+              }}
+              type="button"
+              onClick={() => onChange(allSelected ? [] : architects.map((a) => a.id))}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
+            >
+              <Checkbox
+                checked={
+                  allSelected ? true : selectedVisible.length === 0 ? false : "indeterminate"
+                }
+                aria-hidden="true"
+                tabIndex={-1}
+                className="pointer-events-none"
+              />
+              <span className="font-medium">{t("filter.wholeTeamOption")}</span>
+            </button>
+            <div className="my-1 border-t border-border" />
+            {visibleArchitects.map((a, index) => {
+              const active = selected.includes(a.id);
+              return (
+                <button
+                  key={a.id}
+                  ref={(el) => {
+                    optionRefs.current[index + 1] = el;
+                  }}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => toggle(a.id)}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none",
+                    active && "font-medium",
+                  )}
+                >
+                  <Checkbox
+                    checked={active}
+                    aria-hidden="true"
+                    tabIndex={-1}
+                    className="pointer-events-none"
+                  />
+                  <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                </button>
+              );
+            })}
+            {architects.length === 0 && (
+              <p className="px-2 py-1.5 text-sm text-muted-foreground">
+                {t("filter.noArchitects")}
+              </p>
+            )}
+            {architects.length > 0 && visibleArchitects.length === 0 && (
+              <p className="px-2 py-1.5 text-sm text-muted-foreground">
+                {t("filter.typeahead.empty", { q: query.trim() })}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -135,6 +135,7 @@ describe("Progressão — heatmap, tabela e maestria", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    window.history.replaceState(null, "", "/");
   });
 
   it("a tabela de progressão marca o tipo de cada linha (Bloqueante/Oportunidade)", async () => {
@@ -156,7 +157,9 @@ describe("Progressão — heatmap, tabela e maestria", () => {
     renderProgression();
     await screen.findByText("Tabela de Lacunas de Progressão");
 
-    const progressionTable = screen.getByText("Tabela de Lacunas de Progressão").closest(".surface-card")!;
+    const progressionTable = screen
+      .getByText("Tabela de Lacunas de Progressão")
+      .closest(".surface-card")!;
     // Bruno está em MASTERY neste ciclo — os gaps dele não contam mais como progressão.
     expect(progressionTable.textContent).not.toContain("Kubernetes");
 
@@ -185,5 +188,20 @@ describe("Progressão — heatmap, tabela e maestria", () => {
 
     const architectHeader = screen.getByRole("columnheader", { name: "Arquiteto" });
     expect(architectHeader.className).toContain("sticky");
+  });
+
+  /**
+   * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — mesmo
+   * hook compartilhado de `/gap-analysis`; confirma que `/progression`
+   * também respeita `?selected=` vindo da URL, não só o time inteiro.
+   */
+  it("abrir a tela com ?selected= na URL respeita o recorte", async () => {
+    window.history.replaceState(null, "", "/progression?selected=ana");
+    renderProgression();
+    await screen.findByText("Tabela de Lacunas de Progressão");
+
+    const heatmap = screen.getByRole("columnheader", { name: "Arquiteto" }).closest("table")!;
+    expect(heatmap.textContent).toContain("Ana Martins");
+    expect(heatmap.textContent).not.toContain("Bruno Almeida");
   });
 });

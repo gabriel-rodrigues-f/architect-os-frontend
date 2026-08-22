@@ -28,6 +28,7 @@ const draftAssessment: Assessment = {
   modelVersion: 2,
   targetCareerLevelId: "arquiteto-de-solucoes-iii",
   targetSemantics: "NEXT_ROLE",
+  version: 1,
   items: [],
 };
 

@@ -156,6 +156,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
           modelVersion: 1,
           targetCareerLevelId: null,
           targetSemantics: null,
+          version: 1,
           items: [
             { competencyId: "cloud-k8s", self: 5, leader: 5, target: 4, final: 5, comments: [] },
           ],
@@ -214,6 +215,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
           modelVersion: 1,
           targetCareerLevelId: null,
           targetSemantics: null,
+          version: 1,
           items: [
             { competencyId: "cloud-k8s", self: 5, leader: 5, target: 4, final: 5, comments: [] },
           ],

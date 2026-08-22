@@ -221,9 +221,20 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
    * ficar mentindo sozinha na tela — revalida a partir do servidor (volta o
    * dado real) e avisa quem clicou, em vez de falhar em silêncio como antes.
    * Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC L.
+   *
+   * B-09 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10, "409
+   * espúrios") — `onReconcile` opcional: quando o otimismo local escreveu um
+   * campo que o servidor também recalcula (o caso concreto: `version`, base
+   * de concorrência otimista), o sucesso precisa gravar a resposta real por
+   * cima do palpite otimista. Sem isto, `expectedVersion` da PRÓXIMA edição
+   * lia o `version` antigo do cache — nunca atualizado por um sucesso
+   * anterior — e o servidor recusava com 409 mesmo sem conflito real
+   * nenhum (mesma pessoa, edições sequenciais, nenhuma escrita concorrente
+   * de fato). Reconciliar no sucesso fecha essa janela sem precisar de
+   * `await` no chamador: a escrita continua "dispara e esquece" pra UI.
    */
-  const remote = (call: Promise<unknown>) => {
-    void call.catch((error: unknown) => {
+  const remote = <T,>(call: Promise<T>, onReconcile?: (result: T) => void) => {
+    void call.then(onReconcile, (error: unknown) => {
       if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
       else console.error(error);
       toast.error(
@@ -260,7 +271,10 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     updateCareerLevelPolicy: async (careerLevelId, minimumQualifiedCapabilities) => {
-      const updated = await api.updateCareerLevelPolicy(careerLevelId, minimumQualifiedCapabilities);
+      const updated = await api.updateCareerLevelPolicy(
+        careerLevelId,
+        minimumQualifiedCapabilities,
+      );
       local((s) => ({
         ...s,
         careerLevelPolicies: s.careerLevelPolicies.map((p) =>
@@ -424,7 +438,17 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       }
     },
 
+    // B-09/B-18 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) —
+    // `expectedVersion` vem do estado que a tela está mostrando agora;
+    // reconcilia com a resposta real do servidor no sucesso (mesmo
+    // raciocínio de `updatePlanItem`: sem isto, o `version` do cache
+    // nunca avança, e a PRÓXIMA edição manda uma versão já defasada,
+    // levando a um 409 sem conflito real nenhum).
     updateAssessmentItem: (assessmentId, competencyId, patch) => {
+      const expectedVersion =
+        state.assessments
+          .find((a) => a.id === assessmentId)
+          ?.items.find((i) => i.competencyId === competencyId)?.version ?? 1;
       local((s) => ({
         ...s,
         assessments: s.assessments.map((a) =>
@@ -438,7 +462,14 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
               },
         ),
       }));
-      remote(api.patchAssessmentItem(assessmentId, competencyId, patch));
+      remote(
+        api.patchAssessmentItem(assessmentId, competencyId, patch, expectedVersion),
+        (updated) =>
+          local((s) => ({
+            ...s,
+            assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+          })),
+      );
     },
 
     /**
@@ -541,7 +572,13 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
             : { ...p, items: p.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) },
         ),
       }));
-      remote(api.patchPlanItem(planId, itemId, patch, expectedVersion));
+      // B-09 — reconcilia com o plano de verdade no sucesso: sem isto, o
+      // `version` do item ficava travado no palpite otimista (que este PATCH
+      // nunca incrementa sozinho), e a PRÓXIMA edição mandava um
+      // `expectedVersion` já defasado, levando a um 409 sem conflito real.
+      remote(api.patchPlanItem(planId, itemId, patch, expectedVersion), (updated) =>
+        local((s) => ({ ...s, plans: s.plans.map((p) => (p.id === planId ? updated : p)) })),
+      );
     },
 
     removePlanItem: (planId, itemId) => {
@@ -557,7 +594,13 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     reschedulePlanItem: async (planId, itemId, targetDate, reason) => {
       const expectedVersion =
         state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
-      const updated = await api.reschedulePlanItem(planId, itemId, targetDate, reason, expectedVersion);
+      const updated = await api.reschedulePlanItem(
+        planId,
+        itemId,
+        targetDate,
+        reason,
+        expectedVersion,
+      );
       local((s) => ({
         ...s,
         plans: s.plans.map((p) => (p.id === planId ? updated : p)),
@@ -724,7 +767,11 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       hora do clique.
     */
     setAssessmentStatus: async (id, status) => {
-      const updated = await api.setAssessmentStatus(id, status);
+      // B-18 — mesmo raciocínio de `updateAssessmentItem`: `expectedVersion`
+      // vem do estado atual, não de um valor fixo que o chamador precisaria
+      // rastrear.
+      const expectedVersion = state.assessments.find((a) => a.id === id)?.version ?? 1;
+      const updated = await api.setAssessmentStatus(id, status, expectedVersion);
       local((s) => ({
         ...s,
         assessments: s.assessments.map((a) => (a.id === id ? updated : a)),

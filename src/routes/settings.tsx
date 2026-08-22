@@ -5,7 +5,14 @@ import { toast } from "sonner";
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
-import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, ROLES, roleShort, type CareerLevel } from "@/lib/domain";
+import {
+  ACTION_TYPES,
+  EVIDENCE_TYPES,
+  LEVELS,
+  ROLES,
+  roleShort,
+  type CareerLevel,
+} from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
@@ -84,9 +91,11 @@ function SettingsPage() {
             <table className="w-full min-w-[420px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2">{t("ref.capability")}</th>
+                  <th scope="col" className="py-2">
+                    {t("ref.capability")}
+                  </th>
                   {ROLES.map((r) => (
-                    <th key={r} className="py-2 text-center">
+                    <th key={r} scope="col" className="py-2 text-center">
                       {roleShort(r)}
                     </th>
                   ))}
@@ -167,9 +176,13 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
         <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="py-2">Nível de carreira</th>
-              <th className="py-2 text-center">Mínimo de capacidades qualificadas</th>
-              {isAdmin && <th className="py-2" />}
+              <th scope="col" className="py-2">
+                Nível de carreira
+              </th>
+              <th scope="col" className="py-2 text-center">
+                Mínimo de capacidades qualificadas
+              </th>
+              {isAdmin && <th scope="col" className="py-2" />}
             </tr>
           </thead>
           <tbody>
@@ -233,8 +246,8 @@ function CareerPolicyRow({
       <td className="py-2">
         <p className="font-medium">{level.name}</p>
         <p className="text-xs text-muted-foreground">
-          Para estar elegível ao {level.name}: é necessário qualificar pelo menos{" "}
-          {minimum ?? "—"} capacidade(s) do portfólio confirmado.
+          Para estar elegível ao {level.name}: é necessário qualificar pelo menos {minimum ?? "—"}{" "}
+          capacidade(s) do portfólio confirmado.
         </p>
         {impossible && (
           <p className="mt-1 text-xs text-destructive" role="alert">

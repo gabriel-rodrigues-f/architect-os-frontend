@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, type Gap } from "@/lib/selectors";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
+import { initialSearchParam, replaceSearchParam } from "@/lib/text";
 
 /**
  * Compartilhado entre `/gap-analysis` (Radar + Prioridades, por pessoa) e
@@ -119,10 +120,28 @@ export function useGapAnalysisData() {
    * `coverage`. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
    * SYNAPSE.md, EPIC E, e ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
    * 08-19.md.
+   *
+   * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — o recorte
+   * agora vive na URL (`?selected=id1,id2`), não só em memória: sem isso, dar
+   * F5 depois de trocar a seleção (ou mandar o link para outra pessoa)
+   * sempre voltava para o time inteiro, perdendo o filtro que a tela estava
+   * mostrando. Ausência do parâmetro (primeira visita) cai no time visível
+   * padrão; presente e vazio (`?selected=`) é "ninguém" de propósito, uma
+   * seleção explícita, não o padrão.
    */
-  const [selected, setSelected] = useState<string[]>(() =>
-    sel.activeArchitects.filter((a) => canActFor(user, a)).map((a) => a.id),
+  const defaultSelected = useMemo(
+    () => sel.activeArchitects.filter((a) => canActFor(user, a)).map((a) => a.id),
+    [sel, user],
   );
+  const [selected, setSelectedState] = useState<string[]>(() => {
+    const fromUrl = initialSearchParam("selected");
+    if (fromUrl === undefined) return defaultSelected;
+    return fromUrl === "" ? [] : fromUrl.split(",");
+  });
+  const setSelected = (ids: string[]) => {
+    setSelectedState(ids);
+    replaceSearchParam("selected", ids.join(","));
+  };
 
   /** Toda a tela lê deste recorte. */
   const architects = applyArchitectFilter(store.architects, selected);
@@ -250,14 +269,32 @@ export function GapTable({
       <table className="w-full min-w-[820px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <th className="sticky top-0 z-10 bg-card py-2">{t("col.competency")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2">{t("col.capability")}</th>
-            {!mastery && <th className="sticky top-0 z-10 bg-card py-2">{t("col.type")}</th>}
-            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.people")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.currentAvg")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.targetAvg")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.avgGap")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2">{t("col.classification")}</th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+              {t("col.competency")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+              {t("col.capability")}
+            </th>
+            {!mastery && (
+              <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+                {t("col.type")}
+              </th>
+            )}
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+              {t("col.people")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+              {t("col.currentAvg")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+              {t("col.targetAvg")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+              {t("col.avgGap")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+              {t("col.classification")}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -276,10 +313,7 @@ export function GapTable({
                   </Badge>
                 </td>
               )}
-              <td
-                className="py-2 text-center tabular-nums"
-                title={row.architectNames.join(", ")}
-              >
+              <td className="py-2 text-center tabular-nums" title={row.architectNames.join(", ")}>
                 {row.people}
               </td>
               <td className="py-2 text-center tabular-nums">{row.avgFinal}</td>

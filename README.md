@@ -26,6 +26,24 @@ npm run start    # ou npm run dev; roda em primeiro plano, Ctrl+C encerra
 **O frontend depende do backend no ar** — sem ele a tela mostra "Não foi possível carregar os
 dados". Suba a API antes (`cd ../backend && docker compose up -d --build`).
 
+## Deploy
+
+Fora do escopo Docker deste repositório (decisão explícita — B-08,
+AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md). Deploy via Cloudflare
+Workers, já configurado no preset do Nitro:
+
+```sh
+npm run build
+npx nitro deploy --prebuilt
+```
+
+`VITE_API_URL` do ambiente de build precisa apontar para a API de produção
+(o backend real, não `localhost:4000`); o backend precisa liberar a origem
+de produção do frontend em `CORS_ORIGINS`. Runbook operacional (incidentes,
+observabilidade) do lado da API: [`../backend/docs/RUNBOOK.md`](../backend/docs/RUNBOOK.md)
+— este repositório não tem infraestrutura própria além do CDN/edge do
+Cloudflare, então não há um runbook de backend equivalente aqui.
+
 ## Primeiro acesso
 
 O app exige login (e-mail e senha). Na instância nova, a tela de entrada aparece como

@@ -153,6 +153,7 @@ export const fixtureState: AppState = {
       modelVersion: 1,
       targetCareerLevelId: null,
       targetSemantics: null,
+      version: 1,
       items: [
         { competencyId: "cloud-k8s", self: 3, leader: 3, target: 4, final: 3, comments: [] },
         { competencyId: "cloud-serverless", self: 3, leader: 3, target: 4, final: 3, comments: [] },
@@ -168,6 +169,7 @@ export const fixtureState: AppState = {
       modelVersion: 1,
       targetCareerLevelId: null,
       targetSemantics: null,
+      version: 1,
       items: [
         { competencyId: "cloud-k8s", self: 4, leader: 4, target: 4, final: 4, comments: [] },
         { competencyId: "cloud-serverless", self: 4, leader: 3, target: 4, final: 4, comments: [] },
@@ -182,6 +184,7 @@ export const fixtureState: AppState = {
       modelVersion: 1,
       targetCareerLevelId: null,
       targetSemantics: null,
+      version: 1,
       items: [
         { competencyId: "cloud-k8s", self: 2, leader: 2, target: 3, final: 2, comments: [] },
         { competencyId: "cloud-serverless", self: 3, leader: 3, target: 3, final: 3, comments: [] },

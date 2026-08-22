@@ -1,0 +1,290 @@
+import { z } from "zod";
+
+import { ACTION_TYPES } from "./domain";
+
+/**
+ * B-11 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10) — os tipos
+ * de domínio são espelhados à mão entre front e back (`domain.ts` ×
+ * `domain/types.ts`), e o drift já tinha começado silenciosamente (LEVELS/
+ * roleShort do backend, removidos nesta mesma leva por estarem mortos —
+ * nunca chegavam a uma resposta de API). Nenhuma resposta era validada em
+ * runtime; um campo renomeado ou removido no servidor só aparecia como
+ * `undefined` se propagando silenciosamente pela UI.
+ *
+ * Escopo deliberadamente limitado a `GET /api/state` (o payload de bootstrap
+ * do app inteiro, `store.tsx`) — não os ~40 outros endpoints. A própria
+ * auditoria oferece isto como alternativa ao contrato de tipos compartilhado
+ * (esforço bem maior, dois repositórios independentes); replicar zod para
+ * cada endpoint também contraria o NF-1 ("DTO layer completa antes do
+ * OpenAPI") — o que falta ali é o próprio OpenAPI (B-17), não um zod a mais
+ * por rota. Falha de validação aqui propaga como erro comum de `useQuery`
+ * (`store.tsx` já trata isso via `ConnectionError`) — silencioso vira
+ * barulhento, sem precisar de nenhuma UI nova.
+ */
+
+const level = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]);
+
+const roleName = z.enum([
+  "Arquiteto de Soluções I",
+  "Arquiteto de Soluções II",
+  "Arquiteto de Soluções III",
+]);
+
+const requirementType = z.enum(["RESTRICTIVE", "NON_RESTRICTIVE"]);
+
+const capabilityCuration = z.object({
+  activeCompetencyCount: z.number(),
+  restrictiveCompetencyCount: z.number(),
+  nonRestrictiveCompetencyCount: z.number(),
+  status: z.enum(["READY", "REQUIRES_CURATION"]),
+});
+
+const capability = z.object({
+  id: z.string(),
+  name: z.string(),
+  short: z.string(),
+  active: z.boolean(),
+  curation: capabilityCuration,
+});
+
+/**
+ * `z.record(roleName, level)` infere `Partial<Record<RoleName, Level>>` —
+ * zod não garante as 3 chaves presentes a partir de um schema de chave
+ * enum. `Competency.expected` (`domain.ts`) é `Record<RoleName, Level>`
+ * (as 3 sempre presentes); um objeto com as chaves explícitas é o que
+ * produz o tipo certo.
+ */
+const roleLevelMap = z.object({
+  "Arquiteto de Soluções I": level,
+  "Arquiteto de Soluções II": level,
+  "Arquiteto de Soluções III": level,
+});
+
+const competency = z.object({
+  id: z.string(),
+  name: z.string(),
+  capabilityId: z.string(),
+  requirementType,
+  expected: roleLevelMap,
+  active: z.boolean(),
+});
+
+const careerLevel = z.object({
+  id: z.string(),
+  name: z.string(),
+  rank: z.number(),
+});
+
+const careerLevelPolicy = z.object({
+  careerLevelId: z.string(),
+  minimumQualifiedCapabilities: z.number(),
+});
+
+const architect = z.object({
+  id: z.string(),
+  name: z.string(),
+  role: roleName,
+  careerLevelId: z.string().nullish(),
+  yearsAsArchitect: z.number(),
+  specialization: z.string(),
+  primarySpecializationCompetencyId: z.string().nullish(),
+  email: z.string(),
+  active: z.boolean(),
+  leadUserId: z.string().nullish(),
+  version: z.number(),
+});
+
+const assessmentParticipantRole = z.enum(["PROFESSIONAL", "TECH_LEAD"]);
+
+const assessmentComment = z.object({
+  id: z.string(),
+  authorUserId: z.string().nullable(),
+  authorRole: assessmentParticipantRole,
+  text: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string().optional(),
+});
+
+const assessmentItem = z.object({
+  competencyId: z.string(),
+  self: level.nullable(),
+  leader: level.nullable(),
+  target: level,
+  final: level.nullable(),
+  comments: z.array(assessmentComment),
+  competencyName: z.string().optional(),
+  capabilityId: z.string().optional(),
+  capabilityName: z.string().optional(),
+  requirementType: requirementType.optional(),
+  version: z.number().optional(),
+});
+
+const assessment = z.object({
+  id: z.string(),
+  architectId: z.string(),
+  cycleId: z.string(),
+  status: z.enum(["Draft", "In Review", "Completed"]),
+  items: z.array(assessmentItem),
+  modelVersion: z.union([z.literal(1), z.literal(2)]),
+  targetCareerLevelId: z.string().nullable(),
+  targetSemantics: z.enum(["CURRENT_ROLE", "NEXT_ROLE", "MASTERY"]).nullable(),
+  version: z.number(),
+});
+
+const developmentCycle = z.object({
+  id: z.string(),
+  name: z.string(),
+  start: z.string(),
+  end: z.string(),
+  status: z.enum(["Active", "Closed", "Planned"]),
+});
+
+const smartGoal = z.object({
+  specific: z.string(),
+  measurable: z.string(),
+  achievable: z.string(),
+  relevant: z.string(),
+  timeBound: z.string(),
+  statement: z.string(),
+});
+
+const planItemCheckin = z.object({
+  id: z.string(),
+  authorUserId: z.string(),
+  text: z.string(),
+  createdAt: z.string(),
+});
+
+const developmentPlanItem = z.object({
+  id: z.string(),
+  competencyId: z.string(),
+  currentLevel: level,
+  targetLevel: level,
+  objective: z.string(),
+  actionType: z.enum(ACTION_TYPES),
+  actionPlan: z.string(),
+  startDate: z.string(),
+  targetDate: z.string(),
+  priority: z.enum(["Low", "Medium", "High", "Critical"]),
+  owner: z.string(),
+  status: z.enum(["Not Started", "In Progress", "Blocked", "Completed"]),
+  smart: smartGoal.optional(),
+  checkins: z.array(planItemCheckin),
+  version: z.number(),
+  sourceAssessmentId: z.string().nullish(),
+  dedicationHoursPerWeek: z.number().nullish(),
+});
+
+const developmentPlan = z.object({
+  id: z.string(),
+  architectId: z.string(),
+  cycleId: z.string(),
+  status: z.enum(["Draft", "Approved", "Completed"]),
+  items: z.array(developmentPlanItem),
+  approvedByUserId: z.string().nullish(),
+  approvedAt: z.string().nullish(),
+  completedByUserId: z.string().nullish(),
+  completedAt: z.string().nullish(),
+  version: z.number(),
+});
+
+const learningPathItem = z.object({
+  id: z.string(),
+  title: z.string(),
+  type: z.enum([
+    "Curso",
+    "Vídeo",
+    "Livro",
+    "Artigo",
+    "Laboratório",
+    "Desafio",
+    "Projeto",
+    "Certificação",
+    "Apresentação",
+    "Workshop",
+  ]),
+  url: z.string().optional(),
+  description: z.string().optional(),
+  hours: z.number(),
+});
+
+const learningItemProgress = z.object({
+  architectId: z.string(),
+  itemId: z.string(),
+  status: z.enum(["Not Started", "In Progress", "Completed"]),
+  progress: z.number(),
+});
+
+const learningPath = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  competencyIds: z.array(z.string()),
+  assignedTo: z.array(z.string()),
+  items: z.array(learningPathItem),
+  progress: z.array(learningItemProgress),
+  createdBy: z.string().nullish(),
+  createdByUserId: z.string().nullish(),
+  createdAt: z.string().optional(),
+});
+
+const mentoringSession = z.object({
+  id: z.string(),
+  mentor: z.string(),
+  mentorUserId: z.string().nullish(),
+  menteeId: z.string(),
+  date: z.string(),
+  durationMin: z.number(),
+  topic: z.string(),
+  competencyIds: z.array(z.string()),
+  notes: z.string(),
+  decisions: z.string(),
+  actions: z.string(),
+  nextSession: z.string().optional(),
+});
+
+const evidence = z.object({
+  id: z.string(),
+  architectId: z.string(),
+  title: z.string(),
+  description: z.string(),
+  type: z.enum([
+    "Architecture Design",
+    "ADR",
+    "Technical Presentation",
+    "Workshop",
+    "Project",
+    "Certification",
+    "Course",
+    "Proof of Concept",
+    "Architecture Review",
+    "Mentoring",
+    "Technical Article",
+  ]),
+  competencyIds: z.array(z.string()),
+  date: z.string(),
+  project: z.string().optional(),
+  url: z.string().optional(),
+  complexity: z.enum(["Low", "Medium", "High"]),
+  leaderComment: z.string().optional(),
+  status: z.enum(["Pending", "Accepted", "Needs Improvement", "Rejected"]),
+  issuer: z.string().optional(),
+  developmentPlanItemId: z.string().nullish(),
+  reviewedByUserId: z.string().nullish(),
+  reviewedAt: z.string().nullish(),
+});
+
+export const appStateSchema = z.object({
+  capabilities: z.array(capability),
+  competencies: z.array(competency),
+  careerLevels: z.array(careerLevel),
+  careerLevelPolicies: z.array(careerLevelPolicy),
+  architects: z.array(architect),
+  assessments: z.array(assessment),
+  cycles: z.array(developmentCycle),
+  plans: z.array(developmentPlan),
+  learningPaths: z.array(learningPath),
+  mentoringSessions: z.array(mentoringSession),
+  evidences: z.array(evidence),
+  activeCycleId: z.string(),
+});

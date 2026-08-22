@@ -109,10 +109,18 @@ function TrainingNeedsPage() {
             <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2">Competência</th>
-                  <th className="py-2">Capacidade</th>
-                  <th className="py-2 text-center">{t("needs.col.peopleWithGap")}</th>
-                  <th className="py-2 text-center">{t("needs.col.avgGap")}</th>
+                  <th scope="col" className="py-2">
+                    Competência
+                  </th>
+                  <th scope="col" className="py-2">
+                    Capacidade
+                  </th>
+                  <th scope="col" className="py-2 text-center">
+                    {t("needs.col.peopleWithGap")}
+                  </th>
+                  <th scope="col" className="py-2 text-center">
+                    {t("needs.col.avgGap")}
+                  </th>
                 </tr>
               </thead>
               <tbody>

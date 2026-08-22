@@ -13,6 +13,7 @@ import {
 } from "@/components/app/DataView";
 import { GapBadge, Initials, LevelBadge, PageHeader } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import {
   MultiSelectFilter,
   type MultiSelectFilterOption,
@@ -120,6 +121,9 @@ function TeamPage() {
    * existe um Tech Lead no time hoje, então filtrar por ele não distingue
    * nada.
    */
+  const [architectFilter, setArchitectFilter] = useState<string[]>(() =>
+    store.architects.map((a) => a.id),
+  );
   const [statusFilter, setStatusFilter] = useState<string[]>(["active"]);
   const [roleFilter, setRoleFilter] = useState<string[]>(() => [...ROLES]);
   const [specializationFilter, setSpecializationFilter] = useState<string[]>(() => {
@@ -143,14 +147,26 @@ function TeamPage() {
     });
     return hasNone ? [...ids, NO_CAPABILITY] : ids;
   });
+  /**
+   * B-43 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §41) — a busca
+   * livre por nome (B-13) foi substituída pela faceta "Arquiteto"
+   * (`ArchitectFilter`, mesmo contrato de composição das outras 4 facetas:
+   * 1, n ou todos). Um campo de texto livre era a única faceta desta
+   * toolbar que fugia do modelo "todo filtro é por composição" — não compõe
+   * com "selecionar tudo", não tem semântica de 1/n/todos, e cria dois
+   * mecanismos concorrentes de recorte. O type-ahead interno do
+   * `ArchitectFilter` (>10 arquitetos) cobre a necessidade original de
+   * "achar a Marina" sem reintroduzir um campo de busca solto na toolbar.
+   */
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "level" | "recent">("name-asc");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  /** P1-12 — 25 como default superdimensiona times de 10–30 pessoas; 10 mostra o time inteiro sem paginar na maioria dos casos reais. */
+  const [pageSize, setPageSize] = useState(10);
   const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, roleFilter, specializationFilter, capabilityFilter, sort]);
+  }, [architectFilter, statusFilter, roleFilter, specializationFilter, capabilityFilter, sort]);
 
   /** Última sessão de mentoria por mentee — proxy de "atualização recente": não há `updatedAt` no cadastro. */
   const lastMentoringByArchitect = useMemo(() => {
@@ -203,6 +219,7 @@ function TeamPage() {
   const filtered = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
     return store.architects.filter((a) => {
+      if (!architectFilter.includes(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
       if (!roleFilter.includes(a.role)) return false;
       const specKey = a.primarySpecializationCompetencyId ?? NO_SPECIALIZATION;
@@ -217,6 +234,7 @@ function TeamPage() {
   }, [
     store.architects,
     isAdmin,
+    architectFilter,
     statusFilter,
     roleFilter,
     specializationFilter,
@@ -272,7 +290,19 @@ function TeamPage() {
         ? (options.find((o) => o.id === selected[0])?.label ?? selected[0]!)
         : t("filter.multi.count", { n: selected.length });
 
+  const architectOptions: MultiSelectFilterOption[] = store.architects.map((a) => ({
+    id: a.id,
+    label: a.name,
+  }));
+
   const activeFilterChips: ActiveFilterChip[] = [];
+  if (architectFilter.length !== store.architects.length) {
+    activeFilterChips.push({
+      key: "architect",
+      label: `${t("team.filter.architect")}: ${summarize(architectFilter, architectOptions)}`,
+      onRemove: () => setArchitectFilter(store.architects.map((a) => a.id)),
+    });
+  }
   if (isAdmin && !(statusFilter.length === 1 && statusFilter[0] === "active")) {
     activeFilterChips.push({
       key: "status",
@@ -303,6 +333,7 @@ function TeamPage() {
   }
 
   const clearFilters = () => {
+    setArchitectFilter(store.architects.map((a) => a.id));
     setStatusFilter(["active"]);
     setRoleFilter(roleOptions.map((o) => o.id));
     setSpecializationFilter(specializationOptions.map((o) => o.id));
@@ -432,6 +463,13 @@ function TeamPage() {
             sortOptions={sortOptions}
             onSortChange={(v) => setSort(v as typeof sort)}
           >
+            <ArchitectFilter
+              id="team-filter-architect"
+              label={t("team.filter.architect")}
+              architects={store.architects}
+              selected={architectFilter}
+              onChange={setArchitectFilter}
+            />
             {isAdmin && (
               <MultiSelectFilter
                 id="team-filter-status"
@@ -618,19 +656,35 @@ function TeamPage() {
               <table className="w-full min-w-[760px] text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-4 py-3">{t("team.table.col.name")}</th>
-                    <th className="px-4 py-3">{t("team.table.col.role")}</th>
-                    <th className="px-4 py-3">{t("team.table.col.specialization")}</th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("team.table.col.name")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("team.table.col.role")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("team.table.col.specialization")}
+                    </th>
                     {isAdmin && (
-                      <th className="whitespace-nowrap px-4 py-3">{t("team.table.col.lead")}</th>
+                      <th scope="col" className="whitespace-nowrap px-4 py-3">
+                        {t("team.table.col.lead")}
+                      </th>
                     )}
-                    <th className="whitespace-nowrap px-4 py-3 text-center">
+                    <th scope="col" className="whitespace-nowrap px-4 py-3 text-center">
                       {t("team.table.col.level")}
                     </th>
-                    <th className="px-4 py-3 text-center">{t("team.table.col.gaps")}</th>
-                    {isAdmin && <th className="px-4 py-3">{t("team.table.col.status")}</th>}
+                    <th scope="col" className="px-4 py-3 text-center">
+                      {t("team.table.col.gaps")}
+                    </th>
                     {isAdmin && (
-                      <th className="px-4 py-3 text-right">{t("team.table.col.actions")}</th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("team.table.col.status")}
+                      </th>
+                    )}
+                    {isAdmin && (
+                      <th scope="col" className="px-4 py-3 text-right">
+                        {t("team.table.col.actions")}
+                      </th>
                     )}
                   </tr>
                 </thead>
@@ -744,6 +798,7 @@ function TeamPage() {
             pageSize={pageSize}
             total={enrichedSorted.length}
             onPageChange={setPage}
+            pageSizeOptions={[10, 25, 50]}
             onPageSizeChange={(n) => setPageSize(n)}
           />
         </>

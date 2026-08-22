@@ -64,6 +64,7 @@ function buildLargeState(): AppState {
     modelVersion: 1,
     targetCareerLevelId: null,
     targetSemantics: null,
+    version: 1,
     items: competencies.map((c, i) => ({
       competencyId: c.id,
       self: 3 as Level,

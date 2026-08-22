@@ -107,13 +107,19 @@ if (await firstArchitect.isVisible({ timeout: 3000 }).catch(() => false)) {
   await firstArchitect.click();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(600);
-  await page.screenshot({ path: `${OUT_DIR}/14-detalhe-do-arquiteto-visao-geral.png`, fullPage: true });
+  await page.screenshot({
+    path: `${OUT_DIR}/14-detalhe-do-arquiteto-visao-geral.png`,
+    fullPage: true,
+  });
 
   console.log("15-detalhe-do-arquiteto-evolucao …");
   await page.getByRole("link", { name: "Evolução" }).click();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(800);
-  await page.screenshot({ path: `${OUT_DIR}/15-detalhe-do-arquiteto-evolucao.png`, fullPage: true });
+  await page.screenshot({
+    path: `${OUT_DIR}/15-detalhe-do-arquiteto-evolucao.png`,
+    fullPage: true,
+  });
 } else {
   console.log("  (sem arquitetos cadastrados — pulei estas capturas)");
 }

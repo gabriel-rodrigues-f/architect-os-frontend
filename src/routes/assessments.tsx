@@ -340,13 +340,27 @@ function AssessmentsPage() {
                     <table className="w-full min-w-[820px] text-sm">
                       <thead>
                         <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                          <th className="py-2">{t("asmt.col.competency")}</th>
-                          <th className="w-24 py-2 text-center">{t("asmt.col.self")}</th>
-                          <th className="w-24 py-2 text-center">{t("asmt.col.techLead")}</th>
-                          <th className="w-24 py-2 text-center">{t("asmt.col.target")}</th>
-                          <th className="w-24 py-2 text-center">{t("asmt.col.final")}</th>
-                          <th className="w-44 py-2">{t("asmt.col.gap")}</th>
-                          <th className="w-24 py-2 text-right">{t("asmt.col.notes")}</th>
+                          <th scope="col" className="py-2">
+                            {t("asmt.col.competency")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-center">
+                            {t("asmt.col.self")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-center">
+                            {t("asmt.col.techLead")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-center">
+                            {t("asmt.col.target")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-center">
+                            {t("asmt.col.final")}
+                          </th>
+                          <th scope="col" className="w-44 py-2">
+                            {t("asmt.col.gap")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-right">
+                            {t("asmt.col.notes")}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -393,6 +407,7 @@ function AssessmentsPage() {
                                       onChange={(v) =>
                                         store.updateAssessmentItem(assessment.id, c.id, { self: v })
                                       }
+                                      ariaLabel={t("asmt.select.self", { competency: c.name })}
                                     />
                                   ) : (
                                     <LevelBadge level={item.self ?? undefined} />
@@ -408,6 +423,7 @@ function AssessmentsPage() {
                                             leader: v,
                                           })
                                         }
+                                        ariaLabel={t("asmt.select.leader", { competency: c.name })}
                                       />
                                     ) : (
                                       <LevelBadge level={item.leader ?? undefined} />
@@ -432,6 +448,7 @@ function AssessmentsPage() {
                                           final: v,
                                         })
                                       }
+                                      ariaLabel={t("asmt.select.final", { competency: c.name })}
                                     />
                                   ) : (
                                     <LevelBadge level={item.final ?? undefined} />
@@ -830,7 +847,12 @@ function CareerPortfolioSection({
    * Problema 3 — sem `force`, o backend devolve 409 quando a capacidade já
    * tem competência respondida. Nesse caso (e só nesse), abre o diálogo de
    * confirmação em vez de mostrar o erro cru; qualquer outro erro (403 de
-   * quem não é dono, por exemplo) vai direto para `actionError`.
+   * quem não é dono, ou até um outro 409 — ex.: avaliação deixou de estar
+   * em Rascunho enquanto o diálogo estava aberto) vai direto para
+   * `actionError`. B-16 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md,
+   * §26) — reage por `code` estável, não por `status` genérico: antes,
+   * QUALQUER 409 nesta chamada abria o diálogo de "forçar remoção", mesmo
+   * um 409 sem nada a ver com competência respondida.
    */
   const attemptRemove = (capabilityId: string, capabilityName: string, force = false) => {
     setActionError(null);
@@ -842,7 +864,7 @@ function CareerPortfolioSection({
         setPendingRemoval(null);
       })
       .catch((error: unknown) => {
-        if (!force && error instanceof ApiError && error.status === 409) {
+        if (!force && error instanceof ApiError && error.code === "PORTFOLIO_HAS_ANSWERED_ITEMS") {
           setPendingRemoval({ id: capabilityId, name: capabilityName });
           return;
         }
@@ -1249,9 +1271,18 @@ function DevelopmentSummaryForm({
  * verdade; não existe valor padrão que o componente empurre sozinho. Ver
  * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, DOM-002.
  */
-function LevelSelect({ value, onChange }: { value: Level | null; onChange: (v: Level) => void }) {
+function LevelSelect({
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  value: Level | null;
+  onChange: (v: Level) => void;
+  ariaLabel: string;
+}) {
   return (
     <select
+      aria-label={ariaLabel}
       className="w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
       value={value ?? ""}
       onChange={(e) => onChange(Number(e.target.value) as Level)}

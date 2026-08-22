@@ -57,7 +57,9 @@ function AuthReady({ children }: { children: ReactNode }) {
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
-function baseSummary(overrides: Partial<AssessmentDevelopmentSummary> = {}): AssessmentDevelopmentSummary {
+function baseSummary(
+  overrides: Partial<AssessmentDevelopmentSummary> = {},
+): AssessmentDevelopmentSummary {
   return {
     assessmentId: "ana-h2",
     startDoing: "",
@@ -154,7 +156,11 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
     mockSession(
       fixtureAdminUser,
       inReviewState,
-      baseSummary({ startDoing: "Falar mais em reuniões", updatedAt: "2026-08-01T12:00:00Z", version: 1 }),
+      baseSummary({
+        startDoing: "Falar mais em reuniões",
+        updatedAt: "2026-08-01T12:00:00Z",
+        version: 1,
+      }),
     );
     render(
       <Wrapper>
@@ -172,7 +178,9 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
       const patch = body as { expectedVersion: number };
       expect(patch.expectedVersion).toBe(0);
       return new Response(
-        JSON.stringify(baseSummary({ startDoing: "Documentar decisões arquiteturais", version: 1 })),
+        JSON.stringify(
+          baseSummary({ startDoing: "Documentar decisões arquiteturais", version: 1 }),
+        ),
         { status: 200, headers: { "content-type": "application/json" } },
       );
     });
@@ -189,7 +197,9 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(screen.getByText("Salvo")).toBeTruthy());
-    const putCall = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === "PUT");
+    const putCall = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit)?.method === "PUT",
+    );
     expect(putCall).toBeDefined();
   });
 
