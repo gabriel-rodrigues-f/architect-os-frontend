@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, type Gap } from "@/lib/selectors";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
+import { initialSearchParam, replaceSearchParam } from "@/lib/text";
 
 /**
  * Compartilhado entre `/gap-analysis` (Radar + Prioridades, por pessoa) e
@@ -119,10 +120,28 @@ export function useGapAnalysisData() {
    * `coverage`. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
    * SYNAPSE.md, EPIC E, e ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
    * 08-19.md.
+   *
+   * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — o recorte
+   * agora vive na URL (`?selected=id1,id2`), não só em memória: sem isso, dar
+   * F5 depois de trocar a seleção (ou mandar o link para outra pessoa)
+   * sempre voltava para o time inteiro, perdendo o filtro que a tela estava
+   * mostrando. Ausência do parâmetro (primeira visita) cai no time visível
+   * padrão; presente e vazio (`?selected=`) é "ninguém" de propósito, uma
+   * seleção explícita, não o padrão.
    */
-  const [selected, setSelected] = useState<string[]>(() =>
-    sel.activeArchitects.filter((a) => canActFor(user, a)).map((a) => a.id),
+  const defaultSelected = useMemo(
+    () => sel.activeArchitects.filter((a) => canActFor(user, a)).map((a) => a.id),
+    [sel, user],
   );
+  const [selected, setSelectedState] = useState<string[]>(() => {
+    const fromUrl = initialSearchParam("selected");
+    if (fromUrl === undefined) return defaultSelected;
+    return fromUrl === "" ? [] : fromUrl.split(",");
+  });
+  const setSelected = (ids: string[]) => {
+    setSelectedState(ids);
+    replaceSearchParam("selected", ids.join(","));
+  };
 
   /** Toda a tela lê deste recorte. */
   const architects = applyArchitectFilter(store.architects, selected);

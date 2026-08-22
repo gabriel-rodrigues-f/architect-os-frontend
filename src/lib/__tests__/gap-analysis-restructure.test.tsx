@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -133,6 +134,7 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    window.history.replaceState(null, "", "/");
   });
 
   it("separa bloqueante de oportunidade em listas distintas", async () => {
@@ -221,5 +223,32 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
     renderGap();
     await screen.findByText("Radar de Arquitetura");
     expect(screen.getByRole("columnheader", { name: "Cobertura" })).toBeTruthy();
+  });
+
+  /**
+   * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — trocar o
+   * recorte de arquitetos escreve na URL (não só em memória), para que F5 e
+   * links copiados preservem o filtro em vez de sempre voltar ao time
+   * inteiro.
+   */
+  it("trocar a seleção no filtro escreve o recorte na URL", async () => {
+    renderGap();
+    await screen.findByText("Radar de Arquitetura");
+
+    // Time inteiro nasce selecionado — desmarcar Bruno deixa só Ana.
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+    await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
+
+    expect(window.location.search).toBe("?selected=ana");
+  });
+
+  it("abrir a tela com ?selected= na URL respeita o recorte, sem cair no time inteiro", async () => {
+    window.history.replaceState(null, "", "/gap-analysis?selected=bruno");
+    renderGap();
+    await screen.findByText("Radar de Arquitetura");
+
+    const scopeChip = screen.getByRole("button", { expanded: false });
+    expect(scopeChip.textContent).toContain("Bruno Almeida");
+    expect(scopeChip.textContent).not.toContain("Todo o time");
   });
 });

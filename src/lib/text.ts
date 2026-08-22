@@ -105,3 +105,29 @@ export const initialSearchParam = (name: string): string | undefined => {
   if (typeof window === "undefined") return undefined;
   return new URLSearchParams(window.location.search).get(name) ?? undefined;
 };
+
+/**
+ * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — o par
+ * complementar de `initialSearchParam`: sem isto, a página só honra o filtro
+ * que já veio na URL no primeiro render, mas nunca escreve de volta quando o
+ * filtro muda — dar F5 depois de trocar a seleção perdia tudo, e o link da
+ * barra de endereço nunca refletia o que a tela mostra. `replaceState` (não
+ * `pushState`) porque trocar um filtro é edição de estado da tela atual, não
+ * navegação — não deveria empilhar uma entrada no histórico do botão
+ * "Voltar" por marcação de caixinha. `undefined` remove a chave (URL limpa
+ * quando o filtro está no valor padrão); string vazia mantém a chave
+ * presente e vazia — distinção usada por quem chama para diferenciar
+ * "parâmetro ausente" (cai no padrão) de "selecionado vazio de propósito".
+ */
+export const replaceSearchParam = (name: string, value: string | undefined): void => {
+  if (typeof window === "undefined") return;
+  const params = new URLSearchParams(window.location.search);
+  if (value === undefined) {
+    params.delete(name);
+  } else {
+    params.set(name, value);
+  }
+  const query = params.toString();
+  const url = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+  window.history.replaceState(window.history.state, "", url);
+};
