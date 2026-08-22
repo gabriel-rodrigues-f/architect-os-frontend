@@ -33,21 +33,29 @@ if (!EMAIL || !PASSWORD) {
 
 mkdirSync(OUT_DIR, { recursive: true });
 
-/** Uma entrada por tela do menu principal — arquivo de saída e rota. */
+/**
+ * Uma entrada por tela — arquivo de saída e rota, na mesma ordem em que
+ * aparecem na barra lateral (`AppShell.tsx`, `NAV_GROUPS`). "Capacidades" é
+ * um item só no menu, mas quatro abas internas (`CapabilitiesTabs`) — cada
+ * aba entra aqui como sua própria captura, porque cada uma mostra dado
+ * diferente. `talent-matrix` (Matriz de Talentos / 9-Box) não existe mais
+ * como rota — removida do produto depois da última atualização desta lista.
+ */
 const SCREENS = [
   { file: "01-painel", path: "/" },
   { file: "02-time", path: "/team" },
-  { file: "03-mapa-de-capacidades", path: "/capability-map" },
-  { file: "04-matriz-de-competencias", path: "/competency-matrix" },
-  { file: "05-avaliacoes", path: "/assessments" },
-  { file: "06-analise-de-lacunas", path: "/gap-analysis" },
-  { file: "07-planos-de-desenvolvimento", path: "/development-plans" },
-  { file: "08-trilhas-de-aprendizagem", path: "/learning-paths" },
-  { file: "09-mentoria", path: "/mentoring" },
-  { file: "10-necessidades-de-treinamento", path: "/training-needs" },
-  { file: "11-matriz-de-talentos", path: "/talent-matrix" },
+  { file: "03-capacidades-cobertura", path: "/capability-map" },
+  { file: "04-capacidades-prioridades", path: "/gap-analysis" },
+  { file: "05-capacidades-progressao", path: "/progression" },
+  { file: "06-capacidades-prioridades-coletivas", path: "/training-needs" },
+  { file: "07-avaliacoes", path: "/assessments" },
+  { file: "08-planos-de-desenvolvimento", path: "/development-plans" },
+  { file: "09-trilhas-de-aprendizagem", path: "/learning-paths" },
+  { file: "10-mentoria", path: "/mentoring" },
+  { file: "11-matriz-de-competencias", path: "/competency-matrix" },
   { file: "12-ciclos-de-desenvolvimento", path: "/cycles" },
-  { file: "13-referencia-do-modelo", path: "/settings" },
+  { file: "13-usuarios", path: "/users" },
+  { file: "16-referencia-do-modelo", path: "/settings" },
 ];
 
 const browser = await chromium.launch();
@@ -89,17 +97,25 @@ for (const screen of SCREENS) {
 }
 
 // Detalhe de arquiteto: precisa de um id real, então navega e clica em vez de
-// montar a URL — é a única rota do menu que não é um caminho fixo.
-console.log("14-detalhe-do-arquiteto …");
+// montar a URL — é a única rota do menu que não é um caminho fixo. Duas
+// capturas: a aba "Visão geral" (destino do clique) e a aba "Evolução"
+// (`ProfileTabs`, ao lado) — a segunda só existe a partir da Rodada 10.
+console.log("14-detalhe-do-arquiteto-visao-geral …");
 await page.goto(`${BASE_URL}/team`, { waitUntil: "networkidle" });
 const firstArchitect = page.locator('a[href^="/architects/"]').first();
 if (await firstArchitect.isVisible({ timeout: 3000 }).catch(() => false)) {
   await firstArchitect.click();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(600);
-  await page.screenshot({ path: `${OUT_DIR}/14-detalhe-do-arquiteto.png`, fullPage: true });
+  await page.screenshot({ path: `${OUT_DIR}/14-detalhe-do-arquiteto-visao-geral.png`, fullPage: true });
+
+  console.log("15-detalhe-do-arquiteto-evolucao …");
+  await page.getByRole("link", { name: "Evolução" }).click();
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${OUT_DIR}/15-detalhe-do-arquiteto-evolucao.png`, fullPage: true });
 } else {
-  console.log("  (sem arquitetos cadastrados — pulei esta captura)");
+  console.log("  (sem arquitetos cadastrados — pulei estas capturas)");
 }
 
 await context.close();
