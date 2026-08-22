@@ -679,7 +679,7 @@ function CompetencyEditDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("matrix.edit.title")}</DialogTitle>
         </DialogHeader>
@@ -695,12 +695,12 @@ function CompetencyEditDialog({
           </div>
           <div>
             <Label>{t("matrix.edit.levels")}</Label>
-            <div className="mt-1 grid grid-cols-3 gap-3">
+            <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {ROLES.map((r) => (
-                <div key={r}>
+                <div key={r} className="min-w-0">
                   <span className="block text-xs text-muted-foreground">{roleShort(r)}</span>
                   <select
-                    className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2 text-sm"
+                    className="mt-1 w-full min-w-0 rounded-md border border-input bg-card px-2 py-2 text-sm"
                     value={levels[r]}
                     aria-label={`${t("matrix.edit.levels")} — ${roleShort(r)}`}
                     onChange={(e) => setLevels({ ...levels, [r]: Number(e.target.value) as Level })}
@@ -800,9 +800,9 @@ function SwapPicker({
   return (
     <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
       <p className="text-xs text-amber-700">{hint}</p>
-      <div className="mt-1.5 flex gap-2">
+      <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
         <select
-          className="flex-1 rounded-md border border-input bg-card px-2 py-1.5 text-xs"
+          className="min-w-0 flex-1 rounded-md border border-input bg-card px-2 py-1.5 text-xs"
           aria-label={label}
           value={value}
           disabled={swapping}
@@ -815,7 +815,7 @@ function SwapPicker({
             </option>
           ))}
         </select>
-        <Button size="sm" variant="secondary" disabled={!value || swapping} onClick={onSwap}>
+        <Button size="sm" variant="secondary" className="shrink-0" disabled={!value || swapping} onClick={onSwap}>
           {action}
         </Button>
       </div>
