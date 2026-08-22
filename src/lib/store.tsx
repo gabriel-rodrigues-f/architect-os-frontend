@@ -260,7 +260,10 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     updateCareerLevelPolicy: async (careerLevelId, minimumQualifiedCapabilities) => {
-      const updated = await api.updateCareerLevelPolicy(careerLevelId, minimumQualifiedCapabilities);
+      const updated = await api.updateCareerLevelPolicy(
+        careerLevelId,
+        minimumQualifiedCapabilities,
+      );
       local((s) => ({
         ...s,
         careerLevelPolicies: s.careerLevelPolicies.map((p) =>
@@ -557,7 +560,13 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     reschedulePlanItem: async (planId, itemId, targetDate, reason) => {
       const expectedVersion =
         state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
-      const updated = await api.reschedulePlanItem(planId, itemId, targetDate, reason, expectedVersion);
+      const updated = await api.reschedulePlanItem(
+        planId,
+        itemId,
+        targetDate,
+        reason,
+        expectedVersion,
+      );
       local((s) => ({
         ...s,
         plans: s.plans.map((p) => (p.id === planId ? updated : p)),

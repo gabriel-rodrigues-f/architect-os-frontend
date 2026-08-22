@@ -687,7 +687,15 @@ function DeadlineField({
  * :itemId/events`. Sem otimismo (é leitura), buscado só quando a pessoa
  * pede para ver, não em toda renderização do card.
  */
-function ItemHistory({ planId, itemId, locale }: { planId: string; itemId: string; locale: string }) {
+function ItemHistory({
+  planId,
+  itemId,
+  locale,
+}: {
+  planId: string;
+  itemId: string;
+  locale: string;
+}) {
   const { t } = useI18n();
   const store = useStore();
   const [events, setEvents] = useState<DevelopmentPlanItemEvent[] | null>(null);
@@ -701,7 +709,8 @@ function ItemHistory({ planId, itemId, locale }: { planId: string; itemId: strin
         if (!cancelled) setEvents(result);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof ApiError ? e.message : t("pdi.reschedule.history.error"));
+        if (!cancelled)
+          setError(e instanceof ApiError ? e.message : t("pdi.reschedule.history.error"));
       });
     return () => {
       cancelled = true;
@@ -709,9 +718,14 @@ function ItemHistory({ planId, itemId, locale }: { planId: string; itemId: strin
   }, [planId, itemId, store, t]);
 
   if (error) return <p className="mt-1 text-xs text-destructive">{error}</p>;
-  if (!events) return <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.loading")}</p>;
+  if (!events)
+    return (
+      <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.loading")}</p>
+    );
   if (events.length === 0) {
-    return <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.empty")}</p>;
+    return (
+      <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.empty")}</p>
+    );
   }
 
   return (
@@ -720,7 +734,7 @@ function ItemHistory({ planId, itemId, locale }: { planId: string; itemId: strin
         <li key={e.id} className="text-xs text-muted-foreground">
           <p>
             {t("pdi.reschedule.history.entry", {
-              de: e.fromTargetDate ? formatDate(e.fromTargetDate, locale) ?? "" : "—",
+              de: e.fromTargetDate ? (formatDate(e.fromTargetDate, locale) ?? "") : "—",
               para: formatDate(e.toTargetDate, locale) ?? "",
             })}
           </p>

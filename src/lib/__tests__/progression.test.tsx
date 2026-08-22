@@ -156,7 +156,9 @@ describe("Progressão — heatmap, tabela e maestria", () => {
     renderProgression();
     await screen.findByText("Tabela de Lacunas de Progressão");
 
-    const progressionTable = screen.getByText("Tabela de Lacunas de Progressão").closest(".surface-card")!;
+    const progressionTable = screen
+      .getByText("Tabela de Lacunas de Progressão")
+      .closest(".surface-card")!;
     // Bruno está em MASTERY neste ciclo — os gaps dele não contam mais como progressão.
     expect(progressionTable.textContent).not.toContain("Kubernetes");
 

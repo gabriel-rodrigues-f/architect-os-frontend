@@ -276,10 +276,7 @@ export function GapTable({
                   </Badge>
                 </td>
               )}
-              <td
-                className="py-2 text-center tabular-nums"
-                title={row.architectNames.join(", ")}
-              >
+              <td className="py-2 text-center tabular-nums" title={row.architectNames.join(", ")}>
                 {row.people}
               </td>
               <td className="py-2 text-center tabular-nums">{row.avgFinal}</td>

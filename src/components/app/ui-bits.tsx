@@ -191,7 +191,13 @@ export function PageHeader({
  * dentro da mesma página. `<Link>`, não um componente de abas com estado —
  * é navegação de verdade entre duas rotas.
  */
-export function ProfileTabs({ architectId, active }: { architectId: string; active: "overview" | "evolution" }) {
+export function ProfileTabs({
+  architectId,
+  active,
+}: {
+  architectId: string;
+  active: "overview" | "evolution";
+}) {
   const { t } = useI18n();
   const tabClass = (isActive: boolean) =>
     cn(
@@ -202,7 +208,11 @@ export function ProfileTabs({ architectId, active }: { architectId: string; acti
     );
   return (
     <div className="mb-6 flex gap-6 border-b border-border">
-      <Link to="/architects/$architectId" params={{ architectId }} className={tabClass(active === "overview")}>
+      <Link
+        to="/architects/$architectId"
+        params={{ architectId }}
+        className={tabClass(active === "overview")}
+      >
         {t("arch.tabs.overview")}
       </Link>
       <Link

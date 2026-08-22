@@ -122,7 +122,11 @@ export function DataViewToolbar({
             </button>
           ))}
           {onClearFilters && (
-            <button type="button" onClick={onClearFilters} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
               {t("dataView.clearFilters")}
             </button>
           )}
@@ -170,7 +174,9 @@ export function Pagination({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 pt-3 text-sm">
-      <p className="text-xs text-muted-foreground">{t("dataView.pageRange", { from, to, total })}</p>
+      <p className="text-xs text-muted-foreground">
+        {t("dataView.pageRange", { from, to, total })}
+      </p>
       <div className="flex items-center gap-2">
         {onPageSizeChange && (
           <select
@@ -186,13 +192,23 @@ export function Pagination({
             ))}
           </select>
         )}
-        <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+        >
           {t("dataView.previous")}
         </Button>
         <span className="whitespace-nowrap text-xs text-muted-foreground">
           {t("dataView.pageOf", { page, totalPages })}
         </span>
-        <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
           {t("dataView.next")}
         </Button>
       </div>
@@ -215,9 +231,15 @@ export function EmptyState({
   const { t } = useI18n();
   return (
     <div className="py-8 text-center">
-      <p className="text-sm text-muted-foreground">{hasFilters ? noResultsMessage : emptyMessage}</p>
+      <p className="text-sm text-muted-foreground">
+        {hasFilters ? noResultsMessage : emptyMessage}
+      </p>
       {hasFilters && onClearFilters && (
-        <button type="button" onClick={onClearFilters} className="mt-2 text-xs text-primary hover:underline">
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="mt-2 text-xs text-primary hover:underline"
+        >
           {t("dataView.clearFilters")}
         </button>
       )}

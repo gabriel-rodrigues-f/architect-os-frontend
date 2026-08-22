@@ -5,7 +5,14 @@ import { toast } from "sonner";
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
-import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, ROLES, roleShort, type CareerLevel } from "@/lib/domain";
+import {
+  ACTION_TYPES,
+  EVIDENCE_TYPES,
+  LEVELS,
+  ROLES,
+  roleShort,
+  type CareerLevel,
+} from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
@@ -233,8 +240,8 @@ function CareerPolicyRow({
       <td className="py-2">
         <p className="font-medium">{level.name}</p>
         <p className="text-xs text-muted-foreground">
-          Para estar elegível ao {level.name}: é necessário qualificar pelo menos{" "}
-          {minimum ?? "—"} capacidade(s) do portfólio confirmado.
+          Para estar elegível ao {level.name}: é necessário qualificar pelo menos {minimum ?? "—"}{" "}
+          capacidade(s) do portfólio confirmado.
         </p>
         {impossible && (
           <p className="mt-1 text-xs text-destructive" role="alert">

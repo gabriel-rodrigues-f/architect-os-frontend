@@ -130,7 +130,10 @@ async function requestBlob(path: string, body: unknown): Promise<{ blob: Blob; f
   });
   if (!response.ok) {
     const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-    throw new ApiError(errorBody?.message ?? `POST ${path} falhou (${response.status})`, response.status);
+    throw new ApiError(
+      errorBody?.message ?? `POST ${path} falhou (${response.status})`,
+      response.status,
+    );
   }
   const disposition = response.headers.get("content-disposition") ?? "";
   const match = /filename="?([^"]+)"?/.exec(disposition);
@@ -370,7 +373,10 @@ export const api = {
     planId: string,
     itemId: string,
     body: Partial<
-      Omit<DevelopmentPlanItem, "version" | "currentLevel" | "targetLevel" | "priority" | "sourceAssessmentId">
+      Omit<
+        DevelopmentPlanItem,
+        "version" | "currentLevel" | "targetLevel" | "priority" | "sourceAssessmentId"
+      >
     >,
     expectedVersion: number,
   ) => patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, { ...body, expectedVersion }),

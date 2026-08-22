@@ -90,7 +90,9 @@ function AdminHome() {
    */
   const architects = sel.activeArchitects.filter((a) => canActFor(user, a));
 
-  const allGaps = architects.flatMap((a) => sel.progressionGapsFor(a.id).map((g) => ({ ...g, architect: a })));
+  const allGaps = architects.flatMap((a) =>
+    sel.progressionGapsFor(a.id).map((g) => ({ ...g, architect: a })),
+  );
   const criticalGaps = allGaps.filter((g) => g.gap >= 3).length;
   const planItems = store.plans
     .filter((p) => p.cycleId === store.activeCycleId)

@@ -62,7 +62,10 @@ function ProgressionPage() {
         </div>
       ) : (
         <>
-          <SectionCard title={t("gap.heatmap.title")} description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}>
+          <SectionCard
+            title={t("gap.heatmap.title")}
+            description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}
+          >
             {/* ENT-09-016 — cabeçalho fixo: o heatmap cresce uma linha por arquiteto do time. */}
             <div className="max-h-[480px] overflow-auto">
               <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
