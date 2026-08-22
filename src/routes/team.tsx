@@ -409,6 +409,7 @@ function TeamPage() {
                   id="years"
                   type="number"
                   min={0}
+                  className="mt-1"
                   value={form.years}
                   onChange={(e) => setForm({ ...form, years: e.target.value })}
                   onKeyDown={(e) => e.key === "Enter" && submit()}
