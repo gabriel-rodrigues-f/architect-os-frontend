@@ -1,0 +1,121 @@
+import { createFileRoute } from "@tanstack/react-router";
+
+import { ArchitectFilter } from "@/components/app/ArchitectFilter";
+import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
+import { GapTable, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
+import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { useI18n } from "@/lib/i18n";
+import { useSelectors } from "@/lib/store";
+
+/**
+ * Apontado ao vivo: Mapa de Calor + Tabela de Lacunas de Progressão viviam
+ * no fim de `/gap-analysis` (Radar + Prioridades), empurrando a página
+ * inteira pra baixo — duas visões de escopo diferente (por pessoa vs.
+ * consolidado do time) forçadas na mesma rolagem. Vira aba própria dentro
+ * de "Capacidades", ao lado de "Prioridades"; o cálculo é o mesmo
+ * (`useGapAnalysisData`), só a apresentação muda.
+ */
+export const Route = createFileRoute("/progression")({
+  head: () => ({
+    meta: [
+      { title: "Progressão — Synapse" },
+      {
+        name: "description",
+        content: "Mapa de calor de competências e tabela de lacunas de progressão do time.",
+      },
+      { property: "og:title", content: "Progressão — Synapse" },
+      { property: "og:description", content: "Mapa de calor e tabela de lacunas do time." },
+    ],
+  }),
+  component: ProgressionPage,
+});
+
+function ProgressionPage() {
+  const { t } = useI18n();
+  const sel = useSelectors();
+  const { store, selected, setSelected, architects, blocking, opportunity, mastery, scopeLabel } =
+    useGapAnalysisData();
+
+  return (
+    <>
+      <CapabilitiesTabs />
+      <PageHeader
+        title={t("progression.title")}
+        description={t("progression.subtitle")}
+        actions={
+          <ArchitectFilter
+            architects={store.architects}
+            selected={selected}
+            onChange={setSelected}
+          />
+        }
+      />
+
+      {architects.length === 0 ? (
+        <div className="surface-card p-8 text-center">
+          <p className="text-sm font-medium">{t("gap.empty")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {store.architects.length === 0
+              ? "Cadastre arquitetos em Time e abra uma avaliação do ciclo para ver as lacunas aqui."
+              : t("gap.empty.filterHint")}
+          </p>
+        </div>
+      ) : (
+        <>
+          <SectionCard title={t("gap.heatmap.title")} description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}>
+            {/* ENT-09-016 — cabeçalho fixo: o heatmap cresce uma linha por arquiteto do time. */}
+            <div className="max-h-[480px] overflow-auto">
+              <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
+                <thead>
+                  <tr>
+                    <th className="sticky top-0 z-10 w-44 bg-card text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      {t("col.architect")}
+                    </th>
+                    {store.capabilities.map((c) => (
+                      <th
+                        key={c.id}
+                        className="sticky top-0 z-10 bg-card text-center text-[11px] text-muted-foreground"
+                      >
+                        {c.short}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {architects.map((a) => (
+                    <tr key={a.id}>
+                      <td className="text-sm font-medium">{a.name}</td>
+                      {sel.capabilityAverages(a.id).map((d) => (
+                        <td key={d.capability.id} className="min-w-[52px]">
+                          <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            className="mt-6"
+            title={t("gap.table.title")}
+            description={t("gap.table.subtitle", { escopo: scopeLabel })}
+          >
+            <GapTable rows={[...blocking, ...opportunity]} capabilities={store.capabilities} />
+          </SectionCard>
+
+          {mastery.length > 0 && (
+            <SectionCard
+              className="mt-6"
+              title={t("gap.mastery.title")}
+              description={t("gap.mastery.subtitle", { escopo: scopeLabel })}
+            >
+              <GapTable rows={mastery} capabilities={store.capabilities} mastery />
+            </SectionCard>
+          )}
+        </>
+      )}
+    </>
+  );
+}

@@ -506,6 +506,134 @@ export interface MentoringSession {
   nextSession?: string | undefined;
 }
 
+/** Nível OBSERVADO mudado nesta sessão — separado de `competencyIds` (Seção 17). */
+export interface ProficiencyUpdate {
+  competencyId: string;
+  observedLevel: Level;
+  note?: string | undefined;
+}
+
+export type ProficiencySourceType = "ASSESSMENT" | "MENTORING";
+export type EvolutionSourceFilter = "ALL" | ProficiencySourceType;
+
+/** Nunca `[] = todos` (Seção 44) — modo explícito. */
+export type SelectionScope = { mode: "ALL_VISIBLE" } | { mode: "SELECTED"; ids: string[] };
+
+export interface CompetencyLevelEvent {
+  id: string;
+  architectId: string;
+  competencyId: string;
+  fromLevel: Level | null;
+  toLevel: Level;
+  sourceType: ProficiencySourceType;
+  sourceId: string;
+  effectiveDate: string;
+  recordedAt: string;
+  actorUserId: string;
+  note: string | null;
+}
+
+export type SnapshotTemporalPrecision = "EXACT" | "CYCLE_END_INFERRED";
+
+export interface ProfessionalStateSnapshotItem {
+  capabilityId: string;
+  competencyId: string;
+  capabilityNameSnapshot: string;
+  competencyNameSnapshot: string;
+  observedLevel: Level | null;
+  officialLevel: Level | null;
+  expectedLevelSnapshot: Level | null;
+  requirementTypeSnapshot: RequirementType;
+}
+
+export interface ProfessionalStateSnapshot {
+  id: string;
+  architectId: string;
+  effectiveDate: string;
+  recordedAt: string;
+  sourceType: ProficiencySourceType;
+  sourceId: string;
+  actorUserId: string;
+  careerLevelIdSnapshot: string | null;
+  careerLevelNameSnapshot: string | null;
+  targetCareerLevelIdSnapshot: string | null;
+  minimumQualifiedCapabilitiesSnapshot: number | null;
+  temporalPrecision: SnapshotTemporalPrecision;
+  items: ProfessionalStateSnapshotItem[];
+}
+
+export interface CompetencyEvolutionComparison {
+  competencyId: string;
+  competencyName: string;
+  capabilityId: string;
+  capabilityName: string;
+  initialLevel: Level | null;
+  currentLevel: Level | null;
+  delta: number | null;
+  lastSourceType: ProficiencySourceType | null;
+}
+
+export interface CapabilitySeriesPoint {
+  date: string;
+  averageLevel: number;
+  coveredCount: number;
+}
+
+export interface CapabilitySeries {
+  capabilityId: string;
+  capabilityName: string;
+  points: CapabilitySeriesPoint[];
+}
+
+export interface CompetencySeries {
+  competencyId: string;
+  competencyName: string;
+  capabilityId: string;
+  events: CompetencyLevelEvent[];
+}
+
+export interface EvolutionSummary {
+  coverage: { covered: number; total: number };
+  initialAverage: number | null;
+  currentAverage: number | null;
+  averageDelta: number | null;
+  improved: number;
+  stable: number;
+  regressed: number;
+  mentoringCount: number;
+  assessmentCount: number;
+}
+
+export interface ArchitectEvolutionResult {
+  architect: { id: string; name: string; role: RoleName; careerLevelName: string | null };
+  summary: EvolutionSummary;
+  capabilitySeries: CapabilitySeries[];
+  competencySeries: CompetencySeries[];
+  events: CompetencyLevelEvent[];
+  snapshots: ProfessionalStateSnapshot[];
+  comparisons: CompetencyEvolutionComparison[];
+}
+
+export interface TeamEvolutionResult {
+  architectCount: number;
+  summary: EvolutionSummary;
+  capabilitySeries: CapabilitySeries[];
+  perArchitect: Array<{
+    architectId: string;
+    architectName: string;
+    initialAverage: number | null;
+    currentAverage: number | null;
+    delta: number | null;
+  }>;
+}
+
+export interface EvolutionFilters {
+  range: { from: string; to: string };
+  capabilities: SelectionScope;
+  competencies: SelectionScope;
+  source: EvolutionSourceFilter;
+}
+
 export type EvidenceType =
   | "Architecture Design"
   | "ADR"

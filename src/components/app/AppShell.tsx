@@ -81,7 +81,7 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/capability-map",
         labelKey: "nav.capabilities",
         icon: Map,
-        activePrefixes: ["/gap-analysis", "/training-needs"],
+        activePrefixes: ["/gap-analysis", "/progression", "/training-needs"],
       },
     ],
   },

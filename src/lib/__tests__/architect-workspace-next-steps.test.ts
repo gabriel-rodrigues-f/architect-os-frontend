@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeNextSteps } from "@/routes/architects.$architectId";
+import { computeNextSteps } from "@/routes/architects.$architectId.index";
 
 /**
  * FASE 2 (quinta rodada) — "perfil deveria ser o centro da jornada...

@@ -18,11 +18,14 @@ import { Route as DevelopmentPlansRouteImport } from './routes/development-plans
 import { Route as GapAnalysisRouteImport } from './routes/gap-analysis'
 import { Route as LearningPathsRouteImport } from './routes/learning-paths'
 import { Route as MentoringRouteImport } from './routes/mentoring'
+import { Route as ProgressionRouteImport } from './routes/progression'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ArchitectsArchitectIdRouteImport } from './routes/architects.$architectId'
+import { Route as ArchitectsArchitectIdIndexRouteImport } from './routes/architects.$architectId.index'
+import { Route as ArchitectsArchitectIdEvolutionRouteImport } from './routes/architects.$architectId.evolution'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -69,6 +72,11 @@ const MentoringRoute = MentoringRouteImport.update({
   path: '/mentoring',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProgressionRoute = ProgressionRouteImport.update({
+  id: '/progression',
+  path: '/progression',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -94,6 +102,18 @@ const ArchitectsArchitectIdRoute = ArchitectsArchitectIdRouteImport.update({
   path: '/architects/$architectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArchitectsArchitectIdIndexRoute =
+  ArchitectsArchitectIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ArchitectsArchitectIdRoute,
+  } as any)
+const ArchitectsArchitectIdEvolutionRoute =
+  ArchitectsArchitectIdEvolutionRouteImport.update({
+    id: '/evolution',
+    path: '/evolution',
+    getParentRoute: () => ArchitectsArchitectIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -105,11 +125,14 @@ export interface FileRoutesByFullPath {
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/progression': typeof ProgressionRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdRoute
+  '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
+  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -121,11 +144,13 @@ export interface FileRoutesByTo {
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/progression': typeof ProgressionRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdRoute
+  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -138,11 +163,14 @@ export interface FileRoutesById {
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/progression': typeof ProgressionRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdRoute
+  '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
+  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -156,11 +184,14 @@ export interface FileRouteTypes {
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/progression'
     | '/settings'
     | '/team'
     | '/training-needs'
     | '/users'
     | '/architects/$architectId'
+    | '/architects/$architectId/evolution'
+    | '/architects/$architectId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -172,10 +203,12 @@ export interface FileRouteTypes {
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/progression'
     | '/settings'
     | '/team'
     | '/training-needs'
     | '/users'
+    | '/architects/$architectId/evolution'
     | '/architects/$architectId'
   id:
     | '__root__'
@@ -188,11 +221,14 @@ export interface FileRouteTypes {
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/progression'
     | '/settings'
     | '/team'
     | '/training-needs'
     | '/users'
     | '/architects/$architectId'
+    | '/architects/$architectId/evolution'
+    | '/architects/$architectId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -205,11 +241,12 @@ export interface RootRouteChildren {
   GapAnalysisRoute: typeof GapAnalysisRoute
   LearningPathsRoute: typeof LearningPathsRoute
   MentoringRoute: typeof MentoringRoute
+  ProgressionRoute: typeof ProgressionRoute
   SettingsRoute: typeof SettingsRoute
   TeamRoute: typeof TeamRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
   UsersRoute: typeof UsersRoute
-  ArchitectsArchitectIdRoute: typeof ArchitectsArchitectIdRoute
+  ArchitectsArchitectIdRoute: typeof ArchitectsArchitectIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -277,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MentoringRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/progression': {
+      id: '/progression'
+      path: '/progression'
+      fullPath: '/progression'
+      preLoaderRoute: typeof ProgressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -312,8 +356,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchitectsArchitectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/architects/$architectId/': {
+      id: '/architects/$architectId/'
+      path: '/'
+      fullPath: '/architects/$architectId/'
+      preLoaderRoute: typeof ArchitectsArchitectIdIndexRouteImport
+      parentRoute: typeof ArchitectsArchitectIdRoute
+    }
+    '/architects/$architectId/evolution': {
+      id: '/architects/$architectId/evolution'
+      path: '/evolution'
+      fullPath: '/architects/$architectId/evolution'
+      preLoaderRoute: typeof ArchitectsArchitectIdEvolutionRouteImport
+      parentRoute: typeof ArchitectsArchitectIdRoute
+    }
   }
 }
+
+interface ArchitectsArchitectIdRouteChildren {
+  ArchitectsArchitectIdEvolutionRoute: typeof ArchitectsArchitectIdEvolutionRoute
+  ArchitectsArchitectIdIndexRoute: typeof ArchitectsArchitectIdIndexRoute
+}
+
+const ArchitectsArchitectIdRouteChildren: ArchitectsArchitectIdRouteChildren = {
+  ArchitectsArchitectIdEvolutionRoute: ArchitectsArchitectIdEvolutionRoute,
+  ArchitectsArchitectIdIndexRoute: ArchitectsArchitectIdIndexRoute,
+}
+
+const ArchitectsArchitectIdRouteWithChildren =
+  ArchitectsArchitectIdRoute._addFileChildren(
+    ArchitectsArchitectIdRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -325,11 +398,12 @@ const rootRouteChildren: RootRouteChildren = {
   GapAnalysisRoute: GapAnalysisRoute,
   LearningPathsRoute: LearningPathsRoute,
   MentoringRoute: MentoringRoute,
+  ProgressionRoute: ProgressionRoute,
   SettingsRoute: SettingsRoute,
   TeamRoute: TeamRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
   UsersRoute: UsersRoute,
-  ArchitectsArchitectIdRoute: ArchitectsArchitectIdRoute,
+  ArchitectsArchitectIdRoute: ArchitectsArchitectIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

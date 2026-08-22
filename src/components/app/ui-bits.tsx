@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -180,6 +181,37 @@ export function PageHeader({
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+/**
+ * ORIENTACAO-DECIMA-RODADA, Seção 30 — "Visão geral | Evolução" como rota
+ * própria (deep link, filtros, menos scroll), não como painel escondido
+ * dentro da mesma página. `<Link>`, não um componente de abas com estado —
+ * é navegação de verdade entre duas rotas.
+ */
+export function ProfileTabs({ architectId, active }: { architectId: string; active: "overview" | "evolution" }) {
+  const { t } = useI18n();
+  const tabClass = (isActive: boolean) =>
+    cn(
+      "border-b-2 px-1 pb-2 text-sm font-medium transition-colors",
+      isActive
+        ? "border-primary text-foreground"
+        : "border-transparent text-muted-foreground hover:text-foreground",
+    );
+  return (
+    <div className="mb-6 flex gap-6 border-b border-border">
+      <Link to="/architects/$architectId" params={{ architectId }} className={tabClass(active === "overview")}>
+        {t("arch.tabs.overview")}
+      </Link>
+      <Link
+        to="/architects/$architectId/evolution"
+        params={{ architectId }}
+        className={tabClass(active === "evolution")}
+      >
+        {t("arch.tabs.evolution")}
+      </Link>
     </div>
   );
 }

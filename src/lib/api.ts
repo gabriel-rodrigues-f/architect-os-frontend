@@ -1,6 +1,7 @@
 import type {
   ActionType,
   Architect,
+  ArchitectEvolutionResult,
   Assessment,
   AssessmentCapability,
   AssessmentComment,
@@ -17,10 +18,14 @@ import type {
   DevelopmentPlanItem,
   DevelopmentPlanItemEvent,
   Evidence,
+  EvolutionFilters,
   LearningPath,
   LearningPathItem,
   Level,
   MentoringSession,
+  ProficiencyUpdate,
+  SelectionScope,
+  TeamEvolutionResult,
 } from "./domain";
 
 /** Snapshot devolvido por GET /api/state — espelha o AppState do backend. */
@@ -108,6 +113,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/**
+ * ORIENTACAO-DECIMA-RODADA, Seção 71 — o PDF chega como blob, não JSON;
+ * `request()` não serve aqui. Devolve o filename já resolvido do
+ * `Content-Disposition` (o backend decide o nome — Seção 55 — o cliente só
+ * repassa pro download).
+ */
+async function requestBlob(path: string, body: unknown): Promise<{ blob: Blob; filename: string }> {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new ApiError(errorBody?.message ?? `POST ${path} falhou (${response.status})`, response.status);
+  }
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const match = /filename="?([^"]+)"?/.exec(disposition);
+  return { blob: await response.blob(), filename: match?.[1] ?? "relatorio.pdf" };
 }
 
 const post = <T>(path: string, body: unknown) =>
@@ -407,8 +434,10 @@ export const api = {
     }),
 
   /* registros */
-  createMentoringSession: (session: MentoringSession) =>
-    post<MentoringSession>("/api/mentoring-sessions", session),
+  createMentoringSession: (
+    session: MentoringSession,
+    proficiencyUpdates: ProficiencyUpdate[] = [],
+  ) => post<MentoringSession>("/api/mentoring-sessions", { ...session, proficiencyUpdates }),
   scheduleMentoringFollowUp: (id: string, nextSession: string | null) =>
     patch<MentoringSession>(`/api/mentoring-sessions/${id}`, { nextSession }),
   createEvidence: (evidence: Evidence) => post<Evidence>("/api/evidences", evidence),
@@ -433,4 +462,27 @@ export const api = {
         reviewedAt: string;
       }>
     >(`/api/evidences/${id}/reviews`),
+};
+
+/**
+ * ORIENTACAO-DECIMA-RODADA, Seção 47-49/55 — mesmo serviço de analytics do
+ * backend, aqui só a chamada de rede; nenhum cálculo replicado no cliente.
+ */
+export const evolutionApi = {
+  architect: (architectId: string, filters: EvolutionFilters) =>
+    post<ArchitectEvolutionResult>("/api/evolution/architect", { architectId, ...filters }),
+  team: (architects: SelectionScope, filters: EvolutionFilters) =>
+    post<TeamEvolutionResult>("/api/evolution/team", { architects, ...filters }),
+};
+
+/**
+ * Fase 10.6 — só individual: o relatório é "o que esta pessoa está vendo na
+ * tela de Evolução dela", mesmo escopo de `evolutionApi.architect`. Time
+ * inteiro em PDF não foi pedido nem construído no backend (que renderizador
+ * de tabela/gráfico faria sentido pra dezenas de pessoas de uma vez é uma
+ * decisão de produto em aberto, não um detalhe de implementação).
+ */
+export const reportsApi = {
+  exportEvolutionPdf: (architectId: string, filters: EvolutionFilters) =>
+    requestBlob("/api/reports/evolution/pdf", { architectId, ...filters }),
 };

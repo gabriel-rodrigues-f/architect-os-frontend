@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
-import type { MentoringSession } from "@/lib/domain";
+import type { MentoringSession, ProficiencyUpdate } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
-import { canActFor } from "@/lib/scope";
+import { canActFor, isAssignedTechLeadOf } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, todayIso } from "@/lib/text";
 
@@ -82,6 +82,27 @@ function MentoringPage() {
     nextSession: "",
   });
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
+  /**
+   * ORIENTACAO-DECIMA-RODADA, Seção 17/38 — nível OBSERVADO mudado nesta
+   * sessão, separado de `competencyIds` (que só significa "abordadas na
+   * conversa"). Opcional (Seção 39): mentoria continua válida com o array
+   * vazio.
+   */
+  const [proficiencyUpdates, setProficiencyUpdates] = useState<ProficiencyUpdate[]>([]);
+  const toggleProficiencyUpdate = (competencyId: string) =>
+    setProficiencyUpdates((prev) =>
+      prev.some((u) => u.competencyId === competencyId)
+        ? prev.filter((u) => u.competencyId !== competencyId)
+        : [...prev, { competencyId, observedLevel: 1 }],
+    );
+  const setProficiencyLevel = (competencyId: string, observedLevel: number) =>
+    setProficiencyUpdates((prev) =>
+      prev.map((u) => (u.competencyId === competencyId ? { ...u, observedLevel: observedLevel as 1 | 2 | 3 | 4 | 5 } : u)),
+    );
+  const setProficiencyNote = (competencyId: string, note: string) =>
+    setProficiencyUpdates((prev) =>
+      prev.map((u) => (u.competencyId === competencyId ? { ...u, note: note || undefined } : u)),
+    );
   /** Sessão cujo "Enviar ao PDI" está em voo — evita duplo clique e mostra o estado de carregamento certo. */
   const [sendingSessionId, setSendingSessionId] = useState<string | null>(null);
   const toggleCompetency = (id: string) =>
@@ -126,19 +147,22 @@ function MentoringPage() {
 
     setSaving(true);
     try {
-      await store.addMentoringSession({
-        id: "",
-        mentor: user.name,
-        menteeId: form.menteeId,
-        date: form.date,
-        durationMin: durationValue,
-        topic: form.topic,
-        competencyIds,
-        notes: form.notes,
-        decisions: form.decisions,
-        actions: form.actions,
-        ...(form.nextSession ? { nextSession: form.nextSession } : {}),
-      });
+      await store.addMentoringSession(
+        {
+          id: "",
+          mentor: user.name,
+          menteeId: form.menteeId,
+          date: form.date,
+          durationMin: durationValue,
+          topic: form.topic,
+          competencyIds,
+          notes: form.notes,
+          decisions: form.decisions,
+          actions: form.actions,
+          ...(form.nextSession ? { nextSession: form.nextSession } : {}),
+        },
+        proficiencyUpdates,
+      );
       toast.success(
         t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }),
       );
@@ -152,6 +176,7 @@ function MentoringPage() {
         nextSession: "",
       });
       setCompetencyIds([]);
+      setProficiencyUpdates([]);
       setMissing([]);
       setShowToast(false);
       setOpen(false);
@@ -317,6 +342,55 @@ function MentoringPage() {
                       ))}
                     </div>
                   </div>
+                  {isAssignedTechLeadOf(user, sel.architectById(form.menteeId)) && (
+                    <div>
+                      <FieldLabel htmlFor="mentor-proficiency" hint={t("mentor.form.proficiencyHint")}>
+                        {t("mentor.form.proficiency")}
+                      </FieldLabel>
+                      <div id="mentor-proficiency" className="mt-1 max-h-48 overflow-y-auto surface-inset p-2">
+                        {store.competencies
+                          .filter((c) => c.active)
+                          .map((c) => {
+                            const update = proficiencyUpdates.find((u) => u.competencyId === c.id);
+                            return (
+                              <div key={c.id} className="py-1">
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!update}
+                                    onChange={() => toggleProficiencyUpdate(c.id)}
+                                  />
+                                  <span className="flex-1 truncate">{c.name}</span>
+                                </label>
+                                {update && (
+                                  <div className="ml-6 mt-1 flex items-center gap-2">
+                                    <select
+                                      className="rounded-md border border-input bg-card px-2 py-1 text-xs"
+                                      value={update.observedLevel}
+                                      onChange={(e) => setProficiencyLevel(c.id, Number(e.target.value))}
+                                      aria-label={t("mentor.form.proficiencyLevel", { nome: c.name })}
+                                    >
+                                      {[1, 2, 3, 4, 5].map((level) => (
+                                        <option key={level} value={level}>
+                                          L{level}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <input
+                                      type="text"
+                                      placeholder={t("mentor.form.proficiencyNote")}
+                                      className="flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
+                                      value={update.note ?? ""}
+                                      onChange={(e) => setProficiencyNote(c.id, e.target.value)}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {showToast && (
                   <div
