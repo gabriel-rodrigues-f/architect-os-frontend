@@ -800,25 +800,38 @@ function LoadingState() {
   );
 }
 
+/**
+ * REVISAO-360-FRONTEND, FE-360-012 — a mensagem padrão nunca pode instruir
+ * quem usa o produto a rodar `docker compose` ou conferir `VITE_API_URL`:
+ * isso é instrução de desenvolvedor vazando pra tela de um usuário
+ * enterprise. O detalhe técnico (inclusive a mensagem crua do erro) só
+ * aparece em build de desenvolvimento (`import.meta.env.DEV`); em produção,
+ * vai só pro console, pra quem for investigar via observabilidade/suporte.
+ */
 function ConnectionError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
-  const message = error instanceof Error ? error.message : "Erro desconhecido";
+  const rawMessage = error instanceof Error ? error.message : "Erro desconhecido";
+  if (import.meta.env.DEV) console.error("[store] falha ao carregar /api/state:", error);
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="max-w-md text-center">
         <h2 className="text-lg font-semibold text-foreground">
-          Não foi possível carregar os dados
+          Não foi possível acessar o serviço
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">{message}</p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Verifique se o backend está no ar (<code>docker compose up -d</code>) e se
-          <code className="mx-1">VITE_API_URL</code>
-          aponta para ele.
+        <p className="mt-2 text-sm text-muted-foreground">
+          Tente novamente em instantes. Se o problema continuar, contate o suporte.
         </p>
+        {import.meta.env.DEV && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            <strong>Dev:</strong> {rawMessage} — confira se o backend está no ar (
+            <code>docker compose up -d</code>) e se <code>VITE_API_URL</code> aponta para ele.
+          </p>
+        )}
         <button
           onClick={onRetry}
           className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
-          Tentar novamente
+          Recarregar
         </button>
       </div>
     </div>

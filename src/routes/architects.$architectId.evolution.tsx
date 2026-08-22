@@ -10,6 +10,7 @@ import { ApiError, evolutionApi, reportsApi } from "@/lib/api";
 import type { EvolutionFilters, SelectionScope } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
+import { daysAgoIso, todayIso } from "@/lib/text";
 
 export const Route = createFileRoute("/architects/$architectId/evolution")({
   head: () => ({
@@ -20,29 +21,19 @@ export const Route = createFileRoute("/architects/$architectId/evolution")({
 
 type PeriodPreset = "30" | "60" | "90" | "180" | "365" | "all" | "custom";
 
-function isoDaysAgo(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 /** Seção 46 — presets cobrem os recortes mais pedidos; "todo o histórico" evita ter que adivinhar uma data inicial. */
 function rangeForPreset(preset: PeriodPreset, custom: { from: string; to: string }): { from: string; to: string } {
   switch (preset) {
     case "30":
-      return { from: isoDaysAgo(30), to: todayIso() };
+      return { from: daysAgoIso(30), to: todayIso() };
     case "60":
-      return { from: isoDaysAgo(60), to: todayIso() };
+      return { from: daysAgoIso(60), to: todayIso() };
     case "90":
-      return { from: isoDaysAgo(90), to: todayIso() };
+      return { from: daysAgoIso(90), to: todayIso() };
     case "180":
-      return { from: isoDaysAgo(180), to: todayIso() };
+      return { from: daysAgoIso(180), to: todayIso() };
     case "365":
-      return { from: isoDaysAgo(365), to: todayIso() };
+      return { from: daysAgoIso(365), to: todayIso() };
     case "all":
       return { from: "2000-01-01", to: todayIso() };
     case "custom":
@@ -58,7 +49,7 @@ function ArchitectEvolution() {
   const architect = sel.architectById(architectId);
 
   const [preset, setPreset] = useState<PeriodPreset>("90");
-  const [custom, setCustom] = useState({ from: isoDaysAgo(90), to: todayIso() });
+  const [custom, setCustom] = useState({ from: daysAgoIso(90), to: todayIso() });
   const [selectedCapabilityIds, setSelectedCapabilityIds] = useState<string[]>([]);
   const [focusedCapabilityId, setFocusedCapabilityId] = useState<string | null>(null);
   const [source, setSource] = useState<"ALL" | "MENTORING" | "ASSESSMENT">("ALL");

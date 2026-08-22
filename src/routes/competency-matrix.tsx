@@ -516,7 +516,7 @@ function CompetencyCreateDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("matrix.create.title", { capacidade: capability.name })}</DialogTitle>
         </DialogHeader>
@@ -532,12 +532,15 @@ function CompetencyCreateDialog({
           </div>
           <div>
             <Label>{t("matrix.edit.levels")}</Label>
-            <div className="mt-1 grid grid-cols-3 gap-3">
+            {/* REVISAO-360-FRONTEND, FE-360-004 — mesmo padrão responsivo já
+                aplicado no diálogo "Editar competência" (R10-UX-001);
+                este de criação ainda usava grid-cols-3 rígido. */}
+            <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {ROLES.map((r) => (
-                <div key={r}>
+                <div key={r} className="min-w-0">
                   <span className="block text-xs text-muted-foreground">{roleShort(r)}</span>
                   <select
-                    className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2 text-sm"
+                    className="mt-1 w-full min-w-0 rounded-md border border-input bg-card px-2 py-2 text-sm"
                     value={levels[r] ?? ""}
                     aria-label={`${t("matrix.edit.levels")} — ${roleShort(r)}`}
                     onChange={(e) =>
