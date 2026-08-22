@@ -19,13 +19,40 @@ import { I18nProvider } from "../i18n";
  */
 
 const architects: Architect[] = [
-  { id: "ana", name: "Ana Martins", role: "Arquiteto de Soluções II", yearsAsArchitect: 4, specialization: "", email: "a@a.com", active: true, version: 1 },
-  { id: "bruno", name: "Bruno Almeida", role: "Arquiteto de Soluções I", yearsAsArchitect: 2, specialization: "", email: "b@b.com", active: true, version: 1 },
+  {
+    id: "ana",
+    name: "Ana Martins",
+    role: "Arquiteto de Soluções II",
+    yearsAsArchitect: 4,
+    specialization: "",
+    email: "a@a.com",
+    active: true,
+    version: 1,
+  },
+  {
+    id: "bruno",
+    name: "Bruno Almeida",
+    role: "Arquiteto de Soluções I",
+    yearsAsArchitect: 2,
+    specialization: "",
+    email: "b@b.com",
+    active: true,
+    version: 1,
+  },
 ];
 
 const threeArchitects: Architect[] = [
   ...architects,
-  { id: "carla", name: "Carla Souza", role: "Arquiteto de Soluções II", yearsAsArchitect: 3, specialization: "", email: "c@c.com", active: true, version: 1 },
+  {
+    id: "carla",
+    name: "Carla Souza",
+    role: "Arquiteto de Soluções II",
+    yearsAsArchitect: 3,
+    specialization: "",
+    email: "c@c.com",
+    active: true,
+    version: 1,
+  },
 ];
 
 const renderFilter = (selected: string[]) => {
@@ -45,7 +72,9 @@ describe("ArchitectFilter — 'Todo o time' como alternador de verdade", () => {
     renderFilter(["ana", "bruno"]);
     await userEvent.click(screen.getByRole("button", { expanded: false }));
 
-    const master = screen.getByRole("button", { name: "Todo o time" }).querySelector('[role="checkbox"]');
+    const master = screen
+      .getByRole("button", { name: "Todo o time" })
+      .querySelector('[role="checkbox"]');
     expect(master?.getAttribute("aria-checked")).toBe("true");
 
     for (const option of screen.getAllByRole("option")) {
@@ -57,7 +86,9 @@ describe("ArchitectFilter — 'Todo o time' como alternador de verdade", () => {
     renderFilter([]);
     await userEvent.click(screen.getByRole("button", { expanded: false }));
 
-    const master = screen.getByRole("button", { name: "Todo o time" }).querySelector('[role="checkbox"]');
+    const master = screen
+      .getByRole("button", { name: "Todo o time" })
+      .querySelector('[role="checkbox"]');
     expect(master?.getAttribute("aria-checked")).toBe("false");
 
     for (const option of screen.getAllByRole("option")) {
@@ -123,7 +154,11 @@ describe("ArchitectFilter — 'Todo o time' como alternador de verdade", () => {
       <I18nProvider>
         {/* "ninguem-mais" não existe em `architects` (só 2 pessoas) — mesma
             contagem que "todos selecionados" (2), mas não é o caso. */}
-        <ArchitectFilter architects={architects} selected={["ana", "ninguem-mais"]} onChange={onChange} />
+        <ArchitectFilter
+          architects={architects}
+          selected={["ana", "ninguem-mais"]}
+          onChange={onChange}
+        />
       </I18nProvider>,
     );
     await userEvent.click(screen.getByRole("button", { expanded: false }));
@@ -169,5 +204,84 @@ describe("ArchitectFilter — 'Todo o time' como alternador de verdade", () => {
     await userEvent.click(screen.getByRole("button", { name: "Remover Carla do roster" }));
     // 2 ids visíveis de 2 arquitetos reais — ainda é "todo o time", só que (2), não (3).
     expect(screen.getByRole("button", { name: /Todo o time \(2\)/ })).toBeTruthy();
+  });
+});
+
+/**
+ * REVISAO-360-FRONTEND, Seção 80 — o listbox só respondia a mouse: sem
+ * seta/Home/End pra navegar entre opções, sem Escape pra fechar, sem o
+ * foco entrar na lista ao abrir nem voltar pro botão ao fechar. Como
+ * cada opção já é um `<button>` de verdade, Enter/Espaço para
+ * marcar/desmarcar já funcionavam nativamente — só a navegação e o
+ * ciclo de foco precisavam de tratamento explícito.
+ */
+describe("ArchitectFilter — navegação por teclado", () => {
+  afterEach(() => cleanup());
+
+  it("abrir move o foco para 'Todo o time', a primeira opção", async () => {
+    renderFilter(["ana"]);
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Todo o time" }));
+  });
+
+  it("seta para baixo/cima navega entre as opções, com wrap nas pontas", async () => {
+    renderFilter(["ana"]);
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+
+    await userEvent.keyboard("{ArrowDown}");
+    expect(document.activeElement).toBe(screen.getByRole("option", { name: "Ana Martins" }));
+
+    await userEvent.keyboard("{ArrowDown}");
+    expect(document.activeElement).toBe(screen.getByRole("option", { name: "Bruno Almeida" }));
+
+    // Última opção → seta para baixo de novo dá a volta pro topo.
+    await userEvent.keyboard("{ArrowDown}");
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Todo o time" }));
+
+    // Do topo, seta para cima dá a volta pro fim.
+    await userEvent.keyboard("{ArrowUp}");
+    expect(document.activeElement).toBe(screen.getByRole("option", { name: "Bruno Almeida" }));
+  });
+
+  it("Home e End pulam para a primeira e a última opção", async () => {
+    renderFilter(["ana"]);
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+
+    await userEvent.keyboard("{End}");
+    expect(document.activeElement).toBe(screen.getByRole("option", { name: "Bruno Almeida" }));
+
+    await userEvent.keyboard("{Home}");
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Todo o time" }));
+  });
+
+  it("Enter/Espaço em uma opção focada marca/desmarca — funciona nativo, sem handler extra", async () => {
+    const onChange = renderFilter([]);
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}"); // Todo o time → Ana → Bruno
+    await userEvent.keyboard("{Enter}");
+
+    expect(onChange).toHaveBeenCalledWith(["bruno"]);
+  });
+
+  it("Escape fecha o menu e devolve o foco para o botão que abriu", async () => {
+    renderFilter(["ana"]);
+    const trigger = screen.getByRole("button", { expanded: false });
+    await userEvent.click(trigger);
+    expect(screen.getByRole("listbox")).toBeTruthy();
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("seta para baixo no botão fechado abre o menu", async () => {
+    renderFilter(["ana"]);
+    screen.getByRole("button", { expanded: false }).focus();
+
+    await userEvent.keyboard("{ArrowDown}");
+
+    expect(screen.getByRole("listbox")).toBeTruthy();
   });
 });
