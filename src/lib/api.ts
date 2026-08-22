@@ -475,7 +475,14 @@ export const evolutionApi = {
     post<TeamEvolutionResult>("/api/evolution/team", { architects, ...filters }),
 };
 
+/**
+ * Fase 10.6 — só individual: o relatório é "o que esta pessoa está vendo na
+ * tela de Evolução dela", mesmo escopo de `evolutionApi.architect`. Time
+ * inteiro em PDF não foi pedido nem construído no backend (que renderizador
+ * de tabela/gráfico faria sentido pra dezenas de pessoas de uma vez é uma
+ * decisão de produto em aberto, não um detalhe de implementação).
+ */
 export const reportsApi = {
-  exportEvolutionPdf: (architects: SelectionScope, filters: EvolutionFilters) =>
-    requestBlob("/api/reports/evolution/pdf", { architects, ...filters }),
+  exportEvolutionPdf: (architectId: string, filters: EvolutionFilters) =>
+    requestBlob("/api/reports/evolution/pdf", { architectId, ...filters }),
 };

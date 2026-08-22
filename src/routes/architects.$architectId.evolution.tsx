@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { EvolutionLine, ProficiencyTimeline } from "@/components/app/charts";
+import { Button } from "@/components/ui/button";
 import { PageHeader, ProfileTabs, SectionCard, StatCard } from "@/components/app/ui-bits";
-import { evolutionApi } from "@/lib/api";
-import type { SelectionScope } from "@/lib/domain";
+import { ApiError, evolutionApi, reportsApi } from "@/lib/api";
+import type { EvolutionFilters, SelectionScope } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -66,18 +68,38 @@ function ArchitectEvolution() {
     ? { mode: "SELECTED", ids: selectedCapabilityIds }
     : { mode: "ALL_VISIBLE" };
 
+  /** Mesmos filtros pra tela e pro PDF (Fase 10.6) — exportar é "isto que estou vendo", nunca outro recorte. */
+  const filters: EvolutionFilters = {
+    range,
+    capabilities,
+    competencies: { mode: "ALL_VISIBLE" },
+    source,
+  };
+
   const queryKey = ["evolution-architect", architectId, range.from, range.to, selectedCapabilityIds.join(","), source];
   const { data, isLoading, isError } = useQuery({
     queryKey,
-    queryFn: () =>
-      evolutionApi.architect(architectId, {
-        range,
-        capabilities,
-        competencies: { mode: "ALL_VISIBLE" },
-        source,
-      }),
+    queryFn: () => evolutionApi.architect(architectId, filters),
     enabled: !!architect,
   });
+
+  const [exporting, setExporting] = useState(false);
+  const exportPdf = async () => {
+    setExporting(true);
+    try {
+      const { blob, filename } = await reportsApi.exportEvolutionPdf(architectId, filters);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t("evolution.export.error"));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   /** Seção 33 — pivota `CapabilitySeries[]` (uma série por capacidade) numa linha por data, para o `EvolutionLine` genérico. */
   const capabilityChartData = useMemo(() => {
@@ -119,13 +141,18 @@ function ArchitectEvolution() {
         title={t("evolution.title", { nome: architect.name })}
         description={`${architect.role}${data?.architect.careerLevelName ? ` · ${data.architect.careerLevelName}` : ""}`}
         actions={
-          <Link
-            to="/architects/$architectId"
-            params={{ architectId }}
-            className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent"
-          >
-            {t("arch.back")}
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="secondary" disabled={exporting || !data} onClick={() => void exportPdf()}>
+              {exporting ? t("evolution.export.generating") : t("evolution.export.button")}
+            </Button>
+            <Link
+              to="/architects/$architectId"
+              params={{ architectId }}
+              className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent"
+            >
+              {t("arch.back")}
+            </Link>
+          </div>
         }
       />
 
