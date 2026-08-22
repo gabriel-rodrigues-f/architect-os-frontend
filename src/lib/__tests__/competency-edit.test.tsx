@@ -45,12 +45,15 @@ function AuthReady({ children }: { children: ReactNode }) {
 
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 
-const renderMatrix = () =>
+/** REVISAO-360-FRONTEND, Seção 40-42 — a matriz agora nasce recolhida; "Expandir tudo" reproduz o antigo padrão sempre-aberto que este teste pressupõe. */
+const renderMatrix = async () => {
   render(
     <Wrapper>
       <MatrixPage />
     </Wrapper>,
   );
+  await userEvent.click(await screen.findByRole("button", { name: "Expandir tudo" }));
+};
 
 describe("Matriz de Competências — edição", () => {
   beforeEach(() => {
@@ -85,7 +88,7 @@ describe("Matriz de Competências — edição", () => {
   });
 
   it("abre com o nome e os níveis atuais preenchidos", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Editar Kubernetes"));
@@ -102,7 +105,7 @@ describe("Matriz de Competências — edição", () => {
   });
 
   it("salvar renomeia a competência na tela e envia PATCH", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Editar Kubernetes"));
@@ -125,7 +128,7 @@ describe("Matriz de Competências — edição", () => {
   });
 
   it("mudar o nível de um cargo não altera os outros dois", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Editar Kubernetes"));
@@ -148,7 +151,7 @@ describe("Matriz de Competências — edição", () => {
   });
 
   it("cancelar não envia nada e preserva o nome original", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Editar Kubernetes"));

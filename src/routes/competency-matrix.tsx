@@ -76,10 +76,17 @@ function MatrixPage() {
   const [editCapabilityName, setEditCapabilityName] = useState("");
   const [confirmDeleteCapability, setConfirmDeleteCapability] = useState<Capability | null>(null);
   const [search, setSearch] = useState("");
-  /** Vazio por padrão: nenhuma seção começa recolhida — evita telas que já dependem de ver a tabela sem interação extra. */
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const toggleCollapsed = (id: string) =>
-    setCollapsed((prev) => {
+  const [curationFilter, setCurationFilter] = useState<"all" | "ready" | "needsCuration">("all");
+  /**
+   * REVISAO-360-FRONTEND, Seção 40-42 — a matriz inteira expandida chegava a
+   * ~5000px (11 capacidades × até 6 competências cada, sempre renderizadas
+   * abertas). Vazio por padrão agora significa "tudo recolhido" — o inverso
+   * do comportamento anterior — e cada card guarda seu próprio estado, então
+   * expandir uma capacidade não mexe nas outras.
+   */
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -174,35 +181,75 @@ function MatrixPage() {
       )}
 
       {store.capabilities.length > 0 && (
-        <div className="mb-4">
-          <Input
-            placeholder={t("matrix.search.placeholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label={t("matrix.search.placeholder")}
-            className="max-w-sm"
-          />
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <div className="min-w-[220px] flex-1">
+            <Input
+              placeholder={t("matrix.search.placeholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label={t("matrix.search.placeholder")}
+              className="max-w-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground" htmlFor="matrix-curation-filter">
+              {t("matrix.filter.curation")}
+            </label>
+            <select
+              id="matrix-curation-filter"
+              value={curationFilter}
+              onChange={(e) => setCurationFilter(e.target.value as typeof curationFilter)}
+              className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
+            >
+              <option value="all">{t("matrix.filter.curation.all")}</option>
+              <option value="ready">{t("matrix.filter.curation.ready")}</option>
+              <option value="needsCuration">{t("matrix.filter.curation.needsCuration")}</option>
+            </select>
+          </div>
+          <div className="ml-auto flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExpandedIds(new Set(store.capabilities.map((c) => c.id)))}
+            >
+              {t("matrix.expandAll")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setExpandedIds(new Set())}>
+              {t("matrix.collapseAll")}
+            </Button>
+          </div>
         </div>
       )}
 
       {(() => {
         const term = search.trim().toLowerCase();
         const activeCapabilities = store.capabilities.filter((cat) => cat.active);
-        const visibleCapabilities = term
+        const bySearch = term
           ? activeCapabilities.filter(
               (cat) =>
                 cat.name.toLowerCase().includes(term) ||
                 store.competencies.some(
-                  (c) => c.capabilityId === cat.id && c.active && c.name.toLowerCase().includes(term),
+                  (c) =>
+                    c.capabilityId === cat.id && c.active && c.name.toLowerCase().includes(term),
                 ),
             )
           : activeCapabilities;
+        const visibleCapabilities =
+          curationFilter === "all"
+            ? bySearch
+            : bySearch.filter((cat) =>
+                curationFilter === "ready"
+                  ? cat.curation.status === "READY"
+                  : cat.curation.status !== "READY",
+              );
 
-        if (term && visibleCapabilities.length === 0) {
+        if (visibleCapabilities.length === 0) {
           return (
             <div className="surface-card p-8 text-center">
               <p className="text-sm text-muted-foreground">
-                {t("matrix.search.empty", { termo: search.trim() })}
+                {term
+                  ? t("matrix.search.empty", { termo: search.trim() })
+                  : t("matrix.filter.curation.empty")}
               </p>
             </div>
           );
@@ -212,7 +259,8 @@ function MatrixPage() {
           <div className="space-y-4">
             {visibleCapabilities.map((cat) => {
               const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
-              const isCollapsed = collapsed.has(cat.id);
+              /** Busca ativa força a expansão de todo grupo visível — já filtrado por casar com o termo, sem exigir um segundo clique pra ver por quê. */
+              const isExpanded = expandedIds.has(cat.id) || term.length > 0;
               const atCapacity = cat.curation.activeCompetencyCount >= 6;
               return (
                 <SectionCard
@@ -260,23 +308,25 @@ function MatrixPage() {
                       )}
                       <button
                         type="button"
-                        onClick={() => toggleCollapsed(cat.id)}
+                        onClick={() => toggleExpanded(cat.id)}
                         aria-label={
-                          isCollapsed ? t("matrix.collapse.expand", { nome: cat.name }) : t("matrix.collapse.collapse", { nome: cat.name })
+                          isExpanded
+                            ? t("matrix.collapse.collapse", { nome: cat.name })
+                            : t("matrix.collapse.expand", { nome: cat.name })
                         }
-                        aria-expanded={!isCollapsed}
+                        aria-expanded={isExpanded}
                         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                       >
-                        {isCollapsed ? (
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        ) : (
+                        {isExpanded ? (
                           <ChevronUp className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5" />
                         )}
                       </button>
                     </div>
                   }
                 >
-                  {!isCollapsed && (
+                  {isExpanded && (
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[640px] text-sm">
                         <thead>
@@ -296,7 +346,10 @@ function MatrixPage() {
                               <td className="py-2 font-medium">
                                 {c.name}
                                 {c.requirementType === "RESTRICTIVE" && (
-                                  <Badge variant="outline" className="ml-2 align-middle text-[10px]">
+                                  <Badge
+                                    variant="outline"
+                                    className="ml-2 align-middle text-[10px]"
+                                  >
                                     {t("matrix.requirement.badge")}
                                   </Badge>
                                 )}
@@ -578,7 +631,9 @@ function CompetencyCreateDialog({
             </select>
             <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
             {restrictiveFull && (
-              <p className="mt-1 text-xs text-amber-600">{t("matrix.requirement.restrictiveFull")}</p>
+              <p className="mt-1 text-xs text-amber-600">
+                {t("matrix.requirement.restrictiveFull")}
+              </p>
             )}
             {nonRestrictiveFull && (
               <p className="mt-1 text-xs text-amber-600">
@@ -818,7 +873,13 @@ function SwapPicker({
             </option>
           ))}
         </select>
-        <Button size="sm" variant="secondary" className="shrink-0" disabled={!value || swapping} onClick={onSwap}>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="shrink-0"
+          disabled={!value || swapping}
+          onClick={onSwap}
+        >
           {action}
         </Button>
       </div>

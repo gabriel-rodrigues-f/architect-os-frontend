@@ -792,6 +792,13 @@
   "matrix.atCapacity.hint": "Esta capacidade já tem 6 competências ativas (limite máximo) — arquive uma antes de adicionar outra.",
   "matrix.search.placeholder": "Buscar capacidade ou competência…",
   "matrix.search.empty": "Nenhuma capacidade encontrada para \"{termo}\".",
+  "matrix.filter.curation": "Curadoria",
+  "matrix.filter.curation.all": "Todas",
+  "matrix.filter.curation.ready": "Prontas",
+  "matrix.filter.curation.needsCuration": "Requer curadoria",
+  "matrix.filter.curation.empty": "Nenhuma capacidade com esse status de curadoria.",
+  "matrix.expandAll": "Expandir tudo",
+  "matrix.collapseAll": "Recolher tudo",
   "matrix.collapse.expand": "Expandir {nome}",
   "matrix.collapse.collapse": "Recolher {nome}"
 }

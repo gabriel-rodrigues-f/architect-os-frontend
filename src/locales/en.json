@@ -792,6 +792,13 @@
   "matrix.atCapacity.hint": "This capability already has 6 active competencies (maximum limit) — archive one before adding another.",
   "matrix.search.placeholder": "Search capability or competency…",
   "matrix.search.empty": "No capability found for \"{termo}\".",
+  "matrix.filter.curation": "Curation",
+  "matrix.filter.curation.all": "All",
+  "matrix.filter.curation.ready": "Ready",
+  "matrix.filter.curation.needsCuration": "Needs curation",
+  "matrix.filter.curation.empty": "No capability with this curation status.",
+  "matrix.expandAll": "Expand all",
+  "matrix.collapseAll": "Collapse all",
   "matrix.collapse.expand": "Expand {nome}",
   "matrix.collapse.collapse": "Collapse {nome}"
 }

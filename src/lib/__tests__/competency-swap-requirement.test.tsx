@@ -93,12 +93,15 @@ function AuthReady({ children }: { children: ReactNode }) {
 
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 
-const renderMatrix = () =>
+/** REVISAO-360-FRONTEND, Seção 40-42 — a matriz agora nasce recolhida; "Expandir tudo" reproduz o antigo padrão sempre-aberto que este teste pressupõe. */
+const renderMatrix = async () => {
   render(
     <Wrapper>
       <MatrixPage />
     </Wrapper>,
   );
+  await userEvent.click(await screen.findByRole("button", { name: "Expandir tudo" }));
+};
 
 describe("Matriz de Competências — trocar RESTRICTIVE ↔ NON_RESTRICTIVE quando cheio", () => {
   beforeEach(() => {
@@ -128,8 +131,14 @@ describe("Matriz de Competências — trocar RESTRICTIVE ↔ NON_RESTRICTIVE qua
         return Promise.resolve(
           new Response(
             JSON.stringify({
-              a: { ...fullCompetencies.find((c) => c.id === "full-n1"), requirementType: "RESTRICTIVE" },
-              b: { ...fullCompetencies.find((c) => c.id === "full-r1"), requirementType: "NON_RESTRICTIVE" },
+              a: {
+                ...fullCompetencies.find((c) => c.id === "full-n1"),
+                requirementType: "RESTRICTIVE",
+              },
+              b: {
+                ...fullCompetencies.find((c) => c.id === "full-r1"),
+                requirementType: "NON_RESTRICTIVE",
+              },
             }),
             { status: 200, headers: { "content-type": "application/json" } },
           ),
@@ -145,7 +154,7 @@ describe("Matriz de Competências — trocar RESTRICTIVE ↔ NON_RESTRICTIVE qua
   });
 
   it("mostra o seletor de troca quando o tipo alvo já está em 3/3, e troca ao confirmar", async () => {
-    renderMatrix();
+    await renderMatrix();
     await screen.findByText("Full Capability");
 
     await userEvent.click(screen.getByLabelText("Editar Não Restritiva 1"));
