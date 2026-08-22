@@ -104,6 +104,9 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
       </Wrapper>,
     );
 
+    // REVISAO-360-FRONTEND, Seção 34 — a trilha nasce recolhida; os itens só aparecem depois de expandir.
+    await screen.findByText("Trilha com duas pessoas");
+    fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
     await screen.findByText("Curso X");
     const sliders = screen.getAllByRole("slider");
     // Só a linha da Ana (dona da sessão) tem slider — a do Bruno é só leitura.
@@ -119,6 +122,8 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
       </Wrapper>,
     );
 
+    await screen.findByText("Trilha com duas pessoas");
+    fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
     await screen.findByText("Curso X");
     const slider = screen.getByRole("slider");
     fireEvent.change(slider, { target: { value: "60" } });
@@ -136,6 +141,8 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
       </Wrapper>,
     );
 
+    await screen.findByText("Trilha com duas pessoas");
+    fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
     await screen.findByText("Curso X");
     expect(screen.getAllByRole("slider")).toHaveLength(2);
   });
@@ -153,7 +160,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
       </Wrapper>,
     );
 
-    await screen.findByText("Curso X");
+    await screen.findByText("Trilha com duas pessoas");
     expect(screen.queryByPlaceholderText("Nova trilha")).toBeNull();
   });
 
@@ -165,7 +172,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
       </Wrapper>,
     );
 
-    await screen.findByText("Curso X");
+    await screen.findByText("Trilha com duas pessoas");
     expect(screen.getByPlaceholderText("Nova trilha")).toBeTruthy();
   });
 });
