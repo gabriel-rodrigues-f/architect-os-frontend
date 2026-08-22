@@ -125,12 +125,45 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
     await screen.findByText("Trilha com duas pessoas");
     fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
     await screen.findByText("Curso X");
+    // B-33 — o PATCH só sai ao soltar o arrasto (`onMouseUp`), não a cada
+    // passo do `onChange` (contínuo durante o drag; ver `ProgressControl`).
     const slider = screen.getByRole("slider");
     fireEvent.change(slider, { target: { value: "60" } });
+    fireEvent.mouseUp(slider);
 
     const patches = fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH");
     expect(patches).toHaveLength(1);
     expect(String(patches[0]?.[0])).toContain("/api/learning-paths/lp-dupla/progress/ana/item-1");
+  });
+
+  /**
+   * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12.4) — antes,
+   * cada passo do arrasto (`onChange`, contínuo, não só no soltar) disparava
+   * um PATCH de rede. Simula 3 passos de arrasto sem soltar: nenhum PATCH
+   * ainda deve ter saído.
+   */
+  it("mover o slider sem soltar não dispara nenhum PATCH (evita flooding no arrasto)", async () => {
+    mockSession(fixtureMemberUser);
+    render(
+      <Wrapper>
+        <LearningPage />
+      </Wrapper>,
+    );
+
+    await screen.findByText("Trilha com duas pessoas");
+    fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
+    await screen.findByText("Curso X");
+
+    const slider = screen.getByRole("slider");
+    fireEvent.change(slider, { target: { value: "20" } });
+    fireEvent.change(slider, { target: { value: "40" } });
+    fireEvent.change(slider, { target: { value: "60" } });
+
+    const patches = fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH");
+    expect(patches).toHaveLength(0);
+
+    fireEvent.mouseUp(slider);
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH")).toHaveLength(1);
   });
 
   it("admin vê as duas linhas editáveis", async () => {
@@ -145,6 +178,34 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
     fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
     await screen.findByText("Curso X");
     expect(screen.getAllByRole("slider")).toHaveLength(2);
+  });
+
+  /**
+   * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12.4) — título
+   * de item mandava o array `items` inteiro por tecla digitada. Digitar 3
+   * caracteres sem sair do campo não deve disparar PATCH nenhum; só o blur
+   * commita (`LearningPathItemRow`).
+   */
+  it("editar o título de um item só manda PATCH ao sair do campo (blur), não por tecla", async () => {
+    mockSession(fixtureAdminUser);
+    render(
+      <Wrapper>
+        <LearningPage />
+      </Wrapper>,
+    );
+
+    await screen.findByText("Trilha com duas pessoas");
+    fireEvent.click(screen.getByRole("button", { name: /Editar/ }));
+
+    const titleInput = await screen.findByLabelText("Título de Curso X");
+    fireEvent.change(titleInput, { target: { value: "Curso X revisado" } });
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH")).toHaveLength(0);
+
+    fireEvent.blur(titleInput);
+    const patches = fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH");
+    expect(patches).toHaveLength(1);
+    const body = JSON.parse(String(patches[0]?.[1]?.body));
+    expect(body.items[0].title).toBe("Curso X revisado");
   });
 
   /**

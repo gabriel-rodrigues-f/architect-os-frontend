@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Lock, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Bar, PageHeader, SectionCard } from "@/components/app/ui-bits";
@@ -340,30 +340,20 @@ function LearningPage() {
                                   <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">
                                     {nome}
                                   </span>
-                                  {canEditProgress(architectId) ? (
-                                    <input
-                                      type="range"
-                                      min={0}
-                                      max={100}
-                                      step={10}
-                                      value={prog.progress}
-                                      aria-label={`Progresso de ${nome} em ${item.title}`}
-                                      onChange={(e) =>
-                                        store.updateLearningItemProgress(
-                                          path.id,
-                                          architectId,
-                                          item.id,
-                                          Number(e.target.value),
-                                        )
-                                      }
-                                      className="w-full accent-[var(--primary)]"
-                                    />
-                                  ) : (
-                                    <Bar value={prog.progress} className="flex-1" />
-                                  )}
-                                  <span className="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                                    {prog.progress}% · {labels.learningStatus[prog.status]}
-                                  </span>
+                                  <ProgressControl
+                                    progress={prog.progress}
+                                    statusLabel={labels.learningStatus[prog.status]}
+                                    editable={canEditProgress(architectId)}
+                                    ariaLabel={`Progresso de ${nome} em ${item.title}`}
+                                    onCommit={(value) =>
+                                      store.updateLearningItemProgress(
+                                        path.id,
+                                        architectId,
+                                        item.id,
+                                        value,
+                                      )
+                                    }
+                                  />
                                 </div>
                               );
                             })}
@@ -395,6 +385,68 @@ function LearningPage() {
           onClose={() => setEditingPath(null)}
         />
       )}
+    </>
+  );
+}
+
+/**
+ * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12.4) — o slider
+ * disparava um PATCH a cada passo do arrasto (`onChange` de `<input
+ * type="range">` é contínuo, não só no soltar). Estado local (`draft`) dá o
+ * movimento do thumb e o "%" instantâneo; o PATCH só sai ao soltar
+ * (`onMouseUp`/`onTouchEnd`) ou ao ajustar por teclado (`onKeyUp`, sem
+ * "soltar" nenhum). O rótulo de status (`statusLabel`, "Em andamento" etc.)
+ * continua refletindo só o servidor — não duplica a regra de threshold do
+ * store (`>=100`/`>0`/senão) só por causa do feedback visual do arrasto.
+ */
+function ProgressControl({
+  progress,
+  editable,
+  ariaLabel,
+  statusLabel,
+  onCommit,
+}: {
+  progress: number;
+  editable: boolean;
+  ariaLabel: string;
+  statusLabel: string;
+  onCommit: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(progress);
+  useEffect(() => setDraft(progress), [progress]);
+  const commit = () => {
+    if (draft !== progress) onCommit(draft);
+  };
+
+  if (!editable) {
+    return (
+      <>
+        <Bar value={progress} className="flex-1" />
+        <span className="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+          {progress}% · {statusLabel}
+        </span>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={10}
+        value={draft}
+        aria-label={ariaLabel}
+        onChange={(e) => setDraft(Number(e.target.value))}
+        onMouseUp={commit}
+        onTouchEnd={commit}
+        onKeyUp={commit}
+        className="w-full accent-[var(--primary)]"
+      />
+      <span className="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+        {draft}% · {statusLabel}
+      </span>
     </>
   );
 }
@@ -489,59 +541,26 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                 </li>
               )}
               {path.items.map((item) => (
-                <li key={item.id} className="flex items-center gap-2 px-3 py-2">
-                  <select
-                    className="w-32 shrink-0 rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-                    value={item.type}
-                    aria-label={`Tipo de ${item.title}`}
-                    onChange={(e) =>
-                      store.updateLearningPath(path.id, {
-                        items: path.items.map((i) =>
-                          i.id === item.id ? { ...i, type: e.target.value as LearningItemType } : i,
-                        ),
-                      })
-                    }
-                  >
-                    {ITEM_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                  <Input
-                    value={item.title}
-                    aria-label={`Título de ${item.title}`}
-                    onChange={(e) =>
-                      store.updateLearningPath(path.id, {
-                        items: path.items.map((i) =>
-                          i.id === item.id ? { ...i, title: e.target.value } : i,
-                        ),
-                      })
-                    }
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    className="w-20"
-                    value={item.hours}
-                    aria-label={`Horas de ${item.title}`}
-                    onChange={(e) =>
-                      store.updateLearningPath(path.id, {
-                        items: path.items.map((i) =>
-                          i.id === item.id ? { ...i, hours: Number(e.target.value) || 0 } : i,
-                        ),
-                      })
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={() => store.removeLearningPathItem(path.id, item.id)}
-                    aria-label={`Excluir ${item.title}`}
-                    className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </li>
+                <LearningPathItemRow
+                  key={item.id}
+                  item={item}
+                  onUpdateType={(type) =>
+                    store.updateLearningPath(path.id, {
+                      items: path.items.map((i) => (i.id === item.id ? { ...i, type } : i)),
+                    })
+                  }
+                  onUpdateTitle={(title) =>
+                    store.updateLearningPath(path.id, {
+                      items: path.items.map((i) => (i.id === item.id ? { ...i, title } : i)),
+                    })
+                  }
+                  onUpdateHours={(hours) =>
+                    store.updateLearningPath(path.id, {
+                      items: path.items.map((i) => (i.id === item.id ? { ...i, hours } : i)),
+                    })
+                  }
+                  onRemove={() => store.removeLearningPathItem(path.id, item.id)}
+                />
               ))}
               {path.items.length === 0 && (
                 <p className="px-3 py-2 text-sm text-muted-foreground">{t("path.edit.noItems")}</p>
@@ -642,5 +661,80 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12.4) — título e
+ * horas mandavam o array `items` inteiro por tecla digitada (`onChange`
+ * chamando `store.updateLearningPath` direto). Mesmo padrão de
+ * blur-save já usado em `ActionPlanField` (`development-plans.tsx`):
+ * estado local (`draft`) dá o feedback instantâneo de digitação, o PATCH
+ * só sai no `blur`. `type` continua imediato — um `<select>` não tem
+ * problema de flooding por tecla.
+ */
+function LearningPathItemRow({
+  item,
+  onUpdateType,
+  onUpdateTitle,
+  onUpdateHours,
+  onRemove,
+}: {
+  item: LearningPathItem;
+  onUpdateType: (type: LearningItemType) => void;
+  onUpdateTitle: (title: string) => void;
+  onUpdateHours: (hours: number) => void;
+  onRemove: () => void;
+}) {
+  const [titleDraft, setTitleDraft] = useState(item.title);
+  const [hoursDraft, setHoursDraft] = useState(String(item.hours));
+
+  useEffect(() => setTitleDraft(item.title), [item.title]);
+  useEffect(() => setHoursDraft(String(item.hours)), [item.hours]);
+
+  return (
+    <li className="flex items-center gap-2 px-3 py-2">
+      <select
+        className="w-32 shrink-0 rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+        value={item.type}
+        aria-label={`Tipo de ${item.title}`}
+        onChange={(e) => onUpdateType(e.target.value as LearningItemType)}
+      >
+        {ITEM_TYPES.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+      <Input
+        value={titleDraft}
+        aria-label={`Título de ${item.title}`}
+        onChange={(e) => setTitleDraft(e.target.value)}
+        onBlur={() => {
+          if (titleDraft !== item.title) onUpdateTitle(titleDraft);
+        }}
+      />
+      <Input
+        type="number"
+        min={0}
+        className="w-20"
+        value={hoursDraft}
+        aria-label={`Horas de ${item.title}`}
+        onChange={(e) => setHoursDraft(e.target.value)}
+        onBlur={() => {
+          const hours = Number(hoursDraft) || 0;
+          setHoursDraft(String(hours));
+          if (hours !== item.hours) onUpdateHours(hours);
+        }}
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Excluir ${item.title}`}
+        className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </li>
   );
 }
