@@ -23,6 +23,8 @@ import { Route as TeamRouteImport } from './routes/team'
 import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ArchitectsArchitectIdRouteImport } from './routes/architects.$architectId'
+import { Route as ArchitectsArchitectIdIndexRouteImport } from './routes/architects.$architectId.index'
+import { Route as ArchitectsArchitectIdEvolutionRouteImport } from './routes/architects.$architectId.evolution'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +96,18 @@ const ArchitectsArchitectIdRoute = ArchitectsArchitectIdRouteImport.update({
   path: '/architects/$architectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArchitectsArchitectIdIndexRoute =
+  ArchitectsArchitectIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ArchitectsArchitectIdRoute,
+  } as any)
+const ArchitectsArchitectIdEvolutionRoute =
+  ArchitectsArchitectIdEvolutionRouteImport.update({
+    id: '/evolution',
+    path: '/evolution',
+    getParentRoute: () => ArchitectsArchitectIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,7 +123,9 @@ export interface FileRoutesByFullPath {
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdRoute
+  '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
+  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,7 +141,8 @@ export interface FileRoutesByTo {
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdRoute
+  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,7 +159,9 @@ export interface FileRoutesById {
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdRoute
+  '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
+  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +180,8 @@ export interface FileRouteTypes {
     | '/training-needs'
     | '/users'
     | '/architects/$architectId'
+    | '/architects/$architectId/evolution'
+    | '/architects/$architectId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -176,6 +197,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/training-needs'
     | '/users'
+    | '/architects/$architectId/evolution'
     | '/architects/$architectId'
   id:
     | '__root__'
@@ -193,6 +215,8 @@ export interface FileRouteTypes {
     | '/training-needs'
     | '/users'
     | '/architects/$architectId'
+    | '/architects/$architectId/evolution'
+    | '/architects/$architectId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -209,7 +233,7 @@ export interface RootRouteChildren {
   TeamRoute: typeof TeamRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
   UsersRoute: typeof UsersRoute
-  ArchitectsArchitectIdRoute: typeof ArchitectsArchitectIdRoute
+  ArchitectsArchitectIdRoute: typeof ArchitectsArchitectIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -312,8 +336,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchitectsArchitectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/architects/$architectId/': {
+      id: '/architects/$architectId/'
+      path: '/'
+      fullPath: '/architects/$architectId/'
+      preLoaderRoute: typeof ArchitectsArchitectIdIndexRouteImport
+      parentRoute: typeof ArchitectsArchitectIdRoute
+    }
+    '/architects/$architectId/evolution': {
+      id: '/architects/$architectId/evolution'
+      path: '/evolution'
+      fullPath: '/architects/$architectId/evolution'
+      preLoaderRoute: typeof ArchitectsArchitectIdEvolutionRouteImport
+      parentRoute: typeof ArchitectsArchitectIdRoute
+    }
   }
 }
+
+interface ArchitectsArchitectIdRouteChildren {
+  ArchitectsArchitectIdEvolutionRoute: typeof ArchitectsArchitectIdEvolutionRoute
+  ArchitectsArchitectIdIndexRoute: typeof ArchitectsArchitectIdIndexRoute
+}
+
+const ArchitectsArchitectIdRouteChildren: ArchitectsArchitectIdRouteChildren = {
+  ArchitectsArchitectIdEvolutionRoute: ArchitectsArchitectIdEvolutionRoute,
+  ArchitectsArchitectIdIndexRoute: ArchitectsArchitectIdIndexRoute,
+}
+
+const ArchitectsArchitectIdRouteWithChildren =
+  ArchitectsArchitectIdRoute._addFileChildren(
+    ArchitectsArchitectIdRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -329,7 +382,7 @@ const rootRouteChildren: RootRouteChildren = {
   TeamRoute: TeamRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
   UsersRoute: UsersRoute,
-  ArchitectsArchitectIdRoute: ArchitectsArchitectIdRoute,
+  ArchitectsArchitectIdRoute: ArchitectsArchitectIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

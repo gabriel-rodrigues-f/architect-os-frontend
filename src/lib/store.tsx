@@ -19,6 +19,7 @@ import type {
   LearningPathItem,
   Level,
   MentoringSession,
+  ProficiencyUpdate,
 } from "./domain";
 import { createSelectors, emptyState } from "./selectors";
 import { byName } from "./text";
@@ -190,7 +191,10 @@ interface Api extends AppState {
    */
   resubmitEvidence: (id: string, patch: { description?: string; url?: string }) => Promise<void>;
   /** Sem otimismo — mesmo motivo de `addEvidence`. Ver IDOR-002. */
-  addMentoringSession: (m: MentoringSession) => Promise<MentoringSession>;
+  addMentoringSession: (
+    m: MentoringSession,
+    proficiencyUpdates?: ProficiencyUpdate[],
+  ) => Promise<MentoringSession>;
   /** Sem otimismo: agendar follow-up é escrita autorizada (só quem registrou a sessão). */
   scheduleMentoringFollowUp: (id: string, nextSession: string | null) => Promise<MentoringSession>;
   updateLearningItemProgress: (
@@ -627,8 +631,8 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     },
 
     /** Sem otimismo — mesmo motivo de `addEvidence`: o id de verdade só existe depois da resposta. */
-    addMentoringSession: async (m) => {
-      const created = await api.createMentoringSession(m);
+    addMentoringSession: async (m, proficiencyUpdates = []) => {
+      const created = await api.createMentoringSession(m, proficiencyUpdates);
       local((s) => ({ ...s, mentoringSessions: [created, ...s.mentoringSessions] }));
       return created;
     },

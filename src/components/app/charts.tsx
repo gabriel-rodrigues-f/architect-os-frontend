@@ -297,3 +297,84 @@ export function EvolutionLine({
     </ChartFrame>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Linha temporal de nível observado/oficial (Rodada 10)               */
+/* ------------------------------------------------------------------ */
+
+export interface ProficiencyPoint {
+  /** ISO 8601 (yyyy-mm-dd) — o eixo X é categórico, não temporal contínuo. */
+  date: string;
+  level: number;
+}
+
+/**
+ * ORIENTACAO-DECIMA-RODADA, Seção 24 — nível é discreto (L1-L5): uma linha
+ * `monotone` entre dois pontos sugere uma transição gradual que nunca foi
+ * observada (ex.: "L2,5" em fevereiro, quando só sabemos L2 em janeiro e L3
+ * em março). `stepAfter` mantém o nível anterior constante até o instante
+ * exato da próxima observação — a única leitura fiel ao dado.
+ */
+export function ProficiencyTimeline({
+  data,
+  label,
+  height = 240,
+}: {
+  data: ProficiencyPoint[];
+  label: string;
+  height?: number;
+}) {
+  const { t } = useI18n();
+  const semMovimento = useReducedMotion();
+  const levelNames: Record<number, string> = {
+    1: "L1",
+    2: "L2",
+    3: "L3",
+    4: "L4",
+    5: "L5",
+  };
+
+  return (
+    <ChartFrame
+      label={label}
+      height={height}
+      isEmpty={data.length === 0}
+      emptyMessage={t("chart.empty.evolution")}
+      dataTable={
+        <DataTable
+          caption={label}
+          columns={[t("chart.axis.date"), t("chart.axis.level")]}
+          rows={data.map((d) => [d.date, levelNames[d.level] ?? String(d.level)])}
+        />
+      }
+    >
+      <LineChart data={data} margin={{ left: -20, right: 8, top: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_INK.grid} vertical={false} />
+        <XAxis dataKey="date" tick={axisTick} stroke={CHART_INK.grid} />
+        <YAxis
+          domain={[1, 5]}
+          ticks={[1, 2, 3, 4, 5]}
+          tickFormatter={(v: number) => levelNames[v] ?? String(v)}
+          tick={axisTick}
+          stroke={CHART_INK.grid}
+        />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          itemStyle={{ color: CHART_INK.surfaceText }}
+          cursor={{ stroke: CHART_INK.grid }}
+          formatter={(value: number) => levelNames[value] ?? String(value)}
+        />
+        <Line
+          type="stepAfter"
+          dataKey="level"
+          name={label}
+          stroke="var(--chart-1)"
+          strokeWidth={2}
+          dot={{ r: 4 }}
+          activeDot={{ r: 6 }}
+          isAnimationActive={!semMovimento}
+        />
+      </LineChart>
+    </ChartFrame>
+  );
+}
