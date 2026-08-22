@@ -221,9 +221,20 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
    * ficar mentindo sozinha na tela — revalida a partir do servidor (volta o
    * dado real) e avisa quem clicou, em vez de falhar em silêncio como antes.
    * Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC L.
+   *
+   * B-09 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10, "409
+   * espúrios") — `onReconcile` opcional: quando o otimismo local escreveu um
+   * campo que o servidor também recalcula (o caso concreto: `version`, base
+   * de concorrência otimista), o sucesso precisa gravar a resposta real por
+   * cima do palpite otimista. Sem isto, `expectedVersion` da PRÓXIMA edição
+   * lia o `version` antigo do cache — nunca atualizado por um sucesso
+   * anterior — e o servidor recusava com 409 mesmo sem conflito real
+   * nenhum (mesma pessoa, edições sequenciais, nenhuma escrita concorrente
+   * de fato). Reconciliar no sucesso fecha essa janela sem precisar de
+   * `await` no chamador: a escrita continua "dispara e esquece" pra UI.
    */
-  const remote = (call: Promise<unknown>) => {
-    void call.catch((error: unknown) => {
+  const remote = <T,>(call: Promise<T>, onReconcile?: (result: T) => void) => {
+    void call.then(onReconcile, (error: unknown) => {
       if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
       else console.error(error);
       toast.error(
@@ -544,7 +555,13 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
             : { ...p, items: p.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) },
         ),
       }));
-      remote(api.patchPlanItem(planId, itemId, patch, expectedVersion));
+      // B-09 — reconcilia com o plano de verdade no sucesso: sem isto, o
+      // `version` do item ficava travado no palpite otimista (que este PATCH
+      // nunca incrementa sozinho), e a PRÓXIMA edição mandava um
+      // `expectedVersion` já defasado, levando a um 409 sem conflito real.
+      remote(api.patchPlanItem(planId, itemId, patch, expectedVersion), (updated) =>
+        local((s) => ({ ...s, plans: s.plans.map((p) => (p.id === planId ? updated : p)) })),
+      );
     },
 
     removePlanItem: (planId, itemId) => {
