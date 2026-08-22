@@ -81,6 +81,10 @@ npm run screenshots       # captura cada tela em docs/screenshots (ver docs/FUNC
 [`docs/FUNCIONAL.md`](docs/FUNCIONAL.md) — o que cada tela faz, com captura de tela, do
 ponto de vista de quem usa o produto (não de arquitetura de código).
 
+Auditorias e planos de rodadas anteriores (histórico, não documentação viva):
+[`docs/historico/`](docs/historico/). Decisões arquiteturais atuais estão registradas como
+ADR no backend: [`architect-os-backend/docs/adr/`](https://github.com/gabriel-rodrigues-f/architect-os-backend/tree/main/docs/adr).
+
 ## Built with
 
 - TanStack Start
