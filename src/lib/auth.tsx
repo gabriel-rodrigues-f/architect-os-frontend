@@ -8,8 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 
-import { ApiError, authApi, type SessionUser } from "./api";
+import { ApiError, authApi, setUnauthorizedHandler, type SessionUser } from "./api";
 
 interface AuthContextValue {
   user: SessionUser | null;
@@ -48,6 +49,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
+
+  /**
+   * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12) — sessão
+   * caindo NO MEIO do uso (cookie expirado/revogado) precisa levar de volta
+   * ao login, não virar "não foi possível acessar o serviço" no meio da
+   * tela. `setUser((current) => ...)` só limpa quando JÁ havia sessão —
+   * assim o 401 esperado do `/me` inicial (sem sessão nenhuma ainda) e o
+   * 401 de senha errada no próprio formulário de login não disparam este
+   * aviso: os dois acontecem com `user` ainda `null`.
+   */
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setUser((current) => {
+        if (!current) return current;
+        queryClient.clear();
+        toast.error("Sua sessão expirou. Faça login novamente.");
+        return null;
+      });
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [queryClient]);
 
   const login = useCallback(
     async (email: string, password: string) => {

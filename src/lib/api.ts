@@ -85,6 +85,23 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12 — "sem
+ * tratamento global de 401") — sessão expirando NO MEIO do uso (não o
+ * `/api/auth/me` inicial, nem um 401 de senha errada no próprio formulário
+ * de login) caía como qualquer outro erro de rede: `store.tsx` mostrava
+ * "Não foi possível acessar o serviço" e a pessoa nunca era levada de volta
+ * ao login. `api.ts` é um módulo comum (não um hook) — não pode chamar
+ * `setUser(null)` direto —, então só notifica quem registrar interesse;
+ * `AuthProvider` (`auth.tsx`) é quem decide se um 401 específico significa
+ * "sessão que existia caiu" (só quando já havia usuário autenticado) ou é
+ * irrelevante (login/register/me sem sessão nenhuma ainda).
+ */
+let unauthorizedHandler: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // Sem corpo não vai content-type: o Fastify tenta parsear o JSON ausente e
   // responde 400 (FST_ERR_CTP_EMPTY_JSON_BODY), quebrando todo DELETE.
@@ -105,6 +122,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       message?: string;
       details?: unknown;
     } | null;
+    if (response.status === 401) unauthorizedHandler?.();
     throw new ApiError(
       body?.message ?? `${init?.method ?? "GET"} ${path} falhou (${response.status})`,
       response.status,
