@@ -847,7 +847,12 @@ function CareerPortfolioSection({
    * Problema 3 — sem `force`, o backend devolve 409 quando a capacidade já
    * tem competência respondida. Nesse caso (e só nesse), abre o diálogo de
    * confirmação em vez de mostrar o erro cru; qualquer outro erro (403 de
-   * quem não é dono, por exemplo) vai direto para `actionError`.
+   * quem não é dono, ou até um outro 409 — ex.: avaliação deixou de estar
+   * em Rascunho enquanto o diálogo estava aberto) vai direto para
+   * `actionError`. B-16 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md,
+   * §26) — reage por `code` estável, não por `status` genérico: antes,
+   * QUALQUER 409 nesta chamada abria o diálogo de "forçar remoção", mesmo
+   * um 409 sem nada a ver com competência respondida.
    */
   const attemptRemove = (capabilityId: string, capabilityName: string, force = false) => {
     setActionError(null);
@@ -859,7 +864,7 @@ function CareerPortfolioSection({
         setPendingRemoval(null);
       })
       .catch((error: unknown) => {
-        if (!force && error instanceof ApiError && error.status === 409) {
+        if (!force && error instanceof ApiError && error.code === "PORTFOLIO_HAS_ANSWERED_ITEMS") {
           setPendingRemoval({ id: capabilityId, name: capabilityName });
           return;
         }

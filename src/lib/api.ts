@@ -74,11 +74,21 @@ export const API_URL = (import.meta.env["VITE_API_URL"] ?? "http://localhost:400
   "",
 );
 
+/**
+ * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-16 (§26) — `code`
+ * (estável por regra, ex. `PLAN_VERSION_CONFLICT`) e `correlationId` (id da
+ * requisição, útil pra achar a linha certa no log do servidor ao investigar
+ * um erro relatado) vêm do novo envelope `{code, message, details?,
+ * correlationId}`. Aditivo: `.message`/`.status`/`.details` continuam
+ * exatamente como antes — nenhum call site existente precisa mudar.
+ */
 export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
     readonly details?: unknown,
+    readonly code?: string,
+    readonly correlationId?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -121,12 +131,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const body = (await response.json().catch(() => null)) as {
       message?: string;
       details?: unknown;
+      code?: string;
+      correlationId?: string;
     } | null;
     if (response.status === 401) unauthorizedHandler?.();
     throw new ApiError(
       body?.message ?? `${init?.method ?? "GET"} ${path} falhou (${response.status})`,
       response.status,
       body?.details,
+      body?.code,
+      body?.correlationId,
     );
   }
 
@@ -148,10 +162,17 @@ async function requestBlob(path: string, body: unknown): Promise<{ blob: Blob; f
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
+    const errorBody = (await response.json().catch(() => null)) as {
+      message?: string;
+      code?: string;
+      correlationId?: string;
+    } | null;
     throw new ApiError(
       errorBody?.message ?? `POST ${path} falhou (${response.status})`,
       response.status,
+      undefined,
+      errorBody?.code,
+      errorBody?.correlationId,
     );
   }
   const disposition = response.headers.get("content-disposition") ?? "";
