@@ -531,19 +531,19 @@ function ArchitectEvolution() {
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="sticky top-0 z-10 bg-card py-2">
+                      <th scope="col" className="sticky top-0 z-10 bg-card py-2">
                         {t("evolution.comparison.competency")}
                       </th>
-                      <th className="sticky top-0 z-10 bg-card py-2 text-center">
+                      <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
                         {t("evolution.comparison.initial")}
                       </th>
-                      <th className="sticky top-0 z-10 bg-card py-2 text-center">
+                      <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
                         {t("evolution.comparison.current")}
                       </th>
-                      <th className="sticky top-0 z-10 bg-card py-2 text-center">
+                      <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
                         {t("evolution.comparison.delta")}
                       </th>
-                      <th className="sticky top-0 z-10 bg-card py-2">
+                      <th scope="col" className="sticky top-0 z-10 bg-card py-2">
                         {t("evolution.comparison.source")}
                       </th>
                     </tr>

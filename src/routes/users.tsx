@@ -107,11 +107,23 @@ function UsersPage() {
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2">{t("users.col.name")}</th>
-                  <th className="py-2">{t("users.col.email")}</th>
-                  <th className="py-2">{t("users.col.role")}</th>
-                  <th className="py-2">{t("users.col.status")}</th>
-                  {isAdmin && <th className="py-2">{t("users.col.actions")}</th>}
+                  <th scope="col" className="py-2">
+                    {t("users.col.name")}
+                  </th>
+                  <th scope="col" className="py-2">
+                    {t("users.col.email")}
+                  </th>
+                  <th scope="col" className="py-2">
+                    {t("users.col.role")}
+                  </th>
+                  <th scope="col" className="py-2">
+                    {t("users.col.status")}
+                  </th>
+                  {isAdmin && (
+                    <th scope="col" className="py-2">
+                      {t("users.col.actions")}
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>

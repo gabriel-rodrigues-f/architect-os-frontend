@@ -340,13 +340,27 @@ function AssessmentsPage() {
                     <table className="w-full min-w-[820px] text-sm">
                       <thead>
                         <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                          <th className="py-2">{t("asmt.col.competency")}</th>
-                          <th className="w-24 py-2 text-center">{t("asmt.col.self")}</th>
-                          <th className="w-24 py-2 text-center">{t("asmt.col.techLead")}</th>
-                          <th className="w-24 py-2 text-center">{t("asmt.col.target")}</th>
-                          <th className="w-24 py-2 text-center">{t("asmt.col.final")}</th>
-                          <th className="w-44 py-2">{t("asmt.col.gap")}</th>
-                          <th className="w-24 py-2 text-right">{t("asmt.col.notes")}</th>
+                          <th scope="col" className="py-2">
+                            {t("asmt.col.competency")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-center">
+                            {t("asmt.col.self")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-center">
+                            {t("asmt.col.techLead")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-center">
+                            {t("asmt.col.target")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-center">
+                            {t("asmt.col.final")}
+                          </th>
+                          <th scope="col" className="w-44 py-2">
+                            {t("asmt.col.gap")}
+                          </th>
+                          <th scope="col" className="w-24 py-2 text-right">
+                            {t("asmt.col.notes")}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>

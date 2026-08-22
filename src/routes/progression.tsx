@@ -71,12 +71,16 @@ function ProgressionPage() {
               <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
                 <thead>
                   <tr>
-                    <th className="sticky top-0 z-10 w-44 bg-card text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th
+                      scope="col"
+                      className="sticky top-0 z-10 w-44 bg-card text-left text-xs uppercase tracking-wide text-muted-foreground"
+                    >
                       {t("col.architect")}
                     </th>
                     {store.capabilities.map((c) => (
                       <th
                         key={c.id}
+                        scope="col"
                         className="sticky top-0 z-10 bg-card text-center text-[11px] text-muted-foreground"
                       >
                         {c.short}

@@ -269,14 +269,32 @@ export function GapTable({
       <table className="w-full min-w-[820px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <th className="sticky top-0 z-10 bg-card py-2">{t("col.competency")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2">{t("col.capability")}</th>
-            {!mastery && <th className="sticky top-0 z-10 bg-card py-2">{t("col.type")}</th>}
-            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.people")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.currentAvg")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.targetAvg")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2 text-center">{t("col.avgGap")}</th>
-            <th className="sticky top-0 z-10 bg-card py-2">{t("col.classification")}</th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+              {t("col.competency")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+              {t("col.capability")}
+            </th>
+            {!mastery && (
+              <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+                {t("col.type")}
+              </th>
+            )}
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+              {t("col.people")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+              {t("col.currentAvg")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+              {t("col.targetAvg")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+              {t("col.avgGap")}
+            </th>
+            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+              {t("col.classification")}
+            </th>
           </tr>
         </thead>
         <tbody>

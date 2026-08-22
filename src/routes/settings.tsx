@@ -91,9 +91,11 @@ function SettingsPage() {
             <table className="w-full min-w-[420px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2">{t("ref.capability")}</th>
+                  <th scope="col" className="py-2">
+                    {t("ref.capability")}
+                  </th>
                   {ROLES.map((r) => (
-                    <th key={r} className="py-2 text-center">
+                    <th key={r} scope="col" className="py-2 text-center">
                       {roleShort(r)}
                     </th>
                   ))}
@@ -174,9 +176,13 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
         <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="py-2">Nível de carreira</th>
-              <th className="py-2 text-center">Mínimo de capacidades qualificadas</th>
-              {isAdmin && <th className="py-2" />}
+              <th scope="col" className="py-2">
+                Nível de carreira
+              </th>
+              <th scope="col" className="py-2 text-center">
+                Mínimo de capacidades qualificadas
+              </th>
+              {isAdmin && <th scope="col" className="py-2" />}
             </tr>
           </thead>
           <tbody>

@@ -644,19 +644,35 @@ function TeamPage() {
               <table className="w-full min-w-[760px] text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-4 py-3">{t("team.table.col.name")}</th>
-                    <th className="px-4 py-3">{t("team.table.col.role")}</th>
-                    <th className="px-4 py-3">{t("team.table.col.specialization")}</th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("team.table.col.name")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("team.table.col.role")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("team.table.col.specialization")}
+                    </th>
                     {isAdmin && (
-                      <th className="whitespace-nowrap px-4 py-3">{t("team.table.col.lead")}</th>
+                      <th scope="col" className="whitespace-nowrap px-4 py-3">
+                        {t("team.table.col.lead")}
+                      </th>
                     )}
-                    <th className="whitespace-nowrap px-4 py-3 text-center">
+                    <th scope="col" className="whitespace-nowrap px-4 py-3 text-center">
                       {t("team.table.col.level")}
                     </th>
-                    <th className="px-4 py-3 text-center">{t("team.table.col.gaps")}</th>
-                    {isAdmin && <th className="px-4 py-3">{t("team.table.col.status")}</th>}
+                    <th scope="col" className="px-4 py-3 text-center">
+                      {t("team.table.col.gaps")}
+                    </th>
                     {isAdmin && (
-                      <th className="px-4 py-3 text-right">{t("team.table.col.actions")}</th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("team.table.col.status")}
+                      </th>
+                    )}
+                    {isAdmin && (
+                      <th scope="col" className="px-4 py-3 text-right">
+                        {t("team.table.col.actions")}
+                      </th>
                     )}
                   </tr>
                 </thead>

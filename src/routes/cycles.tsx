@@ -237,9 +237,11 @@ function CyclesPage() {
           <table className="w-full min-w-[520px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="py-2">Competência</th>
+                <th scope="col" className="py-2">
+                  Competência
+                </th>
                 {closedCycles.map((c) => (
-                  <th key={c.id} className="py-2 text-center">
+                  <th key={c.id} scope="col" className="py-2 text-center">
                     {c.name}
                   </th>
                 ))}

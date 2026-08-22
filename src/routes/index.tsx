@@ -189,12 +189,16 @@ function AdminHome() {
             <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
               <thead>
                 <tr>
-                  <th className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <th
+                    scope="col"
+                    className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  >
                     {t("cycle.architect")}
                   </th>
                   {store.capabilities.map((c) => (
                     <th
                       key={c.id}
+                      scope="col"
                       className="px-1 text-center text-[11px] font-medium text-muted-foreground"
                       title={c.name}
                     >
