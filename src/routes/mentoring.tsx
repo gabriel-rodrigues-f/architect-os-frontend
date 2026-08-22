@@ -258,6 +258,7 @@ function MentoringPage() {
                       <Input
                         id="date"
                         type="date"
+                        max={todayIso()}
                         aria-invalid={isMissing("date")}
                         className={invalid("date")}
                         value={form.date}
