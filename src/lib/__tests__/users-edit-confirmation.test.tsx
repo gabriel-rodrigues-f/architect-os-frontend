@@ -14,11 +14,15 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
  * REVISAO-360-FRONTEND-UI-UX-ENTERPRISE-SYNAPSE-2026-08-22.md, FE-360-009
- * (P1 UX/Security) — papel, vínculo e status não podem mais trocar de
- * valor num `onChange` inline sem confirmação. Cobre: a tabela mostra os
- * três campos como somente leitura, "Editar" abre um diálogo, mudanças
- * comuns salvam direto, e conceder Admin exige uma etapa extra de
- * confirmação antes de persistir.
+ * (P1 UX/Security) — papel e status não podem mais trocar de valor num
+ * `onChange` inline sem confirmação. Cobre: a tabela mostra os dois campos
+ * como somente leitura, "Editar" abre um diálogo, mudanças comuns salvam
+ * direto, e conceder Admin exige uma etapa extra de confirmação antes de
+ * persistir.
+ *
+ * "Vínculo com o time" saiu da tela (pedido do usuário: só existe um Tech
+ * Lead no time hoje, o campo não distinguia nada) — o exemplo de "mudança
+ * comum, sem confirmação" agora usa Status em vez dele.
  */
 
 const OTHER_MEMBER: SessionUser = {
@@ -72,7 +76,10 @@ function mockBackend(users: SessionUser[]) {
     }
     if (href.endsWith("/api/auth/users") && (!init || init.method === undefined)) {
       return Promise.resolve(
-        new Response(JSON.stringify(users), { status: 200, headers: { "content-type": "application/json" } }),
+        new Response(JSON.stringify(users), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
       );
     }
     if (href.endsWith("/api/state")) {
@@ -102,7 +109,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("papel/vínculo/status aparecem como somente leitura na tabela, com um botão Editar", async () => {
+  it("papel/status aparecem como somente leitura na tabela, com um botão Editar", async () => {
     mockBackend([fixtureAdminUser, OTHER_MEMBER]);
     render(
       <Wrapper>
@@ -117,7 +124,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     expect(within(row).getByRole("button", { name: "Editar Outro Membro" })).toBeTruthy();
   });
 
-  it("mudança comum (vínculo) salva direto, sem etapa extra", async () => {
+  it("mudança comum (status) salva direto, sem etapa extra", async () => {
     mockBackend([fixtureAdminUser, OTHER_MEMBER]);
     render(
       <Wrapper>
@@ -129,7 +136,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Editar Outro Membro" }));
 
     const dialog = await screen.findByRole("dialog");
-    await userEvent.selectOptions(within(dialog).getByLabelText("Vínculo com o time"), "ana");
+    await userEvent.selectOptions(within(dialog).getByLabelText("Status"), "disabled");
     await userEvent.click(within(dialog).getByRole("button", { name: "Salvar alterações" }));
 
     const isPatchCall = (call: unknown[]) => {
@@ -139,7 +146,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(isPatchCall)).toBe(true));
     const call = fetchMock.mock.calls.find(isPatchCall) as [string, RequestInit];
     const body = JSON.parse(String(call[1].body)) as Record<string, unknown>;
-    expect(body).toEqual({ architectId: "ana" });
+    expect(body).toEqual({ status: "disabled" });
     expect(body["role"]).toBeUndefined();
   });
 

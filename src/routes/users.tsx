@@ -17,7 +17,6 @@ import { Label } from "@/components/ui/label";
 import { authApi, ApiError, isLeadCapable, type SessionUser, type UserRole } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/users")({
   head: () => ({
@@ -25,13 +24,12 @@ export const Route = createFileRoute("/users")({
       { title: "Usuários — Synapse" },
       {
         name: "description",
-        content: "Contas de acesso: papel (administrador, Tech Lead, membro) e vínculo com o time.",
+        content: "Contas de acesso: papel (administrador, Tech Lead, membro) e status.",
       },
       { property: "og:title", content: "Usuários — Synapse" },
       {
         property: "og:description",
-        content:
-          "Quem administra o sistema, quem revisa como Tech Lead, e a quem cada conta pertence.",
+        content: "Quem administra o sistema e quem revisa como Tech Lead.",
       },
     ],
   }),
@@ -42,7 +40,6 @@ const USERS_QUERY_KEY = ["auth-users"] as const;
 
 function UsersPage() {
   const { t } = useI18n();
-  const store = useStore();
   const isAdmin = useCurrentUser().role === "admin";
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
@@ -72,7 +69,7 @@ function UsersPage() {
 
   const updatePatch = async (
     user: SessionUser,
-    patch: Partial<{ role: UserRole; architectId: string | null; status: "active" | "disabled" }>,
+    patch: Partial<{ role: UserRole; status: "active" | "disabled" }>,
   ) => {
     try {
       await authApi.updateUser(user.id, patch);
@@ -113,7 +110,6 @@ function UsersPage() {
                   <th className="py-2">{t("users.col.name")}</th>
                   <th className="py-2">{t("users.col.email")}</th>
                   <th className="py-2">{t("users.col.role")}</th>
-                  <th className="py-2">{t("users.col.architect")}</th>
                   <th className="py-2">{t("users.col.status")}</th>
                   {isAdmin && <th className="py-2">{t("users.col.actions")}</th>}
                 </tr>
@@ -135,12 +131,6 @@ function UsersPage() {
                     <td className="py-2 text-muted-foreground">{user.email}</td>
                     <td className="py-2">
                       <RoleBadge role={user.role} label={t(`users.role.${user.role}`)} />
-                    </td>
-                    <td className="py-2">
-                      <span className="text-muted-foreground">
-                        {store.architects.find((a) => a.id === user.architectId)?.name ??
-                          t("users.architect.none")}
-                      </span>
                     </td>
                     <td className="py-2">
                       <StatusBadge status={user.status} label={t(`users.status.${user.status}`)} />
@@ -178,7 +168,6 @@ function UsersPage() {
       {editing && (
         <EditUserDialog
           user={editing}
-          architects={store.architects}
           onCancel={() => setEditing(null)}
           onSave={async (patch) => {
             await updatePatch(editing, patch);
@@ -210,33 +199,27 @@ function StatusBadge({ status, label }: { status: "active" | "disabled"; label: 
  */
 function EditUserDialog({
   user,
-  architects,
   onCancel,
   onSave,
 }: {
   user: SessionUser;
-  architects: { id: string; name: string }[];
   onCancel: () => void;
-  onSave: (
-    patch: Partial<{ role: UserRole; architectId: string | null; status: "active" | "disabled" }>,
-  ) => Promise<void>;
+  onSave: (patch: Partial<{ role: UserRole; status: "active" | "disabled" }>) => Promise<void>;
 }) {
   const { t } = useI18n();
   const [role, setRole] = useState<UserRole>(user.role);
-  const [architectId, setArchitectId] = useState(user.architectId ?? "");
   const [status, setStatus] = useState<"active" | "disabled">(user.status);
   const [step, setStep] = useState<"edit" | "confirm-admin">("edit");
   const [saving, setSaving] = useState(false);
 
   const grantsAdmin = user.role !== "admin" && role === "admin";
-  const changed = role !== user.role || architectId !== (user.architectId ?? "") || status !== user.status;
+  const changed = role !== user.role || status !== user.status;
 
   const persist = async () => {
     setSaving(true);
     try {
       await onSave({
         ...(role !== user.role ? { role } : {}),
-        ...(architectId !== (user.architectId ?? "") ? { architectId: architectId || null } : {}),
         ...(status !== user.status ? { status } : {}),
       });
     } finally {
@@ -296,22 +279,6 @@ function EditUserDialog({
             </select>
           </div>
           <div>
-            <Label htmlFor="edit-user-architect">{t("users.col.architect")}</Label>
-            <select
-              id="edit-user-architect"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={architectId}
-              onChange={(e) => setArchitectId(e.target.value)}
-            >
-              <option value="">{t("users.architect.none")}</option>
-              {architects.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
             <Label htmlFor="edit-user-status">{t("users.col.status")}</Label>
             <select
               id="edit-user-status"
@@ -353,11 +320,9 @@ function CreateUserDialog({
   onCreated: () => void;
 }) {
   const { t } = useI18n();
-  const store = useStore();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("member");
-  const [architectId, setArchitectId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ email: string; temporaryPassword: string } | null>(null);
@@ -372,7 +337,6 @@ function CreateUserDialog({
         name: name.trim(),
         email: email.trim(),
         role,
-        architectId: architectId || null,
       });
       setResult({ email: email.trim(), temporaryPassword });
     } catch (err) {
@@ -437,22 +401,6 @@ function CreateUserDialog({
               <option value="member">{t("users.role.member")}</option>
               <option value="lead">{t("users.role.lead")}</option>
               <option value="admin">{t("users.role.admin")}</option>
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="new-user-architect">{t("users.col.architect")}</Label>
-            <select
-              id="new-user-architect"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={architectId}
-              onChange={(e) => setArchitectId(e.target.value)}
-            >
-              <option value="">{t("users.architect.none")}</option>
-              {store.architects.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
             </select>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
