@@ -161,5 +161,9 @@ describe("Time — cadastro sem dado fabricado", () => {
     expect(body).not.toHaveProperty("gapDomain");
     expect(body).not.toHaveProperty("performance");
     expect(body).not.toHaveProperty("potential");
+    // B-32 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §41) — id é
+    // gerado no servidor; o front nunca mais calcula slug(nome) e manda um
+    // id no corpo (dois nomes parecidos colidiam nesse slug).
+    expect(body).not.toHaveProperty("id");
   });
 });

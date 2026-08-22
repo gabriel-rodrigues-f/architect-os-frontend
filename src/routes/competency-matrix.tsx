@@ -26,11 +26,10 @@ import {
   type RequirementType,
   type RoleName,
 } from "@/lib/domain";
-import { useCurrentUser } from "@/lib/auth";
+import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
-import { slug } from "@/lib/text";
 
 export const Route = createFileRoute("/competency-matrix")({
   head: () => ({
@@ -50,15 +49,6 @@ export const Route = createFileRoute("/competency-matrix")({
   }),
   component: MatrixPage,
 });
-
-/**
- * O id da compet\u00eancia \u00e9 derivado do **id do dom\u00ednio**, n\u00e3o da sigla: dom\u00ednios
- * diferentes podem compartilhar a mesma sigla (as capacidades novas usam a
- * primeira palavra do nome), e nesse caso duas compet\u00eancias hom\u00f4nimas em
- * dom\u00ednios distintos colidiriam no mesmo id \u2014 a segunda sobrescreveria a
- * primeira e excluir uma delas apagaria as duas.
- */
-const competencyId = (capability: Capability, name: string) => slug(`${capability.id}-${name}`);
 
 function MatrixPage() {
   const store = useStore();
@@ -140,15 +130,20 @@ function MatrixPage() {
               />
               <Button
                 variant="secondary"
-                onClick={() => {
+                onClick={async () => {
                   if (!newCapability.trim()) return;
-                  store.addCapability({
-                    id: slug(newCapability),
-                    name: newCapability,
-                    short: newCapability.split(" ")[0] ?? newCapability,
-                    active: true,
-                  });
-                  setNewCapability("");
+                  // B-32 — id gerado no servidor (nunca mais slug(nome), que
+                  // colidia entre duas capacidades de nome parecido).
+                  try {
+                    await store.addCapability({
+                      name: newCapability,
+                      short: newCapability.split(" ")[0] ?? newCapability,
+                      active: true,
+                    });
+                    setNewCapability("");
+                  } catch (error) {
+                    toast.error(authErrorMessage(error));
+                  }
                 }}
               >
                 {t("matrix.add")}
@@ -556,17 +551,22 @@ function CompetencyCreateDialog({
   );
   const canSave = name.trim().length > 0 && ROLES.every((r) => levels[r] !== undefined);
 
-  const save = () => {
+  const save = async () => {
     if (!canSave) return;
-    store.addCompetency({
-      id: competencyId(capability, name.trim()),
-      name: name.trim(),
-      capabilityId: capability.id,
-      requirementType,
-      expected: levels as Record<RoleName, Level>,
-      active: true,
-    });
-    onClose();
+    // B-32 — id gerado no servidor (nunca mais derivado do nome, que
+    // colidia entre duas competências homônimas em capacidades distintas).
+    try {
+      await store.addCompetency({
+        name: name.trim(),
+        capabilityId: capability.id,
+        requirementType,
+        expected: levels as Record<RoleName, Level>,
+        active: true,
+      });
+      onClose();
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    }
   };
 
   return (

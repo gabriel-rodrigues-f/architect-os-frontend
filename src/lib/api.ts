@@ -248,7 +248,8 @@ export const api = {
     put<{ cycleId: string }>("/api/settings/active-cycle", { cycleId }),
 
   /* arquitetos */
-  createArchitect: (architect: Omit<Architect, "version">) =>
+  /** B-32 — id é sempre gerado no servidor; nunca aceito do cliente (evita colisão de slug). */
+  createArchitect: (architect: Omit<Architect, "id" | "version">) =>
     post<Architect>("/api/architects", architect),
   /** `role`/`version` ficam de fora — ENT-CAR-017: nível de carreira só muda por `transitionCareerLevel`. */
   updateArchitect: (id: string, patch_: Partial<Omit<Architect, "id" | "role" | "version">>) =>
@@ -284,15 +285,17 @@ export const api = {
     }),
 
   /* catálogo */
-  /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. */
-  createCapability: (capability: Omit<Capability, "curation">) =>
+  /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. B-32: `id` idem — gerado no servidor. */
+  createCapability: (capability: Omit<Capability, "id" | "curation">) =>
     post<Capability>("/api/capabilities", capability),
   updateCapability: (id: string, patch_: Partial<Omit<Capability, "id" | "curation">>) =>
     patch<Capability>(`/api/capabilities/${id}`, patch_),
   /** `archived: true` quando a capacidade já tinha histórico e foi arquivada em vez de apagada. */
   deleteCapability: (id: string) =>
     del<{ archived: boolean; competenciesRemoved: number }>(`/api/capabilities/${id}`),
-  createCompetency: (competency: Competency) => post<Competency>("/api/competencies", competency),
+  /** B-32 — id é sempre gerado no servidor; nunca aceito do cliente (evita colisão de slug). */
+  createCompetency: (competency: Omit<Competency, "id">) =>
+    post<Competency>("/api/competencies", competency),
   updateCompetency: (id: string, patch_: Partial<Omit<Competency, "id">>) =>
     patch<Competency>(`/api/competencies/${id}`, patch_),
   /** `undefined` (204) = apagada de verdade; `{archived:true}` (200) = arquivada por já ter histórico. */

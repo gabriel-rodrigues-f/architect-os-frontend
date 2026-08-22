@@ -36,7 +36,8 @@ export const STATE_QUERY_KEY = ["app-state"] as const;
  */
 interface Api extends AppState {
   setActiveCycle: (id: string) => void;
-  addArchitect: (a: Omit<Architect, "version">) => void;
+  /** B-32 — id é gerado no servidor; sem otimismo (a UI só conhece o id real depois da resposta). */
+  addArchitect: (a: Omit<Architect, "id" | "version">) => Promise<Architect>;
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>) => void;
   /**
    * ENT-CAR-017 — comando dedicado, sem otimismo: exige motivo e concorrência
@@ -57,7 +58,8 @@ interface Api extends AppState {
     careerLevelId: string,
     minimumQualifiedCapabilities: number,
   ) => Promise<CareerLevelPolicy>;
-  addCompetency: (c: Competency) => void;
+  /** B-32 — id é gerado no servidor; sem otimismo. */
+  addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
   /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
@@ -67,8 +69,8 @@ interface Api extends AppState {
    * `PATCH` recusado. Ver `api.swapCompetencyRequirement`.
    */
   swapCompetencyRequirement: (id: string, withCompetencyId: string) => Promise<void>;
-  /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. */
-  addCapability: (c: Omit<Capability, "curation">) => void;
+  /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. B-32: `id` idem — sem otimismo. */
+  addCapability: (c: Omit<Capability, "id" | "curation">) => Promise<Capability>;
   updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
   /** Apaga se nenhuma competência da capacidade já foi usada; senão arquiva a capacidade e as competências dela. */
   removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
@@ -255,11 +257,18 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.setActiveCycle(id));
     },
 
-    addArchitect: (a) => {
-      // `version` nasce 1 no servidor (DEFAULT da coluna) — só o otimismo
-      // local precisa do valor antes da resposta chegar.
-      local((s) => ({ ...s, architects: [...s.architects, { ...a, version: 1 }] }));
-      remote(api.createArchitect(a));
+    /**
+     * B-32 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §41) — id
+     * agora é gerado no servidor, então a tela não pode adivinhá-lo antes
+     * da resposta chegar (o mesmo motivo de `addLearningPath`/`addEvidence`
+     * não terem otimismo): navegar para `/architects/:id` ou atribuir o
+     * registro recém-criado a algo antes da resposta real usaria um id que
+     * nunca vai existir.
+     */
+    addArchitect: async (a) => {
+      const created = await api.createArchitect(a);
+      local((s) => ({ ...s, architects: [...s.architects, created] }));
+      return created;
     },
 
     updateArchitect: (id, patch) => {
@@ -294,9 +303,11 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return updated;
     },
 
-    addCompetency: (c) => {
-      local((s) => ({ ...s, competencies: [...s.competencies, c] }));
-      remote(api.createCompetency(c));
+    /** B-32 — id gerado no servidor; sem otimismo (ver `addArchitect`). */
+    addCompetency: async (c) => {
+      const created = await api.createCompetency(c);
+      local((s) => ({ ...s, competencies: [...s.competencies, created] }));
+      return created;
     },
 
     updateCompetency: (id, patch) => {
@@ -360,25 +371,18 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       }
     },
 
-    addCapability: (c) => {
-      // Recém-criada: zero competências ainda — não é um placeholder
-      // inventado, é o estado real até a primeira competência entrar.
+    /**
+     * B-32 — id gerado no servidor; sem otimismo (ver `addArchitect`). A
+     * resposta já traz `curation` computada de verdade (0 competências →
+     * REQUIRES_CURATION) — nada a reconstruir no cliente.
+     */
+    addCapability: async (c) => {
+      const created = await api.createCapability(c);
       local((s) => ({
         ...s,
-        capabilities: [
-          ...s.capabilities,
-          {
-            ...c,
-            curation: {
-              activeCompetencyCount: 0,
-              restrictiveCompetencyCount: 0,
-              nonRestrictiveCompetencyCount: 0,
-              status: "REQUIRES_CURATION" as const,
-            },
-          },
-        ].sort(byName),
+        capabilities: [...s.capabilities, created].sort(byName),
       }));
-      remote(api.createCapability(c));
+      return created;
     },
 
     updateCapability: (id, patch) => {

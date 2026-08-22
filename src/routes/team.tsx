@@ -31,11 +31,11 @@ import {
 } from "@/components/ui/dialog";
 import { ROLES, type Architect, type RoleName } from "@/lib/domain";
 import { ApiError, authApi } from "@/lib/api";
-import { useCurrentUser } from "@/lib/auth";
+import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
-import { byName, slug } from "@/lib/text";
+import { byName } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 /** Pseudo-ids pra quem não tem especialização/capacidade derivável — nunca somem do filtro por não ter um id real de catálogo. */
@@ -374,7 +374,7 @@ function TeamPage() {
    * aqui de qualquer forma, mas nem monta o campo para não sugerir que
    * funcionaria).
    */
-  const submit = () => {
+  const submit = async () => {
     if (!canSubmit) return;
     const payload = {
       name: form.name.trim(),
@@ -392,17 +392,24 @@ function TeamPage() {
       // nova, preservando (ou não) o texto antigo que já estava salvo.
       store.updateArchitect(editing, payload);
       toast.success(t("team.edit.toast", { nome: payload.name }));
+      setEditing(null);
     } else {
-      store.addArchitect({
-        id: slug(form.name),
-        ...payload,
-        // Novo cadastro nasce sem o campo legado — só a FK, quando definida.
-        specialization: "",
-        role: form.role,
-        active: true,
-      });
+      // B-32 — id é gerado no servidor (nunca mais slug(nome), que colidia
+      // entre duas pessoas de nome parecido); sem otimismo, a tela só fecha
+      // o diálogo depois que o cadastro existe de verdade.
+      try {
+        await store.addArchitect({
+          ...payload,
+          // Novo cadastro nasce sem o campo legado — só a FK, quando definida.
+          specialization: "",
+          role: form.role,
+          active: true,
+        });
+        setEditing(null);
+      } catch (error) {
+        toast.error(authErrorMessage(error));
+      }
     }
-    setEditing(null);
   };
 
   /**
