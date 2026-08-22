@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { to: "/capability-map", labelKey: "cap.tabs.coverage" as const },
   { to: "/gap-analysis", labelKey: "cap.tabs.priorities" as const },
+  { to: "/progression", labelKey: "cap.tabs.progression" as const },
   { to: "/training-needs", labelKey: "cap.tabs.collective" as const },
 ];
 

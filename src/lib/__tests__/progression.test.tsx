@@ -20,7 +20,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { Route as GapRoute } from "@/routes/gap-analysis";
+import { Route as ProgressionRoute } from "@/routes/progression";
 import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import type { Assessment, Competency } from "../domain";
@@ -29,10 +29,12 @@ import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
- * ORIENTACAO-NONA-RODADA ENT-09-012 — a tela de Gap Analysis restructurada:
- * bloqueante (RESTRICTIVE) e oportunidade (NON_RESTRICTIVE) nunca na mesma
- * lista, e Nível III (MASTERY) nunca tratado como "gap de progressão".
- * Nenhum teste de render existia antes desta rodada.
+ * `/progression` (Mapa de Calor + Tabela de Lacunas de Progressão + Nível
+ * III) saiu do fim de `/gap-analysis` pra sua própria aba — apontado ao
+ * vivo que empurrava a página de Prioridades (Radar + ranking por pessoa)
+ * pra baixo, misturando duas granularidades diferentes na mesma rolagem.
+ * Estes casos testavam essas seções em `gap-analysis-restructure.test.tsx`
+ * antes da separação; movidos pra cá junto com o conteúdo.
  */
 
 const fetchMock = vi.fn();
@@ -95,16 +97,16 @@ function AuthReady({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-const GapPage = GapRoute.options.component as () => ReactNode;
+const ProgressionPage = ProgressionRoute.options.component as () => ReactNode;
 
-const renderGap = () =>
+const renderProgression = () =>
   render(
     <Wrapper>
-      <GapPage />
+      <ProgressionPage />
     </Wrapper>,
   );
 
-describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () => {
+describe("Progressão — heatmap, tabela e maestria", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -135,91 +137,53 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
     vi.unstubAllGlobals();
   });
 
-  it("separa bloqueante de oportunidade em listas distintas", async () => {
-    renderGap();
-    await screen.findByText("Bloqueantes de progressão");
+  it("a tabela de progressão marca o tipo de cada linha (Bloqueante/Oportunidade)", async () => {
+    renderProgression();
+    await screen.findByText("Tabela de Lacunas de Progressão");
 
-    const blockingSection = screen.getByText("Bloqueantes de progressão").closest("div")!;
-    expect(blockingSection.textContent).toContain("Infra as Code");
-    expect(blockingSection.textContent).not.toContain("IAM");
+    const progressionTable = screen
+      .getByText("Tabela de Lacunas de Progressão")
+      .closest(".surface-card") as HTMLElement;
 
-    const opportunitySection = screen.getByText("Oportunidades de desenvolvimento").closest("div")!;
-    expect(opportunitySection.textContent).toContain("IAM");
-    expect(opportunitySection.textContent).not.toContain("Infra as Code");
+    const iacRow = within(progressionTable).getByText("Infra as Code").closest("tr")!;
+    expect(iacRow.textContent).toContain("Bloqueante");
+
+    const iamRow = within(progressionTable).getByText("IAM").closest("tr")!;
+    expect(iamRow.textContent).toContain("Oportunidade");
   });
 
-  /**
-   * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 36 (A3) — mais de uma pessoa
-   * com a mesma lacuna: os nomes aparecem todos (não só o primeiro), e a
-   * contagem de pessoas bate com a quantidade de nomes únicos.
-   */
-  it("mostra todos os nomes quando mais de uma pessoa tem a mesma lacuna", async () => {
-    const carlaState: AppState = {
-      ...state,
-      architects: [
-        ...state.architects,
-        {
-          id: "carla",
-          name: "Carla Souza",
-          role: "Arquiteto de Soluções II",
-          yearsAsArchitect: 5,
-          specialization: "Dados",
-          email: "carla@company.com",
-          active: true,
-          version: 1,
-        },
-      ],
-      assessments: [
-        ...state.assessments,
-        {
-          id: "carla-h2",
-          architectId: "carla",
-          cycleId: "2026-h2",
-          status: "Completed",
-          modelVersion: 1,
-          targetCareerLevelId: null,
-          targetSemantics: null,
-          items: [
-            { competencyId: "security-iam", self: 2, leader: 2, target: 3, final: 2, comments: [] },
-          ],
-        },
-      ],
-    };
-    fetchMock.mockImplementation((url: string) => {
-      if (String(url).endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (String(url).endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(carlaState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+  it("Nível III (MASTERY) some da tabela de progressão e aparece só na seção de maestria, sem linguagem de bloqueio", async () => {
+    renderProgression();
+    await screen.findByText("Tabela de Lacunas de Progressão");
+
+    const progressionTable = screen.getByText("Tabela de Lacunas de Progressão").closest(".surface-card")!;
+    // Bruno está em MASTERY neste ciclo — os gaps dele não contam mais como progressão.
+    expect(progressionTable.textContent).not.toContain("Kubernetes");
+
+    expect(screen.getByText("Oportunidades de Aprofundamento — Nível III")).toBeTruthy();
+    const masterySection = screen
+      .getByText("Oportunidades de Aprofundamento — Nível III")
+      .closest(".surface-card")!;
+    expect(masterySection.textContent).toContain("Kubernetes");
+    // Nunca o vocabulário de bloqueio/crítico na seção de maestria.
+    expect(masterySection.textContent).not.toContain("Bloqueante");
+    expect(masterySection.textContent).not.toContain("Crítico");
+  });
+
+  /** ENT-09-016 — cabeçalho fixo nas tabelas que crescem com o time/catálogo. */
+  it("o cabeçalho da tabela de progressão e do heatmap fica fixo ao rolar (sticky)", async () => {
+    renderProgression();
+    await screen.findByText("Tabela de Lacunas de Progressão");
+
+    const progressionTable = screen
+      .getByText("Tabela de Lacunas de Progressão")
+      .closest(".surface-card") as HTMLElement;
+    const competencyHeader = within(progressionTable).getByRole("columnheader", {
+      name: "Competência",
     });
+    expect(competencyHeader.className).toContain("sticky");
 
-    renderGap();
-    await screen.findByText("Oportunidades de desenvolvimento");
-
-    const opportunitySection = screen
-      .getByText("Oportunidades de desenvolvimento")
-      .closest("div") as HTMLElement;
-    // IAM tem gap para Ana e Carla (2 pessoas) — os dois nomes aparecem, não só o primeiro.
-    expect(within(opportunitySection).getByText(/Ana Martins/)).toBeTruthy();
-    expect(within(opportunitySection).getByText(/Carla Souza/)).toBeTruthy();
-    expect(within(opportunitySection).getByText(/2 pessoa\(s\)/)).toBeTruthy();
-  });
-
-  it("o radar inclui uma coluna de cobertura na tabela equivalente acessível", async () => {
-    renderGap();
-    await screen.findByText("Radar de Arquitetura");
-    expect(screen.getByRole("columnheader", { name: "Cobertura" })).toBeTruthy();
+    const architectHeader = screen.getByRole("columnheader", { name: "Arquiteto" });
+    expect(architectHeader.className).toContain("sticky");
   });
 });

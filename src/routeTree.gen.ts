@@ -18,6 +18,7 @@ import { Route as DevelopmentPlansRouteImport } from './routes/development-plans
 import { Route as GapAnalysisRouteImport } from './routes/gap-analysis'
 import { Route as LearningPathsRouteImport } from './routes/learning-paths'
 import { Route as MentoringRouteImport } from './routes/mentoring'
+import { Route as ProgressionRouteImport } from './routes/progression'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
@@ -71,6 +72,11 @@ const MentoringRoute = MentoringRouteImport.update({
   path: '/mentoring',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProgressionRoute = ProgressionRouteImport.update({
+  id: '/progression',
+  path: '/progression',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/progression': typeof ProgressionRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/progression': typeof ProgressionRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/progression': typeof ProgressionRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/training-needs': typeof TrainingNeedsRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/progression'
     | '/settings'
     | '/team'
     | '/training-needs'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/progression'
     | '/settings'
     | '/team'
     | '/training-needs'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/progression'
     | '/settings'
     | '/team'
     | '/training-needs'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   GapAnalysisRoute: typeof GapAnalysisRoute
   LearningPathsRoute: typeof LearningPathsRoute
   MentoringRoute: typeof MentoringRoute
+  ProgressionRoute: typeof ProgressionRoute
   SettingsRoute: typeof SettingsRoute
   TeamRoute: typeof TeamRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/mentoring'
       fullPath: '/mentoring'
       preLoaderRoute: typeof MentoringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progression': {
+      id: '/progression'
+      path: '/progression'
+      fullPath: '/progression'
+      preLoaderRoute: typeof ProgressionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -378,6 +398,7 @@ const rootRouteChildren: RootRouteChildren = {
   GapAnalysisRoute: GapAnalysisRoute,
   LearningPathsRoute: LearningPathsRoute,
   MentoringRoute: MentoringRoute,
+  ProgressionRoute: ProgressionRoute,
   SettingsRoute: SettingsRoute,
   TeamRoute: TeamRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
