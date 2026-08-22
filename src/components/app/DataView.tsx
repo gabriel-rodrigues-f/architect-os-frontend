@@ -158,7 +158,15 @@ export function Pagination({
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
 
-  if (total <= pageSizeOptions[0]! && !onPageSizeChange) return null;
+  /**
+   * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12/B-13 — a
+   * condição antiga (`total <= pageSizeOptions[0] && !onPageSizeChange`)
+   * só escondia a barra pra quem NÃO deixa trocar o tamanho da página;
+   * qualquer tela com `onPageSizeChange` (o caso real, Time) sempre
+   * renderizava Anterior/Próxima/"Página 1 de 1", mesmo com tudo cabendo
+   * numa página só. O critério certo é o número de páginas em si.
+   */
+  if (totalPages <= 1) return null;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 pt-3 text-sm">

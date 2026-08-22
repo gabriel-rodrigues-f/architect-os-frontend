@@ -143,14 +143,25 @@ function TeamPage() {
     });
     return hasNone ? [...ids, NO_CAPABILITY] : ids;
   });
+  /**
+   * B-13 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12) — busca
+   * por nome é aditiva ao padrão de composição por caixinha já pedido pelo
+   * usuário pras 4 dimensões categóricas acima (Status/Papel/Especialização/
+   * Capacidade): aquele pedido era sobre COMO filtrar por atributo — nunca
+   * texto livre substituindo caixinha —, não sobre "achar a Marina" entre
+   * 30 cards, que nenhuma composição de caixinhas resolve. O
+   * `DataViewToolbar` já tinha o campo pronto; só não estava conectado.
+   */
+  const [nameFilter, setNameFilter] = useState("");
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "level" | "recent">("name-asc");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  /** P1-12 — 25 como default superdimensiona times de 10–30 pessoas; 10 mostra o time inteiro sem paginar na maioria dos casos reais. */
+  const [pageSize, setPageSize] = useState(10);
   const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, roleFilter, specializationFilter, capabilityFilter, sort]);
+  }, [nameFilter, statusFilter, roleFilter, specializationFilter, capabilityFilter, sort]);
 
   /** Última sessão de mentoria por mentee — proxy de "atualização recente": não há `updatedAt` no cadastro. */
   const lastMentoringByArchitect = useMemo(() => {
@@ -202,6 +213,7 @@ function TeamPage() {
 
   const filtered = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
+    const query = nameFilter.trim().toLowerCase();
     return store.architects.filter((a) => {
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
       if (!roleFilter.includes(a.role)) return false;
@@ -212,6 +224,7 @@ function TeamPage() {
         : undefined;
       const capKey = competency?.capabilityId ?? NO_CAPABILITY;
       if (!capabilityFilter.includes(capKey)) return false;
+      if (query && !a.name.toLowerCase().includes(query)) return false;
       return true;
     });
   }, [
@@ -221,6 +234,7 @@ function TeamPage() {
     roleFilter,
     specializationFilter,
     capabilityFilter,
+    nameFilter,
     sel,
   ]);
 
@@ -273,6 +287,13 @@ function TeamPage() {
         : t("filter.multi.count", { n: selected.length });
 
   const activeFilterChips: ActiveFilterChip[] = [];
+  if (nameFilter.trim()) {
+    activeFilterChips.push({
+      key: "name",
+      label: `${t("team.search.label")}: ${nameFilter.trim()}`,
+      onRemove: () => setNameFilter(""),
+    });
+  }
   if (isAdmin && !(statusFilter.length === 1 && statusFilter[0] === "active")) {
     activeFilterChips.push({
       key: "status",
@@ -303,6 +324,7 @@ function TeamPage() {
   }
 
   const clearFilters = () => {
+    setNameFilter("");
     setStatusFilter(["active"]);
     setRoleFilter(roleOptions.map((o) => o.id));
     setSpecializationFilter(specializationOptions.map((o) => o.id));
@@ -424,6 +446,10 @@ function TeamPage() {
       ) : (
         <>
           <DataViewToolbar
+            searchValue={nameFilter}
+            onSearchChange={setNameFilter}
+            searchLabel={t("team.search.label")}
+            searchPlaceholder={t("team.search.placeholder")}
             resultCount={enrichedSorted.length}
             totalCount={store.architects.length}
             activeFilters={activeFilterChips}
@@ -744,6 +770,7 @@ function TeamPage() {
             pageSize={pageSize}
             total={enrichedSorted.length}
             onPageChange={setPage}
+            pageSizeOptions={[10, 25, 50]}
             onPageSizeChange={(n) => setPageSize(n)}
           />
         </>

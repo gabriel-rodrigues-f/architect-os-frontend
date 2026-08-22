@@ -120,6 +120,8 @@
   "dash.lead.queueEmpty": "Nothing here right now.",
   "meta.dash.title": "Dashboard — Synapse",
   "team.title": "Team",
+  "team.search.label": "Search by name",
+  "team.search.placeholder": "Architect name…",
   "team.subtitle": "Solution Architects under the technical guidance of Architecture Leadership.",
   "team.new": "Add architect",
   "team.empty.title": "No architects yet",
