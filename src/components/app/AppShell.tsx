@@ -73,6 +73,16 @@ interface NavGroup {
  * Referência (`/settings`) sai da navegação primária de vez, não só pra
  * quem não administra — era um glossário read-only competindo por espaço
  * com o resto do menu sem ganhar nada em troca.
+ *
+ * B-15 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-14) — essa
+ * mesma rota volta aqui, porque deixou de ser só glossário: desde a nona
+ * rodada ela também é a única tela onde a Política de Progressão (mínimo de
+ * capacidades qualificadas por nível de carreira) existe, e nenhum
+ * profissional consegue descobrir o critério da própria progressão sem
+ * digitar a URL de cabeça. Mesmo tratamento que `/cycles` já tinha: item
+ * visível a todos os papéis (não `adminOnly`), porque ler a política é
+ * legítimo pra qualquer um — só editar é restrito a admin, resolvido dentro
+ * da própria tela (`settings.tsx`, `CareerPolicySection`).
  */
 export const NAV_GROUPS: NavGroup[] = [
   { items: [{ to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard }] },
@@ -106,6 +116,7 @@ export const NAV_GROUPS: NavGroup[] = [
         adminOnly: true,
       },
       { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
+      { to: "/settings", labelKey: "nav.settings", icon: Settings },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },

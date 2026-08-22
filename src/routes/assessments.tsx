@@ -393,6 +393,7 @@ function AssessmentsPage() {
                                       onChange={(v) =>
                                         store.updateAssessmentItem(assessment.id, c.id, { self: v })
                                       }
+                                      ariaLabel={t("asmt.select.self", { competency: c.name })}
                                     />
                                   ) : (
                                     <LevelBadge level={item.self ?? undefined} />
@@ -408,6 +409,7 @@ function AssessmentsPage() {
                                             leader: v,
                                           })
                                         }
+                                        ariaLabel={t("asmt.select.leader", { competency: c.name })}
                                       />
                                     ) : (
                                       <LevelBadge level={item.leader ?? undefined} />
@@ -432,6 +434,7 @@ function AssessmentsPage() {
                                           final: v,
                                         })
                                       }
+                                      ariaLabel={t("asmt.select.final", { competency: c.name })}
                                     />
                                   ) : (
                                     <LevelBadge level={item.final ?? undefined} />
@@ -1249,9 +1252,18 @@ function DevelopmentSummaryForm({
  * verdade; não existe valor padrão que o componente empurre sozinho. Ver
  * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, DOM-002.
  */
-function LevelSelect({ value, onChange }: { value: Level | null; onChange: (v: Level) => void }) {
+function LevelSelect({
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  value: Level | null;
+  onChange: (v: Level) => void;
+  ariaLabel: string;
+}) {
   return (
     <select
+      aria-label={ariaLabel}
       className="w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
       value={value ?? ""}
       onChange={(e) => onChange(Number(e.target.value) as Level)}

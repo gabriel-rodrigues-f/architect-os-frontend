@@ -8,6 +8,13 @@ import { filterNavGroups, NAV_GROUPS } from "@/components/app/AppShell";
  * `/settings` da navegação primária". Antes, Matriz de Competências,
  * Usuários e Referência apareciam pra qualquer papel, mesmo sem
  * conseguir fazer nada ali.
+ *
+ * B-15 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-14) reverte só
+ * a parte de `/settings`: a rota passou a hospedar a Política de Progressão
+ * editável, e escondê-la da navegação quebrava a transparência de carreira
+ * (profissional não descobria o próprio critério de elegibilidade). Volta
+ * visível a todos os papéis — igual `/cycles` — porque ler a política é
+ * legítimo pra qualquer um; só editar continua restrito a admin.
  */
 describe("AppShell — navegação recortada por papel", () => {
   it("member não vê Matriz de Competências nem Usuários, mas continua vendo Ciclos", () => {
@@ -32,11 +39,11 @@ describe("AppShell — navegação recortada por papel", () => {
     expect(paths).toContain("/users");
   });
 
-  it("/settings não aparece na navegação primária para nenhum papel", () => {
+  it("/settings (Política de Progressão) aparece na navegação para todos os papéis", () => {
     for (const role of ["member", "lead", "admin"]) {
       const groups = filterNavGroups(NAV_GROUPS, role);
       const paths = groups.flatMap((g) => g.items.map((i) => i.to));
-      expect(paths).not.toContain("/settings");
+      expect(paths).toContain("/settings");
     }
   });
 
