@@ -109,6 +109,18 @@ describe("Time — desativar preserva histórico", () => {
     vi.unstubAllGlobals();
   });
 
+  /**
+   * REVISAO-360-FRONTEND — filtro de Status virou composição por caixinha
+   * (`MultiSelectFilter`), não mais um `<select>` de valor único: marcar
+   * "Inativos" ADICIONA à seleção (que já tinha "Ativos" marcado por
+   * padrão), em vez de trocar de valor.
+   */
+  const includeInactiveInStatusFilter = async () => {
+    await userEvent.click(screen.getByLabelText("Status"));
+    await userEvent.click(await screen.findByRole("option", { name: "Inativos" }));
+    await userEvent.keyboard("{Escape}");
+  };
+
   it("desativar tira do roster ativo, sem excluir nada, e continua acessível pelo filtro de status", async () => {
     render(
       <Wrapper>
@@ -122,10 +134,10 @@ describe("Time — desativar preserva histórico", () => {
     expect(dialogo.getByText(/nada é apagado/)).toBeTruthy();
     await userEvent.click(dialogo.getByRole("button", { name: "Desativar" }));
 
-    // some do roster ativo — o filtro de Status padrão é "Ativos"...
+    // some do roster ativo — o filtro de Status padrão é só "Ativos"...
     await waitFor(() => expect(screen.queryByText("Ana Martins")).toBeNull());
-    // ...mas continua acessível trocando pra "Inativos", com opção de reativar.
-    await userEvent.selectOptions(screen.getByLabelText("Status"), "inactive");
+    // ...mas continua acessível incluindo "Inativos" na seleção, com opção de reativar.
+    await includeInactiveInStatusFilter();
     expect(await screen.findByText("Ana Martins")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Reativar/ })).toBeTruthy();
 
@@ -146,14 +158,13 @@ describe("Time — desativar preserva histórico", () => {
     await userEvent.click(dialogo.getByRole("button", { name: "Desativar" }));
     await waitFor(() => expect(screen.queryByText("Ana Martins")).toBeNull());
 
-    await userEvent.selectOptions(screen.getByLabelText("Status"), "inactive");
+    await includeInactiveInStatusFilter();
     await userEvent.click(await screen.findByRole("button", { name: /Reativar/ }));
 
-    // reativada, some da visão "Inativos" sem precisar recarregar nada...
+    // reativada: já não tem mais o botão "Reativar" — "Ativos" já estava
+    // marcado o tempo todo, então ela continua visível na mesma lista.
     await waitFor(() => expect(screen.queryByRole("button", { name: /Reativar/ })).toBeNull());
-    // ...e volta a aparecer assim que o filtro volta pra "Ativos".
-    await userEvent.selectOptions(screen.getByLabelText("Status"), "active");
-    expect(await screen.findByText("Ana Martins")).toBeTruthy();
+    expect(screen.getByText("Ana Martins")).toBeTruthy();
 
     const patches = fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH");
     expect(JSON.parse(String((patches[1]?.[1] as RequestInit).body))).toEqual({ active: true });

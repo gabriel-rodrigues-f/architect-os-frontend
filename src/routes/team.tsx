@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { LayoutGrid, Pencil, Table2, TrendingUp, UserCheck, UserX } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -13,6 +13,10 @@ import {
 } from "@/components/app/DataView";
 import { GapBadge, Initials, LevelBadge, PageHeader } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import {
+  MultiSelectFilter,
+  type MultiSelectFilterOption,
+} from "@/components/app/MultiSelectFilter";
 import { SpecializationCombobox } from "@/components/app/SpecializationCombobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,8 +38,9 @@ import { useSelectors, useStore } from "@/lib/store";
 import { byName, slug } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
-const ALL_OPTION = "__all__";
-const NO_LEAD_OPTION = "__none__";
+/** Pseudo-ids pra quem não tem especialização/capacidade derivável — nunca somem do filtro por não ter um id real de catálogo. */
+const NO_SPECIALIZATION = "__no-specialization__";
+const NO_CAPABILITY = "__no-capability__";
 
 export const Route = createFileRoute("/team")({
   head: () => ({
@@ -77,37 +82,6 @@ const emptyForm = (): ArchitectForm => ({
   leadUserId: "",
 });
 
-/** Select nativo com o mesmo visual do seletor de ordenação do `DataViewToolbar` — um por filtro de domínio. */
-function FilterSelect({
-  id,
-  label,
-  value,
-  onChange,
-  children,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-xs text-muted-foreground" htmlFor={id}>
-        {label}
-      </label>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
-      >
-        {children}
-      </select>
-    </div>
-  );
-}
-
 function TeamPage() {
   const store = useStore();
   const { t } = useI18n();
@@ -133,25 +107,50 @@ function TeamPage() {
   /**
    * REVISAO-360-FRONTEND, Seção 23 — lista única e filtrável (cards ou
    * tabela), em vez de "arquitetos ativos" + uma segunda seção separada de
-   * inativos. Não-admin nunca alcança "Inativos"/"Todos": o status é
-   * travado em "active" pra quem não tem a visão administrativa, mesmo que
-   * o estado interno diga outra coisa.
+   * inativos. Não-admin nunca alcança "Inativos": o status fica travado em
+   * "active" pra quem não tem a visão administrativa, mesmo que o estado
+   * interno diga outra coisa.
+   *
+   * Pedido do usuário revisando o app rodando: filtro é composição por
+   * caixinha (MultiSelectFilter), nunca busca por texto — marcar um valor,
+   * vários, ou "selecionar tudo"/"remover tudo" de uma vez, mesmo padrão do
+   * `ArchitectFilter`. Cada filtro nasce com TUDO selecionado (nenhuma
+   * filtragem de fato) exceto Status, que nasce só em "Ativos" — a mesma
+   * visão padrão de antes desta seção existir. Sem filtro de Tech Lead: só
+   * existe um Tech Lead no time hoje, então filtrar por ele não distingue
+   * nada.
    */
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
-  const [roleFilter, setRoleFilter] = useState<string>(ALL_OPTION);
-  const [leadFilter, setLeadFilter] = useState<string>(ALL_OPTION);
-  const [specializationFilter, setSpecializationFilter] = useState<string>(ALL_OPTION);
-  const [capabilityFilter, setCapabilityFilter] = useState<string>(ALL_OPTION);
+  const [statusFilter, setStatusFilter] = useState<string[]>(["active"]);
+  const [roleFilter, setRoleFilter] = useState<string[]>(() => [...ROLES]);
+  const [specializationFilter, setSpecializationFilter] = useState<string[]>(() => {
+    const used = new Set(
+      store.architects
+        .map((a) => a.primarySpecializationCompetencyId)
+        .filter((id): id is string => !!id),
+    );
+    const ids = [...used];
+    if (store.architects.some((a) => !a.primarySpecializationCompetencyId))
+      ids.push(NO_SPECIALIZATION);
+    return ids;
+  });
+  const [capabilityFilter, setCapabilityFilter] = useState<string[]>(() => {
+    const ids = store.capabilities.map((c) => c.id);
+    const hasNone = store.architects.some((a) => {
+      const competency = a.primarySpecializationCompetencyId
+        ? sel.competencyById(a.primarySpecializationCompetencyId)
+        : undefined;
+      return !competency;
+    });
+    return hasNone ? [...ids, NO_CAPABILITY] : ids;
+  });
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "level" | "recent">("name-asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
-  const effectiveStatusFilter = isAdmin ? statusFilter : "active";
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, roleFilter, leadFilter, specializationFilter, capabilityFilter, sort]);
+  }, [statusFilter, roleFilter, specializationFilter, capabilityFilter, sort]);
 
   /** Última sessão de mentoria por mentee — proxy de "atualização recente": não há `updatedAt` no cadastro. */
   const lastMentoringByArchitect = useMemo(() => {
@@ -163,52 +162,65 @@ function TeamPage() {
     return map;
   }, [store.mentoringSessions]);
 
+  const statusOptions: MultiSelectFilterOption[] = [
+    { id: "active", label: t("team.filter.status.active") },
+    { id: "inactive", label: t("team.filter.status.inactive") },
+  ];
+  const roleOptions: MultiSelectFilterOption[] = ROLES.map((r) => ({ id: r, label: r }));
+
   const specializationOptions = useMemo(() => {
-    const ids = new Set(
+    const used = new Set(
       store.architects
         .map((a) => a.primarySpecializationCompetencyId)
         .filter((id): id is string => !!id),
     );
-    return [...ids]
+    const options: MultiSelectFilterOption[] = [...used]
       .map((id) => sel.competencyById(id))
       .filter((c): c is NonNullable<ReturnType<typeof sel.competencyById>> => !!c)
-      .sort(byName);
-  }, [store.architects, sel]);
+      .sort(byName)
+      .map((c) => ({ id: c.id, label: c.name }));
+    if (store.architects.some((a) => !a.primarySpecializationCompetencyId)) {
+      options.push({ id: NO_SPECIALIZATION, label: t("team.filter.specialization.none") });
+    }
+    return options;
+  }, [store.architects, sel, t]);
+
+  const capabilityOptions = useMemo(() => {
+    const options: MultiSelectFilterOption[] = store.capabilities.map((c) => ({
+      id: c.id,
+      label: c.name,
+    }));
+    const hasNone = store.architects.some((a) => {
+      const competency = a.primarySpecializationCompetencyId
+        ? sel.competencyById(a.primarySpecializationCompetencyId)
+        : undefined;
+      return !competency;
+    });
+    if (hasNone) options.push({ id: NO_CAPABILITY, label: t("team.filter.capability.none") });
+    return options;
+  }, [store.capabilities, store.architects, sel, t]);
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const effectiveStatus = isAdmin ? statusFilter : ["active"];
     return store.architects.filter((a) => {
-      if (effectiveStatusFilter === "active" && !a.active) return false;
-      if (effectiveStatusFilter === "inactive" && a.active) return false;
-      if (roleFilter !== ALL_OPTION && a.role !== roleFilter) return false;
-      if (isAdmin && leadFilter !== ALL_OPTION) {
-        if (leadFilter === NO_LEAD_OPTION ? !!a.leadUserId : a.leadUserId !== leadFilter)
-          return false;
-      }
-      if (
-        specializationFilter !== ALL_OPTION &&
-        a.primarySpecializationCompetencyId !== specializationFilter
-      ) {
-        return false;
-      }
-      if (capabilityFilter !== ALL_OPTION) {
-        const competency = a.primarySpecializationCompetencyId
-          ? sel.competencyById(a.primarySpecializationCompetencyId)
-          : undefined;
-        if (competency?.capabilityId !== capabilityFilter) return false;
-      }
-      if (term && !`${a.name} ${a.email}`.toLowerCase().includes(term)) return false;
+      if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
+      if (!roleFilter.includes(a.role)) return false;
+      const specKey = a.primarySpecializationCompetencyId ?? NO_SPECIALIZATION;
+      if (!specializationFilter.includes(specKey)) return false;
+      const competency = a.primarySpecializationCompetencyId
+        ? sel.competencyById(a.primarySpecializationCompetencyId)
+        : undefined;
+      const capKey = competency?.capabilityId ?? NO_CAPABILITY;
+      if (!capabilityFilter.includes(capKey)) return false;
       return true;
     });
   }, [
     store.architects,
-    effectiveStatusFilter,
-    roleFilter,
     isAdmin,
-    leadFilter,
+    statusFilter,
+    roleFilter,
     specializationFilter,
     capabilityFilter,
-    search,
     sel,
   ]);
 
@@ -252,56 +264,49 @@ function TeamPage() {
     { value: "recent", label: t("team.sort.recent") },
   ];
 
+  /** Resumo genérico pra chip de filtro: 0 = "ninguém", 1 = o próprio rótulo, N = contagem. */
+  const summarize = (selected: string[], options: MultiSelectFilterOption[]) =>
+    selected.length === 0
+      ? t("team.filter.chip.none")
+      : selected.length === 1
+        ? (options.find((o) => o.id === selected[0])?.label ?? selected[0]!)
+        : t("filter.multi.count", { n: selected.length });
+
   const activeFilterChips: ActiveFilterChip[] = [];
-  if (isAdmin && statusFilter !== "active") {
+  if (isAdmin && !(statusFilter.length === 1 && statusFilter[0] === "active")) {
     activeFilterChips.push({
       key: "status",
-      label: `${t("team.filter.status")}: ${
-        statusFilter === "inactive" ? t("team.filter.status.inactive") : t("team.filter.status.all")
-      }`,
-      onRemove: () => setStatusFilter("active"),
+      label: `${t("team.filter.status")}: ${summarize(statusFilter, statusOptions)}`,
+      onRemove: () => setStatusFilter(["active"]),
     });
   }
-  if (roleFilter !== ALL_OPTION) {
+  if (roleFilter.length !== roleOptions.length) {
     activeFilterChips.push({
       key: "role",
-      label: roleFilter,
-      onRemove: () => setRoleFilter(ALL_OPTION),
+      label: `${t("team.filter.role")}: ${summarize(roleFilter, roleOptions)}`,
+      onRemove: () => setRoleFilter(roleOptions.map((o) => o.id)),
     });
   }
-  if (isAdmin && leadFilter !== ALL_OPTION) {
-    const label =
-      leadFilter === NO_LEAD_OPTION
-        ? t("team.filter.lead.none")
-        : (leadOptions.find((u) => u.id === leadFilter)?.name ?? leadFilter);
-    activeFilterChips.push({
-      key: "lead",
-      label: `${t("team.filter.lead")}: ${label}`,
-      onRemove: () => setLeadFilter(ALL_OPTION),
-    });
-  }
-  if (specializationFilter !== ALL_OPTION) {
+  if (specializationFilter.length !== specializationOptions.length) {
     activeFilterChips.push({
       key: "spec",
-      label: sel.competencyById(specializationFilter)?.name ?? specializationFilter,
-      onRemove: () => setSpecializationFilter(ALL_OPTION),
+      label: `${t("team.filter.specialization")}: ${summarize(specializationFilter, specializationOptions)}`,
+      onRemove: () => setSpecializationFilter(specializationOptions.map((o) => o.id)),
     });
   }
-  if (capabilityFilter !== ALL_OPTION) {
+  if (capabilityFilter.length !== capabilityOptions.length) {
     activeFilterChips.push({
       key: "cap",
-      label: store.capabilities.find((c) => c.id === capabilityFilter)?.name ?? capabilityFilter,
-      onRemove: () => setCapabilityFilter(ALL_OPTION),
+      label: `${t("team.filter.capability")}: ${summarize(capabilityFilter, capabilityOptions)}`,
+      onRemove: () => setCapabilityFilter(capabilityOptions.map((o) => o.id)),
     });
   }
 
   const clearFilters = () => {
-    setSearch("");
-    setStatusFilter("active");
-    setRoleFilter(ALL_OPTION);
-    setLeadFilter(ALL_OPTION);
-    setSpecializationFilter(ALL_OPTION);
-    setCapabilityFilter(ALL_OPTION);
+    setStatusFilter(["active"]);
+    setRoleFilter(roleOptions.map((o) => o.id));
+    setSpecializationFilter(specializationOptions.map((o) => o.id));
+    setCapabilityFilter(capabilityOptions.map((o) => o.id));
     setSort("name-asc");
   };
 
@@ -419,9 +424,6 @@ function TeamPage() {
       ) : (
         <>
           <DataViewToolbar
-            searchValue={search}
-            onSearchChange={setSearch}
-            searchPlaceholder={t("team.filter.searchPlaceholder")}
             resultCount={enrichedSorted.length}
             totalCount={store.architects.length}
             activeFilters={activeFilterChips}
@@ -431,74 +433,49 @@ function TeamPage() {
             onSortChange={(v) => setSort(v as typeof sort)}
           >
             {isAdmin && (
-              <FilterSelect
+              <MultiSelectFilter
                 id="team-filter-status"
                 label={t("team.filter.status")}
-                value={statusFilter}
-                onChange={(v) => setStatusFilter(v as typeof statusFilter)}
-              >
-                <option value="active">{t("team.filter.status.active")}</option>
-                <option value="inactive">{t("team.filter.status.inactive")}</option>
-                <option value="all">{t("team.filter.status.all")}</option>
-              </FilterSelect>
+                options={statusOptions}
+                selected={statusFilter}
+                onChange={setStatusFilter}
+                selectAllLabel={t("team.filter.status.all")}
+                allSummaryLabel={t("team.filter.status.all")}
+                noneSummaryLabel={t("team.filter.chip.none")}
+              />
             )}
-            <FilterSelect
+            <MultiSelectFilter
               id="team-filter-role"
               label={t("team.filter.role")}
-              value={roleFilter}
+              options={roleOptions}
+              selected={roleFilter}
               onChange={setRoleFilter}
-            >
-              <option value={ALL_OPTION}>{t("team.filter.role.all")}</option>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </FilterSelect>
-            {isAdmin && leadOptions.length > 0 && (
-              <FilterSelect
-                id="team-filter-lead"
-                label={t("team.filter.lead")}
-                value={leadFilter}
-                onChange={setLeadFilter}
-              >
-                <option value={ALL_OPTION}>{t("team.filter.lead.all")}</option>
-                <option value={NO_LEAD_OPTION}>{t("team.filter.lead.none")}</option>
-                {leadOptions.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </FilterSelect>
-            )}
+              selectAllLabel={t("team.filter.role.all")}
+              allSummaryLabel={t("team.filter.role.all")}
+              noneSummaryLabel={t("team.filter.chip.none")}
+            />
             {specializationOptions.length > 0 && (
-              <FilterSelect
+              <MultiSelectFilter
                 id="team-filter-specialization"
                 label={t("team.filter.specialization")}
-                value={specializationFilter}
+                options={specializationOptions}
+                selected={specializationFilter}
                 onChange={setSpecializationFilter}
-              >
-                <option value={ALL_OPTION}>{t("team.filter.specialization.all")}</option>
-                {specializationOptions.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </FilterSelect>
+                selectAllLabel={t("team.filter.specialization.all")}
+                allSummaryLabel={t("team.filter.specialization.all")}
+                noneSummaryLabel={t("team.filter.chip.none")}
+              />
             )}
-            <FilterSelect
+            <MultiSelectFilter
               id="team-filter-capability"
               label={t("team.filter.capability")}
-              value={capabilityFilter}
+              options={capabilityOptions}
+              selected={capabilityFilter}
               onChange={setCapabilityFilter}
-            >
-              <option value={ALL_OPTION}>{t("team.filter.capability.all")}</option>
-              {store.capabilities.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </FilterSelect>
+              selectAllLabel={t("team.filter.capability.all")}
+              allSummaryLabel={t("team.filter.capability.all")}
+              noneSummaryLabel={t("team.filter.chip.none")}
+            />
           </DataViewToolbar>
 
           <div className="mb-3 flex justify-end">
