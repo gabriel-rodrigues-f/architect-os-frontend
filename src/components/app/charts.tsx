@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import { useState } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -129,6 +130,61 @@ function DataTable({
   );
 }
 
+/**
+ * R2-ESC-03 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — um radar com ~30 eixos
+ * (uma capacidade grande, ou várias combinadas) vira um emaranhado
+ * ilegível: linhas finas demais, rótulos sobrepostos, nenhum padrão
+ * visível. Corta para os `MAX_RADAR_AXES` eixos de maior relevância
+ * (critério varia por chamador — `relevance`), preservando a ORDEM
+ * original entre os selecionados (o objetivo é reduzir ruído, não
+ * embaralhar o que sobrou). A tabela acessível (`ChartFrame`) nunca é
+ * cortada — só o desenho.
+ */
+const MAX_RADAR_AXES = 12;
+
+function topByRelevance<T>(data: readonly T[], relevance: (item: T) => number, max: number): T[] {
+  if (data.length <= max) return [...data];
+  const ranked = data
+    .map((item, index) => ({ item, index, score: relevance(item) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max);
+  const keep = new Set(ranked.map((r) => r.index));
+  return data.filter((_, index) => keep.has(index));
+}
+
+/**
+ * Aviso visível (não só na tabela sr-only) + alternância "mostrar todos" —
+ * sem isto, quem só olha o gráfico nunca sabe que 18 eixos ficaram de fora.
+ */
+function RadarAxisNotice({
+  shown,
+  total,
+  showAll,
+  onToggle,
+}: {
+  shown: number;
+  total: number;
+  showAll: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useI18n();
+  if (total <= MAX_RADAR_AXES) return null;
+  return (
+    <p className="mb-2 text-xs text-muted-foreground">
+      {showAll
+        ? t("chart.radar.showingAll", { total })
+        : t("chart.radar.showingTopN", { shown, total })}{" "}
+      <button
+        type="button"
+        className="underline underline-offset-2 hover:no-underline"
+        onClick={onToggle}
+      >
+        {showAll ? t("chart.radar.showTopOnly") : t("chart.radar.showAll")}
+      </button>
+    </p>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Radar por capacidade                                                   */
 /* ------------------------------------------------------------------ */
@@ -144,6 +200,10 @@ export interface RadarPoint {
 
 export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; height?: number }) {
   const { t } = useI18n();
+  const [showAll, setShowAll] = useState(false);
+  const visibleData = showAll
+    ? data
+    : topByRelevance(data, (d) => Math.abs(d.alvo - d.atual), MAX_RADAR_AXES);
   const semMovimento = useReducedMotion();
 
   const atual = t("chart.series.current");
@@ -152,64 +212,72 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
   const withCoverage = data.some((d) => d.covered !== undefined);
 
   return (
-    <ChartFrame
-      label={t("chart.radar.label")}
-      height={height}
-      isEmpty={data.length === 0}
-      emptyMessage={t("chart.empty.radar")}
-      dataTable={
-        <DataTable
-          caption={t("chart.radar.label")}
-          columns={
-            withCoverage
-              ? [t("chart.axis.capability"), atual, alvo, t("chart.radar.coverageColumn")]
-              : [t("chart.axis.capability"), atual, alvo]
-          }
-          rows={data.map((d) =>
-            withCoverage
-              ? [d.capability, d.atual, d.alvo, `${d.covered ?? 0}/${d.total ?? 0}`]
-              : [d.capability, d.atual, d.alvo],
-          )}
-        />
-      }
-    >
-      <RadarChart data={data} outerRadius="72%">
-        <PolarGrid stroke={CHART_INK.grid} />
-        <PolarAngleAxis dataKey="capability" tick={axisTick} />
-        {/*
+    <>
+      <RadarAxisNotice
+        shown={visibleData.length}
+        total={data.length}
+        showAll={showAll}
+        onToggle={() => setShowAll((v) => !v)}
+      />
+      <ChartFrame
+        label={t("chart.radar.label")}
+        height={height}
+        isEmpty={data.length === 0}
+        emptyMessage={t("chart.empty.radar")}
+        dataTable={
+          <DataTable
+            caption={t("chart.radar.label")}
+            columns={
+              withCoverage
+                ? [t("chart.axis.capability"), atual, alvo, t("chart.radar.coverageColumn")]
+                : [t("chart.axis.capability"), atual, alvo]
+            }
+            rows={data.map((d) =>
+              withCoverage
+                ? [d.capability, d.atual, d.alvo, `${d.covered ?? 0}/${d.total ?? 0}`]
+                : [d.capability, d.atual, d.alvo],
+            )}
+          />
+        }
+      >
+        <RadarChart data={visibleData} outerRadius="72%">
+          <PolarGrid stroke={CHART_INK.grid} />
+          <PolarAngleAxis dataKey="capability" tick={axisTick} />
+          {/*
           Os rótulos do eixo radial saem: numeravam 0..5 por cima do polígono,
           competindo com o dado. A escala continua legível pelos anéis da grade
           e pelo tooltip, e a tabela equivalente traz o número exato.
         */}
-        <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
-        {/*
+          <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
+          {/*
           O esperado vem primeiro, para o atual desenhar por cima: é o valor
           real que se quer ler, a referência é o fundo. Tracejado e quase
           acromático pela mesma razão — e para que a distinção sobreviva à
           impressão em preto e branco.
         */}
-        <Radar
-          name={alvo}
-          dataKey="alvo"
-          stroke={CHART_INK.reference}
-          strokeDasharray="4 3"
-          fill={CHART_INK.reference}
-          fillOpacity={0.08}
-          isAnimationActive={!semMovimento}
-        />
-        <Radar
-          name={atual}
-          dataKey="atual"
-          stroke="var(--chart-1)"
-          strokeWidth={2}
-          fill="var(--chart-1)"
-          fillOpacity={0.28}
-          isAnimationActive={!semMovimento}
-        />
-        <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
-        <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: CHART_INK.surfaceText }} />
-      </RadarChart>
-    </ChartFrame>
+          <Radar
+            name={alvo}
+            dataKey="alvo"
+            stroke={CHART_INK.reference}
+            strokeDasharray="4 3"
+            fill={CHART_INK.reference}
+            fillOpacity={0.08}
+            isAnimationActive={!semMovimento}
+          />
+          <Radar
+            name={atual}
+            dataKey="atual"
+            stroke="var(--chart-1)"
+            strokeWidth={2}
+            fill="var(--chart-1)"
+            fillOpacity={0.28}
+            isAnimationActive={!semMovimento}
+          />
+          <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
+          <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: CHART_INK.surfaceText }} />
+        </RadarChart>
+      </ChartFrame>
+    </>
   );
 }
 
@@ -226,6 +294,13 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
  * exatamente o caso que `EvolutionSeries`+`ChartPalette` já resolvem para
  * `EvolutionLine`, reaproveitado aqui para `Radar` em vez de `Line`.
  */
+/** Variância populacional dos valores numéricos — proxy de "o quanto as pessoas divergem nesta capacidade". */
+function variance(values: readonly number[]): number {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  return values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+}
+
 export function ComparisonRadar({
   data,
   series,
@@ -237,52 +312,70 @@ export function ComparisonRadar({
   height?: number;
 }) {
   const { t } = useI18n();
+  const [showAll, setShowAll] = useState(false);
+  const seriesKeys = series.map((s) => s.key);
+  const visibleData = showAll
+    ? data
+    : topByRelevance(
+        data,
+        (row) =>
+          variance(seriesKeys.map((k) => row[k]).filter((v): v is number => typeof v === "number")),
+        MAX_RADAR_AXES,
+      );
   const semMovimento = useReducedMotion();
 
   const palette = new ChartPalette();
   const estilos = palette.forKeys(series.map((s) => s.key));
 
   return (
-    <ChartFrame
-      label={t("chart.comparison.label")}
-      height={height}
-      isEmpty={data.length === 0 || series.length === 0}
-      emptyMessage={t("chart.empty.comparison")}
-      dataTable={
-        <DataTable
-          caption={t("chart.comparison.label")}
-          columns={[t("chart.axis.capability"), ...series.map((s) => s.label)]}
-          rows={data.map((row) => [
-            row["capability"] ?? "—",
-            ...series.map((s) => row[s.key] ?? "—"),
-          ])}
-        />
-      }
-    >
-      <RadarChart data={data} outerRadius="72%">
-        <PolarGrid stroke={CHART_INK.grid} />
-        <PolarAngleAxis dataKey="capability" tick={axisTick} />
-        <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
-        {series.map((s, i) => {
-          const estilo = estilos[i] ?? { color: "var(--chart-1)" };
-          return (
-            <Radar
-              key={s.key}
-              name={s.label}
-              dataKey={s.key}
-              stroke={estilo.color}
-              strokeWidth={2}
-              {...(estilo.dash ? { strokeDasharray: estilo.dash } : {})}
-              fill={estilo.color}
-              fillOpacity={0.12}
-              isAnimationActive={!semMovimento}
-            />
-          );
-        })}
-        <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
-        <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: CHART_INK.surfaceText }} />
-      </RadarChart>
-    </ChartFrame>
+    <>
+      <RadarAxisNotice
+        shown={visibleData.length}
+        total={data.length}
+        showAll={showAll}
+        onToggle={() => setShowAll((v) => !v)}
+      />
+      <ChartFrame
+        label={t("chart.comparison.label")}
+        height={height}
+        isEmpty={data.length === 0 || series.length === 0}
+        emptyMessage={t("chart.empty.comparison")}
+        dataTable={
+          <DataTable
+            caption={t("chart.comparison.label")}
+            columns={[t("chart.axis.capability"), ...series.map((s) => s.label)]}
+            rows={data.map((row) => [
+              row["capability"] ?? "—",
+              ...series.map((s) => row[s.key] ?? "—"),
+            ])}
+          />
+        }
+      >
+        <RadarChart data={visibleData} outerRadius="72%">
+          <PolarGrid stroke={CHART_INK.grid} />
+          <PolarAngleAxis dataKey="capability" tick={axisTick} />
+          <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
+          {series.map((s, i) => {
+            const estilo = estilos[i] ?? { color: "var(--chart-1)" };
+            return (
+              <Radar
+                key={s.key}
+                name={s.label}
+                dataKey={s.key}
+                stroke={estilo.color}
+                strokeWidth={2}
+                {...(estilo.dash ? { strokeDasharray: estilo.dash } : {})}
+                fill={estilo.color}
+                fillOpacity={0.12}
+                isAnimationActive={!semMovimento}
+              />
+            );
+          })}
+          <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
+          <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: CHART_INK.surfaceText }} />
+        </RadarChart>
+      </ChartFrame>
+    </>
   );
 }
 
