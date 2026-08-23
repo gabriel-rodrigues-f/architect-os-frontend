@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { GapTable, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
 import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors } from "@/lib/store";
+import { exportTeamReportCsv } from "@/lib/team-report-csv";
 
 /**
  * Apontado ao vivo: Mapa de Calor + Tabela de Lacunas de Progressão viviam
@@ -35,6 +39,41 @@ function ProgressionPage() {
   const sel = useSelectors();
   const { store, selected, setSelected, architects, blocking, opportunity, mastery, scopeLabel } =
     useGapAnalysisData();
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const reportInput = () => ({
+    scopeLabel,
+    generatedAt: new Date(),
+    architects,
+    capabilities: store.capabilities,
+    capabilityAveragesFor: sel.capabilityAverages,
+    blocking,
+    opportunity,
+    mastery,
+  });
+
+  const exportCsv = () => {
+    try {
+      exportTeamReportCsv(t, reportInput());
+    } catch {
+      toast.error(t("gap.export.error"));
+    }
+  };
+
+  const exportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      // `jspdf`/`jspdf-autotable` arrastam `html2canvas`/`canvg` (~600kB) —
+      // import() dinâmico mantém esse peso fora do chunk de `/progression`,
+      // baixado só quando alguém de fato clica em exportar.
+      const { exportTeamReportPdf } = await import("@/lib/team-report-pdf");
+      await exportTeamReportPdf(t, reportInput());
+    } catch {
+      toast.error(t("gap.export.error"));
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   return (
     <>
@@ -43,11 +82,29 @@ function ProgressionPage() {
         title={t("progression.title")}
         description={t("progression.subtitle")}
         actions={
-          <ArchitectFilter
-            architects={store.architects}
-            selected={selected}
-            onChange={setSelected}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ArchitectFilter
+              architects={store.architects}
+              selected={selected}
+              onChange={setSelected}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={architects.length === 0}
+              onClick={exportCsv}
+            >
+              {t("gap.export.csv")}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={architects.length === 0 || exportingPdf}
+              onClick={() => void exportPdf()}
+            >
+              {exportingPdf ? t("gap.export.generating") : t("gap.export.pdf")}
+            </Button>
+          </div>
         }
       />
 
