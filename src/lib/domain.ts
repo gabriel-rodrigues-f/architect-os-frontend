@@ -45,7 +45,8 @@ export const ROLES: RoleName[] = [
 ];
 
 /** Rótulo curto para cabeçalhos de tabela: "Nível I", "Nível II", "Nível III". */
-export const roleShort = (role: RoleName): string =>
+/** Aceita `string` (não só `RoleName`) — `CareerLevel.name` já nasce com o mesmo texto, sem o tipo. */
+export const roleShort = (role: string): string =>
   `Nível ${role.replace("Arquiteto de Soluções ", "")}`;
 
 /**
@@ -105,8 +106,14 @@ export interface Competency {
   name: string;
   capabilityId: string;
   requirementType: RequirementType;
-  /** Role Competency Profile: expected level per role */
-  expected: Record<RoleName, Level>;
+  /**
+   * Role Competency Profile: nível esperado por NÍVEL DE CARREIRA — chave é
+   * `CareerLevel.id` (ex. `arquiteto-de-solucoes-i`), não mais o texto de
+   * `RoleName`. B-38 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) —
+   * a régua de carreira é dado (`career_levels`), não união hardcoded;
+   * chaves não são garantidas presentes (nível sem curadoria ainda).
+   */
+  expected: Record<string, Level>;
   /** Fora do catálogo ativo — não entra em novo assessment nem em opção nova de PDI/trilha/evidência. */
   active: boolean;
 }

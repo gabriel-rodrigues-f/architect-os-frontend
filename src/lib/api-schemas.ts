@@ -48,24 +48,20 @@ const capability = z.object({
 });
 
 /**
- * `z.record(roleName, level)` infere `Partial<Record<RoleName, Level>>` —
- * zod não garante as 3 chaves presentes a partir de um schema de chave
- * enum. `Competency.expected` (`domain.ts`) é `Record<RoleName, Level>`
- * (as 3 sempre presentes); um objeto com as chaves explícitas é o que
- * produz o tipo certo.
+ * B-38 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) — chave é
+ * `career_levels.id` (dado), não mais `RoleName`: `expected` não garante
+ * mais as 3 chaves fixas presentes (`Competency.expected` em `domain.ts`
+ * já é `Record<string, Level>`), então um record dinâmico é o schema
+ * certo, não mais um objeto de 3 chaves enumeradas à mão.
  */
-const roleLevelMap = z.object({
-  "Arquiteto de Soluções I": level,
-  "Arquiteto de Soluções II": level,
-  "Arquiteto de Soluções III": level,
-});
+const expectedLevelMap = z.record(z.string(), level);
 
 const competency = z.object({
   id: z.string(),
   name: z.string(),
   capabilityId: z.string(),
   requirementType,
-  expected: roleLevelMap,
+  expected: expectedLevelMap,
   active: z.boolean(),
 });
 

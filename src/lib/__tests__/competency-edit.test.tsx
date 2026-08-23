@@ -144,9 +144,9 @@ describe("Matriz de Competências — edição", () => {
       const body = JSON.parse(String(patchCall?.[1]?.body)) as {
         expected?: Record<string, number>;
       };
-      expect(body.expected?.["Arquiteto de Soluções I"]).toBe(1);
-      expect(body.expected?.["Arquiteto de Soluções II"]).toBe(4);
-      expect(body.expected?.["Arquiteto de Soluções III"]).toBe(5);
+      expect(body.expected?.["arquiteto-de-solucoes-i"]).toBe(1);
+      expect(body.expected?.["arquiteto-de-solucoes-ii"]).toBe(4);
+      expect(body.expected?.["arquiteto-de-solucoes-iii"]).toBe(5);
     });
   });
 

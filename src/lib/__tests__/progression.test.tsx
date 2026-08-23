@@ -46,9 +46,9 @@ const restrictiveCompetency: Competency = {
   capabilityId: "cloud",
   requirementType: "RESTRICTIVE",
   expected: {
-    "Arquiteto de Soluções I": 2,
-    "Arquiteto de Soluções II": 4,
-    "Arquiteto de Soluções III": 5,
+    "arquiteto-de-solucoes-i": 2,
+    "arquiteto-de-solucoes-ii": 4,
+    "arquiteto-de-solucoes-iii": 5,
   },
   active: true,
 };

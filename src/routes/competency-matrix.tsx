@@ -18,13 +18,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   LEVELS,
-  ROLES,
   roleShort,
+  type CareerLevel,
   type Competency,
   type Capability,
   type Level,
   type RequirementType,
-  type RoleName,
 } from "@/lib/domain";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
@@ -50,8 +49,20 @@ export const Route = createFileRoute("/competency-matrix")({
   component: MatrixPage,
 });
 
+/**
+ * B-38 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) — a matriz
+ * iterava `ROLES` (união hardcoded de 3 cargos) para renderizar/editar
+ * `Competency.expected`; agora itera os níveis de carreira REAIS
+ * (`store.careerLevels`, já data-driven — `repositories/career.ts` no
+ * backend), ordenados por `rank` (I → II → III), indexando `expected` por
+ * `CareerLevel.id`, não mais pelo texto do cargo.
+ */
+const byRank = (levels: readonly CareerLevel[]): CareerLevel[] =>
+  [...levels].sort((a, b) => a.rank - b.rank);
+
 function MatrixPage() {
   const store = useStore();
+  const careerLevels = byRank(store.careerLevels);
   /** Catálogo mestre é administrativo — backend já recusa o resto. */
   const isAdmin = useCurrentUser().role === "admin";
   const [newCapability, setNewCapability] = useState("");
@@ -329,9 +340,9 @@ function MatrixPage() {
                             <th scope="col" className="py-2">
                               {t("col.competency")}
                             </th>
-                            {ROLES.map((r) => (
-                              <th key={r} scope="col" className="py-2 text-center">
-                                {roleShort(r)}
+                            {careerLevels.map((cl) => (
+                              <th key={cl.id} scope="col" className="py-2 text-center">
+                                {roleShort(cl.name)}
                               </th>
                             ))}
                             <th scope="col" />
@@ -351,9 +362,9 @@ function MatrixPage() {
                                   </Badge>
                                 )}
                               </td>
-                              {ROLES.map((r) => (
-                                <td key={r} className="py-2 text-center">
-                                  <LevelBadge level={c.expected[r]} />
+                              {careerLevels.map((cl) => (
+                                <td key={cl.id} className="py-2 text-center">
+                                  <LevelBadge level={c.expected[cl.id]} />
                                 </td>
                               ))}
                               <td className="py-2 text-right">
@@ -541,15 +552,16 @@ function CompetencyCreateDialog({
   onClose: () => void;
 }) {
   const store = useStore();
+  const careerLevels = byRank(store.careerLevels);
   const { t } = useI18n();
   const restrictiveFull = capability.curation.restrictiveCompetencyCount >= 3;
   const nonRestrictiveFull = capability.curation.nonRestrictiveCompetencyCount >= 3;
   const [name, setName] = useState("");
-  const [levels, setLevels] = useState<Partial<Record<RoleName, Level>>>({});
+  const [levels, setLevels] = useState<Partial<Record<string, Level>>>({});
   const [requirementType, setRequirementType] = useState<RequirementType>(
     nonRestrictiveFull ? "RESTRICTIVE" : "NON_RESTRICTIVE",
   );
-  const canSave = name.trim().length > 0 && ROLES.every((r) => levels[r] !== undefined);
+  const canSave = name.trim().length > 0 && careerLevels.every((cl) => levels[cl.id] !== undefined);
 
   const save = async () => {
     if (!canSave) return;
@@ -560,7 +572,7 @@ function CompetencyCreateDialog({
         name: name.trim(),
         capabilityId: capability.id,
         requirementType,
-        expected: levels as Record<RoleName, Level>,
+        expected: levels as Record<string, Level>,
         active: true,
       });
       onClose();
@@ -591,17 +603,17 @@ function CompetencyCreateDialog({
                 aplicado no diálogo "Editar competência" (R10-UX-001);
                 este de criação ainda usava grid-cols-3 rígido. */}
             <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {ROLES.map((r) => (
-                <div key={r} className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">{roleShort(r)}</span>
+              {careerLevels.map((cl) => (
+                <div key={cl.id} className="min-w-0">
+                  <span className="block text-xs text-muted-foreground">{roleShort(cl.name)}</span>
                   <select
                     className="mt-1 w-full min-w-0 rounded-md border border-input bg-card px-2 py-2 text-sm"
-                    value={levels[r] ?? ""}
-                    aria-label={`${t("matrix.edit.levels")} — ${roleShort(r)}`}
+                    value={levels[cl.id] ?? ""}
+                    aria-label={`${t("matrix.edit.levels")} — ${roleShort(cl.name)}`}
                     onChange={(e) =>
                       setLevels({
                         ...levels,
-                        [r]: e.target.value ? (Number(e.target.value) as Level) : undefined,
+                        [cl.id]: e.target.value ? (Number(e.target.value) as Level) : undefined,
                       })
                     }
                   >
@@ -671,6 +683,7 @@ function CompetencyEditDialog({
   onClose: () => void;
 }) {
   const store = useStore();
+  const careerLevels = byRank(store.careerLevels);
   const { t } = useI18n();
   const capability = store.capabilities.find((c) => c.id === competency.capabilityId);
   /** Subtrai a própria competência da contagem: ela já ocupa uma vaga do tipo atual. */
@@ -683,7 +696,7 @@ function CompetencyEditDialog({
       (competency.requirementType === "NON_RESTRICTIVE" ? 1 : 0) >=
     3;
   const [name, setName] = useState(competency.name);
-  const [levels, setLevels] = useState<Record<RoleName, Level>>(competency.expected);
+  const [levels, setLevels] = useState<Partial<Record<string, Level>>>(competency.expected);
   const [requirementType, setRequirementType] = useState<RequirementType>(
     competency.requirementType,
   );
@@ -733,7 +746,13 @@ function CompetencyEditDialog({
 
   const save = () => {
     if (!name.trim()) return;
-    store.updateCompetency(competency.id, { name: name.trim(), expected: levels, requirementType });
+    // PATCH faz merge (`jsonbMerge`, backend) — enviar só os níveis já
+    // preenchidos não zera os demais do Perfil por Cargo.
+    store.updateCompetency(competency.id, {
+      name: name.trim(),
+      expected: levels as Record<string, Level>,
+      requirementType,
+    });
     onClose();
   };
 
@@ -756,15 +775,21 @@ function CompetencyEditDialog({
           <div>
             <Label>{t("matrix.edit.levels")}</Label>
             <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {ROLES.map((r) => (
-                <div key={r} className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">{roleShort(r)}</span>
+              {careerLevels.map((cl) => (
+                <div key={cl.id} className="min-w-0">
+                  <span className="block text-xs text-muted-foreground">{roleShort(cl.name)}</span>
                   <select
                     className="mt-1 w-full min-w-0 rounded-md border border-input bg-card px-2 py-2 text-sm"
-                    value={levels[r]}
-                    aria-label={`${t("matrix.edit.levels")} — ${roleShort(r)}`}
-                    onChange={(e) => setLevels({ ...levels, [r]: Number(e.target.value) as Level })}
+                    value={levels[cl.id] ?? ""}
+                    aria-label={`${t("matrix.edit.levels")} — ${roleShort(cl.name)}`}
+                    onChange={(e) =>
+                      setLevels({
+                        ...levels,
+                        [cl.id]: e.target.value ? (Number(e.target.value) as Level) : undefined,
+                      })
+                    }
                   >
+                    <option value="">—</option>
                     {LEVELS.map((l) => (
                       <option key={l.level} value={l.level}>
                         L{l.level} · {l.name}

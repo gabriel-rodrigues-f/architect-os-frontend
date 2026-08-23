@@ -36,9 +36,9 @@ function buildLargeState(): AppState {
       capabilityId: cat.id,
       requirementType: "NON_RESTRICTIVE",
       expected: {
-        "Arquiteto de Soluções I": 3 as Level,
-        "Arquiteto de Soluções II": 4 as Level,
-        "Arquiteto de Soluções III": 5 as Level,
+        "arquiteto-de-solucoes-i": 3 as Level,
+        "arquiteto-de-solucoes-ii": 4 as Level,
+        "arquiteto-de-solucoes-iii": 5 as Level,
       },
       active: true,
     })),

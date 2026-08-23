@@ -9,9 +9,9 @@ import {
   ACTION_TYPES,
   EVIDENCE_TYPES,
   LEVELS,
-  ROLES,
   roleShort,
   type CareerLevel,
+  type Level,
 } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
@@ -94,9 +94,9 @@ function SettingsPage() {
                   <th scope="col" className="py-2">
                     {t("ref.capability")}
                   </th>
-                  {ROLES.map((r) => (
-                    <th key={r} scope="col" className="py-2 text-center">
-                      {roleShort(r)}
+                  {store.careerLevels.map((cl) => (
+                    <th key={cl.id} scope="col" className="py-2 text-center">
+                      {roleShort(cl.name)}
                     </th>
                   ))}
                 </tr>
@@ -107,13 +107,21 @@ function SettingsPage() {
                   return (
                     <tr key={cat.id} className="border-b border-border/60 last:border-0">
                       <td className="py-2 font-medium">{cat.name}</td>
-                      {ROLES.map((r) => {
-                        const avg = comps.length
-                          ? comps.reduce((s, c) => s + c.expected[r], 0) / comps.length
-                          : 0;
+                      {store.careerLevels.map((cl) => {
+                        // B-38 — `expected` não garante mais a chave presente
+                        // (nível de carreira sem curadoria ainda nesta
+                        // competência); a média considera só quem TEM valor,
+                        // nunca trata ausência como 0 (mesma filosofia de
+                        // MISSING ≠ 0 do resto do app).
+                        const values = comps
+                          .map((c) => c.expected[cl.id])
+                          .filter((v): v is Level => v !== undefined);
+                        const avg = values.length
+                          ? values.reduce((s, v) => s + v, 0) / values.length
+                          : undefined;
                         return (
-                          <td key={r} className="py-2 text-center tabular-nums">
-                            {avg.toFixed(1)}
+                          <td key={cl.id} className="py-2 text-center tabular-nums">
+                            {avg === undefined ? "—" : avg.toFixed(1)}
                           </td>
                         );
                       })}
