@@ -17,7 +17,6 @@ import type {
 export const emptyState: AppState = {
   capabilities: [],
   competencies: [],
-  careerLevels: [],
   careerLevelPolicies: [],
   architects: [],
   assessments: [],

@@ -10,7 +10,7 @@ import { AuthProvider, useAuth } from "../auth";
 import type { Capability, Competency } from "../domain";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
 
 /**
  * Pedido do usuário revisando o app rodando: numa capacidade já em 3
@@ -122,6 +122,15 @@ describe("Matriz de Competências — trocar RESTRICTIVE ↔ NON_RESTRICTIVE qua
       if (href.endsWith("/api/state")) {
         return Promise.resolve(
           new Response(JSON.stringify(state), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      // B-24 (ADR-0011) — careerLevels saiu de /api/state; a Matriz busca via seu próprio endpoint.
+      if (href.endsWith("/api/career-levels")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureCareerLevels), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),

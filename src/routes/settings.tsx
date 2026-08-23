@@ -16,7 +16,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
-import { useStore } from "@/lib/store";
+import { useCareerLevelsByRank, useStore } from "@/lib/store";
 import { formatDate } from "@/lib/text";
 
 export const Route = createFileRoute("/settings")({
@@ -40,6 +40,7 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const store = useStore();
+  const careerLevels = useCareerLevelsByRank();
   const labels = useLabels();
   const { t, locale } = useI18n();
   const isAdmin = useCurrentUser().role === "admin";
@@ -94,7 +95,7 @@ function SettingsPage() {
                   <th scope="col" className="py-2">
                     {t("ref.capability")}
                   </th>
-                  {store.careerLevels.map((cl) => (
+                  {careerLevels.map((cl) => (
                     <th key={cl.id} scope="col" className="py-2 text-center">
                       {roleShort(cl.name)}
                     </th>
@@ -107,7 +108,7 @@ function SettingsPage() {
                   return (
                     <tr key={cat.id} className="border-b border-border/60 last:border-0">
                       <td className="py-2 font-medium">{cat.name}</td>
-                      {store.careerLevels.map((cl) => {
+                      {careerLevels.map((cl) => {
                         // B-38 — `expected` não garante mais a chave presente
                         // (nível de carreira sem curadoria ainda nesta
                         // competência); a média considera só quem TEM valor,
@@ -173,6 +174,7 @@ function SettingsPage() {
  */
 function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
   const store = useStore();
+  const careerLevels = useCareerLevelsByRank();
   const readyCapabilities = store.capabilities.filter((c) => c.curation.status === "READY").length;
 
   return (
@@ -194,7 +196,7 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
             </tr>
           </thead>
           <tbody>
-            {store.careerLevels.map((level) => {
+            {careerLevels.map((level) => {
               const policy = store.careerLevelPolicies.find((p) => p.careerLevelId === level.id);
               return (
                 <CareerPolicyRow

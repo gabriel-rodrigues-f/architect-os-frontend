@@ -6,6 +6,7 @@ import { api, ApiError, type AppState, type CommentInput } from "./api";
 import type {
   Architect,
   Assessment,
+  CareerLevel,
   CareerLevelPolicy,
   Competency,
   Capability,
@@ -25,6 +26,22 @@ import { createSelectors, emptyState } from "./selectors";
 import { byName } from "./text";
 
 export const STATE_QUERY_KEY = ["app-state"] as const;
+
+/**
+ * B-24 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, ADR-0011) —
+ * primeira coleção migrada do agregador `/api/state` para o endpoint por
+ * contexto já existente (`GET /api/career-levels`, nunca consumido até
+ * aqui): busca própria, com cache/isolamento de falha independentes do
+ * resto do estado — o próprio ponto do estrangulamento (Strangler Fig),
+ * não um atalho de implementação. Mesmo padrão já usado pela tela de
+ * Evolução (`architects.$architectId.evolution.tsx`, Rodada 10, `useQuery`
+ * direto no componente, sem passar pelo `Api` agregado abaixo).
+ */
+export const CAREER_LEVELS_QUERY_KEY = ["career-levels"] as const;
+export function useCareerLevelsByRank(): CareerLevel[] {
+  const { data } = useQuery({ queryKey: CAREER_LEVELS_QUERY_KEY, queryFn: api.careerLevels });
+  return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
+}
 
 /**
  * A store deixou de guardar dados: o estado agora vive no backend (Postgres,

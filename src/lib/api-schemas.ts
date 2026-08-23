@@ -65,12 +65,6 @@ const competency = z.object({
   active: z.boolean(),
 });
 
-const careerLevel = z.object({
-  id: z.string(),
-  name: z.string(),
-  rank: z.number(),
-});
-
 const careerLevelPolicy = z.object({
   careerLevelId: z.string(),
   minimumQualifiedCapabilities: z.number(),
@@ -273,7 +267,6 @@ const evidence = z.object({
 export const appStateSchema = z.object({
   capabilities: z.array(capability),
   competencies: z.array(competency),
-  careerLevels: z.array(careerLevel),
   careerLevelPolicies: z.array(careerLevelPolicy),
   architects: z.array(architect),
   assessments: z.array(assessment),

@@ -46,6 +46,18 @@ export const fixtureUnassignedLeadUser: SessionUser = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
+/**
+ * B-24 (ADR-0011) — `careerLevels` saiu de `AppState`/`fixtureState`
+ * (migrado para `GET /api/career-levels`); testes que renderizam telas que
+ * leem `useCareerLevelsByRank()` mockam esta resposta separadamente com
+ * este fixture.
+ */
+export const fixtureCareerLevels = [
+  { id: "arquiteto-de-solucoes-i", name: "Arquiteto de Soluções I", rank: 1 },
+  { id: "arquiteto-de-solucoes-ii", name: "Arquiteto de Soluções II", rank: 2 },
+  { id: "arquiteto-de-solucoes-iii", name: "Arquiteto de Soluções III", rank: 3 },
+];
+
 /** Estado mínimo, porém coerente, para exercitar os selectors. */
 export const fixtureState: AppState = {
   capabilities: [
@@ -73,11 +85,6 @@ export const fixtureState: AppState = {
         status: "REQUIRES_CURATION",
       },
     },
-  ],
-  careerLevels: [
-    { id: "arquiteto-de-solucoes-i", name: "Arquiteto de Soluções I", rank: 1 },
-    { id: "arquiteto-de-solucoes-ii", name: "Arquiteto de Soluções II", rank: 2 },
-    { id: "arquiteto-de-solucoes-iii", name: "Arquiteto de Soluções III", rank: 3 },
   ],
   careerLevelPolicies: [
     { careerLevelId: "arquiteto-de-solucoes-i", minimumQualifiedCapabilities: 3 },

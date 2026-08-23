@@ -29,11 +29,15 @@ import type {
 } from "./domain";
 import { appStateSchema } from "./api-schemas";
 
-/** Snapshot devolvido por GET /api/state — espelha o AppState do backend. */
+/**
+ * Snapshot devolvido por GET /api/state — espelha o AppState do backend.
+ * B-24 (ADR-0011) — `careerLevels` saiu daqui, primeira coleção migrada
+ * para seu endpoint por contexto (`api.careerLevels()`, `lib/store.tsx`
+ * `useCareerLevelsByRank`).
+ */
 export interface AppState {
   capabilities: Capability[];
   competencies: Competency[];
-  careerLevels: CareerLevel[];
   careerLevelPolicies: CareerLevelPolicy[];
   architects: Architect[];
   assessments: Assessment[];

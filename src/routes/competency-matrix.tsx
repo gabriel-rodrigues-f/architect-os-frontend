@@ -19,7 +19,6 @@ import { Label } from "@/components/ui/label";
 import {
   LEVELS,
   roleShort,
-  type CareerLevel,
   type Competency,
   type Capability,
   type Level,
@@ -28,7 +27,7 @@ import {
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { useStore } from "@/lib/store";
+import { useCareerLevelsByRank, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/competency-matrix")({
   head: () => ({
@@ -52,17 +51,14 @@ export const Route = createFileRoute("/competency-matrix")({
 /**
  * B-38 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) — a matriz
  * iterava `ROLES` (união hardcoded de 3 cargos) para renderizar/editar
- * `Competency.expected`; agora itera os níveis de carreira REAIS
- * (`store.careerLevels`, já data-driven — `repositories/career.ts` no
- * backend), ordenados por `rank` (I → II → III), indexando `expected` por
- * `CareerLevel.id`, não mais pelo texto do cargo.
+ * `Competency.expected`; agora itera os níveis de carreira REAIS (já
+ * data-driven — `repositories/career.ts` no backend), ordenados por
+ * `rank` (I → II → III), indexando `expected` por `CareerLevel.id`, não
+ * mais pelo texto do cargo.
  */
-const byRank = (levels: readonly CareerLevel[]): CareerLevel[] =>
-  [...levels].sort((a, b) => a.rank - b.rank);
-
 function MatrixPage() {
   const store = useStore();
-  const careerLevels = byRank(store.careerLevels);
+  const careerLevels = useCareerLevelsByRank();
   /** Catálogo mestre é administrativo — backend já recusa o resto. */
   const isAdmin = useCurrentUser().role === "admin";
   const [newCapability, setNewCapability] = useState("");
@@ -552,7 +548,7 @@ function CompetencyCreateDialog({
   onClose: () => void;
 }) {
   const store = useStore();
-  const careerLevels = byRank(store.careerLevels);
+  const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
   const restrictiveFull = capability.curation.restrictiveCompetencyCount >= 3;
   const nonRestrictiveFull = capability.curation.nonRestrictiveCompetencyCount >= 3;
@@ -683,7 +679,7 @@ function CompetencyEditDialog({
   onClose: () => void;
 }) {
   const store = useStore();
-  const careerLevels = byRank(store.careerLevels);
+  const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
   const capability = store.capabilities.find((c) => c.id === competency.capabilityId);
   /** Subtrai a própria competência da contagem: ela já ocupa uma vaga do tipo atual. */

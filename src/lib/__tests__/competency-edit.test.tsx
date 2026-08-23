@@ -9,7 +9,7 @@ import { type AppState } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
 
 /**
  * O lápis ao lado da lixeira: editar nome e nível esperado por cargo sem sair
@@ -73,6 +73,15 @@ describe("Matriz de Competências — edição", () => {
       if (String(url).endsWith("/api/state")) {
         return Promise.resolve(
           new Response(JSON.stringify(state), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      // B-24 (ADR-0011) — careerLevels saiu de /api/state; a Matriz busca via seu próprio endpoint.
+      if (String(url).endsWith("/api/career-levels")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureCareerLevels), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),
