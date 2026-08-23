@@ -272,7 +272,10 @@ function ArchitectProfile() {
         </SectionCard>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,Nfr): sem
+          isto a pista nunca encolhe abaixo do conteúdo interno, e a página
+          inteira rola horizontal em vez do overflow-x-auto ativar. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
             data={capabilityAvgs.map((d) => ({

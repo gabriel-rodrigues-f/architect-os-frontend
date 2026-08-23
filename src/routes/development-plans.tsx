@@ -289,7 +289,10 @@ function PlansPage() {
         />
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,1fr) na
+          pista flexível: a fixa (320px) já tem tamanho definido, não corre o
+          mesmo risco de min-content trap. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           {(plan?.items ?? []).map((item) => {
             const comp = sel.competencyById(item.competencyId);

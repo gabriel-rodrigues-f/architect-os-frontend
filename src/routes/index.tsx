@@ -174,7 +174,12 @@ function AdminHome() {
         />
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[2fr_1fr]">
+      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — grid-cols com fr cru é
+          um min-content trap: a pista nunca encolhe abaixo do conteúdo mais
+          largo (a tabela/heatmap), então a página inteira rola horizontal em
+          vez do overflow-x-auto interno ativar. minmax(0,Nfr) devolve à pista
+          a permissão de encolher, deixando o overflow interno fazer o trabalho. */}
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <SectionCard title={t("dash.heatmap.title")} description={t("dash.heatmap.subtitle")}>
           <p className="mb-3 text-xs text-muted-foreground">
             {t("dash.coverage", {
@@ -344,7 +349,8 @@ function MemberHome() {
         />
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
+      {/* R2-UX-04 — minmax(0,1fr) evita o min-content trap, ver comentário acima. */}
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
             data={capabilityAvgs.map((d) => ({
@@ -409,7 +415,8 @@ function MemberHome() {
         </SectionCard>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
+      {/* R2-UX-04 — minmax(0,1fr) evita o min-content trap, ver comentário acima. */}
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("dash.priorities.title")}
           description={t("dash.member.gaps.subtitle")}

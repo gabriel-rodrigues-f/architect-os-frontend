@@ -100,7 +100,10 @@ function TrainingNeedsPage() {
       <CapabilitiesTabs />
       <PageHeader title={t("needs.title")} description={t("needs.subtitle")} />
 
-      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,Nfr): sem
+          isto a pista nunca encolhe abaixo da tabela/heatmap interno, e a
+          página inteira rola horizontal em vez do overflow-x-auto ativar. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("needs.aggregated.title")}
           description={t("needs.aggregated.subtitle")}

@@ -61,7 +61,10 @@ function GapPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        // R2-UX-04/R2-RESP-03 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesmo
+        // min-content trap dos outros 4 grids do app: minmax(0,1fr) deixa a
+        // pista encolher, o overflow interno faz o resto.
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <SectionCard
             title={t("gap.radar.title")}
             description={t("gap.radar.subtitle", { escopo: scopeLabel })}
