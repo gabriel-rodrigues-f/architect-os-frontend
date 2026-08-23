@@ -20,6 +20,7 @@ const TABS = [
   { to: "/gap-analysis", labelKey: "cap.tabs.priorities" as const },
   { to: "/progression", labelKey: "cap.tabs.progression" as const },
   { to: "/training-needs", labelKey: "cap.tabs.collective" as const },
+  { to: "/compare", labelKey: "cap.tabs.comparison" as const },
 ];
 
 export function CapabilitiesTabs() {

@@ -1,0 +1,148 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+
+import { applyArchitectFilter, ArchitectFilter } from "@/components/app/ArchitectFilter";
+import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
+import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
+import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { useI18n } from "@/lib/i18n";
+import { useSelectors, useStore } from "@/lib/store";
+import { initialSearchParam, replaceSearchParam } from "@/lib/text";
+
+/**
+ * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-29 — "decisão de
+ * promoção manual": comparar pessoas específicas hoje exige olhar o
+ * heatmap do time inteiro (`/progression`) e procurar as linhas certas de
+ * cabeça. Aba própria dentro de "Capacidades" (mesmo grupo de navegação de
+ * `/progression`/`/gap-analysis`), mas com semântica de seleção DIFERENTE:
+ * lá `selected` é "quem entra na média agregada"; aqui cada pessoa
+ * selecionada vira sua PRÓPRIA série — nunca agregada com as outras. Nasce
+ * vazio (nenhuma pré-seleção): comparação é sempre um recorte intencional,
+ * nunca "o time inteiro" por padrão.
+ */
+export const Route = createFileRoute("/compare")({
+  head: () => ({
+    meta: [
+      { title: "Comparação — Synapse" },
+      {
+        name: "description",
+        content: "Comparação lado a lado do nível de capacidades entre profissionais específicos.",
+      },
+      { property: "og:title", content: "Comparação — Synapse" },
+      { property: "og:description", content: "Radar sobreposto e tabela lado a lado por pessoa." },
+    ],
+  }),
+  component: ComparePage,
+});
+
+function ComparePage() {
+  const { t } = useI18n();
+  const store = useStore();
+  const sel = useSelectors();
+
+  const [selected, setSelectedState] = useState<string[]>(() => {
+    const fromUrl = initialSearchParam("selected");
+    if (fromUrl === undefined) return [];
+    return fromUrl === "" ? [] : fromUrl.split(",");
+  });
+  const setSelected = (ids: string[]) => {
+    setSelectedState(ids);
+    replaceSearchParam("selected", ids.join(","));
+  };
+
+  const architects = applyArchitectFilter(store.architects, selected);
+  const series: EvolutionSeries[] = architects.map((a) => ({ key: a.id, label: a.name }));
+
+  /** Uma consulta por pessoa, não uma por célula da tabela/radar. */
+  const averagesByArchitect = new Map(
+    architects.map((a) => [
+      a.id,
+      new Map(sel.capabilityAverages(a.id).map((d) => [d.capability.id, d.avg])),
+    ]),
+  );
+
+  const radarData = store.capabilities.map((capability) => {
+    const row: Record<string, string | number> = { capability: capability.short };
+    for (const architect of architects) {
+      row[architect.id] = averagesByArchitect.get(architect.id)?.get(capability.id) ?? 0;
+    }
+    return row;
+  });
+
+  return (
+    <>
+      <CapabilitiesTabs />
+      <PageHeader
+        title={t("compare.title")}
+        description={t("compare.subtitle")}
+        actions={
+          <ArchitectFilter
+            architects={store.architects}
+            selected={selected}
+            onChange={setSelected}
+            label={t("compare.selector.label")}
+          />
+        }
+      />
+
+      {architects.length < 2 ? (
+        <div className="surface-card p-8 text-center">
+          <p className="text-sm font-medium">{t("compare.empty")}</p>
+        </div>
+      ) : (
+        <>
+          <SectionCard title={t("compare.radar.title")} description={t("compare.radar.subtitle")}>
+            <ComparisonRadar data={radarData} series={series} />
+          </SectionCard>
+
+          <SectionCard
+            className="mt-6"
+            title={t("compare.table.title")}
+            description={t("compare.table.subtitle")}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
+                <thead>
+                  <tr>
+                    <th
+                      scope="col"
+                      className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      {t("col.capability")}
+                    </th>
+                    {architects.map((a) => (
+                      <th
+                        key={a.id}
+                        scope="col"
+                        className="px-1 text-center text-[11px] font-medium text-muted-foreground"
+                      >
+                        {a.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {store.capabilities.map((capability) => (
+                    <tr key={capability.id}>
+                      <td className="py-1 text-sm font-medium" title={capability.name}>
+                        {capability.short}
+                      </td>
+                      {architects.map((a) => {
+                        const avg = averagesByArchitect.get(a.id)?.get(capability.id);
+                        return (
+                          <td key={a.id} className="min-w-[52px]">
+                            <LevelCell level={avg === undefined ? undefined : Math.round(avg)} />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        </>
+      )}
+    </>
+  );
+}

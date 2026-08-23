@@ -214,6 +214,79 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
 }
 
 /* ------------------------------------------------------------------ */
+/* Radar de comparação entre pessoas                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-29 — "decisão de
+ * promoção manual": comparar 2+ pessoas específicas hoje exige olhar o
+ * heatmap do time inteiro e procurar as linhas certas de cabeça.
+ * Diferente de `CapabilityRadar` (série fixa atual×alvo, uma pessoa/recorte
+ * agregado só): aqui uma série POR PESSOA, nenhuma agregação — é
+ * exatamente o caso que `EvolutionSeries`+`ChartPalette` já resolvem para
+ * `EvolutionLine`, reaproveitado aqui para `Radar` em vez de `Line`.
+ */
+export function ComparisonRadar({
+  data,
+  series,
+  height = 360,
+}: {
+  /** `capability` (rótulo do eixo) + uma chave por série — mesmo formato "linha larga" de `EvolutionLine`. */
+  data: Record<string, string | number>[];
+  series: EvolutionSeries[];
+  height?: number;
+}) {
+  const { t } = useI18n();
+  const semMovimento = useReducedMotion();
+
+  const palette = new ChartPalette();
+  const estilos = palette.forKeys(series.map((s) => s.key));
+
+  return (
+    <ChartFrame
+      label={t("chart.comparison.label")}
+      height={height}
+      isEmpty={data.length === 0 || series.length === 0}
+      emptyMessage={t("chart.empty.comparison")}
+      dataTable={
+        <DataTable
+          caption={t("chart.comparison.label")}
+          columns={[t("chart.axis.capability"), ...series.map((s) => s.label)]}
+          rows={data.map((row) => [
+            row["capability"] ?? "—",
+            ...series.map((s) => row[s.key] ?? "—"),
+          ])}
+        />
+      }
+    >
+      <RadarChart data={data} outerRadius="72%">
+        <PolarGrid stroke={CHART_INK.grid} />
+        <PolarAngleAxis dataKey="capability" tick={axisTick} />
+        <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
+        {series.map((s, i) => {
+          const estilo = estilos[i] ?? { color: "var(--chart-1)" };
+          return (
+            <Radar
+              key={s.key}
+              name={s.label}
+              dataKey={s.key}
+              stroke={estilo.color}
+              strokeWidth={2}
+              {...(estilo.dash ? { strokeDasharray: estilo.dash } : {})}
+              fill={estilo.color}
+              fillOpacity={0.12}
+              isAnimationActive={!semMovimento}
+            />
+          );
+        })}
+        <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
+        <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: CHART_INK.surfaceText }} />
+      </RadarChart>
+    </ChartFrame>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Evolução por ciclo                                                  */
 /* ------------------------------------------------------------------ */
 
