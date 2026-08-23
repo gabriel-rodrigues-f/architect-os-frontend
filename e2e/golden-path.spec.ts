@@ -24,13 +24,17 @@ const DATABASE_URL =
   process.env["E2E_DATABASE_URL"] ?? "postgres://architect:architect@localhost:5433/architect_os";
 
 const RUN_ID = Date.now().toString(36);
-const ARCHITECT_ID = `e2e-arch-${RUN_ID}`;
+// AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-32 — `id` deixou de
+// ser aceito na criação (gerado sempre pelo servidor); este valor serve só
+// pra dar um endereço único ao arquiteto de teste, nunca vira o `id` real.
+const ARCHITECT_SEED = `e2e-arch-${RUN_ID}`;
 const MEMBER_EMAIL = `e2e-member-${RUN_ID}@architect-os.local`;
 const LEAD_EMAIL = `e2e-lead-${RUN_ID}@architect-os.local`;
 const PASSWORD = "senha-de-teste-e2e-123";
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
+let architectId: string;
 let memberUserId: string;
 let leadUserId: string;
 
@@ -86,18 +90,18 @@ test.beforeAll(async ({ playwright }) => {
     await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
   );
 
-  await json(
+  const architect = await json<{ id: string }>(
     await api.post("/api/architects", {
       data: {
-        id: ARCHITECT_ID,
         name: "E2E Golden Path",
         role: "Arquiteto de Soluções II",
         yearsAsArchitect: 3,
         specialization: "E2E",
-        email: `${ARCHITECT_ID}@architect-os.local`,
+        email: `${ARCHITECT_SEED}@architect-os.local`,
       },
     }),
   );
+  architectId = architect.id;
 
   // SEC-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — cadastro
   // público (`/api/auth/register`) só funciona na instância vazia; com o
@@ -112,7 +116,7 @@ test.beforeAll(async ({ playwright }) => {
     name: "E2E Member",
     email: MEMBER_EMAIL,
     role: "member",
-    architectId: ARCHITECT_ID,
+    architectId,
   });
 
   leadUserId = await createAndActivateUser(playwright, api, {
@@ -122,7 +126,7 @@ test.beforeAll(async ({ playwright }) => {
   });
 
   await json(
-    await api.patch(`/api/architects/${ARCHITECT_ID}`, {
+    await api.patch(`/api/architects/${architectId}`, {
       data: { leadUserId },
     }),
   );
@@ -134,7 +138,7 @@ test.afterAll(async () => {
   const client = new Client({ connectionString: DATABASE_URL });
   await client.connect();
   try {
-    await client.query("DELETE FROM architects WHERE id = $1", [ARCHITECT_ID]);
+    await client.query("DELETE FROM architects WHERE id = $1", [architectId]);
     await client.query("DELETE FROM users WHERE email IN ($1, $2)", [MEMBER_EMAIL, LEAD_EMAIL]);
   } finally {
     await client.end();
@@ -172,7 +176,7 @@ test("Member — Minha Evolução, navegação restrita e workspace próprio", a
   await expect(page.getByRole("link", { name: "Matriz de Competências" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Usuários" })).toHaveCount(0);
 
-  await page.goto(`/architects/${ARCHITECT_ID}`);
+  await page.goto(`/architects/${architectId}`);
   await expect(page.getByText("Próximos passos")).toBeVisible();
   await expect(page.getByText("Nada pendente no momento.")).toBeVisible();
 });
@@ -188,6 +192,6 @@ test("Lead — Pendências do Lead escopadas à própria liderança", async ({ p
   // Sem avaliação/evidência/PDI pendente ainda — estado "tudo em dia".
   await expect(page.getByText("Nada pendente no momento")).toBeVisible();
 
-  await page.goto(`/architects/${ARCHITECT_ID}`);
+  await page.goto(`/architects/${architectId}`);
   await expect(page.getByText("E2E Golden Path")).toBeVisible();
 });

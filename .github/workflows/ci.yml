@@ -2,8 +2,14 @@ name: CI
 
 # AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-07 — mesma esteira do
 # backend (lint→typecheck→unit→build→audit), adaptada: sem Dockerfile por
-# decisão explícita (B-08 fora de escopo) e sem E2E ainda (depende de
-# `webServer` no Playwright, item separado — B-36).
+# decisão explícita (B-08 fora de escopo). B-36 adicionou coverage (unit) e
+# o job `e2e` — este último precisa do backend real no ar (Postgres/Redis
+# como services já resolve; o CÓDIGO do backend é um repositório PRIVADO
+# separado, então o checkout dele aqui só roda se o secret
+# `BACKEND_CHECKOUT_TOKEN` existir — um PAT com leitura do repo do backend,
+# criado manualmente em Settings → Secrets → Actions deste repositório.
+# Sem o secret, o job é pulado (não falha): webServer/specs continuam
+# executáveis localmente contra a stack de dev normal.
 
 on:
   push:
@@ -57,6 +63,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: coverage/
+          retention-days: 14
 
   build:
     runs-on: ubuntu-latest
@@ -81,3 +93,116 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=high
+
+  # `secrets` não é um contexto válido em `jobs.<id>.if` (só em `env`/`with`/
+  # `steps[*].if`) — este job intermediário só existe para expor "o secret
+  # existe?" como output de job, que aí sim pode alimentar o `if` do `e2e`.
+  check-e2e-secret:
+    runs-on: ubuntu-latest
+    outputs:
+      has_secret: ${{ steps.check.outputs.has_secret }}
+    steps:
+      - id: check
+        run: echo "has_secret=${{ secrets.BACKEND_CHECKOUT_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
+  # AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-36 (§33, achado 2) —
+  # o `webServer` do playwright.config.ts já sobe o FRONTEND sozinho; este
+  # job fecha a outra metade, o BACKEND, que é um repositório PRIVADO
+  # separado (ver topo deste arquivo). Só roda com o secret
+  # `BACKEND_CHECKOUT_TOKEN` configurado (um PAT com leitura do repo do
+  # backend) — sem ele, o job aparece como "skipped", não "failed": specs
+  # continuam executáveis localmente contra a stack de dev normal.
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [build, check-e2e-secret]
+    if: needs.check-e2e-secret.outputs.has_secret == 'true'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: architect
+          POSTGRES_PASSWORD: architect
+          POSTGRES_DB: architect_os
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U architect -d architect_os"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://architect:architect@localhost:5432/architect_os
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-only-secret-nao-usar-em-producao-0123456789
+      AUTO_MIGRATE: "true"
+      PORT: "4000"
+      # Só esta instância efêmera (destruída ao fim do job, nunca exposta a
+      # tráfego real) — a suíte inteira loga como a MESMA conta admin em
+      # ~10 specs num único run; o limite de produção (10/60s por e-mail,
+      # ENT-AUTH-001/SEC-001) sobraria já pelo meio da suíte sem refletir
+      # bug nenhum de produto (achado ao rodar a suíte localmente contra o
+      # compose de dev: 429 consistente a partir do 9º/10º login).
+      AUTH_RATE_LIMIT_MAX: "1000"
+      E2E_API_URL: http://localhost:4000
+      E2E_DATABASE_URL: postgres://architect:architect@localhost:5432/architect_os
+      E2E_ADMIN_EMAIL: e2e-ci-admin@architect-os.local
+      E2E_ADMIN_PASSWORD: e2e-ci-senha-bootstrap-0123456789
+    steps:
+      - name: checkout frontend
+        uses: actions/checkout@v4
+        with:
+          path: frontend
+
+      - name: checkout backend
+        uses: actions/checkout@v4
+        with:
+          repository: gabriel-rodrigues-f/architect-os-backend
+          token: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+          path: backend
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: build e sobe o backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+          npm run seed
+          node dist/server.js > ../backend.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:4000/health/ready && break
+            sleep 1
+          done
+
+      - name: cria a conta admin de bootstrap (instância vazia — ENT-AUTH-001)
+        run: |
+          curl -fsS -X POST http://localhost:4000/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"name":"E2E CI Admin","email":"'"$E2E_ADMIN_EMAIL"'","password":"'"$E2E_ADMIN_PASSWORD"'"}'
+
+      - name: instala dependências do frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: instala browsers do Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: roda a suíte E2E
+        working-directory: frontend
+        run: npm run test:e2e
+
+      - name: artefatos do Playwright (só em falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+            backend.log
+          retention-days: 14

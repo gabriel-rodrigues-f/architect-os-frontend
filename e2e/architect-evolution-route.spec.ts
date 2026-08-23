@@ -33,7 +33,12 @@ const DATABASE_URL =
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
 const RUN_ID = Date.now().toString(36);
-const ARCHITECT_ID = `e2e-arch-evo-${RUN_ID}`;
+// AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-32 — `id` deixou de
+// ser aceito na criação (gerado sempre pelo servidor); este valor serve só
+// pra dar um endereço único ao arquiteto de teste, nunca vira o `id` real.
+const ARCHITECT_SEED = `e2e-arch-evo-${RUN_ID}`;
+
+let architectId: string;
 
 async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
   if (!response.ok()) {
@@ -47,18 +52,18 @@ test.beforeAll(async ({ playwright }) => {
   await json(
     await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
   );
-  await json(
+  const architect = await json<{ id: string }>(
     await api.post("/api/architects", {
       data: {
-        id: ARCHITECT_ID,
         name: "E2E Evolução Rota",
         role: "Arquiteto de Soluções II",
         yearsAsArchitect: 3,
         specialization: "E2E",
-        email: `${ARCHITECT_ID}@architect-os.local`,
+        email: `${ARCHITECT_SEED}@architect-os.local`,
       },
     }),
   );
+  architectId = architect.id;
   await api.dispose();
 });
 
@@ -66,7 +71,7 @@ test.afterAll(async () => {
   const client = new Client({ connectionString: DATABASE_URL });
   await client.connect();
   try {
-    await client.query("DELETE FROM architects WHERE id = $1", [ARCHITECT_ID]);
+    await client.query("DELETE FROM architects WHERE id = $1", [architectId]);
   } finally {
     await client.end();
   }
@@ -86,7 +91,7 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
   // zero e refaz auth+/api/state antes de saber se o arquiteto existe, o
   // que pode passar dos 5s padrão do Playwright sob carga — timeout maior
   // só nesta primeira asserção pós-reload, não porque a rota é lenta.
-  await page.goto(`/architects/${ARCHITECT_ID}/evolution`);
+  await page.goto(`/architects/${architectId}/evolution`);
   await expect(page.getByRole("heading", { name: /^Evolução —/ })).toBeVisible({ timeout: 15000 });
   // FE-360-005 — a tela virou 4 subvisões (Resumo/Capacidades/Competências/
   // Linha do tempo); "Comparativo início × fim" mora na aba Competências,
@@ -100,12 +105,12 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
 
   // Clique de volta pra "Visão geral" — troca de aba client-side.
   await page.getByRole("link", { name: "Visão geral" }).click();
-  await expect(page).toHaveURL(new RegExp(`/architects/${ARCHITECT_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/architects/${architectId}$`));
   await expect(page.getByText("Perfil por capacidade")).toBeVisible();
   await expect(page.getByText("Comparativo início × fim")).not.toBeVisible();
 
   // E de novo pra "Evolução" por clique, não só deep-link.
   await page.getByRole("link", { name: "Evolução" }).click();
-  await expect(page).toHaveURL(new RegExp(`/architects/${ARCHITECT_ID}/evolution$`));
+  await expect(page).toHaveURL(new RegExp(`/architects/${architectId}/evolution$`));
   await expect(page.getByRole("tab", { name: "Resumo" })).toBeVisible();
 });

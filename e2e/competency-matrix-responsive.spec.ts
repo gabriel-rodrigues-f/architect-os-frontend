@@ -19,12 +19,12 @@ const ADMIN_PASSWORD = process.env["E2E_ADMIN_PASSWORD"];
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
-const RUN_ID = Date.now().toString(36);
-const CAPABILITY_ID = `e2e-cap-${RUN_ID}`;
-const COMPETENCY_ID = `e2e-comp-${RUN_ID}`;
 /** >80 caracteres — exigido pelo critério de aceite da Seção 6. */
 const LONG_NAME =
   "Governança de Arquitetura Corporativa Multi-Cloud com Padrões de Observabilidade e Resiliência Distribuída";
+
+let capabilityId: string;
+let competencyId: string;
 
 async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
   if (!response.ok()) {
@@ -38,17 +38,20 @@ test.beforeAll(async ({ playwright }) => {
   await json(
     await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
   );
-  await json(
+  // AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-32 — `id` deixou de
+  // ser aceito na criação (gerado sempre pelo servidor); captura o id real
+  // devolvido em vez de assumir que o valor enviado sobrevive.
+  const capability = await json<{ id: string }>(
     await api.post("/api/capabilities", {
-      data: { id: CAPABILITY_ID, name: "E2E Capacidade Responsiva", short: "E2ERESP" },
+      data: { name: "E2E Capacidade Responsiva", short: "E2ERESP" },
     }),
   );
-  await json(
+  capabilityId = capability.id;
+  const competency = await json<{ id: string }>(
     await api.post("/api/competencies", {
       data: {
-        id: COMPETENCY_ID,
         name: LONG_NAME,
-        capabilityId: CAPABILITY_ID,
+        capabilityId,
         requirementType: "NON_RESTRICTIVE",
         expected: {
           "Arquiteto de Soluções I": 1,
@@ -58,6 +61,7 @@ test.beforeAll(async ({ playwright }) => {
       },
     }),
   );
+  competencyId = competency.id;
   await api.dispose();
 });
 
@@ -68,8 +72,8 @@ test.afterAll(async ({ playwright }) => {
   );
   // Sem `force`: nenhuma resposta real foi registrada contra esta
   // competência descartável, então a exclusão de verdade é esperada.
-  await api.delete(`/api/competencies/${COMPETENCY_ID}`);
-  await api.delete(`/api/capabilities/${CAPABILITY_ID}`);
+  await api.delete(`/api/competencies/${competencyId}`);
+  await api.delete(`/api/capabilities/${capabilityId}`);
   await api.dispose();
 });
 
@@ -93,6 +97,10 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible();
 
     await page.goto("/competency-matrix");
+    // O card da capacidade nasce recolhido — a busca força a expansão do
+    // grupo (`isExpanded = ... || term.length > 0`), revelando a linha da
+    // competência e seu botão "Editar" sem precisar de um segundo clique.
+    await page.getByLabel("Buscar capacidade ou competência…").fill(LONG_NAME);
     await page.getByRole("button", { name: `Editar ${LONG_NAME}` }).click();
 
     const dialog = page.getByRole("dialog");
