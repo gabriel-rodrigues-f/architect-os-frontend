@@ -340,3 +340,72 @@ export function GapTable({
     </div>
   );
 }
+
+/**
+ * R2-ESC-01 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesmo problema do radar
+ * (R2-ESC-03): um heatmap com uma coluna por capacidade vira ilegível a
+ * partir de ~15-20 capacidades. Corta para as `MAX_HEATMAP_COLUMNS` com
+ * pior gap (maior diferença alvo-atual em qualquer arquiteto do recorte
+ * exibido), preservando a ordem original do catálogo entre as mantidas.
+ */
+export const MAX_HEATMAP_COLUMNS = 12;
+
+export function capHeatmapColumns<C extends { id: string }>(
+  capabilities: readonly C[],
+  architects: readonly { id: string }[],
+  capabilityAveragesFor: (architectId: string) => readonly {
+    capability: { id: string };
+    avg: number | undefined;
+    target: number | undefined;
+  }[],
+  max = MAX_HEATMAP_COLUMNS,
+): C[] {
+  if (capabilities.length <= max) return [...capabilities];
+
+  const worstGapByCapability = new Map<string, number>();
+  for (const architect of architects) {
+    for (const row of capabilityAveragesFor(architect.id)) {
+      if (row.avg === undefined || row.target === undefined) continue;
+      const gap = row.target - row.avg;
+      const prev = worstGapByCapability.get(row.capability.id) ?? -Infinity;
+      if (gap > prev) worstGapByCapability.set(row.capability.id, gap);
+    }
+  }
+
+  const ranked = capabilities
+    .map((c, index) => ({ index, score: worstGapByCapability.get(c.id) ?? -Infinity }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max);
+  const keep = new Set(ranked.map((r) => r.index));
+  return capabilities.filter((_, index) => keep.has(index));
+}
+
+/** Aviso visível + alternância "mostrar todas" — mesmo padrão do `RadarAxisNotice` (`charts.tsx`). */
+export function HeatmapColumnsNotice({
+  shown,
+  total,
+  showAll,
+  onToggle,
+}: {
+  shown: number;
+  total: number;
+  showAll: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useI18n();
+  if (total <= MAX_HEATMAP_COLUMNS) return null;
+  return (
+    <p className="mb-3 text-xs text-muted-foreground">
+      {showAll
+        ? t("heatmap.columns.showingAll", { total })
+        : t("heatmap.columns.showingTopN", { shown, total })}{" "}
+      <button
+        type="button"
+        className="underline underline-offset-2 hover:no-underline"
+        onClick={onToggle}
+      >
+        {showAll ? t("heatmap.columns.showTopOnly") : t("heatmap.columns.showAll")}
+      </button>
+    </p>
+  );
+}

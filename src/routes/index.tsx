@@ -11,6 +11,8 @@ import {
   Users,
 } from "lucide-react";
 
+import { useState } from "react";
+
 import {
   GapBadge,
   LevelBadge,
@@ -20,6 +22,7 @@ import {
   StatCard,
 } from "@/components/app/ui-bits";
 import { CapabilityRadar } from "@/components/app/charts";
+import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
 import { useCurrentUser } from "@/lib/auth";
 import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
@@ -123,6 +126,12 @@ function AdminHome() {
     { completed: 0, inReview: 0, draft: 0, notStarted: 0 },
   );
 
+  const [showAllColumns, setShowAllColumns] = useState(false);
+  const visibleCapabilities = showAllColumns
+    ? store.capabilities
+    : capHeatmapColumns(store.capabilities, architects, sel.capabilityAverages);
+  const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
+
   return (
     <>
       <PageHeader
@@ -190,21 +199,27 @@ function AdminHome() {
               notStarted: assessmentCoverage.notStarted,
             })}
           </p>
-          <div className="overflow-x-auto">
+          <HeatmapColumnsNotice
+            shown={visibleCapabilities.length}
+            total={store.capabilities.length}
+            showAll={showAllColumns}
+            onToggle={() => setShowAllColumns((v) => !v)}
+          />
+          <div className="max-h-[480px] overflow-auto">
             <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
               <thead>
                 <tr>
                   <th
                     scope="col"
-                    className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    className="sticky left-0 top-0 z-20 w-44 bg-card text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
                   >
                     {t("cycle.architect")}
                   </th>
-                  {store.capabilities.map((c) => (
+                  {visibleCapabilities.map((c) => (
                     <th
                       key={c.id}
                       scope="col"
-                      className="px-1 text-center text-[11px] font-medium text-muted-foreground"
+                      className="sticky top-0 z-10 max-w-[64px] truncate bg-card px-1 text-center text-[11px] font-medium text-muted-foreground"
                       title={c.name}
                     >
                       {c.short}
@@ -215,7 +230,7 @@ function AdminHome() {
               <tbody>
                 {architects.map((a) => (
                   <tr key={a.id}>
-                    <td className="py-1">
+                    <td className="sticky left-0 z-10 bg-card py-1">
                       <Link
                         to="/architects/$architectId"
                         params={{ architectId: a.id }}
@@ -224,11 +239,14 @@ function AdminHome() {
                         {a.name}
                       </Link>
                     </td>
-                    {sel.capabilityAverages(a.id).map((d) => (
-                      <td key={d.capability.id} className="min-w-[52px]">
-                        <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
-                      </td>
-                    ))}
+                    {sel
+                      .capabilityAverages(a.id)
+                      .filter((d) => visibleCapabilityIds.has(d.capability.id))
+                      .map((d) => (
+                        <td key={d.capability.id} className="min-w-[52px]">
+                          <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
+                        </td>
+                      ))}
                   </tr>
                 ))}
               </tbody>
