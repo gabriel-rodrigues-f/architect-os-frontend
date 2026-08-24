@@ -7,6 +7,7 @@ import { z } from "zod";
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { Label } from "@/components/ui/label";
@@ -167,31 +168,14 @@ function AssessmentsPage() {
         help={help}
         actions={
           <div className="flex gap-2">
-            <select
-              aria-label={t("asmt.architect")}
-              className="rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={architectId}
-              onChange={(e) => setArchitectId(e.target.value)}
-            >
-              <optgroup label={t("asmt.architect.active")}>
-                {sel.activeArchitects.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </optgroup>
-              {store.architects.some((a) => !a.active) && (
-                <optgroup label={t("asmt.architect.inactive")}>
-                  {store.architects
-                    .filter((a) => !a.active)
-                    .map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                </optgroup>
-              )}
-            </select>
+            <ArchitectSelectCombobox
+              architects={sel.activeArchitects}
+              inactiveArchitects={store.architects.filter((a) => !a.active)}
+              selectedId={architectId}
+              onChange={setArchitectId}
+              label={t("asmt.architect")}
+              className="w-48"
+            />
             <CapabilityCombobox
               capabilities={store.capabilities}
               selected={selected}

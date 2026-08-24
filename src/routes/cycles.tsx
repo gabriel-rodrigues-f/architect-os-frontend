@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { EvolutionLine } from "@/components/app/charts";
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
@@ -113,18 +114,14 @@ function CyclesPage() {
         help={help}
         actions={
           <div className="flex gap-2">
-            <select
-              className="rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={architectId}
-              onChange={(e) => setArchitectId(e.target.value)}
-              aria-label={t("cycle.architect")}
-            >
-              {store.architects.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+            <ArchitectSelectCombobox
+              architects={sel.activeArchitects}
+              inactiveArchitects={store.architects.filter((a) => !a.active)}
+              selectedId={architectId}
+              onChange={setArchitectId}
+              label={t("cycle.architect")}
+              className="w-48"
+            />
             {isAdmin && (
               <Button onClick={() => setEditing(emptyCycle(store.cycles))}>{t("cycle.new")}</Button>
             )}

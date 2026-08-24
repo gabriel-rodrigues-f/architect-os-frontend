@@ -133,7 +133,10 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
     await screen.findByText("Evolução observada");
 
     const dialog = screen.getByRole("dialog");
-    await userEvent.selectOptions(within(dialog).getByLabelText("Mentorado"), "ana");
+    // R2-ESC-04 — o campo virou combobox pesquisável, não mais `<select>`; o popover
+    // porta pra fora do dialog (Radix Portal), então a opção é buscada no documento todo.
+    await userEvent.click(within(dialog).getByLabelText("Mentorado"));
+    await userEvent.click(await screen.findByRole("option", { name: "Ana Martins" }));
     await userEvent.type(within(dialog).getByLabelText("Duração (min)"), "45");
     await userEvent.type(within(dialog).getByLabelText("Tema"), "Revisão de IAM");
     await userEvent.type(within(dialog).getByLabelText("Notas"), "Discutimos o desenho de IAM.");
@@ -184,7 +187,10 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     const dialog = await screen.findByRole("dialog");
-    await userEvent.selectOptions(within(dialog).getByLabelText("Mentorado"), "ana");
+    // R2-ESC-04 — o campo virou combobox pesquisável, não mais `<select>`; o popover
+    // porta pra fora do dialog (Radix Portal), então a opção é buscada no documento todo.
+    await userEvent.click(within(dialog).getByLabelText("Mentorado"));
+    await userEvent.click(await screen.findByRole("option", { name: "Ana Martins" }));
     await userEvent.type(within(dialog).getByLabelText("Duração (min)"), "30");
     await userEvent.type(within(dialog).getByLabelText("Tema"), "Follow-up rápido");
     await userEvent.type(within(dialog).getByLabelText("Notas"), "Sem novidades.");
@@ -227,7 +233,10 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     const dialog = await screen.findByRole("dialog");
-    await userEvent.selectOptions(within(dialog).getByLabelText("Mentorado"), "ana");
+    // R2-ESC-04 — o campo virou combobox pesquisável, não mais `<select>`; o popover
+    // porta pra fora do dialog (Radix Portal), então a opção é buscada no documento todo.
+    await userEvent.click(within(dialog).getByLabelText("Mentorado"));
+    await userEvent.click(await screen.findByRole("option", { name: "Ana Martins" }));
     await userEvent.type(within(dialog).getByLabelText("Duração (min)"), "30");
     await userEvent.type(within(dialog).getByLabelText("Tema"), "Follow-up rápido");
     await userEvent.type(within(dialog).getByLabelText("Notas"), "Sem novidades.");

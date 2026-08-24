@@ -2,6 +2,7 @@ import { AlertCircle, Check, ChevronsUpDown, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { FieldLabel, Initials } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -573,19 +574,16 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="mentee">{t("mentor.form.mentee")}</Label>
-              <select
-                id="mentee"
-                aria-invalid={f.isMissing("menteeId")}
-                className={`mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ${f.invalid("menteeId")}`}
-                value={f.form.menteeId}
-                onChange={(e) => f.setField("menteeId", e.target.value)}
-              >
-                {menteeOptions.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-1">
+                <ArchitectSelectCombobox
+                  id="mentee"
+                  architects={menteeOptions}
+                  selectedId={f.form.menteeId}
+                  onChange={(id) => f.setField("menteeId", id)}
+                  label={t("mentor.form.mentee")}
+                  invalid={f.isMissing("menteeId")}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="date">{t("mentor.form.date")}</Label>

@@ -186,8 +186,9 @@ describe("Mentoria — agendar follow-up", () => {
     );
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
-    const select = screen.getByLabelText("Mentorado") as HTMLSelectElement;
-    const options = [...select.options].map((o) => o.textContent);
+    // R2-ESC-04 — o campo virou combobox pesquisável (ArchitectSelectCombobox), não mais `<select>`.
+    await userEvent.click(screen.getByLabelText("Mentorado"));
+    const options = screen.getAllByRole("option").map((o) => o.textContent);
     expect(options).toEqual(["Bruno Almeida"]);
   });
 });

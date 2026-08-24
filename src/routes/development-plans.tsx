@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -182,17 +183,13 @@ function PlansPage() {
         description={t("pdi.subtitle")}
         help={help}
         actions={
-          <select
-            className="rounded-md border border-input bg-card px-3 py-2 text-sm"
-            value={architectId}
-            onChange={(e) => setArchitectId(e.target.value)}
-          >
-            {sel.activeArchitects.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
+          <ArchitectSelectCombobox
+            architects={sel.activeArchitects}
+            selectedId={architectId}
+            onChange={setArchitectId}
+            label={t("pdi.architect")}
+            className="w-48"
+          />
         }
       />
 

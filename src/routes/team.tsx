@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
+import { Check, ChevronsUpDown, Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -21,8 +21,18 @@ import {
 } from "@/components/app/MultiSelectFilter";
 import { SpecializationCombobox } from "@/components/app/SpecializationCombobox";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -851,19 +861,15 @@ function TeamPage() {
             {editing && (
               <div>
                 <Label htmlFor="leadUserId">{t("team.form.lead")}</Label>
-                <select
-                  id="leadUserId"
-                  className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                  value={form.leadUserId}
-                  onChange={(e) => setForm({ ...form, leadUserId: e.target.value })}
-                >
-                  <option value="">{t("team.form.lead.none")}</option>
-                  {leadOptions.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-1">
+                  <LeadCombobox
+                    id="leadUserId"
+                    options={leadOptions}
+                    selectedId={form.leadUserId}
+                    onChange={(id) => setForm({ ...form, leadUserId: id })}
+                    label={t("team.form.lead")}
+                  />
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">{t("team.form.lead.hint")}</p>
               </div>
             )}
@@ -930,6 +936,92 @@ function TeamPage() {
         />
       )}
     </>
+  );
+}
+
+/**
+ * R2-ESC-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — seletor de Lead
+ * responsável pesquisável. Diferente de `ArchitectSelectCombobox`: a lista
+ * é de contas `SessionUser` (lead/admin), não de arquitetos, e tem uma
+ * opção "sem Lead" — mesmo padrão de "remover" de `SpecializationCombobox`.
+ */
+function LeadCombobox({
+  options,
+  selectedId,
+  onChange,
+  label,
+  id,
+}: {
+  options: { id: string; name: string }[];
+  selectedId: string;
+  onChange: (id: string) => void;
+  label: string;
+  id?: string;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const ordered = [...options].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const selected = ordered.find((u) => u.id === selectedId);
+
+  const select = (userId: string) => {
+    onChange(userId);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          id={id}
+          type="button"
+          role="combobox"
+          aria-label={label}
+          aria-expanded={open}
+          title={selected?.name ?? t("team.form.lead.none")}
+          className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
+        >
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate text-left",
+              !selected && "text-muted-foreground",
+            )}
+          >
+            {selected ? selected.name : t("team.form.lead.none")}
+          </span>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="start">
+        <Command>
+          <CommandInput placeholder={t("architectCombobox.search")} />
+          <CommandList className="max-h-72">
+            <CommandEmpty>{t("architectCombobox.empty")}</CommandEmpty>
+            <CommandGroup>
+              <CommandItem value="__none__" onSelect={() => select("")}>
+                <Check
+                  className={cn("mr-2 h-4 w-4 shrink-0", !selected ? "opacity-100" : "opacity-0")}
+                />
+                <span className="text-muted-foreground">{t("team.form.lead.none")}</span>
+              </CommandItem>
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup>
+              {ordered.map((u) => (
+                <CommandItem key={u.id} value={u.name} onSelect={() => select(u.id)}>
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4 shrink-0",
+                      u.id === selectedId ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{u.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
