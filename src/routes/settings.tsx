@@ -23,13 +23,13 @@ import { formatDate } from "@/lib/text";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Referência do Modelo — Synapse" },
+      { title: "Política de Progressão — Synapse" },
       {
         name: "description",
         content:
           "Referência do modelo: escala de proficiência, perfis por cargo, tipos de ação e evidência.",
       },
-      { property: "og:title", content: "Referência do Modelo — Synapse" },
+      { property: "og:title", content: "Política de Progressão — Synapse" },
       {
         property: "og:description",
         content: "Configuração e glossário do modelo de desenvolvimento técnico.",
@@ -51,13 +51,23 @@ function SettingsPage() {
     <>
       <PageHeader
         title={t("ref.title")}
-        description="Glossário do modelo: escala de proficiência, cargos, tipos de ação e de evidência. Somente leitura, exceto a Política de Progressão — o restante do que é editável fica na tela do respectivo cadastro."
+        description="Mínimo de capacidades qualificadas por nível de carreira. Abaixo, a referência somente leitura do modelo: escala de proficiência, cargos, tipos de ação e de evidência."
         help={help}
       />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <CareerPolicySection isAdmin={isAdmin} />
+      </div>
 
+      {/* R2-TXT-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o menu chama esta
+          tela de "Política de Progressão" (título acima já reflete isso); o
+          restante da página é glossário read-only, por isso ganha um
+          cabeçalho interno próprio em vez de se misturar visualmente com a
+          política editável. */}
+      <h2 className="mb-4 mt-6 font-display text-lg font-semibold">
+        {t("ref.referenceSectionTitle")}
+      </h2>
+      <div className="grid gap-6 xl:grid-cols-2">
         <SectionCard title={t("ref.scale")} description="5 níveis usados em todos os assessments.">
           <ul className="space-y-2">
             {LEVELS.map((l) => (

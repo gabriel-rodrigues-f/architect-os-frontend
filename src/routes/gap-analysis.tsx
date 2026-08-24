@@ -11,12 +11,12 @@ import { usePageHelp } from "@/lib/page-help";
 export const Route = createFileRoute("/gap-analysis")({
   head: () => ({
     meta: [
-      { title: "Análise de Lacunas — Synapse" },
+      { title: "Prioridades de Desenvolvimento — Synapse" },
       {
         name: "description",
         content: "Radar de arquitetura e ranking de prioridades de desenvolvimento por pessoa.",
       },
-      { property: "og:title", content: "Análise de Lacunas — Synapse" },
+      { property: "og:title", content: "Prioridades de Desenvolvimento — Synapse" },
       { property: "og:description", content: "Radar e prioridades de desenvolvimento." },
     ],
   }),

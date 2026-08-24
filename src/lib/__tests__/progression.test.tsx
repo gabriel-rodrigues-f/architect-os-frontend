@@ -29,7 +29,7 @@ import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 /**
- * `/progression` (Mapa de Calor + Tabela de Lacunas de Progressão + Nível
+ * `/progression` (Mapa de Calor + Tabela de Gaps de Progressão + Nível
  * III) saiu do fim de `/gap-analysis` pra sua própria aba — apontado ao
  * vivo que empurrava a página de Prioridades (Radar + ranking por pessoa)
  * pra baixo, misturando duas granularidades diferentes na mesma rolagem.
@@ -140,10 +140,10 @@ describe("Progressão — heatmap, tabela e maestria", () => {
 
   it("a tabela de progressão marca o tipo de cada linha (Bloqueante/Oportunidade)", async () => {
     renderProgression();
-    await screen.findByText("Tabela de Lacunas de Progressão");
+    await screen.findByText("Tabela de Gaps de Progressão");
 
     const progressionTable = screen
-      .getByText("Tabela de Lacunas de Progressão")
+      .getByText("Tabela de Gaps de Progressão")
       .closest(".surface-card") as HTMLElement;
 
     const iacRow = within(progressionTable).getByText("Infra as Code").closest("tr")!;
@@ -155,10 +155,10 @@ describe("Progressão — heatmap, tabela e maestria", () => {
 
   it("Nível III (MASTERY) some da tabela de progressão e aparece só na seção de maestria, sem linguagem de bloqueio", async () => {
     renderProgression();
-    await screen.findByText("Tabela de Lacunas de Progressão");
+    await screen.findByText("Tabela de Gaps de Progressão");
 
     const progressionTable = screen
-      .getByText("Tabela de Lacunas de Progressão")
+      .getByText("Tabela de Gaps de Progressão")
       .closest(".surface-card")!;
     // Bruno está em MASTERY neste ciclo — os gaps dele não contam mais como progressão.
     expect(progressionTable.textContent).not.toContain("Kubernetes");
@@ -176,10 +176,10 @@ describe("Progressão — heatmap, tabela e maestria", () => {
   /** ENT-09-016 — cabeçalho fixo nas tabelas que crescem com o time/catálogo. */
   it("o cabeçalho da tabela de progressão e do heatmap fica fixo ao rolar (sticky)", async () => {
     renderProgression();
-    await screen.findByText("Tabela de Lacunas de Progressão");
+    await screen.findByText("Tabela de Gaps de Progressão");
 
     const progressionTable = screen
-      .getByText("Tabela de Lacunas de Progressão")
+      .getByText("Tabela de Gaps de Progressão")
       .closest(".surface-card") as HTMLElement;
     const competencyHeader = within(progressionTable).getByRole("columnheader", {
       name: "Competência",
@@ -198,7 +198,7 @@ describe("Progressão — heatmap, tabela e maestria", () => {
   it("abrir a tela com ?selected= na URL respeita o recorte", async () => {
     window.history.replaceState(null, "", "/progression?selected=ana");
     renderProgression();
-    await screen.findByText("Tabela de Lacunas de Progressão");
+    await screen.findByText("Tabela de Gaps de Progressão");
 
     const heatmap = screen.getByRole("columnheader", { name: "Arquiteto" }).closest("table")!;
     expect(heatmap.textContent).toContain("Ana Martins");

@@ -152,7 +152,7 @@ describe("Necessidades de Treinamento — cortes declarados (R2-ESC-08)", () => 
     );
   };
 
-  it("Lacunas agregadas: acima de 15, avisa a contagem e permite ver todas", async () => {
+  it("Gaps agregados: acima de 15, avisa a contagem e permite ver todas", async () => {
     renderPage();
 
     expect(

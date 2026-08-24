@@ -116,7 +116,7 @@ const renderGap = () =>
     </Wrapper>,
   );
 
-describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () => {
+describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maestria", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);

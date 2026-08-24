@@ -14,13 +14,13 @@ import { useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
     meta: [
-      { title: "Mapa de Capacidades — Synapse" },
+      { title: "Cobertura de Capacidades — Synapse" },
       {
         name: "description",
         content:
           "Mapa das capacidades técnicas disponíveis no time de arquitetura, com risco de concentração e lacunas de proficiência.",
       },
-      { property: "og:title", content: "Mapa de Capacidades — Synapse" },
+      { property: "og:title", content: "Cobertura de Capacidades — Synapse" },
       {
         property: "og:description",
         content:
