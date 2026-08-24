@@ -51,3 +51,32 @@ describe("appStateSchema — comportamento de strip de campo desconhecido", () =
     expect(parsed.architects).toEqual(fixtureState.architects);
   });
 });
+
+/**
+ * R2-TEC-20 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `role` era um
+ * `z.enum([...3 nomes])` fechado: um arquiteto num 4º nível de carreira
+ * (cenário já documentado como esperado, ADR-0002) fazia `appStateSchema.
+ * parse` inteiro falhar, derrubando o app TODO em `ConnectionError`
+ * (`store.tsx`) por causa de UM arquiteto. `z.string()` aceita qualquer
+ * nome de cargo — este teste prova que um nome desconhecido não quebra
+ * mais a validação (o comportamento antigo era exatamente o oposto:
+ * `.toThrow()`, não `.not.toThrow()`).
+ */
+describe("appStateSchema — role de arquiteto aceita nomes além dos 3 conhecidos (R2-TEC-20)", () => {
+  it("um arquiteto com role de um 4º nível de carreira (desconhecido) não quebra a validação", () => {
+    const withFourthLevelRole = {
+      ...fixtureState,
+      architects: [
+        { ...fixtureState.architects[0], role: "Arquiteto de Soluções IV" },
+        ...fixtureState.architects.slice(1),
+      ],
+    };
+    expect(() => appStateSchema.parse(withFourthLevelRole)).not.toThrow();
+    const parsed = appStateSchema.parse(withFourthLevelRole);
+    expect(parsed.architects[0]?.role).toBe("Arquiteto de Soluções IV");
+  });
+
+  it("os 3 nomes conhecidos continuam validando normalmente", () => {
+    expect(() => appStateSchema.parse(fixtureState)).not.toThrow();
+  });
+});

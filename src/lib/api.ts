@@ -266,8 +266,18 @@ export const api = {
    * de validação joga um `ZodError`, que `useQuery` (`store.tsx`) já trata
    * como qualquer outro erro de rede — drift vira erro visível, não
    * `undefined` se propagando silenciosamente pela UI.
+   *
+   * R2-TEC-20 — `architect.role` no schema é `z.string()`, mais largo que
+   * `RoleName` (`AppState`/`domain.ts`): validar de propósito não exclui um
+   * nome de cargo desconhecido (criar um 4º nível de carreira, já
+   * documentado como cenário esperado em ADR-0002, não pode derrubar o
+   * app inteiro em `ConnectionError` por causa disto). O `as AppState`
+   * aqui é a fronteira deliberada desse afrouxamento: o restante do app
+   * continua tratando `role` como `RoleName` (os 3 nomes conhecidos são o
+   * caso comum) — só deixou de ser uma garantia de RUNTIME.
    */
-  getState: () => request<AppState>("/api/state").then((data) => appStateSchema.parse(data)),
+  getState: () =>
+    request<AppState>("/api/state").then((data) => appStateSchema.parse(data) as AppState),
 
   setActiveCycle: (cycleId: string) =>
     put<{ cycleId: string }>("/api/settings/active-cycle", { cycleId }),

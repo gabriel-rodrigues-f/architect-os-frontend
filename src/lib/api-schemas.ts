@@ -24,11 +24,20 @@ import { ACTION_TYPES } from "./domain";
 
 const level = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]);
 
-const roleName = z.enum([
-  "Arquiteto de Soluções I",
-  "Arquiteto de Soluções II",
-  "Arquiteto de Soluções III",
-]);
+/**
+ * R2-TEC-20 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — B-38 já relaxou o
+ * cast equivalente no BACKEND (`RoleName` deixou de ser um enum fechado
+ * ali); este `z.enum([...3 nomes])` sobrevivia só no cliente, um enum
+ * FECHADO sobre um valor que ADR-0002 já documenta como "transitório" —
+ * criar um 4º nível de carreira faz QUALQUER resposta de `/api/state`
+ * com um arquiteto nesse nível falhar `appStateSchema.parse` inteiro,
+ * derrubando o app TODO em `ConnectionError` (`store.tsx`), não só a
+ * tela de quem tem o nível novo. `z.string()` aceita qualquer nome —
+ * código que precisa comparar contra os 3 nomes conhecidos (`ROLES`,
+ * `domain.ts`) continua funcionando para eles; um nome desconhecido só
+ * deixa de quebrar a validação, não vira um valor especial.
+ */
+const roleName = z.string();
 
 const requirementType = z.enum(["RESTRICTIVE", "NON_RESTRICTIVE"]);
 
