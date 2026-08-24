@@ -1,7 +1,8 @@
 import { ChevronDown } from "lucide-react";
-import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,16 @@ export interface MultiSelectFilterOption {
  * navegar entre opções com wrap nas pontas, Home/End para os extremos,
  * Escape fecha e devolve o foco pro botão, Enter/Espaço funcionam nativos
  * porque cada opção já é um `<button>` de verdade.
+ *
+ * R2-VIS-09 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o painel era um `<div
+ * absolute>` de posição fixa, sem detecção de colisão: perto da borda da
+ * viewport ele vazava para fora da tela. `Popover` do Radix (floating-ui por
+ * baixo) resolve só o POSICIONAMENTO — a navegação por teclado continua toda
+ * manual aqui, porque o Radix não sabe navegar entre `<button role="option">`
+ * customizados; ele só reposiciona o painel. Abrir/fechar/clique fora e
+ * Escape-padrão do Radix ficam redundantes com o que este componente já
+ * fazia à mão, mas não conflitam: o handler manual de Escape chama
+ * `preventDefault`, então o Radix respeita e não tenta fechar de novo.
  */
 export function MultiSelectFilter({
   id,
@@ -45,23 +56,9 @@ export function MultiSelectFilter({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const container = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const optionCount = options.length + 1;
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (!container.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
-  }, [open]);
-
-  useEffect(() => {
-    if (open) optionRefs.current[0]?.focus();
-  }, [open]);
 
   const close = () => {
     setOpen(false);
@@ -99,8 +96,9 @@ export function MultiSelectFilter({
     }
   };
 
+  /** Tab sai do widget inteiro num passo só — fecha quando o foco sai do painel por completo. */
   const onListBlur = (event: FocusEvent<HTMLDivElement>) => {
-    if (!container.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
   };
 
   const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -128,33 +126,38 @@ export function MultiSelectFilter({
           : t("filter.multi.count", { n: selected.length });
 
   return (
-    <div className="relative" ref={container}>
+    <div>
       <label className="block text-xs text-muted-foreground" htmlFor={id}>
         {label}
       </label>
-      <button
-        id={id}
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        onKeyDown={onTriggerKeyDown}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        title={summary}
-        className="mt-1 flex w-44 items-center justify-between gap-2 rounded-md border border-input bg-card px-2 py-2 text-sm"
-      >
-        <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
-        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      </button>
-
-      {open && (
-        <div
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            id={id}
+            ref={triggerRef}
+            type="button"
+            onKeyDown={onTriggerKeyDown}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            title={summary}
+            className="mt-1 flex w-44 items-center justify-between gap-2 rounded-md border border-input bg-card px-2 py-2 text-sm"
+          >
+            <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
           role="listbox"
           aria-multiselectable="true"
           aria-label={label}
           onKeyDown={onListKeyDown}
           onBlur={onListBlur}
-          className="absolute left-0 z-30 mt-1 max-h-72 w-56 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-lg"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            optionRefs.current[0]?.focus();
+          }}
+          align="start"
+          className="w-56 max-h-72 overflow-y-auto p-1"
         >
           <button
             ref={(el) => {
@@ -204,8 +207,8 @@ export function MultiSelectFilter({
           {options.length === 0 && (
             <p className="px-2 py-1.5 text-sm text-muted-foreground">{t("filter.multi.empty")}</p>
           )}
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
