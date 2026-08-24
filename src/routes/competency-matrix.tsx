@@ -262,7 +262,7 @@ function MatrixPage() {
                   title={cat.name}
                   description={`${t("matrix.competencyCount", { n: cat.curation.activeCompetencyCount })} · ${t("matrix.requirement.count", { restrictive: cat.curation.restrictiveCompetencyCount })} · ${t("matrix.requirement.nonRestrictiveCount", { n: cat.curation.nonRestrictiveCompetencyCount })}`}
                   actions={
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge
                         variant={cat.curation.status === "READY" ? "default" : "outline"}
                         className="text-[10px]"

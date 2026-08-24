@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { axisTick, CHART_INK, ChartPalette, tooltipStyle } from "@/lib/design/chart";
 import { useI18n } from "@/lib/i18n";
@@ -205,6 +206,7 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
     ? data
     : topByRelevance(data, (d) => Math.abs(d.alvo - d.atual), MAX_RADAR_AXES);
   const semMovimento = useReducedMotion();
+  const estreita = useNarrowViewport();
 
   const atual = t("chart.series.current");
   const alvo = t("chart.series.target");
@@ -240,7 +242,7 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
           />
         }
       >
-        <RadarChart data={visibleData} outerRadius="72%">
+        <RadarChart data={visibleData} outerRadius={estreita ? "65%" : "72%"}>
           <PolarGrid stroke={CHART_INK.grid} />
           <PolarAngleAxis dataKey="capability" tick={axisTick} />
           {/*
@@ -323,6 +325,7 @@ export function ComparisonRadar({
         MAX_RADAR_AXES,
       );
   const semMovimento = useReducedMotion();
+  const estreita = useNarrowViewport();
 
   const palette = new ChartPalette();
   const estilos = palette.forKeys(series.map((s) => s.key));
@@ -351,7 +354,7 @@ export function ComparisonRadar({
           />
         }
       >
-        <RadarChart data={visibleData} outerRadius="72%">
+        <RadarChart data={visibleData} outerRadius={estreita ? "65%" : "72%"}>
           <PolarGrid stroke={CHART_INK.grid} />
           <PolarAngleAxis dataKey="capability" tick={axisTick} />
           <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />

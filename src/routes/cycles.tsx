@@ -113,7 +113,7 @@ function CyclesPage() {
         description={t("cycle.subtitle")}
         help={help}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <ArchitectSelectCombobox
               architects={sel.activeArchitects}
               inactiveArchitects={store.architects.filter((a) => !a.active)}

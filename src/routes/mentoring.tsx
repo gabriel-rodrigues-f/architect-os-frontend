@@ -64,7 +64,7 @@ function MentoringPage() {
         description={t("mentor.subtitle")}
         help={help}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <MenteeFilterCombobox
               architects={store.architects}
               selected={filter}

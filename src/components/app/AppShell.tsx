@@ -599,7 +599,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <p className="truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              {/*
+                R2-RESP-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o texto do
+                fluxo é longo demais para caber ao lado do menu hambúrguer e
+                do seletor de ciclo em telas estreitas; truncado virava
+                "AVALIAR → PRIO…", pior que não mostrar nada. Some abaixo de
+                `md`, volta quando sobra espaço.
+              */}
+              <p className="hidden truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground md:block">
                 {t("shell.flow")}
               </p>
             </div>
