@@ -30,11 +30,17 @@ const planStatusKey: Record<DevelopmentPlan["status"], MessageKey> = {
   Completed: "status.completed",
 };
 
+/**
+ * R2-VIS-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o item do PDI é "a ação"
+ * (fem.), então o particípio de status concorda em gênero: "Bloqueada", não
+ * o "Bloqueado" genérico usado pelo PDI como um todo (`planStatusKey`, "o
+ * PDI", masc.). "Em andamento" não é particípio, não flexiona.
+ */
 const planItemStatusKey: Record<DevelopmentPlanItem["status"], MessageKey> = {
-  "Not Started": "status.notStarted",
+  "Not Started": "status.planItem.notStarted",
   "In Progress": "status.inProgress",
-  Blocked: "status.blocked",
-  Completed: "status.completed",
+  Blocked: "status.planItem.blocked",
+  Completed: "status.planItem.completed",
 };
 
 const learningStatusKey: Record<LearningItemProgress["status"], MessageKey> = {
@@ -56,10 +62,11 @@ const cycleStatusKey: Record<DevelopmentCycle["status"], MessageKey> = {
   Planned: "status.planned",
 };
 
+/** R2-VIS-07 — "a Avaliação" é fem.: "Concluída", não o "Concluído" genérico. */
 const assessmentStatusKey: Record<Assessment["status"], MessageKey> = {
   Draft: "status.draft",
   "In Review": "status.inReview",
-  Completed: "status.completed",
+  Completed: "status.assessment.completed",
 };
 
 const actionTypeKey: Record<ActionType, MessageKey> = {

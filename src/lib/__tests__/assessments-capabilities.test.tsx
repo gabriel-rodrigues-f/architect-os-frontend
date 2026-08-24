@@ -161,7 +161,7 @@ describe("Avaliações — seleção de capacidades", () => {
     renderPage();
     await screen.findByText("Kubernetes");
 
-    expect(await screen.findByText("Concluído")).toBeTruthy();
+    expect(await screen.findByText("Concluída")).toBeTruthy();
     expect(screen.getByText(/somente leitura/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Concluir avaliação/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Enviar para revisão/ })).toBeNull();
