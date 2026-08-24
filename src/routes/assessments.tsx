@@ -21,6 +21,7 @@ import type {
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n, type I18nApi } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useLabels } from "@/lib/labels";
 import { isLeadOf } from "@/lib/scope";
 import { STATE_QUERY_KEY, useSelectors, useStore } from "@/lib/store";
@@ -73,6 +74,7 @@ function AssessmentsPage() {
   const isActiveCycle = cycleId === store.activeCycleId;
   const viewedCycle = store.cycles.find((c) => c.id === cycleId);
   const { t, locale } = useI18n();
+  const help = usePageHelp("assessments");
   const labels = useLabels();
   const user = useCurrentUser();
   const [capabilityIds, setCapabilityIds] = useState<string[]>(() =>
@@ -162,6 +164,7 @@ function AssessmentsPage() {
       <PageHeader
         title={t("asmt.title")}
         description={t("asmt.subtitle")}
+        help={help}
         actions={
           <div className="flex gap-2">
             <select

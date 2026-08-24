@@ -14,6 +14,7 @@ import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useSelectors } from "@/lib/store";
 import { exportTeamReportCsv } from "@/lib/team-report-csv";
 
@@ -42,6 +43,7 @@ export const Route = createFileRoute("/progression")({
 
 function ProgressionPage() {
   const { t } = useI18n();
+  const help = usePageHelp("progression");
   const sel = useSelectors();
   const { store, selected, setSelected, architects, blocking, opportunity, mastery, scopeLabel } =
     useGapAnalysisData();
@@ -94,6 +96,7 @@ function ProgressionPage() {
       <PageHeader
         title={t("progression.title")}
         description={t("progression.subtitle")}
+        help={help}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <ArchitectFilter

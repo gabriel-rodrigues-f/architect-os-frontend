@@ -19,6 +19,7 @@ import type { DevelopmentCycle } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate } from "@/lib/text";
 
@@ -49,6 +50,7 @@ function CyclesPage() {
   const isAdmin = useCurrentUser().role === "admin";
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
   const { t, locale } = useI18n();
+  const help = usePageHelp("cycles");
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<DevelopmentCycle | null>(null);
   const [blockedDelete, setBlockedDelete] = useState<DevelopmentCycle | null>(null);
@@ -108,6 +110,7 @@ function CyclesPage() {
       <PageHeader
         title={t("cycle.title")}
         description="Cada ciclo agrupa avaliação e PDI. Trilhas, mentorias e evidências não têm ciclo — valem para a pessoa em qualquer período."
+        help={help}
         actions={
           <div className="flex gap-2">
             <select

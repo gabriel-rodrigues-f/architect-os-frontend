@@ -5,6 +5,7 @@ import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -167,15 +168,21 @@ export function PageHeader({
   title,
   description,
   actions,
+  help,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
+  /** R2-UX-01 — conteúdo do popover de ajuda contextual; vem do registry em `lib/page-help.ts`. */
+  help?: { lead: PageHelpContent; member: PageHelpContent };
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="page-title">{title}</h1>
+        <div className="flex items-center gap-1.5">
+          <h1 className="page-title">{title}</h1>
+          {help && <PageHelp content={help} />}
+        </div>
         {description && (
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
         )}

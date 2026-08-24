@@ -27,6 +27,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { capabilityShortLabels, levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor } from "@/lib/scope";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -76,6 +77,7 @@ function AdminHome() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const { t } = useI18n();
+  const help = usePageHelp("dash");
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
   /**
    * Quem desativou (saiu do time) não conta nos agregados do Painel — ver
@@ -139,6 +141,7 @@ function AdminHome() {
       <PageHeader
         title={t("dash.title")}
         description={t("dash.subtitle", { ciclo: cycle?.name ?? "—" })}
+        help={help}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -301,6 +304,7 @@ function MemberHome() {
   const user = useCurrentUser();
   const labels = useLabels();
   const { t } = useI18n();
+  const help = usePageHelp("dash");
 
   const architectId = user.architectId;
   const architect = architectId ? sel.architectById(architectId) : undefined;
@@ -308,7 +312,7 @@ function MemberHome() {
   if (!architectId || !architect) {
     return (
       <>
-        <PageHeader title={t("dash.member.title")} />
+        <PageHeader title={t("dash.member.title")} help={help} />
         <SectionCard title={t("dash.member.unlinked.title")}>
           <p className="text-sm text-muted-foreground">{t("dash.member.unlinked.body")}</p>
         </SectionCard>
@@ -339,6 +343,7 @@ function MemberHome() {
       <PageHeader
         title={t("dash.member.title")}
         description={t("dash.member.subtitle", { nome: architect.name })}
+        help={help}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -494,6 +499,7 @@ function LeadHome() {
   const user = useCurrentUser();
   const labels = useLabels();
   const { t } = useI18n();
+  const help = usePageHelp("dashLead");
 
   const myPeople = store.architects.filter((a) => a.active && a.leadUserId === user.id);
 
@@ -514,7 +520,7 @@ function LeadHome() {
 
   return (
     <>
-      <PageHeader title={t("dash.lead.title")} description={t("dash.lead.subtitle")} />
+      <PageHeader title={t("dash.lead.title")} description={t("dash.lead.subtitle")} help={help} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

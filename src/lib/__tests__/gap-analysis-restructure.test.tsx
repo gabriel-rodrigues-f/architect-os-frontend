@@ -38,6 +38,17 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
+/**
+ * R2-UX-01 — o botão de ajuda contextual (`PageHelp`) também é um trigger
+ * `aria-expanded`, então `getByRole("button", { expanded: false })` sozinho
+ * passou a achar dois: ele e o chip de recorte do `ArchitectFilter`. Este é
+ * o único `aria-haspopup="listbox"` da tela — o de ajuda é `"dialog"`.
+ */
+const getArchitectFilterTrigger = (): HTMLElement =>
+  screen
+    .getAllByRole("button", { expanded: false })
+    .find((el) => el.getAttribute("aria-haspopup") === "listbox")!;
+
 /** Competência restritiva nova, com gap para Ana em 2026-h2 — sem isto, a fixture padrão não tem nenhum bloqueante. */
 const restrictiveCompetency: Competency = {
   id: "cloud-iac",
@@ -237,7 +248,7 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
     await screen.findByText("Radar de Arquitetura");
 
     // Time inteiro nasce selecionado — desmarcar Bruno deixa só Ana.
-    await userEvent.click(screen.getByRole("button", { expanded: false }));
+    await userEvent.click(getArchitectFilterTrigger());
     await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
 
     expect(window.location.search).toBe("?selected=ana");
@@ -248,7 +259,7 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
     renderGap();
     await screen.findByText("Radar de Arquitetura");
 
-    const scopeChip = screen.getByRole("button", { expanded: false });
+    const scopeChip = getArchitectFilterTrigger();
     expect(scopeChip.textContent).toContain("Bruno Almeida");
     expect(scopeChip.textContent).not.toContain("Todo o time");
   });

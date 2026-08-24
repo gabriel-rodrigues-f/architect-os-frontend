@@ -6,6 +6,7 @@ import { CapabilityRadar } from "@/components/app/charts";
 import { type ConsolidatedGapRow, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 
 export const Route = createFileRoute("/gap-analysis")({
   head: () => ({
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/gap-analysis")({
 
 function GapPage() {
   const { t } = useI18n();
+  const help = usePageHelp("gapAnalysis");
   const {
     store,
     selected,
@@ -42,6 +44,7 @@ function GapPage() {
       <PageHeader
         title={t("gap.title")}
         description={t("gap.subtitle")}
+        help={help}
         actions={
           <ArchitectFilter
             architects={store.architects}

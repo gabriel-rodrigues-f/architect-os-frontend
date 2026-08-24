@@ -9,6 +9,7 @@ import {
 import { PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -41,6 +42,7 @@ export const Route = createFileRoute("/mentoring")({
 function MentoringPage() {
   const store = useStore();
   const { t } = useI18n();
+  const help = usePageHelp("mentoring");
   // O mentor é quem está registrando a sessão, não um nome fixo no código.
   const user = useCurrentUser();
   const sel = useSelectors();
@@ -60,6 +62,7 @@ function MentoringPage() {
       <PageHeader
         title={t("mentor.title")}
         description={t("mentor.subtitle")}
+        help={help}
         actions={
           <div className="flex items-center gap-2">
             <ArchitectFilter architects={store.architects} selected={filter} onChange={setFilter} />

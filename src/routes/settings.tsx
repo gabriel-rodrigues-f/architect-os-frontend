@@ -16,6 +16,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
 import { formatDate } from "@/lib/text";
 
@@ -43,6 +44,7 @@ function SettingsPage() {
   const careerLevels = useCareerLevelsByRank();
   const labels = useLabels();
   const { t, locale } = useI18n();
+  const help = usePageHelp("settings");
   const isAdmin = useCurrentUser().role === "admin";
 
   return (
@@ -50,6 +52,7 @@ function SettingsPage() {
       <PageHeader
         title={t("ref.title")}
         description="Glossário do modelo: escala de proficiência, cargos, tipos de ação e de evidência. Somente leitura, exceto a Política de Progressão — o restante do que é editável fica na tela do respectivo cadastro."
+        help={help}
       />
 
       <div className="grid gap-6 xl:grid-cols-2">

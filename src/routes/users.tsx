@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { authApi, ApiError, isLeadCapable, type SessionUser, type UserRole } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 
 export const Route = createFileRoute("/users")({
   head: () => ({
@@ -40,6 +41,7 @@ const USERS_QUERY_KEY = ["auth-users"] as const;
 
 function UsersPage() {
   const { t } = useI18n();
+  const help = usePageHelp("users");
   const isAdmin = useCurrentUser().role === "admin";
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
@@ -87,6 +89,7 @@ function UsersPage() {
       <PageHeader
         title={t("users.title")}
         description={t("users.subtitle")}
+        help={help}
         actions={
           isAdmin && (
             <Button size="sm" onClick={() => setCreating(true)}>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -34,6 +35,7 @@ function TrainingNeedsPage() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const { t } = useI18n();
+  const help = usePageHelp("trainingNeeds");
   /**
    * População da análise: quem este viewer de fato enxerga o registro
    * (própria pessoa, ou quem está sob a liderança dela) — nunca o roster
@@ -101,7 +103,7 @@ function TrainingNeedsPage() {
   return (
     <>
       <CapabilitiesTabs />
-      <PageHeader title={t("needs.title")} description={t("needs.subtitle")} />
+      <PageHeader title={t("needs.title")} description={t("needs.subtitle")} help={help} />
 
       {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,Nfr): sem
           isto a pista nunca encolhe abaixo da tabela/heatmap interno, e a

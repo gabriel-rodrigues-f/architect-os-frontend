@@ -27,6 +27,7 @@ import {
   type LearningPathItem,
 } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/learning-paths")({
@@ -68,6 +69,7 @@ function LearningPage() {
   const labels = useLabels();
   const [name, setName] = useState("");
   const { t, locale } = useI18n();
+  const help = usePageHelp("learningPaths");
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
   const [search, setSearch] = useState("");
   /**
@@ -146,6 +148,7 @@ function LearningPage() {
       <PageHeader
         title={t("path.title")}
         description="Trilhas combinam teoria e prática: cursos, laboratórios, projetos reais, apresentações e reviews."
+        help={help}
         actions={
           canCreatePath ? (
             <div className="flex gap-2">

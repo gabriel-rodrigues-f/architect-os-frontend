@@ -9,6 +9,7 @@ import { PageHeader, ProfileTabs, SectionCard, StatCard } from "@/components/app
 import { ApiError, evolutionApi, reportsApi } from "@/lib/api";
 import type { CompetencyEvolutionComparison, EvolutionFilters, SelectionScope } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { daysAgoIso, formatDate, todayIso } from "@/lib/text";
@@ -72,6 +73,7 @@ function ArchitectEvolution() {
   const store = useStore();
   const sel = useSelectors();
   const { t, locale } = useI18n();
+  const help = usePageHelp("architectEvolution");
   const architect = sel.architectById(architectId);
 
   const [preset, setPreset] = useState<PeriodPreset>("90");
@@ -234,6 +236,7 @@ function ArchitectEvolution() {
             ? ` · ${data.architect.careerLevelName}`
             : ""
         }`}
+        help={help}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button

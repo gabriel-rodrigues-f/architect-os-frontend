@@ -37,6 +37,7 @@ import {
 } from "@/lib/domain";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor, isLeadOf } from "@/lib/scope";
 import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -116,6 +117,7 @@ function ArchitectProfile() {
   const sel = useSelectors();
   const labels = useLabels();
   const { t, locale } = useI18n();
+  const help = usePageHelp("architectProfile");
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
   /**
@@ -194,6 +196,7 @@ function ArchitectProfile() {
       <PageHeader
         title={architect.name}
         description={`${architect.role} · ${specializationLabel(architect, sel.competencyById)} · ${architect.yearsAsArchitect} anos como arquiteto`}
+        help={help}
         actions={
           <Link
             to="/team"

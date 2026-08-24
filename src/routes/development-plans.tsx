@@ -28,6 +28,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor, isAssignedTechLeadOf, isLeadOf } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -82,6 +83,7 @@ function PlansPage() {
   const [planTransitioning, setPlanTransitioning] = useState(false);
   const [planTransitionError, setPlanTransitionError] = useState<string | null>(null);
   const { t, locale } = useI18n();
+  const help = usePageHelp("developmentPlans");
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
   /**
@@ -178,6 +180,7 @@ function PlansPage() {
       <PageHeader
         title={t("pdi.title")}
         description={t("pdi.subtitle")}
+        help={help}
         actions={
           <select
             className="rounded-md border border-input bg-card px-3 py-2 text-sm"

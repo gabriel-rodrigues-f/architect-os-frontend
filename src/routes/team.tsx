@@ -33,6 +33,7 @@ import { ROLES, type Architect, type RoleName } from "@/lib/domain";
 import { ApiError, authApi } from "@/lib/api";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { byName } from "@/lib/text";
@@ -86,6 +87,7 @@ function TeamPage() {
   const store = useStore();
   const { t } = useI18n();
   const sel = useSelectors();
+  const help = usePageHelp("team");
   /** Cadastro do roster é decisão administrativa — backend já recusa o resto. */
   const isAdmin = useCurrentUser().role === "admin";
   /** Só para montar o seletor de "Lead responsável" — a rota já é admin-only no backend. */
@@ -437,6 +439,7 @@ function TeamPage() {
       <PageHeader
         title={t("team.title")}
         description={t("team.subtitle")}
+        help={help}
         actions={isAdmin ? <Button onClick={openCreate}>{t("team.new")}</Button> : undefined}
       />
 

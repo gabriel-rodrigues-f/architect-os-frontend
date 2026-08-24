@@ -7,6 +7,7 @@ import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
 import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
 import { initialSearchParam, replaceSearchParam } from "@/lib/text";
 
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/compare")({
 
 function ComparePage() {
   const { t } = useI18n();
+  const help = usePageHelp("compare");
   const store = useStore();
   const sel = useSelectors();
 
@@ -81,6 +83,7 @@ function ComparePage() {
       <PageHeader
         title={t("compare.title")}
         description={t("compare.subtitle")}
+        help={help}
         actions={
           <ArchitectFilter
             architects={store.architects}

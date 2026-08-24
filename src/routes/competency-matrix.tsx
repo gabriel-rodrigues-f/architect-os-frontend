@@ -28,6 +28,7 @@ import {
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/competency-matrix")({
@@ -65,6 +66,7 @@ function MatrixPage() {
   const [newCapability, setNewCapability] = useState("");
   const [newCapabilityShort, setNewCapabilityShort] = useState("");
   const { t } = useI18n();
+  const help = usePageHelp("competencyMatrix");
   const [confirmDelete, setConfirmDelete] = useState<{
     competency: Competency;
     capability: Capability;
@@ -136,6 +138,7 @@ function MatrixPage() {
       <PageHeader
         title={t("matrix.title")}
         description={t("matrix.subtitle")}
+        help={help}
         actions={
           isAdmin ? (
             <div className="flex gap-2">

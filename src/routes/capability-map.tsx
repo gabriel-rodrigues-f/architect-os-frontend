@@ -4,6 +4,7 @@ import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -82,6 +83,7 @@ function CapabilityMapPage() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const { t } = useI18n();
+  const help = usePageHelp("capabilityMap");
 
   /**
    * População: só quem este viewer de fato enxerga o registro — sem isto,
@@ -120,7 +122,7 @@ function CapabilityMapPage() {
   return (
     <>
       <CapabilitiesTabs />
-      <PageHeader title={t("cap.title")} description={t("cap.subtitle")} />
+      <PageHeader title={t("cap.title")} description={t("cap.subtitle")} help={help} />
 
       {store.capabilities.length === 0 && (
         <div className="surface-card p-8 text-center">
