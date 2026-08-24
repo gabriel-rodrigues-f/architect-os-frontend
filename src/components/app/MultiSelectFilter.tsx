@@ -140,10 +140,11 @@ export function MultiSelectFilter({
         onKeyDown={onTriggerKeyDown}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="mt-1 flex items-center gap-2 rounded-md border border-input bg-card px-2 py-2 text-sm"
+        title={summary}
+        className="mt-1 flex w-44 items-center justify-between gap-2 rounded-md border border-input bg-card px-2 py-2 text-sm"
       >
-        <span>{summary}</span>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </button>
 
       {open && (

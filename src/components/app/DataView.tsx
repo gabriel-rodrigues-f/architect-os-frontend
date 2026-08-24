@@ -39,6 +39,18 @@ export interface DataViewToolbarProps {
   sortOptions?: SortOption[];
   onSortChange?: (value: string) => void;
   sortLabel?: string;
+  /**
+   * R2-UX-05 — `"grid-3"` é a grade 2×3 do Time: `children` (6 controles,
+   * na ordem que devem aparecer) enchem um `grid-cols-3` sozinhos — o
+   * auto-flow do CSS Grid já quebra em duas linhas de 3 sem precisar
+   * partir `children` em dois grupos manualmente. Busca/ordenação por
+   * `props` dedicadas ficam de fora desse modo: quem chama passa TUDO
+   * como `children`, inclusive o controle de ordenação. A contagem sai da
+   * linha de filtros e migra para a linha de chips (sempre visível nesse
+   * modo, mesmo sem filtro ativo — "5 de 5" é informação, não só aviso de
+   * corte). Default `"flex"` preserva o layout de sempre.
+   */
+  layout?: "flex" | "grid-3";
 }
 
 export function DataViewToolbar({
@@ -55,8 +67,47 @@ export function DataViewToolbar({
   sortOptions,
   onSortChange,
   sortLabel,
+  layout = "flex",
 }: DataViewToolbarProps) {
   const { t } = useI18n();
+  const countLabel =
+    resultCount === totalCount
+      ? t("dataView.resultCountAll", { n: totalCount })
+      : t("dataView.resultCount", { n: resultCount, total: totalCount });
+
+  if (layout === "grid-3") {
+    return (
+      <div className="mb-4 space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilters?.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={f.onRemove}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20"
+              >
+                {f.label}
+                <X className="h-3 w-3" />
+              </button>
+            ))}
+            {onClearFilters && activeFilters && activeFilters.length > 0 && (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+              >
+                {t("dataView.clearFilters")}
+              </button>
+            )}
+          </div>
+          <p className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{countLabel}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-4 space-y-3">
       <div className="flex flex-wrap items-end gap-3">
@@ -102,9 +153,7 @@ export function DataViewToolbar({
         )}
 
         <p className="ml-auto shrink-0 self-center whitespace-nowrap text-xs text-muted-foreground">
-          {resultCount === totalCount
-            ? t("dataView.resultCountAll", { n: totalCount })
-            : t("dataView.resultCount", { n: resultCount, total: totalCount })}
+          {countLabel}
         </p>
       </div>
 

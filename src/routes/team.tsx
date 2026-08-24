@@ -13,6 +13,7 @@ import {
 } from "@/components/app/DataView";
 import { GapBadge, Initials, LevelBadge, PageHeader } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { ArchitectNameCombobox } from "@/components/app/ArchitectNameCombobox";
 import {
   MultiSelectFilter,
   type MultiSelectFilterOption,
@@ -146,15 +147,15 @@ function TeamPage() {
     return hasNone ? [...ids, NO_CAPABILITY] : ids;
   });
   /**
-   * B-13 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12) — busca
-   * por nome é aditiva ao padrão de composição por caixinha já pedido pelo
-   * usuário pras 4 dimensões categóricas acima (Status/Papel/Especialização/
-   * Capacidade): aquele pedido era sobre COMO filtrar por atributo — nunca
-   * texto livre substituindo caixinha —, não sobre "achar a Marina" entre
-   * 30 cards, que nenhuma composição de caixinhas resolve. O
-   * `DataViewToolbar` já tinha o campo pronto; só não estava conectado.
+   * R2-UX-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo B) — evolui B-13:
+   * "Buscar por nome" (texto livre) virou seleção múltipla pesquisável
+   * (`ArchitectNameCombobox`), mesmo padrão de composição por caixinha das
+   * outras 4 facetas. Nasce com todos os ids — nenhuma filtragem de fato,
+   * mesmo cuidado das outras facetas (nunca esconder gente por engano).
    */
-  const [nameFilter, setNameFilter] = useState("");
+  const [nameSelection, setNameSelection] = useState<string[]>(() =>
+    store.architects.map((a) => a.id),
+  );
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "level" | "recent">("name-asc");
   const [page, setPage] = useState(1);
   /** P1-12 — 25 como default superdimensiona times de 10–30 pessoas; 10 mostra o time inteiro sem paginar na maioria dos casos reais. */
@@ -163,7 +164,7 @@ function TeamPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [nameFilter, statusFilter, roleFilter, specializationFilter, capabilityFilter, sort]);
+  }, [nameSelection, statusFilter, roleFilter, specializationFilter, capabilityFilter, sort]);
 
   /** Última sessão de mentoria por mentee — proxy de "atualização recente": não há `updatedAt` no cadastro. */
   const lastMentoringByArchitect = useMemo(() => {
@@ -215,8 +216,8 @@ function TeamPage() {
 
   const filtered = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
-    const query = nameFilter.trim().toLowerCase();
     return store.architects.filter((a) => {
+      if (!nameSelection.includes(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
       if (!roleFilter.includes(a.role)) return false;
       const specKey = a.primarySpecializationCompetencyId ?? NO_SPECIALIZATION;
@@ -226,7 +227,6 @@ function TeamPage() {
         : undefined;
       const capKey = competency?.capabilityId ?? NO_CAPABILITY;
       if (!capabilityFilter.includes(capKey)) return false;
-      if (query && !a.name.toLowerCase().includes(query)) return false;
       return true;
     });
   }, [
@@ -236,7 +236,7 @@ function TeamPage() {
     roleFilter,
     specializationFilter,
     capabilityFilter,
-    nameFilter,
+    nameSelection,
     sel,
   ]);
 
@@ -289,11 +289,11 @@ function TeamPage() {
         : t("filter.multi.count", { n: selected.length });
 
   const activeFilterChips: ActiveFilterChip[] = [];
-  if (nameFilter.trim()) {
+  if (nameSelection.length !== store.architects.length) {
     activeFilterChips.push({
       key: "name",
-      label: `${t("team.search.label")}: ${nameFilter.trim()}`,
-      onRemove: () => setNameFilter(""),
+      label: t("team.filter.chip.name", { n: nameSelection.length }),
+      onRemove: () => setNameSelection(store.architects.map((a) => a.id)),
     });
   }
   if (isAdmin && !(statusFilter.length === 1 && statusFilter[0] === "active")) {
@@ -326,7 +326,7 @@ function TeamPage() {
   }
 
   const clearFilters = () => {
-    setNameFilter("");
+    setNameSelection(store.architects.map((a) => a.id));
     setStatusFilter(["active"]);
     setRoleFilter(roleOptions.map((o) => o.id));
     setSpecializationFilter(specializationOptions.map((o) => o.id));
@@ -455,19 +455,26 @@ function TeamPage() {
         </div>
       ) : (
         <>
+          {/*
+            R2-UX-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo B) — grade
+            2×3 em vez de flex-wrap: linha 1 [Pessoas, Status, Nível de
+            carreira], linha 2 [Especialização, Capacidade, Ordenar por]. O
+            auto-flow do CSS Grid (`layout="grid-3"`) já faz a quebra de
+            linha sozinho a partir da ordem dos filhos — sem Status (não-
+            admin), a grade só reflui pra 5 itens, sem quebrar o layout.
+          */}
           <DataViewToolbar
-            searchValue={nameFilter}
-            onSearchChange={setNameFilter}
-            searchLabel={t("team.search.label")}
-            searchPlaceholder={t("team.search.placeholder")}
+            layout="grid-3"
             resultCount={enrichedSorted.length}
             totalCount={store.architects.length}
             activeFilters={activeFilterChips}
             onClearFilters={clearFilters}
-            sortValue={sort}
-            sortOptions={sortOptions}
-            onSortChange={(v) => setSort(v as typeof sort)}
           >
+            <ArchitectNameCombobox
+              architects={store.architects}
+              selected={nameSelection}
+              onChange={setNameSelection}
+            />
             {isAdmin && (
               <MultiSelectFilter
                 id="team-filter-status"
@@ -512,6 +519,23 @@ function TeamPage() {
               allSummaryLabel={t("team.filter.capability.all")}
               noneSummaryLabel={t("team.filter.chip.none")}
             />
+            <div>
+              <label className="block text-xs text-muted-foreground" htmlFor="team-sort">
+                {t("dataView.sortLabel")}
+              </label>
+              <select
+                id="team-sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as typeof sort)}
+                className="mt-1 w-44 rounded-md border border-input bg-card px-2 py-2 text-sm"
+              >
+                {sortOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </DataViewToolbar>
 
           <div className="mb-3 flex justify-end">
