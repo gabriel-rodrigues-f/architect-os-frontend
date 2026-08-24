@@ -25,12 +25,12 @@ import { initialSearchParam, replaceSearchParam } from "@/lib/text";
 export const Route = createFileRoute("/compare")({
   head: () => ({
     meta: [
-      { title: "Comparação — Synapse" },
+      { title: "Comparativo de Profissionais — Synapse" },
       {
         name: "description",
         content: "Comparação lado a lado do nível de capacidades entre profissionais específicos.",
       },
-      { property: "og:title", content: "Comparação — Synapse" },
+      { property: "og:title", content: "Comparativo de Profissionais — Synapse" },
       { property: "og:description", content: "Radar sobreposto e tabela lado a lado por pessoa." },
     ],
   }),
