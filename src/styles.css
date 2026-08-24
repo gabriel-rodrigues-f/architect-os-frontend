@@ -127,6 +127,12 @@
   --level-3-fg: oklch(0.38 0.1 130);
   --level-4-fg: oklch(0.3 0.08 170);
   --level-5-fg: oklch(0.28 0.08 195);
+  --status-neutral: oklch(0.93 0.01 250);
+  --status-progress: oklch(0.88 0.09 85);
+  --status-done: oklch(0.87 0.09 300);
+  --status-neutral-fg: oklch(0.42 0.03 250);
+  --status-progress-fg: oklch(0.4 0.12 85);
+  --status-done-fg: oklch(0.38 0.13 300);
   --gap-ok: oklch(0.9 0.06 155);
   --gap-low: oklch(0.91 0.06 95);
   --gap-high: oklch(0.9 0.07 55);
@@ -207,6 +213,12 @@
   --level-3-fg: oklch(0.88 0.055 130);
   --level-4-fg: oklch(0.88 0.044 170);
   --level-5-fg: oklch(0.88 0.044 195);
+  --status-neutral: oklch(0.267 0.007 250);
+  --status-progress: oklch(0.286 0.063 85);
+  --status-done: oklch(0.289 0.063 300);
+  --status-neutral-fg: oklch(0.88 0.017 250);
+  --status-progress-fg: oklch(0.88 0.066 85);
+  --status-done-fg: oklch(0.88 0.072 300);
   --gap-ok: oklch(0.278 0.042 155);
   --gap-low: oklch(0.274 0.042 95);
   --gap-high: oklch(0.278 0.049 55);
@@ -261,6 +273,9 @@
   --color-level-3: var(--level-3);
   --color-level-4: var(--level-4);
   --color-level-5: var(--level-5);
+  --color-status-neutral: var(--status-neutral);
+  --color-status-progress: var(--status-progress);
+  --color-status-done: var(--status-done);
   --color-gap-ok: var(--gap-ok);
   --color-gap-low: var(--gap-low);
   --color-gap-high: var(--gap-high);

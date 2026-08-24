@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { PageHeader, SectionCard, StatusBadge } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authApi, ApiError, isLeadCapable, type SessionUser, type UserRole } from "@/lib/api";
+import { authApi, ApiError, type SessionUser, type UserRole } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -145,10 +145,16 @@ function UsersPage() {
                     </td>
                     <td className="py-2 text-muted-foreground">{user.email}</td>
                     <td className="py-2">
-                      <RoleBadge role={user.role} label={t(`users.role.${user.role}`)} />
+                      <StatusBadge
+                        tone={roleTone[user.role]}
+                        label={t(`users.role.${user.role}`)}
+                      />
                     </td>
                     <td className="py-2">
-                      <StatusBadge status={user.status} label={t(`users.status.${user.status}`)} />
+                      <AccountStatusBadge
+                        status={user.status}
+                        label={t(`users.status.${user.status}`)}
+                      />
                     </td>
                     {isAdmin && (
                       <td className="py-2">
@@ -194,13 +200,14 @@ function UsersPage() {
   );
 }
 
-function RoleBadge({ role, label }: { role: UserRole; label: string }) {
-  const tone =
-    role === "admin" ? "bg-level-5/60" : isLeadCapable(role) ? "bg-level-3/60" : "bg-secondary";
-  return <span className={`rounded-md px-2 py-0.5 text-xs ${tone}`}>{label}</span>;
-}
+/** R2-VIS-01 — mapeia o papel para um dos 3 tons genéricos de `StatusBadge`. */
+const roleTone: Record<UserRole, "neutral" | "progress" | "done"> = {
+  admin: "done",
+  lead: "progress",
+  member: "neutral",
+};
 
-function StatusBadge({ status, label }: { status: "active" | "disabled"; label: string }) {
+function AccountStatusBadge({ status, label }: { status: "active" | "disabled"; label: string }) {
   const tone = status === "disabled" ? "bg-destructive/15 text-destructive" : "bg-secondary";
   return <span className={`rounded-md px-2 py-0.5 text-xs ${tone}`}>{label}</span>;
 }

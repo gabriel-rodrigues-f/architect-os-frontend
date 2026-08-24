@@ -133,6 +133,41 @@ export function GapBadge({ gap }: { gap: number | undefined }) {
   );
 }
 
+/**
+ * R2-VIS-01 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — situação de avaliação e
+ * papel de usuário pegavam emprestado `bg-level-*`, o vocabulário de
+ * PROFICIÊNCIA (`LevelBadge` acima), só porque o número de estados batia por
+ * coincidência. Paleta própria (`status-*`, `tokens.ts`), sem relação com
+ * nível de competência — mudar a escala de proficiência não deve mexer aqui,
+ * e vice-versa. `tone` é a abstração pública: cada tela mapeia o próprio
+ * domínio (status de avaliação, papel de usuário, ...) para um dos três
+ * estados genéricos, sem essa lib conhecer domínio nenhum.
+ */
+const statusTone: Record<"neutral" | "progress" | "done", string> = {
+  neutral: "bg-status-neutral text-[var(--status-neutral-fg)]",
+  progress: "bg-status-progress text-[var(--status-progress-fg)]",
+  done: "bg-status-done text-[var(--status-done-fg)]",
+};
+
+export function StatusBadge({
+  tone,
+  label,
+}: {
+  tone: "neutral" | "progress" | "done";
+  label: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
+        statusTone[tone],
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 export function StatCard({
   label,
   value,

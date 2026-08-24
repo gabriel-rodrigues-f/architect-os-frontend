@@ -4,7 +4,13 @@ import { AlertTriangle, BadgeCheck } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { z } from "zod";
 
-import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import {
+  GapBadge,
+  LevelBadge,
+  PageHeader,
+  SectionCard,
+  StatusBadge,
+} from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
@@ -27,7 +33,6 @@ import { useLabels } from "@/lib/labels";
 import { isLeadOf } from "@/lib/scope";
 import { STATE_QUERY_KEY, useSelectors, useStore } from "@/lib/store";
 import { formatDate, initialSearchParam } from "@/lib/text";
-import { cn } from "@/lib/utils";
 
 /**
  * `architectId` na URL — quem chega de outra tela (o perfil da pessoa)
@@ -239,8 +244,8 @@ function AssessmentsPage() {
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {t("asmt.status")}
           </span>
-          <AssessmentStatusBadge
-            status={assessment.status}
+          <StatusBadge
+            tone={assessmentStatusTone[assessment.status]}
             label={labels.assessmentStatus[assessment.status]}
           />
           {isCompleted && <span className="text-xs text-muted-foreground">{t("asmt.locked")}</span>}
@@ -772,29 +777,12 @@ function CommentForm({
   );
 }
 
-/**
- * Reaproveita a mesma linguagem visual da escala de proficiência — apagado →
- * ácido — em vez de inventar uma paleta própria só para status: `Draft`
- * recebe o tom neutro de nível 0, `Completed` o tom de topo da escala
- * (nível 5), e `In Review` fica no meio.
- */
-function AssessmentStatusBadge({ status, label }: { status: Assessment["status"]; label: string }) {
-  const tone: Record<Assessment["status"], string> = {
-    Draft: "bg-level-0 text-muted-foreground",
-    "In Review": "bg-level-3 text-[var(--level-3-fg)]",
-    Completed: "bg-level-5 text-[var(--level-5-fg)]",
-  };
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
-        tone[status],
-      )}
-    >
-      {label}
-    </span>
-  );
-}
+/** R2-VIS-01 — mapeia o status para um dos 3 tons genéricos de `StatusBadge`. */
+const assessmentStatusTone: Record<Assessment["status"], "neutral" | "progress" | "done"> = {
+  Draft: "neutral",
+  "In Review": "progress",
+  Completed: "done",
+};
 
 /**
  * ENT-CAR-014/015/016 — portfólio individual de capacidades: quais contam
