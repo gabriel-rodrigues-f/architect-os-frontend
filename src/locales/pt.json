@@ -43,6 +43,8 @@
   "common.remove": "Remover",
   "common.close": "Fechar",
   "common.search": "Buscar",
+  "common.searchCompetency": "Buscar competência…",
+  "common.noCompetencyFound": "Nenhuma competência encontrada.",
   "common.all": "Todas",
   "common.selectAll": "Selecionar todas",
   "common.none": "nenhum",

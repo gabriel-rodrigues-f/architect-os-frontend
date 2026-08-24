@@ -43,6 +43,8 @@
   "common.remove": "Remove",
   "common.close": "Close",
   "common.search": "Search",
+  "common.searchCompetency": "Search competency…",
+  "common.noCompetencyFound": "No competency found.",
   "common.all": "All",
   "common.selectAll": "Select all",
   "common.none": "none",

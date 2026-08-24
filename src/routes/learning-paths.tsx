@@ -18,7 +18,7 @@ import {
 import { isLeadCapable } from "@/lib/api";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { canActFor } from "@/lib/scope";
-import { formatDate } from "@/lib/text";
+import { formatDate, matchesSearch } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
 import {
   progressFor,
@@ -377,6 +377,11 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  /** R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local acima de 20 competências. */
+  const [competencyFilter, setCompetencyFilter] = useState("");
+  const visibleCompetencies = store.competencies.filter((c) =>
+    matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
+  );
 
   const assignableArchitects = store.architects.filter((a) => a.active);
 
@@ -450,8 +455,17 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label>{t("path.edit.competencies")}</Label>
+              {store.competencies.length > 20 && (
+                <Input
+                  aria-label={t("common.searchCompetency")}
+                  placeholder={t("common.searchCompetency")}
+                  value={competencyFilter}
+                  onChange={(e) => setCompetencyFilter(e.target.value)}
+                  className="mt-2"
+                />
+              )}
               <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
-                {store.competencies.map((c) => (
+                {visibleCompetencies.map((c) => (
                   <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
                       type="checkbox"
@@ -461,6 +475,9 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
                     <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   </label>
                 ))}
+                {visibleCompetencies.length === 0 && (
+                  <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                )}
               </div>
             </div>
             <div>
@@ -569,6 +586,11 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
     type: ITEM_TYPES[0] as LearningItemType,
     hours: "4",
   });
+  /** R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local acima de 20 competências. */
+  const [competencyFilter, setCompetencyFilter] = useState("");
+  const visibleCompetencies = store.competencies.filter((c) =>
+    matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
+  );
 
   const saveDetails = () => {
     const nome = form.name.trim() || path.name;
@@ -715,8 +737,17 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label>{t("path.edit.competencies")}</Label>
+              {store.competencies.length > 20 && (
+                <Input
+                  aria-label={t("common.searchCompetency")}
+                  placeholder={t("common.searchCompetency")}
+                  value={competencyFilter}
+                  onChange={(e) => setCompetencyFilter(e.target.value)}
+                  className="mt-2"
+                />
+              )}
               <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
-                {store.competencies.map((c) => (
+                {visibleCompetencies.map((c) => (
                   <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
                       type="checkbox"
@@ -726,6 +757,9 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                     <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   </label>
                 ))}
+                {visibleCompetencies.length === 0 && (
+                  <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                )}
               </div>
             </div>
             <div>

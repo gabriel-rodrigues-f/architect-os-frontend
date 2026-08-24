@@ -32,7 +32,7 @@ import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/li
 import { useI18n } from "@/lib/i18n";
 import { isAssignedTechLeadOf } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
-import { byName, formatDate, todayIso } from "@/lib/text";
+import { byName, formatDate, matchesSearch, todayIso } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 /**
@@ -560,6 +560,20 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
   const user = useCurrentUser();
   const sel = useSelectors();
   const f = useMentoringSessionForm(menteeOptions);
+  /**
+   * R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — dois checklists de
+   * competências nesta mesma dialog (discutidas / evolução observada),
+   * filtros independentes — filtrar um não deveria escondar opção do outro.
+   */
+  const [competencyFilter, setCompetencyFilter] = useState("");
+  const [proficiencyFilter, setProficiencyFilter] = useState("");
+  const activeCompetencies = store.competencies.filter((c) => c.active);
+  const discussedList = activeCompetencies.filter((c) =>
+    matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
+  );
+  const proficiencyList = activeCompetencies.filter((c) =>
+    matchesSearch(c.name, proficiencyFilter.trim().toLowerCase()),
+  );
 
   return (
     <Dialog open={f.open} onOpenChange={f.setOpen}>
@@ -680,6 +694,15 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             <FieldLabel htmlFor="mentor-competencies" hint={t("mentor.form.competenciesHint")}>
               {t("mentor.form.competencies")}
             </FieldLabel>
+            {activeCompetencies.length > 20 && (
+              <Input
+                aria-label={t("common.searchCompetency")}
+                placeholder={t("common.searchCompetency")}
+                value={competencyFilter}
+                onChange={(e) => setCompetencyFilter(e.target.value)}
+                className="mt-1"
+              />
+            )}
             <div
               id="mentor-competencies"
               className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
@@ -687,18 +710,19 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               {/* REVISAO-360-FRONTEND, FE-360-003 — competência arquivada não é mais
                   identidade profissional válida daqui pra frente (mesmo critério já
                   aplicado abaixo, em "Evolução observada", e no SpecializationCombobox). */}
-              {store.competencies
-                .filter((c) => c.active)
-                .map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={f.competencyIds.includes(c.id)}
-                      onChange={() => f.toggleCompetency(c.id)}
-                    />
-                    <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                  </label>
-                ))}
+              {discussedList.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={f.competencyIds.includes(c.id)}
+                    onChange={() => f.toggleCompetency(c.id)}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                </label>
+              ))}
+              {discussedList.length === 0 && (
+                <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+              )}
             </div>
           </div>
           {isAssignedTechLeadOf(user, sel.architectById(f.form.menteeId)) && (
@@ -706,69 +730,77 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               <FieldLabel htmlFor="mentor-proficiency" hint={t("mentor.form.proficiencyHint")}>
                 {t("mentor.form.proficiency")}
               </FieldLabel>
+              {activeCompetencies.length > 20 && (
+                <Input
+                  aria-label={t("common.searchCompetency")}
+                  placeholder={t("common.searchCompetency")}
+                  value={proficiencyFilter}
+                  onChange={(e) => setProficiencyFilter(e.target.value)}
+                  className="mt-1"
+                />
+              )}
               <div
                 id="mentor-proficiency"
                 className="mt-1 max-h-48 overflow-y-auto overflow-x-hidden surface-inset p-2"
               >
-                {store.competencies
-                  .filter((c) => c.active)
-                  .map((c) => {
-                    const update = f.proficiencyUpdates.find((u) => u.competencyId === c.id);
-                    return (
-                      <div key={c.id} className="py-1">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={!!update}
-                            onChange={() => f.toggleProficiencyUpdate(c.id)}
-                          />
-                          <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                        </label>
-                        {update && (
-                          <div className="ml-6 mt-1">
-                            <div className="flex items-center gap-2">
-                              <select
-                                className={`rounded-md border bg-card px-2 py-1 text-xs ${
-                                  f.proficiencyMissingLevel && update.observedLevel === null
-                                    ? "border-destructive ring-1 ring-destructive"
-                                    : "border-input"
-                                }`}
-                                value={update.observedLevel ?? ""}
-                                aria-invalid={
-                                  f.proficiencyMissingLevel && update.observedLevel === null
-                                }
-                                onChange={(e) =>
-                                  f.setProficiencyLevel(c.id, Number(e.target.value))
-                                }
-                                aria-label={t("mentor.form.proficiencyLevel", { nome: c.name })}
-                              >
-                                <option value="" disabled>
-                                  {t("mentor.form.proficiencySelectLevel")}
+                {proficiencyList.length === 0 && (
+                  <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                )}
+                {proficiencyList.map((c) => {
+                  const update = f.proficiencyUpdates.find((u) => u.competencyId === c.id);
+                  return (
+                    <div key={c.id} className="py-1">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={!!update}
+                          onChange={() => f.toggleProficiencyUpdate(c.id)}
+                        />
+                        <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                      </label>
+                      {update && (
+                        <div className="ml-6 mt-1">
+                          <div className="flex items-center gap-2">
+                            <select
+                              className={`rounded-md border bg-card px-2 py-1 text-xs ${
+                                f.proficiencyMissingLevel && update.observedLevel === null
+                                  ? "border-destructive ring-1 ring-destructive"
+                                  : "border-input"
+                              }`}
+                              value={update.observedLevel ?? ""}
+                              aria-invalid={
+                                f.proficiencyMissingLevel && update.observedLevel === null
+                              }
+                              onChange={(e) => f.setProficiencyLevel(c.id, Number(e.target.value))}
+                              aria-label={t("mentor.form.proficiencyLevel", { nome: c.name })}
+                            >
+                              <option value="" disabled>
+                                {t("mentor.form.proficiencySelectLevel")}
+                              </option>
+                              {[1, 2, 3, 4, 5].map((level) => (
+                                <option key={level} value={level}>
+                                  L{level}
                                 </option>
-                                {[1, 2, 3, 4, 5].map((level) => (
-                                  <option key={level} value={level}>
-                                    L{level}
-                                  </option>
-                                ))}
-                              </select>
-                              <input
-                                type="text"
-                                placeholder={t("mentor.form.proficiencyNote")}
-                                className="flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
-                                value={update.note ?? ""}
-                                onChange={(e) => f.setProficiencyNote(c.id, e.target.value)}
-                              />
-                            </div>
-                            {f.proficiencyMissingLevel && update.observedLevel === null && (
-                              <p className="mt-1 text-xs text-destructive">
-                                {t("mentor.form.proficiencyLevelRequired")}
-                              </p>
-                            )}
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              placeholder={t("mentor.form.proficiencyNote")}
+                              className="flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
+                              value={update.note ?? ""}
+                              onChange={(e) => f.setProficiencyNote(c.id, e.target.value)}
+                            />
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          {f.proficiencyMissingLevel && update.observedLevel === null && (
+                            <p className="mt-1 text-xs text-destructive">
+                              {t("mentor.form.proficiencyLevelRequired")}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

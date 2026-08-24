@@ -18,6 +18,15 @@ export const byName = <T extends { name: string }>(a: T, b: T): number =>
   a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
 
 /**
+ * R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local por nome,
+ * usado pelos checklists de competências de Mentoria/Trilhas. `term` já
+ * vem `trim()`ado e em minúsculas de quem chama — aqui só decide o critério
+ * de match, para não repetir `.toLowerCase().includes(...)` em cada tela.
+ */
+export const matchesSearch = (name: string, term: string): boolean =>
+  term === "" || name.toLowerCase().includes(term);
+
+/**
  * R2-ESC-05/R2-UX-09 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, regra C.2.9) —
  * lista de nomes concatenada sem teto ficava ilegível a partir de umas
  * poucas dezenas de pessoas (uma capacidade com referência distribuída
