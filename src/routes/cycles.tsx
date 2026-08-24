@@ -110,7 +110,7 @@ function CyclesPage() {
     <>
       <PageHeader
         title={t("cycle.title")}
-        description="Cada ciclo agrupa avaliação e PDI. Trilhas, mentorias e evidências não têm ciclo — valem para a pessoa em qualquer período."
+        description={t("cycle.subtitle")}
         help={help}
         actions={
           <div className="flex gap-2">
@@ -163,7 +163,7 @@ function CyclesPage() {
                     <button
                       type="button"
                       onClick={() => setEditing(c)}
-                      aria-label={`Editar ${c.name}`}
+                      aria-label={`${t("common.edit")} ${c.name}`}
                       className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -171,7 +171,7 @@ function CyclesPage() {
                     <button
                       type="button"
                       onClick={() => askDeleteCycle(c)}
-                      aria-label={`Excluir ${c.name}`}
+                      aria-label={`${t("common.delete")} ${c.name}`}
                       className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -188,12 +188,10 @@ function CyclesPage() {
         {store.cycles.length === 0 && (
           <div className="surface-card p-6 text-center sm:col-span-3">
             <p className="text-sm font-medium">{t("cycle.empty")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              O ciclo delimita o período de avaliação, PDI e metas.
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("cycle.empty.hint")}</p>
             {isAdmin && (
               <Button className="mt-4" onClick={() => setEditing(emptyCycle(store.cycles))}>
-                Novo ciclo
+                {t("cycle.new")}
               </Button>
             )}
           </div>
@@ -204,8 +202,8 @@ function CyclesPage() {
 
       <ConfirmDialog
         open={confirmDelete !== null}
-        title={`Excluir ${confirmDelete?.name}?`}
-        description="O ciclo não tem avaliação nem PDI vinculado — pode ser excluído sem perder histórico. Esta ação não pode ser desfeita."
+        title={t("cycle.delete.confirmTitle", { nome: confirmDelete?.name ?? "" })}
+        description={t("cycle.delete.confirmDescription")}
         onCancel={() => setConfirmDelete(null)}
         onConfirm={() => {
           if (confirmDelete) store.removeCycle(confirmDelete.id);
@@ -216,14 +214,13 @@ function CyclesPage() {
       <Dialog open={blockedDelete !== null} onOpenChange={(v) => !v && setBlockedDelete(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Não é possível excluir {blockedDelete?.name}</DialogTitle>
+            <DialogTitle>
+              {t("cycle.delete.blockedTitle", { nome: blockedDelete?.name ?? "" })}
+            </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Este ciclo tem avaliação ou PDI vinculado — excluí-lo destruiria esse histórico. Ciclos
-            usados só podem ser encerrados (situação "Encerrado"), não excluídos.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("cycle.delete.blockedDescription")}</p>
           <DialogFooter>
-            <Button onClick={() => setBlockedDelete(null)}>Entendi</Button>
+            <Button onClick={() => setBlockedDelete(null)}>{t("common.understood")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -234,11 +231,14 @@ function CyclesPage() {
 
       <SectionCard
         className="mt-6"
-        title="Comparação de competências"
+        title={t("cycle.compare.title")}
         description={
           store.competencies.length > compare.length
-            ? `Nível final por ciclo. Mostrando ${compare.length} de ${store.competencies.length} competências.`
-            : "Nível final por ciclo."
+            ? t("cycle.compare.subtitleShowingN", {
+                shown: compare.length,
+                total: store.competencies.length,
+              })
+            : t("cycle.compare.subtitle")
         }
       >
         <div className="overflow-x-auto">
@@ -246,7 +246,7 @@ function CyclesPage() {
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th scope="col" className="py-2">
-                  Competência
+                  {t("col.competency")}
                 </th>
                 {closedCycles.map((c) => (
                   <th key={c.id} scope="col" className="py-2 text-center">
@@ -271,9 +271,9 @@ function CyclesPage() {
         </div>
         {store.competencies.length > compare.length && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Para ver as demais, consulte a{" "}
+            {t("cycle.compare.seeMore")}{" "}
             <Link to="/competency-matrix" className="text-primary hover:underline">
-              Matriz de Competências
+              {t("matrix.title")}
             </Link>
             .
           </p>
@@ -336,6 +336,7 @@ const emptyCycle = (existing: DevelopmentCycle[]): DevelopmentCycle => {
  */
 function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () => void }) {
   const store = useStore();
+  const { t } = useI18n();
   const isNew = cycle.id === "";
   const parsed = parseCycleName(cycle.name);
   const [year, setYear] = useState(parsed.year);
@@ -372,11 +373,13 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isNew ? "Novo ciclo" : `Editar ${cycle.name}`}</DialogTitle>
+          <DialogTitle>
+            {isNew ? t("cycle.new") : t("cycle.dialog.titleEdit", { nome: cycle.name })}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label htmlFor="cycle-year">Ciclo</Label>
+            <Label htmlFor="cycle-year">{t("cycle.dialog.cycleLabel")}</Label>
             {isNew ? (
               <div className="mt-1 flex gap-2">
                 <Input
@@ -387,7 +390,7 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
                   onChange={(e) => changePeriod(Number(e.target.value) || year, half)}
                 />
                 <select
-                  aria-label="Semestre"
+                  aria-label={t("cycle.dialog.semesterAriaLabel")}
                   className="rounded-md border border-input bg-card px-3 py-2 text-sm"
                   value={half}
                   onChange={(e) => changePeriod(year, e.target.value as Half)}
@@ -403,13 +406,13 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
             )}
             {duplicate && (
               <p className="mt-1 text-xs text-destructive" role="alert">
-                Já existe um ciclo {cycleName(year, half)}.
+                {t("cycle.dialog.duplicate", { nome: cycleName(year, half) })}
               </p>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="cycle-start">Início</Label>
+              <Label htmlFor="cycle-start">{t("cycle.dialog.start")}</Label>
               <Input
                 id="cycle-start"
                 type="date"
@@ -418,7 +421,7 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
               />
             </div>
             <div>
-              <Label htmlFor="cycle-end">Fim</Label>
+              <Label htmlFor="cycle-end">{t("cycle.dialog.end")}</Label>
               <Input
                 id="cycle-end"
                 type="date"
@@ -430,10 +433,10 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button onClick={save} disabled={duplicate}>
-            Salvar
+            {t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

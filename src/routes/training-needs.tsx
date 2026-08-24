@@ -146,10 +146,10 @@ function TrainingNeedsPage() {
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th scope="col" className="py-2">
-                    Competência
+                    {t("col.competency")}
                   </th>
                   <th scope="col" className="py-2">
-                    Capacidade
+                    {t("col.capability")}
                   </th>
                   <th scope="col" className="py-2 text-center">
                     {t("needs.col.peopleWithGap")}
@@ -205,7 +205,7 @@ function TrainingNeedsPage() {
                   <GapBadge gap={Math.round(n.avgGap)} />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {n.people} arquitetos · formato sugerido: workshop prático + architecture review
+                  {t("needs.recommended.summary", { n: n.people })}
                 </p>
                 <div className="mt-2">
                   {interventionExists(n) ? (

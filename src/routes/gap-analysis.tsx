@@ -59,7 +59,7 @@ function GapPage() {
           <p className="text-sm font-medium">{t("gap.empty")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {store.architects.length === 0
-              ? "Cadastre arquitetos em Time e abra uma avaliação do ciclo para ver as lacunas aqui."
+              ? t("gap.empty.noArchitects")
               : t("gap.empty.filterHint")}
           </p>
         </div>

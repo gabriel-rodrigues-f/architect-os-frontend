@@ -580,7 +580,7 @@ function TeamPage() {
                         {a.name}
                       </Link>
                       <p className="truncate text-xs text-muted-foreground">
-                        {a.role} · {a.yearsAsArchitect} anos ·{" "}
+                        {a.role} · {t("team.card.years", { n: a.yearsAsArchitect })} ·{" "}
                         {specializationLabel(a, sel.competencyById)}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">{a.email}</p>
@@ -601,7 +601,7 @@ function TeamPage() {
                             <button
                               type="button"
                               onClick={() => openEdit(a)}
-                              aria-label={`Editar ${a.name}`}
+                              aria-label={`${t("common.edit")} ${a.name}`}
                               className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -609,7 +609,7 @@ function TeamPage() {
                             <button
                               type="button"
                               onClick={() => setConfirmDeactivate(a)}
-                              aria-label={`Desativar ${a.name}`}
+                              aria-label={`${t("team.deactivate.action")} ${a.name}`}
                               title={t("team.deactivate.action")}
                               className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                             >
@@ -768,7 +768,7 @@ function TeamPage() {
                                   <button
                                     type="button"
                                     onClick={() => openEdit(a)}
-                                    aria-label={`Editar ${a.name}`}
+                                    aria-label={`${t("common.edit")} ${a.name}`}
                                     className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                                   >
                                     <Pencil className="h-3.5 w-3.5" />
@@ -776,7 +776,7 @@ function TeamPage() {
                                   <button
                                     type="button"
                                     onClick={() => setConfirmDeactivate(a)}
-                                    aria-label={`Desativar ${a.name}`}
+                                    aria-label={`${t("team.deactivate.action")} ${a.name}`}
                                     title={t("team.deactivate.action")}
                                     className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                                   >
@@ -832,7 +832,7 @@ function TeamPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="nome@empresa.com"
+                placeholder={t("team.form.email.placeholder")}
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -910,7 +910,7 @@ function TeamPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)}>
-              Cancelar
+              {t("common.cancel")}
             </Button>
             <Button onClick={submit} disabled={!canSubmit}>
               {t("common.save")}
@@ -921,8 +921,8 @@ function TeamPage() {
 
       <ConfirmDialog
         open={confirmDeactivate !== null}
-        title={`Desativar ${confirmDeactivate?.name}?`}
-        description="A pessoa some do roster e dos números do Painel, mas nada é apagado: avaliações, PDI, mentorias, evidências e certificações continuam no perfil dela. Dá para reativar depois."
+        title={t("team.deactivate.confirmTitle", { nome: confirmDeactivate?.name ?? "" })}
+        description={t("team.deactivate.confirmDescription")}
         confirmLabel={t("team.deactivate.action")}
         destructive={false}
         onCancel={() => setConfirmDeactivate(null)}

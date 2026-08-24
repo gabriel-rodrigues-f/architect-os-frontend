@@ -121,7 +121,7 @@ function LearningPage() {
     <>
       <PageHeader
         title={t("path.title")}
-        description="Trilhas combinam teoria e prática: cursos, laboratórios, projetos reais, apresentações e reviews."
+        description={t("path.subtitle")}
         help={help}
         actions={
           canCreatePath ? (
@@ -135,10 +135,8 @@ function LearningPage() {
 
       {store.learningPaths.length === 0 && (
         <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">Nenhuma trilha cadastrada</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Crie a primeira trilha para organizar o desenvolvimento do time.
-          </p>
+          <p className="text-sm font-medium">{t("path.empty.title")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("path.empty.hint")}</p>
         </div>
       )}
 
@@ -231,15 +229,15 @@ function LearningPage() {
                       {editable ? (
                         <Button variant="outline" size="sm" onClick={() => setEditingPath(path)}>
                           <Pencil className="h-3.5 w-3.5" />
-                          Editar
+                          {t("common.edit")}
                         </Button>
                       ) : (
                         <span
                           className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                          title={`Somente ${path.createdBy} pode editar esta trilha`}
+                          title={t("path.readOnly.hint", { autor: path.createdBy ?? "" })}
                         >
                           <Lock className="h-3.5 w-3.5" />
-                          Somente leitura
+                          {t("path.readOnly.badge")}
                         </span>
                       )}
                       <button
@@ -297,7 +295,7 @@ function LearningPage() {
                             <div className="min-w-40 flex-1">
                               <p className="text-sm font-medium">{item.title}</p>
                               <p className="text-xs text-muted-foreground">
-                                {item.hours}h estimadas
+                                {t("path.item.hoursEstimate", { n: item.hours })}
                               </p>
                             </div>
                           </div>
@@ -315,7 +313,10 @@ function LearningPage() {
                                     progress={prog.progress}
                                     statusLabel={labels.learningStatus[prog.status]}
                                     editable={canEditProgress(architectId)}
-                                    ariaLabel={`Progresso de ${nome} em ${item.title}`}
+                                    ariaLabel={t("path.item.progressAriaLabel", {
+                                      nome,
+                                      item: item.title,
+                                    })}
                                     onCommit={(value) =>
                                       store.updateLearningItemProgress(
                                         path.id,
@@ -338,7 +339,7 @@ function LearningPage() {
                       ))}
                       {!path.items.length && (
                         <p className="py-2 text-sm text-muted-foreground">
-                          Trilha ainda sem itens.
+                          {t("path.card.noItems")}
                         </p>
                       )}
                     </ul>
@@ -494,7 +495,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
                   </label>
                 ))}
                 {assignableArchitects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Nenhum arquiteto cadastrado.</p>
+                  <p className="text-sm text-muted-foreground">{t("filter.noArchitects")}</p>
                 )}
               </div>
             </div>
@@ -580,6 +581,7 @@ function ProgressControl({
 function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => void }) {
   const store = useStore();
   const { t } = useI18n();
+  const labels = useLabels();
   const [form, setForm] = useState({ name: path.name, description: path.description });
   const [newItem, setNewItem] = useState({
     title: "",
@@ -715,8 +717,10 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                   setNewItem({ ...newItem, type: e.target.value as LearningItemType })
                 }
               >
-                {ITEM_TYPES.map((t) => (
-                  <option key={t}>{t}</option>
+                {ITEM_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {labels.learningItemType[type]}
+                  </option>
                 ))}
               </select>
               <Input
@@ -729,7 +733,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
               />
               <Button variant="outline" onClick={addItem}>
                 <Plus className="h-3.5 w-3.5" />
-                Adicionar
+                {t("path.edit.addItem")}
               </Button>
             </div>
           </div>
@@ -776,7 +780,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                   </label>
                 ))}
                 {assignableArchitects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Nenhum arquiteto cadastrado.</p>
+                  <p className="text-sm text-muted-foreground">{t("filter.noArchitects")}</p>
                 )}
               </div>
             </div>
@@ -792,11 +796,11 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
               onClose();
             }}
           >
-            Excluir trilha
+            {t("path.delete.action")}
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>
-              Fechar
+              {t("path.edit.close")}
             </Button>
             <Button onClick={saveDetails}>{t("path.edit.save")}</Button>
           </div>
@@ -828,6 +832,8 @@ function LearningPathItemRow({
   onUpdateHours: (hours: number) => void;
   onRemove: () => void;
 }) {
+  const { t } = useI18n();
+  const labels = useLabels();
   const [titleDraft, setTitleDraft] = useState(item.title);
   const [hoursDraft, setHoursDraft] = useState(String(item.hours));
 
@@ -839,18 +845,18 @@ function LearningPathItemRow({
       <select
         className="w-32 shrink-0 rounded-md border border-input bg-card px-2 py-1.5 text-sm"
         value={item.type}
-        aria-label={`Tipo de ${item.title}`}
+        aria-label={t("path.item.typeAriaLabel", { item: item.title })}
         onChange={(e) => onUpdateType(e.target.value as LearningItemType)}
       >
-        {ITEM_TYPES.map((t) => (
-          <option key={t} value={t}>
-            {t}
+        {ITEM_TYPES.map((type) => (
+          <option key={type} value={type}>
+            {labels.learningItemType[type]}
           </option>
         ))}
       </select>
       <Input
         value={titleDraft}
-        aria-label={`Título de ${item.title}`}
+        aria-label={t("path.item.titleAriaLabel", { item: item.title })}
         onChange={(e) => setTitleDraft(e.target.value)}
         onBlur={() => {
           if (titleDraft !== item.title) onUpdateTitle(titleDraft);
@@ -861,7 +867,7 @@ function LearningPathItemRow({
         min={0}
         className="w-20"
         value={hoursDraft}
-        aria-label={`Horas de ${item.title}`}
+        aria-label={t("path.item.hoursAriaLabel", { item: item.title })}
         onChange={(e) => setHoursDraft(e.target.value)}
         onBlur={() => {
           const hours = Number(hoursDraft) || 0;
@@ -872,7 +878,7 @@ function LearningPathItemRow({
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Excluir ${item.title}`}
+        aria-label={t("path.item.deleteAriaLabel", { item: item.title })}
         className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
       >
         <Trash2 className="h-3.5 w-3.5" />

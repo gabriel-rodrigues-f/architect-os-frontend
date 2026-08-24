@@ -285,7 +285,7 @@ function MatrixPage() {
                           <button
                             type="button"
                             onClick={() => startEditingCapability(cat)}
-                            aria-label={`Editar ${cat.name}`}
+                            aria-label={`${t("common.edit")} ${cat.name}`}
                             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -293,7 +293,7 @@ function MatrixPage() {
                           <button
                             type="button"
                             onClick={() => setConfirmDeleteCapability(cat)}
-                            aria-label={`Excluir ${cat.name}`}
+                            aria-label={`${t("common.delete")} ${cat.name}`}
                             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -372,7 +372,7 @@ function MatrixPage() {
                                       onClick={() =>
                                         setConfirmDelete({ competency: c, capability: cat })
                                       }
-                                      aria-label={`Excluir ${c.name}`}
+                                      aria-label={t("matrix.delete.action", { nome: c.name })}
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
                                     </button>
@@ -394,13 +394,11 @@ function MatrixPage() {
 
       <ConfirmDialog
         open={confirmDelete !== null}
-        title={
-          <>
-            Tem certeza que deseja excluir {confirmDelete?.competency.name} de{" "}
-            {confirmDelete?.capability.name}?
-          </>
-        }
-        description="Se a competência já foi usada em alguma avaliação, PDI, evidência ou trilha, ela é arquivada (some da matriz ativa, mas o histórico continua íntegro) em vez de excluída."
+        title={t("matrix.delete.confirmTitle", {
+          competencia: confirmDelete?.competency.name ?? "",
+          capacidade: confirmDelete?.capability.name ?? "",
+        })}
+        description={t("matrix.delete.confirmDescription")}
         onCancel={() => setConfirmDelete(null)}
         onConfirm={async () => {
           if (confirmDelete) {
@@ -457,11 +455,15 @@ function MatrixPage() {
 
       <ConfirmDialog
         open={confirmDeleteCapability !== null}
-        title={`Excluir ${confirmDeleteCapability?.name}?`}
+        title={t("matrix.deleteCapability.confirmTitle", {
+          nome: confirmDeleteCapability?.name ?? "",
+        })}
         description={
           confirmDeleteCapability && capabilityCompetencyCount(confirmDeleteCapability.id) > 0
-            ? `Se alguma das ${capabilityCompetencyCount(confirmDeleteCapability.id)} competências desta capacidade já foi usada em avaliação, PDI, evidência ou trilha, a capacidade e as competências dela são arquivadas em vez de excluídas — o histórico continua íntegro.`
-            : "Esta capacidade não tem competências cadastradas."
+            ? t("matrix.deleteCapability.confirmDescription", {
+                n: capabilityCompetencyCount(confirmDeleteCapability.id),
+              })
+            : t("matrix.deleteCapability.confirmDescriptionEmpty")
         }
         onCancel={() => setConfirmDeleteCapability(null)}
         onConfirm={removeCapability}

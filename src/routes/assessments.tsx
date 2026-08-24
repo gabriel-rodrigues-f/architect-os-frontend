@@ -307,9 +307,7 @@ function AssessmentsPage() {
           description={t("asmt.noAssessment.subtitle")}
         >
           {store.architects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Cadastre um arquiteto em Time antes de abrir avaliações.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.noArchitects")}</p>
           ) : selectedArchitect && !selectedArchitect.active ? (
             <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.inactive")}</p>
           ) : !isActiveCycle ? (
@@ -320,10 +318,7 @@ function AssessmentsPage() {
             </p>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground">
-                Ao abrir, a avaliação nasce com uma linha por competência cadastrada e o nível alvo
-                já preenchido a partir do Role Competency Profile do cargo.
-              </p>
+              <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.openExplain")}</p>
               {openError && <p className="mt-2 text-sm text-destructive">{openError}</p>}
               <Button
                 className="mt-4"
@@ -680,14 +675,14 @@ function CommentSection({
                         className="text-xs text-primary hover:underline"
                         onClick={() => setEditing(comment.id)}
                       >
-                        Editar
+                        {t("common.edit")}
                       </button>
                       <button
                         type="button"
                         className="text-xs text-destructive hover:underline"
                         onClick={() => setConfirmDelete(comment)}
                       >
-                        Excluir
+                        {t("common.delete")}
                       </button>
                     </div>
                   )}
@@ -698,7 +693,7 @@ function CommentSection({
         </ul>
       )}
 
-      <CommentForm submitLabel="Salvar" onSubmit={onCreate} />
+      <CommentForm submitLabel={t("common.save")} onSubmit={onCreate} />
 
       <ConfirmDialog
         open={confirmDelete !== null}
@@ -765,7 +760,7 @@ function CommentForm({
         <div className="flex gap-2">
           {onCancel && (
             <Button size="sm" variant="outline" onClick={onCancel}>
-              Cancelar
+              {t("common.cancel")}
             </Button>
           )}
           <Button size="sm" disabled={saving || !trimmed} onClick={submit}>

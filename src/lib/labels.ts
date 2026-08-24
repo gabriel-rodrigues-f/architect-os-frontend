@@ -8,6 +8,7 @@ import type {
   Evidence,
   EvidenceType,
   LearningItemProgress,
+  LearningItemType,
   Level,
 } from "./domain";
 
@@ -124,6 +125,25 @@ const levelDescriptionKey: Record<Level, MessageKey> = {
 };
 
 /**
+ * O valor canônico de `LearningItemType` continua em português (é o que fica
+ * gravado em `learning_path_items.type`) — diferente de `ActionType`/
+ * `EvidenceType`, que já são canônicos em inglês. Aqui o mapa só traduz a
+ * *exibição*; o valor persistido não muda.
+ */
+const learningItemTypeKey: Record<LearningItemType, MessageKey> = {
+  Curso: "learningItemType.curso",
+  Vídeo: "learningItemType.video",
+  Livro: "learningItemType.livro",
+  Artigo: "learningItemType.artigo",
+  Laboratório: "learningItemType.laboratorio",
+  Desafio: "learningItemType.desafio",
+  Projeto: "learningItemType.projeto",
+  Certificação: "learningItemType.certificacao",
+  Apresentação: "learningItemType.apresentacao",
+  Workshop: "learningItemType.workshop",
+};
+
+/**
  * Rótulos já traduzidos para o idioma ativo. É hook porque depende do contexto
  * de i18n — a alternativa seria passar `t` para cada chamada, o que poluiria
  * todas as telas.
@@ -149,5 +169,6 @@ export function useLabels() {
     evidenceStatus: traduzir(evidenceStatusKey),
     levelName: traduzir(levelNameKey),
     levelDescription: traduzir(levelDescriptionKey),
+    learningItemType: traduzir(learningItemTypeKey),
   };
 }
