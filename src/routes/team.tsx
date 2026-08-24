@@ -579,11 +579,16 @@ function TeamPage() {
                       >
                         {a.name}
                       </Link>
-                      <p className="truncate text-xs text-muted-foreground">
+                      <p
+                        className="truncate text-xs text-muted-foreground"
+                        title={`${a.role} · ${t("team.card.years", { n: a.yearsAsArchitect })} · ${specializationLabel(a, sel.competencyById)}`}
+                      >
                         {a.role} · {t("team.card.years", { n: a.yearsAsArchitect })} ·{" "}
                         {specializationLabel(a, sel.competencyById)}
                       </p>
-                      <p className="truncate text-xs text-muted-foreground">{a.email}</p>
+                      <p className="truncate text-xs text-muted-foreground" title={a.email}>
+                        {a.email}
+                      </p>
                     </div>
                     {isAdmin && (
                       <div className="flex shrink-0 gap-1">
@@ -645,7 +650,9 @@ function TeamPage() {
                         key={g.item.competencyId}
                         className="flex items-center justify-between gap-2 text-sm"
                       >
-                        <span className="min-w-0 flex-1 truncate">{g.competency?.name}</span>
+                        <span className="min-w-0 flex-1 truncate" title={g.competency?.name}>
+                          {g.competency?.name}
+                        </span>
                         <GapBadge gap={g.gap} />
                       </div>
                     ))}
@@ -705,22 +712,30 @@ function TeamPage() {
                             to="/architects/$architectId"
                             params={{ architectId: a.id }}
                             className="block truncate font-medium hover:text-primary"
+                            title={a.name}
                           >
                             {a.name}
                           </Link>
-                          <p className="truncate text-xs text-muted-foreground">{a.email}</p>
+                          <p className="truncate text-xs text-muted-foreground" title={a.email}>
+                            {a.email}
+                          </p>
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                           {a.role}
                         </td>
                         <td className="max-w-[200px] px-4 py-3 text-muted-foreground">
-                          <span className="block truncate">
+                          <span
+                            className="block truncate"
+                            title={specializationLabel(a, sel.competencyById)}
+                          >
                             {specializationLabel(a, sel.competencyById)}
                           </span>
                         </td>
                         {isAdmin && (
                           <td className="max-w-[160px] px-4 py-3 text-muted-foreground">
-                            <span className="block truncate">{lead?.name ?? "—"}</span>
+                            <span className="block truncate" title={lead?.name ?? "—"}>
+                              {lead?.name ?? "—"}
+                            </span>
                           </td>
                         )}
                         <td className="px-4 py-3 text-center">
@@ -1007,7 +1022,7 @@ function LeadCombobox({
             <CommandSeparator />
             <CommandGroup>
               {ordered.map((u) => (
-                <CommandItem key={u.id} value={u.name} onSelect={() => select(u.id)}>
+                <CommandItem key={u.id} value={u.name} title={u.name} onSelect={() => select(u.id)}>
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4 shrink-0",

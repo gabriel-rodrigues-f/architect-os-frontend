@@ -185,6 +185,7 @@ export function MultiSelectFilter({
                 role="option"
                 aria-selected={active}
                 onClick={() => toggle(option.id)}
+                title={option.label}
                 className={cn(
                   "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none",
                   active && "font-medium",
