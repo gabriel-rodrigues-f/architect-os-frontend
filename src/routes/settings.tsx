@@ -73,7 +73,7 @@ function SettingsPage() {
             {LEVELS.map((l) => (
               <li key={l.level} className="flex items-start gap-3 surface-inset p-3">
                 <LevelBadge level={l.level} showName />
-                <p className="text-sm text-muted-foreground">{l.description}</p>
+                <p className="text-sm text-muted-foreground">{labels.levelDescription[l.level]}</p>
               </li>
             ))}
           </ul>

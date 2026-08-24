@@ -28,6 +28,7 @@ import {
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
 
@@ -65,6 +66,7 @@ function MatrixPage() {
   const isAdmin = useCurrentUser().role === "admin";
   const [creatingCapability, setCreatingCapability] = useState(false);
   const { t } = useI18n();
+  const labels = useLabels();
   const help = usePageHelp("competencyMatrix");
   const [confirmDelete, setConfirmDelete] = useState<{
     competency: Competency;
@@ -157,7 +159,9 @@ function MatrixPage() {
           {LEVELS.map((l) => (
             <div key={l.level} className="surface-inset p-3">
               <LevelBadge level={l.level} showName />
-              <p className="mt-2 text-xs text-muted-foreground">{l.description}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {labels.levelDescription[l.level]}
+              </p>
             </div>
           ))}
         </div>
@@ -631,6 +635,7 @@ function CompetencyCreateDialog({
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
+  const labels = useLabels();
   const restrictiveFull = capability.curation.restrictiveCompetencyCount >= 3;
   const nonRestrictiveFull = capability.curation.nonRestrictiveCompetencyCount >= 3;
   const [name, setName] = useState("");
@@ -697,7 +702,7 @@ function CompetencyCreateDialog({
                     <option value="">—</option>
                     {LEVELS.map((l) => (
                       <option key={l.level} value={l.level}>
-                        L{l.level} · {l.name}
+                        L{l.level} · {labels.levelName[l.level]}
                       </option>
                     ))}
                   </select>
@@ -762,6 +767,7 @@ function CompetencyEditDialog({
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
+  const labels = useLabels();
   const capability = store.capabilities.find((c) => c.id === competency.capabilityId);
   /** Subtrai a própria competência da contagem: ela já ocupa uma vaga do tipo atual. */
   const restrictiveFull =
@@ -869,7 +875,7 @@ function CompetencyEditDialog({
                     <option value="">—</option>
                     {LEVELS.map((l) => (
                       <option key={l.level} value={l.level}>
-                        L{l.level} · {l.name}
+                        L{l.level} · {labels.levelName[l.level]}
                       </option>
                     ))}
                   </select>

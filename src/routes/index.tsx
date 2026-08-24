@@ -24,7 +24,7 @@ import {
 import { CapabilityRadar } from "@/components/app/charts";
 import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
 import { useCurrentUser } from "@/lib/auth";
-import { capabilityShortLabels, levelName } from "@/lib/domain";
+import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
@@ -77,6 +77,7 @@ function AdminHome() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const { t } = useI18n();
+  const labels = useLabels();
   const help = usePageHelp("dash");
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
   /**
@@ -261,7 +262,7 @@ function AdminHome() {
             {[1, 2, 3, 4, 5].map((l) => (
               <span key={l} className="flex items-center gap-1.5">
                 <span className="h-3 w-6 rounded" style={{ background: `var(--level-${l})` }} />
-                {l} · {levelName(l)}
+                {l} · {labels.levelName[l as keyof typeof labels.levelName]}
               </span>
             ))}
           </div>

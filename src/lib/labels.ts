@@ -8,6 +8,7 @@ import type {
   Evidence,
   EvidenceType,
   LearningItemProgress,
+  Level,
 } from "./domain";
 
 /**
@@ -99,13 +100,37 @@ const evidenceStatusKey: Record<Evidence["status"], MessageKey> = {
 };
 
 /**
+ * R2-VIS-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — a escala de proficiência
+ * (`LEVELS`, `domain.ts`) tinha nome/descrição fixos em português direto no
+ * código, ignorados pelo seletor de idioma; e `pt.json` mantinha um segundo
+ * mapa (`level.*`) nunca lido, com nível 2 numa palavra diferente
+ * ("Iniciante" × "Fundamentos"). Único mapa agora, como todo o resto deste
+ * arquivo.
+ */
+const levelNameKey: Record<Level, MessageKey> = {
+  1: "level.1",
+  2: "level.2",
+  3: "level.3",
+  4: "level.4",
+  5: "level.5",
+};
+
+const levelDescriptionKey: Record<Level, MessageKey> = {
+  1: "level.1.description",
+  2: "level.2.description",
+  3: "level.3.description",
+  4: "level.4.description",
+  5: "level.5.description",
+};
+
+/**
  * Rótulos já traduzidos para o idioma ativo. É hook porque depende do contexto
  * de i18n — a alternativa seria passar `t` para cada chamada, o que poluiria
  * todas as telas.
  */
 export function useLabels() {
   const { t } = useI18n();
-  const traduzir = <K extends string>(mapa: Record<K, MessageKey>) =>
+  const traduzir = <K extends string | number>(mapa: Record<K, MessageKey>) =>
     Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, t(v as MessageKey)])) as Record<
       K,
       string
@@ -122,5 +147,7 @@ export function useLabels() {
     evidenceType: traduzir(evidenceTypeKey),
     complexity: traduzir(complexityKey),
     evidenceStatus: traduzir(evidenceStatusKey),
+    levelName: traduzir(levelNameKey),
+    levelDescription: traduzir(levelDescriptionKey),
   };
 }

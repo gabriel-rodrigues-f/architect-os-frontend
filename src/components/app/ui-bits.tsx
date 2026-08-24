@@ -3,8 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { useLabels } from "@/lib/labels";
 import { truncateNames } from "@/lib/text";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ export function LevelBadge({
   showName?: boolean;
 }) {
   const { t } = useI18n();
+  const labels = useLabels();
   if (level === undefined) {
     return (
       <span
@@ -41,16 +42,17 @@ export function LevelBadge({
       </span>
     );
   }
+  const nome = labels.levelName[level as keyof typeof labels.levelName] ?? "—";
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums",
         levelBg[level] ?? levelBg[0],
       )}
-      title={t("level.tooltip", { n: level, nome: levelName(level) })}
+      title={t("level.tooltip", { n: level, nome })}
     >
       L{level}
-      {showName && <span className="font-medium opacity-80">{levelName(level)}</span>}
+      {showName && <span className="font-medium opacity-80">{nome}</span>}
     </span>
   );
 }
@@ -63,6 +65,7 @@ export function LevelBadge({
  */
 export function LevelCell({ level }: { level: number | undefined }) {
   const { t } = useI18n();
+  const labels = useLabels();
   return (
     <div
       className={cn(
@@ -72,7 +75,10 @@ export function LevelCell({ level }: { level: number | undefined }) {
       title={
         level === undefined
           ? t("level.cellTooltip.none")
-          : t("level.cellTooltip", { nome: levelName(level), n: level })
+          : t("level.cellTooltip", {
+              nome: labels.levelName[level as keyof typeof labels.levelName] ?? "—",
+              n: level,
+            })
       }
     >
       {level ?? "—"}

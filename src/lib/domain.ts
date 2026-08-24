@@ -1,35 +1,20 @@
 export type Level = 1 | 2 | 3 | 4 | 5;
 
-export const LEVELS: { level: Level; name: string; description: string }[] = [
-  {
-    level: 1,
-    name: "Consciência",
-    description:
-      "Conhece os conceitos principais, terminologia e propósito da tecnologia ou prática.",
-  },
-  {
-    level: 2,
-    name: "Fundamentos",
-    description: "Compreende os fundamentos e consegue executar tarefas simples com orientação.",
-  },
-  {
-    level: 3,
-    name: "Praticante",
-    description: "Consegue aplicar a competência de forma autônoma em projetos reais.",
-  },
-  {
-    level: 4,
-    name: "Avançado",
-    description: "Toma decisões complexas, orienta outras pessoas e avalia trade-offs.",
-  },
-  {
-    level: 5,
-    name: "Especialista",
-    description: "É referência no assunto, define padrões e desenvolve outros profissionais.",
-  },
+/**
+ * R2-VIS-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — nome e descrição de cada
+ * nível saíram daqui: viviam fixos em português, ignorando o seletor de
+ * idioma (e um segundo mapa dormia sem uso em `pt.json`, com o nível 2 numa
+ * palavra diferente deste). `useLabels().levelName`/`.levelDescription`
+ * (`lib/labels.ts`) são a fonte única agora, via i18n — `LEVELS` continua só
+ * para iterar os 5 níveis.
+ */
+export const LEVELS: { level: Level }[] = [
+  { level: 1 },
+  { level: 2 },
+  { level: 3 },
+  { level: 4 },
+  { level: 5 },
 ];
-
-export const levelName = (l: number) => LEVELS.find((x) => x.level === l)?.name ?? "—";
 
 /**
  * Cargos da carreira de arquitetura. A progressão é I → II → III; o app não
