@@ -144,6 +144,18 @@ function CapabilityMapPage() {
           <p className="text-sm font-medium">{t("cap.empty.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.hint")}</p>
         </div>
+      ) : population.length === 0 ? (
+        /*
+          R2-VIS-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — sem ninguém visível
+          no escopo, TODA capacidade cai em "insufficientData" por definição
+          (assessedCount é sempre 0) — a tela virava N repetições da mesma
+          frase, uma por card/linha, quando o problema é um só: não há
+          ninguém para avaliar aqui, não uma lacuna de dado por capacidade.
+        */
+        <div className="surface-card p-8 text-center">
+          <p className="text-sm font-medium">{t("cap.empty.noScope.title")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.noScope.hint")}</p>
+        </div>
       ) : (
         <>
           <div className="mb-3 flex justify-end">

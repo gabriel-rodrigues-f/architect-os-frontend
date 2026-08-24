@@ -776,6 +776,8 @@
   "cap.tabs.comparison": "Comparativo do Time",
   "cap.empty.title": "Nenhuma capacidade cadastrada",
   "cap.empty.hint": "Cadastre a primeira capacidade na Matriz de Competências para montar o mapa do time.",
+  "cap.empty.noScope.title": "Nenhuma pessoa no seu escopo",
+  "cap.empty.noScope.hint": "Sem ninguém para avaliar aqui, o mapa de cobertura fica vazio — não é falta de dado por capacidade, é falta de gente no escopo.",
   "cap.band.developing": "Em desenvolvimento (<2,5)",
   "cap.band.practitioners": "Praticantes (2,5+)",
   "cap.band.advanced": "Avançados (3,5+)",

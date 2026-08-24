@@ -776,6 +776,8 @@
   "cap.tabs.comparison": "Team Comparison",
   "cap.empty.title": "No capabilities yet",
   "cap.empty.hint": "Add the first capability in the Competency Matrix to build the team map.",
+  "cap.empty.noScope.title": "No one in your scope",
+  "cap.empty.noScope.hint": "With no one to assess here, the coverage map is empty — this isn't missing data per capability, it's no people in scope.",
   "cap.band.developing": "Developing (<2.5)",
   "cap.band.practitioners": "Practitioners (2.5+)",
   "cap.band.advanced": "Advanced (3.5+)",
