@@ -7,7 +7,8 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { createClientOnlyFn } from "@tanstack/react-start";
+import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { AuthProvider, useAuth } from "../lib/auth";
@@ -17,6 +18,33 @@ import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
 import { LoginScreen } from "../components/app/LoginScreen";
 import { Toaster } from "../components/ui/sonner";
+
+/**
+ * R1-P05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, completa B-27) — `__root.tsx`
+ * renderiza no SSR e no cliente; um import (estático OU dinâmico) de
+ * `error-tracking.client.ts` (que carrega `@sentry/browser`) tornaria esse
+ * módulo alcançável do build do SERVIDOR também, e o plugin de proteção de
+ * import do TanStack Start recusa o build por causa disso (arquivo
+ * `*.client.*` alcançável de onde não devia — a análise estática do plugin
+ * enxerga `import()` dinâmico igual a um `import` normal). `createClientOnlyFn`
+ * é o mecanismo de verdade para isto: o compilador do Start troca a função
+ * pelo próprio corpo no build cliente e por um stub que lança no build
+ * servidor — o import dinâmico do lado servidor nem chega a existir no
+ * código compilado, então o plugin nunca o vê.
+ */
+const initClientErrorTracking = createClientOnlyFn(async () => {
+  const mod = await import("../lib/error-tracking.client");
+  mod.initErrorTrackingClient();
+  return mod;
+});
+
+let errorTrackingInit: ReturnType<typeof initClientErrorTracking> | null = null;
+
+function captureClientError(error: unknown) {
+  if (typeof window === "undefined") return;
+  errorTrackingInit ??= initClientErrorTracking();
+  void errorTrackingInit.then(({ Sentry }) => Sentry.captureException(error));
+}
 
 function NotFoundComponent() {
   return (
@@ -42,6 +70,14 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
+  /*
+    Este componente também renderiza no SSR (erro de loader antes da
+    hidratação); `@sentry/browser` pressupõe navegador de verdade, então
+    `captureClientError` só age client-side (guard interno). O lado servidor
+    do mesmo erro já é coberto por `start.ts`/`error-tracking.server.ts`,
+    então nada fica sem captura.
+  */
+  captureClientError(error);
   const router = useRouter();
 
   return (
@@ -147,6 +183,17 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  /*
+    Inicializa assim que o app monta no cliente, não só quando o primeiro
+    erro acontece — sem isto, qualquer captura antes do primeiro erro de
+    rota (ex.: um handler chamando `Sentry.captureException` direto, se essa
+    necessidade aparecer depois) rodaria sem `init`. `useEffect` só roda no
+    cliente, então a chamada é sempre segura aqui.
+  */
+  useEffect(() => {
+    errorTrackingInit ??= initClientErrorTracking();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
