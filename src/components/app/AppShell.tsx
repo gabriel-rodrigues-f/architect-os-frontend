@@ -85,19 +85,23 @@ interface NavGroup {
  * da própria tela (`settings.tsx`, `CareerPolicySection`).
  */
 export const NAV_GROUPS: NavGroup[] = [
-  { items: [{ to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard }] },
-  { items: [{ to: "/team", labelKey: "nav.team", icon: Users }] },
   {
+    // R2-UX-13 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os 4 primeiros itens
+    // eram cada um seu próprio grupo de item só (sem cabeçalho); ganham um
+    // título só pra contrastar com "Desenvolvimento"/"Administração" abaixo.
+    labelKey: "nav.group.operation",
     items: [
+      { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+      { to: "/team", labelKey: "nav.team", icon: Users },
       {
         to: "/capability-map",
         labelKey: "nav.capabilities",
         icon: Map,
         activePrefixes: ["/gap-analysis", "/progression", "/training-needs", "/compare"],
       },
+      { to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck },
     ],
   },
-  { items: [{ to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck }] },
   {
     labelKey: "nav.group.development",
     items: [

@@ -912,6 +912,7 @@
   "asmt.architect.inactive": "Inactive",
   "asmt.noAssessment.inactive": "This person is no longer on the active team — a new assessment can't be opened. Assessments they already had remain accessible from the selector above.",
   "nav.capabilities": "Capabilities",
+  "nav.group.operation": "Operation",
   "nav.group.development": "Development",
   "nav.group.admin": "Administration",
   "arch.gaps.addToPlan": "+ PDI",

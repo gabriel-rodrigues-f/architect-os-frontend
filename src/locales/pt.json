@@ -912,6 +912,7 @@
   "asmt.architect.inactive": "Inativos",
   "asmt.noAssessment.inactive": "Esta pessoa não está mais no time ativo — não é possível abrir uma nova avaliação. As avaliações que ela já tinha continuam acessíveis pelo seletor acima.",
   "nav.capabilities": "Capacidades",
+  "nav.group.operation": "Operação",
   "nav.group.development": "Desenvolvimento",
   "nav.group.admin": "Administração",
   "arch.gaps.addToPlan": "+ PDI",
