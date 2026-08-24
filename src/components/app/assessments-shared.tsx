@@ -14,11 +14,14 @@ import type {
   Assessment,
   AssessmentComment,
   AssessmentDevelopmentSummary,
+  AssessmentItem,
   Capability,
+  Competency,
   Level,
 } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { isLeadOf } from "@/lib/scope";
@@ -878,6 +881,18 @@ export function CapabilityAssessmentCard({
   const { t, locale } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();
+  /**
+   * R2-RESP-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — abaixo de `md` (768px)
+   * a tabela de pontuação (7 colunas, `min-w-[820px]`) só existia com scroll
+   * lateral, e cada `<select>` de nota ficava pequeno demais para tocar com
+   * o dedo dentro da coluna estreita. Em vez de tentar espremer a mesma
+   * tabela em CSS, troca por um bloco empilhado por competência — mesma
+   * informação, mesmos handlers (`updateAssessmentItem` via
+   * `CompetencyStackedCard`), só em outra ordem visual. Acima de `md` a
+   * tabela permanece exatamente como era (nenhum JSX da branch de tabela
+   * foi tocado). Mesmo padrão de `useNarrowViewport` do R2-RESP-06.
+   */
+  const narrow = useNarrowViewport(768);
 
   const comps = store.competencies.filter((c) => c.capabilityId === capability.id);
   const answeredCount = comps.filter((c) => {
@@ -900,6 +915,26 @@ export function CapabilityAssessmentCard({
     >
       {comps.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("asmt.noCompetencies")}</p>
+      ) : narrow ? (
+        <div className="space-y-3" data-testid="competency-stacked-list">
+          {comps.map((c) => {
+            const item = assessment.items.find((i) => i.competencyId === c.id);
+            if (!item) return null;
+            return (
+              <CompetencyStackedCard
+                key={c.id}
+                competency={c}
+                item={item}
+                assessmentId={assessment.id}
+                architectId={architectId}
+                canEditSelf={canEditSelf}
+                canEditLeaderFinal={canEditLeaderFinal}
+                openComment={openComment}
+                onToggleComment={onToggleComment}
+              />
+            );
+          })}
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
@@ -1075,5 +1110,180 @@ export function CapabilityAssessmentCard({
         </div>
       )}
     </SectionCard>
+  );
+}
+
+/**
+ * R2-RESP-07 — a mesma linha da tabela (nome + evidência, self/Tech
+ * Lead/alvo/final, gap, comentários), só que empilhada verticalmente em vez
+ * de espalhada em colunas: nada aqui precisa de scroll lateral para
+ * aparecer. Mesmos dados e os mesmos handlers de `CapabilityAssessmentCard`
+ * — é um recorte 1:1 do `<tr>` de origem, sem lógica nova.
+ */
+function CompetencyStackedCard({
+  competency,
+  item,
+  assessmentId,
+  architectId,
+  canEditSelf,
+  canEditLeaderFinal,
+  openComment,
+  onToggleComment,
+}: {
+  competency: Competency;
+  item: AssessmentItem;
+  assessmentId: string;
+  architectId: string;
+  canEditSelf: boolean;
+  canEditLeaderFinal: boolean;
+  openComment: string | null;
+  onToggleComment: (competencyId: string) => void;
+}) {
+  const store = useStore();
+  const { t, locale } = useI18n();
+  const labels = useLabels();
+  const user = useCurrentUser();
+
+  // Sem final ainda: não há gap para mostrar (não é gap zero, é indefinido).
+  const gap = item.final === null ? undefined : item.target - item.final;
+  const diverges = item.self !== null && item.leader !== null && item.self !== item.leader;
+  /** Mesmo loop de evidência aceita da versão em tabela — ver comentário lá. */
+  const acceptedEvidence = store.evidences.filter(
+    (e) =>
+      e.architectId === architectId &&
+      e.status === "Accepted" &&
+      e.competencyIds.includes(competency.id),
+  );
+
+  return (
+    <div
+      className="rounded-md border border-border bg-card p-3"
+      data-testid="competency-stacked-card"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-sm font-medium">
+          {competency.name}
+          {acceptedEvidence.length > 0 && (
+            <BadgeCheck
+              className="h-3.5 w-3.5 shrink-0 text-[var(--level-5-fg)]"
+              aria-label={t("asmt.evidence.badge", { n: acceptedEvidence.length })}
+            />
+          )}
+        </span>
+        <GapBadge gap={gap} />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {t("asmt.col.self")}
+          </p>
+          <div className="mt-1">
+            {canEditSelf ? (
+              <LevelSelect
+                value={item.self}
+                onChange={(v) =>
+                  store.updateAssessmentItem(assessmentId, competency.id, { self: v })
+                }
+                ariaLabel={t("asmt.select.self", { competency: competency.name })}
+              />
+            ) : (
+              <LevelBadge level={item.self ?? undefined} />
+            )}
+          </div>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {t("asmt.col.techLead")}
+          </p>
+          <div className="mt-1 flex items-center gap-1">
+            {canEditLeaderFinal ? (
+              <LevelSelect
+                value={item.leader}
+                onChange={(v) =>
+                  store.updateAssessmentItem(assessmentId, competency.id, { leader: v })
+                }
+                ariaLabel={t("asmt.select.leader", { competency: competency.name })}
+              />
+            ) : (
+              <LevelBadge level={item.leader ?? undefined} />
+            )}
+            {diverges && (
+              <AlertTriangle
+                className="h-3.5 w-3.5 shrink-0 text-[var(--gap-high-fg)]"
+                aria-label={t("asmt.divergence")}
+              />
+            )}
+          </div>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {t("asmt.col.target")}
+          </p>
+          <div className="mt-1">
+            <LevelBadge level={item.target} />
+          </div>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {t("asmt.col.final")}
+          </p>
+          <div className="mt-1">
+            {canEditLeaderFinal ? (
+              <LevelSelect
+                value={item.final}
+                onChange={(v) =>
+                  store.updateAssessmentItem(assessmentId, competency.id, { final: v })
+                }
+                ariaLabel={t("asmt.select.final", { competency: competency.name })}
+              />
+            ) : (
+              <LevelBadge level={item.final ?? undefined} />
+            )}
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="mt-3 text-xs text-primary hover:underline"
+        onClick={() => onToggleComment(competency.id)}
+      >
+        {commentCountLabel(item.comments.length, t)}
+      </button>
+
+      {openComment === competency.id && (
+        <div className="mt-3 border-t border-border pt-3">
+          {acceptedEvidence.length > 0 && (
+            <div className="mb-3 space-y-1.5 border-b border-border pb-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("asmt.evidence.title")}
+              </p>
+              <ul className="space-y-1">
+                {acceptedEvidence.map((e) => (
+                  <li key={e.id} className="text-sm">
+                    <span className="font-medium">{e.title}</span>{" "}
+                    <span className="text-xs text-muted-foreground">
+                      {labels.evidenceType[e.type]} · {formatDate(e.date, locale)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <CommentSection
+            comments={item.comments}
+            currentUserId={user.id}
+            onCreate={(input) => store.addAssessmentComment(assessmentId, competency.id, input)}
+            onUpdate={(commentId, input) =>
+              store.updateAssessmentComment(assessmentId, competency.id, commentId, input)
+            }
+            onDelete={(commentId) =>
+              store.removeAssessmentComment(assessmentId, competency.id, commentId)
+            }
+          />
+        </div>
+      )}
+    </div>
   );
 }
