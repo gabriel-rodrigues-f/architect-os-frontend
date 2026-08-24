@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
-import { PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { Badge } from "@/components/ui/badge";
+import { ViewToggle } from "@/components/app/ViewToggle";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -84,6 +87,7 @@ function CapabilityMapPage() {
   const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("capabilityMap");
+  const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
 
   /**
    * População: só quem este viewer de fato enxerga o registro — sem isto,
@@ -119,56 +123,141 @@ function CapabilityMapPage() {
       return { cat, bands, assessedCount: assessed.length, notAssessed };
     });
 
+  /** R2-UX-09 — mesmo default do Time: acima de 8 capacidades, tabela em vez de cards. */
+  const view: "cards" | "table" = viewOverride ?? (areas.length > 8 ? "table" : "cards");
+
+  const withRisk = areas.map((area) => {
+    const experts = area.bands.find((b) => b.key === "experts")?.people ?? [];
+    const advanced = area.bands.find((b) => b.key === "advanced")?.people ?? [];
+    const references = [...experts, ...advanced];
+    const risk = classifyRisk(area.assessedCount, references.length);
+    return { ...area, references, risk };
+  });
+
   return (
     <>
       <CapabilitiesTabs />
       <PageHeader title={t("cap.title")} description={t("cap.subtitle")} help={help} />
 
-      {store.capabilities.length === 0 && (
+      {store.capabilities.length === 0 ? (
         <div className="surface-card p-8 text-center">
           <p className="text-sm font-medium">{t("cap.empty.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.hint")}</p>
         </div>
-      )}
+      ) : (
+        <>
+          <div className="mb-3 flex justify-end">
+            <ViewToggle
+              view={view}
+              onChange={setViewOverride}
+              cardsLabel={t("team.view.cards")}
+              tableLabel={t("team.view.table")}
+            />
+          </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {areas.map((area) => {
-          const experts = area.bands.find((b) => b.key === "experts")?.people ?? [];
-          const advanced = area.bands.find((b) => b.key === "advanced")?.people ?? [];
-          const references = [...experts, ...advanced];
-          const risk = classifyRisk(area.assessedCount, references.length);
-
-          return (
-            <SectionCard
-              key={area.cat.id}
-              title={area.cat.name}
-              description={t(`cap.risk.${risk}`, { n: references.length })}
-            >
-              <div className="grid gap-3 sm:grid-cols-2">
-                {area.bands.map((band) => (
-                  <Group
-                    key={band.key}
-                    label={t(band.labelKey)}
-                    people={band.people.map((p) => p.architect.name)}
-                    tone={band.tone}
-                  />
+          {/*
+            R2-UX-09(b) — título e tabs (CapabilitiesTabs/PageHeader, acima)
+            ficam fixos; só o conteúdo rola. `100vh-260px` é o mesmo cálculo
+            de "o que sobra abaixo do cabeçalho fixo do app" já usado no
+            heatmap de Progressão/Painel (R2-ESC-01), aqui aplicado à
+            página inteira porque não há um heatmap único, e sim N cards.
+          */}
+          <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
+            {view === "table" ? (
+              <div className="surface-card overflow-x-auto">
+                <table className="w-full min-w-[720px] text-sm">
+                  <thead>
+                    <tr className="sticky top-0 z-10 border-b border-border bg-card text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th scope="col" className="px-4 py-3">
+                        {t("col.capability")}
+                      </th>
+                      {BANDS.map((band) => (
+                        <th key={band.key} scope="col" className="px-4 py-3 text-center">
+                          {t(band.labelKey)}
+                        </th>
+                      ))}
+                      <th scope="col" className="px-4 py-3 text-center">
+                        {t("cap.table.col.notAssessed")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("cap.table.col.risk")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {withRisk.map((area) => (
+                      <tr key={area.cat.id} className="border-b border-border/60 last:border-0">
+                        <td
+                          className="max-w-[220px] truncate px-4 py-3 font-medium"
+                          title={area.cat.name}
+                        >
+                          {area.cat.name}
+                        </td>
+                        {area.bands.map((band) => (
+                          <td key={band.key} className="px-4 py-3 text-center tabular-nums">
+                            {band.people.length}
+                          </td>
+                        ))}
+                        <td className="px-4 py-3 text-center tabular-nums">{area.notAssessed}</td>
+                        <td className="px-4 py-3">
+                          <RiskBadge risk={area.risk} referenceCount={area.references.length} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {withRisk.map((area) => (
+                  <SectionCard
+                    key={area.cat.id}
+                    title={area.cat.name}
+                    description={t(`cap.risk.${area.risk}`, { n: area.references.length })}
+                  >
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {area.bands.map((band) => (
+                        <Group
+                          key={band.key}
+                          label={t(band.labelKey)}
+                          people={band.people.map((p) => p.architect.name)}
+                          tone={band.tone}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      {t("cap.references.label")}{" "}
+                      <NameList names={area.references.map((p) => p.architect.name)} />
+                    </p>
+                    {area.notAssessed > 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t("cap.notAssessed", { n: area.notAssessed })}
+                      </p>
+                    )}
+                  </SectionCard>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                {t("cap.references", {
-                  nomes: references.map((p) => p.architect.name).join(", ") || t("common.none"),
-                })}
-              </p>
-              {area.notAssessed > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {t("cap.notAssessed", { n: area.notAssessed })}
-                </p>
-              )}
-            </SectionCard>
-          );
-        })}
-      </div>
+            )}
+          </div>
+        </>
+      )}
     </>
+  );
+}
+
+/** R2-UX-09(a) — badge compacto pra tabela; a frase completa (já usada nos cards) vira `title`. */
+function RiskBadge({ risk, referenceCount }: { risk: RiskState; referenceCount: number }) {
+  const { t } = useI18n();
+  const variant =
+    risk === "concentrationRisk"
+      ? "destructive"
+      : risk === "noReference" || risk === "insufficientData"
+        ? "secondary"
+        : "outline";
+  return (
+    <Badge variant={variant} title={t(`cap.risk.${risk}`, { n: referenceCount })}>
+      {t(`cap.risk.badge.${risk}`)}
+    </Badge>
   );
 }
 
@@ -183,7 +272,9 @@ function Group({ label, people, tone }: { label: string; people: string[]; tone:
           {people.length}
         </span>
       </div>
-      <p className="mt-1 text-sm">{people.join(", ") || "—"}</p>
+      <p className="mt-1 text-sm">
+        <NameList names={people} emptyLabel="—" />
+      </p>
     </div>
   );
 }

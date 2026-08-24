@@ -5,6 +5,7 @@ import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { truncateNames } from "@/lib/text";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -189,6 +190,33 @@ export function PageHeader({
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
+  );
+}
+
+/**
+ * R2-ESC-05/R2-UX-09 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, regra C.2.9) —
+ * lista de nomes concatenados sem teto: acima de `max` (default 5), mostra
+ * só os primeiros + "e mais N", com a lista completa sempre disponível via
+ * `title` (nunca corte silencioso — a informação continua alcançável).
+ */
+export function NameList({
+  names,
+  max = 5,
+  emptyLabel,
+}: {
+  names: readonly string[];
+  max?: number;
+  /** Convenção de "lista vazia" varia por tela (ex.: "—" nos cards de Cobertura) — default é `common.none`. */
+  emptyLabel?: string;
+}) {
+  const { t } = useI18n();
+  if (names.length === 0) return <>{emptyLabel ?? t("common.none")}</>;
+  const { shown, remaining } = truncateNames(names, max);
+  return (
+    <span title={names.join(", ")}>
+      {shown.join(", ")}
+      {remaining > 0 && ` ${t("common.andMoreCount", { n: remaining })}`}
+    </span>
   );
 }
 

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutGrid, Pencil, Table2, TrendingUp, UserCheck, UserX } from "lucide-react";
+import { Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,6 +14,7 @@ import {
 import { GapBadge, Initials, LevelBadge, PageHeader } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { ArchitectNameCombobox } from "@/components/app/ArchitectNameCombobox";
+import { ViewToggle } from "@/components/app/ViewToggle";
 import {
   MultiSelectFilter,
   type MultiSelectFilterOption,
@@ -539,38 +540,12 @@ function TeamPage() {
           </DataViewToolbar>
 
           <div className="mb-3 flex justify-end">
-            <div className="inline-flex items-center gap-0.5 rounded-md border border-input p-0.5">
-              <button
-                type="button"
-                aria-label={t("team.view.cards")}
-                aria-pressed={view === "cards"}
-                title={t("team.view.cards")}
-                onClick={() => setViewOverride("cards")}
-                className={cn(
-                  "rounded p-1.5 transition-colors",
-                  view === "cards"
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                aria-label={t("team.view.table")}
-                aria-pressed={view === "table"}
-                title={t("team.view.table")}
-                onClick={() => setViewOverride("table")}
-                className={cn(
-                  "rounded p-1.5 transition-colors",
-                  view === "table"
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Table2 className="h-4 w-4" />
-              </button>
-            </div>
+            <ViewToggle
+              view={view}
+              onChange={setViewOverride}
+              cardsLabel={t("team.view.cards")}
+              tableLabel={t("team.view.table")}
+            />
           </div>
 
           {pageItems.length === 0 ? (
