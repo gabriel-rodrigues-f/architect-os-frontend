@@ -342,7 +342,7 @@ export function GapTable({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={mastery ? 6 : 7} className="py-3 text-sm text-muted-foreground">
+              <td colSpan={mastery ? 7 : 8} className="py-3 text-sm text-muted-foreground">
                 {t("gap.table.empty")}
               </td>
             </tr>
