@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -63,8 +63,7 @@ function MatrixPage() {
   const careerLevels = useCareerLevelsByRank();
   /** Catálogo mestre é administrativo — backend já recusa o resto. */
   const isAdmin = useCurrentUser().role === "admin";
-  const [newCapability, setNewCapability] = useState("");
-  const [newCapabilityShort, setNewCapabilityShort] = useState("");
+  const [creatingCapability, setCreatingCapability] = useState(false);
   const { t } = useI18n();
   const help = usePageHelp("competencyMatrix");
   const [confirmDelete, setConfirmDelete] = useState<{
@@ -141,54 +140,10 @@ function MatrixPage() {
         help={help}
         actions={
           isAdmin ? (
-            <div className="flex gap-2">
-              <Input
-                placeholder={t("matrix.newCapability")}
-                value={newCapability}
-                onChange={(e) => setNewCapability(e.target.value)}
-                className="w-48"
-              />
-              <Input
-                placeholder={t("matrix.newCapabilityShort")}
-                value={newCapabilityShort}
-                onChange={(e) => setNewCapabilityShort(e.target.value)}
-                className="w-28"
-                title={t("matrix.newCapabilityShort")}
-              />
-              <Button
-                variant="secondary"
-                onClick={async () => {
-                  const trimmedName = newCapability.trim();
-                  // R2-ESC-02 — sigla nasce derivada só como sugestão (1ª
-                  // palavra do nome); o campo é editável desde a criação, não
-                  // mais um valor fixo que colidia entre nomes parecidos
-                  // ("Arquitetura Corporativa"/"Arquitetura de Dados" → os
-                  // dois "Arquitetura"). Vazio cai na mesma derivação de antes.
-                  const trimmedShort =
-                    newCapabilityShort.trim() || trimmedName.split(" ")[0] || trimmedName;
-                  if (!trimmedName || !trimmedShort) return;
-                  if (isCapabilityShortTaken(trimmedShort, store.capabilities)) {
-                    toast.error(t("cap.short.taken", { sigla: trimmedShort }));
-                    return;
-                  }
-                  // B-32 — id gerado no servidor (nunca mais slug(nome), que
-                  // colidia entre duas capacidades de nome parecido).
-                  try {
-                    await store.addCapability({
-                      name: trimmedName,
-                      short: trimmedShort,
-                      active: true,
-                    });
-                    setNewCapability("");
-                    setNewCapabilityShort("");
-                  } catch (error) {
-                    toast.error(authErrorMessage(error));
-                  }
-                }}
-              >
-                {t("matrix.add")}
-              </Button>
-            </div>
+            <Button onClick={() => setCreatingCapability(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              {t("matrix.newCapability")}
+            </Button>
           ) : undefined
         }
       />
@@ -516,7 +471,86 @@ function MatrixPage() {
       {creatingIn && (
         <CompetencyCreateDialog capability={creatingIn} onClose={() => setCreatingIn(null)} />
       )}
+      {creatingCapability && (
+        <CapabilityCreateDialog onClose={() => setCreatingCapability(false)} />
+      )}
     </>
+  );
+}
+
+/**
+ * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — padrão único de criação:
+ * botão primário → modal, mesmo formato de `CompetencyCreateDialog` (que já
+ * seguia esse padrão) em vez dos dois inputs soltos no cabeçalho de antes.
+ */
+function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
+  const store = useStore();
+  const { t } = useI18n();
+  const [name, setName] = useState("");
+  const [short, setShort] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const create = async () => {
+    const trimmedName = name.trim();
+    // R2-ESC-02 — sigla nasce derivada só como sugestão (1ª palavra do
+    // nome); o campo continua editável, não mais um valor fixo que colidia
+    // entre nomes parecidos ("Arquitetura Corporativa"/"Arquitetura de
+    // Dados" → os dois "Arquitetura").
+    const trimmedShort = short.trim() || trimmedName.split(" ")[0] || trimmedName;
+    if (!trimmedName || !trimmedShort) return;
+    if (isCapabilityShortTaken(trimmedShort, store.capabilities)) {
+      toast.error(t("cap.short.taken", { sigla: trimmedShort }));
+      return;
+    }
+    setSaving(true);
+    try {
+      // B-32 — id gerado no servidor (nunca mais slug(nome), que colidia
+      // entre duas capacidades de nome parecido).
+      await store.addCapability({ name: trimmedName, short: trimmedShort, active: true });
+      onClose();
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("matrix.newCapability")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="new-capability-name">{t("cap.field.name")}</Label>
+            <Input
+              id="new-capability-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && create()}
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-capability-short">{t("cap.field.short")}</Label>
+            <Input
+              id="new-capability-short"
+              value={short}
+              onChange={(e) => setShort(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && create()}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={create} disabled={!name.trim() || saving}>
+            {t("matrix.add")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

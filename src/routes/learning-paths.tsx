@@ -67,10 +67,10 @@ function LearningPage() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const labels = useLabels();
-  const [name, setName] = useState("");
   const { t, locale } = useI18n();
   const help = usePageHelp("learningPaths");
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
+  const [creatingPath, setCreatingPath] = useState(false);
   const [search, setSearch] = useState("");
   /**
    * REVISAO-360-FRONTEND, Seção 34 — cada trilha sempre renderizava a lista
@@ -94,32 +94,6 @@ function LearningPage() {
    * oficial. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 4.
    */
   const canCreatePath = isLeadCapable(user.role);
-
-  /**
-   * Sem id local nem sucesso otimista: o servidor gera o id de verdade — ver
-   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001.
-   */
-  const create = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    try {
-      await store.addLearningPath({
-        id: "",
-        name: trimmed,
-        description: "",
-        competencyIds: [],
-        assignedTo: [],
-        items: [],
-        progress: [],
-        createdBy: user.email,
-        createdByUserId: user.id,
-        createdAt: new Date().toISOString(),
-      });
-      setName("");
-    } catch (error) {
-      toast.error(authErrorMessage(error));
-    }
-  };
 
   /**
    * Espelha `canEditPath` do backend: autor (por id, não mais por e-mail) ou
@@ -151,16 +125,10 @@ function LearningPage() {
         help={help}
         actions={
           canCreatePath ? (
-            <div className="flex gap-2">
-              <Input
-                placeholder={t("path.new.placeholder")}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && create()}
-                className="w-52"
-              />
-              <Button onClick={create}>{t("path.new.action")}</Button>
-            </div>
+            <Button onClick={() => setCreatingPath(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              {t("path.new.placeholder")}
+            </Button>
           ) : undefined
         }
       />
@@ -388,7 +356,144 @@ function LearningPage() {
           onClose={() => setEditingPath(null)}
         />
       )}
+      {creatingPath && <CreatePathDialog onClose={() => setCreatingPath(false)} />}
     </>
+  );
+}
+
+/**
+ * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mata a criação em 2 tempos
+ * (nome solto → criar → só depois abrir "Editar" pra preencher o resto).
+ * Reaproveita o corpo de `EditPathDialog` (nome, descrição, competências,
+ * atribuições) — os "itens" da trilha ficam de fora daqui de propósito:
+ * `addLearningPathItem` exige um `path.id` real, que só existe depois do
+ * primeiro save; continuam entrando depois, em "Editar trilha".
+ */
+function CreatePathDialog({ onClose }: { onClose: () => void }) {
+  const store = useStore();
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const [form, setForm] = useState({ name: "", description: "" });
+  const [competencyIds, setCompetencyIds] = useState<string[]>([]);
+  const [assignedTo, setAssignedTo] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const assignableArchitects = store.architects.filter((a) => a.active);
+
+  const toggle = (field: "competencyIds" | "assignedTo", id: string) => {
+    if (field === "competencyIds") {
+      setCompetencyIds((prev) =>
+        prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id],
+      );
+    } else {
+      setAssignedTo((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+    }
+  };
+
+  /**
+   * Sem id local nem sucesso otimista: o servidor gera o id de verdade — ver
+   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001.
+   */
+  const create = async () => {
+    const trimmed = form.name.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    try {
+      await store.addLearningPath({
+        id: "",
+        name: trimmed,
+        description: form.description.trim(),
+        competencyIds,
+        assignedTo,
+        items: [],
+        progress: [],
+        createdBy: user.email,
+        createdByUserId: user.id,
+        createdAt: new Date().toISOString(),
+      });
+      toast.success(t("path.new.toast", { nome: trimmed }));
+      onClose();
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t("path.new.placeholder")}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="new-path-name">{t("path.edit.name")}</Label>
+            <Input
+              id="new-path-name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && create()}
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-path-description">{t("path.edit.description")}</Label>
+            <Textarea
+              id="new-path-description"
+              rows={2}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>{t("path.edit.competencies")}</Label>
+              <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
+                {store.competencies.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={competencyIds.includes(c.id)}
+                      onChange={() => toggle("competencyIds", c.id)}
+                    />
+                    <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>{t("path.edit.assignedTo")}</Label>
+              <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
+                {assignableArchitects.map((a) => (
+                  <label key={a.id} className="flex items-center gap-2 py-0.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={assignedTo.includes(a.id)}
+                      onChange={() => toggle("assignedTo", a.id)}
+                    />
+                    <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                  </label>
+                ))}
+                {assignableArchitects.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhum arquiteto cadastrado.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={create} disabled={!form.name.trim() || saving}>
+            {t("path.new.action")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
