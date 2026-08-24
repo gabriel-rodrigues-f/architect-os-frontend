@@ -116,6 +116,25 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
   unauthorizedHandler = handler;
 }
 
+/**
+ * R2-TEC-21 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — nem todo 401 significa
+ * "a sessão caiu". `INVALID_CURRENT_PASSWORD` (senha atual errada ao trocar
+ * senha) e `INVALID_CREDENTIALS`/`ACCOUNT_DISABLED` (login) também são 401,
+ * mas são erro de NEGÓCIO de uma requisição específica — antes desta
+ * allowlist, qualquer um deles disparava `unauthorizedHandler`
+ * (`auth.tsx`) e deslogava quem só errou a senha atual no próprio
+ * formulário de troca de senha, dentro de uma sessão perfeitamente válida.
+ * Allowlist (não denylist) é deliberado: só os códigos abaixo, todos
+ * emitidos por `auth/plugin.ts#requireAuth`, de fato significam "o cookie
+ * de sessão não autentica mais" — qualquer 401 de rota de negócio fica de
+ * fora por padrão, mesmo que um código novo apareça no futuro.
+ */
+const SESSION_INVALIDATING_CODES = new Set([
+  "AUTHENTICATION_REQUIRED",
+  "SESSION_INVALID",
+  "SESSION_REVOKED",
+]);
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // Sem corpo não vai content-type: o Fastify tenta parsear o JSON ausente e
   // responde 400 (FST_ERR_CTP_EMPTY_JSON_BODY), quebrando todo DELETE.
@@ -138,7 +157,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       code?: string;
       correlationId?: string;
     } | null;
-    if (response.status === 401) unauthorizedHandler?.();
+    if (response.status === 401 && body?.code && SESSION_INVALIDATING_CODES.has(body.code)) {
+      unauthorizedHandler?.();
+    }
     throw new ApiError(
       body?.message ?? `${init?.method ?? "GET"} ${path} falhou (${response.status})`,
       response.status,
