@@ -14,6 +14,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Scale,
   Settings,
   Sun,
   Target,
@@ -127,7 +128,13 @@ export const NAV_GROUPS: NavGroup[] = [
         adminOnly: true,
       },
       { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
-      { to: "/settings", labelKey: "nav.settings", icon: Settings },
+      // R2-VIS-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — este item aponta pra
+      // "Política de Progressão", não pra preferências: usava o mesmo ícone
+      // de engrenagem do menu de tema/idioma no cabeçalho, dois significados
+      // diferentes sob o mesmo símbolo. `Scale` (balança) combina com
+      // "critério/política" e libera `Settings` só para configuração de
+      // verdade.
+      { to: "/settings", labelKey: "nav.settings", icon: Scale },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
