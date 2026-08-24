@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
+import { readMigratedItem } from "../storage";
 import {
   availableLocales,
   BASE_LOCALE,
@@ -13,7 +14,8 @@ import {
   type MessageKey,
 } from "./registry";
 
-const STORAGE_KEY = "architect-os:locale";
+const STORAGE_KEY = "synapse:locale";
+const LEGACY_STORAGE_KEY = "architect-os:locale";
 
 export interface I18nApi {
   locale: string;
@@ -37,7 +39,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const salvo = window.localStorage.getItem(STORAGE_KEY);
+    const salvo = readMigratedItem(STORAGE_KEY, LEGACY_STORAGE_KEY);
     const inicial =
       salvo && isKnownLocale(salvo)
         ? salvo

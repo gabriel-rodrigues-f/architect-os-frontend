@@ -30,6 +30,7 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import { readMigratedItem } from "@/lib/storage";
 import { useStore } from "@/lib/store";
 import { useTheme, type Theme } from "@/lib/theme";
 
@@ -175,8 +176,10 @@ export function isNavGroupActive(group: NavGroup, pathname: string): boolean {
 /** `labelKey` tem pontos ("nav.group.admin"); id de elemento aceita, mas o `aria-controls` fica mais limpo sem. */
 const navGroupPanelId = (labelKey: string) => `nav-group-${labelKey.replace(/\./g, "-")}`;
 
-const SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";
-const SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
+const SIDEBAR_STORAGE_KEY = "synapse:sidebar-collapsed";
+const LEGACY_SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";
+const SIDEBAR_WIDTH_KEY = "synapse:sidebar-width";
+const LEGACY_SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
 const NAV_COLLAPSED_GROUPS_KEY = "synapse:nav-collapsed-groups";
 
 /**
@@ -261,8 +264,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
-    setCollapsed(window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
-    const salva = Number(window.localStorage.getItem(SIDEBAR_WIDTH_KEY));
+    setCollapsed(readMigratedItem(SIDEBAR_STORAGE_KEY, LEGACY_SIDEBAR_STORAGE_KEY) === "true");
+    const salva = Number(readMigratedItem(SIDEBAR_WIDTH_KEY, LEGACY_SIDEBAR_WIDTH_KEY));
     if (Number.isFinite(salva) && salva > 0) setWidth(clampWidth(salva));
   }, []);
 

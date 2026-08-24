@@ -66,7 +66,7 @@ function AuthReady({ children }: { children: ReactNode }) {
 describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
   beforeEach(() => {
     window.localStorage.clear();
-    window.localStorage.setItem("architect-os:locale", "pt");
+    window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockImplementation((url: string) => {
