@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -235,7 +235,11 @@ function CyclesPage() {
       <SectionCard
         className="mt-6"
         title="Comparação de competências"
-        description="Nível final por ciclo."
+        description={
+          store.competencies.length > compare.length
+            ? `Nível final por ciclo. Mostrando ${compare.length} de ${store.competencies.length} competências.`
+            : "Nível final por ciclo."
+        }
       >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
@@ -265,6 +269,15 @@ function CyclesPage() {
             </tbody>
           </table>
         </div>
+        {store.competencies.length > compare.length && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Para ver as demais, consulte a{" "}
+            <Link to="/competency-matrix" className="text-primary hover:underline">
+              Matriz de Competências
+            </Link>
+            .
+          </p>
+        )}
       </SectionCard>
     </>
   );

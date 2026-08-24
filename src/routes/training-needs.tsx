@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
@@ -46,8 +47,18 @@ function TrainingNeedsPage() {
    */
   const population = sel.activeArchitects.filter((a) => canActFor(user, a));
   const needs = sel.teamTrainingNeeds(population);
-  const top = needs.slice(0, 15);
-  const collective = needs.filter((n) => n.people >= 3).slice(0, 6);
+  /**
+   * R2-ESC-08 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os dois cortes (15 e 6)
+   * eram silenciosos: nada avisava que a lista continuava além do que
+   * aparecia. Mesmo padrão de `HeatmapColumnsNotice` (R2-ESC-01) — aviso com
+   * contagem + alternância "mostrar todas" em vez de um link para outro
+   * lugar, já que não existe uma tela dedicada só a esta lista derivada.
+   */
+  const [showAllTop, setShowAllTop] = useState(false);
+  const top = showAllTop ? needs : needs.slice(0, 15);
+  const collectiveEligible = needs.filter((n) => n.people >= 3);
+  const [showAllCollective, setShowAllCollective] = useState(false);
+  const collective = showAllCollective ? collectiveEligible : collectiveEligible.slice(0, 6);
   /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
   const shortLabels = capabilityShortLabels(store.capabilities);
 
@@ -113,6 +124,23 @@ function TrainingNeedsPage() {
           title={t("needs.aggregated.title")}
           description={t("needs.aggregated.subtitle")}
         >
+          {needs.length > 15 && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              {showAllTop
+                ? t("needs.aggregated.showingAll", { total: needs.length })
+                : t("needs.aggregated.showingTopN", {
+                    shown: top.length,
+                    total: needs.length,
+                  })}{" "}
+              <button
+                type="button"
+                className="underline underline-offset-2 hover:no-underline"
+                onClick={() => setShowAllTop((v) => !v)}
+              >
+                {showAllTop ? t("needs.showTopOnly") : t("needs.showAll")}
+              </button>
+            </p>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
@@ -152,6 +180,23 @@ function TrainingNeedsPage() {
           title={t("needs.recommended.title")}
           description={t("needs.recommended.subtitle")}
         >
+          {collectiveEligible.length > 6 && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              {showAllCollective
+                ? t("needs.recommended.showingAll", { total: collectiveEligible.length })
+                : t("needs.recommended.showingTopN", {
+                    shown: collective.length,
+                    total: collectiveEligible.length,
+                  })}{" "}
+              <button
+                type="button"
+                className="underline underline-offset-2 hover:no-underline"
+                onClick={() => setShowAllCollective((v) => !v)}
+              >
+                {showAllCollective ? t("needs.showTopOnly") : t("needs.showAll")}
+              </button>
+            </p>
+          )}
           <ul className="space-y-3">
             {collective.map((n) => (
               <li key={n.competency!.id} className="surface-inset p-3">
