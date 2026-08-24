@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  isCapabilityShortTaken,
   LEVELS,
   roleShort,
   type Competency,
@@ -62,6 +63,7 @@ function MatrixPage() {
   /** Catálogo mestre é administrativo — backend já recusa o resto. */
   const isAdmin = useCurrentUser().role === "admin";
   const [newCapability, setNewCapability] = useState("");
+  const [newCapabilityShort, setNewCapabilityShort] = useState("");
   const { t } = useI18n();
   const [confirmDelete, setConfirmDelete] = useState<{
     competency: Competency;
@@ -71,6 +73,7 @@ function MatrixPage() {
   const [creatingIn, setCreatingIn] = useState<Capability | null>(null);
   const [editingCapability, setEditingCapability] = useState<Capability | null>(null);
   const [editCapabilityName, setEditCapabilityName] = useState("");
+  const [editCapabilityShort, setEditCapabilityShort] = useState("");
   const [confirmDeleteCapability, setConfirmDeleteCapability] = useState<Capability | null>(null);
   const [search, setSearch] = useState("");
   const [curationFilter, setCurationFilter] = useState<"all" | "ready" | "needsCuration">("all");
@@ -93,17 +96,24 @@ function MatrixPage() {
   const startEditingCapability = (capability: Capability) => {
     setEditingCapability(capability);
     setEditCapabilityName(capability.name);
+    setEditCapabilityShort(capability.short);
   };
 
   const saveEditingCapability = () => {
     if (!editingCapability) return;
-    const trimmed = editCapabilityName.trim();
-    if (!trimmed) return;
-    store.updateCapability(editingCapability.id, {
-      name: trimmed,
-      short: trimmed.split(" ")[0] ?? trimmed,
-    });
-    toast.success(t("cap.edit.toast", { nome: trimmed }));
+    const trimmedName = editCapabilityName.trim();
+    const trimmedShort = editCapabilityShort.trim();
+    if (!trimmedName || !trimmedShort) return;
+    // R2-ESC-02 — checagem no cliente é só UX (resposta imediata, sem
+    // esperar o round-trip nem o flash de "otimista, depois desfeito").
+    // `updateCapability` é fire-and-forget (`remote()`): se mesmo assim
+    // colidir (corrida entre dois admins), o toast de erro já vem de lá.
+    if (isCapabilityShortTaken(trimmedShort, store.capabilities, editingCapability.id)) {
+      toast.error(t("cap.short.taken", { sigla: trimmedShort }));
+      return;
+    }
+    store.updateCapability(editingCapability.id, { name: trimmedName, short: trimmedShort });
+    toast.success(t("cap.edit.toast", { nome: trimmedName }));
     setEditingCapability(null);
   };
 
@@ -135,19 +145,39 @@ function MatrixPage() {
                 onChange={(e) => setNewCapability(e.target.value)}
                 className="w-48"
               />
+              <Input
+                placeholder={t("matrix.newCapabilityShort")}
+                value={newCapabilityShort}
+                onChange={(e) => setNewCapabilityShort(e.target.value)}
+                className="w-28"
+                title={t("matrix.newCapabilityShort")}
+              />
               <Button
                 variant="secondary"
                 onClick={async () => {
-                  if (!newCapability.trim()) return;
+                  const trimmedName = newCapability.trim();
+                  // R2-ESC-02 — sigla nasce derivada só como sugestão (1ª
+                  // palavra do nome); o campo é editável desde a criação, não
+                  // mais um valor fixo que colidia entre nomes parecidos
+                  // ("Arquitetura Corporativa"/"Arquitetura de Dados" → os
+                  // dois "Arquitetura"). Vazio cai na mesma derivação de antes.
+                  const trimmedShort =
+                    newCapabilityShort.trim() || trimmedName.split(" ")[0] || trimmedName;
+                  if (!trimmedName || !trimmedShort) return;
+                  if (isCapabilityShortTaken(trimmedShort, store.capabilities)) {
+                    toast.error(t("cap.short.taken", { sigla: trimmedShort }));
+                    return;
+                  }
                   // B-32 — id gerado no servidor (nunca mais slug(nome), que
                   // colidia entre duas capacidades de nome parecido).
                   try {
                     await store.addCapability({
-                      name: newCapability,
-                      short: newCapability.split(" ")[0] ?? newCapability,
+                      name: trimmedName,
+                      short: trimmedShort,
                       active: true,
                     });
                     setNewCapability("");
+                    setNewCapabilityShort("");
                   } catch (error) {
                     toast.error(authErrorMessage(error));
                   }
@@ -437,6 +467,20 @@ function MatrixPage() {
               id="capability-edit-name"
               value={editCapabilityName}
               onChange={(e) => setEditCapabilityName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveEditingCapability()}
+            />
+          </div>
+          <div>
+            {/* R2-ESC-02 — sigla editável e explícita: antes era sempre
+                `nome.split(" ")[0]`, recalculada silenciosamente a cada
+                edição de nome, sem checar se já pertencia a outra
+                capacidade ("Arquitetura Corporativa"/"Arquitetura de
+                Dados" coincidindo em "Arquitetura"). */}
+            <Label htmlFor="capability-edit-short">{t("cap.field.short")}</Label>
+            <Input
+              id="capability-edit-short"
+              value={editCapabilityShort}
+              onChange={(e) => setEditCapabilityShort(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && saveEditingCapability()}
             />
           </div>

@@ -5,6 +5,7 @@ import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
@@ -45,6 +46,8 @@ function TrainingNeedsPage() {
   const needs = sel.teamTrainingNeeds(population);
   const top = needs.slice(0, 15);
   const collective = needs.filter((n) => n.people >= 3).slice(0, 6);
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
 
   /**
    * "Intervenção coletiva" não é uma entidade nova — é a mesma Trilha de
@@ -131,7 +134,8 @@ function TrainingNeedsPage() {
                   <tr key={n.competency!.id} className="border-b border-border/60 last:border-0">
                     <td className="py-2 font-medium">{n.competency!.name}</td>
                     <td className="py-2 text-muted-foreground">
-                      {store.capabilities.find((c) => c.id === n.competency!.capabilityId)?.short}
+                      {shortLabels.get(n.competency!.capabilityId) ??
+                        store.capabilities.find((c) => c.id === n.competency!.capabilityId)?.short}
                     </td>
                     <td className="py-2 text-center tabular-nums">{n.people}</td>
                     <td className="py-2 text-center tabular-nums">{n.avgGap}</td>

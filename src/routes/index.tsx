@@ -24,7 +24,7 @@ import {
 import { CapabilityRadar } from "@/components/app/charts";
 import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
 import { useCurrentUser } from "@/lib/auth";
-import { levelName } from "@/lib/domain";
+import { capabilityShortLabels, levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { canActFor } from "@/lib/scope";
@@ -131,6 +131,8 @@ function AdminHome() {
     ? store.capabilities
     : capHeatmapColumns(store.capabilities, architects, sel.capabilityAverages);
   const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
 
   return (
     <>
@@ -222,7 +224,7 @@ function AdminHome() {
                       className="sticky top-0 z-10 max-w-[64px] truncate bg-card px-1 text-center text-[11px] font-medium text-muted-foreground"
                       title={c.name}
                     >
-                      {c.short}
+                      {shortLabels.get(c.id) ?? c.short}
                     </th>
                   ))}
                 </tr>
@@ -315,6 +317,8 @@ function MemberHome() {
   }
 
   const capabilityAvgs = sel.capabilityAverages(architectId);
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
   const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
   const { avg, covered, total } = averageWithCoverage(capabilityAvgs.map((d) => d.avg));
   const assessment = sel.assessmentFor(architectId);
@@ -372,7 +376,7 @@ function MemberHome() {
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
             data={capabilityAvgs.map((d) => ({
-              capability: d.capability.short,
+              capability: shortLabels.get(d.capability.id) ?? d.capability.short,
               atual: d.avg ?? 0,
               alvo: d.target ?? 0,
             }))}

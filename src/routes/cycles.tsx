@@ -74,12 +74,16 @@ function CyclesPage() {
     // Capacidade sem assessment oficial no ciclo não entra na linha — nada de
     // plotar um 0 fictício que pareceria uma queda real de nível.
     for (const d of sel.capabilityAverages(architectId, c.id)) {
-      if (d.avg !== undefined) row[d.capability.short] = d.avg;
+      // R2-ESC-02 — chave por `id`, nunca por `short`: nada garantia (antes
+      // desta rodada) que `short` fosse único, e duas capacidades com a
+      // mesma sigla sobrescreveriam o valor uma da outra na mesma linha do
+      // gráfico. `id` é sempre único; `short`/`name` seguem só como rótulo.
+      if (d.avg !== undefined) row[d.capability.id] = d.avg;
     }
     return row;
   });
   /* A cor de cada série é decisão da paleta do sistema; aqui só se diz o que plotar. */
-  const series = store.capabilities.map((c) => ({ key: c.short, label: c.name }));
+  const series = store.capabilities.map((c) => ({ key: c.id, label: c.name }));
 
   /**
    * Mesma fonte que o gráfico acima: só assessment `Completed` conta como

@@ -27,6 +27,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  capabilityShortLabels,
   EVIDENCE_TYPES,
   evidencesForPlanItem,
   progressFor,
@@ -142,6 +143,8 @@ function ArchitectProfile() {
 
   const gaps = sel.progressionGapsFor(architect.id).filter((g) => g.gap > 0);
   const capabilityAvgs = sel.capabilityAverages(architect.id);
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
@@ -279,7 +282,7 @@ function ArchitectProfile() {
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
             data={capabilityAvgs.map((d) => ({
-              capability: d.capability.short,
+              capability: shortLabels.get(d.capability.id) ?? d.capability.short,
               atual: d.avg ?? 0,
               alvo: d.target ?? 0,
             }))}

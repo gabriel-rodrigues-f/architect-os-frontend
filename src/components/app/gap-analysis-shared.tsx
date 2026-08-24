@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { GapBadge } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
-import type { Architect } from "@/lib/domain";
+import { capabilityShortLabels, type Architect } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, type Gap } from "@/lib/selectors";
@@ -154,24 +154,27 @@ export function useGapAnalysisData() {
    * de uma fração pequena do grupo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-
    * SYNAPSE.md, Seção 9.
    */
-  const radar = useMemo(
-    () =>
-      store.capabilities.map((cat) => {
-        const rows = architects.map((a) =>
-          sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
-        );
-        const atual = averageWithCoverage(rows.map((r) => r?.avg));
-        const alvo = averageWithCoverage(rows.map((r) => r?.target));
-        return {
-          capability: cat.short,
-          atual: Number((atual.avg ?? 0).toFixed(2)),
-          alvo: Number((alvo.avg ?? 0).toFixed(2)),
-          covered: atual.covered,
-          total: atual.total,
-        };
-      }),
-    [architects, store.capabilities, sel],
-  );
+  const radar = useMemo(() => {
+    // R2-ESC-02 — `short` pode colidir entre capacidades (nada impedia
+    // isso antes desta rodada); o rótulo do radar precisa continuar
+    // distinguível mesmo quando duas capacidades ainda dividem a mesma
+    // sigla (dado legado, até alguém corrigir no catálogo).
+    const shortLabels = capabilityShortLabels(store.capabilities);
+    return store.capabilities.map((cat) => {
+      const rows = architects.map((a) =>
+        sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
+      );
+      const atual = averageWithCoverage(rows.map((r) => r?.avg));
+      const alvo = averageWithCoverage(rows.map((r) => r?.target));
+      return {
+        capability: shortLabels.get(cat.id) ?? cat.short,
+        atual: Number((atual.avg ?? 0).toFixed(2)),
+        alvo: Number((alvo.avg ?? 0).toFixed(2)),
+        covered: atual.covered,
+        total: atual.total,
+      };
+    });
+  }, [architects, store.capabilities, sel]);
 
   /** Pior cobertura entre as capacidades do radar — sinaliza quando a leitura é de poucos. */
   const radarCoverage = radar.reduce(

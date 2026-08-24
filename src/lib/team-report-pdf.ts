@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import type { ConsolidatedGapRow } from "@/components/app/gap-analysis-shared";
+import { capabilityShortLabels } from "@/lib/domain";
 import {
   downloadBlob,
   formatAvg,
@@ -43,12 +44,17 @@ export async function exportTeamReportPdf(t: T, input: TeamReportInput): Promise
   doc.text(t("gap.export.pdf.heatmapSection"), margin, y);
   y += 8;
 
+  // R2-ESC-02 — dedup do cabeçalho enquanto o catálogo tiver siglas
+  // duplicadas legadas (nada impedia isso antes desta rodada).
+  const shortLabels = capabilityShortLabels(input.capabilities);
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
     styles: { fontSize: 7, cellPadding: 3 },
     headStyles: { fillColor: [60, 60, 60] },
-    head: [[t("col.architect"), ...input.capabilities.map((c) => c.short)]],
+    head: [
+      [t("col.architect"), ...input.capabilities.map((c) => shortLabels.get(c.id) ?? c.short)],
+    ],
     body: input.architects.map((a) => {
       const averages = input.capabilityAveragesFor(a.id);
       return [

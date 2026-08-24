@@ -92,6 +92,47 @@ export interface Capability {
 }
 
 /**
+ * R2-ESC-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `short` nascia de
+ * `name.split(" ")[0]`, sem checar unicidade: "Arquitetura Corporativa" e
+ * "Arquitetura de Dados" colidiam na mesma sigla "Arquitetura", e todo
+ * rótulo compacto (radar, heatmap, export) que depende de `short` ser único
+ * virava ambíguo. Case-insensitive porque "Dados"/"dados" são a mesma
+ * colisão visual.
+ */
+export function isCapabilityShortTaken(
+  short: string,
+  capabilities: readonly Pick<Capability, "id" | "short">[],
+  excludeId?: string,
+): boolean {
+  const normalized = short.trim().toLowerCase();
+  return capabilities.some(
+    (c) => c.id !== excludeId && c.short.trim().toLowerCase() === normalized,
+  );
+}
+
+/**
+ * Dedup só para EXIBIÇÃO: dados que já existiam antes da validação de
+ * unicidade acima (ou uma sigla arquivada reaproveitada) podem colidir. Em
+ * vez de quebrar a leitura do rótulo compacto, sufixa "(2)", "(3)"... na
+ * ordem de `capabilities` — determinístico, sem depender de `id`. Só
+ * `id`/`short` no parâmetro (não `Capability` inteiro) porque alguns
+ * chamadores (export CSV/PDF) já trabalham com uma projeção mais estreita.
+ */
+export function capabilityShortLabels(
+  capabilities: readonly Pick<Capability, "id" | "short">[],
+): Map<string, string> {
+  const seen = new Map<string, number>();
+  const labels = new Map<string, string>();
+  for (const c of capabilities) {
+    const key = c.short.trim().toLowerCase();
+    const count = (seen.get(key) ?? 0) + 1;
+    seen.set(key, count);
+    labels.set(c.id, count === 1 ? c.short : `${c.short} (${count})`);
+  }
+  return labels;
+}
+
+/**
  * ENT-CAR-011 — uma capacidade só é "qualificada" para progressão de
  * carreira (motor ainda não implementado, Fase D) quando TODAS as suas
  * competências RESTRICTIVE atingem o alvo; NON_RESTRICTIVE nunca bloqueia

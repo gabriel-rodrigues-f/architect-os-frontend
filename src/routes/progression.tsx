@@ -12,6 +12,7 @@ import {
 } from "@/components/app/gap-analysis-shared";
 import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
+import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useSelectors } from "@/lib/store";
 import { exportTeamReportCsv } from "@/lib/team-report-csv";
@@ -50,6 +51,8 @@ function ProgressionPage() {
     ? store.capabilities
     : capHeatmapColumns(store.capabilities, architects, sel.capabilityAverages);
   const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
 
   const reportInput = () => ({
     scopeLabel,
@@ -157,7 +160,7 @@ function ProgressionPage() {
                         className="sticky top-0 z-10 max-w-[64px] truncate bg-card text-center text-[11px] text-muted-foreground"
                         title={c.name}
                       >
-                        {c.short}
+                        {shortLabels.get(c.id) ?? c.short}
                       </th>
                     ))}
                   </tr>
