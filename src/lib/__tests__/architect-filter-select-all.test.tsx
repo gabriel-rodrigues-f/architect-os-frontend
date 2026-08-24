@@ -14,8 +14,9 @@ import { I18nProvider } from "../i18n";
  * nenhum visível. A resolução das duas juntas: `selected` passa a ser
  * sempre explícito (vazio = ninguém, nunca mais "todo o time" implícito), e
  * "Todo o time" vira um alternador de verdade — marca tudo, clique de novo
- * desmarca tudo. Mesmo componente usado em gap-analysis.tsx e
- * mentoring.tsx.
+ * desmarca tudo. Mesmo componente usado em gap-analysis.tsx e compare.tsx
+ * (mentoring.tsx passou a usar `MenteeFilterCombobox`, seleção única, a
+ * partir de R2-UX-11 — mentoria é sempre 1:1).
  */
 
 const architects: Architect[] = [

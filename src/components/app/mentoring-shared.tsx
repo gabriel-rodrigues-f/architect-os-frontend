@@ -1,12 +1,21 @@
-import { AlertCircle, X } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
 import { FieldLabel, Initials } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -22,7 +31,8 @@ import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/li
 import { useI18n } from "@/lib/i18n";
 import { isAssignedTechLeadOf } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate, todayIso } from "@/lib/text";
+import { byName, formatDate, todayIso } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) — `/mentoring`
@@ -221,18 +231,118 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
   };
 }
 
-/** Recorte por arquiteto (`ArchitectFilter`) + sessões filtradas e ordenadas — o que a linha do tempo lê. */
+/**
+ * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então
+ * o filtro da linha do tempo não é um recorte de time (`ArchitectFilter`),
+ * e sim "todo mundo" ou UMA pessoa específica.
+ */
 export function useMentoringTimeline() {
   const store = useStore();
-  // `ArchitectFilter` trata `selected` como sempre explícito — nasce com todo mundo marcado.
-  const [filter, setFilter] = useState<string[]>(() => store.architects.map((a) => a.id));
+  const [filter, setFilter] = useState<string | "all">("all");
 
-  const filteredIds = new Set(applyArchitectFilter(store.architects, filter).map((a) => a.id));
   const sessions = [...store.mentoringSessions]
-    .filter((s) => filteredIds.has(s.menteeId))
+    .filter((s) => filter === "all" || s.menteeId === filter)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return { filter, setFilter, sessions };
+}
+
+/** Combobox pesquisável de seleção única — mesmo padrão de `ArchitectNameCombobox`, sem multi-seleção. */
+export function MenteeFilterCombobox({
+  architects,
+  selected,
+  onChange,
+}: {
+  architects: readonly Architect[];
+  selected: string | "all";
+  onChange: (value: string | "all") => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const ordered = [...architects].sort(byName);
+  const active = ordered.filter((a) => a.active);
+  const inactive = ordered.filter((a) => !a.active);
+
+  const summary =
+    selected === "all"
+      ? t("mentor.filter.all")
+      : (ordered.find((a) => a.id === selected)?.name ?? t("mentor.filter.all"));
+
+  const select = (value: string | "all") => {
+    onChange(value);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-label={t("mentor.filter.label")}
+          aria-expanded={open}
+          title={summary}
+          className="flex w-64 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
+        >
+          <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="start">
+        <Command>
+          <CommandInput placeholder={t("mentor.filter.searchPlaceholder")} />
+          <CommandList className="max-h-72">
+            <CommandEmpty>{t("mentor.filter.empty")}</CommandEmpty>
+            <CommandGroup>
+              <CommandItem value="__all__" onSelect={() => select("all")}>
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4 shrink-0",
+                    selected === "all" ? "opacity-100" : "opacity-0",
+                  )}
+                />
+                <span className="font-medium">{t("mentor.filter.all")}</span>
+              </CommandItem>
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup>
+              {active.map((a) => (
+                <CommandItem key={a.id} value={a.name} onSelect={() => select(a.id)}>
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4 shrink-0",
+                      selected === a.id ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            {inactive.length > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup>
+                  {inactive.map((a) => (
+                    <CommandItem key={a.id} value={a.name} onSelect={() => select(a.id)}>
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          selected === a.id ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                        {t("mentor.filter.inactiveName", { nome: a.name })}
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 /**

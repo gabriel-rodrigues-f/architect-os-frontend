@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import {
+  MenteeFilterCombobox,
   MentoringTimeline,
   NewMentoringSessionDialog,
   useMentoringTimeline,
@@ -65,7 +65,11 @@ function MentoringPage() {
         help={help}
         actions={
           <div className="flex items-center gap-2">
-            <ArchitectFilter architects={store.architects} selected={filter} onChange={setFilter} />
+            <MenteeFilterCombobox
+              architects={store.architects}
+              selected={filter}
+              onChange={setFilter}
+            />
             <NewMentoringSessionDialog menteeOptions={menteeOptions} />
           </div>
         }
@@ -74,11 +78,12 @@ function MentoringPage() {
       <SectionCard
         title={t("mentor.timeline.title")}
         description={
-          filter.length === 0
-            ? t("mentor.timeline.none")
-            : filter.length === store.architects.length
-              ? t("mentor.timeline.all", { n: sessions.length })
-              : t("mentor.timeline.filtered", { n: sessions.length, p: filter.length })
+          filter === "all"
+            ? t("mentor.timeline.all", { n: sessions.length })
+            : t("mentor.timeline.forPerson", {
+                n: sessions.length,
+                nome: store.architects.find((a) => a.id === filter)?.name ?? "",
+              })
         }
       >
         <MentoringTimeline sessions={sessions} />
