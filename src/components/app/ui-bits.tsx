@@ -389,11 +389,22 @@ export function FieldLabel({
   );
 }
 
+/**
+ * R2-VIS-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `n[0]` pegava o primeiro
+ * CARACTERE de cada palavra, sem checar o que era: um nome com aspas ou
+ * símbolo solto no início de uma palavra (`Arquiteto "R&D" <Ops>`) virava
+ * `A"` no avatar em vez de `AR`. Filtra para a primeira letra ou dígito de
+ * cada palavra — símbolo isolado (palavra sem nenhuma letra/dígito) é
+ * pulado, não vira iniciais.
+ */
+const FIRST_LETTER_OR_NUMBER = /[\p{L}\p{N}]/u;
+
 export function Initials({ name }: { name: string }) {
   const initials = name
     .split(" ")
+    .map((n) => n.match(FIRST_LETTER_OR_NUMBER)?.[0] ?? "")
+    .filter(Boolean)
     .slice(0, 2)
-    .map((n) => n[0])
     .join("");
   return (
     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
