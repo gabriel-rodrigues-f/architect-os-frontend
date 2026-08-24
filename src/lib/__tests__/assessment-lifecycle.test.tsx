@@ -69,6 +69,17 @@ function mockSession(
         }),
       );
     }
+    if (href.includes("/eligibility")) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+      );
+    }
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
 }
@@ -274,6 +285,14 @@ describe("Avaliações — campos por papel e status", () => {
             status: 200,
             headers: { "content-type": "application/json" },
           }),
+        );
+      }
+      if (href.includes("/eligibility")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          ),
         );
       }
       return Promise.resolve(new Response("{}", { status: 200 }));

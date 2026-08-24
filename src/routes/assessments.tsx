@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, BadgeCheck } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { z } from "zod";
 
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
@@ -137,6 +137,37 @@ function AssessmentsPage() {
   const toggleCapability = (id: string) =>
     setCapabilityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
+  /**
+   * R2-ESC-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesma `queryKey` de
+   * `CareerPortfolioSection`: o React Query deduplica, então isto não é uma
+   * segunda chamada de rede, só um segundo lugar lendo o cache já buscado.
+   * Alimenta o atalho "Selecionar as do portfólio".
+   */
+  const { data: eligibility } = useQuery({
+    queryKey: ["assessment-eligibility", assessment?.id],
+    queryFn: () => api.assessmentEligibility(assessment!.id),
+    enabled: !!assessment,
+  });
+
+  /**
+   * REVISAO-360-FRONTEND (R2-ESC-06) — selecionar muitas capacidades de uma
+   * vez (ex.: "Selecionar todas" num catálogo de 30) despejava ~180 linhas
+   * na tela de uma vez. Acima do limiar, a navegação vira "uma capacidade
+   * por vez" — o valor de `selected` continua sendo TODAS as escolhidas
+   * (o resto da tela, contagens etc. não muda), só a RENDERIZAÇÃO dos
+   * cards de resposta que passa a mostrar um por vez.
+   */
+  const MANY_CAPABILITIES_THRESHOLD = 10;
+  const manyCapabilitiesSelected = selected.length > MANY_CAPABILITIES_THRESHOLD;
+  const [capabilityPage, setCapabilityPage] = useState(0);
+  const capabilityIdsKey = capabilityIds.join(",");
+  useEffect(() => {
+    setCapabilityPage(0);
+  }, [capabilityIdsKey]);
+  const visibleCapabilities = manyCapabilitiesSelected
+    ? selected.slice(capabilityPage, capabilityPage + 1)
+    : selected;
+
   const transition = (nextStatus: Assessment["status"]) => {
     if (!assessment) return;
     setTransitionError(null);
@@ -182,6 +213,17 @@ function AssessmentsPage() {
               onToggle={toggleCapability}
               onSelectAll={setCapabilityIds}
             />
+            {eligibility && eligibility.capabilities.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCapabilityIds(eligibility.capabilities.map((c) => c.capabilityId))
+                }
+              >
+                {t("asmt.selectPortfolio")}
+              </Button>
+            )}
           </div>
         }
       />
@@ -308,16 +350,65 @@ function AssessmentsPage() {
         </SectionCard>
       ) : (
         <div className="space-y-4">
-          {selected.map((cat) => {
+          {manyCapabilitiesSelected && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+              <p className="text-amber-800">
+                {t("asmt.manyCapabilities.warning", { n: selected.length })}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={capabilityPage === 0}
+                  onClick={() => setCapabilityPage((p) => p - 1)}
+                >
+                  {t("asmt.manyCapabilities.prev")}
+                </Button>
+                <select
+                  aria-label={t("asmt.manyCapabilities.jump")}
+                  className="rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+                  value={capabilityPage}
+                  onChange={(e) => setCapabilityPage(Number(e.target.value))}
+                >
+                  {selected.map((cat, index) => (
+                    <option key={cat.id} value={index}>
+                      {t("asmt.manyCapabilities.position", {
+                        current: index + 1,
+                        total: selected.length,
+                      })}{" "}
+                      — {cat.name}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={capabilityPage >= selected.length - 1}
+                  onClick={() => setCapabilityPage((p) => p + 1)}
+                >
+                  {t("asmt.manyCapabilities.next")}
+                </Button>
+              </div>
+            </div>
+          )}
+          {visibleCapabilities.map((cat) => {
             const comps = store.competencies.filter((c) => c.capabilityId === cat.id);
+            const answeredCount = comps.filter((c) => {
+              const item = assessment.items.find((i) => i.competencyId === c.id);
+              if (!item) return false;
+              return status === "Draft" ? item.self !== null : item.final !== null;
+            }).length;
             return (
               <SectionCard
                 key={cat.id}
                 title={cat.name}
                 description={
-                  comps.length === 1
+                  (comps.length === 1
                     ? t("asmt.competencyCount.one")
-                    : t("asmt.competencyCount.many", { n: comps.length })
+                    : t("asmt.competencyCount.many", { n: comps.length })) +
+                  (comps.length > 0
+                    ? ` · ${t("asmt.progressCount", { answered: answeredCount, total: comps.length })}`
+                    : "")
                 }
               >
                 {comps.length === 0 ? (

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -79,6 +79,14 @@ describe("Avaliações — seleção de capacidades", () => {
             status: 200,
             headers: { "content-type": "application/json" },
           }),
+        );
+      }
+      if (String(url).includes("/eligibility")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          ),
         );
       }
       return Promise.resolve(new Response("{}", { status: 200 }));
