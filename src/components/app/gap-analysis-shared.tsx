@@ -223,12 +223,21 @@ export function useGapAnalysisData() {
    * existe mais no roster não faz a contagem bater por acidente.
    */
   const { t } = useI18n();
+  /**
+   * R2-ESC-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — a lista de primeiros
+   * nomes crescia sem teto (times de 15+ pessoas viravam uma linha só,
+   * ilegível). `scopeLabel` alimenta `t()`/PDF como string simples (nunca
+   * JSX), então a regra aqui é diferente da truncagem de `NameList`: acima
+   * de 3 pessoas vira contagem, sem nome nenhum.
+   */
   const scopeLabel =
     selected.length === 0
       ? t("gap.scope.none")
       : architects.length === store.architects.length
         ? t("gap.scope.wholeTeam")
-        : architects.map((a) => a.name.split(" ")[0]).join(", ") || t("gap.scope.empty");
+        : architects.length > 3
+          ? t("gap.scope.count", { n: architects.length })
+          : architects.map((a) => a.name.split(" ")[0]).join(", ") || t("gap.scope.empty");
 
   return {
     store,

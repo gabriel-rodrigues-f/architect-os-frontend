@@ -4,7 +4,7 @@ import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { CapabilityRadar } from "@/components/app/charts";
 import { type ConsolidatedGapRow, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
-import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { GapBadge, NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 
@@ -148,7 +148,9 @@ function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emp
             <p className="text-xs text-muted-foreground">
               {t("gap.priorities.avgGapLine", { avg: row.avgGap })}
             </p>
-            <p className="text-xs text-muted-foreground">{row.architectNames.join(", ")}</p>
+            <p className="text-xs text-muted-foreground">
+              <NameList names={row.architectNames} />
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <GapBadge gap={row.maxGap} />

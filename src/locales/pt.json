@@ -409,6 +409,7 @@
   "gap.empty.filterHint": "Nenhum arquiteto selecionado no filtro. Marque \"Todo o time\" ou escolha alguém para ver as lacunas.",
   "gap.scope.none": "nenhum profissional selecionado",
   "gap.scope.wholeTeam": "todo o time",
+  "gap.scope.count": "{n} pessoas selecionadas",
   "gap.scope.empty": "seleção vazia",
   "gap.radar.title": "Radar de Arquitetura",
   "gap.radar.subtitle": "Nível atual versus esperado por capacidade — {escopo}.",
