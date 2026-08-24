@@ -27,7 +27,7 @@ import type {
   SelectionScope,
   TeamEvolutionResult,
 } from "./domain";
-import { appStateSchema } from "./api-schemas";
+import { appStateSchema, careerLevelsResponseSchema } from "./api-schemas";
 
 /**
  * Snapshot devolvido por GET /api/state — espelha o AppState do backend.
@@ -298,7 +298,14 @@ export const api = {
     request<CareerLevelTransition[]>(`/api/architects/${id}/career-level-transitions`),
 
   /* carreira */
-  careerLevels: () => request<CareerLevel[]>("/api/career-levels"),
+  // R2-TEC-19 — validado em runtime (mesmo padrão de getState/appStateSchema),
+  // não só um cast de tipo: `careerLevels` perdeu essa checagem quando saiu
+  // de `/api/state` (B-24, ADR-0011) e nunca ganhou uma equivalente no
+  // endpoint dedicado.
+  careerLevels: () =>
+    request<CareerLevel[]>("/api/career-levels").then((data) =>
+      careerLevelsResponseSchema.parse(data),
+    ),
   /**
    * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — Política de Progressão:
    * mínimo global >=3 já é validado no backend (`policyPatchSchema`,

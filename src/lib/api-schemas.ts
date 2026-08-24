@@ -70,6 +70,23 @@ const careerLevelPolicy = z.object({
   minimumQualifiedCapabilities: z.number(),
 });
 
+/**
+ * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `careerLevels` saiu de
+ * `appStateSchema` junto com a migração pra `GET /api/career-levels` (B-24,
+ * ADR-0011, comentário em `api.ts`), mas a validação em runtime não
+ * acompanhou: `api.careerLevels()` ficou só com um cast de tipo
+ * (`request<CareerLevel[]>`), a MESMA lacuna que `appStateSchema` existe
+ * pra fechar nas outras coleções. Schema dedicado, exportado, pra
+ * `api.ts#careerLevels` validar a resposta como as demais.
+ */
+const careerLevel = z.object({
+  id: z.string(),
+  name: z.string(),
+  rank: z.number(),
+});
+
+export const careerLevelsResponseSchema = z.array(careerLevel);
+
 const architect = z.object({
   id: z.string(),
   name: z.string(),
@@ -264,6 +281,19 @@ const evidence = z.object({
   reviewedAt: z.string().nullish(),
 });
 
+/**
+ * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — comportamento não
+ * documentado até aqui: `z.object()` sem `.passthrough()`/`.strict()`
+ * (o default do zod) SILENCIOSAMENTE DESCARTA qualquer chave que o
+ * servidor mande e este schema não conheça — `.parse()` não falha, só
+ * devolve um objeto sem o campo novo. Isto é aceito de propósito, não um
+ * bug: um campo REMOVIDO ou RENOMEADO no servidor (o caso que este
+ * schema existe pra pegar) ainda quebra a validação normalmente (chave
+ * exigida ausente); só um campo ADICIONADO fica invisível até este
+ * arquivo ser atualizado — o mesmo trade-off que qualquer parser
+ * "aditivo primeiro" faz. Se um campo novo precisar aparecer na UI, ele
+ * também precisa ser declarado aqui — não é automático.
+ */
 export const appStateSchema = z.object({
   capabilities: z.array(capability),
   competencies: z.array(competency),

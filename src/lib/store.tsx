@@ -846,6 +846,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // Só busca no browser: o SSR renderiza o estado de carregamento e a
     // hidratação dispara a chamada real, sem exigir a API durante o build.
     enabled: typeof window !== "undefined",
+    /**
+     * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `/api/state` é o BFF
+     * agregador de todo o app (ADR-0011), não um endpoint barato; o default
+     * do React Query (`refetchOnWindowFocus: true`) refaz essa busca INTEIRA
+     * — incluindo `appStateSchema.parse` do payload todo — toda vez que a
+     * aba/janela recupera o foco depois de `staleTime` (30s) vencido, um
+     * padrão de uso comum (alternar abas, voltar pro navegador). Mutations
+     * já invalidam a query explicitamente (`buildApi`, mais abaixo) — não
+     * dependemos do refetch automático de foco pra ver mudanças próprias.
+     */
+    refetchOnWindowFocus: false,
   });
 
   const state = data ?? emptyState;
