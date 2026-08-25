@@ -44,6 +44,7 @@ export function MultiSelectFilter({
   selectAllLabel,
   allSummaryLabel,
   noneSummaryLabel,
+  emptyLabel,
 }: {
   id: string;
   label: string;
@@ -53,12 +54,24 @@ export function MultiSelectFilter({
   selectAllLabel: string;
   allSummaryLabel: string;
   noneSummaryLabel: string;
+  /**
+   * R3-007 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — sem nenhuma opção real pra
+   * filtrar (ex.: ninguém tem especialização cadastrada ainda), o campo
+   * mostrava "Todos os registros"/"Sem especialização" como se houvesse algo
+   * pra escolher — abrir o popover só revelava as duas opções vazias
+   * ("Todas"/"Sem X"), nunca um item de verdade. Com zero opções o campo
+   * agora fica desabilitado e mostra esta mensagem no lugar do resumo —
+   * `t("filter.multi.empty")` genérico como default; cada chamador pode
+   * passar um texto específico ("Nenhuma especialização cadastrada").
+   */
+  emptyLabel?: string;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const optionCount = options.length + 1;
+  const isEmpty = options.length === 0;
 
   const close = () => {
     setOpen(false);
@@ -102,6 +115,7 @@ export function MultiSelectFilter({
   };
 
   const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (isEmpty) return;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       setOpen(true);
@@ -127,7 +141,7 @@ export function MultiSelectFilter({
 
   return (
     <div>
-      <label className="block text-xs text-muted-foreground" htmlFor={id}>
+      <label className="block text-sm text-muted-foreground" htmlFor={id}>
         {label}
       </label>
       <Popover open={open} onOpenChange={setOpen}>
@@ -136,14 +150,20 @@ export function MultiSelectFilter({
             id={id}
             ref={triggerRef}
             type="button"
+            disabled={isEmpty}
             onKeyDown={onTriggerKeyDown}
             aria-expanded={open}
             aria-haspopup="listbox"
-            title={summary}
-            className="mt-1 flex w-44 items-center justify-between gap-2 rounded-md border border-input bg-card px-2 py-2 text-sm"
+            title={isEmpty ? (emptyLabel ?? t("filter.multi.empty")) : summary}
+            className={cn(
+              "mt-1.5 flex h-10 w-full min-w-48 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-sm shadow-sm",
+              isEmpty && "cursor-not-allowed text-muted-foreground opacity-70",
+            )}
           >
-            <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate text-left">
+              {isEmpty ? (emptyLabel ?? t("filter.multi.empty")) : summary}
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           </button>
         </PopoverTrigger>
         <PopoverContent
