@@ -125,10 +125,7 @@ function LearningPage() {
         help={help}
         actions={
           canCreatePath ? (
-            <Button onClick={() => setCreatingPath(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              {t("path.new.placeholder")}
-            </Button>
+            <Button onClick={() => setCreatingPath(true)}>{t("path.new.placeholder")}</Button>
           ) : undefined
         }
       />

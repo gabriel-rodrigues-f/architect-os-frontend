@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -142,10 +142,7 @@ function MatrixPage() {
         help={help}
         actions={
           isAdmin ? (
-            <Button onClick={() => setCreatingCapability(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              {t("matrix.newCapability")}
-            </Button>
+            <Button onClick={() => setCreatingCapability(true)}>{t("matrix.newCapability")}</Button>
           ) : undefined
         }
       />
