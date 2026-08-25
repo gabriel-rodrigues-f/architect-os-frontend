@@ -192,30 +192,30 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
  * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
  * Bloco 7) — antes, `isGroupExpanded` forçava `isNavGroupActive(...)` como
  * um `OR` que sempre vencia: o grupo da rota ativa nunca podia ser
- * recolhido de verdade, `collapsedGroups` era ignorado pra ele. O pedido
- * não foi remover a proteção sem mais — é manter SEMPRE visível o item da
- * rota atual (fixo, fora do colapso) e deixar só os IRMÃOS dele
- * recolherem/expandirem como qualquer outro grupo.
+ * recolhido de verdade, `collapsedGroups` era ignorado pra ele.
  *
- * `collapsible` é sempre "todos os itens menos o ativo" — um conjunto
- * ESTÁVEL entre renders, independente do grupo estar recolhido ou não.
- * Isso é o que preserva a animação de `grid-template-rows` já existente
- * (0fr/1fr sobre um `overflow-hidden`): os MESMOS nós DOM continuam
- * montados o tempo todo, só a altura do wrapper ao redor deles muda — trocar
- * QUAIS itens entram nesse conjunto conforme o estado de colapso quebraria
- * a animação (React desmontaria/remontaria nós em vez de só redimensionar
- * o wrapper).
+ * A primeira correção (revertida) extraía o item ativo pra um "slot fixo"
+ * acima de um wrapper animado com o resto — só que isso reordenava a
+ * lista TODA VEZ que o item ativo mudava, mesmo com o grupo EXPANDIDO
+ * (bug real reportado: clicar em "Painel" fazia ele saltar pro topo de
+ * "Operação" e "Time" ocupar o lugar onde o mouse estava). A causa: o
+ * "slot fixo" existia incondicionalmente, não só quando o grupo estava
+ * de fato recolhido.
  *
- * Sem rota ativa no grupo: `pinned` vazio, `collapsible` = todos os itens —
- * comportamento idêntico ao de antes desta correção.
+ * Esta versão nunca reordena: cada item recolhe INDIVIDUALMENTE, no
+ * próprio lugar da lista, em vez de a lista inteira ser reparticionada.
+ * `hidden` só é `true` quando o grupo está recolhido E o item não é o
+ * ativo — com o grupo expandido, `hidden` é sempre `false` pra todo
+ * mundo, então a ordem declarada em `NAV_GROUPS` nunca muda, seja qual
+ * for a rota ativa. Grupo sem rota ativa dentro: todo item colapsa junto
+ * (mesmo efeito de antes, só que por item em vez de por bloco).
  */
-export function partitionGroupItems(
-  group: NavGroup,
+export function isNavItemHiddenByCollapse(
+  item: NavItem,
   pathname: string,
-): { pinned: NavItem[]; collapsible: NavItem[] } {
-  const activeItem = group.items.find((item) => isNavItemActive(item, pathname));
-  if (!activeItem) return { pinned: [], collapsible: group.items };
-  return { pinned: [activeItem], collapsible: group.items.filter((item) => item !== activeItem) };
+  isGroupCollapsed: boolean,
+): boolean {
+  return isGroupCollapsed && !isNavItemActive(item, pathname);
 }
 
 /** `labelKey` tem pontos ("nav.group.admin"); id de elemento aceita, mas o `aria-controls` fica mais limpo sem. */
@@ -736,15 +736,21 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 /**
  * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
- * Bloco 7) — o bloco "cabeçalho-botão + chevron + wrapper animado" de um
- * grupo de menu era quase idêntico entre a barra lateral desktop e o
- * drawer mobile (duas cópias de ~90 linhas cada, sem motivo de design
- * documentado pra divergirem — só cresceram separadas). Como os dois
- * precisam da mesma correção de `partitionGroupItems` (item ativo fixo,
- * irmãos recolhem), esta é a extração natural: um componente local só
- * deste arquivo (mesmo nível de `PreferencesMenu` abaixo), não um arquivo
- * `*-shared.tsx` — essa convenção é para compartilhar entre ARQUIVOS de
- * rota, não dentro do próprio `AppShell.tsx`.
+ * Bloco 7) — o bloco "cabeçalho-botão + chevron + itens" de um grupo de
+ * menu era quase idêntico entre a barra lateral desktop e o drawer mobile
+ * (duas cópias de ~90 linhas cada, sem motivo de design documentado pra
+ * divergirem — só cresceram separadas). Como os dois precisam da mesma
+ * correção de colapso por item (ver `isNavItemHiddenByCollapse`), esta é
+ * a extração natural: um componente local só deste arquivo (mesmo nível
+ * de `PreferencesMenu` abaixo), não um arquivo `*-shared.tsx` — essa
+ * convenção é para compartilhar entre ARQUIVOS de rota, não dentro do
+ * próprio `AppShell.tsx`.
+ *
+ * Cada item vira seu PRÓPRIO wrapper animado (`grid-template-rows`
+ * 0fr/1fr sobre `overflow-hidden`), na posição declarada em
+ * `NAV_GROUPS` — nunca um bloco só pro grupo inteiro. É isso que garante
+ * zero reordenação: não existe "extrair o item ativo pra um slot em
+ * separado" em lugar nenhum, só recolher cada item no próprio lugar.
  *
  * Só recebe o que realmente diverge entre desktop e mobile: a classe do
  * cabeçalho do grupo, um prefixo pro `id` do painel (evita colisão de
@@ -790,8 +796,7 @@ function NavGroupSection({
   }
 
   const labelKey = group.labelKey;
-  const expanded = !collapsedGroups.has(labelKey);
-  const { pinned, collapsible } = partitionGroupItems(group, pathname);
+  const isGroupCollapsed = collapsedGroups.has(labelKey);
   const panelId = `${idPrefix}${navGroupPanelId(labelKey)}`;
 
   return (
@@ -799,7 +804,7 @@ function NavGroupSection({
       <button
         type="button"
         onClick={() => onToggleGroup(labelKey)}
-        aria-expanded={expanded}
+        aria-expanded={!isGroupCollapsed}
         aria-controls={panelId}
         className={headerClassName}
       >
@@ -808,24 +813,26 @@ function NavGroupSection({
           className={cn(
             "h-3 w-3 shrink-0 transition-transform duration-200",
             reducedMotion && "transition-none",
-            expanded && "rotate-180",
+            !isGroupCollapsed && "rotate-180",
           )}
         />
       </button>
-      <div className="space-y-0.5">
-        {pinned.map(renderItem)}
-        <div
-          id={panelId}
-          className={cn(
-            "grid transition-[grid-template-rows] duration-200 ease-out",
-            reducedMotion && "transition-none",
-          )}
-          style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
-        >
-          <div className="overflow-hidden">
-            <div className="space-y-0.5">{collapsible.map(renderItem)}</div>
-          </div>
-        </div>
+      <div id={panelId} className="space-y-0.5">
+        {group.items.map((item) => {
+          const hidden = isNavItemHiddenByCollapse(item, pathname, isGroupCollapsed);
+          return (
+            <div
+              key={item.to}
+              className={cn(
+                "grid transition-[grid-template-rows] duration-200 ease-out",
+                reducedMotion && "transition-none",
+              )}
+              style={{ gridTemplateRows: hidden ? "0fr" : "1fr" }}
+            >
+              <div className="overflow-hidden">{renderItem(item)}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
