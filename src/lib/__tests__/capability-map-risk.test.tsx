@@ -4,11 +4,9 @@ import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * `<Link>` do TanStack Router precisa de um `RouterProvider` real. A tela de
- * Capacidades ganhou `CapabilitiesTabs` (FASE 2, quinta rodada), que usa
- * `<Link>` para as três abas — como este teste não monta o router da
- * aplicação, troca por uma âncora comum. Mesmo padrão de
- * team-deactivate.test.tsx.
+ * `<Link>` do TanStack Router precisa de um `RouterProvider` real — como
+ * este teste não monta o router da aplicação, troca por uma âncora comum.
+ * Mesmo padrão de team-deactivate.test.tsx.
  */
 vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-router")>();

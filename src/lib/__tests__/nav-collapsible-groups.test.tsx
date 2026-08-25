@@ -32,10 +32,15 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 /**
  * R2-UX-14 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — seções do menu viram
  * colapsáveis: cabeçalho vira botão com `aria-expanded`, persiste em
- * `synapse:nav-collapsed-groups`, e o grupo da rota ativa nunca fecha.
- * `useRouterState` mockado fixa a rota em "/", que pertence ao grupo
- * "Operação" — é o que permite testar a regra de "nunca fecha" contra ele
- * e o comportamento normal de colapsar contra "Desenvolvimento".
+ * `synapse:nav-collapsed-groups`. Feedback ao vivo do product owner (Bloco
+ * 7) corrigiu um bug real: o grupo da rota ativa não podia ser recolhido
+ * de verdade. Agora QUALQUER grupo recolhe — a diferença é que, se o grupo
+ * contém a rota ativa, o item ativo fica fixo (nunca some) e só os irmãos
+ * dele recolhem (`partitionGroupItems`, testado isoladamente em
+ * `nav-role.test.ts`). `useRouterState` mockado fixa a rota em "/", que
+ * pertence ao grupo "Operação" — é o que permite testar esse comportamento
+ * "item fixo + irmãos recolhem" contra ele e o comportamento comum (grupo
+ * inteiro recolhe, sem rota ativa dentro) contra "Desenvolvimento".
  */
 const fetchMock = vi.fn();
 const STORAGE_KEY = "synapse:nav-collapsed-groups";
@@ -121,18 +126,38 @@ describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
     expect(saved).toContain("nav.group.development");
   });
 
-  it("o grupo da rota ativa ('Operação', pathname '/') nunca fecha, mesmo clicando no cabeçalho", async () => {
+  /**
+   * Este repo não tem `@testing-library/jest-dom` instalado (nenhum teste
+   * da suíte usa `toBeVisible()`/`toBeInTheDocument()`), então a asserção
+   * de "escondido" não pode se apoiar num matcher de visibilidade — lê-se
+   * o `style.gridTemplateRows` do painel (0fr = recolhido, 1fr = aberto)
+   * via `aria-controls` → `id`, o mesmo mecanismo que a animação usa em
+   * produção.
+   */
+  it("colapsar o grupo da rota ativa ('Operação') some com os irmãos e mantém só 'Painel' fixo", async () => {
     renderShell();
     const user = userEvent.setup();
 
     const header = await screen.findByRole("button", { name: "Operação" });
     expect(header.getAttribute("aria-expanded")).toBe("true");
 
+    const panelId = header.getAttribute("aria-controls");
+    expect(panelId).toBeTruthy();
+    expect(document.getElementById(panelId!)?.style.gridTemplateRows).toBe("1fr");
+    // "Time" é irmão do Painel em "Operação" — visível enquanto expandido.
+    expect(within(document.getElementById(panelId!)!).getByText("Time")).toBeTruthy();
+
     await user.click(header);
 
-    // Continua expandido visualmente — o link do Painel (rota ativa) segue visível.
-    expect(header.getAttribute("aria-expanded")).toBe("true");
+    expect(header.getAttribute("aria-expanded")).toBe("false");
+    // Painel (rota ativa) está fixado FORA do wrapper animado — nunca some.
     expect(screen.getAllByText("Painel").length).toBeGreaterThan(0);
+    // O wrapper que guarda os irmãos agora está com altura 0 — mesmo
+    // mecanismo que já funciona para "Desenvolvimento"; os nós continuam
+    // montados (é o que garante a animação suave), só a altura mudou.
+    const panel = document.getElementById(panelId!);
+    expect(panel?.style.gridTemplateRows).toBe("0fr");
+    expect(within(panel!).getByText("Time")).toBeTruthy();
   });
 
   it("nasce com a preferência salva: grupo previamente colapsado carrega já fechado", async () => {

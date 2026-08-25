@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { ViewToggle } from "@/components/app/ViewToggle";
@@ -136,7 +135,6 @@ function CapabilityMapPage() {
 
   return (
     <>
-      <CapabilitiesTabs />
       <PageHeader title={t("cap.title")} description={t("cap.subtitle")} help={help} />
 
       {store.capabilities.length === 0 ? (
@@ -168,11 +166,11 @@ function CapabilityMapPage() {
           </div>
 
           {/*
-            R2-UX-09(b) — título e tabs (CapabilitiesTabs/PageHeader, acima)
-            ficam fixos; só o conteúdo rola. `100vh-260px` é o mesmo cálculo
-            de "o que sobra abaixo do cabeçalho fixo do app" já usado no
-            heatmap de Progressão/Painel (R2-ESC-01), aqui aplicado à
-            página inteira porque não há um heatmap único, e sim N cards.
+            R2-UX-09(b) — título (PageHeader, acima) fica fixo; só o
+            conteúdo rola. `100vh-260px` é o mesmo cálculo de "o que sobra
+            abaixo do cabeçalho fixo do app" já usado no heatmap de
+            Progressão/Painel (R2-ESC-01), aqui aplicado à página inteira
+            porque não há um heatmap único, e sim N cards.
           */}
           <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
             {view === "table" ? (

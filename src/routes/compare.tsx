@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { applyArchitectFilter, ArchitectFilter } from "@/components/app/ArchitectFilter";
-import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
 import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { capabilityShortLabels } from "@/lib/domain";
@@ -79,7 +78,6 @@ function ComparePage() {
 
   return (
     <>
-      <CapabilitiesTabs />
       <PageHeader
         title={t("compare.title")}
         description={t("compare.subtitle")}

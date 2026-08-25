@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
-import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { CapabilityRadar } from "@/components/app/charts";
 import { type ConsolidatedGapRow, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
 import { GapBadge, NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
@@ -40,7 +39,6 @@ function GapPage() {
 
   return (
     <>
-      <CapabilitiesTabs />
       <PageHeader
         title={t("gap.title")}
         description={t("gap.subtitle")}

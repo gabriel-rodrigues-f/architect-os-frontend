@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
@@ -113,7 +112,6 @@ function TrainingNeedsPage() {
 
   return (
     <>
-      <CapabilitiesTabs />
       <PageHeader title={t("needs.title")} description={t("needs.subtitle")} help={help} />
 
       {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,Nfr): sem

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
-import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import {
   capHeatmapColumns,
   GapTable,
@@ -92,7 +91,6 @@ function ProgressionPage() {
 
   return (
     <>
-      <CapabilitiesTabs />
       <PageHeader
         title={t("progression.title")}
         description={t("progression.subtitle")}

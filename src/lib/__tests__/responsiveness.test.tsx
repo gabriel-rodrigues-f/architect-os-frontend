@@ -1,4 +1,4 @@
-import { render, renderHook, screen } from "@testing-library/react";
+import { render, renderHook } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -16,9 +16,6 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
-import { I18nProvider } from "../i18n";
-
 /**
  * Bloco 3b — RESPONSIVIDADE (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md). Trava as
  * classes de layout que evitam overflow/quebra em telas estreitas — não dá
@@ -26,22 +23,6 @@ import { I18nProvider } from "../i18n";
  * classes responsivas certas, não o resultado visual em si (isso fica para
  * a verificação manual em viewport real).
  */
-describe("R2-RESP-01 — CapabilitiesTabs não quebra/vaza em telas estreitas", () => {
-  it("a nav rola horizontalmente em vez de quebrar linha, cada aba não encolhe", () => {
-    render(
-      <I18nProvider>
-        <CapabilitiesTabs />
-      </I18nProvider>,
-    );
-    const nav = screen.getByRole("navigation");
-    expect(nav.className).toContain("overflow-x-auto");
-    expect(nav.className).toContain("whitespace-nowrap");
-
-    const primeiroLink = nav.querySelector("a");
-    expect(primeiroLink?.className).toContain("shrink-0");
-  });
-});
-
 describe("R2-RESP-02 — PageHeader.actions quebra linha em vez de vazar", () => {
   it("o container das ações tem flex-wrap", () => {
     const { container } = render(

@@ -4,9 +4,12 @@ import {
   CalendarRange,
   ChevronDown,
   ClipboardCheck,
+  GitCompare,
   GraduationCap,
   Grid3x3,
   LayoutDashboard,
+  Layers,
+  ListOrdered,
   LogOut,
   Map,
   Menu,
@@ -18,6 +21,7 @@ import {
   Settings,
   Sun,
   Target,
+  TrendingUp,
   UserCog,
   Users,
 } from "lucide-react";
@@ -67,10 +71,18 @@ interface NavGroup {
  * Necessidades de Treinamento eram três itens de primeiro nível para o
  * mesmo momento de decisão; a auditoria chamava Training Needs de
  * "redundante como tela standalone" e recomendava consolidar em
- * "Capacidades". Os três viram um item só aqui — a navegação entre eles
- * agora é por abas dentro da própria tela (`CapabilitiesTabs`), não mais
- * três entradas concorrendo no menu. Ver AUDITORIA-QUINTA-RODADA-360-
- * SYNAPSE-2026-08-19.md, Seção 6 e 33.
+ * "Capacidades", navegando entre elas por abas dentro da própria tela
+ * (`CapabilitiesTabs`). Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md,
+ * Seção 6 e 33.
+ *
+ * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
+ * Bloco 7) reverteu essa consolidação por abas: as 5 sub-telas (Cobertura/
+ * Prioridades/Progressão/Necessidades de Treinamento/Comparativo do Time)
+ * viram um GRUPO próprio na barra lateral, igual a "Operação"/
+ * "Desenvolvimento"/"Administração" — cada uma com seu item de menu direto,
+ * sem abas dentro da página. `CapabilitiesTabs` foi removido; a barra de
+ * abas empurrava o conteúdo de toda tela de Capacidades um degrau abaixo do
+ * cabeçalho, inconsistente com o resto do app.
  *
  * QW-01/QW-02 (Seção 32, Quick Wins) — "esconder destinos administrativos"
  * e "remover `/settings` da navegação primária". Antes, Competência,
@@ -103,13 +115,20 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
       { to: "/team", labelKey: "nav.team", icon: Users },
-      {
-        to: "/capability-map",
-        labelKey: "nav.capabilities",
-        icon: Map,
-        activePrefixes: ["/gap-analysis", "/progression", "/training-needs", "/compare"],
-      },
       { to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck },
+    ],
+  },
+  {
+    // `nav.capabilities` já existia como rótulo do item único antigo
+    // ("Capacidades") — reaproveitado aqui como rótulo do GRUPO, sem chave
+    // nova, já que o texto continua exatamente o mesmo.
+    labelKey: "nav.capabilities",
+    items: [
+      { to: "/capability-map", labelKey: "cap.tabs.coverage", icon: Map },
+      { to: "/gap-analysis", labelKey: "cap.tabs.priorities", icon: ListOrdered },
+      { to: "/progression", labelKey: "cap.tabs.progression", icon: TrendingUp },
+      { to: "/training-needs", labelKey: "cap.tabs.collective", icon: Layers },
+      { to: "/compare", labelKey: "cap.tabs.comparison", icon: GitCompare },
     ],
   },
   {
@@ -169,9 +188,34 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
   );
 }
 
-/** R2-UX-14 — "o grupo da rota ativa nunca fecha" depende de saber se ELE contém a rota ativa. */
-export function isNavGroupActive(group: NavGroup, pathname: string): boolean {
-  return group.items.some((item) => isNavItemActive(item, pathname));
+/**
+ * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
+ * Bloco 7) — antes, `isGroupExpanded` forçava `isNavGroupActive(...)` como
+ * um `OR` que sempre vencia: o grupo da rota ativa nunca podia ser
+ * recolhido de verdade, `collapsedGroups` era ignorado pra ele. O pedido
+ * não foi remover a proteção sem mais — é manter SEMPRE visível o item da
+ * rota atual (fixo, fora do colapso) e deixar só os IRMÃOS dele
+ * recolherem/expandirem como qualquer outro grupo.
+ *
+ * `collapsible` é sempre "todos os itens menos o ativo" — um conjunto
+ * ESTÁVEL entre renders, independente do grupo estar recolhido ou não.
+ * Isso é o que preserva a animação de `grid-template-rows` já existente
+ * (0fr/1fr sobre um `overflow-hidden`): os MESMOS nós DOM continuam
+ * montados o tempo todo, só a altura do wrapper ao redor deles muda — trocar
+ * QUAIS itens entram nesse conjunto conforme o estado de colapso quebraria
+ * a animação (React desmontaria/remontaria nós em vez de só redimensionar
+ * o wrapper).
+ *
+ * Sem rota ativa no grupo: `pinned` vazio, `collapsible` = todos os itens —
+ * comportamento idêntico ao de antes desta correção.
+ */
+export function partitionGroupItems(
+  group: NavGroup,
+  pathname: string,
+): { pinned: NavItem[]; collapsible: NavItem[] } {
+  const activeItem = group.items.find((item) => isNavItemActive(item, pathname));
+  if (!activeItem) return { pinned: [], collapsible: group.items };
+  return { pinned: [activeItem], collapsible: group.items.filter((item) => item !== activeItem) };
 }
 
 /** `labelKey` tem pontos ("nav.group.admin"); id de elemento aceita, mas o `aria-controls` fica mais limpo sem. */
@@ -223,10 +267,9 @@ export function AppShell({ children }: { children: ReactNode }) {
    * R2-UX-14 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — nasce vazio (tudo
    * aberto) pelo mesmo motivo do `collapsed` acima: sem isto, o SSR
    * renderiza expandido e o cliente colapsaria no primeiro efeito, um
-   * flash de conteúdo pulando. O grupo da rota ativa nunca fecha —
-   * `isGroupExpanded` força isto por baixo, então nem precisa filtrar
-   * este set ao persistir: a preferência salva é "o que a pessoa pediu",
-   * não "o que está visível agora".
+   * flash de conteúdo pulando. É "o que a pessoa pediu" de verdade agora
+   * (ver `partitionGroupItems`) — recolher o grupo da rota ativa some com
+   * os irmãos, só o item ativo continua fixo e visível.
    */
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
@@ -253,8 +296,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     });
   };
 
-  const isGroupExpanded = (group: NavGroup) =>
-    !group.labelKey || isNavGroupActive(group, pathname) || !collapsedGroups.has(group.labelKey);
   /**
    * REVISAO-360-FRONTEND, Seção 15 — a faixa horizontal de abas (`navFlat`,
    * sem grupos) obrigava rolagem lateral pra achar itens do fim da lista e
@@ -346,6 +387,54 @@ export function AppShell({ children }: { children: ReactNode }) {
         return proximo;
       });
     }
+  };
+
+  /**
+   * Único renderizador de item pra sidebar desktop, usado tanto na trilha
+   * de ícones (sidebar inteira recolhida, `collapsed === true`, item plano
+   * com `Tooltip`) quanto dentro de `NavGroupSection` (sidebar expandida,
+   * `collapsed === false` sempre nesse caso — os ramos `collapsed ? ... :`
+   * abaixo nunca tomam o lado "recolhido" ali, não é código morto, é a
+   * mesma função cobrindo os dois contextos por construção).
+   */
+  const renderDesktopNavItem = (item: NavItem) => {
+    const active = isNavItemActive(item, pathname);
+    const label = t(item.labelKey);
+    const link = (
+      <Link
+        to={item.to}
+        aria-label={label}
+        className={cn(
+          "flex items-center rounded-lg py-2 text-sm transition-colors",
+          collapsed ? "justify-center px-0" : "gap-2.5 px-3",
+          active
+            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+            : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <item.icon className="h-4 w-4 shrink-0" />
+        <span
+          data-nav-label
+          className={cn(
+            "overflow-hidden whitespace-nowrap transition-all duration-300",
+            collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+          )}
+        >
+          {label}
+        </span>
+      </Link>
+    );
+
+    // Minimizada, o nome aparece ao passar o mouse — é o que devolve
+    // a legibilidade que o rótulo dava.
+    return collapsed ? (
+      <Tooltip key={item.to}>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
+    ) : (
+      <div key={item.to}>{link}</div>
+    );
   };
 
   return (
@@ -462,89 +551,30 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           >
             {navGroups.map((group, groupIndex) => {
-              const expanded = isGroupExpanded(group);
-              const items = (
-                <div className="space-y-0.5">
-                  {group.items.map((item) => {
-                    const active = isNavItemActive(item, pathname);
-                    const label = t(item.labelKey);
-                    const link = (
-                      <Link
-                        to={item.to}
-                        aria-label={label}
-                        className={cn(
-                          "flex items-center rounded-lg py-2 text-sm transition-colors",
-                          collapsed ? "justify-center px-0" : "gap-2.5 px-3",
-                          active
-                            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                            : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-                        )}
-                      >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <span
-                          data-nav-label
-                          className={cn(
-                            "overflow-hidden whitespace-nowrap transition-all duration-300",
-                            collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                          )}
-                        >
-                          {label}
-                        </span>
-                      </Link>
-                    );
-
-                    // Minimizada, o nome aparece ao passar o mouse — é o que devolve
-                    // a legibilidade que o rótulo dava.
-                    return collapsed ? (
-                      <Tooltip key={item.to}>
-                        <TooltipTrigger asChild>{link}</TooltipTrigger>
-                        <TooltipContent side="right">{label}</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <div key={item.to}>{link}</div>
-                    );
-                  })}
-                </div>
-              );
+              if (!group.labelKey || collapsed) {
+                return (
+                  <div
+                    key={group.labelKey ?? `group-${groupIndex}`}
+                    className={groupIndex > 0 ? "pt-2" : ""}
+                  >
+                    <div className="space-y-0.5">{group.items.map(renderDesktopNavItem)}</div>
+                  </div>
+                );
+              }
 
               return (
-                <div
-                  key={group.labelKey ?? `group-${groupIndex}`}
-                  className={groupIndex > 0 ? "pt-2" : ""}
-                >
-                  {group.labelKey && !collapsed ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(group.labelKey!)}
-                        aria-expanded={expanded}
-                        aria-controls={navGroupPanelId(group.labelKey)}
-                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground/80"
-                      >
-                        <span>{t(group.labelKey)}</span>
-                        <ChevronDown
-                          className={cn(
-                            "h-3 w-3 shrink-0 transition-transform duration-200",
-                            reducedMotion && "transition-none",
-                            expanded && "rotate-180",
-                          )}
-                        />
-                      </button>
-                      <div
-                        id={navGroupPanelId(group.labelKey)}
-                        className={cn(
-                          "grid transition-[grid-template-rows] duration-200 ease-out",
-                          reducedMotion && "transition-none",
-                        )}
-                        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
-                      >
-                        <div className="overflow-hidden">{items}</div>
-                      </div>
-                    </>
-                  ) : (
-                    items
-                  )}
-                </div>
+                <NavGroupSection
+                  key={group.labelKey}
+                  group={group}
+                  groupIndex={groupIndex}
+                  pathname={pathname}
+                  collapsedGroups={collapsedGroups}
+                  onToggleGroup={toggleGroup}
+                  reducedMotion={reducedMotion}
+                  groupLabel={t(group.labelKey)}
+                  headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground/80"
+                  renderItem={renderDesktopNavItem}
+                />
               );
             })}
           </nav>
@@ -655,72 +685,36 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p className="text-[11px] text-muted-foreground">{t("shell.subtitle")}</p>
           </SheetHeader>
           <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
-            {navGroups.map((group, groupIndex) => {
-              const expanded = isGroupExpanded(group);
-              const items = (
-                <div className="space-y-0.5">
-                  {group.items.map((item) => {
-                    const active = isNavItemActive(item, pathname);
-                    return (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        onClick={() => setMobileNavOpen(false)}
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                          active
-                            ? "bg-secondary font-medium text-foreground"
-                            : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
-                        )}
-                      >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        {t(item.labelKey)}
-                      </Link>
-                    );
-                  })}
-                </div>
-              );
-
-              return (
-                <div
-                  key={group.labelKey ?? `mobile-group-${groupIndex}`}
-                  className={groupIndex > 0 ? "pt-2" : ""}
-                >
-                  {group.labelKey ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(group.labelKey!)}
-                        aria-expanded={expanded}
-                        aria-controls={`mobile-${navGroupPanelId(group.labelKey)}`}
-                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground/80"
-                      >
-                        <span>{t(group.labelKey)}</span>
-                        <ChevronDown
-                          className={cn(
-                            "h-3 w-3 shrink-0 transition-transform duration-200",
-                            reducedMotion && "transition-none",
-                            expanded && "rotate-180",
-                          )}
-                        />
-                      </button>
-                      <div
-                        id={`mobile-${navGroupPanelId(group.labelKey)}`}
-                        className={cn(
-                          "grid transition-[grid-template-rows] duration-200 ease-out",
-                          reducedMotion && "transition-none",
-                        )}
-                        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
-                      >
-                        <div className="overflow-hidden">{items}</div>
-                      </div>
-                    </>
-                  ) : (
-                    items
-                  )}
-                </div>
-              );
-            })}
+            {navGroups.map((group, groupIndex) => (
+              <NavGroupSection
+                key={group.labelKey ?? `mobile-group-${groupIndex}`}
+                group={group}
+                groupIndex={groupIndex}
+                pathname={pathname}
+                collapsedGroups={collapsedGroups}
+                onToggleGroup={toggleGroup}
+                reducedMotion={reducedMotion}
+                groupLabel={group.labelKey ? t(group.labelKey) : ""}
+                idPrefix="mobile-"
+                headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground/80"
+                renderItem={(item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                      isNavItemActive(item, pathname)
+                        ? "bg-secondary font-medium text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {t(item.labelKey)}
+                  </Link>
+                )}
+              />
+            ))}
           </nav>
           <div className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
             <p className="truncate font-medium text-foreground">{user?.name}</p>
@@ -737,6 +731,103 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SheetContent>
       </Sheet>
     </TooltipProvider>
+  );
+}
+
+/**
+ * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
+ * Bloco 7) — o bloco "cabeçalho-botão + chevron + wrapper animado" de um
+ * grupo de menu era quase idêntico entre a barra lateral desktop e o
+ * drawer mobile (duas cópias de ~90 linhas cada, sem motivo de design
+ * documentado pra divergirem — só cresceram separadas). Como os dois
+ * precisam da mesma correção de `partitionGroupItems` (item ativo fixo,
+ * irmãos recolhem), esta é a extração natural: um componente local só
+ * deste arquivo (mesmo nível de `PreferencesMenu` abaixo), não um arquivo
+ * `*-shared.tsx` — essa convenção é para compartilhar entre ARQUIVOS de
+ * rota, não dentro do próprio `AppShell.tsx`.
+ *
+ * Só recebe o que realmente diverge entre desktop e mobile: a classe do
+ * cabeçalho do grupo, um prefixo pro `id` do painel (evita colisão de
+ * `aria-controls` entre as duas navs desenhadas na mesma página) e como
+ * cada item vira link (desktop tem o modo "trilha de ícones" da sidebar
+ * inteira recolhida — um estado diferente, `collapsed`, sem relação com
+ * colapso de GRUPO — mobile fecha o Sheet ao navegar). O modo trilha de
+ * ícones nunca passa por aqui: continua reto no `AppShell`, sem cabeçalho
+ * de grupo nem colapso por grupo fazem sentido com a coluna reduzida a
+ * ícones.
+ */
+function NavGroupSection({
+  group,
+  groupIndex,
+  pathname,
+  collapsedGroups,
+  onToggleGroup,
+  reducedMotion,
+  groupLabel,
+  idPrefix = "",
+  headerClassName,
+  renderItem,
+}: {
+  group: NavGroup;
+  groupIndex: number;
+  pathname: string;
+  collapsedGroups: Set<string>;
+  onToggleGroup: (labelKey: string) => void;
+  reducedMotion: boolean;
+  groupLabel: string;
+  idPrefix?: string;
+  headerClassName: string;
+  renderItem: (item: NavItem) => ReactNode;
+}) {
+  const wrapperClassName = groupIndex > 0 ? "pt-2" : "";
+
+  if (!group.labelKey) {
+    return (
+      <div className={wrapperClassName}>
+        <div className="space-y-0.5">{group.items.map(renderItem)}</div>
+      </div>
+    );
+  }
+
+  const labelKey = group.labelKey;
+  const expanded = !collapsedGroups.has(labelKey);
+  const { pinned, collapsible } = partitionGroupItems(group, pathname);
+  const panelId = `${idPrefix}${navGroupPanelId(labelKey)}`;
+
+  return (
+    <div className={wrapperClassName}>
+      <button
+        type="button"
+        onClick={() => onToggleGroup(labelKey)}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        className={headerClassName}
+      >
+        <span>{groupLabel}</span>
+        <ChevronDown
+          className={cn(
+            "h-3 w-3 shrink-0 transition-transform duration-200",
+            reducedMotion && "transition-none",
+            expanded && "rotate-180",
+          )}
+        />
+      </button>
+      <div className="space-y-0.5">
+        {pinned.map(renderItem)}
+        <div
+          id={panelId}
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 ease-out",
+            reducedMotion && "transition-none",
+          )}
+          style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-0.5">{collapsible.map(renderItem)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

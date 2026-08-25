@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { filterNavGroups, NAV_GROUPS } from "@/components/app/AppShell";
+import { filterNavGroups, NAV_GROUPS, partitionGroupItems } from "@/components/app/AppShell";
 
 /**
  * QW-01/QW-02 (Seção 32, Quick Wins, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-
@@ -53,19 +53,59 @@ describe("AppShell — navegação recortada por papel", () => {
   });
 
   /**
-   * R2-UX-13 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — Painel, Time,
-   * Capacidades e Avaliações eram 4 grupos de item só (sem cabeçalho);
-   * agora formam um único grupo "Operação", pra contrastar com
-   * "Desenvolvimento" e "Administração" já existentes.
+   * R2-UX-13 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — Painel, Time e
+   * Avaliações eram 3 grupos de item só (sem cabeçalho); agora formam um
+   * único grupo "Operação", pra contrastar com "Desenvolvimento" e
+   * "Administração" já existentes. Capacidades saiu deste grupo (ver teste
+   * abaixo) — feedback ao vivo do product owner (Bloco 7) promoveu-a a
+   * grupo próprio.
    */
-  it("Painel, Time, Capacidades e Avaliações formam um único grupo 'Operação'", () => {
+  it("Painel, Time e Avaliações formam o grupo 'Operação'", () => {
     const operationGroup = NAV_GROUPS.find((g) => g.labelKey === "nav.group.operation");
     expect(operationGroup).toBeTruthy();
-    expect(operationGroup?.items.map((i) => i.to)).toEqual([
-      "/",
-      "/team",
+    expect(operationGroup?.items.map((i) => i.to)).toEqual(["/", "/team", "/assessments"]);
+  });
+
+  /**
+   * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
+   * Bloco 7) — as 5 sub-telas que antes viviam atrás de um único item
+   * ("Capacidades") com abas internas (`CapabilitiesTabs`, removido) agora
+   * são um grupo de primeiro nível na barra lateral, cada uma com seu
+   * próprio item de menu. `nav.capabilities` (rótulo do item único antigo)
+   * é reaproveitado como rótulo do GRUPO, sem chave i18n nova.
+   */
+  it("Cobertura, Prioridades, Progressão, Necessidades de Treinamento e Comparativo formam o grupo 'Capacidades'", () => {
+    const capabilitiesGroup = NAV_GROUPS.find((g) => g.labelKey === "nav.capabilities");
+    expect(capabilitiesGroup).toBeTruthy();
+    expect(capabilitiesGroup?.items.map((i) => i.to)).toEqual([
       "/capability-map",
-      "/assessments",
+      "/gap-analysis",
+      "/progression",
+      "/training-needs",
+      "/compare",
     ]);
+  });
+});
+
+/**
+ * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
+ * Bloco 7) — antes, o grupo da rota ativa nunca podia ser recolhido de
+ * verdade (ver `nav-collapsible-groups.test.tsx` para o comportamento de
+ * UI). `partitionGroupItems` é a função pura por trás da correção: separa
+ * o item ativo (fixo, nunca recolhe) dos irmãos (recolhem/expandem juntos).
+ */
+describe("partitionGroupItems — item ativo fixo, irmãos recolhem juntos", () => {
+  it("sem rota ativa no grupo, todos os itens ficam no conjunto recolhível", () => {
+    const group = NAV_GROUPS.find((g) => g.labelKey === "nav.group.development")!;
+    const { pinned, collapsible } = partitionGroupItems(group, "/settings");
+    expect(pinned).toEqual([]);
+    expect(collapsible).toEqual(group.items);
+  });
+
+  it("com rota ativa no grupo, ela fica fixada e o resto vai para o conjunto recolhível", () => {
+    const group = NAV_GROUPS.find((g) => g.labelKey === "nav.group.operation")!;
+    const { pinned, collapsible } = partitionGroupItems(group, "/team");
+    expect(pinned.map((i) => i.to)).toEqual(["/team"]);
+    expect(collapsible.map((i) => i.to)).toEqual(["/", "/assessments"]);
   });
 });
