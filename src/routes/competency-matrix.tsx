@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -174,21 +175,23 @@ function MatrixPage() {
               className="max-w-sm"
             />
           </div>
-          <div>
-            <label className="block text-xs text-muted-foreground" htmlFor="matrix-curation-filter">
-              {t("matrix.filter.curation")}
-            </label>
-            <select
-              id="matrix-curation-filter"
-              value={curationFilter}
-              onChange={(e) => setCurationFilter(e.target.value as typeof curationFilter)}
-              className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
-            >
-              <option value="all">{t("matrix.filter.curation.all")}</option>
-              <option value="ready">{t("matrix.filter.curation.ready")}</option>
-              <option value="needsCuration">{t("matrix.filter.curation.needsCuration")}</option>
-            </select>
-          </div>
+          {/*
+            R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
+            nativo ao lado do `Input` de busca, nesta mesma família visual
+            da linha de filtro do Time. `SingleSelectFilter` com `label`
+            encaixa direto no tamanho cheio padrão.
+          */}
+          <SingleSelectFilter
+            id="matrix-curation-filter"
+            label={t("matrix.filter.curation")}
+            value={curationFilter}
+            onChange={(value) => setCurationFilter(value as typeof curationFilter)}
+            options={[
+              { value: "all", label: t("matrix.filter.curation.all") },
+              { value: "ready", label: t("matrix.filter.curation.ready") },
+              { value: "needsCuration", label: t("matrix.filter.curation.needsCuration") },
+            ]}
+          />
           <div className="ml-auto flex gap-2">
             <Button
               variant="outline"

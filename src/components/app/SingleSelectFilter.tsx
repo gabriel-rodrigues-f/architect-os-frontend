@@ -1,10 +1,22 @@
 import { ChevronDown } from "lucide-react";
 import { useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
-import type { SortOption } from "@/components/app/DataView";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+
+/**
+ * Formato genérico de opção — estruturalmente igual ao `SortOption` de
+ * `DataView.tsx`, mas declarado aqui pra este componente não depender
+ * daquele módulo (R3-008). Quem já passa `SortOption[]` (ex.: `team.tsx`,
+ * via `useTeamRoster`) continua funcionando sem mudança nenhuma: os dois
+ * tipos são estruturalmente idênticos, o TypeScript aceita um no lugar do
+ * outro.
+ */
+export interface SingleSelectFilterOption {
+  value: string;
+  label: string;
+}
 
 /**
  * R3-006 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Ordenar por" era um
@@ -22,19 +34,40 @@ import { cn } from "@/lib/utils";
  * de uma lista fixa (`sortOptions` em `useTeamRoster`), nunca vazias por
  * construção — diferente das facetas de Especialização/Capacidade que podem
  * legitimamente não ter opção real nenhuma.
+ *
+ * R3-008 — além da linha de filtro cheia (rótulo em bloco acima, gatilho
+ * `w-full min-w-48 h-10`, o uso original de "Ordenar por"), este mesmo
+ * componente agora também cobre lugares apertados/inline (seletor de Ciclo
+ * no cabeçalho, tamanho de página da paginação): `label` fica opcional —
+ * sem ele, nada de `<label>` é renderizado, porque quem chama já tem o
+ * próprio rótulo externo (ex.: o `<label htmlFor="cycle">` que já existia ao
+ * lado do `<select>` no `AppShell`) — e `triggerClassName` deixa
+ * sobrescrever a classe do `FilterTriggerButton` (via `cn()`, então
+ * `w-full`/`h-10`/`mt-1.5` padrão somem quando o chamador pede algo mais
+ * compacto). `ariaLabel` supre o nome acessível do gatilho e do `listbox`
+ * quando não há `label` visível.
  */
 export function SingleSelectFilter({
   id,
   label,
+  ariaLabel,
   options,
   value,
   onChange,
+  disabled,
+  triggerClassName,
 }: {
   id: string;
-  label: string;
-  options: SortOption[];
+  /** Rótulo visível, renderizado em bloco acima do gatilho. Omitir para uso compacto/inline (quem chama cuida do próprio rótulo). */
+  label?: string;
+  /** Nome acessível do gatilho/listbox quando `label` não é renderizado aqui. */
+  ariaLabel?: string;
+  options: SingleSelectFilterOption[];
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
+  /** Sobrescreve/estende a classe do `FilterTriggerButton` — usado pelos usos compactos para trocar `w-full min-w-48 h-10` por algo que caiba inline. */
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -84,6 +117,7 @@ export function SingleSelectFilter({
   };
 
   const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (disabled) return;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       setOpen(true);
@@ -96,21 +130,27 @@ export function SingleSelectFilter({
   };
 
   const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
+  const accessibleLabel = label ?? ariaLabel;
 
   return (
     <div>
-      <label className="block text-sm text-muted-foreground" htmlFor={id}>
-        {label}
-      </label>
-      <Popover open={open} onOpenChange={setOpen}>
+      {label && (
+        <label className="block text-sm text-muted-foreground" htmlFor={id}>
+          {label}
+        </label>
+      )}
+      <Popover open={disabled ? false : open} onOpenChange={(next) => !disabled && setOpen(next)}>
         <PopoverTrigger asChild>
           <FilterTriggerButton
             id={id}
             ref={triggerRef}
+            disabled={disabled}
             onKeyDown={onTriggerKeyDown}
             aria-expanded={open}
             aria-haspopup="listbox"
+            aria-label={label ? undefined : ariaLabel}
             title={selectedLabel}
+            className={triggerClassName}
           >
             <span className="min-w-0 flex-1 truncate text-left">{selectedLabel}</span>
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -118,7 +158,7 @@ export function SingleSelectFilter({
         </PopoverTrigger>
         <PopoverContent
           role="listbox"
-          aria-label={label}
+          aria-label={accessibleLabel}
           onKeyDown={onListKeyDown}
           onBlur={onListBlur}
           onOpenAutoFocus={(event) => {

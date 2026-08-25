@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Pagination } from "@/components/app/DataView";
@@ -44,5 +45,45 @@ describe("DataView — Pagination esconde com uma página só", () => {
       </I18nProvider>,
     );
     expect(screen.getByText(/Página 1 de 3/)).toBeTruthy();
+  });
+});
+
+/**
+ * R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o `<select>` nativo de
+ * tamanho de página virou `SingleSelectFilter` em uso compacto (sem
+ * `label` visível, só `aria-label`, gatilho encolhido pra caber ao lado dos
+ * botões "Anterior"/"Próxima"). Mesmo raciocínio de nome acessível fixo dos
+ * outros testes de conversão: o `role="button"` chama-se pelo `aria-label`
+ * constante ("Itens por página"), o tamanho atual é conferido pelo texto
+ * visível dentro do gatilho.
+ */
+describe("DataView — Pagination, tamanho de página vira SingleSelectFilter", () => {
+  afterEach(() => cleanup());
+
+  it("mostra o tamanho atual no gatilho e troca ao escolher outra opção", async () => {
+    const onPageSizeChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <I18nProvider>
+        <Pagination
+          page={1}
+          pageSize={10}
+          total={100}
+          onPageChange={vi.fn()}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={onPageSizeChange}
+        />
+      </I18nProvider>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Itens por página" });
+    expect(trigger.textContent).toContain("10 por página");
+
+    await user.click(trigger);
+    const option = await screen.findByRole("option", { name: "25 por página" });
+    await user.click(option);
+
+    expect(onPageSizeChange).toHaveBeenCalledWith(25);
+    expect(screen.queryByRole("listbox")).toBeNull();
   });
 });

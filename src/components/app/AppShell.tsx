@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
+import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -615,18 +616,25 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {t("shell.cycle")}
               </label>
               {user?.role === "admin" ? (
-                <select
+                /*
+                  R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um
+                  `<select>` nativo dentro de uma barra de cabeçalho apertada
+                  (`flex items-center gap-2`, ao lado do botão hambúrguer e
+                  do menu de preferências), não uma linha de filtro. Sem
+                  `label` aqui — o `<label htmlFor="cycle">` acima já cumpre
+                  esse papel — e `triggerClassName` troca o tamanho padrão de
+                  filtro (`w-full min-w-48 h-10`, com sombra) pelo mesmo peso
+                  visual que o `<select>` nativo tinha nesta barra: só altura/
+                  padding compactos, sem sombra, largura pelo conteúdo.
+                */
+                <SingleSelectFilter
                   id="cycle"
+                  ariaLabel={t("shell.cycle")}
                   value={activeCycleId}
-                  onChange={(e) => setActiveCycle(e.target.value)}
-                  className="rounded-md border border-input bg-card px-2.5 py-1.5 text-sm"
-                >
-                  {cycles.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setActiveCycle}
+                  options={cycles.map((c) => ({ value: c.id, label: c.name }))}
+                  triggerClassName="mt-0 h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
+                />
               ) : (
                 <span id="cycle" className="px-1 text-sm font-medium">
                   {cycles.find((c) => c.id === activeCycleId)?.name ?? "—"}
@@ -776,25 +784,28 @@ function PreferencesMenu() {
         </div>
 
         <div>
+          {/*
+            R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
+            nativo. O rótulo próprio (uppercase/tracking-wide) que já
+            combinava com o título "Tema" acima fica como está — só o
+            controle vira `SingleSelectFilter` sem `label` interno (evita
+            duplicar rótulo), com o tamanho cheio padrão (`w-full h-10`) que
+            já é o mesmo dos outros filtros de linha completa.
+          */}
           <label
             htmlFor="locale"
-            className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            className="block text-xs font-medium uppercase tracking-wide text-muted-foreground"
           >
             {t("prefs.language")}
           </label>
-          <select
+          <SingleSelectFilter
             id="locale"
+            ariaLabel={t("prefs.language")}
             value={locale}
             disabled={loading}
-            onChange={(e) => setLocale(e.target.value)}
-            className="w-full rounded-md border border-input bg-card px-2.5 py-1.5 text-sm disabled:opacity-60"
-          >
-            {locales.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
+            onChange={setLocale}
+            options={locales.map((l) => ({ value: l.code, label: l.label }))}
+          />
         </div>
       </PopoverContent>
     </Popover>

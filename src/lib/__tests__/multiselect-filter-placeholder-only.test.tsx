@@ -30,7 +30,9 @@ describe("MultiSelectFilter — só opção-placeholder equivale a vazio", () =>
         <MultiSelectFilter
           id="team-filter-specialization"
           label="Especialização"
-          options={[{ id: "__no-specialization__", label: "Sem especialização", isPlaceholder: true }]}
+          options={[
+            { id: "__no-specialization__", label: "Sem especialização", isPlaceholder: true },
+          ]}
           selected={["__no-specialization__"]}
           onChange={vi.fn()}
           selectAllLabel="Todas"
