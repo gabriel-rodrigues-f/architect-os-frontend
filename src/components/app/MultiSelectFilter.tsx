@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
+import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n } from "@/lib/i18n";
@@ -9,6 +10,17 @@ import { cn } from "@/lib/utils";
 export interface MultiSelectFilterOption {
   id: string;
   label: string;
+  /**
+   * R3-007 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — marca uma opção sintética
+   * (ex.: "Sem especialização"/"Sem capacidade" em `team-shared.tsx`) que
+   * existe só pra dar um id filtrável a quem não tem o campo real
+   * preenchido. Continua uma opção de verdade, selecionável igual às outras
+   * quando existem opções reais ao lado dela — o que muda é só o cálculo de
+   * `isEmpty`: se ela for a ÚNICA entrada da lista, não há nada de fato pra
+   * filtrar, e o campo deve se comportar como vazio (desabilitado, mensagem
+   * de vazio), não como se houvesse uma escolha real disponível.
+   */
+  isPlaceholder?: boolean;
 }
 
 /**
@@ -71,7 +83,15 @@ export function MultiSelectFilter({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const optionCount = options.length + 1;
-  const isEmpty = options.length === 0;
+  /**
+   * R3-007 — `options.length === 0` nunca disparava aqui: o array sempre
+   * tinha pelo menos a opção-placeholder ("Sem especialização"/"Sem
+   * capacidade") quando alguém no roster não tem o campo preenchido, então
+   * o campo aparecia habilitado com uma "escolha" que não filtra nada de
+   * verdade. Contar só as opções reais (`!o.isPlaceholder`) trata "só tem
+   * placeholder" igual a "não tem nada": desabilitado, mensagem de vazio.
+   */
+  const isEmpty = options.filter((o) => !o.isPlaceholder).length === 0;
 
   const close = () => {
     setOpen(false);
@@ -146,25 +166,20 @@ export function MultiSelectFilter({
       </label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
+          <FilterTriggerButton
             id={id}
             ref={triggerRef}
-            type="button"
             disabled={isEmpty}
             onKeyDown={onTriggerKeyDown}
             aria-expanded={open}
             aria-haspopup="listbox"
             title={isEmpty ? (emptyLabel ?? t("filter.multi.empty")) : summary}
-            className={cn(
-              "mt-1.5 flex h-10 w-full min-w-48 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-sm shadow-sm",
-              isEmpty && "cursor-not-allowed text-muted-foreground opacity-70",
-            )}
           >
             <span className="min-w-0 flex-1 truncate text-left">
               {isEmpty ? (emptyLabel ?? t("filter.multi.empty")) : summary}
             </span>
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </button>
+          </FilterTriggerButton>
         </PopoverTrigger>
         <PopoverContent
           role="listbox"

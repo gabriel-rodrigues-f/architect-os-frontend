@@ -298,7 +298,11 @@ export function useTeamRoster(isAdmin: boolean) {
       .sort(byName)
       .map((c) => ({ id: c.id, label: c.name }));
     if (store.architects.some((a) => !a.primarySpecializationCompetencyId)) {
-      options.push({ id: NO_SPECIALIZATION, label: t("team.filter.specialization.none") });
+      options.push({
+        id: NO_SPECIALIZATION,
+        label: t("team.filter.specialization.none"),
+        isPlaceholder: true,
+      });
     }
     return options;
   }, [store.architects, sel, t]);
@@ -314,7 +318,13 @@ export function useTeamRoster(isAdmin: boolean) {
         : undefined;
       return !competency;
     });
-    if (hasNone) options.push({ id: NO_CAPABILITY, label: t("team.filter.capability.none") });
+    if (hasNone) {
+      options.push({
+        id: NO_CAPABILITY,
+        label: t("team.filter.capability.none"),
+        isPlaceholder: true,
+      });
+    }
     return options;
   }, [store.capabilities, store.architects, sel, t]);
 

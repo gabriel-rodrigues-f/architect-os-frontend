@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/app/ui-bits";
 import { ArchitectNameCombobox } from "@/components/app/ArchitectNameCombobox";
 import { ViewToggle } from "@/components/app/ViewToggle";
 import { MultiSelectFilter } from "@/components/app/MultiSelectFilter";
+import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { SpecializationCombobox } from "@/components/app/SpecializationCombobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,6 +131,7 @@ function TeamPage() {
                 selectAllLabel={t("team.filter.status.all")}
                 allSummaryLabel={t("team.filter.status.all")}
                 noneSummaryLabel={t("team.filter.chip.none")}
+                emptyLabel={t("team.filter.status.empty")}
               />
             )}
             <MultiSelectFilter
@@ -141,19 +143,28 @@ function TeamPage() {
               selectAllLabel={t("team.filter.role.all")}
               allSummaryLabel={t("team.filter.role.all")}
               noneSummaryLabel={t("team.filter.chip.none")}
+              emptyLabel={t("team.filter.role.empty")}
             />
-            {roster.specializationOptions.length > 0 && (
-              <MultiSelectFilter
-                id="team-filter-specialization"
-                label={t("team.filter.specialization")}
-                options={roster.specializationOptions}
-                selected={roster.specializationFilter}
-                onChange={roster.setSpecializationFilter}
-                selectAllLabel={t("team.filter.specialization.all")}
-                allSummaryLabel={t("team.filter.specialization.all")}
-                noneSummaryLabel={t("team.filter.chip.none")}
-              />
-            )}
+            {/*
+              R3-007 — a guarda antiga (`roster.specializationOptions.length >
+              0 &&`) tentava evitar mostrar o filtro quando só havia a opção-
+              placeholder, mas `.length` conta o placeholder como se fosse uma
+              opção real — nunca chegava a zero. `Capacidade` nem tinha essa
+              guarda. As duas agora renderizam sempre: o `isEmpty` corrigido
+              dentro de `MultiSelectFilter` (options reais, sem placeholder)
+              é quem decide desabilitar e mostrar `emptyLabel`.
+            */}
+            <MultiSelectFilter
+              id="team-filter-specialization"
+              label={t("team.filter.specialization")}
+              options={roster.specializationOptions}
+              selected={roster.specializationFilter}
+              onChange={roster.setSpecializationFilter}
+              selectAllLabel={t("team.filter.specialization.all")}
+              allSummaryLabel={t("team.filter.specialization.all")}
+              noneSummaryLabel={t("team.filter.chip.none")}
+              emptyLabel={t("team.filter.specialization.empty")}
+            />
             <MultiSelectFilter
               id="team-filter-capability"
               label={t("team.filter.capability")}
@@ -163,24 +174,22 @@ function TeamPage() {
               selectAllLabel={t("team.filter.capability.all")}
               allSummaryLabel={t("team.filter.capability.all")}
               noneSummaryLabel={t("team.filter.chip.none")}
+              emptyLabel={t("team.filter.capability.empty")}
             />
-            <div>
-              <label className="block text-xs text-muted-foreground" htmlFor="team-sort">
-                {t("dataView.sortLabel")}
-              </label>
-              <select
-                id="team-sort"
-                value={roster.sort}
-                onChange={(e) => roster.setSort(e.target.value as typeof roster.sort)}
-                className="mt-1 w-44 rounded-md border border-input bg-card px-2 py-2 text-sm"
-              >
-                {roster.sortOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/*
+              R3-006 — "Ordenar por" era um `<select>` nativo (chrome do
+              navegador/SO), do tamanho errado ao lado dos outros 4 filtros
+              `MultiSelectFilter` da mesma grade. `SingleSelectFilter`
+              compartilha o mesmo `FilterTriggerButton`, então a altura/
+              largura/borda batem por construção.
+            */}
+            <SingleSelectFilter
+              id="team-sort"
+              label={t("dataView.sortLabel")}
+              options={roster.sortOptions}
+              value={roster.sort}
+              onChange={(value) => roster.setSort(value as typeof roster.sort)}
+            />
           </DataViewToolbar>
 
           <div className="mb-3 flex justify-end">
