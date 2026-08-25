@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor, isAssignedTechLeadOf, isLeadOf } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -82,6 +84,7 @@ function PlansPage() {
   const [planTransitioning, setPlanTransitioning] = useState(false);
   const [planTransitionError, setPlanTransitionError] = useState<string | null>(null);
   const { t, locale } = useI18n();
+  const help = usePageHelp("developmentPlans");
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
   /**
@@ -178,18 +181,15 @@ function PlansPage() {
       <PageHeader
         title={t("pdi.title")}
         description={t("pdi.subtitle")}
+        help={help}
         actions={
-          <select
-            className="rounded-md border border-input bg-card px-3 py-2 text-sm"
-            value={architectId}
-            onChange={(e) => setArchitectId(e.target.value)}
-          >
-            {sel.activeArchitects.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
+          <ArchitectSelectCombobox
+            architects={sel.activeArchitects}
+            selectedId={architectId}
+            onChange={setArchitectId}
+            label={t("pdi.architect")}
+            className="w-48"
+          />
         }
       />
 
@@ -289,7 +289,10 @@ function PlansPage() {
         />
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,1fr) na
+          pista flexível: a fixa (320px) já tem tamanho definido, não corre o
+          mesmo risco de min-content trap. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           {(plan?.items ?? []).map((item) => {
             const comp = sel.competencyById(item.competencyId);

@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -33,6 +36,7 @@ function TrainingNeedsPage() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const { t } = useI18n();
+  const help = usePageHelp("trainingNeeds");
   /**
    * População da análise: quem este viewer de fato enxerga o registro
    * (própria pessoa, ou quem está sob a liderança dela) — nunca o roster
@@ -43,8 +47,20 @@ function TrainingNeedsPage() {
    */
   const population = sel.activeArchitects.filter((a) => canActFor(user, a));
   const needs = sel.teamTrainingNeeds(population);
-  const top = needs.slice(0, 15);
-  const collective = needs.filter((n) => n.people >= 3).slice(0, 6);
+  /**
+   * R2-ESC-08 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os dois cortes (15 e 6)
+   * eram silenciosos: nada avisava que a lista continuava além do que
+   * aparecia. Mesmo padrão de `HeatmapColumnsNotice` (R2-ESC-01) — aviso com
+   * contagem + alternância "mostrar todas" em vez de um link para outro
+   * lugar, já que não existe uma tela dedicada só a esta lista derivada.
+   */
+  const [showAllTop, setShowAllTop] = useState(false);
+  const top = showAllTop ? needs : needs.slice(0, 15);
+  const collectiveEligible = needs.filter((n) => n.people >= 3);
+  const [showAllCollective, setShowAllCollective] = useState(false);
+  const collective = showAllCollective ? collectiveEligible : collectiveEligible.slice(0, 6);
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
 
   /**
    * "Intervenção coletiva" não é uma entidade nova — é a mesma Trilha de
@@ -98,22 +114,42 @@ function TrainingNeedsPage() {
   return (
     <>
       <CapabilitiesTabs />
-      <PageHeader title={t("needs.title")} description={t("needs.subtitle")} />
+      <PageHeader title={t("needs.title")} description={t("needs.subtitle")} help={help} />
 
-      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,Nfr): sem
+          isto a pista nunca encolhe abaixo da tabela/heatmap interno, e a
+          página inteira rola horizontal em vez do overflow-x-auto ativar. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("needs.aggregated.title")}
           description={t("needs.aggregated.subtitle")}
         >
+          {needs.length > 15 && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              {showAllTop
+                ? t("needs.aggregated.showingAll", { total: needs.length })
+                : t("needs.aggregated.showingTopN", {
+                    shown: top.length,
+                    total: needs.length,
+                  })}{" "}
+              <button
+                type="button"
+                className="underline underline-offset-2 hover:no-underline"
+                onClick={() => setShowAllTop((v) => !v)}
+              >
+                {showAllTop ? t("needs.showTopOnly") : t("needs.showAll")}
+              </button>
+            </p>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th scope="col" className="py-2">
-                    Competência
+                    {t("col.competency")}
                   </th>
                   <th scope="col" className="py-2">
-                    Capacidade
+                    {t("col.capability")}
                   </th>
                   <th scope="col" className="py-2 text-center">
                     {t("needs.col.peopleWithGap")}
@@ -128,7 +164,8 @@ function TrainingNeedsPage() {
                   <tr key={n.competency!.id} className="border-b border-border/60 last:border-0">
                     <td className="py-2 font-medium">{n.competency!.name}</td>
                     <td className="py-2 text-muted-foreground">
-                      {store.capabilities.find((c) => c.id === n.competency!.capabilityId)?.short}
+                      {shortLabels.get(n.competency!.capabilityId) ??
+                        store.capabilities.find((c) => c.id === n.competency!.capabilityId)?.short}
                     </td>
                     <td className="py-2 text-center tabular-nums">{n.people}</td>
                     <td className="py-2 text-center tabular-nums">{n.avgGap}</td>
@@ -143,6 +180,23 @@ function TrainingNeedsPage() {
           title={t("needs.recommended.title")}
           description={t("needs.recommended.subtitle")}
         >
+          {collectiveEligible.length > 6 && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              {showAllCollective
+                ? t("needs.recommended.showingAll", { total: collectiveEligible.length })
+                : t("needs.recommended.showingTopN", {
+                    shown: collective.length,
+                    total: collectiveEligible.length,
+                  })}{" "}
+              <button
+                type="button"
+                className="underline underline-offset-2 hover:no-underline"
+                onClick={() => setShowAllCollective((v) => !v)}
+              >
+                {showAllCollective ? t("needs.showTopOnly") : t("needs.showAll")}
+              </button>
+            </p>
+          )}
           <ul className="space-y-3">
             {collective.map((n) => (
               <li key={n.competency!.id} className="surface-inset p-3">
@@ -151,7 +205,7 @@ function TrainingNeedsPage() {
                   <GapBadge gap={Math.round(n.avgGap)} />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {n.people} arquitetos · formato sugerido: workshop prático + architecture review
+                  {t("needs.recommended.summary", { n: n.people })}
                 </p>
                 <div className="mt-2">
                   {interventionExists(n) ? (

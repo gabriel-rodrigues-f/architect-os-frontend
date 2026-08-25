@@ -62,6 +62,7 @@ export function CapabilityCombobox({
           role="combobox"
           aria-label={label}
           aria-expanded={open}
+          title={resumo}
           className="flex min-w-56 max-w-72 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
         >
           <span className="min-w-0 flex-1 truncate">{resumo}</span>

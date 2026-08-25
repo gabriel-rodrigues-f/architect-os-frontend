@@ -75,7 +75,7 @@ describe("AppShell — botão único de recolher/expandir a sidebar (B-41)", () 
     // limpar localStorage por teste (para o estado da sidebar não vazar de
     // um teste pro outro) também apaga essa chave — sem repor, o provider
     // cai no idioma do jsdom (en-US) e as asserções de texto quebram.
-    window.localStorage.setItem("architect-os:locale", "pt");
+    window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockImplementation((url: string) => {

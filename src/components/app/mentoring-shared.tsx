@@ -1,12 +1,22 @@
-import { AlertCircle, X } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
+import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { FieldLabel, Initials } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -22,7 +32,8 @@ import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/li
 import { useI18n } from "@/lib/i18n";
 import { isAssignedTechLeadOf } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate, todayIso } from "@/lib/text";
+import { byName, formatDate, matchesSearch, todayIso } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) — `/mentoring`
@@ -221,18 +232,119 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
   };
 }
 
-/** Recorte por arquiteto (`ArchitectFilter`) + sessões filtradas e ordenadas — o que a linha do tempo lê. */
+/**
+ * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então
+ * o filtro da linha do tempo não é um recorte de time (`ArchitectFilter`).
+ * Pedido do usuário revisando o app rodando: "em 'mentoria' não deve haver a
+ * opção de 'todo time'. a sessão é sempre individual" — o filtro nunca mais
+ * representa "todo mundo", sempre UMA pessoa específica, mesmo critério de
+ * `ArchitectSelectCombobox`. O valor inicial é a primeira pessoa ativa em
+ * ordem alfabética (cai para a primeira inativa só se não houver nenhuma
+ * ativa) em vez de nascer vazio — mesmo raciocínio de `menteeId` em
+ * `useMentoringSessionForm`, que já assume "a primeira opção da lista" como
+ * default sensato em vez de exigir um clique extra antes de mostrar algo.
+ */
 export function useMentoringTimeline() {
   const store = useStore();
-  // `ArchitectFilter` trata `selected` como sempre explícito — nasce com todo mundo marcado.
-  const [filter, setFilter] = useState<string[]>(() => store.architects.map((a) => a.id));
+  const orderedArchitects = [...store.architects].sort(byName);
+  const defaultMenteeId =
+    orderedArchitects.find((a) => a.active)?.id ?? orderedArchitects[0]?.id ?? "";
+  const [filter, setFilter] = useState<string>(defaultMenteeId);
 
-  const filteredIds = new Set(applyArchitectFilter(store.architects, filter).map((a) => a.id));
   const sessions = [...store.mentoringSessions]
-    .filter((s) => filteredIds.has(s.menteeId))
+    .filter((s) => s.menteeId === filter)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return { filter, setFilter, sessions };
+}
+
+/**
+ * Combobox pesquisável de seleção única para o filtro da linha do tempo —
+ * mesmo padrão "sem opção 'Todo o time'" de `ArchitectSelectCombobox`; a
+ * diferença é que aqui inativos aparecem sempre (com sufixo), porque o
+ * histórico de mentoria de quem já saiu do time continua consultável (mesma
+ * filosofia de R2-UX-08).
+ */
+export function MenteeFilterCombobox({
+  architects,
+  selected,
+  onChange,
+}: {
+  architects: readonly Architect[];
+  selected: string;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const ordered = [...architects].sort(byName);
+  const active = ordered.filter((a) => a.active);
+  const inactive = ordered.filter((a) => !a.active);
+
+  const summary = ordered.find((a) => a.id === selected)?.name ?? t("mentor.filter.placeholder");
+
+  const select = (value: string) => {
+    onChange(value);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-label={t("mentor.filter.label")}
+          aria-expanded={open}
+          title={summary}
+          className="flex w-64 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
+        >
+          <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="start">
+        <Command>
+          <CommandInput placeholder={t("mentor.filter.searchPlaceholder")} />
+          <CommandList className="max-h-72">
+            <CommandEmpty>{t("mentor.filter.empty")}</CommandEmpty>
+            <CommandGroup>
+              {active.map((a) => (
+                <CommandItem key={a.id} value={a.name} onSelect={() => select(a.id)}>
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4 shrink-0",
+                      selected === a.id ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            {inactive.length > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup>
+                  {inactive.map((a) => (
+                    <CommandItem key={a.id} value={a.name} onSelect={() => select(a.id)}>
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          selected === a.id ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                        {t("mentor.filter.inactiveName", { nome: a.name })}
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 /**
@@ -449,6 +561,20 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
   const user = useCurrentUser();
   const sel = useSelectors();
   const f = useMentoringSessionForm(menteeOptions);
+  /**
+   * R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — dois checklists de
+   * competências nesta mesma dialog (discutidas / evolução observada),
+   * filtros independentes — filtrar um não deveria escondar opção do outro.
+   */
+  const [competencyFilter, setCompetencyFilter] = useState("");
+  const [proficiencyFilter, setProficiencyFilter] = useState("");
+  const activeCompetencies = store.competencies.filter((c) => c.active);
+  const discussedList = activeCompetencies.filter((c) =>
+    matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
+  );
+  const proficiencyList = activeCompetencies.filter((c) =>
+    matchesSearch(c.name, proficiencyFilter.trim().toLowerCase()),
+  );
 
   return (
     <Dialog open={f.open} onOpenChange={f.setOpen}>
@@ -463,19 +589,16 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="mentee">{t("mentor.form.mentee")}</Label>
-              <select
-                id="mentee"
-                aria-invalid={f.isMissing("menteeId")}
-                className={`mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ${f.invalid("menteeId")}`}
-                value={f.form.menteeId}
-                onChange={(e) => f.setField("menteeId", e.target.value)}
-              >
-                {menteeOptions.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-1">
+                <ArchitectSelectCombobox
+                  id="mentee"
+                  architects={menteeOptions}
+                  selectedId={f.form.menteeId}
+                  onChange={(id) => f.setField("menteeId", id)}
+                  label={t("mentor.form.mentee")}
+                  invalid={f.isMissing("menteeId")}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="date">{t("mentor.form.date")}</Label>
@@ -572,6 +695,15 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             <FieldLabel htmlFor="mentor-competencies" hint={t("mentor.form.competenciesHint")}>
               {t("mentor.form.competencies")}
             </FieldLabel>
+            {activeCompetencies.length > 20 && (
+              <Input
+                aria-label={t("common.searchCompetency")}
+                placeholder={t("common.searchCompetency")}
+                value={competencyFilter}
+                onChange={(e) => setCompetencyFilter(e.target.value)}
+                className="mt-1"
+              />
+            )}
             <div
               id="mentor-competencies"
               className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
@@ -579,18 +711,19 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               {/* REVISAO-360-FRONTEND, FE-360-003 — competência arquivada não é mais
                   identidade profissional válida daqui pra frente (mesmo critério já
                   aplicado abaixo, em "Evolução observada", e no SpecializationCombobox). */}
-              {store.competencies
-                .filter((c) => c.active)
-                .map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={f.competencyIds.includes(c.id)}
-                      onChange={() => f.toggleCompetency(c.id)}
-                    />
-                    <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                  </label>
-                ))}
+              {discussedList.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={f.competencyIds.includes(c.id)}
+                    onChange={() => f.toggleCompetency(c.id)}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                </label>
+              ))}
+              {discussedList.length === 0 && (
+                <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+              )}
             </div>
           </div>
           {isAssignedTechLeadOf(user, sel.architectById(f.form.menteeId)) && (
@@ -598,69 +731,77 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               <FieldLabel htmlFor="mentor-proficiency" hint={t("mentor.form.proficiencyHint")}>
                 {t("mentor.form.proficiency")}
               </FieldLabel>
+              {activeCompetencies.length > 20 && (
+                <Input
+                  aria-label={t("common.searchCompetency")}
+                  placeholder={t("common.searchCompetency")}
+                  value={proficiencyFilter}
+                  onChange={(e) => setProficiencyFilter(e.target.value)}
+                  className="mt-1"
+                />
+              )}
               <div
                 id="mentor-proficiency"
                 className="mt-1 max-h-48 overflow-y-auto overflow-x-hidden surface-inset p-2"
               >
-                {store.competencies
-                  .filter((c) => c.active)
-                  .map((c) => {
-                    const update = f.proficiencyUpdates.find((u) => u.competencyId === c.id);
-                    return (
-                      <div key={c.id} className="py-1">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={!!update}
-                            onChange={() => f.toggleProficiencyUpdate(c.id)}
-                          />
-                          <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                        </label>
-                        {update && (
-                          <div className="ml-6 mt-1">
-                            <div className="flex items-center gap-2">
-                              <select
-                                className={`rounded-md border bg-card px-2 py-1 text-xs ${
-                                  f.proficiencyMissingLevel && update.observedLevel === null
-                                    ? "border-destructive ring-1 ring-destructive"
-                                    : "border-input"
-                                }`}
-                                value={update.observedLevel ?? ""}
-                                aria-invalid={
-                                  f.proficiencyMissingLevel && update.observedLevel === null
-                                }
-                                onChange={(e) =>
-                                  f.setProficiencyLevel(c.id, Number(e.target.value))
-                                }
-                                aria-label={t("mentor.form.proficiencyLevel", { nome: c.name })}
-                              >
-                                <option value="" disabled>
-                                  {t("mentor.form.proficiencySelectLevel")}
+                {proficiencyList.length === 0 && (
+                  <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                )}
+                {proficiencyList.map((c) => {
+                  const update = f.proficiencyUpdates.find((u) => u.competencyId === c.id);
+                  return (
+                    <div key={c.id} className="py-1">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={!!update}
+                          onChange={() => f.toggleProficiencyUpdate(c.id)}
+                        />
+                        <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                      </label>
+                      {update && (
+                        <div className="ml-6 mt-1">
+                          <div className="flex items-center gap-2">
+                            <select
+                              className={`rounded-md border bg-card px-2 py-1 text-xs ${
+                                f.proficiencyMissingLevel && update.observedLevel === null
+                                  ? "border-destructive ring-1 ring-destructive"
+                                  : "border-input"
+                              }`}
+                              value={update.observedLevel ?? ""}
+                              aria-invalid={
+                                f.proficiencyMissingLevel && update.observedLevel === null
+                              }
+                              onChange={(e) => f.setProficiencyLevel(c.id, Number(e.target.value))}
+                              aria-label={t("mentor.form.proficiencyLevel", { nome: c.name })}
+                            >
+                              <option value="" disabled>
+                                {t("mentor.form.proficiencySelectLevel")}
+                              </option>
+                              {[1, 2, 3, 4, 5].map((level) => (
+                                <option key={level} value={level}>
+                                  L{level}
                                 </option>
-                                {[1, 2, 3, 4, 5].map((level) => (
-                                  <option key={level} value={level}>
-                                    L{level}
-                                  </option>
-                                ))}
-                              </select>
-                              <input
-                                type="text"
-                                placeholder={t("mentor.form.proficiencyNote")}
-                                className="flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
-                                value={update.note ?? ""}
-                                onChange={(e) => f.setProficiencyNote(c.id, e.target.value)}
-                              />
-                            </div>
-                            {f.proficiencyMissingLevel && update.observedLevel === null && (
-                              <p className="mt-1 text-xs text-destructive">
-                                {t("mentor.form.proficiencyLevelRequired")}
-                              </p>
-                            )}
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              placeholder={t("mentor.form.proficiencyNote")}
+                              className="flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
+                              value={update.note ?? ""}
+                              onChange={(e) => f.setProficiencyNote(c.id, e.target.value)}
+                            />
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          {f.proficiencyMissingLevel && update.observedLevel === null && (
+                            <p className="mt-1 text-xs text-destructive">
+                              {t("mentor.form.proficiencyLevelRequired")}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

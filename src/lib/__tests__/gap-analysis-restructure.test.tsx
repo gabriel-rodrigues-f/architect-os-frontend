@@ -38,6 +38,17 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
+/**
+ * R2-UX-01 — o botão de ajuda contextual (`PageHelp`) também é um trigger
+ * `aria-expanded`, então `getByRole("button", { expanded: false })` sozinho
+ * passou a achar dois: ele e o chip de recorte do `ArchitectFilter`. Este é
+ * o único `aria-haspopup="listbox"` da tela — o de ajuda é `"dialog"`.
+ */
+const getArchitectFilterTrigger = (): HTMLElement =>
+  screen
+    .getAllByRole("button", { expanded: false })
+    .find((el) => el.getAttribute("aria-haspopup") === "listbox")!;
+
 /** Competência restritiva nova, com gap para Ana em 2026-h2 — sem isto, a fixture padrão não tem nenhum bloqueante. */
 const restrictiveCompetency: Competency = {
   id: "cloud-iac",
@@ -105,7 +116,7 @@ const renderGap = () =>
     </Wrapper>,
   );
 
-describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () => {
+describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maestria", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -237,7 +248,7 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
     await screen.findByText("Radar de Arquitetura");
 
     // Time inteiro nasce selecionado — desmarcar Bruno deixa só Ana.
-    await userEvent.click(screen.getByRole("button", { expanded: false }));
+    await userEvent.click(getArchitectFilterTrigger());
     await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
 
     expect(window.location.search).toBe("?selected=ana");
@@ -248,8 +259,52 @@ describe("Análise de Lacunas — bloqueante × oportunidade × maestria", () =>
     renderGap();
     await screen.findByText("Radar de Arquitetura");
 
-    const scopeChip = screen.getByRole("button", { expanded: false });
+    const scopeChip = getArchitectFilterTrigger();
     expect(scopeChip.textContent).toContain("Bruno Almeida");
     expect(scopeChip.textContent).not.toContain("Todo o time");
+  });
+
+  /**
+   * R2-ESC-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `scopeLabel` alimenta
+   * `t()`/PDF como string simples; acima de 3 pessoas selecionadas (e sem
+   * ser o time inteiro) vira contagem, não a lista de primeiros nomes
+   * crescendo sem teto.
+   */
+  it("scopeLabel vira contagem acima de 3 pessoas selecionadas, sem ser o time inteiro", async () => {
+    const seisArquitetos: AppState = {
+      ...state,
+      architects: [
+        ...state.architects,
+        { ...state.architects[0]!, id: "c1", name: "C1", email: "c1@x.com" },
+        { ...state.architects[0]!, id: "c2", name: "C2", email: "c2@x.com" },
+        { ...state.architects[0]!, id: "c3", name: "C3", email: "c3@x.com" },
+        { ...state.architects[0]!, id: "c4", name: "C4", email: "c4@x.com" },
+      ],
+    };
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).endsWith("/api/auth/me")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      if (String(url).endsWith("/api/state")) {
+        return Promise.resolve(
+          new Response(JSON.stringify(seisArquitetos), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    // 5 de 6 arquitetos — mais de 3, mas não o time inteiro.
+    window.history.replaceState(null, "", "/gap-analysis?selected=ana,bruno,c1,c2,c3");
+    renderGap();
+
+    expect(await screen.findByText(/5 pessoas selecionadas/)).toBeTruthy();
   });
 });

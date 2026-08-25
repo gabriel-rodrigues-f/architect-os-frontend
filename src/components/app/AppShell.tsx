@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BookOpen,
   CalendarRange,
+  ChevronDown,
   ClipboardCheck,
   GraduationCap,
   Grid3x3,
@@ -13,6 +14,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Scale,
   Settings,
   Sun,
   Target,
@@ -21,12 +23,15 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
+import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import { readMigratedItem } from "@/lib/storage";
 import { useStore } from "@/lib/store";
 import { useTheme, type Theme } from "@/lib/theme";
 
@@ -41,7 +46,12 @@ interface NavItem {
 }
 
 interface NavGroup {
-  /** `undefined` = grupo de um item só, sem cabeçalho (Home, Pessoas, Avaliações). */
+  /**
+   * Opcional só pelo tipo — hoje todo grupo declarado em `NAV_GROUPS` tem
+   * `labelKey` (R2-UX-13 uniu os antigos grupos de item só em "Operação").
+   * Sem `labelKey` não há cabeçalho pra virar botão, e o grupo nasce sempre
+   * expandido, sem entrar no colapso/persistência de R2-UX-14.
+   */
   labelKey?: MessageKey;
   items: NavItem[];
 }
@@ -85,19 +95,23 @@ interface NavGroup {
  * da própria tela (`settings.tsx`, `CareerPolicySection`).
  */
 export const NAV_GROUPS: NavGroup[] = [
-  { items: [{ to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard }] },
-  { items: [{ to: "/team", labelKey: "nav.team", icon: Users }] },
   {
+    // R2-UX-13 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os 4 primeiros itens
+    // eram cada um seu próprio grupo de item só (sem cabeçalho); ganham um
+    // título só pra contrastar com "Desenvolvimento"/"Administração" abaixo.
+    labelKey: "nav.group.operation",
     items: [
+      { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+      { to: "/team", labelKey: "nav.team", icon: Users },
       {
         to: "/capability-map",
         labelKey: "nav.capabilities",
         icon: Map,
         activePrefixes: ["/gap-analysis", "/progression", "/training-needs", "/compare"],
       },
+      { to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck },
     ],
   },
-  { items: [{ to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck }] },
   {
     labelKey: "nav.group.development",
     items: [
@@ -116,7 +130,13 @@ export const NAV_GROUPS: NavGroup[] = [
         adminOnly: true,
       },
       { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
-      { to: "/settings", labelKey: "nav.settings", icon: Settings },
+      // R2-VIS-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — este item aponta pra
+      // "Política de Progressão", não pra preferências: usava o mesmo ícone
+      // de engrenagem do menu de tema/idioma no cabeçalho, dois significados
+      // diferentes sob o mesmo símbolo. `Scale` (balança) combina com
+      // "critério/política" e libera `Settings` só para configuração de
+      // verdade.
+      { to: "/settings", labelKey: "nav.settings", icon: Scale },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
@@ -140,8 +160,28 @@ export function filterNavGroups(groups: NavGroup[], role: string | undefined): N
     .filter((group) => group.items.length > 0);
 }
 
-const SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";
-const SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
+/** Extraído do que antes era recomputado inline em cada render de item, no desktop e no mobile. */
+export function isNavItemActive(item: NavItem, pathname: string): boolean {
+  if (item.to === "/") return pathname === "/";
+  return (
+    pathname.startsWith(item.to) ||
+    (item.activePrefixes?.some((p) => pathname.startsWith(p)) ?? false)
+  );
+}
+
+/** R2-UX-14 — "o grupo da rota ativa nunca fecha" depende de saber se ELE contém a rota ativa. */
+export function isNavGroupActive(group: NavGroup, pathname: string): boolean {
+  return group.items.some((item) => isNavItemActive(item, pathname));
+}
+
+/** `labelKey` tem pontos ("nav.group.admin"); id de elemento aceita, mas o `aria-controls` fica mais limpo sem. */
+const navGroupPanelId = (labelKey: string) => `nav-group-${labelKey.replace(/\./g, "-")}`;
+
+const SIDEBAR_STORAGE_KEY = "synapse:sidebar-collapsed";
+const LEGACY_SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";
+const SIDEBAR_WIDTH_KEY = "synapse:sidebar-width";
+const LEGACY_SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
+const NAV_COLLAPSED_GROUPS_KEY = "synapse:nav-collapsed-groups";
 
 /**
  * 264px é o mínimo que acomoda "Desenvolvimento de Capacidades" numa linha ao
@@ -168,6 +208,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
 
   const navGroups = filterNavGroups(NAV_GROUPS, user?.role);
+  const reducedMotion = useReducedMotion();
 
   /**
    * Começa expandida e só lê a preferência depois da montagem: no SSR não há
@@ -177,6 +218,43 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [resizing, setResizing] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+
+  /**
+   * R2-UX-14 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — nasce vazio (tudo
+   * aberto) pelo mesmo motivo do `collapsed` acima: sem isto, o SSR
+   * renderiza expandido e o cliente colapsaria no primeiro efeito, um
+   * flash de conteúdo pulando. O grupo da rota ativa nunca fecha —
+   * `isGroupExpanded` força isto por baixo, então nem precisa filtrar
+   * este set ao persistir: a preferência salva é "o que a pessoa pediu",
+   * não "o que está visível agora".
+   */
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(NAV_COLLAPSED_GROUPS_KEY);
+      if (raw) setCollapsedGroups(new Set(JSON.parse(raw) as string[]));
+    } catch {
+      // localStorage indisponível (modo privado) ou JSON corrompido — nasce tudo aberto.
+    }
+  }, []);
+
+  const toggleGroup = (labelKey: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(labelKey)) next.delete(labelKey);
+      else next.add(labelKey);
+      try {
+        window.localStorage.setItem(NAV_COLLAPSED_GROUPS_KEY, JSON.stringify([...next]));
+      } catch {
+        // localStorage indisponível — a preferência só não sobrevive a um reload.
+      }
+      return next;
+    });
+  };
+
+  const isGroupExpanded = (group: NavGroup) =>
+    !group.labelKey || isNavGroupActive(group, pathname) || !collapsedGroups.has(group.labelKey);
   /**
    * REVISAO-360-FRONTEND, Seção 15 — a faixa horizontal de abas (`navFlat`,
    * sem grupos) obrigava rolagem lateral pra achar itens do fim da lista e
@@ -187,8 +265,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
-    setCollapsed(window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
-    const salva = Number(window.localStorage.getItem(SIDEBAR_WIDTH_KEY));
+    setCollapsed(readMigratedItem(SIDEBAR_STORAGE_KEY, LEGACY_SIDEBAR_STORAGE_KEY) === "true");
+    const salva = Number(readMigratedItem(SIDEBAR_WIDTH_KEY, LEGACY_SIDEBAR_WIDTH_KEY));
     if (Number.isFinite(salva) && salva > 0) setWidth(clampWidth(salva));
   }, []);
 
@@ -383,23 +461,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               collapsed ? "px-2" : "px-3",
             )}
           >
-            {navGroups.map((group, groupIndex) => (
-              <div
-                key={group.labelKey ?? `group-${groupIndex}`}
-                className={groupIndex > 0 ? "pt-2" : ""}
-              >
-                {group.labelKey && !collapsed && (
-                  <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50">
-                    {t(group.labelKey)}
-                  </p>
-                )}
+            {navGroups.map((group, groupIndex) => {
+              const expanded = isGroupExpanded(group);
+              const items = (
                 <div className="space-y-0.5">
                   {group.items.map((item) => {
-                    const active =
-                      item.to === "/"
-                        ? pathname === "/"
-                        : pathname.startsWith(item.to) ||
-                          (item.activePrefixes?.some((p) => pathname.startsWith(p)) ?? false);
+                    const active = isNavItemActive(item, pathname);
                     const label = t(item.labelKey);
                     const link = (
                       <Link
@@ -438,8 +505,48 @@ export function AppShell({ children }: { children: ReactNode }) {
                     );
                   })}
                 </div>
-              </div>
-            ))}
+              );
+
+              return (
+                <div
+                  key={group.labelKey ?? `group-${groupIndex}`}
+                  className={groupIndex > 0 ? "pt-2" : ""}
+                >
+                  {group.labelKey && !collapsed ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(group.labelKey!)}
+                        aria-expanded={expanded}
+                        aria-controls={navGroupPanelId(group.labelKey)}
+                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground/80"
+                      >
+                        <span>{t(group.labelKey)}</span>
+                        <ChevronDown
+                          className={cn(
+                            "h-3 w-3 shrink-0 transition-transform duration-200",
+                            reducedMotion && "transition-none",
+                            expanded && "rotate-180",
+                          )}
+                        />
+                      </button>
+                      <div
+                        id={navGroupPanelId(group.labelKey)}
+                        className={cn(
+                          "grid transition-[grid-template-rows] duration-200 ease-out",
+                          reducedMotion && "transition-none",
+                        )}
+                        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+                      >
+                        <div className="overflow-hidden">{items}</div>
+                      </div>
+                    </>
+                  ) : (
+                    items
+                  )}
+                </div>
+              );
+            })}
           </nav>
 
           <div
@@ -493,7 +600,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <p className="truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              {/*
+                R2-RESP-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o texto do
+                fluxo é longo demais para caber ao lado do menu hambúrguer e
+                do seletor de ciclo em telas estreitas; truncado virava
+                "AVALIAR → PRIO…", pior que não mostrar nada. Some abaixo de
+                `md`, volta quando sobra espaço.
+              */}
+              <p className="hidden truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground md:block">
                 {t("shell.flow")}
               </p>
             </div>
@@ -502,18 +616,25 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {t("shell.cycle")}
               </label>
               {user?.role === "admin" ? (
-                <select
+                /*
+                  R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um
+                  `<select>` nativo dentro de uma barra de cabeçalho apertada
+                  (`flex items-center gap-2`, ao lado do botão hambúrguer e
+                  do menu de preferências), não uma linha de filtro. Sem
+                  `label` aqui — o `<label htmlFor="cycle">` acima já cumpre
+                  esse papel — e `triggerClassName` troca o tamanho padrão de
+                  filtro (`w-full min-w-48 h-10`, com sombra) pelo mesmo peso
+                  visual que o `<select>` nativo tinha nesta barra: só altura/
+                  padding compactos, sem sombra, largura pelo conteúdo.
+                */
+                <SingleSelectFilter
                   id="cycle"
+                  ariaLabel={t("shell.cycle")}
                   value={activeCycleId}
-                  onChange={(e) => setActiveCycle(e.target.value)}
-                  className="rounded-md border border-input bg-card px-2.5 py-1.5 text-sm"
-                >
-                  {cycles.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setActiveCycle}
+                  options={cycles.map((c) => ({ value: c.id, label: c.name }))}
+                  triggerClassName="mt-0 h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
+                />
               ) : (
                 <span id="cycle" className="px-1 text-sm font-medium">
                   {cycles.find((c) => c.id === activeCycleId)?.name ?? "—"}
@@ -534,23 +655,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p className="text-[11px] text-muted-foreground">{t("shell.subtitle")}</p>
           </SheetHeader>
           <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
-            {navGroups.map((group, groupIndex) => (
-              <div
-                key={group.labelKey ?? `mobile-group-${groupIndex}`}
-                className={groupIndex > 0 ? "pt-2" : ""}
-              >
-                {group.labelKey && (
-                  <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
-                    {t(group.labelKey)}
-                  </p>
-                )}
+            {navGroups.map((group, groupIndex) => {
+              const expanded = isGroupExpanded(group);
+              const items = (
                 <div className="space-y-0.5">
                   {group.items.map((item) => {
-                    const active =
-                      item.to === "/"
-                        ? pathname === "/"
-                        : pathname.startsWith(item.to) ||
-                          (item.activePrefixes?.some((p) => pathname.startsWith(p)) ?? false);
+                    const active = isNavItemActive(item, pathname);
                     return (
                       <Link
                         key={item.to}
@@ -569,8 +679,48 @@ export function AppShell({ children }: { children: ReactNode }) {
                     );
                   })}
                 </div>
-              </div>
-            ))}
+              );
+
+              return (
+                <div
+                  key={group.labelKey ?? `mobile-group-${groupIndex}`}
+                  className={groupIndex > 0 ? "pt-2" : ""}
+                >
+                  {group.labelKey ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(group.labelKey!)}
+                        aria-expanded={expanded}
+                        aria-controls={`mobile-${navGroupPanelId(group.labelKey)}`}
+                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground/80"
+                      >
+                        <span>{t(group.labelKey)}</span>
+                        <ChevronDown
+                          className={cn(
+                            "h-3 w-3 shrink-0 transition-transform duration-200",
+                            reducedMotion && "transition-none",
+                            expanded && "rotate-180",
+                          )}
+                        />
+                      </button>
+                      <div
+                        id={`mobile-${navGroupPanelId(group.labelKey)}`}
+                        className={cn(
+                          "grid transition-[grid-template-rows] duration-200 ease-out",
+                          reducedMotion && "transition-none",
+                        )}
+                        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+                      >
+                        <div className="overflow-hidden">{items}</div>
+                      </div>
+                    </>
+                  ) : (
+                    items
+                  )}
+                </div>
+              );
+            })}
           </nav>
           <div className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
             <p className="truncate font-medium text-foreground">{user?.name}</p>
@@ -634,25 +784,28 @@ function PreferencesMenu() {
         </div>
 
         <div>
+          {/*
+            R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
+            nativo. O rótulo próprio (uppercase/tracking-wide) que já
+            combinava com o título "Tema" acima fica como está — só o
+            controle vira `SingleSelectFilter` sem `label` interno (evita
+            duplicar rótulo), com o tamanho cheio padrão (`w-full h-10`) que
+            já é o mesmo dos outros filtros de linha completa.
+          */}
           <label
             htmlFor="locale"
-            className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            className="block text-xs font-medium uppercase tracking-wide text-muted-foreground"
           >
             {t("prefs.language")}
           </label>
-          <select
+          <SingleSelectFilter
             id="locale"
+            ariaLabel={t("prefs.language")}
             value={locale}
             disabled={loading}
-            onChange={(e) => setLocale(e.target.value)}
-            className="w-full rounded-md border border-input bg-card px-2.5 py-1.5 text-sm disabled:opacity-60"
-          >
-            {locales.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
+            onChange={setLocale}
+            options={locales.map((l) => ({ value: l.code, label: l.label }))}
+          />
         </div>
       </PopoverContent>
     </Popover>

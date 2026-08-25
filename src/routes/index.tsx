@@ -11,6 +11,8 @@ import {
   Users,
 } from "lucide-react";
 
+import { useState } from "react";
+
 import {
   GapBadge,
   LevelBadge,
@@ -20,10 +22,12 @@ import {
   StatCard,
 } from "@/components/app/ui-bits";
 import { CapabilityRadar } from "@/components/app/charts";
+import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
 import { useCurrentUser } from "@/lib/auth";
-import { levelName } from "@/lib/domain";
+import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor } from "@/lib/scope";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -73,6 +77,8 @@ function AdminHome() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const { t } = useI18n();
+  const labels = useLabels();
+  const help = usePageHelp("dash");
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
   /**
    * Quem desativou (saiu do time) não conta nos agregados do Painel — ver
@@ -123,11 +129,20 @@ function AdminHome() {
     { completed: 0, inReview: 0, draft: 0, notStarted: 0 },
   );
 
+  const [showAllColumns, setShowAllColumns] = useState(false);
+  const visibleCapabilities = showAllColumns
+    ? store.capabilities
+    : capHeatmapColumns(store.capabilities, architects, sel.capabilityAverages);
+  const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
+
   return (
     <>
       <PageHeader
         title={t("dash.title")}
         description={t("dash.subtitle", { ciclo: cycle?.name ?? "—" })}
+        help={help}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -174,7 +189,12 @@ function AdminHome() {
         />
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[2fr_1fr]">
+      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — grid-cols com fr cru é
+          um min-content trap: a pista nunca encolhe abaixo do conteúdo mais
+          largo (a tabela/heatmap), então a página inteira rola horizontal em
+          vez do overflow-x-auto interno ativar. minmax(0,Nfr) devolve à pista
+          a permissão de encolher, deixando o overflow interno fazer o trabalho. */}
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <SectionCard title={t("dash.heatmap.title")} description={t("dash.heatmap.subtitle")}>
           <p className="mb-3 text-xs text-muted-foreground">
             {t("dash.coverage", {
@@ -185,24 +205,30 @@ function AdminHome() {
               notStarted: assessmentCoverage.notStarted,
             })}
           </p>
-          <div className="overflow-x-auto">
+          <HeatmapColumnsNotice
+            shown={visibleCapabilities.length}
+            total={store.capabilities.length}
+            showAll={showAllColumns}
+            onToggle={() => setShowAllColumns((v) => !v)}
+          />
+          <div className="max-h-[480px] overflow-auto">
             <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
               <thead>
                 <tr>
                   <th
                     scope="col"
-                    className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    className="sticky left-0 top-0 z-20 w-44 bg-card text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
                   >
                     {t("cycle.architect")}
                   </th>
-                  {store.capabilities.map((c) => (
+                  {visibleCapabilities.map((c) => (
                     <th
                       key={c.id}
                       scope="col"
-                      className="px-1 text-center text-[11px] font-medium text-muted-foreground"
+                      className="sticky top-0 z-10 max-w-[64px] truncate bg-card px-1 text-center text-[11px] font-medium text-muted-foreground"
                       title={c.name}
                     >
-                      {c.short}
+                      {shortLabels.get(c.id) ?? c.short}
                     </th>
                   ))}
                 </tr>
@@ -210,7 +236,7 @@ function AdminHome() {
               <tbody>
                 {architects.map((a) => (
                   <tr key={a.id}>
-                    <td className="py-1">
+                    <td className="sticky left-0 z-10 bg-card py-1">
                       <Link
                         to="/architects/$architectId"
                         params={{ architectId: a.id }}
@@ -219,11 +245,14 @@ function AdminHome() {
                         {a.name}
                       </Link>
                     </td>
-                    {sel.capabilityAverages(a.id).map((d) => (
-                      <td key={d.capability.id} className="min-w-[52px]">
-                        <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
-                      </td>
-                    ))}
+                    {sel
+                      .capabilityAverages(a.id)
+                      .filter((d) => visibleCapabilityIds.has(d.capability.id))
+                      .map((d) => (
+                        <td key={d.capability.id} className="min-w-[52px]">
+                          <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
+                        </td>
+                      ))}
                   </tr>
                 ))}
               </tbody>
@@ -233,7 +262,7 @@ function AdminHome() {
             {[1, 2, 3, 4, 5].map((l) => (
               <span key={l} className="flex items-center gap-1.5">
                 <span className="h-3 w-6 rounded" style={{ background: `var(--level-${l})` }} />
-                {l} · {levelName(l)}
+                {l} · {labels.levelName[l as keyof typeof labels.levelName]}
               </span>
             ))}
           </div>
@@ -276,6 +305,7 @@ function MemberHome() {
   const user = useCurrentUser();
   const labels = useLabels();
   const { t } = useI18n();
+  const help = usePageHelp("dash");
 
   const architectId = user.architectId;
   const architect = architectId ? sel.architectById(architectId) : undefined;
@@ -283,7 +313,7 @@ function MemberHome() {
   if (!architectId || !architect) {
     return (
       <>
-        <PageHeader title={t("dash.member.title")} />
+        <PageHeader title={t("dash.member.title")} help={help} />
         <SectionCard title={t("dash.member.unlinked.title")}>
           <p className="text-sm text-muted-foreground">{t("dash.member.unlinked.body")}</p>
         </SectionCard>
@@ -292,6 +322,8 @@ function MemberHome() {
   }
 
   const capabilityAvgs = sel.capabilityAverages(architectId);
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
   const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
   const { avg, covered, total } = averageWithCoverage(capabilityAvgs.map((d) => d.avg));
   const assessment = sel.assessmentFor(architectId);
@@ -312,6 +344,7 @@ function MemberHome() {
       <PageHeader
         title={t("dash.member.title")}
         description={t("dash.member.subtitle", { nome: architect.name })}
+        help={help}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -344,11 +377,12 @@ function MemberHome() {
         />
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
+      {/* R2-UX-04 — minmax(0,1fr) evita o min-content trap, ver comentário acima. */}
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
             data={capabilityAvgs.map((d) => ({
-              capability: d.capability.short,
+              capability: shortLabels.get(d.capability.id) ?? d.capability.short,
               atual: d.avg ?? 0,
               alvo: d.target ?? 0,
             }))}
@@ -409,7 +443,8 @@ function MemberHome() {
         </SectionCard>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
+      {/* R2-UX-04 — minmax(0,1fr) evita o min-content trap, ver comentário acima. */}
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("dash.priorities.title")}
           description={t("dash.member.gaps.subtitle")}
@@ -465,6 +500,7 @@ function LeadHome() {
   const user = useCurrentUser();
   const labels = useLabels();
   const { t } = useI18n();
+  const help = usePageHelp("dashLead");
 
   const myPeople = store.architects.filter((a) => a.active && a.leadUserId === user.id);
 
@@ -485,7 +521,7 @@ function LeadHome() {
 
   return (
     <>
-      <PageHeader title={t("dash.lead.title")} description={t("dash.lead.subtitle")} />
+      <PageHeader title={t("dash.lead.title")} description={t("dash.lead.subtitle")} help={help} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

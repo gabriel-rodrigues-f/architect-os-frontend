@@ -5,7 +5,9 @@ import { applyArchitectFilter, ArchitectFilter } from "@/components/app/Architec
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
 import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
 import { initialSearchParam, replaceSearchParam } from "@/lib/text";
 
@@ -23,12 +25,12 @@ import { initialSearchParam, replaceSearchParam } from "@/lib/text";
 export const Route = createFileRoute("/compare")({
   head: () => ({
     meta: [
-      { title: "Comparação — Synapse" },
+      { title: "Comparativo de Profissionais — Synapse" },
       {
         name: "description",
         content: "Comparação lado a lado do nível de capacidades entre profissionais específicos.",
       },
-      { property: "og:title", content: "Comparação — Synapse" },
+      { property: "og:title", content: "Comparativo de Profissionais — Synapse" },
       { property: "og:description", content: "Radar sobreposto e tabela lado a lado por pessoa." },
     ],
   }),
@@ -37,6 +39,7 @@ export const Route = createFileRoute("/compare")({
 
 function ComparePage() {
   const { t } = useI18n();
+  const help = usePageHelp("compare");
   const store = useStore();
   const sel = useSelectors();
 
@@ -61,8 +64,13 @@ function ComparePage() {
     ]),
   );
 
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
+
   const radarData = store.capabilities.map((capability) => {
-    const row: Record<string, string | number> = { capability: capability.short };
+    const row: Record<string, string | number> = {
+      capability: shortLabels.get(capability.id) ?? capability.short,
+    };
     for (const architect of architects) {
       row[architect.id] = averagesByArchitect.get(architect.id)?.get(capability.id) ?? 0;
     }
@@ -75,6 +83,7 @@ function ComparePage() {
       <PageHeader
         title={t("compare.title")}
         description={t("compare.subtitle")}
+        help={help}
         actions={
           <ArchitectFilter
             architects={store.architects}
@@ -125,7 +134,7 @@ function ComparePage() {
                   {store.capabilities.map((capability) => (
                     <tr key={capability.id}>
                       <td className="py-1 text-sm font-medium" title={capability.name}>
-                        {capability.short}
+                        {shortLabels.get(capability.id) ?? capability.short}
                       </td>
                       {architects.map((a) => {
                         const avg = averagesByArchitect.get(a.id)?.get(capability.id);

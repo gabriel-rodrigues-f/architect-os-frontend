@@ -51,4 +51,21 @@ describe("AppShell — navegação recortada por papel", () => {
     const groups = filterNavGroups(NAV_GROUPS, "member");
     expect(groups.every((g) => g.items.length > 0)).toBe(true);
   });
+
+  /**
+   * R2-UX-13 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — Painel, Time,
+   * Capacidades e Avaliações eram 4 grupos de item só (sem cabeçalho);
+   * agora formam um único grupo "Operação", pra contrastar com
+   * "Desenvolvimento" e "Administração" já existentes.
+   */
+  it("Painel, Time, Capacidades e Avaliações formam um único grupo 'Operação'", () => {
+    const operationGroup = NAV_GROUPS.find((g) => g.labelKey === "nav.group.operation");
+    expect(operationGroup).toBeTruthy();
+    expect(operationGroup?.items.map((i) => i.to)).toEqual([
+      "/",
+      "/team",
+      "/capability-map",
+      "/assessments",
+    ]);
+  });
 });

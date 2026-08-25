@@ -28,8 +28,13 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12/B-13 — "achar a
  * Marina" entre dezenas de cards não tinha como ser resolvido pelos filtros
- * de composição por caixinha (Status/Papel/Especialização/Capacidade); o
- * `DataViewToolbar` já tinha um campo de busca pronto, só não conectado.
+ * de composição por caixinha (Status/Papel/Especialização/Capacidade).
+ *
+ * R2-UX-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo B) — a busca livre
+ * virou `ArchitectNameCombobox`, seleção múltipla pesquisável: "Todos os
+ * registros" (tri-state) desmarca/marca tudo de uma vez, e cada pessoa tem
+ * seu próprio checkbox — mesmo padrão de composição por caixinha das
+ * outras facetas, nunca texto livre filtrando a tabela direto.
  */
 const fetchMock = vi.fn();
 
@@ -56,7 +61,7 @@ function AuthReady({ children }: { children: ReactNode }) {
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
-describe("Time — busca por nome", () => {
+describe("Time — seleção de pessoas (ArchitectNameCombobox)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -93,7 +98,7 @@ describe("Time — busca por nome", () => {
     vi.unstubAllGlobals();
   });
 
-  it("filtra a lista pelo nome digitado e o chip 'Buscar por nome' limpa a busca", async () => {
+  it("desmarcar 'Todos os registros' e marcar uma pessoa isola a lista; o chip 'Pessoas' limpa a seleção", async () => {
     render(
       <Wrapper>
         <TeamPage />
@@ -102,14 +107,18 @@ describe("Time — busca por nome", () => {
     await screen.findByText("Ana Martins");
     expect(screen.getByText("Bruno Almeida")).toBeTruthy();
 
-    await userEvent.type(screen.getByLabelText("Buscar por nome"), "ana");
+    await userEvent.click(screen.getByRole("combobox", { name: "Pessoas" }));
+    await userEvent.click(await screen.findByText("Todos os registros"));
+    await userEvent.click(await screen.findByText("Ana Martins"));
+    await userEvent.keyboard("{Escape}");
 
     await waitFor(() => expect(screen.queryByText("Bruno Almeida")).toBeNull());
-    expect(screen.getByText("Ana Martins")).toBeTruthy();
+    // "Ana Martins" agora também aparece no resumo do combobox — só uma pessoa selecionada.
+    expect(screen.getAllByText("Ana Martins").length).toBeGreaterThan(0);
 
-    await userEvent.click(screen.getByRole("button", { name: /Buscar por nome: ana/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Pessoas: 1 selecionadas/ }));
 
     expect(await screen.findByText("Bruno Almeida")).toBeTruthy();
-    expect(screen.getByText("Ana Martins")).toBeTruthy();
+    expect(screen.getAllByText("Ana Martins").length).toBeGreaterThan(0);
   });
 });

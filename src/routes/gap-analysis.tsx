@@ -4,18 +4,19 @@ import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { CapabilitiesTabs } from "@/components/app/CapabilitiesTabs";
 import { CapabilityRadar } from "@/components/app/charts";
 import { type ConsolidatedGapRow, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
-import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { GapBadge, NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 
 export const Route = createFileRoute("/gap-analysis")({
   head: () => ({
     meta: [
-      { title: "Análise de Lacunas — Synapse" },
+      { title: "Prioridades de Desenvolvimento — Synapse" },
       {
         name: "description",
         content: "Radar de arquitetura e ranking de prioridades de desenvolvimento por pessoa.",
       },
-      { property: "og:title", content: "Análise de Lacunas — Synapse" },
+      { property: "og:title", content: "Prioridades de Desenvolvimento — Synapse" },
       { property: "og:description", content: "Radar e prioridades de desenvolvimento." },
     ],
   }),
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/gap-analysis")({
 
 function GapPage() {
   const { t } = useI18n();
+  const help = usePageHelp("gapAnalysis");
   const {
     store,
     selected,
@@ -42,6 +44,7 @@ function GapPage() {
       <PageHeader
         title={t("gap.title")}
         description={t("gap.subtitle")}
+        help={help}
         actions={
           <ArchitectFilter
             architects={store.architects}
@@ -56,12 +59,15 @@ function GapPage() {
           <p className="text-sm font-medium">{t("gap.empty")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {store.architects.length === 0
-              ? "Cadastre arquitetos em Time e abra uma avaliação do ciclo para ver as lacunas aqui."
+              ? t("gap.empty.noArchitects")
               : t("gap.empty.filterHint")}
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        // R2-UX-04/R2-RESP-03 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesmo
+        // min-content trap dos outros 4 grids do app: minmax(0,1fr) deixa a
+        // pista encolher, o overflow interno faz o resto.
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <SectionCard
             title={t("gap.radar.title")}
             description={t("gap.radar.subtitle", { escopo: scopeLabel })}
@@ -142,7 +148,9 @@ function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emp
             <p className="text-xs text-muted-foreground">
               {t("gap.priorities.avgGapLine", { avg: row.avgGap })}
             </p>
-            <p className="text-xs text-muted-foreground">{row.architectNames.join(", ")}</p>
+            <p className="text-xs text-muted-foreground">
+              <NameList names={row.architectNames} />
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <GapBadge gap={row.maxGap} />

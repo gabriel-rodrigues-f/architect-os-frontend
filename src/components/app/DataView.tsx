@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 
@@ -19,6 +20,15 @@ export interface ActiveFilterChip {
   onRemove: () => void;
 }
 
+/**
+ * R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o par `sortValue`/
+ * `sortOptions`/`onSortChange`/`sortLabel` que `DataViewToolbar` tinha (e
+ * que usava este tipo) nunca foi passado por chamador nenhum — era código
+ * morto, removido. O tipo em si continua exportado porque `team-shared.tsx`
+ * o usa pra tipar `roster.sortOptions`, hoje consumido por
+ * `SingleSelectFilter` em `team.tsx` (que aceita `SortOption[]` porque seu
+ * próprio `SingleSelectFilterOption` é estruturalmente idêntico).
+ */
 export interface SortOption {
   value: string;
   label: string;
@@ -35,10 +45,18 @@ export interface DataViewToolbarProps {
   totalCount: number;
   activeFilters?: ActiveFilterChip[];
   onClearFilters?: () => void;
-  sortValue?: string;
-  sortOptions?: SortOption[];
-  onSortChange?: (value: string) => void;
-  sortLabel?: string;
+  /**
+   * R2-UX-05 — `"grid-3"` é a grade 2×3 do Time: `children` (6 controles,
+   * na ordem que devem aparecer) enchem um `grid-cols-3` sozinhos — o
+   * auto-flow do CSS Grid já quebra em duas linhas de 3 sem precisar
+   * partir `children` em dois grupos manualmente. Busca/ordenação por
+   * `props` dedicadas ficam de fora desse modo: quem chama passa TUDO
+   * como `children`, inclusive o controle de ordenação. A contagem sai da
+   * linha de filtros e migra para a linha de chips (sempre visível nesse
+   * modo, mesmo sem filtro ativo — "5 de 5" é informação, não só aviso de
+   * corte). Default `"flex"` preserva o layout de sempre.
+   */
+  layout?: "flex" | "grid-3";
 }
 
 export function DataViewToolbar({
@@ -51,12 +69,47 @@ export function DataViewToolbar({
   totalCount,
   activeFilters,
   onClearFilters,
-  sortValue,
-  sortOptions,
-  onSortChange,
-  sortLabel,
+  layout = "flex",
 }: DataViewToolbarProps) {
   const { t } = useI18n();
+  const countLabel =
+    resultCount === totalCount
+      ? t("dataView.resultCountAll", { n: totalCount })
+      : t("dataView.resultCount", { n: resultCount, total: totalCount });
+
+  if (layout === "grid-3") {
+    return (
+      <div className="mb-4 space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilters?.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={f.onRemove}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20"
+              >
+                {f.label}
+                <X className="h-3 w-3" />
+              </button>
+            ))}
+            {onClearFilters && activeFilters && activeFilters.length > 0 && (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+              >
+                {t("dataView.clearFilters")}
+              </button>
+            )}
+          </div>
+          <p className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{countLabel}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-4 space-y-3">
       <div className="flex flex-wrap items-end gap-3">
@@ -81,30 +134,8 @@ export function DataViewToolbar({
 
         {children}
 
-        {sortOptions && sortOptions.length > 0 && (
-          <div>
-            <label className="block text-xs text-muted-foreground" htmlFor="data-view-sort">
-              {sortLabel ?? t("dataView.sortLabel")}
-            </label>
-            <select
-              id="data-view-sort"
-              value={sortValue}
-              onChange={(e) => onSortChange?.(e.target.value)}
-              className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
-            >
-              {sortOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         <p className="ml-auto shrink-0 self-center whitespace-nowrap text-xs text-muted-foreground">
-          {resultCount === totalCount
-            ? t("dataView.resultCountAll", { n: totalCount })
-            : t("dataView.resultCount", { n: resultCount, total: totalCount })}
+          {countLabel}
         </p>
       </div>
 
@@ -178,19 +209,28 @@ export function Pagination({
         {t("dataView.pageRange", { from, to, total })}
       </p>
       <div className="flex items-center gap-2">
+        {/*
+          R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
+          nativo sem rótulo visível (só `aria-label`), do tamanho errado ao
+          lado dos botões `size="sm"` "Anterior"/"Próxima". `SingleSelectFilter`
+          sem `label` (uso compacto) reusa o mesmo `Popover`/`FilterTriggerButton`
+          dos outros filtros, mas `triggerClassName` encolhe o gatilho padrão
+          (`w-full min-w-48 h-10`) para bater com a altura/tamanho de fonte
+          dos botões vizinhos (`h-8`/`text-xs`), em vez de esticar a barra de
+          paginação.
+        */}
         {onPageSizeChange && (
-          <select
-            aria-label={t("dataView.pageSize")}
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="rounded-md border border-input bg-card px-2 py-1.5 text-xs"
-          >
-            {pageSizeOptions.map((n) => (
-              <option key={n} value={n}>
-                {t("dataView.pageSizeOption", { n })}
-              </option>
-            ))}
-          </select>
+          <SingleSelectFilter
+            id="data-view-page-size"
+            ariaLabel={t("dataView.pageSize")}
+            options={pageSizeOptions.map((n) => ({
+              value: String(n),
+              label: t("dataView.pageSizeOption", { n }),
+            }))}
+            value={String(pageSize)}
+            onChange={(v) => onPageSizeChange(Number(v))}
+            triggerClassName="mt-0 h-8 w-auto min-w-0 px-2 text-xs"
+          />
         )}
         <Button
           size="sm"

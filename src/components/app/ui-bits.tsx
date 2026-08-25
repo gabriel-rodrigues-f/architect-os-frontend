@@ -3,8 +3,10 @@ import { Link } from "@tanstack/react-router";
 import { Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { levelName } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { useLabels } from "@/lib/labels";
+import { truncateNames } from "@/lib/text";
+import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -26,6 +28,7 @@ export function LevelBadge({
   showName?: boolean;
 }) {
   const { t } = useI18n();
+  const labels = useLabels();
   if (level === undefined) {
     return (
       <span
@@ -39,16 +42,17 @@ export function LevelBadge({
       </span>
     );
   }
+  const nome = labels.levelName[level as keyof typeof labels.levelName] ?? "—";
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums",
         levelBg[level] ?? levelBg[0],
       )}
-      title={t("level.tooltip", { n: level, nome: levelName(level) })}
+      title={t("level.tooltip", { n: level, nome })}
     >
       L{level}
-      {showName && <span className="font-medium opacity-80">{levelName(level)}</span>}
+      {showName && <span className="font-medium opacity-80">{nome}</span>}
     </span>
   );
 }
@@ -61,6 +65,7 @@ export function LevelBadge({
  */
 export function LevelCell({ level }: { level: number | undefined }) {
   const { t } = useI18n();
+  const labels = useLabels();
   return (
     <div
       className={cn(
@@ -70,7 +75,10 @@ export function LevelCell({ level }: { level: number | undefined }) {
       title={
         level === undefined
           ? t("level.cellTooltip.none")
-          : t("level.cellTooltip", { nome: levelName(level), n: level })
+          : t("level.cellTooltip", {
+              nome: labels.levelName[level as keyof typeof labels.levelName] ?? "—",
+              n: level,
+            })
       }
     >
       {level ?? "—"}
@@ -125,6 +133,41 @@ export function GapBadge({ gap }: { gap: number | undefined }) {
   );
 }
 
+/**
+ * R2-VIS-01 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — situação de avaliação e
+ * papel de usuário pegavam emprestado `bg-level-*`, o vocabulário de
+ * PROFICIÊNCIA (`LevelBadge` acima), só porque o número de estados batia por
+ * coincidência. Paleta própria (`status-*`, `tokens.ts`), sem relação com
+ * nível de competência — mudar a escala de proficiência não deve mexer aqui,
+ * e vice-versa. `tone` é a abstração pública: cada tela mapeia o próprio
+ * domínio (status de avaliação, papel de usuário, ...) para um dos três
+ * estados genéricos, sem essa lib conhecer domínio nenhum.
+ */
+const statusTone: Record<"neutral" | "progress" | "done", string> = {
+  neutral: "bg-status-neutral text-[var(--status-neutral-fg)]",
+  progress: "bg-status-progress text-[var(--status-progress-fg)]",
+  done: "bg-status-done text-[var(--status-done-fg)]",
+};
+
+export function StatusBadge({
+  tone,
+  label,
+}: {
+  tone: "neutral" | "progress" | "done";
+  label: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
+        statusTone[tone],
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 export function StatCard({
   label,
   value,
@@ -167,21 +210,54 @@ export function PageHeader({
   title,
   description,
   actions,
+  help,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
+  /** R2-UX-01 — conteúdo do popover de ajuda contextual; vem do registry em `lib/page-help.ts`. */
+  help?: { lead: PageHelpContent; member: PageHelpContent };
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="page-title">{title}</h1>
+        <div className="flex items-center gap-1.5">
+          <h1 className="page-title">{title}</h1>
+          {help && <PageHelp content={help} />}
+        </div>
         {description && (
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
+  );
+}
+
+/**
+ * R2-ESC-05/R2-UX-09 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, regra C.2.9) —
+ * lista de nomes concatenados sem teto: acima de `max` (default 5), mostra
+ * só os primeiros + "e mais N", com a lista completa sempre disponível via
+ * `title` (nunca corte silencioso — a informação continua alcançável).
+ */
+export function NameList({
+  names,
+  max = 5,
+  emptyLabel,
+}: {
+  names: readonly string[];
+  max?: number;
+  /** Convenção de "lista vazia" varia por tela (ex.: "—" nos cards de Cobertura) — default é `common.none`. */
+  emptyLabel?: string;
+}) {
+  const { t } = useI18n();
+  if (names.length === 0) return <>{emptyLabel ?? t("common.none")}</>;
+  const { shown, remaining } = truncateNames(names, max);
+  return (
+    <span title={names.join(", ")}>
+      {shown.join(", ")}
+      {remaining > 0 && ` ${t("common.andMoreCount", { n: remaining })}`}
+    </span>
   );
 }
 
@@ -313,11 +389,22 @@ export function FieldLabel({
   );
 }
 
+/**
+ * R2-VIS-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `n[0]` pegava o primeiro
+ * CARACTERE de cada palavra, sem checar o que era: um nome com aspas ou
+ * símbolo solto no início de uma palavra (`Arquiteto "R&D" <Ops>`) virava
+ * `A"` no avatar em vez de `AR`. Filtra para a primeira letra ou dígito de
+ * cada palavra — símbolo isolado (palavra sem nenhuma letra/dígito) é
+ * pulado, não vira iniciais.
+ */
+const FIRST_LETTER_OR_NUMBER = /[\p{L}\p{N}]/u;
+
 export function Initials({ name }: { name: string }) {
   const initials = name
     .split(" ")
+    .map((n) => n.match(FIRST_LETTER_OR_NUMBER)?.[0] ?? "")
+    .filter(Boolean)
     .slice(0, 2)
-    .map((n) => n[0])
     .join("");
   return (
     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">

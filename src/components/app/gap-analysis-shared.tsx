@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { GapBadge } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
-import type { Architect } from "@/lib/domain";
+import { capabilityShortLabels, type Architect } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, type Gap } from "@/lib/selectors";
@@ -154,24 +154,27 @@ export function useGapAnalysisData() {
    * de uma fração pequena do grupo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-
    * SYNAPSE.md, Seção 9.
    */
-  const radar = useMemo(
-    () =>
-      store.capabilities.map((cat) => {
-        const rows = architects.map((a) =>
-          sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
-        );
-        const atual = averageWithCoverage(rows.map((r) => r?.avg));
-        const alvo = averageWithCoverage(rows.map((r) => r?.target));
-        return {
-          capability: cat.short,
-          atual: Number((atual.avg ?? 0).toFixed(2)),
-          alvo: Number((alvo.avg ?? 0).toFixed(2)),
-          covered: atual.covered,
-          total: atual.total,
-        };
-      }),
-    [architects, store.capabilities, sel],
-  );
+  const radar = useMemo(() => {
+    // R2-ESC-02 — `short` pode colidir entre capacidades (nada impedia
+    // isso antes desta rodada); o rótulo do radar precisa continuar
+    // distinguível mesmo quando duas capacidades ainda dividem a mesma
+    // sigla (dado legado, até alguém corrigir no catálogo).
+    const shortLabels = capabilityShortLabels(store.capabilities);
+    return store.capabilities.map((cat) => {
+      const rows = architects.map((a) =>
+        sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
+      );
+      const atual = averageWithCoverage(rows.map((r) => r?.avg));
+      const alvo = averageWithCoverage(rows.map((r) => r?.target));
+      return {
+        capability: shortLabels.get(cat.id) ?? cat.short,
+        atual: Number((atual.avg ?? 0).toFixed(2)),
+        alvo: Number((alvo.avg ?? 0).toFixed(2)),
+        covered: atual.covered,
+        total: atual.total,
+      };
+    });
+  }, [architects, store.capabilities, sel]);
 
   /** Pior cobertura entre as capacidades do radar — sinaliza quando a leitura é de poucos. */
   const radarCoverage = radar.reduce(
@@ -220,12 +223,21 @@ export function useGapAnalysisData() {
    * existe mais no roster não faz a contagem bater por acidente.
    */
   const { t } = useI18n();
+  /**
+   * R2-ESC-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — a lista de primeiros
+   * nomes crescia sem teto (times de 15+ pessoas viravam uma linha só,
+   * ilegível). `scopeLabel` alimenta `t()`/PDF como string simples (nunca
+   * JSX), então a regra aqui é diferente da truncagem de `NameList`: acima
+   * de 3 pessoas vira contagem, sem nome nenhum.
+   */
   const scopeLabel =
     selected.length === 0
       ? t("gap.scope.none")
       : architects.length === store.architects.length
         ? t("gap.scope.wholeTeam")
-        : architects.map((a) => a.name.split(" ")[0]).join(", ") || t("gap.scope.empty");
+        : architects.length > 3
+          ? t("gap.scope.count", { n: architects.length })
+          : architects.map((a) => a.name.split(" ")[0]).join(", ") || t("gap.scope.empty");
 
   return {
     store,
@@ -330,7 +342,7 @@ export function GapTable({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={mastery ? 6 : 7} className="py-3 text-sm text-muted-foreground">
+              <td colSpan={mastery ? 7 : 8} className="py-3 text-sm text-muted-foreground">
                 {t("gap.table.empty")}
               </td>
             </tr>
@@ -338,5 +350,74 @@ export function GapTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * R2-ESC-01 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesmo problema do radar
+ * (R2-ESC-03): um heatmap com uma coluna por capacidade vira ilegível a
+ * partir de ~15-20 capacidades. Corta para as `MAX_HEATMAP_COLUMNS` com
+ * pior gap (maior diferença alvo-atual em qualquer arquiteto do recorte
+ * exibido), preservando a ordem original do catálogo entre as mantidas.
+ */
+export const MAX_HEATMAP_COLUMNS = 12;
+
+export function capHeatmapColumns<C extends { id: string }>(
+  capabilities: readonly C[],
+  architects: readonly { id: string }[],
+  capabilityAveragesFor: (architectId: string) => readonly {
+    capability: { id: string };
+    avg: number | undefined;
+    target: number | undefined;
+  }[],
+  max = MAX_HEATMAP_COLUMNS,
+): C[] {
+  if (capabilities.length <= max) return [...capabilities];
+
+  const worstGapByCapability = new Map<string, number>();
+  for (const architect of architects) {
+    for (const row of capabilityAveragesFor(architect.id)) {
+      if (row.avg === undefined || row.target === undefined) continue;
+      const gap = row.target - row.avg;
+      const prev = worstGapByCapability.get(row.capability.id) ?? -Infinity;
+      if (gap > prev) worstGapByCapability.set(row.capability.id, gap);
+    }
+  }
+
+  const ranked = capabilities
+    .map((c, index) => ({ index, score: worstGapByCapability.get(c.id) ?? -Infinity }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max);
+  const keep = new Set(ranked.map((r) => r.index));
+  return capabilities.filter((_, index) => keep.has(index));
+}
+
+/** Aviso visível + alternância "mostrar todas" — mesmo padrão do `RadarAxisNotice` (`charts.tsx`). */
+export function HeatmapColumnsNotice({
+  shown,
+  total,
+  showAll,
+  onToggle,
+}: {
+  shown: number;
+  total: number;
+  showAll: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useI18n();
+  if (total <= MAX_HEATMAP_COLUMNS) return null;
+  return (
+    <p className="mb-3 text-xs text-muted-foreground">
+      {showAll
+        ? t("heatmap.columns.showingAll", { total })
+        : t("heatmap.columns.showingTopN", { shown, total })}{" "}
+      <button
+        type="button"
+        className="underline underline-offset-2 hover:no-underline"
+        onClick={onToggle}
+      >
+        {showAll ? t("heatmap.columns.showTopOnly") : t("heatmap.columns.showAll")}
+      </button>
+    </p>
   );
 }

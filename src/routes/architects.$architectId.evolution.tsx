@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { EvolutionLine, ProficiencyTimeline } from "@/components/app/charts";
+import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Button } from "@/components/ui/button";
 import { PageHeader, ProfileTabs, SectionCard, StatCard } from "@/components/app/ui-bits";
 import { ApiError, evolutionApi, reportsApi } from "@/lib/api";
 import type { CompetencyEvolutionComparison, EvolutionFilters, SelectionScope } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { daysAgoIso, formatDate, todayIso } from "@/lib/text";
@@ -72,6 +74,7 @@ function ArchitectEvolution() {
   const store = useStore();
   const sel = useSelectors();
   const { t, locale } = useI18n();
+  const help = usePageHelp("architectEvolution");
   const architect = sel.architectById(architectId);
 
   const [preset, setPreset] = useState<PeriodPreset>("90");
@@ -234,6 +237,7 @@ function ArchitectEvolution() {
             ? ` · ${data.architect.careerLevelName}`
             : ""
         }`}
+        help={help}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -259,25 +263,28 @@ function ArchitectEvolution() {
 
       <SectionCard title={t("evolution.filters.title")} className="mb-6">
         <div className="flex flex-wrap items-end gap-4">
-          <div>
-            <label className="block text-xs text-muted-foreground" htmlFor="evolution-period">
-              {t("evolution.filters.period")}
-            </label>
-            <select
-              id="evolution-period"
-              className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
-              value={preset}
-              onChange={(e) => setPreset(e.target.value as PeriodPreset)}
-            >
-              <option value="30">{t("evolution.period.last30")}</option>
-              <option value="60">{t("evolution.period.last60")}</option>
-              <option value="90">{t("evolution.period.last90")}</option>
-              <option value="180">{t("evolution.period.last180")}</option>
-              <option value="365">{t("evolution.period.last365")}</option>
-              <option value="all">{t("evolution.period.all")}</option>
-              <option value="custom">{t("evolution.period.custom")}</option>
-            </select>
-          </div>
+          {/*
+            R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
+            nativo nesta linha de filtro (mesma família visual da grade do
+            Time). `SingleSelectFilter` com `label` encaixa direto no
+            tamanho cheio padrão (`w-full min-w-48 h-10`), igual aos outros
+            filtros já convertidos.
+          */}
+          <SingleSelectFilter
+            id="evolution-period"
+            label={t("evolution.filters.period")}
+            value={preset}
+            onChange={(value) => setPreset(value as PeriodPreset)}
+            options={[
+              { value: "30", label: t("evolution.period.last30") },
+              { value: "60", label: t("evolution.period.last60") },
+              { value: "90", label: t("evolution.period.last90") },
+              { value: "180", label: t("evolution.period.last180") },
+              { value: "365", label: t("evolution.period.last365") },
+              { value: "all", label: t("evolution.period.all") },
+              { value: "custom", label: t("evolution.period.custom") },
+            ]}
+          />
 
           {preset === "custom" && (
             <div className="flex items-end gap-2">
@@ -310,21 +317,17 @@ function ArchitectEvolution() {
             </div>
           )}
 
-          <div>
-            <label className="block text-xs text-muted-foreground" htmlFor="evolution-source">
-              {t("evolution.filters.source")}
-            </label>
-            <select
-              id="evolution-source"
-              className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
-              value={source}
-              onChange={(e) => setSource(e.target.value as typeof source)}
-            >
-              <option value="ALL">{t("evolution.source.all")}</option>
-              <option value="MENTORING">{t("evolution.source.mentoring")}</option>
-              <option value="ASSESSMENT">{t("evolution.source.assessment")}</option>
-            </select>
-          </div>
+          <SingleSelectFilter
+            id="evolution-source"
+            label={t("evolution.filters.source")}
+            value={source}
+            onChange={(value) => setSource(value as typeof source)}
+            options={[
+              { value: "ALL", label: t("evolution.source.all") },
+              { value: "MENTORING", label: t("evolution.source.mentoring") },
+              { value: "ASSESSMENT", label: t("evolution.source.assessment") },
+            ]}
+          />
         </div>
 
         <div className="mt-4">

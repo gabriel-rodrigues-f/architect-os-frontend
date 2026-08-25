@@ -16,19 +16,20 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
 import { formatDate } from "@/lib/text";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Referência do Modelo — Synapse" },
+      { title: "Política de Progressão — Synapse" },
       {
         name: "description",
         content:
           "Referência do modelo: escala de proficiência, perfis por cargo, tipos de ação e evidência.",
       },
-      { property: "og:title", content: "Referência do Modelo — Synapse" },
+      { property: "og:title", content: "Política de Progressão — Synapse" },
       {
         property: "og:description",
         content: "Configuração e glossário do modelo de desenvolvimento técnico.",
@@ -43,24 +44,32 @@ function SettingsPage() {
   const careerLevels = useCareerLevelsByRank();
   const labels = useLabels();
   const { t, locale } = useI18n();
+  const help = usePageHelp("settings");
   const isAdmin = useCurrentUser().role === "admin";
 
   return (
     <>
-      <PageHeader
-        title={t("ref.title")}
-        description="Glossário do modelo: escala de proficiência, cargos, tipos de ação e de evidência. Somente leitura, exceto a Política de Progressão — o restante do que é editável fica na tela do respectivo cadastro."
-      />
+      <PageHeader title={t("ref.title")} description={t("ref.subtitle")} help={help} />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <CareerPolicySection isAdmin={isAdmin} />
+      </div>
 
-        <SectionCard title={t("ref.scale")} description="5 níveis usados em todos os assessments.">
+      {/* R2-TXT-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o menu chama esta
+          tela de "Política de Progressão" (título acima já reflete isso); o
+          restante da página é glossário read-only, por isso ganha um
+          cabeçalho interno próprio em vez de se misturar visualmente com a
+          política editável. */}
+      <h2 className="mb-4 mt-6 font-display text-lg font-semibold">
+        {t("ref.referenceSectionTitle")}
+      </h2>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <SectionCard title={t("ref.scale")} description={t("ref.scale.subtitle")}>
           <ul className="space-y-2">
             {LEVELS.map((l) => (
               <li key={l.level} className="flex items-start gap-3 surface-inset p-3">
                 <LevelBadge level={l.level} showName />
-                <p className="text-sm text-muted-foreground">{l.description}</p>
+                <p className="text-sm text-muted-foreground">{labels.levelDescription[l.level]}</p>
               </li>
             ))}
           </ul>
@@ -134,12 +143,9 @@ function SettingsPage() {
           </div>
         </SectionCard>
 
-        <SectionCard
-          title="Taxonomias"
-          description="Tipos de ação de desenvolvimento e de evidência aceitos."
-        >
+        <SectionCard title={t("ref.taxonomies.title")} description={t("ref.taxonomies.subtitle")}>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Tipos de ação
+            {t("ref.taxonomies.actionTypes")}
           </p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {ACTION_TYPES.map((a) => (
@@ -149,7 +155,7 @@ function SettingsPage() {
             ))}
           </div>
           <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Tipos de evidência
+            {t("ref.taxonomies.evidenceTypes")}
           </p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {EVIDENCE_TYPES.map((a) => (
@@ -176,21 +182,19 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const readyCapabilities = store.capabilities.filter((c) => c.curation.status === "READY").length;
+  const { t } = useI18n();
 
   return (
-    <SectionCard
-      title="Política de Progressão"
-      description="Quantidade mínima de capacidades qualificadas para elegibilidade a cada nível de carreira. Elegibilidade nunca promove sozinha — a mudança de nível continua uma decisão explícita e auditada."
-    >
+    <SectionCard title={t("policy.title")} description={t("policy.subtitle")}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th scope="col" className="py-2">
-                Nível de carreira
+                {t("policy.col.careerLevel")}
               </th>
               <th scope="col" className="py-2 text-center">
-                Mínimo de capacidades qualificadas
+                {t("policy.col.minimumQualified")}
               </th>
               {isAdmin && <th scope="col" className="py-2" />}
             </tr>
@@ -227,6 +231,7 @@ function CareerPolicyRow({
   isAdmin: boolean;
 }) {
   const store = useStore();
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(minimum ?? 3));
   const [saving, setSaving] = useState(false);
@@ -256,13 +261,11 @@ function CareerPolicyRow({
       <td className="py-2">
         <p className="font-medium">{level.name}</p>
         <p className="text-xs text-muted-foreground">
-          Para estar elegível ao {level.name}: é necessário qualificar pelo menos {minimum ?? "—"}{" "}
-          capacidade(s) do portfólio confirmado.
+          {t("policy.row.hint", { nivel: level.name, minimo: minimum ?? "—" })}
         </p>
         {impossible && (
           <p className="mt-1 text-xs text-destructive" role="alert">
-            A política exige {minimum} capacidades qualificadas, mas atualmente apenas{" "}
-            {readyCapabilities} capacidade(s) estão prontas (READY) para uso.
+            {t("policy.row.warning", { minimo: minimum, prontas: readyCapabilities })}
           </p>
         )}
       </td>
@@ -300,15 +303,15 @@ function CareerPolicyRow({
                   setError(null);
                 }}
               >
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button size="sm" disabled={!canSave || saving} onClick={() => void save()}>
-                {saving ? "Salvando…" : "Salvar"}
+                {saving ? t("team.transition.submitting") : t("common.save")}
               </Button>
             </div>
           ) : (
             <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-              Editar
+              {t("common.edit")}
             </Button>
           )}
         </td>

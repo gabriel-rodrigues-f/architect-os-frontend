@@ -41,4 +41,4 @@ if (!window.matchMedia) {
  * (`en-US`) e as asserções de texto passariam a depender do ambiente em vez do
  * comportamento — o mesmo teste passaria numa máquina e falharia noutra.
  */
-window.localStorage.setItem("architect-os:locale", "pt");
+window.localStorage.setItem("synapse:locale", "pt");

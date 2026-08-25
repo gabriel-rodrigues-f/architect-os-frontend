@@ -8,6 +8,8 @@ import type {
   Evidence,
   EvidenceType,
   LearningItemProgress,
+  LearningItemType,
+  Level,
 } from "./domain";
 
 /**
@@ -28,11 +30,17 @@ const planStatusKey: Record<DevelopmentPlan["status"], MessageKey> = {
   Completed: "status.completed",
 };
 
+/**
+ * R2-VIS-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o item do PDI é "a ação"
+ * (fem.), então o particípio de status concorda em gênero: "Bloqueada", não
+ * o "Bloqueado" genérico usado pelo PDI como um todo (`planStatusKey`, "o
+ * PDI", masc.). "Em andamento" não é particípio, não flexiona.
+ */
 const planItemStatusKey: Record<DevelopmentPlanItem["status"], MessageKey> = {
-  "Not Started": "status.notStarted",
+  "Not Started": "status.planItem.notStarted",
   "In Progress": "status.inProgress",
-  Blocked: "status.blocked",
-  Completed: "status.completed",
+  Blocked: "status.planItem.blocked",
+  Completed: "status.planItem.completed",
 };
 
 const learningStatusKey: Record<LearningItemProgress["status"], MessageKey> = {
@@ -54,10 +62,11 @@ const cycleStatusKey: Record<DevelopmentCycle["status"], MessageKey> = {
   Planned: "status.planned",
 };
 
+/** R2-VIS-07 — "a Avaliação" é fem.: "Concluída", não o "Concluído" genérico. */
 const assessmentStatusKey: Record<Assessment["status"], MessageKey> = {
   Draft: "status.draft",
   "In Review": "status.inReview",
-  Completed: "status.completed",
+  Completed: "status.assessment.completed",
 };
 
 const actionTypeKey: Record<ActionType, MessageKey> = {
@@ -99,13 +108,56 @@ const evidenceStatusKey: Record<Evidence["status"], MessageKey> = {
 };
 
 /**
+ * R2-VIS-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — a escala de proficiência
+ * (`LEVELS`, `domain.ts`) tinha nome/descrição fixos em português direto no
+ * código, ignorados pelo seletor de idioma; e `pt.json` mantinha um segundo
+ * mapa (`level.*`) nunca lido, com nível 2 numa palavra diferente
+ * ("Iniciante" × "Fundamentos"). Único mapa agora, como todo o resto deste
+ * arquivo.
+ */
+const levelNameKey: Record<Level, MessageKey> = {
+  1: "level.1",
+  2: "level.2",
+  3: "level.3",
+  4: "level.4",
+  5: "level.5",
+};
+
+const levelDescriptionKey: Record<Level, MessageKey> = {
+  1: "level.1.description",
+  2: "level.2.description",
+  3: "level.3.description",
+  4: "level.4.description",
+  5: "level.5.description",
+};
+
+/**
+ * O valor canônico de `LearningItemType` continua em português (é o que fica
+ * gravado em `learning_path_items.type`) — diferente de `ActionType`/
+ * `EvidenceType`, que já são canônicos em inglês. Aqui o mapa só traduz a
+ * *exibição*; o valor persistido não muda.
+ */
+const learningItemTypeKey: Record<LearningItemType, MessageKey> = {
+  Curso: "learningItemType.curso",
+  Vídeo: "learningItemType.video",
+  Livro: "learningItemType.livro",
+  Artigo: "learningItemType.artigo",
+  Laboratório: "learningItemType.laboratorio",
+  Desafio: "learningItemType.desafio",
+  Projeto: "learningItemType.projeto",
+  Certificação: "learningItemType.certificacao",
+  Apresentação: "learningItemType.apresentacao",
+  Workshop: "learningItemType.workshop",
+};
+
+/**
  * Rótulos já traduzidos para o idioma ativo. É hook porque depende do contexto
  * de i18n — a alternativa seria passar `t` para cada chamada, o que poluiria
  * todas as telas.
  */
 export function useLabels() {
   const { t } = useI18n();
-  const traduzir = <K extends string>(mapa: Record<K, MessageKey>) =>
+  const traduzir = <K extends string | number>(mapa: Record<K, MessageKey>) =>
     Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, t(v as MessageKey)])) as Record<
       K,
       string
@@ -122,5 +174,8 @@ export function useLabels() {
     evidenceType: traduzir(evidenceTypeKey),
     complexity: traduzir(complexityKey),
     evidenceStatus: traduzir(evidenceStatusKey),
+    levelName: traduzir(levelNameKey),
+    levelDescription: traduzir(levelDescriptionKey),
+    learningItemType: traduzir(learningItemTypeKey),
   };
 }

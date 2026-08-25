@@ -110,6 +110,17 @@ function mockSession(
       if (onPut) return Promise.resolve(onPut(body));
       return Promise.resolve(new Response(JSON.stringify(summary), { status: 200 }));
     }
+    if (href.includes("/eligibility")) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+      );
+    }
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
 }
@@ -247,6 +258,14 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
           new Response(
             JSON.stringify({ error: "conflict", message: "Atualizado por outra pessoa." }),
             { status: 409, headers: { "content-type": "application/json" } },
+          ),
+        );
+      }
+      if (href.includes("/eligibility")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
+            { status: 200, headers: { "content-type": "application/json" } },
           ),
         );
       }

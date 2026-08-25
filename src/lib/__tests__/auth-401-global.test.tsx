@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "sonner";
 
 import { Toaster } from "@/components/ui/sonner";
-import { api } from "../api";
+import { api, authApi } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { fixtureAdminUser } from "./fixtures";
 
@@ -44,6 +44,12 @@ function SessionProbe() {
       <button type="button" onClick={() => void api.setActiveCycle("2026-h2").catch(() => {})}>
         Disparar chamada autenticada
       </button>
+      <button
+        type="button"
+        onClick={() => void authApi.changePassword("errada", "nova-senha-1").catch(() => {})}
+      >
+        Trocar senha com senha atual errada
+      </button>
     </>
   );
 }
@@ -64,7 +70,7 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
       if (href.endsWith("/api/auth/me")) return Promise.resolve(meResponse.clone());
       if (href.endsWith("/api/settings/active-cycle")) {
         return Promise.resolve(
-          new Response(JSON.stringify({ error: "Unauthorized", message: "Sessão expirada." }), {
+          new Response(JSON.stringify({ code: "SESSION_INVALID", message: "Sessão inválida." }), {
             status: 401,
             headers: { "content-type": "application/json" },
           }),
@@ -119,6 +125,49 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
     );
 
     await screen.findByText("DESLOGADO");
+    expect(screen.queryByText("Sua sessão expirou. Faça login novamente.")).toBeNull();
+  });
+
+  /**
+   * R2-TEC-21 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — antes da allowlist de
+   * `api.ts`, este 401 (erro de NEGÓCIO da própria troca de senha, sessão
+   * continua válida) disparava o mesmo `unauthorizedHandler` do teste
+   * acima só por ser um 401, deslogando quem só errou a senha atual.
+   */
+  it("errar a senha atual na troca de senha (401 INVALID_CURRENT_PASSWORD) não desloga", async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const href = String(url);
+      if (href.endsWith("/api/auth/me")) return Promise.resolve(meResponse.clone());
+      if (href.endsWith("/api/auth/change-password")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ code: "INVALID_CURRENT_PASSWORD", message: "Senha atual incorreta" }),
+            { status: 401, headers: { "content-type": "application/json" } },
+          ),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    render(
+      <Wrapper>
+        <SessionProbe />
+      </Wrapper>,
+    );
+
+    expect(await screen.findByText(`LOGADO:${fixtureAdminUser.email}`)).toBeTruthy();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Trocar senha com senha atual errada" }),
+    );
+
+    // Sem `waitFor` de sucesso possível aqui (nada muda quando o handler
+    // corretamente NÃO dispara) — dá tempo real para o fetch mockado
+    // resolver e qualquer disparo indevido do handler se manifestar antes
+    // de afirmar que a sessão continua de pé.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(screen.getByText(`LOGADO:${fixtureAdminUser.email}`)).toBeTruthy();
     expect(screen.queryByText("Sua sessão expirou. Faça login novamente.")).toBeNull();
   });
 });

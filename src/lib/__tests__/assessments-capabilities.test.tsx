@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -81,6 +81,14 @@ describe("Avaliações — seleção de capacidades", () => {
           }),
         );
       }
+      if (String(url).includes("/eligibility")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          ),
+        );
+      }
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
   });
@@ -153,7 +161,7 @@ describe("Avaliações — seleção de capacidades", () => {
     renderPage();
     await screen.findByText("Kubernetes");
 
-    expect(await screen.findByText("Concluído")).toBeTruthy();
+    expect(await screen.findByText("Concluída")).toBeTruthy();
     expect(screen.getByText(/somente leitura/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Concluir avaliação/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Enviar para revisão/ })).toBeNull();
@@ -193,12 +201,20 @@ describe("Avaliações — seleção de capacidades", () => {
     expect(security.querySelector("[data-state]")?.getAttribute("data-state")).toBe("unchecked");
   });
 
-  it("o seletor de arquitetos continua sendo lista suspensa", async () => {
+  /**
+   * R2-ESC-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o seletor de arquitetos
+   * deixou de ser `<select>` nativo e virou combobox pesquisável
+   * (ArchitectSelectCombobox), mesma regra de "mais de 15 opções" já
+   * aplicada ao seletor de Capacidades acima.
+   */
+  it("o seletor de arquitetos vira combobox pesquisável", async () => {
     renderPage();
     await screen.findByText("Kubernetes");
 
     const arquitetos = screen.getByRole("combobox", { name: "Arquiteto" });
-    expect(arquitetos.tagName).toBe("SELECT");
-    expect(within(arquitetos).getByRole("option", { name: "Ana Martins" })).toBeTruthy();
+    expect(arquitetos.tagName).toBe("BUTTON");
+
+    await userEvent.click(arquitetos);
+    expect(await screen.findByRole("option", { name: "Ana Martins" })).toBeTruthy();
   });
 });

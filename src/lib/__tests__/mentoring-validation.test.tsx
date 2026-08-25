@@ -71,7 +71,24 @@ describe("Mentoria — campos obrigatórios", () => {
             headers: { "content-type": "application/json" },
           }),
         );
-      if (init?.method === "POST") return json({}, 201);
+      if (init?.method === "POST") {
+        return json(
+          {
+            id: "sessao-nova",
+            mentor: usuario.name,
+            mentorUserId: usuario.id,
+            menteeId: "ana",
+            date: "2026-01-01",
+            durationMin: 45,
+            topic: "Revisão de arquitetura",
+            competencyIds: [],
+            notes: "Discutimos o trade-off",
+            decisions: "Seguir com event-driven",
+            actions: "Escrever o ADR",
+          },
+          201,
+        );
+      }
       if (String(url).endsWith("/api/auth/me")) return json(usuario);
       return json(fixtureState);
     });

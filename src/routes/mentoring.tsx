@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import {
+  MenteeFilterCombobox,
   MentoringTimeline,
   NewMentoringSessionDialog,
   useMentoringTimeline,
@@ -9,6 +9,7 @@ import {
 import { PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -41,6 +42,7 @@ export const Route = createFileRoute("/mentoring")({
 function MentoringPage() {
   const store = useStore();
   const { t } = useI18n();
+  const help = usePageHelp("mentoring");
   // O mentor é quem está registrando a sessão, não um nome fixo no código.
   const user = useCurrentUser();
   const sel = useSelectors();
@@ -60,9 +62,14 @@ function MentoringPage() {
       <PageHeader
         title={t("mentor.title")}
         description={t("mentor.subtitle")}
+        help={help}
         actions={
-          <div className="flex items-center gap-2">
-            <ArchitectFilter architects={store.architects} selected={filter} onChange={setFilter} />
+          <div className="flex flex-wrap items-center gap-2">
+            <MenteeFilterCombobox
+              architects={store.architects}
+              selected={filter}
+              onChange={setFilter}
+            />
             <NewMentoringSessionDialog menteeOptions={menteeOptions} />
           </div>
         }
@@ -70,13 +77,10 @@ function MentoringPage() {
 
       <SectionCard
         title={t("mentor.timeline.title")}
-        description={
-          filter.length === 0
-            ? t("mentor.timeline.none")
-            : filter.length === store.architects.length
-              ? t("mentor.timeline.all", { n: sessions.length })
-              : t("mentor.timeline.filtered", { n: sessions.length, p: filter.length })
-        }
+        description={t("mentor.timeline.forPerson", {
+          n: sessions.length,
+          nome: store.architects.find((a) => a.id === filter)?.name ?? "",
+        })}
       >
         <MentoringTimeline sessions={sessions} />
       </SectionCard>

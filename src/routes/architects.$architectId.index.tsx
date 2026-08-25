@@ -27,6 +27,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  capabilityShortLabels,
   EVIDENCE_TYPES,
   evidencesForPlanItem,
   progressFor,
@@ -36,6 +37,7 @@ import {
 } from "@/lib/domain";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { canActFor, isLeadOf } from "@/lib/scope";
 import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -115,6 +117,7 @@ function ArchitectProfile() {
   const sel = useSelectors();
   const labels = useLabels();
   const { t, locale } = useI18n();
+  const help = usePageHelp("architectProfile");
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
   /**
@@ -142,6 +145,8 @@ function ArchitectProfile() {
 
   const gaps = sel.progressionGapsFor(architect.id).filter((g) => g.gap > 0);
   const capabilityAvgs = sel.capabilityAverages(architect.id);
+  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
+  const shortLabels = capabilityShortLabels(store.capabilities);
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
@@ -191,6 +196,7 @@ function ArchitectProfile() {
       <PageHeader
         title={architect.name}
         description={`${architect.role} · ${specializationLabel(architect, sel.competencyById)} · ${architect.yearsAsArchitect} anos como arquiteto`}
+        help={help}
         actions={
           <Link
             to="/team"
@@ -272,11 +278,14 @@ function ArchitectProfile() {
         </SectionCard>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,Nfr): sem
+          isto a pista nunca encolhe abaixo do conteúdo interno, e a página
+          inteira rola horizontal em vez do overflow-x-auto ativar. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
             data={capabilityAvgs.map((d) => ({
-              capability: d.capability.short,
+              capability: shortLabels.get(d.capability.id) ?? d.capability.short,
               atual: d.avg ?? 0,
               alvo: d.target ?? 0,
             }))}

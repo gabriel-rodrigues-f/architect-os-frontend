@@ -45,7 +45,10 @@ export function CapabilitiesTabs() {
    * semântica correta pra navegação entre páginas.
    */
   return (
-    <nav className="mb-6 flex gap-1 border-b border-border" aria-label={t("nav.capabilities")}>
+    <nav
+      className="mb-6 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-border"
+      aria-label={t("nav.capabilities")}
+    >
       {TABS.map((tab) => {
         const active = pathname.startsWith(tab.to);
         return (
@@ -54,7 +57,7 @@ export function CapabilitiesTabs() {
             to={tab.to}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
               active
                 ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground",

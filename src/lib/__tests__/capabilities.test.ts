@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { levelName, LEVELS, ROLES, roleShort } from "../domain";
+import { ROLES, roleShort } from "../domain";
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 
@@ -65,17 +65,6 @@ describe("cargos", () => {
 });
 
 describe("interface em português", () => {
-  it("os níveis de proficiência têm nomes em português", () => {
-    expect(LEVELS.map((l) => l.name)).toEqual([
-      "Consciência",
-      "Fundamentos",
-      "Praticante",
-      "Avançado",
-      "Especialista",
-    ]);
-    expect(levelName(4)).toBe("Avançado");
-  });
-
   /**
    * Os rótulos deixaram de ser strings fixas: agora são chaves resolvidas pelo
    * idioma ativo. O que precisa continuar garantido é que cada valor canônico
@@ -105,12 +94,33 @@ describe("interface em português", () => {
       "complexity.low",
       "complexity.medium",
       "complexity.high",
+      "level.1",
+      "level.2",
+      "level.3",
+      "level.4",
+      "level.5",
+      "level.1.description",
+      "level.2.description",
+      "level.3.description",
+      "level.4.description",
+      "level.5.description",
     ] as const;
 
     for (const chave of canonicos) {
       expect((pt as Record<string, string>)[chave], `pt: ${chave}`).toBeTruthy();
       expect((en as Record<string, string>)[chave], `en: ${chave}`).toBeTruthy();
     }
+  });
+
+  /**
+   * R2-VIS-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — antes, `pt.json` tinha
+   * um segundo mapa de nomes de nível NUNCA lido pelo app (`level.2` dizia
+   * "Iniciante", enquanto o código usava "Fundamentos" direto, sem passar
+   * pelo i18n). Trava o valor correto — "Fundamentos" vence — para não
+   * reabrir o drift silenciosamente numa edição futura de `pt.json`.
+   */
+  it("nível 2 é 'Fundamentos' — não sobra o nome morto 'Iniciante'", () => {
+    expect((pt as Record<string, string>)["level.2"]).toBe("Fundamentos");
   });
 
   it("o português não deixou texto igual ao valor canônico em inglês", () => {

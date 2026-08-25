@@ -67,6 +67,14 @@ interface Api extends AppState {
     reason: string,
   ) => Promise<Architect>;
   /**
+   * R2-UX-08/OO-03 — mesma forma de `transitionCareerLevel`: comando
+   * dedicado, sem otimismo, exige motivo e concorrência otimista. O PATCH
+   * antigo (`updateArchitect(id, { active: false })`) o backend passou a
+   * recusar com 400 — a tela precisa do erro de verdade num 409 (alguém
+   * mais mudou o cadastro desde que o diálogo abriu).
+   */
+  deactivate: (id: string, reason: string) => Promise<Architect>;
+  /**
    * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — Política de Progressão.
    * Sem otimismo: só admin altera, e a tela de configuração precisa do
    * erro de verdade (ex.: abaixo do piso global de 3) para mostrar.
@@ -86,8 +94,19 @@ interface Api extends AppState {
    * `PATCH` recusado. Ver `api.swapCompetencyRequirement`.
    */
   swapCompetencyRequirement: (id: string, withCompetencyId: string) => Promise<void>;
-  /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. B-32: `id` idem — sem otimismo. */
-  addCapability: (c: Omit<Capability, "id" | "curation">) => Promise<Capability>;
+  /**
+   * `curation` nunca vem do cliente — é sempre calculado pelo servidor a
+   * partir das competências. B-32: `id` idem — sem otimismo.
+   *
+   * ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` é opcional aqui (era
+   * obrigatório): a dona do produto pediu para nunca mais digitar a sigla
+   * manualmente, então o diálogo "Nova capacidade" parou de coletá-la — o
+   * backend gera automaticamente a partir de `name`, com resolução de
+   * colisão, quando o campo não vem no corpo.
+   */
+  addCapability: (
+    c: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
+  ) => Promise<Capability>;
   updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
   /** Apaga se nenhuma competência da capacidade já foi usada; senão arquiva a capacidade e as competências dela. */
   removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
@@ -320,6 +339,17 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return updated;
     },
 
+    /** R2-UX-08/OO-03 — mesmo formato de `transitionCareerLevel` acima. */
+    deactivate: async (id, reason) => {
+      const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
+      const updated = await api.deactivate(id, reason, expectedVersion);
+      local((s) => ({
+        ...s,
+        architects: s.architects.map((a) => (a.id === id ? updated : a)),
+      }));
+      return updated;
+    },
+
     /** B-32 — id gerado no servidor; sem otimismo (ver `addArchitect`). */
     addCompetency: async (c) => {
       const created = await api.createCompetency(c);
@@ -409,7 +439,20 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
           .map((c) => (c.id === id ? { ...c, ...patch } : c))
           .sort(byName),
       }));
-      remote(api.updateCapability(id, patch));
+      // ORIENTACAO-BLOCO-2-UX-POR-TELA — mesmo racional de B-09
+      // (`updatePlanItem`, acima): desde que `short` deixou de vir do
+      // formulário e passou a ser gerado/regenerado pelo servidor quando o
+      // patch muda `name` sem mandar `short`, o palpite otimista (que só
+      // aplica os campos que o cliente de fato mandou) não tem como prever
+      // o novo `short` — sem reconciliar com a resposta real, o rótulo
+      // compacto (heatmap/radar/export) ficaria mostrando a sigla antiga
+      // até a próxima revalidação completa do estado.
+      remote(api.updateCapability(id, patch), (updated) =>
+        local((s) => ({
+          ...s,
+          capabilities: s.capabilities.map((c) => (c.id === id ? updated : c)).sort(byName),
+        })),
+      );
     },
 
     /** Excluir a capacidade remove junto as competências que pertenciam a ela. */
@@ -846,6 +889,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // Só busca no browser: o SSR renderiza o estado de carregamento e a
     // hidratação dispara a chamada real, sem exigir a API durante o build.
     enabled: typeof window !== "undefined",
+    /**
+     * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `/api/state` é o BFF
+     * agregador de todo o app (ADR-0011), não um endpoint barato; o default
+     * do React Query (`refetchOnWindowFocus: true`) refaz essa busca INTEIRA
+     * — incluindo `appStateSchema.parse` do payload todo — toda vez que a
+     * aba/janela recupera o foco depois de `staleTime` (30s) vencido, um
+     * padrão de uso comum (alternar abas, voltar pro navegador). Mutations
+     * já invalidam a query explicitamente (`buildApi`, mais abaixo) — não
+     * dependemos do refetch automático de foco pra ver mudanças próprias.
+     */
+    refetchOnWindowFocus: false,
   });
 
   const state = data ?? emptyState;

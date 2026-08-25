@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,8 @@ import {
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useLabels } from "@/lib/labels";
+import { usePageHelp } from "@/lib/page-help";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/competency-matrix")({
@@ -61,8 +64,10 @@ function MatrixPage() {
   const careerLevels = useCareerLevelsByRank();
   /** Catálogo mestre é administrativo — backend já recusa o resto. */
   const isAdmin = useCurrentUser().role === "admin";
-  const [newCapability, setNewCapability] = useState("");
+  const [creatingCapability, setCreatingCapability] = useState(false);
   const { t } = useI18n();
+  const labels = useLabels();
+  const help = usePageHelp("competencyMatrix");
   const [confirmDelete, setConfirmDelete] = useState<{
     competency: Competency;
     capability: Capability;
@@ -97,13 +102,14 @@ function MatrixPage() {
 
   const saveEditingCapability = () => {
     if (!editingCapability) return;
-    const trimmed = editCapabilityName.trim();
-    if (!trimmed) return;
-    store.updateCapability(editingCapability.id, {
-      name: trimmed,
-      short: trimmed.split(" ")[0] ?? trimmed,
-    });
-    toast.success(t("cap.edit.toast", { nome: trimmed }));
+    const trimmedName = editCapabilityName.trim();
+    if (!trimmedName) return;
+    // ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` não é mais coletado neste
+    // diálogo: o backend regenera a sigla a partir do nome novo sempre que
+    // o patch muda `name` sem mandar `short` explícito (com resolução de
+    // colisão do lado de lá, excluindo a própria capacidade da checagem).
+    store.updateCapability(editingCapability.id, { name: trimmedName });
+    toast.success(t("cap.edit.toast", { nome: trimmedName }));
     setEditingCapability(null);
   };
 
@@ -126,36 +132,10 @@ function MatrixPage() {
       <PageHeader
         title={t("matrix.title")}
         description={t("matrix.subtitle")}
+        help={help}
         actions={
           isAdmin ? (
-            <div className="flex gap-2">
-              <Input
-                placeholder={t("matrix.newCapability")}
-                value={newCapability}
-                onChange={(e) => setNewCapability(e.target.value)}
-                className="w-48"
-              />
-              <Button
-                variant="secondary"
-                onClick={async () => {
-                  if (!newCapability.trim()) return;
-                  // B-32 — id gerado no servidor (nunca mais slug(nome), que
-                  // colidia entre duas capacidades de nome parecido).
-                  try {
-                    await store.addCapability({
-                      name: newCapability,
-                      short: newCapability.split(" ")[0] ?? newCapability,
-                      active: true,
-                    });
-                    setNewCapability("");
-                  } catch (error) {
-                    toast.error(authErrorMessage(error));
-                  }
-                }}
-              >
-                {t("matrix.add")}
-              </Button>
-            </div>
+            <Button onClick={() => setCreatingCapability(true)}>{t("matrix.newCapability")}</Button>
           ) : undefined
         }
       />
@@ -169,7 +149,9 @@ function MatrixPage() {
           {LEVELS.map((l) => (
             <div key={l.level} className="surface-inset p-3">
               <LevelBadge level={l.level} showName />
-              <p className="mt-2 text-xs text-muted-foreground">{l.description}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {labels.levelDescription[l.level]}
+              </p>
             </div>
           ))}
         </div>
@@ -193,21 +175,23 @@ function MatrixPage() {
               className="max-w-sm"
             />
           </div>
-          <div>
-            <label className="block text-xs text-muted-foreground" htmlFor="matrix-curation-filter">
-              {t("matrix.filter.curation")}
-            </label>
-            <select
-              id="matrix-curation-filter"
-              value={curationFilter}
-              onChange={(e) => setCurationFilter(e.target.value as typeof curationFilter)}
-              className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
-            >
-              <option value="all">{t("matrix.filter.curation.all")}</option>
-              <option value="ready">{t("matrix.filter.curation.ready")}</option>
-              <option value="needsCuration">{t("matrix.filter.curation.needsCuration")}</option>
-            </select>
-          </div>
+          {/*
+            R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
+            nativo ao lado do `Input` de busca, nesta mesma família visual
+            da linha de filtro do Time. `SingleSelectFilter` com `label`
+            encaixa direto no tamanho cheio padrão.
+          */}
+          <SingleSelectFilter
+            id="matrix-curation-filter"
+            label={t("matrix.filter.curation")}
+            value={curationFilter}
+            onChange={(value) => setCurationFilter(value as typeof curationFilter)}
+            options={[
+              { value: "all", label: t("matrix.filter.curation.all") },
+              { value: "ready", label: t("matrix.filter.curation.ready") },
+              { value: "needsCuration", label: t("matrix.filter.curation.needsCuration") },
+            ]}
+          />
           <div className="ml-auto flex gap-2">
             <Button
               variant="outline"
@@ -270,7 +254,7 @@ function MatrixPage() {
                   title={cat.name}
                   description={`${t("matrix.competencyCount", { n: cat.curation.activeCompetencyCount })} · ${t("matrix.requirement.count", { restrictive: cat.curation.restrictiveCompetencyCount })} · ${t("matrix.requirement.nonRestrictiveCount", { n: cat.curation.nonRestrictiveCompetencyCount })}`}
                   actions={
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge
                         variant={cat.curation.status === "READY" ? "default" : "outline"}
                         className="text-[10px]"
@@ -293,7 +277,7 @@ function MatrixPage() {
                           <button
                             type="button"
                             onClick={() => startEditingCapability(cat)}
-                            aria-label={`Editar ${cat.name}`}
+                            aria-label={`${t("common.edit")} ${cat.name}`}
                             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -301,7 +285,7 @@ function MatrixPage() {
                           <button
                             type="button"
                             onClick={() => setConfirmDeleteCapability(cat)}
-                            aria-label={`Excluir ${cat.name}`}
+                            aria-label={`${t("common.delete")} ${cat.name}`}
                             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -380,7 +364,7 @@ function MatrixPage() {
                                       onClick={() =>
                                         setConfirmDelete({ competency: c, capability: cat })
                                       }
-                                      aria-label={`Excluir ${c.name}`}
+                                      aria-label={t("matrix.delete.action", { nome: c.name })}
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
                                     </button>
@@ -402,13 +386,11 @@ function MatrixPage() {
 
       <ConfirmDialog
         open={confirmDelete !== null}
-        title={
-          <>
-            Tem certeza que deseja excluir {confirmDelete?.competency.name} de{" "}
-            {confirmDelete?.capability.name}?
-          </>
-        }
-        description="Se a competência já foi usada em alguma avaliação, PDI, evidência ou trilha, ela é arquivada (some da matriz ativa, mas o histórico continua íntegro) em vez de excluída."
+        title={t("matrix.delete.confirmTitle", {
+          competencia: confirmDelete?.competency.name ?? "",
+          capacidade: confirmDelete?.capability.name ?? "",
+        })}
+        description={t("matrix.delete.confirmDescription")}
         onCancel={() => setConfirmDelete(null)}
         onConfirm={async () => {
           if (confirmDelete) {
@@ -451,11 +433,15 @@ function MatrixPage() {
 
       <ConfirmDialog
         open={confirmDeleteCapability !== null}
-        title={`Excluir ${confirmDeleteCapability?.name}?`}
+        title={t("matrix.deleteCapability.confirmTitle", {
+          nome: confirmDeleteCapability?.name ?? "",
+        })}
         description={
           confirmDeleteCapability && capabilityCompetencyCount(confirmDeleteCapability.id) > 0
-            ? `Se alguma das ${capabilityCompetencyCount(confirmDeleteCapability.id)} competências desta capacidade já foi usada em avaliação, PDI, evidência ou trilha, a capacidade e as competências dela são arquivadas em vez de excluídas — o histórico continua íntegro.`
-            : "Esta capacidade não tem competências cadastradas."
+            ? t("matrix.deleteCapability.confirmDescription", {
+                n: capabilityCompetencyCount(confirmDeleteCapability.id),
+              })
+            : t("matrix.deleteCapability.confirmDescriptionEmpty")
         }
         onCancel={() => setConfirmDeleteCapability(null)}
         onConfirm={removeCapability}
@@ -469,7 +455,72 @@ function MatrixPage() {
       {creatingIn && (
         <CompetencyCreateDialog capability={creatingIn} onClose={() => setCreatingIn(null)} />
       )}
+      {creatingCapability && (
+        <CapabilityCreateDialog onClose={() => setCreatingCapability(false)} />
+      )}
     </>
+  );
+}
+
+/**
+ * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — padrão único de criação:
+ * botão primário → modal, mesmo formato de `CompetencyCreateDialog` (que já
+ * seguia esse padrão) em vez dos dois inputs soltos no cabeçalho de antes.
+ */
+function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
+  const store = useStore();
+  const { t } = useI18n();
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const create = async () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    setSaving(true);
+    try {
+      // B-32 — id gerado no servidor (nunca mais slug(nome), que colidia
+      // entre duas capacidades de nome parecido).
+      //
+      // ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` não é mais coletado neste
+      // diálogo (pedido direto da dona do produto: nunca mais digitar a
+      // sigla manualmente). O backend gera automaticamente a partir de
+      // `name`, com resolução de colisão, quando o campo não vem no corpo.
+      await store.addCapability({ name: trimmedName, active: true });
+      onClose();
+    } catch (error) {
+      toast.error(authErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("matrix.newCapability")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="new-capability-name">{t("cap.field.name")}</Label>
+            <Input
+              id="new-capability-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && create()}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={create} disabled={!name.trim() || saving}>
+            {t("matrix.add")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -550,6 +601,7 @@ function CompetencyCreateDialog({
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
+  const labels = useLabels();
   const restrictiveFull = capability.curation.restrictiveCompetencyCount >= 3;
   const nonRestrictiveFull = capability.curation.nonRestrictiveCompetencyCount >= 3;
   const [name, setName] = useState("");
@@ -616,7 +668,7 @@ function CompetencyCreateDialog({
                     <option value="">—</option>
                     {LEVELS.map((l) => (
                       <option key={l.level} value={l.level}>
-                        L{l.level} · {l.name}
+                        L{l.level} · {labels.levelName[l.level]}
                       </option>
                     ))}
                   </select>
@@ -681,6 +733,7 @@ function CompetencyEditDialog({
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
+  const labels = useLabels();
   const capability = store.capabilities.find((c) => c.id === competency.capabilityId);
   /** Subtrai a própria competência da contagem: ela já ocupa uma vaga do tipo atual. */
   const restrictiveFull =
@@ -788,7 +841,7 @@ function CompetencyEditDialog({
                     <option value="">—</option>
                     {LEVELS.map((l) => (
                       <option key={l.level} value={l.level}>
-                        L{l.level} · {l.name}
+                        L{l.level} · {labels.levelName[l.level]}
                       </option>
                     ))}
                   </select>

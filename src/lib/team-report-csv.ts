@@ -1,3 +1,4 @@
+import { capabilityShortLabels } from "@/lib/domain";
 import {
   downloadBlob,
   formatAvg,
@@ -32,7 +33,13 @@ function gapRowsToCsv(
 }
 
 export function exportTeamReportCsv(t: T, input: TeamReportInput): void {
-  const heatmapHeader = csvRow([t("col.architect"), ...input.capabilities.map((c) => c.short)]);
+  // R2-ESC-02 — dedup do cabeçalho enquanto o catálogo tiver siglas
+  // duplicadas legadas (nada impedia isso antes desta rodada).
+  const shortLabels = capabilityShortLabels(input.capabilities);
+  const heatmapHeader = csvRow([
+    t("col.architect"),
+    ...input.capabilities.map((c) => shortLabels.get(c.id) ?? c.short),
+  ]);
   const heatmapRows = input.architects
     .map((a) => {
       const averages = input.capabilityAveragesFor(a.id);

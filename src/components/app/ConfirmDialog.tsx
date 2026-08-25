@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Confirmação de ação destrutiva. Antes cada tela montava o próprio diálogo, com
@@ -21,8 +22,8 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = "Excluir",
-  cancelLabel = "Cancelar",
+  confirmLabel,
+  cancelLabel,
   destructive = true,
   onConfirm,
   onCancel,
@@ -36,7 +37,10 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const resolvedConfirmLabel = confirmLabel ?? t("common.delete");
+  const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
@@ -59,14 +63,14 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            {cancelLabel}
+            {resolvedCancelLabel}
           </Button>
           <Button
             ref={confirmRef}
             variant={destructive ? "destructive" : "default"}
             onClick={onConfirm}
           >
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

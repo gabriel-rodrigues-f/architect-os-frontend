@@ -197,6 +197,31 @@ describe("Matriz de Competências — curadoria e escala", () => {
     expect(screen.queryByText("Cloud Architecture")).toBeNull();
   });
 
+  /**
+   * R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o filtro de curadoria era
+   * um `<select>` nativo, agora `SingleSelectFilter`. Mesmo raciocínio de
+   * nome acessível dos outros testes de conversão: o `role="button"` chama-
+   * se pelo `label` fixo ("Curadoria", renderizado pelo próprio componente),
+   * a opção atual é conferida pelo texto visível dentro do gatilho.
+   */
+  it("filtro de curadoria esconde capacidades que não combinam com o status escolhido", async () => {
+    renderMatrix();
+    await screen.findByText("Cloud Architecture");
+    await screen.findByText("Full Capability");
+
+    const trigger = screen.getByRole("button", { name: "Curadoria" });
+    expect(trigger.textContent).toContain("Todas");
+
+    await userEvent.click(trigger);
+    const readyOption = await screen.findByRole("option", { name: "Prontas" });
+    await userEvent.click(readyOption);
+
+    expect(trigger.textContent).toContain("Prontas");
+    expect(screen.getByText("Full Capability")).toBeTruthy();
+    expect(screen.queryByText("Cloud Architecture")).toBeNull();
+    expect(screen.queryByText("Security")).toBeNull();
+  });
+
   it("expandir uma seção mostra a tabela; recolher de novo esconde, mas mantém o título visível", async () => {
     renderMatrix();
     // Seção 40-42 — a matriz nasce com todo grupo recolhido.

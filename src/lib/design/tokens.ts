@@ -388,6 +388,41 @@ export const tokenRegistry = new TokenRegistry().register(
   { name: "gap-critical-fg", role: "content", light: o("oklch(0.4 0.16 25)") },
 
   /*
+    R2-VIS-01 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — status genérico (situação
+    da avaliação, papel de usuário) pegava emprestado `level-*`, o vocabulário
+    de PROFICIÊNCIA. "Avaliação Concluída" e "nível 5 de competência" acabavam
+    na mesma cor por coincidência de contagem de estados, não por relação de
+    sentido — e mudar a escala de proficiência (5 níveis) quebraria silenciosamente
+    o badge de status (3 estados) por tabela. Paleta própria, com metade dos
+    tons: neutro (rascunho/papel-base) → em andamento (revisão/liderança) →
+    concluído (aprovado/admin).
+  */
+  {
+    name: "status-neutral",
+    role: "fill",
+    light: o("oklch(0.93 0.01 250)"),
+    contrastAgainst: "status-neutral-fg",
+    minContrast: 4.5,
+  },
+  {
+    name: "status-progress",
+    role: "fill",
+    light: o("oklch(0.88 0.09 85)"),
+    contrastAgainst: "status-progress-fg",
+    minContrast: 4.5,
+  },
+  {
+    name: "status-done",
+    role: "fill",
+    light: o("oklch(0.87 0.09 300)"),
+    contrastAgainst: "status-done-fg",
+    minContrast: 4.5,
+  },
+  { name: "status-neutral-fg", role: "content", light: o("oklch(0.42 0.03 250)") },
+  { name: "status-progress-fg", role: "content", light: o("oklch(0.4 0.12 85)") },
+  { name: "status-done-fg", role: "content", light: o("oklch(0.38 0.13 300)") },
+
+  /*
     Fundo do gráfico — plano de fundo do tooltip e âncora de contraste das
     séries. Existe como token próprio porque o tooltip do Recharts traz
     `background: #fff` embutido no estilo inline: sem sobrescrever, o tema

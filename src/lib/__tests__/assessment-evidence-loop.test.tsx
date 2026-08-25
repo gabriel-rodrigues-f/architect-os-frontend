@@ -101,6 +101,14 @@ describe("Avaliações — evidência aceita aparece como contexto", () => {
           }),
         );
       }
+      if (String(url).includes("/eligibility")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          ),
+        );
+      }
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
   });

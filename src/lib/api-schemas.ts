@@ -24,11 +24,20 @@ import { ACTION_TYPES } from "./domain";
 
 const level = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]);
 
-const roleName = z.enum([
-  "Arquiteto de Soluções I",
-  "Arquiteto de Soluções II",
-  "Arquiteto de Soluções III",
-]);
+/**
+ * R2-TEC-20 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — B-38 já relaxou o
+ * cast equivalente no BACKEND (`RoleName` deixou de ser um enum fechado
+ * ali); este `z.enum([...3 nomes])` sobrevivia só no cliente, um enum
+ * FECHADO sobre um valor que ADR-0002 já documenta como "transitório" —
+ * criar um 4º nível de carreira faz QUALQUER resposta de `/api/state`
+ * com um arquiteto nesse nível falhar `appStateSchema.parse` inteiro,
+ * derrubando o app TODO em `ConnectionError` (`store.tsx`), não só a
+ * tela de quem tem o nível novo. `z.string()` aceita qualquer nome —
+ * código que precisa comparar contra os 3 nomes conhecidos (`ROLES`,
+ * `domain.ts`) continua funcionando para eles; um nome desconhecido só
+ * deixa de quebrar a validação, não vira um valor especial.
+ */
+const roleName = z.string();
 
 const requirementType = z.enum(["RESTRICTIVE", "NON_RESTRICTIVE"]);
 
@@ -69,6 +78,23 @@ const careerLevelPolicy = z.object({
   careerLevelId: z.string(),
   minimumQualifiedCapabilities: z.number(),
 });
+
+/**
+ * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `careerLevels` saiu de
+ * `appStateSchema` junto com a migração pra `GET /api/career-levels` (B-24,
+ * ADR-0011, comentário em `api.ts`), mas a validação em runtime não
+ * acompanhou: `api.careerLevels()` ficou só com um cast de tipo
+ * (`request<CareerLevel[]>`), a MESMA lacuna que `appStateSchema` existe
+ * pra fechar nas outras coleções. Schema dedicado, exportado, pra
+ * `api.ts#careerLevels` validar a resposta como as demais.
+ */
+const careerLevel = z.object({
+  id: z.string(),
+  name: z.string(),
+  rank: z.number(),
+});
+
+export const careerLevelsResponseSchema = z.array(careerLevel);
 
 const architect = z.object({
   id: z.string(),
@@ -264,6 +290,19 @@ const evidence = z.object({
   reviewedAt: z.string().nullish(),
 });
 
+/**
+ * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — comportamento não
+ * documentado até aqui: `z.object()` sem `.passthrough()`/`.strict()`
+ * (o default do zod) SILENCIOSAMENTE DESCARTA qualquer chave que o
+ * servidor mande e este schema não conheça — `.parse()` não falha, só
+ * devolve um objeto sem o campo novo. Isto é aceito de propósito, não um
+ * bug: um campo REMOVIDO ou RENOMEADO no servidor (o caso que este
+ * schema existe pra pegar) ainda quebra a validação normalmente (chave
+ * exigida ausente); só um campo ADICIONADO fica invisível até este
+ * arquivo ser atualizado — o mesmo trade-off que qualquer parser
+ * "aditivo primeiro" faz. Se um campo novo precisar aparecer na UI, ele
+ * também precisa ser declarado aqui — não é automático.
+ */
 export const appStateSchema = z.object({
   capabilities: z.array(capability),
   competencies: z.array(competency),

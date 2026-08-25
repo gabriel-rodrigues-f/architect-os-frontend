@@ -210,10 +210,10 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
 
   /**
    * EPIC 4 (quarta rodada) — catálogo é curadoria de Lead/Admin, não
-   * autoatendimento: um membro comum não vê o campo de criar trilha nova.
+   * autoatendimento: um membro comum não vê o botão de criar trilha nova.
    * Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md.
    */
-  it("membro comum não vê o campo de criar trilha nova", async () => {
+  it("membro comum não vê o botão de criar trilha nova", async () => {
     mockSession(fixtureMemberUser);
     render(
       <Wrapper>
@@ -222,10 +222,10 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
     );
 
     await screen.findByText("Trilha com duas pessoas");
-    expect(screen.queryByPlaceholderText("Nova trilha")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Nova trilha" })).toBeNull();
   });
 
-  it("admin vê o campo de criar trilha nova", async () => {
+  it("admin vê o botão de criar trilha nova", async () => {
     mockSession(fixtureAdminUser);
     render(
       <Wrapper>
@@ -234,6 +234,6 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
     );
 
     await screen.findByText("Trilha com duas pessoas");
-    expect(screen.getByPlaceholderText("Nova trilha")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Nova trilha" })).toBeTruthy();
   });
 });
