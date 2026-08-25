@@ -1,6 +1,7 @@
 import { ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 
+import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
@@ -61,18 +62,16 @@ export function ArchitectNameCombobox({
       </label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
+          <FilterTriggerButton
             id="architect-name-combobox"
-            type="button"
             role="combobox"
             aria-label={t("team.nameCombobox.label")}
             aria-expanded={open}
             title={summary}
-            className="mt-1 flex w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm sm:w-64"
           >
             <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
             <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-          </button>
+          </FilterTriggerButton>
         </PopoverTrigger>
         <PopoverContent className="w-64 p-0" align="start">
           <Command>
