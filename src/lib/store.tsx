@@ -86,8 +86,19 @@ interface Api extends AppState {
    * `PATCH` recusado. Ver `api.swapCompetencyRequirement`.
    */
   swapCompetencyRequirement: (id: string, withCompetencyId: string) => Promise<void>;
-  /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. B-32: `id` idem — sem otimismo. */
-  addCapability: (c: Omit<Capability, "id" | "curation">) => Promise<Capability>;
+  /**
+   * `curation` nunca vem do cliente — é sempre calculado pelo servidor a
+   * partir das competências. B-32: `id` idem — sem otimismo.
+   *
+   * ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` é opcional aqui (era
+   * obrigatório): a dona do produto pediu para nunca mais digitar a sigla
+   * manualmente, então o diálogo "Nova capacidade" parou de coletá-la — o
+   * backend gera automaticamente a partir de `name`, com resolução de
+   * colisão, quando o campo não vem no corpo.
+   */
+  addCapability: (
+    c: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
+  ) => Promise<Capability>;
   updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
   /** Apaga se nenhuma competência da capacidade já foi usada; senão arquiva a capacidade e as competências dela. */
   removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
@@ -409,7 +420,20 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
           .map((c) => (c.id === id ? { ...c, ...patch } : c))
           .sort(byName),
       }));
-      remote(api.updateCapability(id, patch));
+      // ORIENTACAO-BLOCO-2-UX-POR-TELA — mesmo racional de B-09
+      // (`updatePlanItem`, acima): desde que `short` deixou de vir do
+      // formulário e passou a ser gerado/regenerado pelo servidor quando o
+      // patch muda `name` sem mandar `short`, o palpite otimista (que só
+      // aplica os campos que o cliente de fato mandou) não tem como prever
+      // o novo `short` — sem reconciliar com a resposta real, o rótulo
+      // compacto (heatmap/radar/export) ficaria mostrando a sigla antiga
+      // até a próxima revalidação completa do estado.
+      remote(api.updateCapability(id, patch), (updated) =>
+        local((s) => ({
+          ...s,
+          capabilities: s.capabilities.map((c) => (c.id === id ? updated : c)).sort(byName),
+        })),
+      );
     },
 
     /** Excluir a capacidade remove junto as competências que pertenciam a ela. */

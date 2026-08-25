@@ -8,7 +8,14 @@ import type { ApiClient } from "../api-client";
  * fachada `api.ts`).
  */
 export interface CatalogGateway {
-  createCapability(capability: Omit<Capability, "id" | "curation">): Promise<Capability>;
+  /**
+   * ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` é opcional: o backend gera
+   * automaticamente a partir de `name` (com resolução de colisão) quando o
+   * campo não vem no corpo.
+   */
+  createCapability(
+    capability: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
+  ): Promise<Capability>;
   updateCapability(
     id: string,
     patch_: Partial<Omit<Capability, "id" | "curation">>,
@@ -27,8 +34,9 @@ export class HttpCatalogGateway implements CatalogGateway {
   constructor(private readonly client: ApiClient) {}
 
   /** `curation` nunca vem do cliente — é sempre calculado pelo servidor a partir das competências. B-32: `id` idem — gerado no servidor. */
-  createCapability = (capability: Omit<Capability, "id" | "curation">): Promise<Capability> =>
-    this.client.post<Capability>("/api/capabilities", capability);
+  createCapability = (
+    capability: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
+  ): Promise<Capability> => this.client.post<Capability>("/api/capabilities", capability);
 
   updateCapability = (
     id: string,

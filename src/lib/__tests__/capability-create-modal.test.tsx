@@ -15,6 +15,13 @@ import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures"
  * dois inputs soltos no cabeçalho (nome + sigla + "Adicionar") por um único
  * botão que abre modal, mesmo padrão já usado por "Nova competência"
  * (CompetencyCreateDialog).
+ *
+ * ORIENTACAO-BLOCO-2-UX-POR-TELA — o modal parou de coletar "Sigla": pedido
+ * direto da dona do produto para nunca mais digitar a sigla manualmente. O
+ * backend gera `short` automaticamente a partir de `name` (com resolução de
+ * colisão) quando o campo não vem no corpo — o mock de `POST
+ * /api/capabilities` abaixo simula exatamente isso, devolvendo um `short`
+ * mesmo quando o corpo da requisição não manda nenhum.
  */
 
 const fetchMock = vi.fn();
@@ -65,12 +72,16 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
         );
       }
       if (href.endsWith("/api/capabilities") && init?.method === "POST") {
-        const body = JSON.parse(String(init.body));
+        const body = JSON.parse(String(init.body)) as { name: string; short?: string };
         return Promise.resolve(
           new Response(
             JSON.stringify({
               id: "cap-nova",
               ...body,
+              // Simula a geração automática do backend: o corpo não manda
+              // `short`, mas a resposta sempre traz um (gerado a partir de
+              // `name`, com resolução de colisão do lado do servidor).
+              short: body.short ?? "Nova",
               curation: {
                 activeCompetencyCount: 0,
                 restrictiveCompetencyCount: 0,
@@ -99,7 +110,7 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
     vi.unstubAllGlobals();
   });
 
-  it("botão 'Nova capacidade' abre modal com Nome e Sigla, sem inputs soltos no cabeçalho", async () => {
+  it("botão 'Nova capacidade' abre modal só com Nome — sem campo Sigla, sem inputs soltos no cabeçalho", async () => {
     render(
       <Wrapper>
         <MatrixPage />
@@ -110,10 +121,10 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
 
     expect(screen.getByRole("heading", { name: "Nova capacidade" })).toBeTruthy();
     expect(screen.getByLabelText("Nome")).toBeTruthy();
-    expect(screen.getByLabelText("Sigla")).toBeTruthy();
+    expect(screen.queryByLabelText("Sigla")).toBeNull();
   });
 
-  it("criar com Nome e Sigla envia o POST e fecha o modal", async () => {
+  it("criar só com Nome envia o POST SEM `short` no corpo e fecha o modal", async () => {
     render(
       <Wrapper>
         <MatrixPage />
@@ -122,7 +133,6 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
 
     await userEvent.click(await screen.findByRole("button", { name: "Nova capacidade" }));
     await userEvent.type(screen.getByLabelText("Nome"), "Governança de Dados");
-    await userEvent.type(screen.getByLabelText("Sigla"), "GovDados");
     await userEvent.click(screen.getByRole("button", { name: "Adicionar" }));
 
     await waitFor(() =>
@@ -137,10 +147,12 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
       ([url, init]) =>
         String(url).endsWith("/api/capabilities") && (init as RequestInit)?.method === "POST",
     ) as [string, RequestInit];
-    expect(JSON.parse(String(call[1].body))).toMatchObject({
-      name: "Governança de Dados",
-      short: "GovDados",
-    });
+    const sentBody = JSON.parse(String(call[1].body)) as Record<string, unknown>;
+    expect(sentBody).toMatchObject({ name: "Governança de Dados", active: true });
+    // ORIENTACAO-BLOCO-2-UX-POR-TELA — nunca mandar `short`: é o backend
+    // que gera automaticamente a partir de `name`, com resolução de
+    // colisão, exatamente porque o admin não digita mais esse campo.
+    expect(sentBody).not.toHaveProperty("short");
 
     await waitFor(() =>
       expect(screen.queryByRole("heading", { name: "Nova capacidade" })).toBeNull(),

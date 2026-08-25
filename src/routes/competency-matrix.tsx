@@ -17,7 +17,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  isCapabilityShortTaken,
   LEVELS,
   roleShort,
   type Competency,
@@ -76,7 +75,6 @@ function MatrixPage() {
   const [creatingIn, setCreatingIn] = useState<Capability | null>(null);
   const [editingCapability, setEditingCapability] = useState<Capability | null>(null);
   const [editCapabilityName, setEditCapabilityName] = useState("");
-  const [editCapabilityShort, setEditCapabilityShort] = useState("");
   const [confirmDeleteCapability, setConfirmDeleteCapability] = useState<Capability | null>(null);
   const [search, setSearch] = useState("");
   const [curationFilter, setCurationFilter] = useState<"all" | "ready" | "needsCuration">("all");
@@ -99,23 +97,17 @@ function MatrixPage() {
   const startEditingCapability = (capability: Capability) => {
     setEditingCapability(capability);
     setEditCapabilityName(capability.name);
-    setEditCapabilityShort(capability.short);
   };
 
   const saveEditingCapability = () => {
     if (!editingCapability) return;
     const trimmedName = editCapabilityName.trim();
-    const trimmedShort = editCapabilityShort.trim();
-    if (!trimmedName || !trimmedShort) return;
-    // R2-ESC-02 — checagem no cliente é só UX (resposta imediata, sem
-    // esperar o round-trip nem o flash de "otimista, depois desfeito").
-    // `updateCapability` é fire-and-forget (`remote()`): se mesmo assim
-    // colidir (corrida entre dois admins), o toast de erro já vem de lá.
-    if (isCapabilityShortTaken(trimmedShort, store.capabilities, editingCapability.id)) {
-      toast.error(t("cap.short.taken", { sigla: trimmedShort }));
-      return;
-    }
-    store.updateCapability(editingCapability.id, { name: trimmedName, short: trimmedShort });
+    if (!trimmedName) return;
+    // ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` não é mais coletado neste
+    // diálogo: o backend regenera a sigla a partir do nome novo sempre que
+    // o patch muda `name` sem mandar `short` explícito (com resolução de
+    // colisão do lado de lá, excluindo a própria capacidade da checagem).
+    store.updateCapability(editingCapability.id, { name: trimmedName });
     toast.success(t("cap.edit.toast", { nome: trimmedName }));
     setEditingCapability(null);
   };
@@ -427,20 +419,6 @@ function MatrixPage() {
               onKeyDown={(e) => e.key === "Enter" && saveEditingCapability()}
             />
           </div>
-          <div>
-            {/* R2-ESC-02 — sigla editável e explícita: antes era sempre
-                `nome.split(" ")[0]`, recalculada silenciosamente a cada
-                edição de nome, sem checar se já pertencia a outra
-                capacidade ("Arquitetura Corporativa"/"Arquitetura de
-                Dados" coincidindo em "Arquitetura"). */}
-            <Label htmlFor="capability-edit-short">{t("cap.field.short")}</Label>
-            <Input
-              id="capability-edit-short"
-              value={editCapabilityShort}
-              onChange={(e) => setEditCapabilityShort(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveEditingCapability()}
-            />
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingCapability(null)}>
               {t("common.cancel")}
@@ -490,26 +468,21 @@ function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const { t } = useI18n();
   const [name, setName] = useState("");
-  const [short, setShort] = useState("");
   const [saving, setSaving] = useState(false);
 
   const create = async () => {
     const trimmedName = name.trim();
-    // R2-ESC-02 — sigla nasce derivada só como sugestão (1ª palavra do
-    // nome); o campo continua editável, não mais um valor fixo que colidia
-    // entre nomes parecidos ("Arquitetura Corporativa"/"Arquitetura de
-    // Dados" → os dois "Arquitetura").
-    const trimmedShort = short.trim() || trimmedName.split(" ")[0] || trimmedName;
-    if (!trimmedName || !trimmedShort) return;
-    if (isCapabilityShortTaken(trimmedShort, store.capabilities)) {
-      toast.error(t("cap.short.taken", { sigla: trimmedShort }));
-      return;
-    }
+    if (!trimmedName) return;
     setSaving(true);
     try {
       // B-32 — id gerado no servidor (nunca mais slug(nome), que colidia
       // entre duas capacidades de nome parecido).
-      await store.addCapability({ name: trimmedName, short: trimmedShort, active: true });
+      //
+      // ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` não é mais coletado neste
+      // diálogo (pedido direto da dona do produto: nunca mais digitar a
+      // sigla manualmente). O backend gera automaticamente a partir de
+      // `name`, com resolução de colisão, quando o campo não vem no corpo.
+      await store.addCapability({ name: trimmedName, active: true });
       onClose();
     } catch (error) {
       toast.error(authErrorMessage(error));
@@ -531,15 +504,6 @@ function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
               id="new-capability-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && create()}
-            />
-          </div>
-          <div>
-            <Label htmlFor="new-capability-short">{t("cap.field.short")}</Label>
-            <Input
-              id="new-capability-short"
-              value={short}
-              onChange={(e) => setShort(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && create()}
             />
           </div>

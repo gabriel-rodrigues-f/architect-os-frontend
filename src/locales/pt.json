@@ -797,8 +797,6 @@
   "cap.edit.toast": "Capacidade {nome} atualizada",
   "cap.delete.toast": "Capacidade {nome} excluída",
   "cap.field.name": "Nome",
-  "cap.field.short": "Sigla",
-  "cap.short.taken": "Sigla \"{sigla}\" já está em uso por outra capacidade.",
   "matrix.title": "Matriz de Competências",
   "matrix.subtitle": "Competências necessárias para um Arquiteto de Soluções, agrupadas por capacidade técnica e de negócio.",
   "matrix.newCapability": "Nova capacidade",
