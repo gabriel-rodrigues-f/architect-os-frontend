@@ -69,19 +69,19 @@ function UsersPage() {
     enabled: isAdmin,
   });
 
+  /**
+   * Não engole mais o erro num toast: `EditUserDialog` precisa do reject
+   * pra manter o diálogo aberto e mostrar o erro (ex.: 409
+   * EMAIL_ALREADY_REGISTERED) perto do campo, no mesmo padrão que
+   * `CreateUserDialog` já usa — ver `persist()` abaixo.
+   */
   const updatePatch = async (
     user: SessionUser,
-    patch: Partial<{ role: UserRole; status: "active" | "disabled" }>,
+    patch: Partial<{ role: UserRole; status: "active" | "disabled"; name: string; email: string }>,
   ) => {
-    try {
-      await authApi.updateUser(user.id, patch);
-      await queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
-      toast.success(t("users.toast.updated", { nome: user.name }));
-    } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : "Não foi possível salvar a alteração.";
-      toast.error(message);
-    }
+    const updated = await authApi.updateUser(user.id, patch);
+    await queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
+    toast.success(t("users.toast.updated", { nome: updated.name }));
   };
 
   return (
@@ -226,24 +226,53 @@ function EditUserDialog({
 }: {
   user: SessionUser;
   onCancel: () => void;
-  onSave: (patch: Partial<{ role: UserRole; status: "active" | "disabled" }>) => Promise<void>;
+  onSave: (
+    patch: Partial<{ role: UserRole; status: "active" | "disabled"; name: string; email: string }>,
+  ) => Promise<void>;
 }) {
   const { t } = useI18n();
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
   const [role, setRole] = useState<UserRole>(user.role);
   const [status, setStatus] = useState<"active" | "disabled">(user.status);
   const [step, setStep] = useState<"edit" | "confirm-admin">("edit");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const trimmedName = name.trim();
+  const trimmedEmail = email.trim();
+  const nameValid = trimmedName.length > 1;
+  const emailValid = trimmedEmail.length > 3;
 
   const grantsAdmin = user.role !== "admin" && role === "admin";
-  const changed = role !== user.role || status !== user.status;
+  const changed =
+    role !== user.role ||
+    status !== user.status ||
+    trimmedName !== user.name ||
+    trimmedEmail !== user.email;
 
+  /**
+   * Ao contrário do fluxo antigo (só papel/status), agora dá pra colidir
+   * com um e-mail já cadastrado (409 EMAIL_ALREADY_REGISTERED) — não dá
+   * pra engolir o erro num toast e fechar o diálogo, senão a mudança some
+   * sem o admin conseguir corrigir o e-mail. Mesmo padrão que
+   * `CreateUserDialog.submit` já usa: erro fica local, diálogo continua
+   * aberto. Se o erro estourar durante o passo de confirmação de Admin,
+   * volta pro formulário — é lá que o campo de e-mail está visível.
+   */
   const persist = async () => {
     setSaving(true);
+    setError(null);
     try {
       await onSave({
         ...(role !== user.role ? { role } : {}),
         ...(status !== user.status ? { status } : {}),
+        ...(trimmedName !== user.name ? { name: trimmedName } : {}),
+        ...(trimmedEmail !== user.email ? { email: trimmedEmail } : {}),
       });
+    } catch (err) {
+      setStep("edit");
+      setError(err instanceof ApiError ? err.message : t("users.edit.error"));
     } finally {
       setSaving(false);
     }
@@ -288,6 +317,19 @@ function EditUserDialog({
         </DialogHeader>
         <div className="grid gap-3">
           <div>
+            <Label htmlFor="edit-user-name">{t("users.col.name")}</Label>
+            <Input id="edit-user-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="edit-user-email">{t("users.col.email")}</Label>
+            <Input
+              id="edit-user-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
             <Label htmlFor="edit-user-role">{t("users.col.role")}</Label>
             <select
               id="edit-user-role"
@@ -312,12 +354,16 @@ function EditUserDialog({
               <option value="disabled">{t("users.status.disabled")}</option>
             </select>
           </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={saving}>
             {t("users.edit.cancel")}
           </Button>
-          <Button onClick={handleSaveClick} disabled={!changed || saving}>
+          <Button
+            onClick={handleSaveClick}
+            disabled={!changed || saving || !nameValid || !emailValid}
+          >
             {saving ? t("users.edit.saving") : t("users.edit.save")}
           </Button>
         </DialogFooter>

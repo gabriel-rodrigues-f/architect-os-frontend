@@ -986,6 +986,7 @@
   "users.edit.confirmAdminTitle": "Grant Administrator access",
   "users.edit.confirmAdminBody": "{nome} will gain administrative permissions — full access to all system data and settings. Confirm?",
   "users.edit.confirmAdminAction": "Confirm granting Admin",
+  "users.edit.error": "Could not save the change.",
   "users.role.admin": "Administrator",
   "users.role.lead": "Tech Lead",
   "users.role.member": "Member",

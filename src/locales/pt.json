@@ -986,6 +986,7 @@
   "users.edit.confirmAdminTitle": "Conceder acesso de Administrador",
   "users.edit.confirmAdminBody": "{nome} passará a ter permissões administrativas — acesso completo a todos os dados e configurações do sistema. Confirmar?",
   "users.edit.confirmAdminAction": "Confirmar concessão de Admin",
+  "users.edit.error": "Não foi possível salvar a alteração.",
   "users.role.admin": "Administrador",
   "users.role.lead": "Tech Lead",
   "users.role.member": "Membro",

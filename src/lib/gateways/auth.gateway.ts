@@ -41,7 +41,13 @@ export interface AuthGateway {
   users(): Promise<SessionUser[]>;
   updateUser(
     id: string,
-    patch_: Partial<{ role: UserRole; architectId: string | null; status: UserStatus }>,
+    patch_: Partial<{
+      role: UserRole;
+      architectId: string | null;
+      status: UserStatus;
+      name: string;
+      email: string;
+    }>,
   ): Promise<SessionUser>;
   createUser(input: {
     name: string;
@@ -72,10 +78,16 @@ export class HttpAuthGateway implements AuthGateway {
 
   users = (): Promise<SessionUser[]> => this.client.request<SessionUser[]>("/api/auth/users");
 
-  /** Papel, vínculo com arquiteto e status (ativa/desabilitada) de outra conta — admin-only no backend. */
+  /** Papel, vínculo com arquiteto, status (ativa/desabilitada), nome e e-mail de outra conta — admin-only no backend. */
   updateUser = (
     id: string,
-    patch_: Partial<{ role: UserRole; architectId: string | null; status: UserStatus }>,
+    patch_: Partial<{
+      role: UserRole;
+      architectId: string | null;
+      status: UserStatus;
+      name: string;
+      email: string;
+    }>,
   ): Promise<SessionUser> => this.client.patch<SessionUser>(`/api/auth/users/${id}`, patch_);
 
   /**
