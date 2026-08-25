@@ -67,6 +67,14 @@ interface Api extends AppState {
     reason: string,
   ) => Promise<Architect>;
   /**
+   * R2-UX-08/OO-03 — mesma forma de `transitionCareerLevel`: comando
+   * dedicado, sem otimismo, exige motivo e concorrência otimista. O PATCH
+   * antigo (`updateArchitect(id, { active: false })`) o backend passou a
+   * recusar com 400 — a tela precisa do erro de verdade num 409 (alguém
+   * mais mudou o cadastro desde que o diálogo abriu).
+   */
+  deactivate: (id: string, reason: string) => Promise<Architect>;
+  /**
    * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — Política de Progressão.
    * Sem otimismo: só admin altera, e a tela de configuração precisa do
    * erro de verdade (ex.: abaixo do piso global de 3) para mostrar.
@@ -324,6 +332,17 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     transitionCareerLevel: async (id, toRole, reason) => {
       const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
       const updated = await api.transitionCareerLevel(id, toRole, reason, expectedVersion);
+      local((s) => ({
+        ...s,
+        architects: s.architects.map((a) => (a.id === id ? updated : a)),
+      }));
+      return updated;
+    },
+
+    /** R2-UX-08/OO-03 — mesmo formato de `transitionCareerLevel` acima. */
+    deactivate: async (id, reason) => {
+      const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
+      const updated = await api.deactivate(id, reason, expectedVersion);
       local((s) => ({
         ...s,
         architects: s.architects.map((a) => (a.id === id ? updated : a)),

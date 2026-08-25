@@ -19,6 +19,13 @@ export interface ArchitectsGateway {
     reason: string,
     expectedVersion: number,
   ): Promise<Architect>;
+  /**
+   * R2-UX-08/OO-03 — desativação virou comando dedicado, não mais o PATCH
+   * genérico com `{ active: false }` (o backend agora recusa isso com 400:
+   * "Desativação exige motivo — use POST .../deactivate"). Mesmo formato de
+   * `transitionCareerLevel`: motivo obrigatório + concorrência otimista.
+   */
+  deactivate(id: string, reason: string, expectedVersion: number): Promise<Architect>;
   careerLevelTransitions(id: string): Promise<CareerLevelTransition[]>;
 }
 
@@ -50,6 +57,16 @@ export class HttpArchitectsGateway implements ArchitectsGateway {
       reason,
       expectedVersion,
     });
+
+  /**
+   * R2-UX-08/OO-03 — mesma forma de `transitionCareerLevel`: motivo
+   * obrigatório e `expectedVersion` para concorrência otimista. `PATCH
+   * /api/architects/:id` com `{ active: false }` não existe mais (o backend
+   * recusa com 400); reativar continua sendo `updateArchitect(id, { active:
+   * true })` — só a desativação migrou de rota.
+   */
+  deactivate = (id: string, reason: string, expectedVersion: number): Promise<Architect> =>
+    this.client.post<Architect>(`/api/architects/${id}/deactivate`, { reason, expectedVersion });
 
   careerLevelTransitions = (id: string): Promise<CareerLevelTransition[]> =>
     this.client.request<CareerLevelTransition[]>(`/api/architects/${id}/career-level-transitions`);

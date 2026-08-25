@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import {
   CareerLevelTransitionDialog,
+  DeactivateDialog,
   LeadCombobox,
   TeamRosterView,
   useArchitectForm,
@@ -10,7 +11,6 @@ import {
 } from "@/components/app/team-shared";
 import { DataViewToolbar, EmptyState, Pagination } from "@/components/app/DataView";
 import { PageHeader } from "@/components/app/ui-bits";
-import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { ArchitectNameCombobox } from "@/components/app/ArchitectNameCombobox";
 import { ViewToggle } from "@/components/app/ViewToggle";
 import { MultiSelectFilter } from "@/components/app/MultiSelectFilter";
@@ -333,15 +333,12 @@ function TeamPage() {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
-        open={form.confirmDeactivate !== null}
-        title={t("team.deactivate.confirmTitle", { nome: form.confirmDeactivate?.name ?? "" })}
-        description={t("team.deactivate.confirmDescription")}
-        confirmLabel={t("team.deactivate.action")}
-        destructive={false}
-        onCancel={() => form.setConfirmDeactivate(null)}
-        onConfirm={form.deactivate}
-      />
+      {form.confirmDeactivate && (
+        <DeactivateDialog
+          architect={form.confirmDeactivate}
+          onClose={() => form.setConfirmDeactivate(null)}
+        />
+      )}
 
       {form.transitioning && (
         <CareerLevelTransitionDialog

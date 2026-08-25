@@ -78,9 +78,12 @@ export interface EnrichedArchitect {
 }
 
 /**
- * Estado + submit do diálogo de cadastro/edição, mais desativar/reativar e o
- * diálogo de confirmação de desativação. `editing` é `null` (fechado), string
- * vazia (criação) ou um id (edição) — mesmo controle que a rota já usava.
+ * Estado + submit do diálogo de cadastro/edição, mais reativar. `editing` é
+ * `null` (fechado), string vazia (criação) ou um id (edição) — mesmo
+ * controle que a rota já usava. `confirmDeactivate`/`transitioning` só
+ * guardam "para quem o diálogo está aberto" — o próprio submit (motivo
+ * obrigatório + concorrência otimista) mora em `DeactivateDialog`/
+ * `CareerLevelTransitionDialog`, não aqui, mesmo padrão dos dois.
  */
 export function useArchitectForm() {
   const store = useStore();
@@ -89,6 +92,7 @@ export function useArchitectForm() {
   /** `null` = diálogo fechado; string vazia = criação; id = edição. */
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<ArchitectForm>(emptyForm());
+  /** R2-UX-08/OO-03 — quem está com o diálogo de desativação aberto. */
   const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
   /** ENT-CAR-017 — quem está com o diálogo de transição de nível aberto. */
   const [transitioning, setTransitioning] = useState<Architect | null>(null);
@@ -173,21 +177,6 @@ export function useArchitectForm() {
     }
   };
 
-  /**
-   * "Excluir" virou "Desativar": apaga o cadastro em cascata (avaliações,
-   * PDI, mentorias, evidências, certificações) sempre destruiu histórico de
-   * gente que só saiu do time. `active: false` some do roster
-   * e dos agregados do Painel sem apagar nada — o perfil e o histórico
-   * continuam abertos em /architects/:id. Ver AUDITORIA-RIGIDA-SEGUNDA-
-   * REVISAO-SYNAPSE.md, Seção 18.
-   */
-  const deactivate = () => {
-    if (!confirmDeactivate) return;
-    store.updateArchitect(confirmDeactivate.id, { active: false });
-    toast.success(t("team.deactivate.toast", { nome: confirmDeactivate.name }));
-    setConfirmDeactivate(null);
-  };
-
   const reactivate = (a: Architect) => {
     store.updateArchitect(a.id, { active: true });
     toast.success(t("team.reactivate.toast", { nome: a.name }));
@@ -207,7 +196,6 @@ export function useArchitectForm() {
     yearsValid,
     canSubmit,
     submit,
-    deactivate,
     reactivate,
   };
 }
@@ -648,6 +636,74 @@ export function CareerLevelTransitionDialog({
             onClick={submit}
           >
             {submitting ? t("team.transition.submitting") : t("team.transition.confirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * R2-UX-08/OO-03 — desativação migrou de `PATCH /api/architects/:id` com
+ * `{ active: false }` (o backend passou a recusar isso com 400: "Desativação
+ * exige motivo") para um comando dedicado, `POST .../deactivate`, no mesmo
+ * molde de `transitionCareerLevel`/`CareerLevelTransitionDialog` acima:
+ * motivo obrigatório, sem otimismo, e um 409 (`ARCHITECT_VERSION_CONFLICT` —
+ * alguém mais alterou o cadastro desde que o diálogo abriu) precisa aparecer
+ * como erro de verdade, não fingir sucesso.
+ */
+export function DeactivateDialog({
+  architect,
+  onClose,
+}: {
+  architect: Architect;
+  onClose: () => void;
+}) {
+  const store = useStore();
+  const { t } = useI18n();
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = () => {
+    setError(null);
+    setSubmitting(true);
+    store
+      .deactivate(architect.id, reason.trim())
+      .then(() => {
+        toast.success(t("team.deactivate.toast", { nome: architect.name }));
+        onClose();
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof ApiError ? err.message : t("team.deactivate.error"));
+      })
+      .finally(() => setSubmitting(false));
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("team.deactivate.confirmTitle", { nome: architect.name })}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">{t("team.deactivate.confirmDescription")}</p>
+        <div>
+          <Label htmlFor="deactivate-reason">{t("team.deactivate.reasonLabel")}</Label>
+          <Textarea
+            id="deactivate-reason"
+            className="mt-1"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={t("team.deactivate.reasonPlaceholder")}
+          />
+        </div>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            {t("common.cancel")}
+          </Button>
+          <Button variant="destructive" disabled={!reason.trim() || submitting} onClick={submit}>
+            {submitting ? t("team.deactivate.submitting") : t("team.deactivate.action")}
           </Button>
         </DialogFooter>
       </DialogContent>
