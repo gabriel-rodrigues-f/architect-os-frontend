@@ -15,9 +15,12 @@ import { fixtureState } from "./fixtures";
 /**
  * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então
  * o filtro da linha do tempo troca seleção múltipla (`ArchitectFilter`) por
- * único ("Todo o time" ou UMA pessoa). Inativos continuam aparecendo (com
- * sufixo) porque o histórico de mentoria de quem saiu do time permanece
- * consultável, mesma filosofia de R2-UX-08.
+ * único. Pedido do usuário revisando o app rodando: "em 'mentoria' não deve
+ * haver a opção de 'todo time'. a sessão é sempre individual" — a opção
+ * "Todo o time" foi removida por completo; o filtro nasce já escolhendo a
+ * primeira pessoa ativa em ordem alfabética, nunca "todo mundo". Inativos
+ * continuam aparecendo na lista (com sufixo) porque o histórico de mentoria
+ * de quem saiu do time permanece consultável, mesma filosofia de R2-UX-08.
  */
 
 const fetchMock = vi.fn();
@@ -114,18 +117,23 @@ describe("Mentoria — filtro de mentorado (seleção única)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("nasce em 'Todo o time' mostrando as sessões de todo mundo", async () => {
+  it("nasce escolhendo a primeira pessoa ativa em ordem alfabética, nunca 'Todo o time'", async () => {
     render(
       <Wrapper>
         <MentoringPage />
       </Wrapper>,
     );
 
+    // Ana Martins (ativa) vem antes de Bruno Almeida (ativo, sem sessão) e de
+    // Carla Nunes (inativa) em ordem alfabética — é o default esperado.
     expect(await screen.findByText("Sessão com Ana")).toBeTruthy();
-    expect(screen.getByText("Sessão com Carla")).toBeTruthy();
+    expect(screen.queryByText("Sessão com Carla")).toBeNull();
     expect(screen.getByRole("combobox", { name: "Filtrar mentorado" }).textContent).toContain(
-      "Todo o time",
+      "Ana Martins",
     );
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Filtrar mentorado" }));
+    expect(screen.queryByText("Todo o time")).toBeNull();
   });
 
   it("selecionar uma pessoa mostra só a sessão dela, e inativos aparecem com sufixo", async () => {

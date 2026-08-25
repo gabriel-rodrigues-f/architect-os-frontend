@@ -81,6 +81,17 @@ function Wrapper({ children }: { children: ReactNode }) {
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 
+/**
+ * O filtro da linha do tempo nasce sempre na primeira pessoa ativa em ordem
+ * alfabética (R2-UX-11 revisado — sem mais "Todo o time"); como a fixture
+ * também tem "Ana Martins" no roster, as sessões de "bruno" só aparecem
+ * depois de selecionar Bruno Almeida explicitamente no combobox.
+ */
+async function selectMentee(name: string) {
+  await userEvent.click(await screen.findByRole("combobox", { name: "Filtrar mentorado" }));
+  await userEvent.click(await screen.findByText(name));
+}
+
 describe("Mentoria — converter ação em item de PDI", () => {
   beforeEach(() => {
     fetchMock.mockReset();
@@ -122,6 +133,7 @@ describe("Mentoria — converter ação em item de PDI", () => {
         <MentoringPage />
       </Wrapper>,
     );
+    await selectMentee("Bruno Almeida");
     await screen.findByText("Aprofundar Kubernetes");
 
     expect(screen.getByRole("button", { name: /Criar ação no PDI/ })).toBeTruthy();
@@ -141,6 +153,7 @@ describe("Mentoria — converter ação em item de PDI", () => {
         <MentoringPage />
       </Wrapper>,
     );
+    await selectMentee("Bruno Almeida");
     await screen.findByText("Aprofundar Kubernetes");
     await userEvent.click(screen.getByRole("button", { name: /Criar ação no PDI/ }));
 

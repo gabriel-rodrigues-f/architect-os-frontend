@@ -234,29 +234,45 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
 
 /**
  * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então
- * o filtro da linha do tempo não é um recorte de time (`ArchitectFilter`),
- * e sim "todo mundo" ou UMA pessoa específica.
+ * o filtro da linha do tempo não é um recorte de time (`ArchitectFilter`).
+ * Pedido do usuário revisando o app rodando: "em 'mentoria' não deve haver a
+ * opção de 'todo time'. a sessão é sempre individual" — o filtro nunca mais
+ * representa "todo mundo", sempre UMA pessoa específica, mesmo critério de
+ * `ArchitectSelectCombobox`. O valor inicial é a primeira pessoa ativa em
+ * ordem alfabética (cai para a primeira inativa só se não houver nenhuma
+ * ativa) em vez de nascer vazio — mesmo raciocínio de `menteeId` em
+ * `useMentoringSessionForm`, que já assume "a primeira opção da lista" como
+ * default sensato em vez de exigir um clique extra antes de mostrar algo.
  */
 export function useMentoringTimeline() {
   const store = useStore();
-  const [filter, setFilter] = useState<string | "all">("all");
+  const orderedArchitects = [...store.architects].sort(byName);
+  const defaultMenteeId =
+    orderedArchitects.find((a) => a.active)?.id ?? orderedArchitects[0]?.id ?? "";
+  const [filter, setFilter] = useState<string>(defaultMenteeId);
 
   const sessions = [...store.mentoringSessions]
-    .filter((s) => filter === "all" || s.menteeId === filter)
+    .filter((s) => s.menteeId === filter)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return { filter, setFilter, sessions };
 }
 
-/** Combobox pesquisável de seleção única — mesmo padrão de `ArchitectNameCombobox`, sem multi-seleção. */
+/**
+ * Combobox pesquisável de seleção única para o filtro da linha do tempo —
+ * mesmo padrão "sem opção 'Todo o time'" de `ArchitectSelectCombobox`; a
+ * diferença é que aqui inativos aparecem sempre (com sufixo), porque o
+ * histórico de mentoria de quem já saiu do time continua consultável (mesma
+ * filosofia de R2-UX-08).
+ */
 export function MenteeFilterCombobox({
   architects,
   selected,
   onChange,
 }: {
   architects: readonly Architect[];
-  selected: string | "all";
-  onChange: (value: string | "all") => void;
+  selected: string;
+  onChange: (value: string) => void;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -264,12 +280,9 @@ export function MenteeFilterCombobox({
   const active = ordered.filter((a) => a.active);
   const inactive = ordered.filter((a) => !a.active);
 
-  const summary =
-    selected === "all"
-      ? t("mentor.filter.all")
-      : (ordered.find((a) => a.id === selected)?.name ?? t("mentor.filter.all"));
+  const summary = ordered.find((a) => a.id === selected)?.name ?? t("mentor.filter.placeholder");
 
-  const select = (value: string | "all") => {
+  const select = (value: string) => {
     onChange(value);
     setOpen(false);
   };
@@ -294,18 +307,6 @@ export function MenteeFilterCombobox({
           <CommandInput placeholder={t("mentor.filter.searchPlaceholder")} />
           <CommandList className="max-h-72">
             <CommandEmpty>{t("mentor.filter.empty")}</CommandEmpty>
-            <CommandGroup>
-              <CommandItem value="__all__" onSelect={() => select("all")}>
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4 shrink-0",
-                    selected === "all" ? "opacity-100" : "opacity-0",
-                  )}
-                />
-                <span className="font-medium">{t("mentor.filter.all")}</span>
-              </CommandItem>
-            </CommandGroup>
-            <CommandSeparator />
             <CommandGroup>
               {active.map((a) => (
                 <CommandItem key={a.id} value={a.name} onSelect={() => select(a.id)}>

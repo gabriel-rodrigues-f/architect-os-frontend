@@ -77,14 +77,10 @@ function MentoringPage() {
 
       <SectionCard
         title={t("mentor.timeline.title")}
-        description={
-          filter === "all"
-            ? t("mentor.timeline.all", { n: sessions.length })
-            : t("mentor.timeline.forPerson", {
-                n: sessions.length,
-                nome: store.architects.find((a) => a.id === filter)?.name ?? "",
-              })
-        }
+        description={t("mentor.timeline.forPerson", {
+          n: sessions.length,
+          nome: store.architects.find((a) => a.id === filter)?.name ?? "",
+        })}
       >
         <MentoringTimeline sessions={sessions} />
       </SectionCard>

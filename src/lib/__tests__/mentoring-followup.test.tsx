@@ -74,6 +74,17 @@ function Wrapper({ children }: { children: ReactNode }) {
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 
+/**
+ * O filtro da linha do tempo nasce sempre na primeira pessoa ativa em ordem
+ * alfabética (R2-UX-11 revisado — sem mais "Todo o time"); como a fixture
+ * também tem "Ana Martins" no roster, a sessão de "bruno" só aparece depois
+ * de selecionar Bruno Almeida explicitamente no combobox.
+ */
+async function selectMentee(name: string) {
+  await userEvent.click(await screen.findByRole("combobox", { name: "Filtrar mentorado" }));
+  await userEvent.click(await screen.findByText(name));
+}
+
 function mockSession(user: SessionUser) {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const href = String(url);
@@ -124,6 +135,7 @@ describe("Mentoria — agendar follow-up", () => {
       </Wrapper>,
     );
 
+    await selectMentee("Bruno Almeida");
     await screen.findByText("Sessão para follow-up");
     expect(screen.getByRole("button", { name: "Agendar follow-up" })).toBeTruthy();
   });
@@ -136,6 +148,7 @@ describe("Mentoria — agendar follow-up", () => {
       </Wrapper>,
     );
 
+    await selectMentee("Bruno Almeida");
     await screen.findByText("Sessão para follow-up");
     expect(screen.queryByRole("button", { name: "Agendar follow-up" })).toBeNull();
   });
@@ -148,6 +161,7 @@ describe("Mentoria — agendar follow-up", () => {
       </Wrapper>,
     );
 
+    await selectMentee("Bruno Almeida");
     await screen.findByText("Sessão para follow-up");
     await userEvent.click(screen.getByRole("button", { name: "Agendar follow-up" }));
     await userEvent.type(screen.getByLabelText("Agendar follow-up"), "2026-09-01");
