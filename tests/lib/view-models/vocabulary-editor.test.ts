@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { NewVocabularyCodeEditor, VocabularyItemEditor } from "@/lib/view-models/vocabulary-editor";
+import { NewVocabularyCodeEditor, VocabularyItemEditor } from "@/lib/view-models";
 import type { VocabularyItem } from "@/lib/vocabularies";
 
 const item: VocabularyItem = {

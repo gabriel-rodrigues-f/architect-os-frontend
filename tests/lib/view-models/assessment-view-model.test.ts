@@ -6,7 +6,7 @@ import {
   AssessmentViewModel,
   type AssessmentItemService,
   type AssessmentPortfolioService,
-} from "@/lib/view-models/assessment-view-model";
+} from "@/lib/view-models";
 import {
   fixtureAdminUser,
   fixtureMemberUser,

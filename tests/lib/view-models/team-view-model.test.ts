@@ -7,7 +7,7 @@ import {
   TeamViewModel,
   type ArchitectFormValues,
   type TeamRosterService,
-} from "@/lib/view-models/team-view-model";
+} from "@/lib/view-models";
 import { fixtureAdminUser, fixtureMemberUser } from "../../helpers/fixtures";
 
 /**

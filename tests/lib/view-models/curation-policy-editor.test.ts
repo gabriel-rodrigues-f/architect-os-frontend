@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_CURATION_POLICY, withDefaultCurationPolicy } from "@/lib/curation-policy";
-import { CurationPolicyEditor } from "@/lib/view-models/curation-policy-editor";
+import { CurationPolicyEditor } from "@/lib/view-models";
 
 /**
  * CFG-04 (SPEC-OO3-13, §3.2) — ViewModel do editor da política de curadoria

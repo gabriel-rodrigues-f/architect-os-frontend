@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useToastSubmit } from "@/hooks";
 import { ApiError } from "@/lib/api";
 
 vi.mock("sonner", () => ({

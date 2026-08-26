@@ -5,7 +5,7 @@ import {
   ArchitectProfileViewModel,
   type ArchitectProfileService,
   type EvidenceDraft,
-} from "@/lib/view-models/architect-profile-view-model";
+} from "@/lib/view-models";
 
 /**
  * OO3-10c (Fase OO-3) — mesmo padrão dos demais testes de ViewModel:

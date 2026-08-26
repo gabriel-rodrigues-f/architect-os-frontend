@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_SCORING_BANDS } from "@/lib/scoring-bands";
-import { ScoringBandsEditor } from "@/lib/view-models/scoring-bands-editor";
+import { ScoringBandsEditor } from "@/lib/view-models";
 
 /**
  * CFG-02 (admin UI) — o ViewModel do editor de réguas: o admin edita só os

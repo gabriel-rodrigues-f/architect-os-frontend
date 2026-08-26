@@ -1,7 +1,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { useSearchParamList, useSearchParamString } from "@/hooks/use-search-param";
+import { useSearchParamList, useSearchParamString } from "@/hooks";
 
 /**
  * OO3-11b — o mecanismo do par URL⇄estado, testado uma vez no hook; os

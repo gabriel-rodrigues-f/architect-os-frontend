@@ -3,7 +3,7 @@ import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { PageHeader } from "@/components/app/ui-bits";
-import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
+import { useNarrowViewport } from "@/hooks";
 
 /** Mesmo motivo de capability-map-risk.test.tsx: sem RouterProvider real, `<Link>` vira âncora comum. */
 vi.mock("@tanstack/react-router", async (importOriginal) => {
