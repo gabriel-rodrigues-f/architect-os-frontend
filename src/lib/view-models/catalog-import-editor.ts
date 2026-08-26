@@ -5,10 +5,9 @@ import {
 } from "../catalog-import";
 import type { Capability, Competency } from "../domain";
 
-/** Uma linha do preview — o que o import FARIA com cada capacidade do payload. */
 export interface CatalogImportPreviewCapability {
   name: string;
-  /** `create` quando nenhum nome atual casa (case-insensitive, trim) — a régua do upsert do backend. */
+
   action: "create" | "update";
   competenciesToCreate: string[];
   competenciesToUpdate: string[];
@@ -22,27 +21,6 @@ export interface CatalogImportPreview {
   competenciesToUpdate: number;
 }
 
-/**
- * CFG-07 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — ViewModel do diálogo
- * "Importar catálogo" da matriz, na régua da casa (payload/validação em
- * classe testável, render na tela). A tela só liga o textarea/upload a
- * `withText` e o botão de importar a `payload()`.
- *
- * O que valida AQUI (antes do POST): JSON parseável e o SHAPE do payload
- * (zod espelhando o `catalogImportSchema` do backend). O que NÃO valida, de
- * propósito: unicidade de nomes/siglas no payload e níveis de carreira
- * conhecidos — negócio do VO/use case do backend (400 com code estável, que
- * o diálogo mostra em `role="alert"`).
- *
- * `preview()` conta POR NOME contra o estado ATUAL da matriz (a mesma
- * identidade do upsert — `sameCatalogName`): o admin vê o que será criado e
- * o que será atualizado ANTES de enviar. É um preview honesto, não uma
- * simulação do servidor: o resultado de verdade é o `CatalogImportSummary`
- * da resposta.
- *
- * Imutável de propósito (cada edição devolve um editor novo) — encaixa em
- * `useState` sem `useEffect` de sincronização.
- */
 export class CatalogImportEditor {
   private constructor(
     private readonly currentCapabilities: readonly Pick<Capability, "id" | "name">[],
@@ -95,8 +73,7 @@ export class CatalogImportEditor {
         "matrix.import.error.invalidShape",
       );
     }
-    // Vazio é shape válido para o zod, mas o backend recusa (`Importação
-    // vazia`) — melhor recusar aqui, antes do POST, com mensagem própria.
+
     if (result.data.capabilities.length === 0) {
       return new CatalogImportEditor(
         this.currentCapabilities,
@@ -119,12 +96,10 @@ export class CatalogImportEditor {
     return this.parsed !== null;
   }
 
-  /** O corpo do POST — `null` enquanto o texto não é um payload válido. */
   payload(): CatalogImportPayload | null {
     return this.parsed;
   }
 
-  /** O diff por nome contra a matriz atual — `null` enquanto não há payload válido. */
   preview(): CatalogImportPreview | null {
     if (!this.parsed) return null;
     const capabilities = this.parsed.capabilities.map(
