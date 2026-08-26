@@ -24,7 +24,7 @@ import {
   type Level,
   type RequirementType,
 } from "@/lib/domain";
-import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useAsyncSubmit, useToastSubmit } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -33,6 +33,7 @@ import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useCurationPolicy, useStore } from "@/lib/store";
 import { CompetencyMatrixViewModel } from "@/lib/view-models/competency-matrix-view-model";
+import { CatalogImportEditor } from "@/lib/view-models/catalog-import-editor";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -87,6 +88,8 @@ function MatrixPage() {
   /** Catálogo mestre é administrativo — backend já recusa o resto. */
   const isAdmin = viewModel.isAdmin(useCurrentUser());
   const [creatingCapability, setCreatingCapability] = useState(false);
+  /** CFG-07 — diálogo "Importar catálogo" (upsert-por-nome aditivo), admin-only. */
+  const [importing, setImporting] = useState(false);
   const { t } = useI18n();
   const labels = useLabels();
   const help = usePageHelp("competencyMatrix");
@@ -157,7 +160,14 @@ function MatrixPage() {
         help={help}
         actions={
           isAdmin ? (
-            <Button onClick={() => setCreatingCapability(true)}>{t("matrix.newCapability")}</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setImporting(true)}>
+                {t("matrix.import.button")}
+              </Button>
+              <Button onClick={() => setCreatingCapability(true)}>
+                {t("matrix.newCapability")}
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -483,7 +493,157 @@ function MatrixPage() {
       {creatingCapability && (
         <CapabilityCreateDialog onClose={() => setCreatingCapability(false)} />
       )}
+      {importing && <CatalogImportDialog onClose={() => setImporting(false)} />}
     </>
+  );
+}
+
+/**
+ * CFG-07 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — "Importar catálogo":
+ * colagem OU upload de um JSON no shape do seed (`catalog.json`, sem ids),
+ * validado client-side (zod espelhando o schema do backend) com PREVIEW do
+ * diff por nome contra a matriz atual ANTES do POST — a montagem/validação/
+ * diff vive no ViewModel (`CatalogImportEditor`, a régua da casa); aqui é
+ * só fiação de textarea/arquivo, preview e submit. O 400
+ * `CATALOG_IMPORT_INVALID`/`UNKNOWN_CAREER_LEVEL` (e qualquer 409) do
+ * backend aparece em `role="alert"`; sucesso → toast com o resumo REAL da
+ * resposta + invalidação de `/api/state` (`store.importCatalog`).
+ */
+function CatalogImportDialog({ onClose }: { onClose: () => void }) {
+  const store = useStore();
+  const { t } = useI18n();
+  const [editor, setEditor] = useState<CatalogImportEditor>(() =>
+    CatalogImportEditor.from(store.capabilities, store.competencies),
+  );
+  const {
+    submitting: importingNow,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit(t("matrix.import.failed"));
+
+  const preview = editor.preview();
+
+  const readFile = async (file: File) => {
+    const text = await file.text();
+    setEditor(editor.withText(text));
+    clearError();
+  };
+
+  const submit = async () => {
+    const payload = editor.payload();
+    if (!payload) return;
+    const result = await run(() => store.importCatalog(payload));
+    if (result.ok) {
+      const summary = result.value;
+      toast.success(
+        t("matrix.import.success", {
+          capCriadas: summary.capabilitiesCreated.length,
+          capAtualizadas: summary.capabilitiesUpdated.length,
+          compCriadas: summary.competenciesCreated.length,
+          compAtualizadas: summary.competenciesUpdated.length,
+        }),
+      );
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && !importingNow && onClose()}>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t("matrix.import.title")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("matrix.import.hint")}</p>
+          <div>
+            <Label htmlFor="catalog-import-file">{t("matrix.import.file")}</Label>
+            <Input
+              id="catalog-import-file"
+              type="file"
+              accept="application/json,.json"
+              disabled={importingNow}
+              className="mt-1"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void readFile(file);
+              }}
+            />
+          </div>
+          <div>
+            <Label htmlFor="catalog-import-text">{t("matrix.import.paste")}</Label>
+            <textarea
+              id="catalog-import-text"
+              rows={8}
+              disabled={importingNow}
+              className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1.5 font-mono text-xs"
+              placeholder='{"capabilities": [...]}'
+              value={editor.text}
+              onChange={(e) => {
+                setEditor(editor.withText(e.target.value));
+                clearError();
+              }}
+            />
+          </div>
+
+          {editor.errorKey && (
+            <p className="text-xs text-destructive" role="alert">
+              {t(editor.errorKey)}
+            </p>
+          )}
+
+          {/* Preview do diff — contado por NOME contra a matriz atual (a
+              identidade do upsert), antes de qualquer POST. */}
+          {preview && (
+            <div className="surface-inset p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("matrix.import.preview")}
+              </p>
+              <p className="mt-1 text-sm">
+                {t("matrix.import.previewSummary", {
+                  capCriadas: preview.capabilitiesToCreate,
+                  capAtualizadas: preview.capabilitiesToUpdate,
+                  compCriadas: preview.competenciesToCreate,
+                  compAtualizadas: preview.competenciesToUpdate,
+                })}
+              </p>
+              <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto text-xs">
+                {preview.capabilities.map((capability) => (
+                  <li key={capability.name}>
+                    <span className="font-medium">{capability.name}</span>{" "}
+                    <span className="text-muted-foreground">
+                      —{" "}
+                      {capability.action === "create"
+                        ? t("matrix.import.capabilityCreate")
+                        : t("matrix.import.capabilityUpdate")}
+                      {" · "}
+                      {t("matrix.import.competencyCounts", {
+                        criadas: capability.competenciesToCreate.length,
+                        atualizadas: capability.competenciesToUpdate.length,
+                      })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {error && (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" disabled={importingNow} onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button disabled={!editor.isValid || importingNow} onClick={() => void submit()}>
+            {importingNow ? t("team.transition.submitting") : t("matrix.import.submit")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
