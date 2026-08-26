@@ -39,6 +39,34 @@ export function jsonResponse(body: unknown, status = 200): Response {
  */
 export type FetchRoute = (href: string, init?: RequestInit) => Response | undefined;
 
+/**
+ * RF-05 — o backend envelopa toda resposta 2xx JSON de `/api/*` em
+ * `{ data, message? }` e o `api-client` desembrulha. Para os testes seguirem
+ * escrevendo payloads crus, o mock envelopa automaticamente; rotas que já
+ * devolvem o formato `{ data, ... }` (ex.: para exercitar `message.code`)
+ * passam intactas.
+ */
+async function envelopeApiResponse(response: Response): Promise<Response> {
+  if (!response.ok || response.status === 204) return response;
+  if (!(response.headers.get("content-type") ?? "").includes("application/json")) return response;
+  const text = await response.text();
+  let body: unknown;
+  try {
+    body = JSON.parse(text) as unknown;
+  } catch {
+    return new Response(text, { status: response.status, headers: response.headers });
+  }
+  const alreadyEnveloped =
+    typeof body === "object" &&
+    body !== null &&
+    !Array.isArray(body) &&
+    Object.prototype.hasOwnProperty.call(body, "data");
+  return new Response(JSON.stringify(alreadyEnveloped ? body : { data: body }), {
+    status: response.status,
+    headers: response.headers,
+  });
+}
+
 export function mockAppFetch(
   fetchMock: Mock,
   {
@@ -49,12 +77,14 @@ export function mockAppFetch(
 ): void {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const href = String(url);
+    const respond = (response: Response) =>
+      href.includes("/api/") ? envelopeApiResponse(response) : Promise.resolve(response);
     for (const route of routes) {
       const response = route(href, init);
-      if (response) return Promise.resolve(response);
+      if (response) return respond(response);
     }
-    if (href.endsWith("/api/auth/me")) return Promise.resolve(jsonResponse(user));
-    if (href.endsWith("/api/state")) return Promise.resolve(jsonResponse(state));
+    if (href.endsWith("/api/auth/me")) return respond(jsonResponse(user));
+    if (href.endsWith("/api/state")) return respond(jsonResponse(state));
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
 }

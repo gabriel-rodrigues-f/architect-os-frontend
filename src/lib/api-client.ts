@@ -38,6 +38,22 @@ const SESSION_INVALIDATING_CODES = new Set([
   "SESSION_REVOKED",
 ]);
 
+const responseMessageCodes = new WeakMap<object, string>();
+
+export function messageCodeOf(result: unknown): string | undefined {
+  return typeof result === "object" && result !== null
+    ? responseMessageCodes.get(result)
+    : undefined;
+}
+
+function asSuccessEnvelope(body: unknown): { data: unknown; message?: { code?: string } } | null {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) return null;
+  const record = body as Record<string, unknown>;
+  if (!Object.prototype.hasOwnProperty.call(record, "data")) return null;
+  if (Object.keys(record).some((key) => key !== "data" && key !== "message")) return null;
+  return record as { data: unknown; message?: { code?: string } };
+}
+
 export class ApiClient {
   private unauthorizedHandler: (() => void) | null = null;
 
@@ -79,7 +95,15 @@ export class ApiClient {
     }
 
     if (response.status === 204) return undefined as T;
-    return (await response.json()) as T;
+    const body: unknown = await response.json();
+    if (!path.startsWith("/api")) return body as T;
+    const envelope = asSuccessEnvelope(body);
+    if (!envelope) return body as T;
+    const code = envelope.message?.code;
+    if (code !== undefined && typeof envelope.data === "object" && envelope.data !== null) {
+      responseMessageCodes.set(envelope.data, code);
+    }
+    return envelope.data as T;
   }
 
   async requestBlob(path: string, body: unknown): Promise<{ blob: Blob; filename: string }> {
