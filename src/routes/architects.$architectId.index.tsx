@@ -35,6 +35,7 @@ import {
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { PersonalDashboardPresenter } from "@/lib/presenters/dashboard-presenter";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
@@ -126,6 +127,8 @@ function ArchitectProfile() {
   const sel = useSelectors();
   /** OO3-11l — percentual de trilha compartilhado com /learning-paths via `LearningPathsViewModel`. */
   const learningPathsViewModel = useMemo(() => new LearningPathsViewModel(store), [store]);
+  /** OO3-11/D-5 (reuso final) — KPIs pessoais compartilhados com a Home de Member. */
+  const personal = useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
   const labels = useLabels();
   const { t, locale } = useI18n();
   const help = usePageHelp("architectProfile");
@@ -154,7 +157,7 @@ function ArchitectProfile() {
     );
   }
 
-  const gaps = sel.progressionGapsFor(architect.id).filter((g) => g.gap > 0);
+  const gaps = personal.openGaps(architect.id);
   const capabilityAvgs = sel.capabilityAverages(architect.id);
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
@@ -176,11 +179,11 @@ function ArchitectProfile() {
   const nextSteps = computeNextSteps({
     canEditOwn,
     canReviewEvidence,
-    itemsNotStartedCount: plan?.items.filter((i) => i.status === "Not Started").length ?? 0,
+    itemsNotStartedCount: personal.planItemCounts(architect.id).notStarted,
     gapsNotInPlanCount: gaps.filter(
       (g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId),
     ).length,
-    evidencesPendingCount: evidences.filter((e) => e.status === "Pending").length,
+    evidencesPendingCount: personal.pendingEvidenceCount(architect.id),
     assessmentAwaitingCalibration: assessment?.status === "In Review",
   });
   /**
@@ -193,7 +196,7 @@ function ArchitectProfile() {
     .filter((a) => a.architectId === architect.id)
     .map((a) => ({ assessment: a, cycle: store.cycles.find((c) => c.id === a.cycleId) }))
     .sort((x, y) => (y.cycle?.start ?? "").localeCompare(x.cycle?.start ?? ""));
-  const paths = store.learningPaths.filter((p) => p.assignedTo.includes(architect.id));
+  const paths = personal.assignedPaths(architect.id);
   const {
     avg,
     covered: coveredCapabilities,

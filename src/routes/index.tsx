@@ -17,7 +17,10 @@ import { GapBadge, LevelBadge, PageHeader, SectionCard, StatCard } from "@/compo
 import { CapabilityRadar } from "@/components/app/charts";
 import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import { useCurrentUser } from "@/lib/auth";
-import { DashboardPresenter } from "@/lib/presenters/dashboard-presenter";
+import {
+  DashboardPresenter,
+  PersonalDashboardPresenter,
+} from "@/lib/presenters/dashboard-presenter";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
@@ -68,6 +71,13 @@ function useDashboardPresenter() {
   const store = useStore();
   const sel = useSelectors();
   return useMemo(() => new DashboardPresenter(store, sel), [store, sel]);
+}
+
+/** OO3-11/D-5 (reuso final) — idem, para os KPIs pessoais (compartilhados com o perfil). */
+function usePersonalDashboardPresenter() {
+  const store = useStore();
+  const sel = useSelectors();
+  return useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
 }
 
 function AdminHome() {
@@ -204,12 +214,12 @@ function AdminHome() {
  * roster está fora do escopo dela por desenho, ver `auth/scope.ts`).
  */
 function MemberHome() {
-  const store = useStore();
   const sel = useSelectors();
   const user = useCurrentUser();
   const labels = useLabels();
   const { t } = useI18n();
   const help = usePageHelp("dash");
+  const personal = usePersonalDashboardPresenter();
 
   const architectId = user.architectId;
   const architect = architectId ? sel.architectById(architectId) : undefined;
@@ -226,20 +236,15 @@ function MemberHome() {
   }
 
   const capabilityAvgs = sel.capabilityAverages(architectId);
-  const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
+  /** OO3-11/D-5 — KPIs pessoais compartilhados com o perfil (`PersonalDashboardPresenter`). */
+  const gaps = personal.openGaps(architectId);
   const { avg, covered, total } = sel.coverageFor(architectId);
   const assessment = sel.assessmentFor(architectId);
   const plan = sel.planFor(architectId);
   const planStatus = plan?.status;
-  const itemsByStatus = {
-    notStarted: plan?.items.filter((i) => i.status === "Not Started").length ?? 0,
-    inProgress: plan?.items.filter((i) => i.status === "In Progress").length ?? 0,
-    blocked: plan?.items.filter((i) => i.status === "Blocked").length ?? 0,
-    completed: plan?.items.filter((i) => i.status === "Completed").length ?? 0,
-  };
-  const paths = store.learningPaths.filter((p) => p.assignedTo.includes(architectId));
-  const evidences = store.evidences.filter((e) => e.architectId === architectId);
-  const evidencePending = evidences.filter((e) => e.status === "Pending").length;
+  const itemsByStatus = personal.planItemCounts(architectId);
+  const paths = personal.assignedPaths(architectId);
+  const evidencePending = personal.pendingEvidenceCount(architectId);
 
   return (
     <>

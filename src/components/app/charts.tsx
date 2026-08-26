@@ -19,6 +19,7 @@ import {
 import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { axisTick, CHART_INK, ChartPalette, tooltipStyle } from "@/lib/design/chart";
+import { topByRelevance } from "@/lib/collections";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { useI18n } from "@/lib/i18n";
 
@@ -137,22 +138,11 @@ function DataTable({
  * (uma capacidade grande, ou várias combinadas) vira um emaranhado
  * ilegível: linhas finas demais, rótulos sobrepostos, nenhum padrão
  * visível. Corta para os `MAX_RADAR_AXES` eixos de maior relevância
- * (critério varia por chamador — `relevance`), preservando a ORDEM
- * original entre os selecionados (o objetivo é reduzir ruído, não
- * embaralhar o que sobrou). A tabela acessível (`ChartFrame`) nunca é
- * cortada — só o desenho.
+ * (critério varia por chamador — `relevance`), via `topByRelevance`
+ * (`lib/collections.ts`, OO3-11/D-3). A tabela acessível (`ChartFrame`)
+ * nunca é cortada — só o desenho.
  */
 const MAX_RADAR_AXES = 12;
-
-function topByRelevance<T>(data: readonly T[], relevance: (item: T) => number, max: number): T[] {
-  if (data.length <= max) return [...data];
-  const ranked = data
-    .map((item, index) => ({ item, index, score: relevance(item) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, max);
-  const keep = new Set(ranked.map((r) => r.index));
-  return data.filter((_, index) => keep.has(index));
-}
 
 /**
  * Aviso visível (não só na tabela sr-only) + alternância "mostrar todos" —

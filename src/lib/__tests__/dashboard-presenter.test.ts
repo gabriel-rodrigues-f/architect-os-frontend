@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { AppState } from "../api";
-import { CRITICAL_GAP_THRESHOLD, DashboardPresenter } from "../presenters/dashboard-presenter";
+import {
+  CRITICAL_GAP_THRESHOLD,
+  DashboardPresenter,
+  PersonalDashboardPresenter,
+} from "../presenters/dashboard-presenter";
 import { createSelectors } from "../selectors";
 import { fixtureState } from "./fixtures";
 
@@ -84,5 +88,59 @@ describe("DashboardPresenter", () => {
     expect(
       comAntigo.activePlans().every((p) => p.cycleId === planoDeOutroCiclo.activeCycleId),
     ).toBe(true);
+  });
+});
+
+/**
+ * OO3-11/D-5 (reuso final) — os KPIs pessoais compartilhados entre a Home
+ * de Member (`routes/index.tsx`) e o perfil do arquiteto.
+ */
+describe("PersonalDashboardPresenter", () => {
+  const personalFor = (state: AppState) =>
+    new PersonalDashboardPresenter(state, createSelectors(state));
+
+  it("openGaps devolve só lacunas reais (gap > 0)", () => {
+    const personal = personalFor(fixtureState);
+    const gaps = personal.openGaps("ana");
+    expect(gaps.length).toBeGreaterThan(0);
+    expect(gaps.every((g) => g.gap > 0)).toBe(true);
+    const todos = createSelectors(fixtureState).progressionGapsFor("ana");
+    expect(gaps.length).toBeLessThan(todos.length);
+  });
+
+  it("planItemCounts conta os 4 baldes do PDI ativo; sem plano, tudo zero", () => {
+    const personal = personalFor(fixtureState);
+    expect(personal.planItemCounts("ana")).toEqual({
+      notStarted: 0,
+      inProgress: 2,
+      blocked: 0,
+      completed: 0,
+    });
+    expect(personal.planItemCounts("bruno")).toEqual({
+      notStarted: 0,
+      inProgress: 0,
+      blocked: 0,
+      completed: 0,
+    });
+  });
+
+  it("pendingEvidenceCount conta só Pending da própria pessoa", () => {
+    const comRevisada: AppState = {
+      ...fixtureState,
+      evidences: [
+        ...fixtureState.evidences,
+        { ...fixtureState.evidences[0]!, id: "e2", status: "Accepted" as const },
+        { ...fixtureState.evidences[0]!, id: "e3", architectId: "bruno" },
+      ],
+    };
+    const personal = personalFor(comRevisada);
+    expect(personal.pendingEvidenceCount("ana")).toBe(1);
+    expect(personal.pendingEvidenceCount("bruno")).toBe(1);
+  });
+
+  it("assignedPaths devolve só trilhas atribuídas à pessoa", () => {
+    const personal = personalFor(fixtureState);
+    expect(personal.assignedPaths("ana").map((p) => p.id)).toEqual(["lp-sec"]);
+    expect(personal.assignedPaths("bruno")).toEqual([]);
   });
 });

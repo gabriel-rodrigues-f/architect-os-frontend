@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Lock, Pencil, Plus, Trash2 } from "lucide-react
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Bar, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { Bar, EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -139,10 +139,7 @@ function LearningPage() {
       />
 
       {store.learningPaths.length === 0 && (
-        <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">{t("path.empty.title")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("path.empty.hint")}</p>
-        </div>
+        <EmptyState title={t("path.empty.title")} hint={t("path.empty.hint")} />
       )}
 
       {store.learningPaths.length > 0 && (
@@ -187,13 +184,7 @@ function LearningPage() {
           : store.learningPaths;
 
         if (term && visiblePaths.length === 0) {
-          return (
-            <div className="surface-card p-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                {t("path.search.empty", { termo: search.trim() })}
-              </p>
-            </div>
-          );
+          return <EmptyState hint={t("path.search.empty", { termo: search.trim() })} />;
         }
 
         return (

@@ -4,6 +4,7 @@ import { GapBadge } from "@/components/app/ui-bits";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Badge } from "@/components/ui/badge";
 import { Selection } from "@/lib/selection";
+import { topByRelevance } from "@/lib/collections";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { type ConsolidatedGapRow } from "@/lib/selectors";
@@ -269,24 +270,21 @@ export function capHeatmapColumns<C extends { id: string }>(
   }[],
   max = MAX_HEATMAP_COLUMNS,
 ): C[] {
-  if (capabilities.length <= max) return [...capabilities];
-
   const worstGapByCapability = new Map<string, number>();
-  for (const architect of architects) {
-    for (const row of capabilityAveragesFor(architect.id)) {
-      if (row.avg === undefined || row.target === undefined) continue;
-      const gap = row.target - row.avg;
-      const prev = worstGapByCapability.get(row.capability.id) ?? -Infinity;
-      if (gap > prev) worstGapByCapability.set(row.capability.id, gap);
+  if (capabilities.length > max) {
+    for (const architect of architects) {
+      for (const row of capabilityAveragesFor(architect.id)) {
+        if (row.avg === undefined || row.target === undefined) continue;
+        const gap = row.target - row.avg;
+        const prev = worstGapByCapability.get(row.capability.id) ?? -Infinity;
+        if (gap > prev) worstGapByCapability.set(row.capability.id, gap);
+      }
     }
   }
 
-  const ranked = capabilities
-    .map((c, index) => ({ index, score: worstGapByCapability.get(c.id) ?? -Infinity }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, max);
-  const keep = new Set(ranked.map((r) => r.index));
-  return capabilities.filter((_, index) => keep.has(index));
+  // OO3-11/D-3 (reuso final) — o ranking em si é o `topByRelevance`
+  // compartilhado com o radar; aqui só entra o critério (pior gap).
+  return topByRelevance(capabilities, (c) => worstGapByCapability.get(c.id) ?? -Infinity, max);
 }
 
 /** Aviso visível + alternância "mostrar todas" — wrapper fino de `TruncationNotice` (OO3-11/D-2). */

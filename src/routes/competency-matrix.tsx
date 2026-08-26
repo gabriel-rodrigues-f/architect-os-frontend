@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { EmptyState, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Badge } from "@/components/ui/badge";
@@ -174,10 +174,7 @@ function MatrixPage() {
       </SectionCard>
 
       {store.capabilities.length === 0 && (
-        <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">{t("matrix.empty.title")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("matrix.empty.hint")}</p>
-        </div>
+        <EmptyState title={t("matrix.empty.title")} hint={t("matrix.empty.hint")} />
       )}
 
       {store.capabilities.length > 0 && (
@@ -247,13 +244,13 @@ function MatrixPage() {
 
         if (visibleCapabilities.length === 0) {
           return (
-            <div className="surface-card p-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                {term
+            <EmptyState
+              hint={
+                term
                   ? t("matrix.search.empty", { termo: search.trim() })
-                  : t("matrix.filter.curation.empty")}
-              </p>
-            </div>
+                  : t("matrix.filter.curation.empty")
+              }
+            />
           );
         }
 
