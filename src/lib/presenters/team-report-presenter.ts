@@ -4,20 +4,6 @@ import { defaultGapSeverityRuler, type GapSeverityRuler } from "../scoring-bands
 import type { CapabilityAverage, ConsolidatedGapRow } from "../selectors";
 import { defaultDateFormatter } from "../text";
 
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-28 (§40/§41) — o
- * relatório do time (`/progression`) é gerado inteiramente no cliente: os
- * números já são os mesmos que a tela mostra (`useGapAnalysisData`,
- * `sel.capabilityAverages`).
- *
- * OO3-11j — as 8 funções soltas de `team-report-shared.ts` viraram esta
- * classe (apresentação: cabeçalhos, linhas, rótulos, nome do arquivo);
- * `downloadBlob` foi para `lib/download.ts` (efeito de DOM) e `isoDate`
- * virou `DateFormatter.isoDate`. A montagem de CSV (RFC 4180) e a de PDF
- * (jsPDF) ficam nos seus módulos — é serialização, não apresentação, e o
- * isolamento do `jspdf` (~600kB, import dinâmico em `progression.tsx`) não
- * pode ser quebrado: esta classe NÃO importa `jspdf`, nem transitivamente.
- */
 export interface TeamReportInput {
   scopeLabel: string;
   generatedAt: Date;
@@ -32,19 +18,12 @@ export interface TeamReportInput {
 export type T = (key: MessageKey, params?: Record<string, string | number>) => string;
 
 export class TeamReportPresenter {
-  /**
-   * CFG-02 — a régua de gap entra por parâmetro (quem exporta passa a
-   * efetiva, carregada de `/api/config/bands` via `useGapSeverityRuler`);
-   * o default é a régua do seed — mesmo comportamento de sempre para
-   * testes e chamadas que não a fornecem.
-   */
   constructor(
     private readonly t: T,
     private readonly input: TeamReportInput,
     private readonly ruler: GapSeverityRuler = defaultGapSeverityRuler,
   ) {}
 
-  /** R2-ESC-02 — dedup das siglas enquanto o catálogo tiver duplicatas legadas. */
   get heatmapHead(): string[] {
     const shortLabels = capabilityShortLabels(this.input.capabilities);
     return [
@@ -53,7 +32,6 @@ export class TeamReportPresenter {
     ];
   }
 
-  /** Uma linha por arquiteto; "—" onde não há média (nunca `0` — ausência não é nível baixo). */
   get heatmapBody(): (string | number)[][] {
     return this.input.architects.map((a) => {
       const averages = this.input.capabilityAveragesFor(a.id);
@@ -66,7 +44,6 @@ export class TeamReportPresenter {
     });
   }
 
-  /** Colunas da tabela de lacunas — `mastery` omite a coluna de tipo (sem "próximo nível" pra bloquear). */
   gapColumns(mastery: boolean): string[] {
     return [
       this.t("col.competency"),
@@ -93,7 +70,6 @@ export class TeamReportPresenter {
     ]);
   }
 
-  /** Nome do arquivo exportado — data em UTC de propósito (mudar para fuso local trocaria o nome à noite no Brasil). */
   filename(extension: "csv" | "pdf"): string {
     return `progressao-time-${defaultDateFormatter.isoDate(this.input.generatedAt)}.${extension}`;
   }
@@ -106,20 +82,12 @@ export class TeamReportPresenter {
     return this.input.capabilities.find((c) => c.id === id)?.name ?? id;
   }
 
-  /** Coluna "Tipo" — bloqueante × oportunidade. */
   private gapTypeLabel(row: ConsolidatedGapRow): string {
     return row.requirementType === "RESTRICTIVE"
       ? this.t("gap.type.blocking")
       : this.t("gap.type.opportunity");
   }
 
-  /**
-   * Coluna "Classificação" — a MESMA régua do `GapBadge` na tela, agora de
-   * fato compartilhada via `GapSeverityRuler` (OO3-11i/CFG-02) em vez de
-   * reproduzida à mão — o fim da régua dupla que o comentário do antigo
-   * `team-report-shared.ts` aceitava "por ser trivial de auditar lado a
-   * lado".
-   */
   private gapClassificationLabel(row: ConsolidatedGapRow, mastery: boolean): string {
     if (mastery) return this.t("gap.mastery.badge", { n: row.maxGap });
     const gap = row.maxGap;

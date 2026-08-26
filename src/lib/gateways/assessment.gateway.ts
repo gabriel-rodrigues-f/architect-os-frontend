@@ -15,15 +15,8 @@ export interface AssessmentItemPatch {
   final?: Level;
 }
 
-/** Autor, papel e datas são preenchidos pelo servidor a partir da sessão. */
 export type CommentInput = Pick<AssessmentComment, "text">;
 
-/**
- * OO-FE-02 — gateway do contexto "avaliação" (assessment). Ver
- * `cycles.gateway.ts` para a explicação do padrão interface + `Http*` e do
- * porquê dos métodos serem arrow functions de campo (spread-safe na
- * fachada `api.ts`).
- */
 export interface AssessmentGateway {
   openAssessment(architectId: string, cycleId: string): Promise<Assessment>;
   setAssessmentStatus(
@@ -82,7 +75,6 @@ export class HttpAssessmentGateway implements AssessmentGateway {
   openAssessment = (architectId: string, cycleId: string): Promise<Assessment> =>
     this.client.post<Assessment>("/api/assessments", { architectId, cycleId });
 
-  /** AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-18 — `expectedVersion` obrigatório: concorrência otimista na transição de status. */
   setAssessmentStatus = (
     id: string,
     status: Assessment["status"],
@@ -90,7 +82,6 @@ export class HttpAssessmentGateway implements AssessmentGateway {
   ): Promise<Assessment> =>
     this.client.patch<Assessment>(`/api/assessments/${id}/status`, { status, expectedVersion });
 
-  /** B-18 — idem, por item: concorrência otimista independente por competência. */
   patchAssessmentItem = (
     assessmentId: string,
     competencyId: string,
@@ -132,11 +123,6 @@ export class HttpAssessmentGateway implements AssessmentGateway {
       `/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`,
     );
 
-  /**
-   * ENT-CAR-014 — portfólio individual de capacidades. "Profissional
-   * propõe" (`addAssessmentCapability`, só `Draft`), "Tech Lead confirma"
-   * (`confirmAssessmentCapability`, só `In Review`).
-   */
   assessmentCapabilities = (assessmentId: string): Promise<AssessmentCapability[]> =>
     this.client.request<AssessmentCapability[]>(`/api/assessments/${assessmentId}/capabilities`);
 
@@ -148,12 +134,6 @@ export class HttpAssessmentGateway implements AssessmentGateway {
       capabilityId,
     });
 
-  /**
-   * ORIENTACAO-NONA-RODADA, Seção 8, problema 3 — remover uma capacidade
-   * com competência já respondida devolve 409 (`hadAnsweredItems: true`)
-   * sem `force`; a tela precisa pedir confirmação explícita e reenviar
-   * com `force=true` antes de descartar as respostas.
-   */
   removeAssessmentCapability = (
     assessmentId: string,
     capabilityId: string,
@@ -172,15 +152,9 @@ export class HttpAssessmentGateway implements AssessmentGateway {
       {},
     );
 
-  /** ENT-CAR-015/016 — portfólio + qualificação + política do próximo nível, já juntos. */
   assessmentEligibility = (assessmentId: string): Promise<AssessmentEligibility> =>
     this.client.request<AssessmentEligibility>(`/api/assessments/${assessmentId}/eligibility`);
 
-  /**
-   * ESPECIFICACAO-OITAVA-RODADA, Seção 18 — "Começar/Parar/Continuar".
-   * `expectedVersion` sempre a versão já lida (0 quando `GET` ainda não
-   * devolveu nenhuma escrita — sentinel de "ainda não existe").
-   */
   assessmentDevelopmentSummary = (assessmentId: string): Promise<AssessmentDevelopmentSummary> =>
     this.client.request<AssessmentDevelopmentSummary>(
       `/api/assessments/${assessmentId}/development-summary`,

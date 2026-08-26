@@ -1,11 +1,6 @@
 import type { MentoringSession, ProficiencyUpdate } from "../domain";
 import type { ApiClient } from "../api-client";
 
-/**
- * OO-FE-02 — gateway do contexto "mentoria". Ver `cycles.gateway.ts` para a
- * explicação do padrão interface + `Http*` e do porquê dos métodos serem
- * arrow functions de campo (spread-safe na fachada `api.ts`).
- */
 export interface MentoringGateway {
   createMentoringSession(
     session: MentoringSession,

@@ -1,12 +1,6 @@
 import type { LearningPath, LearningPathItem } from "../domain";
 import type { ApiClient } from "../api-client";
 
-/**
- * OO-FE-02 — gateway do contexto "trilhas de aprendizagem". Ver
- * `cycles.gateway.ts` para a explicação do padrão interface + `Http*` e do
- * porquê dos métodos serem arrow functions de campo (spread-safe na
- * fachada `api.ts`).
- */
 export interface LearningGateway {
   createLearningPath(path: LearningPath): Promise<LearningPath>;
   updateLearningPath(
@@ -48,7 +42,6 @@ export class HttpLearningGateway implements LearningGateway {
   removeLearningItem = (pathId: string, itemId: string): Promise<LearningPath> =>
     this.client.del<LearningPath>(`/api/learning-paths/${pathId}/items/${itemId}`);
 
-  /** Progresso é por pessoa: só a própria pessoa (ou admin) pode registrar o dela. */
   patchLearningItemProgress = (
     pathId: string,
     architectId: string,
