@@ -2,6 +2,7 @@ import type { Architect, DevelopmentPlan, MentoringSession, ProficiencyUpdate } 
 import type { Gap } from "../selectors";
 import type { Api } from "../store";
 import { defaultDateFormatter } from "../text";
+import { createPlanItemFromGap } from "./plan-item-from-gap";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -187,14 +188,14 @@ export class MentoringViewModel {
     mentee: Pick<Architect, "name">,
     eligible: { assessmentId: string; competencyId: string },
   ): Promise<DevelopmentPlan> {
-    return this.service.createPlanItemFromGap(session.menteeId, {
-      id: `pdi-${session.menteeId}-${eligible.competencyId}-${Date.now()}`,
+    // OO3-10b — o envelope invariante (id de cliente, startDate, delegação)
+    // mora no colaborador compartilhado com `DevelopmentPlansViewModel`.
+    return createPlanItemFromGap(this.service, session.menteeId, {
       assessmentId: eligible.assessmentId,
       competencyId: eligible.competencyId,
       objective: session.topic,
       actionType: "Mentor",
       actionPlan: session.actions,
-      startDate: defaultDateFormatter.todayIso(),
       targetDate: session.nextSession ?? defaultDateFormatter.todayIso(),
       owner: mentee.name,
     });

@@ -81,7 +81,6 @@ export const Route = createFileRoute("/development-plans")({
 const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Completed"];
 
 function PlansPage() {
-  const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
   const viewModel = useDevelopmentPlansViewModel();
@@ -350,9 +349,11 @@ function PlansPage() {
                         className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
                         value={item.actionType}
                         onChange={(e) =>
-                          store.updatePlanItem(plan!.id, item.id, {
-                            actionType: e.target.value as ActionType,
-                          })
+                          viewModel.setItemActionType(
+                            plan!.id,
+                            item.id,
+                            e.target.value as ActionType,
+                          )
                         }
                       >
                         {ACTION_TYPES.map((t) => (
@@ -371,9 +372,7 @@ function PlansPage() {
                         className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
                         value={item.status}
                         onChange={(e) =>
-                          store.updatePlanItem(plan!.id, item.id, {
-                            status: e.target.value as PdiStatus,
-                          })
+                          viewModel.setItemStatus(plan!.id, item.id, e.target.value as PdiStatus)
                         }
                       >
                         {STATUSES.map((s) => (
@@ -408,7 +407,7 @@ function PlansPage() {
                 <ActionPlanField
                   value={item.actionPlan}
                   disabled={!canEditExecution}
-                  onSave={(actionPlan) => store.updatePlanItem(plan!.id, item.id, { actionPlan })}
+                  onSave={(actionPlan) => viewModel.saveActionPlan(plan!.id, item.id, actionPlan)}
                 />
 
                 {item.smart && (
@@ -460,7 +459,7 @@ function PlansPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            store.removePlanItem(plan!.id, item.id);
+                            viewModel.removeItem(plan!.id, item.id);
                             toast.success(t("pdi.gap.removed.toast", { nome: competencyName }));
                           }}
                         >
@@ -475,7 +474,7 @@ function PlansPage() {
                   <SmartGoalEditor
                     onCancel={() => setSmartEditingId(null)}
                     onSave={(smart) => {
-                      store.updatePlanItem(plan!.id, item.id, { smart });
+                      viewModel.defineSmartGoal(plan!.id, item.id, smart);
                       setSmartEditingId(null);
                     }}
                   />
@@ -550,26 +549,9 @@ function PlansPage() {
             setCreatingError(null);
             setCreatingSubmitting(true);
             try {
-              /**
-               * ORIENTACAO-NONA-RODADA, Seção 4/11 (ENT-09-001/006) — único
-               * caminho para criar item de PDI a partir de GAP:
-               * currentLevel/targetLevel/priority nunca são enviados — o
-               * servidor deriva os três do assessment oficial
-               * (`assessmentId` + `competencyId`), nunca do que esta tela
-               * calcularia sozinha.
-               */
-              await store.createPlanItemFromGap(architectId, {
-                id: `pdi-${architectId}-${creatingForGap.item.competencyId}-${Date.now()}`,
-                assessmentId: creatingForGap.assessmentId,
-                competencyId: creatingForGap.item.competencyId,
-                objective: `Evoluir ${creatingForGap.competency?.name} do nível ${creatingForGap.item.final} para o nível ${creatingForGap.item.target}`,
-                actionType: draft.actionType,
-                actionPlan: draft.actionPlan,
-                startDate: defaultDateFormatter.todayIso(),
-                targetDate: draft.targetDate,
-                owner: architect.name,
-                dedicationHoursPerWeek: draft.dedicationHoursPerWeek,
-              });
+              // Montagem do payload (id de cliente, startDate, objetivo) mora
+              // no ViewModel — ver `DevelopmentPlansViewModel.createItemFromGap`.
+              await viewModel.createItemFromGap(architectId, creatingForGap, draft, architect.name);
               setCreatingForCompetencyId(null);
             } catch (error) {
               setCreatingError(error instanceof ApiError ? error.message : t("pdi.newItem.error"));
@@ -656,7 +638,7 @@ function DeadlineField({
   canReschedule: boolean;
 }) {
   const { t } = useI18n();
-  const store = useStore();
+  const viewModel = useDevelopmentPlansViewModel();
   const [rescheduling, setRescheduling] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -667,7 +649,7 @@ function DeadlineField({
           type="date"
           className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
           value={item.targetDate}
-          onChange={(e) => store.updatePlanItem(planId, item.id, { targetDate: e.target.value })}
+          onChange={(e) => viewModel.setItemTargetDate(planId, item.id, e.target.value)}
         />
       </Field>
     );
@@ -791,7 +773,7 @@ function RescheduleDialog({
   onSaved: () => void;
 }) {
   const { t, locale } = useI18n();
-  const store = useStore();
+  const viewModel = useDevelopmentPlansViewModel();
   const [targetDate, setTargetDate] = useState(item.targetDate);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -802,7 +784,7 @@ function RescheduleDialog({
     setSubmitting(true);
     setError(null);
     try {
-      await store.reschedulePlanItem(planId, item.id, targetDate, reason.trim());
+      await viewModel.reschedule(planId, item.id, targetDate, reason);
       onSaved();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t("pdi.reschedule.error"));
@@ -885,18 +867,17 @@ function CheckinTimeline({
 }) {
   const { t, locale } = useI18n();
   const user = useCurrentUser();
-  const store = useStore();
+  const viewModel = useDevelopmentPlansViewModel();
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
-    const trimmed = text.trim();
-    if (!trimmed || saving) return;
+    if (!text.trim() || saving) return;
     setError(null);
     setSaving(true);
     try {
-      await store.addPlanItemCheckin(planId, item.id, trimmed);
+      await viewModel.addCheckin(planId, item.id, text);
       setText("");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t("pdi.checkin.error"));
