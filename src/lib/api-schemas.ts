@@ -120,6 +120,16 @@ export const scoringBandsResponseSchema = z.object({
   CONCENTRATION_RISK: z.array(scoringBand).optional(),
 });
 
+/**
+ * CFG-03 — resposta de `GET /api/config/templates` (`ConfigGateway.
+ * templates`): `key → locale → template`, exatamente como
+ * `TextTemplateCatalog.groupedByKey()` serializa no backend. Keys e locales
+ * são strings livres de propósito — um template de key que este build não
+ * conhece não derruba o parse; quem completa keys/locales ausentes com o
+ * default é `withDefaultTextTemplates` (`text-templates.ts`).
+ */
+export const textTemplatesResponseSchema = z.record(z.record(z.string()));
+
 const architect = z.object({
   id: z.string(),
   name: z.string(),

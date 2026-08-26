@@ -1,6 +1,7 @@
 import type { ActionType, DevelopmentPlan, PdiStatus, SmartGoal } from "../domain";
 import type { Gap } from "../selectors";
 import type { Api } from "../store";
+import { defaultObjectiveFromGap, type RenderObjectiveFromGap } from "../text-templates";
 import { createPlanItemFromGap } from "./plan-item-from-gap";
 
 /**
@@ -63,7 +64,20 @@ export interface NewPlanItemDraft {
 }
 
 export class DevelopmentPlansViewModel {
-  constructor(private readonly service: DevelopmentPlanService) {}
+  /**
+   * CFG-03 — o texto do objetivo de PDI gerado a partir de gap deixou de
+   * ser literal pt-BR daqui: entra por injeção (mesmo padrão de
+   * `DashboardPresenter` recebendo o limiar efetivo), já fechado sobre o
+   * template efetivo (`text_templates` com fallback = seed) e o locale
+   * ATIVO do app — ver `useObjectiveFromGap` (`store.tsx`) e o hook
+   * adaptador `useDevelopmentPlansViewModel` (`routes/development-plans.tsx`).
+   * O default (seed, idioma base) preserva o comportamento antigo byte a
+   * byte para quem constrói sem injetar (testes, código não-React).
+   */
+  constructor(
+    private readonly service: DevelopmentPlanService,
+    private readonly objectiveFromGap: RenderObjectiveFromGap = defaultObjectiveFromGap,
+  ) {}
 
   async approve(planId: string): Promise<DevelopmentPlan> {
     return this.service.updatePlanStatus(planId, "Approved");
@@ -166,7 +180,10 @@ export class DevelopmentPlansViewModel {
    * oficial (`assessmentId` + `competencyId`). O envelope invariante (id de
    * cliente, `startDate`) mora no colaborador compartilhado com
    * `MentoringViewModel.sendToPlan` (`plan-item-from-gap.ts`); o objetivo em
-   * pt-BR desta tela ("Evoluir X do nível A para o nível B") é montado aqui.
+   * desta tela ("Evoluir X do nível A para o nível B") é renderizado aqui
+   * pelo `objectiveFromGap` injetado (CFG-03: template de `text_templates`
+   * no locale ativo; com app em pt e seed default, byte-idêntico ao literal
+   * antigo).
    */
   createItemFromGap(
     architectId: string,
@@ -177,7 +194,13 @@ export class DevelopmentPlansViewModel {
     return createPlanItemFromGap(this.service, architectId, {
       assessmentId: gap.assessmentId,
       competencyId: gap.item.competencyId,
-      objective: `Evoluir ${gap.competency?.name} do nível ${gap.item.final} para o nível ${gap.item.target}`,
+      // `${...}` preserva a coerção do literal antigo (competency é opcional
+      // no tipo, mas a tela só abre o diálogo com ela resolvida).
+      objective: this.objectiveFromGap({
+        competencia: `${gap.competency?.name}`,
+        atual: gap.item.final,
+        alvo: gap.item.target,
+      }),
       actionType: draft.actionType,
       actionPlan: draft.actionPlan,
       targetDate: draft.targetDate,

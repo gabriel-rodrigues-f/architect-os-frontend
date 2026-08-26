@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { DevelopmentPlan, SmartGoal } from "@/lib/domain";
 import type { Gap } from "@/lib/selectors";
+import { objectiveFromGapRenderer, withDefaultTextTemplates } from "@/lib/text-templates";
 import {
   DevelopmentPlansViewModel,
   type DevelopmentPlanService,
@@ -269,6 +270,41 @@ describe("DevelopmentPlansViewModel", () => {
         Record<string, unknown>,
       ];
       expect(item).toHaveProperty("dedicationHoursPerWeek", null);
+    });
+
+    // CFG-03 — o objetivo passa a vir do template de `text_templates` no
+    // locale ativo, injetado no construtor. Sem injeção (testes acima), o
+    // default = seed em pt, byte-idêntico ao literal antigo.
+
+    it("app em en: objetivo persistido em inglês (era o bug — texto sempre pt)", async () => {
+      const service = fakeService();
+      const vm = new DevelopmentPlansViewModel(
+        service,
+        objectiveFromGapRenderer(withDefaultTextTemplates(), "en"),
+      );
+      await vm.createItemFromGap("ana", officialGap, draft, "Ana Martins");
+      expect(service.createPlanItemFromGap).toHaveBeenCalledWith(
+        "ana",
+        expect.objectContaining({ objective: "Evolve Kubernetes from level 1 to level 2" }),
+      );
+    });
+
+    it("guard rail: template alterado pelo admin (PUT) muda o objetivo gerado sem deploy", async () => {
+      const service = fakeService();
+      const vm = new DevelopmentPlansViewModel(
+        service,
+        objectiveFromGapRenderer(
+          withDefaultTextTemplates({
+            "pdi.objective.fromGap": { pt: "Levar {competencia} ao nível {alvo} (hoje {atual})" },
+          }),
+          "pt",
+        ),
+      );
+      await vm.createItemFromGap("ana", officialGap, draft, "Ana Martins");
+      expect(service.createPlanItemFromGap).toHaveBeenCalledWith(
+        "ana",
+        expect.objectContaining({ objective: "Levar Kubernetes ao nível 2 (hoje 1)" }),
+      );
     });
 
     it("propaga o erro do serviço (gap inválido, capacidade não confirmada) — o diálogo decide a mensagem", async () => {

@@ -22,6 +22,7 @@ import type {
   MentoringSession,
   ProficiencyUpdate,
 } from "./domain";
+import { useI18n } from "./i18n";
 import { MutationRunner } from "./mutation-runner";
 import {
   gapSeverityRulerFrom,
@@ -31,6 +32,12 @@ import {
 } from "./scoring-bands";
 import { createSelectors, emptyState } from "./selectors";
 import { defaultNameFormatter } from "./text";
+import {
+  objectiveFromGapRenderer,
+  withDefaultTextTemplates,
+  type RenderObjectiveFromGap,
+  type TextTemplates,
+} from "./text-templates";
 
 export const STATE_QUERY_KEY = ["app-state"] as const;
 
@@ -68,6 +75,33 @@ export function useScoringBands(): ScoringBands {
 export function useGapSeverityRuler(): GapSeverityRuler {
   const bands = useScoringBands();
   return useMemo(() => gapSeverityRulerFrom(bands.GAP_SEVERITY), [bands]);
+}
+
+/**
+ * CFG-03 — os templates de texto de domínio (`text_templates`) entram pelo
+ * MESMO padrão de `useScoringBands` acima: `useQuery` próprio, endpoint por
+ * contexto (`GET /api/config/templates`), cache e isolamento de falha
+ * independentes do resto do estado. Enquanto a consulta não resolve (ou se
+ * falhar), `withDefaultTextTemplates` completa com o default byte-idêntico
+ * ao seed — comportamento igual ao hardcoded antigo.
+ */
+export const TEXT_TEMPLATES_QUERY_KEY = ["config-templates"] as const;
+export function useTextTemplates(): TextTemplates {
+  const { data } = useQuery({ queryKey: TEXT_TEMPLATES_QUERY_KEY, queryFn: api.templates });
+  return useMemo(() => withDefaultTextTemplates(data), [data]);
+}
+
+/**
+ * O renderer EFETIVO do objetivo de PDI a partir de gap: template do
+ * servidor (com fallback) no locale ATIVO do app — quem decide pt/en é o
+ * mecanismo i18n existente (`useI18n().locale`), não uma escolha nova. É o
+ * que o hook adaptador da tela injeta no `DevelopmentPlansViewModel`
+ * (mesmo padrão de `useDashboardPresenter` com `criticalThreshold`).
+ */
+export function useObjectiveFromGap(): RenderObjectiveFromGap {
+  const templates = useTextTemplates();
+  const { locale } = useI18n();
+  return useMemo(() => objectiveFromGapRenderer(templates, locale), [templates, locale]);
 }
 
 /**
