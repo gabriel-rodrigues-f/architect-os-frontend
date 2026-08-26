@@ -1,5 +1,12 @@
 import type { Architect, Capability } from "../domain";
 import type { MessageKey } from "../i18n";
+import {
+  concentrationRiskMaxReferencesFrom,
+  DEFAULT_SCORING_BANDS,
+  proficiencyViewBandsFrom,
+  type ProficiencyViewBand,
+  type ScoringBand,
+} from "../scoring-bands";
 import type { CapabilityAverage } from "../selectors";
 
 /**
@@ -23,25 +30,15 @@ import type { CapabilityAverage } from "../selectors";
  * ocidental da esquerda para a direita acompanhar a evolução do time.
  * Cada faixa é `min <= nível < max`; as pontas usam ±Infinity de propósito
  * ("developing" pega qualquer coisa abaixo de 2.5, inclusive nível 1).
+ *
+ * CFG-02 — os cortes deixaram de ser literais aqui: a escala PROFICIENCY
+ * vem de `GET /api/config/bands` (via `useScoringBands`, passada no
+ * construtor); este export é a MESMA lista derivada do default
+ * (`DEFAULT_SCORING_BANDS`, o fallback byte-idêntico ao seed).
  */
-export const BANDS = [
-  {
-    key: "developing",
-    labelKey: "cap.band.developing",
-    tone: "bg-level-1/60",
-    min: -Infinity,
-    max: 2.5,
-  },
-  {
-    key: "practitioners",
-    labelKey: "cap.band.practitioners",
-    tone: "bg-level-3/60",
-    min: 2.5,
-    max: 3.5,
-  },
-  { key: "advanced", labelKey: "cap.band.advanced", tone: "bg-level-4/60", min: 3.5, max: 4.5 },
-  { key: "experts", labelKey: "cap.band.experts", tone: "bg-level-5/60", min: 4.5, max: Infinity },
-] as const;
+export const BANDS: readonly ProficiencyViewBand[] = proficiencyViewBandsFrom(
+  DEFAULT_SCORING_BANDS.PROFICIENCY,
+);
 
 /**
  * Estados explícitos de risco de concentração — antes um `else` genérico
@@ -68,15 +65,34 @@ export interface CapabilityCoverageArea {
 }
 
 export class CapabilityCoveragePresenter {
+  /** As faixas efetivas da tela (cabeçalho da tabela e baldes dos cards) — derivadas da escala recebida. */
+  readonly bands: readonly ProficiencyViewBand[];
+  private readonly concentrationRiskMaxReferences: number;
+
+  /**
+   * CFG-02 — as réguas (PROFICIENCY e CONCENTRATION_RISK) entram por
+   * parâmetro, com o default byte-idêntico ao seed: a rota passa o que
+   * `useScoringBands` carregou; testes que não configuram nada continuam
+   * exercendo exatamente o comportamento antigo.
+   */
   constructor(
     private readonly capabilities: readonly Capability[],
     private readonly capabilityAveragesFor: (architectId: string) => readonly CapabilityAverage[],
-  ) {}
+    scales: {
+      PROFICIENCY: readonly ScoringBand[];
+      CONCENTRATION_RISK: readonly ScoringBand[];
+    } = DEFAULT_SCORING_BANDS,
+  ) {
+    this.bands = proficiencyViewBandsFrom(scales.PROFICIENCY);
+    this.concentrationRiskMaxReferences = concentrationRiskMaxReferencesFrom(
+      scales.CONCENTRATION_RISK,
+    );
+  }
 
   classifyRisk(assessedCount: number, referenceCount: number): RiskState {
     if (assessedCount === 0) return "insufficientData";
     if (referenceCount === 0) return "noReference";
-    if (referenceCount === 1) return "concentrationRisk";
+    if (referenceCount < this.concentrationRiskMaxReferences) return "concentrationRisk";
     return "distributedCoverage";
   }
 
@@ -98,7 +114,7 @@ export class CapabilityCoveragePresenter {
           (p): p is { architect: Architect; level: number } => p.level !== undefined,
         );
         const notAssessed = people.length - assessed.length;
-        const bands = BANDS.map((band) => ({
+        const bands = this.bands.map((band) => ({
           ...band,
           people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
         }));

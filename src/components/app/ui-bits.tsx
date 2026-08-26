@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { GAP_SEVERITY_MESSAGE_KEY, gapSeverityOf } from "@/lib/domain";
+import { useGapSeverityRuler } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { defaultNameFormatter } from "@/lib/text";
@@ -103,6 +103,7 @@ const gapTone: Record<string, string> = {
 /** `gap` undefined = sem nível final ainda (não avaliado); mostra "—", nunca um gap fabricado. */
 export function GapBadge({ gap }: { gap: number | undefined }) {
   const { t } = useI18n();
+  const ruler = useGapSeverityRuler();
   if (gap === undefined) {
     return (
       <span
@@ -113,9 +114,9 @@ export function GapBadge({ gap }: { gap: number | undefined }) {
       </span>
     );
   }
-  /** OO3-11i — régua única de severidade (`domain.gapSeverityOf`), compartilhada com o relatório do time. */
-  const tone = gapSeverityOf(gap);
-  const label = t(GAP_SEVERITY_MESSAGE_KEY[tone]);
+  /** OO3-11i/CFG-02 — régua única de severidade, agora a EFETIVA (`/api/config/bands`, fallback = seed), compartilhada com o relatório do time. */
+  const tone = ruler.severityOf(gap);
+  const label = t(ruler.messageKey[tone]);
   return (
     <span
       className={cn(

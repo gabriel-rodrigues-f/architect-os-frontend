@@ -1,4 +1,5 @@
 import type { MessageKey } from "./i18n";
+import { defaultGapSeverityRuler, type BandTone } from "./scoring-bands";
 import type { SelectionScope as GenericSelectionScope } from "./selection";
 
 export type Level = 1 | 2 | 3 | 4 | 5;
@@ -716,14 +717,17 @@ export interface Evidence {
  * cada degrau (`GAP_SEVERITY_MESSAGE_KEY`) — o texto continua vindo do `t()`
  * de quem exibe.
  */
-export type GapSeverity = "ok" | "low" | "high" | "critical";
+export type GapSeverity = BandTone;
 
-export const gapSeverityOf = (gap: number): GapSeverity =>
-  gap <= 0 ? "ok" : gap === 1 ? "low" : gap === 2 ? "high" : "critical";
+/**
+ * CFG-02 — a régua deixou de ser literal aqui: estes dois exports agora são
+ * a régua DEFAULT, derivada de `DEFAULT_SCORING_BANDS` (`scoring-bands.ts`,
+ * o único lugar onde os cortes antigos sobrevivem como fallback do seed).
+ * Consumidores React usam a régua efetiva (servidor com fallback) via
+ * `useGapSeverityRuler` (`store.tsx`); código não-React recebe um
+ * `GapSeverityRuler` por parâmetro (`TeamReportPresenter`).
+ */
+export const gapSeverityOf: (gap: number) => GapSeverity = defaultGapSeverityRuler.severityOf;
 
-export const GAP_SEVERITY_MESSAGE_KEY: Record<GapSeverity, MessageKey> = {
-  ok: "gap.ok",
-  low: "gap.recommended",
-  high: "gap.highPriority",
-  critical: "gap.critical",
-};
+export const GAP_SEVERITY_MESSAGE_KEY: Record<GapSeverity, MessageKey> =
+  defaultGapSeverityRuler.messageKey;

@@ -6,13 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { ViewToggle } from "@/components/app/ViewToggle";
 import { useCurrentUser } from "@/lib/auth";
 import {
-  BANDS,
   CapabilityCoveragePresenter,
   type RiskState,
 } from "@/lib/presenters/capability-coverage-presenter";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { useSelectors, useStore } from "@/lib/store";
+import { useScoringBands, useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
@@ -45,10 +44,13 @@ function CapabilityMapPage() {
   /** População visível ao viewer — ver o docstring de `ArchitectSelectors.visibleTo` (ANA-001). */
   const population = sel.visibleArchitects(user);
 
+  /** CFG-02 — as réguas da tela (faixas de proficiência e limiar de concentração) vêm de `/api/config/bands`, com o default do seed como fallback. */
+  const scoringBands = useScoringBands();
+
   /** OO3-11h — faixas + risco de concentração moram no `CapabilityCoveragePresenter` (`lib/presenters/`). */
   const presenter = useMemo(
-    () => new CapabilityCoveragePresenter(store.capabilities, sel.capabilityAverages),
-    [store.capabilities, sel],
+    () => new CapabilityCoveragePresenter(store.capabilities, sel.capabilityAverages, scoringBands),
+    [store.capabilities, sel, scoringBands],
   );
   const withRisk = presenter.areas(population);
 
@@ -97,7 +99,7 @@ function CapabilityMapPage() {
                       <th scope="col" className="px-4 py-3">
                         {t("col.capability")}
                       </th>
-                      {BANDS.map((band) => (
+                      {presenter.bands.map((band) => (
                         <th key={band.key} scope="col" className="px-4 py-3 text-center">
                           {t(band.labelKey)}
                         </th>

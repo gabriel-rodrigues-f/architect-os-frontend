@@ -4,6 +4,7 @@ import {
   type T,
   type TeamReportInput,
 } from "@/lib/presenters/team-report-presenter";
+import type { GapSeverityRuler } from "@/lib/scoring-bands";
 
 /** Escapa um campo para CSV (RFC 4180): aspas duplicadas, campo entre aspas se tiver vírgula/aspas/quebra de linha. */
 function csvField(value: string | number): string {
@@ -31,8 +32,8 @@ function gapRowsToCsv(
  * OO3-11j — o conteúdo (cabeçalhos, linhas, rótulos, nome do arquivo) vem do
  * `TeamReportPresenter`; aqui fica só a serialização CSV.
  */
-export function exportTeamReportCsv(t: T, input: TeamReportInput): void {
-  const presenter = new TeamReportPresenter(t, input);
+export function exportTeamReportCsv(t: T, input: TeamReportInput, ruler?: GapSeverityRuler): void {
+  const presenter = new TeamReportPresenter(t, input, ruler);
   const heatmapHeader = csvRow(presenter.heatmapHead);
   const heatmapRows = presenter.heatmapBody.map(csvRow).join("");
 

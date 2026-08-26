@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { Architect, Capability } from "@/lib/domain";
-import { CapabilityCoveragePresenter } from "@/lib/presenters/capability-coverage-presenter";
+import { BANDS, CapabilityCoveragePresenter } from "@/lib/presenters/capability-coverage-presenter";
+import { DEFAULT_SCORING_BANDS, type ScoringBand } from "@/lib/scoring-bands";
 import type { CapabilityAverage } from "@/lib/selectors";
 
 /**
@@ -91,5 +92,78 @@ describe("CapabilityCoveragePresenter.areas", () => {
     const inativa = capability("legacy", false);
     const presenter = new CapabilityCoveragePresenter([inativa], () => []);
     expect(presenter.areas([architect("ana")])).toEqual([]);
+  });
+});
+
+/**
+ * CFG-02 — as réguas do presenter (PROFICIENCY e CONCENTRATION_RISK) vêm de
+ * `/api/config/bands`; sem escalas no construtor, o default reproduz o
+ * comportamento antigo (é o que TODOS os testes acima exercem).
+ */
+describe("CapabilityCoveragePresenter com escalas configuradas (CFG-02)", () => {
+  const scaleBand = (overrides: Partial<ScoringBand>): ScoringBand => ({
+    key: "x",
+    minValue: null,
+    maxValue: null,
+    labelKey: "cap.band.developing",
+    tone: "ok",
+    sortOrder: 1,
+    ...overrides,
+  });
+
+  it("fallback: sem escalas, bands do presenter = BANDS default (cortes 2.5/3.5/4.5)", () => {
+    const presenter = presenterWithLevels({});
+    expect(presenter.bands).toEqual(BANDS);
+    expect(presenter.bands.map((b) => [b.min, b.max])).toEqual([
+      [-Infinity, 2.5],
+      [2.5, 3.5],
+      [3.5, 4.5],
+      [4.5, Infinity],
+    ]);
+  });
+
+  it("PROFICIENCY fake muda os cortes: nível 2.5 muda de faixa quando o corte sobe para 3", () => {
+    const cap = capability("cloud");
+    const averagesFor = (): CapabilityAverage[] => [
+      { capability: cap, avg: 2.5, target: undefined },
+    ];
+    const presenter = new CapabilityCoveragePresenter([cap], averagesFor, {
+      PROFICIENCY: [
+        scaleBand({ key: "developing", maxValue: 3, tone: "low", sortOrder: 1 }),
+        scaleBand({ key: "experts", minValue: 3, labelKey: "cap.band.experts", sortOrder: 2 }),
+      ],
+      CONCENTRATION_RISK: DEFAULT_SCORING_BANDS.CONCENTRATION_RISK,
+    });
+    const [area] = presenter.areas([architect("ana")]);
+    const byKey = Object.fromEntries(area!.bands.map((b) => [b.key, b.people.length]));
+    expect(byKey).toEqual({ developing: 1, experts: 0 }); // no default, 2.5 era practitioners
+  });
+
+  it("CONCENTRATION_RISK fake sobe o limiar: com corte em 3, DUAS referências ainda são concentração", () => {
+    const cap = capability("cloud");
+    const averagesFor = (): CapabilityAverage[] => [{ capability: cap, avg: 4, target: undefined }];
+    const presenter = new CapabilityCoveragePresenter([cap], averagesFor, {
+      PROFICIENCY: DEFAULT_SCORING_BANDS.PROFICIENCY,
+      CONCENTRATION_RISK: [
+        scaleBand({
+          key: "concentrationRisk",
+          maxValue: 3,
+          tone: "critical",
+          labelKey: "cap.risk.badge.concentrationRisk",
+          sortOrder: 1,
+        }),
+        scaleBand({
+          key: "distributedCoverage",
+          minValue: 3,
+          labelKey: "cap.risk.badge.distributedCoverage",
+          sortOrder: 2,
+        }),
+      ],
+    });
+    expect(presenter.classifyRisk(3, 2)).toBe("concentrationRisk"); // no default, 2 já distribuía
+    expect(presenter.classifyRisk(3, 3)).toBe("distributedCoverage");
+    expect(presenter.areas([architect("ana"), architect("bruno")])[0]!.risk).toBe(
+      "concentrationRisk",
+    );
   });
 });
