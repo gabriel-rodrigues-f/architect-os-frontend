@@ -24,7 +24,8 @@ import {
   type Level,
   type RequirementType,
 } from "@/lib/domain";
-import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
@@ -484,27 +485,21 @@ function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
   const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
   const [name, setName] = useState("");
-  const [saving, setSaving] = useState(false);
+  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+  const { submitting: saving, run } = useToastSubmit();
 
   const create = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    setSaving(true);
-    try {
-      // B-32 — id gerado no servidor (nunca mais slug(nome), que colidia
-      // entre duas capacidades de nome parecido).
-      //
-      // ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` não é mais coletado neste
-      // diálogo (pedido direto da dona do produto: nunca mais digitar a
-      // sigla manualmente). O backend gera automaticamente a partir de
-      // `name`, com resolução de colisão, quando o campo não vem no corpo.
-      await viewModel.createCapability(name);
-      onClose();
-    } catch (error) {
-      toast.error(authErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
+    // B-32 — id gerado no servidor (nunca mais slug(nome), que colidia
+    // entre duas capacidades de nome parecido).
+    //
+    // ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` não é mais coletado neste
+    // diálogo (pedido direto da dona do produto: nunca mais digitar a
+    // sigla manualmente). O backend gera automaticamente a partir de
+    // `name`, com resolução de colisão, quando o campo não vem no corpo.
+    const result = await run(() => viewModel.createCapability(name));
+    if (result.ok) onClose();
   };
 
   return (
@@ -619,17 +614,21 @@ function CompetencyCreateDialog({
     nonRestrictiveFull ? "RESTRICTIVE" : "NON_RESTRICTIVE",
   );
   const canSave = viewModel.canCreateCompetency(name, levels, careerLevels);
+  /**
+   * OO3-18/F-1 — era um dos 3 call sites SEM `finally`/`setSaving`: o botão
+   * "Adicionar" aceitava re-submit durante a chamada em voo (bug latente de
+   * competência duplicada). `submitting` agora desabilita.
+   */
+  const { submitting: saving, run } = useToastSubmit();
 
   const save = async () => {
     if (!canSave) return;
     // B-32 — id gerado no servidor (nunca mais derivado do nome, que
     // colidia entre duas competências homônimas em capacidades distintas).
-    try {
-      await viewModel.createCompetency(capability.id, name, levels, requirementType);
-      onClose();
-    } catch (error) {
-      toast.error(authErrorMessage(error));
-    }
+    const result = await run(() =>
+      viewModel.createCompetency(capability.id, name, levels, requirementType),
+    );
+    if (result.ok) onClose();
   };
 
   return (
@@ -713,7 +712,7 @@ function CompetencyCreateDialog({
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={save} disabled={!canSave}>
+          <Button onClick={save} disabled={!canSave || saving}>
             {t("matrix.add")}
           </Button>
         </DialogFooter>

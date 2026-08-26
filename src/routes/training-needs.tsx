@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Button } from "@/components/ui/button";
-import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
@@ -50,6 +51,7 @@ function TrainingNeedsPage() {
   const collectiveEligible = needs.filter((n) => n.people >= 3);
   const [showAllCollective, setShowAllCollective] = useState(false);
   const collective = showAllCollective ? collectiveEligible : collectiveEligible.slice(0, 6);
+  const { submitting, run } = useToastSubmit();
 
   /**
    * "Intervenção coletiva" não é uma entidade nova — é a mesma Trilha de
@@ -64,23 +66,27 @@ function TrainingNeedsPage() {
    * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001.
    */
   const createIntervention = async (need: (typeof needs)[number]) => {
-    if (!need.competency) return;
-    try {
-      await store.addLearningPath({
+    const competency = need.competency;
+    if (!competency) return;
+    // OO3-18/F-1 — era um dos 3 call sites SEM `finally`/`setSaving`: o botão
+    // "Criar intervenção" aceitava cliques repetidos durante a chamada em voo
+    // (bug latente de trilha duplicada). `submitting` agora desabilita.
+    const result = await run(() =>
+      store.addLearningPath({
         id: "",
-        name: t("needs.intervention.pathName", { competencia: need.competency.name }),
+        name: t("needs.intervention.pathName", { competencia: competency.name }),
         description: t("needs.intervention.pathDescription", { n: need.people }),
-        competencyIds: [need.competency.id],
+        competencyIds: [competency.id],
         assignedTo: need.architectIds,
         items: [],
         progress: [],
         createdBy: user.email,
         createdByUserId: user.id,
         createdAt: new Date().toISOString(),
-      });
-      toast.success(t("needs.intervention.toast", { competencia: need.competency.name }));
-    } catch (error) {
-      toast.error(authErrorMessage(error));
+      }),
+    );
+    if (result.ok) {
+      toast.success(t("needs.intervention.toast", { competencia: competency.name }));
     }
   };
 
@@ -193,7 +199,12 @@ function TrainingNeedsPage() {
                       {t("needs.intervention.view")}
                     </Link>
                   ) : (
-                    <Button size="sm" variant="secondary" onClick={() => createIntervention(n)}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={submitting}
+                      onClick={() => createIntervention(n)}
+                    >
                       {t("needs.intervention.create")}
                     </Button>
                   )}

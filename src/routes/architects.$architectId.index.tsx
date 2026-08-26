@@ -32,7 +32,8 @@ import {
   type Evidence,
   type EvidenceType,
 } from "@/lib/domain";
-import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters/dashboard-presenter";
@@ -538,7 +539,8 @@ function EvidenceDialog({
   const [url, setUrl] = useState("");
   const [issuer, setIssuer] = useState("");
   const [pdiItemId, setPdiItemId] = useState("");
-  const [saving, setSaving] = useState(false);
+  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+  const { submitting: saving, run } = useToastSubmit();
   const isCertification = type === "Certification";
 
   /**
@@ -550,9 +552,8 @@ function EvidenceDialog({
   const salvar = async () => {
     const nome = title.trim();
     if (!nome) return;
-    setSaving(true);
-    try {
-      await viewModel.registerEvidence(architectId, {
+    const result = await run(() =>
+      viewModel.registerEvidence(architectId, {
         title,
         description,
         type,
@@ -562,20 +563,17 @@ function EvidenceDialog({
         url,
         issuer,
         pdiItemId,
-      });
-      toast.success(t("ev.toast", { titulo: nome }));
-      setTitle("");
-      setDescription("");
-      setProject("");
-      setUrl("");
-      setIssuer("");
-      setPdiItemId("");
-      setOpen(false);
-    } catch (error) {
-      toast.error(authErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
+      }),
+    );
+    if (!result.ok) return;
+    toast.success(t("ev.toast", { titulo: nome }));
+    setTitle("");
+    setDescription("");
+    setProject("");
+    setUrl("");
+    setIssuer("");
+    setPdiItemId("");
+    setOpen(false);
   };
 
   return (
@@ -721,20 +719,15 @@ function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState(evidence.description);
   const [url, setUrl] = useState(evidence.url ?? "");
-  const [saving, setSaving] = useState(false);
+  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+  const { submitting: saving, run } = useToastSubmit();
 
   const submit = async () => {
-    setSaving(true);
-    try {
-      // Só o que mudou entra no patch — ver `ArchitectProfileViewModel.resubmit`.
-      await viewModel.resubmit(evidence, { description, url });
-      toast.success(t("ev.resubmit.toast", { titulo: evidence.title }));
-      setOpen(false);
-    } catch (error) {
-      toast.error(authErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
+    // Só o que mudou entra no patch — ver `ArchitectProfileViewModel.resubmit`.
+    const result = await run(() => viewModel.resubmit(evidence, { description, url }));
+    if (!result.ok) return;
+    toast.success(t("ev.resubmit.toast", { titulo: evidence.title }));
+    setOpen(false);
   };
 
   return (
@@ -805,7 +798,8 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
     evidence.status === "Pending" ? "Accepted" : evidence.status,
   );
   const [comment, setComment] = useState(evidence.leaderComment ?? "");
-  const [saving, setSaving] = useState(false);
+  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+  const { submitting: saving, run } = useToastSubmit();
 
   /**
    * Sem otimismo: só fecha o diálogo e avisa sucesso depois que o servidor
@@ -814,19 +808,13 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
    * SYNAPSE.md, EPIC L.
    */
   const salvar = async () => {
-    setSaving(true);
-    try {
-      // Comentário vazio nem entra no corpo — ver `ArchitectProfileViewModel.review`.
-      await viewModel.review(evidence.id, status, comment);
-      toast.success(
-        t("ev.review.toast", { titulo: evidence.title, status: labels.evidenceStatus[status] }),
-      );
-      setOpen(false);
-    } catch (error) {
-      toast.error(authErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
+    // Comentário vazio nem entra no corpo — ver `ArchitectProfileViewModel.review`.
+    const result = await run(() => viewModel.review(evidence.id, status, comment));
+    if (!result.ok) return;
+    toast.success(
+      t("ev.review.toast", { titulo: evidence.title, status: labels.evidenceStatus[status] }),
+    );
+    setOpen(false);
   };
 
   return (

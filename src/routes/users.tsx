@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { QuerySection } from "@/components/app/QuerySection";
 import { PageHeader, SectionCard, StatusBadge } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,7 +63,7 @@ function UsersPage() {
    * de rede em vez de deixar claro que é uma tela restrita. Ver AUDITORIA-
    * QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 0.
    */
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: USERS_QUERY_KEY,
     queryFn: authApi.users,
     staleTime: 30_000,
@@ -99,82 +100,95 @@ function UsersPage() {
         }
       />
 
-      <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
-        {!isAdmin && <p className="text-sm text-muted-foreground">{t("users.adminOnly")}</p>}
-        {isAdmin && isPending && (
-          <p className="text-sm text-muted-foreground">{t("users.loading")}</p>
-        )}
-        {isAdmin && isError && <p className="text-sm text-destructive">{t("users.error.load")}</p>}
-        {data && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th scope="col" className="py-2">
-                    {t("users.col.name")}
-                  </th>
-                  <th scope="col" className="py-2">
-                    {t("users.col.email")}
-                  </th>
-                  <th scope="col" className="py-2">
-                    {t("users.col.role")}
-                  </th>
-                  <th scope="col" className="py-2">
-                    {t("users.col.status")}
-                  </th>
-                  {isAdmin && (
-                    <th scope="col" className="py-2">
-                      {t("users.col.actions")}
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((user) => (
-                  <tr key={user.id} className="border-b border-border/60 last:border-0">
-                    <td className="py-2 font-medium">
-                      {user.name}
-                      {user.mustChangePassword && (
-                        <span
-                          className="ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground"
-                          title={t("users.mustChangePassword.hint")}
-                        >
-                          {t("users.mustChangePassword.badge")}
-                        </span>
+      {/* OO3-18/F-2b — loading/erro padronizados via `QuerySection`: esta tela
+          resolvia o mesmo problema de `assessments-shared` sem retry e sem
+          ARIA (aria-busy/role="alert"); agora ganha os dois. O texto de
+          loading continua o mesmo (vira o "skeleton" da seção). */}
+      {!isAdmin ? (
+        <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
+          <p className="text-sm text-muted-foreground">{t("users.adminOnly")}</p>
+        </SectionCard>
+      ) : (
+        <QuerySection
+          query={{ data, isPending, isError, refetch }}
+          title={t("users.list.title")}
+          description={t("users.list.subtitle")}
+          errorMessage={t("users.error.load")}
+          skeleton={<p className="text-sm text-muted-foreground">{t("users.loading")}</p>}
+        >
+          {(data) => (
+            <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th scope="col" className="py-2">
+                        {t("users.col.name")}
+                      </th>
+                      <th scope="col" className="py-2">
+                        {t("users.col.email")}
+                      </th>
+                      <th scope="col" className="py-2">
+                        {t("users.col.role")}
+                      </th>
+                      <th scope="col" className="py-2">
+                        {t("users.col.status")}
+                      </th>
+                      {isAdmin && (
+                        <th scope="col" className="py-2">
+                          {t("users.col.actions")}
+                        </th>
                       )}
-                    </td>
-                    <td className="py-2 text-muted-foreground">{user.email}</td>
-                    <td className="py-2">
-                      <StatusBadge
-                        tone={roleTone[user.role]}
-                        label={t(`users.role.${user.role}`)}
-                      />
-                    </td>
-                    <td className="py-2">
-                      <AccountStatusBadge
-                        status={user.status}
-                        label={t(`users.status.${user.status}`)}
-                      />
-                    </td>
-                    {isAdmin && (
-                      <td className="py-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          aria-label={`${t("users.edit.action")} ${user.name}`}
-                          onClick={() => setEditing(user)}
-                        >
-                          {t("users.edit.action")}
-                        </Button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((user) => (
+                      <tr key={user.id} className="border-b border-border/60 last:border-0">
+                        <td className="py-2 font-medium">
+                          {user.name}
+                          {user.mustChangePassword && (
+                            <span
+                              className="ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground"
+                              title={t("users.mustChangePassword.hint")}
+                            >
+                              {t("users.mustChangePassword.badge")}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 text-muted-foreground">{user.email}</td>
+                        <td className="py-2">
+                          <StatusBadge
+                            tone={roleTone[user.role]}
+                            label={t(`users.role.${user.role}`)}
+                          />
+                        </td>
+                        <td className="py-2">
+                          <AccountStatusBadge
+                            status={user.status}
+                            label={t(`users.status.${user.status}`)}
+                          />
+                        </td>
+                        {isAdmin && (
+                          <td className="py-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              aria-label={`${t("users.edit.action")} ${user.name}`}
+                              onClick={() => setEditing(user)}
+                            >
+                              {t("users.edit.action")}
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </SectionCard>
+          )}
+        </QuerySection>
+      )}
 
       {creating && (
         <CreateUserDialog
