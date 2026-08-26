@@ -27,13 +27,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ROLES, type RoleName } from "@/lib/domain";
+import { type RoleName } from "@/lib/domain";
 import { authApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useStore } from "@/lib/store";
+import { useCareerLevelsByRank, useStore } from "@/lib/store";
 import { TeamViewModel } from "@/lib/view-models/team-view-model";
 
 export const Route = createFileRoute("/team")({
@@ -89,6 +89,8 @@ function TeamPage() {
 
   const form = useArchitectForm();
   const roster = useTeamRoster(isAdmin);
+  /** CFG-01 (SPEC-OO3-13, A5) — opções do select de nível vêm de `career_levels`, por `rank`. */
+  const careerLevels = useCareerLevelsByRank();
 
   return (
     <>
@@ -283,8 +285,8 @@ function TeamPage() {
                   value={form.form.role}
                   onChange={(e) => form.setForm({ ...form.form, role: e.target.value as RoleName })}
                 >
-                  {ROLES.map((r) => (
-                    <option key={r}>{r}</option>
+                  {careerLevels.map((l) => (
+                    <option key={l.id}>{l.name}</option>
                   ))}
                 </select>
               </div>

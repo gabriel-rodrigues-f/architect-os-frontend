@@ -372,6 +372,16 @@ export function CareerPortfolioSection({
   const canPropose = isOwner && assessment.status === "Draft";
   const canConfirm = isLead && assessment.status === "In Review";
   const portfolioSize = eligibility.capabilities.length;
+  /**
+   * CFG-01 (SPEC-OO3-13, B8) — o mínimo do portfólio deixou de ser um
+   * literal `3` repetido (terceira cópia da mesma regra): é
+   * `career_level_policies.minimumQualifiedCapabilities` do nível ALVO,
+   * que a resposta de elegibilidade já traz (`eligibility.policy`). O
+   * `?? 3` cobre só quem está no topo da carreira (sem próximo nível, sem
+   * política) — mesmo fallback já usado no badge de qualificação abaixo;
+   * o piso global 3 é CHECK do banco (B5, parte backend do CFG-01).
+   */
+  const minimumPortfolio = eligibility.policy?.minimumQualifiedCapabilities ?? 3;
 
   const addCapability = () => {
     if (!selectedCapabilityId) return;
@@ -438,17 +448,17 @@ export function CareerPortfolioSection({
       description={t("asmt.portfolio.subtitle")}
     >
       {/* Problema 5 — dois números, nunca confundidos: quantas capacidades
-          o ciclo exige no mínimo (3) versus quantas já qualificam para o
-          próximo nível. */}
+          o ciclo exige no mínimo (a política do nível alvo) versus quantas
+          já qualificam para o próximo nível. */}
       <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-        <Badge variant={portfolioSize >= 3 ? "default" : "outline"}>
-          {t("asmt.portfolio.size", { n: portfolioSize })}
+        <Badge variant={portfolioSize >= minimumPortfolio ? "default" : "outline"}>
+          {t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
         </Badge>
-        {/* ENT-09-016 — indicador visual do mínimo de 3, além do número no badge. */}
+        {/* ENT-09-016 — indicador visual do mínimo da política, além do número no badge. */}
         <Progress
-          value={Math.min(100, (portfolioSize / 3) * 100)}
+          value={Math.min(100, (portfolioSize / minimumPortfolio) * 100)}
           className="h-1.5 w-24"
-          aria-label={t("asmt.portfolio.size", { n: portfolioSize })}
+          aria-label={t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
         />
         {eligibility.nextCareerLevel ? (
           <>
@@ -466,8 +476,10 @@ export function CareerPortfolioSection({
           <span className="text-muted-foreground">{t("asmt.portfolio.topLevel")}</span>
         )}
       </div>
-      {canPropose && portfolioSize < 3 && (
-        <p className="mb-3 text-xs text-muted-foreground">{t("asmt.portfolio.minimumHint")}</p>
+      {canPropose && portfolioSize < minimumPortfolio && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          {t("asmt.portfolio.minimumHint", { min: minimumPortfolio })}
+        </p>
       )}
 
       <ul className="space-y-1.5">

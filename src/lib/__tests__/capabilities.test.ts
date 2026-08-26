@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ROLES } from "../domain";
+import { fixtureCareerLevels } from "./fixtures";
 import { LabelFormatter } from "../labels";
 import type { MessageKey } from "../i18n";
 import en from "@/locales/en.json";
@@ -53,19 +53,20 @@ describe("ordem alfabética das capacidades", () => {
 });
 
 describe("cargos", () => {
-  it("são os três níveis de Arquiteto de Soluções", () => {
-    expect(ROLES).toEqual([
-      "Arquiteto de Soluções I",
-      "Arquiteto de Soluções II",
-      "Arquiteto de Soluções III",
-    ]);
-  });
-
+  /**
+   * CFG-01 (SPEC-OO3-13, A5) — o array `ROLES` hardcoded foi deletado de
+   * `domain.ts`; os níveis vêm de `career_levels` (aqui, o fixture da
+   * resposta de `GET /api/career-levels`).
+   */
   it("o rótulo curto passa pelo i18n: 'Nível' + algarismo romano via chave careerLevel.short (OO3-11f/D-9)", () => {
     const fakeT = (key: MessageKey, vars?: Record<string, string | number>) =>
       key === "careerLevel.short" ? `Nível ${String(vars?.["nivel"])}` : `t:${key}`;
     const labels = new LabelFormatter(fakeT);
-    expect(ROLES.map((r) => labels.roleShort(r))).toEqual(["Nível I", "Nível II", "Nível III"]);
+    expect(fixtureCareerLevels.map((l) => labels.roleShort(l.name))).toEqual([
+      "Nível I",
+      "Nível II",
+      "Nível III",
+    ]);
   });
 });
 

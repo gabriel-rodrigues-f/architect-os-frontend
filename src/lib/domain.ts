@@ -22,15 +22,17 @@ export const LEVELS: { level: Level }[] = [
 /**
  * Cargos da carreira de arquitetura. A progressão é I → II → III; o app não
  * trabalha com senioridade (júnior/pleno/sênior) em separado.
+ *
+ * CFG-01 (SPEC-OO3-13-HARDCODED-CONFIG.md, A5) — o array `ROLES` hardcoded
+ * que morava aqui foi deletado: quem precisa iterar/oferecer níveis de
+ * carreira consome `useCareerLevelsByRank()` (`lib/store.tsx`), que lê a
+ * tabela `career_levels` de verdade (ordenada por `rank`). O TIPO abaixo
+ * continua existindo só enquanto o backend validar `role` por `z.enum`
+ * (`routes/schemas.ts`, A6 — parte backend do CFG-01, em outra frente):
+ * é tipagem de fronteira, nunca fonte de opções de formulário/filtro.
  */
 export type RoleName =
   "Arquiteto de Soluções I" | "Arquiteto de Soluções II" | "Arquiteto de Soluções III";
-
-export const ROLES: RoleName[] = [
-  "Arquiteto de Soluções I",
-  "Arquiteto de Soluções II",
-  "Arquiteto de Soluções III",
-];
 
 /**
  * ENT-CAR-013 — `rank` ordena os níveis (I=1, II=2, III=3) para calcular

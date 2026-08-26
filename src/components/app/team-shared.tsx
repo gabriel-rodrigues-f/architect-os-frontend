@@ -19,13 +19,13 @@ import {
 } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ROLES, type Architect, type RoleName } from "@/lib/domain";
+import { type Architect, type RoleName } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
 import { authErrorMessage } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useSelectors, useStore } from "@/lib/store";
+import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import {
@@ -90,19 +90,26 @@ function useTeamViewModel(): TeamViewModel {
 export function useArchitectForm() {
   const { t } = useI18n();
   const viewModel = useTeamViewModel();
+  /**
+   * CFG-01 (SPEC-OO3-13, A5) — o nível padrão do cadastro é o primeiro
+   * nível REAL de `career_levels` (menor `rank`), não mais `ROLES[0]`
+   * hardcoded. O `useState` inicial pode rodar antes da consulta resolver
+   * (fica ""), mas o único caminho para abrir o diálogo de criação é
+   * `openCreate`, que reavalia com os níveis já carregados.
+   */
+  const careerLevels = useCareerLevelsByRank();
+  const defaultRole = (careerLevels[0]?.name ?? "") as RoleName;
 
   /** `null` = diálogo fechado; string vazia = criação; id = edição. */
   const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState<ArchitectFormValues>(() =>
-    emptyArchitectForm(ROLES[0] as RoleName),
-  );
+  const [form, setForm] = useState<ArchitectFormValues>(() => emptyArchitectForm(defaultRole));
   /** R2-UX-08/OO-03 — quem está com o diálogo de desativação aberto. */
   const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
   /** ENT-CAR-017 — quem está com o diálogo de transição de nível aberto. */
   const [transitioning, setTransitioning] = useState<Architect | null>(null);
 
   const openCreate = () => {
-    setForm(emptyArchitectForm(ROLES[0] as RoleName));
+    setForm(emptyArchitectForm(defaultRole));
     setEditing("");
   };
 
@@ -199,7 +206,18 @@ export function useTeamRoster(isAdmin: boolean) {
    * nada.
    */
   const [statusFilter, setStatusFilter] = useState<string[]>(["active"]);
-  const [roleFilter, setRoleFilter] = useState<string[]>(() => [...ROLES]);
+  /**
+   * CFG-01 (SPEC-OO3-13, A5) — as opções do filtro de nível vêm de
+   * `career_levels` (por `rank`), não mais do array `ROLES` hardcoded. Como
+   * os níveis chegam por consulta própria (podem ainda não ter resolvido no
+   * primeiro render), o estado guarda `null` = "todos selecionados" (a mesma
+   * visão padrão de antes: nascer com tudo marcado, nenhuma filtragem de
+   * fato) — inicializar `useState` com uma lista ainda vazia esconderia o
+   * time inteiro até um clique manual no filtro.
+   */
+  const careerLevels = useCareerLevelsByRank();
+  const [roleSelection, setRoleSelection] = useState<string[] | null>(null);
+  const roleFilter = roleSelection ?? careerLevels.map((l) => l.name);
   const [specializationFilter, setSpecializationFilter] = useState<string[]>(() => {
     const used = new Set(
       store.architects
@@ -239,7 +257,7 @@ export function useTeamRoster(isAdmin: boolean) {
 
   useEffect(() => {
     setPage(1);
-  }, [nameSelection, statusFilter, roleFilter, specializationFilter, capabilityFilter, sort]);
+  }, [nameSelection, statusFilter, roleSelection, specializationFilter, capabilityFilter, sort]);
 
   /** Última sessão de mentoria por mentee — proxy de "atualização recente": não há `updatedAt` no cadastro. */
   const lastMentoringByArchitect = useMemo(() => {
@@ -255,7 +273,10 @@ export function useTeamRoster(isAdmin: boolean) {
     { id: "active", label: t("team.filter.status.active") },
     { id: "inactive", label: t("team.filter.status.inactive") },
   ];
-  const roleOptions: MultiSelectFilterOption[] = ROLES.map((r) => ({ id: r, label: r }));
+  const roleOptions: MultiSelectFilterOption[] = careerLevels.map((l) => ({
+    id: l.name,
+    label: l.name,
+  }));
 
   const specializationOptions = useMemo(() => {
     const used = new Set(
@@ -306,7 +327,8 @@ export function useTeamRoster(isAdmin: boolean) {
     return store.architects.filter((a) => {
       if (!nameFilter.contains(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
-      if (!roleFilter.includes(a.role)) return false;
+      // `null` = todos os níveis (inclusive enquanto `career_levels` carrega).
+      if (roleSelection !== null && !roleSelection.includes(a.role)) return false;
       const specKey = a.primarySpecializationCompetencyId ?? NO_SPECIALIZATION;
       if (!specializationFilter.includes(specKey)) return false;
       const competency = a.primarySpecializationCompetencyId
@@ -320,7 +342,7 @@ export function useTeamRoster(isAdmin: boolean) {
     store.architects,
     isAdmin,
     statusFilter,
-    roleFilter,
+    roleSelection,
     specializationFilter,
     capabilityFilter,
     nameSelection,
@@ -397,7 +419,7 @@ export function useTeamRoster(isAdmin: boolean) {
     activeFilterChips.push({
       key: "role",
       label: `${t("team.filter.role")}: ${summarize(roleFilter, roleOptions)}`,
-      onRemove: () => setRoleFilter(roleOptions.map((o) => o.id)),
+      onRemove: () => setRoleSelection(null),
     });
   }
   if (specializationFilter.length !== specializationOptions.length) {
@@ -418,7 +440,7 @@ export function useTeamRoster(isAdmin: boolean) {
   const clearFilters = () => {
     setNameSelection(store.architects.map((a) => a.id));
     setStatusFilter(["active"]);
-    setRoleFilter(roleOptions.map((o) => o.id));
+    setRoleSelection(null);
     setSpecializationFilter(specializationOptions.map((o) => o.id));
     setCapabilityFilter(capabilityOptions.map((o) => o.id));
     setSort("name-asc");
@@ -428,7 +450,7 @@ export function useTeamRoster(isAdmin: boolean) {
     statusFilter,
     setStatusFilter,
     roleFilter,
-    setRoleFilter,
+    setRoleFilter: setRoleSelection as (ids: string[]) => void,
     specializationFilter,
     setSpecializationFilter,
     capabilityFilter,
@@ -560,6 +582,8 @@ export function CareerLevelTransitionDialog({
 }) {
   const { t } = useI18n();
   const viewModel = useTeamViewModel();
+  /** CFG-01 (A5) — os níveis de destino vêm de `career_levels` (por `rank`), não mais de `ROLES`. */
+  const careerLevels = useCareerLevelsByRank();
   const [toRole, setToRole] = useState<RoleName>(architect.role);
 
   return (
@@ -582,8 +606,8 @@ export function CareerLevelTransitionDialog({
             value={toRole}
             onChange={(e) => setToRole(e.target.value as RoleName)}
           >
-            {ROLES.map((r) => (
-              <option key={r}>{r}</option>
+            {careerLevels.map((l) => (
+              <option key={l.id}>{l.name}</option>
             ))}
           </select>
         </div>
