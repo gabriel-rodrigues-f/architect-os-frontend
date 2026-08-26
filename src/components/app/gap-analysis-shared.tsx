@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { GapBadge } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +7,8 @@ import { Selection } from "@/lib/selection";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, type Gap } from "@/lib/selectors";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
-import { initialSearchParam, replaceSearchParam } from "@/lib/text";
+import { useSearchParamList } from "@/hooks/use-search-param";
 
 /**
  * Compartilhado entre `/gap-analysis` (Radar + Prioridades, por pessoa) e
@@ -109,17 +108,13 @@ export function useGapAnalysisData() {
   const user = useCurrentUser();
 
   /**
-   * Nasce com o time que este viewer de fato enxerga (`canActFor`) — quem já
-   * saiu não conta como lacuna do time ativo, e quem está fora do escopo não
-   * conta como "sem lacuna" só por não ter registro visível (roster é dado
-   * de diretório sem filtro; ver `auth/scope.ts`). Depois disso `selected` é
+   * Nasce com o time visível ao viewer (ver o docstring de
+   * `ArchitectSelectors.visibleTo`, ANA-001). Depois disso `selected` é
    * sempre explícito (ver `ArchitectFilter`): selecionar alguém fora desse
    * recorte inicial (gente inativa ou fora do escopo) ainda funciona — a
    * lista de opções do filtro continua sendo `store.architects` inteiro; a
    * própria falta de dado visível já degrada de forma transparente via
-   * `coverage`. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
-   * SYNAPSE.md, EPIC E, e ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
-   * 08-19.md.
+   * `coverage`.
    *
    * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — o recorte
    * agora vive na URL (`?selected=id1,id2`), não só em memória: sem isso, dar
@@ -129,22 +124,8 @@ export function useGapAnalysisData() {
    * padrão; presente e vazio (`?selected=`) é "ninguém" de propósito, uma
    * seleção explícita, não o padrão.
    */
-  const defaultSelected = useMemo(
-    () =>
-      sel.activeArchitects
-        .filter((a) => defaultUiAuthorizationPolicy.canActFor(user, a))
-        .map((a) => a.id),
-    [sel, user],
-  );
-  const [selected, setSelectedState] = useState<string[]>(() => {
-    const fromUrl = initialSearchParam("selected");
-    if (fromUrl === undefined) return defaultSelected;
-    return fromUrl === "" ? [] : fromUrl.split(",");
-  });
-  const setSelected = (ids: string[]) => {
-    setSelectedState(ids);
-    replaceSearchParam("selected", ids.join(","));
-  };
+  const defaultSelected = useMemo(() => sel.visibleArchitects(user).map((a) => a.id), [sel, user]);
+  const [selected, setSelected] = useSearchParamList("selected", () => defaultSelected);
 
   /** Toda a tela lê deste recorte — pertencimento explícito, `[]` = "ninguém" (OO3-09b, `Selection.explicit`). */
   const architects = Selection.explicit(selected).apply(store.architects);

@@ -7,7 +7,6 @@ import { ViewToggle } from "@/components/app/ViewToggle";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/capability-map")({
@@ -88,16 +87,8 @@ function CapabilityMapPage() {
   const help = usePageHelp("capabilityMap");
   const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
 
-  /**
-   * População: só quem este viewer de fato enxerga o registro — sem isto,
-   * gente fora do escopo (dado de diretório, sempre presente no roster) caía
-   * em `notAssessed` por não ter registro visível, não por realmente não ter
-   * avaliação, distorcendo a classificação de risco de concentração. Ver
-   * ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
-   */
-  const population = sel.activeArchitects.filter((a) =>
-    defaultUiAuthorizationPolicy.canActFor(user, a),
-  );
+  /** População visível ao viewer — ver o docstring de `ArchitectSelectors.visibleTo` (ANA-001). */
+  const population = sel.visibleArchitects(user);
 
   /**
    * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para a

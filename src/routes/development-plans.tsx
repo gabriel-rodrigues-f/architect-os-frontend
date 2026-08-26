@@ -33,7 +33,8 @@ import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
-import { defaultDateFormatter, initialSearchParam } from "@/lib/text";
+import { defaultDateFormatter } from "@/lib/text";
+import { useSearchParamString } from "@/hooks/use-search-param";
 import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-view-model";
 
 /**
@@ -84,8 +85,9 @@ function PlansPage() {
   const sel = useSelectors();
   const labels = useLabels();
   const viewModel = useDevelopmentPlansViewModel();
-  const [architectId, setArchitectId] = useState(
-    () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
+  const [architectId, setArchitectId] = useSearchParamString(
+    "architectId",
+    () => sel.activeArchitects[0]?.id ?? "",
   );
   /** Item cujo formulário de meta SMART está aberto — nunca mais que um por vez. */
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);

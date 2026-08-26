@@ -11,7 +11,13 @@ import {
   SelectorIndex,
   TrainingSelectors,
 } from "../selectors";
-import { fixtureState } from "./fixtures";
+import type { AppState, SessionUser } from "../api";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureState,
+  fixtureUnassignedLeadUser,
+} from "./fixtures";
 
 describe("averageWithCoverage", () => {
   it("ignora undefined na média, mas conta na cobertura", () => {
@@ -232,5 +238,57 @@ describe("classes por contexto (instanciadas diretamente)", () => {
     const training = new TrainingSelectors(index, architects, assessment);
     const needs = training.teamTrainingNeeds();
     expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam", "cloud-k8s"]);
+  });
+});
+
+describe("visibleArchitects", () => {
+  /**
+   * OO3-11a — a regra de população visível (ANA-001) que estava copiada em
+   * 5 telas agora mora em `ArchitectSelectors.visibleTo`. Estes casos provam
+   * a regra espelhada (`UiAuthorizationPolicy.canActFor`) direto no selector.
+   */
+  const leadUser: SessionUser = {
+    ...fixtureUnassignedLeadUser,
+    id: "lead-da-ana",
+  };
+  const state: AppState = {
+    ...fixtureState,
+    architects: [
+      { ...fixtureState.architects[0]!, leadUserId: "lead-da-ana" },
+      fixtureState.architects[1]!,
+      {
+        id: "carla",
+        name: "Carla Inativa",
+        role: "Arquiteto de Soluções I",
+        yearsAsArchitect: 2,
+        specialization: "Data",
+        email: "carla@company.com",
+        active: false,
+        leadUserId: "lead-da-ana",
+        version: 1,
+      },
+    ],
+  };
+  const sel = createSelectors(state);
+
+  it("admin vê todo o time ativo", () => {
+    expect(sel.visibleArchitects(fixtureAdminUser).map((a) => a.id)).toEqual(["ana", "bruno"]);
+  });
+
+  it("member vê só a si", () => {
+    expect(sel.visibleArchitects(fixtureMemberUser).map((a) => a.id)).toEqual(["ana"]);
+  });
+
+  it("lead vê só quem lidera", () => {
+    expect(sel.visibleArchitects(leadUser).map((a) => a.id)).toEqual(["ana"]);
+  });
+
+  it("inativo nunca aparece, nem para o próprio lead", () => {
+    expect(sel.visibleArchitects(leadUser).some((a) => a.id === "carla")).toBe(false);
+    expect(sel.visibleArchitects(fixtureAdminUser).some((a) => a.id === "carla")).toBe(false);
+  });
+
+  it("devolve a MESMA referência para o mesmo viewer — identidade estável para useMemo", () => {
+    expect(sel.visibleArchitects(fixtureAdminUser)).toBe(sel.visibleArchitects(fixtureAdminUser));
   });
 });

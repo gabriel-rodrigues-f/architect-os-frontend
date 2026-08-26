@@ -1,4 +1,4 @@
-import type { AppState } from "./api";
+import type { AppState, SessionUser } from "./api";
 import type {
   Architect,
   Assessment,
@@ -8,6 +8,7 @@ import type {
   Level,
   RoleName,
 } from "./domain";
+import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "./scope";
 
 /**
  * Derivações puras sobre o snapshot da API. Ficam fora do componente para poderem
@@ -152,15 +153,43 @@ export class SelectorIndex {
  */
 export class ArchitectSelectors {
   readonly active: Architect[];
+  private readonly visibleCache = new Map<string, Architect[]>();
 
   constructor(
     s: AppState,
     private readonly index: SelectorIndex,
+    private readonly policy: UiAuthorizationPolicy = defaultUiAuthorizationPolicy,
   ) {
     this.active = s.architects.filter((a) => a.active);
   }
 
   byId = (id: string): Architect | undefined => this.index.architectIndex.get(id);
+
+  /**
+   * População padrão de TODA análise agregada (Painel, Cobertura, LNT,
+   * Mentoria, Gap/Progressão): o time atual (`active`) recortado para quem
+   * este viewer de fato enxerga (`canActFor` — própria pessoa, ou quem está
+   * sob a liderança dela). Sem o recorte, o roster inteiro (que chega sem
+   * filtro por ser dado de diretório, não de carreira — ver `auth/scope.ts`)
+   * virava a população das análises, e quem está fora do escopo aparecia
+   * como "sem lacuna"/"não iniciado" por não ter registro visível, não por
+   * realmente não ter dado: ausência de autorização virando ausência de
+   * dado. Ver ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   *
+   * Cache por viewer (mesmo padrão de `gapsCache`/`averagesCache`): sem ele,
+   * cada chamada devolveria um array novo e os `useMemo([sel, user])` que
+   * dependem da identidade estável (ex.: `defaultSelected` em
+   * `gap-analysis-shared.tsx`) deixariam de estabilizar. A chave cobre os
+   * três campos que `canActFor` lê.
+   */
+  visibleTo = (user: SessionUser): Architect[] => {
+    const cacheKey = `${user.id}|${user.role}|${user.architectId ?? ""}`;
+    const cached = this.visibleCache.get(cacheKey);
+    if (cached) return cached;
+    const visible = this.active.filter((a) => this.policy.canActFor(user, a));
+    this.visibleCache.set(cacheKey, visible);
+    return visible;
+  };
 }
 
 /**
@@ -405,6 +434,7 @@ export function createSelectors(s: AppState) {
     capabilityById: capability.capabilityById,
     architectById: architect.byId,
     activeArchitects: architect.active,
+    visibleArchitects: architect.visibleTo,
     assessmentFor: assessment.assessmentFor,
     officialAssessmentFor: assessment.officialAssessmentFor,
     planFor: development.planFor,

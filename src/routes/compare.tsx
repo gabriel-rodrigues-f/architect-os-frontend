@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
@@ -9,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
-import { initialSearchParam, replaceSearchParam } from "@/lib/text";
+import { useSearchParamList } from "@/hooks/use-search-param";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-29 — "decisão de
@@ -43,15 +42,7 @@ function ComparePage() {
   const store = useStore();
   const sel = useSelectors();
 
-  const [selected, setSelectedState] = useState<string[]>(() => {
-    const fromUrl = initialSearchParam("selected");
-    if (fromUrl === undefined) return [];
-    return fromUrl === "" ? [] : fromUrl.split(",");
-  });
-  const setSelected = (ids: string[]) => {
-    setSelectedState(ids);
-    replaceSearchParam("selected", ids.join(","));
-  };
+  const [selected, setSelected] = useSearchParamList("selected", () => []);
 
   /** OO3-09b — pertencimento explícito (`[]` = ninguém): comparação é sempre um recorte intencional. */
   const architects = Selection.explicit(selected).apply(store.architects);

@@ -28,7 +28,6 @@ import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -80,23 +79,8 @@ function AdminHome() {
   const labels = useLabels();
   const help = usePageHelp("dash");
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
-  /**
-   * Quem desativou (saiu do time) não conta nos agregados do Painel — ver
-   * histórico dela continua em /architects/:id, só não representa mais o
-   * time atual. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18, e
-   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC E.
-   *
-   * `canActFor` recorta pra quem este viewer de fato enxerga (própria
-   * pessoa, ou quem está sob a liderança dela) — sem isto, o roster inteiro
-   * (que chega sem filtro por ser dado de diretório, não de carreira, ver
-   * `auth/scope.ts`) virava a população do heatmap e da cobertura, e quem
-   * está fora do escopo aparecia como "não iniciado" por não ter registro
-   * visível, não por realmente não ter avaliação. Ver ANA-001, AUDITORIA-
-   * QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
-   */
-  const architects = sel.activeArchitects.filter((a) =>
-    defaultUiAuthorizationPolicy.canActFor(user, a),
-  );
+  /** População visível ao viewer — ver o docstring de `ArchitectSelectors.visibleTo` (ANA-001). */
+  const architects = sel.visibleArchitects(user);
 
   const allGaps = architects.flatMap((a) =>
     sel.progressionGapsFor(a.id).map((g) => ({ ...g, architect: a })),
