@@ -4,6 +4,7 @@ import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gate
 import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
 import { HttpCareerGateway, type CareerGateway } from "./career.gateway";
 import { HttpCatalogGateway, type CatalogGateway } from "./catalog.gateway";
+import { HttpConfigGateway, type ConfigGateway } from "./config.gateway";
 import { HttpCyclesGateway, type CyclesGateway } from "./cycles.gateway";
 import { HttpDevelopmentGateway, type DevelopmentGateway } from "./development.gateway";
 import { HttpEvidenceGateway, type EvidenceGateway } from "./evidence.gateway";
@@ -56,6 +57,7 @@ export class FrontendContainer {
   readonly authGateway: AuthGateway;
   readonly careerGateway: CareerGateway;
   readonly catalogGateway: CatalogGateway;
+  readonly configGateway: ConfigGateway;
   readonly cyclesGateway: CyclesGateway;
   readonly developmentGateway: DevelopmentGateway;
   readonly evidenceGateway: EvidenceGateway;
@@ -71,6 +73,7 @@ export class FrontendContainer {
     this.authGateway = new HttpAuthGateway(this.apiClient);
     this.careerGateway = new HttpCareerGateway(this.apiClient);
     this.catalogGateway = new HttpCatalogGateway(this.apiClient);
+    this.configGateway = new HttpConfigGateway(this.apiClient);
     this.cyclesGateway = new HttpCyclesGateway(this.apiClient);
     this.developmentGateway = new HttpDevelopmentGateway(this.apiClient);
     this.evidenceGateway = new HttpEvidenceGateway(this.apiClient);

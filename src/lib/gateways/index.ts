@@ -10,6 +10,7 @@ export * from "./assessment.gateway";
 export * from "./auth.gateway";
 export * from "./career.gateway";
 export * from "./catalog.gateway";
+export * from "./config.gateway";
 export * from "./container";
 export * from "./cycles.gateway";
 export * from "./development.gateway";
