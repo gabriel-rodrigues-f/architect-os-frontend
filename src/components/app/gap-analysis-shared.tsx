@@ -9,7 +9,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { type ConsolidatedGapRow } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
-import { useSearchParamList } from "@/hooks/use-search-param";
+import { useSearchParamList } from "@/hooks";
 
 export function useGapAnalysisData() {
   const store = useStore();

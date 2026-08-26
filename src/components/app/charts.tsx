@@ -16,9 +16,8 @@ import {
   YAxis,
 } from "recharts";
 
-import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { axisTick, CHART_INK, ChartPalette, tooltipStyle } from "@/lib/design/chart";
+import { useNarrowViewport, useReducedMotion } from "@/hooks";
+import { axisTick, CHART_INK, ChartPalette, tooltipStyle } from "@/lib/design";
 import { topByRelevance } from "@/lib/collections";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { useI18n } from "@/lib/i18n";

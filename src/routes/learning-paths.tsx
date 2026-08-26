@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isLeadCapable } from "@/lib/api";
-import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
@@ -24,7 +24,7 @@ import { type LearningItemType, type LearningPath, type LearningPathItem } from 
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
-import { LearningPathsViewModel } from "@/lib/view-models/learning-paths-view-model";
+import { LearningPathsViewModel } from "@/lib/view-models";
 
 function useLearningPathsViewModel(): LearningPathsViewModel {
   const store = useStore();

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useAsyncSubmit } from "@/hooks/use-async-submit";
+import { useAsyncSubmit } from "@/hooks";
 import { useI18n } from "@/lib/i18n";
 
 export function CommandWithReasonDialog({

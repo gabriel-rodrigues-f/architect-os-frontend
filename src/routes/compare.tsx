@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
-import { useSearchParamList } from "@/hooks/use-search-param";
+import { useSearchParamList } from "@/hooks";
 
 export const Route = createFileRoute("/compare")({
   head: () => ({

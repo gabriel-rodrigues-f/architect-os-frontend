@@ -20,7 +20,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useLabels } from "@/lib/labels";
 import { useSelectors, useStore } from "@/lib/store";
-import { useSearchParamString } from "@/hooks/use-search-param";
+import { useSearchParamString } from "@/hooks";
 
 const assessmentsSearchSchema = z.object({
   architectId: z.string().optional(),

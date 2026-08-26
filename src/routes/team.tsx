@@ -34,7 +34,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
-import { TeamViewModel } from "@/lib/view-models/team-view-model";
+import { TeamViewModel } from "@/lib/view-models";
 
 export const Route = createFileRoute("/team")({
   head: () => ({

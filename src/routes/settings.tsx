@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { gapTone, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
-import { useAsyncSubmit, useSuccessToast } from "@/hooks/use-async-submit";
+import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { LEVELS, type CareerLevel, type Level } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
@@ -29,7 +29,18 @@ import {
   useVocabulary,
 } from "@/lib/store";
 import { VOCABULARY_NAMES, type VocabularyItem, type VocabularyName } from "@/lib/vocabularies";
-import { NewVocabularyCodeEditor, VocabularyItemEditor } from "@/lib/view-models/vocabulary-editor";
+import {
+  CURATION_POLICY_FIELDS,
+  CurationPolicyEditor,
+  NewVocabularyCodeEditor,
+  OPERATIONAL_NUMBER_FIELDS,
+  OperationalSettingsEditor,
+  ScoringBandsEditor,
+  TextTemplateEditor,
+  type CurationPolicyField,
+  type OperationalNumberField,
+  VocabularyItemEditor,
+} from "@/lib/view-models";
 import { defaultDateFormatter } from "@/lib/text";
 import {
   renderTemplate,
@@ -38,19 +49,7 @@ import {
   type TextTemplateKey,
 } from "@/lib/text-templates";
 import { cn } from "@/lib/utils";
-import {
-  CURATION_POLICY_FIELDS,
-  CurationPolicyEditor,
-  type CurationPolicyField,
-} from "@/lib/view-models/curation-policy-editor";
-import {
-  OPERATIONAL_NUMBER_FIELDS,
-  OperationalSettingsEditor,
-  type OperationalNumberField,
-} from "@/lib/view-models/operational-settings-editor";
 import { CYCLE_CADENCES, type CycleCadence } from "@/lib/operational-settings";
-import { ScoringBandsEditor } from "@/lib/view-models/scoring-bands-editor";
-import { TextTemplateEditor } from "@/lib/view-models/text-template-editor";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({

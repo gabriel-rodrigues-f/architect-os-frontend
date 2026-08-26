@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authApi, ApiError, type SessionUser, type UserRole } from "@/lib/api";
-import { useSuccessToast } from "@/hooks/use-async-submit";
+import { useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";

@@ -17,10 +17,7 @@ import { GapBadge, LevelBadge, PageHeader, SectionCard, StatCard } from "@/compo
 import { CapabilityRadar } from "@/components/app/charts";
 import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import { useCurrentUser } from "@/lib/auth";
-import {
-  DashboardPresenter,
-  PersonalDashboardPresenter,
-} from "@/lib/presenters/dashboard-presenter";
+import { DashboardPresenter, PersonalDashboardPresenter } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
