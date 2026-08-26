@@ -1,20 +1,17 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
   fixtureState,
   fixtureUnassignedLeadUser,
 } from "./fixtures";
+import { emptyEligibilityRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * PLANO-360-AGENTES-SYNAPSE.md, Seção 9 e 39 — o campo certo precisa nascer
@@ -24,26 +21,7 @@ import {
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
@@ -51,37 +29,7 @@ function mockSession(
   user: typeof fixtureAdminUser | typeof fixtureMemberUser | typeof fixtureUnassignedLeadUser,
   state: AppState,
 ) {
-  fetchMock.mockImplementation((url: string) => {
-    const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(user), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith("/api/state")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.includes("/eligibility")) {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
-          {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          },
-        ),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
-  });
+  mockAppFetch(fetchMock, { user, state, routes: [emptyEligibilityRoute] });
 }
 
 describe("Avaliações — campos por papel e status", () => {
@@ -113,11 +61,7 @@ describe("Avaliações — campos por papel e status", () => {
 
   it("member vê a autoavaliação editável (Rascunho) e a nota do Tech Lead travada", async () => {
     mockSession(fixtureMemberUser, draftState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     const selects = linha.querySelectorAll("select");
@@ -150,11 +94,7 @@ describe("Avaliações — campos por papel e status", () => {
       ),
     };
     mockSession(fixtureMemberUser, incompleteDraft);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Serverless")).closest("tr")!;
     // O select do item não avaliado não tem valor numérico selecionado.
@@ -175,11 +115,7 @@ describe("Avaliações — campos por papel e status", () => {
   // enquanto o Tech Lead revisa.
   it("member não edita mais a autoavaliação depois de Em Revisão", async () => {
     mockSession(fixtureMemberUser, inReviewState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     expect(linha.querySelectorAll("select")).toHaveLength(0);
@@ -190,11 +126,7 @@ describe("Avaliações — campos por papel e status", () => {
   // Rascunho, mesmo para o administrador.
   it("admin não edita líder nem final enquanto ainda é Rascunho", async () => {
     mockSession(fixtureAdminUser, draftState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     expect(linha.querySelectorAll("select")).toHaveLength(0);
@@ -204,11 +136,7 @@ describe("Avaliações — campos por papel e status", () => {
 
   it("admin (Tech Lead) vê líder e final editáveis quando Em Revisão", async () => {
     mockSession(fixtureAdminUser, inReviewState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     const selects = linha.querySelectorAll("select");
@@ -229,11 +157,7 @@ describe("Avaliações — campos por papel e status", () => {
    */
   it("lead sem atribuição a esta pessoa não vê líder/final editáveis", async () => {
     mockSession(fixtureUnassignedLeadUser, inReviewState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     expect(linha.querySelectorAll("select")).toHaveLength(0);
@@ -243,11 +167,7 @@ describe("Avaliações — campos por papel e status", () => {
   it("avaliação concluída: nenhum campo editável para ninguém", async () => {
     // "ana-h2" já é Completed na fixture original — sem sobrescrever o status.
     mockSession(fixtureAdminUser, fixtureState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     expect(linha.querySelectorAll("select")).toHaveLength(0);
@@ -260,49 +180,20 @@ describe("Avaliações — campos por papel e status", () => {
   it("admin reabre avaliação concluída e volta a concluir depois", async () => {
     const completedAssessment = fixtureState.assessments.find((a) => a.id === "ana-h2")!;
 
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (init?.method === "PATCH" && href.endsWith("/api/assessments/ana-h2/status")) {
-        const body = JSON.parse(String(init.body)) as { status: string };
-        return Promise.resolve(
-          new Response(JSON.stringify({ ...completedAssessment, status: body.status }), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.includes("/eligibility")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
-            { status: 200, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      routes: [
+        (href, init) => {
+          if (init?.method === "PATCH" && href.endsWith("/api/assessments/ana-h2/status")) {
+            const body = JSON.parse(String(init.body)) as { status: string };
+            return jsonResponse({ ...completedAssessment, status: body.status });
+          }
+          return undefined;
+        },
+        emptyEligibilityRoute,
+      ],
     });
 
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Reabrir avaliação" }));
 
@@ -331,11 +222,7 @@ describe("Avaliações — campos por papel e status", () => {
   it("deep-link com cycleId abre o assessment do ciclo do link, não o ciclo ativo", async () => {
     window.history.pushState({}, "", "?architectId=ana&cycleId=2026-h1");
     mockSession(fixtureAdminUser, fixtureState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     expect(await screen.findByText(/2026 H1/)).toBeTruthy();
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;

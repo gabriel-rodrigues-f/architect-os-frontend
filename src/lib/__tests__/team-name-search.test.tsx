@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -19,11 +18,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { emptyAuthUsersRoute, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12/B-13 — "achar a
@@ -38,26 +33,7 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
  */
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
@@ -65,32 +41,7 @@ describe("Time — seleção de pessoas (ArchitectNameCombobox)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-
-    fetchMock.mockImplementation((url: string) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/auth/users")) {
-        return Promise.resolve(
-          new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
-    });
+    mockAppFetch(fetchMock, { routes: [emptyAuthUsersRoute] });
   });
 
   afterEach(() => {
@@ -99,11 +50,7 @@ describe("Time — seleção de pessoas (ArchitectNameCombobox)", () => {
   });
 
   it("desmarcar 'Todos os registros' e marcar uma pessoa isola a lista; o chip 'Pessoas' limpa a seleção", async () => {
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
     expect(screen.getByText("Bruno Almeida")).toBeTruthy();
 

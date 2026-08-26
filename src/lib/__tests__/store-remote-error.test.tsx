@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -21,10 +20,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Toaster } from "@/components/ui/sonner";
 import { Route as TeamRoute } from "@/routes/team";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { fixtureState } from "./fixtures";
+import { emptyAuthUsersRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * EPIC L — Trustworthy mutations: uma escrita otimista que falha no servidor
@@ -51,27 +48,7 @@ const stateWithInactiveAna: AppState = {
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-            <Toaster theme="light" position="bottom-right" duration={3000} />
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
@@ -79,40 +56,16 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/auth/users")) {
-        return Promise.resolve(
-          new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(stateWithInactiveAna satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      // O servidor recusa a reativação — simula uma regra de negócio.
-      if (init?.method === "PATCH" && href.includes("/api/architects/")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({ error: "Conflict", message: "Não é possível reativar agora." }),
-            { status: 409, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      state: stateWithInactiveAna,
+      routes: [
+        emptyAuthUsersRoute,
+        // O servidor recusa a reativação — simula uma regra de negócio.
+        (href, init) =>
+          init?.method === "PATCH" && href.includes("/api/architects/")
+            ? jsonResponse({ error: "Conflict", message: "Não é possível reativar agora." }, 409)
+            : undefined,
+      ],
     });
   });
 
@@ -122,10 +75,11 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
   });
 
   it("reativar que falha no servidor mostra a mensagem de erro e mantém a pessoa inativa", async () => {
-    render(
-      <Wrapper>
+    renderWithApp(
+      <>
         <TeamPage />
-      </Wrapper>,
+        <Toaster theme="light" position="bottom-right" duration={3000} />
+      </>,
     );
     const nome = stateWithInactiveAna.architects[0]!.name;
 

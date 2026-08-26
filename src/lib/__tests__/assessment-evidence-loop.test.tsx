@@ -1,16 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
 import type { Evidence } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { fixtureState } from "./fixtures";
+import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * EPIC I — Evidence Loop: evidência aceita para a competência aparece como
@@ -49,33 +46,7 @@ const state: AppState = {
   evidences: [...fixtureState.evidences, evidenciaAceita, evidenciaPendente],
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-/**
- * O app real só monta a árvore autenticada depois do `AuthGate` (em
- * `__root.tsx`) resolver a sessão guardada no navegador. Este teste não passa
- * por ele, então precisa do mesmo corte — ver assessment-comments.test.tsx.
- */
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
@@ -84,33 +55,7 @@ describe("Avaliações — evidência aceita aparece como contexto", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
 
-    fetchMock.mockImplementation((url: string) => {
-      if (String(url).endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (String(url).endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (String(url).includes("/eligibility")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
-            { status: 200, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
-    });
+    mockAppFetch(fetchMock, { state, routes: [emptyEligibilityRoute] });
   });
 
   afterEach(() => {
@@ -119,21 +64,13 @@ describe("Avaliações — evidência aceita aparece como contexto", () => {
   });
 
   it("mostra um selo na competência com evidência aceita", async () => {
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     expect(within(linha).getByLabelText(/evidência aceita/i)).toBeTruthy();
   });
 
   it("ao abrir a competência, lista a evidência aceita — mas não a pendente", async () => {
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     await userEvent.click(within(linha).getByRole("button"));
 
@@ -143,11 +80,7 @@ describe("Avaliações — evidência aceita aparece como contexto", () => {
   });
 
   it("competência sem evidência aceita não mostra selo nem a seção", async () => {
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
     const linha = (await screen.findByText("Serverless")).closest("tr")!;
     expect(within(linha).queryByLabelText(/evidência aceita/i)).toBeNull();
 

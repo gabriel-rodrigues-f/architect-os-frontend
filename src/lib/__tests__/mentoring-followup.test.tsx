@@ -1,16 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "../api";
-import { AuthProvider } from "../auth";
 import type { MentoringSession } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureState } from "./fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * EPIC 5 (quarta rodada) — agendar follow-up depois que a sessão já
@@ -59,18 +56,12 @@ const sessao: MentoringSession = {
 
 const state: AppState = { ...fixtureState, mentoringSessions: [sessao] };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <StoreProvider>{children}</StoreProvider>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
+/**
+ * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
+ * O Wrapper local não tinha o corte `AuthReady`; o do helper apenas atrasa a
+ * montagem até `/api/auth/me` resolver — todas as asserções já esperam via
+ * `findBy*`.
+ */
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 
@@ -86,33 +77,15 @@ async function selectMentee(name: string) {
 }
 
 function mockSession(user: SessionUser) {
-  fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-    const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(user), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith("/api/state")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (init?.method === "PATCH" && href.includes("/api/mentoring-sessions/")) {
-      return Promise.resolve(
-        new Response(JSON.stringify({ ...sessao, nextSession: "2026-09-01" }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
+  mockAppFetch(fetchMock, {
+    user,
+    state,
+    routes: [
+      (href, init) =>
+        init?.method === "PATCH" && href.includes("/api/mentoring-sessions/")
+          ? jsonResponse({ ...sessao, nextSession: "2026-09-01" })
+          : undefined,
+    ],
   });
 }
 
@@ -129,11 +102,7 @@ describe("Mentoria — agendar follow-up", () => {
 
   it("quem registrou a sessão vê a ação de agendar follow-up", async () => {
     mockSession(mentor);
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await selectMentee("Bruno Almeida");
     await screen.findByText("Sessão para follow-up");
@@ -142,11 +111,7 @@ describe("Mentoria — agendar follow-up", () => {
 
   it("outra pessoa não vê a ação numa sessão que não é dela", async () => {
     mockSession(outsider);
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await selectMentee("Bruno Almeida");
     await screen.findByText("Sessão para follow-up");
@@ -155,11 +120,7 @@ describe("Mentoria — agendar follow-up", () => {
 
   it("agendar salva a data e chama o PATCH certo", async () => {
     mockSession(mentor);
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await selectMentee("Bruno Almeida");
     await screen.findByText("Sessão para follow-up");
@@ -193,11 +154,7 @@ describe("Mentoria — agendar follow-up", () => {
    */
   it("formulário de nova sessão só oferece mentorados sob o escopo real de quem registra", async () => {
     mockSession(outsider);
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     // R2-ESC-04 — o campo virou combobox pesquisável (ArchitectSelectCombobox), não mais `<select>`.

@@ -1,16 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
 import type { Assessment, AssessmentEligibility } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureMemberUser, fixtureState } from "./fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * ORIENTACAO-NONA-RODADA, Seção 8/32 — cobertura dedicada do Portfólio de
@@ -46,88 +43,44 @@ const eligibilityBase: AssessmentEligibility = {
   eligible: false,
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
 const renderPage = () => {
   window.history.pushState({}, "", "?architectId=ana&cycleId=2026-h2");
-  return render(
-    <Wrapper>
-      <AssessmentsPage />
-    </Wrapper>,
-  );
+  return renderWithApp(<AssessmentsPage />);
 };
+
+/** Rota do POST de capacidade do portfólio (proposta aceita pelo backend fake). */
+const addCapabilityRoute = (href: string, init?: RequestInit) =>
+  init?.method === "POST" && href.includes("/capabilities") && !href.includes("/confirm")
+    ? jsonResponse(
+        {
+          id: "portfolio-1",
+          assessmentId: draftAssessment.id,
+          capabilityId: "cloud",
+          addedByUserId: "test-member",
+          addedAt: "2026-08-20T00:00:00Z",
+          confirmedByUserId: null,
+          confirmedAt: null,
+        },
+        201,
+      )
+    : undefined;
 
 describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
 
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      const method = init?.method ?? "GET";
-
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureMemberUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.includes("/eligibility")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(eligibilityBase), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (method === "POST" && href.includes("/capabilities") && !href.includes("/confirm")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              id: "portfolio-1",
-              assessmentId: draftAssessment.id,
-              capabilityId: "cloud",
-              addedByUserId: "test-member",
-              addedAt: "2026-08-20T00:00:00Z",
-              confirmedByUserId: null,
-              confirmedAt: null,
-            }),
-            { status: 201, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      user: fixtureMemberUser,
+      state,
+      routes: [
+        (href) => (href.includes("/eligibility") ? jsonResponse(eligibilityBase) : undefined),
+        addCapabilityRoute,
+      ],
     });
   });
 
@@ -183,28 +136,12 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     });
     // Reaplica o mock genérico para as chamadas seguintes, mas força a
     // primeira consulta de elegibilidade a falhar.
-    fetchMock.mockImplementation((url: string) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureMemberUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.includes("/eligibility")) {
-        return Promise.resolve(new Response("{}", { status: 500 }));
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      user: fixtureMemberUser,
+      state,
+      routes: [
+        (href) => (href.includes("/eligibility") ? new Response("{}", { status: 500 }) : undefined),
+      ],
     });
 
     renderPage();
@@ -236,50 +173,13 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
           : c,
       ),
     };
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      const method = init?.method ?? "GET";
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureMemberUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(readyState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.includes("/eligibility")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(eligibilityBase), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (method === "POST" && href.includes("/capabilities") && !href.includes("/confirm")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              id: "portfolio-1",
-              assessmentId: draftAssessment.id,
-              capabilityId: "cloud",
-              addedByUserId: "test-member",
-              addedAt: "2026-08-20T00:00:00Z",
-              confirmedByUserId: null,
-              confirmedAt: null,
-            }),
-            { status: 201, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      user: fixtureMemberUser,
+      state: readyState,
+      routes: [
+        (href) => (href.includes("/eligibility") ? jsonResponse(eligibilityBase) : undefined),
+        addCapabilityRoute,
+      ],
     });
 
     renderPage();

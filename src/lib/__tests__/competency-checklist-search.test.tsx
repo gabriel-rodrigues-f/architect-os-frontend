@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -24,11 +23,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as LearningRoute } from "@/routes/learning-paths";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
 import type { Competency } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { fixtureState } from "./fixtures";
+import { mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — checklists de
@@ -54,50 +51,12 @@ const MANY_COMPETENCIES: Competency[] = Array.from({ length: 25 }, (_, i) => ({
 
 const manyCompetenciesState: AppState = { ...fixtureState, competencies: MANY_COMPETENCIES };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 function mockFetch(state: AppState) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
-  fetchMock.mockImplementation((url: string) => {
-    const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(fixtureAdminUser), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith("/api/state")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
-  });
+  mockAppFetch(fetchMock, { state });
 }
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
@@ -111,11 +70,7 @@ describe("Checklists de competências — busca local acima de 20 itens (R2-ESC-
 
   it("Mentoria: acima de 20 competências, filtro aparece e restringe a lista", async () => {
     mockFetch(manyCompetenciesState);
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     const filtro = await screen.findByLabelText("Buscar competência…");
@@ -131,11 +86,7 @@ describe("Checklists de competências — busca local acima de 20 itens (R2-ESC-
 
   it("Mentoria: abaixo de 20 competências (fixture padrão), o filtro nem aparece", async () => {
     mockFetch(fixtureState);
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     await screen.findByText("Kubernetes");
@@ -145,11 +96,7 @@ describe("Checklists de competências — busca local acima de 20 itens (R2-ESC-
 
   it("Trilhas: acima de 20 competências, filtro aparece na criação de trilha", async () => {
     mockFetch(manyCompetenciesState);
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Nova trilha" }));
     const filtro = await screen.findByLabelText("Buscar competência…");

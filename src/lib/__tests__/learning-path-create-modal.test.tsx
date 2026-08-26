@@ -1,15 +1,12 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as LearningRoute } from "@/routes/learning-paths";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { fixtureState } from "./fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Nova trilha" troca o
@@ -22,26 +19,7 @@ const fetchMock = vi.fn();
 
 const state: AppState = { ...fixtureState, learningPaths: [] };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const LearningPage = LearningRoute.options.component as () => ReactNode;
 
@@ -49,34 +27,17 @@ describe("Trilhas — criação via modal (mata os 2 tempos)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/learning-paths") && init?.method === "POST") {
-        const body = JSON.parse(String(init.body));
-        return Promise.resolve(
-          new Response(JSON.stringify({ ...body, id: "lp-nova" }), {
-            status: 201,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      state,
+      routes: [
+        (href, init) => {
+          if (href.endsWith("/api/learning-paths") && init?.method === "POST") {
+            const body = JSON.parse(String(init.body));
+            return jsonResponse({ ...body, id: "lp-nova" }, 201);
+          }
+          return undefined;
+        },
+      ],
     });
   });
 
@@ -86,11 +47,7 @@ describe("Trilhas — criação via modal (mata os 2 tempos)", () => {
   });
 
   it("botão 'Nova trilha' abre modal com nome, descrição, competências e atribuições", async () => {
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Nova trilha" }));
 
@@ -102,11 +59,7 @@ describe("Trilhas — criação via modal (mata os 2 tempos)", () => {
   });
 
   it("criar com nome, descrição e competência marcada envia tudo num POST só", async () => {
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Nova trilha" }));
     await userEvent.type(screen.getByLabelText("Nome"), "Trilha de Observabilidade");

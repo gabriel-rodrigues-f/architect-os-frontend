@@ -1,14 +1,10 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
+import { careerLevelsRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Nova capacidade" troca os
@@ -26,26 +22,7 @@ import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures"
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 
@@ -53,55 +30,33 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/career-levels")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureCareerLevels), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/capabilities") && init?.method === "POST") {
-        const body = JSON.parse(String(init.body)) as { name: string; short?: string };
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              id: "cap-nova",
-              ...body,
-              // Simula a geração automática do backend: o corpo não manda
-              // `short`, mas a resposta sempre traz um (gerado a partir de
-              // `name`, com resolução de colisão do lado do servidor).
-              short: body.short ?? "Nova",
-              curation: {
-                activeCompetencyCount: 0,
-                restrictiveCompetencyCount: 0,
-                nonRestrictiveCompetencyCount: 0,
-                status: "REQUIRES_CURATION",
+    mockAppFetch(fetchMock, {
+      routes: [
+        careerLevelsRoute,
+        (href, init) => {
+          if (href.endsWith("/api/capabilities") && init?.method === "POST") {
+            const body = JSON.parse(String(init.body)) as { name: string; short?: string };
+            return jsonResponse(
+              {
+                id: "cap-nova",
+                ...body,
+                // Simula a geração automática do backend: o corpo não manda
+                // `short`, mas a resposta sempre traz um (gerado a partir de
+                // `name`, com resolução de colisão do lado do servidor).
+                short: body.short ?? "Nova",
+                curation: {
+                  activeCompetencyCount: 0,
+                  restrictiveCompetencyCount: 0,
+                  nonRestrictiveCompetencyCount: 0,
+                  status: "REQUIRES_CURATION",
+                },
               },
-            }),
-            { status: 201, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+              201,
+            );
+          }
+          return undefined;
+        },
+      ],
     });
   });
 
@@ -111,11 +66,7 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
   });
 
   it("botão 'Nova capacidade' abre modal só com Nome — sem campo Sigla, sem inputs soltos no cabeçalho", async () => {
-    render(
-      <Wrapper>
-        <MatrixPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Nova capacidade" }));
 
@@ -125,11 +76,7 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
   });
 
   it("criar só com Nome envia o POST SEM `short` no corpo e fecha o modal", async () => {
-    render(
-      <Wrapper>
-        <MatrixPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Nova capacidade" }));
     await userEvent.type(screen.getByLabelText("Nome"), "Governança de Dados");

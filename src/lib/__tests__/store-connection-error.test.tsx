@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,10 +17,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser } from "./fixtures";
+import { mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * REVISAO-360-FRONTEND-UI-UX-ENTERPRISE-SYNAPSE-2026-08-22.md, FE-360-012
@@ -32,26 +28,7 @@ import { fixtureAdminUser } from "./fixtures";
  */
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
@@ -59,20 +36,12 @@ describe("Tela de conexão indisponível — sem instrução de desenvolvedor em
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockImplementation((url: string) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(new Response("erro interno", { status: 500 }));
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      routes: [
+        // /api/state falha com 500 — as rotas têm precedência sobre o padrão.
+        (href) =>
+          href.endsWith("/api/state") ? new Response("erro interno", { status: 500 }) : undefined,
+      ],
     });
   });
 
@@ -84,11 +53,7 @@ describe("Tela de conexão indisponível — sem instrução de desenvolvedor em
 
   it("em produção, mostra mensagem genérica e nunca 'docker compose'/'VITE_API_URL'", async () => {
     vi.stubEnv("DEV", false);
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TeamPage />);
 
     expect(
       await screen.findByText("Não foi possível acessar o serviço", {}, { timeout: 5000 }),

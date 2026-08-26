@@ -1,15 +1,12 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as PlansRoute } from "@/routes/development-plans";
 import { type AppState, type SessionUser } from "../api";
-import { AuthProvider } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * EPIC 3 (quarta rodada) — PDI real: sem percentual paralelo ao status, sem
@@ -20,24 +17,11 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  return <>{children}</>;
-}
+/**
+ * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
+ * O AuthReady local era um passthrough; o corte do helper apenas atrasa a
+ * montagem até `/api/auth/me` resolver — as asserções já esperam via `findBy*`.
+ */
 
 const PlansPage = PlansRoute.options.component as () => ReactNode;
 
@@ -45,42 +29,18 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (init?.method === "PATCH" && href.includes("/status")) {
-        return Promise.resolve(
-          new Response(JSON.stringify({ id: "pdi-ana", status: "Completed", items: [] }), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (init?.method === "POST" && href.includes("/api/plans/")) {
-        return Promise.resolve(
-          new Response(JSON.stringify({ id: "pdi-bruno", status: "Draft", items: [] }), {
-            status: 201,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      routes: [
+        (href, init) => {
+          if (init?.method === "PATCH" && href.includes("/status")) {
+            return jsonResponse({ id: "pdi-ana", status: "Completed", items: [] });
+          }
+          if (init?.method === "POST" && href.includes("/api/plans/")) {
+            return jsonResponse({ id: "pdi-bruno", status: "Draft", items: [] }, 201);
+          }
+          return undefined;
+        },
+      ],
     });
   });
 
@@ -92,11 +52,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
   it("item do PDI não mostra percentual — só o status", async () => {
     window.history.pushState({}, "", "?architectId=ana");
-    render(
-      <Wrapper>
-        <PlansPage />
-      </Wrapper>,
-    );
+    renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
     expect(screen.queryByText(/^\d+%$/)).toBeNull();
@@ -105,11 +61,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
   it("mostra a situação do plano e permite concluir o PDI já aprovado", async () => {
     window.history.pushState({}, "", "?architectId=ana");
-    render(
-      <Wrapper>
-        <PlansPage />
-      </Wrapper>,
-    );
+    renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
     expect(screen.getByText("Aprovado")).toBeTruthy();
@@ -134,11 +86,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
   it("adicionar uma sugestão ao PDI abre um formulário — não cria com tipo/prazo fabricados", async () => {
     window.history.pushState({}, "", "?architectId=bruno");
-    render(
-      <Wrapper>
-        <PlansPage />
-      </Wrapper>,
-    );
+    renderWithApp(<PlansPage />);
 
     const addButtons = await screen.findAllByRole("button", { name: /Adicionar ao PDI/ });
     await userEvent.click(addButtons[0]!);
@@ -204,41 +152,18 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
    * QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
    */
   it("plano Approved com item ainda Not Started desabilita Concluir PDI", async () => {
-    fetchMock.mockImplementation((url: string) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        const state: AppState = {
-          ...fixtureState,
-          plans: fixtureState.plans.map((p) =>
-            p.id === "pdi-ana"
-              ? { ...p, items: p.items.map((i) => ({ ...i, status: "Not Started" })) }
-              : p,
-          ),
-        };
-        return Promise.resolve(
-          new Response(JSON.stringify(state satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
-    });
+    const state: AppState = {
+      ...fixtureState,
+      plans: fixtureState.plans.map((p) =>
+        p.id === "pdi-ana"
+          ? { ...p, items: p.items.map((i) => ({ ...i, status: "Not Started" })) }
+          : p,
+      ),
+    };
+    mockAppFetch(fetchMock, { state });
 
     window.history.pushState({}, "", "?architectId=ana");
-    render(
-      <Wrapper>
-        <PlansPage />
-      </Wrapper>,
-    );
+    renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
     const complete = screen.getByRole("button", { name: "Concluir PDI" });
@@ -272,41 +197,17 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
           : i,
       ),
     };
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (init?.method === "POST" && href.endsWith("/api/plans/pdi-ana/items/pdi-ana-0/checkins")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(updatedPlan), {
-            status: 201,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      routes: [
+        (href, init) =>
+          init?.method === "POST" && href.endsWith("/api/plans/pdi-ana/items/pdi-ana-0/checkins")
+            ? jsonResponse(updatedPlan, 201)
+            : undefined,
+      ],
     });
 
     window.history.pushState({}, "", "?architectId=ana");
-    render(
-      <Wrapper>
-        <PlansPage />
-      </Wrapper>,
-    );
+    renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
     expect(await screen.findByText("Concluiu o módulo introdutório do curso.")).toBeTruthy();
@@ -338,11 +239,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
   it("plano Approved: tipo de ação vira texto, status continua editável, sem botão de remover", async () => {
     window.history.pushState({}, "", "?architectId=ana");
-    render(
-      <Wrapper>
-        <PlansPage />
-      </Wrapper>,
-    );
+    renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
     const card = (await screen.findByText("Evoluir IAM")).closest(".surface-card")!;
@@ -380,44 +277,22 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     };
 
     function mockFetchAs(user: SessionUser, state: AppState) {
-      fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-        const href = String(url);
-        if (href.endsWith("/api/auth/me")) {
-          return Promise.resolve(
-            new Response(JSON.stringify(user), {
-              status: 200,
-              headers: { "content-type": "application/json" },
-            }),
-          );
-        }
-        if (href.endsWith("/api/state")) {
-          return Promise.resolve(
-            new Response(JSON.stringify(state), {
-              status: 200,
-              headers: { "content-type": "application/json" },
-            }),
-          );
-        }
-        if (init?.method === "POST" && href.includes("/reopen")) {
-          return Promise.resolve(
-            new Response(JSON.stringify({ id: "pdi-ana", status: "Draft", items: [] }), {
-              status: 200,
-              headers: { "content-type": "application/json" },
-            }),
-          );
-        }
-        return Promise.resolve(new Response("{}", { status: 200 }));
+      mockAppFetch(fetchMock, {
+        user,
+        state,
+        routes: [
+          (href, init) =>
+            init?.method === "POST" && href.includes("/reopen")
+              ? jsonResponse({ id: "pdi-ana", status: "Draft", items: [] })
+              : undefined,
+        ],
       });
     }
 
     it("admin não vê o botão Reabrir PDI — só o Tech Lead responsável reabre", async () => {
       mockFetchAs(fixtureAdminUser, completedState);
       window.history.pushState({}, "", "?architectId=ana");
-      render(
-        <Wrapper>
-          <PlansPage />
-        </Wrapper>,
-      );
+      renderWithApp(<PlansPage />);
       await screen.findByText("Evoluir IAM");
       expect(screen.getByText("Concluído")).toBeTruthy();
       expect(screen.queryByRole("button", { name: "Reabrir PDI" })).toBeNull();
@@ -426,11 +301,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     it("Tech Lead responsável reabre com motivo obrigatório", async () => {
       mockFetchAs(fixtureLeadOfAna, completedState);
       window.history.pushState({}, "", "?architectId=ana");
-      render(
-        <Wrapper>
-          <PlansPage />
-        </Wrapper>,
-      );
+      renderWithApp(<PlansPage />);
       await screen.findByText("Evoluir IAM");
 
       await userEvent.click(screen.getByRole("button", { name: "Reabrir PDI" }));
