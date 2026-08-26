@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { CapabilityRadar } from "@/components/app/charts";
 import {
@@ -27,7 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type DevelopmentPlan, type Evidence, type EvidenceType } from "@/lib/domain";
-import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -495,6 +494,7 @@ function EvidenceDialog({
   const [pdiItemId, setPdiItemId] = useState("");
 
   const { submitting: saving, run } = useToastSubmit();
+  const notifySuccess = useSuccessToast();
   const isCertification = type === "Certification";
 
   const salvar = async () => {
@@ -514,7 +514,7 @@ function EvidenceDialog({
       }),
     );
     if (!result.ok) return;
-    toast.success(t("ev.toast", { titulo: nome }));
+    notifySuccess("msg.evidence.create.success", { titulo: nome }, result.value);
     setTitle("");
     setDescription("");
     setProject("");
@@ -662,11 +662,12 @@ function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
   const [url, setUrl] = useState(evidence.url ?? "");
 
   const { submitting: saving, run } = useToastSubmit();
+  const notifySuccess = useSuccessToast();
 
   const submit = async () => {
     const result = await run(() => viewModel.resubmit(evidence, { description, url }));
     if (!result.ok) return;
-    toast.success(t("ev.resubmit.toast", { titulo: evidence.title }));
+    notifySuccess("msg.evidence.resubmit.success", { titulo: evidence.title }, result.value);
     setOpen(false);
   };
 
@@ -733,12 +734,15 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const [comment, setComment] = useState(evidence.leaderComment ?? "");
 
   const { submitting: saving, run } = useToastSubmit();
+  const notifySuccess = useSuccessToast();
 
   const salvar = async () => {
     const result = await run(() => viewModel.review(evidence.id, status, comment));
     if (!result.ok) return;
-    toast.success(
-      t("ev.review.toast", { titulo: evidence.title, status: labels.evidenceStatus[status] }),
+    notifySuccess(
+      "msg.evidence.review.success",
+      { titulo: evidence.title, status: labels.evidenceStatus[status] },
+      result.value,
     );
     setOpen(false);
   };

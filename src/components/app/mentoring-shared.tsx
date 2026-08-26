@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
@@ -45,7 +45,6 @@ export interface ProficiencyDraft {
 
 export function useMentoringSessionForm(menteeOptions: Architect[]) {
   const store = useStore();
-  const { t } = useI18n();
   const user = useCurrentUser();
   const sel = useSelectors();
 
@@ -105,6 +104,7 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
     form.durationMin.trim().length > 0 && (!Number.isInteger(durationValue) || durationValue <= 0);
 
   const { submitting: saving, run } = useToastSubmit();
+  const notifySuccess = useSuccessToast();
 
   const submit = async () => {
     const vazios = REQUIRED_FIELDS.filter((f) => !form[f].trim());
@@ -128,7 +128,11 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
       viewModel.createSession(user.name, form, durationValue, competencyIds, confirmedUpdates),
     );
     if (!result.ok) return;
-    toast.success(t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }));
+    notifySuccess(
+      "msg.mentoring.create.success",
+      { nome: sel.architectById(form.menteeId)?.name ?? "" },
+      result.value,
+    );
     setForm({
       ...form,
       durationMin: "",
@@ -207,6 +211,7 @@ export function MenteeFilterCombobox({
 
 export function FollowUpScheduler({ session }: { session: MentoringSession }) {
   const { t, locale } = useI18n();
+  const notifySuccess = useSuccessToast();
   const store = useStore();
   const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
   const [editing, setEditing] = useState(false);
@@ -217,8 +222,8 @@ export function FollowUpScheduler({ session }: { session: MentoringSession }) {
     setSaving(true);
     viewModel
       .scheduleFollowUp(session.id, value || null)
-      .then(() => {
-        toast.success(t("mentor.followUp.toast"));
+      .then((updated) => {
+        notifySuccess("msg.mentoring.scheduleFollowUp.success", undefined, updated);
         setEditing(false);
       })
       .catch((error: unknown) => {
@@ -279,6 +284,7 @@ function Block({ title, text }: { title: string; text: string }) {
 
 function MentoringTimelineItem({ session }: { session: MentoringSession }) {
   const { t, locale } = useI18n();
+  const notifySuccess = useSuccessToast();
   const store = useStore();
   const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
   const sel = useSelectors();
@@ -318,11 +324,15 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
             if (!mentee || !eligible.competency) return;
             setSendingSessionId(session.id);
             try {
-              await viewModel.sendToPlan(session, mentee, {
+              const plan = await viewModel.sendToPlan(session, mentee, {
                 assessmentId: eligible.assessmentId,
                 competencyId: eligible.competency.id,
               });
-              toast.success(t("mentor.toPdi.toast", { competencia: eligible.competency.name }));
+              notifySuccess(
+                "msg.plan.item.addFromGap.success",
+                { competencia: eligible.competency.name },
+                plan,
+              );
             } catch (error) {
               toast.error(error instanceof ApiError ? error.message : t("mentor.toPdi.error"));
             } finally {

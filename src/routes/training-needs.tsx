@@ -1,11 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Button } from "@/components/ui/button";
-import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -50,6 +49,7 @@ function TrainingNeedsPage() {
   const [showAllCollective, setShowAllCollective] = useState(false);
   const collective = showAllCollective ? collectiveEligible : collectiveEligible.slice(0, 6);
   const { submitting, run } = useToastSubmit();
+  const notifySuccess = useSuccessToast();
 
   const createIntervention = async (need: (typeof needs)[number]) => {
     const competency = need.competency;
@@ -70,7 +70,7 @@ function TrainingNeedsPage() {
       }),
     );
     if (result.ok) {
-      toast.success(t("needs.intervention.toast", { competencia: competency.name }));
+      notifySuccess("needs.intervention.toast", { competencia: competency.name });
     }
   };
 

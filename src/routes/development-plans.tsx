@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
@@ -34,7 +33,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useObjectiveFromGap, useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
-import { useAsyncSubmit } from "@/hooks/use-async-submit";
+import { useAsyncSubmit, useSuccessToast } from "@/hooks/use-async-submit";
 import { useSearchParamString } from "@/hooks/use-search-param";
 import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-view-model";
 
@@ -91,6 +90,7 @@ function PlansPage() {
   const { t, locale } = useI18n();
 
   const creating = useAsyncSubmit(t("pdi.newItem.error"));
+  const notifySuccess = useSuccessToast();
   const planTransition = useAsyncSubmit(t("pdi.plan.transitionError"));
   const help = usePageHelp("developmentPlans");
   const user = useCurrentUser();
@@ -241,7 +241,7 @@ function PlansPage() {
           onSubmit={(reason) =>
             viewModel
               .reopen(plan.id, reason)
-              .then(() => toast.success(t("pdi.plan.reopenDialog.success")))
+              .then((reopened) => notifySuccess("msg.plan.reopen.success", undefined, reopened))
           }
         />
       )}
@@ -391,7 +391,7 @@ function PlansPage() {
                           size="sm"
                           onClick={() => {
                             viewModel.removeItem(plan!.id, item.id);
-                            toast.success(t("pdi.gap.removed.toast", { nome: competencyName }));
+                            notifySuccess("pdi.gap.removed.toast", { nome: competencyName });
                           }}
                         >
                           <Trash2 className="h-3.5 w-3.5" />

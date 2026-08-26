@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { QuerySection } from "@/components/app/QuerySection";
 import { PageHeader, SectionCard, StatusBadge } from "@/components/app/ui-bits";
@@ -16,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authApi, ApiError, type SessionUser, type UserRole } from "@/lib/api";
+import { useSuccessToast } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -42,6 +42,7 @@ const USERS_QUERY_KEY = ["auth-users"] as const;
 
 function UsersPage() {
   const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
   const help = usePageHelp("users");
   const isAdmin = useCurrentUser().role === "admin";
   const queryClient = useQueryClient();
@@ -62,7 +63,7 @@ function UsersPage() {
   ) => {
     const updated = await authApi.updateUser(user.id, patch);
     await queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
-    toast.success(t("users.toast.updated", { nome: updated.name }));
+    notifySuccess("msg.user.update.success", { nome: updated.name }, updated);
   };
 
   return (
