@@ -2,7 +2,7 @@ import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-quer
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 
-import { api, ApiError, type AppState, type CommentInput } from "./api";
+import { api, type AppState, type CommentInput } from "./api";
 import type {
   Architect,
   Assessment,
@@ -22,6 +22,7 @@ import type {
   MentoringSession,
   ProficiencyUpdate,
 } from "./domain";
+import { MutationRunner } from "./mutation-runner";
 import { createSelectors, emptyState } from "./selectors";
 import { defaultNameFormatter } from "./text";
 
@@ -248,49 +249,33 @@ interface Api extends AppState {
 const Ctx = createContext<Api | null>(null);
 
 function buildApi(state: AppState, queryClient: QueryClient): Api {
-  /** Aplica a mudança no cache local imediatamente (resposta otimista). */
-  const local = (fn: (s: AppState) => AppState) => {
-    queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) => (prev ? fn(prev) : prev));
-  };
-
   /**
-   * Dispara a chamada de escrita. A UI já mudou otimisticamente (`local`)
-   * antes desta função ser chamada; em erro, essa mudança otimista não pode
-   * ficar mentindo sozinha na tela — revalida a partir do servidor (volta o
-   * dado real) e avisa quem clicou, em vez de falhar em silêncio como antes.
-   * Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC L.
-   *
-   * B-09 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10, "409
-   * espúrios") — `onReconcile` opcional: quando o otimismo local escreveu um
-   * campo que o servidor também recalcula (o caso concreto: `version`, base
-   * de concorrência otimista), o sucesso precisa gravar a resposta real por
-   * cima do palpite otimista. Sem isto, `expectedVersion` da PRÓXIMA edição
-   * lia o `version` antigo do cache — nunca atualizado por um sucesso
-   * anterior — e o servidor recusava com 409 mesmo sem conflito real
-   * nenhum (mesma pessoa, edições sequenciais, nenhuma escrita concorrente
-   * de fato). Reconciliar no sucesso fecha essa janela sem precisar de
-   * `await` no chamador: a escrita continua "dispara e esquece" pra UI.
+   * OO3-09 (Fase OO-3) — o antigo par `local(fn)`/`remote(call, onReconcile)`
+   * repetido em cada método virou o `MutationRunner` genérico
+   * (`mutation-runner.ts`), que carrega o ciclo otimista inteiro (local →
+   * remoto → reconciliação → rollback/erro) e o racional de B-09 ("409
+   * espúrios") e do EPIC L (nunca falhar em silêncio). Aqui fica só a
+   * fiação com o React Query e o toast — o runner não conhece nenhum dos dois.
    */
-  const remote = <T,>(call: Promise<T>, onReconcile?: (result: T) => void) => {
-    void call.then(onReconcile, (error: unknown) => {
-      if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
-      else console.error(error);
-      toast.error(
-        error instanceof ApiError
-          ? error.message
-          : "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.",
-      );
-      void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
-    });
-  };
+  const runner = new MutationRunner<AppState>(
+    {
+      update: (fn) =>
+        queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) => (prev ? fn(prev) : prev)),
+      invalidate: () => void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }),
+    },
+    (message) => toast.error(message),
+    "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.",
+  );
 
   return {
     ...state,
     capabilities: [...state.capabilities].sort(defaultNameFormatter.byName),
 
     setActiveCycle: (id) => {
-      local((s) => ({ ...s, activeCycleId: id }));
-      remote(api.setActiveCycle(id));
+      runner.optimistic(
+        (s) => ({ ...s, activeCycleId: id }),
+        () => api.setActiveCycle(id),
+      );
     },
 
     /**
@@ -301,98 +286,94 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * registro recém-criado a algo antes da resposta real usaria um id que
      * nunca vai existir.
      */
-    addArchitect: async (a) => {
-      const created = await api.createArchitect(a);
-      local((s) => ({ ...s, architects: [...s.architects, created] }));
-      return created;
-    },
+    addArchitect: (a) =>
+      runner.command(
+        () => api.createArchitect(a),
+        (created) => (s) => ({ ...s, architects: [...s.architects, created] }),
+      ),
 
     updateArchitect: (id, patch) => {
-      local((s) => ({
-        ...s,
-        architects: s.architects.map((a) => (a.id === id ? { ...a, ...patch } : a)),
-      }));
-      remote(api.updateArchitect(id, patch));
-    },
-
-    updateCareerLevelPolicy: async (careerLevelId, minimumQualifiedCapabilities) => {
-      const updated = await api.updateCareerLevelPolicy(
-        careerLevelId,
-        minimumQualifiedCapabilities,
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          architects: s.architects.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+        }),
+        () => api.updateArchitect(id, patch),
       );
-      local((s) => ({
-        ...s,
-        careerLevelPolicies: s.careerLevelPolicies.map((p) =>
-          p.careerLevelId === careerLevelId ? updated : p,
-        ),
-      }));
-      return updated;
     },
 
-    transitionCareerLevel: async (id, toRole, reason) => {
+    updateCareerLevelPolicy: (careerLevelId, minimumQualifiedCapabilities) =>
+      runner.command(
+        () => api.updateCareerLevelPolicy(careerLevelId, minimumQualifiedCapabilities),
+        (updated) => (s) => ({
+          ...s,
+          careerLevelPolicies: s.careerLevelPolicies.map((p) =>
+            p.careerLevelId === careerLevelId ? updated : p,
+          ),
+        }),
+      ),
+
+    transitionCareerLevel: (id, toRole, reason) => {
       const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
-      const updated = await api.transitionCareerLevel(id, toRole, reason, expectedVersion);
-      local((s) => ({
-        ...s,
-        architects: s.architects.map((a) => (a.id === id ? updated : a)),
-      }));
-      return updated;
+      return runner.command(
+        () => api.transitionCareerLevel(id, toRole, reason, expectedVersion),
+        (updated) => (s) => ({
+          ...s,
+          architects: s.architects.map((a) => (a.id === id ? updated : a)),
+        }),
+      );
     },
 
     /** R2-UX-08/OO-03 — mesmo formato de `transitionCareerLevel` acima. */
-    deactivate: async (id, reason) => {
+    deactivate: (id, reason) => {
       const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
-      const updated = await api.deactivate(id, reason, expectedVersion);
-      local((s) => ({
-        ...s,
-        architects: s.architects.map((a) => (a.id === id ? updated : a)),
-      }));
-      return updated;
+      return runner.command(
+        () => api.deactivate(id, reason, expectedVersion),
+        (updated) => (s) => ({
+          ...s,
+          architects: s.architects.map((a) => (a.id === id ? updated : a)),
+        }),
+      );
     },
 
     /** B-32 — id gerado no servidor; sem otimismo (ver `addArchitect`). */
-    addCompetency: async (c) => {
-      const created = await api.createCompetency(c);
-      local((s) => ({ ...s, competencies: [...s.competencies, created] }));
-      return created;
-    },
+    addCompetency: (c) =>
+      runner.command(
+        () => api.createCompetency(c),
+        (created) => (s) => ({ ...s, competencies: [...s.competencies, created] }),
+      ),
 
     updateCompetency: (id, patch) => {
-      local((s) => ({
-        ...s,
-        competencies: s.competencies.map((c) =>
-          c.id === id
-            ? { ...c, ...patch, expected: { ...c.expected, ...(patch.expected ?? {}) } }
-            : c,
-        ),
-      }));
-      remote(api.updateCompetency(id, patch));
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          competencies: s.competencies.map((c) =>
+            c.id === id
+              ? { ...c, ...patch, expected: { ...c.expected, ...(patch.expected ?? {}) } }
+              : c,
+          ),
+        }),
+        () => api.updateCompetency(id, patch),
+      );
     },
 
     /**
-     * Sem otimismo aqui: o resultado só é conhecido depois que o servidor
-     * responde (apagou ou arquivou), então a UI não pode decidir de antemão o
-     * que remover da tela. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
-     * SYNAPSE.md, EPIC C.
+     * Sem otimismo aqui (`guarded`): o resultado só é conhecido depois que o
+     * servidor responde (apagou ou arquivou), então a UI não pode decidir de
+     * antemão o que remover da tela. Ver AUDITORIA-TERCEIRA-RODADA-
+     * RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC C.
      */
-    removeCompetency: async (id) => {
-      try {
-        const result = await api.deleteCompetency(id);
-        const archived = result?.archived === true;
-        local((s) => ({
-          ...s,
-          competencies: archived
-            ? s.competencies.map((c) => (c.id === id ? { ...c, active: false } : c))
-            : s.competencies.filter((c) => c.id !== id),
-        }));
-        return { archived };
-      } catch (error) {
-        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
-        else console.error(error);
-        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
-        throw error;
-      }
-    },
+    removeCompetency: (id) =>
+      runner.guarded(
+        async () => ({ archived: (await api.deleteCompetency(id))?.archived === true }),
+        ({ archived }) =>
+          (s) => ({
+            ...s,
+            competencies: archived
+              ? s.competencies.map((c) => (c.id === id ? { ...c, active: false } : c))
+              : s.competencies.filter((c) => c.id !== id),
+          }),
+      ),
 
     /**
      * Sem otimismo, mesma razão de `removeCompetency`: as duas competências
@@ -400,22 +381,18 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * UI não pode adivinhar isso antes.
      */
     swapCompetencyRequirement: async (id, withCompetencyId) => {
-      try {
-        const { a, b } = await api.swapCompetencyRequirement(id, withCompetencyId);
-        local((s) => ({
-          ...s,
-          competencies: s.competencies.map((c) => {
-            if (c.id === a.id) return a;
-            if (c.id === b.id) return b;
-            return c;
+      await runner.guarded(
+        () => api.swapCompetencyRequirement(id, withCompetencyId),
+        ({ a, b }) =>
+          (s) => ({
+            ...s,
+            competencies: s.competencies.map((c) => {
+              if (c.id === a.id) return a;
+              if (c.id === b.id) return b;
+              return c;
+            }),
           }),
-        }));
-      } catch (error) {
-        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
-        else console.error(error);
-        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
-        throw error;
-      }
+      );
     },
 
     /**
@@ -423,37 +400,38 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * resposta já traz `curation` computada de verdade (0 competências →
      * REQUIRES_CURATION) — nada a reconstruir no cliente.
      */
-    addCapability: async (c) => {
-      const created = await api.createCapability(c);
-      local((s) => ({
-        ...s,
-        capabilities: [...s.capabilities, created].sort(defaultNameFormatter.byName),
-      }));
-      return created;
-    },
+    addCapability: (c) =>
+      runner.command(
+        () => api.createCapability(c),
+        (created) => (s) => ({
+          ...s,
+          capabilities: [...s.capabilities, created].sort(defaultNameFormatter.byName),
+        }),
+      ),
 
     updateCapability: (id, patch) => {
-      local((s) => ({
-        ...s,
-        capabilities: s.capabilities
-          .map((c) => (c.id === id ? { ...c, ...patch } : c))
-          .sort(defaultNameFormatter.byName),
-      }));
       // ORIENTACAO-BLOCO-2-UX-POR-TELA — mesmo racional de B-09
-      // (`updatePlanItem`, acima): desde que `short` deixou de vir do
+      // (`updatePlanItem`, abaixo): desde que `short` deixou de vir do
       // formulário e passou a ser gerado/regenerado pelo servidor quando o
       // patch muda `name` sem mandar `short`, o palpite otimista (que só
       // aplica os campos que o cliente de fato mandou) não tem como prever
       // o novo `short` — sem reconciliar com a resposta real, o rótulo
       // compacto (heatmap/radar/export) ficaria mostrando a sigla antiga
       // até a próxima revalidação completa do estado.
-      remote(api.updateCapability(id, patch), (updated) =>
-        local((s) => ({
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          capabilities: s.capabilities
+            .map((c) => (c.id === id ? { ...c, ...patch } : c))
+            .sort(defaultNameFormatter.byName),
+        }),
+        () => api.updateCapability(id, patch),
+        (updated) => (s) => ({
           ...s,
           capabilities: s.capabilities
             .map((c) => (c.id === id ? updated : c))
             .sort(defaultNameFormatter.byName),
-        })),
+        }),
       );
     },
 
@@ -469,10 +447,10 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * realmente tem salvo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
      * Seção 19.
      */
-    removeCapability: async (id) => {
-      try {
-        const result = await api.deleteCapability(id);
-        local((s) => {
+    removeCapability: (id) =>
+      runner.guarded(
+        () => api.deleteCapability(id),
+        (result) => (s) => {
           if (result.archived) {
             return {
               ...s,
@@ -494,15 +472,8 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
               competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),
             })),
           };
-        });
-        return result;
-      } catch (error) {
-        if (error instanceof ApiError) console.error(`[api] ${error.status}: ${error.message}`);
-        else console.error(error);
-        void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
-        throw error;
-      }
-    },
+        },
+      ),
 
     // B-09/B-18 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) —
     // `expectedVersion` vem do estado que a tela está mostrando agora;
@@ -515,26 +486,25 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         state.assessments
           .find((a) => a.id === assessmentId)
           ?.items.find((i) => i.competencyId === competencyId)?.version ?? 1;
-      local((s) => ({
-        ...s,
-        assessments: s.assessments.map((a) =>
-          a.id !== assessmentId
-            ? a
-            : {
-                ...a,
-                items: a.items.map((it) =>
-                  it.competencyId === competencyId ? { ...it, ...patch } : it,
-                ),
-              },
-        ),
-      }));
-      remote(
-        api.patchAssessmentItem(assessmentId, competencyId, patch, expectedVersion),
-        (updated) =>
-          local((s) => ({
-            ...s,
-            assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
-          })),
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          assessments: s.assessments.map((a) =>
+            a.id !== assessmentId
+              ? a
+              : {
+                  ...a,
+                  items: a.items.map((it) =>
+                    it.competencyId === competencyId ? { ...it, ...patch } : it,
+                  ),
+                },
+          ),
+        }),
+        () => api.patchAssessmentItem(assessmentId, competencyId, patch, expectedVersion),
+        (updated) => (s) => ({
+          ...s,
+          assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+        }),
       );
     },
 
@@ -543,67 +513,64 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * exibir uma data chutada pelo navegador seria mentira até a resposta voltar.
      * Vale para as três operações do par de comentários.
      */
-    addAssessmentComment: async (assessmentId, competencyId, comment) => {
-      const updated = await api.addAssessmentComment(assessmentId, competencyId, comment);
-      local((s) => ({
-        ...s,
-        assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
-      }));
-      return updated;
-    },
+    addAssessmentComment: (assessmentId, competencyId, comment) =>
+      runner.command(
+        () => api.addAssessmentComment(assessmentId, competencyId, comment),
+        (updated) => (s) => ({
+          ...s,
+          assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+        }),
+      ),
 
-    updateAssessmentComment: async (assessmentId, competencyId, commentId, comment) => {
-      const updated = await api.updateAssessmentComment(
-        assessmentId,
-        competencyId,
-        commentId,
-        comment,
-      );
-      local((s) => ({
-        ...s,
-        assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
-      }));
-      return updated;
-    },
+    updateAssessmentComment: (assessmentId, competencyId, commentId, comment) =>
+      runner.command(
+        () => api.updateAssessmentComment(assessmentId, competencyId, commentId, comment),
+        (updated) => (s) => ({
+          ...s,
+          assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+        }),
+      ),
 
-    removeAssessmentComment: async (assessmentId, competencyId, commentId) => {
-      const updated = await api.deleteAssessmentComment(assessmentId, competencyId, commentId);
-      local((s) => ({
-        ...s,
-        assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
-      }));
-      return updated;
-    },
+    removeAssessmentComment: (assessmentId, competencyId, commentId) =>
+      runner.command(
+        () => api.deleteAssessmentComment(assessmentId, competencyId, commentId),
+        (updated) => (s) => ({
+          ...s,
+          assessments: s.assessments.map((a) => (a.id === updated.id ? updated : a)),
+        }),
+      ),
 
     addPlanItem: (architectId, item) => {
-      local((s) => {
-        const existing = s.plans.find(
-          (p) => p.architectId === architectId && p.cycleId === s.activeCycleId,
-        );
-        if (existing) {
+      runner.optimistic(
+        (s) => {
+          const existing = s.plans.find(
+            (p) => p.architectId === architectId && p.cycleId === s.activeCycleId,
+          );
+          if (existing) {
+            return {
+              ...s,
+              plans: s.plans.map((p) =>
+                p.id === existing.id ? { ...p, items: [...p.items, item] } : p,
+              ),
+            };
+          }
           return {
             ...s,
-            plans: s.plans.map((p) =>
-              p.id === existing.id ? { ...p, items: [...p.items, item] } : p,
-            ),
+            plans: [
+              ...s.plans,
+              {
+                id: `pdi-${architectId}-${s.activeCycleId}`,
+                architectId,
+                cycleId: s.activeCycleId,
+                status: "Draft",
+                items: [item],
+                version: 1,
+              },
+            ],
           };
-        }
-        return {
-          ...s,
-          plans: [
-            ...s.plans,
-            {
-              id: `pdi-${architectId}-${s.activeCycleId}`,
-              architectId,
-              cycleId: s.activeCycleId,
-              status: "Draft",
-              items: [item],
-              version: 1,
-            },
-          ],
-        };
-      });
-      remote(api.addPlanItem(architectId, state.activeCycleId, item));
+        },
+        () => api.addPlanItem(architectId, state.activeCycleId, item),
+      );
     },
 
     /**
@@ -613,77 +580,77 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * resposta. `currentLevel`/`targetLevel`/`priority` nunca aparecem
      * aqui — nem o tipo do parâmetro os tem.
      */
-    createPlanItemFromGap: async (architectId, item) => {
-      const updated = await api.createPlanItemFromGap(architectId, item);
-      local((s) => ({
-        ...s,
-        plans: s.plans.some((p) => p.id === updated.id)
-          ? s.plans.map((p) => (p.id === updated.id ? updated : p))
-          : [...s.plans, updated],
-      }));
-      return updated;
-    },
+    createPlanItemFromGap: (architectId, item) =>
+      runner.command(
+        () => api.createPlanItemFromGap(architectId, item),
+        (updated) => (s) => ({
+          ...s,
+          plans: s.plans.some((p) => p.id === updated.id)
+            ? s.plans.map((p) => (p.id === updated.id ? updated : p))
+            : [...s.plans, updated],
+        }),
+      ),
 
     updatePlanItem: (planId, itemId, patch) => {
       // `expectedVersion` vem do estado que a tela está mostrando agora —
       // concorrência otimista (ENT-DATA-012): se outra pessoa já escreveu
-      // neste item, o servidor recusa com 409 e `remote()` revalida.
+      // neste item, o servidor recusa com 409 e o runner revalida.
       const expectedVersion =
         state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
-      local((s) => ({
-        ...s,
-        plans: s.plans.map((p) =>
-          p.id !== planId
-            ? p
-            : { ...p, items: p.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) },
-        ),
-      }));
       // B-09 — reconcilia com o plano de verdade no sucesso: sem isto, o
       // `version` do item ficava travado no palpite otimista (que este PATCH
       // nunca incrementa sozinho), e a PRÓXIMA edição mandava um
       // `expectedVersion` já defasado, levando a um 409 sem conflito real.
-      remote(api.patchPlanItem(planId, itemId, patch, expectedVersion), (updated) =>
-        local((s) => ({ ...s, plans: s.plans.map((p) => (p.id === planId ? updated : p)) })),
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          plans: s.plans.map((p) =>
+            p.id !== planId
+              ? p
+              : { ...p, items: p.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) },
+          ),
+        }),
+        () => api.patchPlanItem(planId, itemId, patch, expectedVersion),
+        (updated) => (s) => ({ ...s, plans: s.plans.map((p) => (p.id === planId ? updated : p)) }),
       );
     },
 
     removePlanItem: (planId, itemId) => {
-      local((s) => ({
-        ...s,
-        plans: s.plans.map((p) =>
-          p.id !== planId ? p : { ...p, items: p.items.filter((i) => i.id !== itemId) },
-        ),
-      }));
-      remote(api.removePlanItem(planId, itemId));
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          plans: s.plans.map((p) =>
+            p.id !== planId ? p : { ...p, items: p.items.filter((i) => i.id !== itemId) },
+          ),
+        }),
+        () => api.removePlanItem(planId, itemId),
+      );
     },
 
-    reschedulePlanItem: async (planId, itemId, targetDate, reason) => {
+    reschedulePlanItem: (planId, itemId, targetDate, reason) => {
       const expectedVersion =
         state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
-      const updated = await api.reschedulePlanItem(
-        planId,
-        itemId,
-        targetDate,
-        reason,
-        expectedVersion,
+      return runner.command(
+        () => api.reschedulePlanItem(planId, itemId, targetDate, reason, expectedVersion),
+        (updated) => (s) => ({
+          ...s,
+          plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+        }),
       );
-      local((s) => ({
-        ...s,
-        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
-      }));
-      return updated;
     },
 
+    /** Fora do runner: leitura pura, sem passo local nem cache a reconciliar. */
     planItemEvents: (planId, itemId) => api.planItemEvents(planId, itemId),
 
-    updatePlanStatus: async (planId, status) => {
+    updatePlanStatus: (planId, status) => {
       const expectedVersion = state.plans.find((p) => p.id === planId)?.version ?? 1;
-      const updated = await api.updatePlanStatus(planId, status, expectedVersion);
-      local((s) => ({
-        ...s,
-        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
-      }));
-      return updated;
+      return runner.command(
+        () => api.updatePlanStatus(planId, status, expectedVersion),
+        (updated) => (s) => ({
+          ...s,
+          plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+        }),
+      );
     },
 
     /**
@@ -691,24 +658,25 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * otimismo: exige motivo e só o Tech Lead responsável, então a tela
      * precisa do erro de verdade se a autorização ou o motivo falharem.
      */
-    reopenPlan: async (planId, reason) => {
+    reopenPlan: (planId, reason) => {
       const expectedVersion = state.plans.find((p) => p.id === planId)?.version ?? 1;
-      const updated = await api.reopenPlan(planId, reason, expectedVersion);
-      local((s) => ({
-        ...s,
-        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
-      }));
-      return updated;
+      return runner.command(
+        () => api.reopenPlan(planId, reason, expectedVersion),
+        (updated) => (s) => ({
+          ...s,
+          plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+        }),
+      );
     },
 
-    addPlanItemCheckin: async (planId, itemId, text) => {
-      const updated = await api.addPlanItemCheckin(planId, itemId, text);
-      local((s) => ({
-        ...s,
-        plans: s.plans.map((p) => (p.id === planId ? updated : p)),
-      }));
-      return updated;
-    },
+    addPlanItemCheckin: (planId, itemId, text) =>
+      runner.command(
+        () => api.addPlanItemCheckin(planId, itemId, text),
+        (updated) => (s) => ({
+          ...s,
+          plans: s.plans.map((p) => (p.id === planId ? updated : p)),
+        }),
+      ),
 
     /**
      * Sem otimismo: o servidor gera o id de verdade (nunca mais o `id`
@@ -717,113 +685,125 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
      * inventado antes da resposta deixaria o item com um id que nunca vai
      * bater com o do servidor, permanentemente, até o próximo refresh.
      */
-    addEvidence: async (e) => {
-      const created = await api.createEvidence(e);
-      local((s) => ({ ...s, evidences: [created, ...s.evidences] }));
-      return created;
-    },
+    addEvidence: (e) =>
+      runner.command(
+        () => api.createEvidence(e),
+        (created) => (s) => ({ ...s, evidences: [created, ...s.evidences] }),
+      ),
 
     reviewEvidence: async (id, review) => {
-      const updated = await api.reviewEvidence(id, review);
-      local((s) => ({
-        ...s,
-        evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
-      }));
+      await runner.command(
+        () => api.reviewEvidence(id, review),
+        (updated) => (s) => ({
+          ...s,
+          evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
+        }),
+      );
     },
 
     resubmitEvidence: async (id, patch) => {
-      const updated = await api.resubmitEvidence(id, patch);
-      local((s) => ({
-        ...s,
-        evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
-      }));
+      await runner.command(
+        () => api.resubmitEvidence(id, patch),
+        (updated) => (s) => ({
+          ...s,
+          evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
+        }),
+      );
     },
 
     /** Sem otimismo — mesmo motivo de `addEvidence`: o id de verdade só existe depois da resposta. */
-    addMentoringSession: async (m, proficiencyUpdates = []) => {
-      const created = await api.createMentoringSession(m, proficiencyUpdates);
-      local((s) => ({ ...s, mentoringSessions: [created, ...s.mentoringSessions] }));
-      return created;
-    },
+    addMentoringSession: (m, proficiencyUpdates = []) =>
+      runner.command(
+        () => api.createMentoringSession(m, proficiencyUpdates),
+        (created) => (s) => ({ ...s, mentoringSessions: [created, ...s.mentoringSessions] }),
+      ),
 
-    scheduleMentoringFollowUp: async (id, nextSession) => {
-      const updated = await api.scheduleMentoringFollowUp(id, nextSession);
-      local((s) => ({
-        ...s,
-        mentoringSessions: s.mentoringSessions.map((m) => (m.id === id ? updated : m)),
-      }));
-      return updated;
-    },
+    scheduleMentoringFollowUp: (id, nextSession) =>
+      runner.command(
+        () => api.scheduleMentoringFollowUp(id, nextSession),
+        (updated) => (s) => ({
+          ...s,
+          mentoringSessions: s.mentoringSessions.map((m) => (m.id === id ? updated : m)),
+        }),
+      ),
 
     /**
      * Trilha nova entra no topo da lista, igual à ordenação do servidor.
      * Sem otimismo — mesmo motivo de `addEvidence`: o id de verdade só
      * existe depois da resposta.
      */
-    addLearningPath: async (p) => {
-      const created = await api.createLearningPath(p);
-      local((s) => ({ ...s, learningPaths: [created, ...s.learningPaths] }));
-      return created;
-    },
+    addLearningPath: (p) =>
+      runner.command(
+        () => api.createLearningPath(p),
+        (created) => (s) => ({ ...s, learningPaths: [created, ...s.learningPaths] }),
+      ),
 
     /** Progresso é por pessoa: só a entrada de (architectId, itemId) muda, nunca o item inteiro. */
     updateLearningItemProgress: (pathId, architectId, itemId, progress) => {
       const status: LearningItemProgress["status"] =
         progress >= 100 ? "Completed" : progress > 0 ? "In Progress" : "Not Started";
-      local((s) => ({
-        ...s,
-        learningPaths: s.learningPaths.map((p) =>
-          p.id !== pathId
-            ? p
-            : {
-                ...p,
-                progress: p.progress.some(
-                  (e) => e.architectId === architectId && e.itemId === itemId,
-                )
-                  ? p.progress.map((e) =>
-                      e.architectId === architectId && e.itemId === itemId
-                        ? { ...e, progress, status }
-                        : e,
-                    )
-                  : [...p.progress, { architectId, itemId, progress, status }],
-              },
-        ),
-      }));
-      remote(api.patchLearningItemProgress(pathId, architectId, itemId, progress));
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          learningPaths: s.learningPaths.map((p) =>
+            p.id !== pathId
+              ? p
+              : {
+                  ...p,
+                  progress: p.progress.some(
+                    (e) => e.architectId === architectId && e.itemId === itemId,
+                  )
+                    ? p.progress.map((e) =>
+                        e.architectId === architectId && e.itemId === itemId
+                          ? { ...e, progress, status }
+                          : e,
+                      )
+                    : [...p.progress, { architectId, itemId, progress, status }],
+                },
+          ),
+        }),
+        () => api.patchLearningItemProgress(pathId, architectId, itemId, progress),
+      );
     },
 
     addCycle: (c) => {
-      local((s) => ({
-        ...s,
-        cycles: [...s.cycles, c].sort((x, y) => (x.start < y.start ? -1 : 1)),
-      }));
-      remote(api.createCycle(c));
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          cycles: [...s.cycles, c].sort((x, y) => (x.start < y.start ? -1 : 1)),
+        }),
+        () => api.createCycle(c),
+      );
     },
 
     updateCycle: (id, patch) => {
-      local((s) => ({ ...s, cycles: s.cycles.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
-      remote(api.updateCycle(id, patch));
+      runner.optimistic(
+        (s) => ({ ...s, cycles: s.cycles.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
+        () => api.updateCycle(id, patch),
+      );
     },
 
     removeCycle: (id) => {
-      local((s) => ({ ...s, cycles: s.cycles.filter((c) => c.id !== id) }));
-      remote(api.deleteCycle(id));
+      runner.optimistic(
+        (s) => ({ ...s, cycles: s.cycles.filter((c) => c.id !== id) }),
+        () => api.deleteCycle(id),
+      );
     },
 
     /**
      * Abrir assessment devolve o registro criado pelo servidor (uma linha por
-     * competência), por isso esta é a única operação assíncrona da store.
+     * competência) — sem otimismo, a resposta é a fonte do registro.
      */
-    openAssessment: async (architectId, cycleId) => {
-      const assessment = await api.openAssessment(architectId, cycleId);
-      local((s) => ({
-        ...s,
-        assessments: s.assessments.some((a) => a.id === assessment.id)
-          ? s.assessments.map((a) => (a.id === assessment.id ? assessment : a))
-          : [...s.assessments, assessment],
-      }));
-      return assessment;
-    },
+    openAssessment: (architectId, cycleId) =>
+      runner.command(
+        () => api.openAssessment(architectId, cycleId),
+        (assessment) => (s) => ({
+          ...s,
+          assessments: s.assessments.some((a) => a.id === assessment.id)
+            ? s.assessments.map((a) => (a.id === assessment.id ? assessment : a))
+            : [...s.assessments, assessment],
+        }),
+      ),
 
     /*
       Awaitable, e não otimista: enviar para revisão, concluir ou reabrir é
@@ -832,50 +812,59 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       não só reverter em silêncio depois de já ter pintado o novo status na
       hora do clique.
     */
-    setAssessmentStatus: async (id, status) => {
+    setAssessmentStatus: (id, status) => {
       // B-18 — mesmo raciocínio de `updateAssessmentItem`: `expectedVersion`
       // vem do estado atual, não de um valor fixo que o chamador precisaria
       // rastrear.
       const expectedVersion = state.assessments.find((a) => a.id === id)?.version ?? 1;
-      const updated = await api.setAssessmentStatus(id, status, expectedVersion);
-      local((s) => ({
-        ...s,
-        assessments: s.assessments.map((a) => (a.id === id ? updated : a)),
-      }));
-      return updated;
+      return runner.command(
+        () => api.setAssessmentStatus(id, status, expectedVersion),
+        (updated) => (s) => ({
+          ...s,
+          assessments: s.assessments.map((a) => (a.id === id ? updated : a)),
+        }),
+      );
     },
 
     updateLearningPath: (id, patch) => {
-      local((s) => ({
-        ...s,
-        learningPaths: s.learningPaths.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-      }));
-      remote(api.updateLearningPath(id, patch));
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          learningPaths: s.learningPaths.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+        }),
+        () => api.updateLearningPath(id, patch),
+      );
     },
 
     removeLearningPath: (id) => {
-      local((s) => ({ ...s, learningPaths: s.learningPaths.filter((p) => p.id !== id) }));
-      remote(api.deleteLearningPath(id));
+      runner.optimistic(
+        (s) => ({ ...s, learningPaths: s.learningPaths.filter((p) => p.id !== id) }),
+        () => api.deleteLearningPath(id),
+      );
     },
 
     addLearningPathItem: (pathId, item) => {
-      local((s) => ({
-        ...s,
-        learningPaths: s.learningPaths.map((p) =>
-          p.id === pathId ? { ...p, items: [...p.items, item] } : p,
-        ),
-      }));
-      remote(api.addLearningItem(pathId, item));
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          learningPaths: s.learningPaths.map((p) =>
+            p.id === pathId ? { ...p, items: [...p.items, item] } : p,
+          ),
+        }),
+        () => api.addLearningItem(pathId, item),
+      );
     },
 
     removeLearningPathItem: (pathId, itemId) => {
-      local((s) => ({
-        ...s,
-        learningPaths: s.learningPaths.map((p) =>
-          p.id === pathId ? { ...p, items: p.items.filter((i) => i.id !== itemId) } : p,
-        ),
-      }));
-      remote(api.removeLearningItem(pathId, itemId));
+      runner.optimistic(
+        (s) => ({
+          ...s,
+          learningPaths: s.learningPaths.map((p) =>
+            p.id === pathId ? { ...p, items: p.items.filter((i) => i.id !== itemId) } : p,
+          ),
+        }),
+        () => api.removeLearningItem(pathId, itemId),
+      );
     },
   };
 }
