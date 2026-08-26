@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Sparkles, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -34,6 +34,18 @@ import { canActFor, isAssignedTechLeadOf, isLeadOf } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { formatDate, initialSearchParam, todayIso } from "@/lib/text";
+import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-view-model";
+
+/**
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seção 61) — adaptador fino: memoiza o `DevelopmentPlansViewModel` sobre
+ * a fatia de `useStore()` que ele precisa. Ver o arquivo do ViewModel para
+ * o porquê do escopo (só ciclo de vida do plano, não a tela inteira).
+ */
+function useDevelopmentPlansViewModel() {
+  const store = useStore();
+  return useMemo(() => new DevelopmentPlansViewModel(store), [store]);
+}
 
 /**
  * `architectId` na URL — quem chega de outra tela (o perfil da pessoa, uma
@@ -72,6 +84,7 @@ function PlansPage() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
+  const viewModel = useDevelopmentPlansViewModel();
   const [architectId, setArchitectId] = useState(
     () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
   );
@@ -154,20 +167,22 @@ function PlansPage() {
   const canEditDiagnostic = canEdit && planStatus === "Draft";
   const canEditExecution = canEdit && planStatus !== "Completed";
 
-  const suggestions = gaps
-    .filter((g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId))
-    .slice(0, 5);
+  const suggestions = viewModel.suggestions(gaps, plan);
 
   const creatingForGap = creatingForCompetencyId
     ? gaps.find((g) => g.item.competencyId === creatingForCompetencyId)
     : undefined;
 
-  const transitionPlan = (nextStatus: DevelopmentPlan["status"]) => {
+  /**
+   * `action` chama um dos métodos de transição do `DevelopmentPlansViewModel`
+   * (`approve`/`complete`/`returnToDraft`) — este wrapper só cuida do
+   * loading/erro local, igual antes.
+   */
+  const runPlanTransition = (action: () => Promise<DevelopmentPlan>) => {
     if (!plan) return;
     setPlanTransitionError(null);
     setPlanTransitioning(true);
-    store
-      .updatePlanStatus(plan.id, nextStatus)
+    action()
       .catch((error: unknown) =>
         setPlanTransitionError(
           error instanceof ApiError ? error.message : t("pdi.plan.transitionError"),
@@ -222,7 +237,7 @@ function PlansPage() {
               <Button
                 size="sm"
                 disabled={planTransitioning}
-                onClick={() => transitionPlan("Approved")}
+                onClick={() => runPlanTransition(() => viewModel.approve(plan.id))}
               >
                 {planTransitioning ? t("pdi.plan.approving") : t("pdi.plan.approve")}
               </Button>
@@ -233,7 +248,7 @@ function PlansPage() {
                 variant="secondary"
                 disabled={planTransitioning || !!incompletePlanReason}
                 title={incompletePlanReason}
-                onClick={() => transitionPlan("Completed")}
+                onClick={() => runPlanTransition(() => viewModel.complete(plan.id))}
               >
                 {planTransitioning ? t("pdi.plan.completing") : t("pdi.plan.complete")}
               </Button>
@@ -243,7 +258,7 @@ function PlansPage() {
                 size="sm"
                 variant="outline"
                 disabled={planTransitioning}
-                onClick={() => transitionPlan("Draft")}
+                onClick={() => runPlanTransition(() => viewModel.returnToDraft(plan.id))}
               >
                 {planTransitioning ? t("pdi.plan.returningToDraft") : t("pdi.plan.returnToDraft")}
               </Button>
@@ -272,8 +287,8 @@ function PlansPage() {
           onConfirm={(reason) => {
             setPlanTransitionError(null);
             setPlanTransitioning(true);
-            store
-              .reopenPlan(plan.id, reason)
+            viewModel
+              .reopen(plan.id, reason)
               .then(() => {
                 setReopenDialogOpen(false);
                 toast.success(t("pdi.plan.reopenDialog.success"));
