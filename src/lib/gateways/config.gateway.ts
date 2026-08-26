@@ -1,10 +1,18 @@
 import {
   scoringBandsPutResponseSchema,
   scoringBandsResponseSchema,
+  textTemplateRecordSchema,
   textTemplatesResponseSchema,
 } from "../api-schemas";
 import type { ApiClient } from "../api-client";
 import type { ScoringBand, ScoringScale } from "../scoring-bands";
+
+/** CFG-03 (admin UI) — a resposta do PUT de template: o registro validado (mesma forma da tabela). */
+export interface TextTemplateRecord {
+  key: string;
+  locale: string;
+  template: string;
+}
 
 /**
  * CFG-02 — gateway do contexto "configuração". Ver `cycles.gateway.ts` para
@@ -39,6 +47,14 @@ export interface ConfigGateway {
    * a aba "Réguas e limiares" mostra no formulário).
    */
   updateScoringBands(scale: ScoringScale, bands: ScoringBand[]): Promise<ScoringBand[]>;
+  /**
+   * CFG-03 (admin UI) — `PUT /api/config/templates/:key/:locale`: edita o
+   * TEXTO de um template existente. Admin-only e validação no backend
+   * (`TextTemplate.create` → 400 `INVALID_TEXT_TEMPLATE` para vazio ou
+   * variável fora da key; 404 para key desconhecida) — a aba "Textos"
+   * mostra o erro no formulário.
+   */
+  updateTextTemplate(key: string, locale: string, template: string): Promise<TextTemplateRecord>;
 }
 
 export class HttpConfigGateway implements ConfigGateway {
@@ -69,4 +85,17 @@ export class HttpConfigGateway implements ConfigGateway {
     this.client
       .put<ScoringBand[]>(`/api/config/bands/${scale}`, { bands })
       .then((data) => scoringBandsPutResponseSchema.parse(data));
+
+  // CFG-03 (admin UI) — mesma disciplina do PUT de bands: resposta validada.
+  updateTextTemplate = (
+    key: string,
+    locale: string,
+    template: string,
+  ): Promise<TextTemplateRecord> =>
+    this.client
+      .put<TextTemplateRecord>(
+        `/api/config/templates/${encodeURIComponent(key)}/${encodeURIComponent(locale)}`,
+        { template },
+      )
+      .then((data) => textTemplateRecordSchema.parse(data));
 }

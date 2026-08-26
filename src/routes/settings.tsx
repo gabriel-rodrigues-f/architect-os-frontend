@@ -18,10 +18,17 @@ import {
   type ScoringBand,
   type ScoringScale,
 } from "@/lib/scoring-bands";
-import { useCareerLevelsByRank, useScoringBands, useStore } from "@/lib/store";
+import { useCareerLevelsByRank, useScoringBands, useStore, useTextTemplates } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
+import {
+  renderTemplate,
+  TEXT_TEMPLATE_KEYS,
+  TEXT_TEMPLATE_VARIABLES,
+  type TextTemplateKey,
+} from "@/lib/text-templates";
 import { cn } from "@/lib/utils";
 import { ScoringBandsEditor } from "@/lib/view-models/scoring-bands-editor";
+import { TextTemplateEditor } from "@/lib/view-models/text-template-editor";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -60,6 +67,8 @@ function SettingsPage() {
             configuração editável: quem não é admin nem vê a seção (o PUT é
             recusado no servidor de qualquer forma, AdminGuard). */}
         {isAdmin && <ScoringBandsSection />}
+        {/* CFG-03 (SPEC-OO3-13, §3.2) — aba "Textos", mesmo corte admin-only. */}
+        {isAdmin && <TextTemplatesSection />}
       </div>
 
       {/* R2-TXT-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o menu chama esta
@@ -536,6 +545,180 @@ function ScoringScaleEditor({
         />
         {previewBand && <BandChip band={previewBand} />}
       </div>
+    </div>
+  );
+}
+
+/** Título i18n de cada key de template — mapa literal, mesmo racional de `SCALE_TITLE_KEY`. */
+const TEMPLATE_KEY_TITLE: Record<TextTemplateKey, MessageKey> = {
+  "pdi.objective.fromGap": "config.templates.key.pdi.objective.fromGap",
+};
+
+/** Valores de exemplo do preview, por key — cobrem TODAS as variáveis que a key fornece. */
+function sampleVariablesFor(
+  key: TextTemplateKey,
+  t: (key: MessageKey, vars?: Record<string, string | number>) => string,
+): Record<string, string | number> {
+  switch (key) {
+    case "pdi.objective.fromGap":
+      return { competencia: t("config.templates.sample.competencia"), atual: 2, alvo: 4 };
+  }
+}
+
+/**
+ * CFG-03 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Textos": editor de
+ * `text_templates` por key/locale, com a lista de variáveis da key e
+ * preview renderizado pelo MESMO interpolador do app (`renderTemplate`).
+ * A validação client-side vive no ViewModel (`TextTemplateEditor`).
+ */
+function TextTemplatesSection() {
+  const templates = useTextTemplates();
+  const { t } = useI18n();
+
+  return (
+    <SectionCard title={t("config.templates.title")} description={t("config.templates.subtitle")}>
+      <div className="space-y-6">
+        {TEXT_TEMPLATE_KEYS.map((key) => {
+          const locales = Object.keys(templates[key]).sort();
+          return (
+            <div key={key} className="surface-inset p-3">
+              <p className="text-sm font-medium">{t(TEMPLATE_KEY_TITLE[key])}</p>
+              <p className="text-xs text-muted-foreground">{key}</p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("config.templates.variables")}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {TEXT_TEMPLATE_VARIABLES[key].map((variable) => (
+                  <code key={variable} className="rounded-md bg-secondary px-2 py-0.5 text-xs">
+                    {`{${variable}}`}
+                  </code>
+                ))}
+              </div>
+              <div className="mt-3 space-y-3">
+                {locales.map((locale) => (
+                  <TemplateLocaleEditor
+                    key={`${key}:${locale}`}
+                    templateKey={key}
+                    locale={locale}
+                    current={templates[key][locale]!}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </SectionCard>
+  );
+}
+
+function TemplateLocaleEditor({
+  templateKey,
+  locale,
+  current,
+}: {
+  templateKey: TextTemplateKey;
+  locale: string;
+  current: string;
+}) {
+  const store = useStore();
+  const { t } = useI18n();
+  /** `null` = leitura; editar cria o editor a partir do template efetivo atual. */
+  const [editor, setEditor] = useState<TextTemplateEditor | null>(null);
+  const {
+    submitting: saving,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit(t("config.templates.saveFailed"));
+
+  const editing = editor !== null;
+  const samples = sampleVariablesFor(templateKey, t);
+  /** Preview SEMPRE visível e reagindo à edição — rascunho quando editando, efetivo quando não. */
+  const previewText = renderTemplate(editing ? editor.draft : current, samples);
+
+  const save = async () => {
+    if (!editor || !editor.isValid) return;
+    const result = await run(() =>
+      store.updateTextTemplate(templateKey, editor.locale, editor.draft),
+    );
+    if (result.ok) {
+      toast.success(
+        t("config.templates.saved", { key: t(TEMPLATE_KEY_TITLE[templateKey]), locale }),
+      );
+      setEditor(null);
+    }
+  };
+
+  return (
+    <div className="rounded-md border border-border/60 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium uppercase">
+          {locale}
+        </span>
+        {editing ? (
+          <div className="flex justify-end gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={saving}
+              onClick={() => {
+                setEditor(null);
+                clearError();
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button size="sm" disabled={!editor.isValid || saving} onClick={() => void save()}>
+              {saving ? t("team.transition.submitting") : t("common.save")}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditor(TextTemplateEditor.from(templateKey, locale, current))}
+          >
+            {t("common.edit")}
+          </Button>
+        )}
+      </div>
+
+      {editing ? (
+        <textarea
+          rows={2}
+          disabled={saving}
+          aria-label={t("config.templates.editLabel", { locale })}
+          className="mt-2 w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
+          value={editor.draft}
+          onChange={(e) => setEditor(editor.withDraft(e.target.value))}
+        />
+      ) : (
+        <p className="mt-2 text-sm">{current}</p>
+      )}
+
+      {editing && editor.isEmpty && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {t("config.templates.error.empty")}
+        </p>
+      )}
+      {editing && editor.unknownVariables.length > 0 && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {t("config.templates.error.unknownVariable", {
+            variavel: editor.unknownVariables.map((name) => `{${name}}`).join(", "),
+          })}
+        </p>
+      )}
+      {error && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+
+      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {t("config.templates.preview")}
+      </p>
+      <p className="text-sm italic text-muted-foreground">{previewText}</p>
     </div>
   );
 }

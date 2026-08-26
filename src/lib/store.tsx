@@ -3,6 +3,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { api, type AppState, type CommentInput } from "./api";
+import type { TextTemplateRecord } from "./gateways/config.gateway";
 import type {
   Architect,
   Assessment,
@@ -160,6 +161,17 @@ export interface Api extends AppState {
    * e derivadores passam a responder pela régua nova.
    */
   updateScoringBands: (scale: ScoringScale, bands: ScoringBand[]) => Promise<ScoringBand[]>;
+  /**
+   * CFG-03 (admin UI) — edita o texto de UM template de domínio
+   * (key/locale). Sem otimismo (mesmo racional de `updateScoringBands`); ao
+   * sucesso invalida `TEXT_TEMPLATES_QUERY_KEY` — o objetivo de PDI gerado
+   * passa a usar o texto novo.
+   */
+  updateTextTemplate: (
+    key: string,
+    locale: string,
+    template: string,
+  ) => Promise<TextTemplateRecord>;
   /** B-32 — id é gerado no servidor; sem otimismo. */
   addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
@@ -389,6 +401,13 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     updateScoringBands: async (scale, bands) => {
       const updated = await api.updateScoringBands(scale, bands);
       await queryClient.invalidateQueries({ queryKey: SCORING_BANDS_QUERY_KEY });
+      return updated;
+    },
+
+    /** CFG-03 (admin UI) — mesmo formato de `updateScoringBands` acima, para a query de templates. */
+    updateTextTemplate: async (key, locale, template) => {
+      const updated = await api.updateTextTemplate(key, locale, template);
+      await queryClient.invalidateQueries({ queryKey: TEXT_TEMPLATES_QUERY_KEY });
       return updated;
     },
 

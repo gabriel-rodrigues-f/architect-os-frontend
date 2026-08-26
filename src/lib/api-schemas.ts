@@ -137,6 +137,17 @@ export const scoringBandsPutResponseSchema = z.array(scoringBand);
  */
 export const textTemplatesResponseSchema = z.record(z.record(z.string()));
 
+/**
+ * CFG-03 (admin UI) — resposta de `PUT /api/config/templates/:key/:locale`
+ * (`UpdateTextTemplate.execute` devolve o `TextTemplateRecord` validado).
+ * Mesma disciplina R2-TEC-19: validada em runtime.
+ */
+export const textTemplateRecordSchema = z.object({
+  key: z.string(),
+  locale: z.string(),
+  template: z.string(),
+});
+
 const architect = z.object({
   id: z.string(),
   name: z.string(),
