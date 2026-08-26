@@ -140,8 +140,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
       user: fixtureMemberUser,
       state,
       routes: [
-        (href) =>
-          href.includes("/eligibility") ? new Response("{}", { status: 500 }) : undefined,
+        (href) => (href.includes("/eligibility") ? new Response("{}", { status: 500 }) : undefined),
       ],
     });
 
