@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
@@ -21,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { type Architect, type RoleName } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
-import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -51,7 +50,6 @@ function useTeamViewModel(): TeamViewModel {
 }
 
 export function useArchitectForm() {
-  const { t } = useI18n();
   const viewModel = useTeamViewModel();
 
   const careerLevels = useCareerLevelsByRank();
@@ -85,13 +83,14 @@ export function useArchitectForm() {
   const { yearsValid, canSubmit } = viewModel.validate(form);
 
   const { submitting, run } = useToastSubmit();
+  const notifySuccess = useSuccessToast();
 
   const submit = async () => {
     if (!canSubmit) return;
 
     if (editing) {
       await viewModel.submit(form, editing);
-      toast.success(t("team.edit.toast", { nome: form.name.trim() }));
+      notifySuccess("msg.people.update.success", { nome: form.name.trim() });
       setEditing(null);
     } else {
       const result = await run(() => viewModel.submit(form, editing));
@@ -101,7 +100,7 @@ export function useArchitectForm() {
 
   const reactivate = (a: Architect) => {
     viewModel.reactivate(a);
-    toast.success(t("team.reactivate.toast", { nome: a.name }));
+    notifySuccess("team.reactivate.toast", { nome: a.name });
   };
 
   return {
@@ -475,6 +474,7 @@ export function CareerLevelTransitionDialog({
 }) {
   const { t } = useI18n();
   const viewModel = useTeamViewModel();
+  const notifySuccess = useSuccessToast();
 
   const careerLevels = useCareerLevelsByRank();
   const [toRole, setToRole] = useState<RoleName>(architect.role);
@@ -508,7 +508,13 @@ export function CareerLevelTransitionDialog({
       onSubmit={(reason) =>
         viewModel
           .transitionCareerLevel(architect.id, toRole, reason)
-          .then(() => toast.success(t("team.transition.success", { nome: architect.name })))
+          .then((updated) =>
+            notifySuccess(
+              "msg.people.careerLevelTransition.success",
+              { nome: architect.name },
+              updated,
+            ),
+          )
       }
       onClose={onClose}
     />
@@ -524,6 +530,7 @@ export function DeactivateDialog({
 }) {
   const { t } = useI18n();
   const viewModel = useTeamViewModel();
+  const notifySuccess = useSuccessToast();
 
   return (
     <CommandWithReasonDialog
@@ -539,7 +546,9 @@ export function DeactivateDialog({
       onSubmit={(reason) =>
         viewModel
           .deactivate(architect.id, reason)
-          .then(() => toast.success(t("team.deactivate.toast", { nome: architect.name })))
+          .then((updated) =>
+            notifySuccess("msg.people.deactivate.success", { nome: architect.name }, updated),
+          )
       }
       onClose={onClose}
     />

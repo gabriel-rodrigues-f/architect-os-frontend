@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { gapTone, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
-import { useAsyncSubmit } from "@/hooks/use-async-submit";
+import { useAsyncSubmit, useSuccessToast } from "@/hooks/use-async-submit";
 import { LEVELS, type CareerLevel, type Level } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
@@ -262,6 +262,7 @@ function CareerPolicyRow({
     clearError,
     run,
   } = useAsyncSubmit("Não foi possível salvar a política.");
+  const notifySuccess = useSuccessToast();
 
   const draftValue = Number(draft);
   const canSave = Number.isInteger(draftValue) && draftValue >= floor;
@@ -271,7 +272,7 @@ function CareerPolicyRow({
     if (!canSave) return;
     const result = await run(() => store.updateCareerLevelPolicy(level.id, draftValue));
     if (result.ok) {
-      toast.success(`Política do ${level.name} atualizada.`);
+      notifySuccess("msg.career.policy.update.success", { nome: level.name }, result.value);
       setEditing(false);
     }
   };
@@ -406,6 +407,7 @@ function ScoringScaleEditor({
     clearError,
     run,
   } = useAsyncSubmit(t("config.bands.saveFailed"));
+  const notifySuccess = useSuccessToast();
 
   const editing = editor !== null;
   const rows = editor ? editor.bands : [...current].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -422,7 +424,11 @@ function ScoringScaleEditor({
     if (!payload) return;
     const result = await run(() => store.updateScoringBands(scale, payload));
     if (result.ok) {
-      toast.success(t("config.bands.saved", { escala: t(SCALE_TITLE_KEY[scale]) }));
+      notifySuccess(
+        "msg.config.bands.update.success",
+        { escala: t(SCALE_TITLE_KEY[scale]) },
+        result.value,
+      );
       setEditor(null);
     }
   };
@@ -559,6 +565,7 @@ function CurationPolicySection() {
     clearError,
     run,
   } = useAsyncSubmit(t("config.curation.saveFailed"));
+  const notifySuccess = useSuccessToast();
 
   const editing = editor !== null;
 
@@ -568,7 +575,7 @@ function CurationPolicySection() {
     if (!payload) return;
     const result = await run(() => store.updateCurationPolicy(payload));
     if (result.ok) {
-      toast.success(t("config.curation.saved"));
+      notifySuccess("msg.config.curationPolicy.update.success", undefined, result.value);
       setEditor(null);
     }
   };
@@ -724,6 +731,7 @@ function TemplateLocaleEditor({
     clearError,
     run,
   } = useAsyncSubmit(t("config.templates.saveFailed"));
+  const notifySuccess = useSuccessToast();
 
   const editing = editor !== null;
   const samples = sampleVariablesFor(templateKey, t);
@@ -736,8 +744,10 @@ function TemplateLocaleEditor({
       store.updateTextTemplate(templateKey, editor.locale, editor.draft),
     );
     if (result.ok) {
-      toast.success(
-        t("config.templates.saved", { key: t(TEMPLATE_KEY_TITLE[templateKey]), locale }),
+      notifySuccess(
+        "msg.config.template.update.success",
+        { key: t(TEMPLATE_KEY_TITLE[templateKey]), locale },
+        result.value,
       );
       setEditor(null);
     }
@@ -839,6 +849,7 @@ function OperationalSettingsSection() {
     clearError,
     run,
   } = useAsyncSubmit(t("config.operational.saveFailed"));
+  const notifySuccess = useSuccessToast();
 
   const editing = editor !== null;
 
@@ -851,7 +862,7 @@ function OperationalSettingsSection() {
       for (const change of changes) await store.updateAppSetting(change.key, change.value);
     });
     if (result.ok) {
-      toast.success(t("config.operational.saved"));
+      notifySuccess("config.operational.saved");
       setEditor(null);
     }
   };
@@ -1014,6 +1025,7 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
     clearError,
     run,
   } = useAsyncSubmit(t("config.vocab.saveFailed"));
+  const notifySuccess = useSuccessToast();
 
   const rows = [...items].sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
 
@@ -1040,7 +1052,7 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
     }
     const result = await run(() => store.updateVocabularyItem(name, editor.code, patch));
     if (result.ok) {
-      toast.success(t("config.vocab.saved", { code: editor.code }));
+      notifySuccess("msg.config.vocabulary.update.success", { code: editor.code }, result.value);
       setEditor(null);
     }
   };
@@ -1051,7 +1063,7 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
     if (!payload) return;
     const result = await run(() => store.addVocabularyItem(name, payload.code, payload.input));
     if (result.ok) {
-      toast.success(t("config.vocab.added", { code: payload.code }));
+      notifySuccess("msg.config.vocabulary.create.success", { code: payload.code }, result.value);
       setDraft(null);
     }
   };

@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { Bar, EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isLeadCapable } from "@/lib/api";
-import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
@@ -308,6 +307,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
 
   const { submitting: saving, run } = useToastSubmit();
+  const notifySuccess = useSuccessToast();
 
   const [competencyFilter, setCompetencyFilter] = useState("");
   const visibleCompetencies = store.competencies.filter((c) =>
@@ -331,7 +331,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
     if (!trimmed) return;
     const result = await run(() => vm.createPath(user, form, competencyIds, assignedTo));
     if (!result.ok) return;
-    toast.success(t("path.new.toast", { nome: trimmed }));
+    notifySuccess("msg.learningPath.create.success", { nome: trimmed }, result.value);
     onClose();
   };
 
@@ -479,6 +479,7 @@ function ProgressControl({
 function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => void }) {
   const store = useStore();
   const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
   const vm = useLearningPathsViewModel();
 
   const itemTypes = useVocabulary("LEARNING_ITEM_TYPE");
@@ -496,7 +497,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
 
   const saveDetails = () => {
     vm.updateDetails(path, form);
-    toast.success(t("path.edit.toast", { nome: form.name.trim() || path.name }));
+    notifySuccess("msg.learningPath.update.success", { nome: form.name.trim() || path.name });
     onClose();
   };
 
@@ -664,7 +665,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
             variant="destructive"
             onClick={() => {
               vm.removePath(path.id);
-              toast.success(t("path.delete.toast", { nome: path.name }));
+              notifySuccess("path.delete.toast", { nome: path.name });
               onClose();
             }}
           >

@@ -24,7 +24,7 @@ import {
   type Level,
   type RequirementType,
 } from "@/lib/domain";
-import { useAsyncSubmit, useToastSubmit } from "@/hooks/use-async-submit";
+import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -74,6 +74,7 @@ function MatrixPage() {
 
   const [importing, setImporting] = useState(false);
   const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
   const labels = useLabels();
   const help = usePageHelp("competencyMatrix");
   const [confirmDelete, setConfirmDelete] = useState<{
@@ -108,7 +109,7 @@ function MatrixPage() {
     if (!trimmedName) return;
 
     viewModel.renameCapability(editingCapability.id, editCapabilityName);
-    toast.success(t("cap.edit.toast", { nome: trimmedName }));
+    notifySuccess("msg.catalog.capability.update.success", { nome: trimmedName });
     setEditingCapability(null);
   };
 
@@ -479,6 +480,7 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
     clearError,
     run,
   } = useAsyncSubmit(t("matrix.import.failed"));
+  const notifySuccess = useSuccessToast();
 
   const preview = editor.preview();
 
@@ -494,13 +496,15 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
     const result = await run(() => store.importCatalog(payload));
     if (result.ok) {
       const summary = result.value;
-      toast.success(
-        t("matrix.import.success", {
+      notifySuccess(
+        "msg.catalog.import.success",
+        {
           capCriadas: summary.capabilitiesCreated.length,
           capAtualizadas: summary.capabilitiesUpdated.length,
           compCriadas: summary.competenciesCreated.length,
           compAtualizadas: summary.competenciesUpdated.length,
-        }),
+        },
+        summary,
       );
       onClose();
     }
