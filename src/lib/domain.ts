@@ -31,11 +31,6 @@ export const ROLES: RoleName[] = [
   "Arquiteto de Soluções III",
 ];
 
-/** Rótulo curto para cabeçalhos de tabela: "Nível I", "Nível II", "Nível III". */
-/** Aceita `string` (não só `RoleName`) — `CareerLevel.name` já nasce com o mesmo texto, sem o tipo. */
-export const roleShort = (role: string): string =>
-  `Nível ${role.replace("Arquiteto de Soluções ", "")}`;
-
 /**
  * ENT-CAR-013 — `rank` ordena os níveis (I=1, II=2, III=3) para calcular
  * "o próximo nível"; ainda não é o que decide o alvo de um assessment

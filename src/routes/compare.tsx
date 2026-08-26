@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
 import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
-import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Selection } from "@/lib/selection";
@@ -56,12 +55,9 @@ function ComparePage() {
     ]),
   );
 
-  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
-  const shortLabels = capabilityShortLabels(store.capabilities);
-
   const radarData = store.capabilities.map((capability) => {
     const row: Record<string, string | number> = {
-      capability: shortLabels.get(capability.id) ?? capability.short,
+      capability: sel.capabilityShortLabel(capability),
     };
     for (const architect of architects) {
       row[architect.id] = averagesByArchitect.get(architect.id)?.get(capability.id) ?? 0;
@@ -125,7 +121,7 @@ function ComparePage() {
                   {store.capabilities.map((capability) => (
                     <tr key={capability.id}>
                       <td className="py-1 text-sm font-medium" title={capability.name}>
-                        {shortLabels.get(capability.id) ?? capability.short}
+                        {sel.capabilityShortLabel(capability)}
                       </td>
                       {architects.map((a) => {
                         const avg = averagesByArchitect.get(a.id)?.get(capability.id);

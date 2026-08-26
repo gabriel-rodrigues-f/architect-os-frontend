@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   LEVELS,
-  roleShort,
   type Competency,
   type Capability,
   type Level,
@@ -339,7 +338,7 @@ function MatrixPage() {
                             </th>
                             {careerLevels.map((cl) => (
                               <th key={cl.id} scope="col" className="py-2 text-center">
-                                {roleShort(cl.name)}
+                                {labels.roleShort(cl.name)}
                               </th>
                             ))}
                             <th scope="col" />
@@ -660,11 +659,13 @@ function CompetencyCreateDialog({
             <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {careerLevels.map((cl) => (
                 <div key={cl.id} className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">{roleShort(cl.name)}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {labels.roleShort(cl.name)}
+                  </span>
                   <select
                     className="mt-1 w-full min-w-0 rounded-md border border-input bg-card px-2 py-2 text-sm"
                     value={levels[cl.id] ?? ""}
-                    aria-label={`${t("matrix.edit.levels")} — ${roleShort(cl.name)}`}
+                    aria-label={`${t("matrix.edit.levels")} — ${labels.roleShort(cl.name)}`}
                     onChange={(e) =>
                       setLevels({
                         ...levels,
@@ -826,11 +827,13 @@ function CompetencyEditDialog({
             <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {careerLevels.map((cl) => (
                 <div key={cl.id} className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">{roleShort(cl.name)}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {labels.roleShort(cl.name)}
+                  </span>
                   <select
                     className="mt-1 w-full min-w-0 rounded-md border border-input bg-card px-2 py-2 text-sm"
                     value={levels[cl.id] ?? ""}
-                    aria-label={`${t("matrix.edit.levels")} — ${roleShort(cl.name)}`}
+                    aria-label={`${t("matrix.edit.levels")} — ${labels.roleShort(cl.name)}`}
                     onChange={(e) =>
                       setLevels({
                         ...levels,

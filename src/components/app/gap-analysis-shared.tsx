@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import { GapBadge } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
-import { capabilityShortLabels, type Architect } from "@/lib/domain";
+import { type Architect } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -139,11 +139,7 @@ export function useGapAnalysisData() {
    * SYNAPSE.md, Seção 9.
    */
   const radar = useMemo(() => {
-    // R2-ESC-02 — `short` pode colidir entre capacidades (nada impedia
-    // isso antes desta rodada); o rótulo do radar precisa continuar
-    // distinguível mesmo quando duas capacidades ainda dividem a mesma
-    // sigla (dado legado, até alguém corrigir no catálogo).
-    const shortLabels = capabilityShortLabels(store.capabilities);
+    // R2-ESC-02 — rótulo compacto dedup (siglas legadas) via selector memoizado.
     return store.capabilities.map((cat) => {
       const rows = architects.map((a) =>
         sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
@@ -151,7 +147,7 @@ export function useGapAnalysisData() {
       const atual = averageWithCoverage(rows.map((r) => r?.avg));
       const alvo = averageWithCoverage(rows.map((r) => r?.target));
       return {
-        capability: shortLabels.get(cat.id) ?? cat.short,
+        capability: sel.capabilityShortLabel(cat),
         atual: Number((atual.avg ?? 0).toFixed(2)),
         alvo: Number((alvo.avg ?? 0).toFixed(2)),
         covered: atual.covered,

@@ -292,3 +292,25 @@ describe("visibleArchitects", () => {
     expect(sel.visibleArchitects(fixtureAdminUser)).toBe(sel.visibleArchitects(fixtureAdminUser));
   });
 });
+
+describe("capabilityShortLabel", () => {
+  /** OO3-11d — dedup R2-ESC-02 memoizado por snapshot, com o fallback `?? short` embutido. */
+  const state: AppState = {
+    ...fixtureState,
+    capabilities: [
+      { ...fixtureState.capabilities[0]!, id: "cloud", short: "Cld" },
+      { ...fixtureState.capabilities[1]!, id: "security", short: "Cld" },
+    ],
+  };
+  const sel = createSelectors(state);
+
+  it("desempata siglas repetidas na ordem do catálogo", () => {
+    expect(sel.capabilityShortLabel({ id: "cloud", short: "Cld" })).toBe("Cld");
+    expect(sel.capabilityShortLabel({ id: "security", short: "Cld" })).toBe("Cld (2)");
+    expect(sel.capabilityShortLabels.get("security")).toBe("Cld (2)");
+  });
+
+  it("faz fallback para `short` quando o id não está no catálogo", () => {
+    expect(sel.capabilityShortLabel({ id: "fantasma", short: "Xx" })).toBe("Xx");
+  });
+});

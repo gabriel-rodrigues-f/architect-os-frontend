@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { LabelFormatter } from "../labels";
+import { LABEL_KEY_MAPS, LabelFormatter } from "../labels";
 import type { MessageKey } from "../i18n";
 
 /**
@@ -38,6 +38,17 @@ describe("LabelFormatter", () => {
     expect(Object.keys(labels.levelName)).toEqual(["1", "2", "3", "4", "5"]);
     expect(labels.levelName[3]).toBe("t:level.3");
     expect(labels.levelDescription[3]).toBe("t:level.3.description");
+  });
+
+  it("o laço do construtor cobre exatamente os campos do registro — guarda contra mapa esquecido (OO3-11f)", () => {
+    for (const nome of Object.keys(LABEL_KEY_MAPS)) {
+      expect(labels[nome as keyof typeof LABEL_KEY_MAPS]).toBeDefined();
+    }
+  });
+
+  it("roleShort traduz via careerLevel.short com o algarismo do nível (OO3-11f/D-9)", () => {
+    const withVars = new LabelFormatter((key, vars) => `${key}|${JSON.stringify(vars)}`);
+    expect(withVars.roleShort("Arquiteto de Soluções II")).toBe('careerLevel.short|{"nivel":"II"}');
   });
 
   it("cada instância computa os mapas a partir do `t` recebido — duas instâncias com `t`s diferentes não compartilham estado", () => {

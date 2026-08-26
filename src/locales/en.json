@@ -21,6 +21,7 @@
   "prefs.theme.dark": "Dark",
   "prefs.theme.system": "System",
   "prefs.language": "Language",
+  "careerLevel.short": "Level {nivel}",
   "level.1": "Awareness",
   "level.2": "Fundamentals",
   "level.3": "Practitioner",

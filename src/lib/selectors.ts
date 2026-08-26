@@ -8,6 +8,7 @@ import type {
   Level,
   RoleName,
 } from "./domain";
+import { capabilityShortLabels } from "./domain";
 import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "./scope";
 
 /**
@@ -318,14 +319,29 @@ export class DevelopmentSelectors {
 export class CapabilitySelectors {
   private readonly averagesCache = new Map<string, CapabilityAverage[]>();
 
+  /**
+   * R2-ESC-02/OO3-11d — dedup do rótulo compacto (siglas duplicadas legadas),
+   * calculado UMA vez por snapshot em vez de `capabilityShortLabels(store.
+   * capabilities)` reconstruído a cada render em 7 telas. Os exports CSV/PDF
+   * continuam com a função pura de `domain.ts` (trabalham sobre a projeção
+   * `TeamReportInput`, sem `sel`).
+   */
+  readonly shortLabels: Map<string, string>;
+
   constructor(
     private readonly s: AppState,
     private readonly index: SelectorIndex,
     private readonly assessment: AssessmentSelectors,
-  ) {}
+  ) {
+    this.shortLabels = capabilityShortLabels(s.capabilities);
+  }
 
   competencyById = (id: string): Competency | undefined => this.index.competencyIndex.get(id);
   capabilityById = (id: string): Capability | undefined => this.index.capabilityIndex.get(id);
+
+  /** Rótulo compacto com o fallback `?? c.short` que estava repetido ~12× nos call sites. */
+  shortLabelFor = (c: Pick<Capability, "id" | "short">): string =>
+    this.shortLabels.get(c.id) ?? c.short;
 
   capabilityAverages = (
     architectId: string,
@@ -442,6 +458,8 @@ export function createSelectors(s: AppState) {
     progressionGapsFor: assessment.progressionGapsFor,
     masteryOpportunitiesFor: assessment.masteryOpportunitiesFor,
     capabilityAverages: capability.capabilityAverages,
+    capabilityShortLabels: capability.shortLabels,
+    capabilityShortLabel: capability.shortLabelFor,
     teamTrainingNeeds: training.teamTrainingNeeds,
   };
 }
