@@ -121,6 +121,13 @@ export const scoringBandsResponseSchema = z.object({
 });
 
 /**
+ * CFG-02 (admin UI) — resposta de `PUT /api/config/bands/:scale`
+ * (`UpdateScoringBands.execute` devolve a régua validada da escala, sem o
+ * agrupamento do GET). Mesma disciplina R2-TEC-19: validada em runtime.
+ */
+export const scoringBandsPutResponseSchema = z.array(scoringBand);
+
+/**
  * CFG-03 — resposta de `GET /api/config/templates` (`ConfigGateway.
  * templates`): `key → locale → template`, exatamente como
  * `TextTemplateCatalog.groupedByKey()` serializa no backend. Keys e locales

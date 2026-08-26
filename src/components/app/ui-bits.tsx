@@ -93,7 +93,8 @@ export function LevelCell({ level }: { level: number | undefined }) {
   qualquer tema — e pintava o fundo com 20% do token, que no escuro compunha
   com a página até virar vinho quase preto. O par ficava ilegível.
 */
-const gapTone: Record<string, string> = {
+/** CFG-02 (admin UI) — exportado: o preview da aba "Réguas e limiares" pinta o mesmo par fundo/texto por tom. */
+export const gapTone: Record<string, string> = {
   ok: "bg-gap-ok text-[var(--gap-ok-fg)]",
   low: "bg-gap-low text-[var(--gap-low-fg)]",
   high: "bg-gap-high text-[var(--gap-high-fg)]",

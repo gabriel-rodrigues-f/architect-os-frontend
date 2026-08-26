@@ -28,7 +28,9 @@ import {
   gapSeverityRulerFrom,
   withDefaultScoringBands,
   type GapSeverityRuler,
+  type ScoringBand,
   type ScoringBands,
+  type ScoringScale,
 } from "./scoring-bands";
 import { createSelectors, emptyState } from "./selectors";
 import { defaultNameFormatter } from "./text";
@@ -150,6 +152,14 @@ export interface Api extends AppState {
     careerLevelId: string,
     minimumQualifiedCapabilities: number,
   ) => Promise<CareerLevelPolicy>;
+  /**
+   * CFG-02 (admin UI) — recalibra a régua de UMA escala de `scoring_bands`.
+   * Sem otimismo (só admin altera, e a aba "Réguas e limiares" precisa do
+   * 400 `INVALID_SCORING_BANDS` de verdade para mostrar no formulário); ao
+   * sucesso invalida a query de bands (`SCORING_BANDS_QUERY_KEY`) — badges
+   * e derivadores passam a responder pela régua nova.
+   */
+  updateScoringBands: (scale: ScoringScale, bands: ScoringBand[]) => Promise<ScoringBand[]>;
   /** B-32 — id é gerado no servidor; sem otimismo. */
   addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
@@ -366,6 +376,20 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         }),
         () => api.updateArchitect(id, patch),
       );
+    },
+
+    /**
+     * CFG-02 (admin UI) — fora do `MutationRunner` de propósito: a régua não
+     * vive no snapshot de `/api/state` (é a query própria
+     * `SCORING_BANDS_QUERY_KEY`), então não há estado agregado para
+     * reconciliar — o ciclo é PUT → invalidação da query de bands. O erro
+     * sobe CRU para o call site (`useAsyncSubmit` da tela mostra a mensagem
+     * do 400 de contiguidade).
+     */
+    updateScoringBands: async (scale, bands) => {
+      const updated = await api.updateScoringBands(scale, bands);
+      await queryClient.invalidateQueries({ queryKey: SCORING_BANDS_QUERY_KEY });
+      return updated;
     },
 
     updateCareerLevelPolicy: (careerLevelId, minimumQualifiedCapabilities) =>

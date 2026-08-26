@@ -2,16 +2,26 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { gapTone, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit } from "@/hooks/use-async-submit";
 import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, type CareerLevel, type Level } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { useCareerLevelsByRank, useStore } from "@/lib/store";
+import {
+  classifyBand,
+  messageKeyOrDefault,
+  SCORING_SCALES,
+  type BandTone,
+  type ScoringBand,
+  type ScoringScale,
+} from "@/lib/scoring-bands";
+import { useCareerLevelsByRank, useScoringBands, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
+import { cn } from "@/lib/utils";
+import { ScoringBandsEditor } from "@/lib/view-models/scoring-bands-editor";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -46,6 +56,10 @@ function SettingsPage() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <CareerPolicySection isAdmin={isAdmin} />
+        {/* CFG-02 (SPEC-OO3-13, §3.2) — admin-only como o resto da
+            configuração editável: quem não é admin nem vê a seção (o PUT é
+            recusado no servidor de qualquer forma, AdminGuard). */}
+        {isAdmin && <ScoringBandsSection />}
       </div>
 
       {/* R2-TXT-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o menu chama esta
@@ -310,5 +324,218 @@ function CareerPolicyRow({
         </td>
       )}
     </tr>
+  );
+}
+
+/** Título i18n de cada escala — mapa literal para o TypeScript garantir que toda escala tem chave. */
+const SCALE_TITLE_KEY: Record<ScoringScale, MessageKey> = {
+  GAP_SEVERITY: "config.bands.scale.GAP_SEVERITY",
+  PROFICIENCY: "config.bands.scale.PROFICIENCY",
+  CONCENTRATION_RISK: "config.bands.scale.CONCENTRATION_RISK",
+};
+
+/** Rótulo default por tom — fallback de `messageKeyOrDefault` quando o servidor gravou `labelKey` que este build não conhece. */
+const TONE_LABEL_KEY: Record<BandTone, MessageKey> = {
+  ok: "config.bands.tone.ok",
+  low: "config.bands.tone.low",
+  high: "config.bands.tone.high",
+  critical: "config.bands.tone.critical",
+};
+
+/** Valor de exemplo inicial do preview, um por escala (gap 2, média 3, 1 referência). */
+const SCALE_SAMPLE: Record<ScoringScale, string> = {
+  GAP_SEVERITY: "2",
+  PROFICIENCY: "3",
+  CONCENTRATION_RISK: "1",
+};
+
+/**
+ * CFG-02 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Réguas e limiares":
+ * editor das 3 escalas de `scoring_bands`. A montagem/validação do payload
+ * vive no ViewModel (`ScoringBandsEditor` — a régua da casa: classe
+ * testável, render na tela); aqui é só fiação de inputs, preview e submit.
+ */
+function ScoringBandsSection() {
+  const bands = useScoringBands();
+  const { t } = useI18n();
+
+  return (
+    <SectionCard title={t("config.bands.title")} description={t("config.bands.subtitle")}>
+      <div className="space-y-6">
+        {SCORING_SCALES.map((scale) => (
+          <ScoringScaleEditor key={scale} scale={scale} current={bands[scale]} />
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+/** O chip de faixa — mesmo par fundo/texto por tom do `GapBadge` (`gapTone`). */
+function BandChip({ band }: { band: ScoringBand }) {
+  const { t } = useI18n();
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium",
+        gapTone[band.tone],
+      )}
+    >
+      {t(messageKeyOrDefault(band.labelKey, TONE_LABEL_KEY[band.tone]))}
+    </span>
+  );
+}
+
+function ScoringScaleEditor({
+  scale,
+  current,
+}: {
+  scale: ScoringScale;
+  current: readonly ScoringBand[];
+}) {
+  const store = useStore();
+  const { t } = useI18n();
+  /** `null` = leitura; editar cria o editor a partir da régua efetiva atual. */
+  const [editor, setEditor] = useState<ScoringBandsEditor | null>(null);
+  const [sample, setSample] = useState(SCALE_SAMPLE[scale]);
+  const {
+    submitting: saving,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit(t("config.bands.saveFailed"));
+
+  const editing = editor !== null;
+  const rows = editor ? editor.bands : [...current].sort((a, b) => a.sortOrder - b.sortOrder);
+  const previewSource = editor ? editor.previewBands() : rows;
+  const sampleValue = Number(sample);
+  const previewBand =
+    sample.trim().length > 0 && Number.isFinite(sampleValue)
+      ? classifyBand(previewSource, sampleValue)
+      : undefined;
+
+  const save = async () => {
+    if (!editor) return;
+    const payload = editor.payload();
+    if (!payload) return;
+    const result = await run(() => store.updateScoringBands(scale, payload));
+    if (result.ok) {
+      toast.success(t("config.bands.saved", { escala: t(SCALE_TITLE_KEY[scale]) }));
+      setEditor(null);
+    }
+  };
+
+  return (
+    <div className="surface-inset p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">{t(SCALE_TITLE_KEY[scale])}</p>
+        {editing ? (
+          <div className="flex justify-end gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={saving}
+              onClick={() => {
+                setEditor(null);
+                clearError();
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button size="sm" disabled={!editor.isValid || saving} onClick={() => void save()}>
+              {saving ? t("team.transition.submitting") : t("common.save")}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditor(ScoringBandsEditor.from(scale, current))}
+          >
+            {t("common.edit")}
+          </Button>
+        )}
+      </div>
+
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full min-w-[360px] text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <th scope="col" className="py-2">
+                {t("config.bands.col.band")}
+              </th>
+              <th scope="col" className="py-2 text-center">
+                {t("config.bands.col.min")}
+              </th>
+              <th scope="col" className="py-2 text-center">
+                {t("config.bands.col.max")}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((band, i) => {
+              const isFirst = i === 0;
+              const isLast = i === rows.length - 1;
+              return (
+                <tr key={band.key} className="border-b border-border/60 last:border-0">
+                  <td className="py-2">
+                    <BandChip band={band} />
+                    <span className="ml-2 text-xs text-muted-foreground">{band.key}</span>
+                  </td>
+                  <td className="py-2 text-center tabular-nums">
+                    {isFirst ? "−∞" : editing ? (editor.cuts[i - 1] ?? "") : String(band.minValue)}
+                  </td>
+                  <td className="py-2 text-center tabular-nums">
+                    {isLast ? (
+                      "+∞"
+                    ) : editing ? (
+                      <input
+                        type="number"
+                        step={0.5}
+                        disabled={saving}
+                        aria-label={t("config.bands.cutLabel", { faixa: band.key })}
+                        className="w-20 rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"
+                        value={editor.cuts[i] ?? ""}
+                        onChange={(e) => setEditor(editor.withCut(i, e.target.value))}
+                      />
+                    ) : (
+                      String(band.maxValue)
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {editing && editor.errorKey && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {t(editor.errorKey)}
+        </p>
+      )}
+      {error && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+
+      {/* Preview do efeito: classifica um valor de exemplo com o RASCUNHO
+          (quando válido) e mostra o chip resultante — mesmo derivador
+          (`classifyBand`) e mesmos tons do `GapBadge`. */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <label className="text-xs text-muted-foreground" htmlFor={`band-sample-${scale}`}>
+          {t("config.bands.preview.sample")}
+        </label>
+        <input
+          id={`band-sample-${scale}`}
+          type="number"
+          step={0.5}
+          className="w-20 rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"
+          value={sample}
+          onChange={(e) => setSample(e.target.value)}
+        />
+        {previewBand && <BandChip band={previewBand} />}
+      </div>
+    </div>
   );
 }

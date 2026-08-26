@@ -1,4 +1,8 @@
-import { scoringBandsResponseSchema, textTemplatesResponseSchema } from "../api-schemas";
+import {
+  scoringBandsPutResponseSchema,
+  scoringBandsResponseSchema,
+  textTemplatesResponseSchema,
+} from "../api-schemas";
 import type { ApiClient } from "../api-client";
 import type { ScoringBand, ScoringScale } from "../scoring-bands";
 
@@ -28,6 +32,13 @@ export type TextTemplatesResponse = Record<string, Record<string, string>>;
 export interface ConfigGateway {
   bands(): Promise<ScoringBandsResponse>;
   templates(): Promise<TextTemplatesResponse>;
+  /**
+   * CFG-02 (admin UI) — `PUT /api/config/bands/:scale`: substitui a régua
+   * INTEIRA de uma escala. Admin-only e validação de contiguidade no
+   * backend (`ScoringBandScale.create` → 400 `INVALID_SCORING_BANDS`, que
+   * a aba "Réguas e limiares" mostra no formulário).
+   */
+  updateScoringBands(scale: ScoringScale, bands: ScoringBand[]): Promise<ScoringBand[]>;
 }
 
 export class HttpConfigGateway implements ConfigGateway {
@@ -50,4 +61,12 @@ export class HttpConfigGateway implements ConfigGateway {
     this.client
       .request<TextTemplatesResponse>("/api/config/templates")
       .then((data) => textTemplatesResponseSchema.parse(data));
+
+  // CFG-02 (admin UI) — a resposta do PUT também é validada (a régua
+  // recém-gravada volta direto para o cache via invalidação; forma errada
+  // tem que falhar barulhento aqui, não corromper o badge).
+  updateScoringBands = (scale: ScoringScale, bands: ScoringBand[]): Promise<ScoringBand[]> =>
+    this.client
+      .put<ScoringBand[]>(`/api/config/bands/${scale}`, { bands })
+      .then((data) => scoringBandsPutResponseSchema.parse(data));
 }
