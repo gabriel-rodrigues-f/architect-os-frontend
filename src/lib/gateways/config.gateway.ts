@@ -1,4 +1,4 @@
-import { scoringBandsResponseSchema } from "../api-schemas";
+import { scoringBandsResponseSchema, textTemplatesResponseSchema } from "../api-schemas";
 import type { ApiClient } from "../api-client";
 import type { ScoringBand, ScoringScale } from "../scoring-bands";
 
@@ -15,8 +15,19 @@ import type { ScoringBand, ScoringScale } from "../scoring-bands";
  */
 export type ScoringBandsResponse = { [K in ScoringScale]?: ScoringBand[] | undefined };
 
+/**
+ * CFG-03 — `templates()` devolve os templates de texto de domínio AGRUPADOS
+ * como o servidor serializa (`GET /api/config/templates`, `key → locale →
+ * template`): `Record` de strings livres de propósito — uma key/locale pode
+ * não vir (ambiente recém-migrado), e é o consumidor
+ * (`withDefaultTextTemplates`, via `useTextTemplates` em `store.tsx`) quem
+ * completa com o default byte-idêntico ao seed.
+ */
+export type TextTemplatesResponse = Record<string, Record<string, string>>;
+
 export interface ConfigGateway {
   bands(): Promise<ScoringBandsResponse>;
+  templates(): Promise<TextTemplatesResponse>;
 }
 
 export class HttpConfigGateway implements ConfigGateway {
@@ -30,4 +41,13 @@ export class HttpConfigGateway implements ConfigGateway {
     this.client
       .request<ScoringBandsResponse>("/api/config/bands")
       .then((data) => scoringBandsResponseSchema.parse(data));
+
+  // CFG-03 — mesma disciplina de `bands`: validado em runtime, não só cast.
+  // O template vira DADO persistido (objetivo de item de PDI) — uma resposta
+  // com forma errada tem que falhar barulhento no `useQuery`, não gravar
+  // lixo silencioso no plano de alguém.
+  templates = (): Promise<TextTemplatesResponse> =>
+    this.client
+      .request<TextTemplatesResponse>("/api/config/templates")
+      .then((data) => textTemplatesResponseSchema.parse(data));
 }

@@ -33,7 +33,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
-import { useSelectors, useStore } from "@/lib/store";
+import { useObjectiveFromGap, useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { useAsyncSubmit } from "@/hooks/use-async-submit";
 import { useSearchParamString } from "@/hooks/use-search-param";
@@ -44,10 +44,17 @@ import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-v
  * Seção 61) — adaptador fino: memoiza o `DevelopmentPlansViewModel` sobre
  * a fatia de `useStore()` que ele precisa. Ver o arquivo do ViewModel para
  * o porquê do escopo (só ciclo de vida do plano, não a tela inteira).
+ * CFG-03: o objetivo de PDI gerado de gap vem do template efetivo
+ * (`text_templates`, fallback = seed) no locale ativo, injetado no
+ * construtor — mesmo padrão de `useDashboardPresenter` com o limiar.
  */
 function useDevelopmentPlansViewModel() {
   const store = useStore();
-  return useMemo(() => new DevelopmentPlansViewModel(store), [store]);
+  const objectiveFromGap = useObjectiveFromGap();
+  return useMemo(
+    () => new DevelopmentPlansViewModel(store, objectiveFromGap),
+    [store, objectiveFromGap],
+  );
 }
 
 /**
