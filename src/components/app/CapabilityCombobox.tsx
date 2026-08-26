@@ -14,18 +14,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Capability } from "@/lib/domain";
 
-/**
- * Seleção múltipla de capacidades. Diferente de um `<select multiple>`, permite
- * buscar por nome e alternar itens sem depender de Ctrl/Cmd + clique.
- *
- * As caixas são decorativas (`pointer-events-none`): quem trata o clique é o
- * `CommandItem` da linha inteira. Um checkbox interativo dentro do item criaria
- * dois alvos de clique concorrentes e a linha alternaria duas vezes.
- *
- * Recebe `label` porque a tela pode ter outro seletor com `role="combobox"` — o
- * `<select>` nativo também expõe esse papel — e sem nome acessível os dois
- * ficam indistinguíveis para leitor de tela.
- */
 export function CapabilityCombobox({
   capabilities,
   selected,
@@ -36,7 +24,7 @@ export function CapabilityCombobox({
   capabilities: readonly Capability[];
   selected: readonly Capability[];
   onToggle: (id: string) => void;
-  /** Recebe todos os ids quando marca, e lista vazia quando desmarca. */
+
   onSelectAll: (ids: string[]) => void;
   label?: string;
 }) {
@@ -83,8 +71,6 @@ export function CapabilityCombobox({
                     onSelect={() => onSelectAll(todasMarcadas ? [] : capabilities.map((c) => c.id))}
                   >
                     <Checkbox
-                      // Meio-marcada quando há seleção parcial: comunica que
-                      // clicar vai marcar o resto, não desmarcar o que já está.
                       checked={todasMarcadas ? true : algumaMarcada ? "indeterminate" : false}
                       aria-hidden="true"
                       tabIndex={-1}

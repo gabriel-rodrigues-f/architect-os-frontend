@@ -1,12 +1,5 @@
 import { useI18n, type MessageKey } from "@/lib/i18n";
 
-/**
- * OO3-11/D-2 — o aviso "mostrando N de M + alternar 'mostrar todas'" existia
- * em 4 cópias: `HeatmapColumnsNotice` (`gap-analysis-shared.tsx`),
- * `RadarAxisNotice` (`charts.tsx`) e duas versões inline em
- * `training-needs.tsx`. Mesma estrutura, mudando só as chaves i18n, o
- * limiar e um `mb-*`. As variantes nomeadas viram wrappers finos disto.
- */
 export function TruncationNotice({
   shown,
   total,
@@ -20,7 +13,7 @@ export function TruncationNotice({
   total: number;
   showAll: boolean;
   onToggle: () => void;
-  /** Só avisa quando `total > threshold` — o mesmo corte silencioso que cada cópia aplicava. */
+
   threshold: number;
   className?: string;
   messages: {

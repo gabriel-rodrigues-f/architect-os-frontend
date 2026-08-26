@@ -7,17 +7,6 @@ import { authApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { authErrorMessage, useAuth } from "@/lib/auth";
 
-/**
- * Porta de entrada do app. Quando a instância ainda não tem nenhuma conta, o
- * formulário vira "primeiro acesso" e cria o usuário administrador.
- *
- * ENT-AUTH-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
- * Seção 7.1) — o backend fecha `/register` assim que a instância já tem
- * alguma conta; o botão "Criar uma nova conta" não pode continuar
- * oferecendo um caminho que só devolve 403. `hasUsers` guarda o estado real
- * da instância (não só o modo do formulário no momento), então o toggle só
- * aparece enquanto a instância ainda está vazia.
- */
 export function LoginScreen() {
   const { login, register } = useAuth();
   const { t } = useI18n();

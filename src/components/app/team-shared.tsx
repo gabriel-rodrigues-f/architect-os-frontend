@@ -34,28 +34,9 @@ import {
   type ArchitectFormValues,
 } from "@/lib/view-models/team-view-model";
 
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) / R1-P07 —
- * `/team` era um único componente de ~1018 linhas (filtro/ordenação/paginação
- * do roster + formulário de cadastro/edição + renderização em cards/tabela,
- * cada um com o próprio estado). Extraído no mesmo padrão de
- * `mentoring-shared.tsx`: `TeamPage` (rota) vira só composição.
- *
- * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
- * Seções 58-61) — `useArchitectForm` abaixo virou o adaptador fino que a
- * Seção 61 descreve: o cadastro/edição/reativação de verdade mora em
- * `TeamViewModel` (`lib/view-models/team-view-model.ts`), e o hook só cuida
- * do que é genuinamente estado de render (diálogo aberto/fechado, rascunho
- * do formulário) e da orquestração de UI (toast, fechar diálogo). Ver nota
- * no próprio `team-view-model.ts` sobre por que `useTeamRoster` (abaixo)
- * NÃO fez a mesma migração.
- */
-
-/** Pseudo-ids pra quem não tem especialização/capacidade derivável — nunca somem do filtro por não ter um id real de catálogo. */
 const NO_SPECIALIZATION = "__no-specialization__";
 const NO_CAPABILITY = "__no-capability__";
 
-/** Uma pessoa do roster já enriquecida com gaps/média/histórico — o que `enrichedSorted` produz e a tabela/cards consomem. */
 export interface EnrichedArchitect {
   architect: Architect;
   topGaps: Gap[];
@@ -64,24 +45,6 @@ export interface EnrichedArchitect {
   lastMentoring: string | undefined;
 }
 
-/**
- * Estado + submit do diálogo de cadastro/edição, mais reativar. `editing` é
- * `null` (fechado), string vazia (criação) ou um id (edição) — mesmo
- * controle que a rota já usava. `confirmDeactivate`/`transitioning` só
- * guardam "para quem o diálogo está aberto" — o próprio submit (motivo
- * obrigatório + concorrência otimista) mora em `DeactivateDialog`/
- * `CareerLevelTransitionDialog`, não aqui, mesmo padrão dos dois.
- */
-/**
- * `store` (o retorno de `useStore()`) faz o papel de "serviço" que o
- * exemplo da Seção 60 pede no construtor — já abstrai o gateway HTTP
- * atrás de cache/otimismo (Seção 64), então o `TeamViewModel` não
- * precisa (nem deve) falar com `FrontendContainer` diretamente aqui: um
- * ViewModel que bypassasse `store` duplicaria a semântica de cache que
- * `store.tsx` já resolve, e é exatamente o tipo de comportamento
- * inventado que este brief pede para evitar. OO3-11c — adaptador único
- * compartilhado pelo formulário e pelos dois diálogos de comando.
- */
 function useTeamViewModel(): TeamViewModel {
   const store = useStore();
   return useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
@@ -90,22 +53,15 @@ function useTeamViewModel(): TeamViewModel {
 export function useArchitectForm() {
   const { t } = useI18n();
   const viewModel = useTeamViewModel();
-  /**
-   * CFG-01 (SPEC-OO3-13, A5) — o nível padrão do cadastro é o primeiro
-   * nível REAL de `career_levels` (menor `rank`), não mais `ROLES[0]`
-   * hardcoded. O `useState` inicial pode rodar antes da consulta resolver
-   * (fica ""), mas o único caminho para abrir o diálogo de criação é
-   * `openCreate`, que reavalia com os níveis já carregados.
-   */
+
   const careerLevels = useCareerLevelsByRank();
   const defaultRole = (careerLevels[0]?.name ?? "") as RoleName;
 
-  /** `null` = diálogo fechado; string vazia = criação; id = edição. */
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<ArchitectFormValues>(() => emptyArchitectForm(defaultRole));
-  /** R2-UX-08/OO-03 — quem está com o diálogo de desativação aberto. */
+
   const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
-  /** ENT-CAR-017 — quem está com o diálogo de transição de nível aberto. */
+
   const [transitioning, setTransitioning] = useState<Architect | null>(null);
 
   const openCreate = () => {
@@ -127,32 +83,17 @@ export function useArchitectForm() {
   };
 
   const { yearsValid, canSubmit } = viewModel.validate(form);
-  /**
-   * OO3-18/F-1 — esqueleto try/catch/toast.error(authErrorMessage) mora no
-   * hook; este era um dos 3 call sites SEM `finally`/`setSaving` (o diálogo
-   * aceitava re-submit durante a chamada em voo — bug latente que a
-   * unificação corrige: `submitting` agora desabilita o botão Salvar).
-   */
+
   const { submitting, run } = useToastSubmit();
 
-  /**
-   * Validação e payload moraram em `TeamViewModel.submit` (Seção 61 — hook
-   * vira adaptador fino). O que fica aqui é só orquestração de UI: toast e
-   * fechar o diálogo, igual antes.
-   */
   const submit = async () => {
     if (!canSubmit) return;
 
     if (editing) {
-      // `specialization` legado nunca sai daqui — a edição só grava a FK
-      // nova, preservando (ou não) o texto antigo que já estava salvo.
       await viewModel.submit(form, editing);
       toast.success(t("team.edit.toast", { nome: form.name.trim() }));
       setEditing(null);
     } else {
-      // B-32 — id é gerado no servidor (nunca mais slug(nome), que colidia
-      // entre duas pessoas de nome parecido); sem otimismo, a tela só fecha
-      // o diálogo depois que o cadastro existe de verdade.
       const result = await run(() => viewModel.submit(form, editing));
       if (result.ok) setEditing(null);
     }
@@ -182,43 +123,13 @@ export function useArchitectForm() {
   };
 }
 
-/**
- * Filtro/ordenação/paginação do roster. `isAdmin` vem de fora porque só a
- * rota conhece o usuário atual — não-admin nunca alcança "Inativos", mesmo
- * que o estado interno de `statusFilter` diga outra coisa (REVISAO-360-
- * FRONTEND, Seção 23).
- */
 export function useTeamRoster(isAdmin: boolean) {
   const store = useStore();
   const { t } = useI18n();
   const sel = useSelectors();
 
-  /**
-   * REVISAO-360-FRONTEND, Seção 23 — lista única e filtrável (cards ou
-   * tabela), em vez de "arquitetos ativos" + uma segunda seção separada de
-   * inativos. Não-admin nunca alcança "Inativos": o status fica travado em
-   * "active" pra quem não tem a visão administrativa, mesmo que o estado
-   * interno diga outra coisa.
-   *
-   * Pedido do usuário revisando o app rodando: filtro é composição por
-   * caixinha (MultiSelectFilter), nunca busca por texto — marcar um valor,
-   * vários, ou "selecionar tudo"/"remover tudo" de uma vez, mesmo padrão do
-   * `ArchitectFilter`. Cada filtro nasce com TUDO selecionado (nenhuma
-   * filtragem de fato) exceto Status, que nasce só em "Ativos" — a mesma
-   * visão padrão de antes desta seção existir. Sem filtro de Tech Lead: só
-   * existe um Tech Lead no time hoje, então filtrar por ele não distingue
-   * nada.
-   */
   const [statusFilter, setStatusFilter] = useState<string[]>(["active"]);
-  /**
-   * CFG-01 (SPEC-OO3-13, A5) — as opções do filtro de nível vêm de
-   * `career_levels` (por `rank`), não mais do array `ROLES` hardcoded. Como
-   * os níveis chegam por consulta própria (podem ainda não ter resolvido no
-   * primeiro render), o estado guarda `null` = "todos selecionados" (a mesma
-   * visão padrão de antes: nascer com tudo marcado, nenhuma filtragem de
-   * fato) — inicializar `useState` com uma lista ainda vazia esconderia o
-   * time inteiro até um clique manual no filtro.
-   */
+
   const careerLevels = useCareerLevelsByRank();
   const [roleSelection, setRoleSelection] = useState<string[] | null>(null);
   const roleFilter = roleSelection ?? careerLevels.map((l) => l.name);
@@ -243,19 +154,13 @@ export function useTeamRoster(isAdmin: boolean) {
     });
     return hasNone ? [...ids, NO_CAPABILITY] : ids;
   });
-  /**
-   * R2-UX-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo B) — evolui B-13:
-   * "Buscar por nome" (texto livre) virou seleção múltipla pesquisável
-   * (`ArchitectNameCombobox`), mesmo padrão de composição por caixinha das
-   * outras 4 facetas. Nasce com todos os ids — nenhuma filtragem de fato,
-   * mesmo cuidado das outras facetas (nunca esconder gente por engano).
-   */
+
   const [nameSelection, setNameSelection] = useState<string[]>(() =>
     store.architects.map((a) => a.id),
   );
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "level" | "recent">("name-asc");
   const [page, setPage] = useState(1);
-  /** P1-12 — 25 como default superdimensiona times de 10–30 pessoas; 10 mostra o time inteiro sem paginar na maioria dos casos reais. */
+
   const [pageSize, setPageSize] = useState(10);
   const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
 
@@ -263,7 +168,6 @@ export function useTeamRoster(isAdmin: boolean) {
     setPage(1);
   }, [nameSelection, statusFilter, roleSelection, specializationFilter, capabilityFilter, sort]);
 
-  /** Última sessão de mentoria por mentee — proxy de "atualização recente": não há `updatedAt` no cadastro. */
   const lastMentoringByArchitect = useMemo(() => {
     const map = new Map<string, string>();
     for (const session of store.mentoringSessions) {
@@ -326,12 +230,12 @@ export function useTeamRoster(isAdmin: boolean) {
 
   const filtered = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
-    /** OO3-09b — mesmo recorte explícito de gap/compare: `[]` = ninguém, nunca vazio-como-atalho. */
+
     const nameFilter = Selection.explicit(nameSelection);
     return store.architects.filter((a) => {
       if (!nameFilter.contains(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
-      // `null` = todos os níveis (inclusive enquanto `career_levels` carrega).
+
       if (roleSelection !== null && !roleSelection.includes(a.role)) return false;
       const specKey = a.primarySpecializationCompetencyId ?? NO_SPECIALIZATION;
       if (!specializationFilter.includes(specKey)) return false;
@@ -396,7 +300,6 @@ export function useTeamRoster(isAdmin: boolean) {
     { value: "recent", label: t("team.sort.recent") },
   ];
 
-  /** Resumo genérico pra chip de filtro: 0 = "ninguém", 1 = o próprio rótulo, N = contagem. */
   const summarize = (selected: string[], options: MultiSelectFilterOption[]) =>
     selected.length === 0
       ? t("team.filter.chip.none")
@@ -483,12 +386,6 @@ export function useTeamRoster(isAdmin: boolean) {
   };
 }
 
-/**
- * R2-ESC-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — seletor de Lead
- * responsável pesquisável. Diferente de `ArchitectSelectCombobox`: a lista
- * é de contas `SessionUser` (lead/admin), não de arquitetos, e tem uma
- * opção "sem Lead" — mesmo padrão de "remover" de `SpecializationCombobox`.
- */
 export function LeadCombobox({
   options,
   selectedId,
@@ -569,14 +466,6 @@ export function LeadCombobox({
   );
 }
 
-/**
- * ENT-CAR-017 — único jeito de mudar nível de carreira: pede o nível de
- * destino e um motivo (obrigatório), nunca um campo solto de formulário.
- * Sem otimismo: se a versão estiver desatualizada (409, alguém mais mudou
- * o cadastro nesse meio-tempo), a tela precisa mostrar o erro de verdade,
- * não fingir que funcionou. Mesmo padrão de `ReopenPlanDialog`
- * (`development-plans.tsx`).
- */
 export function CareerLevelTransitionDialog({
   architect,
   onClose,
@@ -586,7 +475,7 @@ export function CareerLevelTransitionDialog({
 }) {
   const { t } = useI18n();
   const viewModel = useTeamViewModel();
-  /** CFG-01 (A5) — os níveis de destino vêm de `career_levels` (por `rank`), não mais de `ROLES`. */
+
   const careerLevels = useCareerLevelsByRank();
   const [toRole, setToRole] = useState<RoleName>(architect.role);
 
@@ -626,15 +515,6 @@ export function CareerLevelTransitionDialog({
   );
 }
 
-/**
- * R2-UX-08/OO-03 — desativação migrou de `PATCH /api/architects/:id` com
- * `{ active: false }` (o backend passou a recusar isso com 400: "Desativação
- * exige motivo") para um comando dedicado, `POST .../deactivate`, no mesmo
- * molde de `transitionCareerLevel`/`CareerLevelTransitionDialog` acima:
- * motivo obrigatório, sem otimismo, e um 409 (`ARCHITECT_VERSION_CONFLICT` —
- * alguém mais alterou o cadastro desde que o diálogo abriu) precisa aparecer
- * como erro de verdade, não fingir sucesso.
- */
 export function DeactivateDialog({
   architect,
   onClose,
@@ -666,13 +546,6 @@ export function DeactivateDialog({
   );
 }
 
-/**
- * Roster já paginado, em cards ou tabela — mesma lista, duas apresentações.
- * `leadOptions` vem de fora (só a rota consulta `authApi.users`); os
- * callbacks (`onEdit`/`onTransition`/`onDeactivate`/`onReactivate`) cruzam a
- * fronteira porque o estado que eles mudam (`useArchitectForm`) é
- * compartilhado com o diálogo de cadastro, que fica na rota.
- */
 export function TeamRosterView({
   pageItems,
   view,

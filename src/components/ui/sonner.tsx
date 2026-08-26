@@ -2,12 +2,6 @@ import { Toaster as Sonner } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-/**
- * `success` usa `--gap-ok` — o mesmo token que já significa "adequado" no
- * badge de lacuna e na matriz de talentos — em vez do verde padrão do Sonner.
- * O objetivo é o cartão de sucesso soar como o mesmo "ok" do resto do app, não
- * como uma paleta importada por cima.
- */
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner

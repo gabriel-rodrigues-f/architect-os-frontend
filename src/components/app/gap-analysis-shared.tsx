@@ -11,63 +11,17 @@ import { type ConsolidatedGapRow } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamList } from "@/hooks/use-search-param";
 
-/**
- * Compartilhado entre `/gap-analysis` (Radar + Prioridades, por pessoa) e
- * `/progression` (Mapa de Calor + Tabela, consolidado por competência) —
- * as duas abas leem o mesmo recorte de arquitetos e a mesma consolidação de
- * lacunas, só apresentam de formas diferentes. Extraído pra não duplicar o
- * cálculo (e arriscar as duas telas divergirem) quando o "Progressão" saiu
- * do fim de `/gap-analysis` pra sua própria aba.
- *
- * OO3-11g — `ConsolidatedGapRow`/`consolidateGaps` moraram aqui até virarem
- * `GapConsolidationSelectors` em `lib/selectors.ts` (os relatórios de
- * `lib/team-report-*` importavam de `components/`, invertendo a dependência).
- */
-
-/**
- * Recorte + radar + bloqueante/oportunidade/maestria — o que as duas abas
- * têm em comum. `selected`/`setSelected` voltam pro chamador porque cada
- * aba tem seu próprio `ArchitectFilter` no `PageHeader` (a UI do filtro não
- * é compartilhada, só o cálculo que ela alimenta).
- */
 export function useGapAnalysisData() {
   const store = useStore();
   const sel = useSelectors();
   const user = useCurrentUser();
 
-  /**
-   * Nasce com o time visível ao viewer (ver o docstring de
-   * `ArchitectSelectors.visibleTo`, ANA-001). Depois disso `selected` é
-   * sempre explícito (ver `ArchitectFilter`): selecionar alguém fora desse
-   * recorte inicial (gente inativa ou fora do escopo) ainda funciona — a
-   * lista de opções do filtro continua sendo `store.architects` inteiro; a
-   * própria falta de dado visível já degrada de forma transparente via
-   * `coverage`.
-   *
-   * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — o recorte
-   * agora vive na URL (`?selected=id1,id2`), não só em memória: sem isso, dar
-   * F5 depois de trocar a seleção (ou mandar o link para outra pessoa)
-   * sempre voltava para o time inteiro, perdendo o filtro que a tela estava
-   * mostrando. Ausência do parâmetro (primeira visita) cai no time visível
-   * padrão; presente e vazio (`?selected=`) é "ninguém" de propósito, uma
-   * seleção explícita, não o padrão.
-   */
   const defaultSelected = useMemo(() => sel.visibleArchitects(user).map((a) => a.id), [sel, user]);
   const [selected, setSelected] = useSearchParamList("selected", () => defaultSelected);
 
-  /** Toda a tela lê deste recorte — pertencimento explícito, `[]` = "ninguém" (OO3-09b, `Selection.explicit`). */
   const architects = Selection.explicit(selected).apply(store.architects);
 
-  /**
-   * Radar: média por capacidade só entre quem tem assessment oficial cobrindo
-   * aquela capacidade — quem não tem simplesmente não entra na média, em vez de
-   * puxá-la para baixo como um nível 0 fictício faria. `coverage` guarda
-   * quantos de quantos contribuíram, para a legenda avisar quando a média é
-   * de uma fração pequena do grupo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-
-   * SYNAPSE.md, Seção 9.
-   */
   const radar = useMemo(() => {
-    // R2-ESC-02 — rótulo compacto dedup (siglas legadas) via selector memoizado.
     return store.capabilities.map((cat) => {
       const { atual, alvo } = sel.teamAverageFor(cat.id, architects);
       return {
@@ -80,19 +34,11 @@ export function useGapAnalysisData() {
     });
   }, [architects, store.capabilities, sel]);
 
-  /** Pior cobertura entre as capacidades do radar — sinaliza quando a leitura é de poucos. */
   const radarCoverage = radar.reduce(
     (min, r) => (r.covered < min.covered ? r : min),
     radar[0] ?? { covered: 0, total: 0 },
   );
 
-  /**
-   * ORIENTACAO-NONA-RODADA ENT-09-012 — bloqueante (RESTRICTIVE: impede a
-   * progressão enquanto não fechar) e oportunidade (NON_RESTRICTIVE: entra
-   * na média, mas nunca bloqueia sozinha) nunca aparecem na mesma lista —
-   * misturar os dois é exatamente o problema que a Seção 33 aponta, porque
-   * esconde qual lacuna de fato trava alguém.
-   */
   const progression = useMemo(() => sel.consolidateProgressionGaps(architects), [architects, sel]);
   const blocking = useMemo(
     () => progression.filter((r) => r.requirementType === "RESTRICTIVE"),
@@ -103,31 +49,10 @@ export function useGapAnalysisData() {
     [progression],
   );
 
-  /**
-   * Nível III (topo da carreira): nunca "gap para o Nível IV" — não existe
-   * próximo nível para essa régua. `masteryOpportunitiesFor` já isola esses
-   * itens (Seção 17.1/18 de `selectors.ts`); aqui só consolidam por
-   * competência, com a mesma forma da tabela de progressão, para reaproveitar
-   * o mesmo componente de exibição sem herdar a linguagem de "bloqueio".
-   */
   const mastery = useMemo(() => sel.consolidateMasteryGaps(architects), [architects, sel]);
 
-  /**
-   * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 4.2/17/36 (A1/B2) — texto
-   * ficou obsoleto depois que `selected: []` passou a significar "ninguém"
-   * (não mais "todo o time implícito", ver `ArchitectFilter`). Compara com
-   * `architects.length` (já resolvido pelo recorte `Selection`), não com
-   * `store.architects.length` diretamente — assim um id de seleção que não
-   * existe mais no roster não faz a contagem bater por acidente.
-   */
   const { t } = useI18n();
-  /**
-   * R2-ESC-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — a lista de primeiros
-   * nomes crescia sem teto (times de 15+ pessoas viravam uma linha só,
-   * ilegível). `scopeLabel` alimenta `t()`/PDF como string simples (nunca
-   * JSX), então a regra aqui é diferente da truncagem de `NameList`: acima
-   * de 3 pessoas vira contagem, sem nome nenhum.
-   */
+
   const scopeLabel =
     selected.length === 0
       ? t("gap.scope.none")
@@ -151,12 +76,6 @@ export function useGapAnalysisData() {
   };
 }
 
-/**
- * Tabela compartilhada por progressão (bloqueante + oportunidade, com coluna
- * de tipo) e por maestria (Nível III, sem coluna de tipo — a distinção
- * bloqueante/oportunidade só faz sentido quando existe um próximo nível para
- * travar).
- */
 export function GapTable({
   rows,
   capabilities,
@@ -167,13 +86,7 @@ export function GapTable({
   mastery?: boolean;
 }) {
   const { t } = useI18n();
-  /**
-   * ORIENTACAO-NONA-RODADA ENT-09-016 — cabeçalho fixo dentro de uma altura
-   * máxima: esta tabela cresce com o time e o catálogo (uma linha por
-   * competência com gap), e sem isto rolar a lista perde de vista qual
-   * coluna é qual. `sticky` fica em cada `<th>`, não em `<thead>` — suporte
-   * mais consistente entre navegadores.
-   */
+
   return (
     <div className="max-h-[480px] overflow-auto">
       <table className="w-full min-w-[820px] text-sm">
@@ -251,13 +164,6 @@ export function GapTable({
   );
 }
 
-/**
- * R2-ESC-01 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesmo problema do radar
- * (R2-ESC-03): um heatmap com uma coluna por capacidade vira ilegível a
- * partir de ~15-20 capacidades. Corta para as `MAX_HEATMAP_COLUMNS` com
- * pior gap (maior diferença alvo-atual em qualquer arquiteto do recorte
- * exibido), preservando a ordem original do catálogo entre as mantidas.
- */
 export const MAX_HEATMAP_COLUMNS = 12;
 
 export function capHeatmapColumns<C extends { id: string }>(
@@ -282,12 +188,9 @@ export function capHeatmapColumns<C extends { id: string }>(
     }
   }
 
-  // OO3-11/D-3 (reuso final) — o ranking em si é o `topByRelevance`
-  // compartilhado com o radar; aqui só entra o critério (pior gap).
   return topByRelevance(capabilities, (c) => worstGapByCapability.get(c.id) ?? -Infinity, max);
 }
 
-/** Aviso visível + alternância "mostrar todas" — wrapper fino de `TruncationNotice` (OO3-11/D-2). */
 export function HeatmapColumnsNotice(props: {
   shown: number;
   total: number;

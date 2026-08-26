@@ -16,16 +16,6 @@ import { useI18n } from "@/lib/i18n";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
-/**
- * R2-ESC-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — regra "mais de 15 opções
- * vira combobox pesquisável" aplicada ao seletor de UMA pessoa (Avaliações,
- * PDI, Ciclos, Mentoria). Seleção única, sem opção "Todo o time"; sempre uma
- * pessoa de verdade. `inactiveArchitects` é opcional: telas que já restringem
- * a lista a quem está ativo (PDI, mentorado de uma sessão nova) não precisam
- * da seção de inativos. OO3-18/F-3 — `MenteeFilterCombobox`
- * (mentoring-shared.tsx), que era o clone com inativos sempre visíveis,
- * virou um adaptador fino por cima deste componente.
- */
 export function ArchitectSelectCombobox({
   architects,
   inactiveArchitects = [],
@@ -43,7 +33,7 @@ export function ArchitectSelectCombobox({
   label: string;
   invalid?: boolean;
   className?: string;
-  /** Pareia com um `<Label htmlFor>` externo — sem isto, clicar no rótulo não abre o combobox. */
+
   id?: string;
 }) {
   const { t } = useI18n();

@@ -2,11 +2,6 @@ import { LayoutGrid, Table2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-/**
- * R2-UX-09 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — extraído do Time
- * (primeira tela a ter alternância cards/tabela) pra Capacidades > Cobertura
- * reusar o mesmo par de botões em vez de duplicar a marcação.
- */
 export function ViewToggle({
   view,
   onChange,

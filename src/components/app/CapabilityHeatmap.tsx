@@ -8,20 +8,6 @@ import { useI18n } from "@/lib/i18n";
 import type { CapabilityAverage } from "@/lib/selectors";
 import { useSelectors } from "@/lib/store";
 
-/**
- * OO3-11/D-1 — o mapa de calor pessoas × capacidades estava duplicado entre
- * o Painel (`routes/index.tsx`, AdminHome) e `/progression`
- * (`routes/progression.tsx`): mesma tabela, mesmo corte de colunas
- * (`capHeatmapColumns` + aviso), divergindo só em detalhes acidentais.
- *
- * `[MUDA UI]` (aprovado em 2026-08-26): as duas variantes de cabeçalho eram
- * a mesma coisa escrita de dois jeitos — unificado no visual de
- * `/progression` (`uppercase tracking-wide`, rótulo `t("col.architect")`,
- * mesmo texto que `t("cycle.architect")` renderizava). A diferença REAL
- * vira prop: `linkToProfile` (o Painel linka o nome para o perfil).
- */
-
-/** Corte de colunas (R2-ESC-01) + alternância "mostrar todas" — o estado que as duas telas duplicavam. */
 export function useHeatmapColumns(
   capabilities: readonly Capability[],
   architects: readonly { id: string }[],
@@ -67,7 +53,7 @@ export function CapabilityHeatmap({
         showAll={showAll}
         onToggle={toggle}
       />
-      {/* ENT-09-016 — cabeçalho fixo: o heatmap cresce uma linha por arquiteto do time. */}
+      {}
       <div className="max-h-[480px] overflow-auto">
         <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
           <thead>

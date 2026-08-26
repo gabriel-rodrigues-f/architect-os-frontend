@@ -43,74 +43,19 @@ interface NavItem {
   to: string;
   labelKey: MessageKey;
   icon: typeof LayoutDashboard;
-  /** Rotas extras que também contam como "este item está ativo" (abas internas). */
+
   activePrefixes?: string[];
-  /** Só aparece para quem administra o sistema — Member/Lead nem veem o destino. */
+
   adminOnly?: boolean;
 }
 
 interface NavGroup {
-  /**
-   * Opcional só pelo tipo — hoje todo grupo declarado em `NAV_GROUPS` tem
-   * `labelKey` (R2-UX-13 uniu os antigos grupos de item só em "Operação").
-   * Sem `labelKey` não há cabeçalho pra virar botão, e o grupo nasce sempre
-   * expandido, sem entrar no colapso/persistência de R2-UX-14.
-   */
   labelKey?: MessageKey;
   items: NavItem[];
 }
 
-/**
- * Home / Pessoas / Capacidades / Avaliações / Desenvolvimento / Administração
- * — os seis agrupamentos substituem a lista plana de páginas que a barra
- * lateral tinha antes. Cada URL continua a mesma (nenhuma página mudou de
- * rota, só de posição no menu), então não há redirecionamento para manter.
- * Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC F.
- *
- * FASE 2 (quinta rodada) — Mapa de Capacidades, Análise de Lacunas e
- * Necessidades de Treinamento eram três itens de primeiro nível para o
- * mesmo momento de decisão; a auditoria chamava Training Needs de
- * "redundante como tela standalone" e recomendava consolidar em
- * "Capacidades", navegando entre elas por abas dentro da própria tela
- * (`CapabilitiesTabs`). Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md,
- * Seção 6 e 33.
- *
- * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
- * Bloco 7) reverteu essa consolidação por abas: as 5 sub-telas (Cobertura/
- * Prioridades/Progressão/Necessidades de Treinamento/Comparativo do Time)
- * viram um GRUPO próprio na barra lateral, igual a "Operação"/
- * "Desenvolvimento"/"Administração" — cada uma com seu item de menu direto,
- * sem abas dentro da página. `CapabilitiesTabs` foi removido; a barra de
- * abas empurrava o conteúdo de toda tela de Capacidades um degrau abaixo do
- * cabeçalho, inconsistente com o resto do app.
- *
- * QW-01/QW-02 (Seção 32, Quick Wins) — "esconder destinos administrativos"
- * e "remover `/settings` da navegação primária". Antes, Competência,
- * Usuários e Referência apareciam pra qualquer papel, mesmo sem
- * conseguir fazer nada ali (as próprias telas já recusavam a ação, só a
- * navegação não escondia o link) — Member/Lead viam destinos que não são
- * deles. Ciclos continua visível a todos: a tela já é "Admin + leitura"
- * (comparar evolução entre ciclos é legítimo pra qualquer papel), só a
- * criação/edição é admin-only, resolvida dentro da própria tela.
- * Referência (`/settings`) sai da navegação primária de vez, não só pra
- * quem não administra — era um glossário read-only competindo por espaço
- * com o resto do menu sem ganhar nada em troca.
- *
- * B-15 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-14) — essa
- * mesma rota volta aqui, porque deixou de ser só glossário: desde a nona
- * rodada ela também é a única tela onde a Política de Progressão (mínimo de
- * capacidades qualificadas por nível de carreira) existe, e nenhum
- * profissional consegue descobrir o critério da própria progressão sem
- * digitar a URL de cabeça. Mesmo tratamento que `/cycles` já tinha: item
- * visível a todos os papéis (não `adminOnly`), porque ler a política é
- * legítimo pra qualquer um — só editar é restrito a admin, resolvido dentro
- * da própria tela (`settings.tsx`, `CareerPolicySection`).
- */
 export const NAV_GROUPS: NavGroup[] = [
   {
-    // R2-UX-13 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os 4 primeiros itens
-    // eram cada um seu próprio grupo de item só (sem cabeçalho); ganham um
-    // título só pra contrastar com "Desenvolvimento"/"Administração" abaixo.
     labelKey: "nav.group.operation",
     items: [
       { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
@@ -119,9 +64,6 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    // `nav.capabilities` já existia como rótulo do item único antigo
-    // ("Capacidades") — reaproveitado aqui como rótulo do GRUPO, sem chave
-    // nova, já que o texto continua exatamente o mesmo.
     labelKey: "nav.capabilities",
     items: [
       { to: "/capability-map", labelKey: "cap.tabs.coverage", icon: Map },
@@ -149,27 +91,13 @@ export const NAV_GROUPS: NavGroup[] = [
         adminOnly: true,
       },
       { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
-      // R2-VIS-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — este item aponta pra
-      // "Política de Progressão", não pra preferências: usava o mesmo ícone
-      // de engrenagem do menu de tema/idioma no cabeçalho, dois significados
-      // diferentes sob o mesmo símbolo. `Scale` (balança) combina com
-      // "critério/política" e libera `Settings` só para configuração de
-      // verdade.
+
       { to: "/settings", labelKey: "nav.settings", icon: Scale },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
 ];
 
-/**
- * QW-01 (Seção 32, Quick Wins, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
- * 08-19.md) — destinos `adminOnly` somem do menu pra quem não administra;
- * um grupo que fica sem item nenhum (nada restou pra este papel) some
- * junto, em vez de mostrar um cabeçalho sem conteúdo debaixo. Função pura
- * — sem depender de montar o componente — pra poder testar o recorte por
- * papel sem precisar de um `RouterProvider` real (`useRouterState`, usado
- * no resto do componente, exige um).
- */
 export function filterNavGroups(groups: NavGroup[], role: string | undefined): NavGroup[] {
   return groups
     .map((group) => ({
@@ -179,7 +107,6 @@ export function filterNavGroups(groups: NavGroup[], role: string | undefined): N
     .filter((group) => group.items.length > 0);
 }
 
-/** Extraído do que antes era recomputado inline em cada render de item, no desktop e no mobile. */
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (item.to === "/") return pathname === "/";
   return (
@@ -188,28 +115,6 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
   );
 }
 
-/**
- * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
- * Bloco 7) — antes, `isGroupExpanded` forçava `isNavGroupActive(...)` como
- * um `OR` que sempre vencia: o grupo da rota ativa nunca podia ser
- * recolhido de verdade, `collapsedGroups` era ignorado pra ele.
- *
- * A primeira correção (revertida) extraía o item ativo pra um "slot fixo"
- * acima de um wrapper animado com o resto — só que isso reordenava a
- * lista TODA VEZ que o item ativo mudava, mesmo com o grupo EXPANDIDO
- * (bug real reportado: clicar em "Painel" fazia ele saltar pro topo de
- * "Operação" e "Time" ocupar o lugar onde o mouse estava). A causa: o
- * "slot fixo" existia incondicionalmente, não só quando o grupo estava
- * de fato recolhido.
- *
- * Esta versão nunca reordena: cada item recolhe INDIVIDUALMENTE, no
- * próprio lugar da lista, em vez de a lista inteira ser reparticionada.
- * `hidden` só é `true` quando o grupo está recolhido E o item não é o
- * ativo — com o grupo expandido, `hidden` é sempre `false` pra todo
- * mundo, então a ordem declarada em `NAV_GROUPS` nunca muda, seja qual
- * for a rota ativa. Grupo sem rota ativa dentro: todo item colapsa junto
- * (mesmo efeito de antes, só que por item em vez de por bloco).
- */
 export function isNavItemHiddenByCollapse(
   item: NavItem,
   pathname: string,
@@ -218,7 +123,6 @@ export function isNavItemHiddenByCollapse(
   return isGroupCollapsed && !isNavItemActive(item, pathname);
 }
 
-/** `labelKey` tem pontos ("nav.group.admin"); id de elemento aceita, mas o `aria-controls` fica mais limpo sem. */
 const navGroupPanelId = (labelKey: string) => `nav-group-${labelKey.replace(/\./g, "-")}`;
 
 const SIDEBAR_STORAGE_KEY = "synapse:sidebar-collapsed";
@@ -227,11 +131,6 @@ const SIDEBAR_WIDTH_KEY = "synapse:sidebar-width";
 const LEGACY_SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
 const NAV_COLLAPSED_GROUPS_KEY = "synapse:nav-collapsed-groups";
 
-/**
- * 264px é o mínimo que acomoda "Desenvolvimento de Capacidades" numa linha ao
- * lado do logo e do botão de recolher — abaixo disso o subtítulo era cortado no
- * meio da palavra.
- */
 const SIDEBAR_DEFAULT = 264;
 const SIDEBAR_MIN = 208;
 const SIDEBAR_MAX = 420;
@@ -245,56 +144,6 @@ const THEME_OPTIONS: { value: Theme; labelKey: MessageKey; icon: typeof Sun }[] 
   { value: "system", labelKey: "prefs.theme.system", icon: Monitor },
 ];
 
-/**
- * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md) —
- * revisão deste arquivo pelo mesmo crivo dos cinco ViewModels já extraídos
- * (`team-view-model.ts`, `development-plans-view-model.ts`,
- * `assessment-view-model.ts`, `competency-matrix-view-model.ts`): existe
- * aqui alguma ação de negócio de verdade (entrada clara → chamada
- * assíncrona a um serviço → resultado), independente do ciclo de render?
- * Conclusão: NÃO — nada em `AppShell` vira `ViewModel` nesta rodada.
- *
- * O que foi considerado e descartado, um a um:
- *  - `logout` — a única ação assíncrona de verdade no arquivo, mas não
- *    está "solta" aqui pra ser extraída: já vive inteira em `useAuth()`
- *    (`src/lib/auth.tsx`), com seu próprio tratamento de erro de rede,
- *    limpeza de estado local e `queryClient.clear()`. `AppShell` só
- *    consome o `logout` do hook e pluga no `onClick` do botão — exatamente
- *    o tipo de encapsulamento que um ViewModel daria, só que já existe,
- *    num lugar mais correto (hook de autenticação, não a casca de
- *    navegação). Duplicar isso aqui seria wrapper sem propósito.
- *  - `setActiveCycle` — troca o ciclo ativo chamando direto o setter que
- *    já existe em `store.tsx`; não tem validação, regra de elegibilidade
- *    nem orquestração — é uma seleção de contexto, categoria já tratada
- *    como estado de UI (equivalente a um filtro) nos ViewModels
- *    anteriores, não uma ação de negócio nova.
- *  - `setTheme`/`setLocale` (`PreferencesMenu` abaixo) — preferência
- *    só de cliente: `setTheme` só grava em `localStorage` e alterna a
- *    classe `dark` no `<html>` (`src/lib/theme.tsx`); nunca chama o
- *    servidor, não tem regra de negócio para espelhar.
- *  - `filterNavGroups`/`isNavItemActive`/`isNavItemHiddenByCollapse` —
- *    já são funções puras extraídas e testadas isoladamente (sem precisar
- *    montar `AppShell`), exatamente pelo motivo que esta sessão usa pra
- *    manter algo como hook/função em vez de ViewModel: derivam o que
- *    RENDERIZA agora a partir de `pathname`/`role`/estado de colapso, sem
- *    chamada assíncrona nem serviço. `filterNavGroups` até parece
- *    "autorização" à primeira vista (comparável a
- *    `UiAuthorizationPolicy.isAdmin`, `src/lib/scope.ts`), mas é comparação
- *    de string sobre configuração estática de menu, não uma regra que
- *    precise de injeção de serviço — envolvê-la numa classe só pra ter uma
- *    classe seria produzir ViewModel por produzir.
- *  - Colapso/animação da barra lateral e dos grupos de menu (`collapsed`,
- *    `collapsedGroups`, `resizing`, `width`, `mobileNavOpen`,
- *    `isNavItemHiddenByCollapse`) — é precisamente o estado
- *    entrelaçado-com-render que o commit `9fe230c` (bug real reportado:
- *    item ativo "pulava" de posição no grupo expandido) acabou de corrigir
- *    nesta mesma sessão. Não tocado: nem extraído, nem restruturado, só
- *    lido para confirmar que continua sendo hook/estado local, nunca
- *    ViewModel.
- *
- * Resultado: nenhum ViewModel novo nesta rodada — mesmo desfecho "correto,
- * sem forçar extração" já visto em OO2-05 para mentoria/evolução.
- */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { cycles, activeCycleId, setActiveCycle } = useStore();
@@ -304,23 +153,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navGroups = filterNavGroups(NAV_GROUPS, user?.role);
   const reducedMotion = useReducedMotion();
 
-  /**
-   * Começa expandida e só lê a preferência depois da montagem: no SSR não há
-   * `localStorage`, e decidir no primeiro render quebraria a hidratação.
-   */
   const [collapsed, setCollapsed] = useState(false);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [resizing, setResizing] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
-  /**
-   * R2-UX-14 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — nasce vazio (tudo
-   * aberto) pelo mesmo motivo do `collapsed` acima: sem isto, o SSR
-   * renderiza expandido e o cliente colapsaria no primeiro efeito, um
-   * flash de conteúdo pulando. É "o que a pessoa pediu" de verdade agora
-   * (ver `partitionGroupItems`) — recolher o grupo da rota ativa some com
-   * os irmãos, só o item ativo continua fixo e visível.
-   */
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -328,7 +165,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       const raw = window.localStorage.getItem(NAV_COLLAPSED_GROUPS_KEY);
       if (raw) setCollapsedGroups(new Set(JSON.parse(raw) as string[]));
     } catch {
-      // localStorage indisponível (modo privado) ou JSON corrompido — nasce tudo aberto.
+      return;
     }
   }, []);
 
@@ -340,19 +177,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       try {
         window.localStorage.setItem(NAV_COLLAPSED_GROUPS_KEY, JSON.stringify([...next]));
       } catch {
-        // localStorage indisponível — a preferência só não sobrevive a um reload.
+        return next;
       }
       return next;
     });
   };
 
-  /**
-   * REVISAO-360-FRONTEND, Seção 15 — a faixa horizontal de abas (`navFlat`,
-   * sem grupos) obrigava rolagem lateral pra achar itens do fim da lista e
-   * escondia a hierarquia por seção que a barra lateral do desktop mostra.
-   * O drawer mobile reusa `navGroups` (a mesma fonte, com seção/rótulo) em
-   * vez de uma lista achatada à parte.
-   */
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -361,13 +191,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (Number.isFinite(salva) && salva > 0) setWidth(clampWidth(salva));
   }, []);
 
-  /**
-   * Ajusta a largura ao rótulo mais longo, se a pessoa ainda não escolheu uma.
-   * Largura fixa não serve: um rótulo que cabe em português pode estourar em
-   * inglês, e o texto ficava cortado na abertura.
-   *
-   * Roda também quando o idioma muda, porque os rótulos mudam de tamanho junto.
-   */
   useEffect(() => {
     if (collapsed || window.localStorage.getItem(SIDEBAR_WIDTH_KEY)) return;
     const nav = navRef.current;
@@ -375,7 +198,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     const rotulos = [...nav.querySelectorAll<HTMLElement>("[data-nav-label]")];
     const maior = Math.max(0, ...rotulos.map((el) => el.scrollWidth));
-    // ícone (16) + gap (10) + padding do link (24) + padding do nav (24) + folga
+
     setWidth(clampWidth(Math.ceil(maior) + 90));
   }, [collapsed, t]);
 
@@ -386,11 +209,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     });
   };
 
-  /**
-   * Arrasto da borda. Os listeners ficam no documento, não na alça: o ponteiro
-   * costuma sair dos 4px da borda no meio do gesto, e presos à alça o arrasto
-   * morreria no primeiro movimento rápido.
-   */
   useEffect(() => {
     if (!resizing) return;
 
@@ -403,7 +221,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       });
     };
 
-    // Sem isto o arrasto seleciona o texto do menu enquanto se move.
     const cursorAnterior = document.body.style.cursor;
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
@@ -418,7 +235,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [resizing]);
 
-  /** Teclado: a alça também responde às setas, senão só o mouse ajusta. */
   const onHandleKeyDown = (event: KeyboardEvent) => {
     const passo = event.shiftKey ? 32 : 8;
     if (event.key === "ArrowLeft") {
@@ -439,14 +255,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   };
 
-  /**
-   * Único renderizador de item pra sidebar desktop, usado tanto na trilha
-   * de ícones (sidebar inteira recolhida, `collapsed === true`, item plano
-   * com `Tooltip`) quanto dentro de `NavGroupSection` (sidebar expandida,
-   * `collapsed === false` sempre nesse caso — os ramos `collapsed ? ... :`
-   * abaixo nunca tomam o lado "recolhido" ali, não é código morto, é a
-   * mesma função cobrindo os dois contextos por construção).
-   */
   const renderDesktopNavItem = (item: NavItem) => {
     const active = isNavItemActive(item, pathname);
     const label = t(item.labelKey);
@@ -475,8 +283,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Link>
     );
 
-    // Minimizada, o nome aparece ao passar o mouse — é o que devolve
-    // a legibilidade que o rótulo dava.
     return collapsed ? (
       <Tooltip key={item.to}>
         <TooltipTrigger asChild>{link}</TooltipTrigger>
@@ -490,24 +296,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex min-h-screen w-full bg-background">
-        {/*
-          Minimizada a coluna vira uma trilha de ícones (w-16), não some: a
-          navegação continua acessível com um clique. A transição anima só a
-          largura — animar `display` daria o salto que a barra tinha antes.
-        */}
+        {}
         <aside
           style={{ width: collapsed ? SIDEBAR_RAIL : width }}
           className={cn(
             "sticky top-0 hidden h-screen shrink-0 flex-col bg-sidebar text-sidebar-foreground lg:flex",
-            // Durante o arrasto a transição é desligada: animar cada pixel do
-            // gesto faria a barra "perseguir" o ponteiro com atraso.
+
             resizing ? "" : "transition-[width] duration-300 ease-in-out",
           )}
         >
-          {/*
-            Alça de 4px sobre a borda, com área de clique maior que o traço
-            visível. Só aparece expandida — na trilha de ícones a largura é fixa.
-          */}
+          {}
           {!collapsed && (
             <div
               role="separator"
@@ -532,36 +330,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             />
           )}
-          {/*
-            AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-41 (§41,
-            Fase 4/5) — antes eram DOIS botões em dois pontos do layout:
-            expandida, `PanelLeftClose` vivia dentro desta linha; ao
-            recolher, esse botão desmontava e um segundo (`PanelLeftOpen`)
-            montava num bloco novo ABAIXO do cabeçalho — que ficava com a
-            altura intacta (o texto só perde largura via `w-0 opacity-0`,
-            nunca altura), então o botão "descia" exatamente a altura do
-            cabeçalho a cada alternância. Efeito colateral: o botão focado
-            era desmontado, perdendo o foco de teclado (cai pro `body`).
-            Um único botão sempre montado, trocando só ícone/rótulo,
-            desliza horizontalmente junto com a animação de largura da
-            coluna — sem deslocamento vertical, sem remontagem, foco
-            preservado. `gap-2.5` só quando expandida: recolhida, o bloco
-            de texto (largura zero) não deveria empurrar o botão para fora
-            do centro.
-          */}
+          {}
           <div
             className={cn(
               "flex items-center py-5 transition-[padding] duration-300",
               collapsed ? "justify-center px-0" : "gap-2.5 px-5",
             )}
           >
-            {/*
-              Sem marca gráfica — só o nome. Recolhida, a coluna não tem onde
-              pôr "Synapse" por extenso, então o nome some junto com o texto
-              (opacidade e largura, não `hidden`, para acompanhar a animação
-              da coluna em vez de piscar): a trilha de ícones fica só com o
-              botão de reabrir, sem nada no lugar da marca.
-            */}
+            {}
             <div
               className={cn(
                 "min-w-0 overflow-hidden leading-tight transition-all duration-300",
@@ -680,13 +456,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <Menu className="h-5 w-5" />
               </button>
-              {/*
-                R2-RESP-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o texto do
-                fluxo é longo demais para caber ao lado do menu hambúrguer e
-                do seletor de ciclo em telas estreitas; truncado virava
-                "AVALIAR → PRIO…", pior que não mostrar nada. Some abaixo de
-                `md`, volta quando sobra espaço.
-              */}
+              {}
               <p className="hidden truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground md:block">
                 {t("shell.flow")}
               </p>
@@ -696,17 +466,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {t("shell.cycle")}
               </label>
               {user?.role === "admin" ? (
-                /*
-                  R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um
-                  `<select>` nativo dentro de uma barra de cabeçalho apertada
-                  (`flex items-center gap-2`, ao lado do botão hambúrguer e
-                  do menu de preferências), não uma linha de filtro. Sem
-                  `label` aqui — o `<label htmlFor="cycle">` acima já cumpre
-                  esse papel — e `triggerClassName` troca o tamanho padrão de
-                  filtro (`w-full min-w-48 h-10`, com sombra) pelo mesmo peso
-                  visual que o `<select>` nativo tinha nesta barra: só altura/
-                  padding compactos, sem sombra, largura pelo conteúdo.
-                */
                 <SingleSelectFilter
                   id="cycle"
                   ariaLabel={t("shell.cycle")}
@@ -784,34 +543,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
- * Bloco 7) — o bloco "cabeçalho-botão + chevron + itens" de um grupo de
- * menu era quase idêntico entre a barra lateral desktop e o drawer mobile
- * (duas cópias de ~90 linhas cada, sem motivo de design documentado pra
- * divergirem — só cresceram separadas). Como os dois precisam da mesma
- * correção de colapso por item (ver `isNavItemHiddenByCollapse`), esta é
- * a extração natural: um componente local só deste arquivo (mesmo nível
- * de `PreferencesMenu` abaixo), não um arquivo `*-shared.tsx` — essa
- * convenção é para compartilhar entre ARQUIVOS de rota, não dentro do
- * próprio `AppShell.tsx`.
- *
- * Cada item vira seu PRÓPRIO wrapper animado (`grid-template-rows`
- * 0fr/1fr sobre `overflow-hidden`), na posição declarada em
- * `NAV_GROUPS` — nunca um bloco só pro grupo inteiro. É isso que garante
- * zero reordenação: não existe "extrair o item ativo pra um slot em
- * separado" em lugar nenhum, só recolher cada item no próprio lugar.
- *
- * Só recebe o que realmente diverge entre desktop e mobile: a classe do
- * cabeçalho do grupo, um prefixo pro `id` do painel (evita colisão de
- * `aria-controls` entre as duas navs desenhadas na mesma página) e como
- * cada item vira link (desktop tem o modo "trilha de ícones" da sidebar
- * inteira recolhida — um estado diferente, `collapsed`, sem relação com
- * colapso de GRUPO — mobile fecha o Sheet ao navegar). O modo trilha de
- * ícones nunca passa por aqui: continua reto no `AppShell`, sem cabeçalho
- * de grupo nem colapso por grupo fazem sentido com a coluna reduzida a
- * ícones.
- */
 function NavGroupSection({
   group,
   groupIndex,
@@ -888,7 +619,6 @@ function NavGroupSection({
   );
 }
 
-/** Tema e idioma — preferências da pessoa, não do dado; ficam no cabeçalho. */
 function PreferencesMenu() {
   const { theme, setTheme } = useTheme();
   const { locale, locales, loading, setLocale, t } = useI18n();
@@ -932,14 +662,7 @@ function PreferencesMenu() {
         </div>
 
         <div>
-          {/*
-            R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
-            nativo. O rótulo próprio (uppercase/tracking-wide) que já
-            combinava com o título "Tema" acima fica como está — só o
-            controle vira `SingleSelectFilter` sem `label` interno (evita
-            duplicar rótulo), com o tamanho cheio padrão (`w-full h-10`) que
-            já é o mesmo dos outros filtros de linha completa.
-          */}
+          {}
           <label
             htmlFor="locale"
             className="block text-xs font-medium uppercase tracking-wide text-muted-foreground"

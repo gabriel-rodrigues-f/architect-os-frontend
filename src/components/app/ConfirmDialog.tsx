@@ -11,13 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { useI18n } from "@/lib/i18n";
 
-/**
- * Confirmação de ação destrutiva. Antes cada tela montava o próprio diálogo, com
- * textos de botão e comportamento de fechamento ligeiramente diferentes.
- *
- * Renderiza apenas quando `open` é verdadeiro, então o pai pode passar o alvo da
- * exclusão sem checar nulo dentro do corpo.
- */
 export function ConfirmDialog({
   open,
   title,
@@ -45,13 +38,6 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
       <DialogContent
-        /*
-          O Radix foca o primeiro elemento focável do conteúdo ao abrir — que
-          é o botão Cancelar, o primeiro no DOM. Enter aciona o elemento em
-          foco, então a tecla fechava o diálogo em vez de confirmar. Focar o
-          botão de ação aqui é o que faz Enter confirmar, como em qualquer
-          diálogo do sistema operacional.
-        */
         onOpenAutoFocus={(e) => {
           e.preventDefault();
           confirmRef.current?.focus();
