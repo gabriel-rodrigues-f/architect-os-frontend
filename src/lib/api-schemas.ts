@@ -33,8 +33,9 @@ const level = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z
  * com um arquiteto nesse nível falhar `appStateSchema.parse` inteiro,
  * derrubando o app TODO em `ConnectionError` (`store.tsx`), não só a
  * tela de quem tem o nível novo. `z.string()` aceita qualquer nome —
- * código que precisa comparar contra os 3 nomes conhecidos (`ROLES`,
- * `domain.ts`) continua funcionando para eles; um nome desconhecido só
+ * código que precisa comparar contra nomes conhecidos usa os níveis
+ * reais de `career_levels` (`useCareerLevelsByRank`, `store.tsx` — o
+ * array `ROLES` hardcoded morreu no CFG-01/A5); um nome desconhecido só
  * deixa de quebrar a validação, não vira um valor especial.
  */
 const roleName = z.string();
