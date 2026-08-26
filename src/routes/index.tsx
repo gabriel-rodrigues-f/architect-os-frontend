@@ -11,18 +11,11 @@ import {
   Users,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import {
-  GapBadge,
-  LevelBadge,
-  LevelCell,
-  PageHeader,
-  SectionCard,
-  StatCard,
-} from "@/components/app/ui-bits";
+import { GapBadge, LevelBadge, PageHeader, SectionCard, StatCard } from "@/components/app/ui-bits";
 import { CapabilityRadar } from "@/components/app/charts";
-import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
+import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import { useCurrentUser } from "@/lib/auth";
 import { DashboardPresenter } from "@/lib/presenters/dashboard-presenter";
 import { useI18n } from "@/lib/i18n";
@@ -94,12 +87,6 @@ function AdminHome() {
   const topGaps = presenter.topGaps(architects);
   const assessmentCoverage = presenter.assessmentCoverage(architects);
 
-  const [showAllColumns, setShowAllColumns] = useState(false);
-  const visibleCapabilities = showAllColumns
-    ? store.capabilities
-    : capHeatmapColumns(store.capabilities, architects, sel.capabilityAverages);
-  const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
-
   return (
     <>
       <PageHeader
@@ -168,59 +155,13 @@ function AdminHome() {
               notStarted: assessmentCoverage.notStarted,
             })}
           </p>
-          <HeatmapColumnsNotice
-            shown={visibleCapabilities.length}
-            total={store.capabilities.length}
-            showAll={showAllColumns}
-            onToggle={() => setShowAllColumns((v) => !v)}
+          {/* OO3-11/D-1 — heatmap compartilhado com /progression (CapabilityHeatmap). */}
+          <CapabilityHeatmap
+            architects={architects}
+            capabilities={store.capabilities}
+            capabilityAveragesFor={sel.capabilityAverages}
+            linkToProfile
           />
-          <div className="max-h-[480px] overflow-auto">
-            <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
-              <thead>
-                <tr>
-                  <th
-                    scope="col"
-                    className="sticky left-0 top-0 z-20 w-44 bg-card text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                  >
-                    {t("cycle.architect")}
-                  </th>
-                  {visibleCapabilities.map((c) => (
-                    <th
-                      key={c.id}
-                      scope="col"
-                      className="sticky top-0 z-10 max-w-[64px] truncate bg-card px-1 text-center text-[11px] font-medium text-muted-foreground"
-                      title={c.name}
-                    >
-                      {sel.capabilityShortLabel(c)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {architects.map((a) => (
-                  <tr key={a.id}>
-                    <td className="sticky left-0 z-10 bg-card py-1">
-                      <Link
-                        to="/architects/$architectId"
-                        params={{ architectId: a.id }}
-                        className="text-sm font-medium hover:text-primary"
-                      >
-                        {a.name}
-                      </Link>
-                    </td>
-                    {sel
-                      .capabilityAverages(a.id)
-                      .filter((d) => visibleCapabilityIds.has(d.capability.id))
-                      .map((d) => (
-                        <td key={d.capability.id} className="min-w-[52px]">
-                          <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
-                        </td>
-                      ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             {[1, 2, 3, 4, 5].map((l) => (
               <span key={l} className="flex items-center gap-1.5">

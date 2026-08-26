@@ -1,16 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "../api";
-import { AuthProvider } from "../auth";
 import type { Architect, MentoringSession } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então
@@ -81,18 +78,7 @@ const state: AppState = {
   mentoringSessions: [sessaoAna, sessaoCarla],
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <StoreProvider>{children}</StoreProvider>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 
@@ -118,11 +104,7 @@ describe("Mentoria — filtro de mentorado (seleção única)", () => {
   });
 
   it("nasce escolhendo a primeira pessoa ativa em ordem alfabética, nunca 'Todo o time'", async () => {
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     // Ana Martins (ativa) vem antes de Bruno Almeida (ativo, sem sessão) e de
     // Carla Nunes (inativa) em ordem alfabética — é o default esperado.
@@ -137,11 +119,7 @@ describe("Mentoria — filtro de mentorado (seleção única)", () => {
   });
 
   it("selecionar uma pessoa mostra só a sessão dela, e inativos aparecem com sufixo", async () => {
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
     await screen.findByText("Sessão com Ana");
 
     await userEvent.click(screen.getByRole("combobox", { name: "Filtrar mentorado" }));

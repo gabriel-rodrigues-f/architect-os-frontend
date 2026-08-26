@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { GapBadge } from "@/components/app/ui-bits";
+import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Badge } from "@/components/ui/badge";
 import { Selection } from "@/lib/selection";
 import { useCurrentUser } from "@/lib/auth";
@@ -288,32 +289,23 @@ export function capHeatmapColumns<C extends { id: string }>(
   return capabilities.filter((_, index) => keep.has(index));
 }
 
-/** Aviso visível + alternância "mostrar todas" — mesmo padrão do `RadarAxisNotice` (`charts.tsx`). */
-export function HeatmapColumnsNotice({
-  shown,
-  total,
-  showAll,
-  onToggle,
-}: {
+/** Aviso visível + alternância "mostrar todas" — wrapper fino de `TruncationNotice` (OO3-11/D-2). */
+export function HeatmapColumnsNotice(props: {
   shown: number;
   total: number;
   showAll: boolean;
   onToggle: () => void;
 }) {
-  const { t } = useI18n();
-  if (total <= MAX_HEATMAP_COLUMNS) return null;
   return (
-    <p className="mb-3 text-xs text-muted-foreground">
-      {showAll
-        ? t("heatmap.columns.showingAll", { total })
-        : t("heatmap.columns.showingTopN", { shown, total })}{" "}
-      <button
-        type="button"
-        className="underline underline-offset-2 hover:no-underline"
-        onClick={onToggle}
-      >
-        {showAll ? t("heatmap.columns.showTopOnly") : t("heatmap.columns.showAll")}
-      </button>
-    </p>
+    <TruncationNotice
+      {...props}
+      threshold={MAX_HEATMAP_COLUMNS}
+      messages={{
+        showingAll: "heatmap.columns.showingAll",
+        showingTopN: "heatmap.columns.showingTopN",
+        showAll: "heatmap.columns.showAll",
+        showTopOnly: "heatmap.columns.showTopOnly",
+      }}
+    />
   );
 }

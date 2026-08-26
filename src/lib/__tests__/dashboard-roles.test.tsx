@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -22,10 +21,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as DashboardRoute } from "@/routes/index";
 import { type AppState, type SessionUser } from "../api";
-import { AuthProvider } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "./fixtures";
+import { mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * FASE 2 (quinta rodada) — "homes distintas Member/Lead/Admin": antes, todo
@@ -50,47 +47,12 @@ const fixtureLeadOfAna: SessionUser = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <StoreProvider>{children}</StoreProvider>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
 const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 
+/** OO3-11/D-7 — setup compartilhado em `render-app.tsx`. */
 function renderAs(user: SessionUser, state: AppState = fixtureState) {
-  fetchMock.mockImplementation((url: string) => {
-    const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(user), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith("/api/state")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state satisfies AppState), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
-  });
-  return render(
-    <Wrapper>
-      <DashboardPage />
-    </Wrapper>,
-  );
+  mockAppFetch(fetchMock, { user, state });
+  return renderWithApp(<DashboardPage />);
 }
 
 describe("Painel — Home por papel", () => {

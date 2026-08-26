@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Button } from "@/components/ui/button";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -111,23 +112,19 @@ function TrainingNeedsPage() {
           title={t("needs.aggregated.title")}
           description={t("needs.aggregated.subtitle")}
         >
-          {needs.length > 15 && (
-            <p className="mb-3 text-xs text-muted-foreground">
-              {showAllTop
-                ? t("needs.aggregated.showingAll", { total: needs.length })
-                : t("needs.aggregated.showingTopN", {
-                    shown: top.length,
-                    total: needs.length,
-                  })}{" "}
-              <button
-                type="button"
-                className="underline underline-offset-2 hover:no-underline"
-                onClick={() => setShowAllTop((v) => !v)}
-              >
-                {showAllTop ? t("needs.showTopOnly") : t("needs.showAll")}
-              </button>
-            </p>
-          )}
+          <TruncationNotice
+            shown={top.length}
+            total={needs.length}
+            showAll={showAllTop}
+            onToggle={() => setShowAllTop((v) => !v)}
+            threshold={15}
+            messages={{
+              showingAll: "needs.aggregated.showingAll",
+              showingTopN: "needs.aggregated.showingTopN",
+              showAll: "needs.showAll",
+              showTopOnly: "needs.showTopOnly",
+            }}
+          />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
@@ -167,23 +164,19 @@ function TrainingNeedsPage() {
           title={t("needs.recommended.title")}
           description={t("needs.recommended.subtitle")}
         >
-          {collectiveEligible.length > 6 && (
-            <p className="mb-3 text-xs text-muted-foreground">
-              {showAllCollective
-                ? t("needs.recommended.showingAll", { total: collectiveEligible.length })
-                : t("needs.recommended.showingTopN", {
-                    shown: collective.length,
-                    total: collectiveEligible.length,
-                  })}{" "}
-              <button
-                type="button"
-                className="underline underline-offset-2 hover:no-underline"
-                onClick={() => setShowAllCollective((v) => !v)}
-              >
-                {showAllCollective ? t("needs.showTopOnly") : t("needs.showAll")}
-              </button>
-            </p>
-          )}
+          <TruncationNotice
+            shown={collective.length}
+            total={collectiveEligible.length}
+            showAll={showAllCollective}
+            onToggle={() => setShowAllCollective((v) => !v)}
+            threshold={6}
+            messages={{
+              showingAll: "needs.recommended.showingAll",
+              showingTopN: "needs.recommended.showingTopN",
+              showAll: "needs.showAll",
+              showTopOnly: "needs.showTopOnly",
+            }}
+          />
           <ul className="space-y-3">
             {collective.map((n) => (
               <li key={n.competency!.id} className="surface-inset p-3">

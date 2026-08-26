@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -23,10 +22,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as TeamRoute } from "@/routes/team";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seções 16, 17 e 26/27 — nada
@@ -40,26 +37,7 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
@@ -110,11 +88,7 @@ describe("Time — cadastro sem dado fabricado", () => {
   });
 
   it("mantém 'Salvar' desabilitado até nome, e-mail e um tempo válido estarem preenchidos", async () => {
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
     await userEvent.click(screen.getByRole("button", { name: "Cadastrar arquiteto" }));
@@ -132,11 +106,7 @@ describe("Time — cadastro sem dado fabricado", () => {
   });
 
   it("salva só com o que a pessoa digitou — sem e-mail fabricado, sem domínio forte/lacuna no cadastro", async () => {
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
     await userEvent.click(screen.getByRole("button", { name: "Cadastrar arquiteto" }));

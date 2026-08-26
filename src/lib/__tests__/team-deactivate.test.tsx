@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -26,10 +25,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as TeamRoute } from "@/routes/team";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18 — excluir um
@@ -50,26 +47,7 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
@@ -155,11 +133,7 @@ describe("Time — desativar preserva histórico", () => {
    * de integração tela↔store↔API.
    */
   it("desativar chama o comando dedicado com motivo e versão, tira do roster ativo sem excluir nada", async () => {
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
     await userEvent.click(screen.getByLabelText("Desativar Ana Martins"));
@@ -192,11 +166,7 @@ describe("Time — desativar preserva histórico", () => {
   });
 
   it("reativar devolve a pessoa para o roster ativo", async () => {
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
     await userEvent.click(screen.getByLabelText("Desativar Ana Martins"));
     const dialogo = within(await screen.findByRole("dialog"));

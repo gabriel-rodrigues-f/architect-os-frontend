@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,10 +20,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "../api";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * EPIC 6 (quarta rodada) — antes, "0 Especialistas + 1 Avançado" caía no
@@ -36,26 +33,7 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 
@@ -80,11 +58,7 @@ const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
     }
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
-  return render(
-    <Wrapper>
-      <CapabilityPage />
-    </Wrapper>,
-  );
+  return renderWithApp(<CapabilityPage />);
 };
 
 describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () => {
