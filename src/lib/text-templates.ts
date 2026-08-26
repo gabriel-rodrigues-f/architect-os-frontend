@@ -30,6 +30,17 @@ import { BASE_LOCALE } from "./i18n/registry";
 export const TEXT_TEMPLATE_KEYS = ["pdi.objective.fromGap"] as const;
 export type TextTemplateKey = (typeof TEXT_TEMPLATE_KEYS)[number];
 
+/**
+ * CFG-03 (admin UI) — as variáveis que cada key FORNECE, espelho de
+ * `TEXT_TEMPLATE_VARIABLES` do backend (`config/domain/text-templates.ts`):
+ * é a lista que a aba "Textos" exibe ao admin e que o
+ * `TextTemplateEditor` usa para acusar `{variavel}` desconhecida antes do
+ * PUT (o backend continua a autoridade — 400 `INVALID_TEXT_TEMPLATE`).
+ */
+export const TEXT_TEMPLATE_VARIABLES: Record<TextTemplateKey, readonly string[]> = {
+  "pdi.objective.fromGap": ["competencia", "atual", "alvo"],
+};
+
 /** `key → locale → template`, a MESMA forma serializada por `GET /api/config/templates`. */
 export type TextTemplates = Record<TextTemplateKey, Record<string, string>>;
 
@@ -54,6 +65,11 @@ const VARIABLE_PATTERN = /\{([A-Za-z][A-Za-z0-9_]*)\}/g;
  * fornecido fica literal (não explode, não vira "undefined" no texto que a
  * pessoa lê — e que aqui vira DADO persistido no PDI).
  */
+/** As variáveis REFERENCIADAS num template (`{var}`, dedup) — MESMO padrão do backend. */
+export const templateVariablesIn = (template: string): string[] => [
+  ...new Set([...template.matchAll(VARIABLE_PATTERN)].map((match) => match[1]!)),
+];
+
 export const renderTemplate = (
   template: string,
   variables: Record<string, string | number>,

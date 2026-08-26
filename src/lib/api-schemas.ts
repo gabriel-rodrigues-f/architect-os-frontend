@@ -121,6 +121,13 @@ export const scoringBandsResponseSchema = z.object({
 });
 
 /**
+ * CFG-02 (admin UI) — resposta de `PUT /api/config/bands/:scale`
+ * (`UpdateScoringBands.execute` devolve a régua validada da escala, sem o
+ * agrupamento do GET). Mesma disciplina R2-TEC-19: validada em runtime.
+ */
+export const scoringBandsPutResponseSchema = z.array(scoringBand);
+
+/**
  * CFG-03 — resposta de `GET /api/config/templates` (`ConfigGateway.
  * templates`): `key → locale → template`, exatamente como
  * `TextTemplateCatalog.groupedByKey()` serializa no backend. Keys e locales
@@ -129,6 +136,17 @@ export const scoringBandsResponseSchema = z.object({
  * default é `withDefaultTextTemplates` (`text-templates.ts`).
  */
 export const textTemplatesResponseSchema = z.record(z.record(z.string()));
+
+/**
+ * CFG-03 (admin UI) — resposta de `PUT /api/config/templates/:key/:locale`
+ * (`UpdateTextTemplate.execute` devolve o `TextTemplateRecord` validado).
+ * Mesma disciplina R2-TEC-19: validada em runtime.
+ */
+export const textTemplateRecordSchema = z.object({
+  key: z.string(),
+  locale: z.string(),
+  template: z.string(),
+});
 
 const architect = z.object({
   id: z.string(),
