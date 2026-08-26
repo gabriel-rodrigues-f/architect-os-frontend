@@ -24,7 +24,7 @@ import { useLabels } from "@/lib/labels";
 import { type LearningItemType, type LearningPath, type LearningPathItem } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { useSelectors, useStore } from "@/lib/store";
+import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { LearningPathsViewModel } from "@/lib/view-models/learning-paths-view-model";
 
 /**
@@ -55,19 +55,6 @@ export const Route = createFileRoute("/learning-paths")({
   }),
   component: LearningPage,
 });
-
-const ITEM_TYPES: LearningItemType[] = [
-  "Curso",
-  "Vídeo",
-  "Livro",
-  "Artigo",
-  "Laboratório",
-  "Desafio",
-  "Projeto",
-  "Certificação",
-  "Apresentação",
-  "Workshop",
-];
 
 function LearningPage() {
   const store = useStore();
@@ -550,12 +537,13 @@ function ProgressControl({
 function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => void }) {
   const store = useStore();
   const { t } = useI18n();
-  const labels = useLabels();
   const vm = useLearningPathsViewModel();
+  /** CFG-06 — opções e rótulos do tipo de item vêm do vocabulário SERVIDO (fallback = seed byte-idêntico). */
+  const itemTypes = useVocabulary("LEARNING_ITEM_TYPE");
   const [form, setForm] = useState({ name: path.name, description: path.description });
   const [newItem, setNewItem] = useState({
     title: "",
-    type: ITEM_TYPES[0] as LearningItemType,
+    type: (itemTypes.options[0]?.code ?? "Curso") as LearningItemType,
     hours: "4",
   });
   /** R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local acima de 20 competências. */
@@ -587,7 +575,11 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
     const title = newItem.title.trim();
     if (!title) return;
     vm.addItem(path.id, newItem.title, newItem.type, newItem.hours);
-    setNewItem({ title: "", type: ITEM_TYPES[0] as LearningItemType, hours: "4" });
+    setNewItem({
+      title: "",
+      type: (itemTypes.options[0]?.code ?? "Curso") as LearningItemType,
+      hours: "4",
+    });
   };
 
   return (
@@ -661,9 +653,9 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                   setNewItem({ ...newItem, type: e.target.value as LearningItemType })
                 }
               >
-                {ITEM_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {labels.learningItemType[type]}
+                {itemTypes.options.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {itemTypes.label(option.code)}
                   </option>
                 ))}
               </select>
@@ -777,7 +769,8 @@ function LearningPathItemRow({
   onRemove: () => void;
 }) {
   const { t } = useI18n();
-  const labels = useLabels();
+  /** CFG-06 — mesmo vocabulário servido do diálogo; item com tipo desativado continua renderizável (opção extra abaixo). */
+  const itemTypes = useVocabulary("LEARNING_ITEM_TYPE");
   const [titleDraft, setTitleDraft] = useState(item.title);
   const [hoursDraft, setHoursDraft] = useState(String(item.hours));
 
@@ -792,9 +785,14 @@ function LearningPathItemRow({
         aria-label={t("path.item.typeAriaLabel", { item: item.title })}
         onChange={(e) => onUpdateType(e.target.value as LearningItemType)}
       >
-        {ITEM_TYPES.map((type) => (
-          <option key={type} value={type}>
-            {labels.learningItemType[type]}
+        {/* Tipo já gravado que saiu das opções ativas (desativado): continua
+            visível/selecionado — desativar nunca reescreve histórico. */}
+        {itemTypes.options.every((option) => option.code !== item.type) && (
+          <option value={item.type}>{itemTypes.label(item.type)}</option>
+        )}
+        {itemTypes.options.map((option) => (
+          <option key={option.code} value={option.code}>
+            {itemTypes.label(option.code)}
           </option>
         ))}
       </select>

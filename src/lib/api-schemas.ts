@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ACTION_TYPES } from "./domain";
+import { VOCABULARY_NAMES } from "./vocabularies";
 
 /**
  * B-11 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10) — os tipos
@@ -192,6 +192,44 @@ export const appSettingPutResponseSchema = z.object({
   value: z.union([z.string(), z.number()]),
 });
 
+/**
+ * CFG-06 — `GET /api/config/vocabularies` (`ConfigController`): os 3
+ * vocabulários de domínio como o servidor serializa
+ * (`VocabularyCatalog.grouped()` — `{ EVIDENCE_TYPE: [...], ... }`). Mesma
+ * disciplina R2-TEC-19: validado em runtime — os itens decidem as opções
+ * dos selects de evidência/trilha/PDI; um campo renomeado no servidor tem
+ * que falhar barulhento no `useQuery`, não propagar `undefined` silencioso
+ * pela UI.
+ */
+export const vocabularyItemSchema = z.object({
+  vocabulary: z.enum(VOCABULARY_NAMES),
+  code: z.string(),
+  labelKey: z.string(),
+  sortOrder: z.number(),
+  active: z.boolean(),
+});
+
+export const vocabulariesResponseSchema = z.object({
+  EVIDENCE_TYPE: z.array(vocabularyItemSchema),
+  LEARNING_ITEM_TYPE: z.array(vocabularyItemSchema),
+  ACTION_TYPE: z.array(vocabularyItemSchema),
+});
+
+/**
+ * CFG-07 — resposta de `POST /api/catalog/import` (`ImportCatalog` do
+ * backend, `CatalogImportSummary`): o que foi criado/atualizado por nome.
+ */
+export const catalogImportSummarySchema = z.object({
+  capabilitiesCreated: z.array(z.object({ id: z.string(), name: z.string() })),
+  capabilitiesUpdated: z.array(z.object({ id: z.string(), name: z.string() })),
+  competenciesCreated: z.array(
+    z.object({ id: z.string(), name: z.string(), capabilityId: z.string() }),
+  ),
+  competenciesUpdated: z.array(
+    z.object({ id: z.string(), name: z.string(), capabilityId: z.string() }),
+  ),
+});
+
 const architect = z.object({
   id: z.string(),
   name: z.string(),
@@ -273,7 +311,16 @@ const developmentPlanItem = z.object({
   currentLevel: level,
   targetLevel: level,
   objective: z.string(),
-  actionType: z.enum(ACTION_TYPES),
+  /**
+   * CFG-06 — era `z.enum(ACTION_TYPES)`, um enum FECHADO sobre um valor que
+   * virou DADO (vocabulário `ACTION_TYPE`, editável por admin): um code
+   * novo cadastrado e persistido num item de PDI faria QUALQUER resposta de
+   * `/api/state` falhar o parse inteiro, derrubando o app todo em
+   * `ConnectionError` — exatamente o modo de falha que R2-TEC-20 já matou
+   * no `roleName`. A EXISTÊNCIA do code é validada no backend
+   * (`VocabularyGuard`, 400 `UNKNOWN_VOCABULARY_CODE`), nunca aqui.
+   */
+  actionType: z.string(),
   actionPlan: z.string(),
   startDate: z.string(),
   targetDate: z.string(),
@@ -303,18 +350,8 @@ const developmentPlan = z.object({
 const learningPathItem = z.object({
   id: z.string(),
   title: z.string(),
-  type: z.enum([
-    "Curso",
-    "Vídeo",
-    "Livro",
-    "Artigo",
-    "Laboratório",
-    "Desafio",
-    "Projeto",
-    "Certificação",
-    "Apresentação",
-    "Workshop",
-  ]),
+  /** CFG-06 — mesmo racional do `actionType` acima: vocabulário `LEARNING_ITEM_TYPE` é dado, não enum fechado. */
+  type: z.string(),
   url: z.string().optional(),
   description: z.string().optional(),
   hours: z.number(),
@@ -360,19 +397,8 @@ const evidence = z.object({
   architectId: z.string(),
   title: z.string(),
   description: z.string(),
-  type: z.enum([
-    "Architecture Design",
-    "ADR",
-    "Technical Presentation",
-    "Workshop",
-    "Project",
-    "Certification",
-    "Course",
-    "Proof of Concept",
-    "Architecture Review",
-    "Mentoring",
-    "Technical Article",
-  ]),
+  /** CFG-06 — mesmo racional do `actionType` acima: vocabulário `EVIDENCE_TYPE` é dado, não enum fechado. */
+  type: z.string(),
   competencyIds: z.array(z.string()),
   date: z.string(),
   project: z.string().optional(),

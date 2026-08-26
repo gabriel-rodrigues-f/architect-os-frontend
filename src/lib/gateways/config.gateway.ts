@@ -6,11 +6,28 @@ import {
   scoringBandsResponseSchema,
   textTemplateRecordSchema,
   textTemplatesResponseSchema,
+  vocabulariesResponseSchema,
+  vocabularyItemSchema,
 } from "../api-schemas";
 import type { ApiClient } from "../api-client";
 import type { CurationPolicy } from "../curation-policy";
 import type { AppSettingsResponse, AppSettingValue } from "../operational-settings";
 import type { ScoringBand, ScoringScale } from "../scoring-bands";
+import type { Vocabularies, VocabularyItem, VocabularyName } from "../vocabularies";
+
+/** CFG-06 (admin UI) — corpo do POST de item novo: labelKey obrigatório; sort/active têm default no servidor. */
+export interface VocabularyItemInput {
+  labelKey: string;
+  sortOrder?: number | undefined;
+  active?: boolean | undefined;
+}
+
+/** CFG-06 (admin UI) — corpo do PATCH: só campos editáveis (identidade vocabulary/code é imutável). */
+export interface VocabularyItemPatch {
+  labelKey?: string | undefined;
+  sortOrder?: number | undefined;
+  active?: boolean | undefined;
+}
 
 /** CFG-03 (admin UI) — a resposta do PUT de template: o registro validado (mesma forma da tabela). */
 export interface TextTemplateRecord {
@@ -100,6 +117,37 @@ export interface ConfigGateway {
    * "Operação" mostra o erro no formulário.
    */
   updateSetting(key: string, value: AppSettingValue): Promise<AppSettingUpdate>;
+  /**
+   * CFG-06 — `GET /api/config/vocabularies`: os 3 vocabulários de domínio
+   * agrupados como o servidor serializa (`{ EVIDENCE_TYPE: [...], ... }`).
+   * Uma lista pode vir vazia (ambiente recém-migrado); é o consumidor
+   * (`withDefaultVocabularies`, via `useVocabularies` em `store.tsx`) quem
+   * completa com o default byte-idêntico ao seed.
+   */
+  vocabularies(): Promise<Vocabularies>;
+  /**
+   * CFG-06 (admin UI) — `POST /api/config/vocabularies/:vocabulary/:code`:
+   * cadastra um code NOVO. Admin-only e validação no backend
+   * (`DomainVocabulary` → 400 `INVALID_VOCABULARY_ITEM` para labelKey
+   * vazio; 409 `DUPLICATE_VOCABULARY_CODE` para code repetido) — a aba
+   * "Vocabulários" mostra o erro no formulário. Não existe DELETE: quem
+   * quer tirar um code de circulação usa `active=false` no PATCH.
+   */
+  addVocabularyItem(
+    vocabulary: VocabularyName,
+    code: string,
+    input: VocabularyItemInput,
+  ): Promise<VocabularyItem>;
+  /**
+   * CFG-06 (admin UI) — `PATCH /api/config/vocabularies/:vocabulary/:code`:
+   * edita labelKey/sortOrder/active de um code existente (404 para code
+   * desconhecido — o PATCH edita, nunca cria).
+   */
+  updateVocabularyItem(
+    vocabulary: VocabularyName,
+    code: string,
+    patch: VocabularyItemPatch,
+  ): Promise<VocabularyItem>;
 }
 
 export class HttpConfigGateway implements ConfigGateway {
@@ -173,4 +221,40 @@ export class HttpConfigGateway implements ConfigGateway {
     this.client
       .put<AppSettingUpdate>(`/api/config/settings/${encodeURIComponent(key)}`, { value })
       .then((data) => appSettingPutResponseSchema.parse(data));
+
+  // CFG-06 — mesma disciplina de `bands`/`settings`: validado em runtime,
+  // não só cast. Os itens decidem as OPÇÕES dos selects de evidência,
+  // trilha e PDI — forma errada tem que falhar barulhento no `useQuery`.
+  vocabularies = (): Promise<Vocabularies> =>
+    this.client
+      .request<Vocabularies>("/api/config/vocabularies")
+      .then((data) => vocabulariesResponseSchema.parse(data));
+
+  // CFG-06 (admin UI) — resposta do POST validada (o item recém-criado
+  // volta ao cache via invalidação; forma errada tem que falhar barulhento
+  // aqui, não corromper as opções dos selects).
+  addVocabularyItem = (
+    vocabulary: VocabularyName,
+    code: string,
+    input: VocabularyItemInput,
+  ): Promise<VocabularyItem> =>
+    this.client
+      .post<VocabularyItem>(
+        `/api/config/vocabularies/${vocabulary}/${encodeURIComponent(code)}`,
+        input,
+      )
+      .then((data) => vocabularyItemSchema.parse(data));
+
+  // CFG-06 (admin UI) — mesma disciplina do POST acima: resposta validada.
+  updateVocabularyItem = (
+    vocabulary: VocabularyName,
+    code: string,
+    patch: VocabularyItemPatch,
+  ): Promise<VocabularyItem> =>
+    this.client
+      .patch<VocabularyItem>(
+        `/api/config/vocabularies/${vocabulary}/${encodeURIComponent(code)}`,
+        patch,
+      )
+      .then((data) => vocabularyItemSchema.parse(data));
 }

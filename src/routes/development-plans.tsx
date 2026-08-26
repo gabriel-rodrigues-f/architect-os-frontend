@@ -19,7 +19,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
 import {
-  ACTION_TYPES,
   type ActionType,
   type DevelopmentPlan,
   type DevelopmentPlanItem,
@@ -33,7 +32,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
-import { useObjectiveFromGap, useSelectors, useStore } from "@/lib/store";
+import { useObjectiveFromGap, useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { useAsyncSubmit } from "@/hooks/use-async-submit";
 import { useSearchParamString } from "@/hooks/use-search-param";
@@ -93,6 +92,8 @@ const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Complet
 function PlansPage() {
   const sel = useSelectors();
   const labels = useLabels();
+  /** CFG-06 — opções e rótulos do tipo de ação vêm do vocabulário SERVIDO (fallback = seed byte-idêntico). */
+  const actionTypes = useVocabulary("ACTION_TYPE");
   const viewModel = useDevelopmentPlansViewModel();
   const [architectId, setArchitectId] = useSearchParamString(
     "architectId",
@@ -347,14 +348,19 @@ function PlansPage() {
                           )
                         }
                       >
-                        {ACTION_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {labels.actionType[t]}
+                        {actionTypes.options.every((option) => option.code !== item.actionType) && (
+                          <option value={item.actionType}>
+                            {actionTypes.label(item.actionType)}
+                          </option>
+                        )}
+                        {actionTypes.options.map((option) => (
+                          <option key={option.code} value={option.code}>
+                            {actionTypes.label(option.code)}
                           </option>
                         ))}
                       </select>
                     ) : (
-                      <p className="py-1.5 text-sm">{labels.actionType[item.actionType]}</p>
+                      <p className="py-1.5 text-sm">{actionTypes.label(item.actionType)}</p>
                     )}
                   </Field>
                   <Field label={t("pdi.field.status")}>
@@ -517,9 +523,12 @@ function PlansPage() {
             description={t("pdi.actionModel.subtitle")}
           >
             <div className="flex flex-wrap gap-1.5">
-              {ACTION_TYPES.map((t, i) => (
-                <span key={t} className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium">
-                  {i + 1}. {t}
+              {actionTypes.options.map((option, i) => (
+                <span
+                  key={option.code}
+                  className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
+                >
+                  {i + 1}. {option.code}
                 </span>
               ))}
             </div>
@@ -902,8 +911,11 @@ function NewPlanItemDialog({
   onCancel: () => void;
 }) {
   const { t } = useI18n();
-  const labels = useLabels();
-  const [actionType, setActionType] = useState<ActionType>("Learn");
+  /** CFG-06 — opções e rótulos do tipo de ação vêm do vocabulário SERVIDO (fallback = seed byte-idêntico). */
+  const actionTypes = useVocabulary("ACTION_TYPE");
+  const [actionType, setActionType] = useState<ActionType>(
+    (actionTypes.options[0]?.code ?? "Learn") as ActionType,
+  );
   const [actionPlan, setActionPlan] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [dedication, setDedication] = useState("");
@@ -943,9 +955,9 @@ function NewPlanItemDialog({
               disabled={submitting}
               onChange={(e) => setActionType(e.target.value as ActionType)}
             >
-              {ACTION_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {labels.actionType[type]}
+              {actionTypes.options.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {actionTypes.label(option.code)}
                 </option>
               ))}
             </select>

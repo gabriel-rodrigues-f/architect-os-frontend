@@ -40,6 +40,16 @@ import {
   type ScoringScale,
 } from "./scoring-bands";
 import { createSelectors, emptyState } from "./selectors";
+import type { VocabularyItemInput, VocabularyItemPatch } from "./gateways/config.gateway";
+import type { CatalogImportPayload, CatalogImportSummary } from "./catalog-import";
+import {
+  activeVocabularyOptions,
+  vocabularyLabelOf,
+  withDefaultVocabularies,
+  type Vocabularies,
+  type VocabularyItem,
+  type VocabularyName,
+} from "./vocabularies";
 import { defaultNameFormatter } from "./text";
 import {
   objectiveFromGapRenderer,
@@ -133,6 +143,53 @@ export const OPERATIONAL_SETTINGS_QUERY_KEY = ["config-settings"] as const;
 export function useOperationalSettings(): OperationalSettings {
   const { data } = useQuery({ queryKey: OPERATIONAL_SETTINGS_QUERY_KEY, queryFn: api.settings });
   return useMemo(() => withDefaultOperationalSettings(data), [data]);
+}
+
+/**
+ * CFG-06 — os vocabulários de domínio (`domain_vocabularies`) entram pelo
+ * MESMO padrão de `useScoringBands`/`useOperationalSettings` acima:
+ * `useQuery` próprio, endpoint por contexto
+ * (`GET /api/config/vocabularies`), cache e isolamento de falha
+ * independentes do resto do estado. Enquanto a consulta não resolve (ou se
+ * falhar), `withDefaultVocabularies` completa vocabulário a vocabulário com
+ * o default byte-idêntico ao seed — os selects mostram exatamente as mesmas
+ * opções que os arrays hardcoded antigos mostravam, sem flash.
+ */
+export const VOCABULARIES_QUERY_KEY = ["config-vocabularies"] as const;
+export function useVocabularies(): Vocabularies {
+  const { data } = useQuery({ queryKey: VOCABULARIES_QUERY_KEY, queryFn: api.vocabularies });
+  return useMemo(() => withDefaultVocabularies(data), [data]);
+}
+
+/**
+ * CFG-06 — a visão de UM vocabulário efetivo, já na forma dos consumidores:
+ * `options` são os itens de ESCRITA (só `active`, por `sortOrder` — item
+ * desativado some do select mas continua rotulável), e `label` resolve
+ * labelKey→i18n com fallback para o próprio code (um code recém-cadastrado
+ * ainda sem mensagem neste build aparece cru, nunca a chave crua) — vale
+ * também para histórico com code fora do catálogo.
+ */
+export function useVocabulary(name: VocabularyName): {
+  items: VocabularyItem[];
+  options: VocabularyItem[];
+  label: (code: string) => string;
+} {
+  const vocabularies = useVocabularies();
+  const { t } = useI18n();
+  return useMemo(() => {
+    const items = vocabularies[name];
+    const translate = (labelKey: string): string | undefined => {
+      // `t` devolve a própria chave quando não há mensagem — vira `undefined`
+      // para o fallback de `vocabularyLabelOf` cair no code.
+      const text = t(labelKey as Parameters<typeof t>[0]);
+      return text === labelKey ? undefined : text;
+    };
+    return {
+      items,
+      options: activeVocabularyOptions(items),
+      label: (code: string) => vocabularyLabelOf(items, code, translate),
+    };
+  }, [vocabularies, name, t]);
 }
 
 /**
@@ -237,6 +294,35 @@ export interface Api extends AppState {
     key: string,
     value: AppSettingValue,
   ) => Promise<{ key: string; value: AppSettingValue }>;
+  /**
+   * CFG-06 (admin UI) — cadastra um code novo num vocabulário de domínio.
+   * Sem otimismo (mesmo racional de `updateScoringBands`; a aba
+   * "Vocabulários" precisa do 400 `INVALID_VOCABULARY_ITEM`/409
+   * `DUPLICATE_VOCABULARY_CODE` de verdade); ao sucesso invalida
+   * `VOCABULARIES_QUERY_KEY` — os selects passam a oferecer o code novo.
+   */
+  addVocabularyItem: (
+    vocabulary: VocabularyName,
+    code: string,
+    input: VocabularyItemInput,
+  ) => Promise<VocabularyItem>;
+  /**
+   * CFG-06 (admin UI) — edita labelKey/sortOrder/active de um code
+   * existente (sem DELETE: desativar é `active=false`). Mesmo formato de
+   * `addVocabularyItem`.
+   */
+  updateVocabularyItem: (
+    vocabulary: VocabularyName,
+    code: string,
+    patch: VocabularyItemPatch,
+  ) => Promise<VocabularyItem>;
+  /**
+   * CFG-07 (admin UI) — importa o catálogo (UPSERT-por-nome aditivo). Sem
+   * otimismo (o diálogo precisa do 400/409 de verdade); ao sucesso invalida
+   * `STATE_QUERY_KEY` — capacidades e competências chegam à matriz pelo
+   * snapshot de `/api/state`, e sem refetch o admin não veria o resultado.
+   */
+  importCatalog: (payload: CatalogImportPayload) => Promise<CatalogImportSummary>;
   /** B-32 — id é gerado no servidor; sem otimismo. */
   addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
@@ -508,6 +594,32 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         invalidations.push(queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }));
       await Promise.all(invalidations);
       return updated;
+    },
+
+    /** CFG-06 (admin UI) — mesmo formato de `updateScoringBands` acima, para a query de vocabulários. */
+    addVocabularyItem: async (vocabulary, code, input) => {
+      const created = await api.addVocabularyItem(vocabulary, code, input);
+      await queryClient.invalidateQueries({ queryKey: VOCABULARIES_QUERY_KEY });
+      return created;
+    },
+
+    /** CFG-06 (admin UI) — mesmo formato de `addVocabularyItem` acima. */
+    updateVocabularyItem: async (vocabulary, code, patch) => {
+      const updated = await api.updateVocabularyItem(vocabulary, code, patch);
+      await queryClient.invalidateQueries({ queryKey: VOCABULARIES_QUERY_KEY });
+      return updated;
+    },
+
+    /**
+     * CFG-07 (admin UI) — mesmo formato de `updateScoringBands` acima, mas a
+     * invalidação é do snapshot de `/api/state`: o import escreve
+     * capacidades/competências, que chegam à matriz por lá (o backend já
+     * invalidou `NS.capabilities` no `UnitOfWork` do POST).
+     */
+    importCatalog: async (payload) => {
+      const summary = await api.importCatalog(payload);
+      await queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+      return summary;
     },
 
     updateCareerLevelPolicy: (careerLevelId, minimumQualifiedCapabilities) =>

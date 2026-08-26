@@ -1,5 +1,7 @@
 import type { Capability, Competency } from "../domain";
 import type { ApiClient } from "../api-client";
+import { catalogImportSummarySchema } from "../api-schemas";
+import type { CatalogImportPayload, CatalogImportSummary } from "../catalog-import";
 
 /**
  * OO-FE-02 — gateway do contexto "catálogo" (capacidades/competências). Ver
@@ -28,6 +30,14 @@ export interface CatalogGateway {
     id: string,
     withCompetencyId: string,
   ): Promise<{ a: Competency; b: Competency }>;
+  /**
+   * CFG-07 — `POST /api/catalog/import`: UPSERT-por-nome aditivo e
+   * idempotente do catálogo inteiro (mesmo shape do seed, sem ids).
+   * Admin-only; validação de negócio no backend (400
+   * `CATALOG_IMPORT_INVALID`/`UNKNOWN_CAREER_LEVEL`) — o diálogo da matriz
+   * mostra o erro em `role="alert"`.
+   */
+  importCatalog(payload: CatalogImportPayload): Promise<CatalogImportSummary>;
 }
 
 export class HttpCatalogGateway implements CatalogGateway {
@@ -72,4 +82,12 @@ export class HttpCatalogGateway implements CatalogGateway {
     this.client.post<{ a: Competency; b: Competency }>(`/api/competencies/${id}/swap-requirement`, {
       withCompetencyId,
     });
+
+  // CFG-07 — resposta validada em runtime (mesma disciplina R2-TEC-19 do
+  // `config.gateway`): o resumo alimenta o toast e o diff exibido; forma
+  // errada tem que falhar barulhento aqui.
+  importCatalog = (payload: CatalogImportPayload): Promise<CatalogImportSummary> =>
+    this.client
+      .post<CatalogImportSummary>("/api/catalog/import", payload)
+      .then((data) => catalogImportSummarySchema.parse(data));
 }
