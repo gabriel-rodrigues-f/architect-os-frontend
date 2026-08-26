@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { AlertTriangle, BadgeCheck } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
@@ -24,9 +24,26 @@ import { useCurrentUser } from "@/lib/auth";
 import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
-import { isLeadOf } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { STATE_QUERY_KEY, useStore } from "@/lib/store";
 import { formatDate } from "@/lib/text";
+import { AssessmentViewModel } from "@/lib/view-models/assessment-view-model";
+
+/**
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seções 58-61) — adaptador fino: memoiza o `AssessmentViewModel` sobre a
+ * fatia de `useStore()` (nota por competência + comentários) e `api`
+ * (portfólio de capacidades + resumo de desenvolvimento, que nunca passaram
+ * por `store` — ver a doc do ViewModel para o porquê). Usado por todo
+ * componente deste arquivo que precisa de uma das duas famílias de ação;
+ * não exportado porque nenhum outro arquivo desta PR consome o ViewModel
+ * diretamente (a rota `assessments.tsx` continua só pelos componentes
+ * já exportados).
+ */
+function useAssessmentViewModel(): AssessmentViewModel {
+  const store = useStore();
+  return useMemo(() => new AssessmentViewModel(store, api, defaultUiAuthorizationPolicy), [store]);
+}
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) — `/assessments`
@@ -62,6 +79,10 @@ import { formatDate } from "@/lib/text";
  * botão nasce desabilitado com uma explicação em vez de deixar a pessoa
  * tentar e só descobrir pelo erro do servidor que faltou preencher algo.
  * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+ *
+ * OO2-08 — o cômputo em si mudou para `AssessmentViewModel.permissionsFor`
+ * (puro, sem hook nenhum por trás); isto ficou um adaptador fino que só
+ * resolve `useCurrentUser()` e o ViewModel memoizado.
  */
 export function useAssessmentPermissions(
   architectId: string,
@@ -69,34 +90,8 @@ export function useAssessmentPermissions(
   assessment: Assessment | undefined,
 ) {
   const user = useCurrentUser();
-  const isOwner = user.architectId === architectId;
-  const isLead = !isOwner && isLeadOf(user, selectedArchitect);
-  const status = assessment?.status;
-  const isCompleted = status === "Completed";
-  const canEditSelf = !isLead && isOwner && status === "Draft";
-  const canEditLeaderFinal = isLead && status === "In Review";
-  const canSubmit = !isLead && isOwner && status === "Draft";
-  const canComplete = isLead && status === "In Review";
-  /** Só o Tech Lead reabre — devolve a `In Review` para corrigir e concluir de novo. */
-  const canReopen = isLead && status === "Completed";
-
-  const incompleteSelf = assessment?.items.some((i) => i.self === null) ?? false;
-  const incompleteLeaderFinal =
-    assessment?.items.some((i) => i.leader === null || i.final === null) ?? false;
-
-  return {
-    isOwner,
-    isLead,
-    status,
-    isCompleted,
-    canEditSelf,
-    canEditLeaderFinal,
-    canSubmit,
-    canComplete,
-    canReopen,
-    incompleteSelf,
-    incompleteLeaderFinal,
-  };
+  const viewModel = useAssessmentViewModel();
+  return viewModel.permissionsFor(user, architectId, selectedArchitect, assessment);
 }
 
 /** O rótulo da coluna Notas mostra quantos comentários a competência já tem. */
@@ -305,6 +300,7 @@ export function CareerPortfolioSection({
   const store = useStore();
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const viewModel = useAssessmentViewModel();
   const [selectedCapabilityId, setSelectedCapabilityId] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -369,11 +365,7 @@ export function CareerPortfolioSection({
   // Problema 1 — só capacidade `READY` (curadoria completa) pode entrar no
   // portfólio; o backend já recusa o resto, mas oferecer a opção aqui só
   // para devolver erro depois é a experiência ruim que a Seção 8 aponta.
-  const availableToAdd = store.capabilities.filter(
-    (cap) =>
-      cap.curation.status === "READY" &&
-      !eligibility.capabilities.some((c) => c.capabilityId === cap.id),
-  );
+  const availableToAdd = viewModel.availableCapabilitiesToPropose(store.capabilities, eligibility);
 
   const canPropose = isOwner && assessment.status === "Draft";
   const canConfirm = isLead && assessment.status === "In Review";
@@ -383,8 +375,8 @@ export function CareerPortfolioSection({
     if (!selectedCapabilityId) return;
     setActionError(null);
     setBusy(true);
-    api
-      .addAssessmentCapability(assessment.id, selectedCapabilityId)
+    viewModel
+      .proposeCapability(assessment.id, selectedCapabilityId)
       .then(() => {
         setSelectedCapabilityId("");
         invalidateAll();
@@ -409,8 +401,8 @@ export function CareerPortfolioSection({
   const attemptRemove = (capabilityId: string, capabilityName: string, force = false) => {
     setActionError(null);
     setBusy(true);
-    api
-      .removeAssessmentCapability(assessment.id, capabilityId, force)
+    viewModel
+      .removeCapability(assessment.id, capabilityId, force)
       .then(() => {
         invalidateAll();
         setPendingRemoval(null);
@@ -428,8 +420,8 @@ export function CareerPortfolioSection({
   const confirmCapability = (capabilityId: string) => {
     setActionError(null);
     setBusy(true);
-    api
-      .confirmAssessmentCapability(assessment.id, capabilityId)
+    viewModel
+      .confirmCapability(assessment.id, capabilityId)
       .then(() => invalidateAll())
       .catch((error: unknown) =>
         setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
@@ -677,6 +669,7 @@ function DevelopmentSummaryForm({
 }) {
   const { t, locale } = useI18n();
   const queryClient = useQueryClient();
+  const viewModel = useAssessmentViewModel();
   const [startDoing, setStartDoing] = useState(data.startDoing);
   const [stopDoing, setStopDoing] = useState(data.stopDoing);
   const [continueDoing, setContinueDoing] = useState(data.continueDoing);
@@ -694,8 +687,8 @@ function DevelopmentSummaryForm({
   const save = () => {
     setSaveState("saving");
     setErrorMessage(null);
-    api
-      .updateAssessmentDevelopmentSummary(
+    viewModel
+      .updateDevelopmentSummary(
         assessmentId,
         { startDoing, stopDoing, continueDoing },
         data.version,
@@ -881,6 +874,7 @@ export function CapabilityAssessmentCard({
   const { t, locale } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();
+  const viewModel = useAssessmentViewModel();
   /**
    * R2-RESP-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — abaixo de `md` (768px)
    * a tabela de pontuação (7 colunas, `min-w-[820px]`) só existia com scroll
@@ -1004,9 +998,7 @@ export function CapabilityAssessmentCard({
                         {canEditSelf ? (
                           <LevelSelect
                             value={item.self}
-                            onChange={(v) =>
-                              store.updateAssessmentItem(assessment.id, c.id, { self: v })
-                            }
+                            onChange={(v) => viewModel.updateSelfScore(assessment.id, c.id, v)}
                             ariaLabel={t("asmt.select.self", { competency: c.name })}
                           />
                         ) : (
@@ -1018,11 +1010,7 @@ export function CapabilityAssessmentCard({
                           {canEditLeaderFinal ? (
                             <LevelSelect
                               value={item.leader}
-                              onChange={(v) =>
-                                store.updateAssessmentItem(assessment.id, c.id, {
-                                  leader: v,
-                                })
-                              }
+                              onChange={(v) => viewModel.updateLeaderScore(assessment.id, c.id, v)}
                               ariaLabel={t("asmt.select.leader", { competency: c.name })}
                             />
                           ) : (
@@ -1043,11 +1031,7 @@ export function CapabilityAssessmentCard({
                         {canEditLeaderFinal ? (
                           <LevelSelect
                             value={item.final}
-                            onChange={(v) =>
-                              store.updateAssessmentItem(assessment.id, c.id, {
-                                final: v,
-                              })
-                            }
+                            onChange={(v) => viewModel.updateFinalScore(assessment.id, c.id, v)}
                             ariaLabel={t("asmt.select.final", { competency: c.name })}
                           />
                         ) : (
@@ -1089,14 +1073,12 @@ export function CapabilityAssessmentCard({
                           <CommentSection
                             comments={item.comments}
                             currentUserId={user.id}
-                            onCreate={(input) =>
-                              store.addAssessmentComment(assessment.id, c.id, input)
-                            }
+                            onCreate={(input) => viewModel.addComment(assessment.id, c.id, input)}
                             onUpdate={(commentId, input) =>
-                              store.updateAssessmentComment(assessment.id, c.id, commentId, input)
+                              viewModel.updateComment(assessment.id, c.id, commentId, input)
                             }
                             onDelete={(commentId) =>
-                              store.removeAssessmentComment(assessment.id, c.id, commentId)
+                              viewModel.removeComment(assessment.id, c.id, commentId)
                             }
                           />
                         </td>
@@ -1143,6 +1125,7 @@ function CompetencyStackedCard({
   const { t, locale } = useI18n();
   const labels = useLabels();
   const user = useCurrentUser();
+  const viewModel = useAssessmentViewModel();
 
   // Sem final ainda: não há gap para mostrar (não é gap zero, é indefinido).
   const gap = item.final === null ? undefined : item.target - item.final;
@@ -1182,9 +1165,7 @@ function CompetencyStackedCard({
             {canEditSelf ? (
               <LevelSelect
                 value={item.self}
-                onChange={(v) =>
-                  store.updateAssessmentItem(assessmentId, competency.id, { self: v })
-                }
+                onChange={(v) => viewModel.updateSelfScore(assessmentId, competency.id, v)}
                 ariaLabel={t("asmt.select.self", { competency: competency.name })}
               />
             ) : (
@@ -1200,9 +1181,7 @@ function CompetencyStackedCard({
             {canEditLeaderFinal ? (
               <LevelSelect
                 value={item.leader}
-                onChange={(v) =>
-                  store.updateAssessmentItem(assessmentId, competency.id, { leader: v })
-                }
+                onChange={(v) => viewModel.updateLeaderScore(assessmentId, competency.id, v)}
                 ariaLabel={t("asmt.select.leader", { competency: competency.name })}
               />
             ) : (
@@ -1232,9 +1211,7 @@ function CompetencyStackedCard({
             {canEditLeaderFinal ? (
               <LevelSelect
                 value={item.final}
-                onChange={(v) =>
-                  store.updateAssessmentItem(assessmentId, competency.id, { final: v })
-                }
+                onChange={(v) => viewModel.updateFinalScore(assessmentId, competency.id, v)}
                 ariaLabel={t("asmt.select.final", { competency: competency.name })}
               />
             ) : (
@@ -1274,12 +1251,12 @@ function CompetencyStackedCard({
           <CommentSection
             comments={item.comments}
             currentUserId={user.id}
-            onCreate={(input) => store.addAssessmentComment(assessmentId, competency.id, input)}
+            onCreate={(input) => viewModel.addComment(assessmentId, competency.id, input)}
             onUpdate={(commentId, input) =>
-              store.updateAssessmentComment(assessmentId, competency.id, commentId, input)
+              viewModel.updateComment(assessmentId, competency.id, commentId, input)
             }
             onDelete={(commentId) =>
-              store.removeAssessmentComment(assessmentId, competency.id, commentId)
+              viewModel.removeComment(assessmentId, competency.id, commentId)
             }
           />
         </div>
