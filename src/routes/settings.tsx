@@ -18,7 +18,13 @@ import {
   type ScoringBand,
   type ScoringScale,
 } from "@/lib/scoring-bands";
-import { useCareerLevelsByRank, useScoringBands, useStore, useTextTemplates } from "@/lib/store";
+import {
+  useCareerLevelsByRank,
+  useCurationPolicy,
+  useScoringBands,
+  useStore,
+  useTextTemplates,
+} from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import {
   renderTemplate,
@@ -27,6 +33,11 @@ import {
   type TextTemplateKey,
 } from "@/lib/text-templates";
 import { cn } from "@/lib/utils";
+import {
+  CURATION_POLICY_FIELDS,
+  CurationPolicyEditor,
+  type CurationPolicyField,
+} from "@/lib/view-models/curation-policy-editor";
 import { ScoringBandsEditor } from "@/lib/view-models/scoring-bands-editor";
 import { TextTemplateEditor } from "@/lib/view-models/text-template-editor";
 
@@ -69,6 +80,8 @@ function SettingsPage() {
         {isAdmin && <ScoringBandsSection />}
         {/* CFG-03 (SPEC-OO3-13, §3.2) — aba "Textos", mesmo corte admin-only. */}
         {isAdmin && <TextTemplatesSection />}
+        {/* CFG-04 (SPEC-OO3-13, §3.2) — aba "Catálogo", mesmo corte admin-only. */}
+        {isAdmin && <CurationPolicySection />}
       </div>
 
       {/* R2-TXT-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o menu chama esta
@@ -546,6 +559,127 @@ function ScoringScaleEditor({
         {previewBand && <BandChip band={previewBand} />}
       </div>
     </div>
+  );
+}
+
+/** Rótulo i18n de cada campo da política de curadoria — mapa literal, mesmo racional de `SCALE_TITLE_KEY`. */
+const CURATION_FIELD_LABEL_KEY: Record<CurationPolicyField, MessageKey> = {
+  maxActiveCompetencies: "config.curation.field.maxActiveCompetencies",
+  requiredRestrictive: "config.curation.field.requiredRestrictive",
+  requiredNonRestrictive: "config.curation.field.requiredNonRestrictive",
+};
+
+/**
+ * CFG-04 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Catálogo": editor
+ * dos três limites de `catalog_curation_policy`. A montagem/validação do
+ * payload vive no ViewModel (`CurationPolicyEditor` — a régua da casa:
+ * classe testável, render na tela); aqui é só fiação de inputs, aviso de
+ * impacto e submit. Salvar invalida a query da política E o snapshot de
+ * `/api/state` (`store.updateCurationPolicy`) — o admin VÊ os badges
+ * READY/REQUIRES_CURATION recalculados sob a política nova.
+ */
+function CurationPolicySection() {
+  const store = useStore();
+  const policy = useCurationPolicy();
+  const { t } = useI18n();
+  /** `null` = leitura; editar cria o editor a partir da política efetiva atual. */
+  const [editor, setEditor] = useState<CurationPolicyEditor | null>(null);
+  const {
+    submitting: saving,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit(t("config.curation.saveFailed"));
+
+  const editing = editor !== null;
+
+  const save = async () => {
+    if (!editor) return;
+    const payload = editor.payload();
+    if (!payload) return;
+    const result = await run(() => store.updateCurationPolicy(payload));
+    if (result.ok) {
+      toast.success(t("config.curation.saved"));
+      setEditor(null);
+    }
+  };
+
+  return (
+    <SectionCard title={t("config.curation.title")} description={t("config.curation.subtitle")}>
+      <div className="surface-inset p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium">{t("config.curation.policyTitle")}</p>
+          {editing ? (
+            <div className="flex justify-end gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={saving}
+                onClick={() => {
+                  setEditor(null);
+                  clearError();
+                }}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button size="sm" disabled={!editor.isValid || saving} onClick={() => void save()}>
+                {saving ? t("team.transition.submitting") : t("common.save")}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditor(CurationPolicyEditor.from(policy))}
+            >
+              {t("common.edit")}
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-2 grid gap-3 sm:grid-cols-3">
+          {CURATION_POLICY_FIELDS.map((field) => (
+            <div key={field}>
+              <label className="text-xs text-muted-foreground" htmlFor={`curation-${field}`}>
+                {t(CURATION_FIELD_LABEL_KEY[field])}
+              </label>
+              {editing ? (
+                <input
+                  id={`curation-${field}`}
+                  type="number"
+                  min={field === "maxActiveCompetencies" ? 1 : 0}
+                  step={1}
+                  disabled={saving}
+                  className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"
+                  value={editor.drafts[field]}
+                  onChange={(e) => setEditor(editor.withField(field, e.target.value))}
+                />
+              ) : (
+                <p id={`curation-${field}`} className="mt-1 text-sm font-medium tabular-nums">
+                  {policy[field]}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {editing && editor.errorKey && (
+          <p className="mt-1 text-xs text-destructive" role="alert">
+            {t(editor.errorKey)}
+          </p>
+        )}
+        {error && (
+          <p className="mt-1 text-xs text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+
+        {/* Aviso de impacto — alterar a política recalcula a curadoria
+            (READY/REQUIRES_CURATION) de TODAS as capacidades na próxima
+            leitura (o recomputo é derivado on-read no backend). */}
+        <p className="mt-3 text-xs text-muted-foreground">{t("config.curation.impact")}</p>
+      </div>
+    </SectionCard>
   );
 }
 

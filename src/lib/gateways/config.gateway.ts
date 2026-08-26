@@ -1,10 +1,12 @@
 import {
+  curationPolicySchema,
   scoringBandsPutResponseSchema,
   scoringBandsResponseSchema,
   textTemplateRecordSchema,
   textTemplatesResponseSchema,
 } from "../api-schemas";
 import type { ApiClient } from "../api-client";
+import type { CurationPolicy } from "../curation-policy";
 import type { ScoringBand, ScoringScale } from "../scoring-bands";
 
 /** CFG-03 (admin UI) — a resposta do PUT de template: o registro validado (mesma forma da tabela). */
@@ -55,6 +57,22 @@ export interface ConfigGateway {
    * mostra o erro no formulário.
    */
   updateTextTemplate(key: string, locale: string, template: string): Promise<TextTemplateRecord>;
+  /**
+   * CFG-04 — `GET /api/config/curation-policy`: os três limites de
+   * composição do catálogo (`CatalogCurationLimits` do backend). Sempre vem
+   * completo (a tabela tem a linha do seed); quem cobre a consulta ainda em
+   * voo/falha com o default é `withDefaultCurationPolicy`
+   * (`curation-policy.ts`, via `useCurationPolicy` em `store.tsx`).
+   */
+  curationPolicy(): Promise<CurationPolicy>;
+  /**
+   * CFG-04 (admin UI) — `PUT /api/config/curation-policy`: substitui a
+   * política INTEIRA. Admin-only e validação de negócio no backend
+   * (`CatalogCurationPolicy.create` → 400
+   * `INVALID_CATALOG_CURATION_POLICY` para soma que não fecha, máximo não
+   * positivo ou não-inteiro — a aba "Catálogo" mostra o erro no formulário).
+   */
+  updateCurationPolicy(policy: CurationPolicy): Promise<CurationPolicy>;
 }
 
 export class HttpConfigGateway implements ConfigGateway {
@@ -98,4 +116,19 @@ export class HttpConfigGateway implements ConfigGateway {
         { template },
       )
       .then((data) => textTemplateRecordSchema.parse(data));
+
+  // CFG-04 — mesma disciplina de `bands`/`templates`: validado em runtime,
+  // não só cast. Os limites decidem o que a matriz DEIXA tentar.
+  curationPolicy = (): Promise<CurationPolicy> =>
+    this.client
+      .request<CurationPolicy>("/api/config/curation-policy")
+      .then((data) => curationPolicySchema.parse(data));
+
+  // CFG-04 (admin UI) — resposta do PUT também validada (a política
+  // recém-gravada volta para o cache via invalidação; forma errada tem que
+  // falhar barulhento aqui, não corromper os limites da matriz).
+  updateCurationPolicy = (policy: CurationPolicy): Promise<CurationPolicy> =>
+    this.client
+      .put<CurationPolicy>("/api/config/curation-policy", policy)
+      .then((data) => curationPolicySchema.parse(data));
 }

@@ -148,6 +148,21 @@ export const textTemplateRecordSchema = z.object({
   template: z.string(),
 });
 
+/**
+ * CFG-04 — resposta de `GET`/`PUT /api/config/curation-policy`
+ * (`ConfigGateway.curationPolicy`/`updateCurationPolicy`): os três limites
+ * de composição do catálogo, a forma plana de `CatalogCurationLimits` do
+ * backend. Mesma disciplina R2-TEC-19: validada em runtime — os limites
+ * decidem quando a matriz esconde "Nova competência"/desabilita um tipo;
+ * um campo renomeado no servidor tem que falhar barulhento no `useQuery`,
+ * não propagar `undefined` silencioso pela UI.
+ */
+export const curationPolicySchema = z.object({
+  maxActiveCompetencies: z.number(),
+  requiredRestrictive: z.number(),
+  requiredNonRestrictive: z.number(),
+});
+
 const architect = z.object({
   id: z.string(),
   name: z.string(),

@@ -31,7 +31,7 @@ import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useCareerLevelsByRank, useStore } from "@/lib/store";
+import { useCareerLevelsByRank, useCurationPolicy, useStore } from "@/lib/store";
 import { CompetencyMatrixViewModel } from "@/lib/view-models/competency-matrix-view-model";
 
 /**
@@ -45,7 +45,12 @@ import { CompetencyMatrixViewModel } from "@/lib/view-models/competency-matrix-v
  */
 function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
   const store = useStore();
-  return useMemo(() => new CompetencyMatrixViewModel(store, defaultUiAuthorizationPolicy), [store]);
+  /** CFG-04 — a política de curadoria efetiva (servidor com fallback 6/3+3) entra por injeção, mesmo padrão do renderer de template no `useDevelopmentPlansViewModel`. */
+  const curationPolicy = useCurationPolicy();
+  return useMemo(
+    () => new CompetencyMatrixViewModel(store, defaultUiAuthorizationPolicy, curationPolicy),
+    [store, curationPolicy],
+  );
 }
 
 export const Route = createFileRoute("/competency-matrix")({
@@ -284,7 +289,13 @@ function MatrixPage() {
                             variant="secondary"
                             onClick={() => setCreatingIn(cat)}
                             disabled={atCapacity}
-                            title={atCapacity ? t("matrix.atCapacity.hint") : undefined}
+                            title={
+                              atCapacity
+                                ? t("matrix.atCapacity.hint", {
+                                    max: viewModel.limits.maxActiveCompetencies,
+                                  })
+                                : undefined
+                            }
                           >
                             {t("matrix.newCompetency")}
                           </Button>
@@ -698,12 +709,16 @@ function CompetencyCreateDialog({
             <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
             {restrictiveFull && (
               <p className="mt-1 text-xs text-amber-600">
-                {t("matrix.requirement.restrictiveFull")}
+                {t("matrix.requirement.restrictiveFull", {
+                  limite: viewModel.limits.requiredRestrictive,
+                })}
               </p>
             )}
             {nonRestrictiveFull && (
               <p className="mt-1 text-xs text-amber-600">
-                {t("matrix.requirement.nonRestrictiveFull")}
+                {t("matrix.requirement.nonRestrictiveFull", {
+                  limite: viewModel.limits.requiredNonRestrictive,
+                })}
               </p>
             )}
           </div>
@@ -866,7 +881,9 @@ function CompetencyEditDialog({
             <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
             {restrictiveFull && requirementType !== "RESTRICTIVE" && (
               <SwapPicker
-                hint={t("matrix.requirement.restrictiveFull")}
+                hint={t("matrix.requirement.restrictiveFull", {
+                  limite: viewModel.limits.requiredRestrictive,
+                })}
                 label={t("matrix.requirement.swapPickRestrictive")}
                 action={t("matrix.requirement.swapAction")}
                 candidates={restrictiveSiblings}
@@ -878,7 +895,9 @@ function CompetencyEditDialog({
             )}
             {nonRestrictiveFull && requirementType !== "NON_RESTRICTIVE" && (
               <SwapPicker
-                hint={t("matrix.requirement.nonRestrictiveFull")}
+                hint={t("matrix.requirement.nonRestrictiveFull", {
+                  limite: viewModel.limits.requiredNonRestrictive,
+                })}
                 label={t("matrix.requirement.swapPickNonRestrictive")}
                 action={t("matrix.requirement.swapAction")}
                 candidates={nonRestrictiveSiblings}
