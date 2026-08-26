@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,10 +16,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import { type AppState, type SessionUser } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * EPIC K — Collective Intervention: "Treinamentos Recomendados" era relatório
@@ -68,26 +65,7 @@ const state: AppState = {
   ],
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const TrainingNeedsPage = TrainingNeedsRoute.options.component as () => ReactNode;
 
@@ -140,11 +118,7 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
   });
 
   it("com 3 pessoas na mesma lacuna, cria trilha atribuída a elas — não a um número solto", async () => {
-    render(
-      <Wrapper>
-        <TrainingNeedsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TrainingNeedsPage />);
     await userEvent.click(await screen.findByRole("button", { name: /Criar trilha coletiva/ }));
 
     const postCall = fetchMock.mock.calls.find(
@@ -160,11 +134,7 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
   });
 
   it("depois de criada, mostra 'Ver trilha criada' em vez de oferecer criar de novo", async () => {
-    render(
-      <Wrapper>
-        <TrainingNeedsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TrainingNeedsPage />);
     await userEvent.click(await screen.findByRole("button", { name: /Criar trilha coletiva/ }));
     // Sem otimismo: a tela só reflete a trilha nova depois que o servidor confirma.
     expect(await screen.findByText("Ver trilha criada")).toBeTruthy();

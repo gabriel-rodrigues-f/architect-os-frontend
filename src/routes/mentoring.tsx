@@ -10,7 +10,6 @@ import { PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/mentoring")({
@@ -47,16 +46,11 @@ function MentoringPage() {
   const user = useCurrentUser();
   const sel = useSelectors();
   /**
-   * MENT-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — o
-   * backend (`canActFor`, `POST /api/mentoring-sessions`) só aceita a
-   * própria pessoa mentorada, o Tech Lead dela, ou admin como autor da
-   * sessão; a lista de mentorados nasce restrita ao mesmo escopo, em vez de
-   * oferecer qualquer pessoa do roster e devolver 403 só depois de
-   * preencher o formulário inteiro.
+   * MENT-001 — o backend só aceita a própria pessoa mentorada, o Tech Lead
+   * dela, ou admin como autor da sessão; a lista de mentorados nasce restrita
+   * ao mesmo escopo. Ver o docstring de `ArchitectSelectors.visibleTo`.
    */
-  const menteeOptions = sel.activeArchitects.filter((a) =>
-    defaultUiAuthorizationPolicy.canActFor(user, a),
-  );
+  const menteeOptions = sel.visibleArchitects(user);
   const { filter, setFilter, sessions } = useMentoringTimeline();
 
   return (

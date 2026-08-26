@@ -3,15 +3,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
-import {
-  capHeatmapColumns,
-  GapTable,
-  HeatmapColumnsNotice,
-  useGapAnalysisData,
-} from "@/components/app/gap-analysis-shared";
-import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
+import { GapTable, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
+import { PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
-import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors } from "@/lib/store";
@@ -47,13 +42,6 @@ function ProgressionPage() {
   const { store, selected, setSelected, architects, blocking, opportunity, mastery, scopeLabel } =
     useGapAnalysisData();
   const [exportingPdf, setExportingPdf] = useState(false);
-  const [showAllColumns, setShowAllColumns] = useState(false);
-  const visibleCapabilities = showAllColumns
-    ? store.capabilities
-    : capHeatmapColumns(store.capabilities, architects, sel.capabilityAverages);
-  const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
-  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
-  const shortLabels = capabilityShortLabels(store.capabilities);
 
   const reportInput = () => ({
     scopeLabel,
@@ -137,54 +125,12 @@ function ProgressionPage() {
             title={t("gap.heatmap.title")}
             description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}
           >
-            {/* ENT-09-016 — cabeçalho fixo: o heatmap cresce uma linha por arquiteto do time. */}
-            <HeatmapColumnsNotice
-              shown={visibleCapabilities.length}
-              total={store.capabilities.length}
-              showAll={showAllColumns}
-              onToggle={() => setShowAllColumns((v) => !v)}
+            {/* OO3-11/D-1 — heatmap compartilhado com o Painel (CapabilityHeatmap). */}
+            <CapabilityHeatmap
+              architects={architects}
+              capabilities={store.capabilities}
+              capabilityAveragesFor={sel.capabilityAverages}
             />
-            <div className="max-h-[480px] overflow-auto">
-              <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
-                <thead>
-                  <tr>
-                    <th
-                      scope="col"
-                      className="sticky left-0 top-0 z-20 w-44 bg-card text-left text-xs uppercase tracking-wide text-muted-foreground"
-                    >
-                      {t("col.architect")}
-                    </th>
-                    {visibleCapabilities.map((c) => (
-                      <th
-                        key={c.id}
-                        scope="col"
-                        className="sticky top-0 z-10 max-w-[64px] truncate bg-card text-center text-[11px] text-muted-foreground"
-                        title={c.name}
-                      >
-                        {shortLabels.get(c.id) ?? c.short}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {architects.map((a) => (
-                    <tr key={a.id}>
-                      <td className="sticky left-0 z-10 bg-card text-sm font-medium">{a.name}</td>
-                      {sel
-                        .capabilityAverages(a.id)
-                        .filter((d) => visibleCapabilityIds.has(d.capability.id))
-                        .map((d) => (
-                          <td key={d.capability.id} className="min-w-[52px]">
-                            <LevelCell
-                              level={d.avg === undefined ? undefined : Math.round(d.avg)}
-                            />
-                          </td>
-                        ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </SectionCard>
 
           <SectionCard

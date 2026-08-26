@@ -27,10 +27,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  capabilityShortLabels,
   EVIDENCE_TYPES,
-  evidencesForPlanItem,
-  progressFor,
   type DevelopmentPlan,
   type Evidence,
   type EvidenceType,
@@ -39,10 +36,10 @@ import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { ArchitectProfileViewModel } from "@/lib/view-models/architect-profile-view-model";
+import { LearningPathsViewModel } from "@/lib/view-models/learning-paths-view-model";
 
 /**
  * OO3-10c (Fase OO-3) — adaptador fino no padrão de
@@ -127,6 +124,8 @@ function ArchitectProfile() {
   const { architectId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
+  /** OO3-11l — percentual de trilha compartilhado com /learning-paths via `LearningPathsViewModel`. */
+  const learningPathsViewModel = useMemo(() => new LearningPathsViewModel(store), [store]);
   const labels = useLabels();
   const { t, locale } = useI18n();
   const help = usePageHelp("architectProfile");
@@ -157,8 +156,6 @@ function ArchitectProfile() {
 
   const gaps = sel.progressionGapsFor(architect.id).filter((g) => g.gap > 0);
   const capabilityAvgs = sel.capabilityAverages(architect.id);
-  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
-  const shortLabels = capabilityShortLabels(store.capabilities);
   const plan = sel.planFor(architect.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
@@ -201,13 +198,13 @@ function ArchitectProfile() {
     avg,
     covered: coveredCapabilities,
     total: totalCapabilities,
-  } = averageWithCoverage(capabilityAvgs.map((d) => d.avg));
+  } = sel.coverageFor(architect.id);
 
   return (
     <>
       <PageHeader
         title={architect.name}
-        description={`${architect.role} · ${specializationLabel(architect, sel.competencyById)} · ${architect.yearsAsArchitect} anos como arquiteto`}
+        description={`${architect.role} · ${sel.specializationLabel(architect)} · ${architect.yearsAsArchitect} anos como arquiteto`}
         help={help}
         actions={
           <Link
@@ -297,7 +294,7 @@ function ArchitectProfile() {
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
             data={capabilityAvgs.map((d) => ({
-              capability: shortLabels.get(d.capability.id) ?? d.capability.short,
+              capability: sel.capabilityShortLabel(d.capability),
               atual: d.avg ?? 0,
               alvo: d.target ?? 0,
             }))}
@@ -370,7 +367,7 @@ function ArchitectProfile() {
         <SectionCard title="PDI" description={t("arch.plan.subtitle")}>
           <ul className="space-y-3">
             {(plan?.items ?? []).map((i) => {
-              const itemEvidences = evidencesForPlanItem(evidences, i.id);
+              const itemEvidences = sel.evidencesForPlanItem(evidences, i.id);
               return (
                 <li key={i.id} className="surface-inset p-3">
                   <div className="flex items-center justify-between gap-2">
@@ -409,10 +406,7 @@ function ArchitectProfile() {
         <SectionCard title={t("arch.paths.title")} description={t("arch.paths.subtitle")}>
           <ul className="space-y-2">
             {paths.map((p) => {
-              const values = p.items.map((i) => progressFor(p, architect.id, i.id).progress);
-              const value = values.length
-                ? Math.round(values.reduce((s, v) => s + v, 0) / values.length)
-                : 0;
+              const value = learningPathsViewModel.progressPercentFor(p, architect.id);
               return (
                 <li key={p.id} className="surface-inset p-2.5">
                   <p className="text-sm font-medium">{p.name}</p>

@@ -52,7 +52,10 @@ export const emptyArchitectForm = (defaultRole: RoleName): ArchitectFormValues =
  * divergência vira erro de compilação, e `useStore()` satisfaz a forma
  * estruturalmente, sem adaptador em tempo de execução.
  */
-export type TeamRosterService = Pick<Api, "addArchitect" | "updateArchitect">;
+export type TeamRosterService = Pick<
+  Api,
+  "addArchitect" | "updateArchitect" | "transitionCareerLevel" | "deactivate"
+>;
 
 export class TeamViewModel {
   constructor(
@@ -117,5 +120,22 @@ export class TeamViewModel {
 
   reactivate(architect: Architect): void {
     this.service.updateArchitect(architect.id, { active: true });
+  }
+
+  /**
+   * OO3-11c — os dois comandos "com motivo" da tela de Time passam pelo
+   * ViewModel (os diálogos chamavam `store.transitionCareerLevel`/
+   * `store.deactivate` direto, ignorando o VM que a própria tela instancia).
+   * Delegantes 1:1 de propósito: o `store` já resolve versão otimista/409;
+   * o ganho aqui é o ponto único de dublê nos testes, não lógica nova.
+   * A Promise é repropagada sem `catch` — engolir a rejeição faria o 409
+   * (`ARCHITECT_VERSION_CONFLICT`) sumir do diálogo.
+   */
+  transitionCareerLevel(architectId: string, toRole: RoleName, reason: string): Promise<Architect> {
+    return this.service.transitionCareerLevel(architectId, toRole, reason);
+  }
+
+  deactivate(architectId: string, reason: string): Promise<Architect> {
+    return this.service.deactivate(architectId, reason);
   }
 }

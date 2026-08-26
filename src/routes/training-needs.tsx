@@ -3,12 +3,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Button } from "@/components/ui/button";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
-import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/training-needs")({
@@ -36,17 +35,8 @@ function TrainingNeedsPage() {
   const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("trainingNeeds");
-  /**
-   * População da análise: quem este viewer de fato enxerga o registro
-   * (própria pessoa, ou quem está sob a liderança dela) — nunca o roster
-   * inteiro da empresa, que chega sem filtro por ser dado de diretório, não
-   * de carreira. Sem isto, quem está fora do escopo entrava na conta como
-   * "sem lacuna" (ausência de dado, não ausência de lacuna). Ver ANA-001,
-   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
-   */
-  const population = sel.activeArchitects.filter((a) =>
-    defaultUiAuthorizationPolicy.canActFor(user, a),
-  );
+  /** População visível ao viewer — ver o docstring de `ArchitectSelectors.visibleTo` (ANA-001). */
+  const population = sel.visibleArchitects(user);
   const needs = sel.teamTrainingNeeds(population);
   /**
    * R2-ESC-08 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os dois cortes (15 e 6)
@@ -60,8 +50,6 @@ function TrainingNeedsPage() {
   const collectiveEligible = needs.filter((n) => n.people >= 3);
   const [showAllCollective, setShowAllCollective] = useState(false);
   const collective = showAllCollective ? collectiveEligible : collectiveEligible.slice(0, 6);
-  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
-  const shortLabels = capabilityShortLabels(store.capabilities);
 
   /**
    * "Intervenção coletiva" não é uma entidade nova — é a mesma Trilha de
@@ -124,23 +112,19 @@ function TrainingNeedsPage() {
           title={t("needs.aggregated.title")}
           description={t("needs.aggregated.subtitle")}
         >
-          {needs.length > 15 && (
-            <p className="mb-3 text-xs text-muted-foreground">
-              {showAllTop
-                ? t("needs.aggregated.showingAll", { total: needs.length })
-                : t("needs.aggregated.showingTopN", {
-                    shown: top.length,
-                    total: needs.length,
-                  })}{" "}
-              <button
-                type="button"
-                className="underline underline-offset-2 hover:no-underline"
-                onClick={() => setShowAllTop((v) => !v)}
-              >
-                {showAllTop ? t("needs.showTopOnly") : t("needs.showAll")}
-              </button>
-            </p>
-          )}
+          <TruncationNotice
+            shown={top.length}
+            total={needs.length}
+            showAll={showAllTop}
+            onToggle={() => setShowAllTop((v) => !v)}
+            threshold={15}
+            messages={{
+              showingAll: "needs.aggregated.showingAll",
+              showingTopN: "needs.aggregated.showingTopN",
+              showAll: "needs.showAll",
+              showTopOnly: "needs.showTopOnly",
+            }}
+          />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
@@ -164,8 +148,8 @@ function TrainingNeedsPage() {
                   <tr key={n.competency!.id} className="border-b border-border/60 last:border-0">
                     <td className="py-2 font-medium">{n.competency!.name}</td>
                     <td className="py-2 text-muted-foreground">
-                      {shortLabels.get(n.competency!.capabilityId) ??
-                        store.capabilities.find((c) => c.id === n.competency!.capabilityId)?.short}
+                      {sel.capabilityShortLabels.get(n.competency!.capabilityId) ??
+                        sel.capabilityById(n.competency!.capabilityId)?.short}
                     </td>
                     <td className="py-2 text-center tabular-nums">{n.people}</td>
                     <td className="py-2 text-center tabular-nums">{n.avgGap}</td>
@@ -180,23 +164,19 @@ function TrainingNeedsPage() {
           title={t("needs.recommended.title")}
           description={t("needs.recommended.subtitle")}
         >
-          {collectiveEligible.length > 6 && (
-            <p className="mb-3 text-xs text-muted-foreground">
-              {showAllCollective
-                ? t("needs.recommended.showingAll", { total: collectiveEligible.length })
-                : t("needs.recommended.showingTopN", {
-                    shown: collective.length,
-                    total: collectiveEligible.length,
-                  })}{" "}
-              <button
-                type="button"
-                className="underline underline-offset-2 hover:no-underline"
-                onClick={() => setShowAllCollective((v) => !v)}
-              >
-                {showAllCollective ? t("needs.showTopOnly") : t("needs.showAll")}
-              </button>
-            </p>
-          )}
+          <TruncationNotice
+            shown={collective.length}
+            total={collectiveEligible.length}
+            showAll={showAllCollective}
+            onToggle={() => setShowAllCollective((v) => !v)}
+            threshold={6}
+            messages={{
+              showingAll: "needs.recommended.showingAll",
+              showingTopN: "needs.recommended.showingTopN",
+              showAll: "needs.showAll",
+              showTopOnly: "needs.showTopOnly",
+            }}
+          />
           <ul className="space-y-3">
             {collective.map((n) => (
               <li key={n.competency!.id} className="surface-inset p-3">

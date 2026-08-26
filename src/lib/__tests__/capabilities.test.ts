@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { ROLES, roleShort } from "../domain";
+import { ROLES } from "../domain";
+import { LabelFormatter } from "../labels";
+import type { MessageKey } from "../i18n";
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 
@@ -59,8 +61,11 @@ describe("cargos", () => {
     ]);
   });
 
-  it("o rótulo curto é 'Nível' + algarismo romano, sem abreviação em inglês", () => {
-    expect(ROLES.map(roleShort)).toEqual(["Nível I", "Nível II", "Nível III"]);
+  it("o rótulo curto passa pelo i18n: 'Nível' + algarismo romano via chave careerLevel.short (OO3-11f/D-9)", () => {
+    const fakeT = (key: MessageKey, vars?: Record<string, string | number>) =>
+      key === "careerLevel.short" ? `Nível ${String(vars?.["nivel"])}` : `t:${key}`;
+    const labels = new LabelFormatter(fakeT);
+    expect(ROLES.map((r) => labels.roleShort(r))).toEqual(["Nível I", "Nível II", "Nível III"]);
   });
 });
 

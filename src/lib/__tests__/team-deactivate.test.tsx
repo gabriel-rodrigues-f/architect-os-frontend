@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -26,10 +25,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as TeamRoute } from "@/routes/team";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18 — excluir um
@@ -50,26 +47,7 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
@@ -148,31 +126,14 @@ describe("Time — desativar preserva histórico", () => {
     await userEvent.keyboard("{Escape}");
   };
 
-  it("exige motivo: o botão Desativar só habilita depois de escrever algo no diálogo", async () => {
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
-    await screen.findByText("Ana Martins");
-
-    await userEvent.click(screen.getByLabelText("Desativar Ana Martins"));
-    const dialogo = within(await screen.findByRole("dialog"));
-    expect(dialogo.getByText(/nada é apagado/)).toBeTruthy();
-
-    const botaoDesativar = dialogo.getByRole("button", { name: "Desativar" });
-    expect((botaoDesativar as HTMLButtonElement).disabled).toBe(true);
-
-    await userEvent.type(dialogo.getByLabelText("Motivo da desativação"), "Saiu do time");
-    expect((botaoDesativar as HTMLButtonElement).disabled).toBe(false);
-  });
-
+  /**
+   * OO3-11c — "exige motivo" e "409 mostra o erro dentro do diálogo sem
+   * fechar" viraram invariantes unitários de `CommandWithReasonDialog`
+   * (`command-with-reason-dialog.test.tsx`); aqui ficam só os invariantes
+   * de integração tela↔store↔API.
+   */
   it("desativar chama o comando dedicado com motivo e versão, tira do roster ativo sem excluir nada", async () => {
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
     await userEvent.click(screen.getByLabelText("Desativar Ana Martins"));
@@ -204,73 +165,8 @@ describe("Time — desativar preserva histórico", () => {
     expect(patchesToArchitect).toHaveLength(0);
   });
 
-  it("409 ARCHITECT_VERSION_CONFLICT mostra o erro dentro do diálogo, sem fechar nem sumir do roster", async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/auth/users")) {
-        return Promise.resolve(
-          new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
-        );
-      }
-      if (init?.method === "POST" && href.endsWith("/api/architects/ana/deactivate")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              error: "ARCHITECT_VERSION_CONFLICT",
-              message: "Este cadastro foi alterado por outra pessoa. Recarregue e tente de novo.",
-            }),
-            { status: 409, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
-    });
-
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
-    await screen.findByText("Ana Martins");
-
-    await userEvent.click(screen.getByLabelText("Desativar Ana Martins"));
-    const dialogo = within(await screen.findByRole("dialog"));
-    await userEvent.type(dialogo.getByLabelText("Motivo da desativação"), "Saiu do time");
-    await userEvent.click(dialogo.getByRole("button", { name: "Desativar" }));
-
-    expect(
-      await dialogo.findByText(
-        "Este cadastro foi alterado por outra pessoa. Recarregue e tente de novo.",
-      ),
-    ).toBeTruthy();
-
-    // não fingiu sucesso: o diálogo continua aberto e a pessoa não some do roster ativo.
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(screen.getByText("Ana Martins")).toBeTruthy();
-  });
-
   it("reativar devolve a pessoa para o roster ativo", async () => {
-    render(
-      <Wrapper>
-        <TeamPage />
-      </Wrapper>,
-    );
+    renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
     await userEvent.click(screen.getByLabelText("Desativar Ana Martins"));
     const dialogo = within(await screen.findByRole("dialog"));

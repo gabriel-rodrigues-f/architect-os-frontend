@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -23,11 +22,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as GapRoute } from "@/routes/gap-analysis";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
 import type { Assessment, Competency } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * ORIENTACAO-NONA-RODADA ENT-09-012 — a tela de Gap Analysis restructurada:
@@ -86,35 +83,11 @@ const state: AppState = {
   assessments: fixtureState.assessments.map((a) => asMastery(withBlockingItem(a))),
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const GapPage = GapRoute.options.component as () => ReactNode;
 
-const renderGap = () =>
-  render(
-    <Wrapper>
-      <GapPage />
-    </Wrapper>,
-  );
+const renderGap = () => renderWithApp(<GapPage />);
 
 describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maestria", () => {
   beforeEach(() => {

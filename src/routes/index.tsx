@@ -11,25 +11,16 @@ import {
   Users,
 } from "lucide-react";
 
-import { useState } from "react";
+import { useMemo } from "react";
 
-import {
-  GapBadge,
-  LevelBadge,
-  LevelCell,
-  PageHeader,
-  SectionCard,
-  StatCard,
-} from "@/components/app/ui-bits";
+import { GapBadge, LevelBadge, PageHeader, SectionCard, StatCard } from "@/components/app/ui-bits";
 import { CapabilityRadar } from "@/components/app/charts";
-import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
+import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import { useCurrentUser } from "@/lib/auth";
-import { capabilityShortLabels } from "@/lib/domain";
+import { DashboardPresenter } from "@/lib/presenters/dashboard-presenter";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -72,6 +63,13 @@ function Dashboard() {
   return <AdminHome />;
 }
 
+/** OO3-11e — adaptador fino: memoiza o presenter sobre o snapshot atual. */
+function useDashboardPresenter() {
+  const store = useStore();
+  const sel = useSelectors();
+  return useMemo(() => new DashboardPresenter(store, sel), [store, sel]);
+}
+
 function AdminHome() {
   const store = useStore();
   const sel = useSelectors();
@@ -80,64 +78,14 @@ function AdminHome() {
   const labels = useLabels();
   const help = usePageHelp("dash");
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
-  /**
-   * Quem desativou (saiu do time) não conta nos agregados do Painel — ver
-   * histórico dela continua em /architects/:id, só não representa mais o
-   * time atual. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18, e
-   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC E.
-   *
-   * `canActFor` recorta pra quem este viewer de fato enxerga (própria
-   * pessoa, ou quem está sob a liderança dela) — sem isto, o roster inteiro
-   * (que chega sem filtro por ser dado de diretório, não de carreira, ver
-   * `auth/scope.ts`) virava a população do heatmap e da cobertura, e quem
-   * está fora do escopo aparecia como "não iniciado" por não ter registro
-   * visível, não por realmente não ter avaliação. Ver ANA-001, AUDITORIA-
-   * QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
-   */
-  const architects = sel.activeArchitects.filter((a) =>
-    defaultUiAuthorizationPolicy.canActFor(user, a),
-  );
+  /** População visível ao viewer — ver o docstring de `ArchitectSelectors.visibleTo` (ANA-001). */
+  const architects = sel.visibleArchitects(user);
 
-  const allGaps = architects.flatMap((a) =>
-    sel.progressionGapsFor(a.id).map((g) => ({ ...g, architect: a })),
-  );
-  const criticalGaps = allGaps.filter((g) => g.gap >= 3).length;
-  const planItems = store.plans
-    .filter((p) => p.cycleId === store.activeCycleId)
-    .flatMap((p) => p.items);
-  const goalsInProgress = planItems.filter((i) => i.status === "In Progress").length;
-  const goalsDone = planItems.filter((i) => i.status === "Completed").length;
-  const pathsInProgress = store.learningPaths.filter((p) =>
-    p.progress.some((entry) => entry.status === "In Progress"),
-  ).length;
-
-  const topGaps = [...allGaps].sort((a, b) => b.gap - a.gap).slice(0, 6);
-
-  /**
-   * Cobertura das avaliações do ciclo ativo — sem isto, o heatmap e as
-   * médias do painel podem parecer representar o time inteiro quando na
-   * verdade só cobrem quem já tem assessment `Completed`. Ver AUDITORIA-
-   * RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 42.
-   */
-  const assessmentCoverage = architects.reduce(
-    (acc, a) => {
-      const status = sel.assessmentFor(a.id)?.status;
-      if (status === "Completed") acc.completed += 1;
-      else if (status === "In Review") acc.inReview += 1;
-      else if (status === "Draft") acc.draft += 1;
-      else acc.notStarted += 1;
-      return acc;
-    },
-    { completed: 0, inReview: 0, draft: 0, notStarted: 0 },
-  );
-
-  const [showAllColumns, setShowAllColumns] = useState(false);
-  const visibleCapabilities = showAllColumns
-    ? store.capabilities
-    : capHeatmapColumns(store.capabilities, architects, sel.capabilityAverages);
-  const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
-  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
-  const shortLabels = capabilityShortLabels(store.capabilities);
+  /** OO3-11e — os KPIs do painel moram no `DashboardPresenter`, com cobertura unitária própria. */
+  const presenter = useDashboardPresenter();
+  const criticalGaps = presenter.criticalGapCount(architects);
+  const topGaps = presenter.topGaps(architects);
+  const assessmentCoverage = presenter.assessmentCoverage(architects);
 
   return (
     <>
@@ -155,7 +103,7 @@ function AdminHome() {
         />
         <StatCard
           label={t("dash.stat.activePlans")}
-          value={store.plans.filter((p) => p.cycleId === store.activeCycleId).length}
+          value={presenter.activePlans().length}
           icon={<Target className="h-4 w-4" />}
         />
         <StatCard
@@ -171,12 +119,12 @@ function AdminHome() {
         />
         <StatCard
           label={t("dash.stat.goalsInProgress")}
-          value={goalsInProgress}
+          value={presenter.goalsInProgress}
           icon={<Activity className="h-4 w-4" />}
         />
         <StatCard
           label={t("dash.stat.goalsDone")}
-          value={goalsDone}
+          value={presenter.goalsDone}
           icon={<Target className="h-4 w-4" />}
         />
         <StatCard
@@ -186,7 +134,7 @@ function AdminHome() {
         />
         <StatCard
           label={t("dash.stat.paths")}
-          value={pathsInProgress}
+          value={presenter.pathsInProgress}
           icon={<BookOpen className="h-4 w-4" />}
         />
       </div>
@@ -207,59 +155,13 @@ function AdminHome() {
               notStarted: assessmentCoverage.notStarted,
             })}
           </p>
-          <HeatmapColumnsNotice
-            shown={visibleCapabilities.length}
-            total={store.capabilities.length}
-            showAll={showAllColumns}
-            onToggle={() => setShowAllColumns((v) => !v)}
+          {/* OO3-11/D-1 — heatmap compartilhado com /progression (CapabilityHeatmap). */}
+          <CapabilityHeatmap
+            architects={architects}
+            capabilities={store.capabilities}
+            capabilityAveragesFor={sel.capabilityAverages}
+            linkToProfile
           />
-          <div className="max-h-[480px] overflow-auto">
-            <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
-              <thead>
-                <tr>
-                  <th
-                    scope="col"
-                    className="sticky left-0 top-0 z-20 w-44 bg-card text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                  >
-                    {t("cycle.architect")}
-                  </th>
-                  {visibleCapabilities.map((c) => (
-                    <th
-                      key={c.id}
-                      scope="col"
-                      className="sticky top-0 z-10 max-w-[64px] truncate bg-card px-1 text-center text-[11px] font-medium text-muted-foreground"
-                      title={c.name}
-                    >
-                      {shortLabels.get(c.id) ?? c.short}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {architects.map((a) => (
-                  <tr key={a.id}>
-                    <td className="sticky left-0 z-10 bg-card py-1">
-                      <Link
-                        to="/architects/$architectId"
-                        params={{ architectId: a.id }}
-                        className="text-sm font-medium hover:text-primary"
-                      >
-                        {a.name}
-                      </Link>
-                    </td>
-                    {sel
-                      .capabilityAverages(a.id)
-                      .filter((d) => visibleCapabilityIds.has(d.capability.id))
-                      .map((d) => (
-                        <td key={d.capability.id} className="min-w-[52px]">
-                          <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
-                        </td>
-                      ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             {[1, 2, 3, 4, 5].map((l) => (
               <span key={l} className="flex items-center gap-1.5">
@@ -324,10 +226,8 @@ function MemberHome() {
   }
 
   const capabilityAvgs = sel.capabilityAverages(architectId);
-  /** R2-ESC-02 — dedup do rótulo compacto enquanto o catálogo tiver siglas duplicadas legadas. */
-  const shortLabels = capabilityShortLabels(store.capabilities);
   const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
-  const { avg, covered, total } = averageWithCoverage(capabilityAvgs.map((d) => d.avg));
+  const { avg, covered, total } = sel.coverageFor(architectId);
   const assessment = sel.assessmentFor(architectId);
   const plan = sel.planFor(architectId);
   const planStatus = plan?.status;
@@ -384,7 +284,7 @@ function MemberHome() {
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
             data={capabilityAvgs.map((d) => ({
-              capability: shortLabels.get(d.capability.id) ?? d.capability.short,
+              capability: sel.capabilityShortLabel(d.capability),
               atual: d.avg ?? 0,
               alvo: d.target ?? 0,
             }))}

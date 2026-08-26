@@ -1,13 +1,9 @@
-import { capabilityShortLabels } from "@/lib/domain";
+import { downloadBlob } from "@/lib/download";
 import {
-  downloadBlob,
-  formatAvg,
-  gapColumnLabels,
-  gapRowValues,
-  isoDate,
+  TeamReportPresenter,
   type T,
   type TeamReportInput,
-} from "@/lib/team-report-shared";
+} from "@/lib/presenters/team-report-presenter";
 
 /** Escapa um campo para CSV (RFC 4180): aspas duplicadas, campo entre aspas se tiver vírgula/aspas/quebra de linha. */
 function csvField(value: string | number): string {
@@ -20,55 +16,40 @@ function csvRow(fields: (string | number)[]): string {
 }
 
 function gapRowsToCsv(
-  t: T,
-  input: TeamReportInput,
+  presenter: TeamReportPresenter,
   rows: TeamReportInput["blocking"],
   mastery: boolean,
 ): string {
-  let out = csvRow(gapColumnLabels(t, mastery));
-  for (const row of rows) {
-    out += csvRow(gapRowValues(t, input, row, mastery));
+  let out = csvRow(presenter.gapColumns(mastery));
+  for (const row of presenter.gapRows(rows, mastery)) {
+    out += csvRow(row);
   }
   return out;
 }
 
+/**
+ * OO3-11j — o conteúdo (cabeçalhos, linhas, rótulos, nome do arquivo) vem do
+ * `TeamReportPresenter`; aqui fica só a serialização CSV.
+ */
 export function exportTeamReportCsv(t: T, input: TeamReportInput): void {
-  // R2-ESC-02 — dedup do cabeçalho enquanto o catálogo tiver siglas
-  // duplicadas legadas (nada impedia isso antes desta rodada).
-  const shortLabels = capabilityShortLabels(input.capabilities);
-  const heatmapHeader = csvRow([
-    t("col.architect"),
-    ...input.capabilities.map((c) => shortLabels.get(c.id) ?? c.short),
-  ]);
-  const heatmapRows = input.architects
-    .map((a) => {
-      const averages = input.capabilityAveragesFor(a.id);
-      return csvRow([
-        a.name,
-        ...input.capabilities.map((c) =>
-          formatAvg(averages.find((d) => d.capability.id === c.id)?.avg),
-        ),
-      ]);
-    })
-    .join("");
+  const presenter = new TeamReportPresenter(t, input);
+  const heatmapHeader = csvRow(presenter.heatmapHead);
+  const heatmapRows = presenter.heatmapBody.map(csvRow).join("");
 
   let csv = "﻿"; // BOM — acentos corretos ao abrir no Excel.
   csv += `${t("gap.export.csv.heatmapSection")}\r\n`;
   csv += heatmapHeader + heatmapRows;
   csv += "\r\n";
   csv += `${t("gap.export.csv.blockingSection")}\r\n`;
-  csv += gapRowsToCsv(t, input, input.blocking, false);
+  csv += gapRowsToCsv(presenter, input.blocking, false);
   csv += "\r\n";
   csv += `${t("gap.export.csv.opportunitySection")}\r\n`;
-  csv += gapRowsToCsv(t, input, input.opportunity, false);
+  csv += gapRowsToCsv(presenter, input.opportunity, false);
   if (input.mastery.length > 0) {
     csv += "\r\n";
     csv += `${t("gap.export.csv.masterySection")}\r\n`;
-    csv += gapRowsToCsv(t, input, input.mastery, true);
+    csv += gapRowsToCsv(presenter, input.mastery, true);
   }
 
-  downloadBlob(
-    new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    `progressao-time-${isoDate(input.generatedAt)}.csv`,
-  );
+  downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), presenter.filename("csv"));
 }

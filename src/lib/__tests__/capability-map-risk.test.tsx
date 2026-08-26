@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,10 +20,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "../api";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * EPIC 6 (quarta rodada) — antes, "0 Especialistas + 1 Avançado" caía no
@@ -36,26 +33,7 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 
@@ -80,11 +58,7 @@ const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
     }
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
-  return render(
-    <Wrapper>
-      <CapabilityPage />
-    </Wrapper>,
-  );
+  return renderWithApp(<CapabilityPage />);
 };
 
 describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () => {
@@ -114,61 +88,15 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
     expect(noCard.slice(0, 4)).toEqual(ordem);
   });
 
-  it("domínio com 1 pessoa avançada e 0 especialistas mostra risco de concentração, não 'healthy'", async () => {
-    // Cloud: Ana=nível 4 (avançado), Bruno=nível 2.5 (praticante) — só 1 referência técnica.
-    renderPage(fixtureState);
-    const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
-    expect(within(card).getByText(/Risco de concentração/)).toBeTruthy();
-  });
-
-  it("domínio sem ninguém avançado ou especialista mostra 'sem referência técnica'", async () => {
-    // Security: Ana e Bruno em IAM ficam abaixo de 2,5 — nenhuma referência técnica.
-    renderPage(fixtureState);
-    const card = (await screen.findByText("Security")).closest("section")!;
-    expect(within(card).getByText(/Sem referência técnica/)).toBeTruthy();
-  });
-
-  it("domínio com duas ou mais referências técnicas mostra cobertura distribuída", async () => {
-    const state: AppState = {
-      ...fixtureState,
-      architects: [
-        ...fixtureState.architects,
-        {
-          id: "carla",
-          name: "Carla Souza",
-          role: "Arquiteto de Soluções III",
-          yearsAsArchitect: 8,
-          specialization: "Cloud",
-          email: "carla@company.com",
-          active: true,
-          version: 1,
-        },
-      ],
-      assessments: [
-        ...fixtureState.assessments,
-        {
-          id: "carla-h2",
-          architectId: "carla",
-          cycleId: "2026-h2",
-          status: "Completed",
-          modelVersion: 1,
-          targetCareerLevelId: null,
-          targetSemantics: null,
-          version: 1,
-          items: [
-            { competencyId: "cloud-k8s", self: 5, leader: 5, target: 4, final: 5, comments: [] },
-          ],
-        },
-      ],
-    };
-    renderPage(state);
-    const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
-    expect(within(card).getByText(/Cobertura distribuída/)).toBeTruthy();
-  });
-
   /**
-   * ANA-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — mesmo
-   * estado do teste anterior (3 pessoas avançadas/especialistas em Cloud:
+   * OO3-11h — os 3 estados de risco pela DOM viraram casos unitários do
+   * `CapabilityCoveragePresenter` (`capability-coverage-presenter.test.ts`);
+   * aqui ficam os invariantes de tela: ordem/rótulo das faixas, o recorte
+   * por escopo (ANA-001) e a ausência de CRUD.
+   */
+  /**
+   * ANA-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — estado
+   * com 3 pessoas avançadas/especialistas em Cloud (
    * "cobertura distribuída" para o admin, que enxerga todo mundo), mas
    * lido por um Lead atribuído só à Ana. Bruno e Carla continuam no roster
    * (dado de diretório, sem filtro), mas fora do escopo de carreira deste

@@ -1,3 +1,4 @@
+import type { MessageKey } from "./i18n";
 import type { SelectionScope as GenericSelectionScope } from "./selection";
 
 export type Level = 1 | 2 | 3 | 4 | 5;
@@ -30,11 +31,6 @@ export const ROLES: RoleName[] = [
   "Arquiteto de Soluções II",
   "Arquiteto de Soluções III",
 ];
-
-/** Rótulo curto para cabeçalhos de tabela: "Nível I", "Nível II", "Nível III". */
-/** Aceita `string` (não só `RoleName`) — `CareerLevel.name` já nasce com o mesmo texto, sem o tipo. */
-export const roleShort = (role: string): string =>
-  `Nível ${role.replace("Arquiteto de Soluções ", "")}`;
 
 /**
  * ENT-CAR-013 — `rank` ordena os níveis (I=1, II=2, III=3) para calcular
@@ -509,22 +505,6 @@ export interface LearningPath {
   createdAt?: string | undefined;
 }
 
-/** Progresso de uma pessoa num item — {status:"Not Started", progress:0} se ainda não tocou. */
-export function progressFor(
-  path: Pick<LearningPath, "progress">,
-  architectId: string,
-  itemId: string,
-): LearningItemProgress {
-  return (
-    path.progress.find((p) => p.architectId === architectId && p.itemId === itemId) ?? {
-      architectId,
-      itemId,
-      status: "Not Started",
-      progress: 0,
-    }
-  );
-}
-
 export interface MentoringSession {
   id: string;
   /** Nome do mentor — só apresentação; o servidor sempre deriva do usuário autenticado. */
@@ -726,14 +706,22 @@ export interface Evidence {
   reviewedAt?: string | null | undefined;
 }
 
-/** Evidências que sustentam um item do PDI — sempre uma consulta, nunca um array guardado. */
-export function evidencesForPlanItem(evidences: Evidence[], itemId: string): Evidence[] {
-  return evidences.filter((e) => e.developmentPlanItemId === itemId);
-}
+/**
+ * OO3-11i — a régua de severidade de gap estava em 3 lugares: `GapBadge`
+ * (`ui-bits.tsx`), `gapClassificationLabel` (relatório do time) e um
+ * `gapSeverity` morto aqui (rótulos hardcoded em pt, zero call sites —
+ * deletado). Fonte única agora: o degrau (`gapSeverityOf`) e a chave i18n de
+ * cada degrau (`GAP_SEVERITY_MESSAGE_KEY`) — o texto continua vindo do `t()`
+ * de quem exibe.
+ */
+export type GapSeverity = "ok" | "low" | "high" | "critical";
 
-export const gapSeverity = (gap: number) => {
-  if (gap <= 0) return { label: "Adequado", tone: "ok" as const };
-  if (gap === 1) return { label: "Recomendado", tone: "low" as const };
-  if (gap === 2) return { label: "Prioridade alta", tone: "high" as const };
-  return { label: "Crítico", tone: "critical" as const };
+export const gapSeverityOf = (gap: number): GapSeverity =>
+  gap <= 0 ? "ok" : gap === 1 ? "low" : gap === 2 ? "high" : "critical";
+
+export const GAP_SEVERITY_MESSAGE_KEY: Record<GapSeverity, MessageKey> = {
+  ok: "gap.ok",
+  low: "gap.recommended",
+  high: "gap.highPriority",
+  critical: "gap.critical",
 };

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
+import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +34,8 @@ import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
-import { defaultDateFormatter, initialSearchParam } from "@/lib/text";
+import { defaultDateFormatter } from "@/lib/text";
+import { useSearchParamString } from "@/hooks/use-search-param";
 import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-view-model";
 
 /**
@@ -84,8 +86,9 @@ function PlansPage() {
   const sel = useSelectors();
   const labels = useLabels();
   const viewModel = useDevelopmentPlansViewModel();
-  const [architectId, setArchitectId] = useState(
-    () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
+  const [architectId, setArchitectId] = useSearchParamString(
+    "architectId",
+    () => sel.activeArchitects[0]?.id ?? "",
   );
   /** Item cujo formulário de meta SMART está aberto — nunca mais que um por vez. */
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
@@ -291,24 +294,12 @@ function PlansPage() {
 
       {plan && reopenDialogOpen && (
         <ReopenPlanDialog
-          onCancel={() => setReopenDialogOpen(false)}
-          onConfirm={(reason) => {
-            setPlanTransitionError(null);
-            setPlanTransitioning(true);
+          onClose={() => setReopenDialogOpen(false)}
+          onSubmit={(reason) =>
             viewModel
               .reopen(plan.id, reason)
-              .then(() => {
-                setReopenDialogOpen(false);
-                toast.success(t("pdi.plan.reopenDialog.success"));
-              })
-              .catch((error: unknown) =>
-                setPlanTransitionError(
-                  error instanceof ApiError ? error.message : t("pdi.plan.transitionError"),
-                ),
-              )
-              .finally(() => setPlanTransitioning(false));
-          }}
-          submitting={planTransitioning}
+              .then(() => toast.success(t("pdi.plan.reopenDialog.success")))
+          }
         />
       )}
 
@@ -1076,44 +1067,33 @@ function NewPlanItemDialog({
  * precisa desse motivo para fazer sentido depois.
  */
 function ReopenPlanDialog({
-  onConfirm,
-  onCancel,
-  submitting,
+  onSubmit,
+  onClose,
 }: {
-  onConfirm: (reason: string) => void;
-  onCancel: () => void;
-  submitting: boolean;
+  onSubmit: (reason: string) => Promise<unknown>;
+  onClose: () => void;
 }) {
   const { t } = useI18n();
-  const [reason, setReason] = useState("");
-
+  /**
+   * OO3-11c `[MUDA UI]` (aprovado em 2026-08-26) — o ciclo submitting/erro
+   * saiu do componente pai: o erro de transição agora aparece DENTRO do
+   * diálogo (padrão de `CommandWithReasonDialog`), não mais na barra de
+   * status atrás dele.
+   */
   return (
-    <Dialog open onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("pdi.plan.reopenDialog.title")}</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">{t("pdi.plan.reopenDialog.body")}</p>
-        <div>
-          <Label htmlFor="reopen-reason">{t("pdi.plan.reopenDialog.reasonLabel")}</Label>
-          <Textarea
-            id="reopen-reason"
-            className="mt-1"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder={t("pdi.plan.reopenDialog.reasonPlaceholder")}
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel} disabled={submitting}>
-            {t("pdi.plan.reopenDialog.cancel")}
-          </Button>
-          <Button disabled={!reason.trim() || submitting} onClick={() => onConfirm(reason.trim())}>
-            {submitting ? t("pdi.plan.reopening") : t("pdi.plan.reopenDialog.confirm")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <CommandWithReasonDialog
+      title={t("pdi.plan.reopenDialog.title")}
+      body={t("pdi.plan.reopenDialog.body")}
+      reasonInputId="reopen-reason"
+      reasonLabel={t("pdi.plan.reopenDialog.reasonLabel")}
+      reasonPlaceholder={t("pdi.plan.reopenDialog.reasonPlaceholder")}
+      confirmLabel={t("pdi.plan.reopenDialog.confirm")}
+      submittingLabel={t("pdi.plan.reopening")}
+      cancelLabel={t("pdi.plan.reopenDialog.cancel")}
+      fallbackError={t("pdi.plan.transitionError")}
+      onSubmit={onSubmit}
+      onClose={onClose}
+    />
   );
 }
 

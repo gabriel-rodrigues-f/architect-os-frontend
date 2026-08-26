@@ -5,14 +5,7 @@ import { toast } from "sonner";
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
-import {
-  ACTION_TYPES,
-  EVIDENCE_TYPES,
-  LEVELS,
-  roleShort,
-  type CareerLevel,
-  type Level,
-} from "@/lib/domain";
+import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, type CareerLevel, type Level } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
@@ -107,7 +100,7 @@ function SettingsPage() {
                   </th>
                   {careerLevels.map((cl) => (
                     <th key={cl.id} scope="col" className="py-2 text-center">
-                      {roleShort(cl.name)}
+                      {labels.roleShort(cl.name)}
                     </th>
                   ))}
                 </tr>

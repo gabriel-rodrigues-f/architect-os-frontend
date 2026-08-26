@@ -152,14 +152,46 @@ const learningItemTypeKey: Record<LearningItemType, MessageKey> = {
   Workshop: "learningItemType.workshop",
 };
 
+type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
+
 const traduzir = <K extends string | number>(
   mapa: Record<K, MessageKey>,
-  t: (key: MessageKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ): Record<K, string> =>
   Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, t(v as MessageKey)])) as Record<
     K,
     string
   >;
+
+/**
+ * OO3-11f — registro único dos 13 mapas: o construtor deixa de ter 13
+ * atribuições mecânicas (uma por campo) e vira um laço sobre este objeto.
+ * O merge de declaração (`interface LabelFormatter extends LabelMaps`)
+ * mantém os 13 campos com os tipos exatos de antes — `labels.planStatus.
+ * Draft` continua `string` e chave inexistente continua erro de compilação.
+ */
+export const LABEL_KEY_MAPS = {
+  planStatus: planStatusKey,
+  planItemStatus: planItemStatusKey,
+  learningStatus: learningStatusKey,
+  priority: priorityKey,
+  cycleStatus: cycleStatusKey,
+  assessmentStatus: assessmentStatusKey,
+  actionType: actionTypeKey,
+  evidenceType: evidenceTypeKey,
+  complexity: complexityKey,
+  evidenceStatus: evidenceStatusKey,
+  levelName: levelNameKey,
+  levelDescription: levelDescriptionKey,
+  learningItemType: learningItemTypeKey,
+} as const;
+
+type LabelMaps = {
+  readonly [K in keyof typeof LABEL_KEY_MAPS]: Record<
+    keyof (typeof LABEL_KEY_MAPS)[K] & (string | number),
+    string
+  >;
+};
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -171,35 +203,35 @@ const traduzir = <K extends string | number>(
  * (ex.: um teste que quer os rótulos sem montar `I18nProvider`, passando
  * um `t` fake).
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unsafe-declaration-merging -- merge intencional (OO3-11f): dá à classe os 13 campos tipados que o laço do construtor preenche.
+export interface LabelFormatter extends LabelMaps {}
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging -- par do merge acima.
 export class LabelFormatter {
-  readonly planStatus: Record<DevelopmentPlan["status"], string>;
-  readonly planItemStatus: Record<DevelopmentPlanItem["status"], string>;
-  readonly learningStatus: Record<LearningItemProgress["status"], string>;
-  readonly priority: Record<DevelopmentPlanItem["priority"], string>;
-  readonly cycleStatus: Record<DevelopmentCycle["status"], string>;
-  readonly assessmentStatus: Record<Assessment["status"], string>;
-  readonly actionType: Record<ActionType, string>;
-  readonly evidenceType: Record<EvidenceType, string>;
-  readonly complexity: Record<"Low" | "Medium" | "High", string>;
-  readonly evidenceStatus: Record<Evidence["status"], string>;
-  readonly levelName: Record<Level, string>;
-  readonly levelDescription: Record<Level, string>;
-  readonly learningItemType: Record<LearningItemType, string>;
+  constructor(private readonly t: Translate) {
+    // `Object.assign(this, ...)` não é verificado pelo TS — o teste que
+    // confere `Object.keys(new LabelFormatter(...))` contra o registro é a
+    // guarda contra um mapa esquecido/renomeado.
+    Object.assign(
+      this,
+      Object.fromEntries(
+        Object.entries(LABEL_KEY_MAPS).map(([nome, mapa]) => [
+          nome,
+          traduzir(mapa as Record<string, MessageKey>, t),
+        ]),
+      ),
+    );
+  }
 
-  constructor(t: (key: MessageKey, vars?: Record<string, string | number>) => string) {
-    this.planStatus = traduzir(planStatusKey, t);
-    this.planItemStatus = traduzir(planItemStatusKey, t);
-    this.learningStatus = traduzir(learningStatusKey, t);
-    this.priority = traduzir(priorityKey, t);
-    this.cycleStatus = traduzir(cycleStatusKey, t);
-    this.assessmentStatus = traduzir(assessmentStatusKey, t);
-    this.actionType = traduzir(actionTypeKey, t);
-    this.evidenceType = traduzir(evidenceTypeKey, t);
-    this.complexity = traduzir(complexityKey, t);
-    this.evidenceStatus = traduzir(evidenceStatusKey, t);
-    this.levelName = traduzir(levelNameKey, t);
-    this.levelDescription = traduzir(levelDescriptionKey, t);
-    this.learningItemType = traduzir(learningItemTypeKey, t);
+  /**
+   * OO3-11f/D-9 `[MUDA UI]` (aprovado em 2026-08-26) — o rótulo curto de
+   * nível de carreira morava em `domain.roleShort` com "Nível" hardcoded em
+   * português mesmo com o app em inglês (bug de i18n). Agora passa pelo
+   * mecanismo de tradução como todo o resto deste arquivo: "Nível I" em pt,
+   * "Level I" em en. Aceita `string` (não só `RoleName`) — `CareerLevel.name`
+   * já nasce com o mesmo texto, sem o tipo.
+   */
+  roleShort(role: string): string {
+    return this.t("careerLevel.short", { nivel: role.replace("Arquiteto de Soluções ", "") });
   }
 }
 

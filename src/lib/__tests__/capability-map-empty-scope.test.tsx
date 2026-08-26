@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -15,11 +14,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
-import type { AppState, SessionUser } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureState } from "./fixtures";
+import type { SessionUser } from "../api";
+import { mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * R2-VIS-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — sem ninguém no escopo do
@@ -29,27 +25,6 @@ import { fixtureState } from "./fixtures";
  * problema é um só (ninguém para avaliar aqui) e mostra uma mensagem única.
  */
 const fetchMock = vi.fn();
-
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
 
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 
@@ -69,26 +44,7 @@ describe("Mapa de Capacidades — escopo vazio vira uma mensagem, não N repeti�
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockImplementation((url: string) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(leadWithNoOne), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
-    });
+    mockAppFetch(fetchMock, { user: leadWithNoOne });
   });
 
   afterEach(() => {
@@ -97,11 +53,7 @@ describe("Mapa de Capacidades — escopo vazio vira uma mensagem, não N repeti�
   });
 
   it("mostra a mensagem única de escopo vazio, nunca 'Dados insuficientes' repetido por capacidade", async () => {
-    render(
-      <Wrapper>
-        <CapabilityPage />
-      </Wrapper>,
-    );
+    renderWithApp(<CapabilityPage />);
 
     expect(await screen.findByText("Nenhuma pessoa no seu escopo")).toBeTruthy();
     expect(screen.queryByText(/Dados insuficientes/)).toBeNull();

@@ -19,6 +19,7 @@ import {
 import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { axisTick, CHART_INK, ChartPalette, tooltipStyle } from "@/lib/design/chart";
+import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -155,34 +156,26 @@ function topByRelevance<T>(data: readonly T[], relevance: (item: T) => number, m
 
 /**
  * Aviso visível (não só na tabela sr-only) + alternância "mostrar todos" —
- * sem isto, quem só olha o gráfico nunca sabe que 18 eixos ficaram de fora.
+ * wrapper fino de `TruncationNotice` (OO3-11/D-2).
  */
-function RadarAxisNotice({
-  shown,
-  total,
-  showAll,
-  onToggle,
-}: {
+function RadarAxisNotice(props: {
   shown: number;
   total: number;
   showAll: boolean;
   onToggle: () => void;
 }) {
-  const { t } = useI18n();
-  if (total <= MAX_RADAR_AXES) return null;
   return (
-    <p className="mb-2 text-xs text-muted-foreground">
-      {showAll
-        ? t("chart.radar.showingAll", { total })
-        : t("chart.radar.showingTopN", { shown, total })}{" "}
-      <button
-        type="button"
-        className="underline underline-offset-2 hover:no-underline"
-        onClick={onToggle}
-      >
-        {showAll ? t("chart.radar.showTopOnly") : t("chart.radar.showAll")}
-      </button>
-    </p>
+    <TruncationNotice
+      {...props}
+      threshold={MAX_RADAR_AXES}
+      className="mb-2 text-xs text-muted-foreground"
+      messages={{
+        showingAll: "chart.radar.showingAll",
+        showingTopN: "chart.radar.showingTopN",
+        showAll: "chart.radar.showAll",
+        showTopOnly: "chart.radar.showTopOnly",
+      }}
+    />
   );
 }
 

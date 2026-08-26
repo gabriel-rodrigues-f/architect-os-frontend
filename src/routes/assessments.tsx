@@ -20,7 +20,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useLabels } from "@/lib/labels";
 import { useSelectors, useStore } from "@/lib/store";
-import { initialSearchParam } from "@/lib/text";
+import { useSearchParamString } from "@/hooks/use-search-param";
 
 /**
  * `architectId` na URL — quem chega de outra tela (o perfil da pessoa)
@@ -71,11 +71,12 @@ export const Route = createFileRoute("/assessments")({
 function AssessmentsPage() {
   const store = useStore();
   const sel = useSelectors();
-  const [architectId, setArchitectId] = useState(
-    () => initialSearchParam("architectId") ?? sel.activeArchitects[0]?.id ?? "",
+  const [architectId, setArchitectId] = useSearchParamString(
+    "architectId",
+    () => sel.activeArchitects[0]?.id ?? "",
   );
   /** Ciclo pedido pelo link de origem (histórico) — cai no ativo se nenhum vier na URL. */
-  const [cycleId] = useState(() => initialSearchParam("cycleId") ?? store.activeCycleId);
+  const [cycleId] = useSearchParamString("cycleId", () => store.activeCycleId);
   const isActiveCycle = cycleId === store.activeCycleId;
   const viewedCycle = store.cycles.find((c) => c.id === cycleId);
   const { t } = useI18n();

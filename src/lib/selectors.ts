@@ -1,13 +1,16 @@
-import type { AppState } from "./api";
+import type { AppState, SessionUser } from "./api";
 import type {
   Architect,
   Assessment,
   AssessmentTargetSemantics,
   Competency,
   Capability,
+  Evidence,
   Level,
   RoleName,
 } from "./domain";
+import { capabilityShortLabels } from "./domain";
+import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "./scope";
 
 /**
  * Derivações puras sobre o snapshot da API. Ficam fora do componente para poderem
@@ -152,15 +155,65 @@ export class SelectorIndex {
  */
 export class ArchitectSelectors {
   readonly active: Architect[];
+  private readonly visibleCache = new Map<string, Architect[]>();
 
   constructor(
     s: AppState,
     private readonly index: SelectorIndex,
+    private readonly policy: UiAuthorizationPolicy = defaultUiAuthorizationPolicy,
   ) {
     this.active = s.architects.filter((a) => a.active);
   }
 
   byId = (id: string): Architect | undefined => this.index.architectIndex.get(id);
+
+  /**
+   * População padrão de TODA análise agregada (Painel, Cobertura, LNT,
+   * Mentoria, Gap/Progressão): o time atual (`active`) recortado para quem
+   * este viewer de fato enxerga (`canActFor` — própria pessoa, ou quem está
+   * sob a liderança dela). Sem o recorte, o roster inteiro (que chega sem
+   * filtro por ser dado de diretório, não de carreira — ver `auth/scope.ts`)
+   * virava a população das análises, e quem está fora do escopo aparecia
+   * como "sem lacuna"/"não iniciado" por não ter registro visível, não por
+   * realmente não ter dado: ausência de autorização virando ausência de
+   * dado. Ver ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
+   *
+   * Cache por viewer (mesmo padrão de `gapsCache`/`averagesCache`): sem ele,
+   * cada chamada devolveria um array novo e os `useMemo([sel, user])` que
+   * dependem da identidade estável (ex.: `defaultSelected` em
+   * `gap-analysis-shared.tsx`) deixariam de estabilizar. A chave cobre os
+   * três campos que `canActFor` lê.
+   */
+  visibleTo = (user: SessionUser): Architect[] => {
+    const cacheKey = `${user.id}|${user.role}|${user.architectId ?? ""}`;
+    const cached = this.visibleCache.get(cacheKey);
+    if (cached) return cached;
+    const visible = this.active.filter((a) => this.policy.canActFor(user, a));
+    this.visibleCache.set(cacheKey, visible);
+    return visible;
+  };
+
+  /**
+   * ORIENTACAO-NONA-RODADA, Seção 10 (ENT-09-008/GES-010) — FK resolvida
+   * quando existe; senão, fallback pro texto legado com indicação discreta
+   * de pendência (nunca os dois juntos, e nunca a FK escondendo que ainda
+   * não foi definida). Compartilhado entre Time e Perfil — as duas telas
+   * que mostram a especialização de alguém. OO3-11k — virou método (lê o
+   * `competencyIndex` internamente; some o segundo argumento dos call sites).
+   */
+  specializationLabel = (
+    architect: Pick<Architect, "specialization" | "primarySpecializationCompetencyId">,
+  ): string => {
+    if (architect.primarySpecializationCompetencyId) {
+      const competency = this.index.competencyIndex.get(
+        architect.primarySpecializationCompetencyId,
+      );
+      if (competency) return competency.name;
+    }
+    return architect.specialization
+      ? `${architect.specialization} (pendente de migração)`
+      : "Especialização não definida";
+  };
 }
 
 /**
@@ -277,26 +330,171 @@ export class AssessmentSelectors {
     this.gapsFor(architectId, cycleId).filter((g) => g.targetSemantics === "MASTERY");
 }
 
+/**
+ * ORIENTACAO-NONA-RODADA ENT-09-012 — uma linha consolidada por competência
+ * com todos os números secundários (Seção 33): quantas pessoas, gap médio e
+ * máximo, e as médias que compõem esse gap — nunca só o pior caso.
+ * `requirementType` vem junto porque separar bloqueante de oportunidade é a
+ * própria reestruturação pedida, não um detalhe da tabela.
+ *
+ * OO3-11g — morava em `components/app/gap-analysis-shared.tsx` e era
+ * importado por `lib/team-report-*.ts` (`lib/` dependendo de `components/`,
+ * inversão que esta extração corrige).
+ */
+export interface ConsolidatedGapRow {
+  competencyId: string;
+  name: string;
+  capabilityId: string;
+  requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
+  people: number;
+  /** Nomes de quem tem essa lacuna — a lista de prioridades mostrava só a contagem, e quem lê queria saber quem. */
+  architectNames: string[];
+  totalGap: number;
+  maxGap: number;
+  avgGap: number;
+  avgFinal: number;
+  avgTarget: number;
+}
+
+/** Consolidação de lacunas por competência — contexto próprio, sobre as visões de gap de `AssessmentSelectors`. */
+export class GapConsolidationSelectors {
+  constructor(private readonly assessment: AssessmentSelectors) {}
+
+  consolidate(
+    architects: readonly Architect[],
+    gapsFor: (architectId: string) => Gap[],
+  ): ConsolidatedGapRow[] {
+    const map = new Map<
+      string,
+      {
+        competencyId: string;
+        name: string;
+        capabilityId: string;
+        requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
+        people: number;
+        architectNames: string[];
+        totalGap: number;
+        maxGap: number;
+        sumFinal: number;
+        sumTarget: number;
+      }
+    >();
+
+    for (const architect of architects) {
+      for (const gap of gapsFor(architect.id)) {
+        if (gap.gap <= 0 || !gap.competency) continue;
+        const current = map.get(gap.competency.id) ?? {
+          competencyId: gap.competency.id,
+          name: gap.competency.name,
+          capabilityId: gap.competency.capabilityId,
+          requirementType: gap.competency.requirementType,
+          people: 0,
+          architectNames: [],
+          totalGap: 0,
+          maxGap: 0,
+          sumFinal: 0,
+          sumTarget: 0,
+        };
+        map.set(gap.competency.id, {
+          ...current,
+          people: current.people + 1,
+          architectNames: [...current.architectNames, architect.name],
+          totalGap: current.totalGap + gap.gap,
+          maxGap: Math.max(current.maxGap, gap.gap),
+          sumFinal: current.sumFinal + gap.item.final,
+          sumTarget: current.sumTarget + gap.item.target,
+        });
+      }
+    }
+
+    return [...map.values()]
+      .map((row) => ({
+        ...row,
+        avgFinal: Number((row.sumFinal / row.people).toFixed(1)),
+        avgTarget: Number((row.sumTarget / row.people).toFixed(1)),
+        avgGap: Number((row.totalGap / row.people).toFixed(1)),
+      }))
+      .sort((a, b) => b.totalGap - a.totalGap || b.maxGap - a.maxGap);
+  }
+
+  progression = (architects: readonly Architect[]): ConsolidatedGapRow[] =>
+    this.consolidate(architects, this.assessment.progressionGapsFor);
+
+  mastery = (architects: readonly Architect[]): ConsolidatedGapRow[] =>
+    this.consolidate(architects, this.assessment.masteryOpportunitiesFor);
+}
+
 /** Leituras derivadas de PDI (`DevelopmentPlan`) — hoje só "o plano de alguém num ciclo", mas isolado à parte para crescer sem inchar `AssessmentSelectors`. */
 export class DevelopmentSelectors {
   constructor(private readonly index: SelectorIndex) {}
 
   planFor = (architectId: string, cycleId = this.index.activeCycleId) =>
     this.index.planIndex.get(cycleKey(architectId, cycleId));
+
+  /** Evidências que sustentam um item do PDI — sempre uma consulta, nunca um array guardado (OO3-11l, de `domain.ts`). */
+  evidencesForPlanItem = (evidences: readonly Evidence[], itemId: string): Evidence[] =>
+    evidences.filter((e) => e.developmentPlanItemId === itemId);
 }
 
 /** Leituras derivadas do catálogo (Capability/Competency) e da cobertura por capacidade, que soma assessment oficial + catálogo. */
 export class CapabilitySelectors {
   private readonly averagesCache = new Map<string, CapabilityAverage[]>();
 
+  /**
+   * R2-ESC-02/OO3-11d — dedup do rótulo compacto (siglas duplicadas legadas),
+   * calculado UMA vez por snapshot em vez de `capabilityShortLabels(store.
+   * capabilities)` reconstruído a cada render em 7 telas. Os exports CSV/PDF
+   * continuam com a função pura de `domain.ts` (trabalham sobre a projeção
+   * `TeamReportInput`, sem `sel`).
+   */
+  readonly shortLabels: Map<string, string>;
+
   constructor(
     private readonly s: AppState,
     private readonly index: SelectorIndex,
     private readonly assessment: AssessmentSelectors,
-  ) {}
+  ) {
+    this.shortLabels = capabilityShortLabels(s.capabilities);
+  }
 
   competencyById = (id: string): Competency | undefined => this.index.competencyIndex.get(id);
   capabilityById = (id: string): Capability | undefined => this.index.capabilityIndex.get(id);
+
+  /** Rótulo compacto com o fallback `?? c.short` que estava repetido ~12× nos call sites. */
+  shortLabelFor = (c: Pick<Capability, "id" | "short">): string =>
+    this.shortLabels.get(c.id) ?? c.short;
+
+  /**
+   * OO3-11k — média geral + cobertura de UMA pessoa sobre as capacidades:
+   * `averageWithCoverage(sel.capabilityAverages(id).map(d => d.avg))`
+   * aparecia idêntico no Painel (MemberHome), no Perfil e no roster do Time.
+   */
+  coverageFor = (
+    architectId: string,
+    cycleId?: string,
+  ): { avg: number | undefined; covered: number; total: number } =>
+    averageWithCoverage(this.capabilityAverages(architectId, cycleId).map((d) => d.avg));
+
+  /**
+   * OO3-11k — média do TIME numa capacidade, com cobertura (radar de
+   * gap-analysis). Devolve os números crus — `toFixed` é decisão de exibição
+   * e fica nos call sites.
+   */
+  teamAverageFor = (
+    capabilityId: string,
+    architects: readonly Pick<Architect, "id">[],
+  ): {
+    atual: { avg: number | undefined; covered: number; total: number };
+    alvo: { avg: number | undefined; covered: number; total: number };
+  } => {
+    const rows = architects.map((a) =>
+      this.capabilityAverages(a.id).find((d) => d.capability.id === capabilityId),
+    );
+    return {
+      atual: averageWithCoverage(rows.map((r) => r?.avg)),
+      alvo: averageWithCoverage(rows.map((r) => r?.target)),
+    };
+  };
 
   capabilityAverages = (
     architectId: string,
@@ -399,19 +597,29 @@ export function createSelectors(s: AppState) {
   const development = new DevelopmentSelectors(index);
   const capability = new CapabilitySelectors(s, index, assessment);
   const training = new TrainingSelectors(index, architect, assessment);
+  const gapConsolidation = new GapConsolidationSelectors(assessment);
 
   return {
     competencyById: capability.competencyById,
     capabilityById: capability.capabilityById,
     architectById: architect.byId,
     activeArchitects: architect.active,
+    visibleArchitects: architect.visibleTo,
+    specializationLabel: architect.specializationLabel,
     assessmentFor: assessment.assessmentFor,
     officialAssessmentFor: assessment.officialAssessmentFor,
     planFor: development.planFor,
+    evidencesForPlanItem: development.evidencesForPlanItem,
     gapsFor: assessment.gapsFor,
     progressionGapsFor: assessment.progressionGapsFor,
     masteryOpportunitiesFor: assessment.masteryOpportunitiesFor,
     capabilityAverages: capability.capabilityAverages,
+    capabilityShortLabels: capability.shortLabels,
+    capabilityShortLabel: capability.shortLabelFor,
+    coverageFor: capability.coverageFor,
+    teamAverageFor: capability.teamAverageFor,
+    consolidateProgressionGaps: gapConsolidation.progression,
+    consolidateMasteryGaps: gapConsolidation.mastery,
     teamTrainingNeeds: training.teamTrainingNeeds,
   };
 }
@@ -419,32 +627,13 @@ export function createSelectors(s: AppState) {
 export type Selectors = ReturnType<typeof createSelectors>;
 
 /**
- * ORIENTACAO-NONA-RODADA, Seção 10 (ENT-09-008/GES-010) — FK resolvida
- * quando existe; senão, fallback pro texto legado com indicação discreta
- * de pendência (nunca os dois juntos, e nunca a FK escondendo que ainda
- * não foi definida). Compartilhado entre Time e Perfil — as duas telas
- * que mostram a especialização de alguém.
- */
-export function specializationLabel(
-  architect: Pick<Architect, "specialization" | "primarySpecializationCompetencyId">,
-  competencyById: (id: string) => { name: string } | undefined,
-): string {
-  if (architect.primarySpecializationCompetencyId) {
-    const competency = competencyById(architect.primarySpecializationCompetencyId);
-    if (competency) return competency.name;
-  }
-  return architect.specialization
-    ? `${architect.specialization} (pendente de migração)`
-    : "Especialização não definida";
-}
-
-/**
  * Média só de quem tem valor, mais cobertura (quantos de quantos) — nunca
- * trata ausência como zero. Toda tela que soma `avg`/`target` de várias
- * pessoas ou vários capacidades passa por aqui, para não repetir o mesmo erro
- * em cada lugar. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 9.
+ * trata ausência como zero. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
+ * Seção 9. OO3-11k — deixou de ser exportada: as telas consomem
+ * `coverageFor`/`teamAverageFor` (contexto `CapabilitySelectors`), que
+ * embutem esta regra.
  */
-export function averageWithCoverage(values: (number | undefined)[]): {
+function averageWithCoverage(values: (number | undefined)[]): {
   avg: number | undefined;
   covered: number;
   total: number;

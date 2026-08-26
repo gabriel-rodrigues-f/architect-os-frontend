@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   ArchitectSelectors,
   AssessmentSelectors,
-  averageWithCoverage,
   CapabilitySelectors,
   createSelectors,
   DevelopmentSelectors,
@@ -11,23 +10,42 @@ import {
   SelectorIndex,
   TrainingSelectors,
 } from "../selectors";
-import { fixtureState } from "./fixtures";
+import type { AppState, SessionUser } from "../api";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureState,
+  fixtureUnassignedLeadUser,
+} from "./fixtures";
 
-describe("averageWithCoverage", () => {
-  it("ignora undefined na média, mas conta na cobertura", () => {
-    expect(averageWithCoverage([4, undefined, 2])).toEqual({ avg: 3, covered: 2, total: 3 });
+describe("coverageFor / teamAverageFor (OO3-11k — média com cobertura, nunca ausência como 0)", () => {
+  // "diego" não tem assessment — contribui na cobertura, nunca na média.
+  const state: AppState = {
+    ...fixtureState,
+    architects: [...fixtureState.architects, { ...fixtureState.architects[0]!, id: "diego" }],
+  };
+  const sel = createSelectors(state);
+
+  it("coverageFor ignora capacidade sem média, mas conta na cobertura", () => {
+    // ana: Cloud 4, Security 2 → média (4+2)/2 = 3, cobertura 2/2.
+    expect(sel.coverageFor("ana")).toEqual({ avg: 3, covered: 2, total: 2 });
+    // diego sem assessment: nunca 0 — undefined com cobertura 0.
+    expect(sel.coverageFor("diego")).toEqual({ avg: undefined, covered: 0, total: 2 });
   });
 
-  it("fica undefined quando ninguém contribuiu — nunca 0", () => {
-    expect(averageWithCoverage([undefined, undefined])).toEqual({
+  it("teamAverageFor ignora quem não tem assessment na média, mas conta na cobertura", () => {
+    const { atual, alvo } = sel.teamAverageFor("cloud", [{ id: "ana" }, { id: "diego" }]);
+    // Ana tem 4 em Cloud; diego não tem — média real é 4, não (4+0)/2=2.
+    expect(atual).toEqual({ avg: 4, covered: 1, total: 2 });
+    expect(alvo.covered).toBe(1);
+  });
+
+  it("população vazia fica undefined, sem dividir por zero", () => {
+    expect(sel.teamAverageFor("cloud", []).atual).toEqual({
       avg: undefined,
       covered: 0,
-      total: 2,
+      total: 0,
     });
-  });
-
-  it("lista vazia também fica undefined, sem dividir por zero", () => {
-    expect(averageWithCoverage([])).toEqual({ avg: undefined, covered: 0, total: 0 });
   });
 });
 
@@ -232,5 +250,138 @@ describe("classes por contexto (instanciadas diretamente)", () => {
     const training = new TrainingSelectors(index, architects, assessment);
     const needs = training.teamTrainingNeeds();
     expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam", "cloud-k8s"]);
+  });
+});
+
+describe("visibleArchitects", () => {
+  /**
+   * OO3-11a — a regra de população visível (ANA-001) que estava copiada em
+   * 5 telas agora mora em `ArchitectSelectors.visibleTo`. Estes casos provam
+   * a regra espelhada (`UiAuthorizationPolicy.canActFor`) direto no selector.
+   */
+  const leadUser: SessionUser = {
+    ...fixtureUnassignedLeadUser,
+    id: "lead-da-ana",
+  };
+  const state: AppState = {
+    ...fixtureState,
+    architects: [
+      { ...fixtureState.architects[0]!, leadUserId: "lead-da-ana" },
+      fixtureState.architects[1]!,
+      {
+        id: "carla",
+        name: "Carla Inativa",
+        role: "Arquiteto de Soluções I",
+        yearsAsArchitect: 2,
+        specialization: "Data",
+        email: "carla@company.com",
+        active: false,
+        leadUserId: "lead-da-ana",
+        version: 1,
+      },
+    ],
+  };
+  const sel = createSelectors(state);
+
+  it("admin vê todo o time ativo", () => {
+    expect(sel.visibleArchitects(fixtureAdminUser).map((a) => a.id)).toEqual(["ana", "bruno"]);
+  });
+
+  it("member vê só a si", () => {
+    expect(sel.visibleArchitects(fixtureMemberUser).map((a) => a.id)).toEqual(["ana"]);
+  });
+
+  it("lead vê só quem lidera", () => {
+    expect(sel.visibleArchitects(leadUser).map((a) => a.id)).toEqual(["ana"]);
+  });
+
+  it("inativo nunca aparece, nem para o próprio lead", () => {
+    expect(sel.visibleArchitects(leadUser).some((a) => a.id === "carla")).toBe(false);
+    expect(sel.visibleArchitects(fixtureAdminUser).some((a) => a.id === "carla")).toBe(false);
+  });
+
+  it("devolve a MESMA referência para o mesmo viewer — identidade estável para useMemo", () => {
+    expect(sel.visibleArchitects(fixtureAdminUser)).toBe(sel.visibleArchitects(fixtureAdminUser));
+  });
+});
+
+describe("capabilityShortLabel", () => {
+  /** OO3-11d — dedup R2-ESC-02 memoizado por snapshot, com o fallback `?? short` embutido. */
+  const state: AppState = {
+    ...fixtureState,
+    capabilities: [
+      { ...fixtureState.capabilities[0]!, id: "cloud", short: "Cld" },
+      { ...fixtureState.capabilities[1]!, id: "security", short: "Cld" },
+    ],
+  };
+  const sel = createSelectors(state);
+
+  it("desempata siglas repetidas na ordem do catálogo", () => {
+    expect(sel.capabilityShortLabel({ id: "cloud", short: "Cld" })).toBe("Cld");
+    expect(sel.capabilityShortLabel({ id: "security", short: "Cld" })).toBe("Cld (2)");
+    expect(sel.capabilityShortLabels.get("security")).toBe("Cld (2)");
+  });
+
+  it("faz fallback para `short` quando o id não está no catálogo", () => {
+    expect(sel.capabilityShortLabel({ id: "fantasma", short: "Xx" })).toBe("Xx");
+  });
+});
+
+describe("consolidação de gaps (GapConsolidationSelectors)", () => {
+  /** OO3-11g — a regra saiu de `gap-analysis-shared.tsx` para o selector; estes casos cobrem o cálculo direto. */
+  const sel = createSelectors(fixtureState);
+
+  it("agrega por competência somando pessoas e gap total; gap <= 0 é descartado", () => {
+    const rows = sel.consolidateProgressionGaps(fixtureState.architects);
+    const iam = rows.find((r) => r.competencyId === "security-iam");
+    expect(iam).toMatchObject({ people: 2, totalGap: 2 });
+    expect(iam?.architectNames.sort()).toEqual(["Ana Martins", "Bruno Almeida"]);
+    // cloud-serverless: gap 0 para os dois — nunca vira linha.
+    expect(rows.some((r) => r.competencyId === "cloud-serverless")).toBe(false);
+  });
+
+  it("maxGap é o maior gap individual e as médias saem com 1 casa", () => {
+    const state: AppState = {
+      ...fixtureState,
+      assessments: fixtureState.assessments.map((a) =>
+        a.id === "bruno-h2"
+          ? {
+              ...a,
+              items: a.items.map((i) =>
+                i.competencyId === "security-iam"
+                  ? { ...i, final: 1 as const, target: 4 as const }
+                  : i,
+              ),
+            }
+          : a,
+      ),
+    };
+    const rows = createSelectors(state).consolidateProgressionGaps(state.architects);
+    const iam = rows.find((r) => r.competencyId === "security-iam");
+    // ana: final 2 → 3 (gap 1); bruno: final 1 → 4 (gap 3)
+    expect(iam).toMatchObject({
+      people: 2,
+      maxGap: 3,
+      totalGap: 4,
+      avgGap: 2,
+      avgFinal: 1.5,
+      avgTarget: 3.5,
+    });
+  });
+
+  it("ordena por totalGap desc com desempate por maxGap desc", () => {
+    const rows = sel.consolidateProgressionGaps(fixtureState.architects);
+    for (let i = 1; i < rows.length; i += 1) {
+      const prev = rows[i - 1]!;
+      const cur = rows[i]!;
+      expect(
+        prev.totalGap > cur.totalGap ||
+          (prev.totalGap === cur.totalGap && prev.maxGap >= cur.maxGap),
+      ).toBe(true);
+    }
+  });
+
+  it("consolidateMasteryGaps usa só itens MASTERY — com a fixture atual, nenhum", () => {
+    expect(sel.consolidateMasteryGaps(fixtureState.architects)).toEqual([]);
   });
 });

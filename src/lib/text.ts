@@ -8,12 +8,9 @@
  * classes por afinidade: `NameFormatter` (texto/nome — `slug`, `byName`,
  * `matchesSearch`, `truncateNames`) e `DateFormatter` (data —
  * `formatDate`, `todayIso`, `daysAgoIso`).
- * `initialSearchParam`/`replaceSearchParam` NÃO viraram método de nenhuma
- * das duas: são utilitário de query string/roteamento, não formatação de
- * texto ou data — encaixar os dois ali seria inventar uma categoria que o
- * arquivo original não tinha (a auditoria pede adaptar às classes que fazem
- * sentido para o conteúdo real, não forçar tudo em `DateFormatter`/
- * `PercentageFormatter`/`ProficiencyFormatter`/`NameFormatter`).
+ * OO3-11b — `initialSearchParam`/`replaceSearchParam` (utilitário de query
+ * string, não de formatação) moraram aqui até ganharem casa própria em
+ * `lib/search-params.ts`.
  *
  * OO3-08 — os call sites migraram todos para as instâncias compartilhadas
  * (`defaultNameFormatter`/`defaultDateFormatter`) e as funções soltas de
@@ -116,6 +113,16 @@ export class DateFormatter {
    * no Brasil, já é o dia seguinte — o mesmo problema que `todayIso` existe
    * pra evitar.
    */
+  /**
+   * OO3-11j — `AAAA-MM-DD` de um `Date`, em UTC de propósito (veio de
+   * `team-report-shared.isoDate`, usado no NOME do arquivo exportado do
+   * relatório do time): "corrigir" para fuso local trocaria o nome do
+   * arquivo à noite no Brasil. Para "hoje" no fuso local, use `todayIso`.
+   */
+  isoDate(date: Date): string {
+    return date.toISOString().slice(0, 10);
+  }
+
   daysAgoIso(days: number): string {
     const d = new Date();
     d.setDate(d.getDate() - days);
@@ -128,49 +135,3 @@ export class DateFormatter {
 /** Instâncias sem estado, compartilhadas pelos call sites e por quem injetar as classes em ViewModels. */
 export const defaultNameFormatter = new NameFormatter();
 export const defaultDateFormatter = new DateFormatter();
-
-/**
- * Lê um parâmetro da query string na primeira montagem, sem depender de
- * `Route.useSearch()` — esse hook exige `RouterProvider` de verdade, que os
- * testes de componente isolado (`render(<Page />)` sem o app inteiro) não
- * montam. Ler direto de `window.location` funciona nos dois: no app real,
- * onde a URL já reflete `search` antes do primeiro render de uma rota nova
- * (TanStack Router atualiza a URL antes de montar o destino); e no teste,
- * onde simplesmente não há parâmetro nenhum e cai no `undefined`. `undefined`
- * no SSR (sem `window`) — a página cai no valor padrão do chamador. Ver
- * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
- *
- * Utilitário de query string/roteamento, não de formatação — por isso não
- * virou método de `NameFormatter`/`DateFormatter` (ver nota no topo do
- * arquivo).
- */
-export const initialSearchParam = (name: string): string | undefined => {
-  if (typeof window === "undefined") return undefined;
-  return new URLSearchParams(window.location.search).get(name) ?? undefined;
-};
-
-/**
- * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — o par
- * complementar de `initialSearchParam`: sem isto, a página só honra o filtro
- * que já veio na URL no primeiro render, mas nunca escreve de volta quando o
- * filtro muda — dar F5 depois de trocar a seleção perdia tudo, e o link da
- * barra de endereço nunca refletia o que a tela mostra. `replaceState` (não
- * `pushState`) porque trocar um filtro é edição de estado da tela atual, não
- * navegação — não deveria empilhar uma entrada no histórico do botão
- * "Voltar" por marcação de caixinha. `undefined` remove a chave (URL limpa
- * quando o filtro está no valor padrão); string vazia mantém a chave
- * presente e vazia — distinção usada por quem chama para diferenciar
- * "parâmetro ausente" (cai no padrão) de "selecionado vazio de propósito".
- */
-export const replaceSearchParam = (name: string, value: string | undefined): void => {
-  if (typeof window === "undefined") return;
-  const params = new URLSearchParams(window.location.search);
-  if (value === undefined) {
-    params.delete(name);
-  } else {
-    params.set(name, value);
-  }
-  const query = params.toString();
-  const url = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
-  window.history.replaceState(window.history.state, "", url);
-};

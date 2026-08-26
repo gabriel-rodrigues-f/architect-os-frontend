@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -17,11 +16,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
 import type { Assessment, AssessmentItem, Competency } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { renderWithApp } from "./render-app";
 
 /**
  * R2-ESC-08 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os cortes de "Lacunas
@@ -93,26 +90,7 @@ const state: AppState = {
   ],
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const TrainingNeedsPage = TrainingNeedsRoute.options.component as () => ReactNode;
 
@@ -145,11 +123,7 @@ describe("Necessidades de Treinamento — cortes declarados (R2-ESC-08)", () => 
       }
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
-    return render(
-      <Wrapper>
-        <TrainingNeedsPage />
-      </Wrapper>,
-    );
+    return renderWithApp(<TrainingNeedsPage />);
   };
 
   it("Gaps agregados: acima de 15, avisa a contagem e permite ver todas", async () => {
