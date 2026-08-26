@@ -1,7 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -27,11 +26,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { AppShell } from "@/components/app/AppShell";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { ThemeProvider } from "../theme";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-41 (§41, Fase 4/5) —
@@ -45,28 +41,11 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
  */
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <I18nProvider>
-          <AuthProvider>
-            <AuthReady>
-              <StoreProvider>{children}</StoreProvider>
-            </AuthReady>
-          </AuthProvider>
-        </I18nProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/**
+ * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
+ * O `ThemeProvider` (que o helper não inclui) entra como filho: é contexto
+ * independente dos demais providers, a posição na árvore não muda nada.
+ */
 
 describe("AppShell — botão único de recolher/expandir a sidebar (B-41)", () => {
   beforeEach(() => {
@@ -78,26 +57,7 @@ describe("AppShell — botão único de recolher/expandir a sidebar (B-41)", () 
     window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockImplementation((url: string) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
-    });
+    mockAppFetch(fetchMock);
   });
 
   afterEach(() => {
@@ -106,12 +66,12 @@ describe("AppShell — botão único de recolher/expandir a sidebar (B-41)", () 
   });
 
   const renderShell = () =>
-    render(
-      <Wrapper>
+    renderWithApp(
+      <ThemeProvider>
         <AppShell>
           <div>conteúdo</div>
         </AppShell>
-      </Wrapper>,
+      </ThemeProvider>,
     );
 
   it("o mesmo botão (nó DOM) sobrevive a 3 alternâncias — nunca desmonta/remonta", async () => {
