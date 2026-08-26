@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Lock, Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Bar, PageHeader, SectionCard } from "@/components/app/ui-bits";
@@ -29,6 +29,17 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
+import { LearningPathsViewModel } from "@/lib/view-models/learning-paths-view-model";
+
+/**
+ * OO2-08 — mesma convenção de `useTeamViewModel`/`useDevelopmentPlansViewModel`/
+ * `useCompetencyMatrixViewModel`: `store` já é o serviço narrow que o
+ * `LearningPathsViewModel` precisa, sem `FrontendContainer`/`useContainer()`.
+ */
+function useLearningPathsViewModel(): LearningPathsViewModel {
+  const store = useStore();
+  return useMemo(() => new LearningPathsViewModel(store), [store]);
+}
 
 export const Route = createFileRoute("/learning-paths")({
   head: () => ({
@@ -67,6 +78,7 @@ function LearningPage() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const labels = useLabels();
+  const vm = useLearningPathsViewModel();
   const { t, locale } = useI18n();
   const help = usePageHelp("learningPaths");
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
@@ -315,12 +327,7 @@ function LearningPage() {
                                       item: item.title,
                                     })}
                                     onCommit={(value) =>
-                                      store.updateLearningItemProgress(
-                                        path.id,
-                                        architectId,
-                                        item.id,
-                                        value,
-                                      )
+                                      vm.recordProgress(path.id, architectId, item.id, value)
                                     }
                                   />
                                 </div>
@@ -371,6 +378,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const user = useCurrentUser();
   const { t } = useI18n();
+  const vm = useLearningPathsViewModel();
   const [form, setForm] = useState({ name: "", description: "" });
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
@@ -381,7 +389,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
     matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
   );
 
-  const assignableArchitects = store.architects.filter((a) => a.active);
+  const assignableArchitects = vm.assignableArchitects(store.architects, []);
 
   const toggle = (field: "competencyIds" | "assignedTo", id: string) => {
     if (field === "competencyIds") {
@@ -402,18 +410,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
     if (!trimmed) return;
     setSaving(true);
     try {
-      await store.addLearningPath({
-        id: "",
-        name: trimmed,
-        description: form.description.trim(),
-        competencyIds,
-        assignedTo,
-        items: [],
-        progress: [],
-        createdBy: user.email,
-        createdByUserId: user.id,
-        createdAt: new Date().toISOString(),
-      });
+      await vm.createPath(user, form, competencyIds, assignedTo);
       toast.success(t("path.new.toast", { nome: trimmed }));
       onClose();
     } catch (error) {
@@ -579,6 +576,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
   const store = useStore();
   const { t } = useI18n();
   const labels = useLabels();
+  const vm = useLearningPathsViewModel();
   const [form, setForm] = useState({ name: path.name, description: path.description });
   const [newItem, setNewItem] = useState({
     title: "",
@@ -592,20 +590,14 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
   );
 
   const saveDetails = () => {
-    const nome = form.name.trim() || path.name;
-    store.updateLearningPath(path.id, {
-      name: nome,
-      description: form.description,
-    });
-    toast.success(t("path.edit.toast", { nome }));
+    vm.updateDetails(path, form);
+    toast.success(t("path.edit.toast", { nome: form.name.trim() || path.name }));
     onClose();
   };
 
   const toggle = (field: "competencyIds" | "assignedTo", id: string) => {
-    const current = path[field];
-    store.updateLearningPath(path.id, {
-      [field]: current.includes(id) ? current.filter((v) => v !== id) : [...current, id],
-    });
+    if (field === "competencyIds") vm.toggleCompetency(path, id);
+    else vm.toggleAssignment(path, id);
   };
 
   /**
@@ -614,20 +606,12 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
    * atribuição existente ficaria invisível, sem jeito de desmarcar). Ver
    * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC E.
    */
-  const assignableArchitects = store.architects.filter(
-    (a) => a.active || path.assignedTo.includes(a.id),
-  );
+  const assignableArchitects = vm.assignableArchitects(store.architects, path.assignedTo);
 
   const addItem = () => {
     const title = newItem.title.trim();
     if (!title) return;
-    const item: LearningPathItem = {
-      id: `lpi-${Date.now()}`,
-      title,
-      type: newItem.type,
-      hours: Number(newItem.hours) || 1,
-    };
-    store.addLearningPathItem(path.id, item);
+    vm.addItem(path.id, newItem.title, newItem.type, newItem.hours);
     setNewItem({ title: "", type: ITEM_TYPES[0] as LearningItemType, hours: "4" });
   };
 
@@ -673,22 +657,10 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                 <LearningPathItemRow
                   key={item.id}
                   item={item}
-                  onUpdateType={(type) =>
-                    store.updateLearningPath(path.id, {
-                      items: path.items.map((i) => (i.id === item.id ? { ...i, type } : i)),
-                    })
-                  }
-                  onUpdateTitle={(title) =>
-                    store.updateLearningPath(path.id, {
-                      items: path.items.map((i) => (i.id === item.id ? { ...i, title } : i)),
-                    })
-                  }
-                  onUpdateHours={(hours) =>
-                    store.updateLearningPath(path.id, {
-                      items: path.items.map((i) => (i.id === item.id ? { ...i, hours } : i)),
-                    })
-                  }
-                  onRemove={() => store.removeLearningPathItem(path.id, item.id)}
+                  onUpdateType={(type) => vm.updateItem(path, item.id, { type })}
+                  onUpdateTitle={(title) => vm.updateItem(path, item.id, { title })}
+                  onUpdateHours={(hours) => vm.updateItem(path, item.id, { hours })}
+                  onRemove={() => vm.removeItem(path.id, item.id)}
                 />
               ))}
               {path.items.length === 0 && (
@@ -788,7 +760,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
           <Button
             variant="destructive"
             onClick={() => {
-              store.removeLearningPath(path.id);
+              vm.removePath(path.id);
               toast.success(t("path.delete.toast", { nome: path.name }));
               onClose();
             }}
