@@ -1,16 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "../api";
-import { AuthProvider } from "../auth";
 import type { MentoringSession } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureState } from "./fixtures";
+import { mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * EPIC J — Mentoring Loop: "ações" da sessão viravam texto morto — ninguém
@@ -64,20 +61,11 @@ const state: AppState = {
   mentoringSessions: [sessaoComGap, sessaoSemGap],
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <I18nProvider>
-          <StoreProvider>{children}</StoreProvider>
-        </I18nProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  );
-}
+/**
+ * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
+ * O Wrapper local não tinha o corte `AuthReady`; o do helper apenas atrasa a
+ * montagem até `/api/auth/me` resolver — as asserções já esperam via `findBy*`.
+ */
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 
@@ -97,28 +85,15 @@ describe("Mentoria — converter ação em item de PDI", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
 
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(usuario), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (init?.method === "POST" && href.includes("/api/plans/")) {
-        return Promise.resolve(new Response("{}", { status: 201 }));
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      user: usuario,
+      state,
+      routes: [
+        (href, init) =>
+          init?.method === "POST" && href.includes("/api/plans/")
+            ? new Response("{}", { status: 201 })
+            : undefined,
+      ],
     });
   });
 
@@ -128,11 +103,7 @@ describe("Mentoria — converter ação em item de PDI", () => {
   });
 
   it("mostra o botão só na sessão com competência já avaliada", async () => {
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
     await selectMentee("Bruno Almeida");
     await screen.findByText("Aprofundar Kubernetes");
 
@@ -148,11 +119,7 @@ describe("Mentoria — converter ação em item de PDI", () => {
    * deriva os três a partir do assessment oficial.
    */
   it("clicar chama /from-gap referenciando o assessment oficial, sem inventar nível/prioridade", async () => {
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
     await selectMentee("Bruno Almeida");
     await screen.findByText("Aprofundar Kubernetes");
     await userEvent.click(screen.getByRole("button", { name: /Criar ação no PDI/ }));

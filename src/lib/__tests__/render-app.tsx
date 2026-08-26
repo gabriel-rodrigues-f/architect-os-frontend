@@ -59,6 +59,10 @@ export function mockAppFetch(
   });
 }
 
+/** Rota de `GET /api/auth/users` vazia — telas de Time/Usuários listam contas. */
+export const emptyAuthUsersRoute: FetchRoute = (href) =>
+  href.endsWith("/api/auth/users") ? jsonResponse([]) : undefined;
+
 /**
  * Rota de `GET /api/career-levels` com os níveis da fixture (B-24/ADR-0011:
  * careerLevels saiu de `/api/state`) — replicada em vários testes de telas

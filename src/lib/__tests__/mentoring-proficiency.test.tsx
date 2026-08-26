@@ -1,15 +1,12 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * Rodada 10, Seção 17/38/39 — "Evolução observada" na mentoria é a única
@@ -43,60 +40,25 @@ function stateWithAnaLedBy(leadUserId: string): AppState {
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 
 function mockBackend(sessionUser: SessionUser, state: AppState) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
-  fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-    const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(sessionUser), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith("/api/state")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state satisfies AppState), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (init?.method === "POST" && href.endsWith("/api/mentoring-sessions")) {
-      const body = JSON.parse(String(init.body)) as Record<string, unknown>;
-      return Promise.resolve(
-        new Response(JSON.stringify({ ...body, id: "m-nova" }), {
-          status: 201,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
+  mockAppFetch(fetchMock, {
+    user: sessionUser,
+    state,
+    routes: [
+      (href, init) => {
+        if (init?.method === "POST" && href.endsWith("/api/mentoring-sessions")) {
+          const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+          return jsonResponse({ ...body, id: "m-nova" }, 201);
+        }
+        return undefined;
+      },
+    ],
   });
 }
 
@@ -108,11 +70,7 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
 
   it("não aparece pra admin — só o Tech Lead atribuído registra nível observado", async () => {
     mockBackend(fixtureAdminUser, stateWithAnaLedBy(LEAD_USER.id));
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     await screen.findByText("Nova sessão de mentoria");
@@ -122,11 +80,7 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
 
   it("Tech Lead atribuído vê a seção e o registro de nível observado entra no payload", async () => {
     mockBackend(LEAD_USER, stateWithAnaLedBy(LEAD_USER.id));
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     await screen.findByText("Nova sessão de mentoria");
@@ -179,11 +133,7 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
    */
   it("marcar uma competência sem escolher o nível bloqueia o salvar — nunca grava L1 por padrão", async () => {
     mockBackend(LEAD_USER, stateWithAnaLedBy(LEAD_USER.id));
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     const dialog = await screen.findByRole("dialog");
@@ -225,11 +175,7 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
 
   it("salva normalmente com 'Evolução observada' vazia — o campo é opcional", async () => {
     mockBackend(LEAD_USER, stateWithAnaLedBy(LEAD_USER.id));
-    render(
-      <Wrapper>
-        <MentoringPage />
-      </Wrapper>,
-    );
+    renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     const dialog = await screen.findByRole("dialog");

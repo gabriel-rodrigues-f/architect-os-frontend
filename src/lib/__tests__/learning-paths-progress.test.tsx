@@ -1,14 +1,11 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as LearningRoute } from "@/routes/learning-paths";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "./fixtures";
+import { mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 12 e 13 — "somente
@@ -39,50 +36,12 @@ const state: AppState = {
   ],
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const LearningPage = LearningRoute.options.component as () => ReactNode;
 
 function mockSession(user: typeof fixtureAdminUser | typeof fixtureMemberUser) {
-  fetchMock.mockImplementation((url: string) => {
-    const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(user), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith("/api/state")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
-  });
+  mockAppFetch(fetchMock, { user, state });
 }
 
 describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado", () => {
@@ -98,11 +57,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
 
   it("member vê a própria linha editável e a de outra pessoa só leitura", async () => {
     mockSession(fixtureMemberUser); // Ana Martins, architectId "ana"
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     // REVISAO-360-FRONTEND, Seção 34 — a trilha nasce recolhida; os itens só aparecem depois de expandir.
     await screen.findByText("Trilha com duas pessoas");
@@ -116,11 +71,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
 
   it("mover o próprio slider registra progresso só para essa pessoa, não para a trilha inteira", async () => {
     mockSession(fixtureMemberUser);
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
     fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
@@ -144,11 +95,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
    */
   it("mover o slider sem soltar não dispara nenhum PATCH (evita flooding no arrasto)", async () => {
     mockSession(fixtureMemberUser);
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
     fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
@@ -168,11 +115,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
 
   it("admin vê as duas linhas editáveis", async () => {
     mockSession(fixtureAdminUser);
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
     fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
@@ -188,11 +131,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
    */
   it("editar o título de um item só manda PATCH ao sair do campo (blur), não por tecla", async () => {
     mockSession(fixtureAdminUser);
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
     fireEvent.click(screen.getByRole("button", { name: /Editar/ }));
@@ -215,11 +154,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
    */
   it("membro comum não vê o botão de criar trilha nova", async () => {
     mockSession(fixtureMemberUser);
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
     expect(screen.queryByRole("button", { name: "Nova trilha" })).toBeNull();
@@ -227,11 +162,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
 
   it("admin vê o botão de criar trilha nova", async () => {
     mockSession(fixtureAdminUser);
-    render(
-      <Wrapper>
-        <LearningPage />
-      </Wrapper>,
-    );
+    renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
     expect(screen.getByRole("button", { name: "Nova trilha" })).toBeTruthy();

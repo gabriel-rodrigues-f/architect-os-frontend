@@ -1,15 +1,11 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type SessionUser } from "../api";
-import { AuthProvider } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureState } from "./fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * Todos os campos da sessão são obrigatórios. Antes, Salvar com campo vazio não
@@ -30,30 +26,17 @@ const usuario: SessionUser = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <I18nProvider>
-          <StoreProvider>{children}</StoreProvider>
-        </I18nProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  );
-}
+/**
+ * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
+ * O Wrapper local não tinha o corte `AuthReady`; o do helper apenas atrasa a
+ * montagem até `/api/auth/me` resolver — as asserções já esperam via `findBy*`.
+ */
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 
 /** Renderiza e abre o diálogo de nova sessão. */
 async function abrirFormulario() {
-  render(
-    <Wrapper>
-      <MentoringPage />
-    </Wrapper>,
-  );
+  renderWithApp(<MentoringPage />);
   await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
 }
 
@@ -63,34 +46,29 @@ describe("Mentoria — campos obrigatórios", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const json = (body: unknown, status = 200) =>
-        Promise.resolve(
-          new Response(JSON.stringify(body), {
-            status,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      if (init?.method === "POST") {
-        return json(
-          {
-            id: "sessao-nova",
-            mentor: usuario.name,
-            mentorUserId: usuario.id,
-            menteeId: "ana",
-            date: "2026-01-01",
-            durationMin: 45,
-            topic: "Revisão de arquitetura",
-            competencyIds: [],
-            notes: "Discutimos o trade-off",
-            decisions: "Seguir com event-driven",
-            actions: "Escrever o ADR",
-          },
-          201,
-        );
-      }
-      if (String(url).endsWith("/api/auth/me")) return json(usuario);
-      return json(fixtureState);
+    mockAppFetch(fetchMock, {
+      user: usuario,
+      routes: [
+        (_href, init) =>
+          init?.method === "POST"
+            ? jsonResponse(
+                {
+                  id: "sessao-nova",
+                  mentor: usuario.name,
+                  mentorUserId: usuario.id,
+                  menteeId: "ana",
+                  date: "2026-01-01",
+                  durationMin: 45,
+                  topic: "Revisão de arquitetura",
+                  competencyIds: [],
+                  notes: "Discutimos o trade-off",
+                  decisions: "Seguir com event-driven",
+                  actions: "Escrever o ADR",
+                },
+                201,
+              )
+            : undefined,
+      ],
     });
   });
 
@@ -161,14 +139,7 @@ describe("Mentoria — ajuda dos campos", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockImplementation((url: string) => {
-      const json = (body: unknown) =>
-        Promise.resolve(
-          new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }),
-        );
-      if (String(url).endsWith("/api/auth/me")) return json(usuario);
-      return json(fixtureState);
-    });
+    mockAppFetch(fetchMock, { user: usuario });
   });
 
   afterEach(() => {
