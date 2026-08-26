@@ -31,6 +31,7 @@ import { authApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/team")({
@@ -66,8 +67,13 @@ function TeamPage() {
   const store = useStore();
   const { t } = useI18n();
   const help = usePageHelp("team");
-  /** Cadastro do roster é decisão administrativa — backend já recusa o resto. */
-  const isAdmin = useCurrentUser().role === "admin";
+  /**
+   * Cadastro do roster é decisão administrativa — backend já recusa o
+   * resto. `UiAuthorizationPolicy.isAdmin` (OO2-08, Seção 70) no lugar do
+   * `role === "admin"` inline que ficava aqui antes — mesma regra, agora
+   * consolidada no mesmo objeto que `TeamViewModel` consulta.
+   */
+  const isAdmin = defaultUiAuthorizationPolicy.isAdmin(useCurrentUser());
   /** Só para montar o seletor de "Lead responsável" — a rota já é admin-only no backend. */
   const { data: users } = useQuery({
     queryKey: ["auth-users"],

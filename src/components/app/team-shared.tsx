@@ -31,9 +31,15 @@ import { ApiError } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, specializationLabel, type Gap } from "@/lib/selectors";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { byName } from "@/lib/text";
 import { cn } from "@/lib/utils";
+import {
+  emptyArchitectForm,
+  TeamViewModel,
+  type ArchitectFormValues,
+} from "@/lib/view-models/team-view-model";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) / R1-P07 —
@@ -41,32 +47,20 @@ import { cn } from "@/lib/utils";
  * do roster + formulário de cadastro/edição + renderização em cards/tabela,
  * cada um com o próprio estado). Extraído no mesmo padrão de
  * `mentoring-shared.tsx`: `TeamPage` (rota) vira só composição.
+ *
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seções 58-61) — `useArchitectForm` abaixo virou o adaptador fino que a
+ * Seção 61 descreve: o cadastro/edição/reativação de verdade mora em
+ * `TeamViewModel` (`lib/view-models/team-view-model.ts`), e o hook só cuida
+ * do que é genuinamente estado de render (diálogo aberto/fechado, rascunho
+ * do formulário) e da orquestração de UI (toast, fechar diálogo). Ver nota
+ * no próprio `team-view-model.ts` sobre por que `useTeamRoster` (abaixo)
+ * NÃO fez a mesma migração.
  */
 
 /** Pseudo-ids pra quem não tem especialização/capacidade derivável — nunca somem do filtro por não ter um id real de catálogo. */
 const NO_SPECIALIZATION = "__no-specialization__";
 const NO_CAPABILITY = "__no-capability__";
-
-interface ArchitectForm {
-  name: string;
-  role: RoleName;
-  /** Legado — só preservado para quem ainda não migrou (Seção 10, passo 6: nunca gravado numa edição nova). */
-  specialization: string;
-  primarySpecializationCompetencyId: string | null;
-  years: string;
-  email: string;
-  leadUserId: string;
-}
-
-const emptyForm = (): ArchitectForm => ({
-  name: "",
-  role: ROLES[0] as RoleName,
-  specialization: "",
-  primarySpecializationCompetencyId: null,
-  years: "",
-  email: "",
-  leadUserId: "",
-});
 
 /** Uma pessoa do roster já enriquecida com gaps/média/histórico — o que `enrichedSorted` produz e a tabela/cards consomem. */
 export interface EnrichedArchitect {
@@ -88,17 +82,29 @@ export interface EnrichedArchitect {
 export function useArchitectForm() {
   const store = useStore();
   const { t } = useI18n();
+  /**
+   * `store` (o retorno de `useStore()`) faz o papel de "serviço" que o
+   * exemplo da Seção 60 pede no construtor — já abstrai o gateway HTTP
+   * atrás de cache/otimismo (Seção 64), então o `TeamViewModel` não
+   * precisa (nem deve) falar com `FrontendContainer` diretamente aqui: um
+   * ViewModel que bypassasse `store` duplicaria a semântica de cache que
+   * `store.tsx` já resolve, e é exatamente o tipo de comportamento
+   * inventado que este brief pede para evitar.
+   */
+  const viewModel = useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
 
   /** `null` = diálogo fechado; string vazia = criação; id = edição. */
   const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState<ArchitectForm>(emptyForm());
+  const [form, setForm] = useState<ArchitectFormValues>(() =>
+    emptyArchitectForm(ROLES[0] as RoleName),
+  );
   /** R2-UX-08/OO-03 — quem está com o diálogo de desativação aberto. */
   const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
   /** ENT-CAR-017 — quem está com o diálogo de transição de nível aberto. */
   const [transitioning, setTransitioning] = useState<Architect | null>(null);
 
   const openCreate = () => {
-    setForm(emptyForm());
+    setForm(emptyArchitectForm(ROLES[0] as RoleName));
     setEditing("");
   };
 
@@ -115,61 +121,28 @@ export function useArchitectForm() {
     setEditing(architect.id);
   };
 
-  /**
-   * Nada aqui tem fallback: e-mail inventado do nome e "1 ano" fantasma
-   * escondiam dado que ninguém preencheu como se fosse real. Falta um campo,
-   * o cadastro não salva — sem exceção. `strongDomain`/`gapDomain` saíram do
-   * cadastro: força e lacuna são resultado do assessment (final × target),
-   * não uma opinião prévia coletada antes de qualquer avaliação existir. Ver
-   * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 16 e 17, e AUDITORIA-
-   * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, Seção 11.
-   */
-  const yearsValid =
-    form.years.trim() !== "" && Number.isInteger(Number(form.years)) && Number(form.years) >= 0;
-  const canSubmit =
-    form.name.trim().length > 0 &&
-    form.email.trim().length > 0 &&
-    form.email.includes("@") &&
-    yearsValid;
+  const { yearsValid, canSubmit } = viewModel.validate(form);
 
   /**
-   * `role` só entra no payload ao criar — ENT-CAR-017: depois de criado, nível
-   * de carreira muda só pelo comando dedicado (`transitionCareerLevel`),
-   * nunca por este PATCH genérico de cadastro (o backend já recusa `role`
-   * aqui de qualquer forma, mas nem monta o campo para não sugerir que
-   * funcionaria).
+   * Validação e payload moraram em `TeamViewModel.submit` (Seção 61 — hook
+   * vira adaptador fino). O que fica aqui é só orquestração de UI: toast e
+   * fechar o diálogo, igual antes.
    */
   const submit = async () => {
     if (!canSubmit) return;
-    const payload = {
-      name: form.name.trim(),
-      yearsAsArchitect: Number(form.years),
-      // Legado nunca é gravado numa edição nova (Seção 10, passo 6) — só a
-      // FK. `specialization` (texto livre) permanece intocado no backend
-      // até uma migração administrativa validada mapear o resto.
-      primarySpecializationCompetencyId: form.primarySpecializationCompetencyId,
-      email: form.email.trim(),
-      leadUserId: form.leadUserId || null,
-    };
 
     if (editing) {
       // `specialization` legado nunca sai daqui — a edição só grava a FK
       // nova, preservando (ou não) o texto antigo que já estava salvo.
-      store.updateArchitect(editing, payload);
-      toast.success(t("team.edit.toast", { nome: payload.name }));
+      await viewModel.submit(form, editing);
+      toast.success(t("team.edit.toast", { nome: form.name.trim() }));
       setEditing(null);
     } else {
       // B-32 — id é gerado no servidor (nunca mais slug(nome), que colidia
       // entre duas pessoas de nome parecido); sem otimismo, a tela só fecha
       // o diálogo depois que o cadastro existe de verdade.
       try {
-        await store.addArchitect({
-          ...payload,
-          // Novo cadastro nasce sem o campo legado — só a FK, quando definida.
-          specialization: "",
-          role: form.role,
-          active: true,
-        });
+        await viewModel.submit(form, editing);
         setEditing(null);
       } catch (error) {
         toast.error(authErrorMessage(error));
@@ -178,7 +151,7 @@ export function useArchitectForm() {
   };
 
   const reactivate = (a: Architect) => {
-    store.updateArchitect(a.id, { active: true });
+    viewModel.reactivate(a);
     toast.success(t("team.reactivate.toast", { nome: a.name }));
   };
 
