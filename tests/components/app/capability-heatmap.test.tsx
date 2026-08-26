@@ -2,10 +2,10 @@ import { cleanup, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
-import { type AppState } from "../api";
-import { createSelectors } from "../selectors";
-import { fixtureState } from "./fixtures";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import { createSelectors } from "@/lib/selectors";
+import { fixtureState } from "../../helpers/fixtures";
+import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 
 /**
  * OO3-11/D-1 — o heatmap pessoas × capacidades unificado entre o Painel e

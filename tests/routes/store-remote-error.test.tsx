@@ -19,9 +19,14 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Toaster } from "@/components/ui/sonner";
 import { Route as TeamRoute } from "@/routes/team";
-import { type AppState } from "../api";
-import { fixtureState } from "./fixtures";
-import { emptyAuthUsersRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import { fixtureState } from "../helpers/fixtures";
+import {
+  emptyAuthUsersRoute,
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+} from "../helpers/render-app";
 
 /**
  * EPIC L — Trustworthy mutations: uma escrita otimista que falha no servidor

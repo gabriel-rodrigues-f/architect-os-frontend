@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Evidence } from "../domain";
+import type { Evidence } from "@/lib/domain";
 import {
   ArchitectProfileViewModel,
   type ArchitectProfileService,
   type EvidenceDraft,
-} from "../view-models/architect-profile-view-model";
+} from "@/lib/view-models/architect-profile-view-model";
 
 /**
  * OO3-10c (Fase OO-3) — mesmo padrão dos demais testes de ViewModel:

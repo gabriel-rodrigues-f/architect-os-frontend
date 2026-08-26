@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { type AppState } from "../api";
-import type { Assessment, AssessmentEligibility } from "../domain";
-import { fixtureMemberUser, fixtureState } from "./fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import type { Assessment, AssessmentEligibility } from "@/lib/domain";
+import { fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * ORIENTACAO-NONA-RODADA, Seção 8/32 — cobertura dedicada do Portfólio de

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
-import { createSelectors } from "../selectors";
-import { fixtureState } from "./fixtures";
+import { createSelectors } from "@/lib/selectors";
+import { fixtureState } from "../helpers/fixtures";
 
 /**
  * O filtro da tela de Gap Analysis precisa recortar TODOS os widgets — radar,

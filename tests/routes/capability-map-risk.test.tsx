@@ -18,10 +18,10 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
-import type { SessionUser } from "../api";
-import { type AppState } from "../api";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
-import { renderWithApp } from "./render-app";
+import type { SessionUser } from "@/lib/api";
+import { type AppState } from "@/lib/api";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { renderWithApp } from "../helpers/render-app";
 
 /**
  * EPIC 6 (quarta rodada) — antes, "0 Especialistas + 1 Avançado" caía no

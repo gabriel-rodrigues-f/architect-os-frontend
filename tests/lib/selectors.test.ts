@@ -9,14 +9,14 @@ import {
   emptyState,
   SelectorIndex,
   TrainingSelectors,
-} from "../selectors";
-import type { AppState, SessionUser } from "../api";
+} from "@/lib/selectors";
+import type { AppState, SessionUser } from "@/lib/api";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
   fixtureState,
   fixtureUnassignedLeadUser,
-} from "./fixtures";
+} from "../helpers/fixtures";
 
 describe("coverageFor / teamAverageFor (OO3-11k — média com cobertura, nunca ausência como 0)", () => {
   // "diego" não tem assessment — contribui na cobertura, nunca na média.

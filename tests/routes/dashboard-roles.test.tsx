@@ -20,9 +20,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as DashboardRoute } from "@/routes/index";
-import { type AppState, type SessionUser } from "../api";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "./fixtures";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState, type SessionUser } from "@/lib/api";
+import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * FASE 2 (quinta rodada) — "homes distintas Member/Lead/Admin": antes, todo

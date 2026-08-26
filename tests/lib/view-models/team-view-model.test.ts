@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Architect } from "../domain";
-import { UiAuthorizationPolicy } from "../scope";
+import type { Architect } from "@/lib/domain";
+import { UiAuthorizationPolicy } from "@/lib/scope";
 import {
   emptyArchitectForm,
   TeamViewModel,
   type ArchitectFormValues,
   type TeamRosterService,
-} from "../view-models/team-view-model";
-import { fixtureAdminUser, fixtureMemberUser } from "./fixtures";
+} from "@/lib/view-models/team-view-model";
+import { fixtureAdminUser, fixtureMemberUser } from "../../helpers/fixtures";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

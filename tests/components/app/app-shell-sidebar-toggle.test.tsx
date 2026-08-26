@@ -26,8 +26,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { AppShell } from "@/components/app/AppShell";
-import { ThemeProvider } from "../theme";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { ThemeProvider } from "@/lib/theme";
+import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-41 (§41, Fase 4/5) —

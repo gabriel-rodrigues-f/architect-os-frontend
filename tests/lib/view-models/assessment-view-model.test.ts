@@ -1,13 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Architect, Assessment, AssessmentEligibility, Capability } from "../domain";
-import { UiAuthorizationPolicy } from "../scope";
+import type { Architect, Assessment, AssessmentEligibility, Capability } from "@/lib/domain";
+import { UiAuthorizationPolicy } from "@/lib/scope";
 import {
   AssessmentViewModel,
   type AssessmentItemService,
   type AssessmentPortfolioService,
-} from "../view-models/assessment-view-model";
-import { fixtureAdminUser, fixtureMemberUser, fixtureUnassignedLeadUser } from "./fixtures";
+} from "@/lib/view-models/assessment-view-model";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureUnassignedLeadUser,
+} from "../../helpers/fixtures";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

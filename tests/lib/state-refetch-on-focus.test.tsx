@@ -2,10 +2,10 @@ import { focusManager } from "@tanstack/react-query";
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type AppState } from "../api";
-import { useStore } from "../store";
-import { fixtureState } from "./fixtures";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import { useStore } from "@/lib/store";
+import { fixtureState } from "../helpers/fixtures";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `/api/state` é o BFF

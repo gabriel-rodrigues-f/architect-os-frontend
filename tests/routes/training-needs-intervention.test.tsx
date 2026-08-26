@@ -15,9 +15,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
-import { type AppState, type SessionUser } from "../api";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
-import { renderWithApp } from "./render-app";
+import { type AppState, type SessionUser } from "@/lib/api";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { renderWithApp } from "../helpers/render-app";
 
 /**
  * EPIC K — Collective Intervention: "Treinamentos Recomendados" era relatório

@@ -21,9 +21,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { type AppState } from "../api";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
-import { renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { renderWithApp } from "../helpers/render-app";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seções 16, 17 e 26/27 — nada

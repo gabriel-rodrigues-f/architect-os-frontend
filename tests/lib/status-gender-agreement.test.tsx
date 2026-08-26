@@ -2,8 +2,8 @@ import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 
-import { I18nProvider } from "../i18n";
-import { useLabels } from "../labels";
+import { I18nProvider } from "@/lib/i18n";
+import { useLabels } from "@/lib/labels";
 
 /**
  * R2-VIS-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Avaliação: Concluído" e

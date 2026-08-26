@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as LearningRoute } from "@/routes/learning-paths";
-import { type AppState } from "../api";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "./fixtures";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 12 e 13 — "somente

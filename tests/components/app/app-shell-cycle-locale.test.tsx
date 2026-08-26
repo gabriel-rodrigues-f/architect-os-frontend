@@ -26,8 +26,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { AppShell } from "@/components/app/AppShell";
-import { ThemeProvider } from "../theme";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { ThemeProvider } from "@/lib/theme";
+import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 
 /**
  * R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o seletor de Ciclo (só

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { initErrorTrackingClient, Sentry as SentryClient } from "../error-tracking.client";
+import { initErrorTrackingClient, Sentry as SentryClient } from "@/lib/error-tracking.client";
 
 /**
  * R1-P05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, completa B-27) — a garantia

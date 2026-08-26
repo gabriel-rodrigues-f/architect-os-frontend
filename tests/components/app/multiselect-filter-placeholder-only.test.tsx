@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MultiSelectFilter } from "@/components/app/MultiSelectFilter";
-import { I18nProvider } from "../i18n";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * R3-007 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — bug relatado pela dona do

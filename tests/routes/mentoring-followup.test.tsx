@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { type AppState, type SessionUser } from "../api";
-import type { MentoringSession } from "../domain";
-import { fixtureState } from "./fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState, type SessionUser } from "@/lib/api";
+import type { MentoringSession } from "@/lib/domain";
+import { fixtureState } from "../helpers/fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * EPIC 5 (quarta rodada) — agendar follow-up depois que a sessão já

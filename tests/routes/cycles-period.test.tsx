@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as CyclesRoute } from "@/routes/cycles";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * Ciclo não é texto livre: nasce de ano + semestre, e não dá para repetir um

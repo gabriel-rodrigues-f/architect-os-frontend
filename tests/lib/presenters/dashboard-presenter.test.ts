@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { AppState } from "../api";
+import type { AppState } from "@/lib/api";
 import {
   CRITICAL_GAP_THRESHOLD,
   DashboardPresenter,
   PersonalDashboardPresenter,
-} from "../presenters/dashboard-presenter";
-import { createSelectors } from "../selectors";
-import { fixtureState } from "./fixtures";
+} from "@/lib/presenters/dashboard-presenter";
+import { createSelectors } from "@/lib/selectors";
+import { fixtureState } from "../../helpers/fixtures";
 
 /**
  * OO3-11e — os números do painel (`AdminHome`) ganham a cobertura unitária

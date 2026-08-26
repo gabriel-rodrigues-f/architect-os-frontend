@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
-import { availableLocales, BASE_LOCALE, detectLocale, interpolate, isKnownLocale } from "../i18n";
+import {
+  availableLocales,
+  BASE_LOCALE,
+  detectLocale,
+  interpolate,
+  isKnownLocale,
+} from "@/lib/i18n";
 
 /**
  * O framework descobre idiomas a partir dos arquivos em `src/locales`. Estes

@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { type SessionUser } from "../api";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type SessionUser } from "@/lib/api";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * Todos os campos da sessão são obrigatórios. Antes, Salvar com campo vazio não

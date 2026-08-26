@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Architect, LearningPath, LearningPathItem } from "../domain";
+import type { Architect, LearningPath, LearningPathItem } from "@/lib/domain";
 import {
   LearningPathsViewModel,
   type LearningPathService,
-} from "../view-models/learning-paths-view-model";
-import { fixtureAdminUser } from "./fixtures";
+} from "@/lib/view-models/learning-paths-view-model";
+import { fixtureAdminUser } from "../../helpers/fixtures";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

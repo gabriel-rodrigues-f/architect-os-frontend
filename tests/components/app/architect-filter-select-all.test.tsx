@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import type { Architect } from "@/lib/domain";
-import { I18nProvider } from "../i18n";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * Pedido do usuário revisando o app rodando, em duas rodadas:

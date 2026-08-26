@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Capability, Competency } from "../domain";
-import { UiAuthorizationPolicy } from "../scope";
+import type { Capability, Competency } from "@/lib/domain";
+import { UiAuthorizationPolicy } from "@/lib/scope";
 import {
   CompetencyMatrixViewModel,
   type CatalogService,
-} from "../view-models/competency-matrix-view-model";
-import { fixtureAdminUser, fixtureCareerLevels, fixtureMemberUser } from "./fixtures";
+} from "@/lib/view-models/competency-matrix-view-model";
+import { fixtureAdminUser, fixtureCareerLevels, fixtureMemberUser } from "../../helpers/fixtures";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

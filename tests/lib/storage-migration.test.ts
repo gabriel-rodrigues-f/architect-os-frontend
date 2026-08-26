@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { readMigratedItem } from "../storage";
+import { readMigratedItem } from "@/lib/storage";
 
 /**
  * R2-VIS-10 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — metade das chaves de

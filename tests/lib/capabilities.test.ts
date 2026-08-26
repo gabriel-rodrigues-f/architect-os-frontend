@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { fixtureCareerLevels } from "./fixtures";
-import { LabelFormatter } from "../labels";
-import type { MessageKey } from "../i18n";
+import { fixtureCareerLevels } from "../helpers/fixtures";
+import { LabelFormatter } from "@/lib/labels";
+import type { MessageKey } from "@/lib/i18n";
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 

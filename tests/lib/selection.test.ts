@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Selection, type SelectionScope } from "../selection";
+import { Selection, type SelectionScope } from "@/lib/selection";
 
 /**
  * OO3-09b (Fase OO-3) — `Selection<TId>` é o tipo único de recorte que

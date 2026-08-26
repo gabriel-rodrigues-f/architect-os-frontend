@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { Architect, Capability } from "../domain";
-import { CapabilityCoveragePresenter } from "../presenters/capability-coverage-presenter";
-import type { CapabilityAverage } from "../selectors";
+import type { Architect, Capability } from "@/lib/domain";
+import { CapabilityCoveragePresenter } from "@/lib/presenters/capability-coverage-presenter";
+import type { CapabilityAverage } from "@/lib/selectors";
 
 /**
  * OO3-11h — faixas de proficiência e risco de concentração saíram de

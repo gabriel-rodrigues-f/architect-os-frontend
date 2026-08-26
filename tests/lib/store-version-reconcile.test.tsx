@@ -2,9 +2,9 @@ import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useStore } from "../store";
-import { fixtureState } from "./fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { useStore } from "@/lib/store";
+import { fixtureState } from "../helpers/fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * B-09 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10, "409

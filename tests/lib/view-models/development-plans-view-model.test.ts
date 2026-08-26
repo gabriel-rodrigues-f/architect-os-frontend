@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { DevelopmentPlan, SmartGoal } from "../domain";
-import type { Gap } from "../selectors";
+import type { DevelopmentPlan, SmartGoal } from "@/lib/domain";
+import type { Gap } from "@/lib/selectors";
 import {
   DevelopmentPlansViewModel,
   type DevelopmentPlanService,
-} from "../view-models/development-plans-view-model";
+} from "@/lib/view-models/development-plans-view-model";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

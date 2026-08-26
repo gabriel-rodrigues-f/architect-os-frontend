@@ -22,10 +22,10 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as LearningRoute } from "@/routes/learning-paths";
-import { type AppState } from "../api";
-import type { Competency } from "../domain";
-import { fixtureState } from "./fixtures";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import type { Competency } from "@/lib/domain";
+import { fixtureState } from "../helpers/fixtures";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — checklists de

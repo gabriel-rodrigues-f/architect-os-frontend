@@ -17,7 +17,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * REVISAO-360-FRONTEND-UI-UX-ENTERPRISE-SYNAPSE-2026-08-22.md, FE-360-012

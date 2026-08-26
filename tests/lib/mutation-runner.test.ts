@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ApiError } from "../api-errors";
-import { MutationRunner, type MutationCache } from "../mutation-runner";
+import { ApiError } from "@/lib/api-errors";
+import { MutationRunner, type MutationCache } from "@/lib/mutation-runner";
 
 /**
  * OO3-09 (Fase OO-3) — o `MutationRunner` carrega o ciclo otimista inteiro

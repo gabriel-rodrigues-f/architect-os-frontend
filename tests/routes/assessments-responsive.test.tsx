@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { type AppState } from "../api";
-import { fixtureMemberUser, fixtureState } from "./fixtures";
-import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import { fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * R2-RESP-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — abaixo de `md` (768px) a

@@ -4,10 +4,15 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { type AppState } from "../api";
-import type { AssessmentDevelopmentSummary } from "../domain";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "./fixtures";
-import { emptyEligibilityRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import type { AssessmentDevelopmentSummary } from "@/lib/domain";
+import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import {
+  emptyEligibilityRoute,
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+} from "../helpers/render-app";
 
 /**
  * ORIENTACAO-NONA-RODADA ENT-09-011 — "Começar/Parar/Continuar"

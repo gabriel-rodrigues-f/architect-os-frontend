@@ -2,7 +2,7 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { GapTable } from "@/components/app/gap-analysis-shared";
-import { I18nProvider } from "../i18n";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * R2-VIS-03 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — a linha vazia da GapTable

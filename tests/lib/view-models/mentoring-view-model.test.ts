@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { DevelopmentPlan, MentoringSession, ProficiencyUpdate } from "../domain";
-import type { Gap } from "../selectors";
+import type { DevelopmentPlan, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
+import type { Gap } from "@/lib/selectors";
 import {
   MentoringViewModel,
   type MentoringService,
   type MentoringSessionDraft,
-} from "../view-models/mentoring-view-model";
+} from "@/lib/view-models/mentoring-view-model";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

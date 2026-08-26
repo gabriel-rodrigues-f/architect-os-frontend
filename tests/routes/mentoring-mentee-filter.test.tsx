@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { type AppState, type SessionUser } from "../api";
-import type { Architect, MentoringSession } from "../domain";
-import { fixtureState } from "./fixtures";
-import { renderWithApp } from "./render-app";
+import { type AppState, type SessionUser } from "@/lib/api";
+import type { Architect, MentoringSession } from "@/lib/domain";
+import { fixtureState } from "../helpers/fixtures";
+import { renderWithApp } from "../helpers/render-app";
 
 /**
  * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então

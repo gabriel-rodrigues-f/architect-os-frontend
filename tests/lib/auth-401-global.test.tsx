@@ -6,9 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "sonner";
 
 import { Toaster } from "@/components/ui/sonner";
-import { api, authApi } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { fixtureAdminUser } from "./fixtures";
+import { api, authApi } from "@/lib/api";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { fixtureAdminUser } from "../helpers/fixtures";
 
 /**
  * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12 — "sem

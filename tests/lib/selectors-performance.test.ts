@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { AppState } from "../api";
-import type { Assessment, Competency, Capability, Architect, Level } from "../domain";
-import { createSelectors, emptyState } from "../selectors";
+import type { AppState } from "@/lib/api";
+import type { Assessment, Competency, Capability, Architect, Level } from "@/lib/domain";
+import { createSelectors, emptyState } from "@/lib/selectors";
 
 /**
  * Os selectors alimentam telas que iteram o time inteiro (mapa de calor do

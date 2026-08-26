@@ -36,7 +36,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
 import type { ArchitectEvolutionResult } from "@/lib/domain";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os filtros de Período e

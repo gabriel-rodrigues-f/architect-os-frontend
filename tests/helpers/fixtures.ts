@@ -1,4 +1,4 @@
-import type { AppState, SessionUser } from "../api";
+import type { AppState, SessionUser } from "@/lib/api";
 
 /**
  * Sessão de admin — o Tech Lead surrogate do modelo de contas atual (ver

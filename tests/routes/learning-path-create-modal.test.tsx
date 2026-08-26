@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as LearningRoute } from "@/routes/learning-paths";
-import { type AppState } from "../api";
-import { fixtureState } from "./fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import { fixtureState } from "../helpers/fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Nova trilha" troca o

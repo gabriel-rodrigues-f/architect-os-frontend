@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "./render-app";
+import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * O seletor de capacidades virou combobox de seleção múltipla: dá para abrir

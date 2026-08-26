@@ -14,8 +14,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
-import type { SessionUser } from "../api";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import type { SessionUser } from "@/lib/api";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * R2-VIS-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — sem ninguém no escopo do

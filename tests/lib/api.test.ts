@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, ApiError, API_URL } from "../api";
-import { emptyState } from "../selectors";
+import { api, ApiError, API_URL } from "@/lib/api";
+import { emptyState } from "@/lib/selectors";
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });

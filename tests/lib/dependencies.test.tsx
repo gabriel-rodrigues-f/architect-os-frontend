@@ -1,8 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { DependencyProvider, useContainer } from "../dependencies";
-import { defaultContainer, FrontendContainer } from "../gateways/container";
+import { DependencyProvider, useContainer } from "@/lib/dependencies";
+import { defaultContainer, FrontendContainer } from "@/lib/gateways/container";
 
 /**
  * OO2-07 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

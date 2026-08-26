@@ -4,8 +4,8 @@ import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
-import { ApiError } from "../api";
-import { I18nProvider } from "../i18n";
+import { ApiError } from "@/lib/api";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * OO3-11c — o ciclo `reason` + `submitting` + `error` que

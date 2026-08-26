@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { UiAuthorizationPolicy } from "../scope";
-import { fixtureAdminUser, fixtureMemberUser, fixtureUnassignedLeadUser } from "./fixtures";
+import { UiAuthorizationPolicy } from "@/lib/scope";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureUnassignedLeadUser,
+} from "../helpers/fixtures";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

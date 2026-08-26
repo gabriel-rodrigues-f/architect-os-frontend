@@ -4,14 +4,19 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { type AppState } from "../api";
+import { type AppState } from "@/lib/api";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
   fixtureState,
   fixtureUnassignedLeadUser,
-} from "./fixtures";
-import { emptyEligibilityRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+} from "../helpers/fixtures";
+import {
+  emptyEligibilityRoute,
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+} from "../helpers/render-app";
 
 /**
  * PLANO-360-AGENTES-SYNAPSE.md, Seção 9 e 39 — o campo certo precisa nascer

@@ -21,8 +21,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * CFG-01 (SPEC-OO3-13-HARDCODED-CONFIG.md, A5) — guard rail: as opções de

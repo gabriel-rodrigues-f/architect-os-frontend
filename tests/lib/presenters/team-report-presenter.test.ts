@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 
 import ptMessages from "@/locales/pt.json";
 import { GapBadge } from "@/components/app/ui-bits";
-import { GAP_SEVERITY_MESSAGE_KEY, gapSeverityOf } from "../domain";
-import { I18nProvider } from "../i18n";
+import { GAP_SEVERITY_MESSAGE_KEY, gapSeverityOf } from "@/lib/domain";
+import { I18nProvider } from "@/lib/i18n";
 import {
   TeamReportPresenter,
   type T,
   type TeamReportInput,
-} from "../presenters/team-report-presenter";
-import type { ConsolidatedGapRow } from "../selectors";
+} from "@/lib/presenters/team-report-presenter";
+import type { ConsolidatedGapRow } from "@/lib/selectors";
 
 /**
  * OO3-11j — o conteúdo do relatório do time (antes 8 funções soltas em

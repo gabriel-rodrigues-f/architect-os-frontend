@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { api, API_URL, authApi, type AppState } from "../api";
-import { createSelectors } from "../selectors";
+import { api, API_URL, authApi, type AppState } from "@/lib/api";
+import { createSelectors } from "@/lib/selectors";
 
 /**
  * Contrato entre o payload real do backend e a store do front.

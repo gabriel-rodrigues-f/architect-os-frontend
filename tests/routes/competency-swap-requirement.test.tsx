@@ -4,10 +4,15 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { type AppState } from "../api";
-import type { Capability, Competency } from "../domain";
-import { fixtureState } from "./fixtures";
-import { careerLevelsRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import type { Capability, Competency } from "@/lib/domain";
+import { fixtureState } from "../helpers/fixtures";
+import {
+  careerLevelsRoute,
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+} from "../helpers/render-app";
 
 /**
  * Pedido do usuário revisando o app rodando: numa capacidade já em 3

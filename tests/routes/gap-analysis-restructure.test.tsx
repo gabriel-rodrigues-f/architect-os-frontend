@@ -21,10 +21,10 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as GapRoute } from "@/routes/gap-analysis";
-import { type AppState } from "../api";
-import type { Assessment, Competency } from "../domain";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
-import { renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import type { Assessment, Competency } from "@/lib/domain";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { renderWithApp } from "../helpers/render-app";
 
 /**
  * ORIENTACAO-NONA-RODADA ENT-09-012 — a tela de Gap Analysis restructurada:

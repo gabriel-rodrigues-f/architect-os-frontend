@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MultiSelectFilter } from "@/components/app/MultiSelectFilter";
-import { I18nProvider } from "../i18n";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * R2-VIS-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — opções do MultiSelect

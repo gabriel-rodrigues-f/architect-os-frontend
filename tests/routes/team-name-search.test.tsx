@@ -18,7 +18,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { emptyAuthUsersRoute, mockAppFetch, renderWithApp } from "./render-app";
+import { emptyAuthUsersRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12/B-13 — "achar a

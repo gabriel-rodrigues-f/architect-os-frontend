@@ -18,7 +18,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { emptyAuthUsersRoute, mockAppFetch, renderWithApp } from "./render-app";
+import { emptyAuthUsersRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * R2-VIS-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — texto com `truncate`

@@ -5,9 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Toaster } from "@/components/ui/sonner";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { type AppState } from "../api";
-import { fixtureState } from "./fixtures";
-import { careerLevelsRoute, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import { fixtureState } from "../helpers/fixtures";
+import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * Exercita a Matriz de Competências de verdade: o componente da rota, ligado à

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ChartPalette, SERIES_COUNT, tooltipStyle } from "../design/chart";
+import { ChartPalette, SERIES_COUNT, tooltipStyle } from "@/lib/design/chart";
 
 describe("ChartPalette", () => {
   it("distribui uma cor por série, na ordem dos tokens", () => {

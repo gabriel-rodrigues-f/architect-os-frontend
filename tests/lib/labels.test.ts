@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { LABEL_KEY_MAPS, LabelFormatter } from "../labels";
-import type { MessageKey } from "../i18n";
+import { LABEL_KEY_MAPS, LabelFormatter } from "@/lib/labels";
+import type { MessageKey } from "@/lib/i18n";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

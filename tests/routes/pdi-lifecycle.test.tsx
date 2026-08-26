@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as PlansRoute } from "@/routes/development-plans";
-import { type AppState, type SessionUser } from "../api";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState, type SessionUser } from "@/lib/api";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * EPIC 3 (quarta rodada) — PDI real: sem percentual paralelo ao status, sem

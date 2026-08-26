@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { appStateSchema, careerLevelsResponseSchema } from "../api-schemas";
-import { fixtureCareerLevels, fixtureState } from "./fixtures";
+import { appStateSchema, careerLevelsResponseSchema } from "@/lib/api-schemas";
+import { fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
 
 /**
  * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `careerLevels` perdeu a

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { topByRelevance } from "../collections";
+import { topByRelevance } from "@/lib/collections";
 
 /** OO3-11/D-3 (reuso final) — contrato do corte compartilhado radar/heatmap. */
 describe("topByRelevance", () => {

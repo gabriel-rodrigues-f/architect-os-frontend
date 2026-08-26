@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { initialSearchParam, replaceSearchParam } from "../search-params";
+import { initialSearchParam, replaceSearchParam } from "@/lib/search-params";
 
 /**
  * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — o par que

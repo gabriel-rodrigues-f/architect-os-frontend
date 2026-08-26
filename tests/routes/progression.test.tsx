@@ -20,10 +20,10 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as ProgressionRoute } from "@/routes/progression";
-import { type AppState } from "../api";
-import type { Assessment, Competency } from "../domain";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
-import { renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import type { Assessment, Competency } from "@/lib/domain";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { renderWithApp } from "../helpers/render-app";
 
 /**
  * `/progression` (Mapa de Calor + Tabela de Gaps de Progressão + Nível

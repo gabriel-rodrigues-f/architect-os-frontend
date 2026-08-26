@@ -4,7 +4,12 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { careerLevelsRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import {
+  careerLevelsRoute,
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+} from "../helpers/render-app";
 
 /**
  * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Nova capacidade" troca os

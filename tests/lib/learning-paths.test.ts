@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { LearningPath } from "../domain";
+import type { LearningPath } from "@/lib/domain";
 
 /** Mesma regra aplicada na tela: autor edita; trilha sem autor fica aberta. */
 const canEdit = (path: LearningPath, userEmail: string) =>

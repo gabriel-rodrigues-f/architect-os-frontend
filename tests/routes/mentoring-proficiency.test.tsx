@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { type AppState, type SessionUser } from "../api";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState, type SessionUser } from "@/lib/api";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * Rodada 10, Seção 17/38/39 — "Evolução observada" na mentoria é a única

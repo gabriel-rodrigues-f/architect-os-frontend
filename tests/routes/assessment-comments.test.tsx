@@ -4,10 +4,15 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { type AppState } from "../api";
-import type { AssessmentComment } from "../domain";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
-import { emptyEligibilityRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState } from "@/lib/api";
+import type { AssessmentComment } from "@/lib/domain";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import {
+  emptyEligibilityRoute,
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+} from "../helpers/render-app";
 
 /**
  * Comentário pertence a quem escreveu — não é mais um par arquiteto+Tech Lead

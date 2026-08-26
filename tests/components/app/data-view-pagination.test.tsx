@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Pagination } from "@/components/app/DataView";
-import { I18nProvider } from "../i18n";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12/B-13 — a barra de

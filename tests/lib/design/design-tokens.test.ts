@@ -3,8 +3,8 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { CONTRAST, Oklch } from "../design/color";
-import { DarkTheme, LightTheme, renderTheme, tokenRegistry } from "../design/tokens";
+import { CONTRAST, Oklch } from "@/lib/design/color";
+import { DarkTheme, LightTheme, renderTheme, tokenRegistry } from "@/lib/design/tokens";
 
 /**
  * A auditoria de contraste roda como teste: uma cor que deixa de passar no

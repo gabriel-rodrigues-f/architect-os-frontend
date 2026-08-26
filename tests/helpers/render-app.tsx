@@ -4,10 +4,10 @@ import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
 import type { Mock } from "vitest";
 
-import { type AppState, type SessionUser } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
+import { type AppState, type SessionUser } from "@/lib/api";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { I18nProvider } from "@/lib/i18n";
+import { StoreProvider } from "@/lib/store";
 import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
 
 /**

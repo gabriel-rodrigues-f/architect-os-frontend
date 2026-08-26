@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultDateFormatter, defaultNameFormatter } from "../text";
+import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 
 /**
  * OO3-08 — os wrappers de compatibilidade (`slug`, `byName`, `formatDate`

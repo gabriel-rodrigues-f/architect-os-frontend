@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { type AppState, type SessionUser } from "../api";
-import type { MentoringSession } from "../domain";
-import { fixtureState } from "./fixtures";
-import { mockAppFetch, renderWithApp } from "./render-app";
+import { type AppState, type SessionUser } from "@/lib/api";
+import type { MentoringSession } from "@/lib/domain";
+import { fixtureState } from "../helpers/fixtures";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * EPIC J — Mentoring Loop: "ações" da sessão viravam texto morto — ninguém
