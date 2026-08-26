@@ -16,7 +16,12 @@ export default defineConfig({
     // jsdom para os testes que renderizam componentes de tela.
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    include: [
+      "tests/**/*.test.ts",
+      "tests/**/*.test.tsx",
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+    ],
     // AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-36 (§33, achado 3)
     // — "sem coverage report configurado" em nenhuma das duas pontas.
     coverage: {
