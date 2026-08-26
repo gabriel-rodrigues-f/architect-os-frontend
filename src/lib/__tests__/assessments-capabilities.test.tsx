@@ -1,14 +1,10 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * O seletor de capacidades virou combobox de seleção múltipla: dá para abrir
@@ -20,77 +16,17 @@ import { fixtureAdminUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-/**
- * O app real só monta a árvore autenticada depois do `AuthGate` (em
- * `__root.tsx`) resolver a sessão guardada no navegador. Este teste não passa
- * por ele, então precisa do mesmo corte: sem isto, `AssessmentsPage` chamaria
- * `useCurrentUser()` no primeiro render, antes do `AuthProvider` terminar de
- * buscar `/api/auth/me`, e quebraria com "nenhuma sessão ativa".
- */
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
-const renderPage = () =>
-  render(
-    <Wrapper>
-      <AssessmentsPage />
-    </Wrapper>,
-  );
+const renderPage = () => renderWithApp(<AssessmentsPage />);
 
 describe("Avaliações — seleção de capacidades", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-
-    fetchMock.mockImplementation((url: string) => {
-      if (String(url).endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (String(url).endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (String(url).includes("/eligibility")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
-            { status: 200, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
-    });
+    mockAppFetch(fetchMock, { routes: [emptyEligibilityRoute] });
   });
 
   afterEach(() => {

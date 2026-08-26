@@ -1,14 +1,11 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureMemberUser, fixtureState } from "./fixtures";
+import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * R2-RESP-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — abaixo de `md` (768px) a
@@ -25,58 +22,12 @@ import { fixtureMemberUser, fixtureState } from "./fixtures";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
 function mockSession(state: AppState) {
-  fetchMock.mockImplementation((url: string) => {
-    const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(fixtureMemberUser), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith("/api/state")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.includes("/eligibility")) {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
-  });
+  mockAppFetch(fetchMock, { user: fixtureMemberUser, state, routes: [emptyEligibilityRoute] });
 }
 
 /** Mesma técnica de mock de `responsiveness.test.tsx` (R2-RESP-06). */
@@ -116,11 +67,7 @@ describe("R2-RESP-07 — Avaliações: empilhado por competência abaixo de md",
   it("abaixo de 768px, mostra o bloco empilhado por competência em vez da tabela", async () => {
     const restoreMatchMedia = stubMatchMedia(true);
     mockSession(draftState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     await screen.findByText("Kubernetes");
     expect(screen.getAllByTestId("competency-stacked-card").length).toBeGreaterThan(0);
@@ -132,11 +79,7 @@ describe("R2-RESP-07 — Avaliações: empilhado por competência abaixo de md",
   it("em 768px ou mais, mantém a tabela com scroll lateral, sem o bloco empilhado", async () => {
     const restoreMatchMedia = stubMatchMedia(false);
     mockSession(draftState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     await screen.findByText("Kubernetes");
     expect(screen.getByRole("table")).toBeTruthy();

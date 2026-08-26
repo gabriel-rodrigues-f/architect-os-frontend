@@ -59,6 +59,15 @@ export function mockAppFetch(
   });
 }
 
+/**
+ * Rota pronta para a consulta de elegibilidade vazia (`/eligibility`, telas de
+ * Avaliações) — era replicada verbatim em 8 arquivos de teste.
+ */
+export const emptyEligibilityRoute: FetchRoute = (href) =>
+  href.includes("/eligibility")
+    ? jsonResponse({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null })
+    : undefined;
+
 function AuthReady({ children }: { children: ReactNode }) {
   const { loading } = useAuth();
   if (loading) return null;

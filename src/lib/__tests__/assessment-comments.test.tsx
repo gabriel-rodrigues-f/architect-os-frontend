@@ -1,16 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
 import type { AssessmentComment } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
 import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { emptyEligibilityRoute, jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * Comentário pertence a quem escreveu — não é mais um par arquiteto+Tech Lead
@@ -61,45 +58,13 @@ const respostaCom = (comments: AssessmentComment[]) => {
   };
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-/**
- * O app real só monta a árvore autenticada depois do `AuthGate` (em
- * `__root.tsx`) resolver a sessão guardada no navegador. Este teste não passa
- * por ele, então precisa do mesmo corte: sem isto, `AssessmentsPage` chamaria
- * `useCurrentUser()` no primeiro render, antes do `AuthProvider` terminar de
- * buscar `/api/auth/me`, e quebraria com "nenhuma sessão ativa".
- */
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
 /** Renderiza e abre o painel de notas da competência Kubernetes. */
 async function abrirNotas() {
-  render(
-    <Wrapper>
-      <AssessmentsPage />
-    </Wrapper>,
-  );
+  renderWithApp(<AssessmentsPage />);
   const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
   await userEvent.click(within(linha).getByRole("button"));
 }
@@ -117,15 +82,14 @@ describe("Avaliações — comentários por autor", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
 
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      const method = init?.method ?? "GET";
-
-      if (method === "POST" && href.includes("/comments")) {
-        const body = JSON.parse(String(init?.body)) as { text: string };
-        return Promise.resolve(
-          new Response(
-            JSON.stringify(
+    mockAppFetch(fetchMock, {
+      state,
+      routes: [
+        (href, init) => {
+          const method = init?.method ?? "GET";
+          if (method === "POST" && href.includes("/comments")) {
+            const body = JSON.parse(String(init?.body)) as { text: string };
+            return jsonResponse(
               respostaCom([
                 comentarioDeOutraPessoa,
                 comentarioDoAdmin,
@@ -137,61 +101,25 @@ describe("Avaliações — comentários por autor", () => {
                   createdAt: "2026-08-13T09:00:00Z",
                 },
               ]),
-            ),
-            { status: 201, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      if (method === "PATCH" && href.includes("/comments/")) {
-        const body = JSON.parse(String(init?.body)) as { text: string };
-        return Promise.resolve(
-          new Response(
-            JSON.stringify(
+              201,
+            );
+          }
+          if (method === "PATCH" && href.includes("/comments/")) {
+            const body = JSON.parse(String(init?.body)) as { text: string };
+            return jsonResponse(
               respostaCom([
                 comentarioDeOutraPessoa,
                 { ...comentarioDoAdmin, text: body.text, updatedAt: "2026-08-13T10:00:00Z" },
               ]),
-            ),
-            { status: 200, headers: { "content-type": "application/json" } },
-          ),
-        );
-      }
-      if (method === "DELETE" && href.includes("/comments/")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(respostaCom([comentarioDeOutraPessoa])), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.includes("/eligibility")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({ capabilities: [], qualifiedConfirmedCount: 0, eligible: null }),
-            {
-              status: 200,
-              headers: { "content-type": "application/json" },
-            },
-          ),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+            );
+          }
+          if (method === "DELETE" && href.includes("/comments/")) {
+            return jsonResponse(respostaCom([comentarioDeOutraPessoa]));
+          }
+          return undefined;
+        },
+        emptyEligibilityRoute,
+      ],
     });
   });
 

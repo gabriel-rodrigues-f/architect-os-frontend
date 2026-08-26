@@ -1,16 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
 import type { Assessment, Capability, Competency } from "../domain";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { fixtureState } from "./fixtures";
+import { jsonResponse, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * R2-ESC-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — três garantias de escala
@@ -75,67 +72,29 @@ const manyCapabilitiesState: AppState = {
   assessments: [draftAssessment],
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
 function mockFetch(state: AppState, eligibilityCapabilityIds: string[] = []) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
-  fetchMock.mockImplementation((url: string) => {
-    const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(fixtureAdminUser), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith("/api/state")) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.includes("/eligibility")) {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            capabilities: eligibilityCapabilityIds.map((capabilityId) => ({
-              capabilityId,
-              confirmed: true,
-              qualified: true,
-            })),
-            qualifiedConfirmedCount: eligibilityCapabilityIds.length,
-            eligible: null,
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
+  mockAppFetch(fetchMock, {
+    state,
+    routes: [
+      (href) =>
+        href.includes("/eligibility")
+          ? jsonResponse({
+              capabilities: eligibilityCapabilityIds.map((capabilityId) => ({
+                capabilityId,
+                confirmed: true,
+                qualified: true,
+              })),
+              qualifiedConfirmedCount: eligibilityCapabilityIds.length,
+              eligible: null,
+            })
+          : undefined,
+    ],
   });
 }
 
@@ -150,11 +109,7 @@ describe("Avaliações — escala com muitas capacidades (R2-ESC-06)", () => {
       ...manyCapabilitiesState,
       // Só a primeira capacidade selecionada por padrão (default de 1) — mais fácil de checar o card sozinho.
     });
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     expect(await screen.findByRole("heading", { name: "Capacidade 0" })).toBeTruthy();
     expect(screen.getByText(/0\/1 respondidas/)).toBeTruthy();
@@ -162,11 +117,7 @@ describe("Avaliações — escala com muitas capacidades (R2-ESC-06)", () => {
 
   it("acima de 10 capacidades selecionadas, navega uma por vez com aviso", async () => {
     mockFetch(manyCapabilitiesState);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     await screen.findByRole("heading", { name: "Capacidade 0" });
     await userEvent.click(screen.getByRole("combobox", { name: "Capacidades" }));
@@ -185,11 +136,7 @@ describe("Avaliações — escala com muitas capacidades (R2-ESC-06)", () => {
 
   it("atalho 'Selecionar as do portfólio' troca a seleção pelas capacidades do portfólio", async () => {
     mockFetch(manyCapabilitiesState, ["cap-3", "cap-7"]);
-    render(
-      <Wrapper>
-        <AssessmentsPage />
-      </Wrapper>,
-    );
+    renderWithApp(<AssessmentsPage />);
 
     await screen.findByRole("heading", { name: "Capacidade 0" });
     const shortcut = await screen.findByRole("button", { name: "Selecionar as do portfólio" });
