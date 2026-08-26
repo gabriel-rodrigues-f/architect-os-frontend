@@ -2,11 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import { downloadBlob } from "@/lib/download";
-import {
-  TeamReportPresenter,
-  type T,
-  type TeamReportInput,
-} from "@/lib/presenters/team-report-presenter";
+import { TeamReportPresenter, type T, type TeamReportInput } from "@/lib/presenters";
 import type { GapSeverityRuler } from "@/lib/scoring-bands";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
 

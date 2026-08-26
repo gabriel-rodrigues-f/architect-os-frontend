@@ -2,10 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Capability, Competency } from "@/lib/domain";
 import { UiAuthorizationPolicy } from "@/lib/scope";
-import {
-  CompetencyMatrixViewModel,
-  type CatalogService,
-} from "@/lib/view-models/competency-matrix-view-model";
+import { CompetencyMatrixViewModel, type CatalogService } from "@/lib/view-models";
 import { fixtureAdminUser, fixtureCareerLevels, fixtureMemberUser } from "../../helpers/fixtures";
 
 /**

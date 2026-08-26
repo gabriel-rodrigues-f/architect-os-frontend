@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Architect, LearningPath, LearningPathItem } from "@/lib/domain";
-import {
-  LearningPathsViewModel,
-  type LearningPathService,
-} from "@/lib/view-models/learning-paths-view-model";
+import { LearningPathsViewModel, type LearningPathService } from "@/lib/view-models";
 import { fixtureAdminUser } from "../../helpers/fixtures";
 
 /**

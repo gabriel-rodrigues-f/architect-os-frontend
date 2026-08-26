@@ -20,18 +20,14 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { type Architect, type RoleName } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
-import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import {
-  emptyArchitectForm,
-  TeamViewModel,
-  type ArchitectFormValues,
-} from "@/lib/view-models/team-view-model";
+import { emptyArchitectForm, TeamViewModel, type ArchitectFormValues } from "@/lib/view-models";
 
 const NO_SPECIALIZATION = "__no-specialization__";
 const NO_CAPABILITY = "__no-capability__";

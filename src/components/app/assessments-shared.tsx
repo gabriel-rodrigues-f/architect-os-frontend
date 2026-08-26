@@ -22,12 +22,12 @@ import type {
 } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
+import { useNarrowViewport } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { STATE_QUERY_KEY, useOperationalSettings, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
-import { AssessmentViewModel } from "@/lib/view-models/assessment-view-model";
+import { AssessmentViewModel } from "@/lib/view-models";
 
 function useAssessmentViewModel(): AssessmentViewModel {
   const store = useStore();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Architect, Capability } from "@/lib/domain";
-import { BANDS, CapabilityCoveragePresenter } from "@/lib/presenters/capability-coverage-presenter";
+import { BANDS, CapabilityCoveragePresenter } from "@/lib/presenters";
 import { DEFAULT_SCORING_BANDS, type ScoringBand } from "@/lib/scoring-bands";
 import type { CapabilityAverage } from "@/lib/selectors";
 

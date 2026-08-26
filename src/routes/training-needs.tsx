@@ -4,7 +4,7 @@ import { useState } from "react";
 import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Button } from "@/components/ui/button";
-import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";

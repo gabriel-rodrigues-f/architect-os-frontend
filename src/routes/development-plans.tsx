@@ -33,9 +33,8 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useObjectiveFromGap, useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
-import { useAsyncSubmit, useSuccessToast } from "@/hooks/use-async-submit";
-import { useSearchParamString } from "@/hooks/use-search-param";
-import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-view-model";
+import { useAsyncSubmit, useSearchParamString, useSuccessToast } from "@/hooks";
+import { DevelopmentPlansViewModel } from "@/lib/view-models";
 
 function useDevelopmentPlansViewModel() {
   const store = useStore();

@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useSuccessToast } from "@/hooks/use-async-submit";
+import { useSuccessToast } from "@/hooks";
 import { ApiClient } from "@/lib/api-client";
 import { I18nProvider } from "@/lib/i18n";
 

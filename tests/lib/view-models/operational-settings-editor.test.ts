@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { OperationalSettingsEditor } from "@/lib/view-models/operational-settings-editor";
+import { OperationalSettingsEditor } from "@/lib/view-models";
 import type { OperationalSettings } from "@/lib/operational-settings";
 
 /**

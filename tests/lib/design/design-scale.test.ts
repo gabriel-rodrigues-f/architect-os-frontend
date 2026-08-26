@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fontSize, fontWeight, radius, SCALES, spacing } from "@/lib/design/scale";
-import { renderScales } from "@/lib/design/stylesheet";
+import { fontSize, fontWeight, radius, renderScales, SCALES, spacing } from "@/lib/design";
 
 /**
  * As escalas viram regra verificável, não convenção de documento. Um valor que

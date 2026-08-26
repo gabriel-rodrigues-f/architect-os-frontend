@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CatalogImportEditor } from "@/lib/view-models/catalog-import-editor";
+import { CatalogImportEditor } from "@/lib/view-models";
 
 const currentCapabilities = [
   { id: "cloud", name: "Cloud Architecture" },

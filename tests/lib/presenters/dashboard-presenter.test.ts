@@ -5,7 +5,7 @@ import {
   CRITICAL_GAP_THRESHOLD,
   DashboardPresenter,
   PersonalDashboardPresenter,
-} from "@/lib/presenters/dashboard-presenter";
+} from "@/lib/presenters";
 import { createSelectors } from "@/lib/selectors";
 import { fixtureState } from "../../helpers/fixtures";
 

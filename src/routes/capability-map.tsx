@@ -5,10 +5,7 @@ import { EmptyState, NameList, PageHeader, SectionCard } from "@/components/app/
 import { Badge } from "@/components/ui/badge";
 import { ViewToggle } from "@/components/app/ViewToggle";
 import { useCurrentUser } from "@/lib/auth";
-import {
-  CapabilityCoveragePresenter,
-  type RiskState,
-} from "@/lib/presenters/capability-coverage-presenter";
+import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useScoringBands, useSelectors, useStore } from "@/lib/store";

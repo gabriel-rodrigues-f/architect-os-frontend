@@ -3,10 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { DevelopmentPlan, SmartGoal } from "@/lib/domain";
 import type { Gap } from "@/lib/selectors";
 import { objectiveFromGapRenderer, withDefaultTextTemplates } from "@/lib/text-templates";
-import {
-  DevelopmentPlansViewModel,
-  type DevelopmentPlanService,
-} from "@/lib/view-models/development-plans-view-model";
+import { DevelopmentPlansViewModel, type DevelopmentPlanService } from "@/lib/view-models";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

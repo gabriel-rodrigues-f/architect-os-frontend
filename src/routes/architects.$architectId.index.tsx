@@ -26,16 +26,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type DevelopmentPlan, type Evidence, type EvidenceType } from "@/lib/domain";
-import { useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
+import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { PersonalDashboardPresenter } from "@/lib/presenters/dashboard-presenter";
+import { PersonalDashboardPresenter } from "@/lib/presenters";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
-import { ArchitectProfileViewModel } from "@/lib/view-models/architect-profile-view-model";
-import { LearningPathsViewModel } from "@/lib/view-models/learning-paths-view-model";
+import { ArchitectProfileViewModel, LearningPathsViewModel } from "@/lib/view-models";
 
 function useArchitectProfileViewModel(): ArchitectProfileViewModel {
   const store = useStore();

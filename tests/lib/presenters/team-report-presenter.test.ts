@@ -7,11 +7,7 @@ import ptMessages from "@/locales/pt.json";
 import { GapBadge } from "@/components/app/ui-bits";
 import { GAP_SEVERITY_MESSAGE_KEY, gapSeverityOf } from "@/lib/domain";
 import { I18nProvider } from "@/lib/i18n";
-import {
-  TeamReportPresenter,
-  type T,
-  type TeamReportInput,
-} from "@/lib/presenters/team-report-presenter";
+import { TeamReportPresenter, type T, type TeamReportInput } from "@/lib/presenters";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
 
 /**

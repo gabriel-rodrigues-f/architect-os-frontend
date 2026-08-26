@@ -24,7 +24,7 @@ import {
   type Level,
   type RequirementType,
 } from "@/lib/domain";
-import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks/use-async-submit";
+import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -32,8 +32,7 @@ import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useCurationPolicy, useStore } from "@/lib/store";
-import { CompetencyMatrixViewModel } from "@/lib/view-models/competency-matrix-view-model";
-import { CatalogImportEditor } from "@/lib/view-models/catalog-import-editor";
+import { CatalogImportEditor, CompetencyMatrixViewModel } from "@/lib/view-models";
 
 function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
   const store = useStore();

@@ -1,9 +1,5 @@
 import { downloadBlob } from "@/lib/download";
-import {
-  TeamReportPresenter,
-  type T,
-  type TeamReportInput,
-} from "@/lib/presenters/team-report-presenter";
+import { TeamReportPresenter, type T, type TeamReportInput } from "@/lib/presenters";
 import type { GapSeverityRuler } from "@/lib/scoring-bands";
 
 function csvField(value: string | number): string {

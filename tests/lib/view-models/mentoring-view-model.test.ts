@@ -6,7 +6,7 @@ import {
   MentoringViewModel,
   type MentoringService,
   type MentoringSessionDraft,
-} from "@/lib/view-models/mentoring-view-model";
+} from "@/lib/view-models";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,

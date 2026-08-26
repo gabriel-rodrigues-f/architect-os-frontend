@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_TEXT_TEMPLATES } from "@/lib/text-templates";
-import { TextTemplateEditor } from "@/lib/view-models/text-template-editor";
+import { TextTemplateEditor } from "@/lib/view-models";
 
 /**
  * CFG-03 (admin UI) — o ViewModel do editor de template de texto: validação

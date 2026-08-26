@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { useAsyncSubmit } from "@/hooks/use-async-submit";
+import { useAsyncSubmit } from "@/hooks";
 import { ApiError } from "@/lib/api";
 
 /**
