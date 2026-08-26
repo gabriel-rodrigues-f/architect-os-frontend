@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
+import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
 import { GapBadge, Initials, LevelBadge } from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
@@ -18,16 +19,7 @@ import {
 } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ROLES, type Architect, type RoleName } from "@/lib/domain";
-import { ApiError } from "@/lib/api";
 import { Selection } from "@/lib/selection";
 import { authErrorMessage } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -80,19 +72,24 @@ export interface EnrichedArchitect {
  * obrigatório + concorrência otimista) mora em `DeactivateDialog`/
  * `CareerLevelTransitionDialog`, não aqui, mesmo padrão dos dois.
  */
-export function useArchitectForm() {
+/**
+ * `store` (o retorno de `useStore()`) faz o papel de "serviço" que o
+ * exemplo da Seção 60 pede no construtor — já abstrai o gateway HTTP
+ * atrás de cache/otimismo (Seção 64), então o `TeamViewModel` não
+ * precisa (nem deve) falar com `FrontendContainer` diretamente aqui: um
+ * ViewModel que bypassasse `store` duplicaria a semântica de cache que
+ * `store.tsx` já resolve, e é exatamente o tipo de comportamento
+ * inventado que este brief pede para evitar. OO3-11c — adaptador único
+ * compartilhado pelo formulário e pelos dois diálogos de comando.
+ */
+function useTeamViewModel(): TeamViewModel {
   const store = useStore();
+  return useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
+}
+
+export function useArchitectForm() {
   const { t } = useI18n();
-  /**
-   * `store` (o retorno de `useStore()`) faz o papel de "serviço" que o
-   * exemplo da Seção 60 pede no construtor — já abstrai o gateway HTTP
-   * atrás de cache/otimismo (Seção 64), então o `TeamViewModel` não
-   * precisa (nem deve) falar com `FrontendContainer` diretamente aqui: um
-   * ViewModel que bypassasse `store` duplicaria a semântica de cache que
-   * `store.tsx` já resolve, e é exatamente o tipo de comportamento
-   * inventado que este brief pede para evitar.
-   */
-  const viewModel = useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
+  const viewModel = useTeamViewModel();
 
   /** `null` = diálogo fechado; string vazia = criação; id = edição. */
   const [editing, setEditing] = useState<string | null>(null);
@@ -561,37 +558,22 @@ export function CareerLevelTransitionDialog({
   architect: Architect;
   onClose: () => void;
 }) {
-  const store = useStore();
   const { t } = useI18n();
+  const viewModel = useTeamViewModel();
   const [toRole, setToRole] = useState<RoleName>(architect.role);
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = () => {
-    setError(null);
-    setSubmitting(true);
-    store
-      .transitionCareerLevel(architect.id, toRole, reason.trim())
-      .then(() => {
-        toast.success(t("team.transition.success", { nome: architect.name }));
-        onClose();
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof ApiError ? err.message : t("team.transition.error"));
-      })
-      .finally(() => setSubmitting(false));
-  };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("team.transition.title", { nome: architect.name })}</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          {t("team.transition.body", { atual: architect.role })}
-        </p>
+    <CommandWithReasonDialog
+      title={t("team.transition.title", { nome: architect.name })}
+      body={t("team.transition.body", { atual: architect.role })}
+      reasonInputId="transition-reason"
+      reasonLabel={t("team.transition.reasonLabel")}
+      reasonPlaceholder={t("team.transition.reasonPlaceholder")}
+      confirmLabel={t("team.transition.confirm")}
+      submittingLabel={t("team.transition.submitting")}
+      fallbackError={t("team.transition.error")}
+      canSubmit={toRole !== architect.role}
+      extraFields={() => (
         <div>
           <Label htmlFor="transition-to-role">{t("team.transition.toRole")}</Label>
           <select
@@ -605,30 +587,14 @@ export function CareerLevelTransitionDialog({
             ))}
           </select>
         </div>
-        <div>
-          <Label htmlFor="transition-reason">{t("team.transition.reasonLabel")}</Label>
-          <Textarea
-            id="transition-reason"
-            className="mt-1"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder={t("team.transition.reasonPlaceholder")}
-          />
-        </div>
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={!reason.trim() || toRole === architect.role || submitting}
-            onClick={submit}
-          >
-            {submitting ? t("team.transition.submitting") : t("team.transition.confirm")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+      onSubmit={(reason) =>
+        viewModel
+          .transitionCareerLevel(architect.id, toRole, reason)
+          .then(() => toast.success(t("team.transition.success", { nome: architect.name })))
+      }
+      onClose={onClose}
+    />
   );
 }
 
@@ -648,55 +614,27 @@ export function DeactivateDialog({
   architect: Architect;
   onClose: () => void;
 }) {
-  const store = useStore();
   const { t } = useI18n();
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = () => {
-    setError(null);
-    setSubmitting(true);
-    store
-      .deactivate(architect.id, reason.trim())
-      .then(() => {
-        toast.success(t("team.deactivate.toast", { nome: architect.name }));
-        onClose();
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof ApiError ? err.message : t("team.deactivate.error"));
-      })
-      .finally(() => setSubmitting(false));
-  };
+  const viewModel = useTeamViewModel();
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("team.deactivate.confirmTitle", { nome: architect.name })}</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">{t("team.deactivate.confirmDescription")}</p>
-        <div>
-          <Label htmlFor="deactivate-reason">{t("team.deactivate.reasonLabel")}</Label>
-          <Textarea
-            id="deactivate-reason"
-            className="mt-1"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder={t("team.deactivate.reasonPlaceholder")}
-          />
-        </div>
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
-            {t("common.cancel")}
-          </Button>
-          <Button variant="destructive" disabled={!reason.trim() || submitting} onClick={submit}>
-            {submitting ? t("team.deactivate.submitting") : t("team.deactivate.action")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <CommandWithReasonDialog
+      title={t("team.deactivate.confirmTitle", { nome: architect.name })}
+      body={t("team.deactivate.confirmDescription")}
+      reasonInputId="deactivate-reason"
+      reasonLabel={t("team.deactivate.reasonLabel")}
+      reasonPlaceholder={t("team.deactivate.reasonPlaceholder")}
+      confirmLabel={t("team.deactivate.action")}
+      submittingLabel={t("team.deactivate.submitting")}
+      confirmVariant="destructive"
+      fallbackError={t("team.deactivate.error")}
+      onSubmit={(reason) =>
+        viewModel
+          .deactivate(architect.id, reason)
+          .then(() => toast.success(t("team.deactivate.toast", { nome: architect.name })))
+      }
+      onClose={onClose}
+    />
   );
 }
 

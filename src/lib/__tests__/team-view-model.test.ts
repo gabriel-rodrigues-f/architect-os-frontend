@@ -20,10 +20,14 @@ import { fixtureAdminUser, fixtureMemberUser } from "./fixtures";
 function fakeService(): TeamRosterService & {
   addArchitect: ReturnType<typeof vi.fn>;
   updateArchitect: ReturnType<typeof vi.fn>;
+  transitionCareerLevel: ReturnType<typeof vi.fn>;
+  deactivate: ReturnType<typeof vi.fn>;
 } {
   return {
     addArchitect: vi.fn(async (input) => ({ ...input, id: "novo-id", version: 1 }) as Architect),
     updateArchitect: vi.fn(),
+    transitionCareerLevel: vi.fn(async () => ({ id: "ana" }) as Architect),
+    deactivate: vi.fn(async () => ({ id: "ana" }) as Architect),
   };
 }
 
@@ -166,6 +170,35 @@ describe("TeamViewModel", () => {
       vm.reactivate(architect);
 
       expect(service.updateArchitect).toHaveBeenCalledWith("bruno", { active: true });
+    });
+  });
+
+  describe("transitionCareerLevel / deactivate (OO3-11c)", () => {
+    it("delegam ao serviço com os argumentos exatos", async () => {
+      const service = fakeService();
+      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
+
+      await vm.transitionCareerLevel("ana", "Arquiteto de Soluções III", "promoção do ciclo");
+      await vm.deactivate("ana", "saiu da empresa");
+
+      expect(service.transitionCareerLevel).toHaveBeenCalledWith(
+        "ana",
+        "Arquiteto de Soluções III",
+        "promoção do ciclo",
+      );
+      expect(service.deactivate).toHaveBeenCalledWith("ana", "saiu da empresa");
+    });
+
+    it("propagam a rejeição sem engolir — o 409 precisa chegar ao diálogo", async () => {
+      const service = fakeService();
+      service.transitionCareerLevel.mockRejectedValueOnce(new Error("conflito"));
+      service.deactivate.mockRejectedValueOnce(new Error("conflito"));
+      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
+
+      await expect(
+        vm.transitionCareerLevel("ana", "Arquiteto de Soluções III", "x"),
+      ).rejects.toThrow("conflito");
+      await expect(vm.deactivate("ana", "x")).rejects.toThrow("conflito");
     });
   });
 });
