@@ -21,6 +21,7 @@ import {
 import {
   useCareerLevelsByRank,
   useCurationPolicy,
+  useOperationalSettings,
   useScoringBands,
   useStore,
   useTextTemplates,
@@ -38,6 +39,12 @@ import {
   CurationPolicyEditor,
   type CurationPolicyField,
 } from "@/lib/view-models/curation-policy-editor";
+import {
+  OPERATIONAL_NUMBER_FIELDS,
+  OperationalSettingsEditor,
+  type OperationalNumberField,
+} from "@/lib/view-models/operational-settings-editor";
+import { CYCLE_CADENCES, type CycleCadence } from "@/lib/operational-settings";
 import { ScoringBandsEditor } from "@/lib/view-models/scoring-bands-editor";
 import { TextTemplateEditor } from "@/lib/view-models/text-template-editor";
 
@@ -82,6 +89,8 @@ function SettingsPage() {
         {isAdmin && <TextTemplatesSection />}
         {/* CFG-04 (SPEC-OO3-13, §3.2) — aba "Catálogo", mesmo corte admin-only. */}
         {isAdmin && <CurationPolicySection />}
+        {/* CFG-05 (SPEC-OO3-13, §3.2) — aba "Operação", mesmo corte admin-only. */}
+        {isAdmin && <OperationalSettingsSection />}
       </div>
 
       {/* R2-TXT-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o menu chama esta
@@ -212,6 +221,12 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const readyCapabilities = store.capabilities.filter((c) => c.curation.status === "READY").length;
+  /**
+   * CFG-05 / B5 — o piso global (antes literal `3` no `min`/`canSave`) é
+   * `career.minimumQualifiedFloor` (`app_settings`), com fallback 3
+   * byte-idêntico ao hardcoded; o CHECK do banco continua a autoridade.
+   */
+  const floor = useOperationalSettings().careerMinimumQualifiedFloor;
   const { t } = useI18n();
 
   return (
@@ -237,6 +252,7 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
                   key={level.id}
                   level={level}
                   minimum={policy?.minimumQualifiedCapabilities}
+                  floor={floor}
                   readyCapabilities={readyCapabilities}
                   isAdmin={isAdmin}
                 />
@@ -252,18 +268,21 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
 function CareerPolicyRow({
   level,
   minimum,
+  floor,
   readyCapabilities,
   isAdmin,
 }: {
   level: CareerLevel;
   minimum: number | undefined;
+  /** CFG-05 — piso global efetivo (`career.minimumQualifiedFloor`). */
+  floor: number;
   readyCapabilities: number;
   isAdmin: boolean;
 }) {
   const store = useStore();
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(minimum ?? 3));
+  const [draft, setDraft] = useState(String(minimum ?? floor));
   /** OO3-11/D-6 (reuso final) — ciclo submitting/erro compartilhado; toast e fechar edição ficam aqui. */
   const {
     submitting: saving,
@@ -273,7 +292,7 @@ function CareerPolicyRow({
   } = useAsyncSubmit("Não foi possível salvar a política.");
 
   const draftValue = Number(draft);
-  const canSave = Number.isInteger(draftValue) && draftValue >= 3;
+  const canSave = Number.isInteger(draftValue) && draftValue >= floor;
   const impossible = minimum !== undefined && minimum > readyCapabilities;
 
   const save = async () => {
@@ -302,7 +321,7 @@ function CareerPolicyRow({
         {editing ? (
           <input
             type="number"
-            min={3}
+            min={floor}
             step={1}
             disabled={saving}
             className="w-20 rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"
@@ -328,7 +347,7 @@ function CareerPolicyRow({
                 disabled={saving}
                 onClick={() => {
                   setEditing(false);
-                  setDraft(String(minimum ?? 3));
+                  setDraft(String(minimum ?? floor));
                   clearError();
                 }}
               >
@@ -854,5 +873,173 @@ function TemplateLocaleEditor({
       </p>
       <p className="text-sm italic text-muted-foreground">{previewText}</p>
     </div>
+  );
+}
+
+/** Rótulo i18n de cada cadência — mapa literal, mesmo racional de `SCALE_TITLE_KEY`. */
+const CADENCE_LABEL_KEY: Record<CycleCadence, MessageKey> = {
+  SEMIANNUAL: "config.operational.cadence.SEMIANNUAL",
+  QUARTERLY: "config.operational.cadence.QUARTERLY",
+  ANNUAL: "config.operational.cadence.ANNUAL",
+};
+
+/** Rótulo i18n dos campos numéricos — mapa literal, mesmo racional de `CURATION_FIELD_LABEL_KEY`. */
+const OPERATIONAL_FIELD_LABEL_KEY: Record<OperationalNumberField, MessageKey> = {
+  floor: "config.operational.field.floor",
+  threshold: "config.operational.field.threshold",
+};
+
+/**
+ * CFG-05 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Operação": editor
+ * das três políticas operacionais de `app_settings` (cadência de ciclo,
+ * piso global de carreira, limiar de intervenção coletiva). A montagem/
+ * validação do payload vive no ViewModel (`OperationalSettingsEditor` — a
+ * régua da casa); aqui é só fiação de select/inputs, aviso de impacto e
+ * submit. Salvar faz UM PUT por key alterada (`store.updateAppSetting`),
+ * que invalida a query das settings — e, ao mudar a cadência, também o
+ * snapshot de `/api/state` (é dele que a tela de ciclos lê os ciclos sobre
+ * os quais o diálogo deriva o próximo período da cadência nova).
+ */
+function OperationalSettingsSection() {
+  const store = useStore();
+  const settings = useOperationalSettings();
+  const { t } = useI18n();
+  /** `null` = leitura; editar cria o editor a partir das settings efetivas. */
+  const [editor, setEditor] = useState<OperationalSettingsEditor | null>(null);
+  const {
+    submitting: saving,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit(t("config.operational.saveFailed"));
+
+  const editing = editor !== null;
+
+  const save = async () => {
+    if (!editor) return;
+    const changes = editor.payload();
+    if (!changes) return;
+    // Sequencial de propósito: cada PUT valida e grava UMA key; parar no
+    // primeiro erro deixa o 400 do backend visível sem estado meio-salvo
+    // ambíguo (as keys já gravadas continuam gravadas, como no servidor).
+    const result = await run(async () => {
+      for (const change of changes) await store.updateAppSetting(change.key, change.value);
+    });
+    if (result.ok) {
+      toast.success(t("config.operational.saved"));
+      setEditor(null);
+    }
+  };
+
+  const effectiveValues: Record<OperationalNumberField, number> = {
+    floor: settings.careerMinimumQualifiedFloor,
+    threshold: settings.trainingCollectiveInterventionThreshold,
+  };
+
+  return (
+    <SectionCard
+      title={t("config.operational.title")}
+      description={t("config.operational.subtitle")}
+    >
+      <div className="surface-inset p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium">{t("config.operational.policyTitle")}</p>
+          {editing ? (
+            <div className="flex justify-end gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={saving}
+                onClick={() => {
+                  setEditor(null);
+                  clearError();
+                }}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button size="sm" disabled={!editor.isValid || saving} onClick={() => void save()}>
+                {saving ? t("team.transition.submitting") : t("common.save")}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditor(OperationalSettingsEditor.from(settings))}
+            >
+              {t("common.edit")}
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-2 grid gap-3 sm:grid-cols-3">
+          <div>
+            <label className="text-xs text-muted-foreground" htmlFor="operational-cadence">
+              {t("config.operational.field.cadence")}
+            </label>
+            {editing ? (
+              <select
+                id="operational-cadence"
+                disabled={saving}
+                className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
+                value={editor.cadence}
+                onChange={(e) => setEditor(editor.withCadence(e.target.value as CycleCadence))}
+              >
+                {CYCLE_CADENCES.map((cadence) => (
+                  <option key={cadence} value={cadence}>
+                    {t(CADENCE_LABEL_KEY[cadence])}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p id="operational-cadence" className="mt-1 text-sm font-medium">
+                {t(CADENCE_LABEL_KEY[settings.cycleCadence])}
+              </p>
+            )}
+          </div>
+          {OPERATIONAL_NUMBER_FIELDS.map((field) => (
+            <div key={field}>
+              <label className="text-xs text-muted-foreground" htmlFor={`operational-${field}`}>
+                {t(OPERATIONAL_FIELD_LABEL_KEY[field])}
+              </label>
+              {editing ? (
+                <input
+                  id={`operational-${field}`}
+                  type="number"
+                  min={1}
+                  step={1}
+                  disabled={saving}
+                  className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"
+                  value={editor.drafts[field]}
+                  onChange={(e) => setEditor(editor.withField(field, e.target.value))}
+                />
+              ) : (
+                <p id={`operational-${field}`} className="mt-1 text-sm font-medium tabular-nums">
+                  {effectiveValues[field]}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {editing && editor.errorKey && (
+          <p className="mt-1 text-xs text-destructive" role="alert">
+            {t(editor.errorKey)}
+          </p>
+        )}
+        {error && (
+          <p className="mt-1 text-xs text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+
+        {/* Aviso de impacto da cadência — mudança NUNCA reescreve ciclos
+            existentes (avaliações e PDIs referenciam cycle_id); só o diálogo
+            "Novo ciclo" passa a oferecer os períodos da cadência nova. */}
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t("config.operational.cadenceImpact")}
+        </p>
+      </div>
+    </SectionCard>
   );
 }

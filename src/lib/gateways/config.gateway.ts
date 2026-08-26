@@ -1,4 +1,6 @@
 import {
+  appSettingPutResponseSchema,
+  appSettingsResponseSchema,
   curationPolicySchema,
   scoringBandsPutResponseSchema,
   scoringBandsResponseSchema,
@@ -7,6 +9,7 @@ import {
 } from "../api-schemas";
 import type { ApiClient } from "../api-client";
 import type { CurationPolicy } from "../curation-policy";
+import type { AppSettingsResponse, AppSettingValue } from "../operational-settings";
 import type { ScoringBand, ScoringScale } from "../scoring-bands";
 
 /** CFG-03 (admin UI) — a resposta do PUT de template: o registro validado (mesma forma da tabela). */
@@ -14,6 +17,12 @@ export interface TextTemplateRecord {
   key: string;
   locale: string;
   template: string;
+}
+
+/** CFG-05 (admin UI) — a resposta do PUT de setting: key + valor tipado gravado. */
+export interface AppSettingUpdate {
+  key: string;
+  value: AppSettingValue;
 }
 
 /**
@@ -73,6 +82,24 @@ export interface ConfigGateway {
    * positivo ou não-inteiro — a aba "Catálogo" mostra o erro no formulário).
    */
   updateCurationPolicy(policy: CurationPolicy): Promise<CurationPolicy>;
+  /**
+   * CFG-05 — `GET /api/config/settings`: as políticas operacionais
+   * escalares (`app_settings`) como o servidor serializa
+   * (`{ settings: [...] }` de `AppSettingRecord`). Uma key pode não vir
+   * (ambiente recém-migrado); é o consumidor
+   * (`withDefaultOperationalSettings`, via `useOperationalSettings` em
+   * `store.tsx`) quem completa campo a campo com o default byte-idêntico
+   * ao seed.
+   */
+  settings(): Promise<AppSettingsResponse>;
+  /**
+   * CFG-05 (admin UI) — `PUT /api/config/settings/:key`: edita o VALOR de
+   * uma setting existente do modelo. Admin-only e validação no backend
+   * (`OperationalSettings.apply` → 400 `INVALID_APP_SETTING` para cadência
+   * fora do enum ou inteiro < 1; 404 para key desconhecida) — a aba
+   * "Operação" mostra o erro no formulário.
+   */
+  updateSetting(key: string, value: AppSettingValue): Promise<AppSettingUpdate>;
 }
 
 export class HttpConfigGateway implements ConfigGateway {
@@ -131,4 +158,19 @@ export class HttpConfigGateway implements ConfigGateway {
     this.client
       .put<CurationPolicy>("/api/config/curation-policy", policy)
       .then((data) => curationPolicySchema.parse(data));
+
+  // CFG-05 — mesma disciplina de `bands`/`curationPolicy`: validado em
+  // runtime, não só cast. Os valores decidem cadência, piso e limiar de LNT.
+  settings = (): Promise<AppSettingsResponse> =>
+    this.client
+      .request<AppSettingsResponse>("/api/config/settings")
+      .then((data) => appSettingsResponseSchema.parse(data));
+
+  // CFG-05 (admin UI) — resposta do PUT também validada (o valor
+  // recém-gravado volta ao cache via invalidação; forma errada tem que
+  // falhar barulhento aqui, não corromper cadência/piso/limiar).
+  updateSetting = (key: string, value: AppSettingValue): Promise<AppSettingUpdate> =>
+    this.client
+      .put<AppSettingUpdate>(`/api/config/settings/${encodeURIComponent(key)}`, { value })
+      .then((data) => appSettingPutResponseSchema.parse(data));
 }
