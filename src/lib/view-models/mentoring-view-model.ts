@@ -1,11 +1,6 @@
-import type {
-  Architect,
-  DevelopmentPlan,
-  DevelopmentPlanItem,
-  MentoringSession,
-  ProficiencyUpdate,
-} from "../domain";
+import type { Architect, DevelopmentPlan, MentoringSession, ProficiencyUpdate } from "../domain";
 import type { Gap } from "../selectors";
+import type { Api } from "../store";
 import { defaultDateFormatter } from "../text";
 
 /**
@@ -79,32 +74,18 @@ import { defaultDateFormatter } from "../text";
  */
 
 /**
- * Fatia de `useStore()` que esta tela precisa. Definida aqui (não importada
- * de `store.tsx`) pelo mesmo motivo de `TeamRosterService`/
- * `LearningPathService`: a interface completa de `Api` não é exportada, e
- * TypeScript já valida estruturalmente que `useStore()` satisfaz esta forma.
+ * Fatia de `useStore()` que esta tela precisa. OO3-10 — derivada de `Api`
+ * (`store.tsx`, agora exportada) via `Pick`, em vez de recopiar as
+ * assinaturas à mão: qualquer divergência vira erro de compilação, e
+ * `useStore()` satisfaz a forma estruturalmente. (A recópia anterior de
+ * `createPlanItemFromGap` já tinha divergido em silêncio: faltava o campo
+ * opcional `dedicationHoursPerWeek` que a `Api` real aceita — exatamente o
+ * drift que esta derivação elimina.)
  */
-export interface MentoringService {
-  addMentoringSession(
-    session: MentoringSession,
-    proficiencyUpdates?: ProficiencyUpdate[],
-  ): Promise<MentoringSession>;
-  scheduleMentoringFollowUp(id: string, nextSession: string | null): Promise<MentoringSession>;
-  createPlanItemFromGap(
-    architectId: string,
-    item: {
-      id: string;
-      assessmentId: string;
-      competencyId: string;
-      objective: string;
-      actionType: DevelopmentPlanItem["actionType"];
-      actionPlan: string;
-      startDate: string;
-      targetDate: string;
-      owner: string;
-    },
-  ): Promise<DevelopmentPlan>;
-}
+export type MentoringService = Pick<
+  Api,
+  "addMentoringSession" | "scheduleMentoringFollowUp" | "createPlanItemFromGap"
+>;
 
 /** Os campos de texto do formulário de nova sessão — `durationMin` fica de fora porque `createSession` recebe o valor já convertido para número (validado por `useMentoringSessionForm` antes de chamar). */
 export interface MentoringSessionDraft {

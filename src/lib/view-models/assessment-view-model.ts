@@ -1,4 +1,4 @@
-import type { SessionUser } from "../api";
+import type { api, SessionUser } from "../api";
 import type {
   Architect,
   Assessment,
@@ -10,6 +10,7 @@ import type {
 } from "../domain";
 import type { CommentInput } from "../gateways/assessment.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
+import type { Api } from "../store";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -60,60 +61,32 @@ import type { UiAuthorizationPolicy } from "../scope";
 
 /**
  * Fatia de `useStore()` que a nota por competência e os comentários
- * precisam. Definida aqui (não importada de `store.tsx`) pelo mesmo motivo
- * de `TeamRosterService`/`DevelopmentPlanService`: a interface completa de
- * `Api` não é exportada, e TypeScript já valida estruturalmente que
- * `useStore()` satisfaz esta forma.
+ * precisam. OO3-10 — derivada de `Api` (`store.tsx`, agora exportada) via
+ * `Pick`, em vez de recopiar as assinaturas à mão: qualquer divergência
+ * vira erro de compilação, e `useStore()` satisfaz a forma estruturalmente.
  */
-export interface AssessmentItemService {
-  updateAssessmentItem(
-    assessmentId: string,
-    competencyId: string,
-    patch: Partial<{ self: Level; leader: Level; target: Level; final: Level }>,
-  ): void;
-  addAssessmentComment(
-    assessmentId: string,
-    competencyId: string,
-    comment: CommentInput,
-  ): Promise<Assessment>;
-  updateAssessmentComment(
-    assessmentId: string,
-    competencyId: string,
-    commentId: string,
-    comment: CommentInput,
-  ): Promise<Assessment>;
-  removeAssessmentComment(
-    assessmentId: string,
-    competencyId: string,
-    commentId: string,
-  ): Promise<Assessment>;
-}
+export type AssessmentItemService = Pick<
+  Api,
+  | "updateAssessmentItem"
+  | "addAssessmentComment"
+  | "updateAssessmentComment"
+  | "removeAssessmentComment"
+>;
 
 /**
  * Fatia da fachada `api` (não de `store`) que o portfólio de capacidades e o
  * resumo de desenvolvimento precisam — ver docstring da classe para o
- * porquê de não passar por `store` aqui.
+ * porquê de não passar por `store` aqui. OO3-10 — derivada de `typeof api`
+ * (a fonte real destas chamadas) via `Pick`, mesmo racional da derivação de
+ * `AssessmentItemService` sobre `Api`.
  */
-export interface AssessmentPortfolioService {
-  addAssessmentCapability(
-    assessmentId: string,
-    capabilityId: string,
-  ): Promise<AssessmentCapability>;
-  removeAssessmentCapability(
-    assessmentId: string,
-    capabilityId: string,
-    force?: boolean,
-  ): Promise<void>;
-  confirmAssessmentCapability(
-    assessmentId: string,
-    capabilityId: string,
-  ): Promise<AssessmentCapability>;
-  updateAssessmentDevelopmentSummary(
-    assessmentId: string,
-    body: Pick<AssessmentDevelopmentSummary, "startDoing" | "stopDoing" | "continueDoing">,
-    expectedVersion: number,
-  ): Promise<AssessmentDevelopmentSummary>;
-}
+export type AssessmentPortfolioService = Pick<
+  typeof api,
+  | "addAssessmentCapability"
+  | "removeAssessmentCapability"
+  | "confirmAssessmentCapability"
+  | "updateAssessmentDevelopmentSummary"
+>;
 
 /** Forma que `useAssessmentPermissions` já devolvia — só o cômputo mudou de lugar. */
 export interface AssessmentPermissions {

@@ -1,6 +1,7 @@
 import type { SessionUser } from "../api";
 import type { Architect, RoleName } from "../domain";
 import type { UiAuthorizationPolicy } from "../scope";
+import type { Api } from "../store";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -46,15 +47,12 @@ export const emptyArchitectForm = (defaultRole: RoleName): ArchitectFormValues =
 
 /**
  * Fatia de `useStore()` que o `TeamViewModel` precisa — só cadastro/edição,
- * não o roster inteiro. Definida aqui (não importada de `store.tsx`) porque
- * a interface completa de `Api` (`store.tsx`) não é exportada; TypeScript
- * já valida estruturalmente que o objeto de `useStore()` satisfaz esta
- * forma, sem precisar de nenhum adaptador em tempo de execução.
+ * não o roster inteiro. OO3-10 — derivada de `Api` (`store.tsx`, agora
+ * exportada) via `Pick`, em vez de recopiar as assinaturas à mão: qualquer
+ * divergência vira erro de compilação, e `useStore()` satisfaz a forma
+ * estruturalmente, sem adaptador em tempo de execução.
  */
-export interface TeamRosterService {
-  addArchitect(input: Omit<Architect, "id" | "version">): Promise<Architect>;
-  updateArchitect(id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>): void;
-}
+export type TeamRosterService = Pick<Api, "addArchitect" | "updateArchitect">;
 
 export class TeamViewModel {
   constructor(

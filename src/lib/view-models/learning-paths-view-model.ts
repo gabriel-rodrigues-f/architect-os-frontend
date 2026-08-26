@@ -1,5 +1,6 @@
 import type { SessionUser } from "../api";
 import type { Architect, LearningItemType, LearningPath, LearningPathItem } from "../domain";
+import type { Api } from "../store";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -58,30 +59,20 @@ import type { Architect, LearningItemType, LearningPath, LearningPathItem } from
  */
 
 /**
- * Fatia de `useStore()` que esta tela precisa. Definida aqui (não importada
- * de `store.tsx`) pelo mesmo motivo de `TeamRosterService`/
- * `DevelopmentPlanService`/`CatalogService`: a interface completa de `Api`
- * não é exportada, e TypeScript já valida estruturalmente que `useStore()`
- * satisfaz esta forma.
+ * Fatia de `useStore()` que esta tela precisa. OO3-10 — derivada de `Api`
+ * (`store.tsx`, agora exportada) via `Pick`, em vez de recopiar as
+ * assinaturas à mão: qualquer divergência vira erro de compilação, e
+ * `useStore()` satisfaz a forma estruturalmente.
  */
-export interface LearningPathService {
-  addLearningPath(p: LearningPath): Promise<LearningPath>;
-  updateLearningPath(
-    id: string,
-    patch: Partial<
-      Pick<LearningPath, "name" | "description" | "competencyIds" | "assignedTo" | "items">
-    >,
-  ): void;
-  removeLearningPath(id: string): void;
-  addLearningPathItem(pathId: string, item: LearningPathItem): void;
-  removeLearningPathItem(pathId: string, itemId: string): void;
-  updateLearningItemProgress(
-    pathId: string,
-    architectId: string,
-    itemId: string,
-    progress: number,
-  ): void;
-}
+export type LearningPathService = Pick<
+  Api,
+  | "addLearningPath"
+  | "updateLearningPath"
+  | "removeLearningPath"
+  | "addLearningPathItem"
+  | "removeLearningPathItem"
+  | "updateLearningItemProgress"
+>;
 
 export class LearningPathsViewModel {
   constructor(private readonly service: LearningPathService) {}

@@ -51,8 +51,14 @@ export function useCareerLevelsByRank(): CareerLevel[] {
  * mutação atualiza o cache do React Query na hora (para a UI não travar em
  * sliders e selects) e envia a alteração para a API. Se a chamada falhar, o
  * snapshot é revalidado e a UI volta para a verdade do servidor.
+ *
+ * OO3-10 — exportada de propósito: as interfaces de serviço dos ViewModels
+ * (`TeamRosterService`, `DevelopmentPlanService`, `CatalogService`, ...)
+ * derivam daqui via `Pick<Api, ...>` em vez de recopiar assinaturas à mão —
+ * qualquer divergência entre o que o ViewModel espera e o que `useStore()`
+ * entrega vira erro de compilação neste arquivo, não um drift silencioso.
  */
-interface Api extends AppState {
+export interface Api extends AppState {
   setActiveCycle: (id: string) => void;
   /** B-32 — id é gerado no servidor; sem otimismo (a UI só conhece o id real depois da resposta). */
   addArchitect: (a: Omit<Architect, "id" | "version">) => Promise<Architect>;

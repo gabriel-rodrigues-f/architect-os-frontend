@@ -1,6 +1,7 @@
 import type { SessionUser } from "../api";
 import type { CareerLevel, Capability, Competency, Level, RequirementType } from "../domain";
 import type { UiAuthorizationPolicy } from "../scope";
+import type { Api } from "../store";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -69,22 +70,20 @@ import type { UiAuthorizationPolicy } from "../scope";
 
 /**
  * Fatia de `useStore()` que o catálogo (capacidade + competência) precisa.
- * Definida aqui (não importada de `store.tsx`) pelo mesmo motivo de
- * `TeamRosterService`/`DevelopmentPlanService`: a interface completa de
- * `Api` não é exportada, e TypeScript já valida estruturalmente que
- * `useStore()` satisfaz esta forma.
+ * OO3-10 — derivada de `Api` (`store.tsx`, agora exportada) via `Pick`, em
+ * vez de recopiar as assinaturas à mão: qualquer divergência vira erro de
+ * compilação, e `useStore()` satisfaz a forma estruturalmente.
  */
-export interface CatalogService {
-  addCapability(
-    input: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
-  ): Promise<Capability>;
-  updateCapability(id: string, patch: Partial<Omit<Capability, "id" | "curation">>): void;
-  removeCapability(id: string): Promise<{ archived: boolean; competenciesRemoved: number }>;
-  addCompetency(input: Omit<Competency, "id">): Promise<Competency>;
-  updateCompetency(id: string, patch: Partial<Omit<Competency, "id">>): void;
-  removeCompetency(id: string): Promise<{ archived: boolean }>;
-  swapCompetencyRequirement(id: string, withCompetencyId: string): Promise<void>;
-}
+export type CatalogService = Pick<
+  Api,
+  | "addCapability"
+  | "updateCapability"
+  | "removeCapability"
+  | "addCompetency"
+  | "updateCompetency"
+  | "removeCompetency"
+  | "swapCompetencyRequirement"
+>;
 
 export class CompetencyMatrixViewModel {
   constructor(

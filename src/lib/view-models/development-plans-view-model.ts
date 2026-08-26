@@ -1,5 +1,6 @@
 import type { DevelopmentPlan } from "../domain";
 import type { Gap } from "../selectors";
+import type { Api } from "../store";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -25,11 +26,12 @@ import type { Gap } from "../selectors";
  * lógica extra que justifique sair do componente.
  */
 
-/** Fatia de `useStore()` que este ViewModel precisa. */
-export interface DevelopmentPlanService {
-  updatePlanStatus(planId: string, status: DevelopmentPlan["status"]): Promise<DevelopmentPlan>;
-  reopenPlan(planId: string, reason: string): Promise<DevelopmentPlan>;
-}
+/**
+ * Fatia de `useStore()` que este ViewModel precisa. OO3-10 — derivada de
+ * `Api` (`store.tsx`, agora exportada) via `Pick`, em vez de recopiar as
+ * assinaturas à mão: qualquer divergência vira erro de compilação.
+ */
+export type DevelopmentPlanService = Pick<Api, "updatePlanStatus" | "reopenPlan">;
 
 export class DevelopmentPlansViewModel {
   constructor(private readonly service: DevelopmentPlanService) {}
