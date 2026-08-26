@@ -4,7 +4,7 @@ import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { CapabilityRadar } from "@/components/app/charts";
 import { useGapAnalysisData } from "@/components/app/gap-analysis-shared";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
-import { GapBadge, NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { EmptyState, GapBadge, NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 
@@ -54,14 +54,12 @@ function GapPage() {
       />
 
       {architects.length === 0 ? (
-        <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">{t("gap.empty")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {store.architects.length === 0
-              ? t("gap.empty.noArchitects")
-              : t("gap.empty.filterHint")}
-          </p>
-        </div>
+        <EmptyState
+          title={t("gap.empty")}
+          hint={
+            store.architects.length === 0 ? t("gap.empty.noArchitects") : t("gap.empty.filterHint")
+          }
+        />
       ) : (
         // R2-UX-04/R2-RESP-03 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesmo
         // min-content trap dos outros 4 grids do app: minmax(0,1fr) deixa a

@@ -1,5 +1,5 @@
 import type { AppState } from "../api";
-import type { Architect, DevelopmentPlan } from "../domain";
+import type { Architect, DevelopmentPlan, LearningPath } from "../domain";
 import type { Gap, Selectors } from "../selectors";
 
 /**
@@ -91,5 +91,55 @@ export class DashboardPresenter {
       },
       { completed: 0, inReview: 0, draft: 0, notStarted: 0 },
     );
+  }
+}
+
+/** Itens do PDI ativo da pessoa, por status — os 4 baldes que a Home de Member exibe. */
+export interface PlanItemCounts {
+  notStarted: number;
+  inProgress: number;
+  blocked: number;
+  completed: number;
+}
+
+/**
+ * OO3-11/D-5 (reuso final) — os KPIs PESSOAIS eram derivados inline duas
+ * vezes: na Home de Member (`routes/index.tsx`) e no perfil do arquiteto
+ * (`routes/architects.$architectId.index.tsx`), com o mesmo cálculo
+ * (`progressionGapsFor` filtrado a gap>0, itens do PDI por status,
+ * evidências Pending, trilhas atribuídas). Mesmo padrão do
+ * `DashboardPresenter` acima: derivação pura, sem serviço, sem `Promise`.
+ * A média com cobertura (`coverageFor`) já é seletor compartilhado e não
+ * entra aqui de novo.
+ */
+export class PersonalDashboardPresenter {
+  constructor(
+    private readonly state: Pick<AppState, "learningPaths" | "evidences">,
+    private readonly sel: Pick<Selectors, "progressionGapsFor" | "planFor">,
+  ) {}
+
+  /** Só lacunas reais (gap > 0) — `progressionGapsFor` também devolve gap 0/negativo. */
+  openGaps(architectId: string): Gap[] {
+    return this.sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
+  }
+
+  planItemCounts(architectId: string): PlanItemCounts {
+    const items = this.sel.planFor(architectId)?.items ?? [];
+    return {
+      notStarted: items.filter((i) => i.status === "Not Started").length,
+      inProgress: items.filter((i) => i.status === "In Progress").length,
+      blocked: items.filter((i) => i.status === "Blocked").length,
+      completed: items.filter((i) => i.status === "Completed").length,
+    };
+  }
+
+  pendingEvidenceCount(architectId: string): number {
+    return this.state.evidences.filter(
+      (e) => e.architectId === architectId && e.status === "Pending",
+    ).length;
+  }
+
+  assignedPaths(architectId: string): LearningPath[] {
+    return this.state.learningPaths.filter((p) => p.assignedTo.includes(architectId));
   }
 }

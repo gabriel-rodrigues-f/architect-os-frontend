@@ -11,7 +11,7 @@ import {
   useTeamRoster,
 } from "@/components/app/team-shared";
 import { DataViewToolbar, EmptyState, Pagination } from "@/components/app/DataView";
-import { PageHeader } from "@/components/app/ui-bits";
+import { EmptyState as EmptyStateCard, PageHeader } from "@/components/app/ui-bits";
 import { ArchitectNameCombobox } from "@/components/app/ArchitectNameCombobox";
 import { ViewToggle } from "@/components/app/ViewToggle";
 import { MultiSelectFilter } from "@/components/app/MultiSelectFilter";
@@ -102,15 +102,17 @@ function TeamPage() {
       />
 
       {store.architects.length === 0 ? (
-        <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">{t("team.empty.title")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("team.empty.hint")}</p>
-          {isAdmin && (
-            <Button className="mt-4" onClick={form.openCreate}>
-              {t("team.empty.cta")}
-            </Button>
-          )}
-        </div>
+        <EmptyStateCard
+          title={t("team.empty.title")}
+          hint={t("team.empty.hint")}
+          action={
+            isAdmin && (
+              <Button className="mt-4" onClick={form.openCreate}>
+                {t("team.empty.cta")}
+              </Button>
+            )
+          }
+        />
       ) : (
         <>
           {/*

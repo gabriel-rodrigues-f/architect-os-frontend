@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
-import { NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { EmptyState, NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { ViewToggle } from "@/components/app/ViewToggle";
 import { useCurrentUser } from "@/lib/auth";
@@ -60,10 +60,7 @@ function CapabilityMapPage() {
       <PageHeader title={t("cap.title")} description={t("cap.subtitle")} help={help} />
 
       {store.capabilities.length === 0 ? (
-        <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">{t("cap.empty.title")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.hint")}</p>
-        </div>
+        <EmptyState title={t("cap.empty.title")} hint={t("cap.empty.hint")} />
       ) : population.length === 0 ? (
         /*
           R2-VIS-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — sem ninguém visível
@@ -72,10 +69,7 @@ function CapabilityMapPage() {
           frase, uma por card/linha, quando o problema é um só: não há
           ninguém para avaliar aqui, não uma lacuna de dado por capacidade.
         */
-        <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">{t("cap.empty.noScope.title")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("cap.empty.noScope.hint")}</p>
-        </div>
+        <EmptyState title={t("cap.empty.noScope.title")} hint={t("cap.empty.noScope.hint")} />
       ) : (
         <>
           <div className="mb-3 flex justify-end">

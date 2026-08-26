@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
-import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { EmptyState, LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Selection } from "@/lib/selection";
@@ -82,9 +82,7 @@ function ComparePage() {
       />
 
       {architects.length < 2 ? (
-        <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">{t("compare.empty")}</p>
-        </div>
+        <EmptyState title={t("compare.empty")} />
       ) : (
         <>
           <SectionCard title={t("compare.radar.title")} description={t("compare.radar.subtitle")}>

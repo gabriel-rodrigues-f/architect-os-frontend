@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import { GapTable, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
-import { PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -111,14 +111,12 @@ function ProgressionPage() {
       />
 
       {architects.length === 0 ? (
-        <div className="surface-card p-8 text-center">
-          <p className="text-sm font-medium">{t("gap.empty")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {store.architects.length === 0
-              ? t("gap.empty.noArchitects")
-              : t("gap.empty.filterHint")}
-          </p>
-        </div>
+        <EmptyState
+          title={t("gap.empty")}
+          hint={
+            store.architects.length === 0 ? t("gap.empty.noArchitects") : t("gap.empty.filterHint")
+          }
+        />
       ) : (
         <>
           <SectionCard

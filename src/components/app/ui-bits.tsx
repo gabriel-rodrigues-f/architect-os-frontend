@@ -335,6 +335,34 @@ export function SectionCard({
 }
 
 /**
+ * OO3-11/D-8 (reuso final) — o card de estado vazio (`surface-card p-8
+ * text-center` + título `font-medium` + dica muted) estava copiado em 10
+ * telas, com pequenas variações acidentais. As variações REAIS viram props:
+ * telas de busca sem resultado só têm a dica (sem título → o `mt-1` da dica
+ * também some, como nos originais); o roster vazio de /team tem um botão de
+ * ação abaixo.
+ */
+export function EmptyState({
+  title,
+  hint,
+  action,
+}: {
+  title?: string;
+  hint?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="surface-card p-8 text-center">
+      {title !== undefined && <p className="text-sm font-medium">{title}</p>}
+      {hint !== undefined && (
+        <p className={cn("text-sm text-muted-foreground", title !== undefined && "mt-1")}>{hint}</p>
+      )}
+      {action}
+    </div>
+  );
+}
+
+/**
  * Rótulo de campo com uma bolinha de ajuda à direita.
  *
  * Existe como componente próprio, e não como `<Label>` + `<Tooltip>` repetido
