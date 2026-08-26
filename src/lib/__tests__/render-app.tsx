@@ -8,7 +8,7 @@ import { type AppState, type SessionUser } from "../api";
 import { AuthProvider, useAuth } from "../auth";
 import { I18nProvider } from "../i18n";
 import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureState } from "./fixtures";
+import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
 
 /**
  * OO3-11/D-7 — o setup replicado nos testes de tela (QueryClient com
@@ -58,6 +58,14 @@ export function mockAppFetch(
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
 }
+
+/**
+ * Rota de `GET /api/career-levels` com os níveis da fixture (B-24/ADR-0011:
+ * careerLevels saiu de `/api/state`) — replicada em vários testes de telas
+ * administrativas do catálogo.
+ */
+export const careerLevelsRoute: FetchRoute = (href) =>
+  href.endsWith("/api/career-levels") ? jsonResponse(fixtureCareerLevels) : undefined;
 
 /**
  * Rota pronta para a consulta de elegibilidade vazia (`/eligibility`, telas de

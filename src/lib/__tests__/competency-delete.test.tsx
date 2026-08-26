@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,10 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Toaster } from "@/components/ui/sonner";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { type AppState } from "../api";
-import { AuthProvider, useAuth } from "../auth";
-import { I18nProvider } from "../i18n";
-import { StoreProvider } from "../store";
-import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
+import { fixtureState } from "./fixtures";
+import { careerLevelsRoute, mockAppFetch, renderWithApp } from "./render-app";
 
 /**
  * Exercita a Matriz de Competências de verdade: o componente da rota, ligado à
@@ -26,29 +23,7 @@ const state: AppState = {
   competencies: fixtureState.competencies,
 };
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-            <Toaster theme="light" position="bottom-right" duration={3000} />
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-function AuthReady({ children }: { children: ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return null;
-  return <>{children}</>;
-}
+/** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 
@@ -59,10 +34,11 @@ const MatrixPage = MatrixRoute.options.component as () => ReactNode;
  * expandido) que este teste pressupõe.
  */
 const renderMatrix = async () => {
-  render(
-    <Wrapper>
+  renderWithApp(
+    <>
       <MatrixPage />
-    </Wrapper>,
+      <Toaster theme="light" position="bottom-right" duration={3000} />
+    </>,
   );
   await userEvent.click(await screen.findByRole("button", { name: "Expandir tudo" }));
 };
@@ -71,35 +47,13 @@ describe("Matriz de Competências — exclusão", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      if (String(url).endsWith("/api/auth/me")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (init?.method === "DELETE") return Promise.resolve(new Response(null, { status: 204 }));
-      if (String(url).endsWith("/api/state")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      // B-24 (ADR-0011) — careerLevels saiu de /api/state; a Matriz busca via seu próprio endpoint.
-      if (String(url).endsWith("/api/career-levels")) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureCareerLevels), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      state,
+      routes: [
+        (_href, init) =>
+          init?.method === "DELETE" ? new Response(null, { status: 204 }) : undefined,
+        careerLevelsRoute,
+      ],
     });
   });
 
