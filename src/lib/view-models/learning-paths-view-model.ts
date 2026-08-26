@@ -1,5 +1,11 @@
 import type { SessionUser } from "../api";
-import type { Architect, LearningItemType, LearningPath, LearningPathItem } from "../domain";
+import type {
+  Architect,
+  LearningItemProgress,
+  LearningItemType,
+  LearningPath,
+  LearningPathItem,
+} from "../domain";
 import type { Api } from "../store";
 
 /**
@@ -76,6 +82,52 @@ export type LearningPathService = Pick<
 
 export class LearningPathsViewModel {
   constructor(private readonly service: LearningPathService) {}
+
+  /**
+   * OO3-11l — progresso de uma pessoa num item: `{status:"Not Started",
+   * progress:0}` se ainda não tocou (movido de `domain.progressFor`).
+   */
+  progressFor(
+    path: Pick<LearningPath, "progress">,
+    architectId: string,
+    itemId: string,
+  ): LearningItemProgress {
+    return (
+      path.progress.find((p) => p.architectId === architectId && p.itemId === itemId) ?? {
+        architectId,
+        itemId,
+        status: "Not Started",
+        progress: 0,
+      }
+    );
+  }
+
+  /** Média CRUA (sem arredondar) dos itens para uma pessoa — 0 para trilha sem item, nunca NaN. */
+  private personProgress(
+    path: Pick<LearningPath, "progress" | "items">,
+    architectId: string,
+  ): number {
+    const values = path.items.map((item) => this.progressFor(path, architectId, item.id).progress);
+    return values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+  }
+
+  /** OO3-11l/D-4 — percentual de UMA pessoa na trilha (Perfil); arredonda só no nível externo, como o original. */
+  progressPercentFor(path: Pick<LearningPath, "progress" | "items">, architectId: string): number {
+    return Math.round(this.personProgress(path, architectId));
+  }
+
+  /**
+   * OO3-11l/D-4 — percentual do card da trilha: média entre as pessoas
+   * atribuídas, cada uma com a própria média entre os itens (médias por
+   * pessoa CRUAS; `Math.round` só no total, preservando o cálculo original).
+   * 0 para trilha sem pessoa atribuída — nunca NaN.
+   */
+  teamProgressPercent(path: Pick<LearningPath, "progress" | "items" | "assignedTo">): number {
+    const perPerson = path.assignedTo.map((architectId) => this.personProgress(path, architectId));
+    return perPerson.length
+      ? Math.round(perPerson.reduce((s, v) => s + v, 0) / perPerson.length)
+      : 0;
+  }
 
   /**
    * Sem otimismo (mesmo contrato de `TeamViewModel.submit`/

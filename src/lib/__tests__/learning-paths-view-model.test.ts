@@ -232,6 +232,46 @@ describe("LearningPathsViewModel", () => {
     });
   });
 
+  describe("progresso (OO3-11l/D-4)", () => {
+    const paths = {
+      comProgresso: {
+        items: [{ id: "i1" }, { id: "i2" }] as never,
+        assignedTo: ["ana", "bruno"],
+        progress: [
+          { architectId: "ana", itemId: "i1", status: "Completed", progress: 100 },
+          { architectId: "ana", itemId: "i2", status: "In Progress", progress: 51 },
+        ] as never,
+      },
+      semItem: { items: [] as never, assignedTo: ["ana"], progress: [] as never },
+      semPessoa: { items: [{ id: "i1" }] as never, assignedTo: [], progress: [] as never },
+    };
+
+    it("progressFor devolve o registro da pessoa, ou o zero explícito se ainda não tocou", () => {
+      const { vm } = makeVm();
+      expect(vm.progressFor(paths.comProgresso, "ana", "i1").progress).toBe(100);
+      expect(vm.progressFor(paths.comProgresso, "bruno", "i1")).toEqual({
+        architectId: "bruno",
+        itemId: "i1",
+        status: "Not Started",
+        progress: 0,
+      });
+    });
+
+    it("progressPercentFor arredonda só no nível externo; teamProgressPercent faz média das médias cruas", () => {
+      const { vm } = makeVm();
+      // ana: (100+51)/2 = 75.5 → 76; bruno: 0.
+      expect(vm.progressPercentFor(paths.comProgresso, "ana")).toBe(76);
+      // time: (75.5 + 0)/2 = 37.75 → 38 (médias por pessoa CRUAS, round só no total).
+      expect(vm.teamProgressPercent(paths.comProgresso)).toBe(38);
+    });
+
+    it("trilha sem item = 0 e trilha sem pessoa atribuída = 0 — nunca NaN", () => {
+      const { vm } = makeVm();
+      expect(vm.progressPercentFor(paths.semItem, "ana")).toBe(0);
+      expect(vm.teamProgressPercent(paths.semPessoa)).toBe(0);
+    });
+  });
+
   describe("recordProgress", () => {
     it("delega (pathId, architectId, itemId, progress) 1:1 para o serviço", () => {
       const { vm, service } = makeVm();

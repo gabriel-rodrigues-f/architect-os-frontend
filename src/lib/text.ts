@@ -113,6 +113,16 @@ export class DateFormatter {
    * no Brasil, já é o dia seguinte — o mesmo problema que `todayIso` existe
    * pra evitar.
    */
+  /**
+   * OO3-11j — `AAAA-MM-DD` de um `Date`, em UTC de propósito (veio de
+   * `team-report-shared.isoDate`, usado no NOME do arquivo exportado do
+   * relatório do time): "corrigir" para fuso local trocaria o nome do
+   * arquivo à noite no Brasil. Para "hoje" no fuso local, use `todayIso`.
+   */
+  isoDate(date: Date): string {
+    return date.toISOString().slice(0, 10);
+  }
+
   daysAgoIso(days: number): string {
     const d = new Date();
     d.setDate(d.getDate() - days);

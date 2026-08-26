@@ -28,7 +28,6 @@ import { DashboardPresenter } from "@/lib/presenters/dashboard-presenter";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
-import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -287,7 +286,7 @@ function MemberHome() {
 
   const capabilityAvgs = sel.capabilityAverages(architectId);
   const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
-  const { avg, covered, total } = averageWithCoverage(capabilityAvgs.map((d) => d.avg));
+  const { avg, covered, total } = sel.coverageFor(architectId);
   const assessment = sel.assessmentFor(architectId);
   const plan = sel.planFor(architectId);
   const planStatus = plan?.status;

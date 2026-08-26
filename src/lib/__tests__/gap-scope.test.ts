@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
-import { averageWithCoverage, createSelectors } from "../selectors";
+import { createSelectors } from "../selectors";
 import { fixtureState } from "./fixtures";
 
 /**
@@ -32,15 +32,11 @@ describe("recorte por arquitetos selecionados", () => {
     expect(applyArchitectFilter(fixtureState.architects, ["ninguem"])).toEqual([]);
   });
 
-  /** Espelha exatamente o radar de gap-analysis.tsx — mesma função exportada, não uma cópia da regra. */
+  /** OO3-11k — chama `sel.teamAverageFor` (a regra do radar), em vez de reimplementá-la aqui. */
   const radarFor = (ids: string[]) => {
     const architects = applyArchitectFilter(fixtureState.architects, ids);
     return fixtureState.capabilities.map((cat) => {
-      const rows = architects.map((a) =>
-        sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
-      );
-      const atual = averageWithCoverage(rows.map((r) => r?.avg));
-      const alvo = averageWithCoverage(rows.map((r) => r?.target));
+      const { atual, alvo } = sel.teamAverageFor(cat.id, architects);
       return {
         domain: cat.short,
         atual: Number((atual.avg ?? 0).toFixed(2)),
@@ -79,12 +75,10 @@ describe("recorte por arquitetos selecionados", () => {
       ...fixtureState,
       architects: [...fixtureState.architects, { ...fixtureState.architects[0]!, id: "diego" }],
     });
-    const rows = fixtureState.capabilities.map((cat) => {
-      const pontos = ["ana", "diego"].map((id) =>
-        semAssessment.capabilityAverages(id).find((d) => d.capability.id === cat.id),
-      );
-      return { domain: cat.short, ...averageWithCoverage(pontos.map((p) => p?.avg)) };
-    });
+    const rows = fixtureState.capabilities.map((cat) => ({
+      domain: cat.short,
+      ...semAssessment.teamAverageFor(cat.id, [{ id: "ana" }, { id: "diego" }]).atual,
+    }));
     const cloud = rows.find((r) => r.domain === "Cloud");
     // Ana tem 4 em Cloud; "diego" não tem assessment — média real é 4, não (4+0)/2=2.
     expect(cloud?.avg).toBe(4);

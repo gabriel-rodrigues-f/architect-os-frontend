@@ -23,7 +23,7 @@ import { ROLES, type Architect, type RoleName } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
 import { authErrorMessage } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { averageWithCoverage, specializationLabel, type Gap } from "@/lib/selectors";
+import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
@@ -331,7 +331,7 @@ export function useTeamRoster(isAdmin: boolean) {
     const withStats = filtered.map((a) => ({
       architect: a,
       topGaps: sel.progressionGapsFor(a.id).slice(0, 3),
-      avg: averageWithCoverage(sel.capabilityAverages(a.id).map((d) => d.avg)).avg,
+      avg: sel.coverageFor(a.id).avg,
       hasOfficial: sel.officialAssessmentFor(a.id) !== undefined,
       lastMentoring: lastMentoringByArchitect.get(a.id),
     }));
@@ -669,103 +669,105 @@ export function TeamRosterView({
 
   return view === "cards" ? (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => (
-        <div key={a.id} className="surface-card p-5">
-          <div className="flex items-start gap-3">
-            <Initials name={a.name} />
-            <div className="min-w-0 flex-1">
-              <Link
-                to="/architects/$architectId"
-                params={{ architectId: a.id }}
-                className="font-display text-base font-semibold hover:text-primary"
-              >
-                {a.name}
-              </Link>
-              <p
-                className="truncate text-xs text-muted-foreground"
-                title={`${a.role} · ${t("team.card.years", { n: a.yearsAsArchitect })} · ${specializationLabel(a, sel.competencyById)}`}
-              >
-                {a.role} · {t("team.card.years", { n: a.yearsAsArchitect })} ·{" "}
-                {specializationLabel(a, sel.competencyById)}
-              </p>
-              <p className="truncate text-xs text-muted-foreground" title={a.email}>
-                {a.email}
-              </p>
+      {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => {
+        const specialization = sel.specializationLabel(a);
+        return (
+          <div key={a.id} className="surface-card p-5">
+            <div className="flex items-start gap-3">
+              <Initials name={a.name} />
+              <div className="min-w-0 flex-1">
+                <Link
+                  to="/architects/$architectId"
+                  params={{ architectId: a.id }}
+                  className="font-display text-base font-semibold hover:text-primary"
+                >
+                  {a.name}
+                </Link>
+                <p
+                  className="truncate text-xs text-muted-foreground"
+                  title={`${a.role} · ${t("team.card.years", { n: a.yearsAsArchitect })} · ${specialization}`}
+                >
+                  {a.role} · {t("team.card.years", { n: a.yearsAsArchitect })} · {specialization}
+                </p>
+                <p className="truncate text-xs text-muted-foreground" title={a.email}>
+                  {a.email}
+                </p>
+              </div>
+              {isAdmin && (
+                <div className="flex shrink-0 gap-1">
+                  {a.active ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onTransition(a)}
+                        aria-label={t("team.transition.action", { nome: a.name })}
+                        title={t("team.transition.action", { nome: a.name })}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      >
+                        <TrendingUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onEdit(a)}
+                        aria-label={`${t("common.edit")} ${a.name}`}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeactivate(a)}
+                        aria-label={`${t("team.deactivate.action")} ${a.name}`}
+                        title={t("team.deactivate.action")}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <UserX className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onReactivate(a)}
+                      aria-label={`${t("team.reactivate.action")} ${a.name}`}
+                      title={t("team.reactivate.action")}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-            {isAdmin && (
-              <div className="flex shrink-0 gap-1">
-                {a.active ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onTransition(a)}
-                      aria-label={t("team.transition.action", { nome: a.name })}
-                      title={t("team.transition.action", { nome: a.name })}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    >
-                      <TrendingUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onEdit(a)}
-                      aria-label={`${t("common.edit")} ${a.name}`}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDeactivate(a)}
-                      aria-label={`${t("team.deactivate.action")} ${a.name}`}
-                      title={t("team.deactivate.action")}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <UserX className="h-3.5 w-3.5" />
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onReactivate(a)}
-                    aria-label={`${t("team.reactivate.action")} ${a.name}`}
-                    title={t("team.reactivate.action")}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  >
-                    <UserCheck className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
 
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
-            <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
-          </div>
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
+              <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
+            </div>
 
-          <div className="mt-4 space-y-1.5">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {t("team.card.topGaps")}
-            </p>
-            {top.map((g) => (
-              <div
-                key={g.item.competencyId}
-                className="flex items-center justify-between gap-2 text-sm"
-              >
-                <span className="min-w-0 flex-1 truncate" title={g.competency?.name}>
-                  {g.competency?.name}
-                </span>
-                <GapBadge gap={g.gap} />
-              </div>
-            ))}
-            {top.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                {hasOfficial ? t("team.card.noGaps") : t("team.card.notAssessed")}
+            <div className="mt-4 space-y-1.5">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("team.card.topGaps")}
               </p>
-            )}
+              {top.map((g) => (
+                <div
+                  key={g.item.competencyId}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
+                  <span className="min-w-0 flex-1 truncate" title={g.competency?.name}>
+                    {g.competency?.name}
+                  </span>
+                  <GapBadge gap={g.gap} />
+                </div>
+              ))}
+              {top.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {hasOfficial ? t("team.card.noGaps") : t("team.card.notAssessed")}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   ) : (
     <div className="surface-card overflow-x-auto">
@@ -824,11 +826,8 @@ export function TeamRosterView({
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{a.role}</td>
                 <td className="max-w-[200px] px-4 py-3 text-muted-foreground">
-                  <span
-                    className="block truncate"
-                    title={specializationLabel(a, sel.competencyById)}
-                  >
-                    {specializationLabel(a, sel.competencyById)}
+                  <span className="block truncate" title={sel.specializationLabel(a)}>
+                    {sel.specializationLabel(a)}
                   </span>
                 </td>
                 {isAdmin && (

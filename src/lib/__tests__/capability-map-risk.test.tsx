@@ -114,61 +114,15 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
     expect(noCard.slice(0, 4)).toEqual(ordem);
   });
 
-  it("domínio com 1 pessoa avançada e 0 especialistas mostra risco de concentração, não 'healthy'", async () => {
-    // Cloud: Ana=nível 4 (avançado), Bruno=nível 2.5 (praticante) — só 1 referência técnica.
-    renderPage(fixtureState);
-    const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
-    expect(within(card).getByText(/Risco de concentração/)).toBeTruthy();
-  });
-
-  it("domínio sem ninguém avançado ou especialista mostra 'sem referência técnica'", async () => {
-    // Security: Ana e Bruno em IAM ficam abaixo de 2,5 — nenhuma referência técnica.
-    renderPage(fixtureState);
-    const card = (await screen.findByText("Security")).closest("section")!;
-    expect(within(card).getByText(/Sem referência técnica/)).toBeTruthy();
-  });
-
-  it("domínio com duas ou mais referências técnicas mostra cobertura distribuída", async () => {
-    const state: AppState = {
-      ...fixtureState,
-      architects: [
-        ...fixtureState.architects,
-        {
-          id: "carla",
-          name: "Carla Souza",
-          role: "Arquiteto de Soluções III",
-          yearsAsArchitect: 8,
-          specialization: "Cloud",
-          email: "carla@company.com",
-          active: true,
-          version: 1,
-        },
-      ],
-      assessments: [
-        ...fixtureState.assessments,
-        {
-          id: "carla-h2",
-          architectId: "carla",
-          cycleId: "2026-h2",
-          status: "Completed",
-          modelVersion: 1,
-          targetCareerLevelId: null,
-          targetSemantics: null,
-          version: 1,
-          items: [
-            { competencyId: "cloud-k8s", self: 5, leader: 5, target: 4, final: 5, comments: [] },
-          ],
-        },
-      ],
-    };
-    renderPage(state);
-    const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
-    expect(within(card).getByText(/Cobertura distribuída/)).toBeTruthy();
-  });
-
   /**
-   * ANA-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — mesmo
-   * estado do teste anterior (3 pessoas avançadas/especialistas em Cloud:
+   * OO3-11h — os 3 estados de risco pela DOM viraram casos unitários do
+   * `CapabilityCoveragePresenter` (`capability-coverage-presenter.test.ts`);
+   * aqui ficam os invariantes de tela: ordem/rótulo das faixas, o recorte
+   * por escopo (ANA-001) e a ausência de CRUD.
+   */
+  /**
+   * ANA-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — estado
+   * com 3 pessoas avançadas/especialistas em Cloud (
    * "cobertura distribuída" para o admin, que enxerga todo mundo), mas
    * lido por um Lead atribuído só à Ana. Bruno e Carla continuam no roster
    * (dado de diretório, sem filtro), mas fora do escopo de carreira deste

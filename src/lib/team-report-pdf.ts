@@ -1,17 +1,13 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-import type { ConsolidatedGapRow } from "@/components/app/gap-analysis-shared";
-import { capabilityShortLabels } from "@/lib/domain";
+import { downloadBlob } from "@/lib/download";
 import {
-  downloadBlob,
-  formatAvg,
-  gapColumnLabels,
-  gapRowValues,
-  isoDate,
+  TeamReportPresenter,
   type T,
   type TeamReportInput,
-} from "@/lib/team-report-shared";
+} from "@/lib/presenters/team-report-presenter";
+import type { ConsolidatedGapRow } from "@/lib/selectors";
 
 /**
  * `pdfkit` já existe no backend (`reports/evolution-pdf-renderer.ts`), mas
@@ -19,8 +15,12 @@ import {
  * `jspdf`/`jspdf-autotable` (que arrastam `html2canvas`/`canvg`, ~600kB),
  * exatamente para que `import()` dinâmico em `progression.tsx` baste para
  * manter esse peso fora do chunk da rota.
+ *
+ * OO3-11j — o conteúdo vem do `TeamReportPresenter` (que NÃO importa jspdf);
+ * aqui fica só a montagem do PDF.
  */
 export async function exportTeamReportPdf(t: T, input: TeamReportInput): Promise<void> {
+  const presenter = new TeamReportPresenter(t, input);
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 40;
   let y = margin;
@@ -44,26 +44,13 @@ export async function exportTeamReportPdf(t: T, input: TeamReportInput): Promise
   doc.text(t("gap.export.pdf.heatmapSection"), margin, y);
   y += 8;
 
-  // R2-ESC-02 — dedup do cabeçalho enquanto o catálogo tiver siglas
-  // duplicadas legadas (nada impedia isso antes desta rodada).
-  const shortLabels = capabilityShortLabels(input.capabilities);
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
     styles: { fontSize: 7, cellPadding: 3 },
     headStyles: { fillColor: [60, 60, 60] },
-    head: [
-      [t("col.architect"), ...input.capabilities.map((c) => shortLabels.get(c.id) ?? c.short)],
-    ],
-    body: input.architects.map((a) => {
-      const averages = input.capabilityAveragesFor(a.id);
-      return [
-        a.name,
-        ...input.capabilities.map((c) =>
-          formatAvg(averages.find((d) => d.capability.id === c.id)?.avg),
-        ),
-      ];
-    }),
+    head: [presenter.heatmapHead],
+    body: presenter.heatmapBody,
   });
   y = tableEndY(doc) + 24;
 
@@ -81,8 +68,8 @@ export async function exportTeamReportPdf(t: T, input: TeamReportInput): Promise
       margin: { left: margin, right: margin },
       styles: { fontSize: 7, cellPadding: 3 },
       headStyles: { fillColor: [60, 60, 60] },
-      head: [gapColumnLabels(t, mastery)],
-      body: rows.map((row) => gapRowValues(t, input, row, mastery)),
+      head: [presenter.gapColumns(mastery)],
+      body: presenter.gapRows(rows, mastery),
     });
     y = tableEndY(doc) + 24;
   };
@@ -91,7 +78,7 @@ export async function exportTeamReportPdf(t: T, input: TeamReportInput): Promise
   gapSection(t("gap.export.pdf.opportunitySection"), input.opportunity, false);
   gapSection(t("gap.export.pdf.masterySection"), input.mastery, true);
 
-  downloadBlob(doc.output("blob"), `progressao-time-${isoDate(input.generatedAt)}.pdf`);
+  downloadBlob(doc.output("blob"), presenter.filename("pdf"));
 }
 
 /** `lastAutoTable` é injetado pelo plugin no documento, sem tipo próprio exportado pela lib. */

@@ -2,11 +2,10 @@ import { useMemo } from "react";
 
 import { GapBadge } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
-import { type Architect } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { averageWithCoverage, type Gap } from "@/lib/selectors";
+import { type ConsolidatedGapRow } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamList } from "@/hooks/use-search-param";
 
@@ -18,83 +17,10 @@ import { useSearchParamList } from "@/hooks/use-search-param";
  * cálculo (e arriscar as duas telas divergirem) quando o "Progressão" saiu
  * do fim de `/gap-analysis` pra sua própria aba.
  *
- * ORIENTACAO-NONA-RODADA ENT-09-012 — uma linha consolidada por competência
- * com todos os números secundários (Seção 33): quantas pessoas, gap médio e
- * máximo, e as médias que compõem esse gap — nunca só o pior caso.
- * `requirementType` vem junto porque separar bloqueante de oportunidade é a
- * própria reestruturação pedida, não um detalhe da tabela.
+ * OO3-11g — `ConsolidatedGapRow`/`consolidateGaps` moraram aqui até virarem
+ * `GapConsolidationSelectors` em `lib/selectors.ts` (os relatórios de
+ * `lib/team-report-*` importavam de `components/`, invertendo a dependência).
  */
-export interface ConsolidatedGapRow {
-  competencyId: string;
-  name: string;
-  capabilityId: string;
-  requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
-  people: number;
-  /** Nomes de quem tem essa lacuna — a lista de prioridades mostrava só a contagem, e quem lê queria saber quem. */
-  architectNames: string[];
-  totalGap: number;
-  maxGap: number;
-  avgGap: number;
-  avgFinal: number;
-  avgTarget: number;
-}
-
-export function consolidateGaps(
-  architects: Architect[],
-  gapsFor: (architectId: string) => Gap[],
-): ConsolidatedGapRow[] {
-  const map = new Map<
-    string,
-    {
-      competencyId: string;
-      name: string;
-      capabilityId: string;
-      requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
-      people: number;
-      architectNames: string[];
-      totalGap: number;
-      maxGap: number;
-      sumFinal: number;
-      sumTarget: number;
-    }
-  >();
-
-  for (const architect of architects) {
-    for (const gap of gapsFor(architect.id)) {
-      if (gap.gap <= 0 || !gap.competency) continue;
-      const current = map.get(gap.competency.id) ?? {
-        competencyId: gap.competency.id,
-        name: gap.competency.name,
-        capabilityId: gap.competency.capabilityId,
-        requirementType: gap.competency.requirementType,
-        people: 0,
-        architectNames: [],
-        totalGap: 0,
-        maxGap: 0,
-        sumFinal: 0,
-        sumTarget: 0,
-      };
-      map.set(gap.competency.id, {
-        ...current,
-        people: current.people + 1,
-        architectNames: [...current.architectNames, architect.name],
-        totalGap: current.totalGap + gap.gap,
-        maxGap: Math.max(current.maxGap, gap.gap),
-        sumFinal: current.sumFinal + gap.item.final,
-        sumTarget: current.sumTarget + gap.item.target,
-      });
-    }
-  }
-
-  return [...map.values()]
-    .map((row) => ({
-      ...row,
-      avgFinal: Number((row.sumFinal / row.people).toFixed(1)),
-      avgTarget: Number((row.sumTarget / row.people).toFixed(1)),
-      avgGap: Number((row.totalGap / row.people).toFixed(1)),
-    }))
-    .sort((a, b) => b.totalGap - a.totalGap || b.maxGap - a.maxGap);
-}
 
 /**
  * Recorte + radar + bloqueante/oportunidade/maestria — o que as duas abas
@@ -141,11 +67,7 @@ export function useGapAnalysisData() {
   const radar = useMemo(() => {
     // R2-ESC-02 — rótulo compacto dedup (siglas legadas) via selector memoizado.
     return store.capabilities.map((cat) => {
-      const rows = architects.map((a) =>
-        sel.capabilityAverages(a.id).find((d) => d.capability.id === cat.id),
-      );
-      const atual = averageWithCoverage(rows.map((r) => r?.avg));
-      const alvo = averageWithCoverage(rows.map((r) => r?.target));
+      const { atual, alvo } = sel.teamAverageFor(cat.id, architects);
       return {
         capability: sel.capabilityShortLabel(cat),
         atual: Number((atual.avg ?? 0).toFixed(2)),
@@ -169,10 +91,7 @@ export function useGapAnalysisData() {
    * misturar os dois é exatamente o problema que a Seção 33 aponta, porque
    * esconde qual lacuna de fato trava alguém.
    */
-  const progression = useMemo(
-    () => consolidateGaps(architects, (id) => sel.progressionGapsFor(id)),
-    [architects, sel],
-  );
+  const progression = useMemo(() => sel.consolidateProgressionGaps(architects), [architects, sel]);
   const blocking = useMemo(
     () => progression.filter((r) => r.requirementType === "RESTRICTIVE"),
     [progression],
@@ -189,10 +108,7 @@ export function useGapAnalysisData() {
    * competência, com a mesma forma da tabela de progressão, para reaproveitar
    * o mesmo componente de exibição sem herdar a linguagem de "bloqueio".
    */
-  const mastery = useMemo(
-    () => consolidateGaps(architects, (id) => sel.masteryOpportunitiesFor(id)),
-    [architects, sel],
-  );
+  const mastery = useMemo(() => sel.consolidateMasteryGaps(architects), [architects, sel]);
 
   /**
    * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 4.2/17/36 (A1/B2) — texto

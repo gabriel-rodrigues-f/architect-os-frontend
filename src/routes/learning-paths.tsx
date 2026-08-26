@@ -20,12 +20,7 @@ import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
-import {
-  progressFor,
-  type LearningItemType,
-  type LearningPath,
-  type LearningPathItem,
-} from "@/lib/domain";
+import { type LearningItemType, type LearningPath, type LearningPathItem } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
@@ -206,18 +201,10 @@ function LearningPage() {
             {visiblePaths.map((path) => {
               /**
                * Progresso do card é a média entre as pessoas atribuídas — cada
-               * uma com a própria média entre os itens. Antes, `item.progress`
-               * era um valor só; agora cada pessoa tem o dela (progressFor).
+               * uma com a própria média entre os itens (OO3-11l:
+               * `LearningPathsViewModel.teamProgressPercent`).
                */
-              const perPerson = path.assignedTo.map((architectId) => {
-                const values = path.items.map(
-                  (item) => progressFor(path, architectId, item.id).progress,
-                );
-                return values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
-              });
-              const total = perPerson.length
-                ? Math.round(perPerson.reduce((s, v) => s + v, 0) / perPerson.length)
-                : 0;
+              const total = vm.teamProgressPercent(path);
               const editable = canEdit(path);
               const createdAt = defaultDateFormatter.formatDate(path.createdAt, locale);
               const isExpanded = expandedIds.has(path.id) || term.length > 0;
@@ -312,7 +299,7 @@ function LearningPage() {
                           <div className="mt-2 space-y-1.5">
                             {path.assignedTo.map((architectId) => {
                               const person = sel.architectById(architectId);
-                              const prog = progressFor(path, architectId, item.id);
+                              const prog = vm.progressFor(path, architectId, item.id);
                               const nome = person?.name ?? architectId;
                               return (
                                 <div key={architectId} className="flex items-center gap-2 pl-2">
