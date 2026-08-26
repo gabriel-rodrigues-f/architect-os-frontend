@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { gapTone, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit } from "@/hooks/use-async-submit";
-import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, type CareerLevel, type Level } from "@/lib/domain";
+import { LEVELS, type CareerLevel, type Level } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -25,7 +25,11 @@ import {
   useScoringBands,
   useStore,
   useTextTemplates,
+  useVocabularies,
+  useVocabulary,
 } from "@/lib/store";
+import { VOCABULARY_NAMES, type VocabularyItem, type VocabularyName } from "@/lib/vocabularies";
+import { NewVocabularyCodeEditor, VocabularyItemEditor } from "@/lib/view-models/vocabulary-editor";
 import { defaultDateFormatter } from "@/lib/text";
 import {
   renderTemplate,
@@ -91,6 +95,8 @@ function SettingsPage() {
         {isAdmin && <CurationPolicySection />}
         {/* CFG-05 (SPEC-OO3-13, §3.2) — aba "Operação", mesmo corte admin-only. */}
         {isAdmin && <OperationalSettingsSection />}
+        {/* CFG-06 (SPEC-OO3-13, §3.2) — aba "Vocabulários", mesmo corte admin-only. */}
+        {isAdmin && <VocabulariesSection />}
       </div>
 
       {/* R2-TXT-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o menu chama esta
@@ -182,27 +188,18 @@ function SettingsPage() {
           </div>
         </SectionCard>
 
+        {/* CFG-06 — o glossário lista os vocabulários SERVIDOS (só ativos, por
+            sortOrder), não mais os arrays hardcoded; com seed default, os
+            chips são byte-idênticos aos de antes. */}
         <SectionCard title={t("ref.taxonomies.title")} description={t("ref.taxonomies.subtitle")}>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t("ref.taxonomies.actionTypes")}
           </p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {ACTION_TYPES.map((a) => (
-              <span key={a} className="rounded-md bg-secondary px-2 py-0.5 text-xs">
-                {labels.actionType[a]}
-              </span>
-            ))}
-          </div>
+          <TaxonomyChips vocabulary="ACTION_TYPE" />
           <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t("ref.taxonomies.evidenceTypes")}
           </p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {EVIDENCE_TYPES.map((a) => (
-              <span key={a} className="rounded-md bg-secondary px-2 py-0.5 text-xs">
-                {labels.evidenceType[a]}
-              </span>
-            ))}
-          </div>
+          <TaxonomyChips vocabulary="EVIDENCE_TYPE" />
         </SectionCard>
       </div>
     </>
@@ -1041,5 +1038,287 @@ function OperationalSettingsSection() {
         </p>
       </div>
     </SectionCard>
+  );
+}
+
+/** CFG-06 — chips do glossário: itens ATIVOS do vocabulário servido, rotulados labelKey→i18n (fallback = code). */
+function TaxonomyChips({ vocabulary }: { vocabulary: VocabularyName }) {
+  const { options, label } = useVocabulary(vocabulary);
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {options.map((option) => (
+        <span key={option.code} className="rounded-md bg-secondary px-2 py-0.5 text-xs">
+          {label(option.code)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Título i18n de cada vocabulário — mapa literal, mesmo racional de `SCALE_TITLE_KEY`. */
+const VOCABULARY_TITLE_KEY: Record<VocabularyName, MessageKey> = {
+  EVIDENCE_TYPE: "config.vocab.name.EVIDENCE_TYPE",
+  LEARNING_ITEM_TYPE: "config.vocab.name.LEARNING_ITEM_TYPE",
+  ACTION_TYPE: "config.vocab.name.ACTION_TYPE",
+};
+
+/**
+ * CFG-06 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Vocabulários":
+ * editor dos 3 vocabulários de `domain_vocabularies`. Sem DELETE de
+ * propósito (o code pode estar persistido em histórico): tirar de circulação
+ * é `active=false` — o item some dos selects de escrita mas continua
+ * rotulando o que já foi gravado. A montagem/validação dos payloads vive
+ * nos ViewModels (`NewVocabularyCodeEditor`/`VocabularyItemEditor` — a
+ * régua da casa); aqui é só fiação de inputs, toggle e submit. Cada escrita
+ * invalida a query de vocabulários (`store.addVocabularyItem`/
+ * `updateVocabularyItem`) — os selects respondem na hora.
+ */
+function VocabulariesSection() {
+  const vocabularies = useVocabularies();
+  const { t } = useI18n();
+
+  return (
+    <SectionCard title={t("config.vocab.title")} description={t("config.vocab.subtitle")}>
+      <div className="space-y-6">
+        {VOCABULARY_NAMES.map((name) => (
+          <VocabularyBlock key={name} name={name} items={vocabularies[name]} />
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+function VocabularyBlock({ name, items }: { name: VocabularyName; items: VocabularyItem[] }) {
+  const store = useStore();
+  const { t } = useI18n();
+  const { label } = useVocabulary(name);
+  /** `null` = nenhuma linha em edição; um editor por vez, como nas outras abas. */
+  const [editor, setEditor] = useState<VocabularyItemEditor | null>(null);
+  const [draft, setDraft] = useState<NewVocabularyCodeEditor | null>(null);
+  const {
+    submitting: saving,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit(t("config.vocab.saveFailed"));
+
+  const rows = [...items].sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
+
+  const toggleActive = async (item: VocabularyItem) => {
+    const result = await run(() =>
+      store.updateVocabularyItem(name, item.code, { active: !item.active }),
+    );
+    if (result.ok) {
+      toast.success(
+        item.active
+          ? t("config.vocab.deactivated", { code: item.code })
+          : t("config.vocab.activated", { code: item.code }),
+      );
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editor) return;
+    const patch = editor.payload();
+    if (!patch) return;
+    if (Object.keys(patch).length === 0) {
+      // Nada mudou — o backend recusa patch vazio; fechar é o no-op honesto.
+      setEditor(null);
+      return;
+    }
+    const result = await run(() => store.updateVocabularyItem(name, editor.code, patch));
+    if (result.ok) {
+      toast.success(t("config.vocab.saved", { code: editor.code }));
+      setEditor(null);
+    }
+  };
+
+  const addCode = async () => {
+    if (!draft) return;
+    const payload = draft.payload();
+    if (!payload) return;
+    const result = await run(() => store.addVocabularyItem(name, payload.code, payload.input));
+    if (result.ok) {
+      toast.success(t("config.vocab.added", { code: payload.code }));
+      setDraft(null);
+    }
+  };
+
+  return (
+    <div className="surface-inset p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium">{t(VOCABULARY_TITLE_KEY[name])}</p>
+          <p className="text-xs text-muted-foreground">{name}</p>
+        </div>
+        {draft === null && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setDraft(NewVocabularyCodeEditor.empty());
+              clearError();
+            }}
+          >
+            {t("config.vocab.addCode")}
+          </Button>
+        )}
+      </div>
+
+      <ul className="mt-2 space-y-1.5">
+        {rows.map((item) => {
+          const isEditing = editor !== null && editor.code === item.code;
+          return (
+            <li
+              key={item.code}
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border/60 px-2.5 py-1.5 text-sm"
+            >
+              {isEditing ? (
+                <>
+                  <span className="font-medium">{item.code}</span>
+                  <input
+                    aria-label={t("config.vocab.editLabelKey", { code: item.code })}
+                    className="min-w-0 flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
+                    disabled={saving}
+                    value={editor.labelKey}
+                    onChange={(e) => setEditor(editor.withLabelKey(e.target.value))}
+                  />
+                  <input
+                    type="number"
+                    step={1}
+                    aria-label={t("config.vocab.editSortOrder", { code: item.code })}
+                    className="w-16 rounded-md border border-input bg-card px-2 py-1 text-center text-xs tabular-nums"
+                    disabled={saving}
+                    value={editor.sortOrder}
+                    onChange={(e) => setEditor(editor.withSortOrder(e.target.value))}
+                  />
+                  <div className="ml-auto flex gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={saving}
+                      onClick={() => {
+                        setEditor(null);
+                        clearError();
+                      }}
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={!editor.isValid || saving}
+                      onClick={() => void saveEdit()}
+                    >
+                      {saving ? t("team.transition.submitting") : t("common.save")}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span
+                    className={cn(
+                      "font-medium",
+                      !item.active && "text-muted-foreground line-through",
+                    )}
+                  >
+                    {label(item.code)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {item.code} · {item.labelKey} · #{item.sortOrder}
+                  </span>
+                  {!item.active && (
+                    <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] uppercase">
+                      {t("config.vocab.inactive")}
+                    </span>
+                  )}
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={saving}
+                      onClick={() => {
+                        setEditor(VocabularyItemEditor.from(item));
+                        clearError();
+                      }}
+                    >
+                      {t("common.edit")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={saving}
+                      onClick={() => void toggleActive(item)}
+                    >
+                      {item.active ? t("config.vocab.deactivate") : t("config.vocab.activate")}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {editor?.errorKey && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {t(editor.errorKey)}
+        </p>
+      )}
+
+      {draft !== null && (
+        <div className="mt-2 flex flex-wrap items-end gap-2 rounded-md border border-border/60 p-2.5">
+          <div className="min-w-[140px] flex-1">
+            <label className="text-xs text-muted-foreground" htmlFor={`vocab-new-code-${name}`}>
+              {t("config.vocab.field.code")}
+            </label>
+            <input
+              id={`vocab-new-code-${name}`}
+              className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+              disabled={saving}
+              value={draft.code}
+              onChange={(e) => setDraft(draft.withCode(e.target.value))}
+            />
+          </div>
+          <div className="min-w-[140px] flex-1">
+            <label className="text-xs text-muted-foreground" htmlFor={`vocab-new-labelkey-${name}`}>
+              {t("config.vocab.field.labelKey")}
+            </label>
+            <input
+              id={`vocab-new-labelkey-${name}`}
+              className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+              disabled={saving}
+              value={draft.labelKey}
+              onChange={(e) => setDraft(draft.withLabelKey(e.target.value))}
+            />
+          </div>
+          <div className="flex gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={saving}
+              onClick={() => {
+                setDraft(null);
+                clearError();
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button size="sm" disabled={!draft.isValid || saving} onClick={() => void addCode()}>
+              {saving ? t("team.transition.submitting") : t("config.vocab.add")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+
+      {/* Sem excluir, de propósito: o code pode estar gravado em histórico —
+          desativar tira das opções novas sem reescrever o passado. */}
+      <p className="mt-2 text-xs text-muted-foreground">{t("config.vocab.noDeleteHint")}</p>
+    </div>
   );
 }
