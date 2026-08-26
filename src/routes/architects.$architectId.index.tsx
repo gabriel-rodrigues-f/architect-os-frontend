@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CapabilityRadar } from "@/components/app/charts";
@@ -42,6 +42,18 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
+import { ArchitectProfileViewModel } from "@/lib/view-models/architect-profile-view-model";
+
+/**
+ * OO3-10c (Fase OO-3) — adaptador fino no padrão de
+ * `useCompetencyMatrixViewModel`: memoiza o `ArchitectProfileViewModel`
+ * sobre a fatia de `useStore()` que ele precisa. Ver o arquivo do ViewModel
+ * para o escopo (só os três comandos de Evidência, não a tela inteira).
+ */
+function useArchitectProfileViewModel(): ArchitectProfileViewModel {
+  const store = useStore();
+  return useMemo(() => new ArchitectProfileViewModel(store), [store]);
+}
 
 export const Route = createFileRoute("/architects/$architectId/")({
   head: () => ({
@@ -518,7 +530,7 @@ function EvidenceDialog({
   const planItems = plan?.items ?? [];
   const { t } = useI18n();
   const labels = useLabels();
-  const store = useStore();
+  const viewModel = useArchitectProfileViewModel();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [type, setType] = useState<EvidenceType>(EVIDENCE_TYPES[0] as EvidenceType);
@@ -534,7 +546,8 @@ function EvidenceDialog({
 
   /**
    * Sem id local nem sucesso otimista: o servidor gera o id de verdade e é
-   * quem decide se o registro vale — só fecha o diálogo depois da resposta.
+   * quem decide se o registro vale — só fecha o diálogo depois da resposta
+   * (montagem do payload em `ArchitectProfileViewModel.registerEvidence`).
    * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001/EVD-001.
    */
   const salvar = async () => {
@@ -542,22 +555,16 @@ function EvidenceDialog({
     if (!nome) return;
     setSaving(true);
     try {
-      await store.addEvidence({
-        id: "",
-        architectId,
-        title: nome,
-        description: description.trim(),
+      await viewModel.registerEvidence(architectId, {
+        title,
+        description,
         type,
-        // Sem competência escolhida na tela: se ligada a um item do PDI, o
-        // servidor herda a competência do item automaticamente (EPIC 2).
-        competencyIds: [],
         date,
         complexity,
-        status: "Pending",
-        ...(project.trim() ? { project: project.trim() } : {}),
-        ...(url.trim() ? { url: url.trim() } : {}),
-        ...(isCertification && issuer.trim() ? { issuer: issuer.trim() } : {}),
-        ...(pdiItemId ? { developmentPlanItemId: pdiItemId } : {}),
+        project,
+        url,
+        issuer,
+        pdiItemId,
       });
       toast.success(t("ev.toast", { titulo: nome }));
       setTitle("");
@@ -713,7 +720,7 @@ function EvidenceDialog({
  */
 function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
   const { t } = useI18n();
-  const store = useStore();
+  const viewModel = useArchitectProfileViewModel();
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState(evidence.description);
   const [url, setUrl] = useState(evidence.url ?? "");
@@ -722,10 +729,8 @@ function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
   const submit = async () => {
     setSaving(true);
     try {
-      await store.resubmitEvidence(evidence.id, {
-        ...(description.trim() !== evidence.description ? { description: description.trim() } : {}),
-        ...(url.trim() !== (evidence.url ?? "") ? { url: url.trim() } : {}),
-      });
+      // Só o que mudou entra no patch — ver `ArchitectProfileViewModel.resubmit`.
+      await viewModel.resubmit(evidence, { description, url });
       toast.success(t("ev.resubmit.toast", { titulo: evidence.title }));
       setOpen(false);
     } catch (error) {
@@ -797,7 +802,7 @@ function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
 function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const { t } = useI18n();
   const labels = useLabels();
-  const store = useStore();
+  const viewModel = useArchitectProfileViewModel();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Exclude<Evidence["status"], "Pending">>(
     evidence.status === "Pending" ? "Accepted" : evidence.status,
@@ -814,10 +819,8 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const salvar = async () => {
     setSaving(true);
     try {
-      await store.reviewEvidence(evidence.id, {
-        status,
-        ...(comment.trim() ? { leaderComment: comment.trim() } : {}),
-      });
+      // Comentário vazio nem entra no corpo — ver `ArchitectProfileViewModel.review`.
+      await viewModel.review(evidence.id, status, comment);
       toast.success(
         t("ev.review.toast", { titulo: evidence.title, status: labels.evidenceStatus[status] }),
       );
