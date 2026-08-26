@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
@@ -33,6 +34,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
+import { TeamViewModel } from "@/lib/view-models/team-view-model";
 
 export const Route = createFileRoute("/team")({
   head: () => ({
@@ -69,11 +71,13 @@ function TeamPage() {
   const help = usePageHelp("team");
   /**
    * Cadastro do roster é decisão administrativa — backend já recusa o
-   * resto. `UiAuthorizationPolicy.isAdmin` (OO2-08, Seção 70) no lugar do
-   * `role === "admin"` inline que ficava aqui antes — mesma regra, agora
-   * consolidada no mesmo objeto que `TeamViewModel` consulta.
+   * resto. OO3-08 — a rota consulta `TeamViewModel.isAdmin` (mesma
+   * convenção de `useCompetencyMatrixViewModel` em `competency-matrix.tsx`)
+   * em vez de chamar `defaultUiAuthorizationPolicy` direto: a regra vive no
+   * mesmo objeto que valida cadastro/edição do roster.
    */
-  const isAdmin = defaultUiAuthorizationPolicy.isAdmin(useCurrentUser());
+  const viewModel = useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
+  const isAdmin = viewModel.isAdmin(useCurrentUser());
   /** Só para montar o seletor de "Lead responsável" — a rota já é admin-only no backend. */
   const { data: users } = useQuery({
     queryKey: ["auth-users"],

@@ -15,7 +15,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Architect } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
-import { byName } from "@/lib/text";
+import { defaultNameFormatter } from "@/lib/text";
 
 /**
  * R2-UX-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo B) — clone estrutural
@@ -39,7 +39,7 @@ export function ArchitectNameCombobox({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const ordered = [...architects].sort(byName);
+  const ordered = [...architects].sort(defaultNameFormatter.byName);
 
   const todosMarcados = ordered.length > 0 && selected.length === ordered.length;
   const algumMarcado = selected.length > 0;

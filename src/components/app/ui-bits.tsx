@@ -5,7 +5,7 @@ import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
-import { truncateNames } from "@/lib/text";
+import { defaultNameFormatter } from "@/lib/text";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -252,7 +252,7 @@ export function NameList({
 }) {
   const { t } = useI18n();
   if (names.length === 0) return <>{emptyLabel ?? t("common.none")}</>;
-  const { shown, remaining } = truncateNames(names, max);
+  const { shown, remaining } = defaultNameFormatter.truncateNames(names, max);
   return (
     <span title={names.join(", ")}>
       {shown.join(", ")}

@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { isLeadCapable } from "@/lib/api";
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
-import { canActFor } from "@/lib/scope";
-import { formatDate, matchesSearch } from "@/lib/text";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
 import {
   progressFor,
@@ -127,7 +127,8 @@ function LearningPage() {
    * outra equipe. Ver UX-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-
    * 19.md.
    */
-  const canEditProgress = (architectId: string) => canActFor(user, sel.architectById(architectId));
+  const canEditProgress = (architectId: string) =>
+    defaultUiAuthorizationPolicy.canActFor(user, sel.architectById(architectId));
 
   return (
     <>
@@ -218,7 +219,7 @@ function LearningPage() {
                 ? Math.round(perPerson.reduce((s, v) => s + v, 0) / perPerson.length)
                 : 0;
               const editable = canEdit(path);
-              const createdAt = formatDate(path.createdAt, locale);
+              const createdAt = defaultDateFormatter.formatDate(path.createdAt, locale);
               const isExpanded = expandedIds.has(path.id) || term.length > 0;
 
               return (
@@ -386,7 +387,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   /** R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local acima de 20 competências. */
   const [competencyFilter, setCompetencyFilter] = useState("");
   const visibleCompetencies = store.competencies.filter((c) =>
-    matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
+    defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
   );
 
   const assignableArchitects = vm.assignableArchitects(store.architects, []);
@@ -586,7 +587,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
   /** R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local acima de 20 competências. */
   const [competencyFilter, setCompetencyFilter] = useState("");
   const visibleCompetencies = store.competencies.filter((c) =>
-    matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
+    defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
   );
 
   const saveDetails = () => {

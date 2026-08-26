@@ -7,7 +7,7 @@ import { ViewToggle } from "@/components/app/ViewToggle";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { canActFor } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/capability-map")({
@@ -95,7 +95,9 @@ function CapabilityMapPage() {
    * avaliação, distorcendo a classificação de risco de concentração. Ver
    * ANA-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
    */
-  const population = sel.activeArchitects.filter((a) => canActFor(user, a));
+  const population = sel.activeArchitects.filter((a) =>
+    defaultUiAuthorizationPolicy.canActFor(user, a),
+  );
 
   /**
    * Ausência de avaliação oficial não é lacuna: quem não tem `avg` para a

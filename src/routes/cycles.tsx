@@ -22,7 +22,7 @@ import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate } from "@/lib/text";
+import { defaultDateFormatter } from "@/lib/text";
 
 export const Route = createFileRoute("/cycles")({
   head: () => ({
@@ -181,7 +181,8 @@ function CyclesPage() {
               </div>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {formatDate(c.start, locale)} → {formatDate(c.end, locale)}
+              {defaultDateFormatter.formatDate(c.start, locale)} →{" "}
+              {defaultDateFormatter.formatDate(c.end, locale)}
             </p>
           </div>
         ))}

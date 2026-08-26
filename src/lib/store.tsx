@@ -23,7 +23,7 @@ import type {
   ProficiencyUpdate,
 } from "./domain";
 import { createSelectors, emptyState } from "./selectors";
-import { byName } from "./text";
+import { defaultNameFormatter } from "./text";
 
 export const STATE_QUERY_KEY = ["app-state"] as const;
 
@@ -286,7 +286,7 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
 
   return {
     ...state,
-    capabilities: [...state.capabilities].sort(byName),
+    capabilities: [...state.capabilities].sort(defaultNameFormatter.byName),
 
     setActiveCycle: (id) => {
       local((s) => ({ ...s, activeCycleId: id }));
@@ -427,7 +427,7 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       const created = await api.createCapability(c);
       local((s) => ({
         ...s,
-        capabilities: [...s.capabilities, created].sort(byName),
+        capabilities: [...s.capabilities, created].sort(defaultNameFormatter.byName),
       }));
       return created;
     },
@@ -437,7 +437,7 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         ...s,
         capabilities: s.capabilities
           .map((c) => (c.id === id ? { ...c, ...patch } : c))
-          .sort(byName),
+          .sort(defaultNameFormatter.byName),
       }));
       // ORIENTACAO-BLOCO-2-UX-POR-TELA — mesmo racional de B-09
       // (`updatePlanItem`, acima): desde que `short` deixou de vir do
@@ -450,7 +450,9 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       remote(api.updateCapability(id, patch), (updated) =>
         local((s) => ({
           ...s,
-          capabilities: s.capabilities.map((c) => (c.id === id ? updated : c)).sort(byName),
+          capabilities: s.capabilities
+            .map((c) => (c.id === id ? updated : c))
+            .sort(defaultNameFormatter.byName),
         })),
       );
     },

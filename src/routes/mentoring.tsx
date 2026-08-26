@@ -10,7 +10,7 @@ import { PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { canActFor } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/mentoring")({
@@ -54,7 +54,9 @@ function MentoringPage() {
    * oferecer qualquer pessoa do roster e devolver 403 só depois de
    * preencher o formulário inteiro.
    */
-  const menteeOptions = sel.activeArchitects.filter((a) => canActFor(user, a));
+  const menteeOptions = sel.activeArchitects.filter((a) =>
+    defaultUiAuthorizationPolicy.canActFor(user, a),
+  );
   const { filter, setFilter, sessions } = useMentoringTimeline();
 
   return (

@@ -8,7 +8,7 @@ import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { canActFor } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/training-needs")({
@@ -44,7 +44,9 @@ function TrainingNeedsPage() {
    * "sem lacuna" (ausência de dado, não ausência de lacuna). Ver ANA-001,
    * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
    */
-  const population = sel.activeArchitects.filter((a) => canActFor(user, a));
+  const population = sel.activeArchitects.filter((a) =>
+    defaultUiAuthorizationPolicy.canActFor(user, a),
+  );
   const needs = sel.teamTrainingNeeds(population);
   /**
    * R2-ESC-08 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os dois cortes (15 e 6)

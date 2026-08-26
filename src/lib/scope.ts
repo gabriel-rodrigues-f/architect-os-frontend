@@ -19,10 +19,9 @@ import type { Architect } from "./domain";
  * Seção 70) — as três funções soltas que existiam aqui viraram métodos de
  * `UiAuthorizationPolicy`, para dar aos ViewModels de tela (Seção 58-61) um
  * único objeto injetável por construtor em vez de três imports de função.
- * As funções soltas continuam exportadas, delegando para uma instância
- * compartilhada (`defaultUiAuthorizationPolicy`) — nenhum dos ~16 call
- * sites que já importam `canActFor`/`isLeadOf`/`isAssignedTechLeadOf`
- * precisou mudar nesta PR.
+ * OO3-08 — os call sites migraram todos para a instância compartilhada
+ * (`defaultUiAuthorizationPolicy`) e as funções soltas de compatibilidade
+ * foram removidas.
  *
  * Repetindo o aviso da Seção 70: isto é só apresentação (mostrar/esconder
  * botão, campo editável ou não). NUNCA é autorização de verdade — essa
@@ -73,23 +72,8 @@ export class UiAuthorizationPolicy {
 }
 
 /**
- * Instância única e sem estado (as três regras só leem os parâmetros
- * recebidos) — compartilhada pelas funções soltas abaixo e por quem
- * injetar `UiAuthorizationPolicy` num ViewModel sem precisar instanciar de
- * novo.
+ * Instância única e sem estado (as regras só leem os parâmetros
+ * recebidos) — compartilhada pelos call sites e por quem injetar
+ * `UiAuthorizationPolicy` num ViewModel sem precisar instanciar de novo.
  */
 export const defaultUiAuthorizationPolicy = new UiAuthorizationPolicy();
-
-/** @deprecated Prefira injetar `UiAuthorizationPolicy` (ex.: `defaultUiAuthorizationPolicy`) em código novo — mantido para os call sites existentes. */
-export const canActFor = (user: SessionUser, architect: ScopedArchitect | undefined): boolean =>
-  defaultUiAuthorizationPolicy.canActFor(user, architect);
-
-/** @deprecated Prefira injetar `UiAuthorizationPolicy` (ex.: `defaultUiAuthorizationPolicy`) em código novo — mantido para os call sites existentes. */
-export const isLeadOf = (user: SessionUser, architect: ScopedArchitect | undefined): boolean =>
-  defaultUiAuthorizationPolicy.isLeadOf(user, architect);
-
-/** @deprecated Prefira injetar `UiAuthorizationPolicy` (ex.: `defaultUiAuthorizationPolicy`) em código novo — mantido para os call sites existentes. */
-export const isAssignedTechLeadOf = (
-  user: SessionUser,
-  architect: ScopedArchitect | undefined,
-): boolean => defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);

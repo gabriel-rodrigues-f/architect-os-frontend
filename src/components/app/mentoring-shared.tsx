@@ -30,9 +30,9 @@ import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
-import { isAssignedTechLeadOf } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
-import { byName, formatDate, matchesSearch, todayIso } from "@/lib/text";
+import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { MentoringViewModel } from "@/lib/view-models/mentoring-view-model";
 
@@ -102,7 +102,7 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     menteeId: menteeOptions[0]?.id ?? "",
-    date: todayIso(),
+    date: defaultDateFormatter.todayIso(),
     durationMin: "",
     topic: "",
     notes: "",
@@ -253,7 +253,7 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
  */
 export function useMentoringTimeline() {
   const store = useStore();
-  const orderedArchitects = [...store.architects].sort(byName);
+  const orderedArchitects = [...store.architects].sort(defaultNameFormatter.byName);
   const defaultMenteeId =
     orderedArchitects.find((a) => a.active)?.id ?? orderedArchitects[0]?.id ?? "";
   const [filter, setFilter] = useState<string>(defaultMenteeId);
@@ -283,7 +283,7 @@ export function MenteeFilterCombobox({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const ordered = [...architects].sort(byName);
+  const ordered = [...architects].sort(defaultNameFormatter.byName);
   const active = ordered.filter((a) => a.active);
   const inactive = ordered.filter((a) => !a.active);
 
@@ -388,7 +388,7 @@ export function FollowUpScheduler({ session }: { session: MentoringSession }) {
         <span className="text-muted-foreground">
           {session.nextSession
             ? t("mentor.followUp.scheduled", {
-                data: formatDate(session.nextSession, locale) ?? "",
+                data: defaultDateFormatter.formatDate(session.nextSession, locale) ?? "",
               })
             : t("mentor.followUp.none")}
         </span>
@@ -466,7 +466,7 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
           <p className="text-sm font-medium">{session.topic}</p>
           <p className="text-xs text-muted-foreground">
             {sel.architectById(session.menteeId)?.name} · mentor {session.mentor} ·{" "}
-            {formatDate(session.date, locale)} · {session.durationMin} min
+            {defaultDateFormatter.formatDate(session.date, locale)} · {session.durationMin} min
           </p>
         </div>
       </div>
@@ -520,7 +520,9 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
       )}
       {session.nextSession && session.mentorUserId !== user.id && user.role !== "admin" && (
         <p className="mt-2 text-xs text-muted-foreground">
-          {t("mentor.followUp.scheduled", { data: formatDate(session.nextSession, locale) ?? "" })}
+          {t("mentor.followUp.scheduled", {
+            data: defaultDateFormatter.formatDate(session.nextSession, locale) ?? "",
+          })}
         </p>
       )}
     </li>
@@ -566,10 +568,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
   const [proficiencyFilter, setProficiencyFilter] = useState("");
   const activeCompetencies = store.competencies.filter((c) => c.active);
   const discussedList = activeCompetencies.filter((c) =>
-    matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
+    defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
   );
   const proficiencyList = activeCompetencies.filter((c) =>
-    matchesSearch(c.name, proficiencyFilter.trim().toLowerCase()),
+    defaultNameFormatter.matchesSearch(c.name, proficiencyFilter.trim().toLowerCase()),
   );
 
   return (
@@ -601,7 +603,7 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               <Input
                 id="date"
                 type="date"
-                max={todayIso()}
+                max={defaultDateFormatter.todayIso()}
                 aria-invalid={f.isMissing("date")}
                 className={f.invalid("date")}
                 value={f.form.date}
@@ -722,7 +724,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               )}
             </div>
           </div>
-          {isAssignedTechLeadOf(user, sel.architectById(f.form.menteeId)) && (
+          {defaultUiAuthorizationPolicy.isAssignedTechLeadOf(
+            user,
+            sel.architectById(f.form.menteeId),
+          ) && (
             <div className="min-w-0">
               <FieldLabel htmlFor="mentor-proficiency" hint={t("mentor.form.proficiencyHint")}>
                 {t("mentor.form.proficiency")}

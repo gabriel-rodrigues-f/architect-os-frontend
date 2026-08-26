@@ -6,8 +6,8 @@
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
  * Seção 68) — as funções puras deste arquivo viraram métodos de duas
  * classes por afinidade: `NameFormatter` (texto/nome — `slug`, `byName`,
- * `matchesSearch`, `truncateNames`, `firstWord`) e `DateFormatter` (data —
- * `formatDate`, `todayIso`, `monthsFromTodayIso`, `daysAgoIso`).
+ * `matchesSearch`, `truncateNames`) e `DateFormatter` (data —
+ * `formatDate`, `todayIso`, `daysAgoIso`).
  * `initialSearchParam`/`replaceSearchParam` NÃO viraram método de nenhuma
  * das duas: são utilitário de query string/roteamento, não formatação de
  * texto ou data — encaixar os dois ali seria inventar uma categoria que o
@@ -15,10 +15,10 @@
  * sentido para o conteúdo real, não forçar tudo em `DateFormatter`/
  * `PercentageFormatter`/`ProficiencyFormatter`/`NameFormatter`).
  *
- * As funções soltas de antes continuam exportadas, agora delegando para
- * instâncias compartilhadas (`defaultNameFormatter`/`defaultDateFormatter`)
- * — nenhum dos ~15 call sites que já importam `formatDate`/`slug`/`byName`/
- * etc. precisou mudar nesta PR.
+ * OO3-08 — os call sites migraram todos para as instâncias compartilhadas
+ * (`defaultNameFormatter`/`defaultDateFormatter`) e as funções soltas de
+ * compatibilidade foram removidas junto com os métodos sem uso em produção
+ * (`firstWord`, `monthsFromTodayIso`).
  */
 
 export class NameFormatter {
@@ -58,11 +58,6 @@ export class NameFormatter {
   truncateNames(names: readonly string[], max = 5): { shown: string[]; remaining: number } {
     if (names.length <= max) return { shown: [...names], remaining: 0 };
     return { shown: names.slice(0, max), remaining: names.length - max };
-  }
-
-  /** Primeira palavra do nome — usada como sigla nas colunas dos mapas de calor. */
-  firstWord(value: string): string {
-    return value.trim().split(/\s+/)[0] ?? value;
   }
 }
 
@@ -113,15 +108,6 @@ export class DateFormatter {
     return `${now.getFullYear()}-${mes}-${dia}`;
   }
 
-  /** Mesma ideia, deslocada em meses — usada como alvo padrão de um PDI. */
-  monthsFromTodayIso(months: number): string {
-    const d = new Date();
-    d.setMonth(d.getMonth() + months);
-    const mes = String(d.getMonth() + 1).padStart(2, "0");
-    const dia = String(d.getDate()).padStart(2, "0");
-    return `${d.getFullYear()}-${mes}-${dia}`;
-  }
-
   /**
    * Mesma ideia de `todayIso`, deslocada pra trás em dias — usada pelos
    * presets de período (últimos 30/60/90 dias etc.). Achado na REVISAO-360-
@@ -139,45 +125,9 @@ export class DateFormatter {
   }
 }
 
-/** Instâncias sem estado, compartilhadas pelas funções soltas abaixo e por quem quiser injetar direto. */
+/** Instâncias sem estado, compartilhadas pelos call sites e por quem injetar as classes em ViewModels. */
 export const defaultNameFormatter = new NameFormatter();
 export const defaultDateFormatter = new DateFormatter();
-
-/** @deprecated Prefira injetar `NameFormatter` (ex.: `defaultNameFormatter`) em código novo — mantido para os call sites existentes. */
-export const slug = (value: string): string => defaultNameFormatter.slug(value);
-
-/** @deprecated Prefira injetar `NameFormatter` (ex.: `defaultNameFormatter`) em código novo — mantido para os call sites existentes. */
-export const byName = <T extends { name: string }>(a: T, b: T): number =>
-  defaultNameFormatter.byName(a, b);
-
-/** @deprecated Prefira injetar `NameFormatter` (ex.: `defaultNameFormatter`) em código novo — mantido para os call sites existentes. */
-export const matchesSearch = (name: string, term: string): boolean =>
-  defaultNameFormatter.matchesSearch(name, term);
-
-/** @deprecated Prefira injetar `NameFormatter` (ex.: `defaultNameFormatter`) em código novo — mantido para os call sites existentes. */
-export function truncateNames(
-  names: readonly string[],
-  max = 5,
-): { shown: string[]; remaining: number } {
-  return defaultNameFormatter.truncateNames(names, max);
-}
-
-/** @deprecated Prefira injetar `NameFormatter` (ex.: `defaultNameFormatter`) em código novo — mantido para os call sites existentes. */
-export const firstWord = (value: string): string => defaultNameFormatter.firstWord(value);
-
-/** @deprecated Prefira injetar `DateFormatter` (ex.: `defaultDateFormatter`) em código novo — mantido para os call sites existentes. */
-export const formatDate = (iso: string | null | undefined, locale: string): string | null =>
-  defaultDateFormatter.formatDate(iso, locale);
-
-/** @deprecated Prefira injetar `DateFormatter` (ex.: `defaultDateFormatter`) em código novo — mantido para os call sites existentes. */
-export const todayIso = (): string => defaultDateFormatter.todayIso();
-
-/** @deprecated Prefira injetar `DateFormatter` (ex.: `defaultDateFormatter`) em código novo — mantido para os call sites existentes. */
-export const monthsFromTodayIso = (months: number): string =>
-  defaultDateFormatter.monthsFromTodayIso(months);
-
-/** @deprecated Prefira injetar `DateFormatter` (ex.: `defaultDateFormatter`) em código novo — mantido para os call sites existentes. */
-export const daysAgoIso = (days: number): string => defaultDateFormatter.daysAgoIso(days);
 
 /**
  * Lê um parâmetro da query string na primeira montagem, sem depender de

@@ -26,7 +26,7 @@ import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { STATE_QUERY_KEY, useStore } from "@/lib/store";
-import { formatDate } from "@/lib/text";
+import { defaultDateFormatter } from "@/lib/text";
 import { AssessmentViewModel } from "@/lib/view-models/assessment-view-model";
 
 /**
@@ -155,9 +155,11 @@ function CommentSection({
                 <p className="mt-0.5 whitespace-pre-wrap text-sm">{comment.text}</p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className="text-[11px] text-muted-foreground">
-                    {t("comment.savedAt", { data: formatDate(comment.createdAt, locale) ?? "" })}
+                    {t("comment.savedAt", {
+                      data: defaultDateFormatter.formatDate(comment.createdAt, locale) ?? "",
+                    })}
                     {comment.updatedAt &&
-                      ` · ${t("comment.editedAt", { data: formatDate(comment.updatedAt, locale) ?? "" })}`}
+                      ` · ${t("comment.editedAt", { data: defaultDateFormatter.formatDate(comment.updatedAt, locale) ?? "" })}`}
                   </p>
                   {mine && (
                     <div className="flex gap-3">
@@ -803,7 +805,9 @@ function DevelopmentSummaryForm({
 
       {!canEdit && data.updatedAt && (
         <p className="mt-3 text-xs text-muted-foreground">
-          {t("asmt.devSummary.lastUpdated", { data: formatDate(data.updatedAt, locale) ?? "" })}
+          {t("asmt.devSummary.lastUpdated", {
+            data: defaultDateFormatter.formatDate(data.updatedAt, locale) ?? "",
+          })}
         </p>
       )}
     </SectionCard>
@@ -1063,7 +1067,8 @@ export function CapabilityAssessmentCard({
                                   <li key={e.id} className="text-sm">
                                     <span className="font-medium">{e.title}</span>{" "}
                                     <span className="text-xs text-muted-foreground">
-                                      {labels.evidenceType[e.type]} · {formatDate(e.date, locale)}
+                                      {labels.evidenceType[e.type]} ·{" "}
+                                      {defaultDateFormatter.formatDate(e.date, locale)}
                                     </span>
                                   </li>
                                 ))}
@@ -1241,7 +1246,8 @@ function CompetencyStackedCard({
                   <li key={e.id} className="text-sm">
                     <span className="font-medium">{e.title}</span>{" "}
                     <span className="text-xs text-muted-foreground">
-                      {labels.evidenceType[e.type]} · {formatDate(e.date, locale)}
+                      {labels.evidenceType[e.type]} ·{" "}
+                      {defaultDateFormatter.formatDate(e.date, locale)}
                     </span>
                   </li>
                 ))}

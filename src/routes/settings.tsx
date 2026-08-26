@@ -18,7 +18,7 @@ import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
-import { formatDate } from "@/lib/text";
+import { defaultDateFormatter } from "@/lib/text";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -85,7 +85,8 @@ function SettingsPage() {
                 <span>
                   <strong>{c.name}</strong>{" "}
                   <span className="text-muted-foreground">
-                    {formatDate(c.start, locale)} → {formatDate(c.end, locale)}
+                    {defaultDateFormatter.formatDate(c.start, locale)} →{" "}
+                    {defaultDateFormatter.formatDate(c.end, locale)}
                   </span>
                 </span>
                 <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">

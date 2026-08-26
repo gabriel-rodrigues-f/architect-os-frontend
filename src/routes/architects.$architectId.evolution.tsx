@@ -13,7 +13,7 @@ import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { daysAgoIso, formatDate, todayIso } from "@/lib/text";
+import { defaultDateFormatter } from "@/lib/text";
 
 export const Route = createFileRoute("/architects/$architectId/evolution")({
   head: () => ({
@@ -31,17 +31,17 @@ function rangeForPreset(
 ): { from: string; to: string } {
   switch (preset) {
     case "30":
-      return { from: daysAgoIso(30), to: todayIso() };
+      return { from: defaultDateFormatter.daysAgoIso(30), to: defaultDateFormatter.todayIso() };
     case "60":
-      return { from: daysAgoIso(60), to: todayIso() };
+      return { from: defaultDateFormatter.daysAgoIso(60), to: defaultDateFormatter.todayIso() };
     case "90":
-      return { from: daysAgoIso(90), to: todayIso() };
+      return { from: defaultDateFormatter.daysAgoIso(90), to: defaultDateFormatter.todayIso() };
     case "180":
-      return { from: daysAgoIso(180), to: todayIso() };
+      return { from: defaultDateFormatter.daysAgoIso(180), to: defaultDateFormatter.todayIso() };
     case "365":
-      return { from: daysAgoIso(365), to: todayIso() };
+      return { from: defaultDateFormatter.daysAgoIso(365), to: defaultDateFormatter.todayIso() };
     case "all":
-      return { from: "2000-01-01", to: todayIso() };
+      return { from: "2000-01-01", to: defaultDateFormatter.todayIso() };
     case "custom":
       return custom;
   }
@@ -78,7 +78,10 @@ function ArchitectEvolution() {
   const architect = sel.architectById(architectId);
 
   const [preset, setPreset] = useState<PeriodPreset>("90");
-  const [custom, setCustom] = useState({ from: daysAgoIso(90), to: todayIso() });
+  const [custom, setCustom] = useState({
+    from: defaultDateFormatter.daysAgoIso(90),
+    to: defaultDateFormatter.todayIso(),
+  });
   const [selectedCapabilityIds, setSelectedCapabilityIds] = useState<string[]>([]);
   const [focusedCapabilityId, setFocusedCapabilityId] = useState<string | null>(null);
   const [source, setSource] = useState<"ALL" | "MENTORING" | "ASSESSMENT">("ALL");
@@ -295,7 +298,7 @@ function ArchitectEvolution() {
                 <input
                   id="evolution-from"
                   type="date"
-                  max={todayIso()}
+                  max={defaultDateFormatter.todayIso()}
                   className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
                   value={custom.from}
                   onChange={(e) => setCustom((c) => ({ ...c, from: e.target.value }))}
@@ -308,7 +311,7 @@ function ArchitectEvolution() {
                 <input
                   id="evolution-to"
                   type="date"
-                  max={todayIso()}
+                  max={defaultDateFormatter.todayIso()}
                   className="mt-1 rounded-md border border-input bg-card px-2 py-2 text-sm"
                   value={custom.to}
                   onChange={(e) => setCustom((c) => ({ ...c, to: e.target.value }))}
@@ -603,7 +606,7 @@ function ArchitectEvolution() {
                           className="border-b border-border/60 pb-2 text-sm last:border-0"
                         >
                           <span className="text-xs text-muted-foreground">
-                            {formatDate(event.effectiveDate, locale)} ·{" "}
+                            {defaultDateFormatter.formatDate(event.effectiveDate, locale)} ·{" "}
                             {event.sourceType === "MENTORING"
                               ? t("evolution.source.mentoring")
                               : t("evolution.source.assessment")}

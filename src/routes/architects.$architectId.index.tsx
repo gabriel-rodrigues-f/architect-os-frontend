@@ -38,10 +38,10 @@ import {
 import { authErrorMessage, useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { canActFor, isLeadOf } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { averageWithCoverage, specializationLabel } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate, todayIso } from "@/lib/text";
+import { defaultDateFormatter } from "@/lib/text";
 
 export const Route = createFileRoute("/architects/$architectId/")({
   head: () => ({
@@ -129,8 +129,8 @@ function ArchitectProfile() {
    * pra Lead de outra equipe. Ver UX-001, AUDITORIA-QUINTA-RODADA-360-
    * SYNAPSE-2026-08-19.md.
    */
-  const canEditOwn = canActFor(user, architect);
-  const canReviewEvidence = isLeadOf(user, architect);
+  const canEditOwn = defaultUiAuthorizationPolicy.canActFor(user, architect);
+  const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
 
   if (!architect) {
     return (
@@ -371,7 +371,7 @@ function ArchitectProfile() {
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {labels.actionType[i.actionType]} · {i.actionPlan} · prazo{" "}
-                    {formatDate(i.targetDate, locale)}
+                    {defaultDateFormatter.formatDate(i.targetDate, locale)}
                   </p>
                   {itemEvidences.length > 0 && (
                     <ul className="mt-2 flex flex-wrap gap-1.5">
@@ -431,7 +431,8 @@ function ArchitectProfile() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {labels.evidenceType[e.type]}
-                  {e.issuer ? ` · ${e.issuer}` : ""} · {formatDate(e.date, locale)} · complexidade{" "}
+                  {e.issuer ? ` · ${e.issuer}` : ""} ·{" "}
+                  {defaultDateFormatter.formatDate(e.date, locale)} · complexidade{" "}
                   {labels.complexity[e.complexity]}
                 </p>
                 {e.leaderComment && (
@@ -462,7 +463,8 @@ function ArchitectProfile() {
               <div>
                 <p className="text-sm font-medium">{s.topic}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(s.date, locale)} · {s.durationMin} min · mentor {s.mentor}
+                  {defaultDateFormatter.formatDate(s.date, locale)} · {s.durationMin} min · mentor{" "}
+                  {s.mentor}
                 </p>
                 <p className="mt-1 text-sm">{s.actions}</p>
               </div>
@@ -520,7 +522,7 @@ function EvidenceDialog({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [type, setType] = useState<EvidenceType>(EVIDENCE_TYPES[0] as EvidenceType);
-  const [date, setDate] = useState(todayIso());
+  const [date, setDate] = useState(defaultDateFormatter.todayIso());
   const [complexity, setComplexity] = useState<"Low" | "Medium" | "High">("Medium");
   const [description, setDescription] = useState("");
   const [project, setProject] = useState("");

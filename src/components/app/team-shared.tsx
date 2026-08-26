@@ -33,7 +33,7 @@ import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, specializationLabel, type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
-import { byName } from "@/lib/text";
+import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import {
   emptyArchitectForm,
@@ -268,7 +268,7 @@ export function useTeamRoster(isAdmin: boolean) {
     const options: MultiSelectFilterOption[] = [...used]
       .map((id) => sel.competencyById(id))
       .filter((c): c is NonNullable<ReturnType<typeof sel.competencyById>> => !!c)
-      .sort(byName)
+      .sort(defaultNameFormatter.byName)
       .map((c) => ({ id: c.id, label: c.name }));
     if (store.architects.some((a) => !a.primarySpecializationCompetencyId)) {
       options.push({
@@ -337,20 +337,23 @@ export function useTeamRoster(isAdmin: boolean) {
     }));
     switch (sort) {
       case "name-desc":
-        withStats.sort((x, y) => byName(y.architect, x.architect));
+        withStats.sort((x, y) => defaultNameFormatter.byName(y.architect, x.architect));
         break;
       case "level":
-        withStats.sort((x, y) => (y.avg ?? -1) - (x.avg ?? -1) || byName(x.architect, y.architect));
+        withStats.sort(
+          (x, y) =>
+            (y.avg ?? -1) - (x.avg ?? -1) || defaultNameFormatter.byName(x.architect, y.architect),
+        );
         break;
       case "recent":
         withStats.sort(
           (x, y) =>
             (y.lastMentoring ?? "").localeCompare(x.lastMentoring ?? "") ||
-            byName(x.architect, y.architect),
+            defaultNameFormatter.byName(x.architect, y.architect),
         );
         break;
       default:
-        withStats.sort((x, y) => byName(x.architect, y.architect));
+        withStats.sort((x, y) => defaultNameFormatter.byName(x.architect, y.architect));
     }
     return withStats;
   }, [filtered, sel, lastMentoringByArchitect, sort]);

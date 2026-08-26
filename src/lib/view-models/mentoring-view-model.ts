@@ -6,7 +6,7 @@ import type {
   ProficiencyUpdate,
 } from "../domain";
 import type { Gap } from "../selectors";
-import { todayIso } from "../text";
+import { defaultDateFormatter } from "../text";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
@@ -213,8 +213,8 @@ export class MentoringViewModel {
       objective: session.topic,
       actionType: "Mentor",
       actionPlan: session.actions,
-      startDate: todayIso(),
-      targetDate: session.nextSession ?? todayIso(),
+      startDate: defaultDateFormatter.todayIso(),
+      targetDate: session.nextSession ?? defaultDateFormatter.todayIso(),
       owner: mentee.name,
     });
   }

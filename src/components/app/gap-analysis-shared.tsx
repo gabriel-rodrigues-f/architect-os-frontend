@@ -7,7 +7,7 @@ import { capabilityShortLabels, type Architect } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, type Gap } from "@/lib/selectors";
-import { canActFor } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { initialSearchParam, replaceSearchParam } from "@/lib/text";
 
@@ -130,7 +130,10 @@ export function useGapAnalysisData() {
    * seleção explícita, não o padrão.
    */
   const defaultSelected = useMemo(
-    () => sel.activeArchitects.filter((a) => canActFor(user, a)).map((a) => a.id),
+    () =>
+      sel.activeArchitects
+        .filter((a) => defaultUiAuthorizationPolicy.canActFor(user, a))
+        .map((a) => a.id),
     [sel, user],
   );
   const [selected, setSelectedState] = useState<string[]>(() => {

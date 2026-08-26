@@ -13,7 +13,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Architect } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
-import { byName } from "@/lib/text";
+import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 /**
@@ -48,8 +48,8 @@ export function ArchitectSelectCombobox({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const ordered = [...architects].sort(byName);
-  const inactiveOrdered = [...inactiveArchitects].sort(byName);
+  const ordered = [...architects].sort(defaultNameFormatter.byName);
+  const inactiveOrdered = [...inactiveArchitects].sort(defaultNameFormatter.byName);
   const selected = [...ordered, ...inactiveOrdered].find((a) => a.id === selectedId);
 
   const select = (architectId: string) => {

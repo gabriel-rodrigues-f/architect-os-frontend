@@ -30,10 +30,10 @@ import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { canActFor, isAssignedTechLeadOf, isLeadOf } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
-import { formatDate, initialSearchParam, todayIso } from "@/lib/text";
+import { defaultDateFormatter, initialSearchParam } from "@/lib/text";
 import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-view-model";
 
 /**
@@ -106,7 +106,7 @@ function PlansPage() {
    * (`canActFor`, `auth/scope.ts`). Ver UX-001, AUDITORIA-QUINTA-RODADA-360-
    * SYNAPSE-2026-08-19.md.
    */
-  const canEdit = canActFor(user, architect);
+  const canEdit = defaultUiAuthorizationPolicy.canActFor(user, architect);
   const plan = sel.planFor(architectId);
   /**
    * ORIENTACAO-NONA-RODADA, Seção 5/11 (ENT-09-006) — só GAP de progressão
@@ -123,7 +123,7 @@ function PlansPage() {
    * decidir quais botões de aprovar/reabrir mostrar, não para autorizar nada
    * de verdade (o servidor recusa de qualquer forma).
    */
-  const isLeadOfArchitect = isLeadOf(user, architect);
+  const isLeadOfArchitect = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
   const planStatus = plan?.status ?? "Draft";
   const canApprovePlan = plan && planStatus === "Draft" && isLeadOfArchitect;
   const canReturnToDraft = plan && planStatus === "Approved" && isLeadOfArchitect;
@@ -136,9 +136,14 @@ function PlansPage() {
    * informação de que está bloqueado, nunca o botão.
    */
   const canReopenCompletedPlan =
-    plan && planStatus === "Completed" && isAssignedTechLeadOf(user, architect);
+    plan &&
+    planStatus === "Completed" &&
+    defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);
   const ownerSeesLockedMessage =
-    plan && planStatus === "Completed" && canEdit && !isAssignedTechLeadOf(user, architect);
+    plan &&
+    planStatus === "Completed" &&
+    canEdit &&
+    !defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
 
   /**
@@ -224,12 +229,16 @@ function PlansPage() {
           )}
           {plan.approvedAt && (planStatus === "Approved" || planStatus === "Completed") && (
             <span className="text-xs text-muted-foreground">
-              {t("pdi.plan.approvedAt", { data: formatDate(plan.approvedAt, locale) ?? "" })}
+              {t("pdi.plan.approvedAt", {
+                data: defaultDateFormatter.formatDate(plan.approvedAt, locale) ?? "",
+              })}
             </span>
           )}
           {plan.completedAt && planStatus === "Completed" && (
             <span className="text-xs text-muted-foreground">
-              {t("pdi.plan.completedAt", { data: formatDate(plan.completedAt, locale) ?? "" })}
+              {t("pdi.plan.completedAt", {
+                data: defaultDateFormatter.formatDate(plan.completedAt, locale) ?? "",
+              })}
             </span>
           )}
           <div className="ml-auto flex items-center gap-2">
@@ -556,7 +565,7 @@ function PlansPage() {
                 objective: `Evoluir ${creatingForGap.competency?.name} do nível ${creatingForGap.item.final} para o nível ${creatingForGap.item.target}`,
                 actionType: draft.actionType,
                 actionPlan: draft.actionPlan,
-                startDate: todayIso(),
+                startDate: defaultDateFormatter.todayIso(),
                 targetDate: draft.targetDate,
                 owner: architect.name,
                 dedicationHoursPerWeek: draft.dedicationHoursPerWeek,
@@ -667,7 +676,9 @@ function DeadlineField({
   return (
     <Field label={t("pdi.field.deadline")}>
       <div className="flex flex-wrap items-center gap-2 py-1.5">
-        <p className="text-sm tabular-nums">{formatDate(item.targetDate, locale)}</p>
+        <p className="text-sm tabular-nums">
+          {defaultDateFormatter.formatDate(item.targetDate, locale)}
+        </p>
         {canReschedule && (
           <Button
             size="sm"
@@ -752,13 +763,15 @@ function ItemHistory({
         <li key={e.id} className="text-xs text-muted-foreground">
           <p>
             {t("pdi.reschedule.history.entry", {
-              de: e.fromTargetDate ? (formatDate(e.fromTargetDate, locale) ?? "") : "—",
-              para: formatDate(e.toTargetDate, locale) ?? "",
+              de: e.fromTargetDate
+                ? (defaultDateFormatter.formatDate(e.fromTargetDate, locale) ?? "")
+                : "—",
+              para: defaultDateFormatter.formatDate(e.toTargetDate, locale) ?? "",
             })}
           </p>
           <p>
             {t("pdi.reschedule.history.reason", { motivo: e.reason })} ·{" "}
-            {formatDate(e.occurredAt, locale)}
+            {defaultDateFormatter.formatDate(e.occurredAt, locale)}
           </p>
         </li>
       ))}
@@ -807,7 +820,9 @@ function RescheduleDialog({
         <div className="grid gap-3">
           <div>
             <Label>{t("pdi.reschedule.current")}</Label>
-            <p className="mt-1 text-sm tabular-nums">{formatDate(item.targetDate, locale)}</p>
+            <p className="mt-1 text-sm tabular-nums">
+              {defaultDateFormatter.formatDate(item.targetDate, locale)}
+            </p>
           </div>
           <div>
             <Label htmlFor="reschedule-target-date">{t("pdi.reschedule.new")}</Label>
@@ -901,7 +916,7 @@ function CheckinTimeline({
             <li key={c.id} className="text-sm">
               <span className="text-muted-foreground">
                 {c.authorUserId === user.id ? t("comment.you") : t("pdi.checkin.someone")} ·{" "}
-                {formatDate(c.createdAt, locale)}:
+                {defaultDateFormatter.formatDate(c.createdAt, locale)}:
               </span>{" "}
               {c.text}
             </li>
@@ -1022,7 +1037,7 @@ function NewPlanItemDialog({
               <input
                 id="new-item-target-date"
                 type="date"
-                min={todayIso()}
+                min={defaultDateFormatter.todayIso()}
                 className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
                 value={targetDate}
                 disabled={submitting}

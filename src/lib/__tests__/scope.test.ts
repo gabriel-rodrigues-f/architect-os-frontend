@@ -1,21 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  canActFor,
-  defaultUiAuthorizationPolicy,
-  isAssignedTechLeadOf,
-  isLeadOf,
-  UiAuthorizationPolicy,
-} from "../scope";
+import { UiAuthorizationPolicy } from "../scope";
 import { fixtureAdminUser, fixtureMemberUser, fixtureUnassignedLeadUser } from "./fixtures";
 
 /**
  * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
- * Seção 70) — `scope.ts` virou `UiAuthorizationPolicy`; estes testes cobrem
- * a classe nova diretamente (instanciada, sem passar pelas funções soltas)
- * e confirmam que as funções soltas mantidas para compatibilidade
- * continuam devolvendo exatamente o mesmo resultado, delegando para a
- * mesma instância compartilhada.
+ * Seção 70) — `scope.ts` virou `UiAuthorizationPolicy`. OO3-08 — as funções
+ * soltas de compatibilidade foram removidas junto com a migração dos call
+ * sites; estes testes cobrem a classe diretamente.
  */
 describe("UiAuthorizationPolicy", () => {
   const policy = new UiAuthorizationPolicy();
@@ -80,29 +72,5 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.isAdmin(fixtureMemberUser)).toBe(false);
       expect(policy.isAdmin(fixtureUnassignedLeadUser)).toBe(false);
     });
-  });
-});
-
-describe("funções soltas — compatibilidade com os call sites existentes", () => {
-  const leadOfAna = { id: "ana", leadUserId: fixtureUnassignedLeadUser.id };
-
-  it("canActFor delega para defaultUiAuthorizationPolicy", () => {
-    expect(canActFor(fixtureUnassignedLeadUser, leadOfAna)).toBe(
-      defaultUiAuthorizationPolicy.canActFor(fixtureUnassignedLeadUser, leadOfAna),
-    );
-    expect(canActFor(fixtureUnassignedLeadUser, leadOfAna)).toBe(true);
-  });
-
-  it("isLeadOf delega para defaultUiAuthorizationPolicy", () => {
-    expect(isLeadOf(fixtureAdminUser, undefined)).toBe(
-      defaultUiAuthorizationPolicy.isLeadOf(fixtureAdminUser, undefined),
-    );
-  });
-
-  it("isAssignedTechLeadOf delega para defaultUiAuthorizationPolicy", () => {
-    expect(isAssignedTechLeadOf(fixtureAdminUser, leadOfAna)).toBe(
-      defaultUiAuthorizationPolicy.isAssignedTechLeadOf(fixtureAdminUser, leadOfAna),
-    );
-    expect(isAssignedTechLeadOf(fixtureAdminUser, leadOfAna)).toBe(false);
   });
 });

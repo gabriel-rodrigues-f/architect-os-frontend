@@ -28,7 +28,7 @@ import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
-import { canActFor } from "@/lib/scope";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { averageWithCoverage } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 
@@ -94,7 +94,9 @@ function AdminHome() {
    * visível, não por realmente não ter avaliação. Ver ANA-001, AUDITORIA-
    * QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
    */
-  const architects = sel.activeArchitects.filter((a) => canActFor(user, a));
+  const architects = sel.activeArchitects.filter((a) =>
+    defaultUiAuthorizationPolicy.canActFor(user, a),
+  );
 
   const allGaps = architects.flatMap((a) =>
     sel.progressionGapsFor(a.id).map((g) => ({ ...g, architect: a })),
