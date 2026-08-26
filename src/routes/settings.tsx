@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
-import { ApiError } from "@/lib/api";
+import { useAsyncSubmit } from "@/hooks/use-async-submit";
 import { ACTION_TYPES, EVIDENCE_TYPES, LEVELS, type CareerLevel, type Level } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
@@ -228,8 +228,13 @@ function CareerPolicyRow({
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(minimum ?? 3));
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /** OO3-11/D-6 (reuso final) — ciclo submitting/erro compartilhado; toast e fechar edição ficam aqui. */
+  const {
+    submitting: saving,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit("Não foi possível salvar a política.");
 
   const draftValue = Number(draft);
   const canSave = Number.isInteger(draftValue) && draftValue >= 3;
@@ -237,16 +242,10 @@ function CareerPolicyRow({
 
   const save = async () => {
     if (!canSave) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await store.updateCareerLevelPolicy(level.id, draftValue);
+    const result = await run(() => store.updateCareerLevelPolicy(level.id, draftValue));
+    if (result.ok) {
       toast.success(`Política do ${level.name} atualizada.`);
       setEditing(false);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Não foi possível salvar a política.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -294,7 +293,7 @@ function CareerPolicyRow({
                 onClick={() => {
                   setEditing(false);
                   setDraft(String(minimum ?? 3));
-                  setError(null);
+                  clearError();
                 }}
               >
                 {t("common.cancel")}

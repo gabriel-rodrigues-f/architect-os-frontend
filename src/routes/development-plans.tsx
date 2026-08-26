@@ -35,6 +35,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
+import { useAsyncSubmit } from "@/hooks/use-async-submit";
 import { useSearchParamString } from "@/hooks/use-search-param";
 import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-view-model";
 
@@ -94,11 +95,10 @@ function PlansPage() {
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
   /** Gap escolhido para virar item de PDI — abre o formulário de ação real. */
   const [creatingForCompetencyId, setCreatingForCompetencyId] = useState<string | null>(null);
-  const [creatingSubmitting, setCreatingSubmitting] = useState(false);
-  const [creatingError, setCreatingError] = useState<string | null>(null);
-  const [planTransitioning, setPlanTransitioning] = useState(false);
-  const [planTransitionError, setPlanTransitionError] = useState<string | null>(null);
   const { t, locale } = useI18n();
+  /** OO3-11/D-6 (reuso final) — os dois ciclos submitting/erro da tela vêm do hook compartilhado. */
+  const creating = useAsyncSubmit(t("pdi.newItem.error"));
+  const planTransition = useAsyncSubmit(t("pdi.plan.transitionError"));
   const help = usePageHelp("developmentPlans");
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
@@ -182,21 +182,14 @@ function PlansPage() {
 
   /**
    * `action` chama um dos métodos de transição do `DevelopmentPlansViewModel`
-   * (`approve`/`complete`/`returnToDraft`) — este wrapper só cuida do
-   * loading/erro local, igual antes.
+   * (`approve`/`complete`/`returnToDraft`) — o loading/erro local é o
+   * `useAsyncSubmit` compartilhado (D-6), igual antes.
    */
   const runPlanTransition = (action: () => Promise<DevelopmentPlan>) => {
     if (!plan) return;
-    setPlanTransitionError(null);
-    setPlanTransitioning(true);
-    action()
-      .catch((error: unknown) =>
-        setPlanTransitionError(
-          error instanceof ApiError ? error.message : t("pdi.plan.transitionError"),
-        ),
-      )
-      .finally(() => setPlanTransitioning(false));
+    void planTransition.run(action);
   };
+  const planTransitioning = planTransition.submitting;
 
   return (
     <>
@@ -286,8 +279,8 @@ function PlansPage() {
           {ownerSeesLockedMessage && (
             <p className="w-full text-xs text-muted-foreground">{t("pdi.plan.lockedForOwner")}</p>
           )}
-          {planTransitionError && (
-            <p className="w-full text-xs text-destructive">{planTransitionError}</p>
+          {planTransition.error && (
+            <p className="w-full text-xs text-destructive">{planTransition.error}</p>
           )}
         </div>
       )}
@@ -530,25 +523,19 @@ function PlansPage() {
       {creatingForGap && creatingForGap.competency && architect && (
         <NewPlanItemDialog
           gap={creatingForGap}
-          submitting={creatingSubmitting}
-          error={creatingError}
+          submitting={creating.submitting}
+          error={creating.error}
           onCancel={() => {
-            setCreatingError(null);
+            creating.clearError();
             setCreatingForCompetencyId(null);
           }}
           onSave={async (draft) => {
-            setCreatingError(null);
-            setCreatingSubmitting(true);
-            try {
-              // Montagem do payload (id de cliente, startDate, objetivo) mora
-              // no ViewModel — ver `DevelopmentPlansViewModel.createItemFromGap`.
-              await viewModel.createItemFromGap(architectId, creatingForGap, draft, architect.name);
-              setCreatingForCompetencyId(null);
-            } catch (error) {
-              setCreatingError(error instanceof ApiError ? error.message : t("pdi.newItem.error"));
-            } finally {
-              setCreatingSubmitting(false);
-            }
+            // Montagem do payload (id de cliente, startDate, objetivo) mora
+            // no ViewModel — ver `DevelopmentPlansViewModel.createItemFromGap`.
+            const result = await creating.run(() =>
+              viewModel.createItemFromGap(architectId, creatingForGap, draft, architect.name),
+            );
+            if (result.ok) setCreatingForCompetencyId(null);
           }}
         />
       )}
@@ -673,12 +660,7 @@ function DeadlineField({
       </div>
       {historyOpen && <ItemHistory planId={planId} itemId={item.id} locale={locale} />}
       {rescheduling && (
-        <RescheduleDialog
-          planId={planId}
-          item={item}
-          onCancel={() => setRescheduling(false)}
-          onSaved={() => setRescheduling(false)}
-        />
+        <RescheduleDialog planId={planId} item={item} onClose={() => setRescheduling(false)} />
       )}
     </Field>
   );
@@ -752,44 +734,43 @@ function ItemHistory({
   );
 }
 
+/**
+ * OO3-11 §3b (reuso final) — wrapper fino sobre `CommandWithReasonDialog`:
+ * o comando (`DevelopmentPlansViewModel.reschedule`, OO3-10) e o ciclo
+ * submitting/erro são o mecanismo compartilhado; aqui ficam só o campo
+ * extra de data e os textos. Comportamentos preservados do original:
+ * não fecha por clique fora/Esc enquanto envia, campos desabilitados
+ * durante o envio e `role="alert"` no erro.
+ */
 function RescheduleDialog({
   planId,
   item,
-  onCancel,
-  onSaved,
+  onClose,
 }: {
   planId: string;
   item: DevelopmentPlanItem;
-  onCancel: () => void;
-  onSaved: () => void;
+  /** Cancelou OU salvou — nos dois casos o pai só fecha o diálogo, como antes. */
+  onClose: () => void;
 }) {
   const { t, locale } = useI18n();
   const viewModel = useDevelopmentPlansViewModel();
   const [targetDate, setTargetDate] = useState(item.targetDate);
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const canSave = targetDate.length > 0 && reason.trim().length > 0 && !submitting;
-
-  const submit = async () => {
-    setSubmitting(true);
-    setError(null);
-    try {
-      await viewModel.reschedule(planId, item.id, targetDate, reason);
-      onSaved();
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : t("pdi.reschedule.error"));
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && !submitting && onCancel()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("pdi.reschedule.title")}</DialogTitle>
-        </DialogHeader>
+    <CommandWithReasonDialog
+      title={t("pdi.reschedule.title")}
+      reasonInputId="reschedule-reason"
+      reasonLabel={t("pdi.reschedule.reasonLabel")}
+      reasonPlaceholder={t("pdi.reschedule.reasonPlaceholder")}
+      confirmLabel={t("pdi.reschedule.confirm")}
+      submittingLabel={t("pdi.reschedule.saving")}
+      cancelLabel={t("pdi.newItem.cancel")}
+      fallbackError={t("pdi.reschedule.error")}
+      canSubmit={targetDate.length > 0}
+      dismissibleWhileSubmitting={false}
+      disableFieldsWhileSubmitting
+      errorRole="alert"
+      extraFields={({ submitting }) => (
         <div className="grid gap-3">
           <div>
             <Label>{t("pdi.reschedule.current")}</Label>
@@ -808,33 +789,11 @@ function RescheduleDialog({
               onChange={(e) => setTargetDate(e.target.value)}
             />
           </div>
-          <div>
-            <Label htmlFor="reschedule-reason">{t("pdi.reschedule.reasonLabel")}</Label>
-            <Textarea
-              id="reschedule-reason"
-              className="mt-1"
-              disabled={submitting}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder={t("pdi.reschedule.reasonPlaceholder")}
-            />
-          </div>
-          {error && (
-            <p className="text-xs text-destructive" role="alert">
-              {error}
-            </p>
-          )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel} disabled={submitting}>
-            {t("pdi.newItem.cancel")}
-          </Button>
-          <Button disabled={!canSave} onClick={() => void submit()}>
-            {submitting ? t("pdi.reschedule.saving") : t("pdi.reschedule.confirm")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+      onSubmit={(reason) => viewModel.reschedule(planId, item.id, targetDate, reason)}
+      onClose={onClose}
+    />
   );
 }
 
@@ -860,21 +819,13 @@ function CheckinTimeline({
   const user = useCurrentUser();
   const viewModel = useDevelopmentPlansViewModel();
   const [text, setText] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /** OO3-11/D-6 (reuso final) — ciclo submitting/erro compartilhado; só o "limpar rascunho no sucesso" é daqui. */
+  const { submitting: saving, error, run } = useAsyncSubmit(t("pdi.checkin.error"));
 
   const submit = async () => {
     if (!text.trim() || saving) return;
-    setError(null);
-    setSaving(true);
-    try {
-      await viewModel.addCheckin(planId, item.id, text);
-      setText("");
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : t("pdi.checkin.error"));
-    } finally {
-      setSaving(false);
-    }
+    const result = await run(() => viewModel.addCheckin(planId, item.id, text));
+    if (result.ok) setText("");
   };
 
   return (

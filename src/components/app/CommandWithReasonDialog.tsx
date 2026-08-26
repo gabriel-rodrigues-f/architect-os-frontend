@@ -10,15 +10,17 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api";
+import { useAsyncSubmit } from "@/hooks/use-async-submit";
 import { useI18n } from "@/lib/i18n";
 
 /**
  * OO3-11c — o esqueleto compartilhado dos comandos "com motivo obrigatório":
  * `CareerLevelTransitionDialog` e `DeactivateDialog` (`team-shared.tsx`) e
- * `ReopenPlanDialog` (`development-plans.tsx`) repetiam o mesmo ciclo
- * `reason` + `submitting` + `error` byte a byte, mudando só textos, campo
- * extra e variante do botão.
+ * `ReopenPlanDialog`/`RescheduleDialog` (`development-plans.tsx`) repetiam o
+ * mesmo ciclo `reason` + `submitting` + `error` byte a byte, mudando só
+ * textos, campo extra e variante do botão. O ciclo assíncrono em si vem de
+ * `useAsyncSubmit` (D-6, reuso final) — este componente só soma o motivo
+ * obrigatório e a casca de diálogo.
  *
  * Regras copiadas dos originais, não redesenhadas:
  * - confirmar habilitado sse `reason.trim() && canSubmit && !submitting`;
@@ -29,8 +31,9 @@ import { useI18n } from "@/lib/i18n";
  *   chamador, junto do texto específico do comando;
  * - `onSubmit` DEVE devolver a Promise do comando (sem `return`, o diálogo
  *   fecharia antes da confirmação do servidor e o 409 viraria silêncio);
- * - sem `role="alert"` no erro (os originais não têm; adicionar seria
- *   comportamento novo — anotado como melhoria de a11y separada).
+ * - sem `role="alert"` no erro por padrão (os originais de time não têm) —
+ *   `errorRole="alert"` preserva o comportamento do `RescheduleDialog`, que
+ *   sempre teve.
  */
 export function CommandWithReasonDialog({
   title,
@@ -44,6 +47,9 @@ export function CommandWithReasonDialog({
   confirmVariant = "default",
   fallbackError,
   canSubmit = true,
+  dismissibleWhileSubmitting = true,
+  disableFieldsWhileSubmitting = false,
+  errorRole,
   extraFields,
   onSubmit,
   onClose,
@@ -60,30 +66,32 @@ export function CommandWithReasonDialog({
   confirmVariant?: "default" | "destructive";
   fallbackError: string;
   canSubmit?: boolean;
+  /** `false` = clicar fora/Esc não fecha enquanto envia (comportamento do `RescheduleDialog`). */
+  dismissibleWhileSubmitting?: boolean;
+  /** `true` = motivo (e campos extras, via render-prop) desabilitados enquanto envia. */
+  disableFieldsWhileSubmitting?: boolean;
+  errorRole?: "alert";
   extraFields?: (state: { submitting: boolean }) => ReactNode;
   onSubmit: (reason: string) => Promise<unknown>;
   onClose: () => void;
 }) {
   const { t } = useI18n();
   const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /** OO3-11/D-6 — o ciclo submitting/erro é o `useAsyncSubmit` compartilhado. */
+  const { submitting, error, run } = useAsyncSubmit(fallbackError);
 
-  const submit = () => {
-    setError(null);
-    setSubmitting(true);
-    onSubmit(reason.trim())
-      .then(() => {
-        onClose();
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof ApiError ? err.message : fallbackError);
-      })
-      .finally(() => setSubmitting(false));
+  const submit = async () => {
+    const result = await run(() => onSubmit(reason.trim()));
+    if (result.ok) onClose();
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open && (dismissibleWhileSubmitting || !submitting)) onClose();
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -96,11 +104,16 @@ export function CommandWithReasonDialog({
             id={reasonInputId}
             className="mt-1"
             value={reason}
+            disabled={disableFieldsWhileSubmitting && submitting}
             onChange={(e) => setReason(e.target.value)}
             placeholder={reasonPlaceholder}
           />
         </div>
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && (
+          <p className="text-xs text-destructive" role={errorRole}>
+            {error}
+          </p>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             {cancelLabel ?? t("common.cancel")}
@@ -108,7 +121,7 @@ export function CommandWithReasonDialog({
           <Button
             variant={confirmVariant}
             disabled={!reason.trim() || !canSubmit || submitting}
-            onClick={submit}
+            onClick={() => void submit()}
           >
             {submitting ? submittingLabel : confirmLabel}
           </Button>
