@@ -46,19 +46,6 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
-/**
- * FASE 2 (quinta rodada) — "Member recebe visão executiva de 'time' em vez
- * de agenda pessoal; Lead pode receber visão incompleta do universo
- * exibido... Recomendação: homes distintas Member/Lead/Admin." O painel
- * inteiro era uma visão de time só, para todo mundo — um Member via
- * estatísticas agregadas da empresa em vez da própria agenda, e um Lead via
- * a mesma coisa em vez da fila do que precisa da decisão dele. Cada papel
- * agora tem sua própria Home: Admin mantém a visão executiva (é o único
- * papel para quem "time inteiro" é realmente a pergunta certa); Member vê
- * a própria evolução; Lead vê o que está pendente de decisão dele. Ver
- * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, Seção 7 (Dashboard) e
- * 33 (FASE 2).
- */
 function Dashboard() {
   const user = useCurrentUser();
   if (user.role === "lead") return <LeadHome />;
@@ -66,7 +53,6 @@ function Dashboard() {
   return <AdminHome />;
 }
 
-/** OO3-11e — adaptador fino: memoiza o presenter sobre o snapshot atual. CFG-02: o limiar de "gap crítico" vem da régua efetiva (`/api/config/bands`, fallback = seed). */
 function useDashboardPresenter() {
   const store = useStore();
   const sel = useSelectors();
@@ -77,7 +63,6 @@ function useDashboardPresenter() {
   );
 }
 
-/** OO3-11/D-5 (reuso final) — idem, para os KPIs pessoais (compartilhados com o perfil). */
 function usePersonalDashboardPresenter() {
   const store = useStore();
   const sel = useSelectors();
@@ -92,10 +77,9 @@ function AdminHome() {
   const labels = useLabels();
   const help = usePageHelp("dash");
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
-  /** População visível ao viewer — ver o docstring de `ArchitectSelectors.visibleTo` (ANA-001). */
+
   const architects = sel.visibleArchitects(user);
 
-  /** OO3-11e — os KPIs do painel moram no `DashboardPresenter`, com cobertura unitária própria. */
   const presenter = useDashboardPresenter();
   const criticalGaps = presenter.criticalGapCount(architects);
   const topGaps = presenter.topGaps(architects);
@@ -153,11 +137,7 @@ function AdminHome() {
         />
       </div>
 
-      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — grid-cols com fr cru é
-          um min-content trap: a pista nunca encolhe abaixo do conteúdo mais
-          largo (a tabela/heatmap), então a página inteira rola horizontal em
-          vez do overflow-x-auto interno ativar. minmax(0,Nfr) devolve à pista
-          a permissão de encolher, deixando o overflow interno fazer o trabalho. */}
+      {}
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <SectionCard title={t("dash.heatmap.title")} description={t("dash.heatmap.subtitle")}>
           <p className="mb-3 text-xs text-muted-foreground">
@@ -169,7 +149,7 @@ function AdminHome() {
               notStarted: assessmentCoverage.notStarted,
             })}
           </p>
-          {/* OO3-11/D-1 — heatmap compartilhado com /progression (CapabilityHeatmap). */}
+          {}
           <CapabilityHeatmap
             architects={architects}
             capabilities={store.capabilities}
@@ -212,11 +192,6 @@ function AdminHome() {
   );
 }
 
-/**
- * "Minha Evolução" — a Home de um Member é a própria agenda, não uma
- * estatística de time que ela só enxerga parcialmente (a maior parte do
- * roster está fora do escopo dela por desenho, ver `auth/scope.ts`).
- */
 function MemberHome() {
   const sel = useSelectors();
   const user = useCurrentUser();
@@ -240,7 +215,7 @@ function MemberHome() {
   }
 
   const capabilityAvgs = sel.capabilityAverages(architectId);
-  /** OO3-11/D-5 — KPIs pessoais compartilhados com o perfil (`PersonalDashboardPresenter`). */
+
   const gaps = personal.openGaps(architectId);
   const { avg, covered, total } = sel.coverageFor(architectId);
   const assessment = sel.assessmentFor(architectId);
@@ -288,7 +263,7 @@ function MemberHome() {
         />
       </div>
 
-      {/* R2-UX-04 — minmax(0,1fr) evita o min-content trap, ver comentário acima. */}
+      {}
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
@@ -354,7 +329,7 @@ function MemberHome() {
         </SectionCard>
       </div>
 
-      {/* R2-UX-04 — minmax(0,1fr) evita o min-content trap, ver comentário acima. */}
+      {}
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("dash.priorities.title")}
@@ -399,12 +374,6 @@ function MemberHome() {
   );
 }
 
-/**
- * "Pendências do Lead" — a Home de um Lead é a fila de decisões que
- * dependem dele (avaliação para calibrar, evidência para revisar, PDI
- * aguardando aprovação), não a mesma visão de time do Admin sobre um
- * universo que ele só enxerga parcialmente.
- */
 function LeadHome() {
   const store = useStore();
   const sel = useSelectors();

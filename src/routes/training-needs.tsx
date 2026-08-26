@@ -36,24 +36,13 @@ function TrainingNeedsPage() {
   const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("trainingNeeds");
-  /** População visível ao viewer — ver o docstring de `ArchitectSelectors.visibleTo` (ANA-001). */
+
   const population = sel.visibleArchitects(user);
   const needs = sel.teamTrainingNeeds(population);
-  /**
-   * R2-ESC-08 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os dois cortes (15 e 6)
-   * eram silenciosos: nada avisava que a lista continuava além do que
-   * aparecia. Mesmo padrão de `HeatmapColumnsNotice` (R2-ESC-01) — aviso com
-   * contagem + alternância "mostrar todas" em vez de um link para outro
-   * lugar, já que não existe uma tela dedicada só a esta lista derivada.
-   */
+
   const [showAllTop, setShowAllTop] = useState(false);
   const top = showAllTop ? needs : needs.slice(0, 15);
-  /**
-   * CFG-05 / B6 — o "3+ pessoas" da intervenção coletiva deixou de ser
-   * literal: é `training.collectiveInterventionThreshold` (`app_settings`),
-   * com fallback 3 byte-idêntico ao hardcoded antigo enquanto a consulta
-   * não resolve.
-   */
+
   const { trainingCollectiveInterventionThreshold } = useOperationalSettings();
   const collectiveEligible = needs.filter(
     (n) => n.people >= trainingCollectiveInterventionThreshold,
@@ -62,24 +51,10 @@ function TrainingNeedsPage() {
   const collective = showAllCollective ? collectiveEligible : collectiveEligible.slice(0, 6);
   const { submitting, run } = useToastSubmit();
 
-  /**
-   * "Intervenção coletiva" não é uma entidade nova — é a mesma Trilha de
-   * Aprendizagem que já existe, atribuída de uma vez a todo mundo com a
-   * mesma lacuna. Isso evita inventar um conceito/tabela nova só para
-   * reembalar o que a Trilha já faz, e mantém a lista de pessoas real (os
-   * mesmos ids que `teamTrainingNeeds` já contou, não um número solto). Ver
-   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC K.
-   */
-  /**
-   * Sem id local nem sucesso otimista: o servidor gera o id de verdade — ver
-   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001.
-   */
   const createIntervention = async (need: (typeof needs)[number]) => {
     const competency = need.competency;
     if (!competency) return;
-    // OO3-18/F-1 — era um dos 3 call sites SEM `finally`/`setSaving`: o botão
-    // "Criar intervenção" aceitava cliques repetidos durante a chamada em voo
-    // (bug latente de trilha duplicada). `submitting` agora desabilita.
+
     const result = await run(() =>
       store.addLearningPath({
         id: "",
@@ -99,15 +74,6 @@ function TrainingNeedsPage() {
     }
   };
 
-  /**
-   * Antes checava só se a competência aparecia em QUALQUER trilha, alguma
-   * vez — uma trilha antiga, para outras pessoas, de outro ciclo, já
-   * concluída, bloqueava para sempre uma intervenção nova para o grupo
-   * atual. Agora só considera "já existe" quando a trilha cobre a
-   * competência E está atribuída a pelo menos uma das pessoas que têm essa
-   * lacuna agora. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md,
-   * EPIC 6.
-   */
   const interventionExists = (need: (typeof needs)[number]) =>
     store.learningPaths.some(
       (p) =>
@@ -119,9 +85,7 @@ function TrainingNeedsPage() {
     <>
       <PageHeader title={t("needs.title")} description={t("needs.subtitle")} help={help} />
 
-      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,Nfr): sem
-          isto a pista nunca encolhe abaixo da tabela/heatmap interno, e a
-          página inteira rola horizontal em vez do overflow-x-auto ativar. */}
+      {}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("needs.aggregated.title")}

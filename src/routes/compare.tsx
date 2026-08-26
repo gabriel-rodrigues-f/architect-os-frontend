@@ -9,17 +9,6 @@ import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamList } from "@/hooks/use-search-param";
 
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-29 — "decisão de
- * promoção manual": comparar pessoas específicas hoje exige olhar o
- * heatmap do time inteiro (`/progression`) e procurar as linhas certas de
- * cabeça. Aba própria dentro de "Capacidades" (mesmo grupo de navegação de
- * `/progression`/`/gap-analysis`), mas com semântica de seleção DIFERENTE:
- * lá `selected` é "quem entra na média agregada"; aqui cada pessoa
- * selecionada vira sua PRÓPRIA série — nunca agregada com as outras. Nasce
- * vazio (nenhuma pré-seleção): comparação é sempre um recorte intencional,
- * nunca "o time inteiro" por padrão.
- */
 export const Route = createFileRoute("/compare")({
   head: () => ({
     meta: [
@@ -43,11 +32,9 @@ function ComparePage() {
 
   const [selected, setSelected] = useSearchParamList("selected", () => []);
 
-  /** OO3-09b — pertencimento explícito (`[]` = ninguém): comparação é sempre um recorte intencional. */
   const architects = Selection.explicit(selected).apply(store.architects);
   const series: EvolutionSeries[] = architects.map((a) => ({ key: a.id, label: a.name }));
 
-  /** Uma consulta por pessoa, não uma por célula da tabela/radar. */
   const averagesByArchitect = new Map(
     architects.map((a) => [
       a.id,

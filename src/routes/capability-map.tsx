@@ -41,20 +41,16 @@ function CapabilityMapPage() {
   const help = usePageHelp("capabilityMap");
   const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
 
-  /** População visível ao viewer — ver o docstring de `ArchitectSelectors.visibleTo` (ANA-001). */
   const population = sel.visibleArchitects(user);
 
-  /** CFG-02 — as réguas da tela (faixas de proficiência e limiar de concentração) vêm de `/api/config/bands`, com o default do seed como fallback. */
   const scoringBands = useScoringBands();
 
-  /** OO3-11h — faixas + risco de concentração moram no `CapabilityCoveragePresenter` (`lib/presenters/`). */
   const presenter = useMemo(
     () => new CapabilityCoveragePresenter(store.capabilities, sel.capabilityAverages, scoringBands),
     [store.capabilities, sel, scoringBands],
   );
   const withRisk = presenter.areas(population);
 
-  /** R2-UX-09 — mesmo default do Time: acima de 8 capacidades, tabela em vez de cards. */
   const view: "cards" | "table" = viewOverride ?? (withRisk.length > 8 ? "table" : "cards");
 
   return (
@@ -64,13 +60,6 @@ function CapabilityMapPage() {
       {store.capabilities.length === 0 ? (
         <EmptyState title={t("cap.empty.title")} hint={t("cap.empty.hint")} />
       ) : population.length === 0 ? (
-        /*
-          R2-VIS-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — sem ninguém visível
-          no escopo, TODA capacidade cai em "insufficientData" por definição
-          (assessedCount é sempre 0) — a tela virava N repetições da mesma
-          frase, uma por card/linha, quando o problema é um só: não há
-          ninguém para avaliar aqui, não uma lacuna de dado por capacidade.
-        */
         <EmptyState title={t("cap.empty.noScope.title")} hint={t("cap.empty.noScope.hint")} />
       ) : (
         <>
@@ -83,13 +72,7 @@ function CapabilityMapPage() {
             />
           </div>
 
-          {/*
-            R2-UX-09(b) — título (PageHeader, acima) fica fixo; só o
-            conteúdo rola. `100vh-260px` é o mesmo cálculo de "o que sobra
-            abaixo do cabeçalho fixo do app" já usado no heatmap de
-            Progressão/Painel (R2-ESC-01), aqui aplicado à página inteira
-            porque não há um heatmap único, e sim N cards.
-          */}
+          {}
           <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
             {view === "table" ? (
               <div className="surface-card overflow-x-auto">
@@ -173,7 +156,6 @@ function CapabilityMapPage() {
   );
 }
 
-/** R2-UX-09(a) — badge compacto pra tabela; a frase completa (já usada nos cards) vira `title`. */
 function RiskBadge({ risk, referenceCount }: { risk: RiskState; referenceCount: number }) {
   const { t } = useI18n();
   const variant =

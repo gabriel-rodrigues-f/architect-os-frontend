@@ -2,42 +2,8 @@ import { z } from "zod";
 
 import { VOCABULARY_NAMES } from "./vocabularies";
 
-/**
- * B-11 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10) — os tipos
- * de domínio são espelhados à mão entre front e back (`domain.ts` ×
- * `domain/types.ts`), e o drift já tinha começado silenciosamente (LEVELS/
- * roleShort do backend, removidos nesta mesma leva por estarem mortos —
- * nunca chegavam a uma resposta de API). Nenhuma resposta era validada em
- * runtime; um campo renomeado ou removido no servidor só aparecia como
- * `undefined` se propagando silenciosamente pela UI.
- *
- * Escopo deliberadamente limitado a `GET /api/state` (o payload de bootstrap
- * do app inteiro, `store.tsx`) — não os ~40 outros endpoints. A própria
- * auditoria oferece isto como alternativa ao contrato de tipos compartilhado
- * (esforço bem maior, dois repositórios independentes); replicar zod para
- * cada endpoint também contraria o NF-1 ("DTO layer completa antes do
- * OpenAPI") — o que falta ali é o próprio OpenAPI (B-17), não um zod a mais
- * por rota. Falha de validação aqui propaga como erro comum de `useQuery`
- * (`store.tsx` já trata isso via `ConnectionError`) — silencioso vira
- * barulhento, sem precisar de nenhuma UI nova.
- */
-
 const level = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]);
 
-/**
- * R2-TEC-20 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — B-38 já relaxou o
- * cast equivalente no BACKEND (`RoleName` deixou de ser um enum fechado
- * ali); este `z.enum([...3 nomes])` sobrevivia só no cliente, um enum
- * FECHADO sobre um valor que ADR-0002 já documenta como "transitório" —
- * criar um 4º nível de carreira faz QUALQUER resposta de `/api/state`
- * com um arquiteto nesse nível falhar `appStateSchema.parse` inteiro,
- * derrubando o app TODO em `ConnectionError` (`store.tsx`), não só a
- * tela de quem tem o nível novo. `z.string()` aceita qualquer nome —
- * código que precisa comparar contra nomes conhecidos usa os níveis
- * reais de `career_levels` (`useCareerLevelsByRank`, `store.tsx` — o
- * array `ROLES` hardcoded morreu no CFG-01/A5); um nome desconhecido só
- * deixa de quebrar a validação, não vira um valor especial.
- */
 const roleName = z.string();
 
 const requirementType = z.enum(["RESTRICTIVE", "NON_RESTRICTIVE"]);
@@ -57,13 +23,6 @@ const capability = z.object({
   curation: capabilityCuration,
 });
 
-/**
- * B-38 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) — chave é
- * `career_levels.id` (dado), não mais `RoleName`: `expected` não garante
- * mais as 3 chaves fixas presentes (`Competency.expected` em `domain.ts`
- * já é `Record<string, Level>`), então um record dinâmico é o schema
- * certo, não mais um objeto de 3 chaves enumeradas à mão.
- */
 const expectedLevelMap = z.record(z.string(), level);
 
 const competency = z.object({
@@ -80,15 +39,6 @@ const careerLevelPolicy = z.object({
   minimumQualifiedCapabilities: z.number(),
 });
 
-/**
- * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `careerLevels` saiu de
- * `appStateSchema` junto com a migração pra `GET /api/career-levels` (B-24,
- * ADR-0011, comentário em `api.ts`), mas a validação em runtime não
- * acompanhou: `api.careerLevels()` ficou só com um cast de tipo
- * (`request<CareerLevel[]>`), a MESMA lacuna que `appStateSchema` existe
- * pra fechar nas outras coleções. Schema dedicado, exportado, pra
- * `api.ts#careerLevels` validar a resposta como as demais.
- */
 const careerLevel = z.object({
   id: z.string(),
   name: z.string(),
@@ -97,14 +47,6 @@ const careerLevel = z.object({
 
 export const careerLevelsResponseSchema = z.array(careerLevel);
 
-/**
- * CFG-02 — resposta de `GET /api/config/bands` (`ConfigGateway.bands`):
- * escalas agrupadas, cada uma com faixas meia-abertas `min <= v < max`
- * (`null` = ±infinito na ponta). `labelKey` é string livre de propósito —
- * chave i18n desconhecida não derruba o parse; `messageKeyOrDefault`
- * (`scoring-bands.ts`) resolve o fallback na hora de exibir. Toda escala é
- * opcional: quem completa com o default é `withDefaultScoringBands`.
- */
 const bandTone = z.enum(["ok", "low", "high", "critical"]);
 const scoringBand = z.object({
   key: z.string(),
@@ -120,58 +62,22 @@ export const scoringBandsResponseSchema = z.object({
   CONCENTRATION_RISK: z.array(scoringBand).optional(),
 });
 
-/**
- * CFG-02 (admin UI) — resposta de `PUT /api/config/bands/:scale`
- * (`UpdateScoringBands.execute` devolve a régua validada da escala, sem o
- * agrupamento do GET). Mesma disciplina R2-TEC-19: validada em runtime.
- */
 export const scoringBandsPutResponseSchema = z.array(scoringBand);
 
-/**
- * CFG-03 — resposta de `GET /api/config/templates` (`ConfigGateway.
- * templates`): `key → locale → template`, exatamente como
- * `TextTemplateCatalog.groupedByKey()` serializa no backend. Keys e locales
- * são strings livres de propósito — um template de key que este build não
- * conhece não derruba o parse; quem completa keys/locales ausentes com o
- * default é `withDefaultTextTemplates` (`text-templates.ts`).
- */
 export const textTemplatesResponseSchema = z.record(z.record(z.string()));
 
-/**
- * CFG-03 (admin UI) — resposta de `PUT /api/config/templates/:key/:locale`
- * (`UpdateTextTemplate.execute` devolve o `TextTemplateRecord` validado).
- * Mesma disciplina R2-TEC-19: validada em runtime.
- */
 export const textTemplateRecordSchema = z.object({
   key: z.string(),
   locale: z.string(),
   template: z.string(),
 });
 
-/**
- * CFG-04 — resposta de `GET`/`PUT /api/config/curation-policy`
- * (`ConfigGateway.curationPolicy`/`updateCurationPolicy`): os três limites
- * de composição do catálogo, a forma plana de `CatalogCurationLimits` do
- * backend. Mesma disciplina R2-TEC-19: validada em runtime — os limites
- * decidem quando a matriz esconde "Nova competência"/desabilita um tipo;
- * um campo renomeado no servidor tem que falhar barulhento no `useQuery`,
- * não propagar `undefined` silencioso pela UI.
- */
 export const curationPolicySchema = z.object({
   maxActiveCompetencies: z.number(),
   requiredRestrictive: z.number(),
   requiredNonRestrictive: z.number(),
 });
 
-/**
- * CFG-05 — `GET /api/config/settings` (`ConfigController`): as políticas
- * operacionais escalares como o servidor serializa (`{ settings: [...] }`,
- * linhas de `AppSettingRecord` — valor tipado + metadados). Mesma
- * disciplina R2-TEC-19: validado em runtime — os valores decidem cadência
- * de ciclo, piso de carreira e limiar de LNT; um campo renomeado no
- * servidor tem que falhar barulhento no `useQuery`, não propagar
- * `undefined` silencioso pela UI.
- */
 export const appSettingRecordSchema = z.object({
   key: z.string(),
   value: z.union([z.string(), z.number()]),
@@ -186,21 +92,11 @@ export const appSettingsResponseSchema = z.object({
   settings: z.array(appSettingRecordSchema),
 });
 
-/** CFG-05 (admin UI) — a resposta do PUT: a key e o valor tipado recém-gravado. */
 export const appSettingPutResponseSchema = z.object({
   key: z.string(),
   value: z.union([z.string(), z.number()]),
 });
 
-/**
- * CFG-06 — `GET /api/config/vocabularies` (`ConfigController`): os 3
- * vocabulários de domínio como o servidor serializa
- * (`VocabularyCatalog.grouped()` — `{ EVIDENCE_TYPE: [...], ... }`). Mesma
- * disciplina R2-TEC-19: validado em runtime — os itens decidem as opções
- * dos selects de evidência/trilha/PDI; um campo renomeado no servidor tem
- * que falhar barulhento no `useQuery`, não propagar `undefined` silencioso
- * pela UI.
- */
 export const vocabularyItemSchema = z.object({
   vocabulary: z.enum(VOCABULARY_NAMES),
   code: z.string(),
@@ -215,10 +111,6 @@ export const vocabulariesResponseSchema = z.object({
   ACTION_TYPE: z.array(vocabularyItemSchema),
 });
 
-/**
- * CFG-07 — resposta de `POST /api/catalog/import` (`ImportCatalog` do
- * backend, `CatalogImportSummary`): o que foi criado/atualizado por nome.
- */
 export const catalogImportSummarySchema = z.object({
   capabilitiesCreated: z.array(z.object({ id: z.string(), name: z.string() })),
   capabilitiesUpdated: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -311,15 +203,7 @@ const developmentPlanItem = z.object({
   currentLevel: level,
   targetLevel: level,
   objective: z.string(),
-  /**
-   * CFG-06 — era `z.enum(ACTION_TYPES)`, um enum FECHADO sobre um valor que
-   * virou DADO (vocabulário `ACTION_TYPE`, editável por admin): um code
-   * novo cadastrado e persistido num item de PDI faria QUALQUER resposta de
-   * `/api/state` falhar o parse inteiro, derrubando o app todo em
-   * `ConnectionError` — exatamente o modo de falha que R2-TEC-20 já matou
-   * no `roleName`. A EXISTÊNCIA do code é validada no backend
-   * (`VocabularyGuard`, 400 `UNKNOWN_VOCABULARY_CODE`), nunca aqui.
-   */
+
   actionType: z.string(),
   actionPlan: z.string(),
   startDate: z.string(),
@@ -350,7 +234,7 @@ const developmentPlan = z.object({
 const learningPathItem = z.object({
   id: z.string(),
   title: z.string(),
-  /** CFG-06 — mesmo racional do `actionType` acima: vocabulário `LEARNING_ITEM_TYPE` é dado, não enum fechado. */
+
   type: z.string(),
   url: z.string().optional(),
   description: z.string().optional(),
@@ -397,7 +281,7 @@ const evidence = z.object({
   architectId: z.string(),
   title: z.string(),
   description: z.string(),
-  /** CFG-06 — mesmo racional do `actionType` acima: vocabulário `EVIDENCE_TYPE` é dado, não enum fechado. */
+
   type: z.string(),
   competencyIds: z.array(z.string()),
   date: z.string(),
@@ -412,19 +296,6 @@ const evidence = z.object({
   reviewedAt: z.string().nullish(),
 });
 
-/**
- * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — comportamento não
- * documentado até aqui: `z.object()` sem `.passthrough()`/`.strict()`
- * (o default do zod) SILENCIOSAMENTE DESCARTA qualquer chave que o
- * servidor mande e este schema não conheça — `.parse()` não falha, só
- * devolve um objeto sem o campo novo. Isto é aceito de propósito, não um
- * bug: um campo REMOVIDO ou RENOMEADO no servidor (o caso que este
- * schema existe pra pegar) ainda quebra a validação normalmente (chave
- * exigida ausente); só um campo ADICIONADO fica invisível até este
- * arquivo ser atualizado — o mesmo trade-off que qualquer parser
- * "aditivo primeiro" faz. Se um campo novo precisar aparecer na UI, ele
- * também precisa ser declarado aqui — não é automático.
- */
 export const appStateSchema = z.object({
   capabilities: z.array(capability),
   competencies: z.array(competency),

@@ -26,23 +26,6 @@ import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { MentoringViewModel } from "@/lib/view-models/mentoring-view-model";
 
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) — `/mentoring`
- * era um único componente de ~554 linhas (formulário de nova sessão + linha
- * do tempo, cada um com o próprio estado e regras). Extraído no mesmo
- * padrão de `gap-analysis-shared.tsx` (hook de dados/estado + componentes de
- * apresentação): `MentoringPage` (rota) vira só composição.
- *
- * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
- * Seções 58-61) — os três comandos de escrita (registrar sessão, agendar
- * follow-up, virar item de PDI) moraram para `MentoringViewModel`
- * (`lib/view-models/mentoring-view-model.ts`, que também documenta por que
- * NÃO ganhou `UiAuthorizationPolicy`); os hooks/componentes aqui viram
- * adaptadores finos, mesmo padrão de `useArchitectForm`
- * (`team-shared.tsx`)/`useMentoringSessionForm`.
- */
-
-/** Campos que o usuário preenche e que não podem ficar vazios. */
 export const REQUIRED_FIELDS = [
   "menteeId",
   "date",
@@ -54,39 +37,18 @@ export const REQUIRED_FIELDS = [
 ] as const;
 export type RequiredField = (typeof REQUIRED_FIELDS)[number];
 
-/**
- * ORIENTACAO-DECIMA-RODADA, Seção 17/38 — nível OBSERVADO mudado nesta
- * sessão, separado de `competencyIds` (que só significa "abordadas na
- * conversa"). `observedLevel` nasce `null`, nunca L1 (REVISAO-360-FRONTEND,
- * FE-360-002): um default silencioso de L1 deixava o Tech Lead marcar a
- * competência, não perceber o nível pré-selecionado e gravar uma observação
- * que nunca fez — é um rascunho local, não o `ProficiencyUpdate` que a API
- * espera; a conversão só acontece depois de confirmar que não há `null`
- * sobrando.
- */
 export interface ProficiencyDraft {
   competencyId: string;
   observedLevel: Level | null;
   note?: string | undefined;
 }
 
-/**
- * Estado + submit do formulário de nova sessão. `menteeOptions` vem de fora
- * porque depende de `canActFor` sobre o usuário atual (MENT-001) — a mesma
- * lista também decide o valor inicial do select, então o chamador precisa
- * dela de qualquer forma para renderizar as opções.
- */
 export function useMentoringSessionForm(menteeOptions: Architect[]) {
   const store = useStore();
   const { t } = useI18n();
   const user = useCurrentUser();
   const sel = useSelectors();
-  /**
-   * `store` já abstrai o gateway HTTP atrás de cache/reconciliação (as três
-   * ações desta tela passam por ele, nenhuma bypassa `STATE_QUERY_KEY`) —
-   * mesmo raciocínio de `useArchitectForm`/`useTeamRoster`: um ViewModel que
-   * bypassasse `store` duplicaria essa semântica.
-   */
+
   const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
 
   const [open, setOpen] = useState(false);
@@ -120,16 +82,14 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
     setProficiencyUpdates((prev) =>
       prev.map((u) => (u.competencyId === competencyId ? { ...u, note: note || undefined } : u)),
     );
-  /** Marcada sem nível escolhido, depois de uma tentativa de salvar — mesmo padrão visual de `missing`. */
+
   const [proficiencyMissingLevel, setProficiencyMissingLevel] = useState(false);
   const toggleCompetency = (id: string) =>
     setCompetencyIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
-  /** Campos vazios apontados no último Salvar; some assim que o campo é preenchido. */
   const [missing, setMissing] = useState<RequiredField[]>([]);
   const [showToast, setShowToast] = useState(false);
 
-  /** Escrever num campo destacado limpa o destaque na hora. */
   const setField = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setMissing((prev) => prev.filter((f) => f !== field));
@@ -137,22 +97,15 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
 
   const isMissing = (field: RequiredField) => missing.includes(field);
 
-  /** Borda vermelha nos campos que o usuário precisa revisar. */
   const invalid = (field: RequiredField) =>
     isMissing(field) ? "border-destructive ring-1 ring-destructive" : "";
 
-  /** Duração precisa ser um número real de minutos — nunca um padrão escondendo entrada inválida. */
   const durationValue = Number(form.durationMin);
   const durationInvalid =
     form.durationMin.trim().length > 0 && (!Number.isInteger(durationValue) || durationValue <= 0);
-  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+
   const { submitting: saving, run } = useToastSubmit();
 
-  /**
-   * Sem id local nem sucesso otimista: o servidor gera o id de verdade e é
-   * quem decide se o registro vale — só fecha o diálogo depois da resposta.
-   * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-002/EVD-001.
-   */
   const submit = async () => {
     const vazios = REQUIRED_FIELDS.filter((f) => !form[f].trim());
     const proficiencyIncomplete = proficiencyUpdates.some((u) => u.observedLevel === null);
@@ -165,8 +118,6 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
       return;
     }
 
-    // Nenhum `observedLevel` nulo sobrou (checagem acima) — a conversão pro
-    // tipo que a API espera é segura.
     const confirmedUpdates: ProficiencyUpdate[] = proficiencyUpdates.map((u) => ({
       competencyId: u.competencyId,
       observedLevel: u.observedLevel as Level,
@@ -218,18 +169,6 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
   };
 }
 
-/**
- * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então
- * o filtro da linha do tempo não é um recorte de time (`ArchitectFilter`).
- * Pedido do usuário revisando o app rodando: "em 'mentoria' não deve haver a
- * opção de 'todo time'. a sessão é sempre individual" — o filtro nunca mais
- * representa "todo mundo", sempre UMA pessoa específica, mesmo critério de
- * `ArchitectSelectCombobox`. O valor inicial é a primeira pessoa ativa em
- * ordem alfabética (cai para a primeira inativa só se não houver nenhuma
- * ativa) em vez de nascer vazio — mesmo raciocínio de `menteeId` em
- * `useMentoringSessionForm`, que já assume "a primeira opção da lista" como
- * default sensato em vez de exigir um clique extra antes de mostrar algo.
- */
 export function useMentoringTimeline() {
   const store = useStore();
   const orderedArchitects = [...store.architects].sort(defaultNameFormatter.byName);
@@ -244,16 +183,6 @@ export function useMentoringTimeline() {
   return { filter, setFilter, sessions };
 }
 
-/**
- * Combobox pesquisável de seleção única para o filtro da linha do tempo —
- * OO3-18/F-3: era um clone estrutural de `ArchitectSelectCombobox` (mesmo
- * domínio, mesma ordenação por nome, mesmo agrupamento ativos/inativos,
- * strings idênticas); virou este adaptador fino. A única diferença real
- * sobrevive como dado: aqui inativos aparecem SEMPRE (com sufixo), porque o
- * histórico de mentoria de quem já saiu do time continua consultável (mesma
- * filosofia de R2-UX-08) — por isso o split ativo/inativo acontece aqui e
- * vai como as duas listas que o combobox compartilhado já entende.
- */
 export function MenteeFilterCombobox({
   architects,
   selected,
@@ -276,12 +205,6 @@ export function MenteeFilterCombobox({
   );
 }
 
-/**
- * Agendar follow-up depois que a sessão já aconteceu — antes só dava para
- * definir `nextSession` no instante da criação, sem como voltar numa sessão
- * antiga. Só quem registrou a sessão (ou admin) vê a ação. Ver AUDITORIA-
- * QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 5.
- */
 export function FollowUpScheduler({ session }: { session: MentoringSession }) {
   const { t, locale } = useI18n();
   const store = useStore();
@@ -354,7 +277,6 @@ function Block({ title, text }: { title: string; text: string }) {
   );
 }
 
-/** Uma sessão da linha do tempo — extraído para não inchar `MentoringTimeline`. */
 function MentoringTimelineItem({ session }: { session: MentoringSession }) {
   const { t, locale } = useI18n();
   const store = useStore();
@@ -363,18 +285,6 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
   const user = useCurrentUser();
   const [sendingSessionId, setSendingSessionId] = useState<string | null>(null);
 
-  /**
-   * Fecha o loop da mentoria: "ações" era texto morto — ninguém virava PDI
-   * de verdade. Só oferece o botão quando dá para criar o item sem inventar
-   * nível: precisa de uma competência da sessão com gap já avaliado, e de a
-   * pessoa ainda não ter aquele item no plano. Ver AUDITORIA-TERCEIRA-
-   * RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC J.
-   *
-   * ORIENTACAO-NONA-RODADA, Seção 12/17.1 (ENT-09-006) — `progressionGapsFor`,
-   * nunca `gapsFor` bruta: um gap de Maestria (Nível III) não tem assessment
-   * oficial do qual `/from-gap` possa derivar nível/prioridade — o servidor
-   * rejeitaria mesmo assim, mas o botão nem deve aparecer.
-   */
   const plan = sel.planFor(session.menteeId);
   const gaps = sel.progressionGapsFor(session.menteeId);
   const eligible = viewModel.eligibleGapForPlan(session, gaps, plan);
@@ -408,9 +318,6 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
             if (!mentee || !eligible.competency) return;
             setSendingSessionId(session.id);
             try {
-              // ORIENTACAO-NONA-RODADA, Seção 4/12 (ENT-09-001/006) — único
-              // caminho para criar item de PDI a partir de um GAP oficial:
-              // ver docstring de `MentoringViewModel.sendToPlan`.
               await viewModel.sendToPlan(session, mentee, {
                 assessmentId: eligible.assessmentId,
                 competencyId: eligible.competency.id,
@@ -451,7 +358,6 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
   );
 }
 
-/** Linha do tempo de sessões — descrição do `SectionCard` some daqui porque depende do texto de escopo do filtro, que só a rota conhece. */
 export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }) {
   const { t } = useI18n();
   return (
@@ -468,24 +374,13 @@ export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }
   );
 }
 
-/**
- * Diálogo de nova sessão — formulário + evolução observada. Chama
- * `useMentoringSessionForm` internamente (em vez de receber o resultado por
- * props) para a rota não precisar conhecer os ~20 campos do estado do
- * formulário; só `menteeOptions` (que também decide as opções do select)
- * cruza a fronteira.
- */
 export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Architect[] }) {
   const { t } = useI18n();
   const store = useStore();
   const user = useCurrentUser();
   const sel = useSelectors();
   const f = useMentoringSessionForm(menteeOptions);
-  /**
-   * R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — dois checklists de
-   * competências nesta mesma dialog (discutidas / evolução observada),
-   * filtros independentes — filtrar um não deveria escondar opção do outro.
-   */
+
   const [competencyFilter, setCompetencyFilter] = useState("");
   const [proficiencyFilter, setProficiencyFilter] = useState("");
   const activeCompetencies = store.competencies.filter((c) => c.active);
@@ -628,9 +523,7 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               id="mentor-competencies"
               className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
             >
-              {/* REVISAO-360-FRONTEND, FE-360-003 — competência arquivada não é mais
-                  identidade profissional válida daqui pra frente (mesmo critério já
-                  aplicado abaixo, em "Evolução observada", e no SpecializationCombobox). */}
+              {}
               {discussedList.map((c) => (
                 <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
                   <input

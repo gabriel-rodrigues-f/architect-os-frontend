@@ -61,9 +61,6 @@ function GapPage() {
           }
         />
       ) : (
-        // R2-UX-04/R2-RESP-03 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesmo
-        // min-content trap dos outros 4 grids do app: minmax(0,1fr) deixa a
-        // pista encolher, o overflow interno faz o resto.
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <SectionCard
             title={t("gap.radar.title")}
@@ -85,10 +82,7 @@ function GapPage() {
             title={t("gap.priorities.title")}
             description={t("gap.priorities.subtitle", { n: architects.length })}
           >
-            {/* Rola só esta lista, não a página inteira — mesma ideia do
-                heatmap/tabela em `/progression` (`max-h` + `overflow-auto`),
-                só que aqui cobrindo as duas seções (bloqueante+oportunidade)
-                como uma região só, já que juntas são "as prioridades". */}
+            {}
             <div className="max-h-[460px] space-y-4 overflow-y-auto pr-1">
               <div>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-destructive">
@@ -113,17 +107,6 @@ function GapPage() {
   );
 }
 
-/**
- * ORIENTACAO-NONA-RODADA ENT-09-012 — os números secundários que compõem o
- * gap (médio, máximo, atual, alvo, pessoas afetadas) sempre juntos: o
- * `GapBadge` sozinho só mostra o pior caso, e a Seção 33 pede que a média
- * apareça lado a lado, nunca escondida atrás do máximo.
- *
- * Cada informação na sua própria linha (nome · pessoas · gap médio ·
- * nomes) — apontado ao vivo que tudo espremido num só parágrafo ficava
- * ilegível assim que o nome da competência era longo o bastante pra
- * quebrar linha no meio da legenda.
- */
 function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emptyLabel: string }) {
   const { t } = useI18n();
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
@@ -151,7 +134,7 @@ function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emp
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <GapBadge gap={row.maxGap} />
-            {/* Diagnóstico precisa levar a algum lugar: daqui se vai tratar a lacuna. */}
+            {}
             <Link
               to="/development-plans"
               className="whitespace-nowrap text-xs text-primary hover:underline"

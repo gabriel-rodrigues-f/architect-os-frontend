@@ -29,61 +29,11 @@ import { STATE_QUERY_KEY, useOperationalSettings, useStore, useVocabulary } from
 import { defaultDateFormatter } from "@/lib/text";
 import { AssessmentViewModel } from "@/lib/view-models/assessment-view-model";
 
-/**
- * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
- * Seções 58-61) — adaptador fino: memoiza o `AssessmentViewModel` sobre a
- * fatia de `useStore()` (nota por competência + comentários) e `api`
- * (portfólio de capacidades + resumo de desenvolvimento, que nunca passaram
- * por `store` — ver a doc do ViewModel para o porquê). Usado por todo
- * componente deste arquivo que precisa de uma das duas famílias de ação;
- * não exportado porque nenhum outro arquivo desta PR consome o ViewModel
- * diretamente (a rota `assessments.tsx` continua só pelos componentes
- * já exportados).
- */
 function useAssessmentViewModel(): AssessmentViewModel {
   const store = useStore();
   return useMemo(() => new AssessmentViewModel(store, api, defaultUiAuthorizationPolicy), [store]);
 }
 
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) — `/assessments`
- * era um único arquivo de ~1360 linhas. Diferente de `/mentoring` e `/team`,
- * já nascia decomposto em vários subcomponentes autocontidos (cada um com o
- * próprio estado): a extração aqui é, na maior parte, um move literal de
- * arquivo, não uma nova divisão de um monólito. A única peça que não existia
- * como componente separado — o bloco de flags de permissão/lifecycle que
- * espelha `checkAssessmentWrite` do backend — vira `useAssessmentPermissions`,
- * no mesmo espírito de como `/mentoring` extraiu `useMentoringTimeline`.
- */
-
-/**
- * Quem pode escrever o quê agora — espelha `checkAssessmentWrite` do
- * backend exatamente: dono primeiro (`isOwner`), e `isLead` só considera o
- * vínculo real (`architect.leadUserId`) — nunca só o papel da conta — e é
- * mutuamente exclusivo com `isOwner` (a mesma pessoa nunca é "dono e Lead"
- * ao mesmo tempo, mesmo se a conta também administra ou lidera outras
- * equipes; evita autorrevisão de líder/final). Sem isto, o campo nascia
- * editável para um Lead de outra equipe, que só descobria pelo 403 tardio
- * que não podia. Ver PLANO-360-AGENTES-SYNAPSE.md, Seção 9, e UX-001,
- * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
- *
- * Cada campo só abre na etapa certa do lifecycle, não em qualquer momento
- * "antes de Completed": a autoavaliação fecha assim que vai para revisão
- * (senão a pessoa continuaria ajustando a própria nota depois de pedir
- * avaliação do Tech Lead); líder/final só abrem quando a revisão já
- * começou (senão o Tech Lead calibraria a nota final antes de a
- * autoavaliação existir). Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
- * Seção 2–4.
- *
- * Espelha a completude que o backend já exige na transição (DOM-002): o
- * botão nasce desabilitado com uma explicação em vez de deixar a pessoa
- * tentar e só descobrir pelo erro do servidor que faltou preencher algo.
- * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
- *
- * OO2-08 — o cômputo em si mudou para `AssessmentViewModel.permissionsFor`
- * (puro, sem hook nenhum por trás); isto ficou um adaptador fino que só
- * resolve `useCurrentUser()` e o ViewModel memoizado.
- */
 export function useAssessmentPermissions(
   architectId: string,
   selectedArchitect: Architect | undefined,
@@ -94,22 +44,11 @@ export function useAssessmentPermissions(
   return viewModel.permissionsFor(user, architectId, selectedArchitect, assessment);
 }
 
-/** O rótulo da coluna Notas mostra quantos comentários a competência já tem. */
 function commentCountLabel(total: number, t: I18nApi["t"]) {
   if (total === 0) return t("comment.count.none");
   return total === 1 ? t("comment.count.one") : t("comment.count.many", { n: total });
 }
 
-/**
- * Comentários de uma competência: cada mensagem pertence a quem escreveu — não
- * é mais um par obrigatório salvo junto (ver AUDITORIA-RIGIDA-SEGUNDA-
- * REVISAO-SYNAPSE.md, Seção 5). Só o autor edita ou exclui a própria fala; um
- * comentário herdado do formato antigo, sem autor conhecido, fica só leitura
- * para todo mundo.
- *
- * O texto novo só aparece na lista após o servidor confirmar, porque é ele quem
- * carimba a data.
- */
 function CommentSection({
   comments,
   currentUserId,
@@ -203,7 +142,6 @@ function CommentSection({
   );
 }
 
-/** Formulário de um comentário — criação ou edição da própria fala. */
 function CommentForm({
   initial,
   submitLabel,
@@ -265,31 +203,12 @@ function CommentForm({
   );
 }
 
-/** R2-VIS-01 — mapeia o status para um dos 3 tons genéricos de `StatusBadge`. */
 export const assessmentStatusTone: Record<Assessment["status"], "neutral" | "progress" | "done"> = {
   Draft: "neutral",
   "In Review": "progress",
   Completed: "done",
 };
 
-/**
- * ENT-CAR-014/015/016 — portfólio individual de capacidades: quais contam
- * para elegibilidade de carreira NESTE assessment. "Profissional propõe"
- * (dono adiciona/remove enquanto `Draft`), "Tech Lead confirma" (enquanto
- * `In Review`) — mesma governança do resto do assessment, só que aplicada
- * a um recorte adicional, não às notas em si. Mínimo de 3 é regra real do
- * backend desde a oitava rodada (não mais só orientação de UI).
- *
- * ORIENTACAO-NONA-RODADA, Seção 8 — cinco problemas corrigidos nesta
- * versão: (1) só oferece capacidade `READY` para propor; (2) invalida
- * também o estado principal do app depois de add/remove, não só a
- * elegibilidade — sem isto o Assessment em `store` continuava com `items`
- * antigos até um reload manual; (3) remover capacidade já respondida pede
- * confirmação explícita antes de `force=true`; (4) loading/error de
- * verdade em vez de `return null`; (5) dois números claramente
- * distintos — tamanho do portfólio do ciclo (mínimo 3) × quantas estão
- * qualificadas para o próximo nível.
- */
 export function CareerPortfolioSection({
   assessment,
   isOwner,
@@ -303,12 +222,7 @@ export function CareerPortfolioSection({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const viewModel = useAssessmentViewModel();
-  /**
-   * CFG-05 / B5 — o `?? 3` de quem está no topo da carreira (sem próximo
-   * nível, sem política) deixou de ser literal: é o piso global
-   * `career.minimumQualifiedFloor` (`app_settings`), fallback 3
-   * byte-idêntico ao hardcoded.
-   */
+
   const globalFloor = useOperationalSettings().careerMinimumQualifiedFloor;
   const [selectedCapabilityId, setSelectedCapabilityId] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -328,9 +242,7 @@ export function CareerPortfolioSection({
 
   const invalidateAll = () => {
     void queryClient.invalidateQueries({ queryKey });
-    // Problema 2 — add/remove materializa/remove itens no Assessment no
-    // backend; sem revalidar o estado principal, a tela continuava
-    // mostrando os `items` de antes até um reload manual.
+
     void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
   };
 
@@ -353,17 +265,6 @@ export function CareerPortfolioSection({
       .finally(() => setBusy(false));
   };
 
-  /**
-   * Problema 3 — sem `force`, o backend devolve 409 quando a capacidade já
-   * tem competência respondida. Nesse caso (e só nesse), abre o diálogo de
-   * confirmação em vez de mostrar o erro cru; qualquer outro erro (403 de
-   * quem não é dono, ou até um outro 409 — ex.: avaliação deixou de estar
-   * em Rascunho enquanto o diálogo estava aberto) vai direto para
-   * `actionError`. B-16 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md,
-   * §26) — reage por `code` estável, não por `status` genérico: antes,
-   * QUALQUER 409 nesta chamada abria o diálogo de "forçar remoção", mesmo
-   * um 409 sem nada a ver com competência respondida.
-   */
   const attemptRemove = (capabilityId: string, capabilityName: string, force = false) => {
     setActionError(null);
     setBusy(true);
@@ -402,8 +303,7 @@ export function CareerPortfolioSection({
       title={t("asmt.portfolio.title")}
       description={t("asmt.portfolio.subtitle")}
       errorMessage={t("asmt.portfolio.loadError")}
-      // Problema 4 — loading/error de verdade em vez de `return null`; o
-      // esqueleto/erro/retry/ARIA moram em `QuerySection` (OO3-18/F-2).
+
       skeleton={
         <div className="space-y-2">
           <div className="h-9 animate-pulse rounded-md bg-secondary" />
@@ -411,31 +311,16 @@ export function CareerPortfolioSection({
           <div className="h-9 w-2/3 animate-pulse rounded-md bg-secondary" />
         </div>
       }
-      // `!data.capabilities`, não só `!data`: testes que ainda não conhecem
-      // esta rota (mock de fetch genérico) devolvem `{}` com 200 em vez de
-      // 404 — `data` fica um objeto truthy sem o formato esperado.
+
       isEmpty={(data) => !data.capabilities}
     >
       {(eligibility) => {
-        // Problema 1 — só capacidade `READY` (curadoria completa) pode entrar
-        // no portfólio; o backend já recusa o resto, mas oferecer a opção aqui
-        // só para devolver erro depois é a experiência ruim que a Seção 8
-        // aponta.
         const availableToAdd = viewModel.availableCapabilitiesToPropose(
           store.capabilities,
           eligibility,
         );
         const portfolioSize = eligibility.capabilities.length;
-        /**
-         * CFG-01 (SPEC-OO3-13, B8) — o mínimo do portfólio deixou de ser um
-         * literal `3` repetido (terceira cópia da mesma regra): é
-         * `career_level_policies.minimumQualifiedCapabilities` do nível ALVO,
-         * que a resposta de elegibilidade já traz (`eligibility.policy`). O
-         * `?? 3` cobre só quem está no topo da carreira (sem próximo nível,
-         * sem política) — mesmo fallback já usado no badge de qualificação
-         * abaixo; o piso global 3 é CHECK do banco (B5, parte backend do
-         * CFG-01).
-         */
+
         const minimumPortfolio = eligibility.policy?.minimumQualifiedCapabilities ?? globalFloor;
 
         return (
@@ -444,14 +329,12 @@ export function CareerPortfolioSection({
             title={t("asmt.portfolio.title")}
             description={t("asmt.portfolio.subtitle")}
           >
-            {/* Problema 5 — dois números, nunca confundidos: quantas capacidades
-          o ciclo exige no mínimo (a política do nível alvo) versus quantas
-          já qualificam para o próximo nível. */}
+            {}
             <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
               <Badge variant={portfolioSize >= minimumPortfolio ? "default" : "outline"}>
                 {t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
               </Badge>
-              {/* ENT-09-016 — indicador visual do mínimo da política, além do número no badge. */}
+              {}
               <Progress
                 value={Math.min(100, (portfolioSize / minimumPortfolio) * 100)}
                 className="h-1.5 w-24"
@@ -579,13 +462,6 @@ export function CareerPortfolioSection({
   );
 }
 
-/**
- * ESPECIFICACAO-OITAVA-RODADA, Seção 18 / ORIENTACAO-NONA-RODADA ENT-09-011
- * — "Começar/Parar/Continuar", mesma governança de escrita do resto do
- * assessment: só o dono escreve em `Draft`, só o Tech Lead complementa em
- * `In Review`, e tudo trava em `Completed` (o backend já bloqueia; aqui só
- * espelha para não abrir campo editável que vai apanhar 403).
- */
 export function DevelopmentSummarySection({
   assessment,
   isOwner,
@@ -603,18 +479,11 @@ export function DevelopmentSummarySection({
   const { data, isPending, isError, refetch } = useQuery({
     queryKey,
     queryFn: () => api.assessmentDevelopmentSummary(assessment.id),
-    /**
-     * Sem refetch automático em segundo plano (foco de janela, por exemplo):
-     * o formulário guarda texto digitado localmente até um Salvar explícito,
-     * e uma reconsulta silenciosa sobrescreveria esse texto sem aviso —
-     * exatamente o problema que ENT-09-011 pede para evitar.
-     */
+
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
 
-  // OO3-18/F-2 — loading/erro eram o segundo clone byte a byte do bloco do
-  // portfólio acima; o esqueleto/erro/retry/ARIA moram em `QuerySection`.
   return (
     <QuerySection
       query={{ data, isPending, isError, refetch }}
@@ -644,15 +513,6 @@ export function DevelopmentSummarySection({
   );
 }
 
-/**
- * `key={data.version}` no componente pai (acima) força remontar este
- * formulário sempre que a versão salva no servidor muda — depois de um
- * Salvar bem-sucedido, ou quando a pessoa pede explicitamente a versão mais
- * recente após um conflito de edição concorrente. Fora esses dois momentos
- * pedidos pelo próprio usuário, o texto digitado nunca some sozinho: o
- * componente pai não reconsulta em segundo plano (`staleTime: Infinity`),
- * e este formulário lê `data` só uma vez, no valor inicial do `useState`.
- */
 function DevelopmentSummaryForm({
   assessmentId,
   data,
@@ -811,12 +671,6 @@ function DevelopmentSummaryForm({
   );
 }
 
-/**
- * `value: Level | null` — `null` é "ainda não avaliado", nunca um nível
- * fabricado. O placeholder "—" fica selecionado até a pessoa escolher de
- * verdade; não existe valor padrão que o componente empurre sozinho. Ver
- * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, DOM-002.
- */
 function LevelSelect({
   value,
   onChange,
@@ -845,13 +699,6 @@ function LevelSelect({
   );
 }
 
-/**
- * Uma capacidade selecionada: título + tabela de competências (autoavaliação,
- * Tech Lead, alvo, final, gap, comentários). Extraído de `AssessmentsPage`
- * (era o corpo do `.map` sobre `visibleCapabilities`, ~200 linhas) — a rota
- * só decide QUAIS capacidades mostrar (via `capabilityIds`/paginação de
- * "muitas capacidades"); como cada uma é renderizada fica aqui.
- */
 export function CapabilityAssessmentCard({
   capability,
   assessment,
@@ -873,21 +720,11 @@ export function CapabilityAssessmentCard({
 }) {
   const store = useStore();
   const { t, locale } = useI18n();
-  /** CFG-06 — rótulo do tipo de evidência via vocabulário servido (code desconhecido cai no próprio code). */
+
   const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const user = useCurrentUser();
   const viewModel = useAssessmentViewModel();
-  /**
-   * R2-RESP-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — abaixo de `md` (768px)
-   * a tabela de pontuação (7 colunas, `min-w-[820px]`) só existia com scroll
-   * lateral, e cada `<select>` de nota ficava pequeno demais para tocar com
-   * o dedo dentro da coluna estreita. Em vez de tentar espremer a mesma
-   * tabela em CSS, troca por um bloco empilhado por competência — mesma
-   * informação, mesmos handlers (`updateAssessmentItem` via
-   * `CompetencyStackedCard`), só em outra ordem visual. Acima de `md` a
-   * tabela permanece exatamente como era (nenhum JSX da branch de tabela
-   * foi tocado). Mesmo padrão de `useNarrowViewport` do R2-RESP-06.
-   */
+
   const narrow = useNarrowViewport(768);
 
   const comps = store.competencies.filter((c) => c.capabilityId === capability.id);
@@ -963,17 +800,11 @@ export function CapabilityAssessmentCard({
               {comps.map((c) => {
                 const item = assessment.items.find((i) => i.competencyId === c.id);
                 if (!item) return null;
-                // Sem final ainda: não há gap para mostrar (não é gap zero, é indefinido).
+
                 const gap = item.final === null ? undefined : item.target - item.final;
                 const diverges =
                   item.self !== null && item.leader !== null && item.self !== item.leader;
-                /**
-                 * Fecha o loop da evidência: quando o Tech Lead já aceitou uma
-                 * evidência para esta competência desta pessoa, ela aparece aqui
-                 * como contexto — sem alterar nota nenhuma sozinha, a calibração
-                 * continua sendo decisão de quem revisa. Ver AUDITORIA-TERCEIRA-
-                 * RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC I.
-                 */
+
                 const acceptedEvidence = store.evidences.filter(
                   (e) =>
                     e.architectId === architectId &&
@@ -1098,13 +929,6 @@ export function CapabilityAssessmentCard({
   );
 }
 
-/**
- * R2-RESP-07 — a mesma linha da tabela (nome + evidência, self/Tech
- * Lead/alvo/final, gap, comentários), só que empilhada verticalmente em vez
- * de espalhada em colunas: nada aqui precisa de scroll lateral para
- * aparecer. Mesmos dados e os mesmos handlers de `CapabilityAssessmentCard`
- * — é um recorte 1:1 do `<tr>` de origem, sem lógica nova.
- */
 function CompetencyStackedCard({
   competency,
   item,
@@ -1126,15 +950,14 @@ function CompetencyStackedCard({
 }) {
   const store = useStore();
   const { t, locale } = useI18n();
-  /** CFG-06 — rótulo do tipo de evidência via vocabulário servido (code desconhecido cai no próprio code). */
+
   const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const user = useCurrentUser();
   const viewModel = useAssessmentViewModel();
 
-  // Sem final ainda: não há gap para mostrar (não é gap zero, é indefinido).
   const gap = item.final === null ? undefined : item.target - item.final;
   const diverges = item.self !== null && item.leader !== null && item.self !== item.leader;
-  /** Mesmo loop de evidência aceita da versão em tabela — ver comentário lá. */
+
   const acceptedEvidence = store.evidences.filter(
     (e) =>
       e.architectId === architectId &&

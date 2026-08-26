@@ -5,30 +5,12 @@ import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 
-/**
- * REVISAO-360-FRONTEND-UI-UX-ENTERPRISE-SYNAPSE-2026-08-22.md, Seção 6/97 —
- * padrão único de busca+filtros+contagem+paginação pra toda lista/tabela
- * relevante, em vez de cada tela reinventar o próprio layout de filtro.
- * Composição, não um componente monolítico: `children` recebe os controles
- * específicos do domínio de cada tela (select de capacidade, de papel
- * etc.) — este componente só organiza busca, chips de filtro ativo,
- * ordenação e contagem ao redor deles.
- */
 export interface ActiveFilterChip {
   key: string;
   label: string;
   onRemove: () => void;
 }
 
-/**
- * R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o par `sortValue`/
- * `sortOptions`/`onSortChange`/`sortLabel` que `DataViewToolbar` tinha (e
- * que usava este tipo) nunca foi passado por chamador nenhum — era código
- * morto, removido. O tipo em si continua exportado porque `team-shared.tsx`
- * o usa pra tipar `roster.sortOptions`, hoje consumido por
- * `SingleSelectFilter` em `team.tsx` (que aceita `SortOption[]` porque seu
- * próprio `SingleSelectFilterOption` é estruturalmente idêntico).
- */
 export interface SortOption {
   value: string;
   label: string;
@@ -39,23 +21,13 @@ export interface DataViewToolbarProps {
   onSearchChange?: (value: string) => void;
   searchPlaceholder?: string;
   searchLabel?: string;
-  /** Controles extras (selects de domínio) — entre a busca e a ordenação. */
+
   children?: ReactNode;
   resultCount: number;
   totalCount: number;
   activeFilters?: ActiveFilterChip[];
   onClearFilters?: () => void;
-  /**
-   * R2-UX-05 — `"grid-3"` é a grade 2×3 do Time: `children` (6 controles,
-   * na ordem que devem aparecer) enchem um `grid-cols-3` sozinhos — o
-   * auto-flow do CSS Grid já quebra em duas linhas de 3 sem precisar
-   * partir `children` em dois grupos manualmente. Busca/ordenação por
-   * `props` dedicadas ficam de fora desse modo: quem chama passa TUDO
-   * como `children`, inclusive o controle de ordenação. A contagem sai da
-   * linha de filtros e migra para a linha de chips (sempre visível nesse
-   * modo, mesmo sem filtro ativo — "5 de 5" é informação, não só aviso de
-   * corte). Default `"flex"` preserva o layout de sempre.
-   */
+
   layout?: "flex" | "grid-3";
 }
 
@@ -167,10 +139,6 @@ export function DataViewToolbar({
   );
 }
 
-/**
- * Seção 9 — 25/50/100 por página, "1–25 de 238" explícito. `page` é
- * 1-based (mais legível na URL/estado do que 0-based).
- */
 export interface PaginationProps {
   page: number;
   pageSize: number;
@@ -193,14 +161,6 @@ export function Pagination({
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
 
-  /**
-   * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-12/B-13 — a
-   * condição antiga (`total <= pageSizeOptions[0] && !onPageSizeChange`)
-   * só escondia a barra pra quem NÃO deixa trocar o tamanho da página;
-   * qualquer tela com `onPageSizeChange` (o caso real, Time) sempre
-   * renderizava Anterior/Próxima/"Página 1 de 1", mesmo com tudo cabendo
-   * numa página só. O critério certo é o número de páginas em si.
-   */
   if (totalPages <= 1) return null;
 
   return (
@@ -209,16 +169,7 @@ export function Pagination({
         {t("dataView.pageRange", { from, to, total })}
       </p>
       <div className="flex items-center gap-2">
-        {/*
-          R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
-          nativo sem rótulo visível (só `aria-label`), do tamanho errado ao
-          lado dos botões `size="sm"` "Anterior"/"Próxima". `SingleSelectFilter`
-          sem `label` (uso compacto) reusa o mesmo `Popover`/`FilterTriggerButton`
-          dos outros filtros, mas `triggerClassName` encolhe o gatilho padrão
-          (`w-full min-w-48 h-10`) para bater com a altura/tamanho de fonte
-          dos botões vizinhos (`h-8`/`text-xs`), em vez de esticar a barra de
-          paginação.
-        */}
+        {}
         {onPageSizeChange && (
           <SingleSelectFilter
             id="data-view-page-size"
@@ -256,7 +207,6 @@ export function Pagination({
   );
 }
 
-/** Seção 10 — "sem dados" (coleção vazia de verdade) é diferente de "sem resultado" (filtro zerou tudo); nunca a mesma mensagem. */
 export function EmptyState({
   hasFilters,
   emptyMessage,

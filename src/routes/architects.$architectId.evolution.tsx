@@ -26,7 +26,6 @@ export const Route = createFileRoute("/architects/$architectId/evolution")({
 
 type PeriodPreset = "30" | "60" | "90" | "180" | "365" | "all" | "custom";
 
-/** Seção 46 — presets cobrem os recortes mais pedidos; "todo o histórico" evita ter que adivinhar uma data inicial. */
 function rangeForPreset(
   preset: PeriodPreset,
   custom: { from: string; to: string },
@@ -49,15 +48,6 @@ function rangeForPreset(
   }
 }
 
-/**
- * REVISAO-360-FRONTEND-UI-UX-ENTERPRISE-SYNAPSE-2026-08-22.md, FE-360-005
- * (P1 UX) — esta era "o maior problema de densidade da aplicação" (~8800px
- * de altura numa página só): KPIs, gráfico, drill-down por competência,
- * timeline INTEIRA e tabela com as 66 competências, tudo empilhado e
- * sempre renderizado. Vira quatro subvisões (Seção 51): Resumo, Capacidades,
- * Competências, Linha do tempo — mesmo dado já carregado por um `useQuery`
- * só, cada aba decide o que mostrar dele.
- */
 type EvolutionView = "resumo" | "capacidades" | "competencias" | "timeline";
 const VIEWS: { id: EvolutionView; labelKey: MessageKey }[] = [
   { id: "resumo", labelKey: "evolution.view.summary" },
@@ -66,7 +56,6 @@ const VIEWS: { id: EvolutionView; labelKey: MessageKey }[] = [
   { id: "timeline", labelKey: "evolution.view.timeline" },
 ];
 
-/** Seção 44/69 — mais de 6 séries num line chart deixa de ser legível; mostra as de maior variação por padrão, com opção de ver todas. */
 const MAX_DEFAULT_SERIES = 6;
 
 const TIMELINE_PAGE_SIZE = 25;
@@ -88,16 +77,7 @@ function ArchitectEvolution() {
   const [focusedCapabilityId, setFocusedCapabilityId] = useState<string | null>(null);
   const [source, setSource] = useState<"ALL" | "MENTORING" | "ASSESSMENT">("ALL");
   const [view, setView] = useState<EvolutionView>("resumo");
-  /**
-   * Painéis inativos ficam montados (`hidden`, nunca desmontados — Seção
-   * FE-360-005) pra não perder o estado deles ao trocar de aba, mas isso
-   * significa que o gráfico da aba recém-ativada mede o próprio container
-   * ainda em transição de `display:none` pra visível — um `resize` só não
-   * bastava (o `ResponsiveContainer` do recharts faz sua própria medição
-   * com debounce interno; um disparo síncrono podia chegar cedo demais).
-   * Duas tentativas escalonadas cobrem o próximo frame e a janela de
-   * debounce sem precisar depender de uma versão específica do recharts.
-   */
+
   useEffect(() => {
     const timers = [0, 60, 250].map((delay) =>
       window.setTimeout(() => window.dispatchEvent(new Event("resize")), delay),
@@ -109,15 +89,9 @@ function ArchitectEvolution() {
   const [timelineVisibleCount, setTimelineVisibleCount] = useState(TIMELINE_PAGE_SIZE);
 
   const range = rangeForPreset(preset, custom);
-  /**
-   * OO3-09b — chips de alternância: nada marcado = TODAS as capacidades
-   * (`Selection.fromToggleList`), ao contrário do recorte explícito de
-   * gap/compare/roster onde `[]` = ninguém. A semântica agora está no nome
-   * do construtor; o payload wire (`SelectionScope`) fica byte-idêntico.
-   */
+
   const capabilities = Selection.fromToggleList(selectedCapabilityIds).toScope();
 
-  /** Mesmos filtros pra tela e pro PDF (Fase 10.6) — exportar é "isto que estou vendo", nunca outro recorte. */
   const filters: EvolutionFilters = {
     range,
     capabilities,
@@ -162,7 +136,6 @@ function ArchitectEvolution() {
     [data],
   );
 
-  /** As capacidades com maior |delta| primeiro — mesma ordem usada pro corte "top 6" e pra "maiores mudanças" do Resumo. */
   const capabilitiesByImpact = useMemo(() => {
     if (!data) return [];
     const deltaByCapability = new Map<string, number>();
@@ -187,7 +160,6 @@ function ArchitectEvolution() {
     return new Set(capabilitiesByImpact.slice(0, MAX_DEFAULT_SERIES).map((s) => s.capabilityId));
   }, [data, showAllSeries, capabilitiesByImpact]);
 
-  /** Seção 33 — pivota `CapabilitySeries[]` (uma série por capacidade) numa linha por data, para o `EvolutionLine` genérico. Só as séries visíveis (Seção 44/69). */
   const capabilityChartData = useMemo(() => {
     if (!data) return { rows: [], series: [] };
     const visibleSeries = data.capabilitySeries.filter((s) => visibleSeriesIds.has(s.capabilityId));
@@ -272,13 +244,7 @@ function ArchitectEvolution() {
 
       <SectionCard title={t("evolution.filters.title")} className="mb-6">
         <div className="flex flex-wrap items-end gap-4">
-          {/*
-            R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
-            nativo nesta linha de filtro (mesma família visual da grade do
-            Time). `SingleSelectFilter` com `label` encaixa direto no
-            tamanho cheio padrão (`w-full min-w-48 h-10`), igual aos outros
-            filtros já convertidos.
-          */}
+          {}
           <SingleSelectFilter
             id="evolution-period"
             label={t("evolution.filters.period")}
@@ -365,10 +331,7 @@ function ArchitectEvolution() {
         </div>
       </SectionCard>
 
-      {/* OO3-18/F-2b — loading/erro padronizados via `QuerySection`: esta tela
-          resolvia o mesmo problema de `assessments-shared` sem retry e sem
-          ARIA (aria-busy/role="alert"); agora ganha os dois. Sem `title`, os
-          estados rendem crus (fora de card), como os <p> que substituem. */}
+      {}
       <QuerySection
         query={{ data, isPending: isLoading, isError, refetch }}
         errorMessage={t("evolution.error")}
@@ -667,7 +630,6 @@ function ArchitectEvolution() {
   );
 }
 
-/** Seção 44/69 — nunca mais de 6 séries por padrão; deixa explícito o corte e como ver todas. */
 function SeriesLimitNotice({
   total,
   showingAll,

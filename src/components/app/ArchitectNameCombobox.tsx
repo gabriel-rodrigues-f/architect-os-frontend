@@ -17,17 +17,6 @@ import type { Architect } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { defaultNameFormatter } from "@/lib/text";
 
-/**
- * R2-UX-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo B) — clone estrutural
- * de `CapabilityCombobox`: substitui a busca livre por nome do Time por
- * seleção múltipla pesquisável, mesmo padrão de composição por caixinha já
- * usado no resto da tela (evolui/substitui B-43). `nameSelection` nasce com
- * TODOS os ids (nenhuma filtragem de fato) — sem isto a tela nasceria
- * escondendo gente por engano, o mesmo cuidado de `MultiSelectFilter`.
- *
- * Igual ao `CapabilityCombobox`: caixas decorativas (`pointer-events-none`),
- * quem trata o clique é a linha (`CommandItem`) inteira.
- */
 export function ArchitectNameCombobox({
   architects,
   selected,

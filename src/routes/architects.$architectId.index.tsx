@@ -38,12 +38,6 @@ import { defaultDateFormatter } from "@/lib/text";
 import { ArchitectProfileViewModel } from "@/lib/view-models/architect-profile-view-model";
 import { LearningPathsViewModel } from "@/lib/view-models/learning-paths-view-model";
 
-/**
- * OO3-10c (Fase OO-3) — adaptador fino no padrão de
- * `useCompetencyMatrixViewModel`: memoiza o `ArchitectProfileViewModel`
- * sobre a fatia de `useStore()` que ele precisa. Ver o arquivo do ViewModel
- * para o escopo (só os três comandos de Evidência, não a tela inteira).
- */
 function useArchitectProfileViewModel(): ArchitectProfileViewModel {
   const store = useStore();
   return useMemo(() => new ArchitectProfileViewModel(store), [store]);
@@ -69,7 +63,6 @@ export const Route = createFileRoute("/architects/$architectId/")({
   notFoundComponent: ArchitectNotFound,
 });
 
-/** Componente próprio para poder usar o hook de idioma. */
 function ArchitectNotFound() {
   const { t } = useI18n();
   return <p className="text-sm text-muted-foreground">{t("arch.notFound")}</p>;
@@ -81,14 +74,6 @@ export type NextStep =
   | { kind: "evidencesPending"; count: number }
   | { kind: "assessmentAwaiting" };
 
-/**
- * Função pura — sem depender de montar a página — pra poder testar quais
- * "próximos passos" aparecem sem precisar de `RouterProvider`
- * (`Route.useParams()`, usado no resto do componente, exige um real).
- * Cada passo só entra na lista se quem está vendo a página tem a
- * permissão correspondente (`canEditOwn` pros passos de dono, `canReviewEvidence`
- * pros de revisão) — mesma regra que já autoriza as ações em si.
- */
 export function computeNextSteps(input: {
   canEditOwn: boolean;
   canReviewEvidence: boolean;
@@ -121,27 +106,19 @@ function ArchitectProfile() {
   const { architectId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
-  /** OO3-11l — percentual de trilha compartilhado com /learning-paths via `LearningPathsViewModel`. */
+
   const learningPathsViewModel = useMemo(() => new LearningPathsViewModel(store), [store]);
-  /** OO3-11/D-5 (reuso final) — KPIs pessoais compartilhados com a Home de Member. */
+
   const personal = useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
   const labels = useLabels();
-  /** CFG-06 — rótulos de tipo de ação/evidência via vocabulário servido (code fora do catálogo cai no próprio code). */
+
   const actionTypes = useVocabulary("ACTION_TYPE");
   const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const { t, locale } = useI18n();
   const help = usePageHelp("architectProfile");
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
-  /**
-   * Evidência é da pessoa — só ela (ou o Tech Lead responsável por ela, não
-   * qualquer Lead da empresa) registra; backend já recusa o resto
-   * (`canActFor`). Revisão é uma ação diferente da criação — só o Tech Lead
-   * revisa, nunca a própria pessoa (`isLeadOf`, sem o bypass de dono). Um
-   * `isLeadCapable(role)` genérico misturava as duas coisas e liberava campo
-   * pra Lead de outra equipe. Ver UX-001, AUDITORIA-QUINTA-RODADA-360-
-   * SYNAPSE-2026-08-19.md.
-   */
+
   const canEditOwn = defaultUiAuthorizationPolicy.canActFor(user, architect);
   const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
 
@@ -163,18 +140,6 @@ function ArchitectProfile() {
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
   const assessment = sel.assessmentFor(architect.id);
 
-  /**
-   * FASE 2 (quinta rodada) — "perfil deveria ser o centro da jornada... boa
-   * organização por cards; precisa priorizar pendências/próximo passo sobre
-   * inventário." Antes, a tela era só inventário: radar, gaps, histórico,
-   * PDI, trilhas, evidências e mentoria em sequência fixa, sem indicar o
-   * que precisa de uma ação agora. `computeNextSteps` reaproveita sinais
-   * que já existem na página (gap fora do PDI, item nunca iniciado,
-   * evidência Pending, avaliação em revisão) para liderar com "o que
-   * fazer", antes do resto virar inventário abaixo. Ver AUDITORIA-QUINTA-
-   * RODADA-360-SYNAPSE-2026-08-19.md, Seção 7 (Perfil da pessoa) e 33
-   * (FASE 2).
-   */
   const nextSteps = computeNextSteps({
     canEditOwn,
     canReviewEvidence,
@@ -185,12 +150,7 @@ function ArchitectProfile() {
     evidencesPendingCount: personal.pendingEvidenceCount(architect.id),
     assessmentAwaitingCalibration: assessment?.status === "In Review",
   });
-  /**
-   * Histórico de avaliações: um assessment por ciclo já concluído, mais
-   * recente primeiro. Sem isto o workspace da pessoa não tinha nenhuma vista
-   * de "como ela evoluiu" — só o ciclo atual. Ver AUDITORIA-TERCEIRA-RODADA-
-   * RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC G.
-   */
+
   const assessmentHistory = store.assessments
     .filter((a) => a.architectId === architect.id)
     .map((a) => ({ assessment: a, cycle: store.cycles.find((c) => c.id === a.cycleId) }))
@@ -289,9 +249,7 @@ function ArchitectProfile() {
         </SectionCard>
       )}
 
-      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,Nfr): sem
-          isto a pista nunca encolhe abaixo do conteúdo interno, e a página
-          inteira rola horizontal em vez do overflow-x-auto ativar. */}
+      {}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
@@ -510,12 +468,6 @@ function EvidenceStatusBadge({
   );
 }
 
-/**
- * Registro de evidência. A entidade já existia no domínio e na API, mas não
- * havia nenhuma tela para criá-la — só para listar. O vínculo opcional com um
- * item do PDI fecha o loop Gap → PDI → Atividade → Evidência. Ver AUDITORIA-
- * RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 30.
- */
 function EvidenceDialog({
   architectId,
   plan,
@@ -527,7 +479,7 @@ function EvidenceDialog({
   const { t } = useI18n();
   const labels = useLabels();
   const viewModel = useArchitectProfileViewModel();
-  /** CFG-06 — as opções do select derivam do vocabulário SERVIDO (só ativos, por sortOrder; fallback = seed byte-idêntico). */
+
   const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -541,16 +493,10 @@ function EvidenceDialog({
   const [url, setUrl] = useState("");
   const [issuer, setIssuer] = useState("");
   const [pdiItemId, setPdiItemId] = useState("");
-  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+
   const { submitting: saving, run } = useToastSubmit();
   const isCertification = type === "Certification";
 
-  /**
-   * Sem id local nem sucesso otimista: o servidor gera o id de verdade e é
-   * quem decide se o registro vale — só fecha o diálogo depois da resposta
-   * (montagem do payload em `ArchitectProfileViewModel.registerEvidence`).
-   * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001/EVD-001.
-   */
   const salvar = async () => {
     const nome = title.trim();
     if (!nome) return;
@@ -708,24 +654,16 @@ function EvidenceDialog({
   );
 }
 
-/**
- * ENT-EVD-002 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
- * Seção 14) — reenvio depois de "Precisa de melhoria": a própria pessoa
- * corrige o que o Tech Lead apontou (descrição/link, os campos mais
- * prováveis de precisar ajuste) e a evidência volta para "Pendente",
- * fechando o loop em vez de ficar parada esperando alguém perceber.
- */
 function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
   const { t } = useI18n();
   const viewModel = useArchitectProfileViewModel();
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState(evidence.description);
   const [url, setUrl] = useState(evidence.url ?? "");
-  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+
   const { submitting: saving, run } = useToastSubmit();
 
   const submit = async () => {
-    // Só o que mudou entra no patch — ver `ArchitectProfileViewModel.resubmit`.
     const result = await run(() => viewModel.resubmit(evidence, { description, url }));
     if (!result.ok) return;
     toast.success(t("ev.resubmit.toast", { titulo: evidence.title }));
@@ -784,13 +722,6 @@ function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
   );
 }
 
-/**
- * Revisão da evidência é decisão do Tech Lead — só admin vê este controle.
- * `Pending` não é uma decisão de revisão (ENT-EVD-001/002, AUDITORIA-
- * ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md, Seção 14): é o estado
- * inicial, ou o que `ResubmitEvidenceForm` devolve depois de "Precisa de
- * melhoria" — o backend recusa a revisão tentar voltar pra lá diretamente.
- */
 function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const { t } = useI18n();
   const labels = useLabels();
@@ -800,17 +731,10 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
     evidence.status === "Pending" ? "Accepted" : evidence.status,
   );
   const [comment, setComment] = useState(evidence.leaderComment ?? "");
-  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+
   const { submitting: saving, run } = useToastSubmit();
 
-  /**
-   * Sem otimismo: só fecha o diálogo e avisa sucesso depois que o servidor
-   * confirmou a revisão — decisão de Tech Lead não pode aparecer "salva" e
-   * não estar. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-
-   * SYNAPSE.md, EPIC L.
-   */
   const salvar = async () => {
-    // Comentário vazio nem entra no corpo — ver `ArchitectProfileViewModel.review`.
     const result = await run(() => viewModel.review(evidence.id, status, comment));
     if (!result.ok) return;
     toast.success(

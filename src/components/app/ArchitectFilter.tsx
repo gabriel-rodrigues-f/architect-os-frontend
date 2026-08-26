@@ -8,18 +8,6 @@ import { useI18n } from "@/lib/i18n";
 import { Selection } from "@/lib/selection";
 import { cn } from "@/lib/utils";
 
-/**
- * Filtro de arquitetos com seleção múltipla. `selected` é sempre explícito:
- * lista vazia significa "ninguém selecionado" (a tela mostra o estado vazio
- * dela), e "Todo o time" marcado é a lista inteira de `architects` escrita
- * por extenso — nunca um vazio-como-atalho. Isso é o que torna o clique em
- * "Todo o time" um alternador de verdade (marca tudo → clique de novo
- * desmarca tudo), em vez de um clique morto quando já estava tudo marcado.
- *
- * Quem chama decide o valor inicial de `selected` (normalmente "todo mundo
- * que este viewer pode ver" — nunca a tela nasce mostrando ninguém por
- * engano); este componente só reflete e altera o que já está ali.
- */
 export function ArchitectFilter({
   architects,
   selected,
@@ -34,19 +22,7 @@ export function ArchitectFilter({
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  /**
-   * REVISAO-360-FRONTEND, Seção 80 — índice 0 é "Todo o time", 1..N são os
-   * arquitetos; um `role="listbox"` navegável só de mouse não é operável por
-   * teclado. Foco real em cada botão (não `aria-activedescendant`): já são
-   * `<button>`s de verdade, então Enter/Espaço continuam funcionando sem
-   * handler extra — só as setas/Home/End/Escape precisam de tratamento.
-   *
-   * R2-VIS-09 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o painel era um `<div
-   * absolute>` de posição fixa, sem detecção de colisão de viewport. `Popover`
-   * do Radix resolve só o POSICIONAMENTO (floating-ui reposiciona perto da
-   * borda); a navegação por teclado abaixo continua toda manual, porque o
-   * Radix não sabe navegar entre `<button role="option">` customizados.
-   */
+
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const optionCount = architects.length + 1;
 
@@ -86,12 +62,6 @@ export function ArchitectFilter({
     }
   };
 
-  /**
-   * Tab sai do widget inteiro num passo só (não deveria parar em cada
-   * opção) — em vez de interceptar a tecla Tab (frágil: brigaria com o
-   * cálculo nativo de próximo elemento focável), fecha reativamente sempre
-   * que o foco sai do painel por completo, pra onde for.
-   */
   const onListBlur = (event: FocusEvent<HTMLDivElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
   };
@@ -106,17 +76,6 @@ export function ArchitectFilter({
   const toggle = (id: string) =>
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
 
-  /**
-   * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 28 — `selected.length ===
-   * architects.length` por si só pressupõe que todo id de `selected`
-   * pertence à lista atual de `architects`. Depois de uma desativação, uma
-   * resposta assíncrona atrasada, ou uma seleção persistida de uma sessão
-   * anterior, `selected` pode ter um id que já saiu do roster — nesse caso
-   * as duas contagens podem coincidir por acidente (um id a menos de gente
-   * real, um id a mais de gente que não está mais na lista) e "Todo o
-   * time" apareceria marcado sem estar. Contar só quem de fato está
-   * visível evita esse falso positivo.
-   */
   const selectedVisible = selected.filter((id) => architects.some((a) => a.id === id));
   const allSelected = architects.length > 0 && selectedVisible.length === architects.length;
 
@@ -161,12 +120,7 @@ export function ArchitectFilter({
         align="end"
         className="w-64 max-h-72 overflow-y-auto p-1"
       >
-        {/*
-          Alternador de verdade: tudo já marcado → clique desmarca tudo;
-          nada ou parte marcada → clique marca todo mundo. Sem isto, clicar
-          em "Todo o time" já marcado não tinha efeito nenhum visível — o
-          clique parecia morto.
-        */}
+        {}
         <button
           ref={(el) => {
             optionRefs.current[0] = el;
@@ -220,15 +174,6 @@ export function ArchitectFilter({
   );
 }
 
-/**
- * Aplica a seleção: sempre por pertencimento explícito. Vazio significa
- * "ninguém" — quem chama decide o valor inicial de `selected` para a tela
- * nunca nascer mostrando ninguém por engano (ver doc do componente acima).
- *
- * OO3-09b — delega para `Selection.explicit` (`lib/selection.ts`), o tipo
- * único de recorte: a semântica de `[]` = "ninguém" agora está no nome do
- * construtor, não implícita num `includes`.
- */
 export const applyArchitectFilter = <T extends { id: string }>(
   architects: T[],
   selected: string[],

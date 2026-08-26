@@ -10,16 +10,6 @@ import {
 import type { GapSeverityRuler } from "@/lib/scoring-bands";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
 
-/**
- * `pdfkit` já existe no backend (`reports/evolution-pdf-renderer.ts`), mas
- * não roda no browser — este arquivo é o único lugar do frontend que importa
- * `jspdf`/`jspdf-autotable` (que arrastam `html2canvas`/`canvg`, ~600kB),
- * exatamente para que `import()` dinâmico em `progression.tsx` baste para
- * manter esse peso fora do chunk da rota.
- *
- * OO3-11j — o conteúdo vem do `TeamReportPresenter` (que NÃO importa jspdf);
- * aqui fica só a montagem do PDF.
- */
 export async function exportTeamReportPdf(
   t: T,
   input: TeamReportInput,
@@ -86,7 +76,6 @@ export async function exportTeamReportPdf(
   downloadBlob(doc.output("blob"), presenter.filename("pdf"));
 }
 
-/** `lastAutoTable` é injetado pelo plugin no documento, sem tipo próprio exportado pela lib. */
 function tableEndY(doc: jsPDF): number {
   return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
 }

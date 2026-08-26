@@ -20,7 +20,6 @@ const levelBg: Record<number, string> = {
   5: "bg-level-5 text-[var(--level-5-fg)]",
 };
 
-/** `level` undefined = sem assessment oficial; mostra "—", nunca "L0" fictício. */
 export function LevelBadge({
   level,
   showName = false,
@@ -58,12 +57,6 @@ export function LevelBadge({
   );
 }
 
-/**
- * `level` vem `undefined` quando a pessoa não tem assessment oficial cobrindo
- * a capacidade no ciclo — nunca `0`. A célula mostra "—" sem tooltip de nível,
- * porque não há nível nenhum para explicar (não é o mesmo caso de nível 0,
- * que a escala nem define).
- */
 export function LevelCell({ level }: { level: number | undefined }) {
   const { t } = useI18n();
   const labels = useLabels();
@@ -87,13 +80,6 @@ export function LevelCell({ level }: { level: number | undefined }) {
   );
 }
 
-/*
-  Fundo e texto vêm de tokens, sem opacidade e sem cor literal. A versão
-  anterior fixava o texto em OKLCH no className — que ficava vermelho-escuro em
-  qualquer tema — e pintava o fundo com 20% do token, que no escuro compunha
-  com a página até virar vinho quase preto. O par ficava ilegível.
-*/
-/** CFG-02 (admin UI) — exportado: o preview da aba "Réguas e limiares" pinta o mesmo par fundo/texto por tom. */
 export const gapTone: Record<string, string> = {
   ok: "bg-gap-ok text-[var(--gap-ok-fg)]",
   low: "bg-gap-low text-[var(--gap-low-fg)]",
@@ -101,7 +87,6 @@ export const gapTone: Record<string, string> = {
   critical: "bg-gap-critical text-[var(--gap-critical-fg)]",
 };
 
-/** `gap` undefined = sem nível final ainda (não avaliado); mostra "—", nunca um gap fabricado. */
 export function GapBadge({ gap }: { gap: number | undefined }) {
   const { t } = useI18n();
   const ruler = useGapSeverityRuler();
@@ -115,7 +100,7 @@ export function GapBadge({ gap }: { gap: number | undefined }) {
       </span>
     );
   }
-  /** OO3-11i/CFG-02 — régua única de severidade, agora a EFETIVA (`/api/config/bands`, fallback = seed), compartilhada com o relatório do time. */
+
   const tone = ruler.severityOf(gap);
   const label = t(ruler.messageKey[tone]);
   return (
@@ -130,16 +115,6 @@ export function GapBadge({ gap }: { gap: number | undefined }) {
   );
 }
 
-/**
- * R2-VIS-01 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — situação de avaliação e
- * papel de usuário pegavam emprestado `bg-level-*`, o vocabulário de
- * PROFICIÊNCIA (`LevelBadge` acima), só porque o número de estados batia por
- * coincidência. Paleta própria (`status-*`, `tokens.ts`), sem relação com
- * nível de competência — mudar a escala de proficiência não deve mexer aqui,
- * e vice-versa. `tone` é a abstração pública: cada tela mapeia o próprio
- * domínio (status de avaliação, papel de usuário, ...) para um dos três
- * estados genéricos, sem essa lib conhecer domínio nenhum.
- */
 const statusTone: Record<"neutral" | "progress" | "done", string> = {
   neutral: "bg-status-neutral text-[var(--status-neutral-fg)]",
   progress: "bg-status-progress text-[var(--status-progress-fg)]",
@@ -212,7 +187,7 @@ export function PageHeader({
   title: string;
   description?: string;
   actions?: ReactNode;
-  /** R2-UX-01 — conteúdo do popover de ajuda contextual; vem do registry em `lib/page-help.ts`. */
+
   help?: { lead: PageHelpContent; member: PageHelpContent };
 }) {
   return (
@@ -231,12 +206,6 @@ export function PageHeader({
   );
 }
 
-/**
- * R2-ESC-05/R2-UX-09 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, regra C.2.9) —
- * lista de nomes concatenados sem teto: acima de `max` (default 5), mostra
- * só os primeiros + "e mais N", com a lista completa sempre disponível via
- * `title` (nunca corte silencioso — a informação continua alcançável).
- */
 export function NameList({
   names,
   max = 5,
@@ -244,7 +213,7 @@ export function NameList({
 }: {
   names: readonly string[];
   max?: number;
-  /** Convenção de "lista vazia" varia por tela (ex.: "—" nos cards de Cobertura) — default é `common.none`. */
+
   emptyLabel?: string;
 }) {
   const { t } = useI18n();
@@ -258,18 +227,6 @@ export function NameList({
   );
 }
 
-/**
- * ORIENTACAO-DECIMA-RODADA, Seção 30 — "Visão geral | Evolução" como rota
- * própria (deep link, filtros, menos scroll), não como painel escondido
- * dentro da mesma página. `<Link>`, não um componente de abas com estado —
- * é navegação de verdade entre duas rotas.
- *
- * B-30 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §10 achado #4) —
- * mesmo raciocínio de `CapabilitiesTabs`: `<nav>` + `aria-current="page"`,
- * nunca `role="tablist"`/`role="tab"` (isto navega entre rotas, não troca
- * painel na mesma página). O estado ativo já era só visual (cor da borda)
- * — `aria-current` é o que faltava para chegar a quem usa leitor de tela.
- */
 export function ProfileTabs({
   architectId,
   active,
@@ -336,14 +293,6 @@ export function SectionCard({
   );
 }
 
-/**
- * OO3-11/D-8 (reuso final) — o card de estado vazio (`surface-card p-8
- * text-center` + título `font-medium` + dica muted) estava copiado em 10
- * telas, com pequenas variações acidentais. As variações REAIS viram props:
- * telas de busca sem resultado só têm a dica (sem título → o `mt-1` da dica
- * também some, como nos originais); o roster vazio de /team tem um botão de
- * ação abaixo.
- */
 export function EmptyState({
   title,
   hint,
@@ -364,23 +313,6 @@ export function EmptyState({
   );
 }
 
-/**
- * Rótulo de campo com uma bolinha de ajuda à direita.
- *
- * Existe como componente próprio, e não como `<Label>` + `<Tooltip>` repetido
- * em cada form, porque a dúvida "o que esse campo espera" se repete em
- * qualquer formulário do app — Mentoria foi só o primeiro a pedir. Um lugar
- * só também impede que o botão de ajuda saia com foco, alvo de toque ou
- * `aria-label` levemente diferentes em cada tela.
- *
- * O botão é focável e responde a teclado (é um `<button>`, não um `<span>`
- * com `onMouseEnter`): quem navega sem mouse também precisa ler a explicação.
- *
- * Traz seu próprio `TooltipProvider`: o `AppShell` já mantém um para os
- * ícones da coluna lateral, mas este componente não deve depender de estar
- * dentro dele — um form em teste isolado, ou fora do shell no futuro, precisa
- * continuar funcionando sozinho. Providers do Radix aninham sem conflito.
- */
 export function FieldLabel({
   htmlFor,
   children,
@@ -414,14 +346,6 @@ export function FieldLabel({
   );
 }
 
-/**
- * R2-VIS-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `n[0]` pegava o primeiro
- * CARACTERE de cada palavra, sem checar o que era: um nome com aspas ou
- * símbolo solto no início de uma palavra (`Arquiteto "R&D" <Ops>`) virava
- * `A"` no avatar em vez de `AR`. Filtra para a primeira letra ou dígito de
- * cada palavra — símbolo isolado (palavra sem nenhuma letra/dígito) é
- * pulado, não vira iniciais.
- */
 const FIRST_LETTER_OR_NUMBER = /[\p{L}\p{N}]/u;
 
 export function Initials({ name }: { name: string }) {

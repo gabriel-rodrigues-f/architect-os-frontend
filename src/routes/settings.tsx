@@ -85,25 +85,19 @@ function SettingsPage() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <CareerPolicySection isAdmin={isAdmin} />
-        {/* CFG-02 (SPEC-OO3-13, §3.2) — admin-only como o resto da
-            configuração editável: quem não é admin nem vê a seção (o PUT é
-            recusado no servidor de qualquer forma, AdminGuard). */}
+        {}
         {isAdmin && <ScoringBandsSection />}
-        {/* CFG-03 (SPEC-OO3-13, §3.2) — aba "Textos", mesmo corte admin-only. */}
+        {}
         {isAdmin && <TextTemplatesSection />}
-        {/* CFG-04 (SPEC-OO3-13, §3.2) — aba "Catálogo", mesmo corte admin-only. */}
+        {}
         {isAdmin && <CurationPolicySection />}
-        {/* CFG-05 (SPEC-OO3-13, §3.2) — aba "Operação", mesmo corte admin-only. */}
+        {}
         {isAdmin && <OperationalSettingsSection />}
-        {/* CFG-06 (SPEC-OO3-13, §3.2) — aba "Vocabulários", mesmo corte admin-only. */}
+        {}
         {isAdmin && <VocabulariesSection />}
       </div>
 
-      {/* R2-TXT-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o menu chama esta
-          tela de "Política de Progressão" (título acima já reflete isso); o
-          restante da página é glossário read-only, por isso ganha um
-          cabeçalho interno próprio em vez de se misturar visualmente com a
-          política editável. */}
+      {}
       <h2 className="mb-4 mt-6 font-display text-lg font-semibold">
         {t("ref.referenceSectionTitle")}
       </h2>
@@ -163,11 +157,6 @@ function SettingsPage() {
                     <tr key={cat.id} className="border-b border-border/60 last:border-0">
                       <td className="py-2 font-medium">{cat.name}</td>
                       {careerLevels.map((cl) => {
-                        // B-38 — `expected` não garante mais a chave presente
-                        // (nível de carreira sem curadoria ainda nesta
-                        // competência); a média considera só quem TEM valor,
-                        // nunca trata ausência como 0 (mesma filosofia de
-                        // MISSING ≠ 0 do resto do app).
                         const values = comps
                           .map((c) => c.expected[cl.id])
                           .filter((v): v is Level => v !== undefined);
@@ -188,9 +177,7 @@ function SettingsPage() {
           </div>
         </SectionCard>
 
-        {/* CFG-06 — o glossário lista os vocabulários SERVIDOS (só ativos, por
-            sortOrder), não mais os arrays hardcoded; com seed default, os
-            chips são byte-idênticos aos de antes. */}
+        {}
         <SectionCard title={t("ref.taxonomies.title")} description={t("ref.taxonomies.subtitle")}>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t("ref.taxonomies.actionTypes")}
@@ -206,23 +193,11 @@ function SettingsPage() {
   );
 }
 
-/**
- * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — "Política de Progressão":
- * existia API (`PATCH /api/career-levels/:id/policy`) desde a rodada
- * anterior, mas nenhuma tela administrativa. Cada nível edita só a própria
- * linha — otimista o bastante para não precisar de um formulário separado,
- * mas com estado de erro de verdade (o piso global de 3 é aplicado no
- * servidor, `career_level_policies` CHECK, Seção 9).
- */
 function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const readyCapabilities = store.capabilities.filter((c) => c.curation.status === "READY").length;
-  /**
-   * CFG-05 / B5 — o piso global (antes literal `3` no `min`/`canSave`) é
-   * `career.minimumQualifiedFloor` (`app_settings`), com fallback 3
-   * byte-idêntico ao hardcoded; o CHECK do banco continua a autoridade.
-   */
+
   const floor = useOperationalSettings().careerMinimumQualifiedFloor;
   const { t } = useI18n();
 
@@ -271,7 +246,7 @@ function CareerPolicyRow({
 }: {
   level: CareerLevel;
   minimum: number | undefined;
-  /** CFG-05 — piso global efetivo (`career.minimumQualifiedFloor`). */
+
   floor: number;
   readyCapabilities: number;
   isAdmin: boolean;
@@ -280,7 +255,7 @@ function CareerPolicyRow({
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(minimum ?? floor));
-  /** OO3-11/D-6 (reuso final) — ciclo submitting/erro compartilhado; toast e fechar edição ficam aqui. */
+
   const {
     submitting: saving,
     error,
@@ -365,14 +340,12 @@ function CareerPolicyRow({
   );
 }
 
-/** Título i18n de cada escala — mapa literal para o TypeScript garantir que toda escala tem chave. */
 const SCALE_TITLE_KEY: Record<ScoringScale, MessageKey> = {
   GAP_SEVERITY: "config.bands.scale.GAP_SEVERITY",
   PROFICIENCY: "config.bands.scale.PROFICIENCY",
   CONCENTRATION_RISK: "config.bands.scale.CONCENTRATION_RISK",
 };
 
-/** Rótulo default por tom — fallback de `messageKeyOrDefault` quando o servidor gravou `labelKey` que este build não conhece. */
 const TONE_LABEL_KEY: Record<BandTone, MessageKey> = {
   ok: "config.bands.tone.ok",
   low: "config.bands.tone.low",
@@ -380,19 +353,12 @@ const TONE_LABEL_KEY: Record<BandTone, MessageKey> = {
   critical: "config.bands.tone.critical",
 };
 
-/** Valor de exemplo inicial do preview, um por escala (gap 2, média 3, 1 referência). */
 const SCALE_SAMPLE: Record<ScoringScale, string> = {
   GAP_SEVERITY: "2",
   PROFICIENCY: "3",
   CONCENTRATION_RISK: "1",
 };
 
-/**
- * CFG-02 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Réguas e limiares":
- * editor das 3 escalas de `scoring_bands`. A montagem/validação do payload
- * vive no ViewModel (`ScoringBandsEditor` — a régua da casa: classe
- * testável, render na tela); aqui é só fiação de inputs, preview e submit.
- */
 function ScoringBandsSection() {
   const bands = useScoringBands();
   const { t } = useI18n();
@@ -408,7 +374,6 @@ function ScoringBandsSection() {
   );
 }
 
-/** O chip de faixa — mesmo par fundo/texto por tom do `GapBadge` (`gapTone`). */
 function BandChip({ band }: { band: ScoringBand }) {
   const { t } = useI18n();
   return (
@@ -432,7 +397,7 @@ function ScoringScaleEditor({
 }) {
   const store = useStore();
   const { t } = useI18n();
-  /** `null` = leitura; editar cria o editor a partir da régua efetiva atual. */
+
   const [editor, setEditor] = useState<ScoringBandsEditor | null>(null);
   const [sample, setSample] = useState(SCALE_SAMPLE[scale]);
   const {
@@ -557,9 +522,7 @@ function ScoringScaleEditor({
         </p>
       )}
 
-      {/* Preview do efeito: classifica um valor de exemplo com o RASCUNHO
-          (quando válido) e mostra o chip resultante — mesmo derivador
-          (`classifyBand`) e mesmos tons do `GapBadge`. */}
+      {}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <label className="text-xs text-muted-foreground" htmlFor={`band-sample-${scale}`}>
           {t("config.bands.preview.sample")}
@@ -578,27 +541,17 @@ function ScoringScaleEditor({
   );
 }
 
-/** Rótulo i18n de cada campo da política de curadoria — mapa literal, mesmo racional de `SCALE_TITLE_KEY`. */
 const CURATION_FIELD_LABEL_KEY: Record<CurationPolicyField, MessageKey> = {
   maxActiveCompetencies: "config.curation.field.maxActiveCompetencies",
   requiredRestrictive: "config.curation.field.requiredRestrictive",
   requiredNonRestrictive: "config.curation.field.requiredNonRestrictive",
 };
 
-/**
- * CFG-04 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Catálogo": editor
- * dos três limites de `catalog_curation_policy`. A montagem/validação do
- * payload vive no ViewModel (`CurationPolicyEditor` — a régua da casa:
- * classe testável, render na tela); aqui é só fiação de inputs, aviso de
- * impacto e submit. Salvar invalida a query da política E o snapshot de
- * `/api/state` (`store.updateCurationPolicy`) — o admin VÊ os badges
- * READY/REQUIRES_CURATION recalculados sob a política nova.
- */
 function CurationPolicySection() {
   const store = useStore();
   const policy = useCurationPolicy();
   const { t } = useI18n();
-  /** `null` = leitura; editar cria o editor a partir da política efetiva atual. */
+
   const [editor, setEditor] = useState<CurationPolicyEditor | null>(null);
   const {
     submitting: saving,
@@ -690,21 +643,17 @@ function CurationPolicySection() {
           </p>
         )}
 
-        {/* Aviso de impacto — alterar a política recalcula a curadoria
-            (READY/REQUIRES_CURATION) de TODAS as capacidades na próxima
-            leitura (o recomputo é derivado on-read no backend). */}
+        {}
         <p className="mt-3 text-xs text-muted-foreground">{t("config.curation.impact")}</p>
       </div>
     </SectionCard>
   );
 }
 
-/** Título i18n de cada key de template — mapa literal, mesmo racional de `SCALE_TITLE_KEY`. */
 const TEMPLATE_KEY_TITLE: Record<TextTemplateKey, MessageKey> = {
   "pdi.objective.fromGap": "config.templates.key.pdi.objective.fromGap",
 };
 
-/** Valores de exemplo do preview, por key — cobrem TODAS as variáveis que a key fornece. */
 function sampleVariablesFor(
   key: TextTemplateKey,
   t: (key: MessageKey, vars?: Record<string, string | number>) => string,
@@ -715,12 +664,6 @@ function sampleVariablesFor(
   }
 }
 
-/**
- * CFG-03 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Textos": editor de
- * `text_templates` por key/locale, com a lista de variáveis da key e
- * preview renderizado pelo MESMO interpolador do app (`renderTemplate`).
- * A validação client-side vive no ViewModel (`TextTemplateEditor`).
- */
 function TextTemplatesSection() {
   const templates = useTextTemplates();
   const { t } = useI18n();
@@ -773,7 +716,7 @@ function TemplateLocaleEditor({
 }) {
   const store = useStore();
   const { t } = useI18n();
-  /** `null` = leitura; editar cria o editor a partir do template efetivo atual. */
+
   const [editor, setEditor] = useState<TextTemplateEditor | null>(null);
   const {
     submitting: saving,
@@ -784,7 +727,7 @@ function TemplateLocaleEditor({
 
   const editing = editor !== null;
   const samples = sampleVariablesFor(templateKey, t);
-  /** Preview SEMPRE visível e reagindo à edição — rascunho quando editando, efetivo quando não. */
+
   const previewText = renderTemplate(editing ? editor.draft : current, samples);
 
   const save = async () => {
@@ -873,35 +816,22 @@ function TemplateLocaleEditor({
   );
 }
 
-/** Rótulo i18n de cada cadência — mapa literal, mesmo racional de `SCALE_TITLE_KEY`. */
 const CADENCE_LABEL_KEY: Record<CycleCadence, MessageKey> = {
   SEMIANNUAL: "config.operational.cadence.SEMIANNUAL",
   QUARTERLY: "config.operational.cadence.QUARTERLY",
   ANNUAL: "config.operational.cadence.ANNUAL",
 };
 
-/** Rótulo i18n dos campos numéricos — mapa literal, mesmo racional de `CURATION_FIELD_LABEL_KEY`. */
 const OPERATIONAL_FIELD_LABEL_KEY: Record<OperationalNumberField, MessageKey> = {
   floor: "config.operational.field.floor",
   threshold: "config.operational.field.threshold",
 };
 
-/**
- * CFG-05 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Operação": editor
- * das três políticas operacionais de `app_settings` (cadência de ciclo,
- * piso global de carreira, limiar de intervenção coletiva). A montagem/
- * validação do payload vive no ViewModel (`OperationalSettingsEditor` — a
- * régua da casa); aqui é só fiação de select/inputs, aviso de impacto e
- * submit. Salvar faz UM PUT por key alterada (`store.updateAppSetting`),
- * que invalida a query das settings — e, ao mudar a cadência, também o
- * snapshot de `/api/state` (é dele que a tela de ciclos lê os ciclos sobre
- * os quais o diálogo deriva o próximo período da cadência nova).
- */
 function OperationalSettingsSection() {
   const store = useStore();
   const settings = useOperationalSettings();
   const { t } = useI18n();
-  /** `null` = leitura; editar cria o editor a partir das settings efetivas. */
+
   const [editor, setEditor] = useState<OperationalSettingsEditor | null>(null);
   const {
     submitting: saving,
@@ -916,9 +846,7 @@ function OperationalSettingsSection() {
     if (!editor) return;
     const changes = editor.payload();
     if (!changes) return;
-    // Sequencial de propósito: cada PUT valida e grava UMA key; parar no
-    // primeiro erro deixa o 400 do backend visível sem estado meio-salvo
-    // ambíguo (as keys já gravadas continuam gravadas, como no servidor).
+
     const result = await run(async () => {
       for (const change of changes) await store.updateAppSetting(change.key, change.value);
     });
@@ -1030,9 +958,7 @@ function OperationalSettingsSection() {
           </p>
         )}
 
-        {/* Aviso de impacto da cadência — mudança NUNCA reescreve ciclos
-            existentes (avaliações e PDIs referenciam cycle_id); só o diálogo
-            "Novo ciclo" passa a oferecer os períodos da cadência nova. */}
+        {}
         <p className="mt-3 text-xs text-muted-foreground">
           {t("config.operational.cadenceImpact")}
         </p>
@@ -1041,7 +967,6 @@ function OperationalSettingsSection() {
   );
 }
 
-/** CFG-06 — chips do glossário: itens ATIVOS do vocabulário servido, rotulados labelKey→i18n (fallback = code). */
 function TaxonomyChips({ vocabulary }: { vocabulary: VocabularyName }) {
   const { options, label } = useVocabulary(vocabulary);
   return (
@@ -1055,24 +980,12 @@ function TaxonomyChips({ vocabulary }: { vocabulary: VocabularyName }) {
   );
 }
 
-/** Título i18n de cada vocabulário — mapa literal, mesmo racional de `SCALE_TITLE_KEY`. */
 const VOCABULARY_TITLE_KEY: Record<VocabularyName, MessageKey> = {
   EVIDENCE_TYPE: "config.vocab.name.EVIDENCE_TYPE",
   LEARNING_ITEM_TYPE: "config.vocab.name.LEARNING_ITEM_TYPE",
   ACTION_TYPE: "config.vocab.name.ACTION_TYPE",
 };
 
-/**
- * CFG-06 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — aba "Vocabulários":
- * editor dos 3 vocabulários de `domain_vocabularies`. Sem DELETE de
- * propósito (o code pode estar persistido em histórico): tirar de circulação
- * é `active=false` — o item some dos selects de escrita mas continua
- * rotulando o que já foi gravado. A montagem/validação dos payloads vive
- * nos ViewModels (`NewVocabularyCodeEditor`/`VocabularyItemEditor` — a
- * régua da casa); aqui é só fiação de inputs, toggle e submit. Cada escrita
- * invalida a query de vocabulários (`store.addVocabularyItem`/
- * `updateVocabularyItem`) — os selects respondem na hora.
- */
 function VocabulariesSection() {
   const vocabularies = useVocabularies();
   const { t } = useI18n();
@@ -1092,7 +1005,7 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
   const store = useStore();
   const { t } = useI18n();
   const { label } = useVocabulary(name);
-  /** `null` = nenhuma linha em edição; um editor por vez, como nas outras abas. */
+
   const [editor, setEditor] = useState<VocabularyItemEditor | null>(null);
   const [draft, setDraft] = useState<NewVocabularyCodeEditor | null>(null);
   const {
@@ -1122,7 +1035,6 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
     const patch = editor.payload();
     if (!patch) return;
     if (Object.keys(patch).length === 0) {
-      // Nada mudou — o backend recusa patch vazio; fechar é o no-op honesto.
       setEditor(null);
       return;
     }
@@ -1316,8 +1228,7 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
         </p>
       )}
 
-      {/* Sem excluir, de propósito: o code pode estar gravado em histórico —
-          desativar tira das opções novas sem reescrever o passado. */}
+      {}
       <p className="mt-2 text-xs text-muted-foreground">{t("config.vocab.noDeleteHint")}</p>
     </div>
   );

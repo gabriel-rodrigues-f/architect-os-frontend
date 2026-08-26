@@ -7,12 +7,6 @@ import type {
 } from "../domain";
 import type { ApiClient } from "../api-client";
 
-/**
- * OO-FE-02 — gateway do contexto "desenvolvimento" (PDI). Ver
- * `cycles.gateway.ts` para a explicação do padrão interface + `Http*` e do
- * porquê dos métodos serem arrow functions de campo (spread-safe na
- * fachada `api.ts`).
- */
 export interface DevelopmentGateway {
   addPlanItem(
     architectId: string,
@@ -74,13 +68,6 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
   ): Promise<DevelopmentPlan> =>
     this.client.post<DevelopmentPlan>(`/api/plans/${architectId}/items`, { cycleId, item });
 
-  /**
-   * ESPECIFICACAO-OITAVA-RODADA, Seção 15/25/28/34 — criação source-driven:
-   * o cliente referencia o gap (assessment + competência); o servidor
-   * deriva `currentLevel`/`targetLevel`/`priority` a partir do assessment
-   * oficial. Nunca aceitar esses três do cliente aqui — não é só
-   * convenção, o schema do backend nem tem esses campos.
-   */
   createPlanItemFromGap = (
     architectId: string,
     item: {
@@ -98,14 +85,6 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
   ): Promise<DevelopmentPlan> =>
     this.client.post<DevelopmentPlan>(`/api/plans/${architectId}/items/from-gap`, item);
 
-  /**
-   * `expectedVersion` sustenta concorrência otimista (ENT-DATA-012) —
-   * sempre a versão do item já lido. `currentLevel`/`targetLevel`/
-   * `priority`/`sourceAssessmentId` ficam de fora do tipo: são derivados
-   * na criação (`createPlanItemFromGap`) e o backend nem aceita PATCH
-   * neles (Seção 15/28) — o tipo aqui só espelha o que a rota de fato
-   * recebe, para não sugerir uma escrita que sempre seria ignorada.
-   */
   patchPlanItem = (
     planId: string,
     itemId: string,
@@ -132,10 +111,6 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
   ): Promise<DevelopmentPlan> =>
     this.client.patch<DevelopmentPlan>(`/api/plans/${planId}/status`, { status, expectedVersion });
 
-  /**
-   * Reabertura de PDI concluído (ENT-PDI-001) — comando dedicado, não um
-   * PATCH de status: exige motivo, e só o Tech Lead responsável.
-   */
   reopenPlan = (
     planId: string,
     reason: string,
@@ -149,12 +124,6 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
   addPlanItemCheckin = (planId: string, itemId: string, text: string): Promise<DevelopmentPlan> =>
     this.client.post<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}/checkins`, { text });
 
-  /**
-   * Seção 17 — reprogramar prazo depois de `Approved` (quando o PATCH
-   * genérico já bloqueia `targetDate`) é um comando dedicado: motivo
-   * obrigatório, `expectedVersion` sustenta a mesma concorrência otimista
-   * do resto do PDI.
-   */
   reschedulePlanItem = (
     planId: string,
     itemId: string,
@@ -168,7 +137,6 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
       expectedVersion,
     });
 
-  /** Histórico append-only de reprogramações de um item — prazos anteriores, com motivo. */
   planItemEvents = (planId: string, itemId: string): Promise<DevelopmentPlanItemEvent[]> =>
     this.client.request<DevelopmentPlanItemEvent[]>(`/api/plans/${planId}/items/${itemId}/events`);
 }

@@ -23,50 +23,18 @@ import { topByRelevance } from "@/lib/collections";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { useI18n } from "@/lib/i18n";
 
-/**
- * Gráficos do Synapse.
- *
- * ## Acessibilidade
- *
- * Um `<svg>` de gráfico é opaco para leitor de tela — o dado existe como
- * coordenada, não como texto. Por isso cada gráfico aqui sai em `<figure>` com
- * legenda e acompanhado da **mesma informação em tabela**, escondida
- * visualmente mas presente na árvore de acessibilidade. É o caminho
- * recomendado pelo WCAG para conteúdo gráfico (1.1.1) e o único que também
- * serve a quem lê por teclado ou copia o valor.
- *
- * ## Movimento
- *
- * A animação de entrada é desligada quando o sistema pede menos movimento.
- * Crescimento de linha e expansão de polígono são exatamente o tipo de
- * movimento amplo que causa desconforto vestibular.
- */
-
-/* ------------------------------------------------------------------ */
-/* Moldura comum                                                       */
-/* ------------------------------------------------------------------ */
-
 interface ChartFrameProps {
-  /** Nome acessível do gráfico. */
   label: string;
-  /** Altura da área de plotagem, em px. */
+
   height: number;
-  /** Não há o que plotar — mostra o vazio no lugar de uma grade sozinha. */
+
   isEmpty: boolean;
   emptyMessage: string;
-  /** Mesma informação em tabela, para leitor de tela. */
+
   dataTable: ReactNode;
   children: ReactElement;
 }
 
-/**
- * Moldura única dos gráficos: vazio, rótulo acessível, tabela equivalente e
- * altura. Cada gráfico só descreve o que desenha.
- *
- * O vazio importa mais do que parece — sem ele, uma tela sem avaliações
- * mostrava eixos e grade sem nenhuma linha, o que se lê como "quebrou", e não
- * como "ainda não há dado".
- */
 function ChartFrame({
   label,
   height,
@@ -98,7 +66,6 @@ function ChartFrame({
   );
 }
 
-/** Tabela equivalente ao gráfico — invisível, mas lida e navegável. */
 function DataTable({
   caption,
   columns,
@@ -133,21 +100,8 @@ function DataTable({
   );
 }
 
-/**
- * R2-ESC-03 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — um radar com ~30 eixos
- * (uma capacidade grande, ou várias combinadas) vira um emaranhado
- * ilegível: linhas finas demais, rótulos sobrepostos, nenhum padrão
- * visível. Corta para os `MAX_RADAR_AXES` eixos de maior relevância
- * (critério varia por chamador — `relevance`), via `topByRelevance`
- * (`lib/collections.ts`, OO3-11/D-3). A tabela acessível (`ChartFrame`)
- * nunca é cortada — só o desenho.
- */
 const MAX_RADAR_AXES = 12;
 
-/**
- * Aviso visível (não só na tabela sr-only) + alternância "mostrar todos" —
- * wrapper fino de `TruncationNotice` (OO3-11/D-2).
- */
 function RadarAxisNotice(props: {
   shown: number;
   total: number;
@@ -169,15 +123,11 @@ function RadarAxisNotice(props: {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Radar por capacidade                                                   */
-/* ------------------------------------------------------------------ */
-
 export interface RadarPoint {
   capability: string;
   atual: number;
   alvo: number;
-  /** Quantas pessoas do recorte contribuíram para `atual`, de quantas no recorte total. */
+
   covered?: number;
   total?: number;
 }
@@ -193,7 +143,7 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
 
   const atual = t("chart.series.current");
   const alvo = t("chart.series.target");
-  /** Só entra a coluna quando quem chamou de fato manda cobertura — os outros dois usos do componente não mandam. */
+
   const withCoverage = data.some((d) => d.covered !== undefined);
 
   return (
@@ -228,18 +178,9 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
         <RadarChart data={visibleData} outerRadius={estreita ? "65%" : "72%"}>
           <PolarGrid stroke={CHART_INK.grid} />
           <PolarAngleAxis dataKey="capability" tick={axisTick} />
-          {/*
-          Os rótulos do eixo radial saem: numeravam 0..5 por cima do polígono,
-          competindo com o dado. A escala continua legível pelos anéis da grade
-          e pelo tooltip, e a tabela equivalente traz o número exato.
-        */}
+          {}
           <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
-          {/*
-          O esperado vem primeiro, para o atual desenhar por cima: é o valor
-          real que se quer ler, a referência é o fundo. Tracejado e quase
-          acromático pela mesma razão — e para que a distinção sobreviva à
-          impressão em preto e branco.
-        */}
+          {}
           <Radar
             name={alvo}
             dataKey="alvo"
@@ -266,20 +207,6 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Radar de comparação entre pessoas                                   */
-/* ------------------------------------------------------------------ */
-
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-29 — "decisão de
- * promoção manual": comparar 2+ pessoas específicas hoje exige olhar o
- * heatmap do time inteiro e procurar as linhas certas de cabeça.
- * Diferente de `CapabilityRadar` (série fixa atual×alvo, uma pessoa/recorte
- * agregado só): aqui uma série POR PESSOA, nenhuma agregação — é
- * exatamente o caso que `EvolutionSeries`+`ChartPalette` já resolvem para
- * `EvolutionLine`, reaproveitado aqui para `Radar` em vez de `Line`.
- */
-/** Variância populacional dos valores numéricos — proxy de "o quanto as pessoas divergem nesta capacidade". */
 function variance(values: readonly number[]): number {
   if (values.length < 2) return 0;
   const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
@@ -291,7 +218,6 @@ export function ComparisonRadar({
   series,
   height = 360,
 }: {
-  /** `capability` (rótulo do eixo) + uma chave por série — mesmo formato "linha larga" de `EvolutionLine`. */
   data: Record<string, string | number>[];
   series: EvolutionSeries[];
   height?: number;
@@ -365,10 +291,6 @@ export function ComparisonRadar({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Evolução por ciclo                                                  */
-/* ------------------------------------------------------------------ */
-
 export interface EvolutionSeries {
   key: string;
   label: string;
@@ -382,23 +304,16 @@ export function EvolutionLine({
 }: {
   data: Record<string, string | number>[];
   series: EvolutionSeries[];
-  /** Campo do eixo horizontal. Era fixo em `cycle`, o que travava o reuso. */
+
   xKey?: string;
   height?: number;
 }) {
   const { t } = useI18n();
   const semMovimento = useReducedMotion();
 
-  /*
-    A paleta é criada aqui, e não recebida por prop: a cor de uma série é
-    decisão do sistema de design, não de quem chama. Antes cada tela montava o
-    próprio array de `var(--chart-N)` e o mesmo capacidade saía de cores
-    diferentes em telas diferentes.
-  */
   const palette = new ChartPalette();
   const estilos = palette.forKeys(series.map((s) => s.key));
 
-  /* Um ponto só não forma linha — sem marcador, o gráfico sai vazio. */
   const pontos = data.length <= 12;
 
   return (
@@ -450,23 +365,11 @@ export function EvolutionLine({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Linha temporal de nível observado/oficial (Rodada 10)               */
-/* ------------------------------------------------------------------ */
-
 export interface ProficiencyPoint {
-  /** ISO 8601 (yyyy-mm-dd) — o eixo X é categórico, não temporal contínuo. */
   date: string;
   level: number;
 }
 
-/**
- * ORIENTACAO-DECIMA-RODADA, Seção 24 — nível é discreto (L1-L5): uma linha
- * `monotone` entre dois pontos sugere uma transição gradual que nunca foi
- * observada (ex.: "L2,5" em fevereiro, quando só sabemos L2 em janeiro e L3
- * em março). `stepAfter` mantém o nível anterior constante até o instante
- * exato da próxima observação — a única leitura fiel ao dado.
- */
 export function ProficiencyTimeline({
   data,
   label,

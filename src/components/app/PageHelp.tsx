@@ -12,18 +12,6 @@ export interface PageHelpContent {
   nextStep: string;
 }
 
-/**
- * R2-UX-01 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo A) — "?" ao lado do
- * título de toda tela, com "O que é / Vem de / Próximo passo" pela
- * PERSPECTIVA DE QUEM ESTÁ LOGADO: um Tech Lead/admin e um Member olham a
- * mesma tela com perguntas diferentes ("de onde vêm estes números" vs "o
- * que eu faço agora"), então o conteúdo muda por papel — nunca um seletor
- * manual, a persona já é conhecida (`useCurrentUser`).
- *
- * Popover (Radix), não Tooltip: o conteúdo é longo demais (3 parágrafos)
- * para um tooltip que some ao afastar o mouse — precisa ficar aberto até
- * alguém fechar de propósito.
- */
 export function PageHelp({
   content,
 }: {

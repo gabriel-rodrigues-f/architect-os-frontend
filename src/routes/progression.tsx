@@ -12,14 +12,6 @@ import { usePageHelp } from "@/lib/page-help";
 import { useGapSeverityRuler, useSelectors } from "@/lib/store";
 import { exportTeamReportCsv } from "@/lib/team-report-csv";
 
-/**
- * Apontado ao vivo: Mapa de Calor + Tabela de Lacunas de Progressão viviam
- * no fim de `/gap-analysis` (Radar + Prioridades), empurrando a página
- * inteira pra baixo — duas visões de escopo diferente (por pessoa vs.
- * consolidado do time) forçadas na mesma rolagem. Vira aba própria dentro
- * de "Capacidades", ao lado de "Prioridades"; o cálculo é o mesmo
- * (`useGapAnalysisData`), só a apresentação muda.
- */
 export const Route = createFileRoute("/progression")({
   head: () => ({
     meta: [
@@ -39,7 +31,7 @@ function ProgressionPage() {
   const { t } = useI18n();
   const help = usePageHelp("progression");
   const sel = useSelectors();
-  /** CFG-02 — a coluna "Classificação" do export usa a régua efetiva (`/api/config/bands`, fallback = seed), a MESMA do `GapBadge` na tela. */
+
   const ruler = useGapSeverityRuler();
   const { store, selected, setSelected, architects, blocking, opportunity, mastery, scopeLabel } =
     useGapAnalysisData();
@@ -67,9 +59,6 @@ function ProgressionPage() {
   const exportPdf = async () => {
     setExportingPdf(true);
     try {
-      // `jspdf`/`jspdf-autotable` arrastam `html2canvas`/`canvg` (~600kB) —
-      // import() dinâmico mantém esse peso fora do chunk de `/progression`,
-      // baixado só quando alguém de fato clica em exportar.
       const { exportTeamReportPdf } = await import("@/lib/team-report-pdf");
       await exportTeamReportPdf(t, reportInput(), ruler);
     } catch {
@@ -125,7 +114,7 @@ function ProgressionPage() {
             title={t("gap.heatmap.title")}
             description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}
           >
-            {/* OO3-11/D-1 — heatmap compartilhado com o Painel (CapabilityHeatmap). */}
+            {}
             <CapabilityHeatmap
               architects={architects}
               capabilities={store.capabilities}

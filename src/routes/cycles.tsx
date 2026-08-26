@@ -49,7 +49,7 @@ function CyclesPage() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
-  /** Ciclo é decisão administrativa — muda o que o time inteiro está avaliando. */
+
   const isAdmin = useCurrentUser().role === "admin";
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
   const { t, locale } = useI18n();
@@ -57,20 +57,9 @@ function CyclesPage() {
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<DevelopmentCycle | null>(null);
   const [blockedDelete, setBlockedDelete] = useState<DevelopmentCycle | null>(null);
-  /**
-   * CFG-05 / B9 — a cadência EFETIVA (`cycle.cadence`, `app_settings`, com
-   * fallback SEMIANNUAL byte-idêntico ao hardcoded antigo) decide quais
-   * períodos o diálogo "Novo ciclo" oferece. Só ciclos FUTUROS: os
-   * existentes guardam id/nome/datas próprios.
-   */
+
   const scheme = CycleCadenceScheme.of(useOperationalSettings().cycleCadence);
 
-  /**
-   * Ciclo com avaliação ou PDI vinculado não é deletável — o backend já
-   * recusa com 409, mas checar aqui evita abrir "tem certeza?" para uma ação
-   * que nunca teria efeito, e explica o motivo na hora. Ver AUDITORIA-RIGIDA-
-   * SEGUNDA-REVISAO-SYNAPSE.md, Seção 23.
-   */
   const cycleInUse = (cycleId: string) =>
     store.assessments.some((a) => a.cycleId === cycleId) ||
     store.plans.some((p) => p.cycleId === cycleId);
@@ -83,28 +72,15 @@ function CyclesPage() {
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
   const chartData = closedCycles.map((c) => {
     const row: Record<string, string | number> = { cycle: c.name };
-    // Capacidade sem assessment oficial no ciclo não entra na linha — nada de
-    // plotar um 0 fictício que pareceria uma queda real de nível.
+
     for (const d of sel.capabilityAverages(architectId, c.id)) {
-      // R2-ESC-02 — chave por `id`, nunca por `short`: nada garantia (antes
-      // desta rodada) que `short` fosse único, e duas capacidades com a
-      // mesma sigla sobrescreveriam o valor uma da outra na mesma linha do
-      // gráfico. `id` é sempre único; `short`/`name` seguem só como rótulo.
       if (d.avg !== undefined) row[d.capability.id] = d.avg;
     }
     return row;
   });
-  /* A cor de cada série é decisão da paleta do sistema; aqui só se diz o que plotar. */
+
   const series = store.capabilities.map((c) => ({ key: c.id, label: c.name }));
 
-  /**
-   * Mesma fonte que o gráfico acima: só assessment `Completed` conta como
-   * nível oficial do ciclo. Antes, o gráfico já usava `capabilityAverages()`
-   * (oficial) e esta tabela lia de `assessmentFor()` (aceita Draft/In
-   * Review) — a mesma pessoa podia aparecer "sem nível oficial" no gráfico
-   * e com um L4 na tabela ao lado. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-
-   * SYNAPSE.md, Seção 20.
-   */
   const compare = store.competencies.slice(0, 12).map((c) => {
     const levels = closedCycles.map((cy) => ({
       cycle: cy.name,
@@ -295,13 +271,6 @@ function CyclesPage() {
   );
 }
 
-/**
- * CFG-05 / B9 — identidade, datas e parse do período saíram da rota para
- * `lib/cycle-cadence.ts` (`CycleCadenceScheme`, uma estratégia por cadência
- * — pendência de auditoria: regra de domínio fora da rota). Aqui só resta o
- * rascunho inicial de criação, derivado do próximo período livre da
- * cadência efetiva.
- */
 const emptyCycle = (existing: DevelopmentCycle[], scheme: CycleCadenceScheme): DevelopmentCycle => {
   const { year, period } = scheme.nextAvailable(existing);
   return {
@@ -312,27 +281,12 @@ const emptyCycle = (existing: DevelopmentCycle[], scheme: CycleCadenceScheme): D
   };
 };
 
-/** Rótulo acessível do seletor de período, por cadência (ANNUAL não tem seletor). */
 const PERIOD_ARIA_KEY: Record<CycleCadence, MessageKey> = {
   SEMIANNUAL: "cycle.dialog.semesterAriaLabel",
   QUARTERLY: "cycle.dialog.quarterAriaLabel",
   ANNUAL: "cycle.dialog.quarterAriaLabel",
 };
 
-/**
- * Criação e edição de ciclo. `cycle.id` vazio indica criação.
- *
- * Ano e semestre não são texto livre: são a identidade do ciclo (viram `id`
- * e `name` juntos), então em criação são um par de seletores com checagem de
- * duplicidade — não dá para ter dois "2026 H1". Em edição ficam fixos: mudar
- * o período de um ciclo já em uso desalinharia `id` de tudo que referencia
- * `cycle_id` (avaliações, PDI).
- *
- * Não existe mais campo de "situação" aqui — virar `Active` é uma decisão de
- * negócio (fecha o ciclo ativo anterior atomicamente), feita pelo botão
- * "Ativar" do card, nunca por este CRUD genérico de data/nome. Ver CYC-001,
- * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
- */
 function CycleDialog({
   cycle,
   scheme,

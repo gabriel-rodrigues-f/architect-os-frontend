@@ -13,16 +13,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import type { Capability, Competency } from "@/lib/domain";
 
-/**
- * ORIENTACAO-NONA-RODADA, Seção 10 (ENT-09-008/GES-010) — "Especialização
- * principal" deixa de ser texto livre e passa a apontar para uma
- * competência real do catálogo (`primarySpecializationCompetencyId`). Só
- * competência ATIVA aparece — uma arquivada não é identidade profissional
- * válida daqui para frente (o backend também recusa, `routes/api/
- * architects.ts`; este filtro só evita oferecer uma opção que o servidor
- * rejeitaria). Nome + capacidade juntos desambiguam competências
- * homônimas em capacidades diferentes.
- */
 export function SpecializationCombobox({
   competencies,
   capabilities,
@@ -93,9 +83,7 @@ export function SpecializationCombobox({
                       className={cn("mr-2 h-4 w-4 shrink-0", marked ? "opacity-100" : "opacity-0")}
                     />
                     <div className="min-w-0">
-                      {/* Nome completo, mesmo em mais de uma linha — algumas competências do
-                          catálogo passam de 60 caracteres, e cortar com reticências escondia
-                          justamente a parte que diferenciava competências parecidas. */}
+                      {}
                       <p className="whitespace-normal">{c.name}</p>
                       {capability && (
                         <p className="truncate text-xs text-muted-foreground">{capability.name}</p>

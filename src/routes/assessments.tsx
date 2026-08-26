@@ -22,17 +22,6 @@ import { useLabels } from "@/lib/labels";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamString } from "@/hooks/use-search-param";
 
-/**
- * `architectId` na URL — quem chega de outra tela (o perfil da pessoa)
- * continua olhando para a mesma pessoa, em vez de cair no primeiro
- * arquiteto ativo e perder o contexto que trouxe até aqui. Ver AUDITORIA-
- * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
- *
- * `cycleId` na URL — sem isto, o link "Ver" do histórico do perfil sempre
- * caía no ciclo ativo, não no ciclo que o histórico realmente mostrava (o
- * usuário pedia para ver 2025 H2 e a tela abria 2026 H1). Ver HIST-001,
- * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
- */
 const assessmentsSearchSchema = z.object({
   architectId: z.string().optional(),
   cycleId: z.string().optional(),
@@ -57,17 +46,6 @@ export const Route = createFileRoute("/assessments")({
   component: AssessmentsPage,
 });
 
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) — os
- * componentes de apresentação (comentários, portfólio de carreira, resumo
- * de desenvolvimento, a tabela por capacidade) e o hook de permissões
- * (`useAssessmentPermissions`) foram para
- * `components/app/assessments-shared.tsx` (mesmo padrão de
- * `mentoring-shared.tsx`/`team-shared.tsx`). O que resta aqui é o estado
- * que só a rota conhece: seleção vinda da URL (`architectId`/`cycleId`),
- * quais capacidades estão selecionadas (com a paginação de "muitas
- * capacidades"), e os fluxos de abrir/transicionar o assessment.
- */
 function AssessmentsPage() {
   const store = useStore();
   const sel = useSelectors();
@@ -75,7 +53,7 @@ function AssessmentsPage() {
     "architectId",
     () => sel.activeArchitects[0]?.id ?? "",
   );
-  /** Ciclo pedido pelo link de origem (histórico) — cai no ativo se nenhum vier na URL. */
+
   const [cycleId] = useSearchParamString("cycleId", () => store.activeCycleId);
   const isActiveCycle = cycleId === store.activeCycleId;
   const viewedCycle = store.cycles.find((c) => c.id === cycleId);
@@ -108,32 +86,17 @@ function AssessmentsPage() {
     incompleteLeaderFinal,
   } = useAssessmentPermissions(architectId, selectedArchitect, assessment);
 
-  /** Capacidades escolhidas, na ordem do catálogo — não na ordem de clique. */
   const selected = store.capabilities.filter((c) => capabilityIds.includes(c.id));
 
   const toggleCapability = (id: string) =>
     setCapabilityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
-  /**
-   * R2-ESC-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mesma `queryKey` de
-   * `CareerPortfolioSection`: o React Query deduplica, então isto não é uma
-   * segunda chamada de rede, só um segundo lugar lendo o cache já buscado.
-   * Alimenta o atalho "Selecionar as do portfólio".
-   */
   const { data: eligibility } = useQuery({
     queryKey: ["assessment-eligibility", assessment?.id],
     queryFn: () => api.assessmentEligibility(assessment!.id),
     enabled: !!assessment,
   });
 
-  /**
-   * REVISAO-360-FRONTEND (R2-ESC-06) — selecionar muitas capacidades de uma
-   * vez (ex.: "Selecionar todas" num catálogo de 30) despejava ~180 linhas
-   * na tela de uma vez. Acima do limiar, a navegação vira "uma capacidade
-   * por vez" — o valor de `selected` continua sendo TODAS as escolhidas
-   * (o resto da tela, contagens etc. não muda), só a RENDERIZAÇÃO dos
-   * cards de resposta que passa a mostrar um por vez.
-   */
   const MANY_CAPABILITIES_THRESHOLD = 10;
   const manyCapabilitiesSelected = selected.length > MANY_CAPABILITIES_THRESHOLD;
   const [capabilityPage, setCapabilityPage] = useState(0);
@@ -288,8 +251,6 @@ function AssessmentsPage() {
           ) : selectedArchitect && !selectedArchitect.active ? (
             <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.inactive")}</p>
           ) : !isActiveCycle ? (
-            // Ciclo histórico sem avaliação registrada: não há "abrir" aqui — só o
-            // ciclo ativo pode nascer uma avaliação nova (HIST-001).
             <p className="text-sm text-muted-foreground">
               {t("asmt.noAssessment.historicalCycle", { cycle: viewedCycle?.name ?? cycleId })}
             </p>

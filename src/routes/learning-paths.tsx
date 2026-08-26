@@ -27,11 +27,6 @@ import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { LearningPathsViewModel } from "@/lib/view-models/learning-paths-view-model";
 
-/**
- * OO2-08 — mesma convenção de `useTeamViewModel`/`useDevelopmentPlansViewModel`/
- * `useCompetencyMatrixViewModel`: `store` já é o serviço narrow que o
- * `LearningPathsViewModel` precisa, sem `FrontendContainer`/`useContainer()`.
- */
 function useLearningPathsViewModel(): LearningPathsViewModel {
   const store = useStore();
   return useMemo(() => new LearningPathsViewModel(store), [store]);
@@ -67,13 +62,7 @@ function LearningPage() {
   const [editingPath, setEditingPath] = useState<LearningPath | null>(null);
   const [creatingPath, setCreatingPath] = useState(false);
   const [search, setSearch] = useState("");
-  /**
-   * REVISAO-360-FRONTEND, Seção 34 — cada trilha sempre renderizava a lista
-   * inteira de itens × pessoas atribuídas (o que chegava a ~2500px com
-   * poucas trilhas de tamanho médio). Nasce recolhida — mesmo padrão da
-   * Matriz de Competências (Seção 40-42): resumo sempre visível, detalhe só
-   * sob demanda, um card por vez ou "Expandir tudo".
-   */
+
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const toggleExpanded = (id: string) =>
     setExpandedIds((prev) => {
@@ -83,33 +72,14 @@ function LearningPage() {
       return next;
     });
 
-  /**
-   * Catálogo é curadoria de Lead/Admin — antes qualquer autenticado criava
-   * uma trilha global, misturando iniciativa individual com o catálogo
-   * oficial. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 4.
-   */
   const canCreatePath = isLeadCapable(user.role);
 
-  /**
-   * Espelha `canEditPath` do backend: autor (por id, não mais por e-mail) ou
-   * admin; trilha sem autor (dado anterior a esta migração) fica restrita a
-   * quem já tem poder de curadoria — Lead ou Admin, nunca "qualquer pessoa
-   * logada" como antes.
-   */
   const canEdit = (path: LearningPath) => {
     if (user.role === "admin") return true;
     if (path.createdByUserId) return path.createdByUserId === user.id;
     return user.role === "lead";
   };
 
-  /**
-   * Progresso é execução, não edição da trilha: só a própria pessoa, ou o
-   * Tech Lead responsável por ela (não qualquer Lead da empresa), registra o
-   * progresso dela — espelha `canActFor` do backend (`PATCH .../progress`),
-   * não o `isLeadCapable(role)` genérico que liberava o campo pra Lead de
-   * outra equipe. Ver UX-001, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-
-   * 19.md.
-   */
   const canEditProgress = (architectId: string) =>
     defaultUiAuthorizationPolicy.canActFor(user, sel.architectById(architectId));
 
@@ -178,11 +148,6 @@ function LearningPage() {
         return (
           <div className="space-y-4">
             {visiblePaths.map((path) => {
-              /**
-               * Progresso do card é a média entre as pessoas atribuídas — cada
-               * uma com a própria média entre os itens (OO3-11l:
-               * `LearningPathsViewModel.teamProgressPercent`).
-               */
               const total = vm.teamProgressPercent(path);
               const editable = canEdit(path);
               const createdAt = defaultDateFormatter.formatDate(path.createdAt, locale);
@@ -333,14 +298,6 @@ function LearningPage() {
   );
 }
 
-/**
- * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mata a criação em 2 tempos
- * (nome solto → criar → só depois abrir "Editar" pra preencher o resto).
- * Reaproveita o corpo de `EditPathDialog` (nome, descrição, competências,
- * atribuições) — os "itens" da trilha ficam de fora daqui de propósito:
- * `addLearningPathItem` exige um `path.id` real, que só existe depois do
- * primeiro save; continuam entrando depois, em "Editar trilha".
- */
 function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const user = useCurrentUser();
@@ -349,9 +306,9 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({ name: "", description: "" });
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
-  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+
   const { submitting: saving, run } = useToastSubmit();
-  /** R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local acima de 20 competências. */
+
   const [competencyFilter, setCompetencyFilter] = useState("");
   const visibleCompetencies = store.competencies.filter((c) =>
     defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
@@ -369,10 +326,6 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
     }
   };
 
-  /**
-   * Sem id local nem sucesso otimista: o servidor gera o id de verdade — ver
-   * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001.
-   */
   const create = async () => {
     const trimmed = form.name.trim();
     if (!trimmed) return;
@@ -471,16 +424,6 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-/**
- * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12.4) — o slider
- * disparava um PATCH a cada passo do arrasto (`onChange` de `<input
- * type="range">` é contínuo, não só no soltar). Estado local (`draft`) dá o
- * movimento do thumb e o "%" instantâneo; o PATCH só sai ao soltar
- * (`onMouseUp`/`onTouchEnd`) ou ao ajustar por teclado (`onKeyUp`, sem
- * "soltar" nenhum). O rótulo de status (`statusLabel`, "Em andamento" etc.)
- * continua refletindo só o servidor — não duplica a regra de threshold do
- * store (`>=100`/`>0`/senão) só por causa do feedback visual do arrasto.
- */
 function ProgressControl({
   progress,
   editable,
@@ -533,12 +476,11 @@ function ProgressControl({
   );
 }
 
-/** Edição completa da trilha: dados, competências, atribuições e itens. */
 function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => void }) {
   const store = useStore();
   const { t } = useI18n();
   const vm = useLearningPathsViewModel();
-  /** CFG-06 — opções e rótulos do tipo de item vêm do vocabulário SERVIDO (fallback = seed byte-idêntico). */
+
   const itemTypes = useVocabulary("LEARNING_ITEM_TYPE");
   const [form, setForm] = useState({ name: path.name, description: path.description });
   const [newItem, setNewItem] = useState({
@@ -546,7 +488,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
     type: (itemTypes.options[0]?.code ?? "Curso") as LearningItemType,
     hours: "4",
   });
-  /** R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local acima de 20 competências. */
+
   const [competencyFilter, setCompetencyFilter] = useState("");
   const visibleCompetencies = store.competencies.filter((c) =>
     defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
@@ -563,12 +505,6 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
     else vm.toggleAssignment(path, id);
   };
 
-  /**
-   * Atribuir trilha nova é para o time atual — quem já saiu não é opção nova.
-   * Quem já estava atribuído antes de sair continua na lista (senão a
-   * atribuição existente ficaria invisível, sem jeito de desmarcar). Ver
-   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC E.
-   */
   const assignableArchitects = vm.assignableArchitects(store.architects, path.assignedTo);
 
   const addItem = () => {
@@ -616,7 +552,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                   <span className="w-32 shrink-0">{t("path.col.type")}</span>
                   <span className="flex-1">{t("path.col.name")}</span>
                   <span className="w-20 shrink-0">{t("path.col.hours")}</span>
-                  {/* espaço da lixeira, para as colunas alinharem com as linhas */}
+                  {}
                   <span className="w-9 shrink-0" aria-hidden="true" />
                 </li>
               )}
@@ -746,15 +682,6 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
   );
 }
 
-/**
- * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12.4) — título e
- * horas mandavam o array `items` inteiro por tecla digitada (`onChange`
- * chamando `store.updateLearningPath` direto). Mesmo padrão de
- * blur-save já usado em `ActionPlanField` (`development-plans.tsx`):
- * estado local (`draft`) dá o feedback instantâneo de digitação, o PATCH
- * só sai no `blur`. `type` continua imediato — um `<select>` não tem
- * problema de flooding por tecla.
- */
 function LearningPathItemRow({
   item,
   onUpdateType,
@@ -769,7 +696,7 @@ function LearningPathItemRow({
   onRemove: () => void;
 }) {
   const { t } = useI18n();
-  /** CFG-06 — mesmo vocabulário servido do diálogo; item com tipo desativado continua renderizável (opção extra abaixo). */
+
   const itemTypes = useVocabulary("LEARNING_ITEM_TYPE");
   const [titleDraft, setTitleDraft] = useState(item.title);
   const [hoursDraft, setHoursDraft] = useState(String(item.hours));
@@ -785,8 +712,7 @@ function LearningPathItemRow({
         aria-label={t("path.item.typeAriaLabel", { item: item.title })}
         onChange={(e) => onUpdateType(e.target.value as LearningItemType)}
       >
-        {/* Tipo já gravado que saiu das opções ativas (desativado): continua
-            visível/selecionado — desativar nunca reescreve histórico. */}
+        {}
         {itemTypes.options.every((option) => option.code !== item.type) && (
           <option value={item.type}>{itemTypes.label(item.type)}</option>
         )}

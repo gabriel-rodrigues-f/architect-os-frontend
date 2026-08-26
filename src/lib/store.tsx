@@ -60,115 +60,47 @@ import {
 
 export const STATE_QUERY_KEY = ["app-state"] as const;
 
-/**
- * B-24 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, ADR-0011) —
- * primeira coleção migrada do agregador `/api/state` para o endpoint por
- * contexto já existente (`GET /api/career-levels`, nunca consumido até
- * aqui): busca própria, com cache/isolamento de falha independentes do
- * resto do estado — o próprio ponto do estrangulamento (Strangler Fig),
- * não um atalho de implementação. Mesmo padrão já usado pela tela de
- * Evolução (`architects.$architectId.evolution.tsx`, Rodada 10, `useQuery`
- * direto no componente, sem passar pelo `Api` agregado abaixo).
- */
 export const CAREER_LEVELS_QUERY_KEY = ["career-levels"] as const;
 export function useCareerLevelsByRank(): CareerLevel[] {
   const { data } = useQuery({ queryKey: CAREER_LEVELS_QUERY_KEY, queryFn: api.careerLevels });
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
 }
 
-/**
- * CFG-02 — as réguas numéricas (`scoring_bands`) entram no ciclo de dados
- * pelo MESMO padrão de `careerLevels` acima: `useQuery` próprio, endpoint
- * por contexto (`GET /api/config/bands`), cache e isolamento de falha
- * independentes do resto do estado. Enquanto a consulta não resolve (ou se
- * falhar), `withDefaultScoringBands` completa com o default byte-idêntico
- * ao seed — comportamento igual ao hardcoded antigo, sem flash de UI.
- */
 export const SCORING_BANDS_QUERY_KEY = ["config-bands"] as const;
 export function useScoringBands(): ScoringBands {
   const { data } = useQuery({ queryKey: SCORING_BANDS_QUERY_KEY, queryFn: api.bands });
   return useMemo(() => withDefaultScoringBands(data), [data]);
 }
 
-/** A régua de gap EFETIVA (servidor com fallback) já na forma dos consumidores (OO3-11i). */
 export function useGapSeverityRuler(): GapSeverityRuler {
   const bands = useScoringBands();
   return useMemo(() => gapSeverityRulerFrom(bands.GAP_SEVERITY), [bands]);
 }
 
-/**
- * CFG-03 — os templates de texto de domínio (`text_templates`) entram pelo
- * MESMO padrão de `useScoringBands` acima: `useQuery` próprio, endpoint por
- * contexto (`GET /api/config/templates`), cache e isolamento de falha
- * independentes do resto do estado. Enquanto a consulta não resolve (ou se
- * falhar), `withDefaultTextTemplates` completa com o default byte-idêntico
- * ao seed — comportamento igual ao hardcoded antigo.
- */
 export const TEXT_TEMPLATES_QUERY_KEY = ["config-templates"] as const;
 export function useTextTemplates(): TextTemplates {
   const { data } = useQuery({ queryKey: TEXT_TEMPLATES_QUERY_KEY, queryFn: api.templates });
   return useMemo(() => withDefaultTextTemplates(data), [data]);
 }
 
-/**
- * CFG-04 — a política de curadoria do catálogo (`catalog_curation_policy`)
- * entra pelo MESMO padrão de `useScoringBands`/`useTextTemplates` acima:
- * `useQuery` próprio, endpoint por contexto
- * (`GET /api/config/curation-policy`), cache e isolamento de falha
- * independentes do resto do estado. Enquanto a consulta não resolve (ou se
- * falhar), `withDefaultCurationPolicy` responde com o default 6/3+3
- * byte-idêntico ao seed — comportamento igual ao hardcoded antigo, sem
- * flash. É o que o hook adaptador da matriz injeta no
- * `CompetencyMatrixViewModel` (mesmo padrão de `useObjectiveFromGap` com o
- * `DevelopmentPlansViewModel`).
- */
 export const CURATION_POLICY_QUERY_KEY = ["config-curation-policy"] as const;
 export function useCurationPolicy(): CurationPolicy {
   const { data } = useQuery({ queryKey: CURATION_POLICY_QUERY_KEY, queryFn: api.curationPolicy });
   return useMemo(() => withDefaultCurationPolicy(data), [data]);
 }
 
-/**
- * CFG-05 — as políticas operacionais escalares (`app_settings`) entram pelo
- * MESMO padrão de `useScoringBands`/`useCurationPolicy` acima: `useQuery`
- * próprio, endpoint por contexto (`GET /api/config/settings`), cache e
- * isolamento de falha independentes do resto do estado. Enquanto a
- * consulta não resolve (ou se falhar), `withDefaultOperationalSettings`
- * completa campo a campo com o default byte-idêntico ao seed
- * ({SEMIANNUAL, 3, 3}) — comportamento igual ao hardcoded antigo, sem
- * flash: cadência semestral no diálogo de ciclos, piso 3 na política de
- * carreira, `people >= 3` na intervenção coletiva.
- */
 export const OPERATIONAL_SETTINGS_QUERY_KEY = ["config-settings"] as const;
 export function useOperationalSettings(): OperationalSettings {
   const { data } = useQuery({ queryKey: OPERATIONAL_SETTINGS_QUERY_KEY, queryFn: api.settings });
   return useMemo(() => withDefaultOperationalSettings(data), [data]);
 }
 
-/**
- * CFG-06 — os vocabulários de domínio (`domain_vocabularies`) entram pelo
- * MESMO padrão de `useScoringBands`/`useOperationalSettings` acima:
- * `useQuery` próprio, endpoint por contexto
- * (`GET /api/config/vocabularies`), cache e isolamento de falha
- * independentes do resto do estado. Enquanto a consulta não resolve (ou se
- * falhar), `withDefaultVocabularies` completa vocabulário a vocabulário com
- * o default byte-idêntico ao seed — os selects mostram exatamente as mesmas
- * opções que os arrays hardcoded antigos mostravam, sem flash.
- */
 export const VOCABULARIES_QUERY_KEY = ["config-vocabularies"] as const;
 export function useVocabularies(): Vocabularies {
   const { data } = useQuery({ queryKey: VOCABULARIES_QUERY_KEY, queryFn: api.vocabularies });
   return useMemo(() => withDefaultVocabularies(data), [data]);
 }
 
-/**
- * CFG-06 — a visão de UM vocabulário efetivo, já na forma dos consumidores:
- * `options` são os itens de ESCRITA (só `active`, por `sortOrder` — item
- * desativado some do select mas continua rotulável), e `label` resolve
- * labelKey→i18n com fallback para o próprio code (um code recém-cadastrado
- * ainda sem mensagem neste build aparece cru, nunca a chave crua) — vale
- * também para histórico com code fora do catálogo.
- */
 export function useVocabulary(name: VocabularyName): {
   items: VocabularyItem[];
   options: VocabularyItem[];
@@ -179,8 +111,6 @@ export function useVocabulary(name: VocabularyName): {
   return useMemo(() => {
     const items = vocabularies[name];
     const translate = (labelKey: string): string | undefined => {
-      // `t` devolve a própria chave quando não há mensagem — vira `undefined`
-      // para o fallback de `vocabularyLabelOf` cair no code.
       const text = t(labelKey as Parameters<typeof t>[0]);
       return text === labelKey ? undefined : text;
     };
@@ -192,163 +122,72 @@ export function useVocabulary(name: VocabularyName): {
   }, [vocabularies, name, t]);
 }
 
-/**
- * O renderer EFETIVO do objetivo de PDI a partir de gap: template do
- * servidor (com fallback) no locale ATIVO do app — quem decide pt/en é o
- * mecanismo i18n existente (`useI18n().locale`), não uma escolha nova. É o
- * que o hook adaptador da tela injeta no `DevelopmentPlansViewModel`
- * (mesmo padrão de `useDashboardPresenter` com `criticalThreshold`).
- */
 export function useObjectiveFromGap(): RenderObjectiveFromGap {
   const templates = useTextTemplates();
   const { locale } = useI18n();
   return useMemo(() => objectiveFromGapRenderer(templates, locale), [templates, locale]);
 }
 
-/**
- * A store deixou de guardar dados: o estado agora vive no backend (Postgres,
- * com cache em Redis). Este provider mantém a mesma API que as rotas já usavam
- * — leitura direta dos arrays e mutações imperativas — mas por trás cada
- * mutação atualiza o cache do React Query na hora (para a UI não travar em
- * sliders e selects) e envia a alteração para a API. Se a chamada falhar, o
- * snapshot é revalidado e a UI volta para a verdade do servidor.
- *
- * OO3-10 — exportada de propósito: as interfaces de serviço dos ViewModels
- * (`TeamRosterService`, `DevelopmentPlanService`, `CatalogService`, ...)
- * derivam daqui via `Pick<Api, ...>` em vez de recopiar assinaturas à mão —
- * qualquer divergência entre o que o ViewModel espera e o que `useStore()`
- * entrega vira erro de compilação neste arquivo, não um drift silencioso.
- */
 export interface Api extends AppState {
   setActiveCycle: (id: string) => void;
-  /** B-32 — id é gerado no servidor; sem otimismo (a UI só conhece o id real depois da resposta). */
+
   addArchitect: (a: Omit<Architect, "id" | "version">) => Promise<Architect>;
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>) => void;
-  /**
-   * ENT-CAR-017 — comando dedicado, sem otimismo: exige motivo e concorrência
-   * otimista, mesmo motivo de `reopenPlan` (a tela precisa do erro de
-   * verdade se a versão estiver desatualizada).
-   */
+
   transitionCareerLevel: (
     id: string,
     toRole: Architect["role"],
     reason: string,
   ) => Promise<Architect>;
-  /**
-   * R2-UX-08/OO-03 — mesma forma de `transitionCareerLevel`: comando
-   * dedicado, sem otimismo, exige motivo e concorrência otimista. O PATCH
-   * antigo (`updateArchitect(id, { active: false })`) o backend passou a
-   * recusar com 400 — a tela precisa do erro de verdade num 409 (alguém
-   * mais mudou o cadastro desde que o diálogo abriu).
-   */
+
   deactivate: (id: string, reason: string) => Promise<Architect>;
-  /**
-   * ORIENTACAO-NONA-RODADA, Seção 16 (ENT-09-009) — Política de Progressão.
-   * Sem otimismo: só admin altera, e a tela de configuração precisa do
-   * erro de verdade (ex.: abaixo do piso global de 3) para mostrar.
-   */
+
   updateCareerLevelPolicy: (
     careerLevelId: string,
     minimumQualifiedCapabilities: number,
   ) => Promise<CareerLevelPolicy>;
-  /**
-   * CFG-02 (admin UI) — recalibra a régua de UMA escala de `scoring_bands`.
-   * Sem otimismo (só admin altera, e a aba "Réguas e limiares" precisa do
-   * 400 `INVALID_SCORING_BANDS` de verdade para mostrar no formulário); ao
-   * sucesso invalida a query de bands (`SCORING_BANDS_QUERY_KEY`) — badges
-   * e derivadores passam a responder pela régua nova.
-   */
+
   updateScoringBands: (scale: ScoringScale, bands: ScoringBand[]) => Promise<ScoringBand[]>;
-  /**
-   * CFG-03 (admin UI) — edita o texto de UM template de domínio
-   * (key/locale). Sem otimismo (mesmo racional de `updateScoringBands`); ao
-   * sucesso invalida `TEXT_TEMPLATES_QUERY_KEY` — o objetivo de PDI gerado
-   * passa a usar o texto novo.
-   */
+
   updateTextTemplate: (
     key: string,
     locale: string,
     template: string,
   ) => Promise<TextTemplateRecord>;
-  /**
-   * CFG-04 (admin UI) — substitui a política de curadoria do catálogo. Sem
-   * otimismo (mesmo racional de `updateScoringBands`; a aba "Catálogo"
-   * precisa do 400 `INVALID_CATALOG_CURATION_POLICY` de verdade); ao
-   * sucesso invalida `CURATION_POLICY_QUERY_KEY` E `STATE_QUERY_KEY` — o
-   * backend já invalidou o cache dele (`NS.capabilities`), mas
-   * `curation.status` das capacidades chega ao front pelo snapshot de
-   * `/api/state`: sem refetch o admin continuaria vendo os badges
-   * READY/REQUIRES_CURATION calculados com a política antiga.
-   */
+
   updateCurationPolicy: (policy: CurationPolicy) => Promise<CurationPolicy>;
-  /**
-   * CFG-05 (admin UI) — edita o valor de UMA setting operacional
-   * (`app_settings`). Sem otimismo (mesmo racional de `updateScoringBands`;
-   * a aba "Operação" precisa do 400 `INVALID_APP_SETTING` de verdade); ao
-   * sucesso invalida `OPERATIONAL_SETTINGS_QUERY_KEY` — e, ao mudar a
-   * cadência, TAMBÉM `STATE_QUERY_KEY`: a lista de ciclos vem do snapshot
-   * de `/api/state`, e o diálogo "Novo ciclo" deriva as opções da cadência
-   * nova sobre os ciclos vigentes.
-   */
+
   updateAppSetting: (
     key: string,
     value: AppSettingValue,
   ) => Promise<{ key: string; value: AppSettingValue }>;
-  /**
-   * CFG-06 (admin UI) — cadastra um code novo num vocabulário de domínio.
-   * Sem otimismo (mesmo racional de `updateScoringBands`; a aba
-   * "Vocabulários" precisa do 400 `INVALID_VOCABULARY_ITEM`/409
-   * `DUPLICATE_VOCABULARY_CODE` de verdade); ao sucesso invalida
-   * `VOCABULARIES_QUERY_KEY` — os selects passam a oferecer o code novo.
-   */
+
   addVocabularyItem: (
     vocabulary: VocabularyName,
     code: string,
     input: VocabularyItemInput,
   ) => Promise<VocabularyItem>;
-  /**
-   * CFG-06 (admin UI) — edita labelKey/sortOrder/active de um code
-   * existente (sem DELETE: desativar é `active=false`). Mesmo formato de
-   * `addVocabularyItem`.
-   */
+
   updateVocabularyItem: (
     vocabulary: VocabularyName,
     code: string,
     patch: VocabularyItemPatch,
   ) => Promise<VocabularyItem>;
-  /**
-   * CFG-07 (admin UI) — importa o catálogo (UPSERT-por-nome aditivo). Sem
-   * otimismo (o diálogo precisa do 400/409 de verdade); ao sucesso invalida
-   * `STATE_QUERY_KEY` — capacidades e competências chegam à matriz pelo
-   * snapshot de `/api/state`, e sem refetch o admin não veria o resultado.
-   */
+
   importCatalog: (payload: CatalogImportPayload) => Promise<CatalogImportSummary>;
-  /** B-32 — id é gerado no servidor; sem otimismo. */
+
   addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
-  /** Apaga se a competência nunca foi usada; senão arquiva (active=false) — o resultado diz qual dos dois aconteceu. */
+
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
-  /**
-   * Troca RESTRICTIVE ↔ NON_RESTRICTIVE entre duas competências da mesma
-   * capacidade — único jeito de sair de 3/3 (READY) sem passar por um
-   * `PATCH` recusado. Ver `api.swapCompetencyRequirement`.
-   */
+
   swapCompetencyRequirement: (id: string, withCompetencyId: string) => Promise<void>;
-  /**
-   * `curation` nunca vem do cliente — é sempre calculado pelo servidor a
-   * partir das competências. B-32: `id` idem — sem otimismo.
-   *
-   * ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` é opcional aqui (era
-   * obrigatório): a dona do produto pediu para nunca mais digitar a sigla
-   * manualmente, então o diálogo "Nova capacidade" parou de coletá-la — o
-   * backend gera automaticamente a partir de `name`, com resolução de
-   * colisão, quando o campo não vem no corpo.
-   */
+
   addCapability: (
     c: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
   ) => Promise<Capability>;
   updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
-  /** Apaga se nenhuma competência da capacidade já foi usada; senão arquiva a capacidade e as competências dela. */
+
   removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
   addCycle: (c: DevelopmentCycle) => void;
   updateCycle: (id: string, patch: Partial<Omit<DevelopmentCycle, "id">>) => void;
@@ -391,15 +230,7 @@ export interface Api extends AppState {
     }>,
   ) => void;
   addPlanItem: (architectId: string, item: DevelopmentPlanItem) => void;
-  /**
-   * ORIENTACAO-NONA-RODADA, Seção 4/11/30 (ENT-09-001/006) — único caminho
-   * para criar um item de PDI a partir de um GAP oficial. O tipo do payload
-   * nem tem `currentLevel`/`targetLevel`/`priority`: o servidor deriva os
-   * três do assessment referenciado por `assessmentId`. Sem otimismo — o
-   * servidor pode recusar (capacidade não confirmada, gap <= 0, MASTERY
-   * sem próximo nível), e a tela precisa do erro de verdade, não de um item
-   * que "aparece" na tela e depois some quando a chamada falhar.
-   */
+
   createPlanItemFromGap: (
     architectId: string,
     item: {
@@ -416,64 +247,38 @@ export interface Api extends AppState {
     },
   ) => Promise<DevelopmentPlan>;
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
-  /** Tira o item do PDI — a lacuna dele volta a aparecer como sugestão. */
+
   removePlanItem: (planId: string, itemId: string) => void;
-  /**
-   * Seção 14 (ENT-09-010) — reprogramar prazo depois de `Approved` é um
-   * comando dedicado (motivo obrigatório), não um PATCH do campo. Sem
-   * otimismo: a tela precisa saber se o servidor recusou (409 de versão,
-   * 400 sem motivo) antes de mostrar o novo prazo como salvo.
-   */
+
   reschedulePlanItem: (
     planId: string,
     itemId: string,
     targetDate: string,
     reason: string,
   ) => Promise<DevelopmentPlan>;
-  /** Histórico append-only de reprogramações de um item. */
+
   planItemEvents: (planId: string, itemId: string) => Promise<DevelopmentPlanItemEvent[]>;
-  /**
-   * Sem otimismo, como `setAssessmentStatus`: aprovar/reabrir/concluir o PDI
-   * é uma transição de negócio que pode ser negada (dono não aprova nem
-   * reabre o próprio plano) — a tela precisa do erro de verdade.
-   */
+
   updatePlanStatus: (planId: string, status: DevelopmentPlan["status"]) => Promise<DevelopmentPlan>;
-  /**
-   * ENT-PDI-001 — reabertura de PDI concluído. Só o Tech Lead responsável
-   * (sem bypass de admin), motivo obrigatório.
-   */
+
   reopenPlan: (planId: string, reason: string) => Promise<DevelopmentPlan>;
-  /**
-   * Sem otimismo: autor e data são gerados pelo servidor (nunca aceitos do
-   * cliente) — a lista de check-ins só reflete o que o servidor confirmou.
-   */
+
   addPlanItemCheckin: (planId: string, itemId: string, text: string) => Promise<DevelopmentPlan>;
-  /**
-   * Sem otimismo: o servidor gera o id de verdade (nunca mais aceita o `id`
-   * do cliente). Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md,
-   * IDOR-001.
-   */
+
   addEvidence: (e: Evidence) => Promise<Evidence>;
-  /**
-   * Sem otimismo: aprovar/rejeitar evidência é decisão do Tech Lead, e a UI só
-   * pode dizer "aprovado" depois que o servidor confirmou de verdade — ver
-   * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC L.
-   */
+
   reviewEvidence: (
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
   ) => Promise<void>;
-  /**
-   * ENT-EVD-002 — reenvio depois de "Needs Improvement", fechando o loop de
-   * feedback. Sem otimismo — mesmo motivo de `reviewEvidence`.
-   */
+
   resubmitEvidence: (id: string, patch: { description?: string; url?: string }) => Promise<void>;
-  /** Sem otimismo — mesmo motivo de `addEvidence`. Ver IDOR-002. */
+
   addMentoringSession: (
     m: MentoringSession,
     proficiencyUpdates?: ProficiencyUpdate[],
   ) => Promise<MentoringSession>;
-  /** Sem otimismo: agendar follow-up é escrita autorizada (só quem registrou a sessão). */
+
   scheduleMentoringFollowUp: (id: string, nextSession: string | null) => Promise<MentoringSession>;
   updateLearningItemProgress: (
     pathId: string,
@@ -481,21 +286,13 @@ export interface Api extends AppState {
     itemId: string,
     progress: number,
   ) => void;
-  /** Sem otimismo — mesmo motivo de `addEvidence`. Ver IDOR-001. */
+
   addLearningPath: (p: LearningPath) => Promise<LearningPath>;
 }
 
 const Ctx = createContext<Api | null>(null);
 
 function buildApi(state: AppState, queryClient: QueryClient): Api {
-  /**
-   * OO3-09 (Fase OO-3) — o antigo par `local(fn)`/`remote(call, onReconcile)`
-   * repetido em cada método virou o `MutationRunner` genérico
-   * (`mutation-runner.ts`), que carrega o ciclo otimista inteiro (local →
-   * remoto → reconciliação → rollback/erro) e o racional de B-09 ("409
-   * espúrios") e do EPIC L (nunca falhar em silêncio). Aqui fica só a
-   * fiação com o React Query e o toast — o runner não conhece nenhum dos dois.
-   */
   const runner = new MutationRunner<AppState>(
     {
       update: (fn) =>
@@ -517,14 +314,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /**
-     * B-32 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §41) — id
-     * agora é gerado no servidor, então a tela não pode adivinhá-lo antes
-     * da resposta chegar (o mesmo motivo de `addLearningPath`/`addEvidence`
-     * não terem otimismo): navegar para `/architects/:id` ou atribuir o
-     * registro recém-criado a algo antes da resposta real usaria um id que
-     * nunca vai existir.
-     */
     addArchitect: (a) =>
       runner.command(
         () => api.createArchitect(a),
@@ -541,35 +330,18 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /**
-     * CFG-02 (admin UI) — fora do `MutationRunner` de propósito: a régua não
-     * vive no snapshot de `/api/state` (é a query própria
-     * `SCORING_BANDS_QUERY_KEY`), então não há estado agregado para
-     * reconciliar — o ciclo é PUT → invalidação da query de bands. O erro
-     * sobe CRU para o call site (`useAsyncSubmit` da tela mostra a mensagem
-     * do 400 de contiguidade).
-     */
     updateScoringBands: async (scale, bands) => {
       const updated = await api.updateScoringBands(scale, bands);
       await queryClient.invalidateQueries({ queryKey: SCORING_BANDS_QUERY_KEY });
       return updated;
     },
 
-    /** CFG-03 (admin UI) — mesmo formato de `updateScoringBands` acima, para a query de templates. */
     updateTextTemplate: async (key, locale, template) => {
       const updated = await api.updateTextTemplate(key, locale, template);
       await queryClient.invalidateQueries({ queryKey: TEXT_TEMPLATES_QUERY_KEY });
       return updated;
     },
 
-    /**
-     * CFG-04 (admin UI) — mesmo formato de `updateScoringBands` acima, com
-     * uma invalidação a mais: além da query da política, o snapshot de
-     * `/api/state` (`STATE_QUERY_KEY`), porque `curation.status` de cada
-     * capacidade é derivado no servidor SOB a política — o refetch é o que
-     * faz o admin VER o recomputo (o backend já invalidou `NS.capabilities`
-     * no `UnitOfWork` do PUT).
-     */
     updateCurationPolicy: async (policy) => {
       const updated = await api.updateCurationPolicy(policy);
       await Promise.all([
@@ -579,12 +351,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return updated;
     },
 
-    /**
-     * CFG-05 (admin UI) — mesmo formato de `updateScoringBands` acima, com
-     * a invalidação extra de `/api/state` só quando a key é a cadência (é
-     * de lá que a tela de ciclos lê os ciclos vigentes sobre os quais o
-     * diálogo calcula o próximo período livre da cadência nova).
-     */
     updateAppSetting: async (key, value) => {
       const updated = await api.updateSetting(key, value);
       const invalidations = [
@@ -596,26 +362,18 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return updated;
     },
 
-    /** CFG-06 (admin UI) — mesmo formato de `updateScoringBands` acima, para a query de vocabulários. */
     addVocabularyItem: async (vocabulary, code, input) => {
       const created = await api.addVocabularyItem(vocabulary, code, input);
       await queryClient.invalidateQueries({ queryKey: VOCABULARIES_QUERY_KEY });
       return created;
     },
 
-    /** CFG-06 (admin UI) — mesmo formato de `addVocabularyItem` acima. */
     updateVocabularyItem: async (vocabulary, code, patch) => {
       const updated = await api.updateVocabularyItem(vocabulary, code, patch);
       await queryClient.invalidateQueries({ queryKey: VOCABULARIES_QUERY_KEY });
       return updated;
     },
 
-    /**
-     * CFG-07 (admin UI) — mesmo formato de `updateScoringBands` acima, mas a
-     * invalidação é do snapshot de `/api/state`: o import escreve
-     * capacidades/competências, que chegam à matriz por lá (o backend já
-     * invalidou `NS.capabilities` no `UnitOfWork` do POST).
-     */
     importCatalog: async (payload) => {
       const summary = await api.importCatalog(payload);
       await queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
@@ -644,7 +402,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /** R2-UX-08/OO-03 — mesmo formato de `transitionCareerLevel` acima. */
     deactivate: (id, reason) => {
       const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
       return runner.command(
@@ -656,7 +413,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /** B-32 — id gerado no servidor; sem otimismo (ver `addArchitect`). */
     addCompetency: (c) =>
       runner.command(
         () => api.createCompetency(c),
@@ -677,12 +433,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /**
-     * Sem otimismo aqui (`guarded`): o resultado só é conhecido depois que o
-     * servidor responde (apagou ou arquivou), então a UI não pode decidir de
-     * antemão o que remover da tela. Ver AUDITORIA-TERCEIRA-RODADA-
-     * RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC C.
-     */
     removeCompetency: (id) =>
       runner.guarded(
         async () => ({ archived: (await api.deleteCompetency(id))?.archived === true }),
@@ -695,11 +445,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
           }),
       ),
 
-    /**
-     * Sem otimismo, mesma razão de `removeCompetency`: as duas competências
-     * só mudam de tipo se o servidor confirmar a troca das duas juntas — a
-     * UI não pode adivinhar isso antes.
-     */
     swapCompetencyRequirement: async (id, withCompetencyId) => {
       await runner.guarded(
         () => api.swapCompetencyRequirement(id, withCompetencyId),
@@ -715,11 +460,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /**
-     * B-32 — id gerado no servidor; sem otimismo (ver `addArchitect`). A
-     * resposta já traz `curation` computada de verdade (0 competências →
-     * REQUIRES_CURATION) — nada a reconstruir no cliente.
-     */
     addCapability: (c) =>
       runner.command(
         () => api.createCapability(c),
@@ -730,14 +470,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       ),
 
     updateCapability: (id, patch) => {
-      // ORIENTACAO-BLOCO-2-UX-POR-TELA — mesmo racional de B-09
-      // (`updatePlanItem`, abaixo): desde que `short` deixou de vir do
-      // formulário e passou a ser gerado/regenerado pelo servidor quando o
-      // patch muda `name` sem mandar `short`, o palpite otimista (que só
-      // aplica os campos que o cliente de fato mandou) não tem como prever
-      // o novo `short` — sem reconciliar com a resposta real, o rótulo
-      // compacto (heatmap/radar/export) ficaria mostrando a sigla antiga
-      // até a próxima revalidação completa do estado.
       runner.optimistic(
         (s) => ({
           ...s,
@@ -755,18 +487,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /** Excluir a capacidade remove junto as competências que pertenciam a ela. */
-    /**
-     * Excluir a capacidade nunca mexe em `assessments`: o backend não altera
-     * avaliação histórica quando o catálogo muda (não há FK entre a linha
-     * JSONB do item e a competência — a competência pode deixar de existir
-     * sem que o registro do que foi perguntado na época mude). Antes, a
-     * atualização otimista aqui apagava o item também da tela, na frente do
-     * servidor — via de regra corrigido no próximo refetch, mas mostrando
-     * por alguns instantes uma avaliação passada com menos itens do que ela
-     * realmente tem salvo. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
-     * Seção 19.
-     */
     removeCapability: (id) =>
       runner.guarded(
         () => api.deleteCapability(id),
@@ -795,12 +515,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         },
       ),
 
-    // B-09/B-18 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) —
-    // `expectedVersion` vem do estado que a tela está mostrando agora;
-    // reconcilia com a resposta real do servidor no sucesso (mesmo
-    // raciocínio de `updatePlanItem`: sem isto, o `version` do cache
-    // nunca avança, e a PRÓXIMA edição manda uma versão já defasada,
-    // levando a um 409 sem conflito real nenhum).
     updateAssessmentItem: (assessmentId, competencyId, patch) => {
       const expectedVersion =
         state.assessments
@@ -828,11 +542,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /**
-     * Sem resposta otimista: o id e a data de salvamento nascem no servidor, e
-     * exibir uma data chutada pelo navegador seria mentira até a resposta voltar.
-     * Vale para as três operações do par de comentários.
-     */
     addAssessmentComment: (assessmentId, competencyId, comment) =>
       runner.command(
         () => api.addAssessmentComment(assessmentId, competencyId, comment),
@@ -893,13 +602,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /**
-     * ENT-09-001/006 — sem otimismo, ao contrário de `addPlanItem`: o
-     * servidor pode recusar por várias razões de negócio (capacidade não
-     * confirmada, gap <= 0, MASTERY), e o item só existe de fato depois da
-     * resposta. `currentLevel`/`targetLevel`/`priority` nunca aparecem
-     * aqui — nem o tipo do parâmetro os tem.
-     */
     createPlanItemFromGap: (architectId, item) =>
       runner.command(
         () => api.createPlanItemFromGap(architectId, item),
@@ -912,15 +614,9 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       ),
 
     updatePlanItem: (planId, itemId, patch) => {
-      // `expectedVersion` vem do estado que a tela está mostrando agora —
-      // concorrência otimista (ENT-DATA-012): se outra pessoa já escreveu
-      // neste item, o servidor recusa com 409 e o runner revalida.
       const expectedVersion =
         state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
-      // B-09 — reconcilia com o plano de verdade no sucesso: sem isto, o
-      // `version` do item ficava travado no palpite otimista (que este PATCH
-      // nunca incrementa sozinho), e a PRÓXIMA edição mandava um
-      // `expectedVersion` já defasado, levando a um 409 sem conflito real.
+
       runner.optimistic(
         (s) => ({
           ...s,
@@ -959,7 +655,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /** Fora do runner: leitura pura, sem passo local nem cache a reconciliar. */
     planItemEvents: (planId, itemId) => api.planItemEvents(planId, itemId),
 
     updatePlanStatus: (planId, status) => {
@@ -973,11 +668,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /**
-     * Reabertura de PDI concluído (ENT-PDI-001) — comando dedicado, sem
-     * otimismo: exige motivo e só o Tech Lead responsável, então a tela
-     * precisa do erro de verdade se a autorização ou o motivo falharem.
-     */
     reopenPlan: (planId, reason) => {
       const expectedVersion = state.plans.find((p) => p.id === planId)?.version ?? 1;
       return runner.command(
@@ -998,13 +688,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         }),
       ),
 
-    /**
-     * Sem otimismo: o servidor gera o id de verdade (nunca mais o `id`
-     * enviado pelo cliente — ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-
-     * 08-19.md, IDOR-001). Inserir a evidência localmente com um id
-     * inventado antes da resposta deixaria o item com um id que nunca vai
-     * bater com o do servidor, permanentemente, até o próximo refresh.
-     */
     addEvidence: (e) =>
       runner.command(
         () => api.createEvidence(e),
@@ -1031,7 +714,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /** Sem otimismo — mesmo motivo de `addEvidence`: o id de verdade só existe depois da resposta. */
     addMentoringSession: (m, proficiencyUpdates = []) =>
       runner.command(
         () => api.createMentoringSession(m, proficiencyUpdates),
@@ -1047,18 +729,12 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         }),
       ),
 
-    /**
-     * Trilha nova entra no topo da lista, igual à ordenação do servidor.
-     * Sem otimismo — mesmo motivo de `addEvidence`: o id de verdade só
-     * existe depois da resposta.
-     */
     addLearningPath: (p) =>
       runner.command(
         () => api.createLearningPath(p),
         (created) => (s) => ({ ...s, learningPaths: [created, ...s.learningPaths] }),
       ),
 
-    /** Progresso é por pessoa: só a entrada de (architectId, itemId) muda, nunca o item inteiro. */
     updateLearningItemProgress: (pathId, architectId, itemId, progress) => {
       const status: LearningItemProgress["status"] =
         progress >= 100 ? "Completed" : progress > 0 ? "In Progress" : "Not Started";
@@ -1110,10 +786,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    /**
-     * Abrir assessment devolve o registro criado pelo servidor (uma linha por
-     * competência) — sem otimismo, a resposta é a fonte do registro.
-     */
     openAssessment: (architectId, cycleId) =>
       runner.command(
         () => api.openAssessment(architectId, cycleId),
@@ -1125,17 +797,7 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         }),
       ),
 
-    /*
-      Awaitable, e não otimista: enviar para revisão, concluir ou reabrir é
-      uma transição de negócio que pode ser negada (quem não é Tech Lead não
-      finaliza nem reabre) — a tela precisa do erro de verdade para mostrar,
-      não só reverter em silêncio depois de já ter pintado o novo status na
-      hora do clique.
-    */
     setAssessmentStatus: (id, status) => {
-      // B-18 — mesmo raciocínio de `updateAssessmentItem`: `expectedVersion`
-      // vem do estado atual, não de um valor fixo que o chamador precisaria
-      // rastrear.
       const expectedVersion = state.assessments.find((a) => a.id === id)?.version ?? 1;
       return runner.command(
         () => api.setAssessmentStatus(id, status, expectedVersion),
@@ -1197,19 +859,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     queryFn: api.getState,
     staleTime: 30_000,
     retry: 1,
-    // Só busca no browser: o SSR renderiza o estado de carregamento e a
-    // hidratação dispara a chamada real, sem exigir a API durante o build.
+
     enabled: typeof window !== "undefined",
-    /**
-     * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `/api/state` é o BFF
-     * agregador de todo o app (ADR-0011), não um endpoint barato; o default
-     * do React Query (`refetchOnWindowFocus: true`) refaz essa busca INTEIRA
-     * — incluindo `appStateSchema.parse` do payload todo — toda vez que a
-     * aba/janela recupera o foco depois de `staleTime` (30s) vencido, um
-     * padrão de uso comum (alternar abas, voltar pro navegador). Mutations
-     * já invalidam a query explicitamente (`buildApi`, mais abaixo) — não
-     * dependemos do refetch automático de foco pra ver mudanças próprias.
-     */
+
     refetchOnWindowFocus: false,
   });
 
@@ -1233,14 +885,6 @@ function LoadingState() {
   );
 }
 
-/**
- * REVISAO-360-FRONTEND, FE-360-012 — a mensagem padrão nunca pode instruir
- * quem usa o produto a rodar `docker compose` ou conferir `VITE_API_URL`:
- * isso é instrução de desenvolvedor vazando pra tela de um usuário
- * enterprise. O detalhe técnico (inclusive a mensagem crua do erro) só
- * aparece em build de desenvolvimento (`import.meta.env.DEV`); em produção,
- * vai só pro console, pra quem for investigar via observabilidade/suporte.
- */
 function ConnectionError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const rawMessage = error instanceof Error ? error.message : "Erro desconhecido";
   if (import.meta.env.DEV) console.error("[store] falha ao carregar /api/state:", error);
@@ -1276,8 +920,6 @@ export function useStore() {
   if (!ctx) throw new Error("useStore must be used within StoreProvider");
   return ctx;
 }
-
-/* ---------- selectors / derived helpers ---------- */
 
 export function useSelectors() {
   const s = useStore();

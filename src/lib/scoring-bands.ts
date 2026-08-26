@@ -1,41 +1,11 @@
 import { baseMessages, type MessageKey } from "./i18n/registry";
 
-/**
- * CFG-02 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.1 / B1, B2, B3) — as réguas
- * numéricas de negócio deixaram de ser literais espalhados: a autoridade é
- * a tabela `scoring_bands` do backend, servida por `GET /api/config/bands`
- * (`ConfigGateway.bands`). Este módulo é o lado do frontend dessa fatia:
- *
- * - os TIPOS espelham o domínio do backend
- *   (`backend/src/modules/config/domain/scoring-bands.ts`): faixas
- *   meia-abertas `min <= v < max`, `null` = ±infinito na ponta;
- * - `DEFAULT_SCORING_BANDS` é o ÚNICO lugar onde as constantes antigas
- *   sobrevivem, como fallback byte-idêntico ao seed da migration
- *   (`20260826000000000_scoring-bands.sql`) — enquanto a consulta não
- *   resolve (ou falha), tudo se comporta exatamente como antes, sem flash;
- * - os DERIVADORES abaixo transformam uma escala carregada na forma que
- *   cada consumidor usa: `gapSeverityRulerFrom` (GapBadge, relatório do
- *   time, limiar de "gap crítico" do painel), `proficiencyViewBandsFrom`
- *   e `concentrationRiskMaxReferencesFrom` (Cobertura de Capacidades).
- *
- * Quem quer a régua EFETIVA (servidor com fallback) usa `useScoringBands`/
- * `useGapSeverityRuler` (`store.tsx`); os exports `default*` daqui existem
- * para código não-React e para preservar o comportamento default.
- */
-
 export const SCORING_SCALES = ["GAP_SEVERITY", "PROFICIENCY", "CONCENTRATION_RISK"] as const;
 export type ScoringScale = (typeof SCORING_SCALES)[number];
 
-/**
- * Eixo semântico ESTÁVEL de cada faixa — é dele que o código deriva
- * comportamento (cor do badge, limiar crítico), nunca de `key`/`labelKey`
- * (que um admin pode renomear sem quebrar nada). Coincide de propósito com
- * `GapSeverity` (`domain.ts`), que agora é um alias deste tipo.
- */
 export const BAND_TONES = ["ok", "low", "high", "critical"] as const;
 export type BandTone = (typeof BAND_TONES)[number];
 
-/** Uma faixa de uma régua, na MESMA forma serializada por `GET /api/config/bands`. */
 export interface ScoringBand {
   key: string;
   minValue: number | null;
@@ -47,16 +17,6 @@ export interface ScoringBand {
 
 export type ScoringBands = Record<ScoringScale, readonly ScoringBand[]>;
 
-/**
- * O fallback único — espelho EXATO do seed da migration do backend (que por
- * sua vez espelha os literais que o código tinha antes da fatia). Se o seed
- * mudar lá, este arquivo muda junto; os testes de fallback denunciam
- * qualquer divergência de comportamento com a régua antiga.
- *
- * `labelKey` aqui é tipado como `MessageKey` de propósito: o default nunca
- * pode apontar para uma chave i18n inexistente (o servidor pode — ver
- * `messageKeyOrDefault`).
- */
 export const DEFAULT_SCORING_BANDS: Record<
   ScoringScale,
   readonly (ScoringBand & {
@@ -144,12 +104,6 @@ export const DEFAULT_SCORING_BANDS: Record<
   ],
 };
 
-/**
- * Régua efetiva = servidor onde houver, default onde não houver. Por ESCALA,
- * não tudo-ou-nada: um `PUT` que só recalibrou GAP_SEVERITY não pode fazer
- * PROFICIENCY cair no default. Escala ausente ou vazia cai no fallback —
- * uma régua sem faixa nenhuma classificaria nada.
- */
 export const withDefaultScoringBands = (
   loaded?: Partial<Record<ScoringScale, readonly ScoringBand[] | undefined>>,
 ): ScoringBands => {
@@ -167,12 +121,6 @@ export const withDefaultScoringBands = (
 const bySortOrder = (bands: readonly ScoringBand[]): ScoringBand[] =>
   [...bands].sort((a, b) => a.sortOrder - b.sortOrder);
 
-/**
- * A faixa que cobre `value` (`min <= value < max`, `null` = ±infinito). O
- * backend garante réguas contíguas cobrindo (-∞, +∞) (`ScoringBandScale`),
- * então sempre existe exatamente uma; a última é o fallback defensivo para
- * uma régua malformada que tenha escapado.
- */
 export const classifyBand = (bands: readonly ScoringBand[], value: number): ScoringBand => {
   const sorted = bySortOrder(bands);
   const found = sorted.find(
@@ -183,25 +131,13 @@ export const classifyBand = (bands: readonly ScoringBand[], value: number): Scor
   return found ?? sorted[sorted.length - 1]!;
 };
 
-/**
- * `labelKey` vem do servidor como string livre — um admin pode gravar uma
- * chave que este build não conhece. `t()` só aceita `MessageKey`, então uma
- * chave desconhecida cai no rótulo default correspondente em vez de vazar
- * a chave crua para a tela.
- */
 export const messageKeyOrDefault = (labelKey: string, fallback: MessageKey): MessageKey =>
   labelKey in baseMessages ? (labelKey as MessageKey) : fallback;
 
-/**
- * A régua de severidade de gap na forma que os consumidores usam (OO3-11i):
- * o degrau (`severityOf`), a chave i18n de cada degrau (`messageKey`) e o
- * limiar de "gap crítico" do painel (`criticalThreshold`). O texto continua
- * vindo do `t()` de quem exibe.
- */
 export interface GapSeverityRuler {
   severityOf: (gap: number) => BandTone;
   messageKey: Record<BandTone, MessageKey>;
-  /** `min` da faixa de tom `critical` — o antigo `CRITICAL_GAP_THRESHOLD = 3` do painel. */
+
   criticalThreshold: number;
 }
 
@@ -225,18 +161,10 @@ export const gapSeverityRulerFrom = (bands: readonly ScoringBand[]): GapSeverity
   };
 };
 
-/** A régua default — o que `gapSeverityOf`/`GAP_SEVERITY_MESSAGE_KEY` (`domain.ts`) reexportam. */
 export const defaultGapSeverityRuler: GapSeverityRuler = gapSeverityRulerFrom(
   DEFAULT_SCORING_BANDS.GAP_SEVERITY,
 );
 
-/**
- * Faixa de proficiência na forma que a tela de Cobertura consome (o antigo
- * `BANDS` do `CapabilityCoveragePresenter`): pontas em ±Infinity em vez de
- * `null` (a comparação `level >= min && level < max` do presenter não muda)
- * e `tone` como classe CSS — vocabulário de apresentação, que nunca vem do
- * servidor.
- */
 export interface ProficiencyViewBand {
   key: string;
   labelKey: MessageKey;
@@ -245,12 +173,6 @@ export interface ProficiencyViewBand {
   max: number;
 }
 
-/**
- * Paleta por POSIÇÃO (da menor proficiência para a maior), não por `key` —
- * um admin pode renomear/recortar faixas, e a cor é leitura visual de
- * "quão avançado", não identidade da faixa. Com o seed default o resultado
- * é byte-idêntico ao `BANDS` antigo (level-1/3/4/5).
- */
 const PROFICIENCY_BAND_TONES = [
   "bg-level-1/60",
   "bg-level-3/60",
@@ -272,11 +194,5 @@ export const proficiencyViewBandsFrom = (bands: readonly ScoringBand[]): Profici
   });
 };
 
-/**
- * Limiar de concentração — "abaixo de QUANTAS referências a capacidade está
- * concentrada": o `max` da faixa de tom `critical` da escala
- * CONCENTRATION_RISK (2 no seed → `referenceCount < 2`, o antigo
- * `referenceCount === 1`; um time de 40 pode subir para 3 → `<= 2`).
- */
 export const concentrationRiskMaxReferencesFrom = (bands: readonly ScoringBand[]): number =>
   bands.find((band) => band.tone === "critical")?.maxValue ?? 2;

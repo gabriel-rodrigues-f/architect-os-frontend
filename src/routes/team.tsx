@@ -55,30 +55,14 @@ export const Route = createFileRoute("/team")({
   component: TeamPage,
 });
 
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) / R1-P07 — a
- * rota vira composição: os ~900 linhas de estado de filtro/paginação,
- * formulário de cadastro/edição e apresentação (cards/tabela) que viviam
- * aqui foram para `components/app/team-shared.tsx` (mesmo padrão de
- * `mentoring-shared.tsx`). O que resta aqui é só: quem pode administrar o
- * roster (`isAdmin`), a lista de Leads para o seletor (depende de
- * `authApi.users`, só a rota consulta) e como montar o cabeçalho + a
- * ferramenta de filtro + o diálogo de cadastro/edição.
- */
 function TeamPage() {
   const store = useStore();
   const { t } = useI18n();
   const help = usePageHelp("team");
-  /**
-   * Cadastro do roster é decisão administrativa — backend já recusa o
-   * resto. OO3-08 — a rota consulta `TeamViewModel.isAdmin` (mesma
-   * convenção de `useCompetencyMatrixViewModel` em `competency-matrix.tsx`)
-   * em vez de chamar `defaultUiAuthorizationPolicy` direto: a regra vive no
-   * mesmo objeto que valida cadastro/edição do roster.
-   */
+
   const viewModel = useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
   const isAdmin = viewModel.isAdmin(useCurrentUser());
-  /** Só para montar o seletor de "Lead responsável" — a rota já é admin-only no backend. */
+
   const { data: users } = useQuery({
     queryKey: ["auth-users"],
     queryFn: authApi.users,
@@ -89,7 +73,7 @@ function TeamPage() {
 
   const form = useArchitectForm();
   const roster = useTeamRoster(isAdmin);
-  /** CFG-01 (SPEC-OO3-13, A5) — opções do select de nível vêm de `career_levels`, por `rank`. */
+
   const careerLevels = useCareerLevelsByRank();
 
   return (
@@ -115,14 +99,7 @@ function TeamPage() {
         />
       ) : (
         <>
-          {/*
-            R2-UX-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo B) — grade
-            2×3 em vez de flex-wrap: linha 1 [Pessoas, Status, Nível de
-            carreira], linha 2 [Especialização, Capacidade, Ordenar por]. O
-            auto-flow do CSS Grid (`layout="grid-3"`) já faz a quebra de
-            linha sozinho a partir da ordem dos filhos — sem Status (não-
-            admin), a grade só reflui pra 5 itens, sem quebrar o layout.
-          */}
+          {}
           <DataViewToolbar
             layout="grid-3"
             resultCount={roster.enrichedSorted.length}
@@ -159,15 +136,7 @@ function TeamPage() {
               noneSummaryLabel={t("team.filter.chip.none")}
               emptyLabel={t("team.filter.role.empty")}
             />
-            {/*
-              R3-007 — a guarda antiga (`roster.specializationOptions.length >
-              0 &&`) tentava evitar mostrar o filtro quando só havia a opção-
-              placeholder, mas `.length` conta o placeholder como se fosse uma
-              opção real — nunca chegava a zero. `Capacidade` nem tinha essa
-              guarda. As duas agora renderizam sempre: o `isEmpty` corrigido
-              dentro de `MultiSelectFilter` (options reais, sem placeholder)
-              é quem decide desabilitar e mostrar `emptyLabel`.
-            */}
+            {}
             <MultiSelectFilter
               id="team-filter-specialization"
               label={t("team.filter.specialization")}
@@ -190,13 +159,7 @@ function TeamPage() {
               noneSummaryLabel={t("team.filter.chip.none")}
               emptyLabel={t("team.filter.capability.empty")}
             />
-            {/*
-              R3-006 — "Ordenar por" era um `<select>` nativo (chrome do
-              navegador/SO), do tamanho errado ao lado dos outros 4 filtros
-              `MultiSelectFilter` da mesma grade. `SingleSelectFilter`
-              compartilha o mesmo `FilterTriggerButton`, então a altura/
-              largura/borda batem por construção.
-            */}
+            {}
             <SingleSelectFilter
               id="team-sort"
               label={t("dataView.sortLabel")}
@@ -246,7 +209,7 @@ function TeamPage() {
         </>
       )}
 
-      {/* cadastro e edição */}
+      {}
       <Dialog open={form.editing !== null} onOpenChange={(open) => !open && form.setEditing(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -273,11 +236,7 @@ function TeamPage() {
                 onKeyDown={(e) => e.key === "Enter" && form.submit()}
               />
             </div>
-            {/*
-              ENT-CAR-017 — nível de carreira só é escolhido na criação. Depois
-              disso muda pelo botão dedicado (ícone de seta no card), que exige
-              motivo — nunca por este formulário de cadastro.
-            */}
+            {}
             {!form.editing && (
               <div>
                 <Label htmlFor="role">{t("team.form.role")}</Label>

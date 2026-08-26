@@ -20,7 +20,7 @@ const LEGACY_STORAGE_KEY = "architect-os:locale";
 export interface I18nApi {
   locale: string;
   locales: LocaleInfo[];
-  /** `true` enquanto o pacote do idioma escolhido ainda está sendo baixado. */
+
   loading: boolean;
   setLocale: (code: string) => void;
   t: (key: MessageKey, params?: Record<string, string | number>) => string;
@@ -29,11 +29,6 @@ export interface I18nApi {
 const Ctx = createContext<I18nApi | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  /**
-   * Começa no idioma base e só decide o real depois da montagem: no SSR não há
-   * `localStorage` nem `navigator`, e escolher no primeiro render quebraria a
-   * hidratação.
-   */
   const [locale, setLocaleState] = useState(BASE_LOCALE);
   const [messages, setMessages] = useState<MessageBundle>(baseMessages);
   const [loading, setLoading] = useState(false);
@@ -47,8 +42,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (inicial !== BASE_LOCALE) setLocaleState(inicial);
   }, []);
 
-  // Busca o pacote quando o idioma muda. `cancelado` evita que uma resposta
-  // atrasada sobrescreva uma escolha mais recente.
   useEffect(() => {
     if (locale === BASE_LOCALE) {
       setMessages(baseMessages);
@@ -78,11 +71,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLocaleState(code);
   }, []);
 
-  /**
-   * Chave ausente cai no idioma base — tradução parcial mostra o texto
-   * original, nunca a chave crua. Em desenvolvimento avisa no console, para a
-   * lacuna não passar despercebida.
-   */
   const t = useCallback(
     (key: MessageKey, params?: Record<string, string | number>) => {
       const texto = messages[key] ?? baseMessages[key];
