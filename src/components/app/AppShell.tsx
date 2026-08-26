@@ -245,6 +245,56 @@ const THEME_OPTIONS: { value: Theme; labelKey: MessageKey; icon: typeof Sun }[] 
   { value: "system", labelKey: "prefs.theme.system", icon: Monitor },
 ];
 
+/**
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md) —
+ * revisão deste arquivo pelo mesmo crivo dos cinco ViewModels já extraídos
+ * (`team-view-model.ts`, `development-plans-view-model.ts`,
+ * `assessment-view-model.ts`, `competency-matrix-view-model.ts`): existe
+ * aqui alguma ação de negócio de verdade (entrada clara → chamada
+ * assíncrona a um serviço → resultado), independente do ciclo de render?
+ * Conclusão: NÃO — nada em `AppShell` vira `ViewModel` nesta rodada.
+ *
+ * O que foi considerado e descartado, um a um:
+ *  - `logout` — a única ação assíncrona de verdade no arquivo, mas não
+ *    está "solta" aqui pra ser extraída: já vive inteira em `useAuth()`
+ *    (`src/lib/auth.tsx`), com seu próprio tratamento de erro de rede,
+ *    limpeza de estado local e `queryClient.clear()`. `AppShell` só
+ *    consome o `logout` do hook e pluga no `onClick` do botão — exatamente
+ *    o tipo de encapsulamento que um ViewModel daria, só que já existe,
+ *    num lugar mais correto (hook de autenticação, não a casca de
+ *    navegação). Duplicar isso aqui seria wrapper sem propósito.
+ *  - `setActiveCycle` — troca o ciclo ativo chamando direto o setter que
+ *    já existe em `store.tsx`; não tem validação, regra de elegibilidade
+ *    nem orquestração — é uma seleção de contexto, categoria já tratada
+ *    como estado de UI (equivalente a um filtro) nos ViewModels
+ *    anteriores, não uma ação de negócio nova.
+ *  - `setTheme`/`setLocale` (`PreferencesMenu` abaixo) — preferência
+ *    só de cliente: `setTheme` só grava em `localStorage` e alterna a
+ *    classe `dark` no `<html>` (`src/lib/theme.tsx`); nunca chama o
+ *    servidor, não tem regra de negócio para espelhar.
+ *  - `filterNavGroups`/`isNavItemActive`/`isNavItemHiddenByCollapse` —
+ *    já são funções puras extraídas e testadas isoladamente (sem precisar
+ *    montar `AppShell`), exatamente pelo motivo que esta sessão usa pra
+ *    manter algo como hook/função em vez de ViewModel: derivam o que
+ *    RENDERIZA agora a partir de `pathname`/`role`/estado de colapso, sem
+ *    chamada assíncrona nem serviço. `filterNavGroups` até parece
+ *    "autorização" à primeira vista (comparável a
+ *    `UiAuthorizationPolicy.isAdmin`, `src/lib/scope.ts`), mas é comparação
+ *    de string sobre configuração estática de menu, não uma regra que
+ *    precise de injeção de serviço — envolvê-la numa classe só pra ter uma
+ *    classe seria produzir ViewModel por produzir.
+ *  - Colapso/animação da barra lateral e dos grupos de menu (`collapsed`,
+ *    `collapsedGroups`, `resizing`, `width`, `mobileNavOpen`,
+ *    `isNavItemHiddenByCollapse`) — é precisamente o estado
+ *    entrelaçado-com-render que o commit `9fe230c` (bug real reportado:
+ *    item ativo "pulava" de posição no grupo expandido) acabou de corrigir
+ *    nesta mesma sessão. Não tocado: nem extraído, nem restruturado, só
+ *    lido para confirmar que continua sendo hook/estado local, nunca
+ *    ViewModel.
+ *
+ * Resultado: nenhum ViewModel novo nesta rodada — mesmo desfecho "correto,
+ * sem forçar extração" já visto em OO2-05 para mentoria/evolução.
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { cycles, activeCycleId, setActiveCycle } = useStore();
