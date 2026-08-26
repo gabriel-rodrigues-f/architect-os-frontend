@@ -9,7 +9,7 @@ import { useToastSubmit } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { useSelectors, useStore } from "@/lib/store";
+import { useOperationalSettings, useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/training-needs")({
   head: () => ({
@@ -48,7 +48,16 @@ function TrainingNeedsPage() {
    */
   const [showAllTop, setShowAllTop] = useState(false);
   const top = showAllTop ? needs : needs.slice(0, 15);
-  const collectiveEligible = needs.filter((n) => n.people >= 3);
+  /**
+   * CFG-05 / B6 — o "3+ pessoas" da intervenção coletiva deixou de ser
+   * literal: é `training.collectiveInterventionThreshold` (`app_settings`),
+   * com fallback 3 byte-idêntico ao hardcoded antigo enquanto a consulta
+   * não resolve.
+   */
+  const { trainingCollectiveInterventionThreshold } = useOperationalSettings();
+  const collectiveEligible = needs.filter(
+    (n) => n.people >= trainingCollectiveInterventionThreshold,
+  );
   const [showAllCollective, setShowAllCollective] = useState(false);
   const collective = showAllCollective ? collectiveEligible : collectiveEligible.slice(0, 6);
   const { submitting, run } = useToastSubmit();
@@ -168,7 +177,9 @@ function TrainingNeedsPage() {
 
         <SectionCard
           title={t("needs.recommended.title")}
-          description={t("needs.recommended.subtitle")}
+          description={t("needs.recommended.subtitle", {
+            n: trainingCollectiveInterventionThreshold,
+          })}
         >
           <TruncationNotice
             shown={collective.length}

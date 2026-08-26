@@ -26,7 +26,7 @@ import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { STATE_QUERY_KEY, useStore } from "@/lib/store";
+import { STATE_QUERY_KEY, useOperationalSettings, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { AssessmentViewModel } from "@/lib/view-models/assessment-view-model";
 
@@ -304,6 +304,13 @@ export function CareerPortfolioSection({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const viewModel = useAssessmentViewModel();
+  /**
+   * CFG-05 / B5 — o `?? 3` de quem está no topo da carreira (sem próximo
+   * nível, sem política) deixou de ser literal: é o piso global
+   * `career.minimumQualifiedFloor` (`app_settings`), fallback 3
+   * byte-idêntico ao hardcoded.
+   */
+  const globalFloor = useOperationalSettings().careerMinimumQualifiedFloor;
   const [selectedCapabilityId, setSelectedCapabilityId] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -430,7 +437,7 @@ export function CareerPortfolioSection({
          * abaixo; o piso global 3 é CHECK do banco (B5, parte backend do
          * CFG-01).
          */
-        const minimumPortfolio = eligibility.policy?.minimumQualifiedCapabilities ?? 3;
+        const minimumPortfolio = eligibility.policy?.minimumQualifiedCapabilities ?? globalFloor;
 
         return (
           <SectionCard
@@ -459,7 +466,7 @@ export function CareerPortfolioSection({
                   <Badge variant={eligibility.eligible ? "default" : "outline"}>
                     {t("asmt.portfolio.qualifiedCount", {
                       qualified: eligibility.qualifiedConfirmedCount,
-                      required: eligibility.policy?.minimumQualifiedCapabilities ?? 3,
+                      required: eligibility.policy?.minimumQualifiedCapabilities ?? globalFloor,
                     })}
                   </Badge>
                 </>

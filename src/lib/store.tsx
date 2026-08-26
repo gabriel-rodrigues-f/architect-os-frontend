@@ -24,6 +24,11 @@ import type {
   ProficiencyUpdate,
 } from "./domain";
 import { withDefaultCurationPolicy, type CurationPolicy } from "./curation-policy";
+import {
+  withDefaultOperationalSettings,
+  type AppSettingValue,
+  type OperationalSettings,
+} from "./operational-settings";
 import { useI18n } from "./i18n";
 import { MutationRunner } from "./mutation-runner";
 import {
@@ -111,6 +116,23 @@ export const CURATION_POLICY_QUERY_KEY = ["config-curation-policy"] as const;
 export function useCurationPolicy(): CurationPolicy {
   const { data } = useQuery({ queryKey: CURATION_POLICY_QUERY_KEY, queryFn: api.curationPolicy });
   return useMemo(() => withDefaultCurationPolicy(data), [data]);
+}
+
+/**
+ * CFG-05 — as políticas operacionais escalares (`app_settings`) entram pelo
+ * MESMO padrão de `useScoringBands`/`useCurationPolicy` acima: `useQuery`
+ * próprio, endpoint por contexto (`GET /api/config/settings`), cache e
+ * isolamento de falha independentes do resto do estado. Enquanto a
+ * consulta não resolve (ou se falhar), `withDefaultOperationalSettings`
+ * completa campo a campo com o default byte-idêntico ao seed
+ * ({SEMIANNUAL, 3, 3}) — comportamento igual ao hardcoded antigo, sem
+ * flash: cadência semestral no diálogo de ciclos, piso 3 na política de
+ * carreira, `people >= 3` na intervenção coletiva.
+ */
+export const OPERATIONAL_SETTINGS_QUERY_KEY = ["config-settings"] as const;
+export function useOperationalSettings(): OperationalSettings {
+  const { data } = useQuery({ queryKey: OPERATIONAL_SETTINGS_QUERY_KEY, queryFn: api.settings });
+  return useMemo(() => withDefaultOperationalSettings(data), [data]);
 }
 
 /**
@@ -202,6 +224,19 @@ export interface Api extends AppState {
    * READY/REQUIRES_CURATION calculados com a política antiga.
    */
   updateCurationPolicy: (policy: CurationPolicy) => Promise<CurationPolicy>;
+  /**
+   * CFG-05 (admin UI) — edita o valor de UMA setting operacional
+   * (`app_settings`). Sem otimismo (mesmo racional de `updateScoringBands`;
+   * a aba "Operação" precisa do 400 `INVALID_APP_SETTING` de verdade); ao
+   * sucesso invalida `OPERATIONAL_SETTINGS_QUERY_KEY` — e, ao mudar a
+   * cadência, TAMBÉM `STATE_QUERY_KEY`: a lista de ciclos vem do snapshot
+   * de `/api/state`, e o diálogo "Novo ciclo" deriva as opções da cadência
+   * nova sobre os ciclos vigentes.
+   */
+  updateAppSetting: (
+    key: string,
+    value: AppSettingValue,
+  ) => Promise<{ key: string; value: AppSettingValue }>;
   /** B-32 — id é gerado no servidor; sem otimismo. */
   addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
@@ -455,6 +490,23 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         queryClient.invalidateQueries({ queryKey: CURATION_POLICY_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }),
       ]);
+      return updated;
+    },
+
+    /**
+     * CFG-05 (admin UI) — mesmo formato de `updateScoringBands` acima, com
+     * a invalidação extra de `/api/state` só quando a key é a cadência (é
+     * de lá que a tela de ciclos lê os ciclos vigentes sobre os quais o
+     * diálogo calcula o próximo período livre da cadência nova).
+     */
+    updateAppSetting: async (key, value) => {
+      const updated = await api.updateSetting(key, value);
+      const invalidations = [
+        queryClient.invalidateQueries({ queryKey: OPERATIONAL_SETTINGS_QUERY_KEY }),
+      ];
+      if (key === "cycle.cadence")
+        invalidations.push(queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }));
+      await Promise.all(invalidations);
       return updated;
     },
 

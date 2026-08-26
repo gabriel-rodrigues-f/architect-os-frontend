@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/dialog";
 import type { DevelopmentCycle } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
+import { CycleCadenceScheme } from "@/lib/cycle-cadence";
 import { useLabels } from "@/lib/labels";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type MessageKey } from "@/lib/i18n";
+import type { CycleCadence } from "@/lib/operational-settings";
 import { usePageHelp } from "@/lib/page-help";
-import { useSelectors, useStore } from "@/lib/store";
+import { useOperationalSettings, useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 
 export const Route = createFileRoute("/cycles")({
@@ -55,6 +57,13 @@ function CyclesPage() {
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<DevelopmentCycle | null>(null);
   const [blockedDelete, setBlockedDelete] = useState<DevelopmentCycle | null>(null);
+  /**
+   * CFG-05 / B9 — a cadência EFETIVA (`cycle.cadence`, `app_settings`, com
+   * fallback SEMIANNUAL byte-idêntico ao hardcoded antigo) decide quais
+   * períodos o diálogo "Novo ciclo" oferece. Só ciclos FUTUROS: os
+   * existentes guardam id/nome/datas próprios.
+   */
+  const scheme = CycleCadenceScheme.of(useOperationalSettings().cycleCadence);
 
   /**
    * Ciclo com avaliação ou PDI vinculado não é deletável — o backend já
@@ -123,7 +132,9 @@ function CyclesPage() {
               className="w-48"
             />
             {isAdmin && (
-              <Button onClick={() => setEditing(emptyCycle(store.cycles))}>{t("cycle.new")}</Button>
+              <Button onClick={() => setEditing(emptyCycle(store.cycles, scheme))}>
+                {t("cycle.new")}
+              </Button>
             )}
           </div>
         }
@@ -191,7 +202,7 @@ function CyclesPage() {
             <p className="text-sm font-medium">{t("cycle.empty")}</p>
             <p className="mt-1 text-sm text-muted-foreground">{t("cycle.empty.hint")}</p>
             {isAdmin && (
-              <Button className="mt-4" onClick={() => setEditing(emptyCycle(store.cycles))}>
+              <Button className="mt-4" onClick={() => setEditing(emptyCycle(store.cycles, scheme))}>
                 {t("cycle.new")}
               </Button>
             )}
@@ -199,7 +210,7 @@ function CyclesPage() {
         )}
       </div>
 
-      {editing && <CycleDialog cycle={editing} onClose={() => setEditing(null)} />}
+      {editing && <CycleDialog cycle={editing} scheme={scheme} onClose={() => setEditing(null)} />}
 
       <ConfirmDialog
         open={confirmDelete !== null}
@@ -284,41 +295,28 @@ function CyclesPage() {
   );
 }
 
-type Half = "H1" | "H2";
+/**
+ * CFG-05 / B9 — identidade, datas e parse do período saíram da rota para
+ * `lib/cycle-cadence.ts` (`CycleCadenceScheme`, uma estratégia por cadência
+ * — pendência de auditoria: regra de domínio fora da rota). Aqui só resta o
+ * rascunho inicial de criação, derivado do próximo período livre da
+ * cadência efetiva.
+ */
+const emptyCycle = (existing: DevelopmentCycle[], scheme: CycleCadenceScheme): DevelopmentCycle => {
+  const { year, period } = scheme.nextAvailable(existing);
+  return {
+    id: "",
+    name: scheme.cycleName(year, period),
+    ...scheme.datesFor(year, period),
+    status: "Planned",
+  };
+};
 
-/** Rótulo e id nascem do par ano/semestre — nunca de texto livre. */
-const cycleName = (year: number, half: Half) => `${year} ${half}`;
-const cycleId = (year: number, half: Half) => `${year}-${half.toLowerCase()}`;
-
-/** Extrai ano/semestre de um nome existente; cai no ano corrente se não casar o padrão. */
-function parseCycleName(name: string): { year: number; half: Half } {
-  const match = /^(\d{4}) (H[12])$/.exec(name);
-  if (match) return { year: Number(match[1]), half: match[2] as Half };
-  return { year: new Date().getFullYear(), half: "H1" };
-}
-
-/** Primeiro par ano/semestre ainda não usado, a partir do ciclo mais recente. */
-function nextAvailableCycle(existing: DevelopmentCycle[]): { year: number; half: Half } {
-  const used = new Set(existing.map((c) => c.id));
-  let { year, half } = { year: new Date().getFullYear(), half: "H1" as Half };
-  while (used.has(cycleId(year, half))) {
-    if (half === "H1") half = "H2";
-    else {
-      half = "H1";
-      year += 1;
-    }
-  }
-  return { year, half };
-}
-
-const datesFor = (year: number, half: Half) =>
-  half === "H1"
-    ? { start: `${year}-01-01`, end: `${year}-06-30` }
-    : { start: `${year}-07-01`, end: `${year}-12-31` };
-
-const emptyCycle = (existing: DevelopmentCycle[]): DevelopmentCycle => {
-  const { year, half } = nextAvailableCycle(existing);
-  return { id: "", name: cycleName(year, half), ...datesFor(year, half), status: "Planned" };
+/** Rótulo acessível do seletor de período, por cadência (ANNUAL não tem seletor). */
+const PERIOD_ARIA_KEY: Record<CycleCadence, MessageKey> = {
+  SEMIANNUAL: "cycle.dialog.semesterAriaLabel",
+  QUARTERLY: "cycle.dialog.quarterAriaLabel",
+  ANNUAL: "cycle.dialog.quarterAriaLabel",
 };
 
 /**
@@ -335,31 +333,39 @@ const emptyCycle = (existing: DevelopmentCycle[]): DevelopmentCycle => {
  * "Ativar" do card, nunca por este CRUD genérico de data/nome. Ver CYC-001,
  * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
  */
-function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () => void }) {
+function CycleDialog({
+  cycle,
+  scheme,
+  onClose,
+}: {
+  cycle: DevelopmentCycle;
+  scheme: CycleCadenceScheme;
+  onClose: () => void;
+}) {
   const store = useStore();
   const { t } = useI18n();
   const isNew = cycle.id === "";
-  const parsed = parseCycleName(cycle.name);
+  const parsed = scheme.parseCycleName(cycle.name);
   const [year, setYear] = useState(parsed.year);
-  const [half, setHalf] = useState<Half>(parsed.half);
+  const [period, setPeriod] = useState(parsed.period);
   const [start, setStart] = useState(cycle.start);
   const [end, setEnd] = useState(cycle.end);
 
-  const duplicate = isNew && store.cycles.some((c) => c.id === cycleId(year, half));
+  const duplicate = isNew && store.cycles.some((c) => c.id === scheme.cycleId(year, period));
 
-  const changePeriod = (nextYear: number, nextHalf: Half) => {
+  const changePeriod = (nextYear: number, nextPeriod: string) => {
     setYear(nextYear);
-    setHalf(nextHalf);
-    setStart(datesFor(nextYear, nextHalf).start);
-    setEnd(datesFor(nextYear, nextHalf).end);
+    setPeriod(nextPeriod);
+    setStart(scheme.datesFor(nextYear, nextPeriod).start);
+    setEnd(scheme.datesFor(nextYear, nextPeriod).end);
   };
 
   const save = () => {
     if (duplicate) return;
     if (isNew) {
       store.addCycle({
-        id: cycleId(year, half),
-        name: cycleName(year, half),
+        id: scheme.cycleId(year, period),
+        name: scheme.cycleName(year, period),
         start,
         end,
         status: "Planned",
@@ -388,17 +394,22 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
                   type="number"
                   className="w-28"
                   value={year}
-                  onChange={(e) => changePeriod(Number(e.target.value) || year, half)}
+                  onChange={(e) => changePeriod(Number(e.target.value) || year, period)}
                 />
-                <select
-                  aria-label={t("cycle.dialog.semesterAriaLabel")}
-                  className="rounded-md border border-input bg-card px-3 py-2 text-sm"
-                  value={half}
-                  onChange={(e) => changePeriod(year, e.target.value as Half)}
-                >
-                  <option value="H1">H1</option>
-                  <option value="H2">H2</option>
-                </select>
+                {!scheme.singlePeriod && (
+                  <select
+                    aria-label={t(PERIOD_ARIA_KEY[scheme.cadence])}
+                    className="rounded-md border border-input bg-card px-3 py-2 text-sm"
+                    value={period}
+                    onChange={(e) => changePeriod(year, e.target.value)}
+                  >
+                    {scheme.periods.map((key) => (
+                      <option key={key} value={key}>
+                        {key}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             ) : (
               <p id="cycle-year" className="mt-1 text-sm font-medium">
@@ -407,7 +418,7 @@ function CycleDialog({ cycle, onClose }: { cycle: DevelopmentCycle; onClose: () 
             )}
             {duplicate && (
               <p className="mt-1 text-xs text-destructive" role="alert">
-                {t("cycle.dialog.duplicate", { nome: cycleName(year, half) })}
+                {t("cycle.dialog.duplicate", { nome: scheme.cycleName(year, period) })}
               </p>
             )}
           </div>

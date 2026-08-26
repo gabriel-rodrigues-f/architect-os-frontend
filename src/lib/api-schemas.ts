@@ -163,6 +163,35 @@ export const curationPolicySchema = z.object({
   requiredNonRestrictive: z.number(),
 });
 
+/**
+ * CFG-05 — `GET /api/config/settings` (`ConfigController`): as políticas
+ * operacionais escalares como o servidor serializa (`{ settings: [...] }`,
+ * linhas de `AppSettingRecord` — valor tipado + metadados). Mesma
+ * disciplina R2-TEC-19: validado em runtime — os valores decidem cadência
+ * de ciclo, piso de carreira e limiar de LNT; um campo renomeado no
+ * servidor tem que falhar barulhento no `useQuery`, não propagar
+ * `undefined` silencioso pela UI.
+ */
+export const appSettingRecordSchema = z.object({
+  key: z.string(),
+  value: z.union([z.string(), z.number()]),
+  valueType: z.string(),
+  scope: z.string(),
+  description: z.string().nullable(),
+  updatedAt: z.string(),
+  updatedBy: z.string().nullable(),
+});
+
+export const appSettingsResponseSchema = z.object({
+  settings: z.array(appSettingRecordSchema),
+});
+
+/** CFG-05 (admin UI) — a resposta do PUT: a key e o valor tipado recém-gravado. */
+export const appSettingPutResponseSchema = z.object({
+  key: z.string(),
+  value: z.union([z.string(), z.number()]),
+});
+
 const architect = z.object({
   id: z.string(),
   name: z.string(),
