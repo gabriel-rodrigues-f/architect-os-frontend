@@ -6,6 +6,7 @@ import { GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { QuerySection } from "@/components/app/QuerySection";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
@@ -327,61 +328,8 @@ export function CareerPortfolioSection({
     void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
   };
 
-  if (isPending) {
-    return (
-      <SectionCard
-        className="mb-4"
-        title={t("asmt.portfolio.title")}
-        description={t("asmt.portfolio.subtitle")}
-      >
-        <div className="space-y-2" aria-busy="true" aria-live="polite">
-          <span className="sr-only">{t("common.loading")}</span>
-          <div className="h-9 animate-pulse rounded-md bg-secondary" />
-          <div className="h-9 animate-pulse rounded-md bg-secondary" />
-          <div className="h-9 w-2/3 animate-pulse rounded-md bg-secondary" />
-        </div>
-      </SectionCard>
-    );
-  }
-
-  // `!eligibility?.capabilities`, não só `!eligibility`: testes que ainda não
-  // conhecem esta rota (mock de fetch genérico) devolvem `{}` com 200 em vez
-  // de 404 — `eligibility` fica um objeto truthy sem o formato esperado.
-  if (isError || !eligibility?.capabilities) {
-    return (
-      <SectionCard
-        className="mb-4"
-        title={t("asmt.portfolio.title")}
-        description={t("asmt.portfolio.subtitle")}
-      >
-        <p className="text-sm text-destructive" role="alert">
-          {t("asmt.portfolio.loadError")}
-        </p>
-        <Button size="sm" variant="outline" className="mt-2" onClick={() => void refetch()}>
-          {t("common.retry")}
-        </Button>
-      </SectionCard>
-    );
-  }
-
-  // Problema 1 — só capacidade `READY` (curadoria completa) pode entrar no
-  // portfólio; o backend já recusa o resto, mas oferecer a opção aqui só
-  // para devolver erro depois é a experiência ruim que a Seção 8 aponta.
-  const availableToAdd = viewModel.availableCapabilitiesToPropose(store.capabilities, eligibility);
-
   const canPropose = isOwner && assessment.status === "Draft";
   const canConfirm = isLead && assessment.status === "In Review";
-  const portfolioSize = eligibility.capabilities.length;
-  /**
-   * CFG-01 (SPEC-OO3-13, B8) — o mínimo do portfólio deixou de ser um
-   * literal `3` repetido (terceira cópia da mesma regra): é
-   * `career_level_policies.minimumQualifiedCapabilities` do nível ALVO,
-   * que a resposta de elegibilidade já traz (`eligibility.policy`). O
-   * `?? 3` cobre só quem está no topo da carreira (sem próximo nível, sem
-   * política) — mesmo fallback já usado no badge de qualificação abaixo;
-   * o piso global 3 é CHECK do banco (B5, parte backend do CFG-01).
-   */
-  const minimumPortfolio = eligibility.policy?.minimumQualifiedCapabilities ?? 3;
 
   const addCapability = () => {
     if (!selectedCapabilityId) return;
@@ -442,140 +390,186 @@ export function CareerPortfolioSection({
   };
 
   return (
-    <SectionCard
+    <QuerySection
+      query={{ data: eligibility, isPending, isError, refetch }}
       className="mb-4"
       title={t("asmt.portfolio.title")}
       description={t("asmt.portfolio.subtitle")}
+      errorMessage={t("asmt.portfolio.loadError")}
+      // Problema 4 — loading/error de verdade em vez de `return null`; o
+      // esqueleto/erro/retry/ARIA moram em `QuerySection` (OO3-18/F-2).
+      skeleton={
+        <div className="space-y-2">
+          <div className="h-9 animate-pulse rounded-md bg-secondary" />
+          <div className="h-9 animate-pulse rounded-md bg-secondary" />
+          <div className="h-9 w-2/3 animate-pulse rounded-md bg-secondary" />
+        </div>
+      }
+      // `!data.capabilities`, não só `!data`: testes que ainda não conhecem
+      // esta rota (mock de fetch genérico) devolvem `{}` com 200 em vez de
+      // 404 — `data` fica um objeto truthy sem o formato esperado.
+      isEmpty={(data) => !data.capabilities}
     >
-      {/* Problema 5 — dois números, nunca confundidos: quantas capacidades
+      {(eligibility) => {
+        // Problema 1 — só capacidade `READY` (curadoria completa) pode entrar
+        // no portfólio; o backend já recusa o resto, mas oferecer a opção aqui
+        // só para devolver erro depois é a experiência ruim que a Seção 8
+        // aponta.
+        const availableToAdd = viewModel.availableCapabilitiesToPropose(
+          store.capabilities,
+          eligibility,
+        );
+        const portfolioSize = eligibility.capabilities.length;
+        /**
+         * CFG-01 (SPEC-OO3-13, B8) — o mínimo do portfólio deixou de ser um
+         * literal `3` repetido (terceira cópia da mesma regra): é
+         * `career_level_policies.minimumQualifiedCapabilities` do nível ALVO,
+         * que a resposta de elegibilidade já traz (`eligibility.policy`). O
+         * `?? 3` cobre só quem está no topo da carreira (sem próximo nível,
+         * sem política) — mesmo fallback já usado no badge de qualificação
+         * abaixo; o piso global 3 é CHECK do banco (B5, parte backend do
+         * CFG-01).
+         */
+        const minimumPortfolio = eligibility.policy?.minimumQualifiedCapabilities ?? 3;
+
+        return (
+          <SectionCard
+            className="mb-4"
+            title={t("asmt.portfolio.title")}
+            description={t("asmt.portfolio.subtitle")}
+          >
+            {/* Problema 5 — dois números, nunca confundidos: quantas capacidades
           o ciclo exige no mínimo (a política do nível alvo) versus quantas
           já qualificam para o próximo nível. */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-        <Badge variant={portfolioSize >= minimumPortfolio ? "default" : "outline"}>
-          {t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
-        </Badge>
-        {/* ENT-09-016 — indicador visual do mínimo da política, além do número no badge. */}
-        <Progress
-          value={Math.min(100, (portfolioSize / minimumPortfolio) * 100)}
-          className="h-1.5 w-24"
-          aria-label={t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
-        />
-        {eligibility.nextCareerLevel ? (
-          <>
-            <span className="text-muted-foreground">
-              {t("asmt.portfolio.progressTo", { nivel: eligibility.nextCareerLevel.name })}
-            </span>
-            <Badge variant={eligibility.eligible ? "default" : "outline"}>
-              {t("asmt.portfolio.qualifiedCount", {
-                qualified: eligibility.qualifiedConfirmedCount,
-                required: eligibility.policy?.minimumQualifiedCapabilities ?? 3,
-              })}
-            </Badge>
-          </>
-        ) : (
-          <span className="text-muted-foreground">{t("asmt.portfolio.topLevel")}</span>
-        )}
-      </div>
-      {canPropose && portfolioSize < minimumPortfolio && (
-        <p className="mb-3 text-xs text-muted-foreground">
-          {t("asmt.portfolio.minimumHint", { min: minimumPortfolio })}
-        </p>
-      )}
-
-      <ul className="space-y-1.5">
-        {eligibility.capabilities.map((entry) => {
-          const capability = store.capabilities.find((c) => c.id === entry.capabilityId);
-          const name = capability?.name ?? entry.capabilityId;
-          return (
-            <li
-              key={entry.capabilityId}
-              className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
-            >
-              <span>{name}</span>
-              <div className="flex items-center gap-2">
-                {entry.confirmed ? (
-                  <Badge variant={entry.qualified ? "default" : "outline"}>
-                    {entry.qualified
-                      ? t("asmt.portfolio.qualified")
-                      : t("asmt.portfolio.notQualified")}
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+              <Badge variant={portfolioSize >= minimumPortfolio ? "default" : "outline"}>
+                {t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
+              </Badge>
+              {/* ENT-09-016 — indicador visual do mínimo da política, além do número no badge. */}
+              <Progress
+                value={Math.min(100, (portfolioSize / minimumPortfolio) * 100)}
+                className="h-1.5 w-24"
+                aria-label={t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
+              />
+              {eligibility.nextCareerLevel ? (
+                <>
+                  <span className="text-muted-foreground">
+                    {t("asmt.portfolio.progressTo", { nivel: eligibility.nextCareerLevel.name })}
+                  </span>
+                  <Badge variant={eligibility.eligible ? "default" : "outline"}>
+                    {t("asmt.portfolio.qualifiedCount", {
+                      qualified: eligibility.qualifiedConfirmedCount,
+                      required: eligibility.policy?.minimumQualifiedCapabilities ?? 3,
+                    })}
                   </Badge>
-                ) : (
-                  <Badge variant="secondary">{t("asmt.portfolio.pendingConfirmation")}</Badge>
-                )}
-                {canConfirm && !entry.confirmed && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() => confirmCapability(entry.capabilityId)}
+                </>
+              ) : (
+                <span className="text-muted-foreground">{t("asmt.portfolio.topLevel")}</span>
+              )}
+            </div>
+            {canPropose && portfolioSize < minimumPortfolio && (
+              <p className="mb-3 text-xs text-muted-foreground">
+                {t("asmt.portfolio.minimumHint", { min: minimumPortfolio })}
+              </p>
+            )}
+
+            <ul className="space-y-1.5">
+              {eligibility.capabilities.map((entry) => {
+                const capability = store.capabilities.find((c) => c.id === entry.capabilityId);
+                const name = capability?.name ?? entry.capabilityId;
+                return (
+                  <li
+                    key={entry.capabilityId}
+                    className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
                   >
-                    {t("asmt.portfolio.confirm")}
-                  </Button>
-                )}
-                {canPropose && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => attemptRemove(entry.capabilityId, name)}
-                  >
-                    {t("common.remove")}
-                  </Button>
-                )}
+                    <span>{name}</span>
+                    <div className="flex items-center gap-2">
+                      {entry.confirmed ? (
+                        <Badge variant={entry.qualified ? "default" : "outline"}>
+                          {entry.qualified
+                            ? t("asmt.portfolio.qualified")
+                            : t("asmt.portfolio.notQualified")}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">{t("asmt.portfolio.pendingConfirmation")}</Badge>
+                      )}
+                      {canConfirm && !entry.confirmed && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={busy}
+                          onClick={() => confirmCapability(entry.capabilityId)}
+                        >
+                          {t("asmt.portfolio.confirm")}
+                        </Button>
+                      )}
+                      {canPropose && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => attemptRemove(entry.capabilityId, name)}
+                        >
+                          {t("common.remove")}
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+              {eligibility.capabilities.length === 0 && (
+                <p className="text-sm text-muted-foreground">{t("asmt.portfolio.empty")}</p>
+              )}
+            </ul>
+
+            {canPropose && (
+              <div className="mt-3 flex gap-2">
+                <select
+                  aria-label={t("asmt.portfolio.addLabel")}
+                  className="flex-1 rounded-md border border-input bg-card px-3 py-2 text-sm"
+                  value={selectedCapabilityId}
+                  disabled={busy}
+                  onChange={(e) => setSelectedCapabilityId(e.target.value)}
+                >
+                  <option value="">{t("asmt.portfolio.addPlaceholder")}</option>
+                  {availableToAdd.map((cap) => (
+                    <option key={cap.id} value={cap.id}>
+                      {cap.name}
+                    </option>
+                  ))}
+                </select>
+                <Button size="sm" disabled={!selectedCapabilityId || busy} onClick={addCapability}>
+                  {t("asmt.portfolio.add")}
+                </Button>
               </div>
-            </li>
-          );
-        })}
-        {eligibility.capabilities.length === 0 && (
-          <p className="text-sm text-muted-foreground">{t("asmt.portfolio.empty")}</p>
-        )}
-      </ul>
+            )}
+            {canPropose && availableToAdd.length === 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">{t("asmt.portfolio.noneReady")}</p>
+            )}
 
-      {canPropose && (
-        <div className="mt-3 flex gap-2">
-          <select
-            aria-label={t("asmt.portfolio.addLabel")}
-            className="flex-1 rounded-md border border-input bg-card px-3 py-2 text-sm"
-            value={selectedCapabilityId}
-            disabled={busy}
-            onChange={(e) => setSelectedCapabilityId(e.target.value)}
-          >
-            <option value="">{t("asmt.portfolio.addPlaceholder")}</option>
-            {availableToAdd.map((cap) => (
-              <option key={cap.id} value={cap.id}>
-                {cap.name}
-              </option>
-            ))}
-          </select>
-          <Button size="sm" disabled={!selectedCapabilityId || busy} onClick={addCapability}>
-            {t("asmt.portfolio.add")}
-          </Button>
-        </div>
-      )}
-      {canPropose && availableToAdd.length === 0 && (
-        <p className="mt-2 text-xs text-muted-foreground">{t("asmt.portfolio.noneReady")}</p>
-      )}
+            {actionError && (
+              <p className="mt-2 text-xs text-destructive" role="alert">
+                {actionError}
+              </p>
+            )}
 
-      {actionError && (
-        <p className="mt-2 text-xs text-destructive" role="alert">
-          {actionError}
-        </p>
-      )}
-
-      <ConfirmDialog
-        open={pendingRemoval !== null}
-        title={t("asmt.portfolio.removeConfirm.title")}
-        description={t("asmt.portfolio.removeConfirm.description", {
-          nome: pendingRemoval?.name ?? "",
-        })}
-        confirmLabel={t("asmt.portfolio.removeConfirm.confirm")}
-        cancelLabel={t("pdi.newItem.cancel")}
-        onConfirm={() =>
-          pendingRemoval && attemptRemove(pendingRemoval.id, pendingRemoval.name, true)
-        }
-        onCancel={() => setPendingRemoval(null)}
-      />
-    </SectionCard>
+            <ConfirmDialog
+              open={pendingRemoval !== null}
+              title={t("asmt.portfolio.removeConfirm.title")}
+              description={t("asmt.portfolio.removeConfirm.description", {
+                nome: pendingRemoval?.name ?? "",
+              })}
+              confirmLabel={t("asmt.portfolio.removeConfirm.confirm")}
+              cancelLabel={t("pdi.newItem.cancel")}
+              onConfirm={() =>
+                pendingRemoval && attemptRemove(pendingRemoval.id, pendingRemoval.name, true)
+              }
+              onCancel={() => setPendingRemoval(null)}
+            />
+          </SectionCard>
+        );
+      }}
+    </QuerySection>
   );
 }
 
@@ -613,49 +607,34 @@ export function DevelopmentSummarySection({
     refetchOnWindowFocus: false,
   });
 
-  if (isPending) {
-    return (
-      <SectionCard
-        className="mb-4"
-        title={t("asmt.devSummary.title")}
-        description={t("asmt.devSummary.subtitle")}
-      >
-        <div className="grid gap-3 md:grid-cols-3" aria-busy="true" aria-live="polite">
-          <span className="sr-only">{t("common.loading")}</span>
+  // OO3-18/F-2 — loading/erro eram o segundo clone byte a byte do bloco do
+  // portfólio acima; o esqueleto/erro/retry/ARIA moram em `QuerySection`.
+  return (
+    <QuerySection
+      query={{ data, isPending, isError, refetch }}
+      className="mb-4"
+      title={t("asmt.devSummary.title")}
+      description={t("asmt.devSummary.subtitle")}
+      errorMessage={t("asmt.devSummary.loadError")}
+      skeleton={
+        <div className="grid gap-3 md:grid-cols-3">
           <div className="h-24 animate-pulse rounded-md bg-secondary" />
           <div className="h-24 animate-pulse rounded-md bg-secondary" />
           <div className="h-24 animate-pulse rounded-md bg-secondary" />
         </div>
-      </SectionCard>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <SectionCard
-        className="mb-4"
-        title={t("asmt.devSummary.title")}
-        description={t("asmt.devSummary.subtitle")}
-      >
-        <p className="text-sm text-destructive" role="alert">
-          {t("asmt.devSummary.loadError")}
-        </p>
-        <Button size="sm" variant="outline" className="mt-2" onClick={() => void refetch()}>
-          {t("common.retry")}
-        </Button>
-      </SectionCard>
-    );
-  }
-
-  return (
-    <DevelopmentSummaryForm
-      key={data.version}
-      assessmentId={assessment.id}
-      data={data}
-      canEdit={canEdit}
-      queryKey={queryKey}
-      onReload={() => void refetch()}
-    />
+      }
+    >
+      {(data) => (
+        <DevelopmentSummaryForm
+          key={data.version}
+          assessmentId={assessment.id}
+          data={data}
+          canEdit={canEdit}
+          queryKey={queryKey}
+          onReload={() => void refetch()}
+        />
+      )}
+    </QuerySection>
   );
 }
 

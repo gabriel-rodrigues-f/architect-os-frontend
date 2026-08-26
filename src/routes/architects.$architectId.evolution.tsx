@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { EvolutionLine, ProficiencyTimeline } from "@/components/app/charts";
+import { QuerySection } from "@/components/app/QuerySection";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Button } from "@/components/ui/button";
 import { PageHeader, ProfileTabs, SectionCard, StatCard } from "@/components/app/ui-bits";
@@ -132,7 +133,7 @@ function ArchitectEvolution() {
     selectedCapabilityIds.join(","),
     source,
   ];
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey,
     queryFn: () => evolutionApi.architect(architectId, filters),
     enabled: !!architect,
@@ -364,294 +365,304 @@ function ArchitectEvolution() {
         </div>
       </SectionCard>
 
-      {isLoading && <p className="text-sm text-muted-foreground">{t("evolution.loading")}</p>}
-      {isError && <p className="text-sm text-destructive">{t("evolution.error")}</p>}
-
-      {data && (
-        <>
-          <div
-            className="mb-4 flex gap-1 border-b border-border"
-            role="tablist"
-            aria-label={t("evolution.view.title")}
-          >
-            {VIEWS.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                role="tab"
-                aria-selected={view === v.id}
-                onClick={() => setView(v.id)}
-                className={cn(
-                  "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
-                  view === v.id
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t(v.labelKey)}
-              </button>
-            ))}
-          </div>
-
-          <div role="tabpanel" hidden={view !== "resumo"}>
-            <div className="mb-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              <StatCard
-                label={t("evolution.kpi.initialAverage")}
-                value={data.summary.initialAverage?.toFixed(2) ?? "—"}
-              />
-              <StatCard
-                label={t("evolution.kpi.currentAverage")}
-                value={data.summary.currentAverage?.toFixed(2) ?? "—"}
-              />
-              <StatCard
-                label={t("evolution.kpi.delta")}
-                value={
-                  data.summary.averageDelta === null
-                    ? "—"
-                    : `${data.summary.averageDelta > 0 ? "+" : ""}${data.summary.averageDelta.toFixed(2)}`
-                }
-              />
-              <StatCard
-                label={t("evolution.kpi.coverage")}
-                value={`${data.summary.coverage.covered}/${data.summary.coverage.total}`}
-              />
-              <StatCard
-                label={t("evolution.kpi.mentoring")}
-                value={String(data.summary.mentoringCount)}
-              />
-              <StatCard
-                label={t("evolution.kpi.assessment")}
-                value={String(data.summary.assessmentCount)}
-              />
+      {/* OO3-18/F-2b — loading/erro padronizados via `QuerySection`: esta tela
+          resolvia o mesmo problema de `assessments-shared` sem retry e sem
+          ARIA (aria-busy/role="alert"); agora ganha os dois. Sem `title`, os
+          estados rendem crus (fora de card), como os <p> que substituem. */}
+      <QuerySection
+        query={{ data, isPending: isLoading, isError, refetch }}
+        errorMessage={t("evolution.error")}
+        skeleton={<p className="text-sm text-muted-foreground">{t("evolution.loading")}</p>}
+      >
+        {(data) => (
+          <>
+            <div
+              className="mb-4 flex gap-1 border-b border-border"
+              role="tablist"
+              aria-label={t("evolution.view.title")}
+            >
+              {VIEWS.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === v.id}
+                  onClick={() => setView(v.id)}
+                  className={cn(
+                    "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                    view === v.id
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t(v.labelKey)}
+                </button>
+              ))}
             </div>
 
-            <SectionCard title={t("evolution.chart.capability.title")} className="mb-6">
-              <EvolutionLine
-                data={capabilityChartData.rows}
-                series={capabilityChartData.series}
-                height={280}
-              />
-              <SeriesLimitNotice
-                total={data.capabilitySeries.length}
-                showingAll={showAllSeries}
-                onToggle={() => setShowAllSeries((v) => !v)}
-                t={t}
-              />
-            </SectionCard>
-
-            <SectionCard
-              title={t("evolution.summary.topChanges.title")}
-              description={t("evolution.summary.topChanges.subtitle")}
-            >
-              {topChanges.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("evolution.summary.topChanges.empty")}
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {topChanges.map((c) => (
-                    <li
-                      key={c.competencyId}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
-                    >
-                      <span className="min-w-0 flex-1 truncate">{c.competencyName}</span>
-                      <span className="flex shrink-0 items-center gap-2 tabular-nums">
-                        {c.initialLevel ? `L${c.initialLevel}` : "—"} →{" "}
-                        {c.currentLevel ? `L${c.currentLevel}` : "—"}
-                        <span className={c.delta! > 0 ? "text-emerald-600" : "text-destructive"}>
-                          ({c.delta! > 0 ? "+" : ""}
-                          {c.delta})
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </SectionCard>
-          </div>
-
-          <div role="tabpanel" hidden={view !== "capacidades"}>
-            <SectionCard title={t("evolution.chart.capability.title")} className="mb-6">
-              <EvolutionLine
-                data={capabilityChartData.rows}
-                series={capabilityChartData.series}
-                height={280}
-              />
-              <SeriesLimitNotice
-                total={data.capabilitySeries.length}
-                showingAll={showAllSeries}
-                onToggle={() => setShowAllSeries((v) => !v)}
-                t={t}
-              />
-              <p className="mt-2 text-xs text-muted-foreground">
-                {t("evolution.chart.capability.hint")}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {data.capabilitySeries.map((s) => (
-                  <button
-                    key={s.capabilityId}
-                    type="button"
-                    className={`rounded-full border px-3 py-1 text-xs ${focusedCapabilityId === s.capabilityId ? "border-primary bg-primary/10 text-primary" : "border-input text-muted-foreground hover:bg-accent"}`}
-                    onClick={() =>
-                      setFocusedCapabilityId((id) =>
-                        id === s.capabilityId ? null : s.capabilityId,
-                      )
-                    }
-                  >
-                    {s.capabilityName}
-                  </button>
-                ))}
+            <div role="tabpanel" hidden={view !== "resumo"}>
+              <div className="mb-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                <StatCard
+                  label={t("evolution.kpi.initialAverage")}
+                  value={data.summary.initialAverage?.toFixed(2) ?? "—"}
+                />
+                <StatCard
+                  label={t("evolution.kpi.currentAverage")}
+                  value={data.summary.currentAverage?.toFixed(2) ?? "—"}
+                />
+                <StatCard
+                  label={t("evolution.kpi.delta")}
+                  value={
+                    data.summary.averageDelta === null
+                      ? "—"
+                      : `${data.summary.averageDelta > 0 ? "+" : ""}${data.summary.averageDelta.toFixed(2)}`
+                  }
+                />
+                <StatCard
+                  label={t("evolution.kpi.coverage")}
+                  value={`${data.summary.coverage.covered}/${data.summary.coverage.total}`}
+                />
+                <StatCard
+                  label={t("evolution.kpi.mentoring")}
+                  value={String(data.summary.mentoringCount)}
+                />
+                <StatCard
+                  label={t("evolution.kpi.assessment")}
+                  value={String(data.summary.assessmentCount)}
+                />
               </div>
-            </SectionCard>
 
-            {focusedCapabilityId && focusedCompetencies.length > 0 && (
-              <SectionCard title={t("evolution.chart.competency.title")}>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {focusedCompetencies.map((c) => (
-                    <div key={c.competencyId}>
-                      <p className="mb-1 text-sm font-medium">{c.competencyName}</p>
-                      <ProficiencyTimeline
-                        label={c.competencyName}
-                        height={180}
-                        data={c.events.map((e) => ({ date: e.effectiveDate, level: e.toLevel }))}
-                      />
-                    </div>
+              <SectionCard title={t("evolution.chart.capability.title")} className="mb-6">
+                <EvolutionLine
+                  data={capabilityChartData.rows}
+                  series={capabilityChartData.series}
+                  height={280}
+                />
+                <SeriesLimitNotice
+                  total={data.capabilitySeries.length}
+                  showingAll={showAllSeries}
+                  onToggle={() => setShowAllSeries((v) => !v)}
+                  t={t}
+                />
+              </SectionCard>
+
+              <SectionCard
+                title={t("evolution.summary.topChanges.title")}
+                description={t("evolution.summary.topChanges.subtitle")}
+              >
+                {topChanges.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("evolution.summary.topChanges.empty")}
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {topChanges.map((c) => (
+                      <li
+                        key={c.competencyId}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
+                      >
+                        <span className="min-w-0 flex-1 truncate">{c.competencyName}</span>
+                        <span className="flex shrink-0 items-center gap-2 tabular-nums">
+                          {c.initialLevel ? `L${c.initialLevel}` : "—"} →{" "}
+                          {c.currentLevel ? `L${c.currentLevel}` : "—"}
+                          <span className={c.delta! > 0 ? "text-emerald-600" : "text-destructive"}>
+                            ({c.delta! > 0 ? "+" : ""}
+                            {c.delta})
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </SectionCard>
+            </div>
+
+            <div role="tabpanel" hidden={view !== "capacidades"}>
+              <SectionCard title={t("evolution.chart.capability.title")} className="mb-6">
+                <EvolutionLine
+                  data={capabilityChartData.rows}
+                  series={capabilityChartData.series}
+                  height={280}
+                />
+                <SeriesLimitNotice
+                  total={data.capabilitySeries.length}
+                  showingAll={showAllSeries}
+                  onToggle={() => setShowAllSeries((v) => !v)}
+                  t={t}
+                />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t("evolution.chart.capability.hint")}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {data.capabilitySeries.map((s) => (
+                    <button
+                      key={s.capabilityId}
+                      type="button"
+                      className={`rounded-full border px-3 py-1 text-xs ${focusedCapabilityId === s.capabilityId ? "border-primary bg-primary/10 text-primary" : "border-input text-muted-foreground hover:bg-accent"}`}
+                      onClick={() =>
+                        setFocusedCapabilityId((id) =>
+                          id === s.capabilityId ? null : s.capabilityId,
+                        )
+                      }
+                    >
+                      {s.capabilityName}
+                    </button>
                   ))}
                 </div>
               </SectionCard>
-            )}
-          </div>
 
-          <div role="tabpanel" hidden={view !== "competencias"}>
-            <SectionCard title={t("evolution.comparison.title")}>
-              <input
-                type="search"
-                placeholder={t("evolution.comparison.search")}
-                value={competencySearch}
-                onChange={(e) => setCompetencySearch(e.target.value)}
-                className="mb-3 w-full max-w-sm rounded-md border border-input bg-card px-3 py-2 text-sm"
-                aria-label={t("evolution.comparison.search")}
-              />
-              <p className="mb-2 text-xs text-muted-foreground">
-                {t("evolution.comparison.count", {
-                  n: filteredComparisons.length,
-                  total: sortedComparisons.length,
-                })}
-              </p>
-              <div className="max-h-[60vh] overflow-auto">
-                <table className="w-full min-w-[640px] text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th scope="col" className="sticky top-0 z-10 bg-card py-2">
-                        {t("evolution.comparison.competency")}
-                      </th>
-                      <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
-                        {t("evolution.comparison.initial")}
-                      </th>
-                      <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
-                        {t("evolution.comparison.current")}
-                      </th>
-                      <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
-                        {t("evolution.comparison.delta")}
-                      </th>
-                      <th scope="col" className="sticky top-0 z-10 bg-card py-2">
-                        {t("evolution.comparison.source")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredComparisons.map((c: CompetencyEvolutionComparison) => (
-                      <tr key={c.competencyId} className="border-b border-border/60 last:border-0">
-                        <td className="py-2 font-medium">{c.competencyName}</td>
-                        <td className="py-2 text-center">
-                          {c.initialLevel ? `L${c.initialLevel}` : "—"}
-                        </td>
-                        <td className="py-2 text-center">
-                          {c.currentLevel ? `L${c.currentLevel}` : "—"}
-                        </td>
-                        <td className="py-2 text-center">
-                          {c.delta === null ? "—" : `${c.delta > 0 ? "+" : ""}${c.delta}`}
-                        </td>
-                        <td className="py-2 text-xs text-muted-foreground">
-                          {c.lastSourceType === "MENTORING"
-                            ? t("evolution.source.mentoring")
-                            : c.lastSourceType === "ASSESSMENT"
-                              ? t("evolution.source.assessment")
-                              : "—"}
-                        </td>
-                      </tr>
+              {focusedCapabilityId && focusedCompetencies.length > 0 && (
+                <SectionCard title={t("evolution.chart.competency.title")}>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {focusedCompetencies.map((c) => (
+                      <div key={c.competencyId}>
+                        <p className="mb-1 text-sm font-medium">{c.competencyName}</p>
+                        <ProficiencyTimeline
+                          label={c.competencyName}
+                          height={180}
+                          data={c.events.map((e) => ({ date: e.effectiveDate, level: e.toLevel }))}
+                        />
+                      </div>
                     ))}
-                    {filteredComparisons.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="py-3 text-sm text-muted-foreground">
-                          {t("evolution.comparison.noResults")}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-          </div>
-
-          <div role="tabpanel" hidden={view !== "timeline"}>
-            <SectionCard title={t("evolution.timeline.title")}>
-              {sortedEvents.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("evolution.timeline.empty")}</p>
-              ) : (
-                <>
-                  <ul className="space-y-3">
-                    {sortedEvents.slice(0, timelineVisibleCount).map((event) => {
-                      const competency = data.competencySeries.find(
-                        (c) => c.competencyId === event.competencyId,
-                      );
-                      return (
-                        <li
-                          key={event.id}
-                          className="border-b border-border/60 pb-2 text-sm last:border-0"
-                        >
-                          <span className="text-xs text-muted-foreground">
-                            {defaultDateFormatter.formatDate(event.effectiveDate, locale)} ·{" "}
-                            {event.sourceType === "MENTORING"
-                              ? t("evolution.source.mentoring")
-                              : t("evolution.source.assessment")}
-                          </span>
-                          <div>
-                            <span className="font-medium">
-                              {competency?.competencyName ?? event.competencyId}
-                            </span>{" "}
-                            {event.fromLevel ? `L${event.fromLevel} → ` : ""}L{event.toLevel}
-                          </div>
-                          {event.note && (
-                            <p className="text-xs text-muted-foreground">{event.note}</p>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {timelineVisibleCount < sortedEvents.length && (
-                    <div className="mt-4 flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        {t("evolution.timeline.shown", {
-                          n: Math.min(timelineVisibleCount, sortedEvents.length),
-                          total: sortedEvents.length,
-                        })}
-                      </p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setTimelineVisibleCount((n) => n + TIMELINE_PAGE_SIZE)}
-                      >
-                        {t("evolution.timeline.loadMore")}
-                      </Button>
-                    </div>
-                  )}
-                </>
+                  </div>
+                </SectionCard>
               )}
-            </SectionCard>
-          </div>
-        </>
-      )}
+            </div>
+
+            <div role="tabpanel" hidden={view !== "competencias"}>
+              <SectionCard title={t("evolution.comparison.title")}>
+                <input
+                  type="search"
+                  placeholder={t("evolution.comparison.search")}
+                  value={competencySearch}
+                  onChange={(e) => setCompetencySearch(e.target.value)}
+                  className="mb-3 w-full max-w-sm rounded-md border border-input bg-card px-3 py-2 text-sm"
+                  aria-label={t("evolution.comparison.search")}
+                />
+                <p className="mb-2 text-xs text-muted-foreground">
+                  {t("evolution.comparison.count", {
+                    n: filteredComparisons.length,
+                    total: sortedComparisons.length,
+                  })}
+                </p>
+                <div className="max-h-[60vh] overflow-auto">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                        <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+                          {t("evolution.comparison.competency")}
+                        </th>
+                        <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+                          {t("evolution.comparison.initial")}
+                        </th>
+                        <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+                          {t("evolution.comparison.current")}
+                        </th>
+                        <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
+                          {t("evolution.comparison.delta")}
+                        </th>
+                        <th scope="col" className="sticky top-0 z-10 bg-card py-2">
+                          {t("evolution.comparison.source")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredComparisons.map((c: CompetencyEvolutionComparison) => (
+                        <tr
+                          key={c.competencyId}
+                          className="border-b border-border/60 last:border-0"
+                        >
+                          <td className="py-2 font-medium">{c.competencyName}</td>
+                          <td className="py-2 text-center">
+                            {c.initialLevel ? `L${c.initialLevel}` : "—"}
+                          </td>
+                          <td className="py-2 text-center">
+                            {c.currentLevel ? `L${c.currentLevel}` : "—"}
+                          </td>
+                          <td className="py-2 text-center">
+                            {c.delta === null ? "—" : `${c.delta > 0 ? "+" : ""}${c.delta}`}
+                          </td>
+                          <td className="py-2 text-xs text-muted-foreground">
+                            {c.lastSourceType === "MENTORING"
+                              ? t("evolution.source.mentoring")
+                              : c.lastSourceType === "ASSESSMENT"
+                                ? t("evolution.source.assessment")
+                                : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredComparisons.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="py-3 text-sm text-muted-foreground">
+                            {t("evolution.comparison.noResults")}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </SectionCard>
+            </div>
+
+            <div role="tabpanel" hidden={view !== "timeline"}>
+              <SectionCard title={t("evolution.timeline.title")}>
+                {sortedEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("evolution.timeline.empty")}</p>
+                ) : (
+                  <>
+                    <ul className="space-y-3">
+                      {sortedEvents.slice(0, timelineVisibleCount).map((event) => {
+                        const competency = data.competencySeries.find(
+                          (c) => c.competencyId === event.competencyId,
+                        );
+                        return (
+                          <li
+                            key={event.id}
+                            className="border-b border-border/60 pb-2 text-sm last:border-0"
+                          >
+                            <span className="text-xs text-muted-foreground">
+                              {defaultDateFormatter.formatDate(event.effectiveDate, locale)} ·{" "}
+                              {event.sourceType === "MENTORING"
+                                ? t("evolution.source.mentoring")
+                                : t("evolution.source.assessment")}
+                            </span>
+                            <div>
+                              <span className="font-medium">
+                                {competency?.competencyName ?? event.competencyId}
+                              </span>{" "}
+                              {event.fromLevel ? `L${event.fromLevel} → ` : ""}L{event.toLevel}
+                            </div>
+                            {event.note && (
+                              <p className="text-xs text-muted-foreground">{event.note}</p>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {timelineVisibleCount < sortedEvents.length && (
+                      <div className="mt-4 flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          {t("evolution.timeline.shown", {
+                            n: Math.min(timelineVisibleCount, sortedEvents.length),
+                            total: sortedEvents.length,
+                          })}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setTimelineVisibleCount((n) => n + TIMELINE_PAGE_SIZE)}
+                        >
+                          {t("evolution.timeline.loadMore")}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </SectionCard>
+            </div>
+          </>
+        )}
+      </QuerySection>
     </>
   );
 }
