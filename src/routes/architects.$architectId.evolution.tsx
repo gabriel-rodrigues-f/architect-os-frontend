@@ -8,9 +8,10 @@ import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Button } from "@/components/ui/button";
 import { PageHeader, ProfileTabs, SectionCard, StatCard } from "@/components/app/ui-bits";
 import { ApiError, evolutionApi, reportsApi } from "@/lib/api";
-import type { CompetencyEvolutionComparison, EvolutionFilters, SelectionScope } from "@/lib/domain";
+import type { CompetencyEvolutionComparison, EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { defaultDateFormatter } from "@/lib/text";
@@ -107,15 +108,19 @@ function ArchitectEvolution() {
   const [timelineVisibleCount, setTimelineVisibleCount] = useState(TIMELINE_PAGE_SIZE);
 
   const range = rangeForPreset(preset, custom);
-  const capabilities: SelectionScope = selectedCapabilityIds.length
-    ? { mode: "SELECTED", ids: selectedCapabilityIds }
-    : { mode: "ALL_VISIBLE" };
+  /**
+   * OO3-09b — chips de alternância: nada marcado = TODAS as capacidades
+   * (`Selection.fromToggleList`), ao contrário do recorte explícito de
+   * gap/compare/roster onde `[]` = ninguém. A semântica agora está no nome
+   * do construtor; o payload wire (`SelectionScope`) fica byte-idêntico.
+   */
+  const capabilities = Selection.fromToggleList(selectedCapabilityIds).toScope();
 
   /** Mesmos filtros pra tela e pro PDF (Fase 10.6) — exportar é "isto que estou vendo", nunca outro recorte. */
   const filters: EvolutionFilters = {
     range,
     capabilities,
-    competencies: { mode: "ALL_VISIBLE" },
+    competencies: Selection.allVisible().toScope(),
     source,
   };
 

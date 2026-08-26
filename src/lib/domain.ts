@@ -1,3 +1,5 @@
+import type { SelectionScope as GenericSelectionScope } from "./selection";
+
 export type Level = 1 | 2 | 3 | 4 | 5;
 
 /**
@@ -549,8 +551,12 @@ export interface ProficiencyUpdate {
 export type ProficiencySourceType = "ASSESSMENT" | "MENTORING";
 export type EvolutionSourceFilter = "ALL" | ProficiencySourceType;
 
-/** Nunca `[] = todos` (Seção 44) — modo explícito. */
-export type SelectionScope = { mode: "ALL_VISIBLE" } | { mode: "SELECTED"; ids: string[] };
+/**
+ * Nunca `[] = todos` (Seção 44) — modo explícito. OO3-09b: deriva do
+ * genérico `Selection<TId>`/`SelectionScope<TId>` (`selection.ts`), que
+ * unificou esta representação com os recortes `string[]` das telas.
+ */
+export type SelectionScope = GenericSelectionScope<string>;
 
 export interface CompetencyLevelEvent {
   id: string;

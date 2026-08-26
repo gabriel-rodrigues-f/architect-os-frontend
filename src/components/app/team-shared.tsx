@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { ROLES, type Architect, type RoleName } from "@/lib/domain";
 import { ApiError } from "@/lib/api";
+import { Selection } from "@/lib/selection";
 import { authErrorMessage } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, specializationLabel, type Gap } from "@/lib/selectors";
@@ -303,8 +304,10 @@ export function useTeamRoster(isAdmin: boolean) {
 
   const filtered = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
+    /** OO3-09b — mesmo recorte explícito de gap/compare: `[]` = ninguém, nunca vazio-como-atalho. */
+    const nameFilter = Selection.explicit(nameSelection);
     return store.architects.filter((a) => {
-      if (!nameSelection.includes(a.id)) return false;
+      if (!nameFilter.contains(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
       if (!roleFilter.includes(a.role)) return false;
       const specKey = a.primarySpecializationCompetencyId ?? NO_SPECIALIZATION;

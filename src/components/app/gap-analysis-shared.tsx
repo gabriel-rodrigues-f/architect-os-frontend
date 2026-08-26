@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 
 import { GapBadge } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
-import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
 import { capabilityShortLabels, type Architect } from "@/lib/domain";
+import { Selection } from "@/lib/selection";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { averageWithCoverage, type Gap } from "@/lib/selectors";
@@ -146,8 +146,8 @@ export function useGapAnalysisData() {
     replaceSearchParam("selected", ids.join(","));
   };
 
-  /** Toda a tela lê deste recorte. */
-  const architects = applyArchitectFilter(store.architects, selected);
+  /** Toda a tela lê deste recorte — pertencimento explícito, `[]` = "ninguém" (OO3-09b, `Selection.explicit`). */
+  const architects = Selection.explicit(selected).apply(store.architects);
 
   /**
    * Radar: média por capacidade só entre quem tem assessment oficial cobrindo
@@ -221,7 +221,7 @@ export function useGapAnalysisData() {
    * ORIENTACAO-NONA-RODADA-FECHAMENTO, Seção 4.2/17/36 (A1/B2) — texto
    * ficou obsoleto depois que `selected: []` passou a significar "ninguém"
    * (não mais "todo o time implícito", ver `ArchitectFilter`). Compara com
-   * `architects.length` (já resolvido por `applyArchitectFilter`), não com
+   * `architects.length` (já resolvido pelo recorte `Selection`), não com
    * `store.architects.length` diretamente — assim um id de seleção que não
    * existe mais no roster não faz a contagem bater por acidente.
    */

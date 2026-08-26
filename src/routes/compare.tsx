@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { applyArchitectFilter, ArchitectFilter } from "@/components/app/ArchitectFilter";
+import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
 import { LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { capabilityShortLabels } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
 import { initialSearchParam, replaceSearchParam } from "@/lib/text";
 
@@ -52,7 +53,8 @@ function ComparePage() {
     replaceSearchParam("selected", ids.join(","));
   };
 
-  const architects = applyArchitectFilter(store.architects, selected);
+  /** OO3-09b — pertencimento explícito (`[]` = ninguém): comparação é sempre um recorte intencional. */
+  const architects = Selection.explicit(selected).apply(store.architects);
   const series: EvolutionSeries[] = architects.map((a) => ({ key: a.id, label: a.name }));
 
   /** Uma consulta por pessoa, não uma por célula da tabela/radar. */

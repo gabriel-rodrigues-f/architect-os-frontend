@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Architect } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { Selection } from "@/lib/selection";
 import { cn } from "@/lib/utils";
 
 /**
@@ -223,8 +224,12 @@ export function ArchitectFilter({
  * Aplica a seleção: sempre por pertencimento explícito. Vazio significa
  * "ninguém" — quem chama decide o valor inicial de `selected` para a tela
  * nunca nascer mostrando ninguém por engano (ver doc do componente acima).
+ *
+ * OO3-09b — delega para `Selection.explicit` (`lib/selection.ts`), o tipo
+ * único de recorte: a semântica de `[]` = "ninguém" agora está no nome do
+ * construtor, não implícita num `includes`.
  */
 export const applyArchitectFilter = <T extends { id: string }>(
   architects: T[],
   selected: string[],
-): T[] => architects.filter((a) => selected.includes(a.id));
+): T[] => Selection.explicit(selected).apply(architects);
