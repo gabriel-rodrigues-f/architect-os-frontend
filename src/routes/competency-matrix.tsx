@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
@@ -30,7 +30,23 @@ import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
+import { CompetencyMatrixViewModel } from "@/lib/view-models/competency-matrix-view-model";
+
+/**
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seções 58-61) — adaptador fino: memoiza o `CompetencyMatrixViewModel`
+ * sobre `store` (o próprio `useStore()` já satisfaz `CatalogService`
+ * estruturalmente, sem adaptador). Compartilhado pelos quatro componentes
+ * desta rota que precisam do ViewModel — ver a doc da classe
+ * (`lib/view-models/competency-matrix-view-model.ts`) para o porquê de UMA
+ * fonte só no construtor, diferente do `AssessmentViewModel`.
+ */
+function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
+  const store = useStore();
+  return useMemo(() => new CompetencyMatrixViewModel(store, defaultUiAuthorizationPolicy), [store]);
+}
 
 export const Route = createFileRoute("/competency-matrix")({
   head: () => ({
@@ -62,8 +78,9 @@ export const Route = createFileRoute("/competency-matrix")({
 function MatrixPage() {
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
+  const viewModel = useCompetencyMatrixViewModel();
   /** Catálogo mestre é administrativo — backend já recusa o resto. */
-  const isAdmin = useCurrentUser().role === "admin";
+  const isAdmin = viewModel.isAdmin(useCurrentUser());
   const [creatingCapability, setCreatingCapability] = useState(false);
   const { t } = useI18n();
   const labels = useLabels();
@@ -108,14 +125,14 @@ function MatrixPage() {
     // diálogo: o backend regenera a sigla a partir do nome novo sempre que
     // o patch muda `name` sem mandar `short` explícito (com resolução de
     // colisão do lado de lá, excluindo a própria capacidade da checagem).
-    store.updateCapability(editingCapability.id, { name: trimmedName });
+    viewModel.renameCapability(editingCapability.id, editCapabilityName);
     toast.success(t("cap.edit.toast", { nome: trimmedName }));
     setEditingCapability(null);
   };
 
   const removeCapability = async () => {
     if (!confirmDeleteCapability) return;
-    const { archived } = await store.removeCapability(confirmDeleteCapability.id);
+    const { archived } = await viewModel.removeCapability(confirmDeleteCapability.id);
     toast.success(
       archived
         ? t("cap.archive.toast", { nome: confirmDeleteCapability.name })
@@ -247,7 +264,7 @@ function MatrixPage() {
               const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
               /** Busca ativa força a expansão de todo grupo visível — já filtrado por casar com o termo, sem exigir um segundo clique pra ver por quê. */
               const isExpanded = expandedIds.has(cat.id) || term.length > 0;
-              const atCapacity = cat.curation.activeCompetencyCount >= 6;
+              const atCapacity = viewModel.isCapabilityAtCapacity(cat);
               return (
                 <SectionCard
                   key={cat.id}
@@ -394,7 +411,7 @@ function MatrixPage() {
         onCancel={() => setConfirmDelete(null)}
         onConfirm={async () => {
           if (confirmDelete) {
-            const { archived } = await store.removeCompetency(confirmDelete.competency.id);
+            const { archived } = await viewModel.removeCompetency(confirmDelete.competency.id);
             toast.success(
               archived
                 ? t("matrix.archive.toast", { nome: confirmDelete.competency.name })
@@ -468,7 +485,7 @@ function MatrixPage() {
  * seguia esse padrão) em vez dos dois inputs soltos no cabeçalho de antes.
  */
 function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
-  const store = useStore();
+  const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -485,7 +502,7 @@ function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
       // diálogo (pedido direto da dona do produto: nunca mais digitar a
       // sigla manualmente). O backend gera automaticamente a partir de
       // `name`, com resolução de colisão, quando o campo não vem no corpo.
-      await store.addCapability({ name: trimmedName, active: true });
+      await viewModel.createCapability(name);
       onClose();
     } catch (error) {
       toast.error(authErrorMessage(error));
@@ -537,7 +554,7 @@ function ArchivedCompetencies({
   capabilities: Capability[];
   competencies: Competency[];
 }) {
-  const store = useStore();
+  const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
   const archivedCapabilities = capabilities.filter((c) => !c.active);
   const archivedCompetencies = competencies.filter(
@@ -563,7 +580,7 @@ function ArchivedCompetencies({
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => store.updateCapability(cat.id, { active: true })}
+              onClick={() => viewModel.restoreCapability(cat.id)}
             >
               {t("matrix.restore")}
             </Button>
@@ -572,11 +589,7 @@ function ArchivedCompetencies({
         {archivedCompetencies.map((c) => (
           <li key={c.id} className="flex items-center justify-between gap-2">
             <span>{c.name}</span>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => store.updateCompetency(c.id, { active: true })}
-            >
+            <Button size="sm" variant="secondary" onClick={() => viewModel.restoreCompetency(c.id)}>
               {t("matrix.restore")}
             </Button>
           </li>
@@ -598,31 +611,25 @@ function CompetencyCreateDialog({
   capability: Capability;
   onClose: () => void;
 }) {
-  const store = useStore();
+  const viewModel = useCompetencyMatrixViewModel();
   const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
   const labels = useLabels();
-  const restrictiveFull = capability.curation.restrictiveCompetencyCount >= 3;
-  const nonRestrictiveFull = capability.curation.nonRestrictiveCompetencyCount >= 3;
+  const restrictiveFull = viewModel.isRequirementTypeFull(capability, "RESTRICTIVE");
+  const nonRestrictiveFull = viewModel.isRequirementTypeFull(capability, "NON_RESTRICTIVE");
   const [name, setName] = useState("");
   const [levels, setLevels] = useState<Partial<Record<string, Level>>>({});
   const [requirementType, setRequirementType] = useState<RequirementType>(
     nonRestrictiveFull ? "RESTRICTIVE" : "NON_RESTRICTIVE",
   );
-  const canSave = name.trim().length > 0 && careerLevels.every((cl) => levels[cl.id] !== undefined);
+  const canSave = viewModel.canCreateCompetency(name, levels, careerLevels);
 
   const save = async () => {
     if (!canSave) return;
     // B-32 — id gerado no servidor (nunca mais derivado do nome, que
     // colidia entre duas competências homônimas em capacidades distintas).
     try {
-      await store.addCompetency({
-        name: name.trim(),
-        capabilityId: capability.id,
-        requirementType,
-        expected: levels as Record<string, Level>,
-        active: true,
-      });
+      await viewModel.createCompetency(capability.id, name, levels, requirementType);
       onClose();
     } catch (error) {
       toast.error(authErrorMessage(error));
@@ -731,19 +738,18 @@ function CompetencyEditDialog({
   onClose: () => void;
 }) {
   const store = useStore();
+  const viewModel = useCompetencyMatrixViewModel();
   const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
   const labels = useLabels();
   const capability = store.capabilities.find((c) => c.id === competency.capabilityId);
   /** Subtrai a própria competência da contagem: ela já ocupa uma vaga do tipo atual. */
-  const restrictiveFull =
-    (capability?.curation.restrictiveCompetencyCount ?? 0) -
-      (competency.requirementType === "RESTRICTIVE" ? 1 : 0) >=
-    3;
-  const nonRestrictiveFull =
-    (capability?.curation.nonRestrictiveCompetencyCount ?? 0) -
-      (competency.requirementType === "NON_RESTRICTIVE" ? 1 : 0) >=
-    3;
+  const restrictiveFull = viewModel.isRequirementTypeFull(capability, "RESTRICTIVE", competency);
+  const nonRestrictiveFull = viewModel.isRequirementTypeFull(
+    capability,
+    "NON_RESTRICTIVE",
+    competency,
+  );
   const [name, setName] = useState(competency.name);
   const [levels, setLevels] = useState<Partial<Record<string, Level>>>(competency.expected);
   const [requirementType, setRequirementType] = useState<RequirementType>(
@@ -761,19 +767,17 @@ function CompetencyEditDialog({
   const [swapping, setSwapping] = useState(false);
   const [swapError, setSwapError] = useState<string | null>(null);
 
-  const restrictiveSiblings = store.competencies.filter(
-    (c) =>
-      c.capabilityId === competency.capabilityId &&
-      c.active &&
-      c.requirementType === "RESTRICTIVE" &&
-      c.id !== competency.id,
+  const restrictiveSiblings = viewModel.swapCandidates(
+    store.competencies,
+    competency.capabilityId,
+    "RESTRICTIVE",
+    competency.id,
   );
-  const nonRestrictiveSiblings = store.competencies.filter(
-    (c) =>
-      c.capabilityId === competency.capabilityId &&
-      c.active &&
-      c.requirementType === "NON_RESTRICTIVE" &&
-      c.id !== competency.id,
+  const nonRestrictiveSiblings = viewModel.swapCandidates(
+    store.competencies,
+    competency.capabilityId,
+    "NON_RESTRICTIVE",
+    competency.id,
   );
 
   const swapWith = async () => {
@@ -781,7 +785,7 @@ function CompetencyEditDialog({
     setSwapping(true);
     setSwapError(null);
     try {
-      await store.swapCompetencyRequirement(competency.id, swapTargetId);
+      await viewModel.swapRequirementType(competency.id, swapTargetId);
       // O servidor já confirmou a troca — esta competência agora É o tipo
       // que estava travado, sem precisar de um segundo PATCH para o campo.
       setRequirementType((prev) => (prev === "RESTRICTIVE" ? "NON_RESTRICTIVE" : "RESTRICTIVE"));
@@ -797,11 +801,7 @@ function CompetencyEditDialog({
     if (!name.trim()) return;
     // PATCH faz merge (`jsonbMerge`, backend) — enviar só os níveis já
     // preenchidos não zera os demais do Perfil por Cargo.
-    store.updateCompetency(competency.id, {
-      name: name.trim(),
-      expected: levels as Record<string, Level>,
-      requirementType,
-    });
+    viewModel.updateCompetency(competency.id, name, levels, requirementType);
     onClose();
   };
 
