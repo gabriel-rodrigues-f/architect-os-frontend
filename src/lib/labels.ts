@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { useI18n, type MessageKey } from "./i18n";
 import type {
   ActionType,
@@ -150,32 +152,67 @@ const learningItemTypeKey: Record<LearningItemType, MessageKey> = {
   Workshop: "learningItemType.workshop",
 };
 
+const traduzir = <K extends string | number>(
+  mapa: Record<K, MessageKey>,
+  t: (key: MessageKey, vars?: Record<string, string | number>) => string,
+): Record<K, string> =>
+  Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, t(v as MessageKey)])) as Record<
+    K,
+    string
+  >;
+
+/**
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seção 68) — `useLabels()` virou um adaptador fino (Seção 61) em cima
+ * desta classe: todo o trabalho de traduzir os mapas acima mora aqui,
+ * como campos calculados no construtor a partir de um `t` fixo — mesmo
+ * momento em que a função `traduzir()` rodava antes (uma vez por chamada
+ * de `useLabels()`), só que agora nomeado e reutilizável fora de um hook
+ * (ex.: um teste que quer os rótulos sem montar `I18nProvider`, passando
+ * um `t` fake).
+ */
+export class LabelFormatter {
+  readonly planStatus: Record<DevelopmentPlan["status"], string>;
+  readonly planItemStatus: Record<DevelopmentPlanItem["status"], string>;
+  readonly learningStatus: Record<LearningItemProgress["status"], string>;
+  readonly priority: Record<DevelopmentPlanItem["priority"], string>;
+  readonly cycleStatus: Record<DevelopmentCycle["status"], string>;
+  readonly assessmentStatus: Record<Assessment["status"], string>;
+  readonly actionType: Record<ActionType, string>;
+  readonly evidenceType: Record<EvidenceType, string>;
+  readonly complexity: Record<"Low" | "Medium" | "High", string>;
+  readonly evidenceStatus: Record<Evidence["status"], string>;
+  readonly levelName: Record<Level, string>;
+  readonly levelDescription: Record<Level, string>;
+  readonly learningItemType: Record<LearningItemType, string>;
+
+  constructor(t: (key: MessageKey, vars?: Record<string, string | number>) => string) {
+    this.planStatus = traduzir(planStatusKey, t);
+    this.planItemStatus = traduzir(planItemStatusKey, t);
+    this.learningStatus = traduzir(learningStatusKey, t);
+    this.priority = traduzir(priorityKey, t);
+    this.cycleStatus = traduzir(cycleStatusKey, t);
+    this.assessmentStatus = traduzir(assessmentStatusKey, t);
+    this.actionType = traduzir(actionTypeKey, t);
+    this.evidenceType = traduzir(evidenceTypeKey, t);
+    this.complexity = traduzir(complexityKey, t);
+    this.evidenceStatus = traduzir(evidenceStatusKey, t);
+    this.levelName = traduzir(levelNameKey, t);
+    this.levelDescription = traduzir(levelDescriptionKey, t);
+    this.learningItemType = traduzir(learningItemTypeKey, t);
+  }
+}
+
 /**
  * Rótulos já traduzidos para o idioma ativo. É hook porque depende do contexto
  * de i18n — a alternativa seria passar `t` para cada chamada, o que poluiria
- * todas as telas.
+ * todas as telas. `useMemo` por `t` evita recalcular os 13 mapas em todo
+ * render quando o idioma não mudou (`t` só troca de referência quando o
+ * `I18nProvider` troca de idioma) — antes cada chamada de `useLabels()`
+ * recomputava tudo incondicionalmente; o resultado final é idêntico, só
+ * mais barato quando o idioma fica parado.
  */
-export function useLabels() {
+export function useLabels(): LabelFormatter {
   const { t } = useI18n();
-  const traduzir = <K extends string | number>(mapa: Record<K, MessageKey>) =>
-    Object.fromEntries(Object.entries(mapa).map(([k, v]) => [k, t(v as MessageKey)])) as Record<
-      K,
-      string
-    >;
-
-  return {
-    planStatus: traduzir(planStatusKey),
-    planItemStatus: traduzir(planItemStatusKey),
-    learningStatus: traduzir(learningStatusKey),
-    priority: traduzir(priorityKey),
-    cycleStatus: traduzir(cycleStatusKey),
-    assessmentStatus: traduzir(assessmentStatusKey),
-    actionType: traduzir(actionTypeKey),
-    evidenceType: traduzir(evidenceTypeKey),
-    complexity: traduzir(complexityKey),
-    evidenceStatus: traduzir(evidenceStatusKey),
-    levelName: traduzir(levelNameKey),
-    levelDescription: traduzir(levelDescriptionKey),
-    learningItemType: traduzir(learningItemTypeKey),
-  };
+  return useMemo(() => new LabelFormatter(t), [t]);
 }

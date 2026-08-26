@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   byName,
+  DateFormatter,
   firstWord,
   formatDate,
   initialSearchParam,
+  NameFormatter,
   replaceSearchParam,
   slug,
 } from "../text";
@@ -124,5 +126,62 @@ describe("initialSearchParam / replaceSearchParam", () => {
     replaceSearchParam("cycleId", "2026-h2");
     expect(initialSearchParam("architectId")).toBe("ana");
     expect(initialSearchParam("cycleId")).toBe("2026-h2");
+  });
+});
+
+/**
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seção 68) — `NameFormatter`/`DateFormatter` são as classes por trás das
+ * funções soltas testadas acima. Os testes acima já provam o
+ * comportamento fim a fim; estes só confirmam que instanciar a classe
+ * diretamente (sem passar pelas funções de compatibilidade) devolve o
+ * mesmo resultado.
+ */
+describe("NameFormatter", () => {
+  const formatter = new NameFormatter();
+
+  it("slug normaliza igual à função solta", () => {
+    expect(formatter.slug("Arquitetura de Aplicações Web")).toBe(
+      slug("Arquitetura de Aplicações Web"),
+    );
+  });
+
+  it("byName ordena igual à função solta", () => {
+    expect([{ name: "Bruno" }, { name: "Ana" }].sort(formatter.byName).map((d) => d.name)).toEqual([
+      "Ana",
+      "Bruno",
+    ]);
+  });
+
+  it("matchesSearch e firstWord se comportam igual às funções soltas", () => {
+    expect(formatter.matchesSearch("Kubernetes", "kube")).toBe(true);
+    expect(formatter.matchesSearch("Kubernetes", "azure")).toBe(false);
+    expect(formatter.firstWord("Engenharia de Plataforma")).toBe(
+      firstWord("Engenharia de Plataforma"),
+    );
+  });
+
+  it("truncateNames divide na mesma quantidade que a função solta", () => {
+    const names = ["a", "b", "c", "d", "e", "f"];
+    expect(formatter.truncateNames(names, 5)).toEqual({ shown: names.slice(0, 5), remaining: 1 });
+  });
+});
+
+describe("DateFormatter", () => {
+  const formatter = new DateFormatter();
+
+  it("formatDate se comporta igual à função solta", () => {
+    expect(formatter.formatDate("2026-08-11T14:35:00.000Z", "pt")).toBe(
+      formatDate("2026-08-11T14:35:00.000Z", "pt"),
+    );
+    expect(formatter.formatDate("2026-01-01", "pt")).toBe("01/01/2026");
+    expect(formatter.formatDate(null, "pt")).toBeNull();
+  });
+
+  it("todayIso/monthsFromTodayIso/daysAgoIso devolvem AAAA-MM-DD", () => {
+    const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+    expect(formatter.todayIso()).toMatch(DATE_ONLY);
+    expect(formatter.monthsFromTodayIso(4)).toMatch(DATE_ONLY);
+    expect(formatter.daysAgoIso(30)).toMatch(DATE_ONLY);
   });
 });

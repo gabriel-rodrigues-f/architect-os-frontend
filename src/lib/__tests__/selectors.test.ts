@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { averageWithCoverage, createSelectors, emptyState } from "../selectors";
+import {
+  ArchitectSelectors,
+  AssessmentSelectors,
+  averageWithCoverage,
+  CapabilitySelectors,
+  createSelectors,
+  DevelopmentSelectors,
+  emptyState,
+  SelectorIndex,
+  TrainingSelectors,
+} from "../selectors";
 import { fixtureState } from "./fixtures";
 
 describe("averageWithCoverage", () => {
@@ -172,5 +182,55 @@ describe("createSelectors", () => {
     it("gapsFor ainda funciona para quem está inativo — histórico continua acessível", () => {
       expect(comInativo.gapsFor("bruno").length).toBeGreaterThan(0);
     });
+  });
+});
+
+/**
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seção 62) — os testes de `createSelectors` acima já cobrem o
+ * comportamento (a forma achatada não mudou); estes confirmam que as
+ * classes por contexto funcionam também quando instanciadas diretamente,
+ * fora do objeto achatado — o caso de uso que motivou a divisão (ex.: um
+ * ViewModel futuro que só precisa de uma fatia).
+ */
+describe("classes por contexto (instanciadas diretamente)", () => {
+  const index = new SelectorIndex(fixtureState);
+
+  it("ArchitectSelectors resolve por id e lista só quem está ativo", () => {
+    const architects = new ArchitectSelectors(fixtureState, index);
+    expect(architects.byId("ana")?.name).toBe("Ana Martins");
+    expect(architects.byId("nao-existe")).toBeUndefined();
+    expect(architects.active.map((a) => a.id)).toEqual(["ana", "bruno"]);
+  });
+
+  it("AssessmentSelectors calcula gap igual ao objeto achatado", () => {
+    const assessment = new AssessmentSelectors(index);
+    const viaClasse = assessment.gapsFor("bruno");
+    const viaFlat = createSelectors(fixtureState).gapsFor("bruno");
+    expect(viaClasse).toEqual(viaFlat);
+    expect(
+      assessment.progressionGapsFor("bruno").every((g) => g.targetSemantics !== "MASTERY"),
+    ).toBe(true);
+  });
+
+  it("DevelopmentSelectors resolve o plano do ciclo ativo", () => {
+    const development = new DevelopmentSelectors(index);
+    expect(development.planFor("ana")?.id).toBe("pdi-ana");
+    expect(development.planFor("bruno")).toBeUndefined();
+  });
+
+  it("CapabilitySelectors calcula média por capacidade usando o AssessmentSelectors injetado", () => {
+    const assessment = new AssessmentSelectors(index);
+    const capability = new CapabilitySelectors(fixtureState, index, assessment);
+    const cloud = capability.capabilityAverages("ana").find((d) => d.capability.id === "cloud");
+    expect(cloud).toMatchObject({ avg: 4, target: 4 });
+  });
+
+  it("TrainingSelectors agrega necessidade de treinamento a partir de Architect + Assessment", () => {
+    const architects = new ArchitectSelectors(fixtureState, index);
+    const assessment = new AssessmentSelectors(index);
+    const training = new TrainingSelectors(index, architects, assessment);
+    const needs = training.teamTrainingNeeds();
+    expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam", "cloud-k8s"]);
   });
 });

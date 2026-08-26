@@ -12,6 +12,21 @@ import type {
 /**
  * Derivações puras sobre o snapshot da API. Ficam fora do componente para poderem
  * ser testadas sem React — `useSelectors()` apenas memoiza `createSelectors`.
+ *
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seção 62) — por dentro, `createSelectors` deixou de ser um único closure
+ * gigante e passou a montar quatro objetos por contexto
+ * (`ArchitectSelectors`, `AssessmentSelectors`, `DevelopmentSelectors`,
+ * `CapabilitySelectors`, mais `TrainingSelectors` para a agregação de time
+ * que depende dos outros dois) — os quatro nomes que a própria auditoria
+ * sugere. A forma externa NÃO mudou: `createSelectors(s)` continua
+ * devolvendo o mesmo objeto achatado de sempre (`Selectors`), porque uns 20
+ * arquivos (rotas, `store.tsx`, outros `-shared.tsx`) já chamam `sel.gapsFor(...)`
+ * etc. diretamente — refazer todos os call sites nesta mesma PR seria o
+ * Big Bang que a Seção 145 proíbe. As classes internas ficam exportadas
+ * para quem quiser instanciar/testar uma fatia isolada (ex.: um ViewModel
+ * futuro que só precisa de `AssessmentSelectors`, sem montar o objeto
+ * achatado inteiro).
  */
 
 export const emptyState: AppState = {
@@ -96,31 +111,69 @@ const indexByArchitectAndCycle = <T extends { architectId: string; cycleId: stri
 ): Map<string, T> => new Map(items.map((item) => [cycleKey(item.architectId, item.cycleId), item]));
 
 /**
- * Os índices são construídos uma vez por versão do estado. Antes cada busca era
- * um `find` linear dentro de laços — `capabilityAverages` chegava a ser O(capacidades ×
- * competências²) por arquiteto, e o painel repete isso para o time inteiro a
- * cada render.
+ * Índices construídos uma vez por snapshot de `AppState`, compartilhados
+ * pelas classes de seletor abaixo — antes cada busca era um `find` linear
+ * dentro de laços (`capabilityAverages` chegava a ser O(capacidades ×
+ * competências²) por arquiteto, e o painel repete isso para o time
+ * inteiro a cada render). Não é um dos quatro nomes que a auditoria pede
+ * (`ArchitectSelectors`/`AssessmentSelectors`/`DevelopmentSelectors`/
+ * `CapabilitySelectors`) de propósito: é infraestrutura de indexação
+ * compartilhada, não uma fatia de domínio própria — expor os mesmos quatro
+ * `Map`s dentro de cada classe geraria quatro cópias divergentes do mesmo
+ * índice.
  */
-export function createSelectors(s: AppState) {
-  const competencyIndex = byId(s.competencies);
-  const capabilityIndex = byId(s.capabilities);
-  const architectIndex = byId(s.architects);
-  const assessmentIndex = indexByArchitectAndCycle(s.assessments);
-  const planIndex = indexByArchitectAndCycle(s.plans);
+export class SelectorIndex {
+  readonly competencyIndex: Map<string, Competency>;
+  readonly capabilityIndex: Map<string, Capability>;
+  readonly architectIndex: Map<string, Architect>;
+  readonly assessmentIndex: Map<string, Assessment>;
+  readonly planIndex: Map<string, AppState["plans"][number]>;
 
-  const competencyById = (id: string) => competencyIndex.get(id);
-  const capabilityById = (id: string) => capabilityIndex.get(id);
-  const architectById = (id: string) => architectIndex.get(id);
+  constructor(private readonly s: AppState) {
+    this.competencyIndex = byId(s.competencies);
+    this.capabilityIndex = byId(s.capabilities);
+    this.architectIndex = byId(s.architects);
+    this.assessmentIndex = indexByArchitectAndCycle(s.assessments);
+    this.planIndex = indexByArchitectAndCycle(s.plans);
+  }
 
-  /**
-   * Time atual — quem já saiu não conta em análise de capacidade, lacuna,
-   * necessidade de treinamento nem em atribuição nova de trilha/mentoria/PDI/
-   * avaliação. Uma tela que quer incluir gente inativa explicitamente (ex.:
-   * Time, que separa ativos/inativos) usa `s.architects` direto, não este
-   * selector. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md,
-   * EPIC E.
-   */
-  const activeArchitects: Architect[] = s.architects.filter((a) => a.active);
+  get activeCycleId(): string {
+    return this.s.activeCycleId;
+  }
+}
+
+/**
+ * Time atual — quem já saiu não conta em análise de capacidade, lacuna,
+ * necessidade de treinamento nem em atribuição nova de trilha/mentoria/PDI/
+ * avaliação. Uma tela que quer incluir gente inativa explicitamente (ex.:
+ * Time, que separa ativos/inativos) usa `s.architects` direto, não este
+ * selector. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md,
+ * EPIC E.
+ */
+export class ArchitectSelectors {
+  readonly active: Architect[];
+
+  constructor(
+    s: AppState,
+    private readonly index: SelectorIndex,
+  ) {
+    this.active = s.architects.filter((a) => a.active);
+  }
+
+  byId = (id: string): Architect | undefined => this.index.architectIndex.get(id);
+}
+
+/**
+ * Leituras derivadas de Assessment: qual é o assessment de alguém num
+ * ciclo, qual é a fotografia OFICIAL (só `Completed`) e as três visões de
+ * gap que dependem dela (`gapsFor` bruto, `progressionGapsFor` acionável,
+ * `masteryOpportunitiesFor` Nível III). Ver Seção 17.1/18 da
+ * ORIENTACAO-NONA-RODADA para a distinção entre as três.
+ */
+export class AssessmentSelectors {
+  private readonly gapsCache = new Map<string, Gap[]>();
+
+  constructor(private readonly index: SelectorIndex) {}
 
   /**
    * Nome/capacidade de um item de assessment: catálogo atual quando a competência
@@ -130,8 +183,8 @@ export function createSelectors(s: AppState) {
    * migração não têm fotografia; nesse caso, sem catálogo vivo, não há nome a
    * mostrar. Ver AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC C.
    */
-  const resolveCompetency = (item: Assessment["items"][number]): Competency | undefined => {
-    const live = competencyIndex.get(item.competencyId);
+  private resolveCompetency = (item: Assessment["items"][number]): Competency | undefined => {
+    const live = this.index.competencyIndex.get(item.competencyId);
     if (live) return live;
     if (!item.competencyName) return undefined;
     return {
@@ -147,10 +200,10 @@ export function createSelectors(s: AppState) {
     };
   };
 
-  const assessmentFor = (architectId: string, cycleId = s.activeCycleId) =>
-    assessmentIndex.get(cycleKey(architectId, cycleId));
-  const planFor = (architectId: string, cycleId = s.activeCycleId) =>
-    planIndex.get(cycleKey(architectId, cycleId));
+  assessmentFor = (
+    architectId: string,
+    cycleId = this.index.activeCycleId,
+  ): Assessment | undefined => this.index.assessmentIndex.get(cycleKey(architectId, cycleId));
 
   /**
    * A mesma busca de `assessmentFor`, mas só devolve o assessment quando ele
@@ -160,15 +213,13 @@ export function createSelectors(s: AppState) {
    * aparecer como lacuna real, e uma avaliação em revisão ainda não foi
    * calibrada pelo Tech Lead. Ver PLANO-360-AGENTES-SYNAPSE.md, Seção 9.
    */
-  const officialAssessmentFor = (architectId: string, cycleId = s.activeCycleId) => {
-    const assessment = assessmentFor(architectId, cycleId);
+  officialAssessmentFor = (
+    architectId: string,
+    cycleId = this.index.activeCycleId,
+  ): Assessment | undefined => {
+    const assessment = this.assessmentFor(architectId, cycleId);
     return assessment?.status === "Completed" ? assessment : undefined;
   };
-
-  // As telas pedem os mesmos recortes várias vezes no mesmo render; o cache vive
-  // enquanto esta versão do estado existir.
-  const gapsCache = new Map<string, Gap[]>();
-  const averagesCache = new Map<string, CapabilityAverage[]>();
 
   /**
    * Base bruta — todas as semânticas juntas (NEXT_ROLE/MASTERY/V1
@@ -176,18 +227,18 @@ export function createSelectors(s: AppState) {
    * `progressionGapsFor` (lacuna de progressão de verdade) ou
    * `masteryOpportunitiesFor` (Nível III). Ver Seção 17.1/18.
    */
-  const gapsFor = (architectId: string, cycleId = s.activeCycleId): Gap[] => {
+  gapsFor = (architectId: string, cycleId = this.index.activeCycleId): Gap[] => {
     const cacheKey = cycleKey(architectId, cycleId);
-    const cached = gapsCache.get(cacheKey);
+    const cached = this.gapsCache.get(cacheKey);
     if (cached) return cached;
 
-    const assessment = officialAssessmentFor(architectId, cycleId);
+    const assessment = this.officialAssessmentFor(architectId, cycleId);
     const gaps = !assessment
       ? []
       : assessment.items
           .filter(isEvaluated)
           .map((item) => ({
-            competency: resolveCompetency(item),
+            competency: this.resolveCompetency(item),
             item,
             gap: item.target - item.final,
             assessmentId: assessment.id,
@@ -196,7 +247,7 @@ export function createSelectors(s: AppState) {
           .filter((g) => !!g.competency)
           .sort((x, y) => y.gap - x.gap);
 
-    gapsCache.set(cacheKey, gaps);
+    this.gapsCache.set(cacheKey, gaps);
     return gaps;
   };
 
@@ -213,8 +264,8 @@ export function createSelectors(s: AppState) {
    * `/from-gap` no servidor só rejeita MASTERY pela mesma razão — nunca
    * V1, que continua com alvo válido para derivar um item.
    */
-  const progressionGapsFor = (architectId: string, cycleId = s.activeCycleId): Gap[] =>
-    gapsFor(architectId, cycleId).filter((g) => g.targetSemantics !== "MASTERY");
+  progressionGapsFor = (architectId: string, cycleId = this.index.activeCycleId): Gap[] =>
+    this.gapsFor(architectId, cycleId).filter((g) => g.targetSemantics !== "MASTERY");
 
   /**
    * Nível III (topo da carreira): a diferença contra a própria régua atual
@@ -222,24 +273,46 @@ export function createSelectors(s: AppState) {
    * Nunca usar para alimentar `/from-gap` (o servidor rejeita mesmo assim,
    * mas o produto não deve nem oferecer o CTA nesse caso).
    */
-  const masteryOpportunitiesFor = (architectId: string, cycleId = s.activeCycleId): Gap[] =>
-    gapsFor(architectId, cycleId).filter((g) => g.targetSemantics === "MASTERY");
+  masteryOpportunitiesFor = (architectId: string, cycleId = this.index.activeCycleId): Gap[] =>
+    this.gapsFor(architectId, cycleId).filter((g) => g.targetSemantics === "MASTERY");
+}
 
-  const capabilityAverages = (
+/** Leituras derivadas de PDI (`DevelopmentPlan`) — hoje só "o plano de alguém num ciclo", mas isolado à parte para crescer sem inchar `AssessmentSelectors`. */
+export class DevelopmentSelectors {
+  constructor(private readonly index: SelectorIndex) {}
+
+  planFor = (architectId: string, cycleId = this.index.activeCycleId) =>
+    this.index.planIndex.get(cycleKey(architectId, cycleId));
+}
+
+/** Leituras derivadas do catálogo (Capability/Competency) e da cobertura por capacidade, que soma assessment oficial + catálogo. */
+export class CapabilitySelectors {
+  private readonly averagesCache = new Map<string, CapabilityAverage[]>();
+
+  constructor(
+    private readonly s: AppState,
+    private readonly index: SelectorIndex,
+    private readonly assessment: AssessmentSelectors,
+  ) {}
+
+  competencyById = (id: string): Competency | undefined => this.index.competencyIndex.get(id);
+  capabilityById = (id: string): Capability | undefined => this.index.capabilityIndex.get(id);
+
+  capabilityAverages = (
     architectId: string,
-    cycleId = s.activeCycleId,
+    cycleId = this.index.activeCycleId,
   ): CapabilityAverage[] => {
     const cacheKey = cycleKey(architectId, cycleId);
-    const cached = averagesCache.get(cacheKey);
+    const cached = this.averagesCache.get(cacheKey);
     if (cached) return cached;
 
     // Uma passada pelos itens acumulando por capacidade, em vez de varrer os itens
     // uma vez para cada capacidade.
     const totals = new Map<string, { final: number; target: number; count: number }>();
-    for (const item of officialAssessmentFor(architectId, cycleId)?.items ?? []) {
+    for (const item of this.assessment.officialAssessmentFor(architectId, cycleId)?.items ?? []) {
       if (item.final === null) continue;
       const capabilityId =
-        competencyIndex.get(item.competencyId)?.capabilityId ?? item.capabilityId;
+        this.index.competencyIndex.get(item.competencyId)?.capabilityId ?? item.capabilityId;
       if (!capabilityId) continue;
       const acc = totals.get(capabilityId) ?? { final: 0, target: 0, count: 0 };
       acc.final += item.final;
@@ -248,19 +321,33 @@ export function createSelectors(s: AppState) {
       totals.set(capabilityId, acc);
     }
 
-    const averages = s.capabilities.map((capability) => {
+    const averages = this.s.capabilities.map((capability) => {
       const acc = totals.get(capability.id);
       if (!acc?.count) return { capability, avg: undefined, target: undefined };
       const mean = (value: number) => Number((value / acc.count).toFixed(2));
       return { capability, avg: mean(acc.final), target: mean(acc.target) };
     });
 
-    averagesCache.set(cacheKey, averages);
+    this.averagesCache.set(cacheKey, averages);
     return averages;
   };
+}
+
+/**
+ * LNT (Levantamento de Necessidades de Treinamento) — agregação por time
+ * inteiro, por isso depende de `ArchitectSelectors` (população padrão) e
+ * `AssessmentSelectors` (gap por pessoa), em vez de recalcular índice
+ * nenhum por conta própria.
+ */
+export class TrainingSelectors {
+  constructor(
+    private readonly index: SelectorIndex,
+    private readonly architect: ArchitectSelectors,
+    private readonly assessment: AssessmentSelectors,
+  ) {}
 
   /**
-   * LNT: lacunas positivas agregadas por competência, ordenadas pelo
+   * lacunas positivas agregadas por competência, ordenadas pelo
    * impacto — só time atual.
    *
    * `population` (padrão: `activeArchitects`, o time inteiro) existe porque
@@ -274,10 +361,10 @@ export function createSelectors(s: AppState) {
    * restrita ao próprio escopo (ex.: `canActFor`) evita isso. Ver ANA-001,
    * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
    */
-  const teamTrainingNeeds = (population: Architect[] = activeArchitects): TrainingNeed[] => {
+  teamTrainingNeeds = (population: Architect[] = this.architect.active): TrainingNeed[] => {
     const totals = new Map<string, { people: number; totalGap: number; architectIds: string[] }>();
     for (const architect of population) {
-      for (const gap of progressionGapsFor(architect.id)) {
+      for (const gap of this.assessment.progressionGapsFor(architect.id)) {
         if (gap.gap <= 0) continue;
         const acc = totals.get(gap.item.competencyId) ?? {
           people: 0,
@@ -294,7 +381,7 @@ export function createSelectors(s: AppState) {
 
     return [...totals.entries()]
       .map(([competencyId, v]) => ({
-        competency: competencyIndex.get(competencyId),
+        competency: this.index.competencyIndex.get(competencyId),
         people: v.people,
         avgGap: Number((v.totalGap / v.people).toFixed(1)),
         totalGap: v.totalGap,
@@ -303,20 +390,29 @@ export function createSelectors(s: AppState) {
       .filter((need) => !!need.competency)
       .sort((x, y) => y.totalGap - x.totalGap);
   };
+}
+
+export function createSelectors(s: AppState) {
+  const index = new SelectorIndex(s);
+  const architect = new ArchitectSelectors(s, index);
+  const assessment = new AssessmentSelectors(index);
+  const development = new DevelopmentSelectors(index);
+  const capability = new CapabilitySelectors(s, index, assessment);
+  const training = new TrainingSelectors(index, architect, assessment);
 
   return {
-    competencyById,
-    capabilityById,
-    architectById,
-    activeArchitects,
-    assessmentFor,
-    officialAssessmentFor,
-    planFor,
-    gapsFor,
-    progressionGapsFor,
-    masteryOpportunitiesFor,
-    capabilityAverages,
-    teamTrainingNeeds,
+    competencyById: capability.competencyById,
+    capabilityById: capability.capabilityById,
+    architectById: architect.byId,
+    activeArchitects: architect.active,
+    assessmentFor: assessment.assessmentFor,
+    officialAssessmentFor: assessment.officialAssessmentFor,
+    planFor: development.planFor,
+    gapsFor: assessment.gapsFor,
+    progressionGapsFor: assessment.progressionGapsFor,
+    masteryOpportunitiesFor: assessment.masteryOpportunitiesFor,
+    capabilityAverages: capability.capabilityAverages,
+    teamTrainingNeeds: training.teamTrainingNeeds,
   };
 }
 
