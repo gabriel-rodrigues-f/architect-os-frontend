@@ -1,19 +1,5 @@
 import type { UserRole } from "./gateways/auth.gateway";
-import {
-  architectsGateway,
-  assessmentGateway,
-  authGateway,
-  careerGateway,
-  catalogGateway,
-  cyclesGateway,
-  defaultApiClient,
-  developmentGateway,
-  evidenceGateway,
-  evolutionGateway,
-  learningGateway,
-  mentoringGateway,
-  reportsGateway,
-} from "./gateways/container";
+import { defaultContainer } from "./gateways/container";
 
 /**
  * OO-FE-01/OO-FE-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo F.6) — este
@@ -29,6 +15,14 @@ import {
  * composition root (`gateways/container.ts`) monta UM `ApiClient` + todos
  * os gateways, uma vez.
  *
+ * OO2-07 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seções 54-56) — o composition root deixou de ser consts soltas e virou
+ * `FrontendContainer` (classe + `static create`); esta fachada agora
+ * desestrutura os mesmos gateways de `defaultContainer` em vez de importar
+ * cada const individualmente, mas a forma exportada abaixo (`api`,
+ * `authApi`, `evolutionApi`, `reportsApi`, `setUnauthorizedHandler`) não
+ * mudou nem uma vírgula — é só de onde os gateways vêm por baixo.
+ *
  * Migração de FORMA, não de comportamento (F.3): `api`, `authApi`,
  * `evolutionApi`, `reportsApi`, `ApiError`, `isLeadCapable`, `API_URL`,
  * `AppState` e os demais tipos continuam exportados daqui com a MESMA
@@ -40,6 +34,22 @@ import {
  * arrow functions de campo — isso é o que faz este spread preservar os
  * métodos, já presos à instância certa, sem precisar de `.bind()`).
  */
+const {
+  apiClient: defaultApiClient,
+  architectsGateway,
+  assessmentGateway,
+  authGateway,
+  careerGateway,
+  catalogGateway,
+  cyclesGateway,
+  developmentGateway,
+  evidenceGateway,
+  evolutionGateway,
+  learningGateway,
+  mentoringGateway,
+  reportsGateway,
+} = defaultContainer;
+
 export const api = {
   getState: () => defaultApiClient.getState(),
   ...cyclesGateway,

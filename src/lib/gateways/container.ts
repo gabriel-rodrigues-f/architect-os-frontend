@@ -1,56 +1,98 @@
 import { ApiClient } from "../api-client";
-import { HttpArchitectsGateway } from "./architects.gateway";
-import { HttpAssessmentGateway } from "./assessment.gateway";
-import { HttpAuthGateway } from "./auth.gateway";
-import { HttpCareerGateway } from "./career.gateway";
-import { HttpCatalogGateway } from "./catalog.gateway";
-import { HttpCyclesGateway } from "./cycles.gateway";
-import { HttpDevelopmentGateway } from "./development.gateway";
-import { HttpEvidenceGateway } from "./evidence.gateway";
-import { HttpEvolutionGateway } from "./evolution.gateway";
-import { HttpLearningGateway } from "./learning.gateway";
-import { HttpMentoringGateway } from "./mentoring.gateway";
-import { HttpReportsGateway } from "./reports.gateway";
+import { HttpArchitectsGateway, type ArchitectsGateway } from "./architects.gateway";
+import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
+import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
+import { HttpCareerGateway, type CareerGateway } from "./career.gateway";
+import { HttpCatalogGateway, type CatalogGateway } from "./catalog.gateway";
+import { HttpCyclesGateway, type CyclesGateway } from "./cycles.gateway";
+import { HttpDevelopmentGateway, type DevelopmentGateway } from "./development.gateway";
+import { HttpEvidenceGateway, type EvidenceGateway } from "./evidence.gateway";
+import { HttpEvolutionGateway, type EvolutionGateway } from "./evolution.gateway";
+import { HttpLearningGateway, type LearningGateway } from "./learning.gateway";
+import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway";
+import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
+
+/** Config aceita por {@link FrontendContainer.create}. Hoje só repassa o que `ApiClient` já aceitava como parâmetro solto (`api-client.ts`); `baseUrl` continua opcional porque `ApiClient` já sabe resolver `VITE_API_URL` sozinho quando omitido. */
+export interface FrontendConfig {
+  baseUrl?: string;
+}
 
 /**
- * OO-FE-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo F.6) — composition
- * root: único lugar (fora de teste) que dá `new` no `ApiClient` e nos
- * gateways, mesma regra do `container.ts` do backend (F.3, "DI manual,
- * explícita no container"). Construído uma vez, na carga deste módulo —
- * não é um componente/Provider React.
+ * OO2-07 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seções 54-56) — sucessor do composition root em consts soltas que existia
+ * aqui (histórico do OO-FE-02 abaixo). Continua sendo o único lugar (fora de
+ * teste) que dá `new` no `ApiClient` e nos gateways — mesma regra do
+ * `container.ts` do backend (Anexo F.3, "DI manual, explícita no
+ * container") —, mas agora como CLASSE com construtor privado + fábrica
+ * estática, para três ganhos que os consts soltos não davam:
  *
- * Por que não `GatewaysProvider` (React context) nesta leva, mesmo o
- * backlog citando esse nome como exemplo: nenhuma tela desta PR consome
- * gateway nenhum diretamente ainda — só a fachada `api.ts` consome (ver seu
- * topo) — e o app já tem, de propósito, UM `ApiClient` para o processo
- * inteiro: o mesmo modelo do `API_URL` de módulo que existia antes desta
- * migração, e do próprio `queryClient` (construído uma vez em `router.tsx`,
- * sem Context React, passado adiante por `RouteContext` do TanStack
- * Router). Adicionar `<GatewaysProvider>` a `__root.tsx` sem nenhum
- * consumidor real seria prover algo morto só para bater com o texto do
- * ticket ao pé da letra — o próprio F.7 já avisa para não tratar isto como
- * projeto separado da tela a tela.
+ * 1. Um teste pode montar um `FrontendContainer` próprio (`.create({ baseUrl:
+ *    "http://outro-host" })`) sem tocar no singleton do app nem precisar
+ *    reatribuir um monte de export individual.
+ * 2. Mockar UM gateway isolado vira "construa um objeto com a mesma forma de
+ *    `FrontendContainer` e troque um campo", em vez de precisar de
+ *    `vi.mock()` num módulo inteiro de consts.
+ * 3. Configuração por ambiente (ex.: front apontando para um backend
+ *    diferente em preview/e2e) tem um parâmetro de verdade (`FrontendConfig`)
+ *    em vez de variável de ambiente lida direto dentro de cada gateway.
  *
- * Quando R1-P04 migrar a primeira tela para `gateway + useQuery/
- * useMutation` (F.7), essa tela pode importar os gateways daqui direto —
- * `useQuery`/`useMutation` não precisam de Context React para achar o
- * gateway, do mesmo jeito que uma `queryFn` de hoje não precisa de Context
- * pra achar `api.ts`. Se uma necessidade real de escopo por instância
- * aparecer depois (ex.: trocar `ApiClient` por teste de componente
- * montado), essa é a hora de promover isto a um Provider de verdade — não
- * antes.
+ * `defaultContainer` abaixo preserva o comportamento de antes: construído
+ * uma vez, na carga deste módulo, exatamente como `defaultApiClient` era —
+ * é o que permite `api.ts` continuar um módulo comum (não um hook) que só
+ * desestrutura os gateways do container no top-level, sem precisar existir
+ * dentro de uma árvore React para funcionar (`store.tsx` e todo teste
+ * existente contam com isso).
+ *
+ * `DependencyProvider` (`../dependencies.tsx`) é quem expõe este mesmo
+ * `defaultContainer` via Context React para consumidores futuros — nenhuma
+ * tela desta leva passou a consumir gateway via Context ainda (isso é
+ * OO2-08, ViewModels por tela); esta PR só constrói o container + o
+ * Provider e prova que nada quebrou por baixo do `api.ts`.
  */
-export const defaultApiClient = new ApiClient();
+export class FrontendContainer {
+  readonly apiClient: ApiClient;
+  readonly architectsGateway: ArchitectsGateway;
+  readonly assessmentGateway: AssessmentGateway;
+  readonly authGateway: AuthGateway;
+  readonly careerGateway: CareerGateway;
+  readonly catalogGateway: CatalogGateway;
+  readonly cyclesGateway: CyclesGateway;
+  readonly developmentGateway: DevelopmentGateway;
+  readonly evidenceGateway: EvidenceGateway;
+  readonly evolutionGateway: EvolutionGateway;
+  readonly learningGateway: LearningGateway;
+  readonly mentoringGateway: MentoringGateway;
+  readonly reportsGateway: ReportsGateway;
 
-export const cyclesGateway = new HttpCyclesGateway(defaultApiClient);
-export const architectsGateway = new HttpArchitectsGateway(defaultApiClient);
-export const careerGateway = new HttpCareerGateway(defaultApiClient);
-export const catalogGateway = new HttpCatalogGateway(defaultApiClient);
-export const assessmentGateway = new HttpAssessmentGateway(defaultApiClient);
-export const developmentGateway = new HttpDevelopmentGateway(defaultApiClient);
-export const learningGateway = new HttpLearningGateway(defaultApiClient);
-export const mentoringGateway = new HttpMentoringGateway(defaultApiClient);
-export const evidenceGateway = new HttpEvidenceGateway(defaultApiClient);
-export const authGateway = new HttpAuthGateway(defaultApiClient);
-export const evolutionGateway = new HttpEvolutionGateway(defaultApiClient);
-export const reportsGateway = new HttpReportsGateway(defaultApiClient);
+  private constructor(config: FrontendConfig) {
+    this.apiClient = new ApiClient(config.baseUrl);
+    this.architectsGateway = new HttpArchitectsGateway(this.apiClient);
+    this.assessmentGateway = new HttpAssessmentGateway(this.apiClient);
+    this.authGateway = new HttpAuthGateway(this.apiClient);
+    this.careerGateway = new HttpCareerGateway(this.apiClient);
+    this.catalogGateway = new HttpCatalogGateway(this.apiClient);
+    this.cyclesGateway = new HttpCyclesGateway(this.apiClient);
+    this.developmentGateway = new HttpDevelopmentGateway(this.apiClient);
+    this.evidenceGateway = new HttpEvidenceGateway(this.apiClient);
+    this.evolutionGateway = new HttpEvolutionGateway(this.apiClient);
+    this.learningGateway = new HttpLearningGateway(this.apiClient);
+    this.mentoringGateway = new HttpMentoringGateway(this.apiClient);
+    this.reportsGateway = new HttpReportsGateway(this.apiClient);
+  }
+
+  /** Único jeito de montar um `FrontendContainer` — construtor é privado de propósito, para deixar claro que "criar" é sempre passar por esta fábrica (mesmo hoje sem lógica extra além do construtor). */
+  static create(config: FrontendConfig = {}): FrontendContainer {
+    return new FrontendContainer(config);
+  }
+}
+
+/**
+ * Instância única do processo, mesma vida útil do antigo `defaultApiClient`
+ * + consts de gateway. `api.ts` desestrutura os gateways daqui;
+ * `DependencyProvider` usa esta mesma instância como valor padrão do
+ * Context, então uma tela que hoje lê `api.ts` e uma tela futura que ler
+ * `useContainer()` enxergam os MESMOS gateways (mesmo `ApiClient`, mesmo
+ * `unauthorizedHandler` registrado por `auth.tsx`) — não duas árvores de
+ * objeto paralelas.
+ */
+export const defaultContainer = FrontendContainer.create();

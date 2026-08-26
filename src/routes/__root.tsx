@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { AuthProvider, useAuth } from "../lib/auth";
+import { DependencyProvider } from "../lib/dependencies";
 import { I18nProvider } from "../lib/i18n";
 import { ThemeProvider, useTheme } from "../lib/theme";
 import { StoreProvider } from "../lib/store";
@@ -196,23 +197,25 @@ function RootComponent() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <I18nProvider>
-          <AuthProvider>
-            <AuthGate>
-              <StoreProvider>
-                <AppShell>
-                  {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                  <Outlet />
-                </AppShell>
-                <AppToaster />
-              </StoreProvider>
-            </AuthGate>
-          </AuthProvider>
-        </I18nProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <DependencyProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <I18nProvider>
+            <AuthProvider>
+              <AuthGate>
+                <StoreProvider>
+                  <AppShell>
+                    {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                    <Outlet />
+                  </AppShell>
+                  <AppToaster />
+                </StoreProvider>
+              </AuthGate>
+            </AuthProvider>
+          </I18nProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </DependencyProvider>
   );
 }
 
