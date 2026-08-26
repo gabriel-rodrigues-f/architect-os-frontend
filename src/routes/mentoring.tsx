@@ -30,26 +30,14 @@ export const Route = createFileRoute("/mentoring")({
   component: MentoringPage,
 });
 
-/**
- * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) — a rota vira
- * composição: os ~554 linhas de estado/formulário/linha do tempo que
- * viviam aqui foram para `components/app/mentoring-shared.tsx` (mesmo
- * padrão de `gap-analysis-shared.tsx`, o "melhor padrão do codebase" citado
- * pela auditoria). O que resta aqui é só: quem pode ser mentorado (MENT-001)
- * e como montar o cabeçalho + a seção da linha do tempo.
- */
 function MentoringPage() {
   const store = useStore();
   const { t } = useI18n();
   const help = usePageHelp("mentoring");
-  // O mentor é quem está registrando a sessão, não um nome fixo no código.
+
   const user = useCurrentUser();
   const sel = useSelectors();
-  /**
-   * MENT-001 — o backend só aceita a própria pessoa mentorada, o Tech Lead
-   * dela, ou admin como autor da sessão; a lista de mentorados nasce restrita
-   * ao mesmo escopo. Ver o docstring de `ArchitectSelectors.visibleTo`.
-   */
+
   const menteeOptions = sel.visibleArchitects(user);
   const { filter, setFilter, sessions } = useMentoringTimeline();
 

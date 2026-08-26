@@ -46,23 +46,9 @@ function UsersPage() {
   const isAdmin = useCurrentUser().role === "admin";
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
-  /**
-   * REVISAO-360-FRONTEND, FE-360-009 (P1 UX/Security) — papel, vínculo e
-   * status trocavam de valor no exato `onChange` de um `<select>`/clique de
-   * botão inline, sem nenhuma etapa de confirmação antes de persistir.
-   * Numa tabela densa, um clique errado (linha vizinha, elemento errado)
-   * já tinha efeito real. Agora abre um diálogo — Cancelar/Salvar
-   * alterações — e conceder Admin especificamente exige uma confirmação
-   * extra antes do Salvar valer.
-   */
+
   const [editing, setEditing] = useState<SessionUser | null>(null);
-  /**
-   * GET /api/auth/users é admin-only no backend (diretório completo de
-   * contas é dado administrativo, não catálogo público) — a query nem
-   * dispara para quem não é admin, senão a tela mostraria um erro genérico
-   * de rede em vez de deixar claro que é uma tela restrita. Ver AUDITORIA-
-   * QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md, EPIC 0.
-   */
+
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: USERS_QUERY_KEY,
     queryFn: authApi.users,
@@ -70,12 +56,6 @@ function UsersPage() {
     enabled: isAdmin,
   });
 
-  /**
-   * Não engole mais o erro num toast: `EditUserDialog` precisa do reject
-   * pra manter o diálogo aberto e mostrar o erro (ex.: 409
-   * EMAIL_ALREADY_REGISTERED) perto do campo, no mesmo padrão que
-   * `CreateUserDialog` já usa — ver `persist()` abaixo.
-   */
   const updatePatch = async (
     user: SessionUser,
     patch: Partial<{ role: UserRole; status: "active" | "disabled"; name: string; email: string }>,
@@ -100,10 +80,7 @@ function UsersPage() {
         }
       />
 
-      {/* OO3-18/F-2b — loading/erro padronizados via `QuerySection`: esta tela
-          resolvia o mesmo problema de `assessments-shared` sem retry e sem
-          ARIA (aria-busy/role="alert"); agora ganha os dois. O texto de
-          loading continua o mesmo (vira o "skeleton" da seção). */}
+      {}
       {!isAdmin ? (
         <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
           <p className="text-sm text-muted-foreground">{t("users.adminOnly")}</p>
@@ -214,7 +191,6 @@ function UsersPage() {
   );
 }
 
-/** R2-VIS-01 — mapeia o papel para um dos 3 tons genéricos de `StatusBadge`. */
 const roleTone: Record<UserRole, "neutral" | "progress" | "done"> = {
   admin: "done",
   lead: "progress",
@@ -226,13 +202,6 @@ function AccountStatusBadge({ status, label }: { status: "active" | "disabled"; 
   return <span className={`rounded-md px-2 py-0.5 text-xs ${tone}`}>{label}</span>;
 }
 
-/**
- * REVISAO-360-FRONTEND, FE-360-009 — um diálogo só pros três campos
- * sensíveis (papel, vínculo, status), com um segundo passo obrigatório
- * quando a alteração concede Admin. `step` troca o footer inteiro pro modo
- * de confirmação em vez de abrir um segundo `<Dialog>` por cima — mais
- * simples de gerenciar foco/Escape que dois diálogos empilhados.
- */
 function EditUserDialog({
   user,
   onCancel,
@@ -265,15 +234,6 @@ function EditUserDialog({
     trimmedName !== user.name ||
     trimmedEmail !== user.email;
 
-  /**
-   * Ao contrário do fluxo antigo (só papel/status), agora dá pra colidir
-   * com um e-mail já cadastrado (409 EMAIL_ALREADY_REGISTERED) — não dá
-   * pra engolir o erro num toast e fechar o diálogo, senão a mudança some
-   * sem o admin conseguir corrigir o e-mail. Mesmo padrão que
-   * `CreateUserDialog.submit` já usa: erro fica local, diálogo continua
-   * aberto. Se o erro estourar durante o passo de confirmação de Admin,
-   * volta pro formulário — é lá que o campo de e-mail está visível.
-   */
   const persist = async () => {
     setSaving(true);
     setError(null);
@@ -386,14 +346,6 @@ function EditUserDialog({
   );
 }
 
-/**
- * ENT-AUTH-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
- * Seção 7.1) — self-registration fechou depois do bootstrap; esta é a
- * única forma de entrar conta nova na instância. A senha temporária só
- * aparece nesta resposta — não fica recuperável depois, só o hash é
- * persistido — então o diálogo trava aberto até o admin confirmar que
- * copiou/repassou.
- */
 function CreateUserDialog({
   onCancel,
   onCreated,

@@ -35,18 +35,9 @@ import { useCareerLevelsByRank, useCurationPolicy, useStore } from "@/lib/store"
 import { CompetencyMatrixViewModel } from "@/lib/view-models/competency-matrix-view-model";
 import { CatalogImportEditor } from "@/lib/view-models/catalog-import-editor";
 
-/**
- * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
- * Seções 58-61) — adaptador fino: memoiza o `CompetencyMatrixViewModel`
- * sobre `store` (o próprio `useStore()` já satisfaz `CatalogService`
- * estruturalmente, sem adaptador). Compartilhado pelos quatro componentes
- * desta rota que precisam do ViewModel — ver a doc da classe
- * (`lib/view-models/competency-matrix-view-model.ts`) para o porquê de UMA
- * fonte só no construtor, diferente do `AssessmentViewModel`.
- */
 function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
   const store = useStore();
-  /** CFG-04 — a política de curadoria efetiva (servidor com fallback 6/3+3) entra por injeção, mesmo padrão do renderer de template no `useDevelopmentPlansViewModel`. */
+
   const curationPolicy = useCurationPolicy();
   return useMemo(
     () => new CompetencyMatrixViewModel(store, defaultUiAuthorizationPolicy, curationPolicy),
@@ -73,22 +64,14 @@ export const Route = createFileRoute("/competency-matrix")({
   component: MatrixPage,
 });
 
-/**
- * B-38 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md) — a matriz
- * iterava `ROLES` (união hardcoded de 3 cargos) para renderizar/editar
- * `Competency.expected`; agora itera os níveis de carreira REAIS (já
- * data-driven — `repositories/career.ts` no backend), ordenados por
- * `rank` (I → II → III), indexando `expected` por `CareerLevel.id`, não
- * mais pelo texto do cargo.
- */
 function MatrixPage() {
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const viewModel = useCompetencyMatrixViewModel();
-  /** Catálogo mestre é administrativo — backend já recusa o resto. */
+
   const isAdmin = viewModel.isAdmin(useCurrentUser());
   const [creatingCapability, setCreatingCapability] = useState(false);
-  /** CFG-07 — diálogo "Importar catálogo" (upsert-por-nome aditivo), admin-only. */
+
   const [importing, setImporting] = useState(false);
   const { t } = useI18n();
   const labels = useLabels();
@@ -104,13 +87,7 @@ function MatrixPage() {
   const [confirmDeleteCapability, setConfirmDeleteCapability] = useState<Capability | null>(null);
   const [search, setSearch] = useState("");
   const [curationFilter, setCurationFilter] = useState<"all" | "ready" | "needsCuration">("all");
-  /**
-   * REVISAO-360-FRONTEND, Seção 40-42 — a matriz inteira expandida chegava a
-   * ~5000px (11 capacidades × até 6 competências cada, sempre renderizadas
-   * abertas). Vazio por padrão agora significa "tudo recolhido" — o inverso
-   * do comportamento anterior — e cada card guarda seu próprio estado, então
-   * expandir uma capacidade não mexe nas outras.
-   */
+
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const toggleExpanded = (id: string) =>
     setExpandedIds((prev) => {
@@ -129,10 +106,7 @@ function MatrixPage() {
     if (!editingCapability) return;
     const trimmedName = editCapabilityName.trim();
     if (!trimmedName) return;
-    // ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` não é mais coletado neste
-    // diálogo: o backend regenera a sigla a partir do nome novo sempre que
-    // o patch muda `name` sem mandar `short` explícito (com resolução de
-    // colisão do lado de lá, excluindo a própria capacidade da checagem).
+
     viewModel.renameCapability(editingCapability.id, editCapabilityName);
     toast.success(t("cap.edit.toast", { nome: trimmedName }));
     setEditingCapability(null);
@@ -204,12 +178,7 @@ function MatrixPage() {
               className="max-w-sm"
             />
           </div>
-          {/*
-            R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — era um `<select>`
-            nativo ao lado do `Input` de busca, nesta mesma família visual
-            da linha de filtro do Time. `SingleSelectFilter` com `label`
-            encaixa direto no tamanho cheio padrão.
-          */}
+          {}
           <SingleSelectFilter
             id="matrix-curation-filter"
             label={t("matrix.filter.curation")}
@@ -274,7 +243,7 @@ function MatrixPage() {
           <div className="space-y-4">
             {visibleCapabilities.map((cat) => {
               const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
-              /** Busca ativa força a expansão de todo grupo visível — já filtrado por casar com o termo, sem exigir um segundo clique pra ver por quê. */
+
               const isExpanded = expandedIds.has(cat.id) || term.length > 0;
               const atCapacity = viewModel.isCapabilityAtCapacity(cat);
               return (
@@ -498,17 +467,6 @@ function MatrixPage() {
   );
 }
 
-/**
- * CFG-07 (SPEC-OO3-13-HARDCODED-CONFIG.md, §3.2) — "Importar catálogo":
- * colagem OU upload de um JSON no shape do seed (`catalog.json`, sem ids),
- * validado client-side (zod espelhando o schema do backend) com PREVIEW do
- * diff por nome contra a matriz atual ANTES do POST — a montagem/validação/
- * diff vive no ViewModel (`CatalogImportEditor`, a régua da casa); aqui é
- * só fiação de textarea/arquivo, preview e submit. O 400
- * `CATALOG_IMPORT_INVALID`/`UNKNOWN_CAREER_LEVEL` (e qualquer 409) do
- * backend aparece em `role="alert"`; sucesso → toast com o resumo REAL da
- * resposta + invalidação de `/api/state` (`store.importCatalog`).
- */
 function CatalogImportDialog({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const { t } = useI18n();
@@ -592,8 +550,7 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
             </p>
           )}
 
-          {/* Preview do diff — contado por NOME contra a matriz atual (a
-              identidade do upsert), antes de qualquer POST. */}
+          {}
           {preview && (
             <div className="surface-inset p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -647,28 +604,17 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-/**
- * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — padrão único de criação:
- * botão primário → modal, mesmo formato de `CompetencyCreateDialog` (que já
- * seguia esse padrão) em vez dos dois inputs soltos no cabeçalho de antes.
- */
 function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
   const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
   const [name, setName] = useState("");
-  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+
   const { submitting: saving, run } = useToastSubmit();
 
   const create = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    // B-32 — id gerado no servidor (nunca mais slug(nome), que colidia
-    // entre duas capacidades de nome parecido).
-    //
-    // ORIENTACAO-BLOCO-2-UX-POR-TELA — `short` não é mais coletado neste
-    // diálogo (pedido direto da dona do produto: nunca mais digitar a
-    // sigla manualmente). O backend gera automaticamente a partir de
-    // `name`, com resolução de colisão, quando o campo não vem no corpo.
+
     const result = await run(() => viewModel.createCapability(name));
     if (result.ok) onClose();
   };
@@ -703,12 +649,6 @@ function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-/**
- * Capacidades e competências arquivados: fora da matriz ativa (não entram em
- * avaliação nova), mas não desaparecem — ficam aqui, restauráveis a
- * qualquer momento. Só existem porque já têm histórico vinculado; ver
- * `deleteCompetency`/`deleteCapability` no backend.
- */
 function ArchivedCompetencies({
   capabilities,
   competencies,
@@ -761,11 +701,6 @@ function ArchivedCompetencies({
   );
 }
 
-/**
- * Nível esperado por cargo nasce em branco — nunca 3/4/5 fabricado só para
- * satisfazer o formulário. Admin escolhe os três níveis antes de conseguir
- * salvar. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 39.
- */
 function CompetencyCreateDialog({
   capability,
   onClose,
@@ -785,17 +720,12 @@ function CompetencyCreateDialog({
     nonRestrictiveFull ? "RESTRICTIVE" : "NON_RESTRICTIVE",
   );
   const canSave = viewModel.canCreateCompetency(name, levels, careerLevels);
-  /**
-   * OO3-18/F-1 — era um dos 3 call sites SEM `finally`/`setSaving`: o botão
-   * "Adicionar" aceitava re-submit durante a chamada em voo (bug latente de
-   * competência duplicada). `submitting` agora desabilita.
-   */
+
   const { submitting: saving, run } = useToastSubmit();
 
   const save = async () => {
     if (!canSave) return;
-    // B-32 — id gerado no servidor (nunca mais derivado do nome, que
-    // colidia entre duas competências homônimas em capacidades distintas).
+
     const result = await run(() =>
       viewModel.createCompetency(capability.id, name, levels, requirementType),
     );
@@ -820,9 +750,7 @@ function CompetencyCreateDialog({
           </div>
           <div>
             <Label>{t("matrix.edit.levels")}</Label>
-            {/* REVISAO-360-FRONTEND, FE-360-004 — mesmo padrão responsivo já
-                aplicado no diálogo "Editar competência" (R10-UX-001);
-                este de criação ainda usava grid-cols-3 rígido. */}
+            {}
             <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {careerLevels.map((cl) => (
                 <div key={cl.id} className="min-w-0">
@@ -896,12 +824,6 @@ function CompetencyCreateDialog({
   );
 }
 
-/**
- * Nome, nível esperado por cargo e exigência (ENT-CAR-011) são o que o
- * diálogo edita. Trocar de capacidade é uma decisão de reorganização maior
- * (afeta relatórios agrupados por capacidade), não um ajuste pontual; fica
- * fora daqui.
- */
 function CompetencyEditDialog({
   competency,
   onClose,
@@ -915,7 +837,7 @@ function CompetencyEditDialog({
   const { t } = useI18n();
   const labels = useLabels();
   const capability = store.capabilities.find((c) => c.id === competency.capabilityId);
-  /** Subtrai a própria competência da contagem: ela já ocupa uma vaga do tipo atual. */
+
   const restrictiveFull = viewModel.isRequirementTypeFull(capability, "RESTRICTIVE", competency);
   const nonRestrictiveFull = viewModel.isRequirementTypeFull(
     capability,
@@ -928,13 +850,6 @@ function CompetencyEditDialog({
     competency.requirementType,
   );
 
-  /**
-   * ORIENTACAO-NONA-RODADA — quando o lado de destino já está em 3/3, um
-   * PATCH comum sempre recusa (por isso a opção continua desabilitada
-   * abaixo). A única saída é trocar de lugar com uma competência existente
-   * do outro tipo — `swap-requirement` no servidor, numa transação só, para
-   * nunca passar por um estado fora de 3+3.
-   */
   const [swapTargetId, setSwapTargetId] = useState("");
   const [swapping, setSwapping] = useState(false);
   const [swapError, setSwapError] = useState<string | null>(null);
@@ -958,8 +873,7 @@ function CompetencyEditDialog({
     setSwapError(null);
     try {
       await viewModel.swapRequirementType(competency.id, swapTargetId);
-      // O servidor já confirmou a troca — esta competência agora É o tipo
-      // que estava travado, sem precisar de um segundo PATCH para o campo.
+
       setRequirementType((prev) => (prev === "RESTRICTIVE" ? "NON_RESTRICTIVE" : "RESTRICTIVE"));
       setSwapTargetId("");
     } catch (error) {
@@ -971,8 +885,7 @@ function CompetencyEditDialog({
 
   const save = () => {
     if (!name.trim()) return;
-    // PATCH faz merge (`jsonbMerge`, backend) — enviar só os níveis já
-    // preenchidos não zera os demais do Perfil por Cargo.
+
     viewModel.updateCompetency(competency.id, name, levels, requirementType);
     onClose();
   };
@@ -1085,11 +998,6 @@ function CompetencyEditDialog({
   );
 }
 
-/**
- * Escolher com quem trocar de tipo, quando o lado de destino já está em
- * 3/3. Reaproveitado pelos dois sentidos (restritiva↔não restritiva) —
- * mesma UI, candidatos diferentes.
- */
 function SwapPicker({
   hint,
   label,

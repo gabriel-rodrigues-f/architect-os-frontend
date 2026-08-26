@@ -38,15 +38,6 @@ import { useAsyncSubmit } from "@/hooks/use-async-submit";
 import { useSearchParamString } from "@/hooks/use-search-param";
 import { DevelopmentPlansViewModel } from "@/lib/view-models/development-plans-view-model";
 
-/**
- * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
- * Seção 61) — adaptador fino: memoiza o `DevelopmentPlansViewModel` sobre
- * a fatia de `useStore()` que ele precisa. Ver o arquivo do ViewModel para
- * o porquê do escopo (só ciclo de vida do plano, não a tela inteira).
- * CFG-03: o objetivo de PDI gerado de gap vem do template efetivo
- * (`text_templates`, fallback = seed) no locale ativo, injetado no
- * construtor — mesmo padrão de `useDashboardPresenter` com o limiar.
- */
 function useDevelopmentPlansViewModel() {
   const store = useStore();
   const objectiveFromGap = useObjectiveFromGap();
@@ -56,12 +47,6 @@ function useDevelopmentPlansViewModel() {
   );
 }
 
-/**
- * `architectId` na URL — quem chega de outra tela (o perfil da pessoa, uma
- * lacuna específica) continua olhando para a mesma pessoa, em vez de cair no
- * primeiro arquiteto da lista e perder o contexto que trouxe até aqui. Ver
- * AUDITORIA-TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, EPIC H.
- */
 const developmentPlansSearchSchema = z.object({
   architectId: z.string().optional(),
 });
@@ -92,59 +77,36 @@ const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Complet
 function PlansPage() {
   const sel = useSelectors();
   const labels = useLabels();
-  /** CFG-06 — opções e rótulos do tipo de ação vêm do vocabulário SERVIDO (fallback = seed byte-idêntico). */
+
   const actionTypes = useVocabulary("ACTION_TYPE");
   const viewModel = useDevelopmentPlansViewModel();
   const [architectId, setArchitectId] = useSearchParamString(
     "architectId",
     () => sel.activeArchitects[0]?.id ?? "",
   );
-  /** Item cujo formulário de meta SMART está aberto — nunca mais que um por vez. */
+
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
-  /** Gap escolhido para virar item de PDI — abre o formulário de ação real. */
+
   const [creatingForCompetencyId, setCreatingForCompetencyId] = useState<string | null>(null);
   const { t, locale } = useI18n();
-  /** OO3-11/D-6 (reuso final) — os dois ciclos submitting/erro da tela vêm do hook compartilhado. */
+
   const creating = useAsyncSubmit(t("pdi.newItem.error"));
   const planTransition = useAsyncSubmit(t("pdi.plan.transitionError"));
   const help = usePageHelp("developmentPlans");
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
-  /**
-   * PDI é da pessoa — só ela, o Tech Lead responsável por ela (não Lead de
-   * qualquer equipe), ou admin escreve; backend já recusa o resto
-   * (`canActFor`, `auth/scope.ts`). Ver UX-001, AUDITORIA-QUINTA-RODADA-360-
-   * SYNAPSE-2026-08-19.md.
-   */
+
   const canEdit = defaultUiAuthorizationPolicy.canActFor(user, architect);
   const plan = sel.planFor(architectId);
-  /**
-   * ORIENTACAO-NONA-RODADA, Seção 5/11 (ENT-09-006) — só GAP de progressão
-   * de verdade (`targetSemantics === "NEXT_ROLE"`) pode virar sugestão de
-   * PDI aqui: o item nasce via `/from-gap`, que o servidor já rejeita para
-   * assessments MASTERY. Usar `gapsFor` bruta ofereceria "Adicionar ao PDI"
-   * para uma diferença que nunca vai conseguir criar o item.
-   */
+
   const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
 
-  /**
-   * Espelha `isLeadOf` do backend: só o Tech Lead atribuído (ou admin), nunca
-   * a própria pessoa por ter conta lead/admin em outro contexto — usado para
-   * decidir quais botões de aprovar/reabrir mostrar, não para autorizar nada
-   * de verdade (o servidor recusa de qualquer forma).
-   */
   const isLeadOfArchitect = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
   const planStatus = plan?.status ?? "Draft";
   const canApprovePlan = plan && planStatus === "Draft" && isLeadOfArchitect;
   const canReturnToDraft = plan && planStatus === "Approved" && isLeadOfArchitect;
   const canCompletePlan = plan && planStatus === "Approved" && canEdit;
-  /**
-   * ENT-PDI-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
-   * Seção 5) — reabrir um PDI concluído é ação exclusiva do Tech Lead
-   * RESPONSÁVEL por esta pessoa; `isAssignedTechLeadOf` não tem o bypass de
-   * admin que `isLeadOf` tem. A própria pessoa (dona do PDI) só vê a
-   * informação de que está bloqueado, nunca o botão.
-   */
+
   const canReopenCompletedPlan =
     plan &&
     planStatus === "Completed" &&
@@ -156,14 +118,6 @@ function PlansPage() {
     !defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
 
-  /**
-   * Espelha a régua de conclusão do backend (FASE 1 — "conclusão de PDI com
-   * regras de negócio"): sem item nenhum, ou com algum item ainda "Não
-   * iniciado", concluir deixaria o PDI parecer um resultado que não existe.
-   * O botão nasce desabilitado nesses casos, em vez de deixar clicar e só
-   * depois descobrir pelo 409. Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-
-   * 2026-08-19.md.
-   */
   const incompletePlanReason = !plan
     ? undefined
     : plan.items.length === 0
@@ -172,13 +126,6 @@ function PlansPage() {
         ? t("pdi.plan.incomplete.notStarted")
         : undefined;
 
-  /**
-   * Espelha o backend (DOM-001): depois de `Approved`, item não muda mais de
-   * escopo — nem cria item novo, nem edita competência/nível/objetivo/tipo/
-   * prazo/prioridade, nem remove. Só os campos de execução (status, plano de
-   * ação, meta SMART) continuam abertos até `Completed`, quando tudo trava.
-   * Ver AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md.
-   */
   const canEditDiagnostic = canEdit && planStatus === "Draft";
   const canEditExecution = canEdit && planStatus !== "Completed";
 
@@ -188,11 +135,6 @@ function PlansPage() {
     ? gaps.find((g) => g.item.competencyId === creatingForCompetencyId)
     : undefined;
 
-  /**
-   * `action` chama um dos métodos de transição do `DevelopmentPlansViewModel`
-   * (`approve`/`complete`/`returnToDraft`) — o loading/erro local é o
-   * `useAsyncSubmit` compartilhado (D-6), igual antes.
-   */
   const runPlanTransition = (action: () => Promise<DevelopmentPlan>) => {
     if (!plan) return;
     void planTransition.run(action);
@@ -304,20 +246,12 @@ function PlansPage() {
         />
       )}
 
-      {/* R2-UX-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — minmax(0,1fr) na
-          pista flexível: a fixa (320px) já tem tamanho definido, não corre o
-          mesmo risco de min-content trap. */}
+      {}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           {(plan?.items ?? []).map((item) => {
             const comp = sel.competencyById(item.competencyId);
-            /*
-              A competência pode ter sido removida da matriz depois que o item
-              do PDI foi criado — o gap que o gerou já não existe mais para
-              recalcular o nome. Sem este retorno, `comp?.name` vira
-              `undefined` e a string literal "undefined" vazava para dentro de
-              frases inteiras (título, SMART goal), que é o bug relatado.
-            */
+
             const competencyName = comp?.name ?? t("pdi.unknownCompetency");
             return (
               <div key={item.id} className="surface-card p-5">
@@ -546,8 +480,6 @@ function PlansPage() {
             setCreatingForCompetencyId(null);
           }}
           onSave={async (draft) => {
-            // Montagem do payload (id de cliente, startDate, objetivo) mora
-            // no ViewModel — ver `DevelopmentPlansViewModel.createItemFromGap`.
             const result = await creating.run(() =>
               viewModel.createItemFromGap(architectId, creatingForGap, draft, architect.name),
             );
@@ -559,15 +491,6 @@ function PlansPage() {
   );
 }
 
-/**
- * Plano de ação: salva ao sair do campo (blur), não a cada tecla — antes
- * cada caractere digitado disparava um PATCH, inundando a API e deixando o
- * indicador de estado sem sentido (sempre "salvando"). O rascunho local só
- * é gravado quando a pessoa termina de editar; falha de rede já aparece via
- * toast global (`remote()` na store), este indicador é só o retorno visual
- * rápido de que o campo específico foi salvo. Ver AUDITORIA-QUARTA-REVISAO-
- * ESTADO-ATUAL-SYNAPSE.md, EPIC 3.
- */
 function ActionPlanField({
   value,
   disabled,
@@ -609,15 +532,6 @@ function ActionPlanField({
   );
 }
 
-/**
- * ORIENTACAO-NONA-RODADA, Seção 7/14 (GES-007/ENT-09-010) — prazo é
- * editável em `Draft` como qualquer campo diagnóstico normal (o PATCH
- * genérico já aceita `targetDate` até aqui); em `Approved`, o mesmo PATCH
- * já bloqueia o campo no backend (`EXECUTION_FIELDS`), então a única forma
- * de mudar o prazo passa a ser o comando dedicado `Reprogramar prazo`
- * (motivo obrigatório, evento auditável). Nunca um input silencioso depois
- * de aprovado.
- */
 function DeadlineField({
   planId,
   item,
@@ -682,11 +596,6 @@ function DeadlineField({
   );
 }
 
-/**
- * Histórico append-only de reprogramações — `GET /api/plans/:planId/items/
- * :itemId/events`. Sem otimismo (é leitura), buscado só quando a pessoa
- * pede para ver, não em toda renderização do card.
- */
 function ItemHistory({
   planId,
   itemId,
@@ -750,14 +659,6 @@ function ItemHistory({
   );
 }
 
-/**
- * OO3-11 §3b (reuso final) — wrapper fino sobre `CommandWithReasonDialog`:
- * o comando (`DevelopmentPlansViewModel.reschedule`, OO3-10) e o ciclo
- * submitting/erro são o mecanismo compartilhado; aqui ficam só o campo
- * extra de data e os textos. Comportamentos preservados do original:
- * não fecha por clique fora/Esc enquanto envia, campos desabilitados
- * durante o envio e `role="alert"` no erro.
- */
 function RescheduleDialog({
   planId,
   item,
@@ -765,7 +666,7 @@ function RescheduleDialog({
 }: {
   planId: string;
   item: DevelopmentPlanItem;
-  /** Cancelou OU salvou — nos dois casos o pai só fecha o diálogo, como antes. */
+
   onClose: () => void;
 }) {
   const { t, locale } = useI18n();
@@ -813,15 +714,6 @@ function RescheduleDialog({
   );
 }
 
-/**
- * FASE 2 (quinta rodada) — "não há formalização de check-in. PDI é
- * atualizado, mas acompanhamento é implícito." Mudar `status` já
- * registrava o resultado; check-in registra o processo — uma nota datada,
- * de quem escreveu, sem mudar nenhum campo do item. Autor e data vêm
- * sempre do servidor (mesmo padrão de `CommentSection` em assessments.tsx):
- * a lista só reflete o que o servidor confirmou, sem otimismo. Ver
- * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, Seção 11.
- */
 function CheckinTimeline({
   planId,
   item,
@@ -835,7 +727,7 @@ function CheckinTimeline({
   const user = useCurrentUser();
   const viewModel = useDevelopmentPlansViewModel();
   const [text, setText] = useState("");
-  /** OO3-11/D-6 (reuso final) — ciclo submitting/erro compartilhado; só o "limpar rascunho no sucesso" é daqui. */
+
   const { submitting: saving, error, run } = useAsyncSubmit(t("pdi.checkin.error"));
 
   const submit = async () => {
@@ -885,13 +777,6 @@ function CheckinTimeline({
   );
 }
 
-/**
- * Item de PDI real: tipo de ação, plano e prazo são escolhidos pela própria
- * pessoa aqui — antes um clique em "Adicionar ao PDI" já criava o item com
- * `actionType: "Learn"` e prazo de +4 meses fabricados, sem ninguém ter
- * decidido nada disso. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-
- * SYNAPSE.md, EPIC 3.
- */
 function NewPlanItemDialog({
   gap,
   submitting,
@@ -911,7 +796,7 @@ function NewPlanItemDialog({
   onCancel: () => void;
 }) {
   const { t } = useI18n();
-  /** CFG-06 — opções e rótulos do tipo de ação vêm do vocabulário SERVIDO (fallback = seed byte-idêntico). */
+
   const actionTypes = useVocabulary("ACTION_TYPE");
   const [actionType, setActionType] = useState<ActionType>(
     (actionTypes.options[0]?.code ?? "Learn") as ActionType,
@@ -930,14 +815,7 @@ function NewPlanItemDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
-          {/**
-           * ORIENTACAO-NONA-RODADA, Seção 11 — GAP oficial em read-only,
-           * como contexto de origem; nunca prioridade calculada aqui — "não
-           * duplicar o algoritmo de prioridade no frontend sequer para
-           * preview antes da resposta do servidor" (Seção 11). A prioridade
-           * de verdade só aparece no card do item, depois que o servidor
-           * confirmou a criação.
-           */}
+          {}
           <div className="rounded-md border border-border bg-secondary/40 px-3 py-2 text-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {t("pdi.newItem.officialGap")}
@@ -1030,12 +908,6 @@ function NewPlanItemDialog({
   );
 }
 
-/**
- * ENT-PDI-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
- * Seção 5) — motivo obrigatório: reabrir algo concluído é um comando de
- * negócio, não uma troca de campo qualquer, e o histórico (`PlanReopened`)
- * precisa desse motivo para fazer sentido depois.
- */
 function ReopenPlanDialog({
   onSubmit,
   onClose,
@@ -1044,12 +916,7 @@ function ReopenPlanDialog({
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  /**
-   * OO3-11c `[MUDA UI]` (aprovado em 2026-08-26) — o ciclo submitting/erro
-   * saiu do componente pai: o erro de transição agora aparece DENTRO do
-   * diálogo (padrão de `CommandWithReasonDialog`), não mais na barra de
-   * status atrás dele.
-   */
+
   return (
     <CommandWithReasonDialog
       title={t("pdi.plan.reopenDialog.title")}
@@ -1075,14 +942,6 @@ const SMART_FIELDS = [
   { key: "timeBound", label: "Time-bound" },
 ] as const;
 
-/**
- * Formulário da meta SMART: cada campo é escrito pela própria pessoa (ou pelo
- * Tech Lead), nada é preenchido sozinho. Antes um clique fabricava um texto
- * genérico idêntico para qualquer competência ("Duas entregas arquiteturais,
- * um ADR e uma sessão técnica" valia pra tudo) — a meta parecia elaborada sem
- * ninguém ter pensado nela. Ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md,
- * Seção 33.
- */
 function SmartGoalEditor({
   onSave,
   onCancel,

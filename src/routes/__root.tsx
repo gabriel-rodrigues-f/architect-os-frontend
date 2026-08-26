@@ -20,19 +20,6 @@ import { AppShell } from "../components/app/AppShell";
 import { LoginScreen } from "../components/app/LoginScreen";
 import { Toaster } from "../components/ui/sonner";
 
-/**
- * R1-P05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, completa B-27) — `__root.tsx`
- * renderiza no SSR e no cliente; um import (estático OU dinâmico) de
- * `error-tracking.client.ts` (que carrega `@sentry/browser`) tornaria esse
- * módulo alcançável do build do SERVIDOR também, e o plugin de proteção de
- * import do TanStack Start recusa o build por causa disso (arquivo
- * `*.client.*` alcançável de onde não devia — a análise estática do plugin
- * enxerga `import()` dinâmico igual a um `import` normal). `createClientOnlyFn`
- * é o mecanismo de verdade para isto: o compilador do Start troca a função
- * pelo próprio corpo no build cliente e por um stub que lança no build
- * servidor — o import dinâmico do lado servidor nem chega a existir no
- * código compilado, então o plugin nunca o vê.
- */
 const initClientErrorTracking = createClientOnlyFn(async () => {
   const mod = await import("../lib/error-tracking.client");
   mod.initErrorTrackingClient();
@@ -71,13 +58,7 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
-  /*
-    Este componente também renderiza no SSR (erro de loader antes da
-    hidratação); `@sentry/browser` pressupõe navegador de verdade, então
-    `captureClientError` só age client-side (guard interno). O lado servidor
-    do mesmo erro já é coberto por `start.ts`/`error-tracking.server.ts`,
-    então nada fica sem captura.
-  */
+
   captureClientError(error);
   const router = useRouter();
 
@@ -162,13 +143,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  // `pt` — BASE_LOCALE do app (i18n/registry.ts). O valor real do idioma
-  // detectado (`navigator.languages`) só existe client-side, e o próprio
-  // `I18nProvider` já corrige `document.documentElement.lang` assim que
-  // monta; isto é só o fallback estático do primeiro paint/SSR, que não
-  // pode mais ficar hardcoded em inglês para um app em português. Ver
-  // ENT-A11Y-001, AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
-  // Seção 37.1.
   return (
     <html lang="pt">
       <head>
@@ -185,13 +159,6 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
-  /*
-    Inicializa assim que o app monta no cliente, não só quando o primeiro
-    erro acontece — sem isto, qualquer captura antes do primeiro erro de
-    rota (ex.: um handler chamando `Sentry.captureException` direto, se essa
-    necessidade aparecer depois) rodaria sem `init`. `useEffect` só roda no
-    cliente, então a chamada é sempre segura aqui.
-  */
   useEffect(() => {
     errorTrackingInit ??= initClientErrorTracking();
   }, []);
@@ -205,7 +172,7 @@ function RootComponent() {
               <AuthGate>
                 <StoreProvider>
                   <AppShell>
-                    {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                    {}
                     <Outlet />
                   </AppShell>
                   <AppToaster />
@@ -219,17 +186,11 @@ function RootComponent() {
   );
 }
 
-/**
- * Um `<Toaster>` só, montado uma vez — cada tela chama `toast.success(...)` do
- * `sonner` direto, sem montar o próprio portal. Duração fixa em 3s: é a
- * confirmação de "deu certo", não um aviso que precise ser lido com calma.
- */
 function AppToaster() {
   const { resolved } = useTheme();
   return <Toaster theme={resolved} position="bottom-right" duration={3000} richColors={false} />;
 }
 
-/** Sem sessão válida, nenhuma tela do app é montada — só o login. */
 function AuthGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
 
