@@ -337,6 +337,10 @@ export interface DevelopmentCycle {
  * `z.enum(ACTION_TYPES)` do mesmo array (mesmo fix do backend), em vez das
  * listas escritas à mão que a auditoria cita como exemplo de enum
  * duplicado.
+ *
+ * CFG-06 — este array deixou de ser fonte direta de UI: os selects derivam
+ * do vocabulário SERVIDO `ACTION_TYPE` (`useVocabularies`); aqui sobrevive
+ * só como espelho do seed, o DEFAULT do fallback (`vocabularies.ts`).
  */
 export const ACTION_TYPES = ["Learn", "Practice", "Apply", "Teach", "Mentor", "Lead"] as const;
 export type ActionType = (typeof ACTION_TYPES)[number];
@@ -456,17 +460,28 @@ export interface DevelopmentPlanEvent {
   planVersion: number;
 }
 
-export type LearningItemType =
-  | "Curso"
-  | "Vídeo"
-  | "Livro"
-  | "Artigo"
-  | "Laboratório"
-  | "Desafio"
-  | "Projeto"
-  | "Certificação"
-  | "Apresentação"
-  | "Workshop";
+/**
+ * CFG-06 — os codes DEFAULT do vocabulário `LEARNING_ITEM_TYPE` (antes o
+ * array `ITEM_TYPES` vivia hardcoded em `learning-paths.tsx`). Como
+ * `ACTION_TYPES`/`EVIDENCE_TYPES`, este array deixou de ser fonte direta
+ * de UI: os selects derivam do vocabulário SERVIDO
+ * (`GET /api/config/vocabularies`, via `useVocabularies`), e este array só
+ * sobrevive como espelho do seed — o fallback byte-idêntico de
+ * `vocabularies.ts` enquanto a consulta não resolve (ou falha).
+ */
+export const LEARNING_ITEM_TYPES = [
+  "Curso",
+  "Vídeo",
+  "Livro",
+  "Artigo",
+  "Laboratório",
+  "Desafio",
+  "Projeto",
+  "Certificação",
+  "Apresentação",
+  "Workshop",
+] as const;
+export type LearningItemType = (typeof LEARNING_ITEM_TYPES)[number];
 
 /** Catálogo do item — o que a trilha oferece, não o que uma pessoa já fez dele. */
 export interface LearningPathItem {
@@ -669,6 +684,11 @@ export type EvidenceType =
   | "Mentoring"
   | "Technical Article";
 
+/**
+ * CFG-06 — como `ACTION_TYPES`: deixou de ser fonte direta de UI (os
+ * selects derivam do vocabulário SERVIDO `EVIDENCE_TYPE`); sobrevive como
+ * espelho do seed, o DEFAULT do fallback (`vocabularies.ts`).
+ */
 export const EVIDENCE_TYPES: EvidenceType[] = [
   "Architecture Design",
   "ADR",

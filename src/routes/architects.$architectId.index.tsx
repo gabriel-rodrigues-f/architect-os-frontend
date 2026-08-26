@@ -26,19 +26,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  EVIDENCE_TYPES,
-  type DevelopmentPlan,
-  type Evidence,
-  type EvidenceType,
-} from "@/lib/domain";
+import { type DevelopmentPlan, type Evidence, type EvidenceType } from "@/lib/domain";
 import { useToastSubmit } from "@/hooks/use-async-submit";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters/dashboard-presenter";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useSelectors, useStore } from "@/lib/store";
+import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { ArchitectProfileViewModel } from "@/lib/view-models/architect-profile-view-model";
 import { LearningPathsViewModel } from "@/lib/view-models/learning-paths-view-model";
@@ -131,6 +126,9 @@ function ArchitectProfile() {
   /** OO3-11/D-5 (reuso final) — KPIs pessoais compartilhados com a Home de Member. */
   const personal = useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
   const labels = useLabels();
+  /** CFG-06 — rótulos de tipo de ação/evidência via vocabulário servido (code fora do catálogo cai no próprio code). */
+  const actionTypes = useVocabulary("ACTION_TYPE");
+  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const { t, locale } = useI18n();
   const help = usePageHelp("architectProfile");
   const user = useCurrentUser();
@@ -383,7 +381,7 @@ function ArchitectProfile() {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {labels.actionType[i.actionType]} · {i.actionPlan} · prazo{" "}
+                    {actionTypes.label(i.actionType)} · {i.actionPlan} · prazo{" "}
                     {defaultDateFormatter.formatDate(i.targetDate, locale)}
                   </p>
                   {itemEvidences.length > 0 && (
@@ -440,7 +438,7 @@ function ArchitectProfile() {
                   <EvidenceStatusBadge status={e.status} labels={labels} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {labels.evidenceType[e.type]}
+                  {evidenceTypes.label(e.type)}
                   {e.issuer ? ` · ${e.issuer}` : ""} ·{" "}
                   {defaultDateFormatter.formatDate(e.date, locale)} · complexidade{" "}
                   {labels.complexity[e.complexity]}
@@ -529,9 +527,13 @@ function EvidenceDialog({
   const { t } = useI18n();
   const labels = useLabels();
   const viewModel = useArchitectProfileViewModel();
+  /** CFG-06 — as opções do select derivam do vocabulário SERVIDO (só ativos, por sortOrder; fallback = seed byte-idêntico). */
+  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<EvidenceType>(EVIDENCE_TYPES[0] as EvidenceType);
+  const [type, setType] = useState<EvidenceType>(
+    (evidenceTypes.options[0]?.code ?? "Architecture Design") as EvidenceType,
+  );
   const [date, setDate] = useState(defaultDateFormatter.todayIso());
   const [complexity, setComplexity] = useState<"Low" | "Medium" | "High">("Medium");
   const [description, setDescription] = useState("");
@@ -606,9 +608,9 @@ function EvidenceDialog({
                 value={type}
                 onChange={(e) => setType(e.target.value as EvidenceType)}
               >
-                {EVIDENCE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {evidenceTypes.options.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {evidenceTypes.label(option.code)}
                   </option>
                 ))}
               </select>

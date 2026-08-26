@@ -24,9 +24,8 @@ import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useNarrowViewport } from "@/hooks/use-narrow-viewport";
 import { useI18n, type I18nApi } from "@/lib/i18n";
-import { useLabels } from "@/lib/labels";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { STATE_QUERY_KEY, useOperationalSettings, useStore } from "@/lib/store";
+import { STATE_QUERY_KEY, useOperationalSettings, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { AssessmentViewModel } from "@/lib/view-models/assessment-view-model";
 
@@ -874,7 +873,8 @@ export function CapabilityAssessmentCard({
 }) {
   const store = useStore();
   const { t, locale } = useI18n();
-  const labels = useLabels();
+  /** CFG-06 — rótulo do tipo de evidência via vocabulário servido (code desconhecido cai no próprio code). */
+  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const user = useCurrentUser();
   const viewModel = useAssessmentViewModel();
   /**
@@ -1065,7 +1065,7 @@ export function CapabilityAssessmentCard({
                                   <li key={e.id} className="text-sm">
                                     <span className="font-medium">{e.title}</span>{" "}
                                     <span className="text-xs text-muted-foreground">
-                                      {labels.evidenceType[e.type]} ·{" "}
+                                      {evidenceTypes.label(e.type)} ·{" "}
                                       {defaultDateFormatter.formatDate(e.date, locale)}
                                     </span>
                                   </li>
@@ -1126,7 +1126,8 @@ function CompetencyStackedCard({
 }) {
   const store = useStore();
   const { t, locale } = useI18n();
-  const labels = useLabels();
+  /** CFG-06 — rótulo do tipo de evidência via vocabulário servido (code desconhecido cai no próprio code). */
+  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const user = useCurrentUser();
   const viewModel = useAssessmentViewModel();
 
@@ -1244,7 +1245,7 @@ function CompetencyStackedCard({
                   <li key={e.id} className="text-sm">
                     <span className="font-medium">{e.title}</span>{" "}
                     <span className="text-xs text-muted-foreground">
-                      {labels.evidenceType[e.type]} ·{" "}
+                      {evidenceTypes.label(e.type)} ·{" "}
                       {defaultDateFormatter.formatDate(e.date, locale)}
                     </span>
                   </li>
