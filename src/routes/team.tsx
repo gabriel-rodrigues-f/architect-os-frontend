@@ -349,7 +349,7 @@ function TeamPage() {
             <Button variant="outline" onClick={() => form.setEditing(null)}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={form.submit} disabled={!form.canSubmit}>
+            <Button onClick={form.submit} disabled={!form.canSubmit || form.submitting}>
               {t("common.save")}
             </Button>
           </DialogFooter>

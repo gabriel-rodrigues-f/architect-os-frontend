@@ -16,7 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isLeadCapable } from "@/lib/api";
-import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useCurrentUser } from "@/lib/auth";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
@@ -361,7 +362,8 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({ name: "", description: "" });
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
+  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+  const { submitting: saving, run } = useToastSubmit();
   /** R2-ESC-07 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — filtro local acima de 20 competências. */
   const [competencyFilter, setCompetencyFilter] = useState("");
   const visibleCompetencies = store.competencies.filter((c) =>
@@ -387,16 +389,10 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const create = async () => {
     const trimmed = form.name.trim();
     if (!trimmed) return;
-    setSaving(true);
-    try {
-      await vm.createPath(user, form, competencyIds, assignedTo);
-      toast.success(t("path.new.toast", { nome: trimmed }));
-      onClose();
-    } catch (error) {
-      toast.error(authErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
+    const result = await run(() => vm.createPath(user, form, competencyIds, assignedTo));
+    if (!result.ok) return;
+    toast.success(t("path.new.toast", { nome: trimmed }));
+    onClose();
   };
 
   return (

@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { type Architect, type RoleName } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
-import { authErrorMessage } from "@/lib/auth";
+import { useToastSubmit } from "@/hooks/use-async-submit";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -127,6 +127,13 @@ export function useArchitectForm() {
   };
 
   const { yearsValid, canSubmit } = viewModel.validate(form);
+  /**
+   * OO3-18/F-1 — esqueleto try/catch/toast.error(authErrorMessage) mora no
+   * hook; este era um dos 3 call sites SEM `finally`/`setSaving` (o diálogo
+   * aceitava re-submit durante a chamada em voo — bug latente que a
+   * unificação corrige: `submitting` agora desabilita o botão Salvar).
+   */
+  const { submitting, run } = useToastSubmit();
 
   /**
    * Validação e payload moraram em `TeamViewModel.submit` (Seção 61 — hook
@@ -146,12 +153,8 @@ export function useArchitectForm() {
       // B-32 — id é gerado no servidor (nunca mais slug(nome), que colidia
       // entre duas pessoas de nome parecido); sem otimismo, a tela só fecha
       // o diálogo depois que o cadastro existe de verdade.
-      try {
-        await viewModel.submit(form, editing);
-        setEditing(null);
-      } catch (error) {
-        toast.error(authErrorMessage(error));
-      }
+      const result = await run(() => viewModel.submit(form, editing));
+      if (result.ok) setEditing(null);
     }
   };
 
@@ -173,6 +176,7 @@ export function useArchitectForm() {
     openEdit,
     yearsValid,
     canSubmit,
+    submitting,
     submit,
     reactivate,
   };

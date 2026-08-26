@@ -1,22 +1,12 @@
-import { AlertCircle, Check, ChevronsUpDown, X } from "lucide-react";
+import { AlertCircle, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { FieldLabel, Initials } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -26,14 +16,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { authErrorMessage, useCurrentUser } from "@/lib/auth";
+import { useToastSubmit } from "@/hooks/use-async-submit";
+import { useCurrentUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
-import { cn } from "@/lib/utils";
 import { MentoringViewModel } from "@/lib/view-models/mentoring-view-model";
 
 /**
@@ -155,7 +145,8 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
   const durationValue = Number(form.durationMin);
   const durationInvalid =
     form.durationMin.trim().length > 0 && (!Number.isInteger(durationValue) || durationValue <= 0);
-  const [saving, setSaving] = useState(false);
+  /** OO3-18/F-1 — esqueleto submitting/try/catch/toast.error(authErrorMessage) unificado. */
+  const { submitting: saving, run } = useToastSubmit();
 
   /**
    * Sem id local nem sucesso otimista: o servidor gera o id de verdade e é
@@ -182,38 +173,26 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
       ...(u.note ? { note: u.note } : {}),
     }));
 
-    setSaving(true);
-    try {
-      await viewModel.createSession(
-        user.name,
-        form,
-        durationValue,
-        competencyIds,
-        confirmedUpdates,
-      );
-      toast.success(
-        t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }),
-      );
-      setForm({
-        ...form,
-        durationMin: "",
-        topic: "",
-        notes: "",
-        decisions: "",
-        actions: "",
-        nextSession: "",
-      });
-      setCompetencyIds([]);
-      setProficiencyUpdates([]);
-      setProficiencyMissingLevel(false);
-      setMissing([]);
-      setShowToast(false);
-      setOpen(false);
-    } catch (error) {
-      toast.error(authErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
+    const result = await run(() =>
+      viewModel.createSession(user.name, form, durationValue, competencyIds, confirmedUpdates),
+    );
+    if (!result.ok) return;
+    toast.success(t("mentor.create.toast", { nome: sel.architectById(form.menteeId)?.name ?? "" }));
+    setForm({
+      ...form,
+      durationMin: "",
+      topic: "",
+      notes: "",
+      decisions: "",
+      actions: "",
+      nextSession: "",
+    });
+    setCompetencyIds([]);
+    setProficiencyUpdates([]);
+    setProficiencyMissingLevel(false);
+    setMissing([]);
+    setShowToast(false);
+    setOpen(false);
   };
 
   return {
@@ -267,10 +246,13 @@ export function useMentoringTimeline() {
 
 /**
  * Combobox pesquisável de seleção única para o filtro da linha do tempo —
- * mesmo padrão "sem opção 'Todo o time'" de `ArchitectSelectCombobox`; a
- * diferença é que aqui inativos aparecem sempre (com sufixo), porque o
+ * OO3-18/F-3: era um clone estrutural de `ArchitectSelectCombobox` (mesmo
+ * domínio, mesma ordenação por nome, mesmo agrupamento ativos/inativos,
+ * strings idênticas); virou este adaptador fino. A única diferença real
+ * sobrevive como dado: aqui inativos aparecem SEMPRE (com sufixo), porque o
  * histórico de mentoria de quem já saiu do time continua consultável (mesma
- * filosofia de R2-UX-08).
+ * filosofia de R2-UX-08) — por isso o split ativo/inativo acontece aqui e
+ * vai como as duas listas que o combobox compartilhado já entende.
  */
 export function MenteeFilterCombobox({
   architects,
@@ -282,75 +264,15 @@ export function MenteeFilterCombobox({
   onChange: (value: string) => void;
 }) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const ordered = [...architects].sort(defaultNameFormatter.byName);
-  const active = ordered.filter((a) => a.active);
-  const inactive = ordered.filter((a) => !a.active);
-
-  const summary = ordered.find((a) => a.id === selected)?.name ?? t("mentor.filter.placeholder");
-
-  const select = (value: string) => {
-    onChange(value);
-    setOpen(false);
-  };
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          role="combobox"
-          aria-label={t("mentor.filter.label")}
-          aria-expanded={open}
-          title={summary}
-          className="flex w-64 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
-        >
-          <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
-          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start">
-        <Command>
-          <CommandInput placeholder={t("mentor.filter.searchPlaceholder")} />
-          <CommandList className="max-h-72">
-            <CommandEmpty>{t("mentor.filter.empty")}</CommandEmpty>
-            <CommandGroup>
-              {active.map((a) => (
-                <CommandItem key={a.id} value={a.name} onSelect={() => select(a.id)}>
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 shrink-0",
-                      selected === a.id ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <span className="min-w-0 flex-1 truncate">{a.name}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-            {inactive.length > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup>
-                  {inactive.map((a) => (
-                    <CommandItem key={a.id} value={a.name} onSelect={() => select(a.id)}>
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4 shrink-0",
-                          selected === a.id ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                      <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                        {t("mentor.filter.inactiveName", { nome: a.name })}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <ArchitectSelectCombobox
+      architects={architects.filter((a) => a.active)}
+      inactiveArchitects={architects.filter((a) => !a.active)}
+      selectedId={selected}
+      onChange={onChange}
+      label={t("mentor.filter.label")}
+      className="w-64"
+    />
   );
 }
 
