@@ -1,11 +1,6 @@
-import {
-  capabilityShortLabels,
-  GAP_SEVERITY_MESSAGE_KEY,
-  gapSeverityOf,
-  type Architect,
-  type Capability,
-} from "../domain";
+import { capabilityShortLabels, type Architect, type Capability } from "../domain";
 import type { MessageKey } from "../i18n";
+import { defaultGapSeverityRuler, type GapSeverityRuler } from "../scoring-bands";
 import type { CapabilityAverage, ConsolidatedGapRow } from "../selectors";
 import { defaultDateFormatter } from "../text";
 
@@ -37,9 +32,16 @@ export interface TeamReportInput {
 export type T = (key: MessageKey, params?: Record<string, string | number>) => string;
 
 export class TeamReportPresenter {
+  /**
+   * CFG-02 — a régua de gap entra por parâmetro (quem exporta passa a
+   * efetiva, carregada de `/api/config/bands` via `useGapSeverityRuler`);
+   * o default é a régua do seed — mesmo comportamento de sempre para
+   * testes e chamadas que não a fornecem.
+   */
   constructor(
     private readonly t: T,
     private readonly input: TeamReportInput,
+    private readonly ruler: GapSeverityRuler = defaultGapSeverityRuler,
   ) {}
 
   /** R2-ESC-02 — dedup das siglas enquanto o catálogo tiver duplicatas legadas. */
@@ -113,15 +115,15 @@ export class TeamReportPresenter {
 
   /**
    * Coluna "Classificação" — a MESMA régua do `GapBadge` na tela, agora de
-   * fato compartilhada via `gapSeverityOf`/`GAP_SEVERITY_MESSAGE_KEY`
-   * (OO3-11i) em vez de reproduzida à mão — o fim da régua dupla que o
-   * comentário do antigo `team-report-shared.ts` aceitava "por ser trivial
-   * de auditar lado a lado".
+   * fato compartilhada via `GapSeverityRuler` (OO3-11i/CFG-02) em vez de
+   * reproduzida à mão — o fim da régua dupla que o comentário do antigo
+   * `team-report-shared.ts` aceitava "por ser trivial de auditar lado a
+   * lado".
    */
   private gapClassificationLabel(row: ConsolidatedGapRow, mastery: boolean): string {
     if (mastery) return this.t("gap.mastery.badge", { n: row.maxGap });
     const gap = row.maxGap;
-    const rotulo = this.t(GAP_SEVERITY_MESSAGE_KEY[gapSeverityOf(gap)]);
+    const rotulo = this.t(this.ruler.messageKey[this.ruler.severityOf(gap)]);
     return this.t("gap.badge", { n: Math.max(0, gap), rotulo });
   }
 }

@@ -23,6 +23,12 @@ import type {
   ProficiencyUpdate,
 } from "./domain";
 import { MutationRunner } from "./mutation-runner";
+import {
+  gapSeverityRulerFrom,
+  withDefaultScoringBands,
+  type GapSeverityRuler,
+  type ScoringBands,
+} from "./scoring-bands";
 import { createSelectors, emptyState } from "./selectors";
 import { defaultNameFormatter } from "./text";
 
@@ -42,6 +48,26 @@ export const CAREER_LEVELS_QUERY_KEY = ["career-levels"] as const;
 export function useCareerLevelsByRank(): CareerLevel[] {
   const { data } = useQuery({ queryKey: CAREER_LEVELS_QUERY_KEY, queryFn: api.careerLevels });
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
+}
+
+/**
+ * CFG-02 — as réguas numéricas (`scoring_bands`) entram no ciclo de dados
+ * pelo MESMO padrão de `careerLevels` acima: `useQuery` próprio, endpoint
+ * por contexto (`GET /api/config/bands`), cache e isolamento de falha
+ * independentes do resto do estado. Enquanto a consulta não resolve (ou se
+ * falhar), `withDefaultScoringBands` completa com o default byte-idêntico
+ * ao seed — comportamento igual ao hardcoded antigo, sem flash de UI.
+ */
+export const SCORING_BANDS_QUERY_KEY = ["config-bands"] as const;
+export function useScoringBands(): ScoringBands {
+  const { data } = useQuery({ queryKey: SCORING_BANDS_QUERY_KEY, queryFn: api.bands });
+  return useMemo(() => withDefaultScoringBands(data), [data]);
+}
+
+/** A régua de gap EFETIVA (servidor com fallback) já na forma dos consumidores (OO3-11i). */
+export function useGapSeverityRuler(): GapSeverityRuler {
+  const bands = useScoringBands();
+  return useMemo(() => gapSeverityRulerFrom(bands.GAP_SEVERITY), [bands]);
 }
 
 /**

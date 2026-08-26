@@ -7,6 +7,7 @@ import {
   type T,
   type TeamReportInput,
 } from "@/lib/presenters/team-report-presenter";
+import type { GapSeverityRuler } from "@/lib/scoring-bands";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
 
 /**
@@ -19,8 +20,12 @@ import type { ConsolidatedGapRow } from "@/lib/selectors";
  * OO3-11j — o conteúdo vem do `TeamReportPresenter` (que NÃO importa jspdf);
  * aqui fica só a montagem do PDF.
  */
-export async function exportTeamReportPdf(t: T, input: TeamReportInput): Promise<void> {
-  const presenter = new TeamReportPresenter(t, input);
+export async function exportTeamReportPdf(
+  t: T,
+  input: TeamReportInput,
+  ruler?: GapSeverityRuler,
+): Promise<void> {
+  const presenter = new TeamReportPresenter(t, input, ruler);
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 40;
   let y = margin;

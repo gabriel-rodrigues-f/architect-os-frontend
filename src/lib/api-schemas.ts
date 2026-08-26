@@ -97,6 +97,29 @@ const careerLevel = z.object({
 
 export const careerLevelsResponseSchema = z.array(careerLevel);
 
+/**
+ * CFG-02 — resposta de `GET /api/config/bands` (`ConfigGateway.bands`):
+ * escalas agrupadas, cada uma com faixas meia-abertas `min <= v < max`
+ * (`null` = ±infinito na ponta). `labelKey` é string livre de propósito —
+ * chave i18n desconhecida não derruba o parse; `messageKeyOrDefault`
+ * (`scoring-bands.ts`) resolve o fallback na hora de exibir. Toda escala é
+ * opcional: quem completa com o default é `withDefaultScoringBands`.
+ */
+const bandTone = z.enum(["ok", "low", "high", "critical"]);
+const scoringBand = z.object({
+  key: z.string(),
+  minValue: z.number().nullable(),
+  maxValue: z.number().nullable(),
+  labelKey: z.string(),
+  tone: bandTone,
+  sortOrder: z.number(),
+});
+export const scoringBandsResponseSchema = z.object({
+  GAP_SEVERITY: z.array(scoringBand).optional(),
+  PROFICIENCY: z.array(scoringBand).optional(),
+  CONCENTRATION_RISK: z.array(scoringBand).optional(),
+});
+
 const architect = z.object({
   id: z.string(),
   name: z.string(),

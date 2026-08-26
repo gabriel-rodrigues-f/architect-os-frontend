@@ -144,3 +144,23 @@ describe("PersonalDashboardPresenter", () => {
     expect(personal.assignedPaths("bruno")).toEqual([]);
   });
 });
+
+/**
+ * CFG-02 — o limiar de "gap crítico" vem da régua GAP_SEVERITY carregada
+ * (`useGapSeverityRuler().criticalThreshold`, passado no construtor); sem o
+ * parâmetro, o default (3, derivado do seed) mantém o comportamento antigo
+ * — é o que o teste "limiar de gap crítico é 3" acima exerce.
+ */
+describe("DashboardPresenter com limiar configurado (CFG-02)", () => {
+  it("limiar 2 (bands fake) passa a contar gaps que o default ignorava", () => {
+    const sel = createSelectors(fixtureState);
+    const architects = fixtureState.architects;
+    const defaultPresenter = new DashboardPresenter(fixtureState, sel);
+    const strictPresenter = new DashboardPresenter(fixtureState, sel, 2);
+    const gapsAtLeast2 = defaultPresenter.gapsOf(architects).filter((g) => g.gap >= 2).length;
+    expect(strictPresenter.criticalGapCount(architects)).toBe(gapsAtLeast2);
+    expect(strictPresenter.criticalGapCount(architects)).toBeGreaterThanOrEqual(
+      defaultPresenter.criticalGapCount(architects),
+    );
+  });
+});

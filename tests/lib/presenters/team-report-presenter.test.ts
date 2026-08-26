@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it } from "vitest";
@@ -107,7 +108,19 @@ describe("régua única de severidade (OO3-11i)", () => {
 
   it("GapBadge e o presenter devolvem o MESMO rótulo para o mesmo gap — fim da régua dupla", () => {
     const gap = 2;
-    render(createElement(I18nProvider, null, createElement(GapBadge, { gap })));
+    // CFG-02 — `GapBadge` consulta a régua efetiva via `useGapSeverityRuler`
+    // (React Query); sem resposta de `/api/config/bands`, cai no default do
+    // seed — o comportamento que este teste sempre exerceu.
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
+    render(
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(I18nProvider, null, createElement(GapBadge, { gap })),
+      ),
+    );
     const badgeText = screen.getByText(/Gap 2/).textContent;
 
     // Presenter com um `t` real de pt (as mesmas mensagens que o I18nProvider serve).

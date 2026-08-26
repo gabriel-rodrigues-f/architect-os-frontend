@@ -9,7 +9,7 @@ import { EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { useSelectors } from "@/lib/store";
+import { useGapSeverityRuler, useSelectors } from "@/lib/store";
 import { exportTeamReportCsv } from "@/lib/team-report-csv";
 
 /**
@@ -39,6 +39,8 @@ function ProgressionPage() {
   const { t } = useI18n();
   const help = usePageHelp("progression");
   const sel = useSelectors();
+  /** CFG-02 — a coluna "Classificação" do export usa a régua efetiva (`/api/config/bands`, fallback = seed), a MESMA do `GapBadge` na tela. */
+  const ruler = useGapSeverityRuler();
   const { store, selected, setSelected, architects, blocking, opportunity, mastery, scopeLabel } =
     useGapAnalysisData();
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -56,7 +58,7 @@ function ProgressionPage() {
 
   const exportCsv = () => {
     try {
-      exportTeamReportCsv(t, reportInput());
+      exportTeamReportCsv(t, reportInput(), ruler);
     } catch {
       toast.error(t("gap.export.error"));
     }
@@ -69,7 +71,7 @@ function ProgressionPage() {
       // import() dinâmico mantém esse peso fora do chunk de `/progression`,
       // baixado só quando alguém de fato clica em exportar.
       const { exportTeamReportPdf } = await import("@/lib/team-report-pdf");
-      await exportTeamReportPdf(t, reportInput());
+      await exportTeamReportPdf(t, reportInput(), ruler);
     } catch {
       toast.error(t("gap.export.error"));
     } finally {

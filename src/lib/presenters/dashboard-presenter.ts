@@ -1,5 +1,6 @@
 import type { AppState } from "../api";
 import type { Architect, DevelopmentPlan, LearningPath } from "../domain";
+import { defaultGapSeverityRuler } from "../scoring-bands";
 import type { Gap, Selectors } from "../selectors";
 
 /**
@@ -22,13 +23,19 @@ export interface GapWithArchitect extends Gap {
   architect: Architect;
 }
 
-/** Limiar de "gap crítico" do painel — único lugar onde o número 3 aparece. */
-export const CRITICAL_GAP_THRESHOLD = 3;
+/**
+ * Limiar de "gap crítico" do painel — CFG-02: deixou de ser o literal 3 e
+ * virou o `min` da faixa `critical` da régua DEFAULT de gap
+ * (`DEFAULT_SCORING_BANDS`, fallback byte-idêntico ao seed). A rota passa o
+ * limiar EFETIVO (`useGapSeverityRuler().criticalThreshold`) no construtor.
+ */
+export const CRITICAL_GAP_THRESHOLD = defaultGapSeverityRuler.criticalThreshold;
 
 export class DashboardPresenter {
   constructor(
     private readonly state: Pick<AppState, "plans" | "learningPaths" | "activeCycleId">,
     private readonly sel: Pick<Selectors, "progressionGapsFor" | "assessmentFor">,
+    private readonly criticalGapThreshold: number = CRITICAL_GAP_THRESHOLD,
   ) {}
 
   gapsOf(population: readonly Architect[]): GapWithArchitect[] {
@@ -38,7 +45,7 @@ export class DashboardPresenter {
   }
 
   criticalGapCount(population: readonly Architect[]): number {
-    return this.gapsOf(population).filter((g) => g.gap >= CRITICAL_GAP_THRESHOLD).length;
+    return this.gapsOf(population).filter((g) => g.gap >= this.criticalGapThreshold).length;
   }
 
   /**

@@ -24,7 +24,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
-import { useSelectors, useStore } from "@/lib/store";
+import { useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -66,11 +66,15 @@ function Dashboard() {
   return <AdminHome />;
 }
 
-/** OO3-11e — adaptador fino: memoiza o presenter sobre o snapshot atual. */
+/** OO3-11e — adaptador fino: memoiza o presenter sobre o snapshot atual. CFG-02: o limiar de "gap crítico" vem da régua efetiva (`/api/config/bands`, fallback = seed). */
 function useDashboardPresenter() {
   const store = useStore();
   const sel = useSelectors();
-  return useMemo(() => new DashboardPresenter(store, sel), [store, sel]);
+  const { criticalThreshold } = useGapSeverityRuler();
+  return useMemo(
+    () => new DashboardPresenter(store, sel, criticalThreshold),
+    [store, sel, criticalThreshold],
+  );
 }
 
 /** OO3-11/D-5 (reuso final) — idem, para os KPIs pessoais (compartilhados com o perfil). */
