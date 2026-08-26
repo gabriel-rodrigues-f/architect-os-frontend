@@ -32,7 +32,11 @@ async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>)
   if (!response.ok()) {
     throw new Error(`${response.url()} → ${response.status()}: ${await response.text()}`);
   }
-  return response.json();
+  const body: unknown = await response.json();
+  if (body !== null && typeof body === "object" && !Array.isArray(body) && "data" in body) {
+    return (body as { data: T }).data;
+  }
+  return body as T;
 }
 
 test.beforeAll(async ({ playwright }) => {
