@@ -1,5 +1,5 @@
 import { AlertCircle, Check, ChevronsUpDown, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
@@ -34,6 +34,7 @@ import { isAssignedTechLeadOf } from "@/lib/scope";
 import { useSelectors, useStore } from "@/lib/store";
 import { byName, formatDate, matchesSearch, todayIso } from "@/lib/text";
 import { cn } from "@/lib/utils";
+import { MentoringViewModel } from "@/lib/view-models/mentoring-view-model";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-34 (§12) — `/mentoring`
@@ -41,6 +42,14 @@ import { cn } from "@/lib/utils";
  * do tempo, cada um com o próprio estado e regras). Extraído no mesmo
  * padrão de `gap-analysis-shared.tsx` (hook de dados/estado + componentes de
  * apresentação): `MentoringPage` (rota) vira só composição.
+ *
+ * OO2-08 (AUDITORIA-OO-PADRONIZACAO-ANALYTICS-IA-SYNAPSE-2026-08-25.md,
+ * Seções 58-61) — os três comandos de escrita (registrar sessão, agendar
+ * follow-up, virar item de PDI) moraram para `MentoringViewModel`
+ * (`lib/view-models/mentoring-view-model.ts`, que também documenta por que
+ * NÃO ganhou `UiAuthorizationPolicy`); os hooks/componentes aqui viram
+ * adaptadores finos, mesmo padrão de `useArchitectForm`
+ * (`team-shared.tsx`)/`useMentoringSessionForm`.
  */
 
 /** Campos que o usuário preenche e que não podem ficar vazios. */
@@ -82,6 +91,13 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
   const { t } = useI18n();
   const user = useCurrentUser();
   const sel = useSelectors();
+  /**
+   * `store` já abstrai o gateway HTTP atrás de cache/reconciliação (as três
+   * ações desta tela passam por ele, nenhuma bypassa `STATE_QUERY_KEY`) —
+   * mesmo raciocínio de `useArchitectForm`/`useTeamRoster`: um ViewModel que
+   * bypassasse `store` duplicaria essa semântica.
+   */
+  const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -168,20 +184,11 @@ export function useMentoringSessionForm(menteeOptions: Architect[]) {
 
     setSaving(true);
     try {
-      await store.addMentoringSession(
-        {
-          id: "",
-          mentor: user.name,
-          menteeId: form.menteeId,
-          date: form.date,
-          durationMin: durationValue,
-          topic: form.topic,
-          competencyIds,
-          notes: form.notes,
-          decisions: form.decisions,
-          actions: form.actions,
-          ...(form.nextSession ? { nextSession: form.nextSession } : {}),
-        },
+      await viewModel.createSession(
+        user.name,
+        form,
+        durationValue,
+        competencyIds,
         confirmedUpdates,
       );
       toast.success(
@@ -356,14 +363,15 @@ export function MenteeFilterCombobox({
 export function FollowUpScheduler({ session }: { session: MentoringSession }) {
   const { t, locale } = useI18n();
   const store = useStore();
+  const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(session.nextSession ?? "");
   const [saving, setSaving] = useState(false);
 
   const save = () => {
     setSaving(true);
-    store
-      .scheduleMentoringFollowUp(session.id, value || null)
+    viewModel
+      .scheduleFollowUp(session.id, value || null)
       .then(() => {
         toast.success(t("mentor.followUp.toast"));
         setEditing(false);
@@ -428,6 +436,7 @@ function Block({ title, text }: { title: string; text: string }) {
 function MentoringTimelineItem({ session }: { session: MentoringSession }) {
   const { t, locale } = useI18n();
   const store = useStore();
+  const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
   const sel = useSelectors();
   const user = useCurrentUser();
   const [sendingSessionId, setSendingSessionId] = useState<string | null>(null);
@@ -446,9 +455,7 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
    */
   const plan = sel.planFor(session.menteeId);
   const gaps = sel.progressionGapsFor(session.menteeId);
-  const eligible = session.competencyIds
-    .map((cid) => gaps.find((g) => g.item.competencyId === cid))
-    .find((g) => g && !plan?.items.some((i) => i.competencyId === g.item.competencyId));
+  const eligible = viewModel.eligibleGapForPlan(session, gaps, plan);
 
   return (
     <li className="relative">
@@ -479,23 +486,12 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
             if (!mentee || !eligible.competency) return;
             setSendingSessionId(session.id);
             try {
-              /**
-               * ORIENTACAO-NONA-RODADA, Seção 4/12 (ENT-09-001/006) — único
-               * caminho para criar item de PDI a partir de um GAP oficial:
-               * currentLevel/targetLevel/priority nunca são calculados aqui,
-               * o servidor deriva os três a partir do assessment referenciado
-               * por `eligible.assessmentId`.
-               */
-              await store.createPlanItemFromGap(session.menteeId, {
-                id: `pdi-${session.menteeId}-${eligible.competency.id}-${Date.now()}`,
+              // ORIENTACAO-NONA-RODADA, Seção 4/12 (ENT-09-001/006) — único
+              // caminho para criar item de PDI a partir de um GAP oficial:
+              // ver docstring de `MentoringViewModel.sendToPlan`.
+              await viewModel.sendToPlan(session, mentee, {
                 assessmentId: eligible.assessmentId,
                 competencyId: eligible.competency.id,
-                objective: session.topic,
-                actionType: "Mentor",
-                actionPlan: session.actions,
-                startDate: todayIso(),
-                targetDate: session.nextSession ?? todayIso(),
-                owner: mentee.name,
               });
               toast.success(t("mentor.toPdi.toast", { competencia: eligible.competency.name }));
             } catch (error) {
