@@ -1,4 +1,5 @@
 import type { SessionUser } from "../api";
+import { DEFAULT_CURATION_POLICY, type CurationPolicy } from "../curation-policy";
 import type { CareerLevel, Capability, Competency, Level, RequirementType } from "../domain";
 import type { UiAuthorizationPolicy } from "../scope";
 import type { Api } from "../store";
@@ -86,10 +87,31 @@ export type CatalogService = Pick<
 >;
 
 export class CompetencyMatrixViewModel {
+  /**
+   * CFG-04 — os limites de composição (antes literais `>= 6`/`>= 3` aqui)
+   * agora chegam por injeção: o hook adaptador
+   * (`useCompetencyMatrixViewModel`) injeta a política efetiva de
+   * `useCurationPolicy` (servidor com fallback), mesmo padrão do renderer
+   * de template no `useDevelopmentPlansViewModel` (CFG-03). O default no
+   * construtor preserva o comportamento byte-idêntico para código
+   * não-React/testes que não injetam nada.
+   */
   constructor(
     private readonly service: CatalogService,
     private readonly policy: UiAuthorizationPolicy,
+    private readonly curationPolicy: CurationPolicy = DEFAULT_CURATION_POLICY,
   ) {}
+
+  /**
+   * CFG-04 — a política efetiva, exposta para APRESENTAÇÃO (os textos
+   * "limite de N atingido"/"já tem N ativas" da rota interpolam os números
+   * daqui em vez de literais no i18n) — mesma fonte que decide
+   * `isCapabilityAtCapacity`/`isRequirementTypeFull`, então texto e
+   * comportamento nunca divergem.
+   */
+  get limits(): CurationPolicy {
+    return this.curationPolicy;
+  }
 
   /** Catálogo mestre é administrativo — usado no lugar do `user.role === "admin"` que antes ficava inline na rota (mesmo tratamento de `TeamViewModel.isAdmin`). Backend já recusa o resto de qualquer forma. */
   isAdmin(user: SessionUser): boolean {
@@ -130,12 +152,14 @@ export class CompetencyMatrixViewModel {
 
   /**
    * Espelha `CapabilityLimitError`/`assertCapabilityLimits` do backend (no
-   * máximo 6 competências ativas por capacidade) — só apresentação (some o
-   * botão "Nova competência" antes de deixar tentar e descobrir pelo erro
-   * do servidor), a validação real continua só lá.
+   * máximo `maxActiveCompetencies` competências ativas por capacidade — 6
+   * no seed; CFG-04: o limite vem da política injetada, não mais do literal)
+   * — só apresentação (some o botão "Nova competência" antes de deixar
+   * tentar e descobrir pelo erro do servidor), a validação real continua só
+   * lá.
    */
   isCapabilityAtCapacity(capability: Pick<Capability, "curation">): boolean {
-    return capability.curation.activeCompetencyCount >= 6;
+    return capability.curation.activeCompetencyCount >= this.curationPolicy.maxActiveCompetencies;
   }
 
   // ---- Competência ----
@@ -221,7 +245,9 @@ export class CompetencyMatrixViewModel {
 
   /**
    * Espelha `CapabilityLimitError`/`assertCapabilityLimits` do backend (no
-   * máximo 3 competências de cada tipo por capacidade) — extraído byte a
+   * máximo `requiredRestrictive`/`requiredNonRestrictive` competências de
+   * cada tipo por capacidade — 3+3 no seed; CFG-04: os limites vêm da
+   * política injetada, não mais do literal) — extraído byte a
    * byte dos dois cálculos que existiam soltos: `CompetencyCreateDialog`
    * (sem `excluding`, competência nova não desconta nada) e
    * `CompetencyEditDialog` (com `excluding` = a própria competência, que já
@@ -237,8 +263,12 @@ export class CompetencyMatrixViewModel {
       type === "RESTRICTIVE"
         ? (capability?.curation.restrictiveCompetencyCount ?? 0)
         : (capability?.curation.nonRestrictiveCompetencyCount ?? 0);
+    const limit =
+      type === "RESTRICTIVE"
+        ? this.curationPolicy.requiredRestrictive
+        : this.curationPolicy.requiredNonRestrictive;
     const adjustment = excluding?.requirementType === type ? 1 : 0;
-    return count - adjustment >= 3;
+    return count - adjustment >= limit;
   }
 
   /**

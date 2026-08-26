@@ -23,6 +23,7 @@ import type {
   MentoringSession,
   ProficiencyUpdate,
 } from "./domain";
+import { withDefaultCurationPolicy, type CurationPolicy } from "./curation-policy";
 import { useI18n } from "./i18n";
 import { MutationRunner } from "./mutation-runner";
 import {
@@ -92,6 +93,24 @@ export const TEXT_TEMPLATES_QUERY_KEY = ["config-templates"] as const;
 export function useTextTemplates(): TextTemplates {
   const { data } = useQuery({ queryKey: TEXT_TEMPLATES_QUERY_KEY, queryFn: api.templates });
   return useMemo(() => withDefaultTextTemplates(data), [data]);
+}
+
+/**
+ * CFG-04 — a política de curadoria do catálogo (`catalog_curation_policy`)
+ * entra pelo MESMO padrão de `useScoringBands`/`useTextTemplates` acima:
+ * `useQuery` próprio, endpoint por contexto
+ * (`GET /api/config/curation-policy`), cache e isolamento de falha
+ * independentes do resto do estado. Enquanto a consulta não resolve (ou se
+ * falhar), `withDefaultCurationPolicy` responde com o default 6/3+3
+ * byte-idêntico ao seed — comportamento igual ao hardcoded antigo, sem
+ * flash. É o que o hook adaptador da matriz injeta no
+ * `CompetencyMatrixViewModel` (mesmo padrão de `useObjectiveFromGap` com o
+ * `DevelopmentPlansViewModel`).
+ */
+export const CURATION_POLICY_QUERY_KEY = ["config-curation-policy"] as const;
+export function useCurationPolicy(): CurationPolicy {
+  const { data } = useQuery({ queryKey: CURATION_POLICY_QUERY_KEY, queryFn: api.curationPolicy });
+  return useMemo(() => withDefaultCurationPolicy(data), [data]);
 }
 
 /**
@@ -172,6 +191,17 @@ export interface Api extends AppState {
     locale: string,
     template: string,
   ) => Promise<TextTemplateRecord>;
+  /**
+   * CFG-04 (admin UI) — substitui a política de curadoria do catálogo. Sem
+   * otimismo (mesmo racional de `updateScoringBands`; a aba "Catálogo"
+   * precisa do 400 `INVALID_CATALOG_CURATION_POLICY` de verdade); ao
+   * sucesso invalida `CURATION_POLICY_QUERY_KEY` E `STATE_QUERY_KEY` — o
+   * backend já invalidou o cache dele (`NS.capabilities`), mas
+   * `curation.status` das capacidades chega ao front pelo snapshot de
+   * `/api/state`: sem refetch o admin continuaria vendo os badges
+   * READY/REQUIRES_CURATION calculados com a política antiga.
+   */
+  updateCurationPolicy: (policy: CurationPolicy) => Promise<CurationPolicy>;
   /** B-32 — id é gerado no servidor; sem otimismo. */
   addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
@@ -408,6 +438,23 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
     updateTextTemplate: async (key, locale, template) => {
       const updated = await api.updateTextTemplate(key, locale, template);
       await queryClient.invalidateQueries({ queryKey: TEXT_TEMPLATES_QUERY_KEY });
+      return updated;
+    },
+
+    /**
+     * CFG-04 (admin UI) — mesmo formato de `updateScoringBands` acima, com
+     * uma invalidação a mais: além da query da política, o snapshot de
+     * `/api/state` (`STATE_QUERY_KEY`), porque `curation.status` de cada
+     * capacidade é derivado no servidor SOB a política — o refetch é o que
+     * faz o admin VER o recomputo (o backend já invalidou `NS.capabilities`
+     * no `UnitOfWork` do PUT).
+     */
+    updateCurationPolicy: async (policy) => {
+      const updated = await api.updateCurationPolicy(policy);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: CURATION_POLICY_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }),
+      ]);
       return updated;
     },
 

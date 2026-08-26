@@ -293,4 +293,55 @@ describe("CompetencyMatrixViewModel", () => {
       expect(result.map((c) => c.id)).toEqual(["b"]);
     });
   });
+
+  /**
+   * CFG-04 — os limites deixaram de ser literais: com uma política 8/4+4
+   * injetada, capacidade e tipos só "enchem" nos números novos; sem injeção
+   * o default 6/3+3 preserva o comportamento byte-idêntico (casos acima).
+   */
+  describe("política de curadoria injetada (CFG-04)", () => {
+    const policy844 = {
+      maxActiveCompetencies: 8,
+      requiredRestrictive: 4,
+      requiredNonRestrictive: 4,
+    };
+    const vm844 = new CompetencyMatrixViewModel(
+      fakeService(),
+      new UiAuthorizationPolicy(),
+      policy844,
+    );
+
+    it("isCapabilityAtCapacity respeita maxActiveCompetencies=8", () => {
+      const at = (n: number) =>
+        vm844.isCapabilityAtCapacity(
+          capability({ curation: { ...capability().curation, activeCompetencyCount: n } }),
+        );
+      expect(at(6)).toBe(false);
+      expect(at(7)).toBe(false);
+      expect(at(8)).toBe(true);
+    });
+
+    it("isRequirementTypeFull respeita 4 por tipo (incl. desconto de `excluding`)", () => {
+      const cap = capability({
+        curation: {
+          ...capability().curation,
+          restrictiveCompetencyCount: 4,
+          nonRestrictiveCompetencyCount: 3,
+        },
+      });
+      expect(vm844.isRequirementTypeFull(cap, "RESTRICTIVE")).toBe(true);
+      expect(vm844.isRequirementTypeFull(cap, "NON_RESTRICTIVE")).toBe(false);
+      const self = competency({ requirementType: "RESTRICTIVE" });
+      expect(vm844.isRequirementTypeFull(cap, "RESTRICTIVE", self)).toBe(false);
+    });
+
+    it("limits expõe a política injetada para os textos da rota", () => {
+      expect(vm844.limits).toEqual(policy844);
+      expect(makeVm().vm.limits).toEqual({
+        maxActiveCompetencies: 6,
+        requiredRestrictive: 3,
+        requiredNonRestrictive: 3,
+      });
+    });
+  });
 });
