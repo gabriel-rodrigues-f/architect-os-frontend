@@ -3,12 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GapBadge } from "@/components/app/ui-bits";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-02 — `useScoringBands`/`useGapSeverityRuler` (`store.tsx`) na prática,
  * pelo consumidor mais visível (o `GapBadge`):
  *
- * - fallback: sem `GET /api/config/bands` respondendo faixas, a régua é o
+ * - fallback: sem `GET /api/v1/config/bands` respondendo faixas, a régua é o
  *   default byte-idêntico ao seed — gap 2 continua "Prioridade alta",
  *   exatamente o comportamento hardcoded antigo;
  * - carga: com o endpoint devolvendo uma GAP_SEVERITY recalibrada ("gap 2
@@ -20,7 +21,7 @@ const fetchMock = vi.fn();
 const bandsRoute =
   (body: unknown): FetchRoute =>
   (href) =>
-    href.endsWith("/api/config/bands") ? jsonResponse(body) : undefined;
+    href.endsWith(apiPath("/config/bands")) ? jsonResponse(body) : undefined;
 
 beforeEach(() => {
   fetchMock.mockReset();

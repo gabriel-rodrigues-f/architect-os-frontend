@@ -6,6 +6,7 @@ import { Route as LearningRoute } from "@/routes/learning-paths";
 import { type AppState } from "@/lib/api";
 import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 12 e 13 — "somente
@@ -84,7 +85,9 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
 
     const patches = fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH");
     expect(patches).toHaveLength(1);
-    expect(String(patches[0]?.[0])).toContain("/api/learning-paths/lp-dupla/progress/ana/item-1");
+    expect(String(patches[0]?.[0])).toContain(
+      apiPath("/learning-paths/lp-dupla/progress/ana/item-1"),
+    );
   });
 
   /**

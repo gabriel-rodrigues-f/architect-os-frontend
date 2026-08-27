@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import { Client } from "pg";
+import { apiPath } from "../src/lib/api-path";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-36 (§33, achado 2) —
@@ -37,21 +38,23 @@ async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>)
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
   await json(
-    await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
+    await api.post(apiPath("/auth/login"), {
+      data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+    }),
   );
 
   const created = await json<{ user: { id: string }; temporaryPassword: string }>(
-    await api.post("/api/auth/users", {
+    await api.post(apiPath("/auth/users"), {
       data: { name: "E2E Error Member", email: MEMBER_EMAIL, role: "member" },
     }),
   );
   const guest = await playwright.request.newContext({ baseURL: API_URL });
   await json(
-    await guest.post("/api/auth/login", {
+    await guest.post(apiPath("/auth/login"), {
       data: { email: MEMBER_EMAIL, password: created.temporaryPassword },
     }),
   );
-  const changed = await guest.post("/api/auth/change-password", {
+  const changed = await guest.post(apiPath("/auth/change-password"), {
     data: { currentPassword: created.temporaryPassword, newPassword: PASSWORD },
   });
   if (!changed.ok()) {

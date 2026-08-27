@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import { Client } from "pg";
+import { apiPath } from "../src/lib/api-path";
 
 /**
  * R10-BUG-001 — `architects.$architectId.evolution.tsx` é rota-filha de
@@ -54,10 +55,12 @@ async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>)
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
   await json(
-    await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
+    await api.post(apiPath("/auth/login"), {
+      data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+    }),
   );
   const architect = await json<{ id: string }>(
-    await api.post("/api/architects", {
+    await api.post(apiPath("/architects"), {
       data: {
         name: "E2E Evolução Rota",
         role: "Arquiteto de Soluções II",
@@ -92,7 +95,7 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
 
   // Deep-link direto na URL da aba — era exatamente o caminho quebrado. É
   // um reload de página cheia (não navegação client-side): a SPA remonta do
-  // zero e refaz auth+/api/state antes de saber se o arquiteto existe, o
+  // zero e refaz auth+/api/v1/state antes de saber se o arquiteto existe, o
   // que pode passar dos 5s padrão do Playwright sob carga — timeout maior
   // só nesta primeira asserção pós-reload, não porque a rota é lenta.
   await page.goto(`/architects/${architectId}/evolution`);

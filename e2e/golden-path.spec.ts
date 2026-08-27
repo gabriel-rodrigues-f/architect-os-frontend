@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import { Client } from "pg";
+import { apiPath } from "../src/lib/api-path";
 
 /**
  * E2E de jornada — Admin/Lead/Member (R-015, AUDITORIA-QUINTA-RODADA-360-
@@ -61,16 +62,16 @@ async function createAndActivateUser(
   input: { name: string; email: string; role: "member" | "lead"; architectId?: string },
 ): Promise<string> {
   const created = await json<{ user: { id: string }; temporaryPassword: string }>(
-    await api.post("/api/auth/users", { data: input }),
+    await api.post(apiPath("/auth/users"), { data: input }),
   );
 
   const guest = await playwright.request.newContext({ baseURL: API_URL });
   await json(
-    await guest.post("/api/auth/login", {
+    await guest.post(apiPath("/auth/login"), {
       data: { email: input.email, password: created.temporaryPassword },
     }),
   );
-  const changed = await guest.post("/api/auth/change-password", {
+  const changed = await guest.post(apiPath("/auth/change-password"), {
     data: { currentPassword: created.temporaryPassword, newPassword: PASSWORD },
   });
   if (!changed.ok()) {
@@ -91,11 +92,13 @@ test.beforeAll(async ({ playwright }) => {
   // automaticamente nas chamadas seguintes deste mesmo `api`, sem precisar
   // montar nenhum header na mão.
   await json(
-    await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
+    await api.post(apiPath("/auth/login"), {
+      data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+    }),
   );
 
   const architect = await json<{ id: string }>(
-    await api.post("/api/architects", {
+    await api.post(apiPath("/architects"), {
       data: {
         name: "E2E Golden Path",
         role: "Arquiteto de Soluções II",
@@ -108,10 +111,10 @@ test.beforeAll(async ({ playwright }) => {
   architectId = architect.id;
 
   // SEC-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — cadastro
-  // público (`/api/auth/register`) só funciona na instância vazia; com o
+  // público (`/api/v1/auth/register`) só funciona na instância vazia; com o
   // admin já existindo, toda tentativa de registro público recusa com 403.
   // A única forma de entrar conta nova a partir daqui é o admin criar
-  // (`POST /api/auth/users`), que devolve senha temporária e nasce com
+  // (`POST /api/v1/auth/users`), que devolve senha temporária e nasce com
   // mustChangePassword=true — mesma jornada real de alguém convidado.
   // Resolve isso já na fixture (troca pra `PASSWORD`) porque os testes de
   // UI abaixo logam direto esperando o dashboard, não uma tela de troca de
@@ -130,7 +133,7 @@ test.beforeAll(async ({ playwright }) => {
   });
 
   await json(
-    await api.patch(`/api/architects/${architectId}`, {
+    await api.patch(apiPath(`/architects/${architectId}`), {
       data: { leadUserId },
     }),
   );

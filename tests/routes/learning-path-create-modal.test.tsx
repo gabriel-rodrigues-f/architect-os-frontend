@@ -7,6 +7,7 @@ import { Route as LearningRoute } from "@/routes/learning-paths";
 import { type AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Nova trilha" troca o
@@ -31,7 +32,7 @@ describe("Trilhas — criação via modal (mata os 2 tempos)", () => {
       state,
       routes: [
         (href, init) => {
-          if (href.endsWith("/api/learning-paths") && init?.method === "POST") {
+          if (href.endsWith(apiPath("/learning-paths")) && init?.method === "POST") {
             const body = JSON.parse(String(init.body));
             return jsonResponse({ ...body, id: "lp-nova" }, 201);
           }
@@ -72,13 +73,15 @@ describe("Trilhas — criação via modal (mata os 2 tempos)", () => {
       expect(
         fetchMock.mock.calls.some(
           ([url, init]) =>
-            String(url).endsWith("/api/learning-paths") && (init as RequestInit)?.method === "POST",
+            String(url).endsWith(apiPath("/learning-paths")) &&
+            (init as RequestInit)?.method === "POST",
         ),
       ).toBe(true),
     );
     const call = fetchMock.mock.calls.find(
       ([url, init]) =>
-        String(url).endsWith("/api/learning-paths") && (init as RequestInit)?.method === "POST",
+        String(url).endsWith(apiPath("/learning-paths")) &&
+        (init as RequestInit)?.method === "POST",
     ) as [string, RequestInit];
     expect(JSON.parse(String(call[1].body))).toMatchObject({
       name: "Trilha de Observabilidade",

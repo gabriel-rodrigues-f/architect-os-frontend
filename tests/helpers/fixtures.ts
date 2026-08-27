@@ -48,7 +48,7 @@ export const fixtureUnassignedLeadUser: SessionUser = {
 
 /**
  * B-24 (ADR-0011) — `careerLevels` saiu de `AppState`/`fixtureState`
- * (migrado para `GET /api/career-levels`); testes que renderizam telas que
+ * (migrado para `GET /api/v1/career-levels`); testes que renderizam telas que
  * leem `useCareerLevelsByRank()` mockam esta resposta separadamente com
  * este fixture.
  */

@@ -23,17 +23,17 @@ export class HttpEvidenceGateway implements EvidenceGateway {
   constructor(private readonly client: ApiClient) {}
 
   createEvidence = (evidence: Evidence): Promise<Evidence> =>
-    this.client.post<Evidence>("/api/evidences", evidence);
+    this.client.post<Evidence>("/evidences", evidence);
 
   reviewEvidence = (
     id: string,
     review: { status: Evidence["status"]; leaderComment?: string | undefined },
-  ): Promise<Evidence> => this.client.patch<Evidence>(`/api/evidences/${id}/review`, review);
+  ): Promise<Evidence> => this.client.patch<Evidence>(`/evidences/${id}/review`, review);
 
   resubmitEvidence = (
     id: string,
     patch_: { description?: string; url?: string },
-  ): Promise<Evidence> => this.client.post<Evidence>(`/api/evidences/${id}/resubmit`, patch_);
+  ): Promise<Evidence> => this.client.post<Evidence>(`/evidences/${id}/resubmit`, patch_);
 
   evidenceReviews = (
     id: string,
@@ -54,5 +54,5 @@ export class HttpEvidenceGateway implements EvidenceGateway {
         comment: string | null;
         reviewedAt: string;
       }>
-    >(`/api/evidences/${id}/reviews`);
+    >(`/evidences/${id}/reviews`);
 }

@@ -11,6 +11,7 @@ import {
 } from "@/lib/query-client";
 import { useOperationalSettings } from "@/lib/store";
 import { jsonResponse, mockAppFetch, type FetchRoute } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * F2 (caminhos quentes) — o `QueryClient` do app subia sem `defaultOptions`,
@@ -24,7 +25,7 @@ import { jsonResponse, mockAppFetch, type FetchRoute } from "../helpers/render-a
 const fetchMock = vi.fn();
 
 const settingsRoute: FetchRoute = (href, init) =>
-  href.endsWith("/api/config/settings") && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/config/settings")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({
         settings: [
           {
@@ -41,7 +42,7 @@ const settingsRoute: FetchRoute = (href, init) =>
     : undefined;
 
 const countSettingsFetches = () =>
-  fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/api/config/settings")).length;
+  fetchMock.mock.calls.filter(([url]) => String(url).endsWith(apiPath("/config/settings"))).length;
 
 /** Consulta sem opção nenhuma: o que ela faz é exatamente o que o default manda. */
 function SemOpcoesProbe() {

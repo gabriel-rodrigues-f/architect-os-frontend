@@ -18,6 +18,7 @@ import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import { type AppState, type SessionUser } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * EPIC K — Collective Intervention: "Treinamentos Recomendados" era relatório
@@ -76,7 +77,7 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
+      if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureAdminUser satisfies SessionUser), {
             status: 200,
@@ -84,7 +85,7 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
           }),
         );
       }
-      if (href.endsWith("/api/state")) {
+      if (href.endsWith(apiPath("/state"))) {
         return Promise.resolve(
           new Response(JSON.stringify(state), {
             status: 200,
@@ -92,7 +93,7 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
           }),
         );
       }
-      if (init?.method === "POST" && href.endsWith("/api/learning-paths")) {
+      if (init?.method === "POST" && href.endsWith(apiPath("/learning-paths"))) {
         // O servidor gera o id de verdade e devolve o recurso completo — a
         // store não insere mais o objeto local otimista (ver AUDITORIA-
         // QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, IDOR-001/EVD-001).
@@ -122,7 +123,7 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
     await userEvent.click(await screen.findByRole("button", { name: /Criar trilha coletiva/ }));
 
     const postCall = fetchMock.mock.calls.find(
-      ([url, init]) => String(url).endsWith("/api/learning-paths") && init?.method === "POST",
+      ([url, init]) => String(url).endsWith(apiPath("/learning-paths")) && init?.method === "POST",
     );
     expect(postCall).toBeDefined();
     const body = JSON.parse(String(postCall?.[1]?.body)) as {

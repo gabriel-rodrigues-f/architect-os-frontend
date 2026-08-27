@@ -13,6 +13,7 @@ import {
   mockAppFetch,
   renderWithApp,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * Comentário pertence a quem escreveu — não é mais um par arquiteto+Tech Lead
@@ -168,7 +169,9 @@ describe("Avaliações — comentários por autor", () => {
 
     const posts = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST");
     expect(posts).toHaveLength(1);
-    expect(String(posts[0]?.[0])).toContain("/api/assessments/ana-h2/items/cloud-k8s/comments");
+    expect(String(posts[0]?.[0])).toContain(
+      apiPath("/assessments/ana-h2/items/cloud-k8s/comments"),
+    );
     expect(JSON.parse(String((posts[0]?.[1] as RequestInit).body))).toEqual({
       text: "Concluí o curso",
     });

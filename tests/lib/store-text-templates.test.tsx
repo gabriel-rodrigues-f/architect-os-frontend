@@ -3,12 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useObjectiveFromGap } from "@/lib/store";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-03 — `useTextTemplates`/`useObjectiveFromGap` (`store.tsx`) na
  * prática, pelo mesmo formato de `store-scoring-bands.test.tsx`:
  *
- * - fallback: sem `GET /api/config/templates` respondendo, o objetivo é o
+ * - fallback: sem `GET /api/v1/config/templates` respondendo, o objetivo é o
  *   default byte-idêntico ao literal pt antigo;
  * - locale ativo: com o app em en, o MESMO gap gera o objetivo em inglês
  *   (era o bug — texto persistido em pt com o app em inglês);
@@ -20,7 +21,7 @@ const fetchMock = vi.fn();
 const templatesRoute =
   (body: unknown): FetchRoute =>
   (href) =>
-    href.endsWith("/api/config/templates") ? jsonResponse(body) : undefined;
+    href.endsWith(apiPath("/config/templates")) ? jsonResponse(body) : undefined;
 
 function Probe() {
   const objectiveFromGap = useObjectiveFromGap();

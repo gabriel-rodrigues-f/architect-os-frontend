@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { apiPath } from "@/lib/api-path";
 import { DependencyProvider, useContainer } from "@/lib/dependencies";
 import { defaultContainer, FrontendContainer } from "@/lib/gateways/container";
 
@@ -44,10 +45,10 @@ describe("FrontendContainer", () => {
     try {
       const container = FrontendContainer.create({ baseUrl: "http://outro-host:9999" });
 
-      await container.apiClient.del("/api/qualquer");
+      await container.apiClient.del("/qualquer");
 
       expect(fetchMock).toHaveBeenCalledWith(
-        "http://outro-host:9999/api/qualquer",
+        `http://outro-host:9999${apiPath("/qualquer")}`,
         expect.anything(),
       );
     } finally {

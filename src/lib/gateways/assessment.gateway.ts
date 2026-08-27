@@ -73,14 +73,14 @@ export class HttpAssessmentGateway implements AssessmentGateway {
   constructor(private readonly client: ApiClient) {}
 
   openAssessment = (architectId: string, cycleId: string): Promise<Assessment> =>
-    this.client.post<Assessment>("/api/assessments", { architectId, cycleId });
+    this.client.post<Assessment>("/assessments", { architectId, cycleId });
 
   setAssessmentStatus = (
     id: string,
     status: Assessment["status"],
     expectedVersion: number,
   ): Promise<Assessment> =>
-    this.client.patch<Assessment>(`/api/assessments/${id}/status`, { status, expectedVersion });
+    this.client.patch<Assessment>(`/assessments/${id}/status`, { status, expectedVersion });
 
   patchAssessmentItem = (
     assessmentId: string,
@@ -88,7 +88,7 @@ export class HttpAssessmentGateway implements AssessmentGateway {
     body: AssessmentItemPatch,
     expectedVersion: number,
   ): Promise<Assessment> =>
-    this.client.patch<Assessment>(`/api/assessments/${assessmentId}/items/${competencyId}`, {
+    this.client.patch<Assessment>(`/assessments/${assessmentId}/items/${competencyId}`, {
       ...body,
       expectedVersion,
     });
@@ -99,7 +99,7 @@ export class HttpAssessmentGateway implements AssessmentGateway {
     body: CommentInput,
   ): Promise<Assessment> =>
     this.client.post<Assessment>(
-      `/api/assessments/${assessmentId}/items/${competencyId}/comments`,
+      `/assessments/${assessmentId}/items/${competencyId}/comments`,
       body,
     );
 
@@ -110,7 +110,7 @@ export class HttpAssessmentGateway implements AssessmentGateway {
     body: CommentInput,
   ): Promise<Assessment> =>
     this.client.patch<Assessment>(
-      `/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`,
+      `/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`,
       body,
     );
 
@@ -120,17 +120,17 @@ export class HttpAssessmentGateway implements AssessmentGateway {
     commentId: string,
   ): Promise<Assessment> =>
     this.client.del<Assessment>(
-      `/api/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`,
+      `/assessments/${assessmentId}/items/${competencyId}/comments/${commentId}`,
     );
 
   assessmentCapabilities = (assessmentId: string): Promise<AssessmentCapability[]> =>
-    this.client.request<AssessmentCapability[]>(`/api/assessments/${assessmentId}/capabilities`);
+    this.client.request<AssessmentCapability[]>(`/assessments/${assessmentId}/capabilities`);
 
   addAssessmentCapability = (
     assessmentId: string,
     capabilityId: string,
   ): Promise<AssessmentCapability> =>
-    this.client.post<AssessmentCapability>(`/api/assessments/${assessmentId}/capabilities`, {
+    this.client.post<AssessmentCapability>(`/assessments/${assessmentId}/capabilities`, {
       capabilityId,
     });
 
@@ -140,7 +140,7 @@ export class HttpAssessmentGateway implements AssessmentGateway {
     force = false,
   ): Promise<void> =>
     this.client.del<void>(
-      `/api/assessments/${assessmentId}/capabilities/${capabilityId}${force ? "?force=true" : ""}`,
+      `/assessments/${assessmentId}/capabilities/${capabilityId}${force ? "?force=true" : ""}`,
     );
 
   confirmAssessmentCapability = (
@@ -148,16 +148,16 @@ export class HttpAssessmentGateway implements AssessmentGateway {
     capabilityId: string,
   ): Promise<AssessmentCapability> =>
     this.client.post<AssessmentCapability>(
-      `/api/assessments/${assessmentId}/capabilities/${capabilityId}/confirm`,
+      `/assessments/${assessmentId}/capabilities/${capabilityId}/confirm`,
       {},
     );
 
   assessmentEligibility = (assessmentId: string): Promise<AssessmentEligibility> =>
-    this.client.request<AssessmentEligibility>(`/api/assessments/${assessmentId}/eligibility`);
+    this.client.request<AssessmentEligibility>(`/assessments/${assessmentId}/eligibility`);
 
   assessmentDevelopmentSummary = (assessmentId: string): Promise<AssessmentDevelopmentSummary> =>
     this.client.request<AssessmentDevelopmentSummary>(
-      `/api/assessments/${assessmentId}/development-summary`,
+      `/assessments/${assessmentId}/development-summary`,
     );
 
   updateAssessmentDevelopmentSummary = (
@@ -166,7 +166,7 @@ export class HttpAssessmentGateway implements AssessmentGateway {
     expectedVersion: number,
   ): Promise<AssessmentDevelopmentSummary> =>
     this.client.put<AssessmentDevelopmentSummary>(
-      `/api/assessments/${assessmentId}/development-summary`,
+      `/assessments/${assessmentId}/development-summary`,
       { ...body, expectedVersion },
     );
 }

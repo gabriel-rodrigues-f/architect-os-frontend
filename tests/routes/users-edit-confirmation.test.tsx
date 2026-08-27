@@ -7,6 +7,7 @@ import { Route as UsersRoute } from "@/routes/users";
 import type { SessionUser } from "@/lib/api";
 import { fixtureAdminUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * REVISAO-360-FRONTEND-UI-UX-ENTERPRISE-SYNAPSE-2026-08-22.md, FE-360-009
@@ -41,7 +42,7 @@ const UsersPage = UsersRoute.options.component as () => ReactNode;
 /**
  * `conflictEmail`, se informado, faz o PATCH responder 409
  * EMAIL_ALREADY_REGISTERED quando o corpo tenta gravar esse e-mail
- * específico — mesmo shape de erro que `PATCH /api/auth/users/:id` usa de
+ * específico — mesmo shape de erro que `PATCH /api/v1/auth/users/:id` usa de
  * verdade no backend (`code`/`message`/`correlationId`).
  */
 function mockBackend(users: SessionUser[], conflictEmail?: string) {
@@ -50,10 +51,10 @@ function mockBackend(users: SessionUser[], conflictEmail?: string) {
   mockAppFetch(fetchMock, {
     routes: [
       (href, init) => {
-        if (href.endsWith("/api/auth/users") && (!init || init.method === undefined)) {
+        if (href.endsWith(apiPath("/auth/users")) && (!init || init.method === undefined)) {
           return jsonResponse(users);
         }
-        if (init?.method === "PATCH" && href.includes("/api/auth/users/")) {
+        if (init?.method === "PATCH" && href.includes(apiPath("/auth/users/"))) {
           const body = JSON.parse(String(init.body)) as Record<string, unknown>;
           if (conflictEmail && body["email"] === conflictEmail) {
             return jsonResponse(
@@ -103,7 +104,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
 
     const isPatchCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
-      return String(url).includes("/api/auth/users/") && init?.method === "PATCH";
+      return String(url).includes(apiPath("/auth/users/")) && init?.method === "PATCH";
     };
     await waitFor(() => expect(fetchMock.mock.calls.some(isPatchCall)).toBe(true));
     const call = fetchMock.mock.calls.find(isPatchCall) as [string, RequestInit];
@@ -127,7 +128,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await screen.findByText("Conceder acesso de Administrador");
     const isPatchCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
-      return String(url).includes("/api/auth/users/") && init?.method === "PATCH";
+      return String(url).includes(apiPath("/auth/users/")) && init?.method === "PATCH";
     };
     expect(fetchMock.mock.calls.some(isPatchCall)).toBe(false);
 
@@ -152,7 +153,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
 
     const isPatchCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
-      return String(url).includes("/api/auth/users/") && init?.method === "PATCH";
+      return String(url).includes(apiPath("/auth/users/")) && init?.method === "PATCH";
     };
     await waitFor(() => expect(fetchMock.mock.calls.some(isPatchCall)).toBe(true));
     const call = fetchMock.mock.calls.find(isPatchCall) as [string, RequestInit];
@@ -184,7 +185,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
 
     const isPatchCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
-      return String(url).includes("/api/auth/users/") && init?.method === "PATCH";
+      return String(url).includes(apiPath("/auth/users/")) && init?.method === "PATCH";
     };
     await waitFor(() => expect(fetchMock.mock.calls.some(isPatchCall)).toBe(true));
     const call = fetchMock.mock.calls.find(isPatchCall) as [string, RequestInit];

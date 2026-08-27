@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, ApiError, API_URL } from "@/lib/api";
 import { emptyState } from "@/lib/selectors";
+import { apiPath } from "@/lib/api-path";
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -18,13 +19,13 @@ describe("cliente da API", () => {
     vi.unstubAllGlobals();
   });
 
-  it("busca o snapshot no endpoint /api/state", async () => {
+  it("busca o snapshot no endpoint /api/v1/state", async () => {
     fetchMock.mockResolvedValue(jsonResponse(emptyState));
 
     await api.getState();
 
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe(`${API_URL}/api/state`);
+    expect(url).toBe(`${API_URL}${apiPath("/state")}`);
     expect(init?.method ?? "GET").toBe("GET");
   });
 
@@ -61,7 +62,9 @@ describe("cliente da API", () => {
 
     await api.patchPlanItem("pdi-ana", "pdi-ana-0", { status: "In Progress" }, 1);
 
-    expect(fetchMock.mock.calls[0]![0]).toBe(`${API_URL}/api/plans/pdi-ana/items/pdi-ana-0`);
+    expect(fetchMock.mock.calls[0]![0]).toBe(
+      `${API_URL}${apiPath("/plans/pdi-ana/items/pdi-ana-0")}`,
+    );
   });
 
   it("transforma resposta de erro em ApiError com status e detalhes", async () => {
@@ -88,7 +91,7 @@ describe("cliente da API", () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(500);
-    expect(error.message).toContain("/api/state");
+    expect(error.message).toContain(apiPath("/state"));
   });
 
   it("trata 204 sem corpo (DELETE de competência)", async () => {

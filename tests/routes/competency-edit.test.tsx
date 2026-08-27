@@ -7,6 +7,7 @@ import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { type AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * O lápis ao lado da lixeira: editar nome e nível esperado por cargo sem sair
@@ -80,7 +81,7 @@ describe("Matriz de Competências — edição", () => {
 
     const patchCall = fetchMock.mock.calls.find(([, init]) => init?.method === "PATCH");
     expect(patchCall).toBeDefined();
-    expect(String(patchCall?.[0])).toContain("/api/competencies/cloud-k8s");
+    expect(String(patchCall?.[0])).toContain(apiPath("/competencies/cloud-k8s"));
     expect(JSON.parse(String(patchCall?.[1]?.body))).toMatchObject({
       name: "Kubernetes e Orquestração de Containers",
     });

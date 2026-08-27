@@ -23,10 +23,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as TeamRoute } from "@/routes/team";
 import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-01 (SPEC-OO3-13-HARDCODED-CONFIG.md, A5) — guard rail: as opções de
- * nível de carreira dos formulários vêm de `GET /api/career-levels`
+ * nível de carreira dos formulários vêm de `GET /api/v1/career-levels`
  * (tabela `career_levels`, por `rank`), nunca de um array literal. Com o
  * `ROLES` hardcoded de antes, um 4º nível cadastrado na tabela jamais
  * apareceria (era impossível: o array fixo tinha sempre 3) — este teste
@@ -49,8 +50,8 @@ describe("Time — níveis de carreira vêm de career_levels, não de array fixo
       user: fixtureAdminUser,
       state: fixtureState,
       routes: [
-        (href) => (href.endsWith("/api/career-levels") ? jsonResponse(fourLevels) : undefined),
-        (href) => (href.endsWith("/api/auth/users") ? jsonResponse([]) : undefined),
+        (href) => (href.endsWith(apiPath("/career-levels")) ? jsonResponse(fourLevels) : undefined),
+        (href) => (href.endsWith(apiPath("/auth/users")) ? jsonResponse([]) : undefined),
       ],
     });
   });

@@ -24,23 +24,23 @@ export class HttpLearningGateway implements LearningGateway {
   constructor(private readonly client: ApiClient) {}
 
   createLearningPath = (path: LearningPath): Promise<LearningPath> =>
-    this.client.post<LearningPath>("/api/learning-paths", path);
+    this.client.post<LearningPath>("/learning-paths", path);
 
   updateLearningPath = (
     id: string,
     patch_: Partial<
       Pick<LearningPath, "name" | "description" | "competencyIds" | "assignedTo" | "items">
     >,
-  ): Promise<LearningPath> => this.client.patch<LearningPath>(`/api/learning-paths/${id}`, patch_);
+  ): Promise<LearningPath> => this.client.patch<LearningPath>(`/learning-paths/${id}`, patch_);
 
   deleteLearningPath = (id: string): Promise<void> =>
-    this.client.del<void>(`/api/learning-paths/${id}`);
+    this.client.del<void>(`/learning-paths/${id}`);
 
   addLearningItem = (pathId: string, item: LearningPathItem): Promise<LearningPath> =>
-    this.client.post<LearningPath>(`/api/learning-paths/${pathId}/items`, item);
+    this.client.post<LearningPath>(`/learning-paths/${pathId}/items`, item);
 
   removeLearningItem = (pathId: string, itemId: string): Promise<LearningPath> =>
-    this.client.del<LearningPath>(`/api/learning-paths/${pathId}/items/${itemId}`);
+    this.client.del<LearningPath>(`/learning-paths/${pathId}/items/${itemId}`);
 
   patchLearningItemProgress = (
     pathId: string,
@@ -48,10 +48,7 @@ export class HttpLearningGateway implements LearningGateway {
     itemId: string,
     progress: number,
   ): Promise<LearningPath> =>
-    this.client.patch<LearningPath>(
-      `/api/learning-paths/${pathId}/progress/${architectId}/${itemId}`,
-      {
-        progress,
-      },
-    );
+    this.client.patch<LearningPath>(`/learning-paths/${pathId}/progress/${architectId}/${itemId}`, {
+      progress,
+    });
 }

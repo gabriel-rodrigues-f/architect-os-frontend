@@ -37,12 +37,13 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
 import type { ArchitectEvolutionResult } from "@/lib/domain";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os filtros de Período e
  * Fonte da tela de Evolução trocaram de `<select>` nativo por
  * `SingleSelectFilter`. Prova que a troca de controle preservou o
- * comportamento: abrir, escolher, ver o `POST /api/evolution/architect`
+ * comportamento: abrir, escolher, ver o `POST /api/v1/evolution/architect`
  * seguinte carregar o filtro novo.
  */
 const fetchMock = vi.fn();
@@ -85,7 +86,7 @@ describe("Evolução do arquiteto — filtros de Período e Fonte (R3-008)", () 
     mockAppFetch(fetchMock, {
       routes: [
         (href) =>
-          href.endsWith("/api/evolution/architect")
+          href.endsWith(apiPath("/evolution/architect"))
             ? jsonResponse(emptyEvolutionResult)
             : undefined,
       ],
@@ -116,7 +117,7 @@ describe("Evolução do arquiteto — filtros de Período e Fonte (R3-008)", () 
 
     // A troca de preset dispara uma nova busca com o range recalculado.
     expect(
-      fetchMock.mock.calls.some(([url]) => String(url).endsWith("/api/evolution/architect")),
+      fetchMock.mock.calls.some(([url]) => String(url).endsWith(apiPath("/evolution/architect"))),
     ).toBe(true);
   });
 

@@ -78,17 +78,17 @@ export class HttpConfigGateway implements ConfigGateway {
 
   bands = (): Promise<ScoringBandsResponse> =>
     this.client
-      .request<ScoringBandsResponse>("/api/config/bands")
+      .request<ScoringBandsResponse>("/config/bands")
       .then((data) => scoringBandsResponseSchema.parse(data));
 
   templates = (): Promise<TextTemplatesResponse> =>
     this.client
-      .request<TextTemplatesResponse>("/api/config/templates")
+      .request<TextTemplatesResponse>("/config/templates")
       .then((data) => textTemplatesResponseSchema.parse(data));
 
   updateScoringBands = (scale: ScoringScale, bands: ScoringBand[]): Promise<ScoringBand[]> =>
     this.client
-      .put<ScoringBand[]>(`/api/config/bands/${scale}`, { bands })
+      .put<ScoringBand[]>(`/config/bands/${scale}`, { bands })
       .then((data) => scoringBandsPutResponseSchema.parse(data));
 
   updateTextTemplate = (
@@ -98,34 +98,34 @@ export class HttpConfigGateway implements ConfigGateway {
   ): Promise<TextTemplateRecord> =>
     this.client
       .put<TextTemplateRecord>(
-        `/api/config/templates/${encodeURIComponent(key)}/${encodeURIComponent(locale)}`,
+        `/config/templates/${encodeURIComponent(key)}/${encodeURIComponent(locale)}`,
         { template },
       )
       .then((data) => textTemplateRecordSchema.parse(data));
 
   curationPolicy = (): Promise<CurationPolicy> =>
     this.client
-      .request<CurationPolicy>("/api/config/curation-policy")
+      .request<CurationPolicy>("/config/curation-policy")
       .then((data) => curationPolicySchema.parse(data));
 
   updateCurationPolicy = (policy: CurationPolicy): Promise<CurationPolicy> =>
     this.client
-      .put<CurationPolicy>("/api/config/curation-policy", policy)
+      .put<CurationPolicy>("/config/curation-policy", policy)
       .then((data) => curationPolicySchema.parse(data));
 
   settings = (): Promise<AppSettingsResponse> =>
     this.client
-      .request<AppSettingsResponse>("/api/config/settings")
+      .request<AppSettingsResponse>("/config/settings")
       .then((data) => appSettingsResponseSchema.parse(data));
 
   updateSetting = (key: string, value: AppSettingValue): Promise<AppSettingUpdate> =>
     this.client
-      .put<AppSettingUpdate>(`/api/config/settings/${encodeURIComponent(key)}`, { value })
+      .put<AppSettingUpdate>(`/config/settings/${encodeURIComponent(key)}`, { value })
       .then((data) => appSettingPutResponseSchema.parse(data));
 
   vocabularies = (): Promise<Vocabularies> =>
     this.client
-      .request<Vocabularies>("/api/config/vocabularies")
+      .request<Vocabularies>("/config/vocabularies")
       .then((data) => vocabulariesResponseSchema.parse(data));
 
   addVocabularyItem = (
@@ -134,10 +134,7 @@ export class HttpConfigGateway implements ConfigGateway {
     input: VocabularyItemInput,
   ): Promise<VocabularyItem> =>
     this.client
-      .post<VocabularyItem>(
-        `/api/config/vocabularies/${vocabulary}/${encodeURIComponent(code)}`,
-        input,
-      )
+      .post<VocabularyItem>(`/config/vocabularies/${vocabulary}/${encodeURIComponent(code)}`, input)
       .then((data) => vocabularyItemSchema.parse(data));
 
   updateVocabularyItem = (
@@ -147,7 +144,7 @@ export class HttpConfigGateway implements ConfigGateway {
   ): Promise<VocabularyItem> =>
     this.client
       .patch<VocabularyItem>(
-        `/api/config/vocabularies/${vocabulary}/${encodeURIComponent(code)}`,
+        `/config/vocabularies/${vocabulary}/${encodeURIComponent(code)}`,
         patch,
       )
       .then((data) => vocabularyItemSchema.parse(data));

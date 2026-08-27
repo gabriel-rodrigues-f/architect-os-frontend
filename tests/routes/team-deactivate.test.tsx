@@ -27,6 +27,7 @@ import { Route as TeamRoute } from "@/routes/team";
 import { type AppState } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 18 — excluir um
@@ -35,11 +36,11 @@ import { renderWithApp } from "../helpers/render-app";
  * para reativar.
  *
  * R2-UX-08/OO-03 (R3-005, bug relatado ao vivo pela dona do produto, com
- * print) — desativação migrou de `PATCH /api/architects/:id` com `{ active:
+ * print) — desativação migrou de `PATCH /api/v1/architects/:id` com `{ active:
  * false }` para um comando dedicado (`POST .../deactivate`) que exige
  * motivo e `expectedVersion` (concorrência otimista); o PATCH antigo agora
  * é recusado com 400 ("Desativação exige motivo — use POST
- * /api/architects/:id/deactivate"). Este arquivo cobria só o PATCH antigo —
+ * /api/v1/architects/:id/deactivate"). Este arquivo cobria só o PATCH antigo —
  * reescrito para cobrir o diálogo com motivo, a chamada nova e o 409 de
  * versão desatualizada. "Reativar" não mudou: continua o mesmo PATCH
  * `{ active: true }` de sempre, um clique só, sem diálogo.
@@ -55,7 +56,7 @@ const TeamPage = TeamRoute.options.component as () => ReactNode;
 function mockDeactivateSuccess(fetch: typeof fetchMock) {
   fetch.mockImplementation((url: string, init?: RequestInit) => {
     const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
+    if (href.endsWith(apiPath("/auth/me"))) {
       return Promise.resolve(
         new Response(JSON.stringify(fixtureAdminUser), {
           status: 200,
@@ -63,12 +64,12 @@ function mockDeactivateSuccess(fetch: typeof fetchMock) {
         }),
       );
     }
-    if (href.endsWith("/api/auth/users")) {
+    if (href.endsWith(apiPath("/auth/users"))) {
       return Promise.resolve(
         new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
       );
     }
-    if (init?.method === "POST" && href.endsWith("/api/architects/ana/deactivate")) {
+    if (init?.method === "POST" && href.endsWith(apiPath("/architects/ana/deactivate"))) {
       const body = JSON.parse(String(init.body)) as { reason: string; expectedVersion: number };
       return Promise.resolve(
         new Response(
@@ -81,7 +82,7 @@ function mockDeactivateSuccess(fetch: typeof fetchMock) {
         ),
       );
     }
-    if (init?.method === "PATCH" && href.includes("/api/architects/")) {
+    if (init?.method === "PATCH" && href.includes(apiPath("/architects/"))) {
       const body = JSON.parse(String(init.body)) as { active: boolean };
       return Promise.resolve(
         new Response(JSON.stringify({ ...fixtureState.architects[0], ...body }), {
@@ -90,7 +91,7 @@ function mockDeactivateSuccess(fetch: typeof fetchMock) {
         }),
       );
     }
-    if (href.endsWith("/api/state")) {
+    if (href.endsWith(apiPath("/state"))) {
       return Promise.resolve(
         new Response(JSON.stringify(fixtureState satisfies AppState), {
           status: 200,
@@ -150,7 +151,7 @@ describe("Time — desativar preserva histórico", () => {
 
     const deactivateCalls = fetchMock.mock.calls.filter(
       ([u, init]) =>
-        init?.method === "POST" && String(u).endsWith("/api/architects/ana/deactivate"),
+        init?.method === "POST" && String(u).endsWith(apiPath("/architects/ana/deactivate")),
     );
     expect(deactivateCalls).toHaveLength(1);
     expect(JSON.parse(String((deactivateCalls[0]?.[1] as RequestInit).body))).toEqual({
@@ -160,7 +161,7 @@ describe("Time — desativar preserva histórico", () => {
 
     // nunca mais o PATCH antigo — o backend recusa com 400 hoje.
     const patchesToArchitect = fetchMock.mock.calls.filter(
-      ([u, init]) => init?.method === "PATCH" && String(u).includes("/api/architects/"),
+      ([u, init]) => init?.method === "PATCH" && String(u).includes(apiPath("/architects/")),
     );
     expect(patchesToArchitect).toHaveLength(0);
   });

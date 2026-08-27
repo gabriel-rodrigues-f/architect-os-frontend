@@ -48,19 +48,19 @@ export class HttpAuthGateway implements AuthGateway {
   constructor(private readonly client: ApiClient) {}
 
   status = (): Promise<{ hasUsers: boolean }> =>
-    this.client.request<{ hasUsers: boolean }>("/api/auth/status");
+    this.client.request<{ hasUsers: boolean }>("/auth/status");
 
   login = (email: string, password: string): Promise<AuthResult> =>
-    this.client.post<AuthResult>("/api/auth/login", { email, password });
+    this.client.post<AuthResult>("/auth/login", { email, password });
 
   register = (input: { name: string; email: string; password: string }): Promise<AuthResult> =>
-    this.client.post<AuthResult>("/api/auth/register", input);
+    this.client.post<AuthResult>("/auth/register", input);
 
-  logout = (): Promise<void> => this.client.request<void>("/api/auth/logout", { method: "POST" });
+  logout = (): Promise<void> => this.client.request<void>("/auth/logout", { method: "POST" });
 
-  me = (): Promise<SessionUser> => this.client.request<SessionUser>("/api/auth/me");
+  me = (): Promise<SessionUser> => this.client.request<SessionUser>("/auth/me");
 
-  users = (): Promise<SessionUser[]> => this.client.request<SessionUser[]>("/api/auth/users");
+  users = (): Promise<SessionUser[]> => this.client.request<SessionUser[]>("/auth/users");
 
   updateUser = (
     id: string,
@@ -71,7 +71,7 @@ export class HttpAuthGateway implements AuthGateway {
       name: string;
       email: string;
     }>,
-  ): Promise<SessionUser> => this.client.patch<SessionUser>(`/api/auth/users/${id}`, patch_);
+  ): Promise<SessionUser> => this.client.patch<SessionUser>(`/auth/users/${id}`, patch_);
 
   createUser = (input: {
     name: string;
@@ -79,8 +79,8 @@ export class HttpAuthGateway implements AuthGateway {
     role: UserRole;
     architectId?: string | null;
   }): Promise<{ user: SessionUser; temporaryPassword: string }> =>
-    this.client.post<{ user: SessionUser; temporaryPassword: string }>("/api/auth/users", input);
+    this.client.post<{ user: SessionUser; temporaryPassword: string }>("/auth/users", input);
 
   changePassword = (currentPassword: string, newPassword: string): Promise<void> =>
-    this.client.post<void>("/api/auth/change-password", { currentPassword, newPassword });
+    this.client.post<void>("/auth/change-password", { currentPassword, newPassword });
 }

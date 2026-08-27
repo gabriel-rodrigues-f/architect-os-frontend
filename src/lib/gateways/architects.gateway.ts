@@ -22,12 +22,12 @@ export class HttpArchitectsGateway implements ArchitectsGateway {
   constructor(private readonly client: ApiClient) {}
 
   createArchitect = (architect: Omit<Architect, "id" | "version">): Promise<Architect> =>
-    this.client.post<Architect>("/api/architects", architect);
+    this.client.post<Architect>("/architects", architect);
 
   updateArchitect = (
     id: string,
     patch_: Partial<Omit<Architect, "id" | "role" | "version">>,
-  ): Promise<Architect> => this.client.patch<Architect>(`/api/architects/${id}`, patch_);
+  ): Promise<Architect> => this.client.patch<Architect>(`/architects/${id}`, patch_);
 
   transitionCareerLevel = (
     id: string,
@@ -35,15 +35,15 @@ export class HttpArchitectsGateway implements ArchitectsGateway {
     reason: string,
     expectedVersion: number,
   ): Promise<Architect> =>
-    this.client.post<Architect>(`/api/architects/${id}/career-level-transition`, {
+    this.client.post<Architect>(`/architects/${id}/career-level-transition`, {
       toRole,
       reason,
       expectedVersion,
     });
 
   deactivate = (id: string, reason: string, expectedVersion: number): Promise<Architect> =>
-    this.client.post<Architect>(`/api/architects/${id}/deactivate`, { reason, expectedVersion });
+    this.client.post<Architect>(`/architects/${id}/deactivate`, { reason, expectedVersion });
 
   careerLevelTransitions = (id: string): Promise<CareerLevelTransition[]> =>
-    this.client.request<CareerLevelTransition[]>(`/api/architects/${id}/career-level-transitions`);
+    this.client.request<CareerLevelTransition[]>(`/architects/${id}/career-level-transitions`);
 }

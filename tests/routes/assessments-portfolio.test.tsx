@@ -8,6 +8,7 @@ import { type AppState } from "@/lib/api";
 import type { Assessment, AssessmentEligibility } from "@/lib/domain";
 import { fixtureMemberUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * ORIENTACAO-NONA-RODADA, Seção 8/32 — cobertura dedicada do Portfólio de
@@ -124,7 +125,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
 
   it("loading aparece antes da resposta, e error com Tentar novamente quando a rota falha", async () => {
     fetchMock.mockImplementationOnce((url: string) => {
-      if (String(url).endsWith("/api/auth/me")) {
+      if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureMemberUser), {
             status: 200,
@@ -188,7 +189,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     )) as HTMLSelectElement;
 
     const stateCallsBefore = fetchMock.mock.calls.filter(([u]) =>
-      String(u).endsWith("/api/state"),
+      String(u).endsWith(apiPath("/state")),
     ).length;
 
     await userEvent.selectOptions(select, "cloud");
@@ -198,7 +199,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
       expect(
         fetchMock.mock.calls.some(
           ([u, i]) =>
-            String(u).includes(`/api/assessments/${draftAssessment.id}/capabilities`) &&
+            String(u).includes(apiPath(`/assessments/${draftAssessment.id}/capabilities`)) &&
             (i as RequestInit)?.method === "POST",
         ),
       ).toBe(true),
@@ -208,7 +209,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     // do app (Problema 2), não só a query de elegibilidade.
     await waitFor(() => {
       const stateCallsAfter = fetchMock.mock.calls.filter(([u]) =>
-        String(u).endsWith("/api/state"),
+        String(u).endsWith(apiPath("/state")),
       ).length;
       expect(stateCallsAfter).toBeGreaterThan(stateCallsBefore);
     });

@@ -7,6 +7,7 @@ import { Route as PlansRoute } from "@/routes/development-plans";
 import { type AppState, type SessionUser } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * EPIC 3 (quarta rodada) — PDI real: sem percentual paralelo ao status, sem
@@ -20,7 +21,7 @@ const fetchMock = vi.fn();
 /**
  * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
  * O AuthReady local era um passthrough; o corte do helper apenas atrasa a
- * montagem até `/api/auth/me` resolver — as asserções já esperam via `findBy*`.
+ * montagem até `/api/v1/auth/me` resolver — as asserções já esperam via `findBy*`.
  */
 
 const PlansPage = PlansRoute.options.component as () => ReactNode;
@@ -35,7 +36,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
           if (init?.method === "PATCH" && href.includes("/status")) {
             return jsonResponse({ id: "pdi-ana", status: "Completed", items: [] });
           }
-          if (init?.method === "POST" && href.includes("/api/plans/")) {
+          if (init?.method === "POST" && href.includes(apiPath("/plans/"))) {
             return jsonResponse({ id: "pdi-bruno", status: "Draft", items: [] }, 201);
           }
           return undefined;
@@ -71,14 +72,14 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
       expect(
         fetchMock.mock.calls.some(
           ([url, init]) =>
-            String(url).endsWith("/api/plans/pdi-ana/status") &&
+            String(url).endsWith(apiPath("/plans/pdi-ana/status")) &&
             (init as RequestInit)?.method === "PATCH",
         ),
       ).toBe(true),
     );
     const call = fetchMock.mock.calls.find(
       ([url, init]) =>
-        String(url).endsWith("/api/plans/pdi-ana/status") &&
+        String(url).endsWith(apiPath("/plans/pdi-ana/status")) &&
         (init as RequestInit)?.method === "PATCH",
     ) as [string, RequestInit];
     expect(JSON.parse(String(call[1].body))).toEqual({ status: "Completed", expectedVersion: 1 });
@@ -95,7 +96,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     expect(
       fetchMock.mock.calls.some(
         ([url, init]) =>
-          String(url).includes("/api/plans/bruno/items") &&
+          String(url).includes(apiPath("/plans/bruno/items")) &&
           (init as RequestInit)?.method === "POST",
       ),
     ).toBe(false);
@@ -118,14 +119,14 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
       expect(
         fetchMock.mock.calls.some(
           ([url, init]) =>
-            String(url).includes("/api/plans/bruno/items/from-gap") &&
+            String(url).includes(apiPath("/plans/bruno/items/from-gap")) &&
             (init as RequestInit)?.method === "POST",
         ),
       ).toBe(true),
     );
     const call = fetchMock.mock.calls.find(
       ([url, init]) =>
-        String(url).includes("/api/plans/bruno/items/from-gap") &&
+        String(url).includes(apiPath("/plans/bruno/items/from-gap")) &&
         (init as RequestInit)?.method === "POST",
     ) as [string, RequestInit];
     const body = JSON.parse(String(call[1].body)) as Record<string, unknown>;
@@ -200,7 +201,8 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     mockAppFetch(fetchMock, {
       routes: [
         (href, init) =>
-          init?.method === "POST" && href.endsWith("/api/plans/pdi-ana/items/pdi-ana-0/checkins")
+          init?.method === "POST" &&
+          href.endsWith(apiPath("/plans/pdi-ana/items/pdi-ana-0/checkins"))
             ? jsonResponse(updatedPlan, 201)
             : undefined,
       ],
@@ -221,14 +223,14 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
       expect(
         fetchMock.mock.calls.some(
           ([url, init]) =>
-            String(url).endsWith("/api/plans/pdi-ana/items/pdi-ana-0/checkins") &&
+            String(url).endsWith(apiPath("/plans/pdi-ana/items/pdi-ana-0/checkins")) &&
             (init as RequestInit)?.method === "POST",
         ),
       ).toBe(true),
     );
     const call = fetchMock.mock.calls.find(
       ([url, init]) =>
-        String(url).endsWith("/api/plans/pdi-ana/items/pdi-ana-0/checkins") &&
+        String(url).endsWith(apiPath("/plans/pdi-ana/items/pdi-ana-0/checkins")) &&
         (init as RequestInit)?.method === "POST",
     ) as [string, RequestInit];
     expect(JSON.parse(String(call[1].body))).toEqual({
@@ -322,14 +324,14 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
         expect(
           fetchMock.mock.calls.some(
             ([url, init]) =>
-              String(url).endsWith("/api/plans/pdi-ana/reopen") &&
+              String(url).endsWith(apiPath("/plans/pdi-ana/reopen")) &&
               (init as RequestInit)?.method === "POST",
           ),
         ).toBe(true),
       );
       const call = fetchMock.mock.calls.find(
         ([url, init]) =>
-          String(url).endsWith("/api/plans/pdi-ana/reopen") &&
+          String(url).endsWith(apiPath("/plans/pdi-ana/reopen")) &&
           (init as RequestInit)?.method === "POST",
       ) as [string, RequestInit];
       expect(JSON.parse(String(call[1].body))).toEqual({

@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { api, authApi } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { fixtureAdminUser } from "../helpers/fixtures";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * B-33 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, §12 — "sem
@@ -67,8 +68,8 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
 
     fetchMock.mockImplementation((url: string) => {
       const href = String(url);
-      if (href.endsWith("/api/auth/me")) return Promise.resolve(meResponse.clone());
-      if (href.endsWith("/api/settings/active-cycle")) {
+      if (href.endsWith(apiPath("/auth/me"))) return Promise.resolve(meResponse.clone());
+      if (href.endsWith(apiPath("/settings/active-cycle"))) {
         return Promise.resolve(
           new Response(JSON.stringify({ code: "SESSION_INVALID", message: "Sessão inválida." }), {
             status: 401,
@@ -104,10 +105,10 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
     expect(await screen.findByText("Sua sessão expirou. Faça login novamente.")).toBeTruthy();
   });
 
-  it("o 401 do /api/auth/me inicial (sem sessão nenhuma) não dispara o aviso de sessão expirada", async () => {
+  it("o 401 do /api/v1/auth/me inicial (sem sessão nenhuma) não dispara o aviso de sessão expirada", async () => {
     fetchMock.mockImplementation((url: string) => {
       const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
+      if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify({ error: "Unauthorized", message: "Sem sessão." }), {
             status: 401,
@@ -137,8 +138,8 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
   it("errar a senha atual na troca de senha (401 INVALID_CURRENT_PASSWORD) não desloga", async () => {
     fetchMock.mockImplementation((url: string) => {
       const href = String(url);
-      if (href.endsWith("/api/auth/me")) return Promise.resolve(meResponse.clone());
-      if (href.endsWith("/api/auth/change-password")) {
+      if (href.endsWith(apiPath("/auth/me"))) return Promise.resolve(meResponse.clone());
+      if (href.endsWith(apiPath("/auth/change-password"))) {
         return Promise.resolve(
           new Response(
             JSON.stringify({ code: "INVALID_CURRENT_PASSWORD", message: "Senha atual incorreta" }),

@@ -12,12 +12,13 @@ import {
   renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-04 (SPEC-OO3-13, §3.2) — aba "Catálogo" de /settings: admin-only,
- * edição dos três limites → PUT /api/config/curation-policy com o payload
+ * edição dos três limites → PUT /api/v1/config/curation-policy com o payload
  * inteiro, validação client-side (soma que não fecha desabilita salvar),
- * invalidação da query da política E do snapshot de /api/state ao sucesso
+ * invalidação da query da política E do snapshot de /api/v1/state ao sucesso
  * (o admin precisa VER os badges de curadoria recalculados) e 400
  * INVALID_CATALOG_CURATION_POLICY do backend exibido no formulário
  * (role="alert").
@@ -26,9 +27,9 @@ import {
 const fetchMock = vi.fn();
 const SettingsPage = SettingsRoute.options.component as () => ReactNode;
 
-/** GET /api/config/curation-policy com o seed 6/3+3. */
+/** GET /api/v1/config/curation-policy com o seed 6/3+3. */
 const curationPolicyGetRoute: FetchRoute = (href, init) =>
-  href.endsWith("/api/config/curation-policy") && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/config/curation-policy")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({ maxActiveCompetencies: 6, requiredRestrictive: 3, requiredNonRestrictive: 3 })
     : undefined;
 
@@ -105,12 +106,12 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     ).toBe(true);
   });
 
-  it("salvar envia o PUT com a política inteira e invalida a query da política E o /api/state", async () => {
+  it("salvar envia o PUT com a política inteira e invalida a query da política E o /api/v1/state", async () => {
     mockAppFetch(fetchMock, {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/config/curation-policy") && init?.method === "PUT"
+          href.endsWith(apiPath("/config/curation-policy")) && init?.method === "PUT"
             ? jsonResponse(JSON.parse(String(init.body)) as Record<string, number>)
             : undefined,
         curationPolicyGetRoute,
@@ -119,8 +120,8 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     renderWithApp(<SettingsPage />);
 
     const block = await policyBlock();
-    const policyGetsBefore = countGets("/api/config/curation-policy");
-    const stateGetsBefore = countGets("/api/state");
+    const policyGetsBefore = countGets(apiPath("/config/curation-policy"));
+    const stateGetsBefore = countGets(apiPath("/state"));
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
 
     for (const [label, value] of [
@@ -137,7 +138,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     await waitFor(() => {
       const put = fetchMock.mock.calls.find((call) => {
         const [url, init] = call as [string, RequestInit | undefined];
-        return String(url).endsWith("/api/config/curation-policy") && init?.method === "PUT";
+        return String(url).endsWith(apiPath("/config/curation-policy")) && init?.method === "PUT";
       });
       expect(put).toBeTruthy();
       expect(JSON.parse(String((put![1] as RequestInit).body))).toEqual({
@@ -148,10 +149,10 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     });
 
     // Invalidação encadeada ao sucesso: a query da política refaz o GET e o
-    // snapshot de /api/state também (é dele que vem `curation.status`).
+    // snapshot de /api/v1/state também (é dele que vem `curation.status`).
     await waitFor(() => {
-      expect(countGets("/api/config/curation-policy")).toBeGreaterThan(policyGetsBefore);
-      expect(countGets("/api/state")).toBeGreaterThan(stateGetsBefore);
+      expect(countGets(apiPath("/config/curation-policy"))).toBeGreaterThan(policyGetsBefore);
+      expect(countGets(apiPath("/state"))).toBeGreaterThan(stateGetsBefore);
     });
   });
 
@@ -160,7 +161,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/config/curation-policy") && init?.method === "PUT"
+          href.endsWith(apiPath("/config/curation-policy")) && init?.method === "PUT"
             ? jsonResponse(
                 {
                   code: "INVALID_CATALOG_CURATION_POLICY",

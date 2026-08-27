@@ -25,6 +25,7 @@ import { type AppState } from "@/lib/api";
 import type { Assessment, Competency } from "@/lib/domain";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * ORIENTACAO-NONA-RODADA ENT-09-012 — a tela de Gap Analysis restructurada:
@@ -95,7 +96,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
     vi.stubGlobal("fetch", fetchMock);
 
     fetchMock.mockImplementation((url: string) => {
-      if (String(url).endsWith("/api/auth/me")) {
+      if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureAdminUser), {
             status: 200,
@@ -103,7 +104,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
           }),
         );
       }
-      if (String(url).endsWith("/api/state")) {
+      if (String(url).endsWith(apiPath("/state"))) {
         return Promise.resolve(
           new Response(JSON.stringify(state), {
             status: 200,
@@ -173,7 +174,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
       ],
     };
     fetchMock.mockImplementation((url: string) => {
-      if (String(url).endsWith("/api/auth/me")) {
+      if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureAdminUser), {
             status: 200,
@@ -181,7 +182,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
           }),
         );
       }
-      if (String(url).endsWith("/api/state")) {
+      if (String(url).endsWith(apiPath("/state"))) {
         return Promise.resolve(
           new Response(JSON.stringify(carlaState), {
             status: 200,
@@ -255,7 +256,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
       ],
     };
     fetchMock.mockImplementation((url: string) => {
-      if (String(url).endsWith("/api/auth/me")) {
+      if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureAdminUser), {
             status: 200,
@@ -263,7 +264,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
           }),
         );
       }
-      if (String(url).endsWith("/api/state")) {
+      if (String(url).endsWith(apiPath("/state"))) {
         return Promise.resolve(
           new Response(JSON.stringify(seisArquitetos), {
             status: 200,

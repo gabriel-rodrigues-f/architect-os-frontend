@@ -17,6 +17,7 @@ import {
   mockAppFetch,
   renderWithApp,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * PLANO-360-AGENTES-SYNAPSE.md, Seção 9 e 39 — o campo certo precisa nascer
@@ -188,7 +189,7 @@ describe("Avaliações — campos por papel e status", () => {
     mockAppFetch(fetchMock, {
       routes: [
         (href, init) => {
-          if (init?.method === "PATCH" && href.endsWith("/api/assessments/ana-h2/status")) {
+          if (init?.method === "PATCH" && href.endsWith(apiPath("/assessments/ana-h2/status"))) {
             const body = JSON.parse(String(init.body)) as { status: string };
             return jsonResponse({ ...completedAssessment, status: body.status });
           }

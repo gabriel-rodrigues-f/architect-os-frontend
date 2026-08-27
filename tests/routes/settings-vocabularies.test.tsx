@@ -12,6 +12,7 @@ import {
   renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-06 (SPEC-OO3-13, §3.2) — aba "Vocabulários" de /settings: admin-only,
@@ -33,7 +34,7 @@ const vocabItem = (
 ) => ({ vocabulary, code, labelKey, sortOrder, active });
 
 const vocabulariesGetRoute: FetchRoute = (href, init) =>
-  href.endsWith("/api/config/vocabularies") && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/config/vocabularies")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({
         EVIDENCE_TYPE: [
           vocabItem("EVIDENCE_TYPE", "ADR", "evidenceType.adr", 1),
@@ -95,7 +96,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.includes("/api/config/vocabularies/EVIDENCE_TYPE/") && init?.method === "PATCH"
+          href.includes(apiPath("/config/vocabularies/EVIDENCE_TYPE/")) && init?.method === "PATCH"
             ? jsonResponse(vocabItem("EVIDENCE_TYPE", "ADR", "evidenceType.adr", 1, false))
             : undefined,
         vocabulariesGetRoute,
@@ -107,14 +108,14 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
     await waitFor(() => {
       expect(within(block).getByRole("button", { name: "Reativar" })).toBeTruthy();
     });
-    const getsBefore = countGets("/api/config/vocabularies");
+    const getsBefore = countGets(apiPath("/config/vocabularies"));
     await userEvent.click(within(block).getAllByRole("button", { name: "Desativar" })[0]!);
 
     await waitFor(() => {
       const patch = fetchMock.mock.calls.find((call) => {
         const [url, init] = call as [string, RequestInit | undefined];
         return (
-          String(url).endsWith("/api/config/vocabularies/EVIDENCE_TYPE/ADR") &&
+          String(url).endsWith(apiPath("/config/vocabularies/EVIDENCE_TYPE/ADR")) &&
           init?.method === "PATCH"
         );
       });
@@ -122,7 +123,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       expect(JSON.parse(String((patch![1] as RequestInit).body))).toEqual({ active: false });
     });
     await waitFor(() => {
-      expect(countGets("/api/config/vocabularies")).toBeGreaterThan(getsBefore);
+      expect(countGets(apiPath("/config/vocabularies"))).toBeGreaterThan(getsBefore);
     });
   });
 
@@ -131,7 +132,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/config/vocabularies/EVIDENCE_TYPE/Palestra") &&
+          href.endsWith(apiPath("/config/vocabularies/EVIDENCE_TYPE/Palestra")) &&
           init?.method === "POST"
             ? jsonResponse(
                 { message: 'O vocabulário EVIDENCE_TYPE já tem o código "Palestra".' },
@@ -156,7 +157,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       const call = fetchMock.mock.calls.find((entry) => {
         const [url, init] = entry as [string, RequestInit | undefined];
         return (
-          String(url).endsWith("/api/config/vocabularies/EVIDENCE_TYPE/Palestra") &&
+          String(url).endsWith(apiPath("/config/vocabularies/EVIDENCE_TYPE/Palestra")) &&
           init?.method === "POST"
         );
       });

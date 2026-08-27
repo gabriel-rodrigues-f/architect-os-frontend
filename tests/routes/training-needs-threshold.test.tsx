@@ -17,6 +17,7 @@ import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import type { AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-05 / B6 — guard rail do limiar configurável: o "3+ pessoas" da
@@ -41,7 +42,7 @@ const settingRecord = (key: string, value: string | number) => ({
 });
 
 const thresholdTwoRoute: FetchRoute = (href, init) =>
-  href.endsWith("/api/config/settings") && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/config/settings")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({
         settings: [
           settingRecord("cycle.cadence", "SEMIANNUAL"),

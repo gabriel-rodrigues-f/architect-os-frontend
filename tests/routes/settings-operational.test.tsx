@@ -12,12 +12,13 @@ import {
   renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-05 (SPEC-OO3-13, §3.2) — aba "Operação" de /settings: admin-only,
  * edição das 3 settings de `app_settings` → UM PUT por key ALTERADA em
- * /api/config/settings/:key, aviso de que a cadência só afeta ciclos
- * futuros, invalidação da query das settings (+ /api/state ao mudar a
+ * /api/v1/config/settings/:key, aviso de que a cadência só afeta ciclos
+ * futuros, invalidação da query das settings (+ /api/v1/state ao mudar a
  * cadência) e 400 INVALID_APP_SETTING do backend exibido no formulário
  * (role="alert").
  */
@@ -35,11 +36,11 @@ const settingRecord = (key: string, value: string | number) => ({
   updatedBy: null,
 });
 
-/** GET /api/config/settings com valores dados (default: o seed SEMIANNUAL/3/3). */
+/** GET /api/v1/config/settings com valores dados (default: o seed SEMIANNUAL/3/3). */
 const settingsGetRoute =
   (cadence: string = "SEMIANNUAL", floor = 3, threshold = 3): FetchRoute =>
   (href, init) =>
-    href.endsWith("/api/config/settings") && (init?.method ?? "GET") === "GET"
+    href.endsWith(apiPath("/config/settings")) && (init?.method ?? "GET") === "GET"
       ? jsonResponse({
           settings: [
             settingRecord("cycle.cadence", cadence),
@@ -126,14 +127,14 @@ describe("Operação (CFG-05 admin UI)", () => {
     ).toBe(true);
   });
 
-  it("salvar envia UM PUT por key alterada e, com cadência nova, invalida settings E /api/state", async () => {
+  it("salvar envia UM PUT por key alterada e, com cadência nova, invalida settings E /api/v1/state", async () => {
     mockAppFetch(fetchMock, {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.includes("/api/config/settings/") && init?.method === "PUT"
+          href.includes(apiPath("/config/settings/")) && init?.method === "PUT"
             ? jsonResponse({
-                key: decodeURIComponent(href.split("/api/config/settings/")[1]!),
+                key: decodeURIComponent(href.split(apiPath("/config/settings/"))[1]!),
                 value: (JSON.parse(String(init.body)) as { value: string | number }).value,
               })
             : undefined,
@@ -143,8 +144,8 @@ describe("Operação (CFG-05 admin UI)", () => {
     renderWithApp(<SettingsPage />);
 
     const block = await operationalBlock();
-    const settingsGetsBefore = countGets("/api/config/settings");
-    const stateGetsBefore = countGets("/api/state");
+    const settingsGetsBefore = countGets(apiPath("/config/settings"));
+    const stateGetsBefore = countGets(apiPath("/state"));
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
 
     await userEvent.selectOptions(within(block).getByLabelText("Cadência dos ciclos"), "QUARTERLY");
@@ -154,24 +155,26 @@ describe("Operação (CFG-05 admin UI)", () => {
     await userEvent.click(within(block).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => {
-      const cadencePut = findPut("/api/config/settings/cycle.cadence");
+      const cadencePut = findPut(apiPath("/config/settings/cycle.cadence"));
       expect(cadencePut).toBeTruthy();
       expect(JSON.parse(String((cadencePut![1] as RequestInit).body))).toEqual({
         value: "QUARTERLY",
       });
-      const thresholdPut = findPut("/api/config/settings/training.collectiveInterventionThreshold");
+      const thresholdPut = findPut(
+        apiPath("/config/settings/training.collectiveInterventionThreshold"),
+      );
       expect(thresholdPut).toBeTruthy();
       expect(JSON.parse(String((thresholdPut![1] as RequestInit).body))).toEqual({ value: 2 });
     });
     // Piso não mudou — nenhum PUT dessa key.
-    expect(findPut("/api/config/settings/career.minimumQualifiedFloor")).toBeUndefined();
+    expect(findPut(apiPath("/config/settings/career.minimumQualifiedFloor"))).toBeUndefined();
 
     // Invalidação encadeada ao sucesso: a query das settings refaz o GET e,
-    // porque a cadência mudou, o snapshot de /api/state também (a tela de
+    // porque a cadência mudou, o snapshot de /api/v1/state também (a tela de
     // ciclos lê os ciclos vigentes de lá).
     await waitFor(() => {
-      expect(countGets("/api/config/settings")).toBeGreaterThan(settingsGetsBefore);
-      expect(countGets("/api/state")).toBeGreaterThan(stateGetsBefore);
+      expect(countGets(apiPath("/config/settings"))).toBeGreaterThan(settingsGetsBefore);
+      expect(countGets(apiPath("/state"))).toBeGreaterThan(stateGetsBefore);
     });
   });
 
@@ -180,7 +183,7 @@ describe("Operação (CFG-05 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.includes("/api/config/settings/") && init?.method === "PUT"
+          href.includes(apiPath("/config/settings/")) && init?.method === "PUT"
             ? jsonResponse(
                 {
                   code: "INVALID_APP_SETTING",
