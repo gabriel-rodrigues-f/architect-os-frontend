@@ -11,6 +11,7 @@ import type {
   MentoringSession,
 } from "./domain";
 import { ApiError } from "./api-errors";
+import { apiPath, isApiUrl } from "./api-path";
 import { appStateSchema } from "./api-schemas";
 
 export interface AppState {
@@ -63,13 +64,18 @@ export class ApiClient {
     this.unauthorizedHandler = handler;
   }
 
-  async request<T>(path: string, init?: RequestInit): Promise<T> {
+  urlOf(resource: string): string {
+    return `${this.baseUrl}${apiPath(resource)}`;
+  }
+
+  async request<T>(resource: string, init?: RequestInit): Promise<T> {
     const headers: Record<string, string> = {
       ...(init?.body === undefined ? {} : { "content-type": "application/json" }),
       ...((init?.headers as Record<string, string> | undefined) ?? {}),
     };
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const url = this.urlOf(resource);
+    const response = await fetch(url, {
       ...init,
       headers,
       credentials: "include",
@@ -86,7 +92,8 @@ export class ApiClient {
         this.unauthorizedHandler?.();
       }
       throw new ApiError(
-        body?.message ?? `${init?.method ?? "GET"} ${path} falhou (${response.status})`,
+        body?.message ??
+          `${init?.method ?? "GET"} ${apiPath(resource)} falhou (${response.status})`,
         response.status,
         body?.details,
         body?.code,
@@ -96,7 +103,7 @@ export class ApiClient {
 
     if (response.status === 204) return undefined as T;
     const body: unknown = await response.json();
-    if (!path.startsWith("/api")) return body as T;
+    if (!isApiUrl(url)) return body as T;
     const envelope = asSuccessEnvelope(body);
     if (!envelope) return body as T;
     const code = envelope.message?.code;
@@ -106,8 +113,8 @@ export class ApiClient {
     return envelope.data as T;
   }
 
-  async requestBlob(path: string, body: unknown): Promise<{ blob: Blob; filename: string }> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+  async requestBlob(resource: string, body: unknown): Promise<{ blob: Blob; filename: string }> {
+    const response = await fetch(this.urlOf(resource), {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "include",
@@ -120,7 +127,7 @@ export class ApiClient {
         correlationId?: string;
       } | null;
       throw new ApiError(
-        errorBody?.message ?? `POST ${path} falhou (${response.status})`,
+        errorBody?.message ?? `POST ${apiPath(resource)} falhou (${response.status})`,
         response.status,
         undefined,
         errorBody?.code,
@@ -132,22 +139,20 @@ export class ApiClient {
     return { blob: await response.blob(), filename: match?.[1] ?? "relatorio.pdf" };
   }
 
-  post<T>(path: string, body: unknown): Promise<T> {
-    return this.request<T>(path, { method: "POST", body: JSON.stringify(body) });
+  post<T>(resource: string, body: unknown): Promise<T> {
+    return this.request<T>(resource, { method: "POST", body: JSON.stringify(body) });
   }
-  patch<T>(path: string, body: unknown): Promise<T> {
-    return this.request<T>(path, { method: "PATCH", body: JSON.stringify(body) });
+  patch<T>(resource: string, body: unknown): Promise<T> {
+    return this.request<T>(resource, { method: "PATCH", body: JSON.stringify(body) });
   }
-  put<T>(path: string, body: unknown): Promise<T> {
-    return this.request<T>(path, { method: "PUT", body: JSON.stringify(body) });
+  put<T>(resource: string, body: unknown): Promise<T> {
+    return this.request<T>(resource, { method: "PUT", body: JSON.stringify(body) });
   }
-  del<T>(path: string): Promise<T> {
-    return this.request<T>(path, { method: "DELETE" });
+  del<T>(resource: string): Promise<T> {
+    return this.request<T>(resource, { method: "DELETE" });
   }
 
   getState(): Promise<AppState> {
-    return this.request<AppState>("/api/state").then(
-      (data) => appStateSchema.parse(data) as AppState,
-    );
+    return this.request<AppState>("/state").then((data) => appStateSchema.parse(data) as AppState);
   }
 }

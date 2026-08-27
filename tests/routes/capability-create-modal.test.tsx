@@ -10,6 +10,7 @@ import {
   mockAppFetch,
   renderWithApp,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Nova capacidade" troca os
@@ -21,7 +22,7 @@ import {
  * direto da dona do produto para nunca mais digitar a sigla manualmente. O
  * backend gera `short` automaticamente a partir de `name` (com resolução de
  * colisão) quando o campo não vem no corpo — o mock de `POST
- * /api/capabilities` abaixo simula exatamente isso, devolvendo um `short`
+ * /api/v1/capabilities` abaixo simula exatamente isso, devolvendo um `short`
  * mesmo quando o corpo da requisição não manda nenhum.
  */
 
@@ -39,7 +40,7 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
       routes: [
         careerLevelsRoute,
         (href, init) => {
-          if (href.endsWith("/api/capabilities") && init?.method === "POST") {
+          if (href.endsWith(apiPath("/capabilities")) && init?.method === "POST") {
             const body = JSON.parse(String(init.body)) as { name: string; short?: string };
             return jsonResponse(
               {
@@ -91,13 +92,14 @@ describe("Matriz de Competências — criação de capacidade via modal", () => 
       expect(
         fetchMock.mock.calls.some(
           ([url, init]) =>
-            String(url).endsWith("/api/capabilities") && (init as RequestInit)?.method === "POST",
+            String(url).endsWith(apiPath("/capabilities")) &&
+            (init as RequestInit)?.method === "POST",
         ),
       ).toBe(true),
     );
     const call = fetchMock.mock.calls.find(
       ([url, init]) =>
-        String(url).endsWith("/api/capabilities") && (init as RequestInit)?.method === "POST",
+        String(url).endsWith(apiPath("/capabilities")) && (init as RequestInit)?.method === "POST",
     ) as [string, RequestInit];
     const sentBody = JSON.parse(String(call[1].body)) as Record<string, unknown>;
     expect(sentBody).toMatchObject({ name: "Governança de Dados", active: true });

@@ -8,6 +8,7 @@ import { type AppState, type SessionUser } from "@/lib/api";
 import type { Architect, MentoringSession } from "@/lib/domain";
 import { fixtureState } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então
@@ -88,7 +89,7 @@ describe("Mentoria — filtro de mentorado (seleção única)", () => {
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockImplementation((url: string) => {
       const href = String(url);
-      const body = href.endsWith("/api/auth/me") ? admin : state;
+      const body = href.endsWith(apiPath("/auth/me")) ? admin : state;
       return Promise.resolve(
         new Response(JSON.stringify(body), {
           status: 200,

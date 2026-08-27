@@ -6,6 +6,7 @@ import { Route as LearningRoute } from "@/routes/learning-paths";
 import type { AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
 import { type FetchRoute, jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * F3/Grupo 1 — perda de digitação nas trilhas de aprendizagem.
@@ -23,7 +24,7 @@ import { type FetchRoute, jsonResponse, mockAppFetch, renderWithApp } from "../h
  *
  * O caminho reproduzido é o do próprio app (ver `store-remote-error.test.tsx`):
  * gravação otimista recusada → `cache.invalidate()` → revalidação de
- * `/api/state` → a prop volta ao valor confirmado pelo servidor. Como a perda é
+ * `/api/v1/state` → a prop volta ao valor confirmado pelo servidor. Como a perda é
  * uma corrida, o PATCH fica represado até o teste soltar.
  */
 
@@ -57,7 +58,7 @@ function estadoRevalidado(): AppState {
 function statePorChamada(...respostas: AppState[]): FetchRoute {
   let chamadas = 0;
   return (href) => {
-    if (!href.endsWith("/api/state")) return undefined;
+    if (!href.endsWith(apiPath("/state"))) return undefined;
     const resposta = respostas[Math.min(chamadas, respostas.length - 1)]!;
     chamadas += 1;
     return jsonResponse(resposta);
@@ -73,7 +74,7 @@ function mockComPatchRepresado(): () => void {
   mockAppFetch(fetchMock, {
     routes: [
       (href, init) =>
-        init?.method === "PATCH" && href.includes("/api/learning-paths/")
+        init?.method === "PATCH" && href.includes(apiPath("/learning-paths/"))
           ? jsonResponse({ error: "Conflict", message: "Não foi possível salvar agora." }, 409)
           : undefined,
       statePorChamada(fixtureState, estadoRevalidado()),
@@ -92,7 +93,7 @@ function patchesDaTrilha(): unknown[] {
   return fetchMock.mock.calls.filter(
     ([url, init]) =>
       (init as RequestInit | undefined)?.method === "PATCH" &&
-      String(url).includes("/api/learning-paths/"),
+      String(url).includes(apiPath("/learning-paths/")),
   );
 }
 

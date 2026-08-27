@@ -54,8 +54,12 @@ O token é guardado no `localStorage` e a sessão é revalidada a cada carga.
 
 ## Como conversa com a API
 
-O front hidrata a store com uma chamada a `GET /api/state` e, nas mutações, atualiza o cache
+O front hidrata a store com uma chamada a `GET /api/v1/state` e, nas mutações, atualiza o cache
 do React Query na hora e envia a alteração à API; em erro, revalida o snapshot.
+
+O prefixo `/api/v1` mora num lugar só: `src/lib/api-path.ts`. O `ApiClient` compõe
+`base + prefixo + recurso`, então os call sites dos gateways passam apenas o recurso
+(`/state`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
 
 ## Idioma
 

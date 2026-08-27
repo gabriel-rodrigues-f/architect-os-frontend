@@ -16,11 +16,11 @@ export class HttpMentoringGateway implements MentoringGateway {
     session: MentoringSession,
     proficiencyUpdates: ProficiencyUpdate[] = [],
   ): Promise<MentoringSession> =>
-    this.client.post<MentoringSession>("/api/mentoring-sessions", {
+    this.client.post<MentoringSession>("/mentoring-sessions", {
       ...session,
       proficiencyUpdates,
     });
 
   scheduleMentoringFollowUp = (id: string, nextSession: string | null): Promise<MentoringSession> =>
-    this.client.patch<MentoringSession>(`/api/mentoring-sessions/${id}`, { nextSession });
+    this.client.patch<MentoringSession>(`/mentoring-sessions/${id}`, { nextSession });
 }

@@ -105,7 +105,7 @@ describe("régua única de severidade (OO3-11i)", () => {
   it("GapBadge e o presenter devolvem o MESMO rótulo para o mesmo gap — fim da régua dupla", () => {
     const gap = 2;
     // CFG-02 — `GapBadge` consulta a régua efetiva via `useGapSeverityRuler`
-    // (React Query); sem resposta de `/api/config/bands`, cai no default do
+    // (React Query); sem resposta de `/api/v1/config/bands`, cai no default do
     // seed — o comportamento que este teste sempre exerceu.
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 } },

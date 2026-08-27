@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import type { Mock } from "vitest";
 
 import { type AppState, type SessionUser } from "@/lib/api";
+import { apiPath, isApiUrl } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { I18nProvider } from "@/lib/i18n";
 import { StoreProvider } from "@/lib/store";
@@ -13,7 +14,7 @@ import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures"
 /**
  * OO3-11/D-7 — o setup replicado nos testes de tela (QueryClient com
  * retry/gcTime zerados + I18nProvider + AuthProvider + StoreProvider, mais
- * o fetch mock que responde `/api/auth/me` e `/api/state`) era a maior
+ * o fetch mock que responde `/api/v1/auth/me` e `/api/v1/state`) era a maior
  * duplicação do repositório em linhas absolutas (~40 linhas × 46 arquivos).
  * Este helper NÃO é coletado pelo Vitest (não termina em `.test.tsx`).
  *
@@ -35,12 +36,12 @@ export function jsonResponse(body: unknown, status = 200): Response {
 
 /**
  * Rota extra do mock: devolve uma `Response` para tratar a chamada, ou
- * `undefined` para cair nos padrões (`/api/auth/me`, `/api/state`).
+ * `undefined` para cair nos padrões (`/api/v1/auth/me`, `/api/v1/state`).
  */
 export type FetchRoute = (href: string, init?: RequestInit) => Response | undefined;
 
 /**
- * RF-05 — o backend envelopa toda resposta 2xx JSON de `/api/*` em
+ * RF-05 — o backend envelopa toda resposta 2xx JSON de `/api/v1/*` em
  * `{ data, message? }` e o `api-client` desembrulha. Para os testes seguirem
  * escrevendo payloads crus, o mock envelopa automaticamente; rotas que já
  * devolvem o formato `{ data, ... }` (ex.: para exercitar `message.code`)
@@ -78,28 +79,28 @@ export function mockAppFetch(
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const href = String(url);
     const respond = (response: Response) =>
-      href.includes("/api/") ? envelopeApiResponse(response) : Promise.resolve(response);
+      isApiUrl(href) ? envelopeApiResponse(response) : Promise.resolve(response);
     for (const route of routes) {
       const response = route(href, init);
       if (response) return respond(response);
     }
-    if (href.endsWith("/api/auth/me")) return respond(jsonResponse(user));
-    if (href.endsWith("/api/state")) return respond(jsonResponse(state));
+    if (href.endsWith(apiPath("/auth/me"))) return respond(jsonResponse(user));
+    if (href.endsWith(apiPath("/state"))) return respond(jsonResponse(state));
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
 }
 
-/** Rota de `GET /api/auth/users` vazia — telas de Time/Usuários listam contas. */
+/** Rota de `GET /api/v1/auth/users` vazia — telas de Time/Usuários listam contas. */
 export const emptyAuthUsersRoute: FetchRoute = (href) =>
-  href.endsWith("/api/auth/users") ? jsonResponse([]) : undefined;
+  href.endsWith(apiPath("/auth/users")) ? jsonResponse([]) : undefined;
 
 /**
- * Rota de `GET /api/career-levels` com os níveis da fixture (B-24/ADR-0011:
- * careerLevels saiu de `/api/state`) — replicada em vários testes de telas
+ * Rota de `GET /api/v1/career-levels` com os níveis da fixture (B-24/ADR-0011:
+ * careerLevels saiu de `/api/v1/state`) — replicada em vários testes de telas
  * administrativas do catálogo.
  */
 export const careerLevelsRoute: FetchRoute = (href) =>
-  href.endsWith("/api/career-levels") ? jsonResponse(fixtureCareerLevels) : undefined;
+  href.endsWith(apiPath("/career-levels")) ? jsonResponse(fixtureCareerLevels) : undefined;
 
 /**
  * Rota pronta para a consulta de elegibilidade vazia (`/eligibility`, telas de

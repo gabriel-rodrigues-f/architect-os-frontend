@@ -27,6 +27,7 @@ import {
   mockAppFetch,
   renderWithApp,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * EPIC L — Trustworthy mutations: uma escrita otimista que falha no servidor
@@ -37,7 +38,7 @@ import {
  *
  * R2-UX-08/OO-03 — este teste usava "Desativar" como veículo do PATCH
  * otimista, mas desativação deixou de ser isso: virou `POST
- * /api/architects/:id/deactivate`, sem otimismo nenhum (motivo obrigatório
+ * /api/v1/architects/:id/deactivate`, sem otimismo nenhum (motivo obrigatório
  * + concorrência otimista — ver team-deactivate.test.tsx, que cobre o 409
  * desse fluxo novo, mostrado dentro do próprio diálogo). "Reativar"
  * continua sendo o PATCH otimista de sempre (`updateArchitect(id, { active:
@@ -67,7 +68,7 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
         emptyAuthUsersRoute,
         // O servidor recusa a reativação — simula uma regra de negócio.
         (href, init) =>
-          init?.method === "PATCH" && href.includes("/api/architects/")
+          init?.method === "PATCH" && href.includes(apiPath("/architects/"))
             ? jsonResponse({ error: "Conflict", message: "Não é possível reativar agora." }, 409)
             : undefined,
       ],

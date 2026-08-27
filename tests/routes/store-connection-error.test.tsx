@@ -18,6 +18,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as TeamRoute } from "@/routes/team";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * REVISAO-360-FRONTEND-UI-UX-ENTERPRISE-SYNAPSE-2026-08-22.md, FE-360-012
@@ -38,9 +39,11 @@ describe("Tela de conexão indisponível — sem instrução de desenvolvedor em
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
       routes: [
-        // /api/state falha com 500 — as rotas têm precedência sobre o padrão.
+        // /api/v1/state falha com 500 — as rotas têm precedência sobre o padrão.
         (href) =>
-          href.endsWith("/api/state") ? new Response("erro interno", { status: 500 }) : undefined,
+          href.endsWith(apiPath("/state"))
+            ? new Response("erro interno", { status: 500 })
+            : undefined,
       ],
     });
   });

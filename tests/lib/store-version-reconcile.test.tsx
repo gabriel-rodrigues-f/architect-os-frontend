@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useStore } from "@/lib/store";
 import { fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * B-09 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10, "409
@@ -41,7 +42,10 @@ describe("store.updatePlanItem — reconcilia version no sucesso (evita 409 esp�
     mockAppFetch(fetchMock, {
       routes: [
         (href, init) => {
-          if (init?.method === "PATCH" && href.includes("/api/plans/pdi-ana/items/pdi-ana-0")) {
+          if (
+            init?.method === "PATCH" &&
+            href.includes(apiPath("/plans/pdi-ana/items/pdi-ana-0"))
+          ) {
             const body = JSON.parse(String(init.body)) as { expectedVersion: number };
             const plan = fixtureState.plans.find((p) => p.id === "pdi-ana")!;
             // Simula o servidor: aceita a versão pedida e devolve o plano com o

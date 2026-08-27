@@ -13,6 +13,7 @@ import {
   mockAppFetch,
   renderWithApp,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * Pedido do usuário revisando o app rodando: numa capacidade já em 3
@@ -91,7 +92,7 @@ describe("Matriz de Competências — trocar RESTRICTIVE ↔ NON_RESTRICTIVE qua
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/competencies/full-n1/swap-requirement") &&
+          href.endsWith(apiPath("/competencies/full-n1/swap-requirement")) &&
           (init?.method ?? "GET") === "POST"
             ? jsonResponse({
                 a: {

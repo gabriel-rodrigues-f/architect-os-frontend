@@ -7,6 +7,7 @@ import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * Rodada 10, Seção 17/38/39 — "Evolução observada" na mentoria é a única
@@ -52,7 +53,7 @@ function mockBackend(sessionUser: SessionUser, state: AppState) {
     state,
     routes: [
       (href, init) => {
-        if (init?.method === "POST" && href.endsWith("/api/mentoring-sessions")) {
+        if (init?.method === "POST" && href.endsWith(apiPath("/mentoring-sessions"))) {
           const body = JSON.parse(String(init.body)) as Record<string, unknown>;
           return jsonResponse({ ...body, id: "m-nova" }, 201);
         }
@@ -112,7 +113,7 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
 
     const isCreateCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
-      return String(url).endsWith("/api/mentoring-sessions") && init?.method === "POST";
+      return String(url).endsWith(apiPath("/mentoring-sessions")) && init?.method === "POST";
     };
     await waitFor(() => expect(fetchMock.mock.calls.some(isCreateCall)).toBe(true));
     const call = fetchMock.mock.calls.find(isCreateCall) as [string, RequestInit];
@@ -160,7 +161,7 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
     await screen.findByText("Escolha o nível observado ou desmarque esta competência.");
     const isCreateCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
-      return String(url).endsWith("/api/mentoring-sessions") && init?.method === "POST";
+      return String(url).endsWith(apiPath("/mentoring-sessions")) && init?.method === "POST";
     };
     expect(fetchMock.mock.calls.some(isCreateCall)).toBe(false);
 
@@ -193,7 +194,7 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
 
     const isCreateCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
-      return String(url).endsWith("/api/mentoring-sessions") && init?.method === "POST";
+      return String(url).endsWith(apiPath("/mentoring-sessions")) && init?.method === "POST";
     };
     await waitFor(() => expect(fetchMock.mock.calls.some(isCreateCall)).toBe(true));
     const call = fetchMock.mock.calls.find(isCreateCall) as [string, RequestInit];

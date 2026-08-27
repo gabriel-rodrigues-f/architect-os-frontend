@@ -22,6 +22,7 @@ import type { SessionUser } from "@/lib/api";
 import { type AppState } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * EPIC 6 (quarta rodada) — antes, "0 Especialistas + 1 Avançado" caía no
@@ -40,7 +41,7 @@ const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
   fetchMock.mockImplementation((url: string) => {
     const href = String(url);
-    if (href.endsWith("/api/auth/me")) {
+    if (href.endsWith(apiPath("/auth/me"))) {
       return Promise.resolve(
         new Response(JSON.stringify(user), {
           status: 200,
@@ -48,7 +49,7 @@ const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
         }),
       );
     }
-    if (href.endsWith("/api/state")) {
+    if (href.endsWith(apiPath("/state"))) {
       return Promise.resolve(
         new Response(JSON.stringify(state), {
           status: 200,

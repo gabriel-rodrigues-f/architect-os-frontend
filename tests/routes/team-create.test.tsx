@@ -24,6 +24,7 @@ import { Route as TeamRoute } from "@/routes/team";
 import { type AppState } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seções 16, 17 e 26/27 — nada
@@ -48,7 +49,7 @@ describe("Time — cadastro sem dado fabricado", () => {
 
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
+      if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureAdminUser), {
             status: 200,
@@ -56,12 +57,12 @@ describe("Time — cadastro sem dado fabricado", () => {
           }),
         );
       }
-      if (href.endsWith("/api/auth/users")) {
+      if (href.endsWith(apiPath("/auth/users"))) {
         return Promise.resolve(
           new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
         );
       }
-      if (init?.method === "POST" && href.endsWith("/api/architects")) {
+      if (init?.method === "POST" && href.endsWith(apiPath("/architects"))) {
         const body = JSON.parse(String(init.body)) as Record<string, unknown>;
         return Promise.resolve(
           new Response(JSON.stringify({ ...body, active: true }), {
@@ -70,7 +71,7 @@ describe("Time — cadastro sem dado fabricado", () => {
           }),
         );
       }
-      if (href.endsWith("/api/state")) {
+      if (href.endsWith(apiPath("/state"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureState satisfies AppState), {
             status: 200,
@@ -117,7 +118,7 @@ describe("Time — cadastro sem dado fabricado", () => {
 
     const isCreateCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
-      return String(url).endsWith("/api/architects") && init?.method === "POST";
+      return String(url).endsWith(apiPath("/architects")) && init?.method === "POST";
     };
 
     await waitFor(() => expect(fetchMock.mock.calls.some(isCreateCall)).toBe(true));

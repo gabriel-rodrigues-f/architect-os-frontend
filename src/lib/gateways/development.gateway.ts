@@ -66,7 +66,7 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
     cycleId: string,
     item: DevelopmentPlanItem,
   ): Promise<DevelopmentPlan> =>
-    this.client.post<DevelopmentPlan>(`/api/plans/${architectId}/items`, { cycleId, item });
+    this.client.post<DevelopmentPlan>(`/plans/${architectId}/items`, { cycleId, item });
 
   createPlanItemFromGap = (
     architectId: string,
@@ -83,7 +83,7 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
       dedicationHoursPerWeek?: number | null;
     },
   ): Promise<DevelopmentPlan> =>
-    this.client.post<DevelopmentPlan>(`/api/plans/${architectId}/items/from-gap`, item);
+    this.client.post<DevelopmentPlan>(`/plans/${architectId}/items/from-gap`, item);
 
   patchPlanItem = (
     planId: string,
@@ -96,33 +96,33 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
     >,
     expectedVersion: number,
   ): Promise<DevelopmentPlan> =>
-    this.client.patch<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}`, {
+    this.client.patch<DevelopmentPlan>(`/plans/${planId}/items/${itemId}`, {
       ...body,
       expectedVersion,
     });
 
   removePlanItem = (planId: string, itemId: string): Promise<void> =>
-    this.client.del<void>(`/api/plans/${planId}/items/${itemId}`);
+    this.client.del<void>(`/plans/${planId}/items/${itemId}`);
 
   updatePlanStatus = (
     planId: string,
     status: DevelopmentPlan["status"],
     expectedVersion: number,
   ): Promise<DevelopmentPlan> =>
-    this.client.patch<DevelopmentPlan>(`/api/plans/${planId}/status`, { status, expectedVersion });
+    this.client.patch<DevelopmentPlan>(`/plans/${planId}/status`, { status, expectedVersion });
 
   reopenPlan = (
     planId: string,
     reason: string,
     expectedVersion: number,
   ): Promise<DevelopmentPlan> =>
-    this.client.post<DevelopmentPlan>(`/api/plans/${planId}/reopen`, { reason, expectedVersion });
+    this.client.post<DevelopmentPlan>(`/plans/${planId}/reopen`, { reason, expectedVersion });
 
   planEvents = (planId: string): Promise<DevelopmentPlanEvent[]> =>
-    this.client.request<DevelopmentPlanEvent[]>(`/api/plans/${planId}/events`);
+    this.client.request<DevelopmentPlanEvent[]>(`/plans/${planId}/events`);
 
   addPlanItemCheckin = (planId: string, itemId: string, text: string): Promise<DevelopmentPlan> =>
-    this.client.post<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}/checkins`, { text });
+    this.client.post<DevelopmentPlan>(`/plans/${planId}/items/${itemId}/checkins`, { text });
 
   reschedulePlanItem = (
     planId: string,
@@ -131,12 +131,12 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
     reason: string,
     expectedVersion: number,
   ): Promise<DevelopmentPlan> =>
-    this.client.post<DevelopmentPlan>(`/api/plans/${planId}/items/${itemId}/reschedule`, {
+    this.client.post<DevelopmentPlan>(`/plans/${planId}/items/${itemId}/reschedule`, {
       targetDate,
       reason,
       expectedVersion,
     });
 
   planItemEvents = (planId: string, itemId: string): Promise<DevelopmentPlanItemEvent[]> =>
-    this.client.request<DevelopmentPlanItemEvent[]>(`/api/plans/${planId}/items/${itemId}/events`);
+    this.client.request<DevelopmentPlanItemEvent[]>(`/plans/${planId}/items/${itemId}/events`);
 }

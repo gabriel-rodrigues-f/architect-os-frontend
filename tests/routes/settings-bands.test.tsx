@@ -12,10 +12,11 @@ import {
   renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-02 (SPEC-OO3-13, §3.2) — aba "Réguas e limiares" de /settings:
- * admin-only, edição dos cortes → PUT /api/config/bands/:scale com payload
+ * admin-only, edição dos cortes → PUT /api/v1/config/bands/:scale com payload
  * contíguo, invalidação da query de bands ao sucesso e 400 do backend
  * exibido no formulário (role="alert").
  */
@@ -23,16 +24,16 @@ import {
 const fetchMock = vi.fn();
 const SettingsPage = SettingsRoute.options.component as () => ReactNode;
 
-/** GET /api/config/bands vazio (a UI completa com o default do seed). */
+/** GET /api/v1/config/bands vazio (a UI completa com o default do seed). */
 const emptyBandsGetRoute: FetchRoute = (href, init) =>
-  href.endsWith("/api/config/bands") && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/config/bands")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({})
     : undefined;
 
 const countBandsGets = () =>
   fetchMock.mock.calls.filter((call) => {
     const [url, init] = call as [string, RequestInit | undefined];
-    return String(url).endsWith("/api/config/bands") && (init?.method ?? "GET") === "GET";
+    return String(url).endsWith(apiPath("/config/bands")) && (init?.method ?? "GET") === "GET";
   }).length;
 
 /** O bloco da escala GAP_SEVERITY dentro da seção "Réguas e limiares". */
@@ -69,7 +70,7 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/config/bands/GAP_SEVERITY") && init?.method === "PUT"
+          href.endsWith(apiPath("/config/bands/GAP_SEVERITY")) && init?.method === "PUT"
             ? jsonResponse(JSON.parse(String(init.body)).bands)
             : undefined,
         emptyBandsGetRoute,
@@ -89,7 +90,9 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
     await waitFor(() => {
       const put = fetchMock.mock.calls.find((call) => {
         const [url, init] = call as [string, RequestInit | undefined];
-        return String(url).endsWith("/api/config/bands/GAP_SEVERITY") && init?.method === "PUT";
+        return (
+          String(url).endsWith(apiPath("/config/bands/GAP_SEVERITY")) && init?.method === "PUT"
+        );
       });
       expect(put).toBeTruthy();
       const body = JSON.parse(String((put![1] as RequestInit).body)) as {
@@ -112,7 +115,7 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/config/bands/GAP_SEVERITY") && init?.method === "PUT"
+          href.endsWith(apiPath("/config/bands/GAP_SEVERITY")) && init?.method === "PUT"
             ? jsonResponse(
                 { code: "INVALID_SCORING_BANDS", message: "A régua GAP_SEVERITY tem furo." },
                 400,

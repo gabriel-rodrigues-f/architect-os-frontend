@@ -12,6 +12,7 @@ import {
   mockAppFetch,
   renderWithApp,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * Exercita a Matriz de Competências de verdade: o componente da rota, ligado
@@ -69,7 +70,7 @@ describe("Matriz de Competências — exclusão de capacidade", () => {
 
     const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === "DELETE");
     expect(deleteCall).toBeDefined();
-    expect(String(deleteCall?.[0])).toContain("/api/capabilities/cloud");
+    expect(String(deleteCall?.[0])).toContain(apiPath("/capabilities/cloud"));
   });
 
   /**

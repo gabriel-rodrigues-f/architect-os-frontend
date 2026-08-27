@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
+import { apiPath } from "../src/lib/api-path";
 
 /**
  * R10-UX-001 (ORIENTACAO-DECIMA-RODADA-ENTERPRISE-SYNAPSE-2026-08-21.md,
@@ -40,19 +41,21 @@ async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>)
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
   await json(
-    await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
+    await api.post(apiPath("/auth/login"), {
+      data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+    }),
   );
   // AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-32 — `id` deixou de
   // ser aceito na criação (gerado sempre pelo servidor); captura o id real
   // devolvido em vez de assumir que o valor enviado sobrevive.
   const capability = await json<{ id: string }>(
-    await api.post("/api/capabilities", {
+    await api.post(apiPath("/capabilities"), {
       data: { name: "E2E Capacidade Responsiva", short: "E2ERESP" },
     }),
   );
   capabilityId = capability.id;
   const competency = await json<{ id: string }>(
-    await api.post("/api/competencies", {
+    await api.post(apiPath("/competencies"), {
       data: {
         name: LONG_NAME,
         capabilityId,
@@ -72,12 +75,14 @@ test.beforeAll(async ({ playwright }) => {
 test.afterAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
   await json(
-    await api.post("/api/auth/login", { data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } }),
+    await api.post(apiPath("/auth/login"), {
+      data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+    }),
   );
   // Sem `force`: nenhuma resposta real foi registrada contra esta
   // competência descartável, então a exclusão de verdade é esperada.
-  await api.delete(`/api/competencies/${competencyId}`);
-  await api.delete(`/api/capabilities/${capabilityId}`);
+  await api.delete(apiPath(`/competencies/${competencyId}`));
+  await api.delete(apiPath(`/capabilities/${capabilityId}`));
   await api.dispose();
 });
 

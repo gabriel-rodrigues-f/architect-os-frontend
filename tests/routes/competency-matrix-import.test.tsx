@@ -11,12 +11,13 @@ import {
   mockAppFetch,
   renderWithApp,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-07 (SPEC-OO3-13, §3.2) — "Importar catálogo" na matriz: admin-only,
  * colagem de JSON validada client-side (zod espelhando o backend), PREVIEW
  * do diff por nome ANTES do POST, 400 do backend em role="alert", sucesso →
- * toast + invalidação de /api/state.
+ * toast + invalidação de /api/v1/state.
  */
 
 const fetchMock = vi.fn();
@@ -109,16 +110,16 @@ describe("Importar catálogo (CFG-07)", () => {
     ).toBeTruthy();
     // Nenhum POST ainda — preview é client-side.
     expect(
-      fetchMock.mock.calls.some((call) => String(call[0]).endsWith("/api/catalog/import")),
+      fetchMock.mock.calls.some((call) => String(call[0]).endsWith(apiPath("/catalog/import"))),
     ).toBe(false);
   });
 
-  it("enviar faz o POST, mostra o resumo REAL no toast e invalida /api/state; 400 vai para role=alert", async () => {
+  it("enviar faz o POST, mostra o resumo REAL no toast e invalida /api/v1/state; 400 vai para role=alert", async () => {
     mockAppFetch(fetchMock, {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/catalog/import") && init?.method === "POST"
+          href.endsWith(apiPath("/catalog/import")) && init?.method === "POST"
             ? jsonResponse({
                 capabilitiesCreated: [{ id: "data", name: "Data Engineering" }],
                 capabilitiesUpdated: [{ id: "cloud", name: "Cloud Architecture" }],
@@ -139,19 +140,19 @@ describe("Importar catálogo (CFG-07)", () => {
     const textarea = screen.getByLabelText("Ou cole o JSON");
     await userEvent.click(textarea);
     await userEvent.paste(payload);
-    const stateGetsBefore = countGets("/api/state");
+    const stateGetsBefore = countGets(apiPath("/state"));
     await userEvent.click(screen.getByRole("button", { name: "Importar" }));
 
     await waitFor(() => {
       const post = fetchMock.mock.calls.find((call) => {
         const [url, init] = call as [string, RequestInit | undefined];
-        return String(url).endsWith("/api/catalog/import") && init?.method === "POST";
+        return String(url).endsWith(apiPath("/catalog/import")) && init?.method === "POST";
       });
       expect(post).toBeTruthy();
       expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual(JSON.parse(payload));
     });
     await waitFor(() => {
-      expect(countGets("/api/state")).toBeGreaterThan(stateGetsBefore);
+      expect(countGets(apiPath("/state"))).toBeGreaterThan(stateGetsBefore);
     });
   });
 
@@ -160,7 +161,7 @@ describe("Importar catálogo (CFG-07)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/catalog/import") && init?.method === "POST"
+          href.endsWith(apiPath("/catalog/import")) && init?.method === "POST"
             ? jsonResponse({ message: "Nível de carreira desconhecido em expected: n9" }, 400)
             : undefined,
       ],

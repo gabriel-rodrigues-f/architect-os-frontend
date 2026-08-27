@@ -56,7 +56,7 @@ describe("cargos", () => {
   /**
    * CFG-01 (SPEC-OO3-13, A5) — o array `ROLES` hardcoded foi deletado de
    * `domain.ts`; os níveis vêm de `career_levels` (aqui, o fixture da
-   * resposta de `GET /api/career-levels`).
+   * resposta de `GET /api/v1/career-levels`).
    */
   it("o rótulo curto passa pelo i18n: 'Nível' + algarismo romano via chave careerLevel.short (OO3-11f/D-9)", () => {
     const fakeT = (key: MessageKey, vars?: Record<string, string | number>) =>

@@ -29,7 +29,7 @@ const usuario: SessionUser = {
 /**
  * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
  * O Wrapper local não tinha o corte `AuthReady`; o do helper apenas atrasa a
- * montagem até `/api/auth/me` resolver — as asserções já esperam via `findBy*`.
+ * montagem até `/api/v1/auth/me` resolver — as asserções já esperam via `findBy*`.
  */
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;

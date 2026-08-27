@@ -3,6 +3,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { api, type AppState, type CommentInput } from "./api";
+import { apiPath } from "./api-path";
 import type { TextTemplateRecord } from "./gateways/config.gateway";
 import type {
   Architect,
@@ -912,7 +913,7 @@ function LoadingState() {
 
 function ConnectionError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const rawMessage = error instanceof Error ? error.message : "Erro desconhecido";
-  if (import.meta.env.DEV) console.error("[store] falha ao carregar /api/state:", error);
+  if (import.meta.env.DEV) console.error(`[store] falha ao carregar ${apiPath("/state")}:`, error);
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">

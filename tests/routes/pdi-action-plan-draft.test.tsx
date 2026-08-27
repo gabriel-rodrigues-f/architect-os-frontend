@@ -6,6 +6,7 @@ import { Route as PlansRoute } from "@/routes/development-plans";
 import type { AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
 import { type FetchRoute, jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * F3/Grupo 1 — perda de digitação no plano de ação do PDI.
@@ -17,7 +18,7 @@ import { type FetchRoute, jsonResponse, mockAppFetch, renderWithApp } from "../h
  *
  * O caminho reproduzido é o do próprio app (ver `store-remote-error.test.tsx`):
  * gravação otimista que o servidor recusa → `MutationRunner.optimistic` chama
- * `cache.invalidate()` → revalidação de `/api/state` → a prop volta ao valor
+ * `cache.invalidate()` → revalidação de `/api/v1/state` → a prop volta ao valor
  * confirmado pelo servidor. A `version` do item **não** avança: nada superou a
  * edição em andamento, logo ela tem de sobreviver — inclusive para a pessoa
  * poder tentar salvar de novo.
@@ -62,7 +63,7 @@ function estadoRevalidado(): AppState {
 function statePorChamada(...respostas: AppState[]): FetchRoute {
   let chamadas = 0;
   return (href) => {
-    if (!href.endsWith("/api/state")) return undefined;
+    if (!href.endsWith(apiPath("/state"))) return undefined;
     const resposta = respostas[Math.min(chamadas, respostas.length - 1)]!;
     chamadas += 1;
     return jsonResponse(resposta);
@@ -78,7 +79,7 @@ function mockComPatchRepresado(mensagem: string): () => void {
   mockAppFetch(fetchMock, {
     routes: [
       (href, init) =>
-        init?.method === "PATCH" && href.includes("/api/plans/pdi-ana/items/")
+        init?.method === "PATCH" && href.includes(apiPath("/plans/pdi-ana/items/"))
           ? jsonResponse({ error: "Conflict", message: mensagem }, 409)
           : undefined,
       statePorChamada(fixtureState, estadoRevalidado()),
@@ -110,7 +111,7 @@ function patchesDoItem(): unknown[] {
   return fetchMock.mock.calls.filter(
     ([url, init]) =>
       (init as RequestInit | undefined)?.method === "PATCH" &&
-      String(url).includes("/api/plans/pdi-ana/items/"),
+      String(url).includes(apiPath("/plans/pdi-ana/items/")),
   );
 }
 
@@ -158,7 +159,7 @@ describe("PDI — plano de ação não perde o que está sendo digitado", () => 
     mockAppFetch(fetchMock, {
       routes: [
         (href, init) =>
-          init?.method === "PATCH" && href.includes("/api/plans/pdi-ana/items/")
+          init?.method === "PATCH" && href.includes(apiPath("/plans/pdi-ana/items/"))
             ? jsonResponse({ error: "Conflict", message: "Item alterado por outra pessoa." }, 409)
             : undefined,
         statePorChamada(fixtureState, {

@@ -8,6 +8,7 @@ import { type AppState, type SessionUser } from "@/lib/api";
 import type { MentoringSession } from "@/lib/domain";
 import { fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * EPIC J — Mentoring Loop: "ações" da sessão viravam texto morto — ninguém
@@ -64,7 +65,7 @@ const state: AppState = {
 /**
  * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
  * O Wrapper local não tinha o corte `AuthReady`; o do helper apenas atrasa a
- * montagem até `/api/auth/me` resolver — as asserções já esperam via `findBy*`.
+ * montagem até `/api/v1/auth/me` resolver — as asserções já esperam via `findBy*`.
  */
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
@@ -90,7 +91,7 @@ describe("Mentoria — converter ação em item de PDI", () => {
       state,
       routes: [
         (href, init) =>
-          init?.method === "POST" && href.includes("/api/plans/")
+          init?.method === "POST" && href.includes(apiPath("/plans/"))
             ? new Response("{}", { status: 201 })
             : undefined,
       ],
@@ -125,7 +126,7 @@ describe("Mentoria — converter ação em item de PDI", () => {
     await userEvent.click(screen.getByRole("button", { name: /Criar ação no PDI/ }));
 
     const postToPlans = fetchMock.mock.calls.find(
-      ([url, init]) => String(url).includes("/api/plans/") && init?.method === "POST",
+      ([url, init]) => String(url).includes(apiPath("/plans/")) && init?.method === "POST",
     );
     expect(postToPlans).toBeDefined();
     expect(String(postToPlans?.[0])).toContain("/from-gap");

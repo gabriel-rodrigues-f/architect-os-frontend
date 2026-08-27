@@ -19,6 +19,7 @@ import { type AppState } from "@/lib/api";
 import type { Assessment, AssessmentItem, Competency } from "@/lib/domain";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * R2-ESC-08 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os cortes de "Lacunas
@@ -105,7 +106,7 @@ describe("Necessidades de Treinamento — cortes declarados (R2-ESC-08)", () => 
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockImplementation((url: string) => {
       const href = String(url);
-      if (href.endsWith("/api/auth/me")) {
+      if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureAdminUser), {
             status: 200,
@@ -113,7 +114,7 @@ describe("Necessidades de Treinamento — cortes declarados (R2-ESC-08)", () => 
           }),
         );
       }
-      if (href.endsWith("/api/state")) {
+      if (href.endsWith(apiPath("/state"))) {
         return Promise.resolve(
           new Response(JSON.stringify(state), {
             status: 200,

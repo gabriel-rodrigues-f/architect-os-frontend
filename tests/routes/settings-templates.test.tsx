@@ -12,27 +12,28 @@ import {
   renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-03 (SPEC-OO3-13, §3.2) — aba "Textos" de /settings: admin-only,
  * variáveis da key exibidas, preview vivo pelo interpolador do app,
- * PUT /api/config/templates/:key/:locale com invalidação ao sucesso e 400
+ * PUT /api/v1/config/templates/:key/:locale com invalidação ao sucesso e 400
  * INVALID_TEXT_TEMPLATE do backend exibido no formulário (role="alert").
  */
 
 const fetchMock = vi.fn();
 const SettingsPage = SettingsRoute.options.component as () => ReactNode;
 
-/** GET /api/config/templates vazio (a UI completa com o default do seed pt/en). */
+/** GET /api/v1/config/templates vazio (a UI completa com o default do seed pt/en). */
 const emptyTemplatesGetRoute: FetchRoute = (href, init) =>
-  href.endsWith("/api/config/templates") && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/config/templates")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({})
     : undefined;
 
 const countTemplatesGets = () =>
   fetchMock.mock.calls.filter((call) => {
     const [url, init] = call as [string, RequestInit | undefined];
-    return String(url).endsWith("/api/config/templates") && (init?.method ?? "GET") === "GET";
+    return String(url).endsWith(apiPath("/config/templates")) && (init?.method ?? "GET") === "GET";
   }).length;
 
 /** O bloco do locale `pt` dentro da seção "Textos". */
@@ -102,7 +103,8 @@ describe("Textos (CFG-03 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/config/templates/pdi.objective.fromGap/pt") && init?.method === "PUT"
+          href.endsWith(apiPath("/config/templates/pdi.objective.fromGap/pt")) &&
+          init?.method === "PUT"
             ? jsonResponse({
                 key: "pdi.objective.fromGap",
                 locale: "pt",
@@ -127,7 +129,7 @@ describe("Textos (CFG-03 admin UI)", () => {
       const put = fetchMock.mock.calls.find((call) => {
         const [url, init] = call as [string, RequestInit | undefined];
         return (
-          String(url).endsWith("/api/config/templates/pdi.objective.fromGap/pt") &&
+          String(url).endsWith(apiPath("/config/templates/pdi.objective.fromGap/pt")) &&
           init?.method === "PUT"
         );
       });
@@ -148,7 +150,8 @@ describe("Textos (CFG-03 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith("/api/config/templates/pdi.objective.fromGap/pt") && init?.method === "PUT"
+          href.endsWith(apiPath("/config/templates/pdi.objective.fromGap/pt")) &&
+          init?.method === "PUT"
             ? jsonResponse(
                 { code: "INVALID_TEXT_TEMPLATE", message: "Template não pode ser vazio." },
                 400,

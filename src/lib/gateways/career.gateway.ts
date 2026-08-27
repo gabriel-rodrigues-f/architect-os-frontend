@@ -15,14 +15,14 @@ export class HttpCareerGateway implements CareerGateway {
 
   careerLevels = (): Promise<CareerLevel[]> =>
     this.client
-      .request<CareerLevel[]>("/api/career-levels")
+      .request<CareerLevel[]>("/career-levels")
       .then((data) => careerLevelsResponseSchema.parse(data));
 
   updateCareerLevelPolicy = (
     careerLevelId: string,
     minimumQualifiedCapabilities: number,
   ): Promise<CareerLevelPolicy> =>
-    this.client.patch<CareerLevelPolicy>(`/api/career-levels/${careerLevelId}/policy`, {
+    this.client.patch<CareerLevelPolicy>(`/career-levels/${careerLevelId}/policy`, {
       minimumQualifiedCapabilities,
     });
 }

@@ -15,5 +15,5 @@ export class HttpReportsGateway implements ReportsGateway {
     architectId: string,
     filters: EvolutionFilters,
   ): Promise<{ blob: Blob; filename: string }> =>
-    this.client.requestBlob("/api/reports/evolution/pdf", { architectId, ...filters });
+    this.client.requestBlob("/reports/evolution/pdf", { architectId, ...filters });
 }

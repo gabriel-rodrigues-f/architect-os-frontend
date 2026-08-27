@@ -8,6 +8,7 @@ import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { type AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * Exercita a Matriz de Competências de verdade: o componente da rota, ligado à
@@ -99,7 +100,7 @@ describe("Matriz de Competências — exclusão", () => {
 
     const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === "DELETE");
     expect(deleteCall).toBeDefined();
-    expect(String(deleteCall?.[0])).toContain("/api/competencies/cloud-k8s");
+    expect(String(deleteCall?.[0])).toContain(apiPath("/competencies/cloud-k8s"));
 
     // as vizinhas continuam na tela
     expect(screen.getByText("Serverless")).toBeTruthy();

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as CyclesRoute } from "@/routes/cycles";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-05 / B9 — guard rail da cadência configurável: com
@@ -28,7 +29,7 @@ const settingRecord = (key: string, value: string | number) => ({
 });
 
 const quarterlySettingsRoute: FetchRoute = (href, init) =>
-  href.endsWith("/api/config/settings") && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/config/settings")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({
         settings: [
           settingRecord("cycle.cadence", "QUARTERLY"),
@@ -84,7 +85,7 @@ describe("Ciclos — cadência QUARTERLY (CFG-05/B9)", () => {
 
     const post = fetchMock.mock.calls.find((call) => {
       const [url, init] = call as [string, RequestInit | undefined];
-      return String(url).endsWith("/api/cycles") && init?.method === "POST";
+      return String(url).endsWith(apiPath("/cycles")) && init?.method === "POST";
     });
     expect(post).toBeTruthy();
     expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({

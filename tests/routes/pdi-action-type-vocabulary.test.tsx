@@ -7,6 +7,7 @@ import type { AppState } from "@/lib/api";
 import type { ActionType } from "@/lib/domain";
 import { fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-06 (guard rail) — os selects de tipo de ação derivam do vocabulário
@@ -29,7 +30,7 @@ const vocabItem = (code: string, labelKey: string, sortOrder: number, active = t
 
 /** ACTION_TYPE servido: seed com "Lead" DESATIVADO e um code extra "Shadow". */
 const vocabulariesRoute: FetchRoute = (href, init) =>
-  href.endsWith("/api/config/vocabularies") && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/config/vocabularies")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({
         EVIDENCE_TYPE: [],
         LEARNING_ITEM_TYPE: [],

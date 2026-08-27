@@ -7,6 +7,7 @@ import { LoginScreen } from "@/components/app/LoginScreen";
 import { AuthProvider } from "@/lib/auth";
 import { I18nProvider } from "@/lib/i18n";
 import { jsonResponse } from "../../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * F3/Grupo 2, item 2 — credencial recusada no login.
@@ -41,13 +42,13 @@ describe("Login — credencial recusada é anunciada", () => {
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const href = String(url);
-      if (href.endsWith("/api/auth/status")) {
+      if (href.endsWith(apiPath("/auth/status"))) {
         return Promise.resolve(jsonResponse({ data: { hasUsers: true } }));
       }
-      if (href.endsWith("/api/auth/me")) {
+      if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(jsonResponse({ error: "Unauthorized" }, 401));
       }
-      if (href.endsWith("/api/auth/login") && init?.method === "POST") {
+      if (href.endsWith(apiPath("/auth/login")) && init?.method === "POST") {
         return Promise.resolve(
           jsonResponse({ error: "Unauthorized", message: CREDENCIAL_RECUSADA }, 401),
         );

@@ -97,7 +97,7 @@ describe("CapabilityCoveragePresenter.areas", () => {
 
 /**
  * CFG-02 — as réguas do presenter (PROFICIENCY e CONCENTRATION_RISK) vêm de
- * `/api/config/bands`; sem escalas no construtor, o default reproduz o
+ * `/api/v1/config/bands`; sem escalas no construtor, o default reproduz o
  * comportamento antigo (é o que TODOS os testes acima exercem).
  */
 describe("CapabilityCoveragePresenter com escalas configuradas (CFG-02)", () => {

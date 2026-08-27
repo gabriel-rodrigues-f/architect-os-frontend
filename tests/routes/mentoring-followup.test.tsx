@@ -8,6 +8,7 @@ import { type AppState, type SessionUser } from "@/lib/api";
 import type { MentoringSession } from "@/lib/domain";
 import { fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
 
 /**
  * EPIC 5 (quarta rodada) — agendar follow-up depois que a sessão já
@@ -59,7 +60,7 @@ const state: AppState = { ...fixtureState, mentoringSessions: [sessao] };
 /**
  * OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`).
  * O Wrapper local não tinha o corte `AuthReady`; o do helper apenas atrasa a
- * montagem até `/api/auth/me` resolver — todas as asserções já esperam via
+ * montagem até `/api/v1/auth/me` resolver — todas as asserções já esperam via
  * `findBy*`.
  */
 
@@ -82,7 +83,7 @@ function mockSession(user: SessionUser) {
     state,
     routes: [
       (href, init) =>
-        init?.method === "PATCH" && href.includes("/api/mentoring-sessions/")
+        init?.method === "PATCH" && href.includes(apiPath("/mentoring-sessions/"))
           ? jsonResponse({ ...sessao, nextSession: "2026-09-01" })
           : undefined,
     ],
@@ -132,14 +133,14 @@ describe("Mentoria — agendar follow-up", () => {
       expect(
         fetchMock.mock.calls.some(
           ([url, init]) =>
-            String(url).endsWith("/api/mentoring-sessions/m-followup") &&
+            String(url).endsWith(apiPath("/mentoring-sessions/m-followup")) &&
             (init as RequestInit)?.method === "PATCH",
         ),
       ).toBe(true),
     );
     const call = fetchMock.mock.calls.find(
       ([url, init]) =>
-        String(url).endsWith("/api/mentoring-sessions/m-followup") &&
+        String(url).endsWith(apiPath("/mentoring-sessions/m-followup")) &&
         (init as RequestInit)?.method === "PATCH",
     ) as [string, RequestInit];
     expect(JSON.parse(String(call[1].body))).toEqual({ nextSession: "2026-09-01" });
