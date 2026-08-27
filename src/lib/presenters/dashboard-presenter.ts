@@ -3,14 +3,14 @@ import type { Architect, DevelopmentPlan, LearningPath } from "../domain";
 import { defaultGapSeverityRuler } from "../scoring-bands";
 import type { Gap, Selectors } from "../selectors";
 
-export interface AssessmentCoverage {
+interface AssessmentCoverage {
   completed: number;
   inReview: number;
   draft: number;
   notStarted: number;
 }
 
-export interface GapWithArchitect extends Gap {
+interface GapWithArchitect extends Gap {
   architect: Architect;
 }
 
@@ -74,7 +74,7 @@ export class DashboardPresenter {
   }
 }
 
-export interface PlanItemCounts {
+interface PlanItemCounts {
   notStarted: number;
   inProgress: number;
   blocked: number;

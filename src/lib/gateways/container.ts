@@ -13,7 +13,7 @@ import { HttpLearningGateway, type LearningGateway } from "./learning.gateway";
 import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway";
 import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
 
-export interface FrontendConfig {
+interface FrontendConfig {
   baseUrl?: string;
 }
 

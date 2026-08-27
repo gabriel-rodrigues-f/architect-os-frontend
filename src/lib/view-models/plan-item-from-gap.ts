@@ -2,9 +2,9 @@ import type { DevelopmentPlan, DevelopmentPlanItem } from "../domain";
 import type { Api } from "../store";
 import { defaultDateFormatter } from "../text";
 
-export type PlanItemFromGapService = Pick<Api, "createPlanItemFromGap">;
+type PlanItemFromGapService = Pick<Api, "createPlanItemFromGap">;
 
-export interface PlanItemFromGapDraft {
+interface PlanItemFromGapDraft {
   assessmentId: string;
   competencyId: string;
   objective: string;

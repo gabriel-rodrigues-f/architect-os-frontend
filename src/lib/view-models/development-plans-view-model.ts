@@ -15,7 +15,7 @@ export type DevelopmentPlanService = Pick<
   | "createPlanItemFromGap"
 >;
 
-export interface NewPlanItemDraft {
+interface NewPlanItemDraft {
   actionType: ActionType;
   actionPlan: string;
   targetDate: string;

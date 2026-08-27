@@ -3,7 +3,7 @@ import { baseMessages, type MessageKey } from "./i18n/registry";
 export const SCORING_SCALES = ["GAP_SEVERITY", "PROFICIENCY", "CONCENTRATION_RISK"] as const;
 export type ScoringScale = (typeof SCORING_SCALES)[number];
 
-export const BAND_TONES = ["ok", "low", "high", "critical"] as const;
+const BAND_TONES = ["ok", "low", "high", "critical"] as const;
 export type BandTone = (typeof BAND_TONES)[number];
 
 export interface ScoringBand {

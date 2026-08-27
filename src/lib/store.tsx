@@ -60,13 +60,13 @@ import {
 
 export const STATE_QUERY_KEY = ["app-state"] as const;
 
-export const CAREER_LEVELS_QUERY_KEY = ["career-levels"] as const;
+const CAREER_LEVELS_QUERY_KEY = ["career-levels"] as const;
 export function useCareerLevelsByRank(): CareerLevel[] {
   const { data } = useQuery({ queryKey: CAREER_LEVELS_QUERY_KEY, queryFn: api.careerLevels });
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
 }
 
-export const SCORING_BANDS_QUERY_KEY = ["config-bands"] as const;
+const SCORING_BANDS_QUERY_KEY = ["config-bands"] as const;
 export function useScoringBands(): ScoringBands {
   const { data } = useQuery({ queryKey: SCORING_BANDS_QUERY_KEY, queryFn: api.bands });
   return useMemo(() => withDefaultScoringBands(data), [data]);
@@ -77,25 +77,25 @@ export function useGapSeverityRuler(): GapSeverityRuler {
   return useMemo(() => gapSeverityRulerFrom(bands.GAP_SEVERITY), [bands]);
 }
 
-export const TEXT_TEMPLATES_QUERY_KEY = ["config-templates"] as const;
+const TEXT_TEMPLATES_QUERY_KEY = ["config-templates"] as const;
 export function useTextTemplates(): TextTemplates {
   const { data } = useQuery({ queryKey: TEXT_TEMPLATES_QUERY_KEY, queryFn: api.templates });
   return useMemo(() => withDefaultTextTemplates(data), [data]);
 }
 
-export const CURATION_POLICY_QUERY_KEY = ["config-curation-policy"] as const;
+const CURATION_POLICY_QUERY_KEY = ["config-curation-policy"] as const;
 export function useCurationPolicy(): CurationPolicy {
   const { data } = useQuery({ queryKey: CURATION_POLICY_QUERY_KEY, queryFn: api.curationPolicy });
   return useMemo(() => withDefaultCurationPolicy(data), [data]);
 }
 
-export const OPERATIONAL_SETTINGS_QUERY_KEY = ["config-settings"] as const;
+const OPERATIONAL_SETTINGS_QUERY_KEY = ["config-settings"] as const;
 export function useOperationalSettings(): OperationalSettings {
   const { data } = useQuery({ queryKey: OPERATIONAL_SETTINGS_QUERY_KEY, queryFn: api.settings });
   return useMemo(() => withDefaultOperationalSettings(data), [data]);
 }
 
-export const VOCABULARIES_QUERY_KEY = ["config-vocabularies"] as const;
+const VOCABULARIES_QUERY_KEY = ["config-vocabularies"] as const;
 export function useVocabularies(): Vocabularies {
   const { data } = useQuery({ queryKey: VOCABULARIES_QUERY_KEY, queryFn: api.vocabularies });
   return useMemo(() => withDefaultVocabularies(data), [data]);

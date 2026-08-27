@@ -33,14 +33,14 @@ export interface TextTemplateRecord {
   template: string;
 }
 
-export interface AppSettingUpdate {
+interface AppSettingUpdate {
   key: string;
   value: AppSettingValue;
 }
 
-export type ScoringBandsResponse = { [K in ScoringScale]?: ScoringBand[] | undefined };
+type ScoringBandsResponse = { [K in ScoringScale]?: ScoringBand[] | undefined };
 
-export type TextTemplatesResponse = Record<string, Record<string, string>>;
+type TextTemplatesResponse = Record<string, Record<string, string>>;
 
 export interface ConfigGateway {
   bands(): Promise<ScoringBandsResponse>;

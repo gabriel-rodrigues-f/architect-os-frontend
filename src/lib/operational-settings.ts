@@ -1,7 +1,7 @@
 export const CYCLE_CADENCES = ["SEMIANNUAL", "QUARTERLY", "ANNUAL"] as const;
 export type CycleCadence = (typeof CYCLE_CADENCES)[number];
 
-export const APP_SETTING_KEYS = [
+const APP_SETTING_KEYS = [
   "cycle.cadence",
   "career.minimumQualifiedFloor",
   "training.collectiveInterventionThreshold",

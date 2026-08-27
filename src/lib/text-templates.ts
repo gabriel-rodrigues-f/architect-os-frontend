@@ -52,7 +52,7 @@ export const templateTextFor = (
   templates[key][BASE_LOCALE] ??
   DEFAULT_TEXT_TEMPLATES[key][BASE_LOCALE]!;
 
-export type ObjectiveFromGapVariables = {
+type ObjectiveFromGapVariables = {
   competencia: string;
   atual: string | number;
   alvo: string | number;

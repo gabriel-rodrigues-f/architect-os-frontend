@@ -2,7 +2,7 @@ import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react
 
 import { cn } from "@/lib/utils";
 
-export interface FilterTriggerButtonProps extends ComponentPropsWithoutRef<"button"> {
+interface FilterTriggerButtonProps extends ComponentPropsWithoutRef<"button"> {
   children: ReactNode;
 }
 

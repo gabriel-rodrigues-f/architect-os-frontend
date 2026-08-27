@@ -5,7 +5,7 @@ import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-export interface SingleSelectFilterOption {
+interface SingleSelectFilterOption {
   value: string;
   label: string;
 }

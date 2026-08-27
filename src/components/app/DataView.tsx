@@ -16,7 +16,7 @@ export interface SortOption {
   label: string;
 }
 
-export interface DataViewToolbarProps {
+interface DataViewToolbarProps {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   searchPlaceholder?: string;
@@ -139,7 +139,7 @@ export function DataViewToolbar({
   );
 }
 
-export interface PaginationProps {
+interface PaginationProps {
   page: number;
   pageSize: number;
   total: number;
