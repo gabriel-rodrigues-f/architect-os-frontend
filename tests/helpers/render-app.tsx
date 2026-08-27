@@ -116,7 +116,7 @@ function AuthReady({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-export function AppWrapper({ children }: { children: ReactNode }) {
+function AppWrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return (
     <QueryClientProvider client={queryClient}>
