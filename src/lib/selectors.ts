@@ -230,27 +230,28 @@ export class GapConsolidationSelectors {
     for (const architect of architects) {
       for (const gap of gapsFor(architect.id)) {
         if (gap.gap <= 0 || !gap.competency) continue;
-        const current = map.get(gap.competency.id) ?? {
-          competencyId: gap.competency.id,
-          name: gap.competency.name,
-          capabilityId: gap.competency.capabilityId,
-          requirementType: gap.competency.requirementType,
-          people: 0,
-          architectNames: [],
-          totalGap: 0,
-          maxGap: 0,
-          sumFinal: 0,
-          sumTarget: 0,
-        };
-        map.set(gap.competency.id, {
-          ...current,
-          people: current.people + 1,
-          architectNames: [...current.architectNames, architect.name],
-          totalGap: current.totalGap + gap.gap,
-          maxGap: Math.max(current.maxGap, gap.gap),
-          sumFinal: current.sumFinal + gap.item.final,
-          sumTarget: current.sumTarget + gap.item.target,
-        });
+        let current = map.get(gap.competency.id);
+        if (!current) {
+          current = {
+            competencyId: gap.competency.id,
+            name: gap.competency.name,
+            capabilityId: gap.competency.capabilityId,
+            requirementType: gap.competency.requirementType,
+            people: 0,
+            architectNames: [],
+            totalGap: 0,
+            maxGap: 0,
+            sumFinal: 0,
+            sumTarget: 0,
+          };
+          map.set(gap.competency.id, current);
+        }
+        current.people += 1;
+        current.architectNames.push(architect.name);
+        current.totalGap += gap.gap;
+        current.maxGap = Math.max(current.maxGap, gap.gap);
+        current.sumFinal += gap.item.final;
+        current.sumTarget += gap.item.target;
       }
     }
 
@@ -367,16 +368,14 @@ export class TrainingSelectors {
     for (const architect of population) {
       for (const gap of this.assessment.progressionGapsFor(architect.id)) {
         if (gap.gap <= 0) continue;
-        const acc = totals.get(gap.item.competencyId) ?? {
-          people: 0,
-          totalGap: 0,
-          architectIds: [],
-        };
-        totals.set(gap.item.competencyId, {
-          people: acc.people + 1,
-          totalGap: acc.totalGap + gap.gap,
-          architectIds: [...acc.architectIds, architect.id],
-        });
+        let acc = totals.get(gap.item.competencyId);
+        if (!acc) {
+          acc = { people: 0, totalGap: 0, architectIds: [] };
+          totals.set(gap.item.competencyId, acc);
+        }
+        acc.people += 1;
+        acc.totalGap += gap.gap;
+        acc.architectIds.push(architect.id);
       }
     }
 

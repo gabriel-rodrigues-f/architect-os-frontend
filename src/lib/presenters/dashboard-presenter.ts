@@ -17,6 +17,8 @@ interface GapWithArchitect extends Gap {
 export const CRITICAL_GAP_THRESHOLD = defaultGapSeverityRuler.criticalThreshold;
 
 export class DashboardPresenter {
+  private readonly gapsCache = new WeakMap<readonly Architect[], GapWithArchitect[]>();
+
   constructor(
     private readonly state: Pick<AppState, "plans" | "learningPaths" | "activeCycleId">,
     private readonly sel: Pick<Selectors, "progressionGapsFor" | "assessmentFor">,
@@ -24,9 +26,15 @@ export class DashboardPresenter {
   ) {}
 
   gapsOf(population: readonly Architect[]): GapWithArchitect[] {
-    return population.flatMap((a) =>
+    const cached = this.gapsCache.get(population);
+    if (cached) return cached;
+
+    const gaps = population.flatMap((a) =>
       this.sel.progressionGapsFor(a.id).map((g) => ({ ...g, architect: a })),
     );
+
+    this.gapsCache.set(population, gaps);
+    return gaps;
   }
 
   criticalGapCount(population: readonly Architect[]): number {
@@ -34,7 +42,7 @@ export class DashboardPresenter {
   }
 
   topGaps(population: readonly Architect[], limit = 6): GapWithArchitect[] {
-    return [...this.gapsOf(population)].sort((a, b) => b.gap - a.gap).slice(0, limit);
+    return largestBy(this.gapsOf(population), (g) => g.gap, limit);
   }
 
   activePlans(): DevelopmentPlan[] {
@@ -72,6 +80,32 @@ export class DashboardPresenter {
       { completed: 0, inReview: 0, draft: 0, notStarted: 0 },
     );
   }
+}
+
+function largestBy<T>(items: readonly T[], scoreOf: (item: T) => number, limit: number): T[] {
+  if (limit <= 0) return [];
+  if (items.length <= limit) return [...items].sort((a, b) => scoreOf(b) - scoreOf(a));
+
+  const selected: T[] = [];
+  const scores: number[] = [];
+
+  for (const item of items) {
+    const score = scoreOf(item);
+    if (selected.length === limit && score <= scores[limit - 1]!) continue;
+
+    let position = selected.length;
+    while (position > 0 && scores[position - 1]! < score) position -= 1;
+
+    selected.splice(position, 0, item);
+    scores.splice(position, 0, score);
+
+    if (selected.length > limit) {
+      selected.pop();
+      scores.pop();
+    }
+  }
+
+  return selected;
 }
 
 interface PlanItemCounts {

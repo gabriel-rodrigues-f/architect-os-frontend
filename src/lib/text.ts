@@ -23,17 +23,38 @@ export class NameFormatter {
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
+const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
+
+export function dateTimeFormatFor(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  const cached = dateTimeFormatters.get(key);
+  if (cached) return cached;
+
+  const formatter = new Intl.DateTimeFormat(locale, options);
+  dateTimeFormatters.set(key, formatter);
+  return formatter;
+}
+
+const DAY_MONTH_YEAR: Intl.DateTimeFormatOptions = {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+};
+
+const DAY_MONTH_YEAR_UTC: Intl.DateTimeFormatOptions = { ...DAY_MONTH_YEAR, timeZone: "UTC" };
+
 export class DateFormatter {
   formatDate(iso: string | null | undefined, locale: string): string | null {
     if (!iso) return null;
     const date = new Date(iso);
     if (Number.isNaN(date.getTime())) return null;
-    return new Intl.DateTimeFormat(locale, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      ...(DATE_ONLY.test(iso) ? { timeZone: "UTC" } : {}),
-    }).format(date);
+    return dateTimeFormatFor(
+      locale,
+      DATE_ONLY.test(iso) ? DAY_MONTH_YEAR_UTC : DAY_MONTH_YEAR,
+    ).format(date);
   }
 
   todayIso(): string {

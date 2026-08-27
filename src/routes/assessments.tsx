@@ -95,6 +95,8 @@ function AssessmentsPage() {
     queryKey: ["assessment-eligibility", assessment?.id],
     queryFn: () => api.assessmentEligibility(assessment!.id),
     enabled: !!assessment,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const MANY_CAPABILITIES_THRESHOLD = 10;

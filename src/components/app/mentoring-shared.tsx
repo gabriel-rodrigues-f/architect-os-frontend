@@ -22,6 +22,7 @@ import { ApiError } from "@/lib/api";
 import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import type { Selectors } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { MentoringViewModel } from "@/lib/view-models";
@@ -282,28 +283,33 @@ function Block({ title, text }: { title: string; text: string }) {
   );
 }
 
-function MentoringTimelineItem({ session }: { session: MentoringSession }) {
+function MentoringTimelineItem({
+  session,
+  selectors,
+}: {
+  session: MentoringSession;
+  selectors: Selectors;
+}) {
   const { t, locale } = useI18n();
   const notifySuccess = useSuccessToast();
   const store = useStore();
   const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
-  const sel = useSelectors();
   const user = useCurrentUser();
   const [sendingSessionId, setSendingSessionId] = useState<string | null>(null);
 
-  const plan = sel.planFor(session.menteeId);
-  const gaps = sel.progressionGapsFor(session.menteeId);
+  const plan = selectors.planFor(session.menteeId);
+  const gaps = selectors.progressionGapsFor(session.menteeId);
   const eligible = viewModel.eligibleGapForPlan(session, gaps, plan);
 
   return (
     <li className="relative">
       <span className="absolute -left-[31px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
       <div className="flex flex-wrap items-center gap-2">
-        <Initials name={sel.architectById(session.menteeId)?.name ?? "?"} />
+        <Initials name={selectors.architectById(session.menteeId)?.name ?? "?"} />
         <div>
           <p className="text-sm font-medium">{session.topic}</p>
           <p className="text-xs text-muted-foreground">
-            {sel.architectById(session.menteeId)?.name} · mentor {session.mentor} ·{" "}
+            {selectors.architectById(session.menteeId)?.name} · mentor {session.mentor} ·{" "}
             {defaultDateFormatter.formatDate(session.date, locale)} · {session.durationMin} min
           </p>
         </div>
@@ -320,7 +326,7 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
           className="mt-2"
           disabled={sendingSessionId === session.id}
           onClick={async () => {
-            const mentee = sel.architectById(session.menteeId);
+            const mentee = selectors.architectById(session.menteeId);
             if (!mentee || !eligible.competency) return;
             setSendingSessionId(session.id);
             try {
@@ -349,7 +355,7 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
           {session.competencyIds.map((c) => (
             <span key={c} className="rounded-md bg-secondary px-2 py-0.5">
-              {sel.competencyById(c)?.name ?? c}
+              {selectors.competencyById(c)?.name ?? c}
             </span>
           ))}
         </div>
@@ -370,6 +376,7 @@ function MentoringTimelineItem({ session }: { session: MentoringSession }) {
 
 export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }) {
   const { t } = useI18n();
+  const selectors = useSelectors();
   return (
     <>
       {sessions.length === 0 && (
@@ -377,7 +384,7 @@ export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }
       )}
       <ol className="relative space-y-6 border-l border-border pl-6">
         {sessions.map((s) => (
-          <MentoringTimelineItem key={s.id} session={s} />
+          <MentoringTimelineItem key={s.id} session={s} selectors={selectors} />
         ))}
       </ol>
     </>
