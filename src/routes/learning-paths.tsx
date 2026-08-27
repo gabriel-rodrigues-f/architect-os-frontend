@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Lock, Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Bar, EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isLeadCapable } from "@/lib/api";
-import { useSuccessToast, useToastSubmit } from "@/hooks";
+import { useServerDraft, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
@@ -437,10 +437,9 @@ function ProgressControl({
   statusLabel: string;
   onCommit: (value: number) => void;
 }) {
-  const [draft, setDraft] = useState(progress);
-  useEffect(() => setDraft(progress), [progress]);
+  const { draft, setDraft, changed } = useServerDraft(progress);
   const commit = () => {
-    if (draft !== progress) onCommit(draft);
+    if (changed) onCommit(draft);
   };
 
   if (!editable) {
@@ -698,11 +697,8 @@ function LearningPathItemRow({
   const { t } = useI18n();
 
   const itemTypes = useVocabulary("LEARNING_ITEM_TYPE");
-  const [titleDraft, setTitleDraft] = useState(item.title);
-  const [hoursDraft, setHoursDraft] = useState(String(item.hours));
-
-  useEffect(() => setTitleDraft(item.title), [item.title]);
-  useEffect(() => setHoursDraft(String(item.hours)), [item.hours]);
+  const title = useServerDraft(item.title);
+  const hours = useServerDraft(String(item.hours));
 
   return (
     <li className="flex items-center gap-2 px-3 py-2">
@@ -722,24 +718,24 @@ function LearningPathItemRow({
         ))}
       </select>
       <Input
-        value={titleDraft}
+        value={title.draft}
         aria-label={t("path.item.titleAriaLabel", { item: item.title })}
-        onChange={(e) => setTitleDraft(e.target.value)}
+        onChange={(e) => title.setDraft(e.target.value)}
         onBlur={() => {
-          if (titleDraft !== item.title) onUpdateTitle(titleDraft);
+          if (title.changed) onUpdateTitle(title.draft);
         }}
       />
       <Input
         type="number"
         min={0}
         className="w-20"
-        value={hoursDraft}
+        value={hours.draft}
         aria-label={t("path.item.hoursAriaLabel", { item: item.title })}
-        onChange={(e) => setHoursDraft(e.target.value)}
+        onChange={(e) => hours.setDraft(e.target.value)}
         onBlur={() => {
-          const hours = Number(hoursDraft) || 0;
-          setHoursDraft(String(hours));
-          if (hours !== item.hours) onUpdateHours(hours);
+          const hoursCommitted = Number(hours.draft) || 0;
+          hours.setDraft(String(hoursCommitted));
+          if (hoursCommitted !== item.hours) onUpdateHours(hoursCommitted);
         }}
       />
       <button
