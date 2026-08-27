@@ -33,7 +33,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useObjectiveFromGap, useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
-import { useAsyncSubmit, useSearchParamString, useSuccessToast } from "@/hooks";
+import { useAsyncSubmit, useSearchParamString, useServerDraft, useSuccessToast } from "@/hooks";
 import { DevelopmentPlansViewModel } from "@/lib/view-models";
 
 function useDevelopmentPlansViewModel() {
@@ -334,6 +334,7 @@ function PlansPage() {
                 </div>
 
                 <ActionPlanField
+                  key={item.version}
                   value={item.actionPlan}
                   disabled={!canEditExecution}
                   onSave={(actionPlan) => viewModel.saveActionPlan(plan!.id, item.id, actionPlan)}
@@ -499,13 +500,11 @@ function ActionPlanField({
   onSave: (value: string) => void;
 }) {
   const { t } = useI18n();
-  const [draft, setDraft] = useState(value);
+  const { draft, setDraft, changed } = useServerDraft(value);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => setDraft(value), [value]);
-
   const commit = () => {
-    if (draft === value) return;
+    if (!changed) return;
     onSave(draft);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2000);
@@ -687,12 +686,12 @@ function RescheduleDialog({
       errorRole="alert"
       extraFields={({ submitting }) => (
         <div className="grid gap-3">
-          <div>
-            <Label>{t("pdi.reschedule.current")}</Label>
-            <p className="mt-1 text-sm tabular-nums">
+          <dl>
+            <dt className="text-sm font-medium leading-none">{t("pdi.reschedule.current")}</dt>
+            <dd className="mt-1 text-sm tabular-nums">
               {defaultDateFormatter.formatDate(item.targetDate, locale)}
-            </p>
-          </div>
+            </dd>
+          </dl>
           <div>
             <Label htmlFor="reschedule-target-date">{t("pdi.reschedule.new")}</Label>
             <input
