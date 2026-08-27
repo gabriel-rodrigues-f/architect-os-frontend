@@ -172,7 +172,6 @@ function RootComponent() {
               <AuthGate>
                 <StoreProvider>
                   <AppShell>
-                    {}
                     <Outlet />
                   </AppShell>
                   <AppToaster />

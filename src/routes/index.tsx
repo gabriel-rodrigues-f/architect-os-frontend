@@ -134,7 +134,6 @@ function AdminHome() {
         />
       </div>
 
-      {}
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <SectionCard title={t("dash.heatmap.title")} description={t("dash.heatmap.subtitle")}>
           <p className="mb-3 text-xs text-muted-foreground">
@@ -146,7 +145,6 @@ function AdminHome() {
               notStarted: assessmentCoverage.notStarted,
             })}
           </p>
-          {}
           <CapabilityHeatmap
             architects={architects}
             capabilities={store.capabilities}
@@ -260,7 +258,6 @@ function MemberHome() {
         />
       </div>
 
-      {}
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
@@ -326,7 +323,6 @@ function MemberHome() {
         </SectionCard>
       </div>
 
-      {}
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("dash.priorities.title")}

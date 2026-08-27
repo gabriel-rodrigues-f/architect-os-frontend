@@ -53,7 +53,6 @@ export function CapabilityHeatmap({
         showAll={showAll}
         onToggle={toggle}
       />
-      {}
       <div className="max-h-[480px] overflow-auto">
         <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
           <thead>

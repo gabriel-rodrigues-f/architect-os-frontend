@@ -82,7 +82,6 @@ function GapPage() {
             title={t("gap.priorities.title")}
             description={t("gap.priorities.subtitle", { n: architects.length })}
           >
-            {}
             <div className="max-h-[460px] space-y-4 overflow-y-auto pr-1">
               <div>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-destructive">
@@ -134,7 +133,6 @@ function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emp
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <GapBadge gap={row.maxGap} />
-            {}
             <Link
               to="/development-plans"
               className="whitespace-nowrap text-xs text-primary hover:underline"

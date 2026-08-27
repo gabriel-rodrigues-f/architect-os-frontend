@@ -533,7 +533,6 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               id="mentor-competencies"
               className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
             >
-              {}
               {discussedList.map((c) => (
                 <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
                   <input

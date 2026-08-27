@@ -84,19 +84,13 @@ function SettingsPage() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <CareerPolicySection isAdmin={isAdmin} />
-        {}
         {isAdmin && <ScoringBandsSection />}
-        {}
         {isAdmin && <TextTemplatesSection />}
-        {}
         {isAdmin && <CurationPolicySection />}
-        {}
         {isAdmin && <OperationalSettingsSection />}
-        {}
         {isAdmin && <VocabulariesSection />}
       </div>
 
-      {}
       <h2 className="mb-4 mt-6 font-display text-lg font-semibold">
         {t("ref.referenceSectionTitle")}
       </h2>
@@ -176,7 +170,6 @@ function SettingsPage() {
           </div>
         </SectionCard>
 
-        {}
         <SectionCard title={t("ref.taxonomies.title")} description={t("ref.taxonomies.subtitle")}>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t("ref.taxonomies.actionTypes")}
@@ -527,7 +520,6 @@ function ScoringScaleEditor({
         </p>
       )}
 
-      {}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <label className="text-xs text-muted-foreground" htmlFor={`band-sample-${scale}`}>
           {t("config.bands.preview.sample")}
@@ -649,7 +641,6 @@ function CurationPolicySection() {
           </p>
         )}
 
-        {}
         <p className="mt-3 text-xs text-muted-foreground">{t("config.curation.impact")}</p>
       </div>
     </SectionCard>
@@ -968,7 +959,6 @@ function OperationalSettingsSection() {
           </p>
         )}
 
-        {}
         <p className="mt-3 text-xs text-muted-foreground">
           {t("config.operational.cadenceImpact")}
         </p>
@@ -1239,7 +1229,6 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
         </p>
       )}
 
-      {}
       <p className="mt-2 text-xs text-muted-foreground">{t("config.vocab.noDeleteHint")}</p>
     </div>
   );

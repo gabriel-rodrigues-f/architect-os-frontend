@@ -99,7 +99,6 @@ function TeamPage() {
         />
       ) : (
         <>
-          {}
           <DataViewToolbar
             layout="grid-3"
             resultCount={roster.enrichedSorted.length}
@@ -136,7 +135,6 @@ function TeamPage() {
               noneSummaryLabel={t("team.filter.chip.none")}
               emptyLabel={t("team.filter.role.empty")}
             />
-            {}
             <MultiSelectFilter
               id="team-filter-specialization"
               label={t("team.filter.specialization")}
@@ -159,7 +157,6 @@ function TeamPage() {
               noneSummaryLabel={t("team.filter.chip.none")}
               emptyLabel={t("team.filter.capability.empty")}
             />
-            {}
             <SingleSelectFilter
               id="team-sort"
               label={t("dataView.sortLabel")}
@@ -209,7 +206,6 @@ function TeamPage() {
         </>
       )}
 
-      {}
       <Dialog open={form.editing !== null} onOpenChange={(open) => !open && form.setEditing(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -236,7 +232,6 @@ function TeamPage() {
                 onKeyDown={(e) => e.key === "Enter" && form.submit()}
               />
             </div>
-            {}
             {!form.editing && (
               <div>
                 <Label htmlFor="role">{t("team.form.role")}</Label>

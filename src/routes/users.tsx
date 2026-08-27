@@ -81,7 +81,6 @@ function UsersPage() {
         }
       />
 
-      {}
       {!isAdmin ? (
         <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
           <p className="text-sm text-muted-foreground">{t("users.adminOnly")}</p>

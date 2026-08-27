@@ -553,7 +553,6 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                   <span className="w-32 shrink-0">{t("path.col.type")}</span>
                   <span className="flex-1">{t("path.col.name")}</span>
                   <span className="w-20 shrink-0">{t("path.col.hours")}</span>
-                  {}
                   <span className="w-9 shrink-0" aria-hidden="true" />
                 </li>
               )}
@@ -713,7 +712,6 @@ function LearningPathItemRow({
         aria-label={t("path.item.typeAriaLabel", { item: item.title })}
         onChange={(e) => onUpdateType(e.target.value as LearningItemType)}
       >
-        {}
         {itemTypes.options.every((option) => option.code !== item.type) && (
           <option value={item.type}>{itemTypes.label(item.type)}</option>
         )}

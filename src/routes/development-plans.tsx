@@ -245,7 +245,6 @@ function PlansPage() {
         />
       )}
 
-      {}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           {(plan?.items ?? []).map((item) => {
@@ -814,7 +813,6 @@ function NewPlanItemDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
-          {}
           <div className="rounded-md border border-border bg-secondary/40 px-3 py-2 text-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {t("pdi.newItem.officialGap")}

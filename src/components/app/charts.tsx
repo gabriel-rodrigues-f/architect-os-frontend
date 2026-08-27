@@ -177,9 +177,7 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
         <RadarChart data={visibleData} outerRadius={estreita ? "65%" : "72%"}>
           <PolarGrid stroke={CHART_INK.grid} />
           <PolarAngleAxis dataKey="capability" tick={axisTick} />
-          {}
           <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
-          {}
           <Radar
             name={alvo}
             dataKey="alvo"

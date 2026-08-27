@@ -169,7 +169,6 @@ export function Pagination({
         {t("dataView.pageRange", { from, to, total })}
       </p>
       <div className="flex items-center gap-2">
-        {}
         {onPageSizeChange && (
           <SingleSelectFilter
             id="data-view-page-size"

@@ -329,12 +329,10 @@ export function CareerPortfolioSection({
             title={t("asmt.portfolio.title")}
             description={t("asmt.portfolio.subtitle")}
           >
-            {}
             <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
               <Badge variant={portfolioSize >= minimumPortfolio ? "default" : "outline"}>
                 {t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
               </Badge>
-              {}
               <Progress
                 value={Math.min(100, (portfolioSize / minimumPortfolio) * 100)}
                 className="h-1.5 w-24"

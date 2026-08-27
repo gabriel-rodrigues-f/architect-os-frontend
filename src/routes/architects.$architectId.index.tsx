@@ -247,7 +247,6 @@ function ArchitectProfile() {
         </SectionCard>
       )}
 
-      {}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
           <CapabilityRadar
