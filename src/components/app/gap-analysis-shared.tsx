@@ -19,7 +19,10 @@ export function useGapAnalysisData() {
   const defaultSelected = useMemo(() => sel.visibleArchitects(user).map((a) => a.id), [sel, user]);
   const [selected, setSelected] = useSearchParamList("selected", () => defaultSelected);
 
-  const architects = Selection.explicit(selected).apply(store.architects);
+  const architects = useMemo(
+    () => Selection.explicit(selected).apply(store.architects),
+    [selected, store.architects],
+  );
 
   const radar = useMemo(() => {
     return store.capabilities.map((cat) => {

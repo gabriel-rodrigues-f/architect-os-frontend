@@ -385,3 +385,139 @@ describe("consolidação de gaps (GapConsolidationSelectors)", () => {
     expect(sel.consolidateMasteryGaps(fixtureState.architects)).toEqual([]);
   });
 });
+
+/**
+ * F2 (caminhos quentes) — `consolidate` e `teamTrainingNeeds` acumulavam com
+ * `[...acumulador, item]` dentro de laço duplo (arquitetos × lacunas), o que
+ * recopia a lista inteira a cada pessoa. A troca por acumulação em lugar não
+ * pode mudar NADA do resultado — inclusive a ORDEM dentro de `architectNames`
+ * e `architectIds`, que é a ordem da população recebida e é o que a tela usa
+ * no `title` da coluna "pessoas". Estes casos fixam a saída de hoje inteira,
+ * campo a campo, com três pessoas na mesma competência (é preciso k ≥ 3 para
+ * uma regressão de ordem aparecer).
+ */
+describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
+  const carla: AppState["architects"][number] = {
+    id: "carla",
+    name: "Carla Souza",
+    role: "Arquiteto de Soluções III",
+    yearsAsArchitect: 9,
+    specialization: "Data",
+    email: "carla@company.com",
+    active: true,
+    version: 1,
+  };
+
+  const state: AppState = {
+    ...fixtureState,
+    architects: [...fixtureState.architects, carla],
+    assessments: [
+      ...fixtureState.assessments,
+      {
+        id: "carla-h2",
+        architectId: "carla",
+        cycleId: "2026-h2",
+        status: "Completed",
+        modelVersion: 1,
+        targetCareerLevelId: null,
+        targetSemantics: null,
+        version: 1,
+        items: [
+          { competencyId: "cloud-k8s", self: 1, leader: 1, target: 5, final: 1, comments: [] },
+          {
+            competencyId: "cloud-serverless",
+            self: 3,
+            leader: 3,
+            target: 3,
+            final: 3,
+            comments: [],
+          },
+          { competencyId: "security-iam", self: 2, leader: 2, target: 4, final: 2, comments: [] },
+        ],
+      },
+    ],
+  };
+
+  const sel = createSelectors(state);
+
+  /**
+   * Contas à mão (ciclo 2026-h2):
+   * - cloud-k8s: bruno 2→3 (gap 1), carla 1→5 (gap 4) → total 5, máx 4,
+   *   médias final (2+1)/2 = 1.5 e alvo (3+5)/2 = 4, gap médio 2.5.
+   * - security-iam: ana 2→3 (1), bruno 1→2 (1), carla 2→4 (2) → total 4,
+   *   máx 2, médias final (2+1+2)/3 = 1.7 e alvo (3+2+4)/3 = 3, gap médio 1.3.
+   * - cloud-serverless não tem lacuna em ninguém — nunca vira linha.
+   */
+  it("consolidateProgressionGaps devolve exatamente as linhas de hoje, com os nomes na ordem da população", () => {
+    expect(sel.consolidateProgressionGaps(state.architects)).toEqual([
+      {
+        competencyId: "cloud-k8s",
+        name: "Kubernetes",
+        capabilityId: "cloud",
+        requirementType: "NON_RESTRICTIVE",
+        people: 2,
+        architectNames: ["Bruno Almeida", "Carla Souza"],
+        totalGap: 5,
+        maxGap: 4,
+        sumFinal: 3,
+        sumTarget: 8,
+        avgFinal: 1.5,
+        avgTarget: 4,
+        avgGap: 2.5,
+      },
+      {
+        competencyId: "security-iam",
+        name: "IAM",
+        capabilityId: "security",
+        requirementType: "NON_RESTRICTIVE",
+        people: 3,
+        architectNames: ["Ana Martins", "Bruno Almeida", "Carla Souza"],
+        totalGap: 4,
+        maxGap: 2,
+        sumFinal: 5,
+        sumTarget: 9,
+        avgFinal: 1.7,
+        avgTarget: 3,
+        avgGap: 1.3,
+      },
+    ]);
+  });
+
+  it("a ordem de architectNames acompanha a ordem da população, não a do catálogo", () => {
+    const invertida = [...state.architects].reverse();
+    const linha = sel
+      .consolidateProgressionGaps(invertida)
+      .find((r) => r.competencyId === "security-iam");
+    expect(linha?.architectNames).toEqual(["Carla Souza", "Bruno Almeida", "Ana Martins"]);
+  });
+
+  it("teamTrainingNeeds devolve exatamente as necessidades de hoje, com os ids na ordem da população", () => {
+    expect(sel.teamTrainingNeeds()).toEqual([
+      {
+        competency: state.competencies.find((c) => c.id === "cloud-k8s"),
+        people: 2,
+        avgGap: 2.5,
+        totalGap: 5,
+        architectIds: ["bruno", "carla"],
+      },
+      {
+        competency: state.competencies.find((c) => c.id === "security-iam"),
+        people: 3,
+        avgGap: 1.3,
+        totalGap: 4,
+        architectIds: ["ana", "bruno", "carla"],
+      },
+    ]);
+  });
+
+  it("população vazia continua devolvendo lista vazia", () => {
+    expect(sel.consolidateProgressionGaps([])).toEqual([]);
+    expect(sel.teamTrainingNeeds([])).toEqual([]);
+  });
+
+  it("consolidar duas vezes não acumula nada de uma chamada para a outra", () => {
+    const primeira = sel.consolidateProgressionGaps(state.architects);
+    expect(sel.consolidateProgressionGaps(state.architects)).toEqual(primeira);
+    expect(sel.teamTrainingNeeds()).toEqual(sel.teamTrainingNeeds());
+  });
+});

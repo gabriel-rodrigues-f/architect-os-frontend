@@ -238,6 +238,8 @@ export function CareerPortfolioSection({
   } = useQuery({
     queryKey,
     queryFn: () => api.assessmentEligibility(assessment.id),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const invalidateAll = () => {

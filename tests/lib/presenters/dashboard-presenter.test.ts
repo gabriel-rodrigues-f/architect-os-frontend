@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { AppState } from "@/lib/api";
+import type { Architect, Assessment, Capability, Competency, Level } from "@/lib/domain";
 import {
   CRITICAL_GAP_THRESHOLD,
   DashboardPresenter,
@@ -162,5 +163,149 @@ describe("DashboardPresenter com limiar configurado (CFG-02)", () => {
     expect(strictPresenter.criticalGapCount(architects)).toBeGreaterThanOrEqual(
       defaultPresenter.criticalGapCount(architects),
     );
+  });
+});
+
+/**
+ * F2 (caminhos quentes) — `topGaps` ordenava os ~3.588 gaps do time inteiro
+ * só para mostrar 6 linhas, e `gapsOf` era refeito a cada chamada (o painel
+ * chama duas vezes por render: `criticalGapCount` e `topGaps`). Estes casos
+ * são de caracterização: fixam a SAÍDA de hoje — inclusive o desempate entre
+ * gaps de mesmo tamanho, que a ordenação estável do JavaScript resolve pela
+ * ordem de origem — para que a troca por seleção dos N maiores sem ordenar
+ * tudo seja provadamente equivalente, não "parecida".
+ */
+describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
+  const ARCHITECTS = 8;
+  const COMPETENCIES = 9;
+
+  const empatadoState = (): AppState => {
+    const capability: Capability = {
+      id: "cap",
+      name: "Capacidade",
+      short: "Cap",
+      active: true,
+      curation: {
+        activeCompetencyCount: COMPETENCIES,
+        restrictiveCompetencyCount: 0,
+        nonRestrictiveCompetencyCount: COMPETENCIES,
+        status: "REQUIRES_CURATION",
+      },
+    };
+
+    const competencies: Competency[] = Array.from({ length: COMPETENCIES }, (_, i) => ({
+      id: `comp-${i}`,
+      name: `Competência ${i}`,
+      capabilityId: capability.id,
+      requirementType: "NON_RESTRICTIVE",
+      expected: {
+        "arquiteto-de-solucoes-i": 3 as Level,
+        "arquiteto-de-solucoes-ii": 4 as Level,
+        "arquiteto-de-solucoes-iii": 5 as Level,
+      },
+      active: true,
+    }));
+
+    const architects: Architect[] = Array.from({ length: ARCHITECTS }, (_, i) => ({
+      id: `arq-${i}`,
+      name: `Arquiteto ${i}`,
+      role: "Arquiteto de Soluções II",
+      yearsAsArchitect: 5,
+      specialization: "Integration",
+      email: `arq-${i}@company.com`,
+      active: true,
+      version: 1,
+    }));
+
+    // final varia em ciclo curto: muitos gaps iguais, que é onde o desempate importa.
+    const assessments: Assessment[] = architects.map((a, ai) => ({
+      id: `${a.id}-ciclo`,
+      architectId: a.id,
+      cycleId: "ciclo",
+      status: "Completed",
+      modelVersion: 1,
+      targetCareerLevelId: null,
+      targetSemantics: null,
+      version: 1,
+      items: competencies.map((c, ci) => ({
+        competencyId: c.id,
+        self: 3 as Level,
+        leader: 3 as Level,
+        target: 5 as Level,
+        final: (((ai + ci) % 4) + 1) as Level,
+        comments: [],
+      })),
+    }));
+
+    return {
+      ...fixtureState,
+      capabilities: [capability],
+      competencies,
+      architects,
+      assessments,
+      plans: [],
+      cycles: [
+        { id: "ciclo", name: "Ciclo", start: "2026-01-01", end: "2026-06-30", status: "Active" },
+      ],
+      activeCycleId: "ciclo",
+    };
+  };
+
+  const state = empatadoState();
+  const presenterFor = () => new DashboardPresenter(state, createSelectors(state));
+
+  /** Identidade de negócio de uma linha de prioridade: quem, em qual competência, com qual gap. */
+  const rowKey = (g: { architect: { id: string }; item: { competencyId: string }; gap: number }) =>
+    `${g.architect.id}|${g.item.competencyId}|${g.gap}`;
+
+  it("gapsOf mantém a ordem: população na ordem recebida, gaps na ordem do selector", () => {
+    const presenter = presenterFor();
+    const sel = createSelectors(state);
+    const esperado = state.architects.flatMap((a) =>
+      sel.progressionGapsFor(a.id).map((g) => `${a.id}|${g.item.competencyId}|${g.gap}`),
+    );
+
+    expect(presenter.gapsOf(state.architects).map(rowKey)).toEqual(esperado);
+    expect(esperado).toHaveLength(ARCHITECTS * COMPETENCIES);
+  });
+
+  it("topGaps é idêntico a ordenar tudo por gap desc e cortar — inclusive no empate", () => {
+    const presenter = presenterFor();
+    const todos = presenter.gapsOf(state.architects);
+    // referência: exatamente o algoritmo antigo (sort estável + slice).
+    const referencia = (limit: number) =>
+      [...todos]
+        .sort((a, b) => b.gap - a.gap)
+        .slice(0, limit)
+        .map(rowKey);
+
+    for (const limit of [0, 1, 2, 6, 7, 20, todos.length, todos.length + 5]) {
+      expect(presenter.topGaps(state.architects, limit).map(rowKey)).toEqual(referencia(limit));
+    }
+    // o default do painel são 6 linhas
+    expect(presenter.topGaps(state.architects).map(rowKey)).toEqual(referencia(6));
+    // o cenário precisa ter empates, senão o teste não prova nada sobre desempate
+    const seis = presenter.topGaps(state.architects).map((g) => g.gap);
+    expect(new Set(seis).size).toBeLessThan(seis.length);
+  });
+
+  it("topGaps não reordena a lista base nem os gaps do selector", () => {
+    const presenter = presenterFor();
+    const antes = presenter.gapsOf(state.architects).map(rowKey);
+    presenter.topGaps(state.architects, 6);
+    expect(presenter.gapsOf(state.architects).map(rowKey)).toEqual(antes);
+  });
+
+  it("criticalGapCount continua contando todos os gaps acima do limiar", () => {
+    const presenter = new DashboardPresenter(state, createSelectors(state), 3);
+    const esperado = presenter.gapsOf(state.architects).filter((g) => g.gap >= 3).length;
+    expect(presenter.criticalGapCount(state.architects)).toBe(esperado);
+    expect(esperado).toBeGreaterThan(0);
+  });
+
+  it("gapsOf reaproveita o cálculo da mesma população — o painel chama duas vezes por render", () => {
+    const presenter = presenterFor();
+    const primeiro = presenter.gapsOf(state.architects);
+    expect(presenter.gapsOf(state.architects)).toBe(primeiro);
   });
 });

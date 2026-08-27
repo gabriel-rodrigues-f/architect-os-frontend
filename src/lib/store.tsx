@@ -31,6 +31,7 @@ import {
 } from "./operational-settings";
 import { useI18n } from "./i18n";
 import { MutationRunner } from "./mutation-runner";
+import { CONFIG_QUERY_STALE_TIME } from "./query-client";
 import {
   gapSeverityRulerFrom,
   withDefaultScoringBands,
@@ -62,13 +63,21 @@ export const STATE_QUERY_KEY = ["app-state"] as const;
 
 const CAREER_LEVELS_QUERY_KEY = ["career-levels"] as const;
 export function useCareerLevelsByRank(): CareerLevel[] {
-  const { data } = useQuery({ queryKey: CAREER_LEVELS_QUERY_KEY, queryFn: api.careerLevels });
+  const { data } = useQuery({
+    queryKey: CAREER_LEVELS_QUERY_KEY,
+    queryFn: api.careerLevels,
+    staleTime: CONFIG_QUERY_STALE_TIME,
+  });
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
 }
 
 const SCORING_BANDS_QUERY_KEY = ["config-bands"] as const;
 export function useScoringBands(): ScoringBands {
-  const { data } = useQuery({ queryKey: SCORING_BANDS_QUERY_KEY, queryFn: api.bands });
+  const { data } = useQuery({
+    queryKey: SCORING_BANDS_QUERY_KEY,
+    queryFn: api.bands,
+    staleTime: CONFIG_QUERY_STALE_TIME,
+  });
   return useMemo(() => withDefaultScoringBands(data), [data]);
 }
 
@@ -79,25 +88,41 @@ export function useGapSeverityRuler(): GapSeverityRuler {
 
 const TEXT_TEMPLATES_QUERY_KEY = ["config-templates"] as const;
 export function useTextTemplates(): TextTemplates {
-  const { data } = useQuery({ queryKey: TEXT_TEMPLATES_QUERY_KEY, queryFn: api.templates });
+  const { data } = useQuery({
+    queryKey: TEXT_TEMPLATES_QUERY_KEY,
+    queryFn: api.templates,
+    staleTime: CONFIG_QUERY_STALE_TIME,
+  });
   return useMemo(() => withDefaultTextTemplates(data), [data]);
 }
 
 const CURATION_POLICY_QUERY_KEY = ["config-curation-policy"] as const;
 export function useCurationPolicy(): CurationPolicy {
-  const { data } = useQuery({ queryKey: CURATION_POLICY_QUERY_KEY, queryFn: api.curationPolicy });
+  const { data } = useQuery({
+    queryKey: CURATION_POLICY_QUERY_KEY,
+    queryFn: api.curationPolicy,
+    staleTime: CONFIG_QUERY_STALE_TIME,
+  });
   return useMemo(() => withDefaultCurationPolicy(data), [data]);
 }
 
 const OPERATIONAL_SETTINGS_QUERY_KEY = ["config-settings"] as const;
 export function useOperationalSettings(): OperationalSettings {
-  const { data } = useQuery({ queryKey: OPERATIONAL_SETTINGS_QUERY_KEY, queryFn: api.settings });
+  const { data } = useQuery({
+    queryKey: OPERATIONAL_SETTINGS_QUERY_KEY,
+    queryFn: api.settings,
+    staleTime: CONFIG_QUERY_STALE_TIME,
+  });
   return useMemo(() => withDefaultOperationalSettings(data), [data]);
 }
 
 const VOCABULARIES_QUERY_KEY = ["config-vocabularies"] as const;
 export function useVocabularies(): Vocabularies {
-  const { data } = useQuery({ queryKey: VOCABULARIES_QUERY_KEY, queryFn: api.vocabularies });
+  const { data } = useQuery({
+    queryKey: VOCABULARIES_QUERY_KEY,
+    queryFn: api.vocabularies,
+    staleTime: CONFIG_QUERY_STALE_TIME,
+  });
   return useMemo(() => withDefaultVocabularies(data), [data]);
 }
 
