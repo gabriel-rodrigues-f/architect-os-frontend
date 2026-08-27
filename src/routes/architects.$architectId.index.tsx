@@ -66,7 +66,7 @@ function ArchitectNotFound() {
   return <p className="text-sm text-muted-foreground">{t("arch.notFound")}</p>;
 }
 
-export type NextStep =
+type NextStep =
   | { kind: "itemsNotStarted"; count: number }
   | { kind: "gapsNotInPlan"; count: number }
   | { kind: "evidencesPending"; count: number }

@@ -26,7 +26,7 @@ export const emptyState: AppState = {
   activeCycleId: "",
 };
 
-export type EvaluatedAssessmentItem = Assessment["items"][number] & {
+type EvaluatedAssessmentItem = Assessment["items"][number] & {
   self: Level;
   leader: Level;
   final: Level;
@@ -49,7 +49,7 @@ export interface CapabilityAverage {
   target: number | undefined;
 }
 
-export interface TrainingNeed {
+interface TrainingNeed {
   competency: Competency | undefined;
   people: number;
   avgGap: number;

@@ -4,8 +4,7 @@
     "src/**/*.tsx",
     "tests/**/*.ts",
     "tests/**/*.tsx",
-    "vite.config.ts",
-    "eslint.config.js"
+    "vite.config.ts"
   ],
   "compilerOptions": {
     "target": "ES2022",

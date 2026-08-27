@@ -32,7 +32,7 @@ import { emptyArchitectForm, TeamViewModel, type ArchitectFormValues } from "@/l
 const NO_SPECIALIZATION = "__no-specialization__";
 const NO_CAPABILITY = "__no-capability__";
 
-export interface EnrichedArchitect {
+interface EnrichedArchitect {
   architect: Architect;
   topGaps: Gap[];
   avg: number | undefined;

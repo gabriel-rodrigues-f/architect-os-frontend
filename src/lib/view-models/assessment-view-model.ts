@@ -28,7 +28,7 @@ export type AssessmentPortfolioService = Pick<
   | "updateAssessmentDevelopmentSummary"
 >;
 
-export interface AssessmentPermissions {
+interface AssessmentPermissions {
   isOwner: boolean;
   isLead: boolean;
   status: Assessment["status"] | undefined;

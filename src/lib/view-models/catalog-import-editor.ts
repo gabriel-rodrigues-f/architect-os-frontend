@@ -5,7 +5,7 @@ import {
 } from "../catalog-import";
 import type { Capability, Competency } from "../domain";
 
-export interface CatalogImportPreviewCapability {
+interface CatalogImportPreviewCapability {
   name: string;
 
   action: "create" | "update";
@@ -13,7 +13,7 @@ export interface CatalogImportPreviewCapability {
   competenciesToUpdate: string[];
 }
 
-export interface CatalogImportPreview {
+interface CatalogImportPreview {
   capabilities: CatalogImportPreviewCapability[];
   capabilitiesToCreate: number;
   capabilitiesToUpdate: number;

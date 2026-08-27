@@ -16,7 +16,7 @@ export const BANDS: readonly ProficiencyViewBand[] = proficiencyViewBandsFrom(
 export type RiskState =
   "insufficientData" | "noReference" | "concentrationRisk" | "distributedCoverage";
 
-export interface CapabilityCoverageArea {
+interface CapabilityCoverageArea {
   cat: Capability;
   bands: {
     key: string;

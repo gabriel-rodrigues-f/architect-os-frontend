@@ -20,7 +20,7 @@ const PERIODS: Record<CycleCadence, readonly PeriodSpec[]> = {
   ANNUAL: [{ key: "Y", start: "01-01", end: "12-31" }],
 };
 
-export interface CyclePeriod {
+interface CyclePeriod {
   year: number;
   period: string;
 }

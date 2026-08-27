@@ -96,7 +96,7 @@ export function activeVocabularyOptions(items: readonly VocabularyItem[]): Vocab
     .sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
 }
 
-export type TranslateLabelKey = (labelKey: string) => string | undefined;
+type TranslateLabelKey = (labelKey: string) => string | undefined;
 
 export function vocabularyLabelOf(
   items: readonly VocabularyItem[],

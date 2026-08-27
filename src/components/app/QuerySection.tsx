@@ -4,7 +4,7 @@ import { SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 
-export interface QuerySectionQuery<T> {
+interface QuerySectionQuery<T> {
   data: T | undefined;
   isPending: boolean;
   isError: boolean;

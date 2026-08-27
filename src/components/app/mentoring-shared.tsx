@@ -26,7 +26,7 @@ import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { MentoringViewModel } from "@/lib/view-models";
 
-export const REQUIRED_FIELDS = [
+const REQUIRED_FIELDS = [
   "menteeId",
   "date",
   "durationMin",
@@ -35,15 +35,15 @@ export const REQUIRED_FIELDS = [
   "decisions",
   "actions",
 ] as const;
-export type RequiredField = (typeof REQUIRED_FIELDS)[number];
+type RequiredField = (typeof REQUIRED_FIELDS)[number];
 
-export interface ProficiencyDraft {
+interface ProficiencyDraft {
   competencyId: string;
   observedLevel: Level | null;
   note?: string | undefined;
 }
 
-export function useMentoringSessionForm(menteeOptions: Architect[]) {
+function useMentoringSessionForm(menteeOptions: Architect[]) {
   const store = useStore();
   const user = useCurrentUser();
   const sel = useSelectors();
@@ -209,7 +209,7 @@ export function MenteeFilterCombobox({
   );
 }
 
-export function FollowUpScheduler({ session }: { session: MentoringSession }) {
+function FollowUpScheduler({ session }: { session: MentoringSession }) {
   const { t, locale } = useI18n();
   const notifySuccess = useSuccessToast();
   const store = useStore();

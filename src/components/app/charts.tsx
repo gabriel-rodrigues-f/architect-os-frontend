@@ -122,7 +122,7 @@ function RadarAxisNotice(props: {
   );
 }
 
-export interface RadarPoint {
+interface RadarPoint {
   capability: string;
   atual: number;
   alvo: number;
@@ -364,7 +364,7 @@ export function EvolutionLine({
   );
 }
 
-export interface ProficiencyPoint {
+interface ProficiencyPoint {
   date: string;
   level: number;
 }

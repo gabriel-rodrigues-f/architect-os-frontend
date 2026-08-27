@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import type { CapabilityAverage } from "@/lib/selectors";
 import { useSelectors } from "@/lib/store";
 
-export function useHeatmapColumns(
+function useHeatmapColumns(
   capabilities: readonly Capability[],
   architects: readonly { id: string }[],
   capabilityAveragesFor: (architectId: string) => readonly CapabilityAverage[],

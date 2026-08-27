@@ -26,7 +26,7 @@ export interface CareerLevelPolicy {
   minimumQualifiedCapabilities: number;
 }
 
-export interface CapabilityCuration {
+interface CapabilityCuration {
   activeCompetencyCount: number;
   restrictiveCompetencyCount: number;
   nonRestrictiveCompetencyCount: number;
@@ -99,7 +99,7 @@ export interface CareerLevelTransition {
   architectVersion: number;
 }
 
-export type AssessmentParticipantRole = "PROFESSIONAL" | "TECH_LEAD";
+type AssessmentParticipantRole = "PROFESSIONAL" | "TECH_LEAD";
 
 export interface AssessmentComment {
   id: string;
@@ -130,7 +130,7 @@ export interface AssessmentItem {
   version?: number | undefined;
 }
 
-export type AssessmentModelVersion = 1 | 2;
+type AssessmentModelVersion = 1 | 2;
 
 export type AssessmentTargetSemantics = "CURRENT_ROLE" | "NEXT_ROLE" | "MASTERY";
 
@@ -226,7 +226,7 @@ export interface DevelopmentPlanItemEvent {
   itemVersion: number;
 }
 
-export interface PlanItemCheckin {
+interface PlanItemCheckin {
   id: string;
   authorUserId: string;
   text: string;
@@ -258,8 +258,7 @@ export interface DevelopmentPlan {
   version: number;
 }
 
-export type PlanEventType =
-  "PlanApproved" | "PlanReturnedToDraft" | "PlanCompleted" | "PlanReopened";
+type PlanEventType = "PlanApproved" | "PlanReturnedToDraft" | "PlanCompleted" | "PlanReopened";
 
 export interface DevelopmentPlanEvent {
   id: string;
@@ -342,12 +341,12 @@ export interface ProficiencyUpdate {
   note?: string | undefined;
 }
 
-export type ProficiencySourceType = "ASSESSMENT" | "MENTORING";
-export type EvolutionSourceFilter = "ALL" | ProficiencySourceType;
+type ProficiencySourceType = "ASSESSMENT" | "MENTORING";
+type EvolutionSourceFilter = "ALL" | ProficiencySourceType;
 
 export type SelectionScope = GenericSelectionScope<string>;
 
-export interface CompetencyLevelEvent {
+interface CompetencyLevelEvent {
   id: string;
   architectId: string;
   competencyId: string;
@@ -361,9 +360,9 @@ export interface CompetencyLevelEvent {
   note: string | null;
 }
 
-export type SnapshotTemporalPrecision = "EXACT" | "CYCLE_END_INFERRED";
+type SnapshotTemporalPrecision = "EXACT" | "CYCLE_END_INFERRED";
 
-export interface ProfessionalStateSnapshotItem {
+interface ProfessionalStateSnapshotItem {
   capabilityId: string;
   competencyId: string;
   capabilityNameSnapshot: string;
@@ -374,7 +373,7 @@ export interface ProfessionalStateSnapshotItem {
   requirementTypeSnapshot: RequirementType;
 }
 
-export interface ProfessionalStateSnapshot {
+interface ProfessionalStateSnapshot {
   id: string;
   architectId: string;
   effectiveDate: string;
@@ -401,26 +400,26 @@ export interface CompetencyEvolutionComparison {
   lastSourceType: ProficiencySourceType | null;
 }
 
-export interface CapabilitySeriesPoint {
+interface CapabilitySeriesPoint {
   date: string;
   averageLevel: number;
   coveredCount: number;
 }
 
-export interface CapabilitySeries {
+interface CapabilitySeries {
   capabilityId: string;
   capabilityName: string;
   points: CapabilitySeriesPoint[];
 }
 
-export interface CompetencySeries {
+interface CompetencySeries {
   competencyId: string;
   competencyName: string;
   capabilityId: string;
   events: CompetencyLevelEvent[];
 }
 
-export interface EvolutionSummary {
+interface EvolutionSummary {
   coverage: { covered: number; total: number };
   initialAverage: number | null;
   currentAverage: number | null;
@@ -511,7 +510,7 @@ export interface Evidence {
   reviewedAt?: string | null | undefined;
 }
 
-export type GapSeverity = BandTone;
+type GapSeverity = BandTone;
 
 export const gapSeverityOf: (gap: number) => GapSeverity = defaultGapSeverityRuler.severityOf;
 

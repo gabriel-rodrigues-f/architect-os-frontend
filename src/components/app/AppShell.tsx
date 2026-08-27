@@ -107,7 +107,7 @@ export function filterNavGroups(groups: NavGroup[], role: string | undefined): N
     .filter((group) => group.items.length > 0);
 }
 
-export function isNavItemActive(item: NavItem, pathname: string): boolean {
+function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (item.to === "/") return pathname === "/";
   return (
     pathname.startsWith(item.to) ||

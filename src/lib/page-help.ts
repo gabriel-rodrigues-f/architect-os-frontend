@@ -1,7 +1,7 @@
 import type { PageHelpContent } from "@/components/app/PageHelp";
 import { useI18n } from "@/lib/i18n";
 
-export type PageHelpRouteKey =
+type PageHelpRouteKey =
   | "dash"
   | "dashLead"
   | "team"

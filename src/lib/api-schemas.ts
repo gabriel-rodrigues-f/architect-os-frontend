@@ -78,7 +78,7 @@ export const curationPolicySchema = z.object({
   requiredNonRestrictive: z.number(),
 });
 
-export const appSettingRecordSchema = z.object({
+const appSettingRecordSchema = z.object({
   key: z.string(),
   value: z.union([z.string(), z.number()]),
   valueType: z.string(),
