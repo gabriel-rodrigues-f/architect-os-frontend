@@ -20,18 +20,27 @@ import { AppShell } from "../components/app/AppShell";
 import { LoginScreen } from "../components/app/LoginScreen";
 import { Toaster } from "../components/ui/sonner";
 
-const initClientErrorTracking = createClientOnlyFn(async () => {
-  const mod = await import("../lib/error-tracking.client");
-  mod.initErrorTrackingClient();
-  return mod;
+const errorTrackingDsn = import.meta.env["VITE_SENTRY_DSN"];
+
+const loadClientErrorTracking = createClientOnlyFn(async () => {
+  const errorTracking = await import("../lib/error-tracking.client");
+  errorTracking.initErrorTrackingClient();
+  return errorTracking;
 });
 
-let errorTrackingInit: ReturnType<typeof initClientErrorTracking> | null = null;
+let clientErrorTracking: ReturnType<typeof loadClientErrorTracking> | null = null;
+
+function startClientErrorTracking() {
+  if (!errorTrackingDsn) return null;
+  clientErrorTracking ??= loadClientErrorTracking();
+  return clientErrorTracking;
+}
 
 function captureClientError(error: unknown) {
   if (typeof window === "undefined") return;
-  errorTrackingInit ??= initClientErrorTracking();
-  void errorTrackingInit.then(({ Sentry }) => Sentry.captureException(error));
+  const errorTracking = startClientErrorTracking();
+  if (!errorTracking) return;
+  void errorTracking.then(({ Sentry }) => Sentry.captureException(error));
 }
 
 function NotFoundComponent() {
@@ -160,7 +169,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
-    errorTrackingInit ??= initClientErrorTracking();
+    startClientErrorTracking();
   }, []);
 
   return (
