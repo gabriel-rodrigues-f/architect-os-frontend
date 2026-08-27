@@ -244,7 +244,6 @@ function ArchitectEvolution() {
 
       <SectionCard title={t("evolution.filters.title")} className="mb-6">
         <div className="flex flex-wrap items-end gap-4">
-          {}
           <SingleSelectFilter
             id="evolution-period"
             label={t("evolution.filters.period")}
@@ -331,7 +330,6 @@ function ArchitectEvolution() {
         </div>
       </SectionCard>
 
-      {}
       <QuerySection
         query={{ data, isPending: isLoading, isError, refetch }}
         errorMessage={t("evolution.error")}

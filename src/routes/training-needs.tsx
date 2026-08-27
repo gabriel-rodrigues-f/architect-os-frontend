@@ -85,7 +85,6 @@ function TrainingNeedsPage() {
     <>
       <PageHeader title={t("needs.title")} description={t("needs.subtitle")} help={help} />
 
-      {}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("needs.aggregated.title")}

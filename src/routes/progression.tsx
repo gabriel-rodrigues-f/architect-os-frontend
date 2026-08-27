@@ -114,7 +114,6 @@ function ProgressionPage() {
             title={t("gap.heatmap.title")}
             description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}
           >
-            {}
             <CapabilityHeatmap
               architects={architects}
               capabilities={store.capabilities}

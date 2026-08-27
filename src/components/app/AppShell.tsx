@@ -296,7 +296,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex min-h-screen w-full bg-background">
-        {}
         <aside
           style={{ width: collapsed ? SIDEBAR_RAIL : width }}
           className={cn(
@@ -305,7 +304,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             resizing ? "" : "transition-[width] duration-300 ease-in-out",
           )}
         >
-          {}
           {!collapsed && (
             <div
               role="separator"
@@ -330,14 +328,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             />
           )}
-          {}
           <div
             className={cn(
               "flex items-center py-5 transition-[padding] duration-300",
               collapsed ? "justify-center px-0" : "gap-2.5 px-5",
             )}
           >
-            {}
             <div
               className={cn(
                 "min-w-0 overflow-hidden leading-tight transition-all duration-300",
@@ -456,7 +452,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <Menu className="h-5 w-5" />
               </button>
-              {}
               <p className="hidden truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground md:block">
                 {t("shell.flow")}
               </p>
@@ -662,7 +657,6 @@ function PreferencesMenu() {
         </div>
 
         <div>
-          {}
           <label
             htmlFor="locale"
             className="block text-xs font-medium uppercase tracking-wide text-muted-foreground"

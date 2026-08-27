@@ -69,7 +69,6 @@ function CapabilityMapPage() {
             />
           </div>
 
-          {}
           <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
             {view === "table" ? (
               <div className="surface-card overflow-x-auto">

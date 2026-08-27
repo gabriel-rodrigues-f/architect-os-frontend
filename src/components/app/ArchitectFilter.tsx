@@ -120,7 +120,6 @@ export function ArchitectFilter({
         align="end"
         className="w-64 max-h-72 overflow-y-auto p-1"
       >
-        {}
         <button
           ref={(el) => {
             optionRefs.current[0] = el;

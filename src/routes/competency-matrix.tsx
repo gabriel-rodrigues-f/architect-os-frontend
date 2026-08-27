@@ -178,7 +178,6 @@ function MatrixPage() {
               className="max-w-sm"
             />
           </div>
-          {}
           <SingleSelectFilter
             id="matrix-curation-filter"
             label={t("matrix.filter.curation")}
@@ -553,7 +552,6 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
             </p>
           )}
 
-          {}
           {preview && (
             <div className="surface-inset p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -753,7 +751,6 @@ function CompetencyCreateDialog({
           </div>
           <div>
             <Label>{t("matrix.edit.levels")}</Label>
-            {}
             <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {careerLevels.map((cl) => (
                 <div key={cl.id} className="min-w-0">
