@@ -11,6 +11,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
+    "gate": "bash scripts/gate.sh",
     "lint": "eslint .",
     "lint:prune": "eslint . --prune-suppressions",
     "format": "prettier --write .",
