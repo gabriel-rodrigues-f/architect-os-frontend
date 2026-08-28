@@ -28,9 +28,8 @@ dados". Suba a API antes (`cd ../backend && docker compose up -d --build`).
 
 ## Deploy
 
-Fora do escopo Docker deste repositório (decisão explícita — B-08,
-AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md). Deploy via Cloudflare
-Workers, já configurado no preset do Nitro:
+Fora do escopo Docker deste repositório, por decisão explícita. Deploy via
+Cloudflare Workers, já configurado no preset do Nitro:
 
 ```sh
 npm run build
@@ -61,10 +60,28 @@ O prefixo `/api/v1` mora num lugar só: `src/lib/api-path.ts`. O `ApiClient` com
 `base + prefixo + recurso`, então os call sites dos gateways passam apenas o recurso
 (`/state`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
 
-Erro é assunto de quatro abstrações (`QuerySection`, `useAsyncSubmit`, `useToastSubmit`,
-`MutationRunner`) e nenhuma tela trata `ApiError` por conta própria. A regra de qual usar,
-mais a política de sessão e o caminho offline, está em
-[`docs/TRATAMENTO-DE-ERROS.md`](docs/TRATAMENTO-DE-ERROS.md).
+## Tratamento de erro
+
+`src/lib/api-client.ts` é o único lugar que fala `fetch` e o único que constrói `ApiError` —
+inclusive para falha de rede, que vira `status: 0` e `code: "NETWORK_UNAVAILABLE"` em vez de
+`TypeError: Failed to fetch` na cara de quem usa o produto. Falha de rede não encerra sessão.
+
+Nenhuma tela escreve `try/catch` por conta própria; erro é assunto de quatro abstrações:
+
+| Situação                                              | Use              |
+| ----------------------------------------------------- | ---------------- |
+| Ler dados para pintar a tela (`useQuery`)             | `QuerySection`   |
+| Escrever, com erro ao lado do campo                   | `useAsyncSubmit` |
+| Escrever, com erro em toast (ação fora de formulário) | `useToastSubmit` |
+| Escrever mexendo no cache do `/state`                 | `MutationRunner` |
+
+`MutationRunner` deliberadamente não revalida no caminho feliz — é o que evita refazer o fetch
+e o parse de um `/api/v1/state` de ~2 MB a cada edição.
+
+A política de sessão não mora no transporte: é um interceptor explícito
+(`src/lib/session-policy.ts`) que derruba a sessão só quando o código
+(`AUTHENTICATION_REQUIRED`, `SESSION_INVALID`, `SESSION_REVOKED`) casa com um 401 — um 401 de
+negócio, como `INVALID_CURRENT_PASSWORD`, não desloga ninguém.
 
 ## Idioma
 
@@ -84,11 +101,10 @@ npm run typecheck
 npm run lint
 ```
 
-## Histórico e decisões
+## Decisões
 
-Auditorias e planos de rodadas anteriores (histórico, não documentação viva):
-[`docs/historico/`](docs/historico/). Decisões arquiteturais atuais estão registradas como
-ADR no backend: [`architect-os-backend/docs/adr/`](https://github.com/gabriel-rodrigues-f/architect-os-backend/tree/main/docs/adr).
+As decisões arquiteturais estão registradas como ADR no backend:
+[`architect-os-backend/docs/adr/`](https://github.com/gabriel-rodrigues-f/architect-os-backend/tree/main/docs/adr).
 
 ## Built with
 
