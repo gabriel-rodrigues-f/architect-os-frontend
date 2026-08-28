@@ -32,6 +32,7 @@ import {
 } from "./operational-settings";
 import { useI18n } from "./i18n";
 import { MutationRunner } from "./mutation-runner";
+import { expectedVersionOf, UnknownExpectedVersionError } from "./optimistic-lock";
 import { CONFIG_QUERY_STALE_TIME } from "./query-client";
 import {
   gapSeverityRulerFrom,
@@ -417,8 +418,12 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         }),
       ),
 
-    transitionCareerLevel: (id, toRole, reason) => {
-      const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
+    transitionCareerLevel: async (id, toRole, reason) => {
+      const expectedVersion = expectedVersionOf(
+        state.architects.find((a) => a.id === id)?.version,
+        "deste arquiteto",
+        id,
+      );
       return runner.command(
         () => api.transitionCareerLevel(id, toRole, reason, expectedVersion),
         (updated) => (s) => ({
@@ -428,8 +433,12 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    deactivate: (id, reason) => {
-      const expectedVersion = state.architects.find((a) => a.id === id)?.version ?? 1;
+    deactivate: async (id, reason) => {
+      const expectedVersion = expectedVersionOf(
+        state.architects.find((a) => a.id === id)?.version,
+        "deste arquiteto",
+        id,
+      );
       return runner.command(
         () => api.deactivate(id, reason, expectedVersion),
         (updated) => (s) => ({
@@ -542,10 +551,14 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       ),
 
     updateAssessmentItem: (assessmentId, competencyId, patch) => {
-      const expectedVersion =
-        state.assessments
-          .find((a) => a.id === assessmentId)
-          ?.items.find((i) => i.competencyId === competencyId)?.version ?? 1;
+      const knownVersion = state.assessments
+        .find((a) => a.id === assessmentId)
+        ?.items.find((i) => i.competencyId === competencyId)?.version;
+      if (knownVersion === undefined) {
+        runner.refuse(new UnknownExpectedVersionError("deste item da avaliação", competencyId));
+        return;
+      }
+      const expectedVersion = knownVersion;
       runner.optimistic(
         (s) => ({
           ...s,
@@ -640,8 +653,14 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       ),
 
     updatePlanItem: (planId, itemId, patch) => {
-      const expectedVersion =
-        state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
+      const knownVersion = state.plans
+        .find((p) => p.id === planId)
+        ?.items.find((i) => i.id === itemId)?.version;
+      if (knownVersion === undefined) {
+        runner.refuse(new UnknownExpectedVersionError("deste item do plano", itemId));
+        return;
+      }
+      const expectedVersion = knownVersion;
 
       runner.optimistic(
         (s) => ({
@@ -669,9 +688,12 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    reschedulePlanItem: (planId, itemId, targetDate, reason) => {
-      const expectedVersion =
-        state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version ?? 1;
+    reschedulePlanItem: async (planId, itemId, targetDate, reason) => {
+      const expectedVersion = expectedVersionOf(
+        state.plans.find((p) => p.id === planId)?.items.find((i) => i.id === itemId)?.version,
+        "deste item do plano",
+        itemId,
+      );
       return runner.command(
         () => api.reschedulePlanItem(planId, itemId, targetDate, reason, expectedVersion),
         (updated) => (s) => ({
@@ -683,8 +705,12 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
 
     planItemEvents: (planId, itemId) => api.planItemEvents(planId, itemId),
 
-    updatePlanStatus: (planId, status) => {
-      const expectedVersion = state.plans.find((p) => p.id === planId)?.version ?? 1;
+    updatePlanStatus: async (planId, status) => {
+      const expectedVersion = expectedVersionOf(
+        state.plans.find((p) => p.id === planId)?.version,
+        "deste plano",
+        planId,
+      );
       return runner.command(
         () => api.updatePlanStatus(planId, status, expectedVersion),
         (updated) => (s) => ({
@@ -694,8 +720,12 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       );
     },
 
-    reopenPlan: (planId, reason) => {
-      const expectedVersion = state.plans.find((p) => p.id === planId)?.version ?? 1;
+    reopenPlan: async (planId, reason) => {
+      const expectedVersion = expectedVersionOf(
+        state.plans.find((p) => p.id === planId)?.version,
+        "deste plano",
+        planId,
+      );
       return runner.command(
         () => api.reopenPlan(planId, reason, expectedVersion),
         (updated) => (s) => ({
@@ -823,8 +853,12 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
         }),
       ),
 
-    setAssessmentStatus: (id, status) => {
-      const expectedVersion = state.assessments.find((a) => a.id === id)?.version ?? 1;
+    setAssessmentStatus: async (id, status) => {
+      const expectedVersion = expectedVersionOf(
+        state.assessments.find((a) => a.id === id)?.version,
+        "desta avaliação",
+        id,
+      );
       return runner.command(
         () => api.setAssessmentStatus(id, status, expectedVersion),
         (updated) => (s) => ({

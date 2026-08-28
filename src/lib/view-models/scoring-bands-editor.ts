@@ -34,8 +34,10 @@ export class ScoringBandsEditor {
   get errorKey(): "config.bands.error.number" | "config.bands.error.order" | null {
     const values = this.parsedCuts();
     if (values === null) return "config.bands.error.number";
-    for (let i = 1; i < values.length; i += 1) {
-      if (values[i]! <= values[i - 1]!) return "config.bands.error.order";
+    let previous: number | undefined;
+    for (const value of values) {
+      if (previous !== undefined && value <= previous) return "config.bands.error.order";
+      previous = value;
     }
     return null;
   }
@@ -52,11 +54,15 @@ export class ScoringBandsEditor {
   payload(): ScoringBand[] | null {
     const values = this.parsedCuts();
     if (values === null || !this.isValid) return null;
-    return this.bands.map((band, i) => ({
-      ...band,
-      minValue: i === 0 ? band.minValue : values[i - 1]!,
-      maxValue: i === this.bands.length - 1 ? band.maxValue : values[i]!,
-    }));
+    const lastIndex = this.bands.length - 1;
+    const bands: ScoringBand[] = [];
+    for (const [i, band] of this.bands.entries()) {
+      const minValue = i === 0 ? band.minValue : values[i - 1];
+      const maxValue = i === lastIndex ? band.maxValue : values[i];
+      if (minValue === undefined || maxValue === undefined) return null;
+      bands.push({ ...band, minValue, maxValue });
+    }
+    return bands;
   }
 
   previewBands(): readonly ScoringBand[] {

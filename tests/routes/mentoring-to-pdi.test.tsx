@@ -42,6 +42,7 @@ const sessaoComGap: MentoringSession = {
   notes: "Revisamos operadores customizados.",
   decisions: "Vai propor um PoC de operador.",
   actions: "Escrever o operador de exemplo até a próxima sessão.",
+  nextSession: "2026-09-15",
 };
 
 const sessaoSemGap: MentoringSession = {
@@ -134,6 +135,9 @@ describe("Mentoria — converter ação em item de PDI", () => {
     expect(body["competencyId"]).toBe("cloud-k8s");
     expect(body["actionType"]).toBe("Mentor");
     expect(body["assessmentId"]).toBeTruthy();
+    // ENG-04 — o prazo é a data do próximo encontro; sem ela a criação é recusada,
+    // nunca resolvida com `hoje`.
+    expect(body["targetDate"]).toBe("2026-09-15");
     expect(body).not.toHaveProperty("currentLevel");
     expect(body).not.toHaveProperty("targetLevel");
     expect(body).not.toHaveProperty("priority");

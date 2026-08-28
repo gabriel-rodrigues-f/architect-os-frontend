@@ -75,7 +75,10 @@ export const DEFAULT_VOCABULARIES: Vocabularies = Object.fromEntries(
     name,
     seed(
       name,
-      SEED_CODES[name].map((code, index) => [code, SEED_LABEL_KEYS[name][index]!] as const),
+      SEED_CODES[name].flatMap((code, index) => {
+        const labelKey = SEED_LABEL_KEYS[name][index];
+        return labelKey === undefined ? [] : [[code, labelKey] as const];
+      }),
     ),
   ]),
 ) as Vocabularies;

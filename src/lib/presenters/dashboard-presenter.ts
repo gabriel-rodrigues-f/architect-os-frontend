@@ -91,10 +91,16 @@ function largestBy<T>(items: readonly T[], scoreOf: (item: T) => number, limit: 
 
   for (const item of items) {
     const score = scoreOf(item);
-    if (selected.length === limit && score <= scores[limit - 1]!) continue;
+    const weakestSelected = scores[limit - 1];
+    if (selected.length === limit && weakestSelected !== undefined && score <= weakestSelected)
+      continue;
 
     let position = selected.length;
-    while (position > 0 && scores[position - 1]! < score) position -= 1;
+    while (position > 0) {
+      const previous = scores[position - 1];
+      if (previous === undefined || previous >= score) break;
+      position -= 1;
+    }
 
     selected.splice(position, 0, item);
     scores.splice(position, 0, score);

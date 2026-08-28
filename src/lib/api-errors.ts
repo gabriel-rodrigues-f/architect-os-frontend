@@ -1,4 +1,11 @@
-export class ApiError extends Error {
+export class UserFacingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UserFacingError";
+  }
+}
+
+export class ApiError extends UserFacingError {
   constructor(
     message: string,
     readonly status: number,

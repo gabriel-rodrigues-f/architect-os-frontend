@@ -178,7 +178,12 @@ describe("MentoringViewModel", () => {
       expect(item.id).toMatch(/^pdi-ana-cloud-k8s-\d+$/);
     });
 
-    it("sem nextSession na sessão, targetDate cai para hoje", async () => {
+    /**
+     * ENG-04 — antes o prazo caía para `hoje` quando a sessão não tinha
+     * próximo encontro: um item nascia vencido, com um prazo que ninguém
+     * escolheu e indistinguível de um prazo real. Prazo ausente é erro.
+     */
+    it("sem nextSession na sessão, recusa criar o item em vez de inventar o prazo de hoje", async () => {
       const { vm, service } = makeVm();
       const session = {
         menteeId: "ana",
@@ -186,26 +191,24 @@ describe("MentoringViewModel", () => {
         actions: "Ação",
         nextSession: undefined,
       };
-      await vm.sendToPlan(
-        session,
-        { name: "Ana Martins" },
-        {
-          assessmentId: "assessment-1",
-          competencyId: "cloud-k8s",
-        },
-      );
-      const [, item] = service.createPlanItemFromGap.mock.calls[0] as [
-        string,
-        { targetDate: string; startDate: string },
-      ];
-      expect(item.targetDate).toBe(item.startDate);
+      await expect(
+        vm.sendToPlan(
+          session,
+          { name: "Ana Martins" },
+          {
+            assessmentId: "assessment-1",
+            competencyId: "cloud-k8s",
+          },
+        ),
+      ).rejects.toBeInstanceOf(Error);
+      expect(service.createPlanItemFromGap).not.toHaveBeenCalled();
     });
 
     it("propaga o erro do serviço — quem chama decide toast/mensagem", async () => {
       const service = fakeService();
       service.createPlanItemFromGap.mockRejectedValueOnce(new Error("409 gap inválido"));
       const { vm } = makeVm(service);
-      const session = { menteeId: "ana", topic: "X", actions: "Y", nextSession: undefined };
+      const session = { menteeId: "ana", topic: "X", actions: "Y", nextSession: "2026-09-01" };
       await expect(
         vm.sendToPlan(
           session,

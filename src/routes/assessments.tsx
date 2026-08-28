@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -91,10 +91,10 @@ function AssessmentsPage() {
   const toggleCapability = (id: string) =>
     setCapabilityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
+  const assessmentId = assessment?.id;
   const { data: eligibility } = useQuery({
-    queryKey: ["assessment-eligibility", assessment?.id],
-    queryFn: () => api.assessmentEligibility(assessment!.id),
-    enabled: !!assessment,
+    queryKey: ["assessment-eligibility", assessmentId],
+    queryFn: assessmentId ? () => api.assessmentEligibility(assessmentId) : skipToken,
     staleTime: 0,
     refetchOnWindowFocus: true,
   });

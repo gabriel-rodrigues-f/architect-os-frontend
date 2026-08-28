@@ -488,9 +488,7 @@ function EvidenceDialog({
   const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<EvidenceType>(
-    (evidenceTypes.options[0]?.code ?? "Architecture Design") as EvidenceType,
-  );
+  const [type, setType] = useState(() => evidenceTypes.options[0]?.code ?? "");
   const [date, setDate] = useState(defaultDateFormatter.todayIso());
   const [complexity, setComplexity] = useState<"Low" | "Medium" | "High">("Medium");
   const [description, setDescription] = useState("");
@@ -505,12 +503,12 @@ function EvidenceDialog({
 
   const salvar = async () => {
     const nome = title.trim();
-    if (!nome) return;
+    if (!nome || !type) return;
     const result = await run(() =>
       viewModel.registerEvidence(architectId, {
         title,
         description,
-        type,
+        type: type as EvidenceType,
         date,
         complexity,
         project,
@@ -558,7 +556,7 @@ function EvidenceDialog({
                 id="ev-type"
                 className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
                 value={type}
-                onChange={(e) => setType(e.target.value as EvidenceType)}
+                onChange={(e) => setType(e.target.value)}
               >
                 {evidenceTypes.options.map((option) => (
                   <option key={option.code} value={option.code}>

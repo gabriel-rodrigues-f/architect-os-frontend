@@ -1,7 +1,7 @@
+import { UserFacingError } from "../api-errors";
 import type { Architect, DevelopmentPlan, MentoringSession, ProficiencyUpdate } from "../domain";
 import type { Gap } from "../selectors";
 import type { Api } from "../store";
-import { defaultDateFormatter } from "../text";
 import { createPlanItemFromGap } from "./plan-item-from-gap";
 
 export type MentoringService = Pick<
@@ -61,18 +61,25 @@ export class MentoringViewModel {
       .find((g) => g && !plan?.items.some((i) => i.competencyId === g.item.competencyId));
   }
 
-  sendToPlan(
+  async sendToPlan(
     session: Pick<MentoringSession, "menteeId" | "topic" | "actions" | "nextSession">,
     mentee: Pick<Architect, "name">,
     eligible: { assessmentId: string; competencyId: string },
   ): Promise<DevelopmentPlan> {
+    const targetDate = session.nextSession;
+    if (!targetDate) {
+      throw new UserFacingError(
+        "Agende o próximo encontro desta mentoria antes de mandar a ação para o PDI: sem essa data o item ficaria sem prazo real.",
+      );
+    }
+
     return createPlanItemFromGap(this.service, session.menteeId, {
       assessmentId: eligible.assessmentId,
       competencyId: eligible.competencyId,
       objective: session.topic,
       actionType: "Mentor",
       actionPlan: session.actions,
-      targetDate: session.nextSession ?? defaultDateFormatter.todayIso(),
+      targetDate,
       owner: mentee.name,
     });
   }

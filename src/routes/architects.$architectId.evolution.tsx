@@ -189,7 +189,12 @@ function ArchitectEvolution() {
   );
 
   const topChanges = useMemo(
-    () => sortedComparisons.filter((c) => c.delta !== null && c.delta !== 0).slice(0, 5),
+    () =>
+      sortedComparisons
+        .filter((c): c is CompetencyEvolutionComparison & { delta: number } => {
+          return c.delta !== null && c.delta !== 0;
+        })
+        .slice(0, 5),
     [sortedComparisons],
   );
 
@@ -421,8 +426,8 @@ function ArchitectEvolution() {
                         <span className="flex shrink-0 items-center gap-2 tabular-nums">
                           {c.initialLevel ? `L${c.initialLevel}` : "—"} →{" "}
                           {c.currentLevel ? `L${c.currentLevel}` : "—"}
-                          <span className={c.delta! > 0 ? "text-success-fg" : "text-destructive"}>
-                            ({c.delta! > 0 ? "+" : ""}
+                          <span className={c.delta > 0 ? "text-success-fg" : "text-destructive"}>
+                            ({c.delta > 0 ? "+" : ""}
                             {c.delta})
                           </span>
                         </span>

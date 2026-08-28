@@ -415,7 +415,7 @@ function ScoringScaleEditor({
   const previewSource = editor ? editor.previewBands() : rows;
   const sampleValue = Number(sample);
   const previewBand =
-    sample.trim().length > 0 && Number.isFinite(sampleValue)
+    previewSource.length > 0 && sample.trim().length > 0 && Number.isFinite(sampleValue)
       ? classifyBand(previewSource, sampleValue)
       : undefined;
 
@@ -678,7 +678,9 @@ function TextTemplatesSection() {
     <SectionCard title={t("config.templates.title")} description={t("config.templates.subtitle")}>
       <div className="space-y-6">
         {TEXT_TEMPLATE_KEYS.map((key) => {
-          const locales = Object.keys(templates[key]).sort();
+          const localeTemplates = Object.entries(templates[key]).sort(([a], [b]) =>
+            a.localeCompare(b),
+          );
           return (
             <div key={key} className="surface-inset p-3">
               <p className="text-sm font-medium">{t(TEMPLATE_KEY_TITLE[key])}</p>
@@ -694,12 +696,12 @@ function TextTemplatesSection() {
                 ))}
               </div>
               <div className="mt-3 space-y-3">
-                {locales.map((locale) => (
+                {localeTemplates.map(([locale, current]) => (
                   <TemplateLocaleEditor
                     key={`${key}:${locale}`}
                     templateKey={key}
                     locale={locale}
-                    current={templates[key][locale]!}
+                    current={current}
                   />
                 ))}
               </div>

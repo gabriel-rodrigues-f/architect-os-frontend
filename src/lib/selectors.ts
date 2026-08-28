@@ -36,7 +36,7 @@ const isEvaluated = (item: Assessment["items"][number]): item is EvaluatedAssess
   item.final !== null;
 
 export interface Gap {
-  competency: Competency | undefined;
+  competency: Competency;
   item: EvaluatedAssessmentItem;
   gap: number;
   assessmentId: string;
@@ -49,8 +49,8 @@ export interface CapabilityAverage {
   target: number | undefined;
 }
 
-interface TrainingNeed {
-  competency: Competency | undefined;
+export interface TrainingNeed {
+  competency: Competency;
   people: number;
   avgGap: number;
   totalGap: number;
@@ -175,7 +175,7 @@ export class AssessmentSelectors {
             assessmentId: assessment.id,
             targetSemantics: assessment.targetSemantics,
           }))
-          .filter((g) => !!g.competency)
+          .filter((g): g is Gap => g.competency !== undefined)
           .sort((x, y) => y.gap - x.gap);
 
     this.gapsCache.set(cacheKey, gaps);
@@ -358,19 +358,21 @@ export class CapabilitySelectors {
 
 export class TrainingSelectors {
   constructor(
-    private readonly index: SelectorIndex,
     private readonly architect: ArchitectSelectors,
     private readonly assessment: AssessmentSelectors,
   ) {}
 
   teamTrainingNeeds = (population: Architect[] = this.architect.active): TrainingNeed[] => {
-    const totals = new Map<string, { people: number; totalGap: number; architectIds: string[] }>();
+    const totals = new Map<
+      string,
+      { competency: Competency; people: number; totalGap: number; architectIds: string[] }
+    >();
     for (const architect of population) {
       for (const gap of this.assessment.progressionGapsFor(architect.id)) {
         if (gap.gap <= 0) continue;
         let acc = totals.get(gap.item.competencyId);
         if (!acc) {
-          acc = { people: 0, totalGap: 0, architectIds: [] };
+          acc = { competency: gap.competency, people: 0, totalGap: 0, architectIds: [] };
           totals.set(gap.item.competencyId, acc);
         }
         acc.people += 1;
@@ -379,15 +381,14 @@ export class TrainingSelectors {
       }
     }
 
-    return [...totals.entries()]
-      .map(([competencyId, v]) => ({
-        competency: this.index.competencyIndex.get(competencyId),
+    return [...totals.values()]
+      .map((v) => ({
+        competency: v.competency,
         people: v.people,
         avgGap: Number((v.totalGap / v.people).toFixed(1)),
         totalGap: v.totalGap,
         architectIds: v.architectIds,
       }))
-      .filter((need) => !!need.competency)
       .sort((x, y) => y.totalGap - x.totalGap);
   };
 }
@@ -398,7 +399,7 @@ export function createSelectors(s: AppState) {
   const assessment = new AssessmentSelectors(index);
   const development = new DevelopmentSelectors(index);
   const capability = new CapabilitySelectors(s, index, assessment);
-  const training = new TrainingSelectors(index, architect, assessment);
+  const training = new TrainingSelectors(architect, assessment);
   const gapConsolidation = new GapConsolidationSelectors(assessment);
 
   return {
