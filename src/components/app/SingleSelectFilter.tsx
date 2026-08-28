@@ -1,8 +1,9 @@
 import { ChevronDown } from "lucide-react";
-import { useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
+import { useState } from "react";
 
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useOptionListNavigation } from "@/hooks";
 import { cn } from "@/lib/utils";
 
 interface SingleSelectFilterOption {
@@ -33,62 +34,18 @@ export function SingleSelectFilter({
   triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const optionCount = options.length;
 
-  const close = () => {
-    setOpen(false);
-    triggerRef.current?.focus();
-  };
-
-  const focusOption = (index: number) => {
-    if (optionCount === 0) return;
-    const clamped = (index + optionCount) % optionCount;
-    optionRefs.current[clamped]?.focus();
-  };
-
-  const onListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const currentIndex = optionRefs.current.findIndex((el) => el === document.activeElement);
-    switch (event.key) {
-      case "ArrowDown":
-        event.preventDefault();
-        focusOption(currentIndex + 1);
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        focusOption(currentIndex - 1);
-        break;
-      case "Home":
-        event.preventDefault();
-        focusOption(0);
-        break;
-      case "End":
-        event.preventDefault();
-        focusOption(optionCount - 1);
-        break;
-      case "Escape":
-        event.preventDefault();
-        close();
-        break;
-    }
-  };
-
-  const onListBlur = (event: FocusEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
-  };
-
-  const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      setOpen(true);
-    }
-  };
+  const { optionProps, onListKeyDown, onTriggerKeyDown } = useOptionListNavigation({
+    optionCount: options.length,
+    entryIndex: options.findIndex((o) => o.value === value),
+    openList: () => {
+      if (!disabled) setOpen(true);
+    },
+  });
 
   const select = (optionValue: string) => {
     onChange(optionValue);
-    close();
+    setOpen(false);
   };
 
   const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
@@ -105,10 +62,8 @@ export function SingleSelectFilter({
         <PopoverTrigger asChild>
           <FilterTriggerButton
             id={id}
-            ref={triggerRef}
             disabled={disabled}
             onKeyDown={onTriggerKeyDown}
-            aria-expanded={open}
             aria-haspopup="listbox"
             aria-label={label ? undefined : ariaLabel}
             title={selectedLabel}
@@ -122,12 +77,6 @@ export function SingleSelectFilter({
           role="listbox"
           aria-label={accessibleLabel}
           onKeyDown={onListKeyDown}
-          onBlur={onListBlur}
-          onOpenAutoFocus={(event) => {
-            event.preventDefault();
-            const selectedIndex = options.findIndex((o) => o.value === value);
-            optionRefs.current[selectedIndex >= 0 ? selectedIndex : 0]?.focus();
-          }}
           align="start"
           className="w-56 max-h-72 overflow-y-auto p-1"
         >
@@ -136,9 +85,7 @@ export function SingleSelectFilter({
             return (
               <button
                 key={option.value}
-                ref={(el) => {
-                  optionRefs.current[index] = el;
-                }}
+                {...optionProps(index)}
                 type="button"
                 role="option"
                 aria-selected={active}
