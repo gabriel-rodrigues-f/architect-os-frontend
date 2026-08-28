@@ -60,10 +60,14 @@ function fromLinearRgb([r, g, b]: [number, number, number]): Oklch {
   const curta = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
 
   const luminosidade = 0.2104542553 * longa + 0.793617785 * media - 0.0040720468 * curta;
-  const a = 1.9779984951 * longa - 2.428592205 * media + 0.4505937099 * curta;
+  const eixoVermelho = 1.9779984951 * longa - 2.428592205 * media + 0.4505937099 * curta;
   const eixoAmarelo = 0.0259040371 * longa + 0.7827717662 * media - 0.808675766 * curta;
 
-  return new Oklch(luminosidade, Math.hypot(a, eixoAmarelo), toDegrees(Math.atan2(eixoAmarelo, a)));
+  return new Oklch(
+    luminosidade,
+    Math.hypot(eixoVermelho, eixoAmarelo),
+    toDegrees(Math.atan2(eixoAmarelo, eixoVermelho)),
+  );
 }
 
 export function simulateColorVision(cor: Oklch, deficiency: ColorVisionDeficiency): Oklch {

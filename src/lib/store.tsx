@@ -982,6 +982,6 @@ export function useStore() {
 }
 
 export function useSelectors() {
-  const s = useStore();
-  return useMemo(() => createSelectors(s), [s]);
+  const store = useStore();
+  return useMemo(() => createSelectors(store), [store]);
 }

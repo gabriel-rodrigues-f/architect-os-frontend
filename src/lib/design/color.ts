@@ -10,8 +10,10 @@ export class Oklch {
   ) {}
 
   static parse(css: string): Oklch {
-    const m = /oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)/i.exec(css);
-    const [, lightness, chroma, hue, alpha] = m ?? [];
+    const match = /oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)/i.exec(
+      css,
+    );
+    const [, lightness, chroma, hue, alpha] = match ?? [];
     if (lightness === undefined) throw new Error(`cor OKLCH inválida: ${css}`);
     const num = (v: string) => (v.endsWith("%") ? Number(v.slice(0, -1)) / 100 : Number(v));
     return new Oklch(num(lightness), Number(chroma), Number(hue), alpha ? num(alpha) : 1);
@@ -69,9 +71,12 @@ export class Oklch {
   }
 
   contrastWith(other: Oklch): number {
-    const a = this.luminance();
-    const b = other.luminance();
-    const [claro, escuro] = a > b ? [a, b] : [b, a];
+    const luminanciaPropria = this.luminance();
+    const luminanciaOutra = other.luminance();
+    const [claro, escuro] =
+      luminanciaPropria > luminanciaOutra
+        ? [luminanciaPropria, luminanciaOutra]
+        : [luminanciaOutra, luminanciaPropria];
     return (claro + 0.05) / (escuro + 0.05);
   }
 }

@@ -1,0 +1,657 @@
+{
+  "e2e/pdi-lifecycle.spec.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/app/AppShell.tsx": {
+    "id-length": {
+      "count": 7
+    }
+  },
+  "src/components/app/ArchitectFilter.tsx": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "src/components/app/ArchitectNameCombobox.tsx": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "src/components/app/ArchitectSelectCombobox.tsx": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/components/app/CapabilityCombobox.tsx": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/components/app/CapabilityHeatmap.tsx": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "src/components/app/CommandWithReasonDialog.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/app/ConfirmDialog.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/app/DataView.tsx": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "src/components/app/LoginScreen.tsx": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/components/app/MultiSelectFilter.tsx": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "src/components/app/SingleSelectFilter.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/components/app/SpecializationCombobox.tsx": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "src/components/app/assessments-shared.tsx": {
+    "id-length": {
+      "count": 25
+    }
+  },
+  "src/components/app/charts-recharts.tsx": {
+    "id-length": {
+      "count": 7
+    }
+  },
+  "src/components/app/charts.tsx": {
+    "id-length": {
+      "count": 18
+    }
+  },
+  "src/components/app/gap-analysis-shared.tsx": {
+    "id-length": {
+      "count": 7
+    }
+  },
+  "src/components/app/mentoring-shared.tsx": {
+    "id-length": {
+      "count": 38
+    }
+  },
+  "src/components/app/team-shared.tsx": {
+    "id-length": {
+      "count": 41
+    }
+  },
+  "src/components/app/ui-bits.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/hooks/use-async-submit.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/lib/catalog-import.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/lib/collections.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/lib/cycle-cadence.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/lib/design/chart.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/lib/design/color.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/lib/design/scale.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/lib/design/stylesheet.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/lib/design/tokens.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/lib/domain.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/lib/i18n/registry.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/lib/labels.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/lib/page-help.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/lib/presenters/capability-coverage-presenter.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "src/lib/presenters/dashboard-presenter.ts": {
+    "id-length": {
+      "count": 19
+    }
+  },
+  "src/lib/presenters/team-report-presenter.ts": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "src/lib/scoring-bands.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/lib/selectors.ts": {
+    "id-length": {
+      "count": 21
+    }
+  },
+  "src/lib/store.tsx": {
+    "id-length": {
+      "count": 117
+    }
+  },
+  "src/lib/team-report-csv.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/lib/team-report-pdf.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/lib/text.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/lib/view-models/assessment-view-model.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/lib/view-models/catalog-import-editor.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "src/lib/view-models/competency-matrix-view-model.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/lib/view-models/development-plans-view-model.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/lib/view-models/learning-paths-view-model.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "src/lib/view-models/mentoring-view-model.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/lib/view-models/scoring-bands-editor.ts": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "src/lib/vocabularies.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/routes/architects.$architectId.evolution.tsx": {
+    "id-length": {
+      "count": 34
+    }
+  },
+  "src/routes/architects.$architectId.index.tsx": {
+    "id-length": {
+      "count": 36
+    }
+  },
+  "src/routes/assessments.tsx": {
+    "id-length": {
+      "count": 8
+    }
+  },
+  "src/routes/capability-map.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/routes/compare.tsx": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "src/routes/competency-matrix.tsx": {
+    "id-length": {
+      "count": 30
+    }
+  },
+  "src/routes/cycles.tsx": {
+    "id-length": {
+      "count": 18
+    }
+  },
+  "src/routes/development-plans.tsx": {
+    "id-length": {
+      "count": 20
+    }
+  },
+  "src/routes/gap-analysis.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/routes/index.tsx": {
+    "id-length": {
+      "count": 15
+    }
+  },
+  "src/routes/learning-paths.tsx": {
+    "id-length": {
+      "count": 25
+    }
+  },
+  "src/routes/mentoring.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/routes/settings.tsx": {
+    "id-length": {
+      "count": 27
+    }
+  },
+  "src/routes/team.tsx": {
+    "id-length": {
+      "count": 10
+    }
+  },
+  "src/routes/training-needs.tsx": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "src/routes/users.tsx": {
+    "id-length": {
+      "count": 7
+    }
+  },
+  "src/server.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/components/app/app-shell-sidebar-toggle.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/components/app/capability-heatmap.test.tsx": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "tests/components/app/gap-analysis-memo.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/components/app/nav-role.test.ts": {
+    "id-length": {
+      "count": 16
+    }
+  },
+  "tests/components/app/nav-settings-icon.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/components/app/query-section.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/components/app/section-group.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/hooks/use-async-submit.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/hooks/use-server-draft.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/lib/accessibility/second-channel.test.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "tests/lib/api-client-envelope.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/lib/api-client-offline.test.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "tests/lib/api.integration.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/lib/api.test.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "tests/lib/capabilities.test.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "tests/lib/collections.test.ts": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "tests/lib/dependencies.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/lib/design/design-chart.test.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "tests/lib/design/design-scale.test.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "tests/lib/design/design-tokens.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/lib/gap-scope.test.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "tests/lib/i18n.test.ts": {
+    "id-length": {
+      "count": 7
+    }
+  },
+  "tests/lib/learning-paths.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/lib/mutation-runner.test.ts": {
+    "id-length": {
+      "count": 12
+    }
+  },
+  "tests/lib/presenters/capability-coverage-presenter.test.ts": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "tests/lib/presenters/dashboard-presenter.test.ts": {
+    "id-length": {
+      "count": 23
+    }
+  },
+  "tests/lib/scoring-bands.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/lib/selectors-performance.test.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "tests/lib/selectors.test.ts": {
+    "id-length": {
+      "count": 29
+    }
+  },
+  "tests/lib/store-version-reconcile.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/lib/text.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/lib/training-needs-orphan-competency.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/lib/view-models/architect-profile-view-model.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/lib/view-models/assessment-view-model.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/lib/view-models/catalog-import-editor.test.ts": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "tests/lib/view-models/competency-matrix-view-model.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/lib/view-models/development-plans-view-model.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/lib/view-models/learning-paths-view-model.test.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "tests/lib/view-models/mentoring-view-model.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/lib/view-models/scoring-bands-editor.test.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "tests/lib/vocabularies.test.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "tests/routes/architect-workspace-next-steps.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/assessment-comments.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/routes/assessment-development-summary.test.tsx": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "tests/routes/assessment-lifecycle.test.tsx": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "tests/routes/assessments-portfolio.test.tsx": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "tests/routes/assessments-responsive.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/assessments-scale.test.tsx": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "tests/routes/capability-map-risk.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/competency-checklist-search.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/competency-matrix-curation.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/competency-swap-requirement.test.tsx": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "tests/routes/dashboard-roles.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/gap-analysis-restructure.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/mentoring-followup.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/mentoring-proficiency.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/pdi-lifecycle.test.tsx": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "tests/routes/progression.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/settings-bands.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/routes/store-remote-error.test.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "tests/routes/team-deactivate.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/routes/team-roles-from-career-levels.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/routes/training-needs-scale.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  }
+}

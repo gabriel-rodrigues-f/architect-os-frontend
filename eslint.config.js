@@ -28,6 +28,30 @@ const UNSAFE_ANY_RULES_AS_WARNINGS = Object.fromEntries(
   Object.keys(UNSAFE_ANY_RULES).map((rule) => [rule, "warn"]),
 );
 
+/**
+ * CQ-03 — nome de uma letra esconde o que o valor é. A regra é para código NOVO:
+ * as ocorrências de hoje (quase todas parâmetros de callback em cadeias
+ * `.map`/`.filter`, cuja renomeação em massa o dono descartou por ser ruído)
+ * estão registradas em `eslint-suppressions.json`, um livro-razão com contagem
+ * por arquivo que só encolhe. `error` em vez de `warn` porque a supressão em
+ * lote deixa o gate vermelho para o nome novo sem afogar a saída do lint em
+ * ~950 avisos que ninguém leria.
+ *
+ * `t` é o tradutor do i18n e `_` é o descarte explícito: vocabulário
+ * estabelecido, não abreviação preguiçosa.
+ */
+const NOMES_CURTOS_ESTABELECIDOS = ["t", "_"];
+
+/**
+ * Nos arquivos de cor as letras SÃO o vocabulário da especificação: `l`/`c`/`h`
+ * são os eixos do OKLCH, `a`/`b` os do OKLab, `l`/`m`/`s` as respostas dos cones
+ * e `r`/`g`/`b` os canais lineares. Renomear afasta o código da referência que
+ * ele implementa em vez de aproximá-lo do leitor.
+ */
+const CANAIS_DE_COR = ["l", "c", "h", "a", "b", "m", "s", "r", "g"];
+
+const ARQUIVOS_DE_COR = ["src/lib/design/color.ts", "src/lib/accessibility/color-vision.ts"];
+
 export default tseslint.config(
   { ignores: ["dist", ".output", ".worktrees", "src/routeTree.gen.ts"] },
   {
@@ -58,6 +82,23 @@ export default tseslint.config(
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "error",
+      "id-length": [
+        "error",
+        { min: 2, properties: "never", exceptions: NOMES_CURTOS_ESTABELECIDOS },
+      ],
+    },
+  },
+  {
+    files: ARQUIVOS_DE_COR,
+    rules: {
+      "id-length": [
+        "error",
+        {
+          min: 2,
+          properties: "never",
+          exceptions: [...NOMES_CURTOS_ESTABELECIDOS, ...CANAIS_DE_COR],
+        },
+      ],
     },
   },
   {
