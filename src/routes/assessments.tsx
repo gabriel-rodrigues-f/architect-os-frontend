@@ -3,17 +3,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import { Callout, PageHeader, SectionCard, StatusBadge } from "@/components/app/ui-bits";
-import { Button } from "@/components/ui/button";
-import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
-import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
 import {
+  ArchitectSelectCombobox,
   assessmentStatusTone,
+  Callout,
   CapabilityAssessmentCard,
+  CapabilityCombobox,
   CareerPortfolioSection,
   DevelopmentSummarySection,
+  PageHeader,
+  SectionCard,
+  StatusBadge,
   useAssessmentPermissions,
-} from "@/components/app/assessments-shared";
+} from "@/components/app";
+import { Button } from "@/components/ui/button";
 import type { Assessment } from "@/lib/domain";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";

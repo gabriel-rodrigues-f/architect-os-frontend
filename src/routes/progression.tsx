@@ -2,10 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { ArchitectFilter } from "@/components/app/ArchitectFilter";
-import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
-import { GapTable, useGapAnalysisData } from "@/components/app/gap-analysis-shared";
-import { EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import {
+  ArchitectFilter,
+  CapabilityHeatmap,
+  EmptyState,
+  GapTable,
+  PageHeader,
+  SectionCard,
+  useGapAnalysisData,
+} from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";

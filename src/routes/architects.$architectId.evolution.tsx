@@ -2,12 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
-import { EvolutionLine, ProficiencyTimeline } from "@/components/app/charts";
-import { QuerySection } from "@/components/app/QuerySection";
+import {
+  EvolutionLine,
+  PageHeader,
+  ProficiencyTimeline,
+  ProfileTabs,
+  QuerySection,
+  SectionCard,
+  SingleSelectFilter,
+  StatCard,
+} from "@/components/app";
 import { useToastSubmit } from "@/hooks";
-import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Button } from "@/components/ui/button";
-import { PageHeader, ProfileTabs, SectionCard, StatCard } from "@/components/app/ui-bits";
 import { evolutionApi, reportsApi } from "@/lib/api";
 import type { CompetencyEvolutionComparison, EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";

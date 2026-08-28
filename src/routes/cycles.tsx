@@ -2,10 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
-import { EvolutionLine } from "@/components/app/charts";
-import { LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
-import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import {
+  ArchitectSelectCombobox,
+  ConfirmDialog,
+  EvolutionLine,
+  LevelBadge,
+  PageHeader,
+  SectionCard,
+} from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

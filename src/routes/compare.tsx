@@ -1,9 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ArchitectFilter } from "@/components/app/ArchitectFilter";
-import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
-import { LevelHeatCell, LevelScaleKey } from "@/components/app/level-encoding";
-import { EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import {
+  ArchitectFilter,
+  ComparisonRadar,
+  EmptyState,
+  type EvolutionSeries,
+  LevelHeatCell,
+  LevelScaleKey,
+  PageHeader,
+  SectionCard,
+} from "@/components/app";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Selection } from "@/lib/selection";

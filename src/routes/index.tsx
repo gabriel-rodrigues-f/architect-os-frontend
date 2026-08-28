@@ -13,9 +13,15 @@ import {
 
 import { useMemo } from "react";
 
-import { GapBadge, LevelBadge, PageHeader, SectionCard, StatCard } from "@/components/app/ui-bits";
-import { CapabilityRadar } from "@/components/app/charts";
-import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
+import {
+  CapabilityHeatmap,
+  CapabilityRadar,
+  GapBadge,
+  LevelBadge,
+  PageHeader,
+  SectionCard,
+  StatCard,
+} from "@/components/app";
 import { useCurrentUser } from "@/lib/auth";
 import { DashboardPresenter, PersonalDashboardPresenter } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
