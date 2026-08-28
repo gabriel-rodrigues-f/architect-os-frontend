@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
-import { EmptyState, NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { EmptyState, NameList, PageHeader, SectionCard, ViewToggle } from "@/components/app";
 import { Badge } from "@/components/ui/badge";
-import { ViewToggle } from "@/components/app/ViewToggle";
 import { useCurrentUser } from "@/lib/auth";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";

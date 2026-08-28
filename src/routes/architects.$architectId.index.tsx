@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
-import { CapabilityRadar } from "@/components/app/charts";
 import {
   Bar,
+  CapabilityRadar,
   GapBadge,
   Initials,
   LevelBadge,
@@ -13,7 +13,7 @@ import {
   SectionGroup,
   semanticTone,
   StatCard,
-} from "@/components/app/ui-bits";
+} from "@/components/app";
 import { useLabels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

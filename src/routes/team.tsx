@@ -3,20 +3,23 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import {
+  ArchitectNameCombobox,
   CareerLevelTransitionDialog,
+  DataViewToolbar,
   DeactivateDialog,
   LeadCombobox,
+  MultiSelectFilter,
+  PageHeader,
+  Pagination,
+  SingleSelectFilter,
+  SpecializationCombobox,
   TeamRosterView,
   useArchitectForm,
   useTeamRoster,
-} from "@/components/app/team-shared";
-import { DataViewToolbar, EmptyState, Pagination } from "@/components/app/DataView";
-import { EmptyState as EmptyStateCard, PageHeader } from "@/components/app/ui-bits";
-import { ArchitectNameCombobox } from "@/components/app/ArchitectNameCombobox";
-import { ViewToggle } from "@/components/app/ViewToggle";
-import { MultiSelectFilter } from "@/components/app/MultiSelectFilter";
-import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
-import { SpecializationCombobox } from "@/components/app/SpecializationCombobox";
+  ViewToggle,
+} from "@/components/app";
+import { EmptyState } from "@/components/app/DataView";
+import { EmptyState as EmptyStateCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

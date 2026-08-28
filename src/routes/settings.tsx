@@ -2,13 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import {
-  gapTone,
-  LevelBadge,
-  PageHeader,
-  SectionCard,
-  SectionGroup,
-} from "@/components/app/ui-bits";
+import { gapTone, LevelBadge, PageHeader, SectionCard, SectionGroup } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { LEVELS, type CareerLevel, type Level } from "@/lib/domain";

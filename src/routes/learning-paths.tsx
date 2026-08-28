@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Bar, EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { Bar, EmptyState, PageHeader, SectionCard } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

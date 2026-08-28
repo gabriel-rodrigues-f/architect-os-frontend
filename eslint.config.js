@@ -52,6 +52,49 @@ const CANAIS_DE_COR = ["l", "c", "h", "a", "b", "m", "s", "r", "g"];
 
 const ARQUIVOS_DE_COR = ["src/lib/design/color.ts", "src/lib/accessibility/color-vision.ts"];
 
+const SERVER_ONLY = {
+  name: "server-only",
+  message:
+    "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
+};
+
+/**
+ * CQ-04 — cada uma destas áreas expõe sua API por um barril `index.ts`, e quem
+ * está de fora entra por ele. Quem está DENTRO, não: o barril reexporta o
+ * próprio arquivo que o importaria de volta, e o ciclo que nasce daí o bundler
+ * resolve em silêncio — o módulo do meio chega parcialmente inicializado e a
+ * falha aparece numa rota, em runtime. Dentro da área, o import é direto ao
+ * arquivo vizinho. `tests/lib/import-cycles.test.ts` é a rede de fundo; esta
+ * regra é a que fala no momento em que a linha é escrita.
+ */
+const AREAS_COM_BARRIL = [
+  "components/app",
+  "hooks",
+  "lib/accessibility",
+  "lib/design",
+  "lib/i18n",
+  "lib/presenters",
+  "lib/view-models",
+];
+
+const semImportarOProprioBarril = (area) => ({
+  files: [`src/${area}/**/*.{ts,tsx}`],
+  rules: {
+    "no-restricted-imports": [
+      "error",
+      {
+        paths: [
+          SERVER_ONLY,
+          ...[`@/${area}`, `@/${area}/index`].map((name) => ({
+            name,
+            message: `CQ-04: dentro de src/${area} o import vai direto ao arquivo vizinho. Passar pelo próprio barril fecha ciclo de importação.`,
+          })),
+        ],
+      },
+    ],
+  },
+});
+
 export default tseslint.config(
   { ignores: ["dist", ".output", ".worktrees", "src/routeTree.gen.ts"] },
   {
@@ -67,18 +110,7 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "server-only",
-              message:
-                "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
-            },
-          ],
-        },
-      ],
+      "no-restricted-imports": ["error", { paths: [SERVER_ONLY] }],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "error",
@@ -101,6 +133,7 @@ export default tseslint.config(
       ],
     },
   },
+  ...AREAS_COM_BARRIL.map(semImportarOProprioBarril),
   {
     files: ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
     languageOptions: {

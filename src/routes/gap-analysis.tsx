@@ -1,10 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { ArchitectFilter } from "@/components/app/ArchitectFilter";
-import { CapabilityRadar } from "@/components/app/charts";
-import { useGapAnalysisData } from "@/components/app/gap-analysis-shared";
+import {
+  ArchitectFilter,
+  CapabilityRadar,
+  EmptyState,
+  GapBadge,
+  NameList,
+  PageHeader,
+  SectionCard,
+  useGapAnalysisData,
+} from "@/components/app";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
-import { EmptyState, GapBadge, NameList, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 

@@ -4,9 +4,10 @@ import {
   MenteeFilterCombobox,
   MentoringTimeline,
   NewMentoringSessionDialog,
+  PageHeader,
+  SectionCard,
   useMentoringTimeline,
-} from "@/components/app/mentoring-shared";
-import { PageHeader, SectionCard } from "@/components/app/ui-bits";
+} from "@/components/app";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";

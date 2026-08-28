@@ -2,8 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { QuerySection } from "@/components/app/QuerySection";
-import { PageHeader, SectionCard, StatusBadge } from "@/components/app/ui-bits";
+import { PageHeader, QuerySection, SectionCard, StatusBadge } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

@@ -4,10 +4,15 @@ import { Sparkles, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
-import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
-import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
-import { QuerySection } from "@/components/app/QuerySection";
-import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import {
+  ArchitectSelectCombobox,
+  CommandWithReasonDialog,
+  GapBadge,
+  LevelBadge,
+  PageHeader,
+  QuerySection,
+  SectionCard,
+} from "@/components/app";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { GapBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
-import { TruncationNotice } from "@/components/app/TruncationNotice";
+import { GapBadge, PageHeader, SectionCard, TruncationNotice } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
