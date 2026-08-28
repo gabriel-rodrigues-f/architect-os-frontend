@@ -1,4 +1,5 @@
 import { ApiClient } from "../api-client";
+import { SessionPolicy } from "../session-policy";
 import { HttpArchitectsGateway, type ArchitectsGateway } from "./architects.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
 import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
@@ -18,6 +19,7 @@ interface FrontendConfig {
 }
 
 export class FrontendContainer {
+  readonly sessionPolicy: SessionPolicy;
   readonly apiClient: ApiClient;
   readonly architectsGateway: ArchitectsGateway;
   readonly assessmentGateway: AssessmentGateway;
@@ -34,7 +36,10 @@ export class FrontendContainer {
   readonly reportsGateway: ReportsGateway;
 
   private constructor(config: FrontendConfig) {
-    this.apiClient = new ApiClient(config.baseUrl);
+    this.sessionPolicy = new SessionPolicy();
+    this.apiClient = new ApiClient(config.baseUrl, (error) =>
+      this.sessionPolicy.reviewFailure(error),
+    );
     this.architectsGateway = new HttpArchitectsGateway(this.apiClient);
     this.assessmentGateway = new HttpAssessmentGateway(this.apiClient);
     this.authGateway = new HttpAuthGateway(this.apiClient);

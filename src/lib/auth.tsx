@@ -10,7 +10,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import { ApiError, authApi, setUnauthorizedHandler, type SessionUser } from "./api";
+import { ApiError, authApi, sessionPolicy, type SessionUser } from "./api";
 
 interface AuthContextValue {
   user: SessionUser | null;
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => {
+    sessionPolicy.whenSessionEnded(() => {
       setUser((current) => {
         if (!current) return current;
         queryClient.clear();
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       });
     });
-    return () => setUnauthorizedHandler(null);
+    return () => sessionPolicy.whenSessionEnded(null);
   }, [queryClient]);
 
   const login = useCallback(

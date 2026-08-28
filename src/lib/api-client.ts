@@ -33,11 +33,21 @@ export const API_URL = (import.meta.env["VITE_API_URL"] ?? "http://localhost:400
   "",
 );
 
-const SESSION_INVALIDATING_CODES = new Set([
-  "AUTHENTICATION_REQUIRED",
-  "SESSION_INVALID",
-  "SESSION_REVOKED",
-]);
+export const NETWORK_UNAVAILABLE_STATUS = 0;
+
+export const NETWORK_UNAVAILABLE_CODE = "NETWORK_UNAVAILABLE";
+
+const NETWORK_UNAVAILABLE_MESSAGE =
+  "Não foi possível falar com o serviço. Verifique sua conexão e tente novamente.";
+
+export type ApiFailureInterceptor = (error: ApiError) => void;
+
+interface ApiErrorBody {
+  message?: string;
+  details?: unknown;
+  code?: string;
+  correlationId?: string;
+}
 
 const responseMessageCodes = new WeakMap<object, string>();
 
@@ -56,16 +66,48 @@ function asSuccessEnvelope(body: unknown): { data: unknown; message?: { code?: s
 }
 
 export class ApiClient {
-  private unauthorizedHandler: (() => void) | null = null;
-
-  constructor(private readonly baseUrl: string = API_URL) {}
-
-  setUnauthorizedHandler(handler: (() => void) | null): void {
-    this.unauthorizedHandler = handler;
-  }
+  constructor(
+    private readonly baseUrl: string = API_URL,
+    private readonly interceptFailure: ApiFailureInterceptor = () => {},
+  ) {}
 
   urlOf(resource: string): string {
     return `${this.baseUrl}${apiPath(resource)}`;
+  }
+
+  private intercepted(error: ApiError): ApiError {
+    this.interceptFailure(error);
+    return error;
+  }
+
+  private async send(url: string, init: RequestInit): Promise<Response> {
+    try {
+      return await fetch(url, init);
+    } catch (cause) {
+      throw this.intercepted(
+        new ApiError(
+          NETWORK_UNAVAILABLE_MESSAGE,
+          NETWORK_UNAVAILABLE_STATUS,
+          undefined,
+          NETWORK_UNAVAILABLE_CODE,
+          undefined,
+          { cause },
+        ),
+      );
+    }
+  }
+
+  private async failureOf(response: Response, fallbackMessage: string): Promise<ApiError> {
+    const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
+    return this.intercepted(
+      new ApiError(
+        body?.message ?? fallbackMessage,
+        response.status,
+        body?.details,
+        body?.code,
+        body?.correlationId,
+      ),
+    );
   }
 
   async request<T>(resource: string, init?: RequestInit): Promise<T> {
@@ -75,29 +117,16 @@ export class ApiClient {
     };
 
     const url = this.urlOf(resource);
-    const response = await fetch(url, {
+    const response = await this.send(url, {
       ...init,
       headers,
       credentials: "include",
     });
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as {
-        message?: string;
-        details?: unknown;
-        code?: string;
-        correlationId?: string;
-      } | null;
-      if (response.status === 401 && body?.code && SESSION_INVALIDATING_CODES.has(body.code)) {
-        this.unauthorizedHandler?.();
-      }
-      throw new ApiError(
-        body?.message ??
-          `${init?.method ?? "GET"} ${apiPath(resource)} falhou (${response.status})`,
-        response.status,
-        body?.details,
-        body?.code,
-        body?.correlationId,
+      throw await this.failureOf(
+        response,
+        `${init?.method ?? "GET"} ${apiPath(resource)} falhou (${response.status})`,
       );
     }
 
@@ -114,25 +143,14 @@ export class ApiClient {
   }
 
   async requestBlob(resource: string, body: unknown): Promise<{ blob: Blob; filename: string }> {
-    const response = await fetch(this.urlOf(resource), {
+    const response = await this.send(this.urlOf(resource), {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "include",
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as {
-        message?: string;
-        code?: string;
-        correlationId?: string;
-      } | null;
-      throw new ApiError(
-        errorBody?.message ?? `POST ${apiPath(resource)} falhou (${response.status})`,
-        response.status,
-        undefined,
-        errorBody?.code,
-        errorBody?.correlationId,
-      );
+      throw await this.failureOf(response, `POST ${apiPath(resource)} falhou (${response.status})`);
     }
     const disposition = response.headers.get("content-disposition") ?? "";
     const match = /filename="?([^"]+)"?/.exec(disposition);

@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { EvolutionLine, ProficiencyTimeline } from "@/components/app/charts";
 import { QuerySection } from "@/components/app/QuerySection";
+import { useToastSubmit } from "@/hooks";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Button } from "@/components/ui/button";
 import { PageHeader, ProfileTabs, SectionCard, StatCard } from "@/components/app/ui-bits";
-import { ApiError, evolutionApi, reportsApi } from "@/lib/api";
+import { evolutionApi, reportsApi } from "@/lib/api";
 import type { CompetencyEvolutionComparison, EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -113,22 +113,17 @@ function ArchitectEvolution() {
     enabled: !!architect,
   });
 
-  const [exporting, setExporting] = useState(false);
+  const { submitting: exporting, run: runExport } = useToastSubmit(t("evolution.export.error"));
   const exportPdf = async () => {
-    setExporting(true);
-    try {
-      const { blob, filename } = await reportsApi.exportEvolutionPdf(architectId, filters);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : t("evolution.export.error"));
-    } finally {
-      setExporting(false);
-    }
+    const result = await runExport(() => reportsApi.exportEvolutionPdf(architectId, filters));
+    if (!result.ok) return;
+    const { blob, filename } = result.value;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const sortedComparisons = useMemo(

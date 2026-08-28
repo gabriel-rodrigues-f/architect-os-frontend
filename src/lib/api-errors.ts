@@ -5,8 +5,9 @@ export class ApiError extends Error {
     readonly details?: unknown,
     readonly code?: string,
     readonly correlationId?: string,
+    options?: { cause?: unknown },
   ) {
-    super(message);
+    super(message, options);
     this.name = "ApiError";
   }
 }

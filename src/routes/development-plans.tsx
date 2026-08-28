@@ -1,10 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Sparkles, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
+import { QuerySection } from "@/components/app/QuerySection";
 import { GapBadge, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +18,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/api";
 import {
   type ActionType,
   type DevelopmentPlan,
@@ -604,55 +605,45 @@ function ItemHistory({
 }) {
   const { t } = useI18n();
   const store = useStore();
-  const [events, setEvents] = useState<DevelopmentPlanItemEvent[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    store
-      .planItemEvents(planId, itemId)
-      .then((result) => {
-        if (!cancelled) setEvents(result);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled)
-          setError(e instanceof ApiError ? e.message : t("pdi.reschedule.history.error"));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [planId, itemId, store, t]);
-
-  if (error) return <p className="mt-1 text-xs text-destructive">{error}</p>;
-  if (!events)
-    return (
-      <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.loading")}</p>
-    );
-  if (events.length === 0) {
-    return (
-      <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.empty")}</p>
-    );
-  }
+  const query = useQuery({
+    queryKey: ["plan-item-events", planId, itemId],
+    queryFn: () => store.planItemEvents(planId, itemId),
+  });
 
   return (
-    <ul className="mt-1 space-y-1.5 border-t border-border pt-2">
-      {events.map((e) => (
-        <li key={e.id} className="text-xs text-muted-foreground">
-          <p>
-            {t("pdi.reschedule.history.entry", {
-              de: e.fromTargetDate
-                ? (defaultDateFormatter.formatDate(e.fromTargetDate, locale) ?? "")
-                : "—",
-              para: defaultDateFormatter.formatDate(e.toTargetDate, locale) ?? "",
-            })}
-          </p>
-          <p>
-            {t("pdi.reschedule.history.reason", { motivo: e.reason })} ·{" "}
-            {defaultDateFormatter.formatDate(e.occurredAt, locale)}
-          </p>
-        </li>
-      ))}
-    </ul>
+    <QuerySection
+      query={query}
+      errorMessage={t("pdi.reschedule.history.error")}
+      skeleton={
+        <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.loading")}</p>
+      }
+    >
+      {(events: DevelopmentPlanItemEvent[]) =>
+        events.length === 0 ? (
+          <p className="mt-1 text-xs text-muted-foreground">{t("pdi.reschedule.history.empty")}</p>
+        ) : (
+          <ul className="mt-1 space-y-1.5 border-t border-border pt-2">
+            {events.map((e) => (
+              <li key={e.id} className="text-xs text-muted-foreground">
+                <p>
+                  {t("pdi.reschedule.history.entry", {
+                    de: e.fromTargetDate
+                      ? (defaultDateFormatter.formatDate(e.fromTargetDate, locale) ?? "")
+                      : "—",
+                    para: defaultDateFormatter.formatDate(e.toTargetDate, locale) ?? "",
+                  })}
+                </p>
+                <p>
+                  {t("pdi.reschedule.history.reason", { motivo: e.reason })} ·{" "}
+                  {defaultDateFormatter.formatDate(e.occurredAt, locale)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </QuerySection>
   );
 }
 

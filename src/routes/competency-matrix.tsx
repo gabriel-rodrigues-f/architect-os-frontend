@@ -26,7 +26,6 @@ import {
 } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
-import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
@@ -851,8 +850,11 @@ function CompetencyEditDialog({
   );
 
   const [swapTargetId, setSwapTargetId] = useState("");
-  const [swapping, setSwapping] = useState(false);
-  const [swapError, setSwapError] = useState<string | null>(null);
+  const {
+    submitting: swapping,
+    error: swapError,
+    run: runSwap,
+  } = useAsyncSubmit(t("matrix.requirement.swapError"));
 
   const restrictiveSiblings = viewModel.swapCandidates(
     store.competencies,
@@ -869,18 +871,10 @@ function CompetencyEditDialog({
 
   const swapWith = async () => {
     if (!swapTargetId) return;
-    setSwapping(true);
-    setSwapError(null);
-    try {
-      await viewModel.swapRequirementType(competency.id, swapTargetId);
-
-      setRequirementType((prev) => (prev === "RESTRICTIVE" ? "NON_RESTRICTIVE" : "RESTRICTIVE"));
-      setSwapTargetId("");
-    } catch (error) {
-      setSwapError(error instanceof ApiError ? error.message : t("matrix.requirement.swapError"));
-    } finally {
-      setSwapping(false);
-    }
+    const result = await runSwap(() => viewModel.swapRequirementType(competency.id, swapTargetId));
+    if (!result.ok) return;
+    setRequirementType((prev) => (prev === "RESTRICTIVE" ? "NON_RESTRICTIVE" : "RESTRICTIVE"));
+    setSwapTargetId("");
   };
 
   const save = () => {

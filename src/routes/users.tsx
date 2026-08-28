@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authApi, ApiError, type SessionUser, type UserRole } from "@/lib/api";
-import { useSuccessToast } from "@/hooks";
+import { authApi, type SessionUser, type UserRole } from "@/lib/api";
+import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -219,8 +219,7 @@ function EditUserDialog({
   const [role, setRole] = useState<UserRole>(user.role);
   const [status, setStatus] = useState<"active" | "disabled">(user.status);
   const [step, setStep] = useState<"edit" | "confirm-admin">("edit");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { submitting: saving, error, run } = useAsyncSubmit(t("users.edit.error"));
 
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
@@ -235,21 +234,15 @@ function EditUserDialog({
     trimmedEmail !== user.email;
 
   const persist = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      await onSave({
+    const result = await run(() =>
+      onSave({
         ...(role !== user.role ? { role } : {}),
         ...(status !== user.status ? { status } : {}),
         ...(trimmedName !== user.name ? { name: trimmedName } : {}),
         ...(trimmedEmail !== user.email ? { email: trimmedEmail } : {}),
-      });
-    } catch (err) {
-      setStep("edit");
-      setError(err instanceof ApiError ? err.message : t("users.edit.error"));
-    } finally {
-      setSaving(false);
-    }
+      }),
+    );
+    if (!result.ok) setStep("edit");
   };
 
   const handleSaveClick = () => {
@@ -357,27 +350,17 @@ function CreateUserDialog({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("member");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { submitting, error, run } = useAsyncSubmit(t("users.create.error"));
   const [result, setResult] = useState<{ email: string; temporaryPassword: string } | null>(null);
 
   const canSave = name.trim().length > 1 && email.trim().length > 3;
 
   const submit = async () => {
-    setSubmitting(true);
-    setError(null);
-    try {
-      const { temporaryPassword } = await authApi.createUser({
-        name: name.trim(),
-        email: email.trim(),
-        role,
-      });
-      setResult({ email: email.trim(), temporaryPassword });
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("users.create.error"));
-    } finally {
-      setSubmitting(false);
-    }
+    const created = await run(() =>
+      authApi.createUser({ name: name.trim(), email: email.trim(), role }),
+    );
+    if (created.ok)
+      setResult({ email: email.trim(), temporaryPassword: created.value.temporaryPassword });
   };
 
   if (result) {

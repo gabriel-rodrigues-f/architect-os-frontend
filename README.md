@@ -61,6 +61,11 @@ O prefixo `/api/v1` mora num lugar só: `src/lib/api-path.ts`. O `ApiClient` com
 `base + prefixo + recurso`, então os call sites dos gateways passam apenas o recurso
 (`/state`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
 
+Erro é assunto de quatro abstrações (`QuerySection`, `useAsyncSubmit`, `useToastSubmit`,
+`MutationRunner`) e nenhuma tela trata `ApiError` por conta própria. A regra de qual usar,
+mais a política de sessão e o caminho offline, está em
+[`docs/TRATAMENTO-DE-ERROS.md`](docs/TRATAMENTO-DE-ERROS.md).
+
 ## Idioma
 
 A interface é toda em português. Os valores de status continuam gravados em inglês no banco
