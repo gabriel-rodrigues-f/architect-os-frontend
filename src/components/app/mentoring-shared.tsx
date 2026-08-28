@@ -387,7 +387,7 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
   const store = useStore();
   const user = useCurrentUser();
   const sel = useSelectors();
-  const f = useMentoringSessionForm(menteeOptions);
+  const sessionForm = useMentoringSessionForm(menteeOptions);
 
   const [competencyFilter, setCompetencyFilter] = useState("");
   const [proficiencyFilter, setProficiencyFilter] = useState("");
@@ -400,7 +400,7 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
   );
 
   return (
-    <Dialog open={f.open} onOpenChange={f.setOpen}>
+    <Dialog open={sessionForm.open} onOpenChange={sessionForm.setOpen}>
       <DialogTrigger asChild>
         <Button>{t("mentor.new")}</Button>
       </DialogTrigger>
@@ -416,10 +416,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
                 <ArchitectSelectCombobox
                   id="mentee"
                   architects={menteeOptions}
-                  selectedId={f.form.menteeId}
-                  onChange={(id) => f.setField("menteeId", id)}
+                  selectedId={sessionForm.form.menteeId}
+                  onChange={(id) => sessionForm.setField("menteeId", id)}
                   label={t("mentor.form.mentee")}
-                  invalid={f.isMissing("menteeId")}
+                  invalid={sessionForm.isMissing("menteeId")}
                 />
               </div>
             </div>
@@ -429,11 +429,11 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
                 id="date"
                 type="date"
                 max={defaultDateFormatter.todayIso()}
-                aria-invalid={f.isMissing("date")}
-                className={f.invalid("date")}
-                value={f.form.date}
-                onChange={(e) => f.setField("date", e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void f.submit()}
+                aria-invalid={sessionForm.isMissing("date")}
+                className={sessionForm.invalid("date")}
+                value={sessionForm.form.date}
+                onChange={(e) => sessionForm.setField("date", e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && void sessionForm.submit()}
               />
             </div>
           </div>
@@ -445,14 +445,14 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
                 type="number"
                 min={1}
                 step={1}
-                aria-invalid={f.isMissing("durationMin") || f.durationInvalid}
+                aria-invalid={sessionForm.isMissing("durationMin") || sessionForm.durationInvalid}
                 className={
-                  f.invalid("durationMin") ||
-                  (f.durationInvalid ? "border-destructive ring-1 ring-destructive" : "")
+                  sessionForm.invalid("durationMin") ||
+                  (sessionForm.durationInvalid ? "border-destructive ring-1 ring-destructive" : "")
                 }
-                value={f.form.durationMin}
-                onChange={(e) => f.setField("durationMin", e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void f.submit()}
+                value={sessionForm.form.durationMin}
+                onChange={(e) => sessionForm.setField("durationMin", e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && void sessionForm.submit()}
               />
             </div>
             <div>
@@ -460,8 +460,8 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               <Input
                 id="next-session"
                 type="date"
-                value={f.form.nextSession}
-                onChange={(e) => f.setField("nextSession", e.target.value)}
+                value={sessionForm.form.nextSession}
+                onChange={(e) => sessionForm.setField("nextSession", e.target.value)}
               />
             </div>
           </div>
@@ -471,11 +471,11 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             </FieldLabel>
             <Input
               id="topic"
-              aria-invalid={f.isMissing("topic")}
-              className={f.invalid("topic")}
-              value={f.form.topic}
-              onChange={(e) => f.setField("topic", e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && void f.submit()}
+              aria-invalid={sessionForm.isMissing("topic")}
+              className={sessionForm.invalid("topic")}
+              value={sessionForm.form.topic}
+              onChange={(e) => sessionForm.setField("topic", e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void sessionForm.submit()}
             />
           </div>
           <div>
@@ -484,10 +484,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             </FieldLabel>
             <Textarea
               id="notes"
-              aria-invalid={f.isMissing("notes")}
-              className={f.invalid("notes")}
-              value={f.form.notes}
-              onChange={(e) => f.setField("notes", e.target.value)}
+              aria-invalid={sessionForm.isMissing("notes")}
+              className={sessionForm.invalid("notes")}
+              value={sessionForm.form.notes}
+              onChange={(e) => sessionForm.setField("notes", e.target.value)}
             />
           </div>
           <div>
@@ -496,10 +496,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             </FieldLabel>
             <Textarea
               id="decisions"
-              aria-invalid={f.isMissing("decisions")}
-              className={f.invalid("decisions")}
-              value={f.form.decisions}
-              onChange={(e) => f.setField("decisions", e.target.value)}
+              aria-invalid={sessionForm.isMissing("decisions")}
+              className={sessionForm.invalid("decisions")}
+              value={sessionForm.form.decisions}
+              onChange={(e) => sessionForm.setField("decisions", e.target.value)}
             />
           </div>
           <div>
@@ -508,10 +508,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             </FieldLabel>
             <Textarea
               id="actions"
-              aria-invalid={f.isMissing("actions")}
-              className={f.invalid("actions")}
-              value={f.form.actions}
-              onChange={(e) => f.setField("actions", e.target.value)}
+              aria-invalid={sessionForm.isMissing("actions")}
+              className={sessionForm.invalid("actions")}
+              value={sessionForm.form.actions}
+              onChange={(e) => sessionForm.setField("actions", e.target.value)}
             />
           </div>
           <div className="min-w-0">
@@ -535,8 +535,8 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
                 <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
                   <input
                     type="checkbox"
-                    checked={f.competencyIds.includes(c.id)}
-                    onChange={() => f.toggleCompetency(c.id)}
+                    checked={sessionForm.competencyIds.includes(c.id)}
+                    onChange={() => sessionForm.toggleCompetency(c.id)}
                   />
                   <span className="min-w-0 flex-1 truncate">{c.name}</span>
                 </label>
@@ -548,7 +548,7 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
           </div>
           {defaultUiAuthorizationPolicy.isAssignedTechLeadOf(
             user,
-            sel.architectById(f.form.menteeId),
+            sel.architectById(sessionForm.form.menteeId),
           ) && (
             <div className="min-w-0">
               <FieldLabel htmlFor="mentor-proficiency" hint={t("mentor.form.proficiencyHint")}>
@@ -571,14 +571,16 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
                   <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
                 )}
                 {proficiencyList.map((c) => {
-                  const update = f.proficiencyUpdates.find((u) => u.competencyId === c.id);
+                  const update = sessionForm.proficiencyUpdates.find(
+                    (u) => u.competencyId === c.id,
+                  );
                   return (
                     <div key={c.id} className="py-1">
                       <label className="flex items-center gap-2 text-sm">
                         <input
                           type="checkbox"
                           checked={!!update}
-                          onChange={() => f.toggleProficiencyUpdate(c.id)}
+                          onChange={() => sessionForm.toggleProficiencyUpdate(c.id)}
                         />
                         <span className="min-w-0 flex-1 truncate">{c.name}</span>
                       </label>
@@ -587,15 +589,17 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
                           <div className="flex items-center gap-2">
                             <select
                               className={`rounded-md border bg-card px-2 py-1 text-xs ${
-                                f.proficiencyMissingLevel && update.observedLevel === null
+                                sessionForm.proficiencyMissingLevel && update.observedLevel === null
                                   ? "border-destructive ring-1 ring-destructive"
                                   : "border-input"
                               }`}
                               value={update.observedLevel ?? ""}
                               aria-invalid={
-                                f.proficiencyMissingLevel && update.observedLevel === null
+                                sessionForm.proficiencyMissingLevel && update.observedLevel === null
                               }
-                              onChange={(e) => f.setProficiencyLevel(c.id, Number(e.target.value))}
+                              onChange={(e) =>
+                                sessionForm.setProficiencyLevel(c.id, Number(e.target.value))
+                              }
                               aria-label={t("mentor.form.proficiencyLevel", { nome: c.name })}
                             >
                               <option value="" disabled>
@@ -612,10 +616,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
                               placeholder={t("mentor.form.proficiencyNote")}
                               className="flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
                               value={update.note ?? ""}
-                              onChange={(e) => f.setProficiencyNote(c.id, e.target.value)}
+                              onChange={(e) => sessionForm.setProficiencyNote(c.id, e.target.value)}
                             />
                           </div>
-                          {f.proficiencyMissingLevel && update.observedLevel === null && (
+                          {sessionForm.proficiencyMissingLevel && update.observedLevel === null && (
                             <p className="mt-1 text-xs text-destructive">
                               {t("mentor.form.proficiencyLevelRequired")}
                             </p>
@@ -629,7 +633,7 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             </div>
           )}
         </div>
-        {f.showToast && (
+        {sessionForm.showToast && (
           <div
             role="alert"
             className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3"
@@ -638,7 +642,7 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             <p className="flex-1 text-sm">{t("mentor.required")}</p>
             <button
               type="button"
-              onClick={() => f.setShowToast(false)}
+              onClick={() => sessionForm.setShowToast(false)}
               aria-label={t("mentor.closeWarning")}
               className="rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
             >
@@ -647,8 +651,8 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
           </div>
         )}
         <DialogFooter>
-          <Button disabled={f.saving} onClick={() => void f.submit()}>
-            {f.saving ? t("mentor.followUp.saving") : t("mentor.form.save")}
+          <Button disabled={sessionForm.saving} onClick={() => void sessionForm.submit()}>
+            {sessionForm.saving ? t("mentor.followUp.saving") : t("mentor.form.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -74,16 +74,16 @@ export class SelectorIndex {
   readonly assessmentIndex: Map<string, Assessment>;
   readonly planIndex: Map<string, AppState["plans"][number]>;
 
-  constructor(private readonly s: AppState) {
-    this.competencyIndex = byId(s.competencies);
-    this.capabilityIndex = byId(s.capabilities);
-    this.architectIndex = byId(s.architects);
-    this.assessmentIndex = indexByArchitectAndCycle(s.assessments);
-    this.planIndex = indexByArchitectAndCycle(s.plans);
+  constructor(private readonly state: AppState) {
+    this.competencyIndex = byId(state.competencies);
+    this.capabilityIndex = byId(state.capabilities);
+    this.architectIndex = byId(state.architects);
+    this.assessmentIndex = indexByArchitectAndCycle(state.assessments);
+    this.planIndex = indexByArchitectAndCycle(state.plans);
   }
 
   get activeCycleId(): string {
-    return this.s.activeCycleId;
+    return this.state.activeCycleId;
   }
 }
 
@@ -92,11 +92,11 @@ export class ArchitectSelectors {
   private readonly visibleCache = new Map<string, Architect[]>();
 
   constructor(
-    s: AppState,
+    state: AppState,
     private readonly index: SelectorIndex,
     private readonly policy: UiAuthorizationPolicy = defaultUiAuthorizationPolicy,
   ) {
-    this.active = s.architects.filter((a) => a.active);
+    this.active = state.architects.filter((a) => a.active);
   }
 
   byId = (id: string): Architect | undefined => this.index.architectIndex.get(id);
@@ -288,11 +288,11 @@ export class CapabilitySelectors {
   readonly shortLabels: Map<string, string>;
 
   constructor(
-    private readonly s: AppState,
+    private readonly state: AppState,
     private readonly index: SelectorIndex,
     private readonly assessment: AssessmentSelectors,
   ) {
-    this.shortLabels = capabilityShortLabels(s.capabilities);
+    this.shortLabels = capabilityShortLabels(state.capabilities);
   }
 
   competencyById = (id: string): Competency | undefined => this.index.competencyIndex.get(id);
@@ -344,7 +344,7 @@ export class CapabilitySelectors {
       totals.set(capabilityId, acc);
     }
 
-    const averages = this.s.capabilities.map((capability) => {
+    const averages = this.state.capabilities.map((capability) => {
       const acc = totals.get(capability.id);
       if (!acc?.count) return { capability, avg: undefined, target: undefined };
       const mean = (value: number) => Number((value / acc.count).toFixed(2));
@@ -393,12 +393,12 @@ export class TrainingSelectors {
   };
 }
 
-export function createSelectors(s: AppState) {
-  const index = new SelectorIndex(s);
-  const architect = new ArchitectSelectors(s, index);
+export function createSelectors(state: AppState) {
+  const index = new SelectorIndex(state);
+  const architect = new ArchitectSelectors(state, index);
   const assessment = new AssessmentSelectors(index);
   const development = new DevelopmentSelectors(index);
-  const capability = new CapabilitySelectors(s, index, assessment);
+  const capability = new CapabilitySelectors(state, index, assessment);
   const training = new TrainingSelectors(architect, assessment);
   const gapConsolidation = new GapConsolidationSelectors(assessment);
 
