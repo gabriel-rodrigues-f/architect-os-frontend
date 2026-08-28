@@ -4,7 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionUser } from "@/lib/api";
 import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureState,
+  fixtureUnassignedLeadUser,
+} from "../helpers/fixtures";
 import { mockAppFetch } from "../helpers/render-app";
 
 /**
@@ -70,5 +75,18 @@ describe("guarda de navegação do perfil de arquiteto", () => {
     expect(await navegarComoUsuario(fixtureAdminUser, "/architects/bruno")).toBe(
       "/architects/bruno",
     );
+  });
+
+  /**
+   * UX-001 — ser `lead` não é passe livre: só o lead atribuído àquele
+   * arquiteto (`leadUserId`) alcança o perfil. Nenhum arquiteto da fixture
+   * aponta para esta conta, então ela é negada.
+   */
+  it("nega o perfil a um lead sem atribuição àquele arquiteto", async () => {
+    expect(await navegarComoUsuario(fixtureUnassignedLeadUser, "/architects/bruno")).toBe("/");
+  });
+
+  it("nega /users a um lead", async () => {
+    expect(await navegarComoUsuario(fixtureUnassignedLeadUser, "/users")).toBe("/");
   });
 });

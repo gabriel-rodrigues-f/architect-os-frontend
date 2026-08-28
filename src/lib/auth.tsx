@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 
 import { ApiError, authApi, sessionPolicy, type SessionUser } from "./api";
+import { SESSION_QUERY_KEY, sessionQuery } from "./session-query";
 
 interface AuthContextValue {
   user: SessionUser | null;
@@ -30,8 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    authApi
-      .me()
+    queryClient
+      .ensureQueryData(sessionQuery)
       .then((me) => {
         if (active) setUser(me);
       })
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     sessionPolicy.whenSessionEnded(() => {
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await authApi.login(email, password);
       setUser(result.user);
       await queryClient.invalidateQueries();
+      queryClient.setQueryData(SESSION_QUERY_KEY, result.user);
     },
     [queryClient],
   );
@@ -70,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await authApi.register(input);
       setUser(result.user);
       await queryClient.invalidateQueries();
+      queryClient.setQueryData(SESSION_QUERY_KEY, result.user);
     },
     [queryClient],
   );
