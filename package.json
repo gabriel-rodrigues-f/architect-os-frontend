@@ -12,6 +12,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
+    "lint:prune": "eslint . --prune-suppressions",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
