@@ -84,9 +84,7 @@ npm run typecheck
 npm run lint
 ```
 
-## Documentação funcional
-
-ponto de vista de quem usa o produto (não de arquitetura de código).
+## Histórico e decisões
 
 Auditorias e planos de rodadas anteriores (histórico, não documentação viva):
 [`docs/historico/`](docs/historico/). Decisões arquiteturais atuais estão registradas como
