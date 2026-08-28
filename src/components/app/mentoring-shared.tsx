@@ -1,6 +1,5 @@
 import { AlertCircle, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { FieldLabel, Initials } from "@/components/app/ui-bits";
@@ -18,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
-import { ApiError } from "@/lib/api";
 import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -217,20 +215,14 @@ function FollowUpScheduler({ session }: { session: MentoringSession }) {
   const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(session.nextSession ?? "");
-  const [saving, setSaving] = useState(false);
+  const { submitting: saving, run } = useToastSubmit(t("mentor.followUp.error"));
 
   const save = () => {
-    setSaving(true);
-    viewModel
-      .scheduleFollowUp(session.id, value || null)
-      .then((updated) => {
-        notifySuccess("msg.mentoring.scheduleFollowUp.success", undefined, updated);
-        setEditing(false);
-      })
-      .catch((error: unknown) => {
-        toast.error(error instanceof Error ? error.message : t("mentor.followUp.error"));
-      })
-      .finally(() => setSaving(false));
+    void run(() => viewModel.scheduleFollowUp(session.id, value || null)).then((result) => {
+      if (!result.ok) return;
+      notifySuccess("msg.mentoring.scheduleFollowUp.success", undefined, result.value);
+      setEditing(false);
+    });
   };
 
   if (!editing) {
@@ -295,7 +287,7 @@ function MentoringTimelineItem({
   const store = useStore();
   const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
   const user = useCurrentUser();
-  const [sendingSessionId, setSendingSessionId] = useState<string | null>(null);
+  const { submitting: sending, run } = useToastSubmit(t("mentor.toPdi.error"));
 
   const plan = selectors.planFor(session.menteeId);
   const gaps = selectors.progressionGapsFor(session.menteeId);
@@ -324,29 +316,27 @@ function MentoringTimelineItem({
           variant="secondary"
           size="sm"
           className="mt-2"
-          disabled={sendingSessionId === session.id}
-          onClick={async () => {
+          disabled={sending}
+          onClick={() => {
             const mentee = selectors.architectById(session.menteeId);
-            if (!mentee || !eligible.competency) return;
-            setSendingSessionId(session.id);
-            try {
-              const plan = await viewModel.sendToPlan(session, mentee, {
+            const competency = eligible.competency;
+            if (!mentee || !competency) return;
+            void run(() =>
+              viewModel.sendToPlan(session, mentee, {
                 assessmentId: eligible.assessmentId,
-                competencyId: eligible.competency.id,
-              });
-              notifySuccess(
-                "msg.plan.item.addFromGap.success",
-                { competencia: eligible.competency.name },
-                plan,
-              );
-            } catch (error) {
-              toast.error(error instanceof ApiError ? error.message : t("mentor.toPdi.error"));
-            } finally {
-              setSendingSessionId(null);
-            }
+                competencyId: competency.id,
+              }),
+            ).then((result) => {
+              if (result.ok)
+                notifySuccess(
+                  "msg.plan.item.addFromGap.success",
+                  { competencia: competency.name },
+                  result.value,
+                );
+            });
           }}
         >
-          {sendingSessionId === session.id
+          {sending
             ? t("mentor.toPdi.sending")
             : t("mentor.toPdi.action", { competencia: eligible.competency.name })}
         </Button>

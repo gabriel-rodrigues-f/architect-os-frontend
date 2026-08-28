@@ -3,6 +3,7 @@ import { defaultContainer } from "./gateways/container";
 
 const {
   apiClient: defaultApiClient,
+  sessionPolicy,
   architectsGateway,
   assessmentGateway,
   authGateway,
@@ -36,9 +37,7 @@ export const authApi = { ...authGateway };
 export const evolutionApi = { ...evolutionGateway };
 export const reportsApi = { ...reportsGateway };
 
-export function setUnauthorizedHandler(handler: (() => void) | null): void {
-  defaultApiClient.setUnauthorizedHandler(handler);
-}
+export { sessionPolicy };
 
 export const isLeadCapable = (role: UserRole): boolean => role === "admin" || role === "lead";
 

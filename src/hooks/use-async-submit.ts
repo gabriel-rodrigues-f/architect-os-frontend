@@ -8,7 +8,14 @@ import { successMessageOf } from "@/lib/success-message";
 
 export type AsyncSubmitResult<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
-export function useAsyncSubmit(fallback: string | ((error: unknown) => string)) {
+export type SubmitErrorFallback = string | ((error: unknown) => string);
+
+export function submitErrorMessage(error: unknown, fallback: SubmitErrorFallback): string {
+  if (typeof fallback === "function") return fallback(error);
+  return error instanceof ApiError ? error.message : fallback;
+}
+
+export function useAsyncSubmit(fallback: SubmitErrorFallback) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,9 +25,7 @@ export function useAsyncSubmit(fallback: string | ((error: unknown) => string)) 
     try {
       return { ok: true, value: await action() };
     } catch (e) {
-      setError(
-        typeof fallback === "function" ? fallback(e) : e instanceof ApiError ? e.message : fallback,
-      );
+      setError(submitErrorMessage(e, fallback));
       return { ok: false, error: e };
     } finally {
       setSubmitting(false);
@@ -40,7 +45,7 @@ export function useSuccessToast() {
   );
 }
 
-export function useToastSubmit() {
+export function useToastSubmit(fallback: SubmitErrorFallback = authErrorMessage) {
   const [submitting, setSubmitting] = useState(false);
 
   const run = async <T>(action: () => Promise<T>): Promise<AsyncSubmitResult<T>> => {
@@ -48,7 +53,7 @@ export function useToastSubmit() {
     try {
       return { ok: true, value: await action() };
     } catch (e) {
-      toast.error(authErrorMessage(e));
+      toast.error(submitErrorMessage(e, fallback));
       return { ok: false, error: e };
     } finally {
       setSubmitting(false);

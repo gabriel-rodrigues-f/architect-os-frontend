@@ -22,7 +22,7 @@ import type {
 } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import { useNarrowViewport } from "@/hooks";
+import { useAsyncSubmit, useNarrowViewport } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { STATE_QUERY_KEY, useOperationalSettings, useStore, useVocabulary } from "@/lib/store";
@@ -155,21 +155,15 @@ function CommentForm({
 }) {
   const { t } = useI18n();
   const [text, setText] = useState(initial?.text ?? "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { submitting: saving, error, run } = useAsyncSubmit(t("comment.saveError"));
 
   const trimmed = text.trim();
 
   const submit = () => {
     if (!trimmed || saving) return;
-    setError(null);
-    setSaving(true);
-    onSubmit({ text: trimmed })
-      .then(() => {
-        if (!initial) setText("");
-      })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : t("comment.saveError")))
-      .finally(() => setSaving(false));
+    void run(() => onSubmit({ text: trimmed })).then((result) => {
+      if (result.ok && !initial) setText("");
+    });
   };
 
   return (
@@ -225,8 +219,12 @@ export function CareerPortfolioSection({
 
   const globalFloor = useOperationalSettings().careerMinimumQualifiedFloor;
   const [selectedCapabilityId, setSelectedCapabilityId] = useState("");
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const {
+    submitting: busy,
+    error: actionError,
+    clearError: clearActionError,
+    run,
+  } = useAsyncSubmit(t("asmt.portfolio.error"));
   const [pendingRemoval, setPendingRemoval] = useState<{ id: string; name: string } | null>(null);
 
   const queryKey = ["assessment-eligibility", assessment.id];
@@ -253,49 +251,39 @@ export function CareerPortfolioSection({
 
   const addCapability = () => {
     if (!selectedCapabilityId) return;
-    setActionError(null);
-    setBusy(true);
-    viewModel
-      .proposeCapability(assessment.id, selectedCapabilityId)
-      .then(() => {
+    void run(() => viewModel.proposeCapability(assessment.id, selectedCapabilityId)).then(
+      (result) => {
+        if (!result.ok) return;
         setSelectedCapabilityId("");
         invalidateAll();
-      })
-      .catch((error: unknown) =>
-        setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
-      )
-      .finally(() => setBusy(false));
+      },
+    );
   };
 
   const attemptRemove = (capabilityId: string, capabilityName: string, force = false) => {
-    setActionError(null);
-    setBusy(true);
-    viewModel
-      .removeCapability(assessment.id, capabilityId, force)
-      .then(() => {
-        invalidateAll();
-        setPendingRemoval(null);
-      })
-      .catch((error: unknown) => {
-        if (!force && error instanceof ApiError && error.code === "PORTFOLIO_HAS_ANSWERED_ITEMS") {
-          setPendingRemoval({ id: capabilityId, name: capabilityName });
+    void run(() => viewModel.removeCapability(assessment.id, capabilityId, force)).then(
+      (result) => {
+        if (result.ok) {
+          invalidateAll();
+          setPendingRemoval(null);
           return;
         }
-        setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error"));
-      })
-      .finally(() => setBusy(false));
+        if (
+          !force &&
+          result.error instanceof ApiError &&
+          result.error.code === "PORTFOLIO_HAS_ANSWERED_ITEMS"
+        ) {
+          clearActionError();
+          setPendingRemoval({ id: capabilityId, name: capabilityName });
+        }
+      },
+    );
   };
 
   const confirmCapability = (capabilityId: string) => {
-    setActionError(null);
-    setBusy(true);
-    viewModel
-      .confirmCapability(assessment.id, capabilityId)
-      .then(() => invalidateAll())
-      .catch((error: unknown) =>
-        setActionError(error instanceof ApiError ? error.message : t("asmt.portfolio.error")),
-      )
-      .finally(() => setBusy(false));
+    void run(() => viewModel.confirmCapability(assessment.id, capabilityId)).then((result) => {
+      if (result.ok) invalidateAll();
+    });
   };
 
   return (
@@ -532,39 +520,39 @@ function DevelopmentSummaryForm({
   const [startDoing, setStartDoing] = useState(data.startDoing);
   const [stopDoing, setStopDoing] = useState(data.stopDoing);
   const [continueDoing, setContinueDoing] = useState(data.continueDoing);
-  const [saveState, setSaveState] = useState<"clean" | "dirty" | "saving" | "saved" | "error">(
-    "clean",
-  );
+  const [saveState, setSaveState] = useState<"clean" | "dirty" | "saved" | "error">("clean");
   const [conflict, setConflict] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const {
+    submitting: saving,
+    error: errorMessage,
+    clearError: clearErrorMessage,
+    run,
+  } = useAsyncSubmit(t("asmt.devSummary.saveError"));
 
   const markDirty = () => {
     setConflict(false);
-    setSaveState((prev) => (prev === "saving" ? prev : "dirty"));
+    setSaveState((prev) => (saving ? prev : "dirty"));
   };
 
   const save = () => {
-    setSaveState("saving");
-    setErrorMessage(null);
-    viewModel
-      .updateDevelopmentSummary(
+    void run(() =>
+      viewModel.updateDevelopmentSummary(
         assessmentId,
         { startDoing, stopDoing, continueDoing },
         data.version,
-      )
-      .then(() => {
+      ),
+    ).then((result) => {
+      if (result.ok) {
         setSaveState("saved");
         void queryClient.invalidateQueries({ queryKey });
-      })
-      .catch((error: unknown) => {
-        if (error instanceof ApiError && error.status === 409) {
-          setConflict(true);
-          setSaveState("error");
-          return;
-        }
-        setErrorMessage(error instanceof ApiError ? error.message : t("asmt.devSummary.saveError"));
-        setSaveState("error");
-      });
+        return;
+      }
+      setSaveState("error");
+      if (result.error instanceof ApiError && result.error.status === 409) {
+        clearErrorMessage();
+        setConflict(true);
+      }
+    });
   };
 
   return (
@@ -637,12 +625,8 @@ function DevelopmentSummaryForm({
 
       {canEdit && (
         <div className="mt-3 flex items-center gap-3">
-          <Button
-            size="sm"
-            disabled={saveState === "saving" || saveState === "clean"}
-            onClick={save}
-          >
-            {saveState === "saving" ? t("asmt.devSummary.saving") : t("common.save")}
+          <Button size="sm" disabled={saving || saveState === "clean"} onClick={save}>
+            {saving ? t("asmt.devSummary.saving") : t("common.save")}
           </Button>
           <p className="text-xs" role="status">
             {saveState === "saved" && (
