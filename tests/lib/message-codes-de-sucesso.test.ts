@@ -105,6 +105,21 @@ interface EntradaDoBackend {
 
 const CODIGOS_EMITIDOS: Readonly<Record<string, EntradaDoBackend>> = inventarioDoBackend.codigos;
 
+/**
+ * O número da linha é artefato de edição, não contrato: qualquer mexida no
+ * backend o move e quebraria o build do frontend por ruído. O que precisa
+ * casar é o conjunto de códigos e, para cada um, a rota, o arquivo e a forma
+ * da resposta — isso sim é o que o frontend consome.
+ */
+function semLinhas(codigos: Readonly<Record<string, EntradaDoBackend>>): unknown {
+  return Object.fromEntries(
+    Object.entries(codigos).map(([code, entrada]) => {
+      const { linha: _linha, ...contrato } = entrada;
+      return [code, contrato];
+    }),
+  );
+}
+
 const TRADUCOES: Readonly<Record<string, string>> = pt;
 
 const chavesDeMensagem = (): string[] =>
@@ -228,9 +243,15 @@ describe("ARQ-18 — procedência da cópia do fixture do backend", () => {
       if (original === undefined) return;
 
       expect(
-        JSON.parse(readFileSync(original, "utf8")),
+        semLinhas(
+          (
+            JSON.parse(readFileSync(original, "utf8")) as {
+              codigos: Record<string, EntradaDoBackend>;
+            }
+          ).codigos,
+        ),
         `cópia defasada: rode "cp ${original} tests/lib/message-codes-de-sucesso.fixture.json"`,
-      ).toEqual(inventarioDoBackend);
+      ).toEqual(semLinhas(CODIGOS_EMITIDOS));
     },
   );
 });

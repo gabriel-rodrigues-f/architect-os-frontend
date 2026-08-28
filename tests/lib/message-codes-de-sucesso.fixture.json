@@ -9,55 +9,55 @@
     "assessment.capability.confirm.success": {
       "rota": "POST /assessments/:id/capabilities/:capabilityId/confirm",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 247,
+      "linha": 272,
       "resposta": "ok"
     },
     "assessment.capability.propose.success": {
       "rota": "POST /assessments/:id/capabilities",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 219,
+      "linha": 244,
       "resposta": "created"
     },
     "assessment.comment.create.success": {
       "rota": "POST /assessments/:id/items/:competencyId/comments",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 325,
+      "linha": 350,
       "resposta": "created"
     },
     "assessment.comment.delete.success": {
       "rota": "DELETE /assessments/:id/items/:competencyId/comments/:commentId",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 355,
+      "linha": 380,
       "resposta": "ok"
     },
     "assessment.comment.update.success": {
       "rota": "PATCH /assessments/:id/items/:competencyId/comments/:commentId",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 342,
+      "linha": 367,
       "resposta": "ok"
     },
     "assessment.developmentSummary.update.success": {
       "rota": "PUT /assessments/:id/development-summary",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 305,
+      "linha": 330,
       "resposta": "ok"
     },
     "assessment.item.update.success": {
       "rota": "PATCH /assessments/:id/items/:competencyId",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 195,
+      "linha": 220,
       "resposta": "ok"
     },
     "assessment.open.success": {
       "rota": "POST /assessments",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 149,
+      "linha": 156,
       "resposta": "created"
     },
     "assessment.status.update.success": {
       "rota": "PATCH /assessments/:id/status",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 167,
+      "linha": 173,
       "resposta": "ok"
     },
     "auth.login.success": {
@@ -281,43 +281,43 @@
     "plan.item.add.success": {
       "rota": "POST /plans/:architectId/items",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 128,
+      "linha": 130,
       "resposta": "created"
     },
     "plan.item.addFromGap.success": {
       "rota": "POST /plans/:architectId/items/from-gap",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 148,
+      "linha": 150,
       "resposta": "created"
     },
     "plan.item.checkin.success": {
       "rota": "POST /plans/:planId/items/:itemId/checkins",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 214,
+      "linha": 216,
       "resposta": "created"
     },
     "plan.item.reschedule.success": {
       "rota": "POST /plans/:planId/items/:itemId/reschedule",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 187,
+      "linha": 189,
       "resposta": "ok"
     },
     "plan.item.update.success": {
       "rota": "PATCH /plans/:planId/items/:itemId",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 167,
+      "linha": 169,
       "resposta": "ok"
     },
     "plan.reopen.success": {
       "rota": "POST /plans/:planId/reopen",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 262,
+      "linha": 272,
       "resposta": "ok"
     },
     "plan.status.update.success": {
       "rota": "PATCH /plans/:planId/status",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 239,
+      "linha": 249,
       "resposta": "ok"
     }
   }
