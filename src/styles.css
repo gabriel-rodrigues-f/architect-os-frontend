@@ -133,6 +133,10 @@
   --status-neutral-fg: oklch(0.42 0.03 250);
   --status-progress-fg: oklch(0.4 0.12 85);
   --status-done-fg: oklch(0.38 0.13 300);
+  --warning: oklch(0.9 0.08 80);
+  --success: oklch(0.89 0.07 152);
+  --warning-fg: oklch(0.4 0.13 70);
+  --success-fg: oklch(0.39 0.12 152);
   --gap-ok: oklch(0.9 0.06 155);
   --gap-low: oklch(0.91 0.06 95);
   --gap-high: oklch(0.9 0.07 55);
@@ -165,6 +169,41 @@
   --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   /* Mono para valor técnico: id, timestamp, métrica, nível. */
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/*
+  Ponte entre a escala declarada acima e as utilities do Tailwind, gerada por
+  `renderScaleUtilities()` em `src/lib/design/stylesheet.ts`.
+
+  Declarar `--space-*` e `--text-*` em `:root` não cria utility nenhuma: o
+  Tailwind só gera `p-4` ou `text-body` a partir de um bloco `@theme`. Sem este
+  registro a escala era documentação, e a tela seguia governada pelo padrão do
+  framework — trocar um degrau em `scale.ts` não mudava um pixel.
+
+  Larguras de leitura ficam aqui pelo mesmo motivo: `max-w-page` limita a
+  página no monitor ultrawide, `max-w-prose` prende o texto corrido na faixa de
+  45–75 caracteres. Nenhuma das duas mexe na densidade — a interface continua
+  compacta, só para de esticar.
+*/
+@theme inline {
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-12: var(--space-12);
+  --spacing-16: var(--space-16);
+  --text-meta: var(--text-meta);
+  --text-label: var(--text-label);
+  --text-table: var(--text-table);
+  --text-body: var(--text-body);
+  --text-subtitle: var(--text-subtitle);
+  --text-section: var(--text-section);
+  --text-page: var(--text-page);
+  --text-kpi: var(--text-kpi);
+  --container-page: 1600px;
+  --container-prose: 65ch;
 }
 
 .dark {
@@ -219,6 +258,10 @@
   --status-neutral-fg: oklch(0.88 0.017 250);
   --status-progress-fg: oklch(0.88 0.066 85);
   --status-done-fg: oklch(0.88 0.072 300);
+  --warning: oklch(0.278 0.056 80);
+  --success: oklch(0.282 0.049 152);
+  --warning-fg: oklch(0.88 0.072 70);
+  --success-fg: oklch(0.88 0.066 152);
   --gap-ok: oklch(0.278 0.042 155);
   --gap-low: oklch(0.274 0.042 95);
   --gap-high: oklch(0.278 0.049 55);
@@ -276,6 +319,10 @@
   --color-status-neutral: var(--status-neutral);
   --color-status-progress: var(--status-progress);
   --color-status-done: var(--status-done);
+  --color-warning: var(--warning);
+  --color-warning-fg: var(--warning-fg);
+  --color-success: var(--success);
+  --color-success-fg: var(--success-fg);
   --color-gap-ok: var(--gap-ok);
   --color-gap-low: var(--gap-low);
   --color-gap-high: var(--gap-high);

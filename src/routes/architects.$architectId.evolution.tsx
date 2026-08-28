@@ -426,7 +426,7 @@ function ArchitectEvolution() {
                         <span className="flex shrink-0 items-center gap-2 tabular-nums">
                           {c.initialLevel ? `L${c.initialLevel}` : "—"} →{" "}
                           {c.currentLevel ? `L${c.currentLevel}` : "—"}
-                          <span className={c.delta! > 0 ? "text-emerald-600" : "text-destructive"}>
+                          <span className={c.delta! > 0 ? "text-success-fg" : "text-destructive"}>
                             ({c.delta! > 0 ? "+" : ""}
                             {c.delta})
                           </span>

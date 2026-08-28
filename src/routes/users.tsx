@@ -125,7 +125,7 @@ function UsersPage() {
                           {user.name}
                           {user.mustChangePassword && (
                             <span
-                              className="ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground"
+                              className="ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-meta font-normal text-muted-foreground"
                               title={t("users.mustChangePassword.hint")}
                             >
                               {t("users.mustChangePassword.badge")}

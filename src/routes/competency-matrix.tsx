@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { EmptyState, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { Callout, EmptyState, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Badge } from "@/components/ui/badge";
@@ -796,14 +796,14 @@ function CompetencyCreateDialog({
             </select>
             <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
             {restrictiveFull && (
-              <p className="mt-1 text-xs text-amber-600">
+              <p className="mt-1 text-xs text-warning-fg">
                 {t("matrix.requirement.restrictiveFull", {
                   limite: viewModel.limits.requiredRestrictive,
                 })}
               </p>
             )}
             {nonRestrictiveFull && (
-              <p className="mt-1 text-xs text-amber-600">
+              <p className="mt-1 text-xs text-warning-fg">
                 {t("matrix.requirement.nonRestrictiveFull", {
                   limite: viewModel.limits.requiredNonRestrictive,
                 })}
@@ -1018,8 +1018,8 @@ function SwapPicker({
   swapping: boolean;
 }) {
   return (
-    <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
-      <p className="text-xs text-amber-700">{hint}</p>
+    <Callout tone="warning" className="mt-2 p-2">
+      <p className="text-xs">{hint}</p>
       <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
         <select
           className="min-w-0 flex-1 rounded-md border border-input bg-card px-2 py-1.5 text-xs"
@@ -1045,6 +1045,6 @@ function SwapPicker({
           {action}
         </Button>
       </div>
-    </div>
+    </Callout>
   );
 }

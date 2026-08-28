@@ -2,7 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { gapTone, LevelBadge, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import {
+  gapTone,
+  LevelBadge,
+  PageHeader,
+  SectionCard,
+  SectionGroup,
+} from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { LEVELS, type CareerLevel, type Level } from "@/lib/domain";
@@ -82,105 +88,108 @@ function SettingsPage() {
     <>
       <PageHeader title={t("ref.title")} description={t("ref.subtitle")} help={help} />
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <CareerPolicySection isAdmin={isAdmin} />
-        {isAdmin && <ScoringBandsSection />}
-        {isAdmin && <TextTemplatesSection />}
-        {isAdmin && <CurationPolicySection />}
-        {isAdmin && <OperationalSettingsSection />}
-        {isAdmin && <VocabulariesSection />}
-      </div>
+      <SectionGroup title={t("ref.configSectionTitle")}>
+        <div className="grid gap-6 xl:grid-cols-2">
+          <CareerPolicySection isAdmin={isAdmin} />
+          {isAdmin && <ScoringBandsSection />}
+          {isAdmin && <TextTemplatesSection />}
+          {isAdmin && <CurationPolicySection />}
+          {isAdmin && <OperationalSettingsSection />}
+          {isAdmin && <VocabulariesSection />}
+        </div>
+      </SectionGroup>
 
-      <h2 className="mb-4 mt-6 font-display text-lg font-semibold">
-        {t("ref.referenceSectionTitle")}
-      </h2>
-      <div className="grid gap-6 xl:grid-cols-2">
-        <SectionCard title={t("ref.scale")} description={t("ref.scale.subtitle")}>
-          <ul className="space-y-2">
-            {LEVELS.map((l) => (
-              <li key={l.level} className="flex items-start gap-3 surface-inset p-3">
-                <LevelBadge level={l.level} showName />
-                <p className="text-sm text-muted-foreground">{labels.levelDescription[l.level]}</p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+      <SectionGroup className="mt-8" title={t("ref.referenceSectionTitle")}>
+        <div className="grid gap-6 xl:grid-cols-2">
+          <SectionCard title={t("ref.scale")} description={t("ref.scale.subtitle")}>
+            <ul className="space-y-2">
+              {LEVELS.map((l) => (
+                <li key={l.level} className="flex items-start gap-3 surface-inset p-3">
+                  <LevelBadge level={l.level} showName />
+                  <p className="text-sm text-muted-foreground">
+                    {labels.levelDescription[l.level]}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
 
-        <SectionCard title={t("ref.cycles")} description={t("ref.cycles.subtitle")}>
-          <ul className="space-y-2">
-            {store.cycles.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between surface-inset p-3 text-sm"
-              >
-                <span>
-                  <strong>{c.name}</strong>{" "}
-                  <span className="text-muted-foreground">
-                    {defaultDateFormatter.formatDate(c.start, locale)} →{" "}
-                    {defaultDateFormatter.formatDate(c.end, locale)}
+          <SectionCard title={t("ref.cycles")} description={t("ref.cycles.subtitle")}>
+            <ul className="space-y-2">
+              {store.cycles.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between surface-inset p-3 text-sm"
+                >
+                  <span>
+                    <strong>{c.name}</strong>{" "}
+                    <span className="text-muted-foreground">
+                      {defaultDateFormatter.formatDate(c.start, locale)} →{" "}
+                      {defaultDateFormatter.formatDate(c.end, locale)}
+                    </span>
                   </span>
-                </span>
-                <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
-                  {labels.cycleStatus[c.status]}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+                  <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
+                    {labels.cycleStatus[c.status]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
 
-        <SectionCard title={t("ref.profiles")} description={t("ref.profiles.subtitle")}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[420px] text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th scope="col" className="py-2">
-                    {t("ref.capability")}
-                  </th>
-                  {careerLevels.map((cl) => (
-                    <th key={cl.id} scope="col" className="py-2 text-center">
-                      {labels.roleShort(cl.name)}
+          <SectionCard title={t("ref.profiles")} description={t("ref.profiles.subtitle")}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[420px] text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th scope="col" className="py-2">
+                      {t("ref.capability")}
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {store.capabilities.map((cat) => {
-                  const comps = store.competencies.filter((c) => c.capabilityId === cat.id);
-                  return (
-                    <tr key={cat.id} className="border-b border-border/60 last:border-0">
-                      <td className="py-2 font-medium">{cat.name}</td>
-                      {careerLevels.map((cl) => {
-                        const values = comps
-                          .map((c) => c.expected[cl.id])
-                          .filter((v): v is Level => v !== undefined);
-                        const avg = values.length
-                          ? values.reduce((s, v) => s + v, 0) / values.length
-                          : undefined;
-                        return (
-                          <td key={cl.id} className="py-2 text-center tabular-nums">
-                            {avg === undefined ? "—" : avg.toFixed(1)}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </SectionCard>
+                    {careerLevels.map((cl) => (
+                      <th key={cl.id} scope="col" className="py-2 text-center">
+                        {labels.roleShort(cl.name)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {store.capabilities.map((cat) => {
+                    const comps = store.competencies.filter((c) => c.capabilityId === cat.id);
+                    return (
+                      <tr key={cat.id} className="border-b border-border/60 last:border-0">
+                        <td className="py-2 font-medium">{cat.name}</td>
+                        {careerLevels.map((cl) => {
+                          const values = comps
+                            .map((c) => c.expected[cl.id])
+                            .filter((v): v is Level => v !== undefined);
+                          const avg = values.length
+                            ? values.reduce((s, v) => s + v, 0) / values.length
+                            : undefined;
+                          return (
+                            <td key={cl.id} className="py-2 text-center tabular-nums">
+                              {avg === undefined ? "—" : avg.toFixed(1)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
 
-        <SectionCard title={t("ref.taxonomies.title")} description={t("ref.taxonomies.subtitle")}>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("ref.taxonomies.actionTypes")}
-          </p>
-          <TaxonomyChips vocabulary="ACTION_TYPE" />
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("ref.taxonomies.evidenceTypes")}
-          </p>
-          <TaxonomyChips vocabulary="EVIDENCE_TYPE" />
-        </SectionCard>
-      </div>
+          <SectionCard title={t("ref.taxonomies.title")} description={t("ref.taxonomies.subtitle")}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("ref.taxonomies.actionTypes")}
+            </p>
+            <TaxonomyChips vocabulary="ACTION_TYPE" />
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("ref.taxonomies.evidenceTypes")}
+            </p>
+            <TaxonomyChips vocabulary="EVIDENCE_TYPE" />
+          </SectionCard>
+        </div>
+      </SectionGroup>
     </>
   );
 }

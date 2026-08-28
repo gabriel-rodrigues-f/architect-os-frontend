@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { fontSize, fontWeight, radius, renderScales, SCALES, spacing } from "@/lib/design";
@@ -84,6 +87,51 @@ describe("geração do CSS", () => {
     for (const escala of SCALES) {
       for (const [step] of escala.entries()) {
         expect(css).toContain(`--${escala.prefix}-${step}:`);
+      }
+    }
+  });
+});
+
+/**
+ * Declarar a escala em `:root` não cria utility nenhuma: o Tailwind só gera
+ * `p-4` ou `text-body` a partir do que está registrado num bloco `@theme`. Sem
+ * a ponte, a escala existia como documentação e a tela continuava governada
+ * pelo padrão do framework.
+ */
+describe("registro das utilities", () => {
+  const styles = () => readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+
+  it("espaçamento e tipografia declaram o namespace de utility do Tailwind", () => {
+    expect(spacing.utilityNamespace).toBe("spacing");
+    expect(fontSize.utilityNamespace).toBe("text");
+  });
+
+  it("a ponte aponta a utility para a variável da escala, sem duplicar o valor", () => {
+    expect(spacing.toThemeLines()).toContain("  --spacing-4: var(--space-4);");
+    expect(fontSize.toThemeLines()).toContain("  --text-body: var(--text-body);");
+  });
+
+  it("escala sem namespace não inventa utility", () => {
+    expect(fontWeight.toThemeLines()).toEqual([]);
+  });
+
+  it("todo degrau registrado está no styles.css", () => {
+    const css = styles();
+    for (const escala of SCALES) {
+      for (const linha of escala.toThemeLines()) {
+        expect(css, `${escala.prefix} — registre a ponte em @theme inline`).toContain(linha);
+      }
+    }
+  });
+
+  it("nenhum degrau da escala fica de fora do registro", () => {
+    const css = styles();
+    for (const escala of SCALES.filter((e) => e.utilityNamespace)) {
+      expect(escala.toThemeLines().length, escala.prefix).toBe(escala.entries().length);
+      for (const [step] of escala.entries()) {
+        expect(css, `${escala.utilityNamespace ?? ""}-${step}`).toContain(
+          `--${escala.utilityNamespace ?? ""}-${step}:`,
+        );
       }
     }
   });

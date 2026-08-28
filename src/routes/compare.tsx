@@ -95,7 +95,7 @@ function ComparePage() {
                       <th
                         key={a.id}
                         scope="col"
-                        className="px-1 text-center text-[11px] font-medium text-muted-foreground"
+                        className="px-1 text-center text-meta font-medium text-muted-foreground"
                       >
                         {a.name}
                       </th>

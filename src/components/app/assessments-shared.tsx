@@ -2,7 +2,7 @@ import { useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { AlertTriangle, BadgeCheck } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
-import { GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
+import { Callout, GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
@@ -88,12 +88,12 @@ function CommentSection({
               </li>
             ) : (
               <li key={comment.id} className="rounded-md border border-border bg-card p-3">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
                   {authorLabel}
                 </p>
                 <p className="mt-0.5 whitespace-pre-wrap text-sm">{comment.text}</p>
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-meta text-muted-foreground">
                     {t("comment.savedAt", {
                       data: defaultDateFormatter.formatDate(comment.createdAt, locale) ?? "",
                     })}
@@ -574,7 +574,7 @@ function DevelopmentSummaryForm({
       description={t("asmt.devSummary.subtitle")}
     >
       {conflict && (
-        <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+        <Callout tone="warning" className="mb-3">
           <p>{t("asmt.devSummary.conflict")}</p>
           <Button
             size="sm"
@@ -587,7 +587,7 @@ function DevelopmentSummaryForm({
           >
             {t("asmt.devSummary.reload")}
           </Button>
-        </div>
+        </Callout>
       )}
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -646,7 +646,7 @@ function DevelopmentSummaryForm({
           </Button>
           <p className="text-xs" role="status">
             {saveState === "saved" && (
-              <span className="text-emerald-600">{t("asmt.devSummary.saved")}</span>
+              <span className="text-success-fg">{t("asmt.devSummary.saved")}</span>
             )}
             {saveState === "dirty" && (
               <span className="text-muted-foreground">{t("asmt.devSummary.unsaved")}</span>
@@ -985,7 +985,7 @@ function CompetencyStackedCard({
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
             {t("asmt.col.self")}
           </p>
           <div className="mt-1">
@@ -1001,7 +1001,7 @@ function CompetencyStackedCard({
           </div>
         </div>
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
             {t("asmt.col.techLead")}
           </p>
           <div className="mt-1 flex items-center gap-1">
@@ -1023,7 +1023,7 @@ function CompetencyStackedCard({
           </div>
         </div>
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
             {t("asmt.col.target")}
           </p>
           <div className="mt-1">
@@ -1031,7 +1031,7 @@ function CompetencyStackedCard({
           </div>
         </div>
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
             {t("asmt.col.final")}
           </p>
           <div className="mt-1">

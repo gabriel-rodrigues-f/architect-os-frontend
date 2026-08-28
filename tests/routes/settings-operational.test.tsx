@@ -221,10 +221,11 @@ describe("Operação (CFG-05 admin UI)", () => {
       expect(within(block).getByText("4")).toBeTruthy();
     });
 
-    // O h1 da página tem o mesmo texto — o card da política é o heading nível 2.
+    // O h1 da página tem o mesmo texto. O card vive dentro de um `SectionGroup`,
+    // cujo título é o nível 2 — o card, portanto, é o nível 3.
     const policyTitle = await screen.findByRole("heading", {
       name: "Política de Progressão",
-      level: 2,
+      level: 3,
     });
     const section = policyTitle.closest("section") as HTMLElement;
     const editButtons = within(section).getAllByRole("button", { name: "Editar" });

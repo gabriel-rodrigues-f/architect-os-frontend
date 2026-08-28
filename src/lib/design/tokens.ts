@@ -267,6 +267,23 @@ export const tokenRegistry = new TokenRegistry().register(
   { name: "status-done-fg", role: "content", light: o("oklch(0.38 0.13 300)") },
 
   {
+    name: "warning",
+    role: "fill",
+    light: o("oklch(0.9 0.08 80)"),
+    contrastAgainst: "warning-fg",
+    minContrast: 4.5,
+  },
+  {
+    name: "success",
+    role: "fill",
+    light: o("oklch(0.89 0.07 152)"),
+    contrastAgainst: "success-fg",
+    minContrast: 4.5,
+  },
+  { name: "warning-fg", role: "content", light: o("oklch(0.4 0.13 70)") },
+  { name: "success-fg", role: "content", light: o("oklch(0.39 0.12 152)") },
+
+  {
     name: "chart-surface",
     role: "surface",
     light: o("oklch(1 0 0)"),

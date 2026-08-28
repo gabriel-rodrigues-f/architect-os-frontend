@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from "react";
+import { createContext, useContext, useId, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Info } from "lucide-react";
 
@@ -140,6 +140,27 @@ export function StatusBadge({
   );
 }
 
+export type SemanticTone = "warning" | "success";
+
+export const semanticTone: Record<SemanticTone, string> = {
+  warning: "bg-warning text-warning-fg",
+  success: "bg-success text-success-fg",
+};
+
+export function Callout({
+  tone,
+  children,
+  className,
+}: {
+  tone: SemanticTone;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-md p-3 text-sm", semanticTone[tone], className)}>{children}</div>
+  );
+}
+
 export function StatCard({
   label,
   value,
@@ -198,7 +219,7 @@ export function PageHeader({
           {help && <PageHelp content={help} />}
         </div>
         {description && (
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+          <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -264,6 +285,39 @@ export function ProfileTabs({
   );
 }
 
+const SECTION_HEADING_TAG = { 2: "h2", 3: "h3" } as const;
+
+const SectionHeadingLevelContext = createContext<2 | 3>(2);
+
+export function SectionGroup({
+  title,
+  description,
+  children,
+  className,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  const titleId = useId();
+  return (
+    <section aria-labelledby={titleId} className={className}>
+      <div className="mb-4">
+        <h2 id={titleId} className="section-title">
+          {title}
+        </h2>
+        {description && (
+          <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p>
+        )}
+      </div>
+      <SectionHeadingLevelContext.Provider value={3}>
+        {children}
+      </SectionHeadingLevelContext.Provider>
+    </section>
+  );
+}
+
 export function SectionCard({
   title,
   description,
@@ -280,14 +334,17 @@ export function SectionCard({
   id?: string;
 }) {
   const titleId = useId();
+  const Heading = SECTION_HEADING_TAG[useContext(SectionHeadingLevelContext)];
   return (
     <section id={id} aria-labelledby={titleId} className={cn("surface-card p-5", className)}>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 id={titleId} className="font-display text-base font-semibold">
+          <Heading id={titleId} className="font-display text-base font-semibold">
             {title}
-          </h2>
-          {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
+          </Heading>
+          {description && (
+            <p className="mt-0.5 max-w-prose text-sm text-muted-foreground">{description}</p>
+          )}
         </div>
         {actions}
       </div>
