@@ -29,7 +29,7 @@ const UNSAFE_ANY_RULES_AS_WARNINGS = Object.fromEntries(
 );
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", "src/routeTree.gen.ts"] },
+  { ignores: ["dist", ".output", ".worktrees", "src/routeTree.gen.ts"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
