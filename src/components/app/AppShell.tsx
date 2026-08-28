@@ -639,12 +639,12 @@ function PreferencesMenu() {
           <Settings className="h-4 w-4" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-56 space-y-3">
+      <PopoverContent align="end" className="space-y-4">
         <div>
-          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {t("prefs.theme")}
           </p>
-          <div className="grid grid-cols-3 gap-1">
+          <div className="grid grid-cols-3 gap-2">
             {THEME_OPTIONS.map((option) => (
               <button
                 key={option.value}
@@ -652,7 +652,7 @@ function PreferencesMenu() {
                 onClick={() => setTheme(option.value)}
                 aria-pressed={theme === option.value}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-meta transition-colors",
+                  "flex flex-col items-center gap-1 rounded-md border px-2 py-3 text-sm transition-colors",
                   theme === option.value
                     ? "border-primary bg-secondary font-medium text-foreground"
                     : "border-input text-muted-foreground hover:bg-secondary",
