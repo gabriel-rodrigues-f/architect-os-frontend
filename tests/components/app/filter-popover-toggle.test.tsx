@@ -145,14 +145,15 @@ describe.each(filters)("$name — alternar no mouse", ({ renderFilter }) => {
   afterEach(() => cleanup());
 
   it("apertar o botão do mouse sobre o gatilho não fecha a lista — quem alterna é o clique", async () => {
+    const user = userEvent.setup();
     const trigger = renderFilter();
-    await userEvent.click(trigger);
+    await user.click(trigger);
     expect(screen.queryByRole("listbox")).not.toBeNull();
 
-    await userEvent.pointer({ keys: "[MouseLeft>]", target: trigger });
+    await user.pointer({ keys: "[MouseLeft>]", target: trigger });
     expect(screen.queryByRole("listbox"), "apertar o mouse não pode fechar a lista").not.toBeNull();
 
-    await userEvent.pointer({ keys: "[/MouseLeft]", target: trigger });
+    await user.pointer({ keys: "[/MouseLeft]", target: trigger });
     expect(screen.queryByRole("listbox"), "soltar completa o clique e fecha").toBeNull();
   });
 

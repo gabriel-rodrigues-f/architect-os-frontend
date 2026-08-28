@@ -1,8 +1,9 @@
 import { ChevronDown, Users } from "lucide-react";
-import { useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
+import { useState } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useOptionListNavigation } from "@/hooks";
 import type { Architect } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { Selection } from "@/lib/selection";
@@ -21,57 +22,11 @@ export function ArchitectFilter({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const optionCount = architects.length + 1;
-
-  const close = () => {
-    setOpen(false);
-    triggerRef.current?.focus();
-  };
-
-  const focusOption = (index: number) => {
-    const clamped = (index + optionCount) % optionCount;
-    optionRefs.current[clamped]?.focus();
-  };
-
-  const onListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const currentIndex = optionRefs.current.findIndex((el) => el === document.activeElement);
-    switch (event.key) {
-      case "ArrowDown":
-        event.preventDefault();
-        focusOption(currentIndex + 1);
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        focusOption(currentIndex - 1);
-        break;
-      case "Home":
-        event.preventDefault();
-        focusOption(0);
-        break;
-      case "End":
-        event.preventDefault();
-        focusOption(optionCount - 1);
-        break;
-      case "Escape":
-        event.preventDefault();
-        close();
-        break;
-    }
-  };
-
-  const onListBlur = (event: FocusEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
-  };
-
-  const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      setOpen(true);
-    }
-  };
+  const { optionProps, onListKeyDown, onTriggerKeyDown } = useOptionListNavigation({
+    optionCount: architects.length + 1,
+    openList: () => setOpen(true),
+  });
 
   const toggle = (id: string) =>
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
@@ -92,10 +47,8 @@ export function ArchitectFilter({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          ref={triggerRef}
           type="button"
           onKeyDown={onTriggerKeyDown}
-          aria-expanded={open}
           aria-haspopup="listbox"
           title={summary}
           className="flex w-64 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
@@ -112,18 +65,11 @@ export function ArchitectFilter({
         aria-multiselectable="true"
         aria-label={label ?? t("filter.architects")}
         onKeyDown={onListKeyDown}
-        onBlur={onListBlur}
-        onOpenAutoFocus={(event) => {
-          event.preventDefault();
-          optionRefs.current[0]?.focus();
-        }}
         align="end"
         className="w-64 max-h-72 overflow-y-auto p-1"
       >
         <button
-          ref={(el) => {
-            optionRefs.current[0] = el;
-          }}
+          {...optionProps(0)}
           type="button"
           onClick={() => onChange(allSelected ? [] : architects.map((a) => a.id))}
           className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
@@ -142,9 +88,7 @@ export function ArchitectFilter({
           return (
             <button
               key={a.id}
-              ref={(el) => {
-                optionRefs.current[index + 1] = el;
-              }}
+              {...optionProps(index + 1)}
               type="button"
               role="option"
               aria-selected={active}
