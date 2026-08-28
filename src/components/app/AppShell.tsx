@@ -131,6 +131,8 @@ const SIDEBAR_WIDTH_KEY = "synapse:sidebar-width";
 const LEGACY_SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
 const NAV_COLLAPSED_GROUPS_KEY = "synapse:nav-collapsed-groups";
 
+const PAGE_CONTAINER = "mx-auto w-full max-w-page";
+
 const SIDEBAR_DEFAULT = 264;
 const SIDEBAR_MIN = 208;
 const SIDEBAR_MAX = 420;
@@ -341,7 +343,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             >
               <p className="whitespace-nowrap font-display text-sm font-semibold">Synapse</p>
-              <p className="whitespace-nowrap text-[11px] text-sidebar-foreground/60">
+              <p className="whitespace-nowrap text-meta text-sidebar-foreground/60">
                 {t("shell.subtitle")}
               </p>
             </div>
@@ -441,44 +443,51 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/85 px-5 py-3 backdrop-blur lg:px-8">
-            <div className="flex min-w-0 items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setMobileNavOpen(true)}
-                aria-label={t("shell.openMenu")}
-                title={t("shell.openMenu")}
-                className="-ml-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:hidden"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-              <p className="hidden truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground md:block">
-                {t("shell.flow")}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-muted-foreground" htmlFor="cycle">
-                {t("shell.cycle")}
-              </label>
-              {user?.role === "admin" ? (
-                <SingleSelectFilter
-                  id="cycle"
-                  ariaLabel={t("shell.cycle")}
-                  value={activeCycleId}
-                  onChange={setActiveCycle}
-                  options={cycles.map((c) => ({ value: c.id, label: c.name }))}
-                  triggerClassName="mt-0 h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
-                />
-              ) : (
-                <span id="cycle" className="px-1 text-sm font-medium">
-                  {cycles.find((c) => c.id === activeCycleId)?.name ?? "—"}
-                </span>
+          <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
+            <div
+              className={cn(
+                PAGE_CONTAINER,
+                "flex flex-wrap items-center justify-between gap-3 px-5 py-3 lg:px-8",
               )}
-              <PreferencesMenu />
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(true)}
+                  aria-label={t("shell.openMenu")}
+                  title={t("shell.openMenu")}
+                  className="-ml-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+                <p className="hidden truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground md:block">
+                  {t("shell.flow")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground" htmlFor="cycle">
+                  {t("shell.cycle")}
+                </label>
+                {user?.role === "admin" ? (
+                  <SingleSelectFilter
+                    id="cycle"
+                    ariaLabel={t("shell.cycle")}
+                    value={activeCycleId}
+                    onChange={setActiveCycle}
+                    options={cycles.map((c) => ({ value: c.id, label: c.name }))}
+                    triggerClassName="mt-0 h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
+                  />
+                ) : (
+                  <span id="cycle" className="px-1 text-sm font-medium">
+                    {cycles.find((c) => c.id === activeCycleId)?.name ?? "—"}
+                  </span>
+                )}
+                <PreferencesMenu />
+              </div>
             </div>
           </header>
 
-          <main className="flex-1 px-5 py-6 lg:px-8 lg:py-8">{children}</main>
+          <main className={cn(PAGE_CONTAINER, "flex-1 px-5 py-6 lg:px-8 lg:py-8")}>{children}</main>
         </div>
       </div>
 
@@ -486,7 +495,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SheetContent side="left" className="flex w-[85vw] max-w-xs flex-col gap-0 p-0 sm:max-w-xs">
           <SheetHeader className="border-b border-border px-5 py-4 text-left">
             <SheetTitle className="font-display text-sm font-semibold">Synapse</SheetTitle>
-            <p className="text-[11px] text-muted-foreground">{t("shell.subtitle")}</p>
+            <p className="text-meta text-muted-foreground">{t("shell.subtitle")}</p>
           </SheetHeader>
           <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
             {navGroups.map((group, groupIndex) => (
@@ -643,7 +652,7 @@ function PreferencesMenu() {
                 onClick={() => setTheme(option.value)}
                 aria-pressed={theme === option.value}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-[11px] transition-colors",
+                  "flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-meta transition-colors",
                   theme === option.value
                     ? "border-primary bg-secondary font-medium text-foreground"
                     : "border-input text-muted-foreground hover:bg-secondary",

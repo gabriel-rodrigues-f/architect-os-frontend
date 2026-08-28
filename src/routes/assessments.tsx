@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import { PageHeader, SectionCard, StatusBadge } from "@/components/app/ui-bits";
+import { Callout, PageHeader, SectionCard, StatusBadge } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
 import { CapabilityCombobox } from "@/components/app/CapabilityCombobox";
@@ -286,10 +286,8 @@ function AssessmentsPage() {
       ) : (
         <div className="space-y-4">
           {manyCapabilitiesSelected && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-              <p className="text-amber-800">
-                {t("asmt.manyCapabilities.warning", { n: selected.length })}
-              </p>
+            <Callout tone="warning" className="flex flex-wrap items-center justify-between gap-3">
+              <p>{t("asmt.manyCapabilities.warning", { n: selected.length })}</p>
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
@@ -324,7 +322,7 @@ function AssessmentsPage() {
                   {t("asmt.manyCapabilities.next")}
                 </Button>
               </div>
-            </div>
+            </Callout>
           )}
           {visibleCapabilities.map((cat) => (
             <CapabilityAssessmentCard

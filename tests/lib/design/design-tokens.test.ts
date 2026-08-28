@@ -116,6 +116,36 @@ describe("contraste — auditoria WCAG", () => {
     expect(semRegra.map((t) => t.name)).toEqual([]);
   });
 
+  /**
+   * `warning-fg` e `success-fg` também aparecem como texto solto sobre o card
+   * — "salvo", "+2", o aviso de limite. O par com o preenchimento não cobre
+   * esse uso: é contra a superfície do card que eles precisam ser legíveis, e
+   * era exatamente aí que o âmbar cru falhava no tema escuro.
+   */
+  it("aviso e sucesso são legíveis como texto sobre o card, nos dois temas", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+    const cardDoBloco = (seletor: string) => {
+      const bloco = new RegExp(`${seletor}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+      const valor = /--card:\s*([^;]+);/.exec(bloco)?.[1];
+      if (!valor) throw new Error(`--card não encontrado em ${seletor}`);
+      return Oklch.parse(valor);
+    };
+
+    const superficie = { light: cardDoBloco(":root"), dark: cardDoBloco("\\.dark") };
+
+    for (const nome of ["warning-fg", "success-fg"]) {
+      const token = tokenRegistry.get(nome)!;
+      expect(
+        light.resolve(token).contrastWith(superficie.light),
+        `${nome} no claro`,
+      ).toBeGreaterThanOrEqual(CONTRAST.text);
+      expect(
+        dark.resolve(token).contrastWith(superficie.dark),
+        `${nome} no escuro`,
+      ).toBeGreaterThanOrEqual(CONTRAST.text);
+    }
+  });
+
   /** Toda série precisa se separar da superfície do gráfico — linha invisível é dado perdido. */
   it("nenhuma série de gráfico fica sem regra de contraste", () => {
     const series = tokenRegistry.byRole("series");
