@@ -402,6 +402,7 @@
   "asmt.select.self": "Self-assessment — {competency}",
   "asmt.select.leader": "Tech Lead rating — {competency}",
   "asmt.select.final": "Final rating — {competency}",
+  "asmt.comments.toggle": "{contagem} — {competency}",
   "asmt.col.notes": "Notes",
   "asmt.status": "Status",
   "asmt.submit": "Submit for review",

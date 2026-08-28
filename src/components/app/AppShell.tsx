@@ -125,6 +125,9 @@ export function isNavItemHiddenByCollapse(
 
 const navGroupPanelId = (labelKey: string) => `nav-group-${labelKey.replace(/\./g, "-")}`;
 
+const outOfReachProps = (hidden: boolean) =>
+  hidden ? ({ tabIndex: -1, "aria-hidden": true } as const) : {};
+
 const SIDEBAR_STORAGE_KEY = "synapse:sidebar-collapsed";
 const LEGACY_SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";
 const SIDEBAR_WIDTH_KEY = "synapse:sidebar-width";
@@ -257,13 +260,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   };
 
-  const renderDesktopNavItem = (item: NavItem) => {
+  const renderDesktopNavItem = (item: NavItem, hidden = false) => {
     const active = isNavItemActive(item, pathname);
     const label = t(item.labelKey);
     const link = (
       <Link
         to={item.to}
         aria-label={label}
+        {...outOfReachProps(hidden)}
         className={cn(
           "flex items-center rounded-lg py-2 text-sm transition-colors",
           collapsed ? "justify-center px-0" : "gap-2.5 px-3",
@@ -381,7 +385,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={group.labelKey ?? `group-${groupIndex}`}
                     className={groupIndex > 0 ? "pt-2" : ""}
                   >
-                    <div className="space-y-0.5">{group.items.map(renderDesktopNavItem)}</div>
+                    <div className="space-y-0.5">
+                      {group.items.map((item) => renderDesktopNavItem(item))}
+                    </div>
                   </div>
                 );
               }
@@ -465,22 +471,27 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground" htmlFor="cycle">
-                  {t("shell.cycle")}
-                </label>
                 {user?.role === "admin" ? (
-                  <SingleSelectFilter
-                    id="cycle"
-                    ariaLabel={t("shell.cycle")}
-                    value={activeCycleId}
-                    onChange={setActiveCycle}
-                    options={cycles.map((c) => ({ value: c.id, label: c.name }))}
-                    triggerClassName="mt-0 h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
-                  />
+                  <>
+                    <label className="text-xs text-muted-foreground" htmlFor="cycle">
+                      {t("shell.cycle")}
+                    </label>
+                    <SingleSelectFilter
+                      id="cycle"
+                      ariaLabel={t("shell.cycle")}
+                      value={activeCycleId}
+                      onChange={setActiveCycle}
+                      options={cycles.map((c) => ({ value: c.id, label: c.name }))}
+                      triggerClassName="mt-0 h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
+                    />
+                  </>
                 ) : (
-                  <span id="cycle" className="px-1 text-sm font-medium">
-                    {cycles.find((c) => c.id === activeCycleId)?.name ?? "—"}
-                  </span>
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {t("shell.cycle")}
+                    <span className="text-sm font-medium text-foreground">
+                      {cycles.find((c) => c.id === activeCycleId)?.name ?? "—"}
+                    </span>
+                  </p>
                 )}
                 <PreferencesMenu />
               </div>
@@ -510,11 +521,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 groupLabel={group.labelKey ? t(group.labelKey) : ""}
                 idPrefix="mobile-"
                 headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground/80"
-                renderItem={(item) => (
+                renderItem={(item, hidden) => (
                   <Link
                     key={item.to}
                     to={item.to}
                     onClick={() => setMobileNavOpen(false)}
+                    {...outOfReachProps(hidden)}
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
                       isNavItemActive(item, pathname)
@@ -568,14 +580,14 @@ function NavGroupSection({
   groupLabel: string;
   idPrefix?: string;
   headerClassName: string;
-  renderItem: (item: NavItem) => ReactNode;
+  renderItem: (item: NavItem, hidden: boolean) => ReactNode;
 }) {
   const wrapperClassName = groupIndex > 0 ? "pt-2" : "";
 
   if (!group.labelKey) {
     return (
       <div className={wrapperClassName}>
-        <div className="space-y-0.5">{group.items.map(renderItem)}</div>
+        <div className="space-y-0.5">{group.items.map((item) => renderItem(item, false))}</div>
       </div>
     );
   }
@@ -614,7 +626,7 @@ function NavGroupSection({
               )}
               style={{ gridTemplateRows: hidden ? "0fr" : "1fr" }}
             >
-              <div className="overflow-hidden">{renderItem(item)}</div>
+              <div className="overflow-hidden">{renderItem(item, hidden)}</div>
             </div>
           );
         })}

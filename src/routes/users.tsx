@@ -321,7 +321,11 @@ function EditUserDialog({
               <option value="disabled">{t("users.status.disabled")}</option>
             </select>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={saving}>
@@ -420,7 +424,11 @@ function CreateUserDialog({
               <option value="admin">{t("users.role.admin")}</option>
             </select>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={submitting}>

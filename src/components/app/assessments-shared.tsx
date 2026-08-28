@@ -49,6 +49,37 @@ function commentCountLabel(total: number, t: I18nApi["t"]) {
   return total === 1 ? t("comment.count.one") : t("comment.count.many", { n: total });
 }
 
+const commentPanelId = (competencyId: string) => `asmt-comments-${competencyId}`;
+
+function CommentToggleButton({
+  competency,
+  commentCount,
+  expanded,
+  onToggle,
+  className,
+}: {
+  competency: Competency;
+  commentCount: number;
+  expanded: boolean;
+  onToggle: () => void;
+  className: string;
+}) {
+  const { t } = useI18n();
+  const contagem = commentCountLabel(commentCount, t);
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      aria-controls={commentPanelId(competency.id)}
+      aria-label={t("asmt.comments.toggle", { contagem, competency: competency.name })}
+      className={className}
+      onClick={onToggle}
+    >
+      {contagem}
+    </button>
+  );
+}
+
 function CommentSection({
   comments,
   currentUserId,
@@ -859,16 +890,20 @@ export function CapabilityAssessmentCard({
                         <GapBadge gap={gap} />
                       </td>
                       <td className="py-2 text-right">
-                        <button
+                        <CommentToggleButton
+                          competency={c}
+                          commentCount={item.comments.length}
+                          expanded={openComment === c.id}
+                          onToggle={() => onToggleComment(c.id)}
                           className="text-xs text-primary hover:underline"
-                          onClick={() => onToggleComment(c.id)}
-                        >
-                          {commentCountLabel(item.comments.length, t)}
-                        </button>
+                        />
                       </td>
                     </tr>
                     {openComment === c.id && (
-                      <tr className="border-b border-border/60 bg-secondary/40">
+                      <tr
+                        id={commentPanelId(c.id)}
+                        className="border-b border-border/60 bg-secondary/40"
+                      >
                         <td colSpan={7} className="p-3">
                           {acceptedEvidence.length > 0 && (
                             <div className="mb-3 space-y-1.5 border-b border-border pb-3">
@@ -1032,16 +1067,16 @@ function CompetencyStackedCard({
         </div>
       </div>
 
-      <button
-        type="button"
+      <CommentToggleButton
+        competency={competency}
+        commentCount={item.comments.length}
+        expanded={openComment === competency.id}
+        onToggle={() => onToggleComment(competency.id)}
         className="mt-3 text-xs text-primary hover:underline"
-        onClick={() => onToggleComment(competency.id)}
-      >
-        {commentCountLabel(item.comments.length, t)}
-      </button>
+      />
 
       {openComment === competency.id && (
-        <div className="mt-3 border-t border-border pt-3">
+        <div id={commentPanelId(competency.id)} className="mt-3 border-t border-border pt-3">
           {acceptedEvidence.length > 0 && (
             <div className="mb-3 space-y-1.5 border-b border-border pb-3">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
