@@ -213,7 +213,7 @@ export function PageHeader({
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
+      <div className="page-heading">
         <div className="flex items-center gap-1.5">
           <h1 className="page-title">{title}</h1>
           {help && <PageHelp content={help} />}

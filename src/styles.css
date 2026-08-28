@@ -381,6 +381,20 @@
   line-height: 1.2;
 }
 
+/*
+  Bloco de título da página. O cabeçalho alinha os filhos por `items-end`, e o
+  bloco só era alto quando a rota passava descrição — o botão de criação descia
+  nas telas com descrição e subia nas sem, mudando de altura a cada rota. A
+  reserva fixa o caso mais alto (linha do título + respiro + linha da
+  descrição), então a linha de base do botão é a mesma em todas as telas.
+*/
+@utility page-heading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--space-16);
+}
+
 /* Título de seção: um degrau abaixo da página, mesmo peso. A diferença de
    tamanho já cria a hierarquia — subir o peso junto duplicaria o sinal. */
 @utility section-title {
