@@ -17,8 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "screenshots": "node scripts/screenshot.mjs"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",

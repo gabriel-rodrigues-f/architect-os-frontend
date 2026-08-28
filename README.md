@@ -82,7 +82,6 @@ npm test                  # unitários
 RUN_INTEGRATION=1 npm test  # inclui contrato contra a API real (backend no ar)
 npm run typecheck
 npm run lint
-npm run screenshots       # captura cada tela em docs/screenshots (ver docs/FUNCIONAL.md)
 ```
 
 ## Documentação funcional

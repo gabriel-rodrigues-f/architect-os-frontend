@@ -74,7 +74,6 @@ e reidentificável.
 
 ## 1. Login
 
-![Login](screenshots/00-login.png)
 
 Porta de entrada. Numa instância sem nenhum usuário cadastrado, o formulário
 vira "Primeiro acesso" e cria a conta de administrador; do contrário, é login
@@ -82,7 +81,6 @@ comum. Sem sessão válida, nenhuma outra tela do app é acessível.
 
 ## 2. Painel
 
-![Painel](screenshots/01-painel.png)
 
 Visão executiva do ciclo ativo: quantos arquitetos, PDIs ativos, competências
 avaliadas, lacunas críticas, mentorias realizadas e trilhas em andamento.
@@ -92,7 +90,6 @@ apontando de quem é a lacuna.
 
 ## 3. Time
 
-![Time](screenshots/02-time.png)
 
 Cadastro dos arquitetos: cargo, tempo de casa, e-mail, Tech Lead responsável
 e especialização principal. Cada card permite editar ou desativar a pessoa
@@ -118,7 +115,6 @@ sobre o mesmo dado.
 
 ### 4.1 Cobertura
 
-![Capacidades — Cobertura](screenshots/03-capacidades-cobertura.png)
 
 Uma visão por capacidade de arquitetura (Corporativa, Dados, Nuvem,
 Segurança…) focada em risco organizacional: quantas pessoas estão em
@@ -129,7 +125,6 @@ o risco que esta aba existe para expor.
 
 ### 4.2 Prioridades
 
-![Capacidades — Prioridades](screenshots/04-capacidades-prioridades.png)
 
 A visão por pessoa (ou pelo recorte de pessoas escolhido no filtro): um
 radar comparando nível atual e esperado por capacidade, e ao lado a lista
@@ -140,7 +135,6 @@ a página.
 
 ### 4.3 Progressão
 
-![Capacidades — Progressão](screenshots/05-capacidades-progressao.png)
 
 A visão consolidada do time inteiro: um mapa de calor (uma linha por
 arquiteto, uma coluna por capacidade) e, logo abaixo, a Tabela de Lacunas de
@@ -153,7 +147,6 @@ de bloqueio — não existe "próximo nível" pra travar quem já chegou lá.
 
 ### 4.4 Prioridades coletivas
 
-![Capacidades — Prioridades coletivas](screenshots/06-capacidades-prioridades-coletivas.png)
 
 Agregação das lacunas do time inteiro por competência, respondendo "se eu só
 pudesse investir num treinamento este trimestre, qual entregaria mais valor
@@ -163,7 +156,6 @@ coletiva direto da lacuna identificada.
 
 ## 5. Avaliações
 
-![Avaliações](screenshots/07-avaliacoes.png)
 
 O formulário central do ciclo: para um arquiteto e uma capacidade, cada
 competência recebe autoavaliação, avaliação do Tech Lead, nível alvo (do
@@ -189,7 +181,6 @@ avaliação no ciclo: não é dado faltando, é dado ainda não oficial.
 
 ## 6. Planos de Desenvolvimento
 
-![Planos de Desenvolvimento](screenshots/08-planos-de-desenvolvimento.png)
 
 O PDI (Plano de Desenvolvimento Individual) de cada arquiteto: itens de ação
 ligados a uma competência com lacuna, tipo de ação (Aprender, Praticar,
@@ -199,7 +190,6 @@ alvo do item vêm sempre do assessment oficial, nunca digitados à mão.
 
 ## 7. Trilhas de Aprendizagem
 
-![Trilhas de Aprendizagem](screenshots/09-trilhas-de-aprendizagem.png)
 
 Percursos de estudo — cursos, leituras, hands-on — atribuídos a arquitetos,
 com tipo, nome, carga horária e status por item. Uma trilha pode ficar
@@ -215,7 +205,6 @@ termo, sem precisar de um clique extra.
 
 ## 8. Mentoria
 
-![Mentoria](screenshots/10-mentoria.png)
 
 Linha do tempo das sessões de mentoria registradas: quem mentorou quem, em
 que tema, por quanto tempo, e três campos por sessão — notas da conversa,
@@ -228,7 +217,6 @@ do tempo de Evolução de uma pessoa, ao lado das avaliações concluídas.
 
 ## 9. Matriz de Competências
 
-![Matriz de Competências](screenshots/11-matriz-de-competencias.png)
 
 O catálogo mestre: toda competência técnica que o time avalia, agrupada por
 capacidade, com o nível esperado por cargo. É daqui que nascem as opções que
@@ -247,7 +235,6 @@ rápido o que ainda falta revisar.
 
 ## 10. Ciclos de Desenvolvimento
 
-![Ciclos de Desenvolvimento](screenshots/12-ciclos-de-desenvolvimento.png)
 
 Os períodos que organizam todo o resto do app (avaliações e PDIs giram em
 torno de um ciclo ativo). Cada ciclo tem início, fim e situação (Planejado,
@@ -258,7 +245,6 @@ histórico inteiro, de todos os ciclos.
 
 ## 11. Usuários
 
-![Usuários](screenshots/13-usuarios.png)
 
 Contas de acesso: quem administra o sistema e quem revisa como Tech Lead. Um
 administrador cria conta nova, muda papel e status (ativa/desabilitada) —
@@ -272,7 +258,6 @@ app — tem duas abas.
 
 ### 12.1 Visão geral
 
-![Detalhe do Arquiteto — Visão geral](screenshots/14-detalhe-do-arquiteto-visao-geral.png)
 
 O retrato do ciclo atual: nível médio, lacunas abertas, "próximos passos"
 priorizados sobre o resto, radar de perfil por capacidade, principais
@@ -282,7 +267,6 @@ olharia antes de uma conversa de carreira sobre **o presente**.
 
 ### 12.2 Evolução
 
-![Detalhe do Arquiteto — Evolução](screenshots/15-detalhe-do-arquiteto-evolucao.png)
 
 Novidade da Rodada 10: como o nível de cada competência mudou ao longo do
 tempo, não só o retrato de agora. Filtros de período, capacidade e fonte
@@ -301,7 +285,6 @@ acrescenta um ponto de observação na linha do tempo.
 
 ## 13. Referência do Modelo
 
-![Referência do Modelo](screenshots/16-referencia-do-modelo.png)
 
 Glossário somente-leitura: a escala de proficiência (o que cada nível de 1 a
 5 significa), os ciclos cadastrados, e as duas taxonomias fixas do modelo —
@@ -313,7 +296,6 @@ diretamente em `/settings`.
 
 ## 14. Navegação mobile
 
-![Navegação mobile](screenshots/17-navegacao-mobile.png)
 
 Abaixo de um certo tamanho de tela, a barra lateral some e vira um botão de
 hambúrguer no cabeçalho. Ele abre um drawer com a mesma hierarquia por seção
@@ -328,17 +310,3 @@ O seletor no canto superior direito (ícone de engrenagem) troca o idioma da
 interface entre português, inglês e espanhol, e o tema entre claro, escuro e
 "acompanhar o sistema". A escolha fica salva no navegador.
 
-## Regerando as capturas
-
-As imagens desta pasta são geradas por script, não tiradas à mão — quando uma
-tela mudar de forma visível, regenere em vez de editar a imagem:
-
-```sh
-cd frontend
-SCREENSHOT_EMAIL=seu@email.com SCREENSHOT_PASSWORD=sua-senha npm run screenshots
-```
-
-Requer o backend (`docker compose up`) e o frontend (`npm run dev`) já
-rodando, com a massa de `seed:demo` + `seed:evolution-history` carregada
-(veja "Como acessar" acima) para as telas saírem preenchidas como nestas
-capturas. O script está em `scripts/screenshot.mjs`.
