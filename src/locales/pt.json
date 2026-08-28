@@ -402,6 +402,7 @@
   "asmt.select.self": "Autoavaliação — {competency}",
   "asmt.select.leader": "Nota do Tech Lead — {competency}",
   "asmt.select.final": "Nota final — {competency}",
+  "asmt.comments.toggle": "{contagem} — {competency}",
   "asmt.col.notes": "Notas",
   "asmt.status": "Situação",
   "asmt.submit": "Enviar para revisão",

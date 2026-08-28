@@ -515,7 +515,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             />
           </div>
           <div className="min-w-0">
-            <FieldLabel htmlFor="mentor-competencies" hint={t("mentor.form.competenciesHint")}>
+            <FieldLabel
+              labelId="mentor-competencies-label"
+              hint={t("mentor.form.competenciesHint")}
+            >
               {t("mentor.form.competencies")}
             </FieldLabel>
             {activeCompetencies.length > 20 && (
@@ -529,6 +532,8 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             )}
             <div
               id="mentor-competencies"
+              role="group"
+              aria-labelledby="mentor-competencies-label"
               className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
             >
               {discussedList.map((c) => (
@@ -551,7 +556,10 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
             sel.architectById(sessionForm.form.menteeId),
           ) && (
             <div className="min-w-0">
-              <FieldLabel htmlFor="mentor-proficiency" hint={t("mentor.form.proficiencyHint")}>
+              <FieldLabel
+                labelId="mentor-proficiency-label"
+                hint={t("mentor.form.proficiencyHint")}
+              >
                 {t("mentor.form.proficiency")}
               </FieldLabel>
               {activeCompetencies.length > 20 && (
@@ -565,6 +573,8 @@ export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Ar
               )}
               <div
                 id="mentor-proficiency"
+                role="group"
+                aria-labelledby="mentor-proficiency-label"
                 className="mt-1 max-h-48 overflow-y-auto overflow-x-hidden surface-inset p-2"
               >
                 {proficiencyList.length === 0 && (

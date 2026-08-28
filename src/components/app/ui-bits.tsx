@@ -375,17 +375,21 @@ export function EmptyState({
 
 export function FieldLabel({
   htmlFor,
+  labelId,
   children,
   hint,
 }: {
-  htmlFor: string;
+  htmlFor?: string;
+  labelId?: string;
   children: ReactNode;
   hint: string;
 }) {
   const { t } = useI18n();
   return (
     <div className="flex items-center gap-1.5">
-      <Label htmlFor={htmlFor}>{children}</Label>
+      <Label {...(htmlFor ? { htmlFor } : {})} {...(labelId ? { id: labelId } : {})}>
+        {children}
+      </Label>
       <TooltipProvider delayDuration={150}>
         <Tooltip>
           <TooltipTrigger asChild>
