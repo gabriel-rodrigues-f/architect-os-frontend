@@ -1,9 +1,13 @@
 export const SERIES_COUNT = 6;
 
+export type SeriesSymbol = "circle" | "square" | "triangle" | "diamond" | "cross" | "star" | "wye";
+
 export interface SeriesStyle {
   readonly color: string;
 
   readonly dash?: string;
+
+  readonly symbol: SeriesSymbol;
 }
 
 export class ChartPalette {
@@ -12,9 +16,11 @@ export class ChartPalette {
   at(index: number): SeriesStyle {
     const slot = index % SERIES_COUNT;
     const volta = Math.floor(index / SERIES_COUNT);
+    const traco = DASHES[(slot + volta) % DASHES.length];
     return {
       color: `var(--chart-${String(slot + 1)})`,
-      ...(volta > 0 ? { dash: DASHES[(volta - 1) % DASHES.length] } : {}),
+      symbol: SYMBOLS[(slot + volta) % SYMBOLS.length]!,
+      ...(traco ? { dash: traco } : {}),
     };
   }
 
@@ -32,7 +38,17 @@ export class ChartPalette {
   }
 }
 
-const DASHES = ["6 3", "2 3", "8 3 2 3"] as const;
+const DASHES = [undefined, "6 3", "2 3", "8 3 2 3", "1 4", "12 4 2 4"] as const;
+
+const SYMBOLS: readonly SeriesSymbol[] = [
+  "circle",
+  "square",
+  "triangle",
+  "diamond",
+  "cross",
+  "star",
+  "wye",
+];
 
 export const CHART_INK = {
   reference: "var(--chart-reference)",
