@@ -9,14 +9,35 @@ import {
   Radar,
   RadarChart,
   ResponsiveContainer,
+  Symbols,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
-import { useNarrowViewport, useReducedMotion } from "@/hooks";
-import { axisTick, CHART_INK, ChartPalette, tooltipStyle } from "@/lib/design";
+import { useDisplayPreferences, useNarrowViewport } from "@/hooks";
+import { axisTick, CHART_INK, ChartPalette, tooltipStyle, type SeriesStyle } from "@/lib/design";
 import type { EvolutionSeries, ProficiencyPoint, RadarPoint } from "@/components/app/charts";
+
+const FALLBACK_STYLE: SeriesStyle = { color: "var(--chart-1)", symbol: "circle" };
+
+function seriesDot(estilo: SeriesStyle) {
+  return (props: { cx?: number; cy?: number; key?: string }) => {
+    if (props.cx === undefined || props.cy === undefined) return <g key={props.key} />;
+    return (
+      <Symbols
+        key={props.key}
+        cx={props.cx}
+        cy={props.cy}
+        type={estilo.symbol}
+        size={56}
+        fill={estilo.color}
+        stroke={CHART_INK.surface}
+        strokeWidth={1}
+      />
+    );
+  };
+}
 
 export function CapabilityRadarFigure({
   data,
@@ -27,7 +48,7 @@ export function CapabilityRadarFigure({
   currentLabel: string;
   targetLabel: string;
 }) {
-  const semMovimento = useReducedMotion();
+  const { reducedMotion, increasedContrast } = useDisplayPreferences();
   const estreita = useNarrowViewport();
 
   return (
@@ -39,20 +60,24 @@ export function CapabilityRadarFigure({
         <Radar
           name={targetLabel}
           dataKey="alvo"
+          legendType="plainline"
           stroke={CHART_INK.reference}
           strokeDasharray="4 3"
+          strokeWidth={increasedContrast ? 2 : 1}
           fill={CHART_INK.reference}
           fillOpacity={0.08}
-          isAnimationActive={!semMovimento}
+          isAnimationActive={!reducedMotion}
         />
         <Radar
           name={currentLabel}
           dataKey="atual"
+          legendType="circle"
           stroke="var(--chart-1)"
-          strokeWidth={2}
+          strokeWidth={increasedContrast ? 3 : 2}
           fill="var(--chart-1)"
-          fillOpacity={0.28}
-          isAnimationActive={!semMovimento}
+          fillOpacity={increasedContrast ? 0.16 : 0.28}
+          dot={seriesDot(FALLBACK_STYLE)}
+          isAnimationActive={!reducedMotion}
         />
         <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
         <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: CHART_INK.surfaceText }} />
@@ -68,7 +93,7 @@ export function ComparisonRadarFigure({
   data: Record<string, string | number>[];
   series: EvolutionSeries[];
 }) {
-  const semMovimento = useReducedMotion();
+  const { reducedMotion, increasedContrast } = useDisplayPreferences();
   const estreita = useNarrowViewport();
 
   const palette = new ChartPalette();
@@ -81,18 +106,20 @@ export function ComparisonRadarFigure({
         <PolarAngleAxis dataKey="capability" tick={axisTick} />
         <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
         {series.map((s, i) => {
-          const estilo = estilos[i] ?? { color: "var(--chart-1)" };
+          const estilo = estilos[i] ?? FALLBACK_STYLE;
           return (
             <Radar
               key={s.key}
               name={s.label}
               dataKey={s.key}
+              legendType={estilo.symbol}
               stroke={estilo.color}
-              strokeWidth={2}
+              strokeWidth={increasedContrast ? 3 : 2}
               {...(estilo.dash ? { strokeDasharray: estilo.dash } : {})}
               fill={estilo.color}
-              fillOpacity={0.12}
-              isAnimationActive={!semMovimento}
+              fillOpacity={increasedContrast ? 0.06 : 0.12}
+              dot={seriesDot(estilo)}
+              isAnimationActive={!reducedMotion}
             />
           );
         })}
@@ -112,7 +139,7 @@ export function EvolutionLineFigure({
   series: EvolutionSeries[];
   xKey: string;
 }) {
-  const semMovimento = useReducedMotion();
+  const { reducedMotion, increasedContrast } = useDisplayPreferences();
 
   const palette = new ChartPalette();
   const estilos = palette.forKeys(series.map((s) => s.key));
@@ -132,19 +159,20 @@ export function EvolutionLineFigure({
         />
         <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
         {series.map((s, i) => {
-          const estilo = estilos[i] ?? { color: "var(--chart-1)" };
+          const estilo = estilos[i] ?? FALLBACK_STYLE;
           return (
             <Line
               key={s.key}
               type="monotone"
               dataKey={s.key}
               name={s.label}
+              legendType={estilo.symbol}
               stroke={estilo.color}
-              strokeWidth={2}
+              strokeWidth={increasedContrast ? 3 : 2}
               {...(estilo.dash ? { strokeDasharray: estilo.dash } : {})}
-              dot={pontos}
+              dot={pontos ? seriesDot(estilo) : false}
               activeDot={{ r: 5 }}
-              isAnimationActive={!semMovimento}
+              isAnimationActive={!reducedMotion}
             />
           );
         })}
@@ -162,7 +190,7 @@ export function ProficiencyTimelineFigure({
   label: string;
   levelNames: Record<number, string>;
 }) {
-  const semMovimento = useReducedMotion();
+  const { reducedMotion, increasedContrast } = useDisplayPreferences();
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -187,10 +215,10 @@ export function ProficiencyTimelineFigure({
           dataKey="level"
           name={label}
           stroke="var(--chart-1)"
-          strokeWidth={2}
-          dot={{ r: 4 }}
+          strokeWidth={increasedContrast ? 3 : 2}
+          dot={seriesDot(FALLBACK_STYLE)}
           activeDot={{ r: 6 }}
-          isAnimationActive={!semMovimento}
+          isAnimationActive={!reducedMotion}
         />
       </LineChart>
     </ResponsiveContainer>

@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { ComparisonRadar, type EvolutionSeries } from "@/components/app/charts";
-import { EmptyState, LevelCell, PageHeader, SectionCard } from "@/components/app/ui-bits";
+import { LevelHeatCell, LevelScaleKey } from "@/components/app/level-encoding";
+import { EmptyState, PageHeader, SectionCard } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Selection } from "@/lib/selection";
@@ -81,6 +82,7 @@ function ComparePage() {
             title={t("compare.table.title")}
             description={t("compare.table.subtitle")}
           >
+            <LevelScaleKey />
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
                 <thead>
@@ -105,14 +107,20 @@ function ComparePage() {
                 <tbody>
                   {store.capabilities.map((capability) => (
                     <tr key={capability.id}>
-                      <td className="py-1 text-sm font-medium" title={capability.name}>
+                      <th
+                        scope="row"
+                        className="py-1 text-left text-sm font-medium"
+                        title={capability.name}
+                      >
                         {sel.capabilityShortLabel(capability)}
-                      </td>
+                      </th>
                       {architects.map((a) => {
                         const avg = averagesByArchitect.get(a.id)?.get(capability.id);
                         return (
                           <td key={a.id} className="min-w-[52px]">
-                            <LevelCell level={avg === undefined ? undefined : Math.round(avg)} />
+                            <LevelHeatCell
+                              level={avg === undefined ? undefined : Math.round(avg)}
+                            />
                           </td>
                         );
                       })}

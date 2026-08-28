@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
-import { LevelCell } from "@/components/app/ui-bits";
+import { LevelHeatCell, LevelScaleKey } from "@/components/app/level-encoding";
 import type { Capability } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import type { CapabilityAverage } from "@/lib/selectors";
@@ -53,6 +53,7 @@ export function CapabilityHeatmap({
         showAll={showAll}
         onToggle={toggle}
       />
+      <LevelScaleKey />
       <div className="max-h-[480px] overflow-auto">
         <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
           <thead>
@@ -79,23 +80,31 @@ export function CapabilityHeatmap({
             {architects.map((a) => (
               <tr key={a.id}>
                 {linkToProfile ? (
-                  <td className="sticky left-0 z-10 bg-card py-1">
+                  <th
+                    scope="row"
+                    className="sticky left-0 z-10 bg-card py-1 text-left text-sm font-medium"
+                  >
                     <Link
                       to="/architects/$architectId"
                       params={{ architectId: a.id }}
-                      className="text-sm font-medium hover:text-primary"
+                      className="hover:text-primary"
                     >
                       {a.name}
                     </Link>
-                  </td>
+                  </th>
                 ) : (
-                  <td className="sticky left-0 z-10 bg-card text-sm font-medium">{a.name}</td>
+                  <th
+                    scope="row"
+                    className="sticky left-0 z-10 bg-card text-left text-sm font-medium"
+                  >
+                    {a.name}
+                  </th>
                 )}
                 {capabilityAveragesFor(a.id)
                   .filter((d) => visibleCapabilityIds.has(d.capability.id))
                   .map((d) => (
                     <td key={d.capability.id} className="min-w-[52px]">
-                      <LevelCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
+                      <LevelHeatCell level={d.avg === undefined ? undefined : Math.round(d.avg)} />
                     </td>
                   ))}
               </tr>
