@@ -86,7 +86,6 @@ npm run lint
 
 ## Documentação funcional
 
-[`docs/FUNCIONAL.md`](docs/FUNCIONAL.md) — o que cada tela faz, com captura de tela, do
 ponto de vista de quem usa o produto (não de arquitetura de código).
 
 Auditorias e planos de rodadas anteriores (histórico, não documentação viva):
