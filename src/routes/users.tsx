@@ -18,8 +18,10 @@ import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireAdminReach } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/users")({
+  beforeLoad: requireAdminReach,
   head: () => ({
     meta: [
       { title: "Usuários — Synapse" },

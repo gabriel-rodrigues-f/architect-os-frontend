@@ -35,6 +35,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
+import { requireAdminReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useCurationPolicy, useStore } from "@/lib/store";
 import { CatalogImportEditor, CompetencyMatrixViewModel } from "@/lib/view-models";
@@ -50,6 +51,7 @@ function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
 }
 
 export const Route = createFileRoute("/competency-matrix")({
+  beforeLoad: requireAdminReach,
   head: () => ({
     meta: [
       { title: "Matriz de Competências — Synapse" },

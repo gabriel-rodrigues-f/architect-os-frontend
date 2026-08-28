@@ -25,6 +25,7 @@ import type {
   ProficiencyUpdate,
 } from "./domain";
 import { withDefaultCurationPolicy, type CurationPolicy } from "./curation-policy";
+import { appStateQuery, STATE_QUERY_KEY } from "./session-query";
 import {
   withDefaultOperationalSettings,
   type AppSettingValue,
@@ -61,7 +62,7 @@ import {
   type TextTemplates,
 } from "./text-templates";
 
-export const STATE_QUERY_KEY = ["app-state"] as const;
+export { STATE_QUERY_KEY };
 
 const CAREER_LEVELS_QUERY_KEY = ["career-levels"] as const;
 export function useCareerLevelsByRank(): CareerLevel[] {
@@ -915,10 +916,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
   const { data, isPending, isError, error, refetch } = useQuery({
-    queryKey: STATE_QUERY_KEY,
-    queryFn: api.getState,
-    staleTime: 30_000,
-    retry: 1,
+    ...appStateQuery,
 
     enabled: typeof window !== "undefined",
 
