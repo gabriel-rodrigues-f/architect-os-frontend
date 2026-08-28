@@ -1,3 +1,4 @@
+import { UserFacingError } from "./api-errors";
 import { baseMessages, type MessageKey } from "./i18n/registry";
 
 export const SCORING_SCALES = ["GAP_SEVERITY", "PROFICIENCY", "CONCENTRATION_RISK"] as const;
@@ -17,11 +18,11 @@ export interface ScoringBand {
 
 export type ScoringBands = Record<ScoringScale, readonly ScoringBand[]>;
 
+type DefaultScoringBand = ScoringBand & { labelKey: MessageKey };
+
 export const DEFAULT_SCORING_BANDS: Record<
   ScoringScale,
-  readonly (ScoringBand & {
-    labelKey: MessageKey;
-  })[]
+  readonly [DefaultScoringBand, ...DefaultScoringBand[]]
 > = {
   GAP_SEVERITY: [
     { key: "adequate", minValue: null, maxValue: 1, labelKey: "gap.ok", tone: "ok", sortOrder: 1 },
@@ -121,14 +122,21 @@ export const withDefaultScoringBands = (
 const bySortOrder = (bands: readonly ScoringBand[]): ScoringBand[] =>
   [...bands].sort((a, b) => a.sortOrder - b.sortOrder);
 
+const clampedAt = <T>(items: readonly [T, ...T[]], index: number): T =>
+  items[Math.min(Math.max(index, 0), items.length - 1)] ?? items[0];
+
 export const classifyBand = (bands: readonly ScoringBand[], value: number): ScoringBand => {
   const sorted = bySortOrder(bands);
-  const found = sorted.find(
-    (band) =>
-      (band.minValue === null || value >= band.minValue) &&
-      (band.maxValue === null || value < band.maxValue),
+  const widest = sorted[sorted.length - 1];
+  if (!widest)
+    throw new UserFacingError("Nenhuma faixa de pontuação configurada para classificar.");
+  return (
+    sorted.find(
+      (band) =>
+        (band.minValue === null || value >= band.minValue) &&
+        (band.maxValue === null || value < band.maxValue),
+    ) ?? widest
   );
-  return found ?? sorted[sorted.length - 1]!;
 };
 
 export const messageKeyOrDefault = (labelKey: string, fallback: MessageKey): MessageKey =>
@@ -183,11 +191,11 @@ const PROFICIENCY_BAND_TONES = [
 export const proficiencyViewBandsFrom = (bands: readonly ScoringBand[]): ProficiencyViewBand[] => {
   const defaults = DEFAULT_SCORING_BANDS.PROFICIENCY;
   return bySortOrder(bands).map((band, i) => {
-    const positionFallback = defaults[Math.min(i, defaults.length - 1)]!.labelKey;
+    const positionFallback = clampedAt(defaults, i).labelKey;
     return {
       key: band.key,
       labelKey: messageKeyOrDefault(band.labelKey, positionFallback),
-      tone: PROFICIENCY_BAND_TONES[Math.min(i, PROFICIENCY_BAND_TONES.length - 1)]!,
+      tone: clampedAt(PROFICIENCY_BAND_TONES, i),
       min: band.minValue ?? -Infinity,
       max: band.maxValue ?? Infinity,
     };

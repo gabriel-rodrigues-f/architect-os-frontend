@@ -73,9 +73,12 @@ export const Route = createFileRoute("/development-plans")({
 
 const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Completed"];
 
+function statusOfPlanOrEmptyDraft(plan: DevelopmentPlan | undefined): DevelopmentPlan["status"] {
+  return plan?.status ?? "Draft";
+}
+
 function PlansPage() {
   const sel = useSelectors();
-  const labels = useLabels();
 
   const actionTypes = useVocabulary("ACTION_TYPE");
   const viewModel = useDevelopmentPlansViewModel();
@@ -87,59 +90,30 @@ function PlansPage() {
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
 
   const [creatingForCompetencyId, setCreatingForCompetencyId] = useState<string | null>(null);
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   const creating = useAsyncSubmit(t("pdi.newItem.error"));
-  const notifySuccess = useSuccessToast();
-  const planTransition = useAsyncSubmit(t("pdi.plan.transitionError"));
   const help = usePageHelp("developmentPlans");
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
 
-  const canEdit = defaultUiAuthorizationPolicy.canActFor(user, architect);
+  const actsForArchitect = defaultUiAuthorizationPolicy.canActFor(user, architect);
   const plan = sel.planFor(architectId);
 
   const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
 
   const isLeadOfArchitect = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
-  const planStatus = plan?.status ?? "Draft";
-  const canApprovePlan = plan && planStatus === "Draft" && isLeadOfArchitect;
-  const canReturnToDraft = plan && planStatus === "Approved" && isLeadOfArchitect;
-  const canCompletePlan = plan && planStatus === "Approved" && canEdit;
+  const isAssignedTechLead = defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);
+  const planStatus = statusOfPlanOrEmptyDraft(plan);
 
-  const canReopenCompletedPlan =
-    plan &&
-    planStatus === "Completed" &&
-    defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);
-  const ownerSeesLockedMessage =
-    plan &&
-    planStatus === "Completed" &&
-    canEdit &&
-    !defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);
-  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
-
-  const incompletePlanReason = !plan
-    ? undefined
-    : plan.items.length === 0
-      ? t("pdi.plan.incomplete.noItems")
-      : plan.items.some((i) => i.status === "Not Started")
-        ? t("pdi.plan.incomplete.notStarted")
-        : undefined;
-
-  const canEditDiagnostic = canEdit && planStatus === "Draft";
-  const canEditExecution = canEdit && planStatus !== "Completed";
+  const canEditDiagnostic = actsForArchitect && planStatus === "Draft";
+  const canEditExecution = actsForArchitect && planStatus !== "Completed";
 
   const suggestions = viewModel.suggestions(gaps, plan);
 
   const creatingForGap = creatingForCompetencyId
     ? gaps.find((g) => g.item.competencyId === creatingForCompetencyId)
     : undefined;
-
-  const runPlanTransition = (action: () => Promise<DevelopmentPlan>) => {
-    if (!plan) return;
-    void planTransition.run(action);
-  };
-  const planTransitioning = planTransition.submitting;
 
   return (
     <>
@@ -159,262 +133,28 @@ function PlansPage() {
       />
 
       {plan && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 surface-inset px-3 py-2 text-sm">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {t("pdi.plan.status")}
-          </span>
-          <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium">
-            {labels.planStatus[planStatus]}
-          </span>
-          {planStatus === "Completed" && (
-            <span className="text-xs text-muted-foreground">{t("pdi.plan.locked")}</span>
-          )}
-          {planStatus === "Approved" && (
-            <span className="text-xs text-muted-foreground">{t("pdi.plan.approvedHint")}</span>
-          )}
-          {plan.approvedAt && (planStatus === "Approved" || planStatus === "Completed") && (
-            <span className="text-xs text-muted-foreground">
-              {t("pdi.plan.approvedAt", {
-                data: defaultDateFormatter.formatDate(plan.approvedAt, locale) ?? "",
-              })}
-            </span>
-          )}
-          {plan.completedAt && planStatus === "Completed" && (
-            <span className="text-xs text-muted-foreground">
-              {t("pdi.plan.completedAt", {
-                data: defaultDateFormatter.formatDate(plan.completedAt, locale) ?? "",
-              })}
-            </span>
-          )}
-          <div className="ml-auto flex items-center gap-2">
-            {canApprovePlan && (
-              <Button
-                size="sm"
-                disabled={planTransitioning}
-                onClick={() => runPlanTransition(() => viewModel.approve(plan.id))}
-              >
-                {planTransitioning ? t("pdi.plan.approving") : t("pdi.plan.approve")}
-              </Button>
-            )}
-            {canCompletePlan && (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={planTransitioning || !!incompletePlanReason}
-                title={incompletePlanReason}
-                onClick={() => runPlanTransition(() => viewModel.complete(plan.id))}
-              >
-                {planTransitioning ? t("pdi.plan.completing") : t("pdi.plan.complete")}
-              </Button>
-            )}
-            {canReturnToDraft && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={planTransitioning}
-                onClick={() => runPlanTransition(() => viewModel.returnToDraft(plan.id))}
-              >
-                {planTransitioning ? t("pdi.plan.returningToDraft") : t("pdi.plan.returnToDraft")}
-              </Button>
-            )}
-            {canReopenCompletedPlan && (
-              <Button size="sm" variant="outline" onClick={() => setReopenDialogOpen(true)}>
-                {t("pdi.plan.reopen")}
-              </Button>
-            )}
-          </div>
-          {canCompletePlan && incompletePlanReason && (
-            <p className="w-full text-xs text-muted-foreground">{incompletePlanReason}</p>
-          )}
-          {ownerSeesLockedMessage && (
-            <p className="w-full text-xs text-muted-foreground">{t("pdi.plan.lockedForOwner")}</p>
-          )}
-          {planTransition.error && (
-            <p className="w-full text-xs text-destructive">{planTransition.error}</p>
-          )}
-        </div>
-      )}
-
-      {plan && reopenDialogOpen && (
-        <ReopenPlanDialog
-          onClose={() => setReopenDialogOpen(false)}
-          onSubmit={(reason) =>
-            viewModel
-              .reopen(plan.id, reason)
-              .then((reopened) => notifySuccess("msg.plan.reopen.success", undefined, reopened))
-          }
+        <PlanStatusBar
+          plan={plan}
+          actsForArchitect={actsForArchitect}
+          isLeadOfArchitect={isLeadOfArchitect}
+          isAssignedTechLead={isAssignedTechLead}
         />
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
-          {(plan?.items ?? []).map((item) => {
-            const comp = sel.competencyById(item.competencyId);
-
-            const competencyName = comp?.name ?? t("pdi.unknownCompetency");
-            return (
-              <div key={item.id} className="surface-card p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-display text-base font-semibold">{competencyName}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.objective}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <LevelBadge level={item.currentLevel} />
-                    <span className="text-muted-foreground">→</span>
-                    <LevelBadge level={item.targetLevel} />
-                    <GapBadge gap={item.targetLevel - item.currentLevel} />
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-5">
-                  <Field label={t("pdi.field.actionType")}>
-                    {canEditDiagnostic ? (
-                      <select
-                        className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-                        value={item.actionType}
-                        onChange={(e) =>
-                          viewModel.setItemActionType(
-                            plan!.id,
-                            item.id,
-                            e.target.value as ActionType,
-                          )
-                        }
-                      >
-                        {actionTypes.options.every((option) => option.code !== item.actionType) && (
-                          <option value={item.actionType}>
-                            {actionTypes.label(item.actionType)}
-                          </option>
-                        )}
-                        {actionTypes.options.map((option) => (
-                          <option key={option.code} value={option.code}>
-                            {actionTypes.label(option.code)}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="py-1.5 text-sm">{actionTypes.label(item.actionType)}</p>
-                    )}
-                  </Field>
-                  <Field label={t("pdi.field.status")}>
-                    {canEditExecution ? (
-                      <select
-                        className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-                        value={item.status}
-                        onChange={(e) =>
-                          viewModel.setItemStatus(plan!.id, item.id, e.target.value as PdiStatus)
-                        }
-                      >
-                        {STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {labels.planItemStatus[s]}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="py-1.5 text-sm">{labels.planItemStatus[item.status]}</p>
-                    )}
-                  </Field>
-                  <Field label={t("pdi.field.priority")}>
-                    <p className="py-1.5 text-sm">{labels.priority[item.priority]}</p>
-                  </Field>
-                  <Field label={t("pdi.field.dedication")}>
-                    <p className="py-1.5 text-sm tabular-nums">
-                      {item.dedicationHoursPerWeek != null
-                        ? t("pdi.field.dedication.value", { horas: item.dedicationHoursPerWeek })
-                        : "—"}
-                    </p>
-                  </Field>
-                  <DeadlineField
-                    planId={plan!.id}
-                    item={item}
-                    locale={locale}
-                    canEditDraft={canEditDiagnostic}
-                    canReschedule={canEditExecution && planStatus === "Approved"}
-                  />
-                </div>
-
-                <ActionPlanField
-                  key={item.version}
-                  value={item.actionPlan}
-                  disabled={!canEditExecution}
-                  onSave={(actionPlan) => viewModel.saveActionPlan(plan!.id, item.id, actionPlan)}
-                />
-
-                {item.smart && (
-                  <div className="mt-4 rounded-lg border border-border bg-secondary/50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      SMART Goal
-                    </p>
-                    <p className="mt-2 text-sm">{item.smart.statement}</p>
-                    <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                      <div>
-                        <dt className="font-medium text-foreground">Specific</dt>
-                        <dd>{item.smart.specific}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Measurable</dt>
-                        <dd>{item.smart.measurable}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Achievable</dt>
-                        <dd>{item.smart.achievable}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Relevant</dt>
-                        <dd>{item.smart.relevant}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Time-bound</dt>
-                        <dd>{item.smart.timeBound}</dd>
-                      </div>
-                    </dl>
-                  </div>
-                )}
-
-                {!item.smart &&
-                  (canEditExecution || canEditDiagnostic) &&
-                  smartEditingId !== item.id && (
-                    <div className="mt-4 flex items-center gap-2">
-                      {canEditExecution && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setSmartEditingId(item.id)}
-                        >
-                          {t("pdi.smart.define")}
-                        </Button>
-                      )}
-                      {canEditDiagnostic && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            viewModel.removeItem(plan!.id, item.id);
-                            notifySuccess("pdi.gap.removed.toast", { nome: competencyName });
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          {t("pdi.gap.remove")}
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                {!item.smart && canEditExecution && smartEditingId === item.id && (
-                  <SmartGoalEditor
-                    onCancel={() => setSmartEditingId(null)}
-                    onSave={(smart) => {
-                      viewModel.defineSmartGoal(plan!.id, item.id, smart);
-                      setSmartEditingId(null);
-                    }}
-                  />
-                )}
-
-                <CheckinTimeline planId={plan!.id} item={item} canCheckin={canEditExecution} />
-              </div>
-            );
-          })}
+          {plan?.items.map((item) => (
+            <PlanItemCard
+              key={item.id}
+              planId={plan.id}
+              item={item}
+              canEditDiagnostic={canEditDiagnostic}
+              canEditExecution={canEditExecution}
+              canReschedule={canEditExecution && planStatus === "Approved"}
+              smartEditing={smartEditingId === item.id}
+              onSmartEditingChange={(open) => setSmartEditingId(open ? item.id : null)}
+            />
+          ))}
           {!plan?.items.length && (
             <SectionCard title={t("pdi.empty.title")} description={t("pdi.empty.subtitle")}>
               <p className="text-sm text-muted-foreground">O plano deste ciclo ainda está vazio.</p>
@@ -488,6 +228,310 @@ function PlansPage() {
         />
       )}
     </>
+  );
+}
+
+function PlanStatusBar({
+  plan,
+  actsForArchitect,
+  isLeadOfArchitect,
+  isAssignedTechLead,
+}: {
+  plan: DevelopmentPlan;
+  actsForArchitect: boolean;
+  isLeadOfArchitect: boolean;
+  isAssignedTechLead: boolean;
+}) {
+  const { t, locale } = useI18n();
+  const labels = useLabels();
+  const viewModel = useDevelopmentPlansViewModel();
+  const notifySuccess = useSuccessToast();
+  const planTransition = useAsyncSubmit(t("pdi.plan.transitionError"));
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+
+  const status = plan.status;
+  const canApprove = status === "Draft" && isLeadOfArchitect;
+  const canReturnToDraft = status === "Approved" && isLeadOfArchitect;
+  const canComplete = status === "Approved" && actsForArchitect;
+  const canReopen = status === "Completed" && isAssignedTechLead;
+  const ownerSeesLockedMessage = status === "Completed" && actsForArchitect && !isAssignedTechLead;
+
+  const incompleteReason =
+    plan.items.length === 0
+      ? t("pdi.plan.incomplete.noItems")
+      : plan.items.some((i) => i.status === "Not Started")
+        ? t("pdi.plan.incomplete.notStarted")
+        : undefined;
+
+  const transitioning = planTransition.submitting;
+  const runTransition = (action: () => Promise<DevelopmentPlan>) => void planTransition.run(action);
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-center gap-3 surface-inset px-3 py-2 text-sm">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t("pdi.plan.status")}
+        </span>
+        <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium">
+          {labels.planStatus[status]}
+        </span>
+        {status === "Completed" && (
+          <span className="text-xs text-muted-foreground">{t("pdi.plan.locked")}</span>
+        )}
+        {status === "Approved" && (
+          <span className="text-xs text-muted-foreground">{t("pdi.plan.approvedHint")}</span>
+        )}
+        {plan.approvedAt && (status === "Approved" || status === "Completed") && (
+          <span className="text-xs text-muted-foreground">
+            {t("pdi.plan.approvedAt", {
+              data: defaultDateFormatter.formatDate(plan.approvedAt, locale) ?? "",
+            })}
+          </span>
+        )}
+        {plan.completedAt && status === "Completed" && (
+          <span className="text-xs text-muted-foreground">
+            {t("pdi.plan.completedAt", {
+              data: defaultDateFormatter.formatDate(plan.completedAt, locale) ?? "",
+            })}
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          {canApprove && (
+            <Button
+              size="sm"
+              disabled={transitioning}
+              onClick={() => runTransition(() => viewModel.approve(plan.id))}
+            >
+              {transitioning ? t("pdi.plan.approving") : t("pdi.plan.approve")}
+            </Button>
+          )}
+          {canComplete && (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={transitioning || !!incompleteReason}
+              title={incompleteReason}
+              onClick={() => runTransition(() => viewModel.complete(plan.id))}
+            >
+              {transitioning ? t("pdi.plan.completing") : t("pdi.plan.complete")}
+            </Button>
+          )}
+          {canReturnToDraft && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={transitioning}
+              onClick={() => runTransition(() => viewModel.returnToDraft(plan.id))}
+            >
+              {transitioning ? t("pdi.plan.returningToDraft") : t("pdi.plan.returnToDraft")}
+            </Button>
+          )}
+          {canReopen && (
+            <Button size="sm" variant="outline" onClick={() => setReopenDialogOpen(true)}>
+              {t("pdi.plan.reopen")}
+            </Button>
+          )}
+        </div>
+        {canComplete && incompleteReason && (
+          <p className="w-full text-xs text-muted-foreground">{incompleteReason}</p>
+        )}
+        {ownerSeesLockedMessage && (
+          <p className="w-full text-xs text-muted-foreground">{t("pdi.plan.lockedForOwner")}</p>
+        )}
+        {planTransition.error && (
+          <p className="w-full text-xs text-destructive">{planTransition.error}</p>
+        )}
+      </div>
+
+      {reopenDialogOpen && (
+        <ReopenPlanDialog
+          onClose={() => setReopenDialogOpen(false)}
+          onSubmit={(reason) =>
+            viewModel
+              .reopen(plan.id, reason)
+              .then((reopened) => notifySuccess("msg.plan.reopen.success", undefined, reopened))
+          }
+        />
+      )}
+    </>
+  );
+}
+
+function PlanItemCard({
+  planId,
+  item,
+  canEditDiagnostic,
+  canEditExecution,
+  canReschedule,
+  smartEditing,
+  onSmartEditingChange,
+}: {
+  planId: string;
+  item: DevelopmentPlanItem;
+  canEditDiagnostic: boolean;
+  canEditExecution: boolean;
+  canReschedule: boolean;
+  smartEditing: boolean;
+  onSmartEditingChange: (open: boolean) => void;
+}) {
+  const { t, locale } = useI18n();
+  const labels = useLabels();
+  const sel = useSelectors();
+  const actionTypes = useVocabulary("ACTION_TYPE");
+  const viewModel = useDevelopmentPlansViewModel();
+  const notifySuccess = useSuccessToast();
+
+  const competencyName = sel.competencyById(item.competencyId)?.name ?? t("pdi.unknownCompetency");
+
+  return (
+    <div className="surface-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-display text-base font-semibold">{competencyName}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{item.objective}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <LevelBadge level={item.currentLevel} />
+          <span className="text-muted-foreground">→</span>
+          <LevelBadge level={item.targetLevel} />
+          <GapBadge gap={item.targetLevel - item.currentLevel} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-5">
+        <Field label={t("pdi.field.actionType")}>
+          {canEditDiagnostic ? (
+            <select
+              className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+              value={item.actionType}
+              onChange={(e) =>
+                viewModel.setItemActionType(planId, item.id, e.target.value as ActionType)
+              }
+            >
+              {actionTypes.options.every((option) => option.code !== item.actionType) && (
+                <option value={item.actionType}>{actionTypes.label(item.actionType)}</option>
+              )}
+              {actionTypes.options.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {actionTypes.label(option.code)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="py-1.5 text-sm">{actionTypes.label(item.actionType)}</p>
+          )}
+        </Field>
+        <Field label={t("pdi.field.status")}>
+          {canEditExecution ? (
+            <select
+              className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+              value={item.status}
+              onChange={(e) =>
+                viewModel.setItemStatus(planId, item.id, e.target.value as PdiStatus)
+              }
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {labels.planItemStatus[s]}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="py-1.5 text-sm">{labels.planItemStatus[item.status]}</p>
+          )}
+        </Field>
+        <Field label={t("pdi.field.priority")}>
+          <p className="py-1.5 text-sm">{labels.priority[item.priority]}</p>
+        </Field>
+        <Field label={t("pdi.field.dedication")}>
+          <p className="py-1.5 text-sm tabular-nums">
+            {item.dedicationHoursPerWeek != null
+              ? t("pdi.field.dedication.value", { horas: item.dedicationHoursPerWeek })
+              : "—"}
+          </p>
+        </Field>
+        <DeadlineField
+          planId={planId}
+          item={item}
+          locale={locale}
+          canEditDraft={canEditDiagnostic}
+          canReschedule={canReschedule}
+        />
+      </div>
+
+      <ActionPlanField
+        key={item.version}
+        value={item.actionPlan}
+        disabled={!canEditExecution}
+        onSave={(actionPlan) => viewModel.saveActionPlan(planId, item.id, actionPlan)}
+      />
+
+      {item.smart && (
+        <div className="mt-4 rounded-lg border border-border bg-secondary/50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            SMART Goal
+          </p>
+          <p className="mt-2 text-sm">{item.smart.statement}</p>
+          <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+            <div>
+              <dt className="font-medium text-foreground">Specific</dt>
+              <dd>{item.smart.specific}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">Measurable</dt>
+              <dd>{item.smart.measurable}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">Achievable</dt>
+              <dd>{item.smart.achievable}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">Relevant</dt>
+              <dd>{item.smart.relevant}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">Time-bound</dt>
+              <dd>{item.smart.timeBound}</dd>
+            </div>
+          </dl>
+        </div>
+      )}
+
+      {!item.smart && (canEditExecution || canEditDiagnostic) && !smartEditing && (
+        <div className="mt-4 flex items-center gap-2">
+          {canEditExecution && (
+            <Button variant="secondary" size="sm" onClick={() => onSmartEditingChange(true)}>
+              {t("pdi.smart.define")}
+            </Button>
+          )}
+          {canEditDiagnostic && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                viewModel.removeItem(planId, item.id);
+                notifySuccess("pdi.gap.removed.toast", { nome: competencyName });
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t("pdi.gap.remove")}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {!item.smart && canEditExecution && smartEditing && (
+        <SmartGoalEditor
+          onCancel={() => onSmartEditingChange(false)}
+          onSave={(smart) => {
+            viewModel.defineSmartGoal(planId, item.id, smart);
+            onSmartEditingChange(false);
+          }}
+        />
+      )}
+
+      <CheckinTimeline planId={planId} item={item} canCheckin={canEditExecution} />
+    </div>
   );
 }
 
@@ -786,13 +830,12 @@ function NewPlanItemDialog({
   const { t } = useI18n();
 
   const actionTypes = useVocabulary("ACTION_TYPE");
-  const [actionType, setActionType] = useState<ActionType>(
-    (actionTypes.options[0]?.code ?? "Learn") as ActionType,
-  );
+  const [actionType, setActionType] = useState(() => actionTypes.options[0]?.code ?? "");
   const [actionPlan, setActionPlan] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [dedication, setDedication] = useState("");
-  const canSave = actionPlan.trim().length > 0 && targetDate.length > 0 && !submitting;
+  const canSave =
+    actionType.length > 0 && actionPlan.trim().length > 0 && targetDate.length > 0 && !submitting;
 
   return (
     <Dialog open onOpenChange={(open) => !open && !submitting && onCancel()}>
@@ -818,7 +861,7 @@ function NewPlanItemDialog({
               className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
               value={actionType}
               disabled={submitting}
-              onChange={(e) => setActionType(e.target.value as ActionType)}
+              onChange={(e) => setActionType(e.target.value)}
             >
               {actionTypes.options.map((option) => (
                 <option key={option.code} value={option.code}>
@@ -880,7 +923,7 @@ function NewPlanItemDialog({
             disabled={!canSave}
             onClick={() =>
               onSave({
-                actionType,
+                actionType: actionType as ActionType,
                 actionPlan: actionPlan.trim(),
                 targetDate,
                 dedicationHoursPerWeek: dedication.trim() ? Number(dedication) : null,
@@ -929,6 +972,8 @@ const SMART_FIELDS = [
   { key: "timeBound", label: "Time-bound" },
 ] as const;
 
+const SMART_FIELD_KEYS = [...SMART_FIELDS.map((field) => field.key), "statement"] as const;
+
 function SmartGoalEditor({
   onSave,
   onCancel,
@@ -945,7 +990,7 @@ function SmartGoalEditor({
     timeBound: "",
     statement: "",
   });
-  const canSave = Object.values(draft).every((v) => v.trim().length > 0);
+  const canSave = SMART_FIELD_KEYS.every((key) => draft[key].trim().length > 0);
 
   return (
     <div className="mt-4 space-y-2 rounded-lg border border-border bg-secondary/50 p-4">

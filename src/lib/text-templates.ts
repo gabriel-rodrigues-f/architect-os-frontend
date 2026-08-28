@@ -9,9 +9,13 @@ export const TEXT_TEMPLATE_VARIABLES: Record<TextTemplateKey, readonly string[]>
 
 export type TextTemplates = Record<TextTemplateKey, Record<string, string>>;
 
+const BASE_LOCALE_TEXT_TEMPLATES: Record<TextTemplateKey, string> = {
+  "pdi.objective.fromGap": "Evoluir {competencia} do nível {atual} para o nível {alvo}",
+};
+
 export const DEFAULT_TEXT_TEMPLATES: TextTemplates = {
   "pdi.objective.fromGap": {
-    pt: "Evoluir {competencia} do nível {atual} para o nível {alvo}",
+    [BASE_LOCALE]: BASE_LOCALE_TEXT_TEMPLATES["pdi.objective.fromGap"],
     en: "Evolve {competencia} from level {atual} to level {alvo}",
   },
 };
@@ -19,7 +23,11 @@ export const DEFAULT_TEXT_TEMPLATES: TextTemplates = {
 const VARIABLE_PATTERN = /\{([A-Za-z][A-Za-z0-9_]*)\}/g;
 
 export const templateVariablesIn = (template: string): string[] => [
-  ...new Set([...template.matchAll(VARIABLE_PATTERN)].map((match) => match[1]!)),
+  ...new Set(
+    [...template.matchAll(VARIABLE_PATTERN)]
+      .map((match) => match[1])
+      .filter((name) => name !== undefined),
+  ),
 ];
 
 export const renderTemplate = (
@@ -48,9 +56,7 @@ export const templateTextFor = (
   key: TextTemplateKey,
   locale: string,
 ): string =>
-  templates[key][locale] ??
-  templates[key][BASE_LOCALE] ??
-  DEFAULT_TEXT_TEMPLATES[key][BASE_LOCALE]!;
+  templates[key][locale] ?? templates[key][BASE_LOCALE] ?? BASE_LOCALE_TEXT_TEMPLATES[key];
 
 type ObjectiveFromGapVariables = {
   competencia: string;

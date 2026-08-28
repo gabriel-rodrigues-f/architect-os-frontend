@@ -27,7 +27,12 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { emptyArchitectForm, TeamViewModel, type ArchitectFormValues } from "@/lib/view-models";
+import {
+  emptyArchitectForm,
+  TeamViewModel,
+  type ArchitectFormRole,
+  type ArchitectFormValues,
+} from "@/lib/view-models";
 
 const NO_SPECIALIZATION = "__no-specialization__";
 const NO_CAPABILITY = "__no-capability__";
@@ -49,7 +54,10 @@ export function useArchitectForm() {
   const viewModel = useTeamViewModel();
 
   const careerLevels = useCareerLevelsByRank();
-  const defaultRole = (careerLevels[0]?.name ?? "") as RoleName;
+  const firstCareerLevel = careerLevels[0];
+  const defaultRole: ArchitectFormRole = firstCareerLevel
+    ? (firstCareerLevel.name as RoleName)
+    : "";
 
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<ArchitectFormValues>(() => emptyArchitectForm(defaultRole));
@@ -295,12 +303,12 @@ export function useTeamRoster(isAdmin: boolean) {
     { value: "recent", label: t("team.sort.recent") },
   ];
 
-  const summarize = (selected: string[], options: MultiSelectFilterOption[]) =>
-    selected.length === 0
-      ? t("team.filter.chip.none")
-      : selected.length === 1
-        ? (options.find((o) => o.id === selected[0])?.label ?? selected[0]!)
-        : t("filter.multi.count", { n: selected.length });
+  const summarize = (selected: string[], options: MultiSelectFilterOption[]) => {
+    const [only, ...rest] = selected;
+    if (only === undefined) return t("team.filter.chip.none");
+    if (rest.length > 0) return t("filter.multi.count", { n: selected.length });
+    return options.find((o) => o.id === only)?.label ?? only;
+  };
 
   const activeFilterChips: ActiveFilterChip[] = [];
   if (nameSelection.length !== store.architects.length) {
@@ -551,6 +559,20 @@ export function DeactivateDialog({
   );
 }
 
+function WorstGapCell({
+  hasOfficial,
+  worstGap,
+}: {
+  hasOfficial: boolean;
+  worstGap: Gap | undefined;
+}) {
+  const { t } = useI18n();
+  if (!hasOfficial) return <span className="text-xs text-muted-foreground">—</span>;
+  if (!worstGap)
+    return <span className="text-xs text-muted-foreground">{t("team.card.noGaps")}</span>;
+  return <GapBadge gap={worstGap.gap} />;
+}
+
 export function TeamRosterView({
   pageItems,
   view,
@@ -747,13 +769,7 @@ export function TeamRosterView({
                   <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} />
                 </td>
                 <td className="px-4 py-3 text-center">
-                  {!hasOfficial ? (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  ) : top.length === 0 ? (
-                    <span className="text-xs text-muted-foreground">{t("team.card.noGaps")}</span>
-                  ) : (
-                    <GapBadge gap={top[0]!.gap} />
-                  )}
+                  <WorstGapCell hasOfficial={hasOfficial} worstGap={top[0]} />
                 </td>
                 {isAdmin && (
                   <td className="px-4 py-3">

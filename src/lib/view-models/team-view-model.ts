@@ -1,11 +1,15 @@
+import { UserFacingError } from "../api-errors";
 import type { SessionUser } from "../api";
 import type { Architect, RoleName } from "../domain";
 import type { UiAuthorizationPolicy } from "../scope";
 import type { Api } from "../store";
 
+/** Vazio enquanto nenhum nível de carreira estiver escolhido — nunca um `RoleName` inventado. */
+export type ArchitectFormRole = RoleName | "";
+
 export interface ArchitectFormValues {
   name: string;
-  role: RoleName;
+  role: ArchitectFormRole;
 
   specialization: string;
   primarySpecializationCompetencyId: string | null;
@@ -14,7 +18,7 @@ export interface ArchitectFormValues {
   leadUserId: string;
 }
 
-export const emptyArchitectForm = (defaultRole: RoleName): ArchitectFormValues => ({
+export const emptyArchitectForm = (defaultRole: ArchitectFormRole): ArchitectFormValues => ({
   name: "",
   role: defaultRole,
   specialization: "",
@@ -46,6 +50,7 @@ export class TeamViewModel {
       form.name.trim().length > 0 &&
       form.email.trim().length > 0 &&
       form.email.includes("@") &&
+      form.role !== "" &&
       yearsValid;
     return { yearsValid, canSubmit };
   }
@@ -62,6 +67,12 @@ export class TeamViewModel {
     if (editingId) {
       this.service.updateArchitect(editingId, payload);
       return;
+    }
+
+    if (form.role === "") {
+      throw new UserFacingError(
+        "Escolha o nível de carreira antes de cadastrar a pessoa. Se a lista está vazia, cadastre os níveis de carreira primeiro.",
+      );
     }
 
     await this.service.addArchitect({

@@ -8,6 +8,8 @@ import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import type { Competency } from "@/lib/domain";
+import type { TrainingNeed } from "@/lib/selectors";
 import { useOperationalSettings, useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/training-needs")({
@@ -51,9 +53,8 @@ function TrainingNeedsPage() {
   const { submitting, run } = useToastSubmit();
   const notifySuccess = useSuccessToast();
 
-  const createIntervention = async (need: (typeof needs)[number]) => {
+  const createIntervention = async (need: TrainingNeed) => {
     const competency = need.competency;
-    if (!competency) return;
 
     const result = await run(() =>
       store.addLearningPath({
@@ -74,10 +75,10 @@ function TrainingNeedsPage() {
     }
   };
 
-  const interventionExists = (need: (typeof needs)[number]) =>
+  const interventionExists = (need: TrainingNeed) =>
     store.learningPaths.some(
       (p) =>
-        p.competencyIds.includes(need.competency!.id) &&
+        p.competencyIds.includes(need.competency.id) &&
         p.assignedTo.some((id) => need.architectIds.includes(id)),
     );
 
@@ -123,15 +124,12 @@ function TrainingNeedsPage() {
               </thead>
               <tbody>
                 {top.map((n) => (
-                  <tr key={n.competency!.id} className="border-b border-border/60 last:border-0">
-                    <td className="py-2 font-medium">{n.competency!.name}</td>
-                    <td className="py-2 text-muted-foreground">
-                      {sel.capabilityShortLabels.get(n.competency!.capabilityId) ??
-                        sel.capabilityById(n.competency!.capabilityId)?.short}
-                    </td>
-                    <td className="py-2 text-center tabular-nums">{n.people}</td>
-                    <td className="py-2 text-center tabular-nums">{n.avgGap}</td>
-                  </tr>
+                  <AggregatedNeedRow
+                    key={n.competency.id}
+                    competency={n.competency}
+                    people={n.people}
+                    avgGap={n.avgGap}
+                  />
                 ))}
               </tbody>
             </table>
@@ -159,9 +157,9 @@ function TrainingNeedsPage() {
           />
           <ul className="space-y-3">
             {collective.map((n) => (
-              <li key={n.competency!.id} className="surface-inset p-3">
+              <li key={n.competency.id} className="surface-inset p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{n.competency!.name}</p>
+                  <p className="text-sm font-medium">{n.competency.name}</p>
                   <GapBadge gap={Math.round(n.avgGap)} />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -192,5 +190,29 @@ function TrainingNeedsPage() {
         </SectionCard>
       </div>
     </>
+  );
+}
+
+function AggregatedNeedRow({
+  competency,
+  people,
+  avgGap,
+}: {
+  competency: Competency;
+  people: number;
+  avgGap: number;
+}) {
+  const sel = useSelectors();
+  const capabilityLabel =
+    sel.capabilityShortLabels.get(competency.capabilityId) ??
+    sel.capabilityById(competency.capabilityId)?.short;
+
+  return (
+    <tr className="border-b border-border/60 last:border-0">
+      <td className="py-2 font-medium">{competency.name}</td>
+      <td className="py-2 text-muted-foreground">{capabilityLabel}</td>
+      <td className="py-2 text-center tabular-nums">{people}</td>
+      <td className="py-2 text-center tabular-nums">{avgGap}</td>
+    </tr>
   );
 }

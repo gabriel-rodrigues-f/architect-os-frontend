@@ -483,9 +483,10 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
 
   const itemTypes = useVocabulary("LEARNING_ITEM_TYPE");
   const [form, setForm] = useState({ name: path.name, description: path.description });
+  const firstItemTypeCode = itemTypes.options[0]?.code ?? "";
   const [newItem, setNewItem] = useState({
     title: "",
-    type: (itemTypes.options[0]?.code ?? "Curso") as LearningItemType,
+    type: firstItemTypeCode,
     hours: "4",
   });
 
@@ -509,13 +510,9 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
 
   const addItem = () => {
     const title = newItem.title.trim();
-    if (!title) return;
-    vm.addItem(path.id, newItem.title, newItem.type, newItem.hours);
-    setNewItem({
-      title: "",
-      type: (itemTypes.options[0]?.code ?? "Curso") as LearningItemType,
-      hours: "4",
-    });
+    if (!title || !newItem.type) return;
+    vm.addItem(path.id, newItem.title, newItem.type as LearningItemType, newItem.hours);
+    setNewItem({ title: "", type: firstItemTypeCode, hours: "4" });
   };
 
   return (
@@ -584,9 +581,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                 className="h-9 rounded-md border border-input bg-card px-2 text-sm"
                 value={newItem.type}
                 aria-label={t("path.edit.itemType")}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, type: e.target.value as LearningItemType })
-                }
+                onChange={(e) => setNewItem({ ...newItem, type: e.target.value })}
               >
                 {itemTypes.options.map((option) => (
                   <option key={option.code} value={option.code}>

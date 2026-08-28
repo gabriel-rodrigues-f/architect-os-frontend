@@ -6,7 +6,9 @@ interface PeriodSpec {
   readonly end: string;
 }
 
-const PERIODS: Record<CycleCadence, readonly PeriodSpec[]> = {
+type NonEmptyPeriodSpecs = readonly [PeriodSpec, ...PeriodSpec[]];
+
+const PERIODS: Record<CycleCadence, NonEmptyPeriodSpecs> = {
   SEMIANNUAL: [
     { key: "H1", start: "01-01", end: "06-30" },
     { key: "H2", start: "07-01", end: "12-31" },
@@ -30,7 +32,7 @@ export class CycleCadenceScheme {
 
   private constructor(
     readonly cadence: CycleCadence,
-    private readonly specs: readonly PeriodSpec[],
+    private readonly specs: NonEmptyPeriodSpecs,
   ) {}
 
   static of(cadence: CycleCadence): CycleCadenceScheme {
@@ -58,8 +60,18 @@ export class CycleCadenceScheme {
     return this.singlePeriod ? String(year) : `${year}-${period.toLowerCase()}`;
   }
 
+  private specAt(index: number): PeriodSpec {
+    const spec = this.specs[index];
+    if (!spec) throw new RangeError(`Cadência ${this.cadence} não tem o período ${index}.`);
+    return spec;
+  }
+
+  private get firstSpec(): PeriodSpec {
+    return this.specs[0];
+  }
+
   datesFor(year: number, period: string): { start: string; end: string } {
-    const spec = this.specs.find((s) => s.key === period) ?? this.specs[0]!;
+    const spec = this.specs.find((s) => s.key === period) ?? this.firstSpec;
     return { start: `${year}-${spec.start}`, end: `${year}-${spec.end}` };
   }
 
@@ -68,21 +80,21 @@ export class CycleCadenceScheme {
       ? /^(\d{4})$/
       : new RegExp(`^(\\d{4}) (${this.specs.map((s) => s.key).join("|")})$`);
     const match = pattern.exec(name);
-    if (match) return { year: Number(match[1]), period: match[2] ?? this.specs[0]!.key };
-    return { year: new Date().getFullYear(), period: this.specs[0]!.key };
+    if (match) return { year: Number(match[1]), period: match[2] ?? this.firstSpec.key };
+    return { year: new Date().getFullYear(), period: this.firstSpec.key };
   }
 
   nextAvailable(existing: readonly { id: string }[]): CyclePeriod {
     const used = new Set(existing.map((c) => c.id));
     let year = new Date().getFullYear();
     let index = 0;
-    while (used.has(this.cycleId(year, this.specs[index]!.key))) {
+    while (used.has(this.cycleId(year, this.specAt(index).key))) {
       index += 1;
       if (index === this.specs.length) {
         index = 0;
         year += 1;
       }
     }
-    return { year, period: this.specs[index]!.key };
+    return { year, period: this.specAt(index).key };
   }
 }

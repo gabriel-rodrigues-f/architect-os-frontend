@@ -247,7 +247,7 @@ describe("classes por contexto (instanciadas diretamente)", () => {
   it("TrainingSelectors agrega necessidade de treinamento a partir de Architect + Assessment", () => {
     const architects = new ArchitectSelectors(fixtureState, index);
     const assessment = new AssessmentSelectors(index);
-    const training = new TrainingSelectors(index, architects, assessment);
+    const training = new TrainingSelectors(architects, assessment);
     const needs = training.teamTrainingNeeds();
     expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam", "cloud-k8s"]);
   });

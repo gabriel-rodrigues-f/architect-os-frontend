@@ -22,7 +22,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as TeamRoute } from "@/routes/team";
 import { type AppState } from "@/lib/api";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -52,6 +52,14 @@ describe("Time — cadastro sem dado fabricado", () => {
       if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureAdminUser), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      if (href.endsWith(apiPath("/career-levels"))) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: fixtureCareerLevels }), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),
@@ -128,6 +136,8 @@ describe("Time — cadastro sem dado fabricado", () => {
 
     expect(body["email"]).toBe("nova.pessoa@company.com");
     expect(body["yearsAsArchitect"]).toBe(2);
+    // ENG-04 — o cargo vem do nível de carreira escolhido, nunca de um `?? ""`.
+    expect(body["role"]).toBe("Arquiteto de Soluções I");
     expect(body).not.toHaveProperty("strongDomain");
     expect(body).not.toHaveProperty("gapDomain");
     expect(body).not.toHaveProperty("performance");

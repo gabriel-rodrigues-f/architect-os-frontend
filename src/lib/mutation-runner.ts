@@ -1,4 +1,4 @@
-import { ApiError } from "./api-errors";
+import { ApiError, UserFacingError } from "./api-errors";
 
 export interface MutationCache<S> {
   update(fn: (s: S) => S): void;
@@ -18,6 +18,10 @@ export class MutationRunner<S> {
     else console.error(error);
   }
 
+  private messageOf(error: unknown): string {
+    return error instanceof UserFacingError ? error.message : this.fallbackErrorMessage;
+  }
+
   optimistic<T>(
     applyLocal: (s: S) => S,
     call: () => Promise<T>,
@@ -28,10 +32,16 @@ export class MutationRunner<S> {
       reconcile ? (result) => this.cache.update(reconcile(result)) : undefined,
       (error: unknown) => {
         this.log(error);
-        this.notifyError(error instanceof ApiError ? error.message : this.fallbackErrorMessage);
+        this.notifyError(this.messageOf(error));
         this.cache.invalidate();
       },
     );
+  }
+
+  refuse(error: unknown): void {
+    this.log(error);
+    this.notifyError(this.messageOf(error));
+    this.cache.invalidate();
   }
 
   async command<T>(call: () => Promise<T>, applyLocal: (result: T) => (s: S) => S): Promise<T> {

@@ -19,6 +19,7 @@ import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import { useCurrentUser } from "@/lib/auth";
 import { DashboardPresenter, PersonalDashboardPresenter } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
+import type { DevelopmentPlan } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
@@ -187,6 +188,17 @@ function AdminHome() {
   );
 }
 
+function PlanStatusChip({ status }: { status: DevelopmentPlan["status"] }) {
+  const labels = useLabels();
+  return (
+    <div className="mb-3 flex items-center gap-2">
+      <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium">
+        {labels.planStatus[status]}
+      </span>
+    </div>
+  );
+}
+
 function MemberHome() {
   const sel = useSelectors();
   const user = useCurrentUser();
@@ -215,7 +227,6 @@ function MemberHome() {
   const { avg, covered, total } = sel.coverageFor(architectId);
   const assessment = sel.assessmentFor(architectId);
   const plan = sel.planFor(architectId);
-  const planStatus = plan?.status;
   const itemsByStatus = personal.planItemCounts(architectId);
   const paths = personal.assignedPaths(architectId);
   const evidencePending = personal.pendingEvidenceCount(architectId);
@@ -274,11 +285,7 @@ function MemberHome() {
             <p className="text-sm text-muted-foreground">{t("dash.member.pdi.none")}</p>
           ) : (
             <>
-              <div className="mb-3 flex items-center gap-2">
-                <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium">
-                  {labels.planStatus[planStatus!]}
-                </span>
-              </div>
+              <PlanStatusChip status={plan.status} />
               <dl className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <dt className="text-xs text-muted-foreground">

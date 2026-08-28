@@ -11,9 +11,10 @@ export class Oklch {
 
   static parse(css: string): Oklch {
     const m = /oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)/i.exec(css);
-    if (!m) throw new Error(`cor OKLCH inválida: ${css}`);
+    const [, lightness, chroma, hue, alpha] = m ?? [];
+    if (lightness === undefined) throw new Error(`cor OKLCH inválida: ${css}`);
     const num = (v: string) => (v.endsWith("%") ? Number(v.slice(0, -1)) / 100 : Number(v));
-    return new Oklch(num(m[1]!), Number(m[2]), Number(m[3]), m[4] ? num(m[4]) : 1);
+    return new Oklch(num(lightness), Number(chroma), Number(hue), alpha ? num(alpha) : 1);
   }
 
   with(patch: Partial<{ l: number; c: number; h: number; alpha: number }>): Oklch {
