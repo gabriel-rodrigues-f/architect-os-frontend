@@ -26,10 +26,15 @@ export interface CareerLevelPolicy {
   minimumQualifiedCapabilities: number;
 }
 
+export interface TeamLevelRule {
+  id: string;
+  teamId: string;
+  careerLevelId: string;
+  minimumQualifiedCapabilities: number;
+}
+
 interface CapabilityCuration {
   activeCompetencyCount: number;
-  restrictiveCompetencyCount: number;
-  nonRestrictiveCompetencyCount: number;
   status: "READY" | "REQUIRES_CURATION";
 }
 
@@ -58,14 +63,16 @@ export function capabilityShortLabels(
 
 export type RequirementType = "RESTRICTIVE" | "NON_RESTRICTIVE";
 
+/**
+ * Fase 2 (backend ADR-0032) — a competência global é definição pura.
+ * `requirementType` e `expected` morreram no catálogo: obrigatoriedade e
+ * nível exigido são da régua do time (`team_rule_competencies`) e chegam à
+ * UI pela FOTO do item de avaliação (`AssessmentItem.requirementType`/`target`).
+ */
 export interface Competency {
   id: string;
   name: string;
   capabilityId: string;
-  requirementType: RequirementType;
-
-  expected: Record<string, Level>;
-
   active: boolean;
 }
 
@@ -83,7 +90,7 @@ export interface Architect {
 
   active: boolean;
 
-  leadUserId?: string | null | undefined;
+  teamId?: string | null | undefined;
 
   version: number;
 }

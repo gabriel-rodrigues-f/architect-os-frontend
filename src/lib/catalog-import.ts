@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-const level = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]);
-
 export const catalogImportPayloadSchema = z.object({
   capabilities: z.array(
     z.object({
@@ -10,8 +8,6 @@ export const catalogImportPayloadSchema = z.object({
       competencies: z.array(
         z.object({
           name: z.string().min(1),
-          requirementType: z.enum(["RESTRICTIVE", "NON_RESTRICTIVE"]),
-          expected: z.record(z.string().min(1), level),
         }),
       ),
     }),

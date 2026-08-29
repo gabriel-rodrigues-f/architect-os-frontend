@@ -1,7 +1,6 @@
 import type {
   Architect,
   Assessment,
-  CareerLevelPolicy,
   Capability,
   Competency,
   DevelopmentCycle,
@@ -9,6 +8,7 @@ import type {
   Evidence,
   LearningPath,
   MentoringSession,
+  TeamLevelRule,
 } from "./domain";
 import { ApiError } from "./api-errors";
 import { apiPath, isApiUrl } from "./api-path";
@@ -17,7 +17,7 @@ import { appStateSchema } from "./api-schemas";
 export interface AppState {
   capabilities: Capability[];
   competencies: Competency[];
-  careerLevelPolicies: CareerLevelPolicy[];
+  teamLevelRules: TeamLevelRule[];
   architects: Architect[];
   assessments: Assessment[];
   cycles: DevelopmentCycle[];

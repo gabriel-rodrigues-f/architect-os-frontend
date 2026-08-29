@@ -1,13 +1,11 @@
 import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 
 import {
   ArchitectNameCombobox,
   CareerLevelTransitionDialog,
   DataViewToolbar,
   DeactivateDialog,
-  LeadCombobox,
   MultiSelectFilter,
   PageHeader,
   Pagination,
@@ -31,7 +29,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { type RoleName } from "@/lib/domain";
-import { authApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -65,14 +62,6 @@ function TeamPage() {
 
   const viewModel = useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
   const isAdmin = viewModel.isAdmin(useCurrentUser());
-
-  const { data: users } = useQuery({
-    queryKey: ["auth-users"],
-    queryFn: authApi.users,
-    staleTime: 30_000,
-    enabled: isAdmin,
-  });
-  const leadOptions = (users ?? []).filter((u) => u.role === "lead" || u.role === "admin");
 
   const form = useArchitectForm();
   const roster = useTeamRoster(isAdmin);
@@ -190,7 +179,6 @@ function TeamPage() {
               pageItems={roster.pageItems}
               view={roster.view}
               isAdmin={isAdmin}
-              leadOptions={leadOptions}
               onTransition={form.setTransitioning}
               onEdit={form.openEdit}
               onDeactivate={form.setConfirmDeactivate}
@@ -248,21 +236,6 @@ function TeamPage() {
                     <option key={l.id}>{l.name}</option>
                   ))}
                 </select>
-              </div>
-            )}
-            {form.editing && (
-              <div>
-                <Label htmlFor="leadUserId">{t("team.form.lead")}</Label>
-                <div className="mt-1">
-                  <LeadCombobox
-                    id="leadUserId"
-                    options={leadOptions}
-                    selectedId={form.form.leadUserId}
-                    onChange={(id) => form.setForm({ ...form.form, leadUserId: id })}
-                    label={t("team.form.lead")}
-                  />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{t("team.form.lead.hint")}</p>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">

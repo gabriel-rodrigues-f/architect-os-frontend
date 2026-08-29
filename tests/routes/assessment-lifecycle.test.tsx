@@ -154,15 +154,20 @@ describe("Avaliações — campos por papel e status", () => {
   });
 
   /**
-   * UX-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — antes,
-   * `isLeadCapable(role)` liberava líder/final para QUALQUER conta `lead` da
-   * empresa, não só o Tech Lead responsável por esta pessoa (`ana` não tem
-   * `leadUserId` na fixture). O backend já recusava (`isLeadOf`); a tela
-   * precisa nascer coerente com isso, não deixar preencher e devolver 403
-   * tarde.
+   * UX-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md), semântica
+   * pós-Fase 2 — o vínculo virou o TIME (ADR-0035): um lead de outro time
+   * nem recebe a pessoa no recorte do servidor; o caso que a UI ainda decide
+   * sozinha é o arquiteto SEM time — nele, nenhuma conta lead ganha
+   * líder/final, em vez de preencher e devolver 403 tarde.
    */
-  it("lead sem atribuição a esta pessoa não vê líder/final editáveis", async () => {
-    mockSession(fixtureUnassignedLeadUser, inReviewState);
+  it("lead não vê líder/final editáveis para arquiteto sem time", async () => {
+    mockSession(fixtureUnassignedLeadUser, {
+      ...inReviewState,
+      architects: inReviewState.architects.map((architect) => ({
+        ...architect,
+        teamId: null,
+      })),
+    });
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;

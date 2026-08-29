@@ -1,6 +1,7 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import { Client } from "pg";
 import { apiPath } from "../src/lib/api-path";
+import { linkLeadToArchitects, unlinkTeam } from "./team-link";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-36 (§33, achado 2) —
@@ -28,6 +29,7 @@ const TOPIC = `E2E revisão de arquitetura ${RUN_ID}`;
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
 let architectId: string;
+let teamId: string;
 
 async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
   if (!response.ok()) {
@@ -80,11 +82,12 @@ test.beforeAll(async ({ playwright }) => {
   }
   await guest.dispose();
 
-  await json(
-    await api.patch(apiPath(`/architects/${architectId}`), {
-      data: { leadUserId: created.user.id },
-    }),
-  );
+  teamId = await linkLeadToArchitects({
+    databaseUrl: DATABASE_URL,
+    runId: `ment-${RUN_ID}`,
+    leadUserId: created.user.id,
+    architectIds: [architectId],
+  });
 
   await api.dispose();
 });
@@ -98,6 +101,7 @@ test.afterAll(async () => {
   } finally {
     await client.end();
   }
+  await unlinkTeam(DATABASE_URL, teamId);
 });
 
 test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo", async ({

@@ -119,7 +119,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
       ...fixtureState,
       architects: [
         ...fixtureState.architects.map((a) =>
-          a.id === "ana" ? { ...a, leadUserId: leadUser.id } : a,
+          a.id === "ana" ? { ...a, teamId: "time-de-ana" } : a,
         ),
         {
           id: "carla",
@@ -150,7 +150,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
       ],
     };
 
-    renderPage(scopedFixtureStateFor(leadUser, state), leadUser);
+    renderPage(scopedFixtureStateFor(leadUser, state, ["time-de-ana"]), leadUser);
     const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
     expect(within(card).getByText(/Risco de concentração/)).toBeTruthy();
     expect(within(card).queryByText(/Cobertura distribuída/)).toBeNull();

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
-  Callout,
   ConfirmDialog,
   EmptyState,
   LevelBadge,
@@ -23,13 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  LEVELS,
-  type Competency,
-  type Capability,
-  type Level,
-  type RequirementType,
-} from "@/lib/domain";
+import { LEVELS, type Competency, type Capability } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -256,7 +249,9 @@ function MatrixPage() {
                 <SectionCard
                   key={cat.id}
                   title={cat.name}
-                  description={`${t("matrix.competencyCount", { n: cat.curation.activeCompetencyCount })} · ${t("matrix.requirement.count", { restrictive: cat.curation.restrictiveCompetencyCount })} · ${t("matrix.requirement.nonRestrictiveCount", { n: cat.curation.nonRestrictiveCompetencyCount })}`}
+                  description={t("matrix.competencyCount", {
+                    n: cat.curation.activeCompetencyCount,
+                  })}
                   actions={
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge
@@ -341,20 +336,10 @@ function MatrixPage() {
                         <tbody>
                           {comps.map((c) => (
                             <tr key={c.id} className="border-b border-border/60 last:border-0">
-                              <td className="py-2 font-medium">
-                                {c.name}
-                                {c.requirementType === "RESTRICTIVE" && (
-                                  <Badge
-                                    variant="outline"
-                                    className="ml-2 align-middle text-[10px]"
-                                  >
-                                    {t("matrix.requirement.badge")}
-                                  </Badge>
-                                )}
-                              </td>
+                              <td className="py-2 font-medium">{c.name}</td>
                               {careerLevels.map((cl) => (
                                 <td key={cl.id} className="py-2 text-center">
-                                  <LevelBadge level={c.expected[cl.id]} />
+                                  <LevelBadge level={undefined} />
                                 </td>
                               ))}
                               <td className="py-2 text-right">
@@ -717,26 +702,16 @@ function CompetencyCreateDialog({
   onClose: () => void;
 }) {
   const viewModel = useCompetencyMatrixViewModel();
-  const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
-  const labels = useLabels();
-  const restrictiveFull = viewModel.isRequirementTypeFull(capability, "RESTRICTIVE");
-  const nonRestrictiveFull = viewModel.isRequirementTypeFull(capability, "NON_RESTRICTIVE");
   const [name, setName] = useState("");
-  const [levels, setLevels] = useState<Partial<Record<string, Level>>>({});
-  const [requirementType, setRequirementType] = useState<RequirementType>(
-    nonRestrictiveFull ? "RESTRICTIVE" : "NON_RESTRICTIVE",
-  );
-  const canSave = viewModel.canCreateCompetency(name, levels, careerLevels);
+  const canSave = viewModel.canCreateCompetency(name);
 
   const { submitting: saving, run } = useToastSubmit();
 
   const save = async () => {
     if (!canSave) return;
 
-    const result = await run(() =>
-      viewModel.createCompetency(capability.id, name, levels, requirementType),
-    );
+    const result = await run(() => viewModel.createCompetency(capability.id, name));
     if (result.ok) onClose();
   };
 
@@ -756,67 +731,7 @@ function CompetencyCreateDialog({
               onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </div>
-          <div>
-            <Label>{t("matrix.edit.levels")}</Label>
-            <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {careerLevels.map((cl) => (
-                <div key={cl.id} className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">
-                    {labels.roleShort(cl.name)}
-                  </span>
-                  <select
-                    className="mt-1 w-full min-w-0 rounded-md border border-input bg-card px-2 py-2 text-sm"
-                    value={levels[cl.id] ?? ""}
-                    aria-label={`${t("matrix.edit.levels")} — ${labels.roleShort(cl.name)}`}
-                    onChange={(e) =>
-                      setLevels({
-                        ...levels,
-                        [cl.id]: e.target.value ? (Number(e.target.value) as Level) : undefined,
-                      })
-                    }
-                  >
-                    <option value="">—</option>
-                    {LEVELS.map((l) => (
-                      <option key={l.level} value={l.level}>
-                        L{l.level} · {labels.levelName[l.level]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="new-competency-requirement">{t("matrix.requirement.label")}</Label>
-            <select
-              id="new-competency-requirement"
-              className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2 text-sm"
-              value={requirementType}
-              onChange={(e) => setRequirementType(e.target.value as RequirementType)}
-            >
-              <option value="NON_RESTRICTIVE" disabled={nonRestrictiveFull}>
-                {t("matrix.requirement.nonRestrictive")}
-              </option>
-              <option value="RESTRICTIVE" disabled={restrictiveFull}>
-                {t("matrix.requirement.restrictive")}
-              </option>
-            </select>
-            <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
-            {restrictiveFull && (
-              <p className="mt-1 text-xs text-warning-fg">
-                {t("matrix.requirement.restrictiveFull", {
-                  limite: viewModel.limits.requiredRestrictive,
-                })}
-              </p>
-            )}
-            {nonRestrictiveFull && (
-              <p className="mt-1 text-xs text-warning-fg">
-                {t("matrix.requirement.nonRestrictiveFull", {
-                  limite: viewModel.limits.requiredNonRestrictive,
-                })}
-              </p>
-            )}
-          </div>
+          <p className="text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
@@ -838,57 +753,14 @@ function CompetencyEditDialog({
   competency: Competency;
   onClose: () => void;
 }) {
-  const store = useStore();
   const viewModel = useCompetencyMatrixViewModel();
-  const careerLevels = useCareerLevelsByRank();
   const { t } = useI18n();
-  const labels = useLabels();
-  const capability = store.capabilities.find((c) => c.id === competency.capabilityId);
-
-  const restrictiveFull = viewModel.isRequirementTypeFull(capability, "RESTRICTIVE", competency);
-  const nonRestrictiveFull = viewModel.isRequirementTypeFull(
-    capability,
-    "NON_RESTRICTIVE",
-    competency,
-  );
   const [name, setName] = useState(competency.name);
-  const [levels, setLevels] = useState<Partial<Record<string, Level>>>(competency.expected);
-  const [requirementType, setRequirementType] = useState<RequirementType>(
-    competency.requirementType,
-  );
-
-  const [swapTargetId, setSwapTargetId] = useState("");
-  const {
-    submitting: swapping,
-    error: swapError,
-    run: runSwap,
-  } = useAsyncSubmit(t("matrix.requirement.swapError"));
-
-  const restrictiveSiblings = viewModel.swapCandidates(
-    store.competencies,
-    competency.capabilityId,
-    "RESTRICTIVE",
-    competency.id,
-  );
-  const nonRestrictiveSiblings = viewModel.swapCandidates(
-    store.competencies,
-    competency.capabilityId,
-    "NON_RESTRICTIVE",
-    competency.id,
-  );
-
-  const swapWith = async () => {
-    if (!swapTargetId) return;
-    const result = await runSwap(() => viewModel.swapRequirementType(competency.id, swapTargetId));
-    if (!result.ok) return;
-    setRequirementType((prev) => (prev === "RESTRICTIVE" ? "NON_RESTRICTIVE" : "RESTRICTIVE"));
-    setSwapTargetId("");
-  };
 
   const save = () => {
     if (!name.trim()) return;
 
-    viewModel.updateCompetency(competency.id, name, levels, requirementType);
+    viewModel.updateCompetency(competency.id, name);
     onClose();
   };
 
@@ -908,86 +780,7 @@ function CompetencyEditDialog({
               onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </div>
-          <div>
-            <Label>{t("matrix.edit.levels")}</Label>
-            <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {careerLevels.map((cl) => (
-                <div key={cl.id} className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">
-                    {labels.roleShort(cl.name)}
-                  </span>
-                  <select
-                    className="mt-1 w-full min-w-0 rounded-md border border-input bg-card px-2 py-2 text-sm"
-                    value={levels[cl.id] ?? ""}
-                    aria-label={`${t("matrix.edit.levels")} — ${labels.roleShort(cl.name)}`}
-                    onChange={(e) =>
-                      setLevels({
-                        ...levels,
-                        [cl.id]: e.target.value ? (Number(e.target.value) as Level) : undefined,
-                      })
-                    }
-                  >
-                    <option value="">—</option>
-                    {LEVELS.map((l) => (
-                      <option key={l.level} value={l.level}>
-                        L{l.level} · {labels.levelName[l.level]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="edit-competency-requirement">{t("matrix.requirement.label")}</Label>
-            <select
-              id="edit-competency-requirement"
-              className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2 text-sm"
-              value={requirementType}
-              onChange={(e) => setRequirementType(e.target.value as RequirementType)}
-            >
-              <option value="NON_RESTRICTIVE" disabled={nonRestrictiveFull}>
-                {t("matrix.requirement.nonRestrictive")}
-              </option>
-              <option value="RESTRICTIVE" disabled={restrictiveFull}>
-                {t("matrix.requirement.restrictive")}
-              </option>
-            </select>
-            <p className="mt-1 text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
-            {restrictiveFull && requirementType !== "RESTRICTIVE" && (
-              <SwapPicker
-                hint={t("matrix.requirement.restrictiveFull", {
-                  limite: viewModel.limits.requiredRestrictive,
-                })}
-                label={t("matrix.requirement.swapPickRestrictive")}
-                action={t("matrix.requirement.swapAction")}
-                candidates={restrictiveSiblings}
-                value={swapTargetId}
-                onChange={setSwapTargetId}
-                onSwap={swapWith}
-                swapping={swapping}
-              />
-            )}
-            {nonRestrictiveFull && requirementType !== "NON_RESTRICTIVE" && (
-              <SwapPicker
-                hint={t("matrix.requirement.nonRestrictiveFull", {
-                  limite: viewModel.limits.requiredNonRestrictive,
-                })}
-                label={t("matrix.requirement.swapPickNonRestrictive")}
-                action={t("matrix.requirement.swapAction")}
-                candidates={nonRestrictiveSiblings}
-                value={swapTargetId}
-                onChange={setSwapTargetId}
-                onSwap={swapWith}
-                swapping={swapping}
-              />
-            )}
-            {swapError && (
-              <p className="mt-1 text-xs text-destructive" role="alert">
-                {swapError}
-              </p>
-            )}
-          </div>
+          <p className="text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
@@ -997,56 +790,5 @@ function CompetencyEditDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function SwapPicker({
-  hint,
-  label,
-  action,
-  candidates,
-  value,
-  onChange,
-  onSwap,
-  swapping,
-}: {
-  hint: string;
-  label: string;
-  action: string;
-  candidates: Competency[];
-  value: string;
-  onChange: (id: string) => void;
-  onSwap: () => void;
-  swapping: boolean;
-}) {
-  return (
-    <Callout tone="warning" className="mt-2 p-2">
-      <p className="text-xs">{hint}</p>
-      <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
-        <select
-          className="min-w-0 flex-1 rounded-md border border-input bg-card px-2 py-1.5 text-xs"
-          aria-label={label}
-          value={value}
-          disabled={swapping}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="">{label}</option>
-          {candidates.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <Button
-          size="sm"
-          variant="secondary"
-          className="shrink-0"
-          disabled={!value || swapping}
-          onClick={onSwap}
-        >
-          {action}
-        </Button>
-      </div>
-    </Callout>
   );
 }

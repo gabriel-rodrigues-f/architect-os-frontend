@@ -84,9 +84,24 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     caminho: "/api/v1/career-levels",
   },
   {
-    nome: "política de nível de carreira",
-    enviar: () => api.updateCareerLevelPolicy("senior", 3),
-    caminho: "/api/v1/career-levels/senior/policy",
+    nome: "leitura da régua do time",
+    enviar: () => api.teamRule("time-plataforma", "senior"),
+    caminho: "/api/v1/teams/time-plataforma/rules/senior",
+  },
+  {
+    nome: "definição da régua do time",
+    enviar: () =>
+      api.defineTeamRule("time-plataforma", "senior", {
+        minimumQualifiedCapabilities: 3,
+        capabilityIds: [],
+        competencies: [],
+      }),
+    caminho: "/api/v1/teams/time-plataforma/rules/senior",
+  },
+  {
+    nome: "aderência do arquiteto à régua",
+    enviar: () => api.architectAdherence("ana", "senior"),
+    caminho: "/api/v1/architects/ana/adherence?careerLevelId=senior",
   },
   {
     nome: "remoção de capacidade",
@@ -99,9 +114,9 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     caminho: "/api/v1/competencies/cloud-k8s",
   },
   {
-    nome: "troca de restritividade",
-    enviar: () => api.swapCompetencyRequirement("full-n1", "full-n2"),
-    caminho: "/api/v1/competencies/full-n1/swap-requirement",
+    nome: "troca de obrigatoriedade na régua do time",
+    enviar: () => api.swapTeamRuleRequirement("time-plataforma", "senior", "full-n1", "full-n2"),
+    caminho: "/api/v1/teams/time-plataforma/rules/senior/swap-requirement",
   },
   {
     nome: "importação de catálogo",

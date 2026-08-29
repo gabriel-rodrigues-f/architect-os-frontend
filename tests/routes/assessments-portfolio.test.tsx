@@ -30,8 +30,17 @@ const draftAssessment: Assessment = {
   items: [],
 };
 
+/**
+ * Fase 2 (ADR-0034): o sinal REQUIRES_CURATION agora é só "extrapolou o alvo
+ * de ativas" — a fixture padrão nasce READY, então este teste força as duas
+ * capacidades ao estado extrapolado para provar que nenhuma é oferecida.
+ */
 const state: AppState = {
   ...fixtureState,
+  capabilities: fixtureState.capabilities.map((capability) => ({
+    ...capability,
+    curation: { activeCompetencyCount: 7, status: "REQUIRES_CURATION" as const },
+  })),
   assessments: [...fixtureState.assessments, draftAssessment],
 };
 

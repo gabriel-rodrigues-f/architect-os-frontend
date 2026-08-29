@@ -1,13 +1,62 @@
-import type { CareerLevel, CareerLevelPolicy } from "../domain";
-import { careerLevelsResponseSchema } from "../api-schemas";
+import type { CareerLevel, Level, RequirementType, TeamLevelRule } from "../domain";
+import {
+  architectAdherenceResponseSchema,
+  careerLevelsResponseSchema,
+  teamRuleResponseSchema,
+} from "../api-schemas";
 import type { ApiClient } from "../api-client";
+
+export interface TeamRuleCompetencyRequirement {
+  competencyId: string;
+  requirementType: RequirementType;
+  requiredLevel: Level;
+}
+
+export interface TeamRuleView extends TeamLevelRule {
+  capabilityIds: string[];
+  competencies: TeamRuleCompetencyRequirement[];
+}
+
+export interface TeamRuleDefinition {
+  minimumQualifiedCapabilities: number;
+  capabilityIds: string[];
+  competencies: TeamRuleCompetencyRequirement[];
+}
+
+export interface ArchitectAdherence {
+  architectId: string;
+  teamId: string | null;
+  careerLevelId: string;
+  adherence: {
+    percentage: number;
+    missingRequired: {
+      competencyId: string;
+      currentLevel: number;
+      requiredLevel: number;
+    }[];
+  };
+  semRegua?: true | undefined;
+}
 
 export interface CareerGateway {
   careerLevels(): Promise<CareerLevel[]>;
-  updateCareerLevelPolicy(
+  teamRule(teamId: string, careerLevelId: string): Promise<TeamRuleView>;
+  defineTeamRule(
+    teamId: string,
     careerLevelId: string,
-    minimumQualifiedCapabilities: number,
-  ): Promise<CareerLevelPolicy>;
+    definition: TeamRuleDefinition,
+  ): Promise<TeamRuleView>;
+  swapTeamRuleRequirement(
+    teamId: string,
+    careerLevelId: string,
+    competencyId: string,
+    withCompetencyId: string,
+  ): Promise<TeamRuleView>;
+  architectAdherence(
+    architectId: string,
+    careerLevelId: string,
+    teamId?: string,
+  ): Promise<ArchitectAdherence>;
 }
 
 export class HttpCareerGateway implements CareerGateway {
@@ -18,11 +67,38 @@ export class HttpCareerGateway implements CareerGateway {
       .request<CareerLevel[]>("/career-levels")
       .then((data) => careerLevelsResponseSchema.parse(data));
 
-  updateCareerLevelPolicy = (
+  teamRule = (teamId: string, careerLevelId: string): Promise<TeamRuleView> =>
+    this.client
+      .request<TeamRuleView>(`/teams/${teamId}/rules/${careerLevelId}`)
+      .then((data) => teamRuleResponseSchema.parse(data) as TeamRuleView);
+
+  defineTeamRule = (
+    teamId: string,
     careerLevelId: string,
-    minimumQualifiedCapabilities: number,
-  ): Promise<CareerLevelPolicy> =>
-    this.client.patch<CareerLevelPolicy>(`/career-levels/${careerLevelId}/policy`, {
-      minimumQualifiedCapabilities,
+    definition: TeamRuleDefinition,
+  ): Promise<TeamRuleView> =>
+    this.client.put<TeamRuleView>(`/teams/${teamId}/rules/${careerLevelId}`, definition);
+
+  swapTeamRuleRequirement = (
+    teamId: string,
+    careerLevelId: string,
+    competencyId: string,
+    withCompetencyId: string,
+  ): Promise<TeamRuleView> =>
+    this.client.post<TeamRuleView>(`/teams/${teamId}/rules/${careerLevelId}/swap-requirement`, {
+      competencyId,
+      withCompetencyId,
     });
+
+  architectAdherence = (
+    architectId: string,
+    careerLevelId: string,
+    teamId?: string,
+  ): Promise<ArchitectAdherence> => {
+    const query = new URLSearchParams({ careerLevelId });
+    if (teamId !== undefined) query.set("teamId", teamId);
+    return this.client
+      .request<ArchitectAdherence>(`/architects/${architectId}/adherence?${query.toString()}`)
+      .then((data) => architectAdherenceResponseSchema.parse(data) as ArchitectAdherence);
+  };
 }

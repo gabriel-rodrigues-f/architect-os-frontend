@@ -2,6 +2,7 @@ import { test, expect, type APIRequestContext, type Page } from "@playwright/tes
 import { Client } from "pg";
 
 import { apiPath } from "../src/lib/api-path";
+import { linkLeadToArchitects, unlinkTeam } from "./team-link";
 
 /**
  * Gate de entrega — fluxos de escrita pela UI (onda13/harness-ux).
@@ -43,6 +44,7 @@ test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD n
 let architectId: string;
 let assessmentId: string;
 let capabilityIds: string[];
+let teamId: string;
 
 async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
   if (!response.ok()) {
@@ -155,7 +157,12 @@ test.beforeAll(async ({ playwright }) => {
     email: LEAD_EMAIL,
     role: "lead",
   });
-  await json(await api.patch(apiPath(`/architects/${architectId}`), { data: { leadUserId } }));
+  teamId = await linkLeadToArchitects({
+    databaseUrl: DATABASE_URL,
+    runId: `flux-${RUN_ID}`,
+    leadUserId,
+    architectIds: [architectId],
+  });
 
   const cycles = await json<Array<{ id: string; status: string }>>(
     await api.get(apiPath("/cycles")),
@@ -222,6 +229,7 @@ test.afterAll(async () => {
   } finally {
     await client.end();
   }
+  await unlinkTeam(DATABASE_URL, teamId);
 });
 
 test("Member avalia uma competência pela UI e envia a avaliação para revisão", async ({ page }) => {

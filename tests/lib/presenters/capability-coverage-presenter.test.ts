@@ -18,8 +18,6 @@ const capability = (id: string, active = true): Capability => ({
   active,
   curation: {
     activeCompetencyCount: 0,
-    restrictiveCompetencyCount: 0,
-    nonRestrictiveCompetencyCount: 0,
     status: "REQUIRES_CURATION",
   },
 });

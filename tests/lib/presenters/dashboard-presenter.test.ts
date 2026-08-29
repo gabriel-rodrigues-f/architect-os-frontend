@@ -187,8 +187,6 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
       active: true,
       curation: {
         activeCompetencyCount: COMPETENCIES,
-        restrictiveCompetencyCount: 0,
-        nonRestrictiveCompetencyCount: COMPETENCIES,
         status: "REQUIRES_CURATION",
       },
     };

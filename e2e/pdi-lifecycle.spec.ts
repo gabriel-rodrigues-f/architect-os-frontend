@@ -1,6 +1,7 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import { Client } from "pg";
 import { apiPath } from "../src/lib/api-path";
+import { linkLeadToArchitects, unlinkTeam } from "./team-link";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-36 (§33, achado 2) —
@@ -31,6 +32,7 @@ test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD n
 
 let architectId: string;
 let leadUserId: string;
+let teamId: string;
 let cycleId: string;
 let competencyId: string;
 
@@ -86,7 +88,12 @@ test.beforeAll(async ({ playwright }) => {
   }
   await guest.dispose();
 
-  await json(await api.patch(apiPath(`/architects/${architectId}`), { data: { leadUserId } }));
+  teamId = await linkLeadToArchitects({
+    databaseUrl: DATABASE_URL,
+    runId: `pdi-${RUN_ID}`,
+    leadUserId,
+    architectIds: [architectId],
+  });
 
   const cycles = await json<Array<{ id: string; status: string }>>(
     await api.get(apiPath("/cycles")),
@@ -130,6 +137,7 @@ test.afterAll(async () => {
   } finally {
     await client.end();
   }
+  await unlinkTeam(DATABASE_URL, teamId);
 });
 
 test("Tech Lead registra check-in e avança o status de um item de PDI", async ({ page }) => {

@@ -15,8 +15,8 @@ import {
  */
 describe("UiAuthorizationPolicy", () => {
   const policy = new UiAuthorizationPolicy();
-  const anaAsArchitect = { id: "ana", leadUserId: null };
-  const leadOfAna = { id: "ana", leadUserId: fixtureUnassignedLeadUser.id };
+  const anaAsArchitect = { id: "ana", teamId: null };
+  const anaInLedTeam = { id: "ana", teamId: "time-plataforma" };
 
   describe("canActFor", () => {
     it("admin pode agir sobre qualquer pessoa", () => {
@@ -27,12 +27,12 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canActFor(fixtureMemberUser, anaAsArchitect)).toBe(true);
     });
 
-    it("lead sem atribuição não pode agir sobre quem não é dele", () => {
+    it("lead não age sobre arquiteto SEM TIME — a Fase 2 trocou o vínculo: sem time, sem dono", () => {
       expect(policy.canActFor(fixtureUnassignedLeadUser, anaAsArchitect)).toBe(false);
     });
 
-    it("lead atribuído pode agir sobre quem ele lidera", () => {
-      expect(policy.canActFor(fixtureUnassignedLeadUser, leadOfAna)).toBe(true);
+    it("lead age sobre arquiteto com time — o recorte do servidor (ADR-0035) só lhe entrega times que ele lidera", () => {
+      expect(policy.canActFor(fixtureUnassignedLeadUser, anaInLedTeam)).toBe(true);
     });
 
     it("sem architect, ninguém além do admin pode agir", () => {
@@ -48,24 +48,25 @@ describe("UiAuthorizationPolicy", () => {
 
     it("a própria pessoa NÃO é lead de si mesma", () => {
       expect(policy.isLeadOf(fixtureMemberUser, anaAsArchitect)).toBe(false);
+      expect(policy.isLeadOf({ ...fixtureMemberUser, role: "lead" }, anaInLedTeam)).toBe(false);
     });
 
-    it("só o lead atribuído responde true", () => {
+    it("lead responde true para arquiteto com time, false para arquiteto sem time", () => {
       expect(policy.isLeadOf(fixtureUnassignedLeadUser, anaAsArchitect)).toBe(false);
-      expect(policy.isLeadOf(fixtureUnassignedLeadUser, leadOfAna)).toBe(true);
+      expect(policy.isLeadOf(fixtureUnassignedLeadUser, anaInLedTeam)).toBe(true);
     });
   });
 
   describe("isAssignedTechLeadOf", () => {
     it("NÃO tem bypass de admin — reabertura de PDI é só do lead responsável", () => {
-      expect(policy.isAssignedTechLeadOf(fixtureAdminUser, leadOfAna)).toBe(false);
+      expect(policy.isAssignedTechLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(false);
     });
 
-    it("o lead atribuído responde true", () => {
-      expect(policy.isAssignedTechLeadOf(fixtureUnassignedLeadUser, leadOfAna)).toBe(true);
+    it("o lead do time responde true", () => {
+      expect(policy.isAssignedTechLeadOf(fixtureUnassignedLeadUser, anaInLedTeam)).toBe(true);
     });
 
-    it("lead sem atribuição responde false", () => {
+    it("arquiteto sem time responde false", () => {
       expect(policy.isAssignedTechLeadOf(fixtureUnassignedLeadUser, anaAsArchitect)).toBe(false);
     });
   });

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Check, ChevronsUpDown, Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
+import { Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
@@ -7,17 +7,7 @@ import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialo
 import { GapBadge, Initials, LevelBadge } from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { type Architect, type RoleName } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
@@ -79,7 +69,6 @@ export function useArchitectForm() {
       primarySpecializationCompetencyId: architect.primarySpecializationCompetencyId ?? null,
       years: String(architect.yearsAsArchitect),
       email: architect.email,
-      leadUserId: architect.leadUserId ?? "",
     });
     setEditing(architect.id);
   };
@@ -389,86 +378,6 @@ export function useTeamRoster(isAdmin: boolean) {
   };
 }
 
-export function LeadCombobox({
-  options,
-  selectedId,
-  onChange,
-  label,
-  id,
-}: {
-  options: { id: string; name: string }[];
-  selectedId: string;
-  onChange: (id: string) => void;
-  label: string;
-  id?: string;
-}) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const ordered = [...options].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-  const selected = ordered.find((u) => u.id === selectedId);
-
-  const select = (userId: string) => {
-    onChange(userId);
-    setOpen(false);
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          id={id}
-          type="button"
-          role="combobox"
-          aria-label={label}
-          aria-expanded={open}
-          title={selected?.name ?? t("team.form.lead.none")}
-          className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
-        >
-          <span
-            className={cn(
-              "min-w-0 flex-1 truncate text-left",
-              !selected && "text-muted-foreground",
-            )}
-          >
-            {selected ? selected.name : t("team.form.lead.none")}
-          </span>
-          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start">
-        <Command>
-          <CommandInput placeholder={t("architectCombobox.search")} />
-          <CommandList className="max-h-72">
-            <CommandEmpty>{t("architectCombobox.empty")}</CommandEmpty>
-            <CommandGroup>
-              <CommandItem value="__none__" onSelect={() => select("")}>
-                <Check
-                  className={cn("mr-2 h-4 w-4 shrink-0", !selected ? "opacity-100" : "opacity-0")}
-                />
-                <span className="text-muted-foreground">{t("team.form.lead.none")}</span>
-              </CommandItem>
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup>
-              {ordered.map((u) => (
-                <CommandItem key={u.id} value={u.name} title={u.name} onSelect={() => select(u.id)}>
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 shrink-0",
-                      u.id === selectedId ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <span className="min-w-0 flex-1 truncate">{u.name}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 export function CareerLevelTransitionDialog({
   architect,
   onClose,
@@ -577,7 +486,6 @@ export function TeamRosterView({
   pageItems,
   view,
   isAdmin,
-  leadOptions,
   onTransition,
   onEdit,
   onDeactivate,
@@ -586,7 +494,6 @@ export function TeamRosterView({
   pageItems: EnrichedArchitect[];
   view: "cards" | "table";
   isAdmin: boolean;
-  leadOptions: readonly { id: string; name: string }[];
   onTransition: (architect: Architect) => void;
   onEdit: (architect: Architect) => void;
   onDeactivate: (architect: Architect) => void;
@@ -736,7 +643,6 @@ export function TeamRosterView({
         </thead>
         <tbody>
           {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => {
-            const lead = leadOptions.find((u) => u.id === a.leadUserId);
             return (
               <tr key={a.id} className="border-b border-border/60 last:border-0">
                 <td className="max-w-[220px] px-4 py-3">
@@ -760,8 +666,8 @@ export function TeamRosterView({
                 </td>
                 {isAdmin && (
                   <td className="max-w-[160px] px-4 py-3 text-muted-foreground">
-                    <span className="block truncate" title={lead?.name ?? "—"}>
-                      {lead?.name ?? "—"}
+                    <span className="block truncate" title={a.teamId ?? "—"}>
+                      {a.teamId ?? "—"}
                     </span>
                   </td>
                 )}

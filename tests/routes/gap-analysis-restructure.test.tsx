@@ -47,17 +47,15 @@ const getArchitectFilterTrigger = (): HTMLElement =>
     .getAllByRole("button", { expanded: false })
     .find((el) => el.getAttribute("aria-haspopup") === "listbox")!;
 
-/** Competência restritiva nova, com gap para Ana em 2026-h2 — sem isto, a fixture padrão não tem nenhum bloqueante. */
+/**
+ * Competência nova, com gap RESTRITIVO para Ana em 2026-h2 — sem isto, a
+ * fixture padrão não tem nenhum bloqueante. Pós-Fase 2 a obrigatoriedade vem
+ * da FOTO do item (régua do time no momento da avaliação), não do catálogo.
+ */
 const restrictiveCompetency: Competency = {
   id: "cloud-iac",
   name: "Infra as Code",
   capabilityId: "cloud",
-  requirementType: "RESTRICTIVE",
-  expected: {
-    "arquiteto-de-solucoes-i": 2,
-    "arquiteto-de-solucoes-ii": 4,
-    "arquiteto-de-solucoes-iii": 5,
-  },
   active: true,
 };
 
@@ -67,7 +65,15 @@ function withBlockingItem(assessment: Assessment): Assessment {
     ...assessment,
     items: [
       ...assessment.items,
-      { competencyId: "cloud-iac", self: 2, leader: 2, target: 4, final: 2, comments: [] },
+      {
+        competencyId: "cloud-iac",
+        self: 2,
+        leader: 2,
+        target: 4,
+        final: 2,
+        comments: [],
+        requirementType: "RESTRICTIVE",
+      },
     ],
   };
 }
