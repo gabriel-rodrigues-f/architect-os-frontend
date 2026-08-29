@@ -140,7 +140,7 @@ O que cada peça garante:
   1440×900, tema claro; escuro com `E2E_NAV_DARK=1`). Tela com error
   boundary/404 falha o teste com a lista — a captura fica como prova. O
   anexo `navegacao-resumo` do relatório registra onde cada papel aterrissou
-  (rota admin-only redireciona member para `/`, e isso é o recorte por
+  (rota admin-only mostra aviso in-place (member NÃO é redirecionado — vê /users com aviso e /competency-matrix em leitura), e isso é o recorte por
   papel que o QA-UX compara).
 - **Papel** via `E2E_NAV_ROLE=admin|member|lead` (default `admin`). O seed
   local só cria admin e member; `lead` exige `E2E_LEAD_EMAIL`/`_PASSWORD`

@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
  *   `index.tsx`   → `/`
  *   `a.b.tsx`     → `/a/b` (ponto separa segmento)
  *   `a.index.tsx` → `/a` (mesma URL do layout `a.tsx` — deduplicado)
+ *   `dir/index.tsx` → `/dir` (convenção de DIRETÓRIO — o ponto cego que o QA provou: sem varredura recursiva, rota em pasta nascia invisível à rede)
  *   `$param`      → segmento dinâmico, preservado literal para o mapa de
  *                   visitas resolver com um id real
  */
@@ -21,11 +22,18 @@ const ROUTES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "r
 
 export function discoverRoutePaths(): string[] {
   const paths = new Set<string>();
-  for (const file of readdirSync(ROUTES_DIR)) {
-    if (!file.endsWith(".tsx") || file === "__root.tsx") continue;
-    const segments = file.slice(0, -".tsx".length).split(".");
-    if (segments.at(-1) === "index") segments.pop();
-    paths.add(`/${segments.join("/")}`);
-  }
+  const walk = (dir: string, prefixo: readonly string[]): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        walk(join(dir, entry.name), [...prefixo, entry.name]);
+        continue;
+      }
+      if (!entry.name.endsWith(".tsx") || entry.name === "__root.tsx") continue;
+      const segments = [...prefixo, ...entry.name.slice(0, -".tsx".length).split(".")];
+      if (segments.at(-1) === "index") segments.pop();
+      paths.add(`/${segments.join("/")}`);
+    }
+  };
+  walk(ROUTES_DIR, []);
   return [...paths].sort();
 }

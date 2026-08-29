@@ -25,7 +25,7 @@ import { discoverRoutePaths } from "./route-inventory";
  * Papel via E2E_NAV_ROLE (admin|lead|member, default admin) — o recorte
  * por papel na tela é exatamente o que o QA-UX compara. Tema claro sempre;
  * escuro opcional via E2E_NAV_DARK=1. Rota que o papel não alcança
- * (`requireAdminReach` redireciona para `/`) não é falha: a captura mostra
+ * não é falha: member vê aviso in-place em /users e /competency-matrix em leitura (SEM redirect — o QA provou que redirect não acontece); a captura mostra
  * onde o papel aterrissou, e o destino final fica registrado no anexo
  * `navegacao-resumo` do relatório.
  */
