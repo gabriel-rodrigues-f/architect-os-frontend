@@ -30,6 +30,7 @@ import {
 import { type DevelopmentPlan, type Evidence, type EvidenceType } from "@/lib/domain";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters";
@@ -102,7 +103,29 @@ export function computeNextSteps(input: {
   return steps;
 }
 
+const profileContextsFor = (architectId: string): readonly ContextScopeRequest[] => [
+  "architects",
+  "capabilities",
+  "competencies",
+  "cycles",
+  "activeCycle",
+  { name: "assessments", architectId },
+  { name: "plans", architectId },
+  { name: "evidences", architectId },
+  { name: "mentoringSessions", architectId },
+  { name: "learningPaths", architectId },
+];
+
 function ArchitectProfile() {
+  const { architectId } = Route.useParams();
+  return (
+    <ContextScope contexts={profileContextsFor(architectId)}>
+      <ArchitectWorkspace />
+    </ContextScope>
+  );
+}
+
+function ArchitectWorkspace() {
   const { architectId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
