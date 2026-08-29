@@ -724,6 +724,7 @@
   "path.new.action": "Create path",
   "path.progress": "Progress",
   "path.item.noAssignee": "Nobody assigned to this path yet.",
+  "path.assignee.outOfScope": "Outside your scope",
   "path.createdBy": "Created by {autor}",
   "path.noAuthor": "Path without a recorded author",
   "path.edit.title": "Edit path",
