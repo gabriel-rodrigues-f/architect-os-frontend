@@ -3,8 +3,6 @@ import { Callout, Initials, NameList } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import type { EvaluatorCalibrationView, ScoreLevelRow } from "@/lib/view-models";
 
-const signedAverage = (delta: number): string => `${delta > 0 ? "+" : ""}${delta.toFixed(2)}`;
-
 export function EvaluatorDistributionCard({
   view,
   scoreLevels,
@@ -32,9 +30,9 @@ export function EvaluatorDistributionCard({
           <p className="font-display text-xl font-semibold tabular-nums">
             {view.average === null ? "—" : view.average.toFixed(2)}
           </p>
-          {view.delta !== null && (
+          {view.deltaLabel !== null && (
             <p className="text-xs tabular-nums text-muted-foreground">
-              {t("calibration.card.deltaVsOverall", { delta: signedAverage(view.delta) })}
+              {t("calibration.card.deltaVsOverall", { delta: view.deltaLabel })}
             </p>
           )}
         </div>
@@ -45,10 +43,10 @@ export function EvaluatorDistributionCard({
           ? t("calibration.card.noScores")
           : t("calibration.card.items", { n: view.itemsCount, m: view.assessmentsCount })}
       </p>
-      {view.deviates && view.delta !== null && (
+      {view.deviates && view.deltaLabel !== null && (
         <div role="status">
           <Callout tone="warning">
-            {t("calibration.deviation.warning", { delta: signedAverage(view.delta) })}
+            {t("calibration.deviation.warning", { delta: view.deltaLabel })}
           </Callout>
         </div>
       )}

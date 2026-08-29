@@ -7,6 +7,7 @@ import type { Level } from "../domain";
 
 export interface EvaluatorCalibrationView extends CalibrationEvaluator {
   delta: number | null;
+  deltaLabel: string | null;
   deviates: boolean;
 }
 
@@ -30,6 +31,7 @@ export class CalibrationViewModel {
         return {
           ...evaluator,
           delta,
+          deltaLabel: this.deltaLabel(delta),
           deviates:
             delta !== null && Math.abs(delta) >= CalibrationViewModel.DEVIATION_ALERT_THRESHOLD,
         };
@@ -43,6 +45,11 @@ export class CalibrationViewModel {
 
   private deviationWeight(view: Pick<EvaluatorCalibrationView, "delta">): number {
     return view.delta === null ? -1 : Math.abs(view.delta);
+  }
+
+  private deltaLabel(delta: number | null): string | null {
+    if (delta === null) return null;
+    return `${delta > 0 ? "+" : ""}${delta.toFixed(2)}`;
   }
 
   scoreLevels(distribution: LevelDistribution): ScoreLevelRow[] {

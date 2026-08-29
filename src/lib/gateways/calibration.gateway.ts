@@ -37,75 +37,99 @@ export class HttpCalibrationGateway implements CalibrationGateway {
   };
 }
 
-const distributionOf = (counts: [number, number, number, number, number]): LevelDistribution => ({
-  "1": counts[0],
-  "2": counts[1],
-  "3": counts[2],
-  "4": counts[3],
-  "5": counts[4],
-});
-
-const averageOf = (distribution: LevelDistribution): number | null => {
-  const entries = Object.entries(distribution);
-  const total = entries.reduce((sum, [, count]) => sum + count, 0);
-  if (total === 0) return null;
-  const weighted = entries.reduce((sum, [levelKey, count]) => sum + Number(levelKey) * count, 0);
-  return weighted / total;
-};
-
-const sumDistributions = (distributions: readonly LevelDistribution[]): LevelDistribution =>
-  distributions.reduce(
-    (accumulated, current) => ({
-      "1": accumulated["1"] + current["1"],
-      "2": accumulated["2"] + current["2"],
-      "3": accumulated["3"] + current["3"],
-      "4": accumulated["4"] + current["4"],
-      "5": accumulated["5"] + current["5"],
-    }),
-    distributionOf([0, 0, 0, 0, 0]),
-  );
-
-const itemsCountOf = (distribution: LevelDistribution): number =>
-  Object.values(distribution).reduce((sum, count) => sum + count, 0);
-
-const evaluatorFixture = (
-  userId: string,
-  name: string,
-  teamIds: string[],
-  counts: [number, number, number, number, number],
-  assessmentsCount: number,
-): CalibrationEvaluator => {
-  const distribution = distributionOf(counts);
-  return {
-    userId,
-    name,
-    teamIds,
-    distribution,
-    average: averageOf(distribution),
-    itemsCount: itemsCountOf(distribution),
-    assessmentsCount,
-  };
-};
-
-const fixtureEvaluators = (): CalibrationEvaluator[] => [
-  evaluatorFixture("evaluator-lenient", "Marina Lopes", ["team-integration"], [0, 1, 4, 9, 6], 4),
-  evaluatorFixture("evaluator-central", "Ricardo Nunes", ["team-architecture"], [1, 3, 8, 3, 1], 3),
-  evaluatorFixture("evaluator-severe", "Paula Souza", ["team-platform"], [4, 7, 4, 1, 0], 3),
-];
-
 export class InMemoryCalibrationGateway implements CalibrationGateway {
   private readonly evaluators: CalibrationEvaluator[];
 
-  constructor(evaluators: CalibrationEvaluator[] = fixtureEvaluators()) {
-    this.evaluators = evaluators;
+  constructor(evaluators?: CalibrationEvaluator[]) {
+    this.evaluators = evaluators ?? InMemoryCalibrationGateway.fixtureEvaluators();
   }
 
   calibration = (cycleId: string): Promise<CalibrationSnapshot> => {
-    const distribution = sumDistributions(this.evaluators.map((entry) => entry.distribution));
+    const distribution = InMemoryCalibrationGateway.sumDistributions(
+      this.evaluators.map((entry) => entry.distribution),
+    );
     return Promise.resolve({
       cycleId,
-      overall: { distribution, average: averageOf(distribution) },
+      overall: { distribution, average: InMemoryCalibrationGateway.averageOf(distribution) },
       evaluators: this.evaluators.map((entry) => ({ ...entry, teamIds: [...entry.teamIds] })),
     });
   };
+
+  private static distributionOf(
+    counts: [number, number, number, number, number],
+  ): LevelDistribution {
+    return { "1": counts[0], "2": counts[1], "3": counts[2], "4": counts[3], "5": counts[4] };
+  }
+
+  private static averageOf(distribution: LevelDistribution): number | null {
+    const entries = Object.entries(distribution);
+    const total = entries.reduce((sum, [, count]) => sum + count, 0);
+    if (total === 0) return null;
+    const weighted = entries.reduce((sum, [levelKey, count]) => sum + Number(levelKey) * count, 0);
+    return weighted / total;
+  }
+
+  private static sumDistributions(
+    distributions: readonly LevelDistribution[],
+  ): LevelDistribution {
+    return distributions.reduce(
+      (accumulated, current) => ({
+        "1": accumulated["1"] + current["1"],
+        "2": accumulated["2"] + current["2"],
+        "3": accumulated["3"] + current["3"],
+        "4": accumulated["4"] + current["4"],
+        "5": accumulated["5"] + current["5"],
+      }),
+      InMemoryCalibrationGateway.distributionOf([0, 0, 0, 0, 0]),
+    );
+  }
+
+  private static itemsCountOf(distribution: LevelDistribution): number {
+    return Object.values(distribution).reduce((sum, count) => sum + count, 0);
+  }
+
+  private static evaluatorFixture(
+    userId: string,
+    name: string,
+    teamIds: string[],
+    counts: [number, number, number, number, number],
+    assessmentsCount: number,
+  ): CalibrationEvaluator {
+    const distribution = InMemoryCalibrationGateway.distributionOf(counts);
+    return {
+      userId,
+      name,
+      teamIds,
+      distribution,
+      average: InMemoryCalibrationGateway.averageOf(distribution),
+      itemsCount: InMemoryCalibrationGateway.itemsCountOf(distribution),
+      assessmentsCount,
+    };
+  }
+
+  private static fixtureEvaluators(): CalibrationEvaluator[] {
+    return [
+      InMemoryCalibrationGateway.evaluatorFixture(
+        "evaluator-lenient",
+        "Marina Lopes",
+        ["team-integration"],
+        [0, 1, 4, 9, 6],
+        4,
+      ),
+      InMemoryCalibrationGateway.evaluatorFixture(
+        "evaluator-central",
+        "Ricardo Nunes",
+        ["team-architecture"],
+        [1, 3, 8, 3, 1],
+        3,
+      ),
+      InMemoryCalibrationGateway.evaluatorFixture(
+        "evaluator-severe",
+        "Paula Souza",
+        ["team-platform"],
+        [4, 7, 4, 1, 0],
+        3,
+      ),
+    ];
+  }
 }
