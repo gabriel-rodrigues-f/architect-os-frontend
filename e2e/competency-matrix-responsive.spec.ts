@@ -54,17 +54,20 @@ test.beforeAll(async ({ playwright }) => {
     }),
   );
   capabilityId = capability.id;
+  // As chaves de `expected` são IDs de nível de carreira, não nomes —
+  // mandar "Arquiteto de Soluções I" rende UNKNOWN_CAREER_LEVEL. Deriva os
+  // três primeiros IDs do próprio /state em vez de fixar slug na mão.
+  const state = await json<{ careerLevelPolicies: Array<{ careerLevelId: string }> }>(
+    await api.get(apiPath("/state")),
+  );
+  const levelIds = state.careerLevelPolicies.slice(0, 3).map((policy) => policy.careerLevelId);
   const competency = await json<{ id: string }>(
     await api.post(apiPath("/competencies"), {
       data: {
         name: LONG_NAME,
         capabilityId,
         requirementType: "NON_RESTRICTIVE",
-        expected: {
-          "Arquiteto de Soluções I": 1,
-          "Arquiteto de Soluções II": 2,
-          "Arquiteto de Soluções III": 3,
-        },
+        expected: Object.fromEntries(levelIds.map((levelId, index) => [levelId, index + 1])),
       },
     }),
   );

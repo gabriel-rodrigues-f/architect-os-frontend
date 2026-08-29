@@ -119,7 +119,11 @@ test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo
   // campo; sem isto `getByLabel` casa os dois (e mais campos, por
   // sobreposição de texto) e vira "strict mode violation".
   const dialog = page.getByRole("dialog", { name: "Nova sessão de mentoria" });
-  await dialog.getByLabel("Mentorado", { exact: true }).selectOption(architectId);
+  // "Mentorado" deixou de ser <select> nativo: é o ArchitectSelectCombobox
+  // (botão role="combobox" + popover cmdk) — abre e escolhe a opção pelo
+  // nome, como uma pessoa faria.
+  await dialog.getByRole("combobox", { name: "Mentorado", exact: true }).click();
+  await page.getByRole("option", { name: ARCHITECT_NAME }).click();
   await dialog.getByLabel("Tema", { exact: true }).fill(TOPIC);
   await dialog
     .getByLabel("Notas", { exact: true })
