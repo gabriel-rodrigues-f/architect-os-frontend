@@ -17,7 +17,8 @@ import { InMemoryNoticesGateway, type NoticesViewer } from "@/lib/gateways/notic
  *    status/limit sobrevivia a todos os testes anteriores.
  */
 const admin: NoticesViewer = { role: "admin", architectId: null };
-const leadViewer: NoticesViewer = { role: "lead", architectId: null };
+const leadIntegration: NoticesViewer = { role: "lead", architectId: "bruno" };
+const leadUnassigned: NoticesViewer = { role: "lead", architectId: null };
 const memberAna: NoticesViewer = { role: "member", architectId: "ana" };
 const memberCarla: NoticesViewer = { role: "member", architectId: "carla" };
 const memberWithoutArchitect: NoticesViewer = { role: "member", architectId: null };
@@ -110,11 +111,43 @@ describe("InMemoryNoticesGateway — recorte por papel (o mock É o servidor)", 
     expect(page.unreadCount).toBe(0);
   });
 
-  it("lead vê os avisos do time; admin vê tudo", async () => {
-    const leadPage = await gatewayFor(leadViewer).notices({ status: "all" });
+  /**
+   * QA da onda 17, achado MÉDIA — o recorte do lead filtrava por PAPEL
+   * (qualquer aviso com teamId) e não por VÍNCULO: o lead do time de
+   * integração via o aviso de Carla, do time de arquitetura. CONTRATO
+   * PRD-02: tech lead vê os avisos do TIME DELE. O /auth/me de hoje não
+   * traz memberships, então o time do lead vem do arquiteto vinculado
+   * (architectId → time) — o refinamento final chega com a habilitadora
+   * do PRD-02, quando a sessão passar a carregar os vínculos e o servidor
+   * real assumir o recorte.
+   */
+  it("lead vê SÓ os avisos do time DELE — o aviso de outro time não vaza", async () => {
+    const page = await gatewayFor(leadIntegration).notices({ status: "all" });
+    expect(page.notices.length).toBeGreaterThan(0);
+    expect(page.notices.every((item) => item.teamId === "team-integration")).toBe(true);
+    expect(page.notices.some((item) => item.architectId === "carla")).toBe(false);
+  });
+
+  it("unreadCount do lead conta só o escopo do time dele, nunca o de todos os times", async () => {
+    const leadPage = await gatewayFor(leadIntegration).notices({ status: "all" });
     const adminPage = await gatewayFor(admin).notices({ status: "all" });
-    expect(leadPage.notices.every((item) => item.teamId !== null)).toBe(true);
-    expect(adminPage.notices.length).toBeGreaterThanOrEqual(leadPage.notices.length);
+    expect(leadPage.unreadCount).toBe(
+      leadPage.notices.filter((item) => item.readAt === null).length,
+    );
+    expect(leadPage.unreadCount).toBeLessThan(adminPage.unreadCount);
+  });
+
+  it("lead sem arquiteto vinculado não tem time — e não vê aviso nenhum", async () => {
+    const page = await gatewayFor(leadUnassigned).notices({ status: "all" });
+    expect(page.notices).toEqual([]);
+    expect(page.unreadCount).toBe(0);
+  });
+
+  it("admin segue vendo tudo, de todos os times", async () => {
+    const adminPage = await gatewayFor(admin).notices({ status: "all" });
+    const teams = new Set(adminPage.notices.map((item) => item.teamId));
+    expect(teams.has("team-integration")).toBe(true);
+    expect(teams.has("team-architecture")).toBe(true);
   });
 
   it("marcar todos como lidos respeita o recorte: o member não zera os avisos do time", async () => {
