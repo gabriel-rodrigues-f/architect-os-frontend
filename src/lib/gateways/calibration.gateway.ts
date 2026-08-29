@@ -69,9 +69,7 @@ export class InMemoryCalibrationGateway implements CalibrationGateway {
     return weighted / total;
   }
 
-  private static sumDistributions(
-    distributions: readonly LevelDistribution[],
-  ): LevelDistribution {
+  private static sumDistributions(distributions: readonly LevelDistribution[]): LevelDistribution {
     return distributions.reduce(
       (accumulated, current) => ({
         "1": accumulated["1"] + current["1"],
