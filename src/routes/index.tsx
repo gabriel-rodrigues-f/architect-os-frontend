@@ -28,6 +28,7 @@ import { useI18n } from "@/lib/i18n";
 import type { DevelopmentPlan } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -387,7 +388,9 @@ function LeadHome() {
   const { t } = useI18n();
   const help = usePageHelp("dashLead");
 
-  const myPeople = store.architects.filter((a) => a.active && a.leadUserId === user.id);
+  const myPeople = store.architects.filter(
+    (a) => a.active && defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, a),
+  );
 
   const awaitingCalibration = myPeople
     .map((a) => ({ architect: a, assessment: sel.assessmentFor(a.id) }))

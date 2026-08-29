@@ -31,12 +31,13 @@ const LEAD_USER: SessionUser = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
-/** Cópia local — não mexe no `fixtureState` compartilhado por outros testes que assumem "ana" sem lead atribuído. */
-function stateWithAnaLedBy(leadUserId: string): AppState {
-  return {
-    ...fixtureState,
-    architects: fixtureState.architects.map((a) => (a.id === "ana" ? { ...a, leadUserId } : a)),
-  };
+/**
+ * Pós-Fase 2 o vínculo lead→pessoa é o TIME (a fixture já põe "ana" num
+ * time); o helper sobrevive só como nome do cenário "ana liderada pelo lead
+ * da sessão" — o recorte real é do servidor.
+ */
+function stateWithAnaLedBy(_leadUserId: string): AppState {
+  return fixtureState;
 }
 
 const fetchMock = vi.fn();

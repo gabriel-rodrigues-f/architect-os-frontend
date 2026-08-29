@@ -53,6 +53,53 @@ describe("appStateSchema — comportamento de strip de campo desconhecido", () =
 });
 
 /**
+ * Fase 2 do modelo de carreira (backend f1926f7, ADRs 0032-0035) — o
+ * contrato do `/state` mudou de forma: a competência global perdeu
+ * `requirementType`/`expected` (a régua do time é a dona), a curadoria
+ * perdeu a contagem por tipo (teto virou sinal), `careerLevelPolicies`
+ * morreu dando lugar a `teamLevelRules`, e o arquiteto trocou
+ * `leadUserId` por `teamId`. Estes testes provam que o parser aceita o
+ * payload REAL do backend novo — era exatamente aqui que o frontend
+ * quebrava (o zod rejeitava o parse inteiro e derrubava o app).
+ */
+describe("appStateSchema — contrato da Fase 2 (régua por time)", () => {
+  it("aceita competência global SEM requirementType/expected (payload real do f1926f7)", () => {
+    const parsed = appStateSchema.parse(fixtureState);
+    expect(parsed.competencies[0]).toEqual({
+      id: "cloud-k8s",
+      name: "Kubernetes",
+      capabilityId: "cloud",
+      active: true,
+    });
+  });
+
+  it("carrega teamLevelRules (piso por time×nível) no lugar de careerLevelPolicies", () => {
+    const parsed = appStateSchema.parse(fixtureState);
+    expect(parsed.teamLevelRules).toHaveLength(3);
+    expect(parsed.teamLevelRules[0]).toMatchObject({
+      teamId: "time-plataforma",
+      careerLevelId: "arquiteto-de-solucoes-i",
+      minimumQualifiedCapabilities: 3,
+    });
+    expect(parsed).not.toHaveProperty("careerLevelPolicies");
+  });
+
+  it("aceita curadoria sem contagem por tipo e arquiteto com teamId", () => {
+    const parsed = appStateSchema.parse(fixtureState);
+    expect(parsed.capabilities[0]?.curation).toEqual({
+      activeCompetencyCount: 2,
+      status: "READY",
+    });
+    expect(parsed.architects[0]?.teamId).toBe("time-plataforma");
+  });
+
+  it("a FOTO do item de avaliação segue carregando requirementType (fonte da UI)", () => {
+    const parsed = appStateSchema.parse(fixtureState);
+    expect(parsed.assessments[0]?.items[0]?.requirementType).toBe("NON_RESTRICTIVE");
+  });
+});
+
+/**
  * R2-TEC-20 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `role` era um
  * `z.enum([...3 nomes])` fechado: um arquiteto num 4º nível de carreira
  * (cenário já documentado como esperado, ADR-0002) fazia `appStateSchema.

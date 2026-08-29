@@ -15,7 +15,6 @@ export interface ArchitectFormValues {
   primarySpecializationCompetencyId: string | null;
   years: string;
   email: string;
-  leadUserId: string;
 }
 
 export const emptyArchitectForm = (defaultRole: ArchitectFormRole): ArchitectFormValues => ({
@@ -25,7 +24,6 @@ export const emptyArchitectForm = (defaultRole: ArchitectFormRole): ArchitectFor
   primarySpecializationCompetencyId: null,
   years: "",
   email: "",
-  leadUserId: "",
 });
 
 export type TeamRosterService = Pick<
@@ -61,7 +59,6 @@ export class TeamViewModel {
       yearsAsArchitect: Number(form.years),
       primarySpecializationCompetencyId: form.primarySpecializationCompetencyId,
       email: form.email.trim(),
-      leadUserId: form.leadUserId || null,
     };
 
     if (editingId) {

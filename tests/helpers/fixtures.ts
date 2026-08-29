@@ -30,10 +30,10 @@ export const fixtureMemberUser: SessionUser = {
 };
 
 /**
- * Sessão de lead sem nenhum arquiteto atribuído (`architect.leadUserId` não
- * aponta para ela em nenhum arquiteto da fixture) — usada para provar que
- * `isLeadOf` nega por padrão sem a atribuição real, em vez de liberar campo
- * pra qualquer conta `lead` da empresa (UX-001).
+ * Sessão de lead sem nenhum arquiteto no escopo (o recorte do servidor não
+ * lhe entrega ninguém) — usada para provar que `isLeadOf` nega por padrão
+ * sobre arquiteto sem time, em vez de liberar campo pra qualquer conta
+ * `lead` da empresa (UX-001, semântica pós-Fase 2: o vínculo é o TIME).
  */
 export const fixtureUnassignedLeadUser: SessionUser = {
   id: "test-lead-sem-atribuicao",
@@ -58,7 +58,18 @@ export const fixtureCareerLevels = [
   { id: "arquiteto-de-solucoes-iii", name: "Arquiteto de Soluções III", rank: 3 },
 ];
 
-/** Estado mínimo, porém coerente, para exercitar os selectors. */
+/** O time da fixture — pós-Fase 2 o vínculo de escopo e da régua é o TIME. */
+export const fixtureTeamId = "time-plataforma";
+
+/**
+ * Estado mínimo, porém coerente, para exercitar os selectors — na forma que o
+ * backend f1926f7 REALMENTE emite (Fase 2, ADRs 0032-0035): competência
+ * global sem `requirementType`/`expected` (a obrigatoriedade e o nível
+ * exigido moram na régua do time e chegam à UI pela FOTO do item de
+ * avaliação); `careerLevelPolicies` morreu e `/state` carrega
+ * `teamLevelRules` (piso por time×nível); curadoria sem contagem por tipo
+ * (o teto virou sinal, ADR-0034); arquiteto com `teamId`, sem `leadUserId`.
+ */
 export const fixtureState: AppState = {
   capabilities: [
     {
@@ -68,9 +79,7 @@ export const fixtureState: AppState = {
       active: true,
       curation: {
         activeCompetencyCount: 2,
-        restrictiveCompetencyCount: 0,
-        nonRestrictiveCompetencyCount: 2,
-        status: "REQUIRES_CURATION",
+        status: "READY",
       },
     },
     {
@@ -80,52 +89,47 @@ export const fixtureState: AppState = {
       active: true,
       curation: {
         activeCompetencyCount: 1,
-        restrictiveCompetencyCount: 0,
-        nonRestrictiveCompetencyCount: 1,
-        status: "REQUIRES_CURATION",
+        status: "READY",
       },
     },
   ],
-  careerLevelPolicies: [
-    { careerLevelId: "arquiteto-de-solucoes-i", minimumQualifiedCapabilities: 3 },
-    { careerLevelId: "arquiteto-de-solucoes-ii", minimumQualifiedCapabilities: 3 },
-    { careerLevelId: "arquiteto-de-solucoes-iii", minimumQualifiedCapabilities: 3 },
+  teamLevelRules: [
+    {
+      id: "regra-plataforma-i",
+      teamId: fixtureTeamId,
+      careerLevelId: "arquiteto-de-solucoes-i",
+      minimumQualifiedCapabilities: 3,
+    },
+    {
+      id: "regra-plataforma-ii",
+      teamId: fixtureTeamId,
+      careerLevelId: "arquiteto-de-solucoes-ii",
+      minimumQualifiedCapabilities: 3,
+    },
+    {
+      id: "regra-plataforma-iii",
+      teamId: fixtureTeamId,
+      careerLevelId: "arquiteto-de-solucoes-iii",
+      minimumQualifiedCapabilities: 3,
+    },
   ],
   competencies: [
     {
       id: "cloud-k8s",
       name: "Kubernetes",
       capabilityId: "cloud",
-      requirementType: "NON_RESTRICTIVE",
-      expected: {
-        "arquiteto-de-solucoes-i": 3,
-        "arquiteto-de-solucoes-ii": 4,
-        "arquiteto-de-solucoes-iii": 5,
-      },
       active: true,
     },
     {
       id: "cloud-serverless",
       name: "Serverless",
       capabilityId: "cloud",
-      requirementType: "NON_RESTRICTIVE",
-      expected: {
-        "arquiteto-de-solucoes-i": 3,
-        "arquiteto-de-solucoes-ii": 4,
-        "arquiteto-de-solucoes-iii": 5,
-      },
       active: true,
     },
     {
       id: "security-iam",
       name: "IAM",
       capabilityId: "security",
-      requirementType: "NON_RESTRICTIVE",
-      expected: {
-        "arquiteto-de-solucoes-i": 2,
-        "arquiteto-de-solucoes-ii": 3,
-        "arquiteto-de-solucoes-iii": 4,
-      },
       active: true,
     },
   ],
@@ -138,6 +142,7 @@ export const fixtureState: AppState = {
       specialization: "Integration",
       email: "ana@company.com",
       active: true,
+      teamId: fixtureTeamId,
       version: 1,
     },
     {
@@ -148,6 +153,7 @@ export const fixtureState: AppState = {
       specialization: "Cloud",
       email: "bruno@company.com",
       active: true,
+      teamId: fixtureTeamId,
       version: 1,
     },
   ],
@@ -162,9 +168,33 @@ export const fixtureState: AppState = {
       targetSemantics: null,
       version: 1,
       items: [
-        { competencyId: "cloud-k8s", self: 3, leader: 3, target: 4, final: 3, comments: [] },
-        { competencyId: "cloud-serverless", self: 3, leader: 3, target: 4, final: 3, comments: [] },
-        { competencyId: "security-iam", self: 2, leader: 2, target: 3, final: 2, comments: [] },
+        {
+          competencyId: "cloud-k8s",
+          self: 3,
+          leader: 3,
+          target: 4,
+          final: 3,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
+        {
+          competencyId: "cloud-serverless",
+          self: 3,
+          leader: 3,
+          target: 4,
+          final: 3,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
+        {
+          competencyId: "security-iam",
+          self: 2,
+          leader: 2,
+          target: 3,
+          final: 2,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
       ],
     },
     {
@@ -178,9 +208,33 @@ export const fixtureState: AppState = {
       targetSemantics: null,
       version: 1,
       items: [
-        { competencyId: "cloud-k8s", self: 4, leader: 4, target: 4, final: 4, comments: [] },
-        { competencyId: "cloud-serverless", self: 4, leader: 3, target: 4, final: 4, comments: [] },
-        { competencyId: "security-iam", self: 2, leader: 2, target: 3, final: 2, comments: [] },
+        {
+          competencyId: "cloud-k8s",
+          self: 4,
+          leader: 4,
+          target: 4,
+          final: 4,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
+        {
+          competencyId: "cloud-serverless",
+          self: 4,
+          leader: 3,
+          target: 4,
+          final: 4,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
+        {
+          competencyId: "security-iam",
+          self: 2,
+          leader: 2,
+          target: 3,
+          final: 2,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
       ],
     },
     {
@@ -193,9 +247,33 @@ export const fixtureState: AppState = {
       targetSemantics: null,
       version: 1,
       items: [
-        { competencyId: "cloud-k8s", self: 2, leader: 2, target: 3, final: 2, comments: [] },
-        { competencyId: "cloud-serverless", self: 3, leader: 3, target: 3, final: 3, comments: [] },
-        { competencyId: "security-iam", self: 1, leader: 1, target: 2, final: 1, comments: [] },
+        {
+          competencyId: "cloud-k8s",
+          self: 2,
+          leader: 2,
+          target: 3,
+          final: 2,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
+        {
+          competencyId: "cloud-serverless",
+          self: 3,
+          leader: 3,
+          target: 3,
+          final: 3,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
+        {
+          competencyId: "security-iam",
+          self: 1,
+          leader: 1,
+          target: 2,
+          final: 1,
+          comments: [],
+          requirementType: "NON_RESTRICTIVE",
+        },
       ],
     },
   ],
@@ -289,32 +367,45 @@ export const fixtureState: AppState = {
 
 /**
  * O payload que o servidor manda DE VERDADE desde o roster fechado
- * (backend `d1edba4`): `AuthorizationService.scopeAppState` recorta
- * `architects`, `assessments`, `plans`, `evidences`, `mentoringSessions` e
- * `learningPaths` pelo conjunto visível do papel — member vê só a si, lead vê
- * só quem lidera, admin vê tudo. Este helper espelha aquele filtro, campo a
- * campo, para que os testes exercitem o mundo recortado em vez do payload
- * antigo (roster inteiro), que o servidor não emite mais.
+ * (backend `d1edba4`) e o escopo por TIME da Fase 2 (backend `f1926f7`,
+ * ADR-0035): `AuthorizationService.scopeAppState` recorta `architects`,
+ * `assessments`, `plans`, `evidences`, `mentoringSessions`, `learningPaths`
+ * e `teamLevelRules` pelo conjunto visível do papel — member vê só a si,
+ * lead vê os times que lidera (papel E vínculo `tech_lead`/`manager`),
+ * admin vê tudo. Este helper espelha aquele filtro, campo a campo, para que
+ * os testes exercitem o mundo recortado em vez do payload antigo (roster
+ * inteiro), que o servidor não emite mais. `leadTeamIds` faz o papel de
+ * `team_memberships` do backend: os times que concedem escopo ao usuário.
  *
  * Nota fiel ao backend: `learningPaths` sobrevive inteiro quando UM dos
  * atribuídos é visível — `assignedTo` e `progress` seguem carregando ids fora
  * do escopo. É exatamente o caso que produz assignee sem `Architect`
  * correspondente no cliente.
  */
-export function scopedFixtureStateFor(user: SessionUser, state: AppState = fixtureState): AppState {
+export function scopedFixtureStateFor(
+  user: SessionUser,
+  state: AppState = fixtureState,
+  leadTeamIds: readonly string[] = [],
+): AppState {
   if (user.role === "admin") return state;
 
   const visibleIds = new Set<string>();
   if (user.architectId) visibleIds.add(user.architectId);
-  if (user.role === "lead") {
-    for (const architect of state.architects) {
-      if (architect.leadUserId === user.id) visibleIds.add(architect.id);
+  const scopeGrantingTeams = new Set(user.role === "lead" ? leadTeamIds : []);
+  for (const architect of state.architects) {
+    if (architect.teamId && scopeGrantingTeams.has(architect.teamId)) {
+      visibleIds.add(architect.id);
     }
+  }
+  const visibleTeamIds = new Set(scopeGrantingTeams);
+  for (const architect of state.architects) {
+    if (visibleIds.has(architect.id) && architect.teamId) visibleTeamIds.add(architect.teamId);
   }
 
   return {
     ...state,
     architects: state.architects.filter((architect) => visibleIds.has(architect.id)),
+    teamLevelRules: state.teamLevelRules.filter((rule) => visibleTeamIds.has(rule.teamId)),
     assessments: state.assessments.filter((assessment) => visibleIds.has(assessment.architectId)),
     plans: state.plans.filter((plan) => visibleIds.has(plan.architectId)),
     evidences: state.evidences.filter((evidence) => visibleIds.has(evidence.architectId)),

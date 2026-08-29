@@ -38,7 +38,6 @@ const baseForm: ArchitectFormValues = {
   primarySpecializationCompetencyId: null,
   years: "2",
   email: "carla@company.com",
-  leadUserId: "",
 };
 
 describe("TeamViewModel", () => {
@@ -89,7 +88,6 @@ describe("TeamViewModel", () => {
         yearsAsArchitect: 2,
         primarySpecializationCompetencyId: null,
         email: "carla@company.com",
-        leadUserId: null,
         specialization: "",
         role: "Arquiteto de Soluções I",
         active: true,
@@ -120,14 +118,14 @@ describe("TeamViewModel", () => {
       );
     });
 
-    it("leadUserId vazio vira null, nunca string vazia", async () => {
+    it("nunca envia leadUserId — o campo morreu no contrato da Fase 2 (o vínculo é o time; o backend responde 400 a campo extra)", async () => {
       const service = fakeService();
       const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
 
-      await vm.submit({ ...baseForm, leadUserId: "" }, null);
+      await vm.submit(baseForm, null);
 
       expect(service.addArchitect).toHaveBeenCalledWith(
-        expect.objectContaining({ leadUserId: null }),
+        expect.not.objectContaining({ leadUserId: expect.anything() }),
       );
     });
 
@@ -153,7 +151,6 @@ describe("TeamViewModel", () => {
         yearsAsArchitect: 2,
         primarySpecializationCompetencyId: null,
         email: "carla@company.com",
-        leadUserId: null,
       });
       const [, patch] = service.updateArchitect.mock.calls[0]!;
       expect(patch).not.toHaveProperty("role");
@@ -212,7 +209,6 @@ describe("emptyArchitectForm", () => {
       primarySpecializationCompetencyId: null,
       years: "",
       email: "",
-      leadUserId: "",
     });
   });
 });

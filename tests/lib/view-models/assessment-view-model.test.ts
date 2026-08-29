@@ -71,7 +71,7 @@ const anaArchitect: Architect = {
   specialization: "",
   email: "ana@company.com",
   active: true,
-  leadUserId: fixtureUnassignedLeadUser.id,
+  teamId: "time-plataforma",
   version: 1,
 };
 
@@ -107,11 +107,11 @@ describe("AssessmentViewModel", () => {
       expect(result.canEditSelf).toBe(false);
     });
 
-    it("lead de OUTRA equipe (sem leadUserId apontando para esta pessoa) não ganha canEditLeaderFinal — UX-001", () => {
+    it("lead sobre arquiteto SEM TIME não ganha canEditLeaderFinal — UX-001 pós-Fase 2 (vínculo é o time; lead de outro time nem recebe a pessoa no recorte do servidor)", () => {
       const { vm } = makeVm();
-      const someoneElsesLead = { ...fixtureUnassignedLeadUser, id: "outro-lead" };
+      const teamlessAna = { ...anaArchitect, teamId: null };
       const assessment = { ...baseAssessment, status: "In Review" as const };
-      const result = vm.permissionsFor(someoneElsesLead, "ana", anaArchitect, assessment);
+      const result = vm.permissionsFor(fixtureUnassignedLeadUser, "ana", teamlessAna, assessment);
       expect(result.isLead).toBe(false);
       expect(result.canEditLeaderFinal).toBe(false);
     });
@@ -243,8 +243,6 @@ describe("AssessmentViewModel", () => {
       active: true,
       curation: {
         activeCompetencyCount: 6,
-        restrictiveCompetencyCount: 3,
-        nonRestrictiveCompetencyCount: 3,
         status: "READY",
       },
     });
@@ -255,8 +253,6 @@ describe("AssessmentViewModel", () => {
       active: true,
       curation: {
         activeCompetencyCount: 2,
-        restrictiveCompetencyCount: 0,
-        nonRestrictiveCompetencyCount: 2,
         status: "REQUIRES_CURATION",
       },
     });

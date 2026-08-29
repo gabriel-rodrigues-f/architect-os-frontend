@@ -21,7 +21,12 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as DashboardRoute } from "@/routes/index";
 import { type AppState, type SessionUser } from "@/lib/api";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureState,
+  scopedFixtureStateFor,
+} from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -90,7 +95,7 @@ describe("Painel — Home por papel", () => {
   });
 
   it("lead sem pessoa atribuída vê o estado vazio, não a visão de time", async () => {
-    renderAs(fixtureLeadOfAna);
+    renderAs(fixtureLeadOfAna, scopedFixtureStateFor(fixtureLeadOfAna));
     await screen.findByText("Pendências do Lead");
     expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
     expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
@@ -100,10 +105,10 @@ describe("Painel — Home por papel", () => {
     const state: AppState = {
       ...fixtureState,
       architects: fixtureState.architects.map((a) =>
-        a.id === "ana" ? { ...a, leadUserId: fixtureLeadOfAna.id } : a,
+        a.id === "ana" ? { ...a, teamId: "time-de-ana" } : a,
       ),
     };
-    renderAs(fixtureLeadOfAna, state);
+    renderAs(fixtureLeadOfAna, scopedFixtureStateFor(fixtureLeadOfAna, state, ["time-de-ana"]));
     await screen.findByText("Pendências do Lead");
     // "e1" na fixture: evidência Pending de "ana", título "ADR-014".
     expect(await screen.findByText(/ADR-014/)).toBeTruthy();

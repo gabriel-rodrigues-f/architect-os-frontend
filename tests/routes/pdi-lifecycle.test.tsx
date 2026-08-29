@@ -260,9 +260,6 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   describe("reabertura de PDI concluído (ENT-PDI-001)", () => {
     const completedState: AppState = {
       ...fixtureState,
-      architects: fixtureState.architects.map((a) =>
-        a.id === "ana" ? { ...a, leadUserId: "test-lead-ana" } : a,
-      ),
       plans: fixtureState.plans.map((p) =>
         p.architectId === "ana" ? { ...p, status: "Completed" as const } : p,
       ),

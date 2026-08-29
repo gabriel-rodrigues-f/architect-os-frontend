@@ -2,14 +2,13 @@ import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-quer
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 
-import { api, type AppState, type CommentInput } from "./api";
+import { api, ApiError, type AppState, type CommentInput } from "./api";
 import { apiPath } from "./api-path";
 import type { TextTemplateRecord } from "./gateways/config.gateway";
 import type {
   Architect,
   Assessment,
   CareerLevel,
-  CareerLevelPolicy,
   Competency,
   Capability,
   DevelopmentCycle,
@@ -23,6 +22,7 @@ import type {
   Level,
   MentoringSession,
   ProficiencyUpdate,
+  TeamLevelRule,
 } from "./domain";
 import { withDefaultCurationPolicy, type CurationPolicy } from "./curation-policy";
 import { appStateQuery, STATE_QUERY_KEY } from "./session-query";
@@ -170,10 +170,11 @@ export interface Api extends AppState {
 
   deactivate: (id: string, reason: string) => Promise<Architect>;
 
-  updateCareerLevelPolicy: (
+  defineTeamRuleMinimum: (
+    teamId: string,
     careerLevelId: string,
     minimumQualifiedCapabilities: number,
-  ) => Promise<CareerLevelPolicy>;
+  ) => Promise<TeamLevelRule>;
 
   updateScoringBands: (scale: ScoringScale, bands: ScoringBand[]) => Promise<ScoringBand[]>;
 
@@ -208,8 +209,6 @@ export interface Api extends AppState {
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
 
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
-
-  swapCompetencyRequirement: (id: string, withCompetencyId: string) => Promise<void>;
 
   addCapability: (
     c: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
@@ -408,15 +407,34 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       return summary;
     },
 
-    updateCareerLevelPolicy: (careerLevelId, minimumQualifiedCapabilities) =>
+    defineTeamRuleMinimum: (teamId, careerLevelId, minimumQualifiedCapabilities) =>
       runner.command(
-        () => api.updateCareerLevelPolicy(careerLevelId, minimumQualifiedCapabilities),
-        (updated) => (s) => ({
-          ...s,
-          careerLevelPolicies: s.careerLevelPolicies.map((p) =>
-            p.careerLevelId === careerLevelId ? updated : p,
-          ),
-        }),
+        async () => {
+          const current = await api.teamRule(teamId, careerLevelId).catch((error: unknown) => {
+            if (error instanceof ApiError && error.status === 404) return undefined;
+            throw error;
+          });
+          return api.defineTeamRule(teamId, careerLevelId, {
+            minimumQualifiedCapabilities,
+            capabilityIds: current?.capabilityIds ?? [],
+            competencies: current?.competencies ?? [],
+          });
+        },
+        (updated) => (s) => {
+          const summary: TeamLevelRule = {
+            id: updated.id,
+            teamId: updated.teamId,
+            careerLevelId: updated.careerLevelId,
+            minimumQualifiedCapabilities: updated.minimumQualifiedCapabilities,
+          };
+          const exists = s.teamLevelRules.some((rule) => rule.id === summary.id);
+          return {
+            ...s,
+            teamLevelRules: exists
+              ? s.teamLevelRules.map((rule) => (rule.id === summary.id ? summary : rule))
+              : [...s.teamLevelRules, summary],
+          };
+        },
       ),
 
     transitionCareerLevel: async (id, toRole, reason) => {
@@ -459,11 +477,7 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
       runner.optimistic(
         (s) => ({
           ...s,
-          competencies: s.competencies.map((c) =>
-            c.id === id
-              ? { ...c, ...patch, expected: { ...c.expected, ...(patch.expected ?? {}) } }
-              : c,
-          ),
+          competencies: s.competencies.map((c) => (c.id === id ? { ...c, ...patch } : c)),
         }),
         () => api.updateCompetency(id, patch),
       );
@@ -480,21 +494,6 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
               : s.competencies.filter((c) => c.id !== id),
           }),
       ),
-
-    swapCompetencyRequirement: async (id, withCompetencyId) => {
-      await runner.guarded(
-        () => api.swapCompetencyRequirement(id, withCompetencyId),
-        ({ a, b }) =>
-          (s) => ({
-            ...s,
-            competencies: s.competencies.map((c) => {
-              if (c.id === a.id) return a;
-              if (c.id === b.id) return b;
-              return c;
-            }),
-          }),
-      );
-    },
 
     addCapability: (c) =>
       runner.command(

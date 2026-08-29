@@ -96,7 +96,7 @@
   },
   "src/components/app/team-shared.tsx": {
     "id-length": {
-      "count": 41
+      "count": 36
     }
   },
   "src/components/app/ui-bits.tsx": {
@@ -196,7 +196,7 @@
   },
   "src/lib/store.tsx": {
     "id-length": {
-      "count": 117
+      "count": 114
     }
   },
   "src/lib/team-report-csv.ts": {
@@ -222,11 +222,6 @@
   "src/lib/view-models/catalog-import-editor.ts": {
     "id-length": {
       "count": 6
-    }
-  },
-  "src/lib/view-models/competency-matrix-view-model.ts": {
-    "id-length": {
-      "count": 1
     }
   },
   "src/lib/view-models/development-plans-view-model.ts": {
@@ -281,7 +276,7 @@
   },
   "src/routes/competency-matrix.tsx": {
     "id-length": {
-      "count": 30
+      "count": 21
     }
   },
   "src/routes/cycles.tsx": {
@@ -316,12 +311,12 @@
   },
   "src/routes/settings.tsx": {
     "id-length": {
-      "count": 27
+      "count": 22
     }
   },
   "src/routes/team.tsx": {
     "id-length": {
-      "count": 10
+      "count": 9
     }
   },
   "src/routes/training-needs.tsx": {
@@ -516,7 +511,7 @@
   },
   "tests/lib/view-models/competency-matrix-view-model.test.ts": {
     "id-length": {
-      "count": 2
+      "count": 1
     }
   },
   "tests/lib/view-models/development-plans-view-model.test.ts": {
@@ -594,11 +589,6 @@
       "count": 1
     }
   },
-  "tests/routes/competency-swap-requirement.test.tsx": {
-    "id-length": {
-      "count": 5
-    }
-  },
   "tests/routes/dashboard-roles.test.tsx": {
     "id-length": {
       "count": 1
@@ -614,14 +604,9 @@
       "count": 1
     }
   },
-  "tests/routes/mentoring-proficiency.test.tsx": {
-    "id-length": {
-      "count": 1
-    }
-  },
   "tests/routes/pdi-lifecycle.test.tsx": {
     "id-length": {
-      "count": 5
+      "count": 4
     }
   },
   "tests/routes/progression.test.tsx": {

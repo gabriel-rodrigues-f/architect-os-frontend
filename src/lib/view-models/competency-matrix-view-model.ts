@@ -1,6 +1,6 @@
 import type { SessionUser } from "../api";
 import { DEFAULT_CURATION_POLICY, type CurationPolicy } from "../curation-policy";
-import type { CareerLevel, Capability, Competency, Level, RequirementType } from "../domain";
+import type { Capability, Competency } from "../domain";
 import type { UiAuthorizationPolicy } from "../scope";
 import type { Api } from "../store";
 
@@ -12,9 +12,14 @@ export type CatalogService = Pick<
   | "addCompetency"
   | "updateCompetency"
   | "removeCompetency"
-  | "swapCompetencyRequirement"
 >;
 
+/**
+ * Fase 2 (backend ADRs 0032-0034) — o catálogo global é definição pura:
+ * criar/editar competência é só nome + capacidade + atividade. Nível exigido,
+ * obrigatoriedade e o swap de requisito moram na régua do time
+ * (`/teams/:teamId/rules/:careerLevelId`), fora desta tela.
+ */
 export class CompetencyMatrixViewModel {
   constructor(
     private readonly service: CatalogService,
@@ -50,40 +55,20 @@ export class CompetencyMatrixViewModel {
     return capability.curation.activeCompetencyCount >= this.curationPolicy.maxActiveCompetencies;
   }
 
-  createCompetency(
-    capabilityId: string,
-    name: string,
-    levels: Partial<Record<string, Level>>,
-    requirementType: RequirementType,
-  ): Promise<Competency> {
+  createCompetency(capabilityId: string, name: string): Promise<Competency> {
     return this.service.addCompetency({
       name: name.trim(),
       capabilityId,
-      requirementType,
-      expected: levels as Record<string, Level>,
       active: true,
     });
   }
 
-  canCreateCompetency(
-    name: string,
-    levels: Partial<Record<string, Level>>,
-    careerLevels: readonly Pick<CareerLevel, "id">[],
-  ): boolean {
-    return name.trim().length > 0 && careerLevels.every((cl) => levels[cl.id] !== undefined);
+  canCreateCompetency(name: string): boolean {
+    return name.trim().length > 0;
   }
 
-  updateCompetency(
-    id: string,
-    name: string,
-    levels: Partial<Record<string, Level>>,
-    requirementType: RequirementType,
-  ): void {
-    this.service.updateCompetency(id, {
-      name: name.trim(),
-      expected: levels as Record<string, Level>,
-      requirementType,
-    });
+  updateCompetency(id: string, name: string): void {
+    this.service.updateCompetency(id, { name: name.trim() });
   }
 
   removeCompetency(id: string): Promise<{ archived: boolean }> {
@@ -92,41 +77,5 @@ export class CompetencyMatrixViewModel {
 
   restoreCompetency(id: string): void {
     this.service.updateCompetency(id, { active: true });
-  }
-
-  swapRequirementType(id: string, withCompetencyId: string): Promise<void> {
-    return this.service.swapCompetencyRequirement(id, withCompetencyId);
-  }
-
-  isRequirementTypeFull(
-    capability: Pick<Capability, "curation"> | undefined,
-    type: RequirementType,
-    excluding?: Pick<Competency, "requirementType"> | null,
-  ): boolean {
-    const count =
-      type === "RESTRICTIVE"
-        ? (capability?.curation.restrictiveCompetencyCount ?? 0)
-        : (capability?.curation.nonRestrictiveCompetencyCount ?? 0);
-    const limit =
-      type === "RESTRICTIVE"
-        ? this.curationPolicy.requiredRestrictive
-        : this.curationPolicy.requiredNonRestrictive;
-    const adjustment = excluding?.requirementType === type ? 1 : 0;
-    return count - adjustment >= limit;
-  }
-
-  swapCandidates(
-    competencies: readonly Competency[],
-    capabilityId: string,
-    type: RequirementType,
-    excludingCompetencyId: string,
-  ): Competency[] {
-    return competencies.filter(
-      (c) =>
-        c.capabilityId === capabilityId &&
-        c.active &&
-        c.requirementType === type &&
-        c.id !== excludingCompetencyId,
-    );
   }
 }

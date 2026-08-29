@@ -10,15 +10,16 @@ import { fixtureState } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
- * ORIENTACAO-NONA-RODADA, Seção 8, problemas 7/13 — a Matriz não mostrava as
- * contagens 6/3/3 nem o status READY/REQUIRES_CURATION por capacidade, e
- * deixava escolher uma 4ª competência restritiva/não restritiva mesmo já no
- * limite (o backend rejeitaria, mas a tela não avisava antes).
+ * ORIENTACAO-NONA-RODADA, Seção 8, problemas 7/13, recortada pela Fase 2
+ * (backend ADRs 0032/0034): a contagem por tipo morreu com
+ * `competencies.requirement_type` (obrigatoriedade é da régua do time) e o
+ * teto virou SINAL — a Matriz mostra a contagem de ativas e o status
+ * READY/REQUIRES_CURATION, e desabilita "Nova competência" no teto.
  */
 
 const fetchMock = vi.fn();
 
-/** Capacidade "no limite total" (6 ativas: 3 restritivas + 3 não restritivas) — READY, sem espaço para nova competência. */
+/** Capacidade "no limite" (6 ativas) — READY, sem espaço para nova competência. */
 const fullCapability: Capability = {
   id: "full",
   name: "Full Capability",
@@ -26,42 +27,40 @@ const fullCapability: Capability = {
   active: true,
   curation: {
     activeCompetencyCount: 6,
-    restrictiveCompetencyCount: 3,
-    nonRestrictiveCompetencyCount: 3,
     status: "READY",
+  },
+};
+
+/** Capacidade que EXTRAPOLOU o alvo (7 ativas) — o sinal REQUIRES_CURATION da Fase 2. */
+const overCapability: Capability = {
+  id: "over",
+  name: "Over Capability",
+  short: "Over",
+  active: true,
+  curation: {
+    activeCompetencyCount: 7,
+    status: "REQUIRES_CURATION",
   },
 };
 
 const fullCompetencies: Competency[] = [1, 2, 3].flatMap((n) => [
   {
     id: `full-r${n}`,
-    name: `Restritiva ${n}`,
+    name: `Competência ${n}A`,
     capabilityId: "full",
-    requirementType: "RESTRICTIVE" as const,
-    expected: {
-      "arquiteto-de-solucoes-i": 3,
-      "arquiteto-de-solucoes-ii": 4,
-      "arquiteto-de-solucoes-iii": 5,
-    },
     active: true,
   },
   {
     id: `full-n${n}`,
-    name: `Não Restritiva ${n}`,
+    name: `Competência ${n}B`,
     capabilityId: "full",
-    requirementType: "NON_RESTRICTIVE" as const,
-    expected: {
-      "arquiteto-de-solucoes-i": 3,
-      "arquiteto-de-solucoes-ii": 4,
-      "arquiteto-de-solucoes-iii": 5,
-    },
     active: true,
   },
 ]);
 
 const state: AppState = {
   ...fixtureState,
-  capabilities: [...fixtureState.capabilities, fullCapability],
+  capabilities: [...fixtureState.capabilities, fullCapability, overCapability],
   competencies: [...fixtureState.competencies, ...fullCompetencies],
 };
 
@@ -83,22 +82,16 @@ describe("Matriz de Competências — curadoria e escala", () => {
     vi.unstubAllGlobals();
   });
 
-  it("mostra contagens 6/3/3 e status de curadoria por capacidade", async () => {
+  it("mostra a contagem de ativas e o status de curadoria por capacidade — sem contagem por tipo (morreu com a Fase 2)", async () => {
     renderMatrix();
-    // Contagens e status de curadoria moram no cabeçalho do card — visíveis mesmo com a seção recolhida (Seção 40-42).
+    // Contagem e status de curadoria moram no cabeçalho do card — visíveis mesmo com a seção recolhida (Seção 40-42).
     await screen.findByText("Cloud Architecture");
 
-    // Security: REQUIRES_CURATION, 1 competência não restritiva só.
-    expect(
-      screen.getByText("1/6 competências · 0/3 restritivas · 1/3 não restritivas"),
-    ).toBeTruthy();
+    expect(screen.getByText("6/6 competências")).toBeTruthy();
+    expect(screen.getByText("7/6 competências")).toBeTruthy();
+    expect(screen.getAllByText("Pronta").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Requer curadoria").length).toBeGreaterThan(0);
-
-    // Full Capability: READY, 6/3/3.
-    expect(
-      screen.getByText("6/6 competências · 3/3 restritivas · 3/3 não restritivas"),
-    ).toBeTruthy();
-    expect(screen.getByText("Pronta")).toBeTruthy();
+    expect(screen.queryByText(/restritivas/)).toBeNull();
   });
 
   it("desabilita 'Nova competência' quando a capacidade já tem 6 competências ativas", async () => {
@@ -113,23 +106,21 @@ describe("Matriz de Competências — curadoria e escala", () => {
     expect(disabledButton).toHaveProperty("disabled", true);
   });
 
-  it("desabilita a opção restritiva no diálogo de nova competência quando a capacidade já tem 3 restritivas", async () => {
+  it("o diálogo de nova competência pede SÓ o nome — obrigatoriedade e níveis exigidos moram na régua do time", async () => {
     renderMatrix();
     await screen.findByText("Cloud Architecture");
 
     const cloudCard = screen.getByText("Cloud Architecture").closest(".surface-card");
     expect(cloudCard).toBeTruthy();
-    // "cloud" só tem NON_RESTRICTIVE — abre o diálogo por essa capacidade para checar que RESTRICTIVE está livre.
     await userEvent.click(
       screen
         .getAllByRole("button", { name: "Nova competência" })
         .find((btn) => cloudCard?.contains(btn))!,
     );
     await screen.findByText("Nova competência em Cloud Architecture");
-    const restrictiveOption = screen.getByRole("option", {
-      name: "Restritiva",
-    }) as HTMLOptionElement;
-    expect(restrictiveOption.disabled).toBe(false);
+    expect(screen.getByLabelText("Nome")).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Restritiva" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "Não restritiva" })).toBeNull();
   });
 
   it("filtro de busca esconde capacidades que não combinam com o termo e expande as que casam", async () => {
@@ -163,8 +154,8 @@ describe("Matriz de Competências — curadoria e escala", () => {
 
     expect(trigger.textContent).toContain("Prontas");
     expect(screen.getByText("Full Capability")).toBeTruthy();
-    expect(screen.queryByText("Cloud Architecture")).toBeNull();
-    expect(screen.queryByText("Security")).toBeNull();
+    expect(screen.getByText("Cloud Architecture")).toBeTruthy();
+    expect(screen.queryByText("Over Capability")).toBeNull();
   });
 
   it("expandir uma seção mostra a tabela; recolher de novo esconde, mas mantém o título visível", async () => {

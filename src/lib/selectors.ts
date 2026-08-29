@@ -7,14 +7,13 @@ import type {
   Capability,
   Evidence,
   Level,
-  RoleName,
 } from "./domain";
 import { capabilityShortLabels } from "./domain";
 
 export const emptyState: AppState = {
   capabilities: [],
   competencies: [],
-  careerLevelPolicies: [],
+  teamLevelRules: [],
   architects: [],
   assessments: [],
   cycles: [],
@@ -126,9 +125,6 @@ export class AssessmentSelectors {
       id: item.competencyId,
       name: item.competencyName,
       capabilityId: item.capabilityId ?? "",
-
-      requirementType: "NON_RESTRICTIVE",
-      expected: {} as Record<RoleName, Level>,
       active: false,
     };
   };
@@ -224,7 +220,7 @@ export class GapConsolidationSelectors {
             competencyId: gap.competency.id,
             name: gap.competency.name,
             capabilityId: gap.competency.capabilityId,
-            requirementType: gap.competency.requirementType,
+            requirementType: gap.item.requirementType ?? "NON_RESTRICTIVE",
             people: 0,
             architectNames: [],
             totalGap: 0,

@@ -19,17 +19,12 @@ const validPayload = {
     {
       name: "cloud architecture", // caixa diferente — mesma identidade (upsert por nome)
       short: "Cloud",
-      competencies: [
-        { name: "Kubernetes", requirementType: "NON_RESTRICTIVE", expected: { n1: 3 } },
-        { name: "Service Mesh", requirementType: "RESTRICTIVE", expected: { n1: 4 } },
-      ],
+      competencies: [{ name: "Kubernetes" }, { name: "Service Mesh" }],
     },
     {
       name: "Data Engineering",
       short: "Data",
-      competencies: [
-        { name: "Pipelines", requirementType: "NON_RESTRICTIVE", expected: { n1: 2 } },
-      ],
+      competencies: [{ name: "Pipelines" }],
     },
   ],
 };
@@ -49,17 +44,11 @@ describe("CatalogImportEditor (CFG-07)", () => {
     expect(editor().withText('{"capabilities":[{"name":""}]}').errorKey).toBe(
       "matrix.import.error.invalidShape",
     );
-    // `expected` com nível fora de 1..5 também é shape
+    // competência sem nome também é shape (Fase 2: o import é só nome — requirementType/expected morreram no catálogo)
     expect(
       editor().withText(
         JSON.stringify({
-          capabilities: [
-            {
-              name: "X",
-              short: "X",
-              competencies: [{ name: "Y", requirementType: "RESTRICTIVE", expected: { n1: 9 } }],
-            },
-          ],
+          capabilities: [{ name: "X", short: "X", competencies: [{ name: "" }] }],
         }),
       ).errorKey,
     ).toBe("matrix.import.error.invalidShape");

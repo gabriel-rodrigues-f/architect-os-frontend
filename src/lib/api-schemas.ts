@@ -10,8 +10,6 @@ const requirementType = z.enum(["RESTRICTIVE", "NON_RESTRICTIVE"]);
 
 const capabilityCuration = z.object({
   activeCompetencyCount: z.number(),
-  restrictiveCompetencyCount: z.number(),
-  nonRestrictiveCompetencyCount: z.number(),
   status: z.enum(["READY", "REQUIRES_CURATION"]),
 });
 
@@ -23,20 +21,46 @@ const capability = z.object({
   curation: capabilityCuration,
 });
 
-const expectedLevelMap = z.record(z.string(), level);
-
 const competency = z.object({
   id: z.string(),
   name: z.string(),
   capabilityId: z.string(),
-  requirementType,
-  expected: expectedLevelMap,
   active: z.boolean(),
 });
 
-const careerLevelPolicy = z.object({
+const teamLevelRule = z.object({
+  id: z.string(),
+  teamId: z.string(),
   careerLevelId: z.string(),
   minimumQualifiedCapabilities: z.number(),
+});
+
+export const teamRuleResponseSchema = teamLevelRule.extend({
+  capabilityIds: z.array(z.string()),
+  competencies: z.array(
+    z.object({
+      competencyId: z.string(),
+      requirementType,
+      requiredLevel: level,
+    }),
+  ),
+});
+
+export const architectAdherenceResponseSchema = z.object({
+  architectId: z.string(),
+  teamId: z.string().nullable(),
+  careerLevelId: z.string(),
+  adherence: z.object({
+    percentage: z.number(),
+    missingRequired: z.array(
+      z.object({
+        competencyId: z.string(),
+        currentLevel: z.number(),
+        requiredLevel: z.number(),
+      }),
+    ),
+  }),
+  semRegua: z.literal(true).optional(),
 });
 
 const careerLevel = z.object({
@@ -132,7 +156,7 @@ const architect = z.object({
   primarySpecializationCompetencyId: z.string().nullish(),
   email: z.string(),
   active: z.boolean(),
-  leadUserId: z.string().nullish(),
+  teamId: z.string().nullish(),
   version: z.number(),
 });
 
@@ -299,7 +323,7 @@ const evidence = z.object({
 export const appStateSchema = z.object({
   capabilities: z.array(capability),
   competencies: z.array(competency),
-  careerLevelPolicies: z.array(careerLevelPolicy),
+  teamLevelRules: z.array(teamLevelRule),
   architects: z.array(architect),
   assessments: z.array(assessment),
   cycles: z.array(developmentCycle),

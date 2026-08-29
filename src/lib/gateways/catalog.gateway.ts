@@ -15,10 +15,6 @@ export interface CatalogGateway {
   createCompetency(competency: Omit<Competency, "id">): Promise<Competency>;
   updateCompetency(id: string, patch_: Partial<Omit<Competency, "id">>): Promise<Competency>;
   deleteCompetency(id: string): Promise<{ archived: boolean } | undefined>;
-  swapCompetencyRequirement(
-    id: string,
-    withCompetencyId: string,
-  ): Promise<{ a: Competency; b: Competency }>;
 
   importCatalog(payload: CatalogImportPayload): Promise<CatalogImportSummary>;
 }
@@ -46,14 +42,6 @@ export class HttpCatalogGateway implements CatalogGateway {
 
   deleteCompetency = (id: string): Promise<{ archived: boolean } | undefined> =>
     this.client.del<{ archived: boolean } | undefined>(`/competencies/${id}`);
-
-  swapCompetencyRequirement = (
-    id: string,
-    withCompetencyId: string,
-  ): Promise<{ a: Competency; b: Competency }> =>
-    this.client.post<{ a: Competency; b: Competency }>(`/competencies/${id}/swap-requirement`, {
-      withCompetencyId,
-    });
 
   importCatalog = (payload: CatalogImportPayload): Promise<CatalogImportSummary> =>
     this.client

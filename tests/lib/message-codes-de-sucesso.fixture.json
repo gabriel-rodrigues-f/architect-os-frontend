@@ -3,7 +3,7 @@
     "analytics.cacheFlush.success": {
       "rota": "POST /cache/flush",
       "arquivo": "src/modules/analytics/infrastructure/controllers/analytics.controller.ts",
-      "linha": 19,
+      "linha": 47,
       "resposta": "ok"
     },
     "assessment.capability.confirm.success": {
@@ -86,58 +86,46 @@
       "resposta": "ok",
       "consumidorAusente": true
     },
-    "career.policy.update.success": {
-      "rota": "PATCH /career-levels/:id/policy",
-      "arquivo": "src/modules/career/infrastructure/controllers/career.controller.ts",
-      "linha": 34,
-      "resposta": "ok"
-    },
     "catalog.capability.create.success": {
       "rota": "POST /capabilities",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 55,
+      "linha": 52,
       "resposta": "created"
     },
     "catalog.capability.delete.success": {
       "rota": "DELETE /capabilities/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 82,
+      "linha": 79,
       "resposta": "ok"
     },
     "catalog.capability.update.success": {
       "rota": "PATCH /capabilities/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 71,
+      "linha": 68,
       "resposta": "ok"
     },
     "catalog.competency.create.success": {
       "rota": "POST /competencies",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 100,
+      "linha": 97,
       "resposta": "created"
     },
     "catalog.competency.delete.success": {
       "rota": "DELETE /competencies/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 151,
-      "resposta": "ok"
-    },
-    "catalog.competency.swapRequirement.success": {
-      "rota": "POST /competencies/:id/swap-requirement",
-      "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 130,
+      "linha": 140,
       "resposta": "ok"
     },
     "catalog.competency.update.success": {
       "rota": "PATCH /competencies/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 116,
+      "linha": 113,
       "resposta": "ok"
     },
     "catalog.import.success": {
       "rota": "POST /catalog/import",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 142,
+      "linha": 131,
       "resposta": "ok"
     },
     "config.bands.update.success": {
@@ -257,25 +245,25 @@
     "people.careerLevelTransition.success": {
       "rota": "POST /architects/:id/career-level-transition",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 84,
+      "linha": 92,
       "resposta": "ok"
     },
     "people.create.success": {
       "rota": "POST /architects",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 52,
+      "linha": 60,
       "resposta": "created"
     },
     "people.deactivate.success": {
       "rota": "POST /architects/:id/deactivate",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 114,
+      "linha": 122,
       "resposta": "ok"
     },
     "people.update.success": {
       "rota": "PATCH /architects/:id",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 65,
+      "linha": 73,
       "resposta": "ok"
     },
     "plan.item.add.success": {
@@ -318,6 +306,18 @@
       "rota": "PATCH /plans/:planId/status",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
       "linha": 249,
+      "resposta": "ok"
+    },
+    "career.teamRule.define.success": {
+      "rota": "PUT /teams/:teamId/rules/:careerLevelId",
+      "arquivo": "src/modules/career/infrastructure/controllers/career.controller.ts",
+      "linha": 100,
+      "resposta": "ok"
+    },
+    "career.teamRule.swapRequirement.success": {
+      "rota": "POST /teams/:teamId/rules/:careerLevelId/swap-requirement",
+      "arquivo": "src/modules/career/infrastructure/controllers/career.controller.ts",
+      "linha": 124,
       "resposta": "ok"
     }
   }

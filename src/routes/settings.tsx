@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { gapTone, LevelBadge, PageHeader, SectionCard, SectionGroup } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
-import { LEVELS, type CareerLevel, type Level } from "@/lib/domain";
+import { LEVELS, type CareerLevel, type TeamLevelRule } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -146,27 +146,16 @@ function SettingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {store.capabilities.map((cat) => {
-                    const comps = store.competencies.filter((c) => c.capabilityId === cat.id);
-                    return (
-                      <tr key={cat.id} className="border-b border-border/60 last:border-0">
-                        <td className="py-2 font-medium">{cat.name}</td>
-                        {careerLevels.map((cl) => {
-                          const values = comps
-                            .map((c) => c.expected[cl.id])
-                            .filter((v): v is Level => v !== undefined);
-                          const avg = values.length
-                            ? values.reduce((s, v) => s + v, 0) / values.length
-                            : undefined;
-                          return (
-                            <td key={cl.id} className="py-2 text-center tabular-nums">
-                              {avg === undefined ? "—" : avg.toFixed(1)}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
+                  {store.capabilities.map((cat) => (
+                    <tr key={cat.id} className="border-b border-border/60 last:border-0">
+                      <td className="py-2 font-medium">{cat.name}</td>
+                      {careerLevels.map((cl) => (
+                        <td key={cl.id} className="py-2 text-center tabular-nums">
+                          —
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -213,12 +202,13 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
           </thead>
           <tbody>
             {careerLevels.map((level) => {
-              const policy = store.careerLevelPolicies.find((p) => p.careerLevelId === level.id);
+              const rules = store.teamLevelRules.filter((r) => r.careerLevelId === level.id);
+              const rule = rules.length === 1 ? rules[0] : undefined;
               return (
                 <CareerPolicyRow
                   key={level.id}
                   level={level}
-                  minimum={policy?.minimumQualifiedCapabilities}
+                  rule={rule}
                   floor={floor}
                   readyCapabilities={readyCapabilities}
                   isAdmin={isAdmin}
@@ -234,18 +224,19 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
 
 function CareerPolicyRow({
   level,
-  minimum,
+  rule,
   floor,
   readyCapabilities,
   isAdmin,
 }: {
   level: CareerLevel;
-  minimum: number | undefined;
+  rule: TeamLevelRule | undefined;
 
   floor: number;
   readyCapabilities: number;
   isAdmin: boolean;
 }) {
+  const minimum = rule?.minimumQualifiedCapabilities;
   const store = useStore();
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
@@ -264,10 +255,10 @@ function CareerPolicyRow({
   const impossible = minimum !== undefined && minimum > readyCapabilities;
 
   const save = async () => {
-    if (!canSave) return;
-    const result = await run(() => store.updateCareerLevelPolicy(level.id, draftValue));
+    if (!canSave || !rule) return;
+    const result = await run(() => store.defineTeamRuleMinimum(rule.teamId, level.id, draftValue));
     if (result.ok) {
-      notifySuccess("msg.career.policy.update.success", { nome: level.name }, result.value);
+      notifySuccess("msg.career.teamRule.define.success", { nome: level.name }, result.value);
       setEditing(false);
     }
   };
@@ -326,9 +317,11 @@ function CareerPolicyRow({
               </Button>
             </div>
           ) : (
-            <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-              {t("common.edit")}
-            </Button>
+            rule && (
+              <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+                {t("common.edit")}
+              </Button>
+            )
           )}
         </td>
       )}

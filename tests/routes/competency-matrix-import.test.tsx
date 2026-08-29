@@ -28,29 +28,12 @@ const payload = JSON.stringify({
     {
       name: "Cloud Architecture", // já existe na fixture → update
       short: "Cloud",
-      competencies: [
-        {
-          name: "Kubernetes",
-          requirementType: "NON_RESTRICTIVE",
-          expected: { "arquiteto-de-solucoes-i": 3 },
-        },
-        {
-          name: "FinOps",
-          requirementType: "NON_RESTRICTIVE",
-          expected: { "arquiteto-de-solucoes-i": 2 },
-        },
-      ],
+      competencies: [{ name: "Kubernetes" }, { name: "FinOps" }],
     },
     {
       name: "Data Engineering", // nova
       short: "Data",
-      competencies: [
-        {
-          name: "Pipelines",
-          requirementType: "RESTRICTIVE",
-          expected: { "arquiteto-de-solucoes-i": 2 },
-        },
-      ],
+      competencies: [{ name: "Pipelines" }],
     },
   ],
 });
@@ -162,7 +145,7 @@ describe("Importar catálogo (CFG-07)", () => {
         careerLevelsRoute,
         (href, init) =>
           href.endsWith(apiPath("/catalog/import")) && init?.method === "POST"
-            ? jsonResponse({ message: "Nível de carreira desconhecido em expected: n9" }, 400)
+            ? jsonResponse({ message: "Capacidade sem sigla utilizável" }, 400)
             : undefined,
       ],
     });
@@ -175,7 +158,7 @@ describe("Importar catálogo (CFG-07)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Importar" }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("Nível de carreira desconhecido");
+    expect(alert.textContent).toContain("Capacidade sem sigla utilizável");
     expect(screen.getByRole("button", { name: "Importar" })).toBeTruthy();
   });
 });
