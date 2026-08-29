@@ -110,12 +110,15 @@ const fixtureNotices = (now: number): Notice[] => [
 
 export class InMemoryNoticesGateway implements NoticesGateway {
   private readonly store: Notice[];
+  private readonly architectTeams: Record<string, string>;
 
   constructor(
     private readonly viewer: () => Promise<NoticesViewer>,
     seed: Notice[] = fixtureNotices(Date.now()),
+    architectTeams?: Record<string, string>,
   ) {
     this.store = seed.map((notice) => ({ ...notice }));
+    this.architectTeams = architectTeams ?? InMemoryNoticesGateway.fixtureArchitectTeams();
   }
 
   notices = async (filter: NoticesFilter): Promise<NoticesPage> => {
@@ -153,11 +156,23 @@ export class InMemoryNoticesGateway implements NoticesGateway {
     const viewer = await this.viewer();
     if (viewer.role === "admin") return this.store;
     if (viewer.role === "lead") {
+      const teamId = this.viewerTeamId(viewer);
       return this.store.filter(
-        (notice) => notice.teamId !== null || notice.architectId === viewer.architectId,
+        (notice) =>
+          (teamId !== null && notice.teamId === teamId) ||
+          (viewer.architectId !== null && notice.architectId === viewer.architectId),
       );
     }
     if (viewer.architectId === null) return [];
     return this.store.filter((notice) => notice.architectId === viewer.architectId);
+  }
+
+  private viewerTeamId(viewer: NoticesViewer): string | null {
+    if (viewer.architectId === null) return null;
+    return this.architectTeams[viewer.architectId] ?? null;
+  }
+
+  private static fixtureArchitectTeams(): Record<string, string> {
+    return { ana: "team-integration", bruno: "team-integration", carla: "team-architecture" };
   }
 }

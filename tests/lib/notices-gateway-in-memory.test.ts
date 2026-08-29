@@ -128,13 +128,13 @@ describe("InMemoryNoticesGateway — recorte por papel (o mock É o servidor)", 
     expect(page.notices.some((item) => item.architectId === "carla")).toBe(false);
   });
 
-  it("unreadCount do lead conta só o escopo do time dele, nunca o de todos os times", async () => {
+  it("o escopo do lead é menor que o do admin, e o unreadCount vem SÓ desse escopo", async () => {
     const leadPage = await gatewayFor(leadIntegration).notices({ status: "all" });
     const adminPage = await gatewayFor(admin).notices({ status: "all" });
+    expect(leadPage.notices.length).toBeLessThan(adminPage.notices.length);
     expect(leadPage.unreadCount).toBe(
       leadPage.notices.filter((item) => item.readAt === null).length,
     );
-    expect(leadPage.unreadCount).toBeLessThan(adminPage.unreadCount);
   });
 
   it("lead sem arquiteto vinculado não tem time — e não vê aviso nenhum", async () => {
