@@ -150,13 +150,14 @@ function AssessmentsPage() {
               selectedId={architectId}
               onChange={setArchitectId}
               label={t("asmt.architect")}
-              className="w-48"
+              className="w-56"
             />
             <CapabilityCombobox
               capabilities={store.capabilities}
               selected={selected}
               onToggle={toggleCapability}
               onSelectAll={setCapabilityIds}
+              className="w-56"
             />
             {eligibility && eligibility.capabilities.length > 0 && (
               <Button

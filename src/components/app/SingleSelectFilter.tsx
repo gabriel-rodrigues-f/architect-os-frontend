@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+import { FilterField } from "@/components/app/FilterField";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOptionListNavigation } from "@/hooks";
@@ -52,12 +53,7 @@ export function SingleSelectFilter({
   const accessibleLabel = label ?? ariaLabel;
 
   return (
-    <div>
-      {label && (
-        <label className="block text-sm text-muted-foreground" htmlFor={id}>
-          {label}
-        </label>
-      )}
+    <FilterField label={label} htmlFor={id}>
       <Popover open={disabled ? false : open} onOpenChange={(next) => !disabled && setOpen(next)}>
         <PopoverTrigger asChild>
           <FilterTriggerButton
@@ -102,6 +98,6 @@ export function SingleSelectFilter({
           })}
         </PopoverContent>
       </Popover>
-    </div>
+    </FilterField>
   );
 }

@@ -482,7 +482,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       value={activeCycleId}
                       onChange={setActiveCycle}
                       options={cycles.map((c) => ({ value: c.id, label: c.name }))}
-                      triggerClassName="mt-0 h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
+                      triggerClassName="h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
                     />
                   </>
                 ) : (

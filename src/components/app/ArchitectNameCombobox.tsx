@@ -1,6 +1,7 @@
 import { ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 
+import { FilterField } from "@/components/app/FilterField";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -45,10 +46,7 @@ export function ArchitectNameCombobox({
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
 
   return (
-    <div>
-      <label className="block text-xs text-muted-foreground" htmlFor="architect-name-combobox">
-        {t("team.nameCombobox.label")}
-      </label>
+    <FilterField label={t("team.nameCombobox.label")} htmlFor="architect-name-combobox">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <FilterTriggerButton
@@ -108,6 +106,6 @@ export function ArchitectNameCombobox({
           </Command>
         </PopoverContent>
       </Popover>
-    </div>
+    </FilterField>
   );
 }

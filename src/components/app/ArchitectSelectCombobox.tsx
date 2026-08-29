@@ -1,6 +1,7 @@
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 
+import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import {
   Command,
   CommandEmpty,
@@ -50,19 +51,14 @@ export function ArchitectSelectCombobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
+        <FilterTriggerButton
           id={id}
-          type="button"
           role="combobox"
           aria-label={label}
           aria-expanded={open}
           aria-invalid={invalid}
           title={selected?.name}
-          className={cn(
-            "flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm",
-            invalid && "border-destructive ring-1 ring-destructive",
-            className,
-          )}
+          className={cn(invalid && "border-destructive ring-1 ring-destructive", className)}
         >
           <span
             className={cn(
@@ -73,7 +69,7 @@ export function ArchitectSelectCombobox({
             {selected ? selected.name : t("architectCombobox.placeholder")}
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-        </button>
+        </FilterTriggerButton>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="start">
         <Command>

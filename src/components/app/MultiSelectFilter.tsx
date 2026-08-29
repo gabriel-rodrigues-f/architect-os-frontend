@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+import { FilterField } from "@/components/app/FilterField";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -67,10 +68,7 @@ export function MultiSelectFilter({
           : t("filter.multi.count", { n: selected.length });
 
   return (
-    <div>
-      <label className="block text-sm text-muted-foreground" htmlFor={id}>
-        {label}
-      </label>
+    <FilterField label={label} htmlFor={id}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <FilterTriggerButton
@@ -140,6 +138,6 @@ export function MultiSelectFilter({
           )}
         </PopoverContent>
       </Popover>
-    </div>
+    </FilterField>
   );
 }

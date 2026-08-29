@@ -1,6 +1,7 @@
 import { ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 
+import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
@@ -20,6 +21,7 @@ export function CapabilityCombobox({
   onToggle,
   onSelectAll,
   label = "Capacidades",
+  className,
 }: {
   capabilities: readonly Capability[];
   selected: readonly Capability[];
@@ -27,6 +29,7 @@ export function CapabilityCombobox({
 
   onSelectAll: (ids: string[]) => void;
   label?: string;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -45,17 +48,16 @@ export function CapabilityCombobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <FilterTriggerButton
           role="combobox"
           aria-label={label}
           aria-expanded={open}
           title={resumo}
-          className="flex min-w-56 max-w-72 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
+          className={className}
         >
-          <span className="min-w-0 flex-1 truncate">{resumo}</span>
+          <span className="min-w-0 flex-1 truncate text-left">{resumo}</span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-        </button>
+        </FilterTriggerButton>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="end">
         <Command>
