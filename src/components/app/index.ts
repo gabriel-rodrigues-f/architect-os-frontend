@@ -1,3 +1,4 @@
+export * from "./AdherenceSummary";
 export * from "./AppShell";
 export * from "./ArchitectFilter";
 export * from "./ArchitectNameCombobox";
@@ -8,8 +9,11 @@ export * from "./CommandWithReasonDialog";
 export * from "./ConfirmDialog";
 export * from "./FilterField";
 export * from "./FilterTriggerButton";
+export * from "./LearningPathCoverageList";
 export * from "./LoginScreen";
 export * from "./MultiSelectFilter";
+export * from "./NoticeBell";
+export * from "./NoticeList";
 export * from "./PageHelp";
 export * from "./QuerySection";
 export * from "./SingleSelectFilter";

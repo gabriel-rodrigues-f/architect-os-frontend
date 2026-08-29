@@ -73,6 +73,8 @@ const VISITAS: Record<string, (ctx: VisitContext) => string | null> = {
   "/architects/$architectId": (ctx) => ctx.architectId && `/architects/${ctx.architectId}`,
   "/architects/$architectId/evolution": (ctx) =>
     ctx.architectId && `/architects/${ctx.architectId}/evolution`,
+  "/architects/$architectId/roadmap": (ctx) =>
+    ctx.architectId && `/architects/${ctx.architectId}/roadmap`,
   "/assessments": () => "/assessments",
   "/capability-map": () => "/capability-map",
   "/compare": () => "/compare",
@@ -82,6 +84,7 @@ const VISITAS: Record<string, (ctx: VisitContext) => string | null> = {
   "/gap-analysis": () => "/gap-analysis",
   "/learning-paths": () => "/learning-paths",
   "/mentoring": () => "/mentoring",
+  "/notices": () => "/notices",
   "/progression": () => "/progression",
   "/settings": () => "/settings",
   "/team": () => "/team",
