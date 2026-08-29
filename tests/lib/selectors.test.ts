@@ -10,13 +10,8 @@ import {
   SelectorIndex,
   TrainingSelectors,
 } from "@/lib/selectors";
-import type { AppState, SessionUser } from "@/lib/api";
-import {
-  fixtureAdminUser,
-  fixtureMemberUser,
-  fixtureState,
-  fixtureUnassignedLeadUser,
-} from "../helpers/fixtures";
+import type { AppState } from "@/lib/api";
+import { fixtureState } from "../helpers/fixtures";
 
 describe("coverageFor / teamAverageFor (OO3-11k — média com cobertura, nunca ausência como 0)", () => {
   // "diego" não tem assessment — contribui na cobertura, nunca na média.
@@ -253,21 +248,20 @@ describe("classes por contexto (instanciadas diretamente)", () => {
   });
 });
 
-describe("visibleArchitects", () => {
+describe("activeArchitects", () => {
   /**
-   * OO3-11a — a regra de população visível (ANA-001) que estava copiada em
-   * 5 telas agora mora em `ArchitectSelectors.visibleTo`. Estes casos provam
-   * a regra espelhada (`UiAuthorizationPolicy.canActFor`) direto no selector.
+   * Onda 10, T8 — `visibleTo` (OO3-11a) morreu com o roster fechado no
+   * backend (`d1edba4`): o recorte de QUEM aparece é do servidor, que só
+   * manda os arquitetos do escopo do papel (`scopedFixtureStateFor` espelha
+   * esse payload). O que continua sendo regra de UI legítima — e é o que
+   * estes casos fixam — é o filtro por `active`: um desligado que VEM no
+   * payload (o servidor não recorta por `active`) não entra nas populações
+   * de tela nem nos seletores de pessoa.
    */
-  const leadUser: SessionUser = {
-    ...fixtureUnassignedLeadUser,
-    id: "lead-da-ana",
-  };
   const state: AppState = {
     ...fixtureState,
     architects: [
-      { ...fixtureState.architects[0]!, leadUserId: "lead-da-ana" },
-      fixtureState.architects[1]!,
+      ...fixtureState.architects,
       {
         id: "carla",
         name: "Carla Inativa",
@@ -276,32 +270,22 @@ describe("visibleArchitects", () => {
         specialization: "Data",
         email: "carla@company.com",
         active: false,
-        leadUserId: "lead-da-ana",
         version: 1,
       },
     ],
   };
   const sel = createSelectors(state);
 
-  it("admin vê todo o time ativo", () => {
-    expect(sel.visibleArchitects(fixtureAdminUser).map((a) => a.id)).toEqual(["ana", "bruno"]);
+  it("inativo presente no payload nunca entra na população ativa", () => {
+    expect(sel.activeArchitects.map((architect) => architect.id)).toEqual(["ana", "bruno"]);
   });
 
-  it("member vê só a si", () => {
-    expect(sel.visibleArchitects(fixtureMemberUser).map((a) => a.id)).toEqual(["ana"]);
+  it("continua alcançável por id — a ficha dele não some, só as listas", () => {
+    expect(sel.architectById("carla")?.name).toBe("Carla Inativa");
   });
 
-  it("lead vê só quem lidera", () => {
-    expect(sel.visibleArchitects(leadUser).map((a) => a.id)).toEqual(["ana"]);
-  });
-
-  it("inativo nunca aparece, nem para o próprio lead", () => {
-    expect(sel.visibleArchitects(leadUser).some((a) => a.id === "carla")).toBe(false);
-    expect(sel.visibleArchitects(fixtureAdminUser).some((a) => a.id === "carla")).toBe(false);
-  });
-
-  it("devolve a MESMA referência para o mesmo viewer — identidade estável para useMemo", () => {
-    expect(sel.visibleArchitects(fixtureAdminUser)).toBe(sel.visibleArchitects(fixtureAdminUser));
+  it("é a MESMA referência entre leituras — identidade estável para useMemo", () => {
+    expect(sel.activeArchitects).toBe(sel.activeArchitects);
   });
 });
 

@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 
 import { EmptyState, NameList, PageHeader, SectionCard, ViewToggle } from "@/components/app";
 import { Badge } from "@/components/ui/badge";
-import { useCurrentUser } from "@/lib/auth";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -32,12 +31,11 @@ export const Route = createFileRoute("/capability-map")({
 function CapabilityMapPage() {
   const store = useStore();
   const sel = useSelectors();
-  const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("capabilityMap");
   const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
 
-  const population = sel.visibleArchitects(user);
+  const population = sel.activeArchitects;
 
   const scoringBands = useScoringBands();
 

@@ -191,7 +191,7 @@
   },
   "src/lib/selectors.ts": {
     "id-length": {
-      "count": 21
+      "count": 20
     }
   },
   "src/lib/store.tsx": {
@@ -481,7 +481,7 @@
   },
   "tests/lib/selectors.test.ts": {
     "id-length": {
-      "count": 29
+      "count": 24
     }
   },
   "tests/lib/store-version-reconcile.test.tsx": {
