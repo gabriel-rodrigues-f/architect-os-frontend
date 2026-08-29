@@ -24,9 +24,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { type AppState } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { renderWithApp } from "../helpers/render-app";
+import { emptyAuthUsersRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -54,52 +53,33 @@ const TeamPage = TeamRoute.options.component as () => ReactNode;
 
 /** Resposta padrão do `POST .../deactivate`: devolve o arquiteto atualizado. */
 function mockDeactivateSuccess(fetch: typeof fetchMock) {
-  fetch.mockImplementation((url: string, init?: RequestInit) => {
-    const href = String(url);
-    if (href.endsWith(apiPath("/auth/me"))) {
-      return Promise.resolve(
-        new Response(JSON.stringify(fixtureAdminUser), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith(apiPath("/auth/users"))) {
-      return Promise.resolve(
-        new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
-      );
-    }
-    if (init?.method === "POST" && href.endsWith(apiPath("/architects/ana/deactivate"))) {
-      const body = JSON.parse(String(init.body)) as { reason: string; expectedVersion: number };
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            ...fixtureState.architects[0],
-            active: false,
-            version: body.expectedVersion + 1,
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
-      );
-    }
-    if (init?.method === "PATCH" && href.includes(apiPath("/architects/"))) {
-      const body = JSON.parse(String(init.body)) as { active: boolean };
-      return Promise.resolve(
-        new Response(JSON.stringify({ ...fixtureState.architects[0], ...body }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    if (href.endsWith(apiPath("/state"))) {
-      return Promise.resolve(
-        new Response(JSON.stringify(fixtureState satisfies AppState), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
-    return Promise.resolve(new Response("{}", { status: 200 }));
+  mockAppFetch(fetch, {
+    user: fixtureAdminUser,
+    state: fixtureState,
+    routes: [
+      emptyAuthUsersRoute,
+      (href, init) => {
+        if (init?.method === "POST" && href.endsWith(apiPath("/architects/ana/deactivate"))) {
+          const body = JSON.parse(String(init.body)) as { reason: string; expectedVersion: number };
+          return new Response(
+            JSON.stringify({
+              ...fixtureState.architects[0],
+              active: false,
+              version: body.expectedVersion + 1,
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
+        if (init?.method === "PATCH" && href.includes(apiPath("/architects/"))) {
+          const body = JSON.parse(String(init.body)) as { active: boolean };
+          return new Response(JSON.stringify({ ...fixtureState.architects[0], ...body }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return undefined;
+      },
+    ],
   });
 }
 

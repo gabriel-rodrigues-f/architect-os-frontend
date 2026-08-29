@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { type RoleName } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -55,7 +56,25 @@ export const Route = createFileRoute("/team")({
   component: TeamPage,
 });
 
+const TEAM_CONTEXTS: readonly ContextScopeRequest[] = [
+  "architects",
+  "assessments",
+  "capabilities",
+  "competencies",
+  "cycles",
+  "activeCycle",
+  "mentoringSessions",
+];
+
 function TeamPage() {
+  return (
+    <ContextScope contexts={TEAM_CONTEXTS}>
+      <TeamRoster />
+    </ContextScope>
+  );
+}
+
+function TeamRoster() {
   const store = useStore();
   const { t } = useI18n();
   const help = usePageHelp("team");

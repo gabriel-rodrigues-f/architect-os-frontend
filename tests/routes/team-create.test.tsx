@@ -21,9 +21,13 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { type AppState } from "@/lib/api";
-import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
-import { renderWithApp } from "../helpers/render-app";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import {
+  careerLevelsRoute,
+  emptyAuthUsersRoute,
+  mockAppFetch,
+  renderWithApp,
+} from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -47,47 +51,23 @@ describe("Time — cadastro sem dado fabricado", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
 
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const href = String(url);
-      if (href.endsWith(apiPath("/auth/me"))) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith(apiPath("/career-levels"))) {
-        return Promise.resolve(
-          new Response(JSON.stringify({ data: fixtureCareerLevels }), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith(apiPath("/auth/users"))) {
-        return Promise.resolve(
-          new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
-        );
-      }
-      if (init?.method === "POST" && href.endsWith(apiPath("/architects"))) {
-        const body = JSON.parse(String(init.body)) as Record<string, unknown>;
-        return Promise.resolve(
-          new Response(JSON.stringify({ ...body, active: true }), {
-            status: 201,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      if (href.endsWith(apiPath("/state"))) {
-        return Promise.resolve(
-          new Response(JSON.stringify(fixtureState satisfies AppState), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 200 }));
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state: fixtureState,
+      routes: [
+        careerLevelsRoute,
+        emptyAuthUsersRoute,
+        (href, init) => {
+          if (init?.method === "POST" && href.endsWith(apiPath("/architects"))) {
+            const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+            return new Response(JSON.stringify({ ...body, active: true }), {
+              status: 201,
+              headers: { "content-type": "application/json" },
+            });
+          }
+          return undefined;
+        },
+      ],
     });
   });
 
