@@ -20,7 +20,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "@/lib/api";
 import { type AppState } from "@/lib/api";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureState, scopedFixtureStateFor } from "../helpers/fixtures";
 import { renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -99,10 +99,10 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
    * ANA-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — estado
    * com 3 pessoas avançadas/especialistas em Cloud (
    * "cobertura distribuída" para o admin, que enxerga todo mundo), mas
-   * lido por um Lead atribuído só à Ana. Bruno e Carla continuam no roster
-   * (dado de diretório, sem filtro), mas fora do escopo de carreira deste
-   * Lead — a população da análise de risco não pode contá-los como
-   * "referência técnica" só porque o nome deles aparece na lista.
+   * lido por um Lead atribuído só à Ana. Desde o roster fechado (backend
+   * `d1edba4`) o recorte é do servidor: o payload deste Lead traz só a Ana
+   * (`scopedFixtureStateFor`), e a análise de risco não pode contar Bruno e
+   * Carla como "referência técnica" — eles nem chegam ao navegador.
    */
   it("Lead sem Bruno/Carla atribuídos vê risco de concentração, não a cobertura distribuída que o admin vê", async () => {
     const leadUser: SessionUser = {
@@ -150,7 +150,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
       ],
     };
 
-    renderPage(state, leadUser);
+    renderPage(scopedFixtureStateFor(leadUser, state), leadUser);
     const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
     expect(within(card).getByText(/Risco de concentração/)).toBeTruthy();
     expect(within(card).queryByText(/Cobertura distribuída/)).toBeNull();

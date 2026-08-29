@@ -724,6 +724,7 @@
   "path.new.action": "Criar trilha",
   "path.progress": "Progresso",
   "path.item.noAssignee": "Ninguém atribuído a esta trilha ainda.",
+  "path.assignee.outOfScope": "Fora do seu escopo",
   "path.createdBy": "Criada por {autor}",
   "path.noAuthor": "Trilha sem autor registrado",
   "path.edit.title": "Editar trilha",

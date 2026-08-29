@@ -8,7 +8,6 @@ import {
   SectionCard,
   useMentoringTimeline,
 } from "@/components/app";
-import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore } from "@/lib/store";
@@ -36,10 +35,9 @@ function MentoringPage() {
   const { t } = useI18n();
   const help = usePageHelp("mentoring");
 
-  const user = useCurrentUser();
   const sel = useSelectors();
 
-  const menteeOptions = sel.visibleArchitects(user);
+  const menteeOptions = sel.activeArchitects;
   const { filter, setFilter, sessions } = useMentoringTimeline();
 
   return (

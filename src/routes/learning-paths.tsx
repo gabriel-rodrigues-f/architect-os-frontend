@@ -219,7 +219,7 @@ function LearningPage() {
                     ))}
                     {path.assignedTo.map((aid) => (
                       <span key={aid} className="rounded-md border border-border px-2 py-0.5">
-                        {sel.architectById(aid)?.name ?? aid}
+                        {sel.architectById(aid)?.name ?? t("path.assignee.outOfScope")}
                       </span>
                     ))}
                   </div>
@@ -243,7 +243,7 @@ function LearningPage() {
                             {path.assignedTo.map((architectId) => {
                               const person = sel.architectById(architectId);
                               const prog = vm.progressFor(path, architectId, item.id);
-                              const nome = person?.name ?? architectId;
+                              const nome = person?.name ?? t("path.assignee.outOfScope");
                               return (
                                 <div key={architectId} className="flex items-center gap-2 pl-2">
                                   <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">

@@ -5,7 +5,6 @@ import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Badge } from "@/components/ui/badge";
 import { Selection } from "@/lib/selection";
 import { topByRelevance } from "@/lib/collections";
-import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { type ConsolidatedGapRow } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -14,9 +13,8 @@ import { useSearchParamList } from "@/hooks";
 export function useGapAnalysisData() {
   const store = useStore();
   const sel = useSelectors();
-  const user = useCurrentUser();
 
-  const defaultSelected = useMemo(() => sel.visibleArchitects(user).map((a) => a.id), [sel, user]);
+  const defaultSelected = useMemo(() => sel.activeArchitects.map((a) => a.id), [sel]);
   const [selected, setSelected] = useSearchParamList("selected", () => defaultSelected);
 
   const architects = useMemo(

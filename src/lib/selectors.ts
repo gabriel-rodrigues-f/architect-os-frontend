@@ -1,4 +1,4 @@
-import type { AppState, SessionUser } from "./api";
+import type { AppState } from "./api";
 import type {
   Architect,
   Assessment,
@@ -10,7 +10,6 @@ import type {
   RoleName,
 } from "./domain";
 import { capabilityShortLabels } from "./domain";
-import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "./scope";
 
 export const emptyState: AppState = {
   capabilities: [],
@@ -89,26 +88,15 @@ export class SelectorIndex {
 
 export class ArchitectSelectors {
   readonly active: Architect[];
-  private readonly visibleCache = new Map<string, Architect[]>();
 
   constructor(
     state: AppState,
     private readonly index: SelectorIndex,
-    private readonly policy: UiAuthorizationPolicy = defaultUiAuthorizationPolicy,
   ) {
     this.active = state.architects.filter((a) => a.active);
   }
 
   byId = (id: string): Architect | undefined => this.index.architectIndex.get(id);
-
-  visibleTo = (user: SessionUser): Architect[] => {
-    const cacheKey = `${user.id}|${user.role}|${user.architectId ?? ""}`;
-    const cached = this.visibleCache.get(cacheKey);
-    if (cached) return cached;
-    const visible = this.active.filter((a) => this.policy.canActFor(user, a));
-    this.visibleCache.set(cacheKey, visible);
-    return visible;
-  };
 
   specializationLabel = (
     architect: Pick<Architect, "specialization" | "primarySpecializationCompetencyId">,
@@ -407,7 +395,6 @@ export function createSelectors(state: AppState) {
     capabilityById: capability.capabilityById,
     architectById: architect.byId,
     activeArchitects: architect.active,
-    visibleArchitects: architect.visibleTo,
     specializationLabel: architect.specializationLabel,
     assessmentFor: assessment.assessmentFor,
     officialAssessmentFor: assessment.officialAssessmentFor,

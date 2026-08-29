@@ -37,7 +37,7 @@ function TrainingNeedsPage() {
   const { t } = useI18n();
   const help = usePageHelp("trainingNeeds");
 
-  const population = sel.visibleArchitects(user);
+  const population = sel.activeArchitects;
   const needs = sel.teamTrainingNeeds(population);
 
   const [showAllTop, setShowAllTop] = useState(false);

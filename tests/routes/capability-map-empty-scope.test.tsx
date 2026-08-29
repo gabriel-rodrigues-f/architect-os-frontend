@@ -15,6 +15,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "@/lib/api";
+import { scopedFixtureStateFor } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -44,7 +45,7 @@ describe("Mapa de Capacidades — escopo vazio vira uma mensagem, não N repeti�
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: leadWithNoOne });
+    mockAppFetch(fetchMock, { user: leadWithNoOne, state: scopedFixtureStateFor(leadWithNoOne) });
   });
 
   afterEach(() => {

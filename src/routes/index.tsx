@@ -76,13 +76,12 @@ function usePersonalDashboardPresenter() {
 function AdminHome() {
   const store = useStore();
   const sel = useSelectors();
-  const user = useCurrentUser();
   const { t } = useI18n();
   const labels = useLabels();
   const help = usePageHelp("dash");
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
 
-  const architects = sel.visibleArchitects(user);
+  const architects = sel.activeArchitects;
 
   const presenter = useDashboardPresenter();
   const criticalGaps = presenter.criticalGapCount(architects);

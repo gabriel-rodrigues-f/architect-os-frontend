@@ -7,8 +7,8 @@ import { routeTree } from "@/routeTree.gen";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
-  fixtureState,
   fixtureUnassignedLeadUser,
+  scopedFixtureStateFor,
 } from "../helpers/fixtures";
 import { mockAppFetch } from "../helpers/render-app";
 
@@ -26,7 +26,7 @@ const fetchMock = vi.fn();
 
 /** Para onde o roteador realmente foi, depois de resolver `beforeLoad`. */
 async function navegarComoUsuario(user: SessionUser, href: string): Promise<string> {
-  mockAppFetch(fetchMock, { user, state: fixtureState });
+  mockAppFetch(fetchMock, { user, state: scopedFixtureStateFor(user) });
 
   const queryClient = createAppQueryClient();
   const router = createRouter({
@@ -62,9 +62,21 @@ describe("guardas de navegação das telas administrativas", () => {
   });
 });
 
-describe("guarda de navegação do perfil de arquiteto", () => {
-  it("nega o perfil de outra pessoa a um member", async () => {
-    expect(await navegarComoUsuario(fixtureMemberUser, "/architects/bruno")).toBe("/");
+/**
+ * Onda 10, T7 — desde o roster fechado (backend `d1edba4`), o perfil fora do
+ * escopo NÃO vem no payload de `/state`: a antiga guarda `requireArchitectReach`
+ * nunca mais encontrava o arquiteto e caía no ramo "não encontrei, libero" —
+ * redirect morto, e o teste antigo só ficava verde porque a fixture emitia o
+ * payload que o servidor não manda mais. A negação decidida para o mundo
+ * recortado é o estado "não encontrado" que a própria tela já tem (fixado em
+ * `architect-profile-fora-do-escopo.test.tsx`); aqui se fixa a metade da
+ * navegação: a rota RESOLVE, ninguém é jogado para a home.
+ */
+describe("navegação do perfil de arquiteto no mundo recortado", () => {
+  it("member em perfil fora do escopo permanece na URL — a negação é o 'não encontrado' da tela", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/architects/bruno")).toBe(
+      "/architects/bruno",
+    );
   });
 
   it("mantém o próprio perfil aberto para o member dono dele", async () => {
@@ -78,12 +90,14 @@ describe("guarda de navegação do perfil de arquiteto", () => {
   });
 
   /**
-   * UX-001 — ser `lead` não é passe livre: só o lead atribuído àquele
-   * arquiteto (`leadUserId`) alcança o perfil. Nenhum arquiteto da fixture
-   * aponta para esta conta, então ela é negada.
+   * UX-001 continua valendo, imposto pelo servidor: o payload recortado de um
+   * lead sem atribuição não traz o arquiteto, então a rota resolve e a tela
+   * mostra "não encontrado" — nada do perfil chega ao navegador.
    */
-  it("nega o perfil a um lead sem atribuição àquele arquiteto", async () => {
-    expect(await navegarComoUsuario(fixtureUnassignedLeadUser, "/architects/bruno")).toBe("/");
+  it("lead sem atribuição permanece na URL e não recebe o arquiteto no payload", async () => {
+    expect(await navegarComoUsuario(fixtureUnassignedLeadUser, "/architects/bruno")).toBe(
+      "/architects/bruno",
+    );
   });
 
   it("nega /users a um lead", async () => {

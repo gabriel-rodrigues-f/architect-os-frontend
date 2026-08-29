@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "@/lib/api";
 import type { MentoringSession } from "@/lib/domain";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, scopedFixtureStateFor } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -149,12 +149,13 @@ describe("Mentoria — agendar follow-up", () => {
   /**
    * MENT-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — o
    * backend só aceita a própria pessoa, o Tech Lead dela, ou admin como
-   * mentor; a lista de mentorados no formulário de nova sessão precisa
-   * nascer restrita ao mesmo escopo, não oferecer o roster inteiro
+   * mentor; desde o roster fechado (backend `d1edba4`) essa restrição chega
+   * pronta no payload (`scopedFixtureStateFor`): o formulário lista o que o
+   * servidor mandou, sem refiltrar no cliente
    * (`outsider` só tem relação com "bruno", ele mesmo — nunca com "ana").
    */
   it("formulário de nova sessão só oferece mentorados sob o escopo real de quem registra", async () => {
-    mockSession(outsider);
+    mockAppFetch(fetchMock, { user: outsider, state: scopedFixtureStateFor(outsider, state) });
     renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));

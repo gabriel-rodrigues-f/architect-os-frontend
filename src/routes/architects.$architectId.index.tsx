@@ -125,9 +125,9 @@ function ArchitectProfile() {
   if (!architect) {
     return (
       <div className="surface-card p-6 text-sm">
-        Arquiteto não encontrado.{" "}
+        {t("arch.notFound")}{" "}
         <Link to="/team" className="text-primary underline">
-          Voltar ao time
+          {t("arch.back")}
         </Link>
       </div>
     );
