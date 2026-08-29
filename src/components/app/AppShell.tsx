@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { readMigratedItem } from "@/lib/storage";
-import { useStore } from "@/lib/store";
+import { useCycleSelection } from "@/lib/context-scope";
 import { useTheme, type Theme } from "@/lib/theme";
 
 interface NavItem {
@@ -151,7 +151,7 @@ const THEME_OPTIONS: { value: Theme; labelKey: MessageKey; icon: typeof Sun }[] 
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { cycles, activeCycleId, setActiveCycle } = useStore();
+  const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
   const { t } = useI18n();
 

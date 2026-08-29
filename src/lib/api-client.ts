@@ -28,10 +28,11 @@ export interface AppState {
   activeCycleId: string;
 }
 
-export const API_URL = (import.meta.env["VITE_API_URL"] ?? "http://localhost:4000").replace(
-  /\/$/,
-  "",
-);
+const rawApiUrl: unknown = import.meta.env["VITE_API_URL"];
+
+export const API_URL = (
+  typeof rawApiUrl === "string" ? rawApiUrl : "http://localhost:4000"
+).replace(/\/$/, "");
 
 export const NETWORK_UNAVAILABLE_STATUS = 0;
 
@@ -42,7 +43,7 @@ const NETWORK_UNAVAILABLE_MESSAGE =
 
 export type ApiFailureInterceptor = (error: ApiError) => void;
 
-interface ApiErrorBody {
+export interface ApiErrorBody {
   message?: string;
   details?: unknown;
   code?: string;
@@ -51,13 +52,40 @@ interface ApiErrorBody {
 
 const responseMessageCodes = new WeakMap<object, string>();
 
+export function networkUnavailableError(cause: unknown): ApiError {
+  return new ApiError(
+    NETWORK_UNAVAILABLE_MESSAGE,
+    NETWORK_UNAVAILABLE_STATUS,
+    undefined,
+    NETWORK_UNAVAILABLE_CODE,
+    undefined,
+    { cause },
+  );
+}
+
+export function apiFailureOf(
+  body: ApiErrorBody | null,
+  status: number,
+  fallbackMessage: string,
+): ApiError {
+  return new ApiError(
+    body?.message ?? fallbackMessage,
+    status,
+    body?.details,
+    body?.code,
+    body?.correlationId,
+  );
+}
+
 export function messageCodeOf(result: unknown): string | undefined {
   return typeof result === "object" && result !== null
     ? responseMessageCodes.get(result)
     : undefined;
 }
 
-function asSuccessEnvelope(body: unknown): { data: unknown; message?: { code?: string } } | null {
+export function asSuccessEnvelope(
+  body: unknown,
+): { data: unknown; message?: { code?: string } } | null {
   if (typeof body !== "object" || body === null || Array.isArray(body)) return null;
   const record = body as Record<string, unknown>;
   if (!Object.prototype.hasOwnProperty.call(record, "data")) return null;
@@ -84,30 +112,13 @@ export class ApiClient {
     try {
       return await fetch(url, init);
     } catch (cause) {
-      throw this.intercepted(
-        new ApiError(
-          NETWORK_UNAVAILABLE_MESSAGE,
-          NETWORK_UNAVAILABLE_STATUS,
-          undefined,
-          NETWORK_UNAVAILABLE_CODE,
-          undefined,
-          { cause },
-        ),
-      );
+      throw this.intercepted(networkUnavailableError(cause));
     }
   }
 
   private async failureOf(response: Response, fallbackMessage: string): Promise<ApiError> {
     const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
-    return this.intercepted(
-      new ApiError(
-        body?.message ?? fallbackMessage,
-        response.status,
-        body?.details,
-        body?.code,
-        body?.correlationId,
-      ),
-    );
+    return this.intercepted(apiFailureOf(body, response.status, fallbackMessage));
   }
 
   async request<T>(resource: string, init?: RequestInit): Promise<T> {

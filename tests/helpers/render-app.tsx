@@ -8,7 +8,7 @@ import { type AppState, type SessionUser } from "@/lib/api";
 import { apiPath, isApiUrl } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { I18nProvider } from "@/lib/i18n";
-import { StoreProvider } from "@/lib/store";
+import { StoreProvider, type StoreProviderMode } from "@/lib/store";
 import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
 
 /**
@@ -68,6 +68,57 @@ async function envelopeApiResponse(response: Response): Promise<Response> {
   });
 }
 
+/**
+ * ADR-0011, fase 1 — as telas estranguladas consomem os endpoints por
+ * contexto em vez do blob `/state`. Este roteador serve cada contexto a
+ * partir da MESMA fixture, aplicando o filtro de querystring que o backend
+ * aplica (`architectId`/`menteeId`), para que os testes de tela exercitem a
+ * paridade blob ↔ contexto sem duplicar dados.
+ */
+function stateContextResponse(
+  state: AppState,
+  href: string,
+  init?: RequestInit,
+): Response | undefined {
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (method !== "GET") return undefined;
+  const url = new URL(href, "http://localhost");
+  const path = url.pathname;
+  const query = url.searchParams;
+  const byArchitect = <T extends { architectId: string }>(items: T[]): T[] => {
+    const architectId = query.get("architectId");
+    return architectId ? items.filter((item) => item.architectId === architectId) : items;
+  };
+  if (path.endsWith(apiPath("/architects"))) return jsonResponse(state.architects);
+  if (path.endsWith(apiPath("/assessments"))) return jsonResponse(byArchitect(state.assessments));
+  if (path.endsWith(apiPath("/capabilities"))) return jsonResponse(state.capabilities);
+  if (path.endsWith(apiPath("/competencies"))) return jsonResponse(state.competencies);
+  if (path.endsWith(apiPath("/cycles"))) return jsonResponse(state.cycles);
+  if (path.endsWith(apiPath("/settings/active-cycle")))
+    return jsonResponse({ cycleId: state.activeCycleId });
+  if (path.endsWith(apiPath("/plans"))) return jsonResponse(byArchitect(state.plans));
+  if (path.endsWith(apiPath("/evidences"))) return jsonResponse(byArchitect(state.evidences));
+  if (path.endsWith(apiPath("/mentoring-sessions"))) {
+    const menteeId = query.get("menteeId");
+    return jsonResponse(
+      menteeId
+        ? state.mentoringSessions.filter((session) => session.menteeId === menteeId)
+        : state.mentoringSessions,
+    );
+  }
+  if (path.endsWith(apiPath("/learning-paths"))) {
+    const architectId = query.get("architectId");
+    return jsonResponse(
+      architectId
+        ? state.learningPaths.filter((learningPath) =>
+            learningPath.assignedTo.includes(architectId),
+          )
+        : state.learningPaths,
+    );
+  }
+  return undefined;
+}
+
 export function mockAppFetch(
   fetchMock: Mock,
   {
@@ -76,16 +127,22 @@ export function mockAppFetch(
     routes = [],
   }: { user?: SessionUser; state?: AppState; routes?: FetchRoute[] } = {},
 ): void {
-  fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-    const href = String(url);
+  fetchMock.mockImplementation((input: string | URL | Request, init?: RequestInit) => {
+    const request = input instanceof Request ? input : undefined;
+    const href = request ? request.url : String(input);
+    const effectiveInit: RequestInit | undefined = request
+      ? { method: request.method, ...init }
+      : init;
     const respond = (response: Response) =>
       isApiUrl(href) ? envelopeApiResponse(response) : Promise.resolve(response);
     for (const route of routes) {
-      const response = route(href, init);
+      const response = route(href, effectiveInit);
       if (response) return respond(response);
     }
     if (href.endsWith(apiPath("/auth/me"))) return respond(jsonResponse(user));
     if (href.endsWith(apiPath("/state"))) return respond(jsonResponse(state));
+    const contextResponse = stateContextResponse(state, href, effectiveInit);
+    if (contextResponse) return respond(contextResponse);
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
 }
@@ -117,14 +174,20 @@ function AuthReady({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function AppWrapper({ children }: { children: ReactNode }) {
+function AppWrapper({
+  children,
+  storeMode,
+}: {
+  children: ReactNode;
+  storeMode: StoreProviderMode;
+}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <AuthProvider>
           <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
+            <StoreProvider mode={storeMode}>{children}</StoreProvider>
           </AuthReady>
         </AuthProvider>
       </I18nProvider>
@@ -133,6 +196,9 @@ function AppWrapper({ children }: { children: ReactNode }) {
 }
 
 /** `render` já embrulhado nos providers do app — combine com `mockAppFetch` no `beforeEach`. */
-export function renderWithApp(ui: ReactNode): ReturnType<typeof render> {
-  return render(<AppWrapper>{ui}</AppWrapper>);
+export function renderWithApp(
+  ui: ReactNode,
+  { storeMode = "blob" }: { storeMode?: StoreProviderMode } = {},
+): ReturnType<typeof render> {
+  return render(<AppWrapper storeMode={storeMode}>{ui}</AppWrapper>);
 }

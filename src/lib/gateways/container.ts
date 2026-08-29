@@ -13,6 +13,7 @@ import { HttpEvolutionGateway, type EvolutionGateway } from "./evolution.gateway
 import { HttpLearningGateway, type LearningGateway } from "./learning.gateway";
 import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway";
 import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
+import { HttpStateContextsGateway, type StateContextsGateway } from "./state-contexts.gateway";
 
 interface FrontendConfig {
   baseUrl?: string;
@@ -34,6 +35,7 @@ export class FrontendContainer {
   readonly learningGateway: LearningGateway;
   readonly mentoringGateway: MentoringGateway;
   readonly reportsGateway: ReportsGateway;
+  readonly stateContextsGateway: StateContextsGateway;
 
   private constructor(config: FrontendConfig) {
     this.sessionPolicy = new SessionPolicy();
@@ -53,6 +55,9 @@ export class FrontendContainer {
     this.learningGateway = new HttpLearningGateway(this.apiClient);
     this.mentoringGateway = new HttpMentoringGateway(this.apiClient);
     this.reportsGateway = new HttpReportsGateway(this.apiClient);
+    this.stateContextsGateway = new HttpStateContextsGateway(config.baseUrl, (error) =>
+      this.sessionPolicy.reviewFailure(error),
+    );
   }
 
   static create(config: FrontendConfig = {}): FrontendContainer {

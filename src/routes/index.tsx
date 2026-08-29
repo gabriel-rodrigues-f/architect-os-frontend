@@ -23,6 +23,7 @@ import {
   StatCard,
 } from "@/components/app";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { DashboardPresenter, PersonalDashboardPresenter } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
 import type { DevelopmentPlan } from "@/lib/domain";
@@ -51,11 +52,32 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
+const PAINEL_CONTEXTS: readonly ContextScopeRequest[] = [
+  "architects",
+  "assessments",
+  "capabilities",
+  "competencies",
+  "cycles",
+  "activeCycle",
+  "plans",
+  "learningPaths",
+  "mentoringSessions",
+  "evidences",
+];
+
 function Dashboard() {
   const user = useCurrentUser();
-  if (user.role === "lead") return <LeadHome />;
-  if (user.role === "member") return <MemberHome />;
-  return <AdminHome />;
+  return (
+    <ContextScope contexts={PAINEL_CONTEXTS}>
+      {user.role === "lead" ? (
+        <LeadHome />
+      ) : user.role === "member" ? (
+        <MemberHome />
+      ) : (
+        <AdminHome />
+      )}
+    </ContextScope>
+  );
 }
 
 function useDashboardPresenter() {

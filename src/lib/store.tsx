@@ -32,7 +32,7 @@ import {
   type OperationalSettings,
 } from "./operational-settings";
 import { useI18n } from "./i18n";
-import { MutationRunner } from "./mutation-runner";
+import { MutationRunner, type MutationCache } from "./mutation-runner";
 import { expectedVersionOf, UnknownExpectedVersionError } from "./optimistic-lock";
 import { CONFIG_QUERY_STALE_TIME } from "./query-client";
 import {
@@ -319,15 +319,28 @@ export interface Api extends AppState {
 
 const Ctx = createContext<Api | null>(null);
 
-function buildApi(state: AppState, queryClient: QueryClient): Api {
+export { Ctx as StoreApiContext };
+
+export const MUTATION_FALLBACK_ERROR_MESSAGE =
+  "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.";
+
+export function blobMutationCache(queryClient: QueryClient): MutationCache<AppState> {
+  return {
+    update: (fn) =>
+      queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) => (prev ? fn(prev) : prev)),
+    invalidate: () => void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }),
+  };
+}
+
+export function buildApi(
+  state: AppState,
+  queryClient: QueryClient,
+  cache: MutationCache<AppState> = blobMutationCache(queryClient),
+): Api {
   const runner = new MutationRunner<AppState>(
-    {
-      update: (fn) =>
-        queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) => (prev ? fn(prev) : prev)),
-      invalidate: () => void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }),
-    },
+    cache,
     (message) => toast.error(message),
-    "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.",
+    MUTATION_FALLBACK_ERROR_MESSAGE,
   );
 
   return {
@@ -911,13 +924,21 @@ function buildApi(state: AppState, queryClient: QueryClient): Api {
   };
 }
 
-export function StoreProvider({ children }: { children: ReactNode }) {
+export type StoreProviderMode = "blob" | "contexts";
+
+export function StoreProvider({
+  children,
+  mode = "blob",
+}: {
+  children: ReactNode;
+  mode?: StoreProviderMode;
+}) {
   const queryClient = useQueryClient();
 
   const { data, isPending, isError, error, refetch } = useQuery({
     ...appStateQuery,
 
-    enabled: typeof window !== "undefined",
+    enabled: typeof window !== "undefined" && mode === "blob",
 
     refetchOnWindowFocus: false,
   });
@@ -925,13 +946,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const state = data ?? emptyState;
   const value = useMemo(() => buildApi(state, queryClient), [state, queryClient]);
 
-  if (isError) return <ConnectionError error={error} onRetry={() => void refetch()} />;
-  if (isPending || !data) return <LoadingState />;
+  if (mode === "blob") {
+    if (isError) return <ConnectionError error={error} onRetry={() => void refetch()} />;
+    if (isPending || !data) return <LoadingState />;
+  }
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-function LoadingState() {
+export function LoadingState() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="flex flex-col items-center gap-3">
@@ -942,7 +965,7 @@ function LoadingState() {
   );
 }
 
-function ConnectionError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+export function ConnectionError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const rawMessage = error instanceof Error ? error.message : "Erro desconhecido";
   if (import.meta.env.DEV) console.error(`[store] falha ao carregar ${apiPath("/state")}:`, error);
 

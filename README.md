@@ -75,7 +75,20 @@ continuam validadas em runtime pelos schemas zod de `src/lib/api-schemas.ts`, ex
 mesmos que já validavam o `/state`. Quando o backend publicar response schemas, a derivação
 por zod pode ser aposentada rota a rota.
 
-## Tratamento de erro
+### Estrangulamento do `/state` (ADR-0011, fase 1)
+
+O blob `GET /api/v1/state` (~2 MB) está sendo estrangulado. As rotas listadas no
+livro-razão (`defaultStranglerLedger`, em `src/lib/state-contexts.ts`) — hoje o Painel `/`,
+`/team` e o índice `/architects/$architectId` — **não carregam o blob**: cada uma declara os
+contextos de que precisa e o `ContextScope` (`src/lib/context-scope.tsx`) monta o mesmo
+`AppState` parcial a partir dos endpoints por contexto (`/architects`, `/assessments`,
+`/cycles`, …), servindo-o pelo MESMO `useStore()`/`useSelectors()` de sempre — telas,
+view-models e presenters não sabem a diferença. Mutações dentro de um escopo estrangulado
+escrevem de volta nas queries de contexto (e no cache do blob, quando existir), então a
+invalidação é cirúrgica: só os contextos daquela tela.
+
+As demais rotas continuam no blob (modo `"blob"` do `StoreProvider`, decidido pelo
+`__root` consultando o livro-razão). Fase 2 amplia a lista até o blob morrer.
 
 `src/lib/api-client.ts` é o único lugar que fala `fetch` e o único que constrói `ApiError` —
 inclusive para falha de rede, que vira `status: 0` e `code: "NETWORK_UNAVAILABLE"` em vez de
