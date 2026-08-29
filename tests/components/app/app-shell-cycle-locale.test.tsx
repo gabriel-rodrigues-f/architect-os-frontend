@@ -1,4 +1,4 @@
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -82,7 +82,9 @@ describe("AppShell — seletor de Ciclo e de idioma (R3-008)", () => {
      */
     const trigger = await screen.findByRole("button", { name: "Ciclo" });
     // fixtureState tem "2026 H1" (fechado) e "2026 H2" (ativo, activeCycleId).
-    expect(trigger.textContent).toContain("2026 H2");
+    // ADR-0011 fase 1: o seletor lê o contexto `cycles` (não mais o blob
+    // /state), então o rótulo chega quando a query resolve — daí o waitFor.
+    await waitFor(() => expect(trigger.textContent).toContain("2026 H2"));
 
     await user.click(trigger);
     const option = await screen.findByRole("option", { name: "2026 H1" });

@@ -60,7 +60,35 @@ O prefixo `/api/v1` mora num lugar só: `src/lib/api-path.ts`. O `ApiClient` com
 `base + prefixo + recurso`, então os call sites dos gateways passam apenas o recurso
 (`/state`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
 
-## Tratamento de erro
+### Tipos gerados do contrato OpenAPI (ADR-0011, fase 1)
+
+`npm run gen:api` gera `src/lib/api-contract.gen.ts` a partir do `docs/openapi.json` do
+backend (caminho padrão `../backend/docs/openapi.json`; sobreponha com `OPENAPI_JSON=...`
+quando rodar de um worktree). O arquivo gerado é commitado — o gate não depende do backend
+estar por perto.
+
+**Lacuna conhecida do contrato, registrada sem inventar:** o `openapi.json` do backend não
+declara response schemas (todo 200 sai como `content?: never`) e nem toda rota declara o
+querystring (ex.: `GET /api/v1/assessments` aceita `architectId`/`cycleId` que não estão no
+documento). Por isso os tipos gerados valem para **paths, params e bodies**; as **respostas**
+continuam validadas em runtime pelos schemas zod de `src/lib/api-schemas.ts`, exatamente os
+mesmos que já validavam o `/state`. Quando o backend publicar response schemas, a derivação
+por zod pode ser aposentada rota a rota.
+
+### Estrangulamento do `/state` (ADR-0011, fase 1)
+
+O blob `GET /api/v1/state` (~2 MB) está sendo estrangulado. As rotas listadas no
+livro-razão (`defaultStranglerLedger`, em `src/lib/state-contexts.ts`) — hoje o Painel `/`,
+`/team` e o índice `/architects/$architectId` — **não carregam o blob**: cada uma declara os
+contextos de que precisa e o `ContextScope` (`src/lib/context-scope.tsx`) monta o mesmo
+`AppState` parcial a partir dos endpoints por contexto (`/architects`, `/assessments`,
+`/cycles`, …), servindo-o pelo MESMO `useStore()`/`useSelectors()` de sempre — telas,
+view-models e presenters não sabem a diferença. Mutações dentro de um escopo estrangulado
+escrevem de volta nas queries de contexto (e no cache do blob, quando existir), então a
+invalidação é cirúrgica: só os contextos daquela tela.
+
+As demais rotas continuam no blob (modo `"blob"` do `StoreProvider`, decidido pelo
+`__root` consultando o livro-razão). Fase 2 amplia a lista até o blob morrer.
 
 `src/lib/api-client.ts` é o único lugar que fala `fetch` e o único que constrói `ApiError` —
 inclusive para falha de rede, que vira `status: 0` e `code: "NETWORK_UNAVAILABLE"` em vez de
@@ -96,6 +124,7 @@ pt-BR, no front e no backend).
 
 ```sh
 npm run gate              # portão do repositório: typecheck + lint + test + build
+npm run gen:api           # regenera src/lib/api-contract.gen.ts do openapi.json do backend
 npm test                  # unitários
 RUN_INTEGRATION=1 npm test  # inclui contrato contra a API real (backend no ar)
 npm run typecheck

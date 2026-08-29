@@ -17,6 +17,7 @@ const {
   learningGateway,
   mentoringGateway,
   reportsGateway,
+  stateContextsGateway,
 } = defaultContainer;
 
 export const api = {
@@ -34,6 +35,7 @@ export const api = {
 };
 
 export const authApi = { ...authGateway };
+export const stateContextsApi = { ...stateContextsGateway };
 export const evolutionApi = { ...evolutionGateway };
 export const reportsApi = { ...reportsGateway };
 

@@ -162,6 +162,16 @@ for (const tema of TEMAS) {
       // 17 rotas numa sessão só — o timeout default de 30s não cobre.
       test.setTimeout(300_000);
 
+      // `reducedMotion: "reduce"` congela também as animações dirigidas por
+      // JS (recharts) — `animations: "disabled"` do screenshot só cobre CSS.
+      // Sem isto, o PNG flagra o radar no MEIO da animação de entrada
+      // (polígono colado ao centro) e o achado parece defeito de escala da
+      // aplicação. Vai por `emulateMedia` porque o caminho por opção de
+      // contexto (`test.use({ reducedMotion })`) NÃO emula o media query
+      // nesta versão do Playwright (1.62.1) — verificado com sonda: opção de
+      // contexto → matches false; emulateMedia → true.
+      await page.emulateMedia({ reducedMotion: "reduce" });
+
       const architectId = await resolveArchitectId(playwright);
       const dir = join(SCREENSHOTS_DIR, ROLE, tema);
       mkdirSync(dir, { recursive: true });

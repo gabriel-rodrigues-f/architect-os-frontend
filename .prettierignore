@@ -5,3 +5,4 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+api-contract.gen.ts

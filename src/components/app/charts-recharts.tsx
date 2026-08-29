@@ -56,7 +56,7 @@ export function CapabilityRadarFigure({
       <RadarChart data={data} outerRadius={estreita ? "65%" : "72%"}>
         <PolarGrid stroke={CHART_INK.grid} />
         <PolarAngleAxis dataKey="capability" tick={axisTick} />
-        <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
+        <PolarRadiusAxis domain={[1, 5]} tickCount={5} tick={false} axisLine={false} />
         <Radar
           name={targetLabel}
           dataKey="alvo"

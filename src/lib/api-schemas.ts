@@ -333,3 +333,14 @@ export const appStateSchema = z.object({
   evidences: z.array(evidence),
   activeCycleId: z.string(),
 });
+
+export const architectsResponseSchema = z.array(architect);
+export const assessmentsResponseSchema = z.array(assessment);
+export const capabilitiesResponseSchema = z.array(capability);
+export const competenciesResponseSchema = z.array(competency);
+export const cyclesResponseSchema = z.array(developmentCycle);
+export const plansResponseSchema = z.array(developmentPlan);
+export const learningPathsResponseSchema = z.array(learningPath);
+export const mentoringSessionsResponseSchema = z.array(mentoringSession);
+export const evidencesResponseSchema = z.array(evidence);
+export const activeCycleResponseSchema = z.object({ cycleId: z.string() });

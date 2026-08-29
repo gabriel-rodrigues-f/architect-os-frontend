@@ -30,6 +30,7 @@ import {
 import { type DevelopmentPlan, type Evidence, type EvidenceType } from "@/lib/domain";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters";
@@ -102,7 +103,29 @@ export function computeNextSteps(input: {
   return steps;
 }
 
+const profileContextsFor = (architectId: string): readonly ContextScopeRequest[] => [
+  "architects",
+  "capabilities",
+  "competencies",
+  "cycles",
+  "activeCycle",
+  { name: "assessments", architectId },
+  { name: "plans", architectId },
+  { name: "evidences", architectId },
+  { name: "mentoringSessions", architectId },
+  { name: "learningPaths", architectId },
+];
+
 function ArchitectProfile() {
+  const { architectId } = Route.useParams();
+  return (
+    <ContextScope contexts={profileContextsFor(architectId)}>
+      <ArchitectWorkspace />
+    </ContextScope>
+  );
+}
+
+function ArchitectWorkspace() {
   const { architectId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
@@ -408,9 +431,13 @@ function ArchitectProfile() {
                   {e.leaderComment && (
                     <p className="mt-1 text-xs text-muted-foreground">"{e.leaderComment}"</p>
                   )}
-                  {canReviewEvidence && <EvidenceReviewDialog evidence={e} />}
-                  {canEditOwn && e.status === "Needs Improvement" && (
-                    <ResubmitEvidenceDialog evidence={e} />
+                  {(canReviewEvidence || (canEditOwn && e.status === "Needs Improvement")) && (
+                    <div className="mt-1 flex flex-wrap items-center gap-3">
+                      {canReviewEvidence && <EvidenceReviewDialog evidence={e} />}
+                      {canEditOwn && e.status === "Needs Improvement" && (
+                        <ResubmitEvidenceDialog evidence={e} />
+                      )}
+                    </div>
                   )}
                 </li>
               ))}
@@ -687,7 +714,7 @@ function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="mt-1 h-auto px-0 text-xs">
+        <Button size="sm" variant="ghost" className="h-auto px-0 text-xs">
           {t("ev.resubmit.action")}
         </Button>
       </DialogTrigger>
@@ -763,7 +790,7 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="mt-1 h-auto px-0 text-xs">
+        <Button size="sm" variant="ghost" className="h-auto px-0 text-xs">
           {t("ev.review.action")}
         </Button>
       </DialogTrigger>

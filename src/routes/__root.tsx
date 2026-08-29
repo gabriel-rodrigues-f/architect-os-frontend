@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useRouterState,
 } from "@tanstack/react-router";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
@@ -15,6 +16,7 @@ import { AuthProvider, useAuth } from "../lib/auth";
 import { DependencyProvider } from "../lib/dependencies";
 import { I18nProvider } from "../lib/i18n";
 import { ThemeProvider, useTheme } from "../lib/theme";
+import { defaultStranglerLedger } from "../lib/state-contexts";
 import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
 import { LoginScreen } from "../components/app/LoginScreen";
@@ -167,6 +169,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (routerState) => routerState.location.pathname });
 
   useEffect(() => {
     startClientErrorTracking();
@@ -179,7 +182,9 @@ function RootComponent() {
           <I18nProvider>
             <AuthProvider>
               <AuthGate>
-                <StoreProvider>
+                <StoreProvider
+                  mode={defaultStranglerLedger.isStrangled(pathname) ? "contexts" : "blob"}
+                >
                   <AppShell>
                     <Outlet />
                   </AppShell>
