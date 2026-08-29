@@ -132,12 +132,23 @@ export interface RadarPoint {
   total?: number;
 }
 
+const LEVEL_SCALE_MIN = 1;
+const LEVEL_SCALE_MAX = 5;
+
+const clampToLevelScale = (value: number): number =>
+  Math.min(LEVEL_SCALE_MAX, Math.max(LEVEL_SCALE_MIN, value));
+
 export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; height?: number }) {
   const { t } = useI18n();
   const [showAll, setShowAll] = useState(false);
   const visibleData = showAll
     ? data
     : topByRelevance(data, (d) => Math.abs(d.alvo - d.atual), MAX_RADAR_AXES);
+  const plotData = visibleData.map((point) => ({
+    ...point,
+    atual: clampToLevelScale(point.atual),
+    alvo: clampToLevelScale(point.alvo),
+  }));
 
   const atual = t("chart.series.current");
   const alvo = t("chart.series.target");
@@ -173,7 +184,7 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
           />
         }
       >
-        <CapabilityRadarFigure data={visibleData} currentLabel={atual} targetLabel={alvo} />
+        <CapabilityRadarFigure data={plotData} currentLabel={atual} targetLabel={alvo} />
       </ChartFrame>
     </>
   );

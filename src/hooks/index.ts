@@ -4,5 +4,6 @@ export * from "./use-media-query";
 export * from "./use-narrow-viewport";
 export * from "./use-option-list-navigation";
 export * from "./use-reduced-motion";
+export * from "./use-scroll-overflow";
 export * from "./use-search-param";
 export * from "./use-server-draft";

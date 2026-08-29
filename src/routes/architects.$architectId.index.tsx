@@ -408,9 +408,13 @@ function ArchitectProfile() {
                   {e.leaderComment && (
                     <p className="mt-1 text-xs text-muted-foreground">"{e.leaderComment}"</p>
                   )}
-                  {canReviewEvidence && <EvidenceReviewDialog evidence={e} />}
-                  {canEditOwn && e.status === "Needs Improvement" && (
-                    <ResubmitEvidenceDialog evidence={e} />
+                  {(canReviewEvidence || (canEditOwn && e.status === "Needs Improvement")) && (
+                    <div className="mt-1 flex flex-wrap items-center gap-3">
+                      {canReviewEvidence && <EvidenceReviewDialog evidence={e} />}
+                      {canEditOwn && e.status === "Needs Improvement" && (
+                        <ResubmitEvidenceDialog evidence={e} />
+                      )}
+                    </div>
                   )}
                 </li>
               ))}
@@ -687,7 +691,7 @@ function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="mt-1 h-auto px-0 text-xs">
+        <Button size="sm" variant="ghost" className="h-auto px-0 text-xs">
           {t("ev.resubmit.action")}
         </Button>
       </DialogTrigger>
@@ -763,7 +767,7 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="mt-1 h-auto px-0 text-xs">
+        <Button size="sm" variant="ghost" className="h-auto px-0 text-xs">
           {t("ev.review.action")}
         </Button>
       </DialogTrigger>

@@ -149,9 +149,14 @@ const TEMAS = ["light", ...(DARK ? ["dark"] : [])] as const;
 
 for (const tema of TEMAS) {
   test.describe(`captura — ${ROLE}, tema ${tema}`, () => {
+    // `reducedMotion: "reduce"` congela também as animações dirigidas por JS
+    // (recharts) — `animations: "disabled"` do screenshot só cobre CSS. Sem
+    // isto, o PNG flagra o radar no MEIO da animação de entrada (polígono
+    // colado ao centro) e o achado parece defeito de escala da aplicação.
     test.use({
       viewport: { width: 1440, height: 900 },
       colorScheme: tema === "dark" ? "dark" : "light",
+      reducedMotion: "reduce",
     });
 
     test(`visita todas as rotas e captura (${ROLE}, ${tema})`, async ({
