@@ -1062,6 +1062,8 @@
   "nav.calibration": "Calibration",
   "calibration.title": "Calibration across leaders",
   "calibration.description": "Score distribution per evaluator, side by side — is everyone using the same ruler?",
+  "calibration.adminOnly": "Calibration is restricted to administrators.",
+  "calibration.adminOnlyHint": "Ask an administrator for the calibration reading — managers will get access once the 4-profile model exists.",
   "calibration.cycle.label": "Cycle",
   "calibration.kpi.overallAverage": "Overall average",
   "calibration.kpi.evaluators": "Evaluators",

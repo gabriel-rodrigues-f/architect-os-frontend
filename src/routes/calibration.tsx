@@ -11,6 +11,7 @@ import {
   StatCard,
 } from "@/components/app";
 import { calibrationApi } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { requireAdminReach } from "@/lib/route-guards";
 import { useStore } from "@/lib/store";
@@ -47,14 +48,24 @@ function CalibrationPage() {
   const { t } = useI18n();
   const vm = useCalibrationViewModel();
   const store = useStore();
+  const isAdmin = useCurrentUser().role === "admin";
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
 
   const query = useQuery({
     queryKey: ["calibration", cycleId],
     queryFn: () => calibrationApi.calibration(cycleId ?? ""),
-    enabled: cycleId !== null,
+    enabled: isAdmin && cycleId !== null,
   });
+
+  if (!isAdmin) {
+    return (
+      <>
+        <PageHeader title={t("calibration.title")} description={t("calibration.description")} />
+        <EmptyState title={t("calibration.adminOnly")} hint={t("calibration.adminOnlyHint")} />
+      </>
+    );
+  }
 
   return (
     <>
