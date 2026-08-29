@@ -96,7 +96,15 @@ const semImportarOProprioBarril = (area) => ({
 });
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".worktrees", "src/routeTree.gen.ts"] },
+  {
+    ignores: [
+      "dist",
+      ".output",
+      ".worktrees",
+      "src/routeTree.gen.ts",
+      "src/lib/api-contract.gen.ts",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

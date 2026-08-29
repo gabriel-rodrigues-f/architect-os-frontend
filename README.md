@@ -60,6 +60,21 @@ O prefixo `/api/v1` mora num lugar só: `src/lib/api-path.ts`. O `ApiClient` com
 `base + prefixo + recurso`, então os call sites dos gateways passam apenas o recurso
 (`/state`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
 
+### Tipos gerados do contrato OpenAPI (ADR-0011, fase 1)
+
+`npm run gen:api` gera `src/lib/api-contract.gen.ts` a partir do `docs/openapi.json` do
+backend (caminho padrão `../backend/docs/openapi.json`; sobreponha com `OPENAPI_JSON=...`
+quando rodar de um worktree). O arquivo gerado é commitado — o gate não depende do backend
+estar por perto.
+
+**Lacuna conhecida do contrato, registrada sem inventar:** o `openapi.json` do backend não
+declara response schemas (todo 200 sai como `content?: never`) e nem toda rota declara o
+querystring (ex.: `GET /api/v1/assessments` aceita `architectId`/`cycleId` que não estão no
+documento). Por isso os tipos gerados valem para **paths, params e bodies**; as **respostas**
+continuam validadas em runtime pelos schemas zod de `src/lib/api-schemas.ts`, exatamente os
+mesmos que já validavam o `/state`. Quando o backend publicar response schemas, a derivação
+por zod pode ser aposentada rota a rota.
+
 ## Tratamento de erro
 
 `src/lib/api-client.ts` é o único lugar que fala `fetch` e o único que constrói `ApiError` —
@@ -96,6 +111,7 @@ pt-BR, no front e no backend).
 
 ```sh
 npm run gate              # portão do repositório: typecheck + lint + test + build
+npm run gen:api           # regenera src/lib/api-contract.gen.ts do openapi.json do backend
 npm test                  # unitários
 RUN_INTEGRATION=1 npm test  # inclui contrato contra a API real (backend no ar)
 npm run typecheck
