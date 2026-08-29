@@ -39,7 +39,7 @@ export class CareerRoadmapViewModel {
     if (!current) return null;
     const above = this.careerLevels
       .filter((level) => level.rank > current.rank)
-      .sort((a, b) => a.rank - b.rank);
+      .sort((menor, maior) => menor.rank - maior.rank);
     return above[0] ?? null;
   }
 
@@ -52,7 +52,7 @@ export class CareerRoadmapViewModel {
         requiredLevel: missing.requiredLevel,
         gap: Math.max(0, missing.requiredLevel - missing.currentLevel),
       }))
-      .sort((a, b) => b.gap - a.gap || a.name.localeCompare(b.name));
+      .sort((um, outro) => outro.gap - um.gap || um.name.localeCompare(outro.name));
   }
 
   coverageFor(
@@ -68,7 +68,10 @@ export class CareerRoadmapViewModel {
         progressPercent: this.learningProgress.progressPercentFor(path, architectId),
       }))
       .filter((view) => view.covered.length > 0)
-      .sort((a, b) => b.covered.length - a.covered.length || a.name.localeCompare(b.name));
+      .sort(
+        (um, outro) =>
+          outro.covered.length - um.covered.length || um.name.localeCompare(outro.name),
+      );
     const coveredIds = new Set(
       pathViews.flatMap((view) => view.covered.map((item) => item.competencyId)),
     );

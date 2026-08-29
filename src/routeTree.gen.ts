@@ -27,6 +27,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as ArchitectsArchitectIdRouteImport } from './routes/architects.$architectId'
 import { Route as ArchitectsArchitectIdIndexRouteImport } from './routes/architects.$architectId.index'
 import { Route as ArchitectsArchitectIdEvolutionRouteImport } from './routes/architects.$architectId.evolution'
+import { Route as ArchitectsArchitectIdRoadmapRouteImport } from './routes/architects.$architectId.roadmap'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -120,6 +121,12 @@ const ArchitectsArchitectIdEvolutionRoute =
     path: '/evolution',
     getParentRoute: () => ArchitectsArchitectIdRoute,
   } as any)
+const ArchitectsArchitectIdRoadmapRoute =
+  ArchitectsArchitectIdRoadmapRouteImport.update({
+    id: '/roadmap',
+    path: '/roadmap',
+    getParentRoute: () => ArchitectsArchitectIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
   '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
   '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -158,6 +166,7 @@ export interface FileRoutesByTo {
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
   '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRoutesById {
@@ -179,6 +188,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
   '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
+  '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
   '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/architects/$architectId'
     | '/architects/$architectId/evolution'
+    | '/architects/$architectId/roadmap'
     | '/architects/$architectId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/training-needs'
     | '/users'
     | '/architects/$architectId/evolution'
+    | '/architects/$architectId/roadmap'
     | '/architects/$architectId'
   id:
     | '__root__'
@@ -240,6 +252,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/architects/$architectId'
     | '/architects/$architectId/evolution'
+    | '/architects/$architectId/roadmap'
     | '/architects/$architectId/'
   fileRoutesById: FileRoutesById
 }
@@ -390,16 +403,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchitectsArchitectIdEvolutionRouteImport
       parentRoute: typeof ArchitectsArchitectIdRoute
     }
+    '/architects/$architectId/roadmap': {
+      id: '/architects/$architectId/roadmap'
+      path: '/roadmap'
+      fullPath: '/architects/$architectId/roadmap'
+      preLoaderRoute: typeof ArchitectsArchitectIdRoadmapRouteImport
+      parentRoute: typeof ArchitectsArchitectIdRoute
+    }
   }
 }
 
 interface ArchitectsArchitectIdRouteChildren {
   ArchitectsArchitectIdEvolutionRoute: typeof ArchitectsArchitectIdEvolutionRoute
+  ArchitectsArchitectIdRoadmapRoute: typeof ArchitectsArchitectIdRoadmapRoute
   ArchitectsArchitectIdIndexRoute: typeof ArchitectsArchitectIdIndexRoute
 }
 
 const ArchitectsArchitectIdRouteChildren: ArchitectsArchitectIdRouteChildren = {
   ArchitectsArchitectIdEvolutionRoute: ArchitectsArchitectIdEvolutionRoute,
+  ArchitectsArchitectIdRoadmapRoute: ArchitectsArchitectIdRoadmapRoute,
   ArchitectsArchitectIdIndexRoute: ArchitectsArchitectIdIndexRoute,
 }
 

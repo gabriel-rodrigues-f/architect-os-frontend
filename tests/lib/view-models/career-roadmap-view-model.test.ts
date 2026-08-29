@@ -18,8 +18,14 @@ const LEVELS: CareerLevel[] = [
 ];
 
 const CATALOG = new Map<string, Competency>([
-  ["comp-clean-core", { id: "comp-clean-core", name: "Clean Core", capabilityId: "cap-btp", active: true }],
-  ["comp-eventos", { id: "comp-eventos", name: "Arquitetura de Eventos", capabilityId: "cap-int", active: true }],
+  [
+    "comp-clean-core",
+    { id: "comp-clean-core", name: "Clean Core", capabilityId: "cap-btp", active: true },
+  ],
+  [
+    "comp-eventos",
+    { id: "comp-eventos", name: "Arquitetura de Eventos", capabilityId: "cap-int", active: true },
+  ],
   ["comp-cds", { id: "comp-cds", name: "Modelagem CDS", capabilityId: "cap-btp", active: true }],
 ]);
 
@@ -100,7 +106,7 @@ describe("CareerRoadmapViewModel — obrigatórias faltantes (o segundo número 
         { competencyId: "comp-eventos", currentLevel: 1, requiredLevel: 4 },
       ]),
     );
-    expect(missing.map((m) => m.name)).toEqual(["Arquitetura de Eventos", "Clean Core"]);
+    expect(missing.map((item) => item.name)).toEqual(["Arquitetura de Eventos", "Clean Core"]);
     expect(missing[0]).toMatchObject({ currentLevel: 1, requiredLevel: 4, gap: 3 });
     expect(missing[1]).toMatchObject({ gap: 1 });
   });
@@ -126,11 +132,15 @@ describe("CareerRoadmapViewModel — cobertura das trilhas", () => {
     const vm = makeVm();
     const missing = vm.missingRequired(adherence(MISSING));
     const coverage = vm.coverageFor("ana", missing, [
-      path({ id: "trilha-btp", name: "Trilha BTP", competencyIds: ["comp-clean-core", "comp-cds", "comp-outra"] }),
+      path({
+        id: "trilha-btp",
+        name: "Trilha BTP",
+        competencyIds: ["comp-clean-core", "comp-cds", "comp-outra"],
+      }),
       path({ id: "trilha-solta", name: "Trilha sem relação", competencyIds: ["comp-outra"] }),
     ]);
     expect(coverage.paths).toHaveLength(1);
-    expect(coverage.paths[0]?.covered.map((c) => c.competencyId).sort()).toEqual([
+    expect(coverage.paths[0]?.covered.map((item) => item.competencyId).sort()).toEqual([
       "comp-cds",
       "comp-clean-core",
     ]);
@@ -140,9 +150,13 @@ describe("CareerRoadmapViewModel — cobertura das trilhas", () => {
     const vm = makeVm();
     const missing = vm.missingRequired(adherence(MISSING));
     const coverage = vm.coverageFor("ana", missing, [
-      path({ id: "trilha-btp", name: "Trilha BTP", competencyIds: ["comp-clean-core", "comp-cds"] }),
+      path({
+        id: "trilha-btp",
+        name: "Trilha BTP",
+        competencyIds: ["comp-clean-core", "comp-cds"],
+      }),
     ]);
-    expect(coverage.uncovered.map((c) => c.competencyId)).toEqual(["comp-eventos"]);
+    expect(coverage.uncovered.map((item) => item.competencyId)).toEqual(["comp-eventos"]);
   });
 
   it("o progresso da trilha é o já calculado pela LearningPathsViewModel (reuso, não recontagem)", () => {
@@ -172,6 +186,6 @@ describe("CareerRoadmapViewModel — cobertura das trilhas", () => {
       path({ id: "t-1", name: "Cobre uma", competencyIds: ["comp-eventos"] }),
       path({ id: "t-2", name: "Cobre duas", competencyIds: ["comp-clean-core", "comp-cds"] }),
     ]);
-    expect(coverage.paths.map((p) => p.pathId)).toEqual(["t-2", "t-1"]);
+    expect(coverage.paths.map((view) => view.pathId)).toEqual(["t-2", "t-1"]);
   });
 });
