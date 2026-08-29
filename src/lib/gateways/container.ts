@@ -12,6 +12,7 @@ import { HttpEvidenceGateway, type EvidenceGateway } from "./evidence.gateway";
 import { HttpEvolutionGateway, type EvolutionGateway } from "./evolution.gateway";
 import { HttpLearningGateway, type LearningGateway } from "./learning.gateway";
 import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway";
+import { InMemoryNoticesGateway, type NoticesGateway } from "./notices.gateway";
 import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
 
 interface FrontendConfig {
@@ -33,6 +34,7 @@ export class FrontendContainer {
   readonly evolutionGateway: EvolutionGateway;
   readonly learningGateway: LearningGateway;
   readonly mentoringGateway: MentoringGateway;
+  readonly noticesGateway: NoticesGateway;
   readonly reportsGateway: ReportsGateway;
 
   private constructor(config: FrontendConfig) {
@@ -52,6 +54,7 @@ export class FrontendContainer {
     this.evolutionGateway = new HttpEvolutionGateway(this.apiClient);
     this.learningGateway = new HttpLearningGateway(this.apiClient);
     this.mentoringGateway = new HttpMentoringGateway(this.apiClient);
+    this.noticesGateway = new InMemoryNoticesGateway();
     this.reportsGateway = new HttpReportsGateway(this.apiClient);
   }
 

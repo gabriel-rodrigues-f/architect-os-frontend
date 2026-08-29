@@ -7,6 +7,7 @@ export * from "./curation-policy-editor";
 export * from "./development-plans-view-model";
 export * from "./learning-paths-view-model";
 export * from "./mentoring-view-model";
+export * from "./notices-view-model";
 export * from "./operational-settings-editor";
 export * from "./plan-item-from-gap";
 export * from "./scoring-bands-editor";

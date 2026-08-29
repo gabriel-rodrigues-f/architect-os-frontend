@@ -63,6 +63,22 @@ export const architectAdherenceResponseSchema = z.object({
   semRegua: z.literal(true).optional(),
 });
 
+const notice = z.object({
+  id: z.string(),
+  eventType: z.string(),
+  title: z.string(),
+  link: z.string(),
+  occurredAt: z.string(),
+  readAt: z.string().nullable(),
+  architectId: z.string().nullable(),
+  teamId: z.string().nullable(),
+});
+
+export const noticesResponseSchema = z.object({
+  notices: z.array(notice),
+  unreadCount: z.number(),
+});
+
 const careerLevel = z.object({
   id: z.string(),
   name: z.string(),
