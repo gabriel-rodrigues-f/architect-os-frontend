@@ -3,8 +3,13 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as CalibrationRoute } from "@/routes/calibration";
-import { requireAdminReach } from "@/lib/route-guards";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureUnassignedLeadUser,
+  fixtureState,
+  scopedFixtureStateFor,
+} from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -33,10 +38,6 @@ describe("/calibration — distribuição de notas por avaliador", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-  });
-
-  it("a rota é admin-only pela guarda compartilhada (gestor entra com os 4 perfis)", () => {
-    expect(CalibrationRoute.options.beforeLoad).toBe(requireAdminReach);
   });
 
   it("mostra os 3 avaliadores lado a lado, do mais desviante para o menos", async () => {
@@ -72,5 +73,52 @@ describe("/calibration — distribuição de notas por avaliador", () => {
     const marina = screen.getByText("Marina Lopes").closest("[data-evaluator-card]") as HTMLElement;
     const table = within(marina).getByRole("table");
     expect(table.textContent).toContain("L4");
+  });
+});
+
+/**
+ * QA da onda 17, achado BLOQUEANTE — por URL direta a tela abria INTEIRA para
+ * member: no acesso direto (SSR + hidratação do TanStack Start) o
+ * `beforeLoad` não roda no navegador, e o dado de calibração vem de gateway
+ * em memória, sem servidor para recusar. Reproduzido em navegador real:
+ * member em /calibration via URL viu os 3 avaliadores e a média geral.
+ *
+ * A correção copia o mecanismo que JÁ segura /users no mesmo cenário: a
+ * PRÓPRIA TELA nega quem não é admin (`users.adminOnly` é o precedente), com
+ * a consulta desligada para não-admin. O redirect do `beforeLoad` continua
+ * valendo na navegação interna — coberto em `route-guards.test.ts`, agora
+ * por comportamento (para onde a navegação vai), não por identidade de
+ * função (o teste antigo `toBe(requireAdminReach)` sobrevivia a uma guarda
+ * quebrada por dentro).
+ *
+ * Estes testes afirmam o COMPORTAMENTO: nenhum dado de calibração renderiza
+ * para member/lead. Contra o código atual nasceram VERMELHOS (a tela
+ * mostrava Marina/Ricardo/Paula para qualquer papel).
+ */
+describe("/calibration nega DADO a quem não é admin — a tela é a última barreira", () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const renderAs = (user: typeof fixtureMemberUser) => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    mockAppFetch(fetchMock, { user, state: scopedFixtureStateFor(user) });
+    renderWithApp(<CalibrationPage />);
+  };
+
+  it("member não recebe a tela: aviso de acesso restrito, zero avaliadores, zero KPIs", async () => {
+    renderAs(fixtureMemberUser);
+    expect(await screen.findByText("Calibração é restrita a administradores.")).toBeTruthy();
+    expect(screen.queryByText("Marina Lopes")).toBeNull();
+    expect(screen.queryByText("Paula Souza")).toBeNull();
+    expect(screen.queryByText("Média geral")).toBeNull();
+  });
+
+  it("lead também não — CONTRATO PRD-03: gestor só entra quando os 4 perfis existirem", async () => {
+    renderAs(fixtureUnassignedLeadUser);
+    expect(await screen.findByText("Calibração é restrita a administradores.")).toBeTruthy();
+    expect(screen.queryByText("Marina Lopes")).toBeNull();
   });
 });
