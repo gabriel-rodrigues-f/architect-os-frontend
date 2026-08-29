@@ -6,7 +6,7 @@ import {
 } from "../api-schemas";
 import type { ApiClient } from "../api-client";
 
-export interface TeamRuleCompetencyRequirement {
+interface TeamRuleCompetencyRequirement {
   competencyId: string;
   requirementType: RequirementType;
   requiredLevel: Level;

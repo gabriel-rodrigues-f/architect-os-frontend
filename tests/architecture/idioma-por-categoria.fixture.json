@@ -1,5 +1,5 @@
 {
-  "total": 133,
+  "total": 130,
   "porArquivo": {
     "src/components/app/AppShell.tsx": 6,
     "src/components/app/ArchitectFilter.tsx": 1,
@@ -22,7 +22,7 @@
     "src/lib/context-scope.tsx": 1,
     "src/lib/curation-policy.ts": 1,
     "src/lib/design/color.ts": 2,
-    "src/lib/design/stylesheet.ts": 4,
+    "src/lib/design/stylesheet.ts": 1,
     "src/lib/design/tokens.ts": 4,
     "src/lib/domain.ts": 1,
     "src/lib/download.ts": 1,

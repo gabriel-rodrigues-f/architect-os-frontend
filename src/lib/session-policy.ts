@@ -1,6 +1,6 @@
 import { ApiError } from "./api-errors";
 
-export const SESSION_ENDING_STATUS = 401;
+const SESSION_ENDING_STATUS = 401;
 
 export const SESSION_ENDING_CODES = [
   "AUTHENTICATION_REQUIRED",
@@ -10,7 +10,7 @@ export const SESSION_ENDING_CODES = [
 
 const sessionEndingCodes: ReadonlySet<string> = new Set(SESSION_ENDING_CODES);
 
-export function endsSession(error: unknown): boolean {
+function endsSession(error: unknown): boolean {
   return (
     error instanceof ApiError &&
     error.status === SESSION_ENDING_STATUS &&

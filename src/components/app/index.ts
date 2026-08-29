@@ -28,4 +28,4 @@ export * from "./mentoring-shared";
 export * from "./team-shared";
 export * from "./ui-bits";
 
-export { DataViewToolbar, Pagination, type ActiveFilterChip, type SortOption } from "./DataView";
+export { DataViewToolbar, Pagination } from "./DataView";

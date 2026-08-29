@@ -10,7 +10,7 @@ export type AsyncSubmitResult<T> = { ok: true; value: T } | { ok: false; error: 
 
 export type SubmitErrorFallback = string | ((error: unknown) => string);
 
-export function submitErrorMessage(error: unknown, fallback: SubmitErrorFallback): string {
+function submitErrorMessage(error: unknown, fallback: SubmitErrorFallback): string {
   if (typeof fallback === "function") return fallback(error);
   return error instanceof ApiError ? error.message : fallback;
 }

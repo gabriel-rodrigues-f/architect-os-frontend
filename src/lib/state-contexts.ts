@@ -1,6 +1,6 @@
 import { stateContextsApi, type AppState } from "./api";
 
-export const STATE_CONTEXT_NAMES = [
+const STATE_CONTEXT_NAMES = [
   "architects",
   "assessments",
   "capabilities",
@@ -20,7 +20,7 @@ export interface StateContextRequest {
   architectId?: string | undefined;
 }
 
-export const CONTEXT_STALE_TIME = 30_000;
+const CONTEXT_STALE_TIME = 30_000;
 
 interface StateContextDefinition {
   fetchSlice: (filter: { architectId?: string | undefined }) => Promise<unknown>;
@@ -87,7 +87,7 @@ const definitions: Record<StateContextName, StateContextDefinition> = {
   },
 };
 
-export class StateContextCatalog {
+class StateContextCatalog {
   queryKeyOf(request: StateContextRequest): readonly unknown[] {
     return request.architectId
       ? (["state-context", request.name, { architectId: request.architectId }] as const)
@@ -123,7 +123,7 @@ export class StateContextCatalog {
 
 export const stateContextCatalog = new StateContextCatalog();
 
-export class StranglerLedger {
+class StranglerLedger {
   private readonly exactPaths: ReadonlySet<string>;
   private readonly patterns: readonly RegExp[];
 

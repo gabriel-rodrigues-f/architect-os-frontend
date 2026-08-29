@@ -57,7 +57,12 @@ import { describe, expect, it } from "vitest";
  */
 
 const raizDoRepositorio = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const FIXTURE = join(raizDoRepositorio, "tests", "architecture", "idioma-por-categoria.fixture.json");
+const FIXTURE = join(
+  raizDoRepositorio,
+  "tests",
+  "architecture",
+  "idioma-por-categoria.fixture.json",
+);
 
 const ARQUIVOS_DE_PLATAFORMA = new Set([
   join("src", "router.tsx"),
@@ -223,7 +228,7 @@ function carregarBaseline(): BaselineDeIdioma {
   const anterior = existsSync(FIXTURE)
     ? (JSON.parse(readFileSync(FIXTURE, "utf8")) as BaselineDeIdioma)
     : undefined;
-  if (process.env.ATUALIZAR_BASELINE_IDIOMA === "1") {
+  if (process.env["ATUALIZAR_BASELINE_IDIOMA"] === "1") {
     if (anterior && totalAtual > anterior.total) return anterior;
     return gravarBaseline();
   }

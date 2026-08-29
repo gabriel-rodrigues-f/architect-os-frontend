@@ -1,4 +1,4 @@
-export class Scale<Step extends string> {
+class Scale<Step extends string> {
   constructor(
     readonly prefix: string,
     private readonly steps: Readonly<Record<Step, number>>,

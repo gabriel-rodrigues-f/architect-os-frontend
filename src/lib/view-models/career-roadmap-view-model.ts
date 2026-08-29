@@ -10,7 +10,7 @@ export interface MissingCompetencyView {
   gap: number;
 }
 
-export interface LearningPathCoverageView {
+interface LearningPathCoverageView {
   pathId: string;
   name: string;
   covered: MissingCompetencyView[];

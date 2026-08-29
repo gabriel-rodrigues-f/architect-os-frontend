@@ -1,6 +1,6 @@
 import { CONTRAST, Oklch } from "./color";
 
-export type TokenRole = "surface" | "content" | "fill" | "stroke" | "series";
+type TokenRole = "surface" | "content" | "fill" | "stroke" | "series";
 
 export interface TokenDefinition {
   readonly name: string;
@@ -132,7 +132,7 @@ class TokenRegistry {
   }
 }
 
-export class StylesheetBuilder {
+class StylesheetBuilder {
   private readonly linhas: string[] = [];
 
   constructor(private readonly strategy: ThemeStrategy) {}

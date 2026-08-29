@@ -21,7 +21,7 @@ export interface CareerLevel {
   rank: number;
 }
 
-export interface CareerLevelPolicy {
+interface CareerLevelPolicy {
   careerLevelId: string;
   minimumQualifiedCapabilities: number;
 }
