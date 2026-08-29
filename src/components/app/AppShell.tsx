@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
+import { NoticeBell } from "@/components/app/NoticeBell";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -493,6 +494,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     </span>
                   </p>
                 )}
+                <NoticeBell />
                 <PreferencesMenu />
               </div>
             </div>

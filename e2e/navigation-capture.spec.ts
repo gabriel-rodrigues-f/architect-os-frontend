@@ -84,6 +84,7 @@ const VISITAS: Record<string, (ctx: VisitContext) => string | null> = {
   "/gap-analysis": () => "/gap-analysis",
   "/learning-paths": () => "/learning-paths",
   "/mentoring": () => "/mentoring",
+  "/notices": () => "/notices",
   "/progression": () => "/progression",
   "/settings": () => "/settings",
   "/team": () => "/team",
