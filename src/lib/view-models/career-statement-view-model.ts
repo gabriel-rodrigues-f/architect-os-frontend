@@ -8,12 +8,7 @@ import type {
 import type { MessageKey } from "../i18n";
 import { defaultDateFormatter } from "../text";
 
-export type StatementEntryKind =
-  | "transition"
-  | "competencyStep"
-  | "evidence"
-  | "pdi"
-  | "mentoring";
+export type StatementEntryKind = "transition" | "competencyStep" | "evidence" | "pdi" | "mentoring";
 
 export interface StatementEntry {
   id: string;
@@ -87,24 +82,9 @@ export class CareerStatementViewModel {
         detail: transition.reason || null,
         link: profileLink,
       })),
-      ...sources.competencyEvents.map((event) => ({
-        id: `step-${event.id}`,
-        kind: "competencyStep" as const,
-        date: event.effectiveDate,
-        title:
-          event.fromLevel === null
-            ? this.translate("statement.entry.competencyStepFirst", {
-                competency: this.competencyName(event.competencyId) ?? event.competencyId,
-                to: event.toLevel,
-              })
-            : this.translate("statement.entry.competencyStep", {
-                competency: this.competencyName(event.competencyId) ?? event.competencyId,
-                from: event.fromLevel,
-                to: event.toLevel,
-              }),
-        detail: event.note,
-        link: `${profileLink}/evolution`,
-      })),
+      ...sources.competencyEvents.map((event) =>
+        this.competencyStepEntry(event, sources.architectId),
+      ),
       ...sources.evidences.map((evidence) => ({
         id: `evidence-${evidence.id}`,
         kind: "evidence" as const,
@@ -131,6 +111,28 @@ export class CareerStatementViewModel {
       })),
     ];
     return all.sort((left, right) => right.date.localeCompare(left.date));
+  }
+
+  competencyStepEntry(event: StatementCompetencyEvent, architectId: string): StatementEntry {
+    const competency = this.competencyName(event.competencyId) ?? event.competencyId;
+    return {
+      id: `step-${event.id}`,
+      kind: "competencyStep",
+      date: event.effectiveDate,
+      title:
+        event.fromLevel === null
+          ? this.translate("statement.entry.competencyStepFirst", {
+              competency,
+              to: event.toLevel,
+            })
+          : this.translate("statement.entry.competencyStep", {
+              competency,
+              from: event.fromLevel,
+              to: event.toLevel,
+            }),
+      detail: event.note,
+      link: `/architects/${architectId}/evolution`,
+    };
   }
 
   groupByYear(entries: readonly StatementEntry[]): StatementYearGroup[] {

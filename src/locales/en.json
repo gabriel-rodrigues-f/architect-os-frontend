@@ -938,6 +938,8 @@
   "statement.title": "Career statement — {nome}",
   "statement.description": "The whole story in chronological order: level transitions, competency steps, evidence, development plans and mentoring.",
   "statement.filters.kinds": "Entry types",
+  "statement.filters.all": "All types",
+  "statement.filters.none": "No types",
   "statement.kind.transition": "Level transition",
   "statement.kind.competencyStep": "Competency step",
   "statement.kind.evidence": "Evidence",

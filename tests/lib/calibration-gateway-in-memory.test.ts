@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { InMemoryCalibrationGateway, type LevelDistribution } from "@/lib/gateways/calibration.gateway";
+import {
+  InMemoryCalibrationGateway,
+  type LevelDistribution,
+} from "@/lib/gateways/calibration.gateway";
 import { calibrationResponseSchema } from "@/lib/api-schemas";
 
 /**

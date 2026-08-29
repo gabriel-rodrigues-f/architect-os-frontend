@@ -30,6 +30,7 @@ import { Route as ArchitectsArchitectIdRouteImport } from './routes/architects.$
 import { Route as ArchitectsArchitectIdIndexRouteImport } from './routes/architects.$architectId.index'
 import { Route as ArchitectsArchitectIdEvolutionRouteImport } from './routes/architects.$architectId.evolution'
 import { Route as ArchitectsArchitectIdRoadmapRouteImport } from './routes/architects.$architectId.roadmap'
+import { Route as ArchitectsArchitectIdStatementRouteImport } from './routes/architects.$architectId.statement'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -139,6 +140,12 @@ const ArchitectsArchitectIdRoadmapRoute =
     path: '/roadmap',
     getParentRoute: () => ArchitectsArchitectIdRoute,
   } as any)
+const ArchitectsArchitectIdStatementRoute =
+  ArchitectsArchitectIdStatementRouteImport.update({
+    id: '/statement',
+    path: '/statement',
+    getParentRoute: () => ArchitectsArchitectIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
   '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
   '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
+  '/architects/$architectId/statement': typeof ArchitectsArchitectIdStatementRoute
   '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -183,6 +191,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
   '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
+  '/architects/$architectId/statement': typeof ArchitectsArchitectIdStatementRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRoutesById {
@@ -207,6 +216,7 @@ export interface FileRoutesById {
   '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
   '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
   '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
+  '/architects/$architectId/statement': typeof ArchitectsArchitectIdStatementRoute
   '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/architects/$architectId'
     | '/architects/$architectId/evolution'
     | '/architects/$architectId/roadmap'
+    | '/architects/$architectId/statement'
     | '/architects/$architectId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/architects/$architectId/evolution'
     | '/architects/$architectId/roadmap'
+    | '/architects/$architectId/statement'
     | '/architects/$architectId'
   id:
     | '__root__'
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
     | '/architects/$architectId'
     | '/architects/$architectId/evolution'
     | '/architects/$architectId/roadmap'
+    | '/architects/$architectId/statement'
     | '/architects/$architectId/'
   fileRoutesById: FileRoutesById
 }
@@ -450,18 +463,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchitectsArchitectIdRoadmapRouteImport
       parentRoute: typeof ArchitectsArchitectIdRoute
     }
+    '/architects/$architectId/statement': {
+      id: '/architects/$architectId/statement'
+      path: '/statement'
+      fullPath: '/architects/$architectId/statement'
+      preLoaderRoute: typeof ArchitectsArchitectIdStatementRouteImport
+      parentRoute: typeof ArchitectsArchitectIdRoute
+    }
   }
 }
 
 interface ArchitectsArchitectIdRouteChildren {
   ArchitectsArchitectIdEvolutionRoute: typeof ArchitectsArchitectIdEvolutionRoute
   ArchitectsArchitectIdRoadmapRoute: typeof ArchitectsArchitectIdRoadmapRoute
+  ArchitectsArchitectIdStatementRoute: typeof ArchitectsArchitectIdStatementRoute
   ArchitectsArchitectIdIndexRoute: typeof ArchitectsArchitectIdIndexRoute
 }
 
 const ArchitectsArchitectIdRouteChildren: ArchitectsArchitectIdRouteChildren = {
   ArchitectsArchitectIdEvolutionRoute: ArchitectsArchitectIdEvolutionRoute,
   ArchitectsArchitectIdRoadmapRoute: ArchitectsArchitectIdRoadmapRoute,
+  ArchitectsArchitectIdStatementRoute: ArchitectsArchitectIdStatementRoute,
   ArchitectsArchitectIdIndexRoute: ArchitectsArchitectIdIndexRoute,
 }
 

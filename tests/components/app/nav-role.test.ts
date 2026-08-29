@@ -48,7 +48,7 @@ describe("AppShell — navegação recortada por papel", () => {
   it("calibração é admin-only na navegação até o modelo de 4 perfis", () => {
     for (const role of ["member", "lead"]) {
       const groups = filterNavGroups(NAV_GROUPS, role);
-      const paths = groups.flatMap((g) => g.items.map((i) => i.to));
+      const paths = groups.flatMap((group) => group.items.map((item) => item.to));
       expect(paths, role).not.toContain("/calibration");
     }
   });

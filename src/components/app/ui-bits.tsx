@@ -253,7 +253,7 @@ export function ProfileTabs({
   active,
 }: {
   architectId: string;
-  active: "overview" | "evolution" | "roadmap";
+  active: "overview" | "evolution" | "statement" | "roadmap";
 }) {
   const { t } = useI18n();
   const tabClass = (isActive: boolean) =>
@@ -280,6 +280,14 @@ export function ProfileTabs({
         className={tabClass(active === "evolution")}
       >
         {t("arch.tabs.evolution")}
+      </Link>
+      <Link
+        to="/architects/$architectId/statement"
+        params={{ architectId }}
+        aria-current={active === "statement" ? "page" : undefined}
+        className={tabClass(active === "statement")}
+      >
+        {t("arch.tabs.statement")}
       </Link>
       <Link
         to="/architects/$architectId/roadmap"

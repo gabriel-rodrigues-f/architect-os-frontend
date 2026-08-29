@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  CareerEventItem,
   EvolutionLine,
   PageHeader,
   ProficiencyTimeline,
@@ -22,6 +23,8 @@ import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { defaultDateFormatter } from "@/lib/text";
+import { downloadBlob } from "@/lib/download";
+import { CareerStatementViewModel } from "@/lib/view-models";
 
 export const Route = createFileRoute("/architects/$architectId/evolution")({
   head: () => ({
@@ -123,13 +126,7 @@ function ArchitectEvolution() {
   const exportPdf = async () => {
     const result = await runExport(() => reportsApi.exportEvolutionPdf(architectId, filters));
     if (!result.ok) return;
-    const { blob, filename } = result.value;
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(result.value.blob, result.value.filename);
   };
 
   const sortedComparisons = useMemo(
@@ -192,6 +189,15 @@ function ArchitectEvolution() {
     () =>
       data ? [...data.events].sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate)) : [],
     [data],
+  );
+
+  const statementVm = useMemo(
+    () =>
+      new CareerStatementViewModel(
+        t,
+        (id) => data?.competencySeries.find((c) => c.competencyId === id)?.competencyName,
+      ),
+    [t, data],
   );
 
   const topChanges = useMemo(
@@ -577,34 +583,19 @@ function ArchitectEvolution() {
                   <p className="text-sm text-muted-foreground">{t("evolution.timeline.empty")}</p>
                 ) : (
                   <>
-                    <ul className="space-y-3">
-                      {sortedEvents.slice(0, timelineVisibleCount).map((event) => {
-                        const competency = data.competencySeries.find(
-                          (c) => c.competencyId === event.competencyId,
-                        );
-                        return (
-                          <li
-                            key={event.id}
-                            className="border-b border-border/60 pb-2 text-sm last:border-0"
-                          >
-                            <span className="text-xs text-muted-foreground">
-                              {defaultDateFormatter.formatDate(event.effectiveDate, locale)} ·{" "}
-                              {event.sourceType === "MENTORING"
+                    <ul className="divide-y divide-border/60">
+                      {sortedEvents.slice(0, timelineVisibleCount).map((event) => (
+                        <li key={event.id}>
+                          <CareerEventItem
+                            entry={statementVm.competencyStepEntry(event, architectId)}
+                            meta={`${defaultDateFormatter.formatDate(event.effectiveDate, locale) ?? event.effectiveDate} · ${
+                              event.sourceType === "MENTORING"
                                 ? t("evolution.source.mentoring")
-                                : t("evolution.source.assessment")}
-                            </span>
-                            <div>
-                              <span className="font-medium">
-                                {competency?.competencyName ?? event.competencyId}
-                              </span>{" "}
-                              {event.fromLevel ? `L${event.fromLevel} → ` : ""}L{event.toLevel}
-                            </div>
-                            {event.note && (
-                              <p className="text-xs text-muted-foreground">{event.note}</p>
-                            )}
-                          </li>
-                        );
-                      })}
+                                : t("evolution.source.assessment")
+                            }`}
+                          />
+                        </li>
+                      ))}
                     </ul>
                     {timelineVisibleCount < sortedEvents.length && (
                       <div className="mt-4 flex items-center justify-between">

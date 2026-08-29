@@ -4,6 +4,7 @@ export * from "./ArchitectFilter";
 export * from "./ArchitectNameCombobox";
 export * from "./ArchitectSelectCombobox";
 export * from "./CapabilityCombobox";
+export * from "./CareerEventTimeline";
 export * from "./CapabilityHeatmap";
 export * from "./CommandWithReasonDialog";
 export * from "./ConfirmDialog";

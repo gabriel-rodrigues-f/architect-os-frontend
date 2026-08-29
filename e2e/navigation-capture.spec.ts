@@ -75,6 +75,8 @@ const VISITAS: Record<string, (ctx: VisitContext) => string | null> = {
     ctx.architectId && `/architects/${ctx.architectId}/evolution`,
   "/architects/$architectId/roadmap": (ctx) =>
     ctx.architectId && `/architects/${ctx.architectId}/roadmap`,
+  "/architects/$architectId/statement": (ctx) =>
+    ctx.architectId && `/architects/${ctx.architectId}/statement`,
   "/assessments": () => "/assessments",
   "/calibration": () => "/calibration",
   "/capability-map": () => "/capability-map",

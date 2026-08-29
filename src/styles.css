@@ -419,3 +419,18 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
+
+/* Extrato de carreira (PRD-04): até o PDF do backend chegar, a impressão do
+   navegador é o export — o miolo imprime limpo, sem a moldura da aplicação. */
+@media print {
+  aside,
+  header,
+  nav {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}

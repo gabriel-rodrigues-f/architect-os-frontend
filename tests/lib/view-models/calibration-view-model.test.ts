@@ -77,7 +77,10 @@ describe("CalibrationViewModel", () => {
       snapshot({
         overall: { distribution: distribution([0, 0, 3, 0, 0]), average: 3 },
         evaluators: [
-          evaluator({ userId: "severe", average: 3 - CalibrationViewModel.DEVIATION_ALERT_THRESHOLD }),
+          evaluator({
+            userId: "severe",
+            average: 3 - CalibrationViewModel.DEVIATION_ALERT_THRESHOLD,
+          }),
           evaluator({ userId: "central", average: 3.2 }),
         ],
       }),

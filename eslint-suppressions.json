@@ -211,7 +211,7 @@
   },
   "src/lib/text.ts": {
     "id-length": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/view-models/assessment-view-model.ts": {

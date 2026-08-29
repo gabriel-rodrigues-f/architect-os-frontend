@@ -938,6 +938,8 @@
   "statement.title": "Extrato de carreira — {nome}",
   "statement.description": "A história em ordem cronológica: transições de nível, degraus de competência, evidências, PDIs e mentorias.",
   "statement.filters.kinds": "Tipos de entrada",
+  "statement.filters.all": "Todos os tipos",
+  "statement.filters.none": "Nenhum tipo",
   "statement.kind.transition": "Transição de nível",
   "statement.kind.competencyStep": "Degrau de competência",
   "statement.kind.evidence": "Evidência",

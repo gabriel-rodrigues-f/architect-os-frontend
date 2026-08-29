@@ -23,7 +23,8 @@ import { CareerStatementViewModel, type StatementSources } from "@/lib/view-mode
 const translate = (key: string, vars?: Record<string, string | number>): string =>
   vars ? `${key} ${Object.values(vars).join(" ")}` : key;
 
-const vm = () => new CareerStatementViewModel(translate, (id) => (id === "cc" ? "Clean Core" : undefined));
+const vm = () =>
+  new CareerStatementViewModel(translate, (id) => (id === "cc" ? "Clean Core" : undefined));
 
 const transition: CareerLevelTransition = {
   id: "tr-1",

@@ -95,9 +95,7 @@ describe("InMemoryNoticesGateway — recorte por papel (o mock É o servidor)", 
   it("unreadCount do member conta só o escopo dele, não o do time", async () => {
     const anaPage = await gatewayFor(memberAna).notices({ status: "all" });
     const adminPage = await gatewayFor(admin).notices({ status: "all" });
-    expect(anaPage.unreadCount).toBe(
-      anaPage.notices.filter((item) => item.readAt === null).length,
-    );
+    expect(anaPage.unreadCount).toBe(anaPage.notices.filter((item) => item.readAt === null).length);
     expect(anaPage.unreadCount).toBeLessThan(adminPage.unreadCount);
   });
 
