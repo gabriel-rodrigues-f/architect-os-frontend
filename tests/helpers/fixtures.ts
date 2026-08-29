@@ -286,3 +286,44 @@ export const fixtureState: AppState = {
   ],
   activeCycleId: "2026-h2",
 };
+
+/**
+ * O payload que o servidor manda DE VERDADE desde o roster fechado
+ * (backend `d1edba4`): `AuthorizationService.scopeAppState` recorta
+ * `architects`, `assessments`, `plans`, `evidences`, `mentoringSessions` e
+ * `learningPaths` pelo conjunto visível do papel — member vê só a si, lead vê
+ * só quem lidera, admin vê tudo. Este helper espelha aquele filtro, campo a
+ * campo, para que os testes exercitem o mundo recortado em vez do payload
+ * antigo (roster inteiro), que o servidor não emite mais.
+ *
+ * Nota fiel ao backend: `learningPaths` sobrevive inteiro quando UM dos
+ * atribuídos é visível — `assignedTo` e `progress` seguem carregando ids fora
+ * do escopo. É exatamente o caso que produz assignee sem `Architect`
+ * correspondente no cliente.
+ */
+export function scopedFixtureStateFor(user: SessionUser, state: AppState = fixtureState): AppState {
+  if (user.role === "admin") return state;
+
+  const visibleIds = new Set<string>();
+  if (user.architectId) visibleIds.add(user.architectId);
+  if (user.role === "lead") {
+    for (const architect of state.architects) {
+      if (architect.leadUserId === user.id) visibleIds.add(architect.id);
+    }
+  }
+
+  return {
+    ...state,
+    architects: state.architects.filter((architect) => visibleIds.has(architect.id)),
+    assessments: state.assessments.filter((assessment) => visibleIds.has(assessment.architectId)),
+    plans: state.plans.filter((plan) => visibleIds.has(plan.architectId)),
+    evidences: state.evidences.filter((evidence) => visibleIds.has(evidence.architectId)),
+    mentoringSessions: state.mentoringSessions.filter(
+      (session) => visibleIds.has(session.menteeId) || session.mentorUserId === user.id,
+    ),
+    learningPaths: state.learningPaths.filter(
+      (path) =>
+        path.assignedTo.some((id) => visibleIds.has(id)) || path.createdByUserId === user.id,
+    ),
+  };
+}
