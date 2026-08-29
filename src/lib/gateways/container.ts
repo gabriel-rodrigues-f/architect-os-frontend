@@ -3,6 +3,7 @@ import { SessionPolicy } from "../session-policy";
 import { HttpArchitectsGateway, type ArchitectsGateway } from "./architects.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
 import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
+import { InMemoryCalibrationGateway, type CalibrationGateway } from "./calibration.gateway";
 import { HttpCareerGateway, type CareerGateway } from "./career.gateway";
 import { HttpCatalogGateway, type CatalogGateway } from "./catalog.gateway";
 import { HttpConfigGateway, type ConfigGateway } from "./config.gateway";
@@ -26,6 +27,7 @@ export class FrontendContainer {
   readonly architectsGateway: ArchitectsGateway;
   readonly assessmentGateway: AssessmentGateway;
   readonly authGateway: AuthGateway;
+  readonly calibrationGateway: CalibrationGateway;
   readonly careerGateway: CareerGateway;
   readonly catalogGateway: CatalogGateway;
   readonly configGateway: ConfigGateway;
@@ -47,6 +49,7 @@ export class FrontendContainer {
     this.architectsGateway = new HttpArchitectsGateway(this.apiClient);
     this.assessmentGateway = new HttpAssessmentGateway(this.apiClient);
     this.authGateway = new HttpAuthGateway(this.apiClient);
+    this.calibrationGateway = new InMemoryCalibrationGateway();
     this.careerGateway = new HttpCareerGateway(this.apiClient);
     this.catalogGateway = new HttpCatalogGateway(this.apiClient);
     this.configGateway = new HttpConfigGateway(this.apiClient);
