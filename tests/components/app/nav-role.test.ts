@@ -37,6 +37,20 @@ describe("AppShell — navegação recortada por papel", () => {
     const paths = groups.flatMap((g) => g.items.map((i) => i.to));
     expect(paths).toContain("/competency-matrix");
     expect(paths).toContain("/users");
+    expect(paths).toContain("/calibration");
+  });
+
+  /**
+   * Tela 3 (spec §3, CONTRATO PRD-03) — calibração é só gestor + admin, e o
+   * papel `lead` de hoje não distingue gestor de tech lead: até os 4 perfis
+   * existirem, /calibration é admin-only também na navegação.
+   */
+  it("calibração é admin-only na navegação até o modelo de 4 perfis", () => {
+    for (const role of ["member", "lead"]) {
+      const groups = filterNavGroups(NAV_GROUPS, role);
+      const paths = groups.flatMap((g) => g.items.map((i) => i.to));
+      expect(paths, role).not.toContain("/calibration");
+    }
   });
 
   it("/settings (Política de Progressão) aparece na navegação para todos os papéis", () => {

@@ -7,6 +7,7 @@ export * from "./CapabilityCombobox";
 export * from "./CapabilityHeatmap";
 export * from "./CommandWithReasonDialog";
 export * from "./ConfirmDialog";
+export * from "./EvaluatorDistributionCard";
 export * from "./FilterField";
 export * from "./FilterTriggerButton";
 export * from "./LearningPathCoverageList";

@@ -21,6 +21,10 @@ const ProficiencyTimelineFigure = lazy(() =>
   import("./charts-recharts").then((charts) => ({ default: charts.ProficiencyTimelineFigure })),
 );
 
+const LevelDistributionFigure = lazy(() =>
+  import("./charts-recharts").then((charts) => ({ default: charts.LevelDistributionFigure })),
+);
+
 function ChartPlaceholder() {
   return <div aria-hidden="true" className="h-full w-full rounded-md bg-muted/40" />;
 }
@@ -327,6 +331,44 @@ export function ProficiencyTimeline({
       }
     >
       <ProficiencyTimelineFigure data={data} label={label} levelNames={LEVEL_NAMES} />
+    </ChartFrame>
+  );
+}
+
+export interface LevelDistributionRow {
+  level: number;
+  count: number;
+}
+
+export function LevelDistribution({
+  data,
+  height = 160,
+}: {
+  data: LevelDistributionRow[];
+  height?: number;
+}) {
+  const { t } = useI18n();
+  const label = t("chart.distribution.label");
+  const rows = data.map((row) => ({
+    level: LEVEL_NAMES[row.level] ?? String(row.level),
+    count: row.count,
+  }));
+
+  return (
+    <ChartFrame
+      label={label}
+      height={height}
+      isEmpty={data.every((row) => row.count === 0)}
+      emptyMessage={t("chart.empty.distribution")}
+      dataTable={
+        <DataTable
+          caption={label}
+          columns={[t("chart.axis.level"), t("chart.axis.count")]}
+          rows={rows.map((row) => [row.level, row.count])}
+        />
+      }
+    >
+      <LevelDistributionFigure data={rows} label={label} />
     </ChartFrame>
   );
 }

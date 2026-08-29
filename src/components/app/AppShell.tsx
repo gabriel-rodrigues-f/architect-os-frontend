@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  BarChart3,
   BookOpen,
   CalendarRange,
   ChevronDown,
@@ -92,6 +93,7 @@ export const NAV_GROUPS: NavGroup[] = [
         adminOnly: true,
       },
       { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
+      { to: "/calibration", labelKey: "nav.calibration", icon: BarChart3, adminOnly: true },
 
       { to: "/settings", labelKey: "nav.settings", icon: Scale },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
