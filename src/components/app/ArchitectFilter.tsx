@@ -1,6 +1,7 @@
 import { ChevronDown, Users } from "lucide-react";
 import { useState } from "react";
 
+import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOptionListNavigation } from "@/hooks";
@@ -46,19 +47,18 @@ export function ArchitectFilter({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <FilterTriggerButton
           onKeyDown={onTriggerKeyDown}
           aria-haspopup="listbox"
           title={summary}
-          className="flex w-64 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm"
+          className="w-64"
         >
           <span className="flex min-w-0 flex-1 items-center gap-2">
             <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
           </span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        </button>
+        </FilterTriggerButton>
       </PopoverTrigger>
       <PopoverContent
         role="listbox"

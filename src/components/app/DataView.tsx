@@ -179,7 +179,7 @@ export function Pagination({
             }))}
             value={String(pageSize)}
             onChange={(v) => onPageSizeChange(Number(v))}
-            triggerClassName="mt-0 h-8 w-auto min-w-0 px-2 text-xs"
+            triggerClassName="h-8 w-auto min-w-0 px-2 text-xs"
           />
         )}
         <Button
