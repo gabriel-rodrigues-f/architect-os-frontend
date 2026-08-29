@@ -1,6 +1,7 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import { Client } from "pg";
 import { apiPath } from "../src/lib/api-path";
+import { linkLeadToArchitects, unlinkTeam } from "./team-link";
 
 /**
  * E2E de jornada — Admin/Lead/Member (R-015, AUDITORIA-QUINTA-RODADA-360-
@@ -38,6 +39,7 @@ test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD n
 let architectId: string;
 let memberUserId: string;
 let leadUserId: string;
+let teamId: string;
 
 async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
   if (!response.ok()) {
@@ -132,11 +134,12 @@ test.beforeAll(async ({ playwright }) => {
     role: "lead",
   });
 
-  await json(
-    await api.patch(apiPath(`/architects/${architectId}`), {
-      data: { leadUserId },
-    }),
-  );
+  teamId = await linkLeadToArchitects({
+    databaseUrl: DATABASE_URL,
+    runId: `gp-${RUN_ID}`,
+    leadUserId,
+    architectIds: [architectId],
+  });
 
   await api.dispose();
 });
@@ -150,6 +153,7 @@ test.afterAll(async () => {
   } finally {
     await client.end();
   }
+  await unlinkTeam(DATABASE_URL, teamId);
 });
 
 async function login(page: import("@playwright/test").Page, email: string, password: string) {
