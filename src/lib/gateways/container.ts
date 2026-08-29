@@ -56,7 +56,7 @@ export class FrontendContainer {
     this.evolutionGateway = new HttpEvolutionGateway(this.apiClient);
     this.learningGateway = new HttpLearningGateway(this.apiClient);
     this.mentoringGateway = new HttpMentoringGateway(this.apiClient);
-    this.noticesGateway = new InMemoryNoticesGateway();
+    this.noticesGateway = new InMemoryNoticesGateway(() => this.authGateway.me());
     this.reportsGateway = new HttpReportsGateway(this.apiClient);
     this.stateContextsGateway = new HttpStateContextsGateway(config.baseUrl, (error) =>
       this.sessionPolicy.reviewFailure(error),

@@ -58,10 +58,14 @@ export class DateFormatter {
   }
 
   todayIso(): string {
-    const now = new Date();
-    const mes = String(now.getMonth() + 1).padStart(2, "0");
-    const dia = String(now.getDate()).padStart(2, "0");
-    return `${now.getFullYear()}-${mes}-${dia}`;
+    return this.localDayIso(new Date());
+  }
+
+  localDayIso(moment: Date | string): string {
+    const date = typeof moment === "string" ? new Date(moment) : moment;
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
   isoDate(date: Date): string {
@@ -86,11 +90,9 @@ export class DateFormatter {
   }
 
   daysAgoIso(days: number): string {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    const mes = String(d.getMonth() + 1).padStart(2, "0");
-    const dia = String(d.getDate()).padStart(2, "0");
-    return `${d.getFullYear()}-${mes}-${dia}`;
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return this.localDayIso(date);
   }
 }
 

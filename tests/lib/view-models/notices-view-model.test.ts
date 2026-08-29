@@ -12,14 +12,14 @@ import { NoticesViewModel } from "@/lib/view-models";
  */
 function notice(overrides: Partial<Notice>): Notice {
   return {
-    id: "aviso-1",
+    id: "notice-1",
     eventType: "pdi.item.dueSoon",
     title: "Item de PDI vence em 3 dias",
     link: "/development-plans?architectId=ana",
     occurredAt: "2026-08-28T09:00:00.000Z",
     readAt: null,
     architectId: "ana",
-    teamId: "time-integracao",
+    teamId: "team-integration",
     ...overrides,
   };
 }

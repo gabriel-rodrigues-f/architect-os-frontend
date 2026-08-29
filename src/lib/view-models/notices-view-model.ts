@@ -1,4 +1,5 @@
 import type { Notice } from "../gateways/notices.gateway";
+import { defaultDateFormatter } from "../text";
 
 export interface NoticeDayGroup {
   day: string;
@@ -10,7 +11,7 @@ export class NoticesViewModel {
     const ordered = this.newestFirst(notices);
     const groups: NoticeDayGroup[] = [];
     for (const notice of ordered) {
-      const day = notice.occurredAt.slice(0, 10);
+      const day = defaultDateFormatter.localDayIso(notice.occurredAt);
       const group = groups.at(-1);
       if (group && group.day === day) group.notices.push(notice);
       else groups.push({ day, notices: [notice] });
@@ -27,6 +28,6 @@ export class NoticesViewModel {
   }
 
   private newestFirst(notices: readonly Notice[]): Notice[] {
-    return [...notices].sort((um, outro) => outro.occurredAt.localeCompare(um.occurredAt));
+    return [...notices].sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
   }
 }
