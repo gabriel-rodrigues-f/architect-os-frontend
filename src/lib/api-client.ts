@@ -34,7 +34,7 @@ export const API_URL = (
   typeof rawApiUrl === "string" ? rawApiUrl : "http://localhost:4000"
 ).replace(/\/$/, "");
 
-export const NETWORK_UNAVAILABLE_STATUS = 0;
+const NETWORK_UNAVAILABLE_STATUS = 0;
 
 export const NETWORK_UNAVAILABLE_CODE = "NETWORK_UNAVAILABLE";
 

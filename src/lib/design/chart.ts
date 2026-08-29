@@ -1,6 +1,6 @@
 export const SERIES_COUNT = 6;
 
-export type SeriesSymbol = "circle" | "square" | "triangle" | "diamond" | "cross" | "star" | "wye";
+type SeriesSymbol = "circle" | "square" | "triangle" | "diamond" | "cross" | "star" | "wye";
 
 export interface SeriesStyle {
   readonly color: string;

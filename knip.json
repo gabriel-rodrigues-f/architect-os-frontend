@@ -1,0 +1,6 @@
+{
+  "entry": ["src/routes/**/*.tsx"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["src/lib/api-contract.gen.ts"],
+  "ignoreDependencies": ["@tanstack/router-plugin", "tailwindcss", "tw-animate-css"]
+}

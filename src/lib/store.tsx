@@ -324,7 +324,7 @@ export { Ctx as StoreApiContext };
 export const MUTATION_FALLBACK_ERROR_MESSAGE =
   "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.";
 
-export function blobMutationCache(queryClient: QueryClient): MutationCache<AppState> {
+function blobMutationCache(queryClient: QueryClient): MutationCache<AppState> {
   return {
     update: (fn) =>
       queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) => (prev ? fn(prev) : prev)),

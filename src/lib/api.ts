@@ -47,5 +47,5 @@ export const isLeadCapable = (role: UserRole): boolean => role === "admin" || ro
 
 export { ApiError } from "./api-errors";
 export { API_URL, type AppState } from "./api-client";
-export type { AssessmentItemPatch, CommentInput } from "./gateways/assessment.gateway";
-export type { AuthResult, SessionUser, UserRole, UserStatus } from "./gateways/auth.gateway";
+export type { CommentInput } from "./gateways/assessment.gateway";
+export type { SessionUser, UserRole } from "./gateways/auth.gateway";

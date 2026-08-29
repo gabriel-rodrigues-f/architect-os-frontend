@@ -5,7 +5,5 @@ export {
   detectLocale,
   interpolate,
   isKnownLocale,
-  type LocaleInfo,
-  type MessageBundle,
   type MessageKey,
 } from "./registry";
