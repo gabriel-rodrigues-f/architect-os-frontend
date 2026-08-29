@@ -95,11 +95,21 @@ pt-BR, no front e no backend).
 ## Scripts
 
 ```sh
+npm run gate              # portão do repositório: typecheck + lint + test + build
 npm test                  # unitários
 RUN_INTEGRATION=1 npm test  # inclui contrato contra a API real (backend no ar)
 npm run typecheck
 npm run lint
+npm run build
 ```
+
+`npm run gate` é o mesmo portão do backend, adaptado ao que este repositório
+tem: cada etapa é medida pelo próprio código de saída (montar a cadeia à mão
+já deixou um typecheck quebrado passar por verde), e a primeira que falhar
+interrompe mostrando o erro cru. O **build é etapa do gate** — o preset de
+saída já mudou de forma silenciosa uma vez. Não existe `gate:full` aqui: o
+frontend não tem suíte de integração própria (a de contrato roda por
+`RUN_INTEGRATION=1`, com o backend no ar).
 
 ## Decisões
 
