@@ -111,6 +111,49 @@ saída já mudou de forma silenciosa uma vez. Não existe `gate:full` aqui: o
 frontend não tem suíte de integração própria (a de contrato roda por
 `RUN_INTEGRATION=1`, com o backend no ar).
 
+## Gate de entrega
+
+O harness de observação do QA-UX: navega a aplicação inteira logado, preenche
+os fluxos principais de escrita e captura um PNG por rota.
+
+```sh
+npm run e2e:nav           # navegação completa + capturas (exige backend no ar)
+npm run e2e:nav:report    # abre o relatório HTML da última rodada
+npm run test:e2e          # suíte E2E inteira (jornadas + fluxos de escrita + navegação)
+```
+
+Pré-requisito: a stack do backend no ar (no repo do backend: `docker compose
+up -d postgres redis`, `npm run dev`, `npm run seed:access-profiles`) — o
+`e2e:nav` verifica `/health/ready` e falha com instrução clara se não estiver.
+As credenciais locais default são as do `seed:access-profiles`
+(`admin@synapse.local` / `dev@synapse.local`); na CI o job `e2e` injeta as
+suas via env.
+
+O que cada peça garante:
+
+- **`e2e/route-inventory.ts`** deriva a lista de rotas do próprio
+  `src/routes/` — rota nova sem cobertura declarada FALHA o teste de
+  cobertura de `navigation-capture.spec.ts` (ausência congelada, não
+  silêncio).
+- **`e2e/navigation-capture.spec.ts`** loga com um papel, visita toda rota e
+  grava `e2e/screenshots/<papel>/<tema>/<rota>.png` (gitignorado; viewport
+  1440×900, tema claro; escuro com `E2E_NAV_DARK=1`). Tela com error
+  boundary/404 falha o teste com a lista — a captura fica como prova. O
+  anexo `navegacao-resumo` do relatório registra onde cada papel aterrissou
+  (rota admin-only redireciona member para `/`, e isso é o recorte por
+  papel que o QA-UX compara).
+- **Papel** via `E2E_NAV_ROLE=admin|member|lead` (default `admin`). O seed
+  local só cria admin e member; `lead` exige `E2E_LEAD_EMAIL`/`_PASSWORD`
+  de uma conta existente.
+- **Fluxos de escrita pela UI**: sessão de mentoria (`mentoring.spec.ts`),
+  check-in/status de item de PDI (`pdi-lifecycle.spec.ts`) e, em
+  `write-flows.spec.ts`: avaliar competência e enviar para revisão
+  (member), pontuar e concluir (lead), criar ação de PDI a partir do gap,
+  registrar evidência e adicionar código de vocabulário (admin).
+
+Os specs E2E não rodam no `npm run gate` (unitário) — a separação é o
+`testDir: "./e2e"` do `playwright.config.ts` versus o Vitest.
+
 ## Decisões
 
 As decisões arquiteturais estão registradas como ADR no backend:
