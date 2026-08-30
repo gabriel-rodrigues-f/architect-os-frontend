@@ -1,7 +1,10 @@
 import { cleanup, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
+import type { MockInstance } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { calibrationApi, type SessionUser } from "@/lib/api";
+import type { CalibrationGateway } from "@/lib/gateways/calibration.gateway";
 import { Route as CalibrationRoute } from "@/routes/calibration";
 import {
   fixtureAdminUser,
@@ -120,5 +123,60 @@ describe("/calibration nega DADO a quem não é admin — a tela é a última ba
     renderAs(fixtureUnassignedLeadUser);
     expect(await screen.findByText("Calibração é restrita a administradores.")).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
+  });
+});
+
+/**
+ * Ressalva 1 da onda 17 — mutante VIVO. O `enabled: isAdmin && cycleId !== null`
+ * de `calibration.tsx` não tinha teste que o pinasse: apagar o `isAdmin` da
+ * condição deixava a suíte inteira verde, porque os testes acima só afirmam o
+ * que a TELA renderiza, e a tela nega por conta própria (`if (!isAdmin)`).
+ *
+ * Hoje o dano é teórico — o gateway de calibração é in-memory e responder para
+ * um member não sai da aba. Vira dano real no PRD-03, quando o gateway virar
+ * HTTP: a consulta sairia para o servidor em nome de quem não pode vê-la, e a
+ * única barreira restante seria o backend.
+ *
+ * Estes testes afirmam o DISPARO, não a renderização: o queryFn da calibração
+ * não é chamado para member nem para lead. O primeiro caso é o controle — sem
+ * ele o par não pinaria nada, porque um `enabled` sempre-falso (ciclo nulo,
+ * por exemplo) também deixaria os dois negativos verdes.
+ */
+describe("/calibration não CONSULTA para quem não é admin — o `enabled` é parte da barreira", () => {
+  let calibrationSpy: MockInstance<CalibrationGateway["calibration"]>;
+
+  beforeEach(() => {
+    calibrationSpy = vi.spyOn(calibrationApi, "calibration");
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    calibrationSpy.mockRestore();
+  });
+
+  const renderAs = (user: SessionUser) => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    mockAppFetch(fetchMock, { user, state: scopedFixtureStateFor(user) });
+    renderWithApp(<CalibrationPage />);
+  };
+
+  it("controle: para admin a consulta SAI, com o ciclo ativo da fixture", async () => {
+    renderAs(fixtureAdminUser);
+    await screen.findByText("Marina Lopes");
+    expect(calibrationSpy).toHaveBeenCalledWith("2026-h2");
+  });
+
+  it("member: a consulta não sai — nem para o ciclo ativo, nem para nenhum outro", async () => {
+    renderAs(fixtureMemberUser);
+    await screen.findByText("Calibração é restrita a administradores.");
+    expect(calibrationSpy).not.toHaveBeenCalled();
+  });
+
+  it("lead: a consulta não sai — CONTRATO PRD-03 reserva a calibração a gestor + admin", async () => {
+    renderAs(fixtureUnassignedLeadUser);
+    await screen.findByText("Calibração é restrita a administradores.");
+    expect(calibrationSpy).not.toHaveBeenCalled();
   });
 });

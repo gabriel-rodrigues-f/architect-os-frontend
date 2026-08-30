@@ -60,50 +60,50 @@ const fixtureNotices = (now: number): Notice[] => [
     id: "notice-pdi-due-soon",
     eventType: "pdi.item.dueSoon",
     title: "Item de PDI de Ana Martins vence em 3 dias: Workshop de Clean Core",
-    link: "/development-plans?architectId=ana",
+    link: "/development-plans?architectId=demo-ana-martins",
     occurredAt: new Date(now - 2 * HOUR_MS).toISOString(),
     readAt: null,
-    architectId: "ana",
+    architectId: "demo-ana-martins",
     teamId: "team-integration",
   },
   {
     id: "notice-assessment-stalled",
     eventType: "assessment.stalled",
-    title: "Avaliação de Bruno Costa está parada há 14 dias",
+    title: "Avaliação de Bruno Almeida está parada há 14 dias",
     link: "/assessments",
     occurredAt: new Date(now - 6 * HOUR_MS).toISOString(),
     readAt: null,
-    architectId: "bruno",
+    architectId: "demo-bruno-almeida",
     teamId: "team-integration",
   },
   {
     id: "notice-evidence-awaiting-review",
     eventType: "evidence.awaitingReview",
     title: "Evidência de Ana Martins espera revisão: Certificação BTP",
-    link: "/architects/ana",
+    link: "/architects/demo-ana-martins",
     occurredAt: new Date(now - 1 * DAY_MS).toISOString(),
     readAt: null,
-    architectId: "ana",
+    architectId: "demo-ana-martins",
     teamId: "team-integration",
   },
   {
     id: "notice-assessment-completed",
     eventType: "assessment.completed",
-    title: "Avaliação de Carla Dias foi concluída",
+    title: "Avaliação de Carla Souza foi concluída",
     link: "/assessments",
     occurredAt: new Date(now - 2 * DAY_MS).toISOString(),
     readAt: new Date(now - 1 * DAY_MS).toISOString(),
-    architectId: "carla",
+    architectId: "demo-carla-souza",
     teamId: "team-architecture",
   },
   {
     id: "notice-mentoring-recorded",
     eventType: "mentoring.recorded",
-    title: "Mentoria registrada para Bruno Costa: Arquitetura de Eventos",
+    title: "Mentoria registrada para Bruno Almeida: Arquitetura de Eventos",
     link: "/mentoring",
     occurredAt: new Date(now - 3 * DAY_MS).toISOString(),
     readAt: new Date(now - 2 * DAY_MS).toISOString(),
-    architectId: "bruno",
+    architectId: "demo-bruno-almeida",
     teamId: "team-integration",
   },
 ];
@@ -173,6 +173,10 @@ export class InMemoryNoticesGateway implements NoticesGateway {
   }
 
   private static fixtureArchitectTeams(): Record<string, string> {
-    return { ana: "team-integration", bruno: "team-integration", carla: "team-architecture" };
+    return {
+      "demo-ana-martins": "team-integration",
+      "demo-bruno-almeida": "team-integration",
+      "demo-carla-souza": "team-architecture",
+    };
   }
 }
