@@ -17,6 +17,14 @@ export interface TeamReportInput {
 
 export type T = (key: MessageKey, params?: Record<string, string | number>) => string;
 
+export type TeamReportGapSectionKind = "blocking" | "opportunity" | "mastery";
+
+export interface TeamReportGapSection {
+  kind: TeamReportGapSectionKind;
+  rows: ConsolidatedGapRow[];
+  mastery: boolean;
+}
+
 export class TeamReportPresenter {
   constructor(
     private readonly t: T,
@@ -42,6 +50,14 @@ export class TeamReportPresenter {
         ),
       ];
     });
+  }
+
+  get gapSections(): TeamReportGapSection[] {
+    return [
+      { kind: "blocking", rows: this.input.blocking, mastery: false },
+      { kind: "opportunity", rows: this.input.opportunity, mastery: false },
+      { kind: "mastery", rows: this.input.mastery, mastery: true },
+    ];
   }
 
   gapColumns(mastery: boolean): string[] {

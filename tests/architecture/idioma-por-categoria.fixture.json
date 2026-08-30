@@ -1,5 +1,5 @@
 {
-  "total": 125,
+  "total": 121,
   "porArquivo": {
     "src/components/app/AppShell.tsx": 6,
     "src/components/app/ArchitectFilter.tsx": 1,
@@ -42,8 +42,8 @@
     "src/lib/storage.ts": 1,
     "src/lib/store.tsx": 2,
     "src/lib/success-message.ts": 1,
-    "src/lib/team-report-csv.ts": 4,
-    "src/lib/team-report-pdf.ts": 2,
+    "src/lib/team-report-csv.ts": 1,
+    "src/lib/team-report-pdf.ts": 1,
     "src/lib/text-templates.ts": 5,
     "src/lib/text.ts": 2,
     "src/lib/theme.tsx": 1,

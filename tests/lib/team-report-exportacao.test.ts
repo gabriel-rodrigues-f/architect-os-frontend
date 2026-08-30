@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { T, TeamReportInput } from "@/lib/presenters";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
-import { TeamReportCsvBuilder } from "@/lib/team-report-csv";
-import { TeamReportPdfBuilder } from "@/lib/team-report-pdf";
+import { exportTeamReportCsv, TeamReportCsvBuilder } from "@/lib/team-report-csv";
+import { exportTeamReportPdf, TeamReportPdfBuilder } from "@/lib/team-report-pdf";
 
 import ouro from "./team-report-exportacao.fixture.json";
 
@@ -23,6 +23,15 @@ import ouro from "./team-report-exportacao.fixture.json";
  * de aleatório, medidos), normalizado aqui; o `CreationDate` obedece ao
  * relógio falso. Fora isso o arquivo é idêntico rodada a rodada.
  */
+
+const entregues: { blob: Blob; filename: string }[] = [];
+
+vi.mock("@/lib/download", async (original) => ({
+  ...(await original<typeof import("@/lib/download")>()),
+  downloadBlob: (blob: Blob, filename: string) => {
+    entregues.push({ blob, filename });
+  },
+}));
 
 const fakeT: T = (key, params) => (params ? `${key}|${JSON.stringify(params)}` : String(key));
 
@@ -60,7 +69,7 @@ const entradaCompleta = (): TeamReportInput => ({
         ]
       : [],
   blocking: [gapRow(), gapRow({ competencyId: "c2", name: "Terraform", capabilityId: "x" })],
-  opportunity: [gapRow({ competencyId: "c3", name: "Kafka", requirementType: "OPTIONAL" })],
+  opportunity: [gapRow({ competencyId: "c3", name: "Kafka", requirementType: "NON_RESTRICTIVE" })],
   mastery: [gapRow({ competencyId: "c4", name: "Go", maxGap: -2 })],
 });
 
@@ -100,6 +109,7 @@ const localeOriginal = Date.prototype.toLocaleString;
 
 describe("exportação do relatório do time — byte a byte contra a main af12f99", () => {
   beforeEach(() => {
+    entregues.length = 0;
     Date.prototype.toLocaleString = function () {
       return "26/08/2026, 02:00:00";
     };
@@ -126,8 +136,11 @@ describe("exportação do relatório do time — byte a byte contra a main af12f
 
   it("o CSV vai para o download como text/csv;charset=utf-8 com o nome datado", async () => {
     const baixados: { blob: Blob; filename: string }[] = [];
-    const construtor = new TeamReportCsvBuilder(fakeT, entradaCompleta(), undefined, (blob, filename) =>
-      baixados.push({ blob, filename }),
+    const construtor = new TeamReportCsvBuilder(
+      fakeT,
+      entradaCompleta(),
+      undefined,
+      (blob, filename) => baixados.push({ blob, filename }),
     );
     construtor.download();
     expect(baixados).toHaveLength(1);
@@ -151,8 +164,11 @@ describe("exportação do relatório do time — byte a byte contra a main af12f
 
   it("o PDF vai para o download como application/pdf com o nome datado", async () => {
     const baixados: { blob: Blob; filename: string }[] = [];
-    const construtor = new TeamReportPdfBuilder(fakeT, entradaCompleta(), undefined, (blob, filename) =>
-      baixados.push({ blob, filename }),
+    const construtor = new TeamReportPdfBuilder(
+      fakeT,
+      entradaCompleta(),
+      undefined,
+      (blob, filename) => baixados.push({ blob, filename }),
     );
     construtor.download();
     expect(baixados).toHaveLength(1);
@@ -160,5 +176,21 @@ describe("exportação do relatório do time — byte a byte contra a main af12f
     expect(baixados[0]!.blob.type).toBe(ouro.pdf.tipo);
     vi.useRealTimers();
     expect(await impressaoDigitalDo(baixados[0]!.blob)).toEqual(ouro.pdf.completo);
+  });
+
+  it("a tela de progressão continua exportando CSV pelo mesmo nome de operação, e entrega pelo downloadBlob", async () => {
+    exportTeamReportCsv(fakeT, entradaCompleta());
+    expect(entregues).toHaveLength(1);
+    expect(entregues[0]!.filename).toBe(ouro.csv.arquivo);
+    vi.useRealTimers();
+    expect(await textoDe(entregues[0]!.blob)).toBe(ouro.csv.completo);
+  });
+
+  it("a tela de progressão continua exportando PDF pelo mesmo nome de operação, e entrega pelo downloadBlob", async () => {
+    await exportTeamReportPdf(fakeT, entradaCompleta());
+    expect(entregues).toHaveLength(1);
+    expect(entregues[0]!.filename).toBe(ouro.pdf.arquivo);
+    vi.useRealTimers();
+    expect(await impressaoDigitalDo(entregues[0]!.blob)).toEqual(ouro.pdf.completo);
   });
 });
