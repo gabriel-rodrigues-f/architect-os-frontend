@@ -137,7 +137,7 @@ describe("InMemoryNoticesGateway — recorte por papel (o mock É o servidor)", 
     );
   });
 
-  it("lead sem arquiteto vinculado não tem time — e não vê aviso nenhum", async () => {
+  it("lead sem arquiteto vinculado E sem vínculo de time não vê aviso nenhum", async () => {
     const page = await gatewayFor(leadUnassigned).notices({ status: "all" });
     expect(page.notices).toEqual([]);
     expect(page.unreadCount).toBe(0);
@@ -211,5 +211,58 @@ describe("InMemoryNoticesGateway — a fixture fala os ids do seed real", () => 
     for (const notice of withArchitectInLink) {
       expect(notice.link).toContain(notice.architectId!);
     }
+  });
+});
+
+/**
+ * Onda 18 diagnosticou por que o sino ficava VAZIO para a conta de tech lead
+ * do seed (`techlead@synapse.local`): o `/auth/me` devolve `architectId: null`
+ * para ela, e o time do lead era derivado do arquiteto vinculado — sem
+ * arquiteto, sem time, e nenhum aviso casava. Não era id de fixture errado.
+ *
+ * A sessão passou a carregar `memberships` (onda 18), que é de onde o vínculo
+ * de time SEMPRE deveria ter vindo: o CONTRATO PRD-02 diz "tech lead vê os
+ * avisos do TIME", e time é o vínculo, não o arquiteto. O `architectId`
+ * continua como último recurso para não regredir quem já era coberto.
+ *
+ * `NoticesViewer` é `Pick<SessionUser, ...>`: o campo é o mesmo que a sessão
+ * real entrega, não um paralelo inventado para o teste.
+ */
+describe("InMemoryNoticesGateway — o time do lead vem do VÍNCULO, não do arquiteto", () => {
+  const leadVinculadoSemArquiteto: NoticesViewer = {
+    role: "lead",
+    architectId: null,
+    memberships: [{ teamId: "team-integration", role: "tech_lead" }],
+  };
+
+  const leadVinculadoComoGestor: NoticesViewer = {
+    role: "lead",
+    architectId: null,
+    memberships: [{ teamId: "team-architecture", role: "manager" }],
+  };
+
+  const leadApenasMembro: NoticesViewer = {
+    role: "lead",
+    architectId: null,
+    memberships: [{ teamId: "team-integration", role: "member" }],
+  };
+
+  it("tech lead sem arquiteto vinculado enxerga os avisos do time que ele lidera", async () => {
+    const page = await gatewayFor(leadVinculadoSemArquiteto).notices({ status: "all" });
+    expect(page.notices.length).toBeGreaterThan(0);
+    expect(page.notices.every((item) => item.teamId === "team-integration")).toBe(true);
+    expect(page.unreadCount).toBeGreaterThan(0);
+  });
+
+  it("gestor vinculado enxerga o time dele, e o vínculo não vaza para o time vizinho", async () => {
+    const page = await gatewayFor(leadVinculadoComoGestor).notices({ status: "all" });
+    expect(page.notices.length).toBeGreaterThan(0);
+    expect(page.notices.every((item) => item.teamId === "team-architecture")).toBe(true);
+  });
+
+  it("vínculo de MEMBRO não concede o escopo do time — quem não lidera não lê o time", async () => {
+    const page = await gatewayFor(leadApenasMembro).notices({ status: "all" });
+    expect(page.notices).toEqual([]);
+    expect(page.unreadCount).toBe(0);
   });
 });

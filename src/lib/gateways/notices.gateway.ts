@@ -54,7 +54,7 @@ export class HttpNoticesGateway implements NoticesGateway {
   markAllNoticesRead = (): Promise<void> => this.client.post<void>("/notices/read-all", {});
 }
 
-export type NoticesViewer = Pick<SessionUser, "role" | "architectId">;
+export type NoticesViewer = Pick<SessionUser, "role" | "architectId" | "memberships">;
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -163,10 +163,10 @@ export class InMemoryNoticesGateway implements NoticesGateway {
     const viewer = await this.viewer();
     if (viewer.role === "admin") return this.store;
     if (viewer.role === "lead") {
-      const teamId = this.viewerTeamId(viewer);
+      const ledTeamIds = this.ledTeamIds(viewer);
       return this.store.filter(
         (notice) =>
-          (teamId !== null && notice.teamId === teamId) ||
+          (notice.teamId !== null && ledTeamIds.includes(notice.teamId)) ||
           (viewer.architectId !== null && notice.architectId === viewer.architectId),
       );
     }
@@ -174,9 +174,15 @@ export class InMemoryNoticesGateway implements NoticesGateway {
     return this.store.filter((notice) => notice.architectId === viewer.architectId);
   }
 
-  private viewerTeamId(viewer: NoticesViewer): string | null {
-    if (viewer.architectId === null) return null;
-    return this.architectTeams[viewer.architectId] ?? null;
+  private ledTeamIds(viewer: NoticesViewer): string[] {
+    const byMembership = (viewer.memberships ?? [])
+      .filter((membership) => membership.role === "tech_lead" || membership.role === "manager")
+      .map((membership) => membership.teamId);
+    if (byMembership.length > 0) return byMembership;
+    if (viewer.memberships !== undefined) return [];
+    const byArchitect =
+      viewer.architectId === null ? null : this.architectTeams[viewer.architectId];
+    return byArchitect === undefined || byArchitect === null ? [] : [byArchitect];
   }
 
   private static fixtureArchitectTeams(): Record<string, string> {
