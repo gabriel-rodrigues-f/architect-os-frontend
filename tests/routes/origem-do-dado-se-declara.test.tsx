@@ -31,6 +31,7 @@ import { calibrationApi, noticesApi } from "@/lib/api";
 import { HttpCalibrationGateway } from "@/lib/gateways/calibration.gateway";
 import { HttpNoticesGateway } from "@/lib/gateways/notices.gateway";
 import { Route as CalibrationRoute } from "@/routes/calibration";
+import { Route as NoticesRoute } from "@/routes/notices";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
@@ -58,6 +59,7 @@ const fetchMock = vi.fn();
 const DECLARACAO = /dados de demonstração/i;
 
 const CalibrationPage = CalibrationRoute.options.component as () => ReactNode;
+const NoticesPage = NoticesRoute.options.component as () => ReactNode;
 
 const calibracaoDaOrganizacao = {
   cycleId: "2026-h2",
@@ -164,6 +166,19 @@ describe("o sino de avisos declara que os avisos são de demonstração", () => 
     registraGatewayReal();
     renderWithApp(<NoticeBell />);
     await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
+    await screen.findByText("Avaliação real está parada");
+    expect(screen.queryByText(DECLARACAO)).toBeNull();
+  });
+
+  it("a central de avisos inteira declara a origem enquanto o mock a serve", async () => {
+    renderWithApp(<NoticesPage />);
+    await screen.findByText(/Avaliação de Bruno Almeida está parada/);
+    expect(screen.getByText(DECLARACAO)).toBeTruthy();
+  });
+
+  it("com o gateway HTTP real registrado, a central de avisos não declara nada", async () => {
+    registraGatewayReal();
+    renderWithApp(<NoticesPage />);
     await screen.findByText("Avaliação real está parada");
     expect(screen.queryByText(DECLARACAO)).toBeNull();
   });
