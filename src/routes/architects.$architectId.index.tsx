@@ -69,40 +69,6 @@ function ArchitectNotFound() {
   return <p className="text-sm text-muted-foreground">{t("arch.notFound")}</p>;
 }
 
-type NextStep =
-  | { kind: "itemsNotStarted"; count: number }
-  | { kind: "gapsNotInPlan"; count: number }
-  | { kind: "evidencesPending"; count: number }
-  | { kind: "assessmentAwaiting" };
-
-export function computeNextSteps(input: {
-  canEditOwn: boolean;
-  canReviewEvidence: boolean;
-  itemsNotStartedCount: number;
-  gapsNotInPlanCount: number;
-  evidencesPendingCount: number;
-  assessmentAwaitingCalibration: boolean;
-}): NextStep[] {
-  const steps: NextStep[] = [];
-  if (input.canEditOwn) {
-    if (input.itemsNotStartedCount > 0) {
-      steps.push({ kind: "itemsNotStarted", count: input.itemsNotStartedCount });
-    }
-    if (input.gapsNotInPlanCount > 0) {
-      steps.push({ kind: "gapsNotInPlan", count: input.gapsNotInPlanCount });
-    }
-  }
-  if (input.canReviewEvidence) {
-    if (input.evidencesPendingCount > 0) {
-      steps.push({ kind: "evidencesPending", count: input.evidencesPendingCount });
-    }
-    if (input.assessmentAwaitingCalibration) {
-      steps.push({ kind: "assessmentAwaiting" });
-    }
-  }
-  return steps;
-}
-
 const profileContextsFor = (architectId: string): readonly ContextScopeRequest[] => [
   "architects",
   "capabilities",
@@ -130,6 +96,7 @@ function ArchitectWorkspace() {
   const store = useStore();
   const sel = useSelectors();
 
+  const viewModel = useArchitectProfileViewModel();
   const learningPathsViewModel = useMemo(() => new LearningPathsViewModel(store), [store]);
 
   const personal = useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
@@ -163,7 +130,7 @@ function ArchitectWorkspace() {
   const evidences = store.evidences.filter((e) => e.architectId === architect.id);
   const assessment = sel.assessmentFor(architect.id);
 
-  const nextSteps = computeNextSteps({
+  const nextSteps = viewModel.nextSteps({
     canEditOwn,
     canReviewEvidence,
     itemsNotStartedCount: personal.planItemCounts(architect.id).notStarted,
@@ -760,7 +727,7 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const viewModel = useArchitectProfileViewModel();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Exclude<Evidence["status"], "Pending">>(
-    evidence.status === "Pending" ? "Accepted" : evidence.status,
+    viewModel.preselectedReviewDecisionFor(evidence),
   );
   const [comment, setComment] = useState(evidence.leaderComment ?? "");
 
@@ -784,7 +751,7 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
       onOpenChange={(next) => {
         setOpen(next);
         if (next) {
-          setStatus(evidence.status === "Pending" ? "Accepted" : evidence.status);
+          setStatus(viewModel.preselectedReviewDecisionFor(evidence));
           setComment(evidence.leaderComment ?? "");
         }
       }}

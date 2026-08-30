@@ -35,6 +35,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import type { PlanWorkflowPolicy } from "@/lib/plan-workflow-policy";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Gap } from "@/lib/selectors";
 import { useObjectiveFromGap, useSelectors, useStore, useVocabulary } from "@/lib/store";
@@ -78,10 +79,6 @@ export const Route = createFileRoute("/development-plans")({
 
 const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Completed"];
 
-function statusOfPlanOrEmptyDraft(plan: DevelopmentPlan | undefined): DevelopmentPlan["status"] {
-  return plan?.status ?? "Draft";
-}
-
 function PlansPage() {
   const sel = useSelectors();
 
@@ -107,12 +104,11 @@ function PlansPage() {
 
   const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
 
-  const isLeadOfArchitect = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
-  const isAssignedTechLead = defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);
-  const planStatus = statusOfPlanOrEmptyDraft(plan);
-
-  const canEditDiagnostic = actsForArchitect && planStatus === "Draft";
-  const canEditExecution = actsForArchitect && planStatus !== "Completed";
+  const workflow = viewModel.workflowFor(plan, {
+    actsForArchitect,
+    isLeadOfArchitect: defaultUiAuthorizationPolicy.isLeadOf(user, architect),
+    isAssignedTechLead: defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect),
+  });
 
   const suggestions = viewModel.suggestions(gaps, plan);
 
@@ -137,14 +133,7 @@ function PlansPage() {
         }
       />
 
-      {plan && (
-        <PlanStatusBar
-          plan={plan}
-          actsForArchitect={actsForArchitect}
-          isLeadOfArchitect={isLeadOfArchitect}
-          isAssignedTechLead={isAssignedTechLead}
-        />
-      )}
+      {plan && <PlanStatusBar plan={plan} workflow={workflow} />}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
@@ -153,9 +142,9 @@ function PlansPage() {
               key={item.id}
               planId={plan.id}
               item={item}
-              canEditDiagnostic={canEditDiagnostic}
-              canEditExecution={canEditExecution}
-              canReschedule={canEditExecution && planStatus === "Approved"}
+              canEditDiagnostic={workflow.canEditDiagnostic}
+              canEditExecution={workflow.canEditExecution}
+              canReschedule={workflow.canRescheduleItems}
               smartEditing={smartEditingId === item.id}
               onSmartEditingChange={(open) => setSmartEditingId(open ? item.id : null)}
             />
@@ -179,7 +168,7 @@ function PlansPage() {
                     <p className="text-sm font-medium">{g.competency?.name}</p>
                     <GapBadge gap={g.gap} />
                   </div>
-                  {canEditDiagnostic && (
+                  {workflow.canEditDiagnostic && (
                     <Button
                       size="sm"
                       variant="ghost"
@@ -238,14 +227,10 @@ function PlansPage() {
 
 function PlanStatusBar({
   plan,
-  actsForArchitect,
-  isLeadOfArchitect,
-  isAssignedTechLead,
+  workflow,
 }: {
   plan: DevelopmentPlan;
-  actsForArchitect: boolean;
-  isLeadOfArchitect: boolean;
-  isAssignedTechLead: boolean;
+  workflow: PlanWorkflowPolicy;
 }) {
   const { t, locale } = useI18n();
   const labels = useLabels();
@@ -255,18 +240,8 @@ function PlanStatusBar({
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
 
   const status = plan.status;
-  const canApprove = status === "Draft" && isLeadOfArchitect;
-  const canReturnToDraft = status === "Approved" && isLeadOfArchitect;
-  const canComplete = status === "Approved" && actsForArchitect;
-  const canReopen = status === "Completed" && isAssignedTechLead;
-  const ownerSeesLockedMessage = status === "Completed" && actsForArchitect && !isAssignedTechLead;
-
-  const incompleteReason =
-    plan.items.length === 0
-      ? t("pdi.plan.incomplete.noItems")
-      : plan.items.some((i) => i.status === "Not Started")
-        ? t("pdi.plan.incomplete.notStarted")
-        : undefined;
+  const blockedReasonKey = workflow.completionBlockedReasonKey(plan.items);
+  const incompleteReason = blockedReasonKey ? t(blockedReasonKey) : undefined;
 
   const transitioning = planTransition.submitting;
   const runTransition = (action: () => Promise<DevelopmentPlan>) => void planTransition.run(action);
@@ -301,7 +276,7 @@ function PlanStatusBar({
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
-          {canApprove && (
+          {workflow.canApprove && (
             <Button
               size="sm"
               disabled={transitioning}
@@ -310,7 +285,7 @@ function PlanStatusBar({
               {transitioning ? t("pdi.plan.approving") : t("pdi.plan.approve")}
             </Button>
           )}
-          {canComplete && (
+          {workflow.canComplete && (
             <Button
               size="sm"
               variant="secondary"
@@ -321,7 +296,7 @@ function PlanStatusBar({
               {transitioning ? t("pdi.plan.completing") : t("pdi.plan.complete")}
             </Button>
           )}
-          {canReturnToDraft && (
+          {workflow.canReturnToDraft && (
             <Button
               size="sm"
               variant="outline"
@@ -331,16 +306,16 @@ function PlanStatusBar({
               {transitioning ? t("pdi.plan.returningToDraft") : t("pdi.plan.returnToDraft")}
             </Button>
           )}
-          {canReopen && (
+          {workflow.canReopen && (
             <Button size="sm" variant="outline" onClick={() => setReopenDialogOpen(true)}>
               {t("pdi.plan.reopen")}
             </Button>
           )}
         </div>
-        {canComplete && incompleteReason && (
+        {workflow.canComplete && incompleteReason && (
           <p className="w-full text-xs text-muted-foreground">{incompleteReason}</p>
         )}
-        {ownerSeesLockedMessage && (
+        {workflow.ownerSeesLockedMessage && (
           <p className="w-full text-xs text-muted-foreground">{t("pdi.plan.lockedForOwner")}</p>
         )}
         {planTransition.error && (

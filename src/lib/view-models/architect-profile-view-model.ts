@@ -18,8 +18,50 @@ export interface EvidenceDraft {
   pdiItemId: string;
 }
 
+export type NextStep =
+  | { kind: "itemsNotStarted"; count: number }
+  | { kind: "gapsNotInPlan"; count: number }
+  | { kind: "evidencesPending"; count: number }
+  | { kind: "assessmentAwaiting" };
+
+export interface NextStepSignals {
+  canEditOwn: boolean;
+  canReviewEvidence: boolean;
+  itemsNotStartedCount: number;
+  gapsNotInPlanCount: number;
+  evidencesPendingCount: number;
+  assessmentAwaitingCalibration: boolean;
+}
+
 export class ArchitectProfileViewModel {
   constructor(private readonly service: ArchitectProfileService) {}
+
+  nextSteps(input: NextStepSignals): NextStep[] {
+    const steps: NextStep[] = [];
+    if (input.canEditOwn) {
+      if (input.itemsNotStartedCount > 0) {
+        steps.push({ kind: "itemsNotStarted", count: input.itemsNotStartedCount });
+      }
+      if (input.gapsNotInPlanCount > 0) {
+        steps.push({ kind: "gapsNotInPlan", count: input.gapsNotInPlanCount });
+      }
+    }
+    if (input.canReviewEvidence) {
+      if (input.evidencesPendingCount > 0) {
+        steps.push({ kind: "evidencesPending", count: input.evidencesPendingCount });
+      }
+      if (input.assessmentAwaitingCalibration) {
+        steps.push({ kind: "assessmentAwaiting" });
+      }
+    }
+    return steps;
+  }
+
+  preselectedReviewDecisionFor(
+    evidence: Pick<Evidence, "status">,
+  ): Exclude<Evidence["status"], "Pending"> {
+    return evidence.status === "Pending" ? "Accepted" : evidence.status;
+  }
 
   registerEvidence(architectId: string, draft: EvidenceDraft): Promise<Evidence> {
     return this.service.addEvidence({

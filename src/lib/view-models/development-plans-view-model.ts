@@ -1,4 +1,5 @@
 import type { ActionType, DevelopmentPlan, PdiStatus, SmartGoal } from "../domain";
+import { PlanWorkflowPolicy, type PlanActorReach, type PlanStatus } from "../plan-workflow-policy";
 import type { Gap } from "../selectors";
 import type { Api } from "../store";
 import { defaultObjectiveFromGap, type RenderObjectiveFromGap } from "../text-templates";
@@ -27,6 +28,14 @@ export class DevelopmentPlansViewModel {
     private readonly service: DevelopmentPlanService,
     private readonly objectiveFromGap: RenderObjectiveFromGap = defaultObjectiveFromGap,
   ) {}
+
+  statusOf(plan: DevelopmentPlan | undefined): PlanStatus {
+    return plan?.status ?? "Draft";
+  }
+
+  workflowFor(plan: DevelopmentPlan | undefined, reach: PlanActorReach): PlanWorkflowPolicy {
+    return new PlanWorkflowPolicy(this.statusOf(plan), reach);
+  }
 
   async approve(planId: string): Promise<DevelopmentPlan> {
     return this.service.updatePlanStatus(planId, "Approved");

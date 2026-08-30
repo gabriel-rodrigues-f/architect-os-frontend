@@ -24,12 +24,15 @@ import {
 } from "@/components/app";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
-import { DashboardPresenter, PersonalDashboardPresenter } from "@/lib/presenters";
+import {
+  DashboardPresenter,
+  type LeadPendingQueues,
+  PersonalDashboardPresenter,
+} from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
 import type { DevelopmentPlan } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -88,6 +91,14 @@ function useDashboardPresenter() {
     () => new DashboardPresenter(store, sel, criticalThreshold),
     [store, sel, criticalThreshold],
   );
+}
+
+function useLeadPendingQueues(): LeadPendingQueues {
+  const store = useStore();
+  const sel = useSelectors();
+  const user = useCurrentUser();
+  const presenter = useMemo(() => new DashboardPresenter(store, sel), [store, sel]);
+  return presenter.pendingQueuesFor(user);
 }
 
 function usePersonalDashboardPresenter() {
@@ -403,31 +414,18 @@ function MemberHome() {
 }
 
 function LeadHome() {
-  const store = useStore();
   const sel = useSelectors();
-  const user = useCurrentUser();
   const labels = useLabels();
   const { t } = useI18n();
   const help = usePageHelp("dashLead");
 
-  const myPeople = store.architects.filter(
-    (a) => a.active && defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, a),
-  );
-
-  const awaitingCalibration = myPeople
-    .map((a) => ({ architect: a, assessment: sel.assessmentFor(a.id) }))
-    .filter((x) => x.assessment?.status === "In Review");
-
-  const pendingEvidence = store.evidences.filter(
-    (e) => myPeople.some((a) => a.id === e.architectId) && e.status === "Pending",
-  );
-
-  const awaitingApproval = myPeople
-    .map((a) => ({ architect: a, plan: sel.planFor(a.id) }))
-    .filter((x) => x.plan && x.plan.status === "Draft" && x.plan.items.length > 0);
-
-  const totalPending =
-    awaitingCalibration.length + pendingEvidence.length + awaitingApproval.length;
+  const {
+    people: myPeople,
+    awaitingCalibration,
+    pendingEvidence,
+    awaitingApproval,
+    totalPending,
+  } = useLeadPendingQueues();
 
   return (
     <>

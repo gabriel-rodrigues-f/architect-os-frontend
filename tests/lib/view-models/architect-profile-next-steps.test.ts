@@ -1,13 +1,27 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { computeNextSteps } from "@/routes/architects.$architectId.index";
+import { ArchitectProfileViewModel, type ArchitectProfileService } from "@/lib/view-models";
 
 /**
  * FASE 2 (quinta rodada) — "perfil deveria ser o centro da jornada...
  * precisa priorizar pendências/próximo passo sobre inventário." Ver
  * AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md, Seção 7 e 33.
+ *
+ * R4 (varredura-oo-ddd-2026-08-29, §2c) — os próximos passos eram um
+ * serviço de domínio exportado de um arquivo de ROTA, e este teste
+ * importava a rota para alcançá-lo. A regra passou para a view-model do
+ * perfil; as asserções abaixo são as mesmas, linha por linha.
  */
-describe("Workspace da pessoa — computeNextSteps", () => {
+const fakeService = (): ArchitectProfileService => ({
+  addEvidence: vi.fn(),
+  resubmitEvidence: vi.fn(),
+  reviewEvidence: vi.fn(),
+});
+
+const computeNextSteps: ArchitectProfileViewModel["nextSteps"] = (input) =>
+  new ArchitectProfileViewModel(fakeService()).nextSteps(input);
+
+describe("Workspace da pessoa — próximos passos", () => {
   const base = {
     canEditOwn: false,
     canReviewEvidence: false,
