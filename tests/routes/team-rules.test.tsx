@@ -113,7 +113,11 @@ describe("/team-rules nega DADO a quem não rege régua — a tela é a última 
   it("lead com vínculo só enxerga os times que rege — nunca a lista inteira", async () => {
     renderAs(fixtureTeamLeadUser, [comRegua]);
     expect(await screen.findByText("Time Plataforma")).toBeTruthy();
-    expect(screen.queryByText("Time Dados")).toBeNull();
+
+    await userEvent.click(screen.getByLabelText("Time"));
+
+    expect(screen.getByRole("option", { name: "Time Plataforma" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Time Dados" })).toBeNull();
   });
 
   it("admin alcança a tela e a régua do time selecionado", async () => {
