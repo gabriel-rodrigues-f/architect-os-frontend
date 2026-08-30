@@ -2,6 +2,12 @@ import type { ApiClient } from "../api-client";
 
 export type UserRole = "admin" | "lead" | "member";
 export type UserStatus = "active" | "disabled";
+export type TeamMemberRole = "manager" | "tech_lead" | "member";
+
+export interface TeamMembership {
+  teamId: string;
+  role: TeamMemberRole;
+}
 
 export interface SessionUser {
   id: string;
@@ -12,6 +18,7 @@ export interface SessionUser {
   status: UserStatus;
   mustChangePassword: boolean;
   createdAt: string;
+  memberships?: readonly TeamMembership[];
 }
 
 export interface AuthResult {

@@ -1,12 +1,15 @@
-import { createMemoryHistory, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRouter, isRedirect } from "@tanstack/react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SessionUser } from "@/lib/api";
 import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
+import { requireLeadReach } from "@/lib/route-guards";
+import { SESSION_QUERY_KEY } from "@/lib/session-query";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
+  fixtureTeamLeadUser,
   fixtureUnassignedLeadUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
@@ -110,5 +113,45 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
 
   it("nega /users a um lead", async () => {
     expect(await navegarComoUsuario(fixtureUnassignedLeadUser, "/users")).toBe("/");
+  });
+});
+
+/**
+ * Fase C, tela 1 — a 2ª guarda do arquivo. A rota `/team-rules` é da
+ * sub-fatia da tela; a barreira, não: ela é a mesma coisa que o `beforeLoad`
+ * vai chamar, e é exercitada aqui direto, sem tela nenhuma no caminho.
+ *
+ * `requireAdminReach` já tem a metade de navegação coberta acima; esta
+ * metade prova que a guarda NOVA nega quem não rege régua nenhuma — a
+ * repetição do vazamento da onda 17 (`/calibration` por URL direta) é o que
+ * este arquivo existe para impedir.
+ */
+async function alcancaTelaDaRegua(user: SessionUser): Promise<boolean> {
+  const queryClient = createAppQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, user);
+  try {
+    await requireLeadReach({ context: { queryClient } });
+    return true;
+  } catch (erro) {
+    if (isRedirect(erro)) return false;
+    throw erro;
+  }
+}
+
+describe("requireLeadReach — a guarda da régua do time", () => {
+  it("nega a quem é member", async () => {
+    expect(await alcancaTelaDaRegua(fixtureMemberUser)).toBe(false);
+  });
+
+  it("nega ao lead sem vínculo nenhum — não há régua que ele reja", async () => {
+    expect(await alcancaTelaDaRegua(fixtureUnassignedLeadUser)).toBe(false);
+  });
+
+  it("deixa passar o lead com vínculo no time", async () => {
+    expect(await alcancaTelaDaRegua(fixtureTeamLeadUser)).toBe(true);
+  });
+
+  it("deixa passar o admin", async () => {
+    expect(await alcancaTelaDaRegua(fixtureAdminUser)).toBe(true);
   });
 });
