@@ -21,9 +21,19 @@
       "guarda": "requireAdminReach",
       "sinal": "isAdmin",
       "negativa": "somente-leitura",
-      "justificativa": "O catálogo é global e chega pelo /state, que o servidor já recorta; o não-admin LÊ a matriz e não age sobre ela. A tela não abre consulta própria nenhuma, então não há o que pinar com `enabled` — a negativa é a ausência de toda ação de escrita, provada em competency-matrix-import.test.tsx.",
+      "justificativa": "O catálogo é global e chega pelo /state, que o servidor já recorta; o não-admin LÊ a matriz e não age sobre ela. A tela não abre consulta com recorte de time ou de pessoa — só os dois catálogos globais declarados abaixo, que o hook de store.tsx dispara sem aceitar `enabled` —, então não há o que pinar: a negativa é a ausência de toda ação de escrita, provada em competency-matrix-import.test.tsx.",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/competency-matrix-import.test.tsx"
+      "provaDeTela": "tests/routes/competency-matrix-import.test.tsx",
+      "catalogosGlobais": [
+        {
+          "hook": "useCareerLevelsByRank",
+          "justificativa": "GET /career-levels é o catálogo GLOBAL da escada de carreira, sem recorte de time nem de pessoa, e é o eixo em que a matriz mostra o nível esperado por cargo — a mesma leitura que o não-admin tem direito de fazer."
+        },
+        {
+          "hook": "useCurationPolicy",
+          "justificativa": "GET /config/curation-policy é configuração global de curadoria, sem recorte de time nem de pessoa. Ela alimenta o view-model que decide o que a tela deixa EDITAR, e é justamente essa decisão que o não-admin precisa ver negada — buscá-la é o que permite negar."
+        }
+      ]
     },
     "/cycles": { "alcance": "autenticado" },
     "/development-plans": { "alcance": "autenticado" },
@@ -40,7 +50,13 @@
       "sinal": "canConfigure",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/team-rules.test.tsx"
+      "provaDeTela": "tests/routes/team-rules.test.tsx",
+      "catalogosGlobais": [
+        {
+          "hook": "useCareerLevelsByRank",
+          "justificativa": "GET /career-levels é o catálogo GLOBAL da escada de carreira — o CONTRATO diz que posição e senioridade significam a mesma coisa na organização inteira —, então ele não tem recorte de time nem de pessoa para vazar. O hook de store.tsx não aceita `enabled`, e o QA de integração da onda 19 mediu no navegador com conta member em /team-rules: sai a consulta do catálogo e NÃO sai a do time, porque o teamsQuery respeita `enabled: canConfigure`."
+        }
+      ]
     },
     "/training-needs": { "alcance": "autenticado" },
     "/users": {
