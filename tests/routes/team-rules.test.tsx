@@ -63,7 +63,11 @@ const comRegua: FetchRoute = (href) =>
         capabilityIds: ["cloud"],
         competencies: [
           { competencyId: "cloud-k8s", requirementType: "RESTRICTIVE", requiredLevel: 4 },
-          { competencyId: "cloud-serverless", requirementType: "NON_RESTRICTIVE", requiredLevel: 2 },
+          {
+            competencyId: "cloud-serverless",
+            requirementType: "NON_RESTRICTIVE",
+            requiredLevel: 2,
+          },
         ],
       })
     : undefined;
@@ -129,10 +133,9 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
   it("404 TeamRuleNotFoundError vira 'ainda não tem régua', nunca erro de tela", async () => {
     renderAs(fixtureAdminUser, [semRegua]);
     expect(
-      await screen.findByText(
-        "Este time ainda não tem régua para Arquiteto de Soluções I.",
-        { exact: false },
-      ),
+      await screen.findByText("Este time ainda não tem régua para Arquiteto de Soluções I.", {
+        exact: false,
+      }),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Definir régua" })).toBeTruthy();
   });

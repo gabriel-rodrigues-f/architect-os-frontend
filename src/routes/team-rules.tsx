@@ -104,7 +104,11 @@ function TeamRulesPage() {
             />
           </div>
 
-          <TeamRuleSection key={`${teamId}:${careerLevel.id}`} teamId={teamId} level={careerLevel} />
+          <TeamRuleSection
+            key={`${teamId}:${careerLevel.id}`}
+            teamId={teamId}
+            level={careerLevel}
+          />
         </>
       )}
     </>
@@ -335,7 +339,10 @@ function TeamRuleEditor({
                   );
                   const candidates = editor.swapCandidatesFor(competency.id);
                   return (
-                    <tr key={competency.id} className="border-b border-border/60 align-top last:border-0">
+                    <tr
+                      key={competency.id}
+                      className="border-b border-border/60 align-top last:border-0"
+                    >
                       <td className="py-2 font-medium">{competency.name}</td>
                       <td className="py-2">
                         <div className="flex items-center gap-2">
