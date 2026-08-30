@@ -1,4 +1,6 @@
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
   Legend,
   Line,
@@ -221,6 +223,39 @@ export function ProficiencyTimelineFigure({
           isAnimationActive={!reducedMotion}
         />
       </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function LevelDistributionFigure({
+  data,
+  label,
+}: {
+  data: { level: string; count: number }[];
+  label: string;
+}) {
+  const { reducedMotion, increasedContrast } = useDisplayPreferences();
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ left: -24, right: 8, top: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_INK.grid} vertical={false} />
+        <XAxis dataKey="level" tick={axisTick} stroke={CHART_INK.grid} />
+        <YAxis allowDecimals={false} tick={axisTick} stroke={CHART_INK.grid} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          itemStyle={{ color: CHART_INK.surfaceText }}
+          cursor={{ fill: CHART_INK.grid, fillOpacity: 0.4 }}
+        />
+        <Bar
+          dataKey="count"
+          name={label}
+          fill="var(--chart-1)"
+          {...(increasedContrast ? { stroke: CHART_INK.surfaceText, strokeWidth: 1 } : {})}
+          radius={[3, 3, 0, 0]}
+          isAnimationActive={!reducedMotion}
+        />
+      </BarChart>
     </ResponsiveContainer>
   );
 }

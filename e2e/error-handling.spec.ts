@@ -101,6 +101,24 @@ test("member acessando /users direto pela URL vê o aviso de restrição, não o
   await expect(page.getByText("Diretório de contas é restrito a administradores.")).toBeVisible();
 });
 
+test("member acessando /calibration direto pela URL vê o aviso de restrição, não os avaliadores", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.locator("#email").fill(MEMBER_EMAIL);
+  await page.locator("#password").fill(PASSWORD);
+  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await expect(page.getByText("Minha Evolução")).toBeVisible();
+
+  // QA da onda 17, achado bloqueante: no acesso direto o beforeLoad não roda
+  // no cliente (SSR + hidratação) e a tela abria INTEIRA, com o dado do
+  // gateway em memória. O twin de /users acima: a tela é a última barreira.
+  await page.goto("/calibration");
+  await expect(page.getByText("Calibração é restrita a administradores.")).toBeVisible();
+  await expect(page.getByText("Marina Lopes")).toHaveCount(0);
+  await expect(page.getByText("Média geral")).toHaveCount(0);
+});
+
 test("perfil de um arquiteto inexistente mostra 'não encontrado', não uma tela quebrada", async ({
   page,
 }) => {

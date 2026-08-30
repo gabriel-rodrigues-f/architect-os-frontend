@@ -79,6 +79,33 @@ export const noticesResponseSchema = z.object({
   unreadCount: z.number(),
 });
 
+const levelDistribution = z.object({
+  "1": z.number(),
+  "2": z.number(),
+  "3": z.number(),
+  "4": z.number(),
+  "5": z.number(),
+});
+
+const calibrationEvaluator = z.object({
+  userId: z.string(),
+  name: z.string(),
+  teamIds: z.array(z.string()),
+  distribution: levelDistribution,
+  average: z.number().nullable(),
+  itemsCount: z.number(),
+  assessmentsCount: z.number(),
+});
+
+export const calibrationResponseSchema = z.object({
+  cycleId: z.string(),
+  overall: z.object({
+    distribution: levelDistribution,
+    average: z.number().nullable(),
+  }),
+  evaluators: z.array(calibrationEvaluator),
+});
+
 const careerLevel = z.object({
   id: z.string(),
   name: z.string(),

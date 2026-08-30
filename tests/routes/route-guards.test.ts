@@ -57,6 +57,14 @@ describe("guardas de navegação das telas administrativas", () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/competency-matrix")).toBe("/");
   });
 
+  it("nega /calibration a quem não é admin na navegação interna (PRD-03: só gestor+admin)", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/calibration")).toBe("/");
+  });
+
+  it("mantém /calibration aberta para admin", async () => {
+    expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/calibration");
+  });
+
   it("mantém /users aberta para admin", async () => {
     expect(await navegarComoUsuario(fixtureAdminUser, "/users")).toBe("/users");
   });

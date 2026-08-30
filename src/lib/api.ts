@@ -7,6 +7,7 @@ const {
   architectsGateway,
   assessmentGateway,
   authGateway,
+  calibrationGateway,
   careerGateway,
   catalogGateway,
   configGateway,
@@ -38,6 +39,7 @@ export const api = {
 export const authApi = { ...authGateway };
 export const stateContextsApi = { ...stateContextsGateway };
 export const evolutionApi = { ...evolutionGateway };
+export const calibrationApi = { ...calibrationGateway };
 export const noticesApi = { ...noticesGateway };
 export const reportsApi = { ...reportsGateway };
 
