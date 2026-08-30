@@ -46,6 +46,14 @@ export const teamRuleResponseSchema = teamLevelRule.extend({
   ),
 });
 
+export const teamsResponseSchema = z.array(
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    active: z.boolean(),
+  }),
+);
+
 export const architectAdherenceResponseSchema = z.object({
   architectId: z.string(),
   teamId: z.string().nullable(),
