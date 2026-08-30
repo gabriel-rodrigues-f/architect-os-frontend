@@ -11,7 +11,7 @@ export interface RouteGuardContext {
 
 type RouteGuard = (args: { context: RouteGuardContext }) => Promise<void>;
 
-export class NavigationBarrier {
+class NavigationBarrier {
   constructor(private readonly policy: UiAuthorizationPolicy) {}
 
   requireAdminReach: RouteGuard = ({ context }) =>

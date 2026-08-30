@@ -1,4 +1,5 @@
-import type { SessionUser, TeamMemberRole } from "./api";
+import type { SessionUser } from "./api";
+import type { TeamMemberRole } from "./gateways/auth.gateway";
 import type { Architect } from "./domain";
 
 type ScopedArchitect = Pick<Architect, "id" | "teamId">;
