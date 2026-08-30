@@ -727,7 +727,7 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const viewModel = useArchitectProfileViewModel();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Exclude<Evidence["status"], "Pending">>(
-    evidence.status === "Pending" ? "Accepted" : evidence.status,
+    viewModel.preselectedReviewDecisionFor(evidence),
   );
   const [comment, setComment] = useState(evidence.leaderComment ?? "");
 
@@ -751,7 +751,7 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
       onOpenChange={(next) => {
         setOpen(next);
         if (next) {
-          setStatus(evidence.status === "Pending" ? "Accepted" : evidence.status);
+          setStatus(viewModel.preselectedReviewDecisionFor(evidence));
           setComment(evidence.leaderComment ?? "");
         }
       }}

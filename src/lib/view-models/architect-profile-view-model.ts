@@ -57,6 +57,12 @@ export class ArchitectProfileViewModel {
     return steps;
   }
 
+  preselectedReviewDecisionFor(
+    evidence: Pick<Evidence, "status">,
+  ): Exclude<Evidence["status"], "Pending"> {
+    return evidence.status === "Pending" ? "Accepted" : evidence.status;
+  }
+
   registerEvidence(architectId: string, draft: EvidenceDraft): Promise<Evidence> {
     return this.service.addEvidence({
       id: "",

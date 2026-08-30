@@ -166,3 +166,27 @@ describe("ArchitectProfileViewModel", () => {
     });
   });
 });
+
+/**
+ * R4 (regra 6 — 2+ ocorrências viram componente) — a decisão que o revisor
+ * encontra já marcada no diálogo era escrita DUAS vezes no mesmo
+ * componente: uma no estado inicial e outra ao reabrir. Duas cópias da
+ * mesma regra no mesmo arquivo é a definição do problema.
+ */
+describe("ArchitectProfileViewModel — decisão pré-selecionada da revisão", () => {
+  const evidenceWith = (status: Evidence["status"]): Pick<Evidence, "status"> => ({ status });
+
+  it("evidência ainda pendente chega com Accepted marcado", () => {
+    const vm = new ArchitectProfileViewModel(fakeService());
+    expect(vm.preselectedReviewDecisionFor(evidenceWith("Pending"))).toBe("Accepted");
+  });
+
+  it("evidência já revisada chega com a própria decisão marcada", () => {
+    const vm = new ArchitectProfileViewModel(fakeService());
+    expect(vm.preselectedReviewDecisionFor(evidenceWith("Rejected"))).toBe("Rejected");
+    expect(vm.preselectedReviewDecisionFor(evidenceWith("Needs Improvement"))).toBe(
+      "Needs Improvement",
+    );
+    expect(vm.preselectedReviewDecisionFor(evidenceWith("Accepted"))).toBe("Accepted");
+  });
+});
