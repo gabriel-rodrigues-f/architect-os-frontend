@@ -999,6 +999,7 @@
   "notices.filter.all": "Todos",
   "notices.filter.unread": "Não lidos",
   "notices.error": "Não foi possível carregar os avisos.",
+  "dataOrigin.demonstration": "Dados de demonstração: esta tela ainda não lê a organização. O conteúdo abaixo é um exemplo fabricado, não informação real de ninguém.",
   "arch.stat.avgLevel": "Nível médio",
   "arch.stat.avgLevelHint": "Média das competências avaliadas",
   "arch.stat.avgLevelHintPartial": "{covered} de {total} capacidades com avaliação oficial neste ciclo",

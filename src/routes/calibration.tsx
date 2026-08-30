@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import {
+  DataOriginCallout,
   EmptyState,
   EvaluatorDistributionCard,
   PageHeader,
@@ -90,39 +91,44 @@ function CalibrationPage() {
             skeleton={CARDS_SKELETON}
             errorMessage={t("calibration.error")}
           >
-            {(data) =>
-              data.evaluators.length === 0 ? (
-                <EmptyState title={t("calibration.empty")} hint={t("calibration.emptyHint")} />
-              ) : (
-                <>
-                  <div className="mb-6 grid gap-4 sm:grid-cols-3">
-                    <StatCard
-                      label={t("calibration.kpi.overallAverage")}
-                      value={data.overall.average === null ? "—" : data.overall.average.toFixed(2)}
-                    />
-                    <StatCard
-                      label={t("calibration.kpi.evaluators")}
-                      value={String(data.evaluators.length)}
-                    />
-                    <StatCard
-                      label={t("calibration.kpi.assessments")}
-                      value={String(
-                        data.evaluators.reduce((sum, entry) => sum + entry.assessmentsCount, 0),
-                      )}
-                    />
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {vm.evaluators(data).map((view) => (
-                      <EvaluatorDistributionCard
-                        key={view.userId}
-                        view={view}
-                        scoreLevels={vm.scoreLevels(view.distribution)}
+            {(data) => (
+              <>
+                <DataOriginCallout origin={data.dataOrigin} className="mb-6" />
+                {data.evaluators.length === 0 ? (
+                  <EmptyState title={t("calibration.empty")} hint={t("calibration.emptyHint")} />
+                ) : (
+                  <>
+                    <div className="mb-6 grid gap-4 sm:grid-cols-3">
+                      <StatCard
+                        label={t("calibration.kpi.overallAverage")}
+                        value={
+                          data.overall.average === null ? "—" : data.overall.average.toFixed(2)
+                        }
                       />
-                    ))}
-                  </div>
-                </>
-              )
-            }
+                      <StatCard
+                        label={t("calibration.kpi.evaluators")}
+                        value={String(data.evaluators.length)}
+                      />
+                      <StatCard
+                        label={t("calibration.kpi.assessments")}
+                        value={String(
+                          data.evaluators.reduce((sum, entry) => sum + entry.assessmentsCount, 0),
+                        )}
+                      />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {vm.evaluators(data).map((view) => (
+                        <EvaluatorDistributionCard
+                          key={view.userId}
+                          view={view}
+                          scoreLevels={vm.scoreLevels(view.distribution)}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
           </QuerySection>
         </>
       )}

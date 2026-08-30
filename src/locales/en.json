@@ -999,6 +999,7 @@
   "notices.filter.all": "All",
   "notices.filter.unread": "Unread",
   "notices.error": "Could not load notices.",
+  "dataOrigin.demonstration": "Demonstration data: this screen does not read the organization yet. What follows is a fabricated example, not anyone’s real information.",
   "arch.stat.avgLevel": "Average level",
   "arch.stat.avgLevelHint": "Average of assessed competencies",
   "arch.stat.avgLevelHintPartial": "{covered} of {total} capabilities with an official assessment this cycle",

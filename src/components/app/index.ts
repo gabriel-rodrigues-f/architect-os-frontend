@@ -8,6 +8,7 @@ export * from "./CareerEventTimeline";
 export * from "./CapabilityHeatmap";
 export * from "./CommandWithReasonDialog";
 export * from "./ConfirmDialog";
+export * from "./DataOriginCallout";
 export * from "./EvaluatorDistributionCard";
 export * from "./FilterField";
 export * from "./FilterTriggerButton";

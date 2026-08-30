@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { NOTICES_QUERY_KEY } from "@/components/app/NoticeBell";
 import { NoticeList } from "@/components/app/NoticeList";
 import {
+  DataOriginCallout,
   EmptyState,
   PageHeader,
   QuerySection,
@@ -101,28 +102,31 @@ function NoticesPage() {
         skeleton={<div className="h-40 animate-pulse rounded-md bg-secondary" />}
         errorMessage={t("notices.error")}
       >
-        {(data) =>
-          data.notices.length === 0 ? (
-            <EmptyState title={t("notices.empty")} hint={t("notices.emptyHint")} />
-          ) : (
-            <div className="space-y-6">
-              {vm.groupByDay(data.notices).map((group) => (
-                <SectionGroup
-                  key={group.day}
-                  title={defaultDateFormatter.formatDate(group.day, locale) ?? group.day}
-                >
-                  <div className="surface-card p-2">
-                    <NoticeList
-                      notices={group.notices}
-                      unreadOf={(notice) => vm.isUnread(notice)}
-                      onOpen={openNotice}
-                    />
-                  </div>
-                </SectionGroup>
-              ))}
-            </div>
-          )
-        }
+        {(data) => (
+          <>
+            <DataOriginCallout origin={data.dataOrigin} className="mb-6" />
+            {data.notices.length === 0 ? (
+              <EmptyState title={t("notices.empty")} hint={t("notices.emptyHint")} />
+            ) : (
+              <div className="space-y-6">
+                {vm.groupByDay(data.notices).map((group) => (
+                  <SectionGroup
+                    key={group.day}
+                    title={defaultDateFormatter.formatDate(group.day, locale) ?? group.day}
+                  >
+                    <div className="surface-card p-2">
+                      <NoticeList
+                        notices={group.notices}
+                        unreadOf={(notice) => vm.isUnread(notice)}
+                        onOpen={openNotice}
+                      />
+                    </div>
+                  </SectionGroup>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </QuerySection>
     </>
   );
