@@ -57,24 +57,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sessionPolicy.whenSessionEnded(null);
   }, [queryClient]);
 
+  /**
+   * `POST /auth/login` e `POST /auth/register` devolvem a conta autenticada,
+   * não a SESSÃO: `memberships` só existe em `GET /auth/me` (backend
+   * `auth.controller.ts`). Quem entra pela tela de login fica na mesma
+   * instância da SPA — o `/auth/me` da montagem já falhou com 401 — então a
+   * sessão precisa ser aberta relendo `/auth/me`, senão o vínculo de time
+   * nunca chega à política de UI e o lead perde os destinos que rege.
+   */
+  const openSession = useCallback(
+    async (authenticated: SessionUser) => {
+      await queryClient.invalidateQueries();
+      const session = await queryClient.fetchQuery(sessionQuery).catch(() => authenticated);
+      queryClient.setQueryData(SESSION_QUERY_KEY, session);
+      setUser(session);
+    },
+    [queryClient],
+  );
+
   const login = useCallback(
     async (email: string, password: string) => {
       const result = await authApi.login(email, password);
-      setUser(result.user);
-      await queryClient.invalidateQueries();
-      queryClient.setQueryData(SESSION_QUERY_KEY, result.user);
+      await openSession(result.user);
     },
-    [queryClient],
+    [openSession],
   );
 
   const register = useCallback(
     async (input: { name: string; email: string; password: string }) => {
       const result = await authApi.register(input);
-      setUser(result.user);
-      await queryClient.invalidateQueries();
-      queryClient.setQueryData(SESSION_QUERY_KEY, result.user);
+      await openSession(result.user);
     },
-    [queryClient],
+    [openSession],
   );
 
   const logout = useCallback(async () => {
