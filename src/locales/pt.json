@@ -1277,6 +1277,8 @@
   "matrix.import.error.invalidJson": "O texto não é um JSON válido.",
   "matrix.import.error.invalidShape": "O JSON não está no formato esperado ({\"capabilities\": [{name, short, competencies: [...]}]}).",
   "matrix.import.error.empty": "Importação vazia: inclua ao menos uma capacidade.",
+  "requirement.type.required": "Obrigatória",
+  "requirement.type.optional": "Opcional",
   "teamRules.error.minimumBelowFloor": "O piso da régua não pode ser menor que {minimo} capacidades qualificadas.",
   "teamRules.error.competencyWithoutCapability": "Toda competência exigida precisa vir de uma capacidade que a régua exige.",
   "teamRules.error.levelOutOfRange": "O nível exigido vai de 1 a 5.",

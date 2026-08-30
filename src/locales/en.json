@@ -1277,6 +1277,8 @@
   "matrix.import.error.invalidJson": "The text is not valid JSON.",
   "matrix.import.error.invalidShape": "The JSON is not in the expected format ({\"capabilities\": [{name, short, competencies: [...]}]}).",
   "matrix.import.error.empty": "Empty import: include at least one capability.",
+  "requirement.type.required": "Required",
+  "requirement.type.optional": "Optional",
   "teamRules.error.minimumBelowFloor": "The rule floor cannot be lower than {minimo} qualified capabilities.",
   "teamRules.error.competencyWithoutCapability": "Every required competency must come from a capability the rule requires.",
   "teamRules.error.levelOutOfRange": "The required level goes from 1 to 5.",
