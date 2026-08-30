@@ -176,7 +176,7 @@
   },
   "src/lib/presenters/dashboard-presenter.ts": {
     "id-length": {
-      "count": 19
+      "count": 18
     }
   },
   "src/lib/presenters/team-report-presenter.ts": {
@@ -296,7 +296,7 @@
   },
   "src/routes/index.tsx": {
     "id-length": {
-      "count": 15
+      "count": 8
     }
   },
   "src/routes/learning-paths.tsx": {

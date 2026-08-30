@@ -1,5 +1,6 @@
-import type { AppState } from "../api";
-import type { Architect, DevelopmentPlan, LearningPath } from "../domain";
+import type { AppState, SessionUser } from "../api";
+import type { Architect, Assessment, DevelopmentPlan, Evidence, LearningPath } from "../domain";
+import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "../scope";
 import { defaultGapSeverityRuler } from "../scoring-bands";
 import type { Gap, Selectors } from "../selectors";
 
@@ -16,14 +17,67 @@ interface GapWithArchitect extends Gap {
 
 export const CRITICAL_GAP_THRESHOLD = defaultGapSeverityRuler.criticalThreshold;
 
+interface ArchitectAwaitingCalibration {
+  architect: Architect;
+  assessment: Assessment | undefined;
+}
+
+interface ArchitectAwaitingApproval {
+  architect: Architect;
+  plan: DevelopmentPlan | undefined;
+}
+
+export class LeadPendingQueues {
+  constructor(
+    readonly people: readonly Architect[],
+    readonly awaitingCalibration: readonly ArchitectAwaitingCalibration[],
+    readonly pendingEvidence: readonly Evidence[],
+    readonly awaitingApproval: readonly ArchitectAwaitingApproval[],
+  ) {}
+
+  get totalPending(): number {
+    return (
+      this.awaitingCalibration.length + this.pendingEvidence.length + this.awaitingApproval.length
+    );
+  }
+}
+
 export class DashboardPresenter {
   private readonly gapsCache = new WeakMap<readonly Architect[], GapWithArchitect[]>();
 
   constructor(
-    private readonly state: Pick<AppState, "plans" | "learningPaths" | "activeCycleId">,
-    private readonly sel: Pick<Selectors, "progressionGapsFor" | "assessmentFor">,
+    private readonly state: Pick<
+      AppState,
+      "architects" | "evidences" | "plans" | "learningPaths" | "activeCycleId"
+    >,
+    private readonly sel: Pick<Selectors, "progressionGapsFor" | "assessmentFor" | "planFor">,
     private readonly criticalGapThreshold: number = CRITICAL_GAP_THRESHOLD,
+    private readonly authorization: UiAuthorizationPolicy = defaultUiAuthorizationPolicy,
   ) {}
+
+  pendingQueuesFor(user: SessionUser): LeadPendingQueues {
+    const people = this.state.architects.filter(
+      (architect) => architect.active && this.authorization.isAssignedTechLeadOf(user, architect),
+    );
+
+    const awaitingCalibration = people
+      .map((architect) => ({ architect, assessment: this.sel.assessmentFor(architect.id) }))
+      .filter((entry) => entry.assessment?.status === "In Review");
+
+    const pendingEvidence = this.state.evidences.filter(
+      (evidence) =>
+        people.some((architect) => architect.id === evidence.architectId) &&
+        evidence.status === "Pending",
+    );
+
+    const awaitingApproval = people
+      .map((architect) => ({ architect, plan: this.sel.planFor(architect.id) }))
+      .filter(
+        (entry) => entry.plan && entry.plan.status === "Draft" && entry.plan.items.length > 0,
+      );
+
+    return new LeadPendingQueues(people, awaitingCalibration, pendingEvidence, awaitingApproval);
+  }
 
   gapsOf(population: readonly Architect[]): GapWithArchitect[] {
     const cached = this.gapsCache.get(population);
@@ -42,7 +96,7 @@ export class DashboardPresenter {
   }
 
   topGaps(population: readonly Architect[], limit = 6): GapWithArchitect[] {
-    return largestBy(this.gapsOf(population), (g) => g.gap, limit);
+    return this.largestBy(this.gapsOf(population), (gap) => gap.gap, limit);
   }
 
   activePlans(): DevelopmentPlan[] {
@@ -80,38 +134,38 @@ export class DashboardPresenter {
       { completed: 0, inReview: 0, draft: 0, notStarted: 0 },
     );
   }
-}
 
-function largestBy<T>(items: readonly T[], scoreOf: (item: T) => number, limit: number): T[] {
-  if (limit <= 0) return [];
-  if (items.length <= limit) return [...items].sort((a, b) => scoreOf(b) - scoreOf(a));
+  private largestBy<T>(items: readonly T[], scoreOf: (item: T) => number, limit: number): T[] {
+    if (limit <= 0) return [];
+    if (items.length <= limit) return [...items].sort((a, b) => scoreOf(b) - scoreOf(a));
 
-  const selected: T[] = [];
-  const scores: number[] = [];
+    const selected: T[] = [];
+    const scores: number[] = [];
 
-  for (const item of items) {
-    const score = scoreOf(item);
-    const weakestSelected = scores[limit - 1];
-    if (selected.length === limit && weakestSelected !== undefined && score <= weakestSelected)
-      continue;
+    for (const item of items) {
+      const score = scoreOf(item);
+      const weakestSelected = scores[limit - 1];
+      if (selected.length === limit && weakestSelected !== undefined && score <= weakestSelected)
+        continue;
 
-    let position = selected.length;
-    while (position > 0) {
-      const previous = scores[position - 1];
-      if (previous === undefined || previous >= score) break;
-      position -= 1;
+      let position = selected.length;
+      while (position > 0) {
+        const previous = scores[position - 1];
+        if (previous === undefined || previous >= score) break;
+        position -= 1;
+      }
+
+      selected.splice(position, 0, item);
+      scores.splice(position, 0, score);
+
+      if (selected.length > limit) {
+        selected.pop();
+        scores.pop();
+      }
     }
 
-    selected.splice(position, 0, item);
-    scores.splice(position, 0, score);
-
-    if (selected.length > limit) {
-      selected.pop();
-      scores.pop();
-    }
+    return selected;
   }
-
-  return selected;
 }
 
 interface PlanItemCounts {

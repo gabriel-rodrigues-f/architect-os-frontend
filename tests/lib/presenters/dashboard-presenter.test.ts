@@ -8,7 +8,11 @@ import {
   PersonalDashboardPresenter,
 } from "@/lib/presenters";
 import { createSelectors } from "@/lib/selectors";
-import { fixtureState } from "../../helpers/fixtures";
+import {
+  fixtureState,
+  fixtureTeamLeadUser,
+  fixtureUnassignedLeadUser,
+} from "../../helpers/fixtures";
 
 /**
  * OO3-11e — os números do painel (`AdminHome`) ganham a cobertura unitária
@@ -305,5 +309,102 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
     const presenter = presenterFor();
     const primeiro = presenter.gapsOf(state.architects);
     expect(presenter.gapsOf(state.architects)).toBe(primeiro);
+  });
+});
+
+/**
+ * R4 (varredura-oo-ddd-2026-08-29, §2c) — as três filas de pendência do
+ * líder (`routes/index.tsx:394-397`) eram calculadas inline no `LeadHome`:
+ * quem é do meu time, quem espera calibração, qual evidência espera revisão
+ * e qual plano espera aprovação. É regra de negócio, e o painel já tinha
+ * presenter. Estes casos são o espelho literal daquelas linhas.
+ */
+describe("DashboardPresenter — filas de pendência do líder", () => {
+  const leadDoTime = fixtureTeamLeadUser;
+
+  const stateWith = (patch: Partial<AppState>): AppState => ({ ...fixtureState, ...patch });
+
+  const queuesOf = (state: AppState, user = leadDoTime) =>
+    new DashboardPresenter(state, createSelectors(state)).pendingQueuesFor(user);
+
+  it("as pessoas da fila são só as ativas que o usuário lidera", () => {
+    const comInativo = stateWith({
+      architects: fixtureState.architects.map((architect) =>
+        architect.id === "bruno" ? { ...architect, active: false } : architect,
+      ),
+    });
+    expect(queuesOf(fixtureState).people.map((architect) => architect.id)).toEqual([
+      "ana",
+      "bruno",
+    ]);
+    expect(queuesOf(comInativo).people.map((architect) => architect.id)).toEqual(["ana"]);
+  });
+
+  it("lead sem vínculo nenhum e sem time não recolhe pendência alguma", () => {
+    const semTime = stateWith({
+      architects: fixtureState.architects.map((architect) => ({ ...architect, teamId: null })),
+    });
+    const queues = queuesOf(semTime, fixtureUnassignedLeadUser);
+    expect(queues.people).toEqual([]);
+    expect(queues.pendingEvidence).toEqual([]);
+    expect(queues.totalPending).toBe(0);
+  });
+
+  it("espera calibração é a avaliação do ciclo ativo em In Review", () => {
+    const emRevisao = stateWith({
+      assessments: fixtureState.assessments.map((assessment) =>
+        assessment.id === "bruno-h2" ? { ...assessment, status: "In Review" as const } : assessment,
+      ),
+    });
+    expect(queuesOf(fixtureState).awaitingCalibration).toEqual([]);
+    expect(queuesOf(emRevisao).awaitingCalibration.map((entry) => entry.architect.id)).toEqual([
+      "bruno",
+    ]);
+  });
+
+  it("evidência pendente é só a Pending de gente do time, na ordem em que o estado a entrega", () => {
+    const comOutraPendente = stateWith({
+      evidences: [
+        ...fixtureState.evidences,
+        { ...fixtureState.evidences[0]!, id: "e2", architectId: "bruno" },
+        { ...fixtureState.evidences[0]!, id: "e3", status: "Accepted" as const },
+        { ...fixtureState.evidences[0]!, id: "e4", architectId: "de-fora" },
+      ],
+    });
+    expect(queuesOf(comOutraPendente).pendingEvidence.map((evidence) => evidence.id)).toEqual([
+      "e1",
+      "e2",
+    ]);
+  });
+
+  it("espera aprovação é o plano em Draft COM item — rascunho vazio não vira fila", () => {
+    const planoDeAna = fixtureState.plans[0]!;
+    const rascunhoComItem = stateWith({
+      plans: [{ ...planoDeAna, status: "Draft" as const }],
+    });
+    const rascunhoVazio = stateWith({
+      plans: [{ ...planoDeAna, status: "Draft" as const, items: [] }],
+    });
+    expect(queuesOf(fixtureState).awaitingApproval).toEqual([]);
+    expect(queuesOf(rascunhoComItem).awaitingApproval.map((entry) => entry.architect.id)).toEqual([
+      "ana",
+    ]);
+    expect(queuesOf(rascunhoVazio).awaitingApproval).toEqual([]);
+  });
+
+  it("o total de pendências é a soma das três filas", () => {
+    const planoDeAna = fixtureState.plans[0]!;
+    const tudoPendente = stateWith({
+      assessments: fixtureState.assessments.map((assessment) =>
+        assessment.id === "bruno-h2" ? { ...assessment, status: "In Review" as const } : assessment,
+      ),
+      plans: [{ ...planoDeAna, status: "Draft" as const }],
+    });
+    const queues = queuesOf(tudoPendente);
+    expect(queues.awaitingCalibration).toHaveLength(1);
+    expect(queues.pendingEvidence).toHaveLength(1);
+    expect(queues.awaitingApproval).toHaveLength(1);
+    expect(queues.totalPending).toBe(3);
+    expect(queuesOf(fixtureState).totalPending).toBe(1);
   });
 });
