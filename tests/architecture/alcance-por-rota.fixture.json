@@ -1,0 +1,55 @@
+{
+  "rotas": {
+    "/": { "alcance": "autenticado" },
+    "/architects/$architectId": { "alcance": "autenticado" },
+    "/architects/$architectId/evolution": { "alcance": "autenticado" },
+    "/architects/$architectId/roadmap": { "alcance": "autenticado" },
+    "/architects/$architectId/statement": { "alcance": "autenticado" },
+    "/assessments": { "alcance": "autenticado" },
+    "/calibration": {
+      "alcance": "admin",
+      "guarda": "requireAdminReach",
+      "sinal": "isAdmin",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/calibration.test.tsx"
+    },
+    "/capability-map": { "alcance": "autenticado" },
+    "/compare": { "alcance": "autenticado" },
+    "/competency-matrix": {
+      "alcance": "admin",
+      "guarda": "requireAdminReach",
+      "sinal": "isAdmin",
+      "negativa": "somente-leitura",
+      "justificativa": "O catálogo é global e chega pelo /state, que o servidor já recorta; o não-admin LÊ a matriz e não age sobre ela. A tela não abre consulta própria nenhuma, então não há o que pinar com `enabled` — a negativa é a ausência de toda ação de escrita, provada em competency-matrix-import.test.tsx.",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/competency-matrix-import.test.tsx"
+    },
+    "/cycles": { "alcance": "autenticado" },
+    "/development-plans": { "alcance": "autenticado" },
+    "/gap-analysis": { "alcance": "autenticado" },
+    "/learning-paths": { "alcance": "autenticado" },
+    "/mentoring": { "alcance": "autenticado" },
+    "/notices": { "alcance": "autenticado" },
+    "/progression": { "alcance": "autenticado" },
+    "/settings": { "alcance": "autenticado" },
+    "/team": { "alcance": "autenticado" },
+    "/team-rules": {
+      "alcance": "lead-com-vinculo",
+      "guarda": "requireLeadReach",
+      "sinal": "canConfigure",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/team-rules.test.tsx"
+    },
+    "/training-needs": { "alcance": "autenticado" },
+    "/users": {
+      "alcance": "admin",
+      "guarda": "requireAdminReach",
+      "sinal": "isAdmin",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/users-alcance.test.tsx"
+    }
+  }
+}
