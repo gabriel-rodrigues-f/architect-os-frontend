@@ -494,6 +494,11 @@
       "count": 1
     }
   },
+  "tests/lib/view-models/architect-profile-next-steps.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
   "tests/lib/view-models/architect-profile-view-model.test.ts": {
     "id-length": {
       "count": 1
@@ -537,11 +542,6 @@
   "tests/lib/vocabularies.test.ts": {
     "id-length": {
       "count": 4
-    }
-  },
-  "tests/routes/architect-workspace-next-steps.test.ts": {
-    "id-length": {
-      "count": 1
     }
   },
   "tests/routes/assessment-comments.test.tsx": {
