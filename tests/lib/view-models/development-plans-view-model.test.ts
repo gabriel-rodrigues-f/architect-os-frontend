@@ -49,6 +49,42 @@ const gap = (competencyId: string, value: number): Gap =>
   }) as Gap;
 
 describe("DevelopmentPlansViewModel", () => {
+  describe("status do plano do ciclo", () => {
+    it("arquiteto sem plano no ciclo conta como rascunho", () => {
+      const vm = new DevelopmentPlansViewModel(fakeService());
+      expect(vm.statusOf(undefined)).toBe("Draft");
+    });
+
+    it("com plano, o status é o do próprio plano", () => {
+      const vm = new DevelopmentPlansViewModel(fakeService());
+      expect(vm.statusOf({ status: "Completed" } as DevelopmentPlan)).toBe("Completed");
+    });
+  });
+
+  describe("fluxo do plano", () => {
+    it("sem plano, o fluxo é o de um rascunho — o líder pode aprovar", () => {
+      const vm = new DevelopmentPlansViewModel(fakeService());
+      const workflow = vm.workflowFor(undefined, {
+        actsForArchitect: true,
+        isLeadOfArchitect: true,
+        isAssignedTechLead: false,
+      });
+      expect(workflow.canApprove).toBe(true);
+      expect(workflow.canEditDiagnostic).toBe(true);
+    });
+
+    it("com plano concluído, o fluxo trava a edição de execução", () => {
+      const vm = new DevelopmentPlansViewModel(fakeService());
+      const workflow = vm.workflowFor({ status: "Completed" } as DevelopmentPlan, {
+        actsForArchitect: true,
+        isLeadOfArchitect: true,
+        isAssignedTechLead: false,
+      });
+      expect(workflow.canEditExecution).toBe(false);
+      expect(workflow.ownerSeesLockedMessage).toBe(true);
+    });
+  });
+
   describe("approve / complete / returnToDraft", () => {
     it("approve chama updatePlanStatus(planId, 'Approved')", async () => {
       const service = fakeService();
