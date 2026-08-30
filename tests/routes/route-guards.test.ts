@@ -16,7 +16,9 @@ import {
 import { mockAppFetch } from "../helpers/render-app";
 
 /**
- * ADR-0028 — antes desta fatia, `grep -rn "beforeLoad" src/` voltava vazio: a
+ * "Guardas de navegação de rota" em `direcao/frontend/DECISOES.md` (o ex-ADR
+ * 0028 do frontend, migrado pela regra 17) — antes desta fatia,
+ * `grep -rn "beforeLoad" src/` voltava vazio: a
  * única barreira das telas administrativas era o item de menu escondido
  * (`AppShell.tsx`, `filterNavGroups`). Digitar a URL abria a tela.
  *
