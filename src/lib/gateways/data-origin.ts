@@ -6,6 +6,6 @@ export interface OriginatedData {
 
 export class DataOriginPolicy {
   requiresDisclosure(origin: DataOrigin): boolean {
-    return true;
+    return origin === "demonstration";
   }
 }
