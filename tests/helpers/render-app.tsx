@@ -7,6 +7,7 @@ import type { Mock } from "vitest";
 import { type AppState, type SessionUser } from "@/lib/api";
 import { apiPath, isApiUrl } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { DEFAULT_CURATION_POLICY } from "@/lib/curation-policy";
 import { I18nProvider } from "@/lib/i18n";
 import { StoreProvider, type StoreProviderMode } from "@/lib/store";
 import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
@@ -119,6 +120,29 @@ function stateContextResponse(
   return undefined;
 }
 
+/**
+ * CFG-03 — a régua da organização (níveis de carreira, faixas de pontuação,
+ * parâmetros operacionais, política de curadoria) deixou de cair no padrão de
+ * fábrica quando a rota falha: `StoreProvider` mostra a tela de falha de
+ * serviço. O catch-all deste mock devolvia `{}` cru, que os schemas rejeitam —
+ * ou seja, TODA tela dos testes rodava com a régua de fábrica por acidente de
+ * mock. Estas respostas são VÁLIDAS E VAZIAS: o padrão continua valendo (é o
+ * caso "carregou e está vazio"), sem simular indisponibilidade. Quem quer
+ * exercitar a falha declara a rota em `routes`.
+ */
+export function configurationRoute(href: string, init?: RequestInit): Response | undefined {
+  if ((init?.method ?? "GET").toUpperCase() !== "GET") return undefined;
+  if (href.endsWith(apiPath("/career-levels"))) return jsonResponse([]);
+  if (href.endsWith(apiPath("/config/bands"))) return jsonResponse({});
+  if (href.endsWith(apiPath("/config/templates"))) return jsonResponse({});
+  if (href.endsWith(apiPath("/config/settings"))) return jsonResponse({ settings: [] });
+  if (href.endsWith(apiPath("/config/curation-policy")))
+    return jsonResponse(DEFAULT_CURATION_POLICY);
+  if (href.endsWith(apiPath("/config/vocabularies")))
+    return jsonResponse({ EVIDENCE_TYPE: [], LEARNING_ITEM_TYPE: [], ACTION_TYPE: [] });
+  return undefined;
+}
+
 export function mockAppFetch(
   fetchMock: Mock,
   {
@@ -141,6 +165,8 @@ export function mockAppFetch(
     }
     if (href.endsWith(apiPath("/auth/me"))) return respond(jsonResponse(user));
     if (href.endsWith(apiPath("/state"))) return respond(jsonResponse(state));
+    const configuration = configurationRoute(href, effectiveInit);
+    if (configuration) return respond(configuration);
     const contextResponse = stateContextResponse(state, href, effectiveInit);
     if (contextResponse) return respond(contextResponse);
     return Promise.resolve(new Response("{}", { status: 200 }));

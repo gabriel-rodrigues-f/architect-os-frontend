@@ -18,7 +18,7 @@ import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import { type AppState } from "@/lib/api";
 import type { Assessment, AssessmentItem, Competency } from "@/lib/domain";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { renderWithApp } from "../helpers/render-app";
+import { configurationRoute, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -122,6 +122,8 @@ describe("Necessidades de Treinamento — cortes declarados (R2-ESC-08)", () => 
           }),
         );
       }
+      const configuration = configurationRoute(href);
+      if (configuration) return Promise.resolve(configuration);
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
     return renderWithApp(<TrainingNeedsPage />);

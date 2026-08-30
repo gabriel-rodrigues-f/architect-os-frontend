@@ -34,7 +34,9 @@ const RECADO_DA_REGUA = "Gap 2 · Prioridade alta";
 const rotaQueFalha =
   (caminho: string): FetchRoute =>
   (href) =>
-    href.endsWith(apiPath(caminho)) ? jsonResponse({ code: "INTERNAL", message: "x" }, 500) : undefined;
+    href.endsWith(apiPath(caminho))
+      ? jsonResponse({ code: "INTERNAL", message: "x" }, 500)
+      : undefined;
 
 beforeEach(() => {
   fetchMock.mockReset();

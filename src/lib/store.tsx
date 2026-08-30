@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -25,6 +25,7 @@ import type {
   TeamLevelRule,
 } from "./domain";
 import { withDefaultCurationPolicy, type CurationPolicy } from "./curation-policy";
+import { configurationCatalog, RulerConfiguration } from "./configuration-queries";
 import { appStateQuery, STATE_QUERY_KEY } from "./session-query";
 import {
   withDefaultOperationalSettings,
@@ -34,7 +35,6 @@ import {
 import { useI18n } from "./i18n";
 import { MutationRunner, type MutationCache } from "./mutation-runner";
 import { expectedVersionOf, UnknownExpectedVersionError } from "./optimistic-lock";
-import { CONFIG_QUERY_STALE_TIME } from "./query-client";
 import {
   gapSeverityRulerFrom,
   withDefaultScoringBands,
@@ -64,23 +64,13 @@ import {
 
 export { STATE_QUERY_KEY };
 
-const CAREER_LEVELS_QUERY_KEY = ["career-levels"] as const;
 export function useCareerLevelsByRank(): CareerLevel[] {
-  const { data } = useQuery({
-    queryKey: CAREER_LEVELS_QUERY_KEY,
-    queryFn: api.careerLevels,
-    staleTime: CONFIG_QUERY_STALE_TIME,
-  });
+  const { data } = useQuery(configurationCatalog.careerLevels.options);
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
 }
 
-const SCORING_BANDS_QUERY_KEY = ["config-bands"] as const;
 export function useScoringBands(): ScoringBands {
-  const { data } = useQuery({
-    queryKey: SCORING_BANDS_QUERY_KEY,
-    queryFn: api.bands,
-    staleTime: CONFIG_QUERY_STALE_TIME,
-  });
+  const { data } = useQuery(configurationCatalog.scoringBands.options);
   return useMemo(() => withDefaultScoringBands(data), [data]);
 }
 
@@ -89,43 +79,23 @@ export function useGapSeverityRuler(): GapSeverityRuler {
   return useMemo(() => gapSeverityRulerFrom(bands.GAP_SEVERITY), [bands]);
 }
 
-const TEXT_TEMPLATES_QUERY_KEY = ["config-templates"] as const;
 export function useTextTemplates(): TextTemplates {
-  const { data } = useQuery({
-    queryKey: TEXT_TEMPLATES_QUERY_KEY,
-    queryFn: api.templates,
-    staleTime: CONFIG_QUERY_STALE_TIME,
-  });
+  const { data } = useQuery(configurationCatalog.textTemplates.options);
   return useMemo(() => withDefaultTextTemplates(data), [data]);
 }
 
-const CURATION_POLICY_QUERY_KEY = ["config-curation-policy"] as const;
 export function useCurationPolicy(): CurationPolicy {
-  const { data } = useQuery({
-    queryKey: CURATION_POLICY_QUERY_KEY,
-    queryFn: api.curationPolicy,
-    staleTime: CONFIG_QUERY_STALE_TIME,
-  });
+  const { data } = useQuery(configurationCatalog.curationPolicy.options);
   return useMemo(() => withDefaultCurationPolicy(data), [data]);
 }
 
-const OPERATIONAL_SETTINGS_QUERY_KEY = ["config-settings"] as const;
 export function useOperationalSettings(): OperationalSettings {
-  const { data } = useQuery({
-    queryKey: OPERATIONAL_SETTINGS_QUERY_KEY,
-    queryFn: api.settings,
-    staleTime: CONFIG_QUERY_STALE_TIME,
-  });
+  const { data } = useQuery(configurationCatalog.operationalSettings.options);
   return useMemo(() => withDefaultOperationalSettings(data), [data]);
 }
 
-const VOCABULARIES_QUERY_KEY = ["config-vocabularies"] as const;
 export function useVocabularies(): Vocabularies {
-  const { data } = useQuery({
-    queryKey: VOCABULARIES_QUERY_KEY,
-    queryFn: api.vocabularies,
-    staleTime: CONFIG_QUERY_STALE_TIME,
-  });
+  const { data } = useQuery(configurationCatalog.vocabularies.options);
   return useMemo(() => withDefaultVocabularies(data), [data]);
 }
 
@@ -372,20 +342,22 @@ export function buildApi(
 
     updateScoringBands: async (scale, bands) => {
       const updated = await api.updateScoringBands(scale, bands);
-      await queryClient.invalidateQueries({ queryKey: SCORING_BANDS_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: configurationCatalog.scoringBands.queryKey });
       return updated;
     },
 
     updateTextTemplate: async (key, locale, template) => {
       const updated = await api.updateTextTemplate(key, locale, template);
-      await queryClient.invalidateQueries({ queryKey: TEXT_TEMPLATES_QUERY_KEY });
+      await queryClient.invalidateQueries({
+        queryKey: configurationCatalog.textTemplates.queryKey,
+      });
       return updated;
     },
 
     updateCurationPolicy: async (policy) => {
       const updated = await api.updateCurationPolicy(policy);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: CURATION_POLICY_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: configurationCatalog.curationPolicy.queryKey }),
         queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }),
       ]);
       return updated;
@@ -394,7 +366,9 @@ export function buildApi(
     updateAppSetting: async (key, value) => {
       const updated = await api.updateSetting(key, value);
       const invalidations = [
-        queryClient.invalidateQueries({ queryKey: OPERATIONAL_SETTINGS_QUERY_KEY }),
+        queryClient.invalidateQueries({
+          queryKey: configurationCatalog.operationalSettings.queryKey,
+        }),
       ];
       if (key === "cycle.cadence")
         invalidations.push(queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }));
@@ -404,13 +378,13 @@ export function buildApi(
 
     addVocabularyItem: async (vocabulary, code, input) => {
       const created = await api.addVocabularyItem(vocabulary, code, input);
-      await queryClient.invalidateQueries({ queryKey: VOCABULARIES_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: configurationCatalog.vocabularies.queryKey });
       return created;
     },
 
     updateVocabularyItem: async (vocabulary, code, patch) => {
       const updated = await api.updateVocabularyItem(vocabulary, code, patch);
-      await queryClient.invalidateQueries({ queryKey: VOCABULARIES_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: configurationCatalog.vocabularies.queryKey });
       return updated;
     },
 
@@ -924,6 +898,13 @@ export function buildApi(
   };
 }
 
+export function useRulerConfiguration(): RulerConfiguration {
+  const loads = useQueries({
+    queries: configurationCatalog.rulers.map((configuration) => configuration.options),
+  });
+  return new RulerConfiguration(loads);
+}
+
 export type StoreProviderMode = "blob" | "contexts";
 
 export function StoreProvider({
@@ -945,11 +926,23 @@ export function StoreProvider({
 
   const state = data ?? emptyState;
   const value = useMemo(() => buildApi(state, queryClient), [state, queryClient]);
+  const ruler = useRulerConfiguration();
 
   if (mode === "blob") {
     if (isError) return <ConnectionError error={error} onRetry={() => void refetch()} />;
     if (isPending || !data) return <LoadingState />;
   }
+
+  const unavailableRuler = ruler.unavailable;
+  if (unavailableRuler)
+    return (
+      <ConnectionError
+        error={unavailableRuler.error}
+        onRetry={() => void unavailableRuler.refetch()}
+        resource={apiPath("/config")}
+      />
+    );
+  if (ruler.stillLoading) return <LoadingState />;
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -965,9 +958,17 @@ export function LoadingState() {
   );
 }
 
-export function ConnectionError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+export function ConnectionError({
+  error,
+  onRetry,
+  resource = apiPath("/state"),
+}: {
+  error: unknown;
+  onRetry: () => void;
+  resource?: string;
+}) {
   const rawMessage = error instanceof Error ? error.message : "Erro desconhecido";
-  if (import.meta.env.DEV) console.error(`[store] falha ao carregar ${apiPath("/state")}:`, error);
+  if (import.meta.env.DEV) console.error(`[store] falha ao carregar ${resource}:`, error);
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">

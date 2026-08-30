@@ -13,7 +13,7 @@ import { apiPath } from "@/lib/api-path";
 import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
 import { fixtureCareerLevels, fixtureState, fixtureTeamId } from "../helpers/fixtures";
-import { jsonResponse } from "../helpers/render-app";
+import { configurationRoute, jsonResponse } from "../helpers/render-app";
 
 /**
  * REDE 2 — o caminho real do usuário, que o harness inteiro mascarava.
@@ -112,6 +112,9 @@ class ServidorDaSessao {
       return this.envelope(jsonResponse(fixtureCareerLevels));
     if (href.includes("/rules/")) return this.envelope(jsonResponse(REGUA));
     if (href.endsWith(apiPath("/state"))) return this.envelope(jsonResponse(fixtureState));
+
+    const configuracao = configurationRoute(href, { method: metodo });
+    if (configuracao) return this.envelope(configuracao);
 
     return this.envelope(jsonResponse({}));
   };

@@ -7,7 +7,7 @@ import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "@/lib/api";
 import type { Architect, MentoringSession } from "@/lib/domain";
 import { fixtureState } from "../helpers/fixtures";
-import { renderWithApp } from "../helpers/render-app";
+import { configurationRoute, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -89,6 +89,8 @@ describe("Mentoria — filtro de mentorado (seleção única)", () => {
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockImplementation((url: string) => {
       const href = String(url);
+      const configuration = configurationRoute(href);
+      if (configuration) return Promise.resolve(configuration);
       const body = href.endsWith(apiPath("/auth/me")) ? admin : state;
       return Promise.resolve(
         new Response(JSON.stringify(body), {

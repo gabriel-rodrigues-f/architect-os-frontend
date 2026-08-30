@@ -23,7 +23,7 @@ import { Route as ProgressionRoute } from "@/routes/progression";
 import { type AppState } from "@/lib/api";
 import type { Assessment, Competency } from "@/lib/domain";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { renderWithApp } from "../helpers/render-app";
+import { configurationRoute, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -108,6 +108,8 @@ describe("Progressão — heatmap, tabela e maestria", () => {
           }),
         );
       }
+      const configuration = configurationRoute(String(url));
+      if (configuration) return Promise.resolve(configuration);
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
   });

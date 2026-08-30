@@ -21,7 +21,7 @@ import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "@/lib/api";
 import { type AppState } from "@/lib/api";
 import { fixtureAdminUser, fixtureState, scopedFixtureStateFor } from "../helpers/fixtures";
-import { renderWithApp } from "../helpers/render-app";
+import { configurationRoute, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -57,6 +57,8 @@ const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
         }),
       );
     }
+    const configuration = configurationRoute(href);
+    if (configuration) return Promise.resolve(configuration);
     return Promise.resolve(new Response("{}", { status: 200 }));
   });
   return renderWithApp(<CapabilityPage />);
