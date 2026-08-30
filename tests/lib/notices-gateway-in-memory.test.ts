@@ -17,10 +17,10 @@ import { InMemoryNoticesGateway, type NoticesViewer } from "@/lib/gateways/notic
  *    status/limit sobrevivia a todos os testes anteriores.
  */
 const admin: NoticesViewer = { role: "admin", architectId: null };
-const leadIntegration: NoticesViewer = { role: "lead", architectId: "bruno" };
+const leadIntegration: NoticesViewer = { role: "lead", architectId: "demo-bruno-almeida" };
 const leadUnassigned: NoticesViewer = { role: "lead", architectId: null };
-const memberAna: NoticesViewer = { role: "member", architectId: "ana" };
-const memberCarla: NoticesViewer = { role: "member", architectId: "carla" };
+const memberAna: NoticesViewer = { role: "member", architectId: "demo-ana-martins" };
+const memberCarla: NoticesViewer = { role: "member", architectId: "demo-carla-souza" };
 const memberWithoutArchitect: NoticesViewer = { role: "member", architectId: null };
 
 const gatewayFor = (viewer: NoticesViewer) =>
@@ -90,7 +90,7 @@ describe("InMemoryNoticesGateway — recorte por papel (o mock É o servidor)", 
   it("member vê SÓ os próprios avisos — nunca um aviso do time sobre outra pessoa", async () => {
     const page = await gatewayFor(memberAna).notices({ status: "all" });
     expect(page.notices.length).toBeGreaterThan(0);
-    expect(page.notices.every((item) => item.architectId === "ana")).toBe(true);
+    expect(page.notices.every((item) => item.architectId === "demo-ana-martins")).toBe(true);
   });
 
   it("unreadCount do member conta só o escopo dele, não o do time", async () => {
@@ -102,7 +102,7 @@ describe("InMemoryNoticesGateway — recorte por papel (o mock É o servidor)", 
 
   it("member de outra pessoa não herda avisos alheios pelo time em comum", async () => {
     const page = await gatewayFor(memberCarla).notices({ status: "all" });
-    expect(page.notices.every((item) => item.architectId === "carla")).toBe(true);
+    expect(page.notices.every((item) => item.architectId === "demo-carla-souza")).toBe(true);
   });
 
   it("member sem arquiteto vinculado não vê aviso nenhum", async () => {
@@ -125,7 +125,7 @@ describe("InMemoryNoticesGateway — recorte por papel (o mock É o servidor)", 
     const page = await gatewayFor(leadIntegration).notices({ status: "all" });
     expect(page.notices.length).toBeGreaterThan(0);
     expect(page.notices.every((item) => item.teamId === "team-integration")).toBe(true);
-    expect(page.notices.some((item) => item.architectId === "carla")).toBe(false);
+    expect(page.notices.some((item) => item.architectId === "demo-carla-souza")).toBe(false);
   });
 
   it("o escopo do lead é menor que o do admin, e o unreadCount vem SÓ desse escopo", async () => {
@@ -159,5 +159,57 @@ describe("InMemoryNoticesGateway — recorte por papel (o mock É o servidor)", 
     viewer = admin;
     const adminAfter = await gateway.notices({ status: "all" });
     expect(adminAfter.unreadCount).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * Ressalva 2 da onda 17 — a fixture do sino falava uma língua que o seed real
+ * não fala. Os `architectId` eram apelidos inventados (`ana`, `bruno`,
+ * `carla`) enquanto o seed de demonstração do backend cadastra
+ * `demo-ana-martins`, `demo-bruno-almeida` e `demo-carla-souza`. Na stack de
+ * verdade `dev@synapse.local` está vinculado ao arquiteto "Ana Martins", ou
+ * seja `demo-ana-martins` — que não casava com nada — e o sino abria em
+ * "Nenhum aviso". Falha FECHADA (não vazava aviso de ninguém), mas a tela
+ * parecia quebrada.
+ *
+ * Estes testes amarram a fixture ao seed: são o alarme que dispara se alguém
+ * reintroduzir apelido inventado. Os ids vêm de
+ * `backend/src/scripts/seed-demo.ts` (ARCHITECTS) — conferidos à mão, não
+ * adivinhados.
+ */
+describe("InMemoryNoticesGateway — a fixture fala os ids do seed real", () => {
+  const SEED_ARCHITECT_IDS = ["demo-ana-martins", "demo-bruno-almeida", "demo-carla-souza"];
+
+  it("todo aviso aponta para um arquiteto que existe no seed de demonstração", async () => {
+    const page = await gatewayFor(admin).notices({ status: "all" });
+    const ids = [...new Set(page.notices.map((item) => item.architectId))];
+    expect(ids.sort()).toEqual([...SEED_ARCHITECT_IDS].sort());
+  });
+
+  it("o member do seed (dev@synapse.local → demo-ana-martins) vê os avisos DELE, não 'Nenhum aviso'", async () => {
+    const seedMember: NoticesViewer = { role: "member", architectId: "demo-ana-martins" };
+    const page = await gatewayFor(seedMember).notices({ status: "all" });
+    expect(page.notices.length).toBeGreaterThan(0);
+    expect(page.notices.every((item) => item.architectId === "demo-ana-martins")).toBe(true);
+    expect(page.unreadCount).toBeGreaterThan(0);
+  });
+
+  it("o mapa arquiteto→time cobre exatamente os arquitetos do seed que têm aviso", async () => {
+    const page = await gatewayFor(admin).notices({ status: "all" });
+    for (const notice of page.notices) {
+      expect(SEED_ARCHITECT_IDS).toContain(notice.architectId);
+      const leadOfNotice: NoticesViewer = { role: "lead", architectId: notice.architectId };
+      const leadPage = await gatewayFor(leadOfNotice).notices({ status: "all" });
+      expect(leadPage.notices.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("o link de cada aviso aponta para o arquiteto do próprio aviso", async () => {
+    const page = await gatewayFor(admin).notices({ status: "all" });
+    const withArchitectInLink = page.notices.filter((item) => item.link.includes("demo-"));
+    expect(withArchitectInLink.length).toBeGreaterThan(0);
+    for (const notice of withArchitectInLink) {
+      expect(notice.link).toContain(notice.architectId!);
+    }
   });
 });
