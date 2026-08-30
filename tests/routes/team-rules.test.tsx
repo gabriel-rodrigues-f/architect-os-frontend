@@ -220,6 +220,20 @@ describe("/team-rules — o que sai do rascunho e chega ao servidor", () => {
     expect(chamadas("/swap-requirement")).toHaveLength(1);
   });
 
+  it("sem rascunho não há o que salvar: o botão nasce desabilitado", async () => {
+    renderAs(fixtureAdminUser, [comRegua]);
+    await screen.findByText("Kubernetes");
+    expect(
+      (screen.getByRole("button", { name: "Salvar régua" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+
+    await userEvent.click(screen.getByLabelText("Nível mínimo — Kubernetes"));
+    await userEvent.click(screen.getByRole("option", { name: "L5" }));
+    expect(
+      (screen.getByRole("button", { name: "Salvar régua" }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+  });
+
   it("409 no salvar vira aviso de conflito com recarregar, nunca sobrescrita calada", async () => {
     const conflitoRoute: FetchRoute = (href, init) =>
       href.includes("/rules/") && (init?.method ?? "GET") === "PUT"
