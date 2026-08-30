@@ -7,3 +7,4 @@ export * from "./use-reduced-motion";
 export * from "./use-scroll-overflow";
 export * from "./use-search-param";
 export * from "./use-server-draft";
+export * from "./use-team-rule-editor-view-model";
