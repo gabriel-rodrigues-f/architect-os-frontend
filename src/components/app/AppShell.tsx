@@ -18,6 +18,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Ruler,
   Scale,
   Settings,
   Sun,
@@ -35,7 +36,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useReducedMotion } from "@/hooks";
 import { cn } from "@/lib/utils";
+import type { SessionUser } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { readMigratedItem } from "@/lib/storage";
 import { useCycleSelection } from "@/lib/context-scope";
@@ -49,6 +52,8 @@ interface NavItem {
   activePrefixes?: string[];
 
   adminOnly?: boolean;
+
+  teamRuleReachOnly?: boolean;
 }
 
 interface NavGroup {
@@ -94,6 +99,12 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
       { to: "/calibration", labelKey: "nav.calibration", icon: BarChart3, adminOnly: true },
+      {
+        to: "/team-rules",
+        labelKey: "nav.teamRules",
+        icon: Ruler,
+        teamRuleReachOnly: true,
+      },
 
       { to: "/settings", labelKey: "nav.settings", icon: Scale },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
@@ -101,11 +112,17 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export function filterNavGroups(groups: NavGroup[], role: string | undefined): NavGroup[] {
+export function filterNavGroups(groups: NavGroup[], user: SessionUser | undefined): NavGroup[] {
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.adminOnly || role === "admin"),
+      items: group.items.filter((item) => {
+        if (item.adminOnly && !(user && defaultUiAuthorizationPolicy.isAdmin(user))) return false;
+        return !(
+          item.teamRuleReachOnly &&
+          !(user && defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user))
+        );
+      }),
     }))
     .filter((group) => group.items.length > 0);
 }
@@ -158,7 +175,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const { t } = useI18n();
 
-  const navGroups = filterNavGroups(NAV_GROUPS, user?.role);
+  const navGroups = filterNavGroups(NAV_GROUPS, user ?? undefined);
   const reducedMotion = useReducedMotion();
 
   const [collapsed, setCollapsed] = useState(false);

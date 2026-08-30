@@ -47,6 +47,24 @@ export const fixtureUnassignedLeadUser: SessionUser = {
 };
 
 /**
+ * Onda 17.1 — a sessão passou a expor `memberships`. Este é o lead COM
+ * vínculo de tech lead no time, a conta que de fato rege a régua daquele
+ * time (backend `isLeadOfTeam`). O par dele é o `fixtureUnassignedLeadUser`:
+ * mesmo papel, sem vínculo nenhum — e por isso sem régua para configurar.
+ */
+export const fixtureTeamLeadUser: SessionUser = {
+  id: "test-lead-do-time",
+  email: "lead-do-time@company.com",
+  name: "Lead do time",
+  role: "lead",
+  architectId: null,
+  status: "active",
+  mustChangePassword: false,
+  createdAt: "2026-01-01T00:00:00Z",
+  memberships: [{ teamId: "time-plataforma", role: "tech_lead" }],
+};
+
+/**
  * B-24 (ADR-0011) — `careerLevels` saiu de `AppState`/`fixtureState`
  * (migrado para `GET /api/v1/career-levels`); testes que renderizam telas que
  * leem `useCareerLevelsByRank()` mockam esta resposta separadamente com

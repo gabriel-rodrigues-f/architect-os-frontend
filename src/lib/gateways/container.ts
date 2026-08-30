@@ -16,6 +16,7 @@ import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway
 import { InMemoryNoticesGateway, type NoticesGateway } from "./notices.gateway";
 import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
 import { HttpStateContextsGateway, type StateContextsGateway } from "./state-contexts.gateway";
+import { HttpTeamsGateway, type TeamsGateway } from "./teams.gateway";
 
 interface FrontendConfig {
   baseUrl?: string;
@@ -40,6 +41,7 @@ export class FrontendContainer {
   readonly noticesGateway: NoticesGateway;
   readonly reportsGateway: ReportsGateway;
   readonly stateContextsGateway: StateContextsGateway;
+  readonly teamsGateway: TeamsGateway;
 
   private constructor(config: FrontendConfig) {
     this.sessionPolicy = new SessionPolicy();
@@ -64,6 +66,7 @@ export class FrontendContainer {
     this.stateContextsGateway = new HttpStateContextsGateway(config.baseUrl, (error) =>
       this.sessionPolicy.reviewFailure(error),
     );
+    this.teamsGateway = new HttpTeamsGateway(this.apiClient);
   }
 
   static create(config: FrontendConfig = {}): FrontendContainer {

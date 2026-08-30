@@ -20,6 +20,7 @@ const {
   noticesGateway,
   reportsGateway,
   stateContextsGateway,
+  teamsGateway,
 } = defaultContainer;
 
 export const api = {
@@ -42,6 +43,7 @@ export const evolutionApi = { ...evolutionGateway };
 export const calibrationApi = { ...calibrationGateway };
 export const noticesApi = { ...noticesGateway };
 export const reportsApi = { ...reportsGateway };
+export const teamsApi = { ...teamsGateway };
 
 export { sessionPolicy };
 

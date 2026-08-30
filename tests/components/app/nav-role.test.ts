@@ -1,6 +1,25 @@
 import { describe, expect, it } from "vitest";
 
 import { filterNavGroups, isNavItemHiddenByCollapse, NAV_GROUPS } from "@/components/app/AppShell";
+import {
+  fixtureAdminUser,
+  fixtureMemberUser,
+  fixtureTeamLeadUser,
+  fixtureUnassignedLeadUser,
+} from "../../helpers/fixtures";
+
+/**
+ * Fase C, tela 1 — `filterNavGroups` passou a receber a SESSÃO, não só o
+ * papel: `/team-rules` é do lead COM VÍNCULO, e vínculo mora em
+ * `memberships`. As asserções de papel abaixo continuam idênticas; só a
+ * forma de dizer "este papel" mudou, via `usuarioDoPapel`.
+ */
+const usuarioDoPapel = (role: string) =>
+  ({
+    member: fixtureMemberUser,
+    lead: fixtureUnassignedLeadUser,
+    admin: fixtureAdminUser,
+  })[role]!;
 
 /**
  * QW-01/QW-02 (Seção 32, Quick Wins, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-
@@ -18,7 +37,7 @@ import { filterNavGroups, isNavItemHiddenByCollapse, NAV_GROUPS } from "@/compon
  */
 describe("AppShell — navegação recortada por papel", () => {
   it("member não vê Matriz de Competências nem Usuários, mas continua vendo Ciclos", () => {
-    const groups = filterNavGroups(NAV_GROUPS, "member");
+    const groups = filterNavGroups(NAV_GROUPS, fixtureMemberUser);
     const paths = groups.flatMap((g) => g.items.map((i) => i.to));
     expect(paths).not.toContain("/competency-matrix");
     expect(paths).not.toContain("/users");
@@ -26,14 +45,14 @@ describe("AppShell — navegação recortada por papel", () => {
   });
 
   it("lead também não vê os destinos admin-only", () => {
-    const groups = filterNavGroups(NAV_GROUPS, "lead");
+    const groups = filterNavGroups(NAV_GROUPS, fixtureUnassignedLeadUser);
     const paths = groups.flatMap((g) => g.items.map((i) => i.to));
     expect(paths).not.toContain("/competency-matrix");
     expect(paths).not.toContain("/users");
   });
 
   it("admin vê tudo, incluindo os destinos admin-only", () => {
-    const groups = filterNavGroups(NAV_GROUPS, "admin");
+    const groups = filterNavGroups(NAV_GROUPS, fixtureAdminUser);
     const paths = groups.flatMap((g) => g.items.map((i) => i.to));
     expect(paths).toContain("/competency-matrix");
     expect(paths).toContain("/users");
@@ -47,7 +66,7 @@ describe("AppShell — navegação recortada por papel", () => {
    */
   it("calibração é admin-only na navegação até o modelo de 4 perfis", () => {
     for (const role of ["member", "lead"]) {
-      const groups = filterNavGroups(NAV_GROUPS, role);
+      const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel(role));
       const paths = groups.flatMap((group) => group.items.map((item) => item.to));
       expect(paths, role).not.toContain("/calibration");
     }
@@ -55,14 +74,30 @@ describe("AppShell — navegação recortada por papel", () => {
 
   it("/settings (Política de Progressão) aparece na navegação para todos os papéis", () => {
     for (const role of ["member", "lead", "admin"]) {
-      const groups = filterNavGroups(NAV_GROUPS, role);
+      const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel(role));
       const paths = groups.flatMap((g) => g.items.map((i) => i.to));
       expect(paths).toContain("/settings");
     }
   });
 
+  /**
+   * Fase C, tela 1 (spec §1) — a régua do time é de quem LIDERA o time:
+   * admin sempre, lead com vínculo `manager|tech_lead`. Papel `lead` sem
+   * vínculo nenhum não rege régua alguma e não vê o destino — o item de
+   * menu segue a MESMA política da guarda (`canConfigureAnyTeamRules`), em
+   * vez de reintroduzir `role === "x"` inline.
+   */
+  it("/team-rules aparece para admin e para o lead COM vínculo, e some para os demais", () => {
+    const destinos = (user: typeof fixtureAdminUser) =>
+      filterNavGroups(NAV_GROUPS, user).flatMap((group) => group.items.map((item) => item.to));
+    expect(destinos(fixtureAdminUser)).toContain("/team-rules");
+    expect(destinos(fixtureTeamLeadUser)).toContain("/team-rules");
+    expect(destinos(fixtureUnassignedLeadUser)).not.toContain("/team-rules");
+    expect(destinos(fixtureMemberUser)).not.toContain("/team-rules");
+  });
+
   it("nenhum grupo fica com cabeçalho e zero itens", () => {
-    const groups = filterNavGroups(NAV_GROUPS, "member");
+    const groups = filterNavGroups(NAV_GROUPS, fixtureMemberUser);
     expect(groups.every((g) => g.items.length > 0)).toBe(true);
   });
 

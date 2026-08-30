@@ -18,6 +18,7 @@ export * from "./NoticeBell";
 export * from "./NoticeList";
 export * from "./PageHelp";
 export * from "./QuerySection";
+export * from "./RequirementTypeBadge";
 export * from "./SingleSelectFilter";
 export * from "./SpecializationCombobox";
 export * from "./TruncationNotice";

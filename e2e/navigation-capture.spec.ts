@@ -91,6 +91,7 @@ const VISITAS: Record<string, (ctx: VisitContext) => string | null> = {
   "/progression": () => "/progression",
   "/settings": () => "/settings",
   "/team": () => "/team",
+  "/team-rules": () => "/team-rules",
   "/training-needs": () => "/training-needs",
   "/users": () => "/users",
 };
