@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -43,7 +43,22 @@ import { discoverRoutes } from "../../e2e/route-inventory";
  *      escritos à mão, um por um; agora a AUSÊNCIA de um deles falha;
  *   6. na negativa `tela-nega`, nenhuma consulta declarada ANTES do ramo de
  *      negação sai sem `enabled` amarrado ao sinal de autorização — é a
- *      metade que o vazamento da onda 17 atravessou.
+ *      metade que o vazamento da onda 17 atravessou;
+ *   7. consulta EMBRULHADA EM HOOK conta como consulta. Até a onda 19 a
+ *      varredura só enxergava `useQuery({` literal, e o QA de integração
+ *      mediu o buraco no navegador: um member em `/team-rules` disparava
+ *      GET /career-levels, porque `useCareerLevelsByRank()` — um `useQuery`
+ *      dentro de `store.tsx` — roda antes do ramo de negação. Não era
+ *      vazamento (o catálogo é global), mas a promessa escrita era mais
+ *      larga que a checagem. Agora os hooks de consulta de `store.tsx` são
+ *      derivados por ponto fixo e varridos junto, e cada um que sobreviva
+ *      antes da negativa tem de estar DECLARADO como catálogo global, com
+ *      justificativa escrita;
+ *   8. a guarda de navegação tem NOME. `beforeLoad: ({ context }) => …`
+ *      escapava da varredura de guardas, e uma rota declarada `autenticado`
+ *      podia ganhar guarda anônima sem a declaração mudar. As quatro rotas
+ *      restritas já usavam a forma nomeada; isto fecha antes que deixem de
+ *      usar.
  *
  * Limites declarados, para ninguém ler mais do que está escrito: isto NÃO
  * prova que a guarda redireciona (quem prova é `tests/routes/route-guards.test.ts`),
@@ -55,6 +70,8 @@ import { discoverRoutes } from "../../e2e/route-inventory";
 
 const raizDoRepositorio = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FIXTURE = join(raizDoRepositorio, "tests", "architecture", "alcance-por-rota.fixture.json");
+const STORE = join(raizDoRepositorio, "src", "lib", "store.tsx");
+const DIRETORIO_LIB = join(raizDoRepositorio, "src", "lib");
 
 type Alcance = "publica" | "autenticado" | "admin" | "lead-com-vinculo";
 type Negativa = "tela-nega" | "somente-leitura";
@@ -73,11 +90,19 @@ const FIXTURES_DE_QUEM_NAO_ALCANCA = ["fixtureMemberUser", "fixtureUnassignedLea
 /** Declarar "somente leitura" sem dizer por quê é o mesmo buraco com outro nome. */
 const TAMANHO_MINIMO_DA_JUSTIFICATIVA = 60;
 
+/** Guarda de navegação é nomeada: `beforeLoad: requireAdminReach`, nunca uma seta anônima. */
+const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
 const DISTRIBUICAO_ESPERADA = {
   autenticado: 18,
   admin: 3,
   "lead-com-vinculo": 1,
 };
+
+interface CatalogoGlobal {
+  readonly hook: string;
+  readonly justificativa: string;
+}
 
 interface DeclaracaoDeAlcance {
   readonly alcance: Alcance;
@@ -85,9 +110,79 @@ interface DeclaracaoDeAlcance {
   readonly sinal?: string;
   readonly negativa?: Negativa;
   readonly justificativa?: string;
+  readonly catalogosGlobais?: readonly CatalogoGlobal[];
   readonly provaDeNavegacao?: string;
   readonly provaDeTela?: string;
 }
+
+interface ConsultaDaRota {
+  readonly inicio: number;
+  readonly corpo: string;
+  readonly hook?: string;
+  readonly rotulo: string;
+}
+
+/**
+ * Os hooks de consulta que um módulo exporta. Fecho por PONTO FIXO: hook é
+ * de consulta se chamar `useQuery(` ou se chamar outro hook de consulta do
+ * mesmo módulo — senão `useGapSeverityRuler()`, que só chama
+ * `useScoringBands()`, voltaria a ser invisível pelo mesmo motivo que
+ * `useCareerLevelsByRank()` era.
+ */
+class HooksDeConsulta {
+  private constructor(private readonly blocos: ReadonlyMap<string, string>) {}
+
+  static de(arquivo: string): HooksDeConsulta {
+    const texto = readFileSync(arquivo, "utf8");
+    const inicios = [...texto.matchAll(/^export /gm)].map((achado) => achado.index);
+    const blocos = new Map<string, string>();
+    for (const [ordem, inicio] of inicios.entries()) {
+      const bloco = texto.slice(inicio, inicios[ordem + 1] ?? texto.length);
+      const nome = /^export function (use[A-Za-z0-9_]*)/.exec(bloco)?.[1];
+      if (nome !== undefined) blocos.set(nome, bloco);
+    }
+    return new HooksDeConsulta(blocos);
+  }
+
+  get nomes(): string[] {
+    const consultam = new Set<string>();
+    let cresceu = true;
+    while (cresceu) {
+      cresceu = false;
+      for (const [nome, bloco] of this.blocos) {
+        if (consultam.has(nome) || !HooksDeConsulta.consulta(bloco, consultam)) continue;
+        consultam.add(nome);
+        cresceu = true;
+      }
+    }
+    return [...consultam].sort();
+  }
+
+  private static consulta(bloco: string, conhecidos: ReadonlySet<string>): boolean {
+    if (/\buseQuery\(/.test(bloco)) return true;
+    return [...conhecidos].some((nome) => new RegExp(`\\b${nome}\\s*\\(`).test(bloco));
+  }
+}
+
+/**
+ * Módulos de `lib/` que abrem consulta e que esta varredura NÃO lê. Enquanto
+ * nenhuma rota restrita importar um deles, o limite é teórico; no dia em que
+ * importar, o tripwire abaixo cobra a extensão da varredura em vez de deixar
+ * a promessa crescer sozinha.
+ */
+class ModulosDeConsultaForaDaVarredura {
+  static get nomes(): string[] {
+    return readdirSync(DIRETORIO_LIB, { recursive: true, withFileTypes: true })
+      .filter((entrada) => entrada.isFile() && /\.tsx?$/.test(entrada.name))
+      .map((entrada) => join(entrada.parentPath, entrada.name))
+      .filter((arquivo) => arquivo !== STORE)
+      .filter((arquivo) => /\buseQuery\(/.test(readFileSync(arquivo, "utf8")))
+      .map((arquivo) => `@/lib/${relative(DIRETORIO_LIB, arquivo).replace(/\.tsx?$/, "")}`)
+      .sort();
+  }
+}
+
+const HOOKS_DE_CONSULTA_DO_STORE = HooksDeConsulta.de(STORE).nomes;
 
 class Fixture {
   private static conteudo: Readonly<Record<string, DeclaracaoDeAlcance>> | undefined;
@@ -120,8 +215,20 @@ class FonteDaRota {
   }
 
   get guardasDeclaradas(): string[] {
-    return [...this.texto.matchAll(/beforeLoad:\s*([A-Za-z0-9_]+)/g)].flatMap(
-      (achado) => achado[1] ?? [],
+    return this.beforeLoads.filter((valor) => NOME_DE_GUARDA.test(valor));
+  }
+
+  get guardasAnonimas(): string[] {
+    return this.beforeLoads.filter((valor) => !NOME_DE_GUARDA.test(valor));
+  }
+
+  importa(modulo: string): boolean {
+    return this.texto.includes(`from "${modulo}"`);
+  }
+
+  private get beforeLoads(): string[] {
+    return [...this.texto.matchAll(/beforeLoad:\s*([^\s,][^,\n]*)/g)].flatMap(
+      (achado) => achado[1]?.trim() ?? [],
     );
   }
 
@@ -137,8 +244,8 @@ class FonteDaRota {
     return this.texto.search(new RegExp(`![\\s(]*${sinal}\\b`));
   }
 
-  get abreConsultaPropria(): boolean {
-    return this.consultas.length > 0;
+  get todasAsConsultas(): ConsultaDaRota[] {
+    return this.consultas;
   }
 
   /**
@@ -147,21 +254,50 @@ class FonteDaRota {
    * qualquer `return`. As que vêm depois moram em componentes que só montam
    * do outro lado da negativa; para elas a barreira é não existirem.
    */
-  consultasExpostasA(sinal: string): string[] {
+  consultasExpostasA(sinal: string): ConsultaDaRota[] {
     const negativa = this.posicaoDaNegativa(sinal);
     return this.consultas
       .filter((consulta) => negativa < 0 || consulta.inicio < negativa)
-      .filter((consulta) => !new RegExp(`enabled:[^\\n]*\\b${sinal}\\b`).test(consulta.corpo))
-      .map((consulta) => consulta.corpo.split("\n")[1]?.trim() ?? consulta.corpo.slice(0, 60));
+      .filter((consulta) => !new RegExp(`enabled:[^\\n]*\\b${sinal}\\b`).test(consulta.corpo));
   }
 
-  private get consultas(): { inicio: number; corpo: string }[] {
-    const encontradas: { inicio: number; corpo: string }[] = [];
-    for (const achado of this.texto.matchAll(/useQuery\(\{/g)) {
+  chamaOHook(hook: string): boolean {
+    return this.consultas.some((consulta) => consulta.hook === hook);
+  }
+
+  private get consultas(): ConsultaDaRota[] {
+    return [...this.consultasLiterais, ...this.consultasEmHook].sort(
+      (esquerda, direita) => esquerda.inicio - direita.inicio,
+    );
+  }
+
+  private get consultasLiterais(): ConsultaDaRota[] {
+    return [...this.texto.matchAll(/useQuery\(\{/g)].map((achado) => {
       const inicio = achado.index;
-      encontradas.push({ inicio, corpo: this.objetoLiteralEm(inicio + achado[0].length - 1) });
-    }
-    return encontradas;
+      const corpo = this.objetoLiteralEm(inicio + achado[0].length - 1);
+      return {
+        inicio,
+        corpo,
+        rotulo: corpo.split("\n")[1]?.trim() ?? corpo.slice(0, 60),
+      };
+    });
+  }
+
+  /**
+   * `useCareerLevelsByRank()` é um `useQuery` com outro nome. Um hook não
+   * aceita `enabled`, então toda chamada anterior ao ramo de negação sai
+   * SEMPRE — a única saída honesta é declará-la como catálogo global e
+   * escrever por quê.
+   */
+  private get consultasEmHook(): ConsultaDaRota[] {
+    return HOOKS_DE_CONSULTA_DO_STORE.flatMap((hook) =>
+      [...this.texto.matchAll(new RegExp(`\\b${hook}\\s*\\(`, "g"))].map((achado) => ({
+        inicio: achado.index,
+        corpo: "",
+        hook,
+        rotulo: `${hook}()`,
+      })),
+    );
   }
 
   private objetoLiteralEm(abertura: number): string {
@@ -211,6 +347,25 @@ function moduloDe(caminho: string): string {
 const restritas = () =>
   Fixture.entradas.filter(([, declaracao]) => declaracao.alcance in GUARDA_POR_ALCANCE);
 
+/** Toda guarda que a rota instala, nomeada ou anônima. */
+const guardasDe = (caminho: string): string[] => {
+  const fonte = fontePorCaminho.get(caminho);
+  return [...(fonte?.guardasDeclaradas ?? []), ...(fonte?.guardasAnonimas ?? [])];
+};
+
+const catalogosDeclaradosEm = (declaracao: DeclaracaoDeAlcance): string[] =>
+  (declaracao.catalogosGlobais ?? []).map((catalogo) => catalogo.hook);
+
+const naoDeclaradas = (
+  consultas: readonly ConsultaDaRota[],
+  declaracao: DeclaracaoDeAlcance,
+): string[] => {
+  const declarados = catalogosDeclaradosEm(declaracao);
+  return consultas
+    .filter((consulta) => consulta.hook === undefined || !declarados.includes(consulta.hook))
+    .map((consulta) => consulta.rotulo);
+};
+
 describe("alcance por rota — toda rota declara quem a alcança", () => {
   it("nenhuma rota do código fica sem declaração, e a declaração é uma das quatro", () => {
     const semDeclaracao = rotasDoCodigo
@@ -256,10 +411,29 @@ describe("alcance por rota — a declaração concorda com o código", () => {
   it("quem declara `autenticado` NÃO tem guarda de navegação — a concordância vale nos dois sentidos", () => {
     const mentirosas = Fixture.entradas
       .filter(([, declaracao]) => declaracao.alcance === "autenticado")
-      .filter(([caminho]) => (fontePorCaminho.get(caminho)?.guardasDeclaradas ?? []).length > 0)
-      .map(([caminho]) => `${caminho} → ${fontePorCaminho.get(caminho)?.guardasDeclaradas.join()}`);
+      .map(([caminho]) => ({ caminho, guardas: guardasDe(caminho) }))
+      .filter(({ guardas }) => guardas.length > 0)
+      .map(({ caminho, guardas }) => `${caminho} → ${guardas.join()}`);
 
     expect(mentirosas).toEqual([]);
+  });
+
+  /**
+   * `beforeLoad: ({ context }) => …` escapava da varredura de guardas: o
+   * casamento pedia identificador e a seta não é um. Uma rota `autenticado`
+   * podia ganhar guarda anônima sem a declaração mudar, e a rota restrita
+   * podia trocar a guarda nomeada por uma cópia inline. Guarda tem nome.
+   */
+  it("nenhuma guarda de navegação é anônima — `beforeLoad` nomeia quem guarda", () => {
+    const anonimas = rotasDoCodigo
+      .map((rota) => ({
+        caminho: rota.path,
+        guardas: fontePorCaminho.get(rota.path)?.guardasAnonimas ?? [],
+      }))
+      .filter(({ guardas }) => guardas.length > 0)
+      .map(({ caminho, guardas }) => `${caminho} → ${guardas.join()}`);
+
+    expect(anonimas).toEqual([]);
   });
 
   /**
@@ -327,9 +501,10 @@ describe("alcance por rota — a rota restrita exibe o gêmeo da negativa", () =
     const vazadas = restritas()
       .filter(([, declaracao]) => declaracao.negativa === "tela-nega")
       .flatMap(([caminho, declaracao]) =>
-        (fontePorCaminho.get(caminho)?.consultasExpostasA(declaracao.sinal ?? "") ?? []).map(
-          (consulta) => `${caminho} → ${consulta}`,
-        ),
+        naoDeclaradas(
+          fontePorCaminho.get(caminho)?.consultasExpostasA(declaracao.sinal ?? "") ?? [],
+          declaracao,
+        ).map((consulta) => `${caminho} → ${consulta}`),
       );
 
     expect(vazadas).toEqual([]);
@@ -340,8 +515,8 @@ describe("alcance por rota — a rota restrita exibe o gêmeo da negativa", () =
       .filter(([, declaracao]) => declaracao.negativa === "somente-leitura")
       .filter(
         ([caminho, declaracao]) =>
-          fontePorCaminho.get(caminho)?.abreConsultaPropria === true ||
-          (declaracao.justificativa ?? "").trim().length < TAMANHO_MINIMO_DA_JUSTIFICATIVA,
+          naoDeclaradas(fontePorCaminho.get(caminho)?.todasAsConsultas ?? [], declaracao).length >
+            0 || (declaracao.justificativa ?? "").trim().length < TAMANHO_MINIMO_DA_JUSTIFICATIVA,
       )
       .map(([caminho]) => caminho);
 
@@ -355,6 +530,54 @@ describe("alcance por rota — a rota restrita exibe o gêmeo da negativa", () =
       .map(([caminho]) => caminho);
 
     expect(sobrando).toEqual([]);
+  });
+});
+
+describe("alcance por rota — o catálogo global é declarado, não presumido", () => {
+  /**
+   * A declaração é a saída honesta para o hook que não aceita `enabled`; ela
+   * não pode virar a porta dos fundos. Catálogo declarado que a rota não
+   * consulta é declaração podre — o mesmo defeito do fixture que registra
+   * ausência —, e catálogo sem justificativa escrita é o buraco com outro
+   * nome.
+   */
+  it("todo catálogo global declarado é consultado pela rota, e diz por escrito por que pode sair", () => {
+    const podres = Fixture.entradas.flatMap(([caminho, declaracao]) =>
+      (declaracao.catalogosGlobais ?? [])
+        .filter(
+          (catalogo) =>
+            fontePorCaminho.get(caminho)?.chamaOHook(catalogo.hook) !== true ||
+            catalogo.justificativa.trim().length < TAMANHO_MINIMO_DA_JUSTIFICATIVA,
+        )
+        .map((catalogo) => `${caminho} → ${catalogo.hook}`),
+    );
+
+    expect(podres).toEqual([]);
+  });
+
+  it("catálogo global só é dizível por quem declara alcance restrito", () => {
+    const sobrando = Fixture.entradas
+      .filter(([, declaracao]) => !(declaracao.alcance in GUARDA_POR_ALCANCE))
+      .filter(([, declaracao]) => declaracao.catalogosGlobais !== undefined)
+      .map(([caminho]) => caminho);
+
+    expect(sobrando).toEqual([]);
+  });
+
+  /**
+   * A varredura lê `store.tsx` e mais nada de `lib/`. Enquanto rota restrita
+   * nenhuma importar outro módulo que abra consulta, o limite é teórico; no
+   * dia em que importar, a promessa passaria a ser mais larga que a checagem
+   * outra vez — que é exatamente o defeito que esta fatia veio fechar.
+   */
+  it("rota restrita não importa consulta de módulo que a varredura não lê", () => {
+    const cegas = restritas().flatMap(([caminho]) =>
+      ModulosDeConsultaForaDaVarredura.nomes
+        .filter((modulo) => fontePorCaminho.get(caminho)?.importa(modulo) === true)
+        .map((modulo) => `${caminho} → ${modulo}`),
+    );
+
+    expect(cegas).toEqual([]);
   });
 });
 
