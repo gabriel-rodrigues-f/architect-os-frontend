@@ -97,10 +97,8 @@ function useLeadPendingQueues(): LeadPendingQueues {
   const store = useStore();
   const sel = useSelectors();
   const user = useCurrentUser();
-  return useMemo(
-    () => new DashboardPresenter(store, sel).pendingQueuesFor(user),
-    [store, sel, user],
-  );
+  const presenter = useMemo(() => new DashboardPresenter(store, sel), [store, sel]);
+  return presenter.pendingQueuesFor(user);
 }
 
 function usePersonalDashboardPresenter() {
