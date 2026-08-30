@@ -38,6 +38,7 @@ function evaluator(overrides: Partial<CalibrationEvaluator>): CalibrationEvaluat
 
 function snapshot(overrides: Partial<CalibrationSnapshot>): CalibrationSnapshot {
   return {
+    dataOrigin: "demonstration",
     cycleId: "cycle-1",
     overall: { distribution: distribution([2, 5, 10, 8, 5]), average: 3.3 },
     evaluators: [],

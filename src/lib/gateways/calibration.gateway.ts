@@ -1,5 +1,6 @@
 import { calibrationResponseSchema } from "../api-schemas";
 import type { ApiClient } from "../api-client";
+import type { DataOrigin, OriginatedData } from "./data-origin";
 
 export type LevelDistribution = Record<"1" | "2" | "3" | "4" | "5", number>;
 
@@ -13,7 +14,7 @@ export interface CalibrationEvaluator {
   assessmentsCount: number;
 }
 
-export interface CalibrationSnapshot {
+export interface CalibrationSnapshot extends OriginatedData {
   cycleId: string;
   overall: {
     distribution: LevelDistribution;
@@ -23,21 +24,26 @@ export interface CalibrationSnapshot {
 }
 
 export interface CalibrationGateway {
+  readonly dataOrigin: DataOrigin;
   calibration(cycleId: string): Promise<CalibrationSnapshot>;
 }
 
 export class HttpCalibrationGateway implements CalibrationGateway {
+  readonly dataOrigin: DataOrigin = "organization";
+
   constructor(private readonly client: ApiClient) {}
 
   calibration = (cycleId: string): Promise<CalibrationSnapshot> => {
     const query = new URLSearchParams({ cycleId });
     return this.client
-      .request<CalibrationSnapshot>(`/calibration?${query.toString()}`)
-      .then((data) => calibrationResponseSchema.parse(data));
+      .request<unknown>(`/calibration?${query.toString()}`)
+      .then((data) => ({ ...calibrationResponseSchema.parse(data), dataOrigin: this.dataOrigin }));
   };
 }
 
 export class InMemoryCalibrationGateway implements CalibrationGateway {
+  readonly dataOrigin: DataOrigin = "demonstration";
+
   private readonly evaluators: CalibrationEvaluator[];
 
   constructor(evaluators?: CalibrationEvaluator[]) {
@@ -49,6 +55,7 @@ export class InMemoryCalibrationGateway implements CalibrationGateway {
       this.evaluators.map((entry) => entry.distribution),
     );
     return Promise.resolve({
+      dataOrigin: this.dataOrigin,
       cycleId,
       overall: { distribution, average: InMemoryCalibrationGateway.averageOf(distribution) },
       evaluators: this.evaluators.map((entry) => ({ ...entry, teamIds: [...entry.teamIds] })),
