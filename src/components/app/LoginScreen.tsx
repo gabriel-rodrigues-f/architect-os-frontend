@@ -24,7 +24,7 @@ export function LoginScreen() {
         setHasUsers(instanceHasUsers);
         setMode(instanceHasUsers ? "login" : "register");
       })
-      .catch(() => setError(t("login.offline")))
+      .catch(() => setError(import.meta.env.DEV ? t("login.offline.dev") : t("login.offline")))
       .finally(() => setCheckedInstance(true));
   }, []);
 

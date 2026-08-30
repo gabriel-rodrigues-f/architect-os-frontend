@@ -62,6 +62,22 @@ describe("política de sessão — 401 + código encerra a sessão", () => {
     });
   }
 
+  it("503 DATABASE_UNAVAILABLE não encerra a sessão — o contrato que atravessa os dois repositórios", async () => {
+    fetchMock.mockResolvedValue(
+      errorResponse(
+        {
+          code: "DATABASE_UNAVAILABLE",
+          message: "Banco de dados temporariamente indisponível. Tente novamente em instantes.",
+        },
+        503,
+      ),
+    );
+
+    await client.request("/state").catch(() => undefined);
+
+    expect(endSession).not.toHaveBeenCalled();
+  });
+
   it("401 de erro de negócio (INVALID_CURRENT_PASSWORD) não encerra a sessão", async () => {
     fetchMock.mockResolvedValue(
       errorResponse({ code: "INVALID_CURRENT_PASSWORD", message: "Senha atual incorreta" }, 401),
