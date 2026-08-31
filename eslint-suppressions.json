@@ -246,7 +246,7 @@
   },
   "src/routes/architects.$architectId.evolution.tsx": {
     "id-length": {
-      "count": 34
+      "count": 29
     }
   },
   "src/routes/architects.$architectId.index.tsx": {
