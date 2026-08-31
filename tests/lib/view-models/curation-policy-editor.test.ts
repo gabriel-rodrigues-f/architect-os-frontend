@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_CURATION_POLICY, withDefaultCurationPolicy } from "@/lib/curation-policy";
+import { EffectiveCurationPolicy } from "@/lib/curation-policy";
 import { CurationPolicyEditor } from "@/lib/view-models";
 
 /**
@@ -11,13 +11,13 @@ import { CurationPolicyEditor } from "@/lib/view-models";
  * máximo positivo, contagens não negativas, soma que fecha.
  */
 describe("CurationPolicyEditor", () => {
-  const from = () => CurationPolicyEditor.from(DEFAULT_CURATION_POLICY);
+  const from = () => CurationPolicyEditor.from(EffectiveCurationPolicy.defaults);
 
   it("nasce válido a partir da política efetiva e monta o payload dela", () => {
     const editor = from();
     expect(editor.errorKey).toBeNull();
     expect(editor.isValid).toBe(true);
-    expect(editor.payload()).toEqual(DEFAULT_CURATION_POLICY);
+    expect(editor.payload()).toEqual(EffectiveCurationPolicy.defaults);
   });
 
   it("edição é imutável: withField devolve editor novo sem tocar o original", () => {
@@ -72,12 +72,12 @@ describe("CurationPolicyEditor", () => {
   });
 
   it("fallback: withDefaultCurationPolicy responde 6/3+3 quando a query ainda não resolveu", () => {
-    expect(withDefaultCurationPolicy(undefined)).toEqual({
+    expect(EffectiveCurationPolicy.resolve(undefined)).toEqual({
       maxActiveCompetencies: 6,
       requiredRestrictive: 3,
       requiredNonRestrictive: 3,
     });
     const loaded = { maxActiveCompetencies: 8, requiredRestrictive: 4, requiredNonRestrictive: 4 };
-    expect(withDefaultCurationPolicy(loaded)).toBe(loaded);
+    expect(EffectiveCurationPolicy.resolve(loaded)).toBe(loaded);
   });
 });

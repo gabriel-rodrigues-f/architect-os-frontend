@@ -7,7 +7,7 @@ import type { Mock } from "vitest";
 import { type AppState, type SessionUser } from "@/lib/api";
 import { apiPath, isApiUrl } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { DEFAULT_CURATION_POLICY } from "@/lib/curation-policy";
+import { EffectiveCurationPolicy } from "@/lib/curation-policy";
 import { I18nProvider } from "@/lib/i18n";
 import { StoreProvider, type StoreProviderMode } from "@/lib/store";
 import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
@@ -137,7 +137,7 @@ export function configurationRoute(href: string, init?: RequestInit): Response |
   if (href.endsWith(apiPath("/config/templates"))) return jsonResponse({});
   if (href.endsWith(apiPath("/config/settings"))) return jsonResponse({ settings: [] });
   if (href.endsWith(apiPath("/config/curation-policy")))
-    return jsonResponse(DEFAULT_CURATION_POLICY);
+    return jsonResponse(EffectiveCurationPolicy.defaults);
   if (href.endsWith(apiPath("/config/vocabularies")))
     return jsonResponse({ EVIDENCE_TYPE: [], LEARNING_ITEM_TYPE: [], ACTION_TYPE: [] });
   return undefined;

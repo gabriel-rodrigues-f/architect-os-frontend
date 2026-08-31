@@ -24,11 +24,11 @@ import type {
   ProficiencyUpdate,
   TeamLevelRule,
 } from "./domain";
-import { withDefaultCurationPolicy, type CurationPolicy } from "./curation-policy";
+import { EffectiveCurationPolicy, type CurationPolicy } from "./curation-policy";
 import { configurationCatalog, RulerConfiguration } from "./configuration-queries";
 import { appStateQuery, STATE_QUERY_KEY } from "./session-query";
 import {
-  withDefaultOperationalSettings,
+  EffectiveOperationalSettings,
   type AppSettingValue,
   type OperationalSettings,
 } from "./operational-settings";
@@ -36,8 +36,7 @@ import { useI18n } from "./i18n";
 import { MutationRunner, type MutationCache } from "./mutation-runner";
 import { expectedVersionOf, UnknownExpectedVersionError } from "./optimistic-lock";
 import {
-  gapSeverityRulerFrom,
-  withDefaultScoringBands,
+  ScoringRuler,
   type GapSeverityRuler,
   type ScoringBand,
   type ScoringBands,
@@ -47,17 +46,14 @@ import { createSelectors, emptyState } from "./selectors";
 import type { VocabularyItemInput, VocabularyItemPatch } from "./gateways/config.gateway";
 import type { CatalogImportPayload, CatalogImportSummary } from "./catalog-import";
 import {
-  activeVocabularyOptions,
-  vocabularyLabelOf,
-  withDefaultVocabularies,
+  VocabularyCatalog,
   type Vocabularies,
   type VocabularyItem,
   type VocabularyName,
 } from "./vocabularies";
 import { defaultNameFormatter } from "./text";
 import {
-  objectiveFromGapRenderer,
-  withDefaultTextTemplates,
+  TextTemplateRenderer,
   type RenderObjectiveFromGap,
   type TextTemplates,
 } from "./text-templates";
@@ -69,34 +65,38 @@ export function useCareerLevelsByRank(): CareerLevel[] {
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
 }
 
-export function useScoringBands(): ScoringBands {
+export function useScoringRuler(): ScoringRuler {
   const { data } = useQuery(configurationCatalog.scoringBands.options);
-  return useMemo(() => withDefaultScoringBands(data), [data]);
+  return useMemo(() => ScoringRuler.fromLoaded(data), [data]);
+}
+
+export function useScoringBands(): ScoringBands {
+  return useScoringRuler().scales;
 }
 
 export function useGapSeverityRuler(): GapSeverityRuler {
-  const bands = useScoringBands();
-  return useMemo(() => gapSeverityRulerFrom(bands.GAP_SEVERITY), [bands]);
+  const ruler = useScoringRuler();
+  return useMemo(() => ruler.gapSeverity, [ruler]);
 }
 
 export function useTextTemplates(): TextTemplates {
   const { data } = useQuery(configurationCatalog.textTemplates.options);
-  return useMemo(() => withDefaultTextTemplates(data), [data]);
+  return useMemo(() => TextTemplateRenderer.resolve(data), [data]);
 }
 
 export function useCurationPolicy(): CurationPolicy {
   const { data } = useQuery(configurationCatalog.curationPolicy.options);
-  return useMemo(() => withDefaultCurationPolicy(data), [data]);
+  return useMemo(() => EffectiveCurationPolicy.resolve(data), [data]);
 }
 
 export function useOperationalSettings(): OperationalSettings {
   const { data } = useQuery(configurationCatalog.operationalSettings.options);
-  return useMemo(() => withDefaultOperationalSettings(data), [data]);
+  return useMemo(() => EffectiveOperationalSettings.resolve(data), [data]);
 }
 
 export function useVocabularies(): Vocabularies {
   const { data } = useQuery(configurationCatalog.vocabularies.options);
-  return useMemo(() => withDefaultVocabularies(data), [data]);
+  return useMemo(() => VocabularyCatalog.resolve(data), [data]);
 }
 
 export function useVocabulary(name: VocabularyName): {
@@ -107,15 +107,15 @@ export function useVocabulary(name: VocabularyName): {
   const vocabularies = useVocabularies();
   const { t } = useI18n();
   return useMemo(() => {
-    const items = vocabularies[name];
+    const vocabulary = VocabularyCatalog.over(vocabularies).named(name);
     const translate = (labelKey: string): string | undefined => {
       const text = t(labelKey as Parameters<typeof t>[0]);
       return text === labelKey ? undefined : text;
     };
     return {
-      items,
-      options: activeVocabularyOptions(items),
-      label: (code: string) => vocabularyLabelOf(items, code, translate),
+      items: vocabulary.items,
+      options: vocabulary.activeOptions,
+      label: (code: string) => vocabulary.labelOf(code, translate),
     };
   }, [vocabularies, name, t]);
 }
@@ -123,7 +123,10 @@ export function useVocabulary(name: VocabularyName): {
 export function useObjectiveFromGap(): RenderObjectiveFromGap {
   const templates = useTextTemplates();
   const { locale } = useI18n();
-  return useMemo(() => objectiveFromGapRenderer(templates, locale), [templates, locale]);
+  return useMemo(
+    () => TextTemplateRenderer.over(templates, locale).objectiveFromGap,
+    [templates, locale],
+  );
 }
 
 export interface Api extends AppState {

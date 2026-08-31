@@ -18,6 +18,8 @@ export interface ScoringBand {
 
 export type ScoringBands = Record<ScoringScale, readonly ScoringBand[]>;
 
+export type ServedScoringBands = Partial<Record<ScoringScale, readonly ScoringBand[] | undefined>>;
+
 type DefaultScoringBand = ScoringBand & { labelKey: MessageKey };
 
 export const DEFAULT_SCORING_BANDS: Record<
@@ -105,50 +107,6 @@ export const DEFAULT_SCORING_BANDS: Record<
   ],
 };
 
-export const withDefaultScoringBands = (
-  loaded?: Partial<Record<ScoringScale, readonly ScoringBand[] | undefined>>,
-): ScoringBands => {
-  const pick = (scale: ScoringScale): readonly ScoringBand[] => {
-    const bands = loaded?.[scale];
-    return bands !== undefined && bands.length > 0 ? bands : DEFAULT_SCORING_BANDS[scale];
-  };
-  return {
-    GAP_SEVERITY: pick("GAP_SEVERITY"),
-    PROFICIENCY: pick("PROFICIENCY"),
-    CONCENTRATION_RISK: pick("CONCENTRATION_RISK"),
-  };
-};
-
-const bySortOrder = (bands: readonly ScoringBand[]): ScoringBand[] =>
-  [...bands].sort((a, b) => a.sortOrder - b.sortOrder);
-
-const clampedAt = <T>(items: readonly [T, ...T[]], index: number): T =>
-  items[Math.min(Math.max(index, 0), items.length - 1)] ?? items[0];
-
-export const classifyBand = (bands: readonly ScoringBand[], value: number): ScoringBand => {
-  const sorted = bySortOrder(bands);
-  const widest = sorted[sorted.length - 1];
-  if (!widest)
-    throw new UserFacingError("Nenhuma faixa de pontuação configurada para classificar.");
-  return (
-    sorted.find(
-      (band) =>
-        (band.minValue === null || value >= band.minValue) &&
-        (band.maxValue === null || value < band.maxValue),
-    ) ?? widest
-  );
-};
-
-export const messageKeyOrDefault = (labelKey: string, fallback: MessageKey): MessageKey =>
-  labelKey in baseMessages ? (labelKey as MessageKey) : fallback;
-
-export interface GapSeverityRuler {
-  severityOf: (gap: number) => BandTone;
-  messageKey: Record<BandTone, MessageKey>;
-
-  criticalThreshold: number;
-}
-
 const DEFAULT_GAP_MESSAGE_KEY: Record<BandTone, MessageKey> = {
   ok: "gap.ok",
   low: "gap.recommended",
@@ -156,22 +114,16 @@ const DEFAULT_GAP_MESSAGE_KEY: Record<BandTone, MessageKey> = {
   critical: "gap.critical",
 };
 
-export const gapSeverityRulerFrom = (bands: readonly ScoringBand[]): GapSeverityRuler => {
-  const messageKey = { ...DEFAULT_GAP_MESSAGE_KEY };
-  for (const band of bySortOrder(bands)) {
-    messageKey[band.tone] = messageKeyOrDefault(band.labelKey, DEFAULT_GAP_MESSAGE_KEY[band.tone]);
-  }
-  const critical = bands.find((band) => band.tone === "critical");
-  return {
-    severityOf: (gap) => classifyBand(bands, gap).tone,
-    messageKey,
-    criticalThreshold: critical?.minValue ?? 3,
-  };
-};
+const PROFICIENCY_BAND_TONES = [
+  "bg-level-1/60",
+  "bg-level-3/60",
+  "bg-level-4/60",
+  "bg-level-5/60",
+] as const;
 
-export const defaultGapSeverityRuler: GapSeverityRuler = gapSeverityRulerFrom(
-  DEFAULT_SCORING_BANDS.GAP_SEVERITY,
-);
+const DEFAULT_CRITICAL_GAP_THRESHOLD = 3;
+
+const DEFAULT_CONCENTRATION_RISK_MAX_REFERENCES = 2;
 
 export interface ProficiencyViewBand {
   key: string;
@@ -181,26 +133,125 @@ export interface ProficiencyViewBand {
   max: number;
 }
 
-const PROFICIENCY_BAND_TONES = [
-  "bg-level-1/60",
-  "bg-level-3/60",
-  "bg-level-4/60",
-  "bg-level-5/60",
-] as const;
+export class ScoringBandSet {
+  private constructor(readonly bands: readonly ScoringBand[]) {}
 
-export const proficiencyViewBandsFrom = (bands: readonly ScoringBand[]): ProficiencyViewBand[] => {
-  const defaults = DEFAULT_SCORING_BANDS.PROFICIENCY;
-  return bySortOrder(bands).map((band, i) => {
-    const positionFallback = clampedAt(defaults, i).labelKey;
-    return {
+  static of(bands: readonly ScoringBand[]): ScoringBandSet {
+    return new ScoringBandSet(bands);
+  }
+
+  static messageKeyOr(labelKey: string, fallback: MessageKey): MessageKey {
+    return labelKey in baseMessages ? (labelKey as MessageKey) : fallback;
+  }
+
+  private static clampedAt<T>(items: readonly [T, ...T[]], index: number): T {
+    return items[Math.min(Math.max(index, 0), items.length - 1)] ?? items[0];
+  }
+
+  get inSortOrder(): ScoringBand[] {
+    return [...this.bands].sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  classify(value: number): ScoringBand {
+    const sorted = this.inSortOrder;
+    const widest = sorted[sorted.length - 1];
+    if (!widest)
+      throw new UserFacingError("Nenhuma faixa de pontuação configurada para classificar.");
+    return (
+      sorted.find(
+        (band) =>
+          (band.minValue === null || value >= band.minValue) &&
+          (band.maxValue === null || value < band.maxValue),
+      ) ?? widest
+    );
+  }
+
+  get gapSeverityRuler(): GapSeverityRuler {
+    return GapSeverityRuler.over(this);
+  }
+
+  get proficiencyViewBands(): ProficiencyViewBand[] {
+    const defaults = DEFAULT_SCORING_BANDS.PROFICIENCY;
+    return this.inSortOrder.map((band, position) => ({
       key: band.key,
-      labelKey: messageKeyOrDefault(band.labelKey, positionFallback),
-      tone: clampedAt(PROFICIENCY_BAND_TONES, i),
+      labelKey: ScoringBandSet.messageKeyOr(
+        band.labelKey,
+        ScoringBandSet.clampedAt(defaults, position).labelKey,
+      ),
+      tone: ScoringBandSet.clampedAt(PROFICIENCY_BAND_TONES, position),
       min: band.minValue ?? -Infinity,
       max: band.maxValue ?? Infinity,
-    };
-  });
-};
+    }));
+  }
 
-export const concentrationRiskMaxReferencesFrom = (bands: readonly ScoringBand[]): number =>
-  bands.find((band) => band.tone === "critical")?.maxValue ?? 2;
+  get concentrationRiskMaxReferences(): number {
+    return (
+      this.bands.find((band) => band.tone === "critical")?.maxValue ??
+      DEFAULT_CONCENTRATION_RISK_MAX_REFERENCES
+    );
+  }
+
+  get criticalThreshold(): number {
+    return (
+      this.bands.find((band) => band.tone === "critical")?.minValue ??
+      DEFAULT_CRITICAL_GAP_THRESHOLD
+    );
+  }
+
+  get messageKeyByTone(): Record<BandTone, MessageKey> {
+    const byTone = { ...DEFAULT_GAP_MESSAGE_KEY };
+    for (const band of this.inSortOrder) {
+      byTone[band.tone] = ScoringBandSet.messageKeyOr(
+        band.labelKey,
+        DEFAULT_GAP_MESSAGE_KEY[band.tone],
+      );
+    }
+    return byTone;
+  }
+}
+
+export class GapSeverityRuler {
+  private constructor(
+    private readonly severityBands: ScoringBandSet,
+    readonly messageKey: Record<BandTone, MessageKey>,
+    readonly criticalThreshold: number,
+  ) {}
+
+  static over(bands: ScoringBandSet): GapSeverityRuler {
+    return new GapSeverityRuler(bands, bands.messageKeyByTone, bands.criticalThreshold);
+  }
+
+  static get defaults(): GapSeverityRuler {
+    return GapSeverityRuler.over(ScoringBandSet.of(DEFAULT_SCORING_BANDS.GAP_SEVERITY));
+  }
+
+  severityOf(gap: number): BandTone {
+    return this.severityBands.classify(gap).tone;
+  }
+}
+
+export class ScoringRuler {
+  private constructor(readonly scales: ScoringBands) {}
+
+  static fromLoaded(loaded?: ServedScoringBands): ScoringRuler {
+    const served = (scale: ScoringScale): readonly ScoringBand[] => {
+      const bands = loaded?.[scale];
+      return bands !== undefined && bands.length > 0 ? bands : DEFAULT_SCORING_BANDS[scale];
+    };
+    return new ScoringRuler({
+      GAP_SEVERITY: served("GAP_SEVERITY"),
+      PROFICIENCY: served("PROFICIENCY"),
+      CONCENTRATION_RISK: served("CONCENTRATION_RISK"),
+    });
+  }
+
+  forScale(scale: ScoringScale): ScoringBandSet {
+    return ScoringBandSet.of(this.scales[scale]);
+  }
+
+  get gapSeverity(): GapSeverityRuler {
+    return this.forScale("GAP_SEVERITY").gapSeverityRuler;
+  }
+}
+
+export const defaultGapSeverityRuler: GapSeverityRuler = GapSeverityRuler.defaults;

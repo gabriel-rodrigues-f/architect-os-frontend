@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  DEFAULT_OPERATIONAL_SETTINGS,
-  withDefaultOperationalSettings,
-  type AppSettingRecord,
-} from "@/lib/operational-settings";
+import { EffectiveOperationalSettings, type AppSettingRecord } from "@/lib/operational-settings";
 
 /**
  * CFG-05 — o fallback das políticas operacionais: byte-idêntico ao seed do
@@ -23,18 +19,20 @@ const record = (key: string, value: string | number): AppSettingRecord => ({
   updatedBy: null,
 });
 
-describe("withDefaultOperationalSettings", () => {
+describe("EffectiveOperationalSettings.resolve", () => {
   it("sem resposta (consulta em voo/falha) devolve o default do seed", () => {
-    expect(withDefaultOperationalSettings(undefined)).toEqual({
+    expect(EffectiveOperationalSettings.resolve(undefined)).toEqual({
       cycleCadence: "SEMIANNUAL",
       careerMinimumQualifiedFloor: 3,
       trainingCollectiveInterventionThreshold: 3,
     });
-    expect(withDefaultOperationalSettings(undefined)).toEqual(DEFAULT_OPERATIONAL_SETTINGS);
+    expect(EffectiveOperationalSettings.resolve(undefined)).toEqual(
+      EffectiveOperationalSettings.defaults,
+    );
   });
 
   it("resposta completa vira a forma plana efetiva", () => {
-    const settings = withDefaultOperationalSettings({
+    const settings = EffectiveOperationalSettings.resolve({
       settings: [
         record("cycle.cadence", "QUARTERLY"),
         record("career.minimumQualifiedFloor", 4),
@@ -49,7 +47,7 @@ describe("withDefaultOperationalSettings", () => {
   });
 
   it("key ausente ou inválida cai no default do CAMPO, sem afetar as outras", () => {
-    const settings = withDefaultOperationalSettings({
+    const settings = EffectiveOperationalSettings.resolve({
       settings: [
         record("cycle.cadence", "MONTHLY"), // fora do enum
         record("training.collectiveInterventionThreshold", 5),
@@ -64,7 +62,7 @@ describe("withDefaultOperationalSettings", () => {
   });
 
   it("inteiro < 1 ou não inteiro não é utilizável — cai no default", () => {
-    const settings = withDefaultOperationalSettings({
+    const settings = EffectiveOperationalSettings.resolve({
       settings: [
         record("career.minimumQualifiedFloor", 0),
         record("training.collectiveInterventionThreshold", 2.5),

@@ -1,14 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  classifyBand,
-  concentrationRiskMaxReferencesFrom,
   DEFAULT_SCORING_BANDS,
   defaultGapSeverityRuler,
-  gapSeverityRulerFrom,
-  messageKeyOrDefault,
-  proficiencyViewBandsFrom,
-  withDefaultScoringBands,
+  ScoringBandSet,
+  ScoringRuler,
   type ScoringBand,
 } from "@/lib/scoring-bands";
 
@@ -28,10 +24,10 @@ const band = (overrides: Partial<ScoringBand>): ScoringBand => ({
   ...overrides,
 });
 
-describe("withDefaultScoringBands (fallback)", () => {
+describe("ScoringRuler.fromLoaded (fallback)", () => {
   it("sem resposta nenhuma, devolve o default inteiro (o seed)", () => {
-    expect(withDefaultScoringBands(undefined)).toEqual(DEFAULT_SCORING_BANDS);
-    expect(withDefaultScoringBands({})).toEqual(DEFAULT_SCORING_BANDS);
+    expect(ScoringRuler.fromLoaded(undefined).scales).toEqual(DEFAULT_SCORING_BANDS);
+    expect(ScoringRuler.fromLoaded({}).scales).toEqual(DEFAULT_SCORING_BANDS);
   });
 
   it("completa POR ESCALA — a escala carregada entra, as ausentes caem no default", () => {
@@ -39,31 +35,31 @@ describe("withDefaultScoringBands (fallback)", () => {
       band({ key: "baixo", maxValue: 2, tone: "ok", sortOrder: 1 }),
       band({ key: "alto", minValue: 2, tone: "critical", labelKey: "gap.critical", sortOrder: 2 }),
     ];
-    const merged = withDefaultScoringBands({ GAP_SEVERITY: custom });
+    const merged = ScoringRuler.fromLoaded({ GAP_SEVERITY: custom }).scales;
     expect(merged.GAP_SEVERITY).toEqual(custom);
     expect(merged.PROFICIENCY).toEqual(DEFAULT_SCORING_BANDS.PROFICIENCY);
     expect(merged.CONCENTRATION_RISK).toEqual(DEFAULT_SCORING_BANDS.CONCENTRATION_RISK);
   });
 
   it("escala vazia é tratada como ausente — uma régua sem faixa não classifica nada", () => {
-    expect(withDefaultScoringBands({ GAP_SEVERITY: [] }).GAP_SEVERITY).toEqual(
+    expect(ScoringRuler.fromLoaded({ GAP_SEVERITY: [] }).scales.GAP_SEVERITY).toEqual(
       DEFAULT_SCORING_BANDS.GAP_SEVERITY,
     );
   });
 });
 
-describe("classifyBand", () => {
+describe("ScoringBandSet.classify", () => {
   it("faixas meia-abertas min <= v < max, com null = ±infinito", () => {
     const bands = DEFAULT_SCORING_BANDS.PROFICIENCY;
-    expect(classifyBand(bands, 1).key).toBe("developing");
-    expect(classifyBand(bands, 2.5).key).toBe("practitioners"); // fronteira pertence à faixa de cima
-    expect(classifyBand(bands, 3.49).key).toBe("practitioners");
-    expect(classifyBand(bands, 4.5).key).toBe("experts");
-    expect(classifyBand(bands, 99).key).toBe("experts");
+    expect(ScoringBandSet.of(bands).classify(1).key).toBe("developing");
+    expect(ScoringBandSet.of(bands).classify(2.5).key).toBe("practitioners"); // fronteira pertence à faixa de cima
+    expect(ScoringBandSet.of(bands).classify(3.49).key).toBe("practitioners");
+    expect(ScoringBandSet.of(bands).classify(4.5).key).toBe("experts");
+    expect(ScoringBandSet.of(bands).classify(99).key).toBe("experts");
   });
 });
 
-describe("gapSeverityRulerFrom", () => {
+describe("ScoringBandSet.gapSeverityRuler", () => {
   it("default reproduz a régua antiga (gap<=0 ok, 1 low, 2 high, 3+ critical) e o limiar 3", () => {
     const ruler = defaultGapSeverityRuler;
     expect(ruler.severityOf(-1)).toBe("ok");
@@ -82,7 +78,7 @@ describe("gapSeverityRulerFrom", () => {
   });
 
   it('bands fake mudam a régua — "gap 2 já é crítico no nosso time" (o caso do spec)', () => {
-    const ruler = gapSeverityRulerFrom([
+    const ruler = ScoringBandSet.of([
       band({ key: "adequate", maxValue: 1, tone: "ok", labelKey: "gap.ok", sortOrder: 1 }),
       band({
         key: "recommended",
@@ -100,14 +96,14 @@ describe("gapSeverityRulerFrom", () => {
         labelKey: "gap.critical",
         sortOrder: 3,
       }),
-    ]);
+    ]).gapSeverityRuler;
     expect(ruler.severityOf(2)).toBe("critical"); // era "high" no default
     expect(ruler.criticalThreshold).toBe(2); // o painel passa a contar gap >= 2
     expect(ruler.messageKey.critical).toBe("gap.critical");
   });
 
   it("labelKey desconhecida deste build cai no rótulo default do tom — nunca chave crua na tela", () => {
-    const ruler = gapSeverityRulerFrom([
+    const ruler = ScoringBandSet.of([
       band({ key: "ok", maxValue: 3, tone: "ok", labelKey: "gap.chave.inventada", sortOrder: 1 }),
       band({
         key: "critical",
@@ -116,16 +112,16 @@ describe("gapSeverityRulerFrom", () => {
         labelKey: "gap.critical",
         sortOrder: 2,
       }),
-    ]);
+    ]).gapSeverityRuler;
     expect(ruler.messageKey.ok).toBe("gap.ok");
-    expect(messageKeyOrDefault("gap.critical", "gap.ok")).toBe("gap.critical");
-    expect(messageKeyOrDefault("nao.existe", "gap.ok")).toBe("gap.ok");
+    expect(ScoringBandSet.messageKeyOr("gap.critical", "gap.ok")).toBe("gap.critical");
+    expect(ScoringBandSet.messageKeyOr("nao.existe", "gap.ok")).toBe("gap.ok");
   });
 });
 
-describe("proficiencyViewBandsFrom", () => {
+describe("ScoringBandSet.proficiencyViewBands", () => {
   it("default reproduz o BANDS antigo: cortes 2.5/3.5/4.5, ±Infinity nas pontas e as MESMAS classes CSS", () => {
-    expect(proficiencyViewBandsFrom(DEFAULT_SCORING_BANDS.PROFICIENCY)).toEqual([
+    expect(ScoringBandSet.of(DEFAULT_SCORING_BANDS.PROFICIENCY).proficiencyViewBands).toEqual([
       {
         key: "developing",
         labelKey: "cap.band.developing",
@@ -152,7 +148,7 @@ describe("proficiencyViewBandsFrom", () => {
   });
 
   it("bands fake mudam os cortes das faixas da tela de Cobertura", () => {
-    const view = proficiencyViewBandsFrom([
+    const view = ScoringBandSet.of([
       band({
         key: "novatos",
         maxValue: 3,
@@ -167,7 +163,7 @@ describe("proficiencyViewBandsFrom", () => {
         labelKey: "cap.band.experts",
         sortOrder: 2,
       }),
-    ]);
+    ]).proficiencyViewBands;
     expect(view.map((b) => [b.key, b.min, b.max])).toEqual([
       ["novatos", -Infinity, 3],
       ["veteranos", 3, Infinity],
@@ -175,14 +171,16 @@ describe("proficiencyViewBandsFrom", () => {
   });
 });
 
-describe("concentrationRiskMaxReferencesFrom", () => {
+describe("ScoringBandSet.concentrationRiskMaxReferences", () => {
   it("default = 2 (o antigo referenceCount === 1)", () => {
-    expect(concentrationRiskMaxReferencesFrom(DEFAULT_SCORING_BANDS.CONCENTRATION_RISK)).toBe(2);
+    expect(
+      ScoringBandSet.of(DEFAULT_SCORING_BANDS.CONCENTRATION_RISK).concentrationRiskMaxReferences,
+    ).toBe(2);
   });
 
   it('bands fake sobem o limiar — "time de 40 pode querer <= 2 referências" (o caso do spec)', () => {
     expect(
-      concentrationRiskMaxReferencesFrom([
+      ScoringBandSet.of([
         band({
           key: "concentrationRisk",
           maxValue: 3,
@@ -197,7 +195,7 @@ describe("concentrationRiskMaxReferencesFrom", () => {
           labelKey: "cap.risk.badge.distributedCoverage",
           sortOrder: 2,
         }),
-      ]),
+      ]).concentrationRiskMaxReferences,
     ).toBe(3);
   });
 });

@@ -519,7 +519,8 @@ export interface Evidence {
 
 type GapSeverity = BandTone;
 
-export const gapSeverityOf: (gap: number) => GapSeverity = defaultGapSeverityRuler.severityOf;
+export const gapSeverityOf: (gap: number) => GapSeverity =
+  defaultGapSeverityRuler.severityOf.bind(defaultGapSeverityRuler);
 
 export const GAP_SEVERITY_MESSAGE_KEY: Record<GapSeverity, MessageKey> =
   defaultGapSeverityRuler.messageKey;

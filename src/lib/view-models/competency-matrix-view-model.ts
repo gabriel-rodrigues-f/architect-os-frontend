@@ -1,5 +1,5 @@
 import type { SessionUser } from "../api";
-import { DEFAULT_CURATION_POLICY, type CurationPolicy } from "../curation-policy";
+import { EffectiveCurationPolicy, type CurationPolicy } from "../curation-policy";
 import type { Capability, Competency } from "../domain";
 import type { UiAuthorizationPolicy } from "../scope";
 import type { Api } from "../store";
@@ -24,7 +24,7 @@ export class CompetencyMatrixViewModel {
   constructor(
     private readonly service: CatalogService,
     private readonly policy: UiAuthorizationPolicy,
-    private readonly curationPolicy: CurationPolicy = DEFAULT_CURATION_POLICY,
+    private readonly curationPolicy: CurationPolicy = EffectiveCurationPolicy.defaults,
   ) {}
 
   get limits(): CurationPolicy {

@@ -2,11 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { ACTION_TYPES, EVIDENCE_TYPES, LEARNING_ITEM_TYPES } from "@/lib/domain";
 import {
-  activeVocabularyOptions,
   DEFAULT_VOCABULARIES,
-  vocabularyLabelOf,
+  Vocabulary,
   VOCABULARY_NAMES,
-  withDefaultVocabularies,
+  VocabularyCatalog,
   type VocabularyItem,
 } from "@/lib/vocabularies";
 
@@ -41,7 +40,7 @@ describe("vocabularies (CFG-06)", () => {
   });
 
   it("sem resposta carregada, devolve o default inteiro", () => {
-    expect(withDefaultVocabularies(undefined)).toEqual(DEFAULT_VOCABULARIES);
+    expect(VocabularyCatalog.resolve(undefined)).toEqual(DEFAULT_VOCABULARIES);
   });
 
   it("fallback é POR vocabulário: lista vazia/ausente cai no default sem invalidar as servidas", () => {
@@ -54,7 +53,7 @@ describe("vocabularies (CFG-06)", () => {
         active: true,
       },
     ];
-    const effective = withDefaultVocabularies({ ACTION_TYPE: served, EVIDENCE_TYPE: [] });
+    const effective = VocabularyCatalog.resolve({ ACTION_TYPE: served, EVIDENCE_TYPE: [] });
     expect(effective.ACTION_TYPE).toEqual(served);
     expect(effective.EVIDENCE_TYPE).toEqual(DEFAULT_VOCABULARIES.EVIDENCE_TYPE);
     expect(effective.LEARNING_ITEM_TYPE).toEqual(DEFAULT_VOCABULARIES.LEARNING_ITEM_TYPE);
@@ -66,7 +65,10 @@ describe("vocabularies (CFG-06)", () => {
       { vocabulary: "ACTION_TYPE", code: "C", labelKey: "c", sortOrder: 3, active: false },
       { vocabulary: "ACTION_TYPE", code: "A", labelKey: "a", sortOrder: 1, active: true },
     ];
-    expect(activeVocabularyOptions(items).map((i) => i.code)).toEqual(["A", "B"]);
+    expect(Vocabulary.of("ACTION_TYPE", items).activeOptions.map((i) => i.code)).toEqual([
+      "A",
+      "B",
+    ]);
   });
 
   it("rótulo: labelKey→i18n; sem mensagem cai no code; code fora do catálogo idem", () => {
@@ -88,8 +90,9 @@ describe("vocabularies (CFG-06)", () => {
     ];
     const translate = (labelKey: string) =>
       labelKey === "actionType.learn" ? "Aprender" : undefined;
-    expect(vocabularyLabelOf(items, "Learn", translate)).toBe("Aprender");
-    expect(vocabularyLabelOf(items, "Shadow", translate)).toBe("Shadow");
-    expect(vocabularyLabelOf(items, "Inexistente", translate)).toBe("Inexistente");
+    const vocabulary = Vocabulary.of("ACTION_TYPE", items);
+    expect(vocabulary.labelOf("Learn", translate)).toBe("Aprender");
+    expect(vocabulary.labelOf("Shadow", translate)).toBe("Shadow");
+    expect(vocabulary.labelOf("Inexistente", translate)).toBe("Inexistente");
   });
 });
