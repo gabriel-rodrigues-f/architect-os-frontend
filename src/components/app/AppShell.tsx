@@ -198,11 +198,10 @@ export function filterNavGroups(groups: NavGroup[], user: SessionUser | undefine
     .filter((group) => group.items.length > 0);
 }
 
-function isNavItemActive(item: NavItem, pathname: string): boolean {
+export function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (item.to === "/") return pathname === "/";
-  return (
-    pathname.startsWith(item.to) ||
-    (item.activePrefixes?.some((p) => pathname.startsWith(p)) ?? false)
+  return [item.to, ...(item.activePrefixes ?? [])].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }
 
