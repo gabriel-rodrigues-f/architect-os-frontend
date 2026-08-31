@@ -232,6 +232,8 @@ const SIDEBAR_MIN = 208;
 const SIDEBAR_MAX = 420;
 const SIDEBAR_RAIL = 64;
 
+const BRAND_HEADER_HEIGHT = "h-[74px]";
+
 const clampWidth = (value: number) => Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, value));
 
 const THEME_OPTIONS: { value: Theme; labelKey: MessageKey; icon: typeof Sun }[] = [
@@ -425,41 +427,54 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             />
           )}
-          <div
-            className={cn(
-              "flex items-center py-5 transition-[padding] duration-300",
-              collapsed ? "justify-center px-0" : "gap-2.5 px-5",
-            )}
-          >
+          <div className={cn("relative shrink-0 overflow-hidden", BRAND_HEADER_HEIGHT)}>
             <div
               className={cn(
-                "min-w-0 overflow-hidden leading-tight transition-all duration-300",
-                collapsed ? "w-0 opacity-0" : "w-auto flex-1 opacity-100",
+                "flex justify-end pt-5 transition-[padding] duration-300",
+                reducedMotion && "transition-none",
+                collapsed ? "px-[18px]" : "px-3.5",
               )}
             >
-              <p className="whitespace-nowrap font-display text-sm font-semibold">Synapse</p>
-              <p className="whitespace-nowrap text-meta text-sidebar-foreground/60">
-                {t("shell.subtitle")}
-              </p>
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                aria-label={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
+                title={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
+                aria-expanded={!collapsed}
+                className={cn(
+                  "shrink-0 rounded-md p-1.5 text-sidebar-foreground/70 transition-colors",
+                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                )}
+              >
+                {collapsed ? (
+                  <PanelLeftOpen className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              aria-label={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
-              title={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
-              aria-expanded={!collapsed}
+            <p
               className={cn(
-                "shrink-0 rounded-md p-1.5 text-sidebar-foreground/70 transition-colors",
-                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                !collapsed && "-mr-1.5",
+                "absolute whitespace-nowrap font-display font-semibold leading-none",
+                "transition-all duration-300 ease-in-out",
+                reducedMotion && "transition-none",
+                collapsed
+                  ? "left-1/2 top-[52px] -translate-x-1/2 text-[10px]"
+                  : "left-5 top-[22px] text-sm",
               )}
             >
-              {collapsed ? (
-                <PanelLeftOpen className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
+              Synapse
+            </p>
+            <p
+              className={cn(
+                "absolute left-5 top-[42px] whitespace-nowrap text-meta text-sidebar-foreground/60",
+                "transition-opacity duration-300",
+                reducedMotion && "transition-none",
+                collapsed ? "opacity-0" : "opacity-100",
               )}
-            </button>
+            >
+              {t("shell.subtitle")}
+            </p>
           </div>
 
           <nav
