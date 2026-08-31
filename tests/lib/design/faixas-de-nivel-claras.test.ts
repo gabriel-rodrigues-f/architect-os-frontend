@@ -10,27 +10,39 @@ import { LEVELS } from "@/lib/domain";
  *
  * A escala nascia desnivelada: L1–L3 em claridade 0,90 e L4/L5 mergulhando
  * para 0,82 e 0,68. Os dois últimos viravam ladrilhos escuros no meio de uma
- * tabela clara, e como a hachura de acessibilidade é desenhada com a TINTA do
- * próprio nível, quanto mais escuro o fundo mais a hachura vira listra em vez
- * de textura. O caminho é clarear o fundo, não tirar a hachura: ela é o canal
- * que separa os cinco níveis para quem não distingue as cores.
+ * tabela clara.
  *
- * Os três invariantes abaixo são o pedido do dono escrito como medida:
+ * ONDA22/paleta-de-niveis mexeu nesta suíte, e vale registrar exatamente o
+ * quê e por quê.
  *
- *  1. FUNDO CLARO — no tema claro nenhuma faixa desce de 0,88 de claridade;
- *     é papel para tinta escura, não ladrilho colorido.
- *  2. FAIXA ÚNICA — os cinco níveis ficam dentro de uma faixa estreita de
- *     claridade, nos dois temas. O que separa um nível do outro é o MATIZ e a
- *     hachura, nunca "este é mais escuro". Sem esta cláusula, clarear só o L5
- *     deixaria o L4 sozinho como ladrilho escuro.
- *  3. NÚMERO LEGÍVEL — a razão de contraste entre o número e a faixa alcança
+ * A cláusula que saiu era a "FAIXA ÚNICA": os cinco níveis presos numa faixa
+ * de 0,03 de claridade, porque "o que separa um nível do outro é o MATIZ e a
+ * hachura". A hachura foi embora a pedido do dono ("sem xadrez ou listras"),
+ * e sem ela o matiz sozinho não separa: medido com o simulador do projeto, os
+ * pares vizinhos daquela paleta ficavam entre ΔE 0,19 e 5,16 — o par 2-3
+ * praticamente na mesma cor. A cláusula da faixa única deixou de proteger e
+ * passou a IMPEDIR o conserto, porque a saída é justamente deixar a claridade
+ * variar com o nível. Ela foi substituída pela rampa monotônica de
+ * `tests/lib/accessibility/paleta-de-niveis.test.ts`.
+ *
+ * O piso de claridade também desceu, de 0,88 para 0,75, e isso é uma escolha
+ * com preço medido. Com o piso em 0,88 não existe paleta que separe os cinco
+ * níveis sob dicromacia: varrendo o espaço OKLCH, o melhor par vizinho
+ * alcançável era ΔE 4,3, abaixo do piso de 6 do projeto. A separação de 6 só
+ * aparece com o piso em torno de 0,76. O pedido do dono era "enxergar o
+ * número preto", e o que MEDE esse pedido é a razão de contraste — não o
+ * número 0,88, que foi proxy escolhido aqui, não palavra dele. As duas
+ * cláusulas abaixo guardam o pedido pelo que ele diz:
+ *
+ *  1. FUNDO CLARO — no tema claro toda faixa continua na metade clara da
+ *     escala, bem acima do meio: é papel para tinta escura, não ladrilho.
+ *  2. NÚMERO LEGÍVEL — a razão de contraste entre o número e a faixa alcança
  *     AAA (7:1) nos dois temas, não só o AA de 4,5 que `design-tokens` já
- *     cobra. O número é pequeno (14 px) e ainda por cima é lido POR CIMA da
- *     hachura, que come parte da margem: o piso de texto corrido não basta.
+ *     cobra. O número é pequeno (14 px) e é o único portador do nível depois
+ *     que a hachura saiu: o piso de texto corrido não basta.
  */
 
-const PISO_DE_CLARIDADE_NO_TEMA_CLARO = 0.88;
-const FAIXA_DE_CLARIDADE = 0.03;
+const PISO_DE_CLARIDADE_NO_TEMA_CLARO = 0.75;
 const CONTRASTE_AAA = 7;
 
 const temas = [new LightTheme(), new DarkTheme()];
@@ -46,17 +58,6 @@ describe("as faixas de nível são fundo claro para o número", () => {
       expect(claridade, `level-${String(level)} no tema claro`).toBeGreaterThanOrEqual(
         PISO_DE_CLARIDADE_NO_TEMA_CLARO,
       );
-    }
-  });
-
-  it("os cinco níveis ficam numa faixa única de claridade — o que separa é o matiz", () => {
-    for (const tema of temas) {
-      const claridades = niveis.map((level) => tema.resolve(faixaDoNivel(level)).l);
-      const amplitude = Math.max(...claridades) - Math.min(...claridades);
-      expect(
-        amplitude,
-        `amplitude de claridade no tema ${tema.id}: ${claridades.map((valor) => valor.toFixed(3)).join(", ")}`,
-      ).toBeLessThanOrEqual(FAIXA_DE_CLARIDADE);
     }
   });
 

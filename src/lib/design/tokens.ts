@@ -163,49 +163,83 @@ const series = (name: string, light: string): TokenDefinition => ({
 });
 
 export const tokenRegistry = new TokenRegistry().register(
-  { name: "level-0", role: "fill", light: parseOklch("oklch(0.95 0.006 245)") },
+  {
+    name: "level-0",
+    role: "fill",
+    light: parseOklch("oklch(0.965 0.004 245)"),
+    darkOverride: parseOklch("oklch(0.19 0.004 245)"),
+  },
   {
     name: "level-1",
     role: "fill",
-    light: parseOklch("oklch(0.9 0.06 25)"),
+    light: parseOklch("oklch(0.955 0.02 25)"),
+    darkOverride: parseOklch("oklch(0.25 0.01 25)"),
     contrastAgainst: "level-1-fg",
     minContrast: 4.5,
   },
   {
     name: "level-2",
     role: "fill",
-    light: parseOklch("oklch(0.9 0.07 65)"),
+    light: parseOklch("oklch(0.92 0.075 95)"),
+    darkOverride: parseOklch("oklch(0.29 0.055 95)"),
     contrastAgainst: "level-2-fg",
     minContrast: 4.5,
   },
   {
     name: "level-3",
     role: "fill",
-    light: parseOklch("oklch(0.9 0.07 110)"),
+    light: parseOklch("oklch(0.82 0.1 155)"),
+    darkOverride: parseOklch("oklch(0.35 0.06 155)"),
     contrastAgainst: "level-3-fg",
     minContrast: 4.5,
   },
   {
     name: "level-4",
     role: "fill",
-    light: parseOklch("oklch(0.9 0.07 165)"),
+    light: parseOklch("oklch(0.795 0.125 195)"),
+    darkOverride: parseOklch("oklch(0.4 0.065 195)"),
     contrastAgainst: "level-4-fg",
     minContrast: 4.5,
   },
   {
     name: "level-5",
     role: "fill",
-    light: parseOklch("oklch(0.9 0.075 195)"),
+    light: parseOklch("oklch(0.78 0.13 235)"),
+    darkOverride: parseOklch("oklch(0.435 0.09 235)"),
     contrastAgainst: "level-5-fg",
     minContrast: 4.5,
   },
 
-  { name: "level-1-fg", role: "content", light: parseOklch("oklch(0.4 0.14 25)") },
-  { name: "level-2-fg", role: "content", light: parseOklch("oklch(0.39 0.11 65)") },
-  { name: "level-3-fg", role: "content", light: parseOklch("oklch(0.38 0.1 130)") },
-  { name: "level-4-fg", role: "content", light: parseOklch("oklch(0.3 0.08 170)") },
-
-  { name: "level-5-fg", role: "content", light: parseOklch("oklch(0.28 0.08 195)") },
+  {
+    name: "level-1-fg",
+    role: "content",
+    light: parseOklch("oklch(0.43 0.13 25)"),
+    darkOverride: parseOklch("oklch(0.755 0.04 25)"),
+  },
+  {
+    name: "level-2-fg",
+    role: "content",
+    light: parseOklch("oklch(0.39 0.08 95)"),
+    darkOverride: parseOklch("oklch(0.79 0.06 95)"),
+  },
+  {
+    name: "level-3-fg",
+    role: "content",
+    light: parseOklch("oklch(0.31 0.075 155)"),
+    darkOverride: parseOklch("oklch(0.855 0.06 155)"),
+  },
+  {
+    name: "level-4-fg",
+    role: "content",
+    light: parseOklch("oklch(0.295 0.05 195)"),
+    darkOverride: parseOklch("oklch(0.925 0.06 195)"),
+  },
+  {
+    name: "level-5-fg",
+    role: "content",
+    light: parseOklch("oklch(0.275 0.055 235)"),
+    darkOverride: parseOklch("oklch(0.975 0.01 235)"),
+  },
 
   {
     name: "gap-ok",
