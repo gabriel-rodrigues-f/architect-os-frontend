@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { noticesApi } from "@/lib/api";
 import type { Notice, NoticeStatusFilter } from "@/lib/gateways/notices.gateway";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { defaultDateFormatter } from "@/lib/text";
 import { NoticesViewModel } from "@/lib/view-models";
 
@@ -39,6 +40,7 @@ function useNoticesViewModel(): NoticesViewModel {
 
 function NoticesPage() {
   const { t, locale } = useI18n();
+  const help = usePageHelp("notices");
   const vm = useNoticesViewModel();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -70,6 +72,7 @@ function NoticesPage() {
   return (
     <>
       <PageHeader
+        help={help}
         title={t("notices.title")}
         description={t("notices.description")}
         actions={

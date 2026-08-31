@@ -31,14 +31,13 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 const ROTAS = resolve(AQUI, "../../src/routes");
 
 /**
- * Telas cujo `PageHeader` ainda não declara `help`, medidas em 2026-08-31.
- * NÃO acrescente linha aqui: a lista é dívida reconhecida, não permissão.
+ * Telas cujo `PageHeader` ainda não declara `help`. **A lista está VAZIA** — a
+ * catraca desceu a zero em 2026-08-31 e daqui em diante ela não é mais
+ * ratchet, é regra: nenhuma tela pode nascer muda.
+ * NÃO acrescente linha aqui. Uma tela nova que precise entrar nesta lista é
+ * uma tela que devia ter ganhado o `?` junto com o resto.
  */
-const SEM_EXPLICACAO_AINDA: readonly string[] = [
-  "architects.$architectId.roadmap.tsx",
-  "architects.$architectId.statement.tsx",
-  "notices.tsx",
-];
+const SEM_EXPLICACAO_AINDA: readonly string[] = [];
 
 /** As duas que o dono nomeou. Não podem voltar a ficar mudas. */
 const PEDIDAS_PELO_DONO: readonly string[] = ["team-rules.tsx", "calibration.tsx"];

@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { downloadBlob } from "@/lib/download";
 import type { EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
@@ -81,6 +82,7 @@ function ArchitectStatement() {
   const store = useStore();
   const sel = useSelectors();
   const { t, locale } = useI18n();
+  const help = usePageHelp("architectStatement");
   const { user } = useAuth();
   const router = useRouter();
   const vm = useCareerStatementViewModel();
@@ -173,6 +175,7 @@ function ArchitectStatement() {
     <>
       <div className="print:hidden">
         <PageHeader
+          help={help}
           title={t("statement.title", { nome: architect.name })}
           description={t("statement.description")}
           actions={

@@ -15,6 +15,7 @@ import {
 import { api } from "@/lib/api";
 import type { CareerLevel } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import {
   CareerRoadmapViewModel,
@@ -54,6 +55,7 @@ function ArchitectRoadmap() {
   const sel = useSelectors();
   const store = useStore();
   const { t } = useI18n();
+  const help = usePageHelp("architectRoadmap");
   const vm = useCareerRoadmapViewModel();
   const architect = sel.architectById(architectId);
 
@@ -85,6 +87,7 @@ function ArchitectRoadmap() {
   const header = (
     <>
       <PageHeader
+        help={help}
         title={t("roadmap.title", { nome: architect.name })}
         description={t("roadmap.description")}
         actions={
