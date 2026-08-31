@@ -4,7 +4,6 @@ import { toast } from "sonner";
 
 import { api, ApiError, type AppState, type CommentInput } from "./api";
 import { apiPath } from "./api-path";
-import { defaultContainer } from "./gateways/container";
 import type { TextTemplateRecord } from "./gateways/config.gateway";
 import type {
   Architect,
@@ -25,19 +24,23 @@ import type {
   ProficiencyUpdate,
   TeamLevelRule,
 } from "./domain";
-import type { CurationPolicy } from "./curation-policy";
+import { EffectiveCurationPolicy, type CurationPolicy } from "./curation-policy";
 import { configurationCatalog, RulerConfiguration } from "./configuration-queries";
 import { appStateQuery, STATE_QUERY_KEY } from "./session-query";
-import type { AppSettingValue, OperationalSettings } from "./operational-settings";
+import {
+  EffectiveOperationalSettings,
+  type AppSettingValue,
+  type OperationalSettings,
+} from "./operational-settings";
 import { useI18n } from "./i18n";
 import { MutationRunner, type MutationCache } from "./mutation-runner";
 import { expectedVersionOf, UnknownExpectedVersionError } from "./optimistic-lock";
-import type {
-  GapSeverityRuler,
-  ScoringBand,
-  ScoringBands,
+import {
   ScoringRuler,
-  ScoringScale,
+  type GapSeverityRuler,
+  type ScoringBand,
+  type ScoringBands,
+  type ScoringScale,
 } from "./scoring-bands";
 import { createSelectors, emptyState } from "./selectors";
 import type { VocabularyItemInput, VocabularyItemPatch } from "./gateways/config.gateway";
@@ -57,8 +60,6 @@ import {
 
 export { STATE_QUERY_KEY };
 
-const { configuration } = defaultContainer;
-
 export function useCareerLevelsByRank(): CareerLevel[] {
   const { data } = useQuery(configurationCatalog.careerLevels.options);
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
@@ -66,7 +67,7 @@ export function useCareerLevelsByRank(): CareerLevel[] {
 
 export function useScoringRuler(): ScoringRuler {
   const { data } = useQuery(configurationCatalog.scoringBands.options);
-  return useMemo(() => configuration.scoringRuler(data), [data]);
+  return useMemo(() => ScoringRuler.fromLoaded(data), [data]);
 }
 
 export function useScoringBands(): ScoringBands {
@@ -80,22 +81,22 @@ export function useGapSeverityRuler(): GapSeverityRuler {
 
 export function useTextTemplates(): TextTemplates {
   const { data } = useQuery(configurationCatalog.textTemplates.options);
-  return useMemo(() => configuration.textTemplates(data).templates, [data]);
+  return useMemo(() => TextTemplateRenderer.resolve(data), [data]);
 }
 
 export function useCurationPolicy(): CurationPolicy {
   const { data } = useQuery(configurationCatalog.curationPolicy.options);
-  return useMemo(() => configuration.curationPolicy(data), [data]);
+  return useMemo(() => EffectiveCurationPolicy.resolve(data), [data]);
 }
 
 export function useOperationalSettings(): OperationalSettings {
   const { data } = useQuery(configurationCatalog.operationalSettings.options);
-  return useMemo(() => configuration.operationalSettings(data), [data]);
+  return useMemo(() => EffectiveOperationalSettings.resolve(data), [data]);
 }
 
 export function useVocabularies(): Vocabularies {
   const { data } = useQuery(configurationCatalog.vocabularies.options);
-  return useMemo(() => configuration.vocabularies(data).vocabularies, [data]);
+  return useMemo(() => VocabularyCatalog.resolve(data), [data]);
 }
 
 export function useVocabulary(name: VocabularyName): {

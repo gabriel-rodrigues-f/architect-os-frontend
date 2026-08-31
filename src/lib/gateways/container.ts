@@ -1,14 +1,5 @@
 import { ApiClient } from "../api-client";
-import { EffectiveCurationPolicy, type CurationPolicy } from "../curation-policy";
-import {
-  EffectiveOperationalSettings,
-  type AppSettingsResponse,
-  type OperationalSettings,
-} from "../operational-settings";
-import { ScoringRuler, type ServedScoringBands } from "../scoring-bands";
 import { SessionPolicy } from "../session-policy";
-import { TextTemplateRenderer, type ServedTextTemplates } from "../text-templates";
-import { VocabularyCatalog, type Vocabularies } from "../vocabularies";
 import { HttpArchitectsGateway, type ArchitectsGateway } from "./architects.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
 import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
@@ -31,31 +22,8 @@ interface FrontendConfig {
   baseUrl?: string;
 }
 
-export class AppConfiguration {
-  scoringRuler(served?: ServedScoringBands): ScoringRuler {
-    return ScoringRuler.fromLoaded(served);
-  }
-
-  textTemplates(served?: ServedTextTemplates): TextTemplateRenderer {
-    return TextTemplateRenderer.fromLoaded(served);
-  }
-
-  vocabularies(served?: Partial<Vocabularies>): VocabularyCatalog {
-    return VocabularyCatalog.fromLoaded(served);
-  }
-
-  operationalSettings(served?: AppSettingsResponse): OperationalSettings {
-    return EffectiveOperationalSettings.resolve(served);
-  }
-
-  curationPolicy(served?: CurationPolicy): CurationPolicy {
-    return EffectiveCurationPolicy.resolve(served);
-  }
-}
-
 export class FrontendContainer {
   readonly sessionPolicy: SessionPolicy;
-  readonly configuration: AppConfiguration;
   readonly apiClient: ApiClient;
   readonly architectsGateway: ArchitectsGateway;
   readonly assessmentGateway: AssessmentGateway;
@@ -77,7 +45,6 @@ export class FrontendContainer {
 
   private constructor(config: FrontendConfig) {
     this.sessionPolicy = new SessionPolicy();
-    this.configuration = new AppConfiguration();
     this.apiClient = new ApiClient(config.baseUrl, (error) =>
       this.sessionPolicy.reviewFailure(error),
     );
