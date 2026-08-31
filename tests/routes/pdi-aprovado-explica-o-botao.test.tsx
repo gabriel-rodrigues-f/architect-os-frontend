@@ -79,9 +79,7 @@ const estadoBase: AppState = {
 
 const comPlanoDaAnaEm = (status: DevelopmentPlan["status"]): AppState => ({
   ...estadoBase,
-  plans: estadoBase.plans.map((plan) =>
-    plan.architectId === "ana" ? { ...plan, status } : plan,
-  ),
+  plans: estadoBase.plans.map((plan) => (plan.architectId === "ana" ? { ...plan, status } : plan)),
 });
 
 /** Bruno herda um plano aprovado para a linha de Prioridades dele travar tambem. */

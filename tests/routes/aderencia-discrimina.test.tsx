@@ -53,8 +53,16 @@ const fetchMock = vi.fn();
 
 const RoadmapPage = RoadmapRoute.options.component as () => ReactNode;
 
+function nomeDoNivel(id: string): string {
+  const nivel = fixtureCareerLevels.find((candidato) => candidato.id === id);
+  if (!nivel) throw new Error(`Fixture sem o nível ${id}`);
+  return nivel.name;
+}
+
 const NIVEL_ATUAL = "arquiteto-de-solucoes-ii";
 const PROXIMO_NIVEL = "arquiteto-de-solucoes-iii";
+const NOME_ATUAL = nomeDoNivel(NIVEL_ATUAL);
+const NOME_PROXIMO = nomeDoNivel(PROXIMO_NIVEL);
 
 const anaNoNivelDois: AppState = {
   ...fixtureState,
@@ -81,8 +89,8 @@ const aderenciaRoute =
       careerLevelId,
       adherence: {
         percentage: resposta.percentage,
-        missingRequired: Array.from({ length: resposta.missingRequired }, (_, i) => ({
-          competencyId: `obrigatoria-${i}`,
+        missingRequired: Array.from({ length: resposta.missingRequired }, (_, ordem) => ({
+          competencyId: `obrigatoria-${ordem}`,
           currentLevel: 1,
           requiredLevel: 4,
         })),
@@ -126,12 +134,8 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
     });
     renderWithApp(<RoadmapPage />);
 
-    const atual = (
-      await screen.findByText(`Nível atual · ${fixtureCareerLevels[1].name}`)
-    ).closest("div")!;
-    const proximo = (
-      await screen.findByText(`Próximo nível · ${fixtureCareerLevels[2].name}`)
-    ).closest("div")!;
+    const atual = (await screen.findByText(`Nível atual · ${NOME_ATUAL}`)).closest("div")!;
+    const proximo = (await screen.findByText(`Próximo nível · ${NOME_PROXIMO}`)).closest("div")!;
     const percentualDe = (cartao: HTMLElement) => cartao.textContent?.match(/(\d+)%/)?.[1];
 
     expect(percentualDe(atual)).not.toBe(percentualDe(proximo));

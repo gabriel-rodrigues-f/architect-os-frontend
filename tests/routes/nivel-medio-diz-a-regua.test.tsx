@@ -133,9 +133,7 @@ describe("Nível médio — cada tela diz qual régua usa", () => {
       state: fixtureState,
       routes: [
         (href) =>
-          href.endsWith(apiPath("/evolution/architect"))
-            ? jsonResponse(evolucaoDaAna)
-            : undefined,
+          href.endsWith(apiPath("/evolution/architect")) ? jsonResponse(evolucaoDaAna) : undefined,
       ],
     });
     const { container } = renderWithApp(<EvolutionPage />);
