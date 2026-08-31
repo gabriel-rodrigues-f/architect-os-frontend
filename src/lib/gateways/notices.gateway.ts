@@ -56,59 +56,63 @@ export class HttpNoticesGateway implements NoticesGateway {
 
 export type NoticesViewer = Pick<SessionUser, "role" | "architectId" | "memberships">;
 
+export const DEMONSTRATION_TEAM_ID = "time-em-demonstracao";
+
+const LEADING_TEAM_ROLES = ["tech_lead", "manager"];
+
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
 const fixtureNotices = (now: number): Notice[] => [
   {
-    id: "notice-pdi-due-soon",
-    eventType: "pdi.item.dueSoon",
-    title: "Item de PDI de Ana Martins vence em 3 dias: Workshop de Clean Core",
-    link: "/development-plans?architectId=demo-ana-martins",
+    id: "notice-evidence-carla-awaiting-review",
+    eventType: "evidence.awaitingReview",
+    title: "Evidência de Carla Souza espera revisão: Desenho do data mart de logística",
+    link: "/architects/demo-carla-souza",
     occurredAt: new Date(now - 2 * HOUR_MS).toISOString(),
     readAt: null,
-    architectId: "demo-ana-martins",
-    teamId: "team-integration",
+    architectId: "demo-carla-souza",
+    teamId: DEMONSTRATION_TEAM_ID,
   },
   {
-    id: "notice-assessment-stalled",
-    eventType: "assessment.stalled",
-    title: "Avaliação de Bruno Almeida está parada há 14 dias",
-    link: "/assessments",
+    id: "notice-evidence-elisa-awaiting-review",
+    eventType: "evidence.awaitingReview",
+    title: "Evidência de Elisa Prado espera revisão: Contrato v2 do serviço de catálogo",
+    link: "/architects/demo-elisa-prado",
     occurredAt: new Date(now - 6 * HOUR_MS).toISOString(),
     readAt: null,
-    architectId: "demo-bruno-almeida",
-    teamId: "team-integration",
+    architectId: "demo-elisa-prado",
+    teamId: DEMONSTRATION_TEAM_ID,
   },
   {
-    id: "notice-evidence-awaiting-review",
-    eventType: "evidence.awaitingReview",
-    title: "Evidência de Ana Martins espera revisão: Certificação BTP",
-    link: "/architects/demo-ana-martins",
+    id: "notice-assessment-diego-stalled",
+    eventType: "assessment.stalled",
+    title: "Avaliação de Diego Rocha segue em rascunho, sem envio",
+    link: "/assessments",
     occurredAt: new Date(now - 1 * DAY_MS).toISOString(),
     readAt: null,
-    architectId: "demo-ana-martins",
-    teamId: "team-integration",
+    architectId: "demo-diego-rocha",
+    teamId: DEMONSTRATION_TEAM_ID,
   },
   {
-    id: "notice-assessment-completed",
+    id: "notice-assessment-ana-completed",
     eventType: "assessment.completed",
-    title: "Avaliação de Carla Souza foi concluída",
+    title: "Avaliação de Ana Martins foi concluída",
     link: "/assessments",
     occurredAt: new Date(now - 2 * DAY_MS).toISOString(),
-    readAt: new Date(now - 1 * DAY_MS).toISOString(),
-    architectId: "demo-carla-souza",
-    teamId: "team-architecture",
+    readAt: null,
+    architectId: "demo-ana-martins",
+    teamId: DEMONSTRATION_TEAM_ID,
   },
   {
-    id: "notice-mentoring-recorded",
+    id: "notice-mentoring-bruno-recorded",
     eventType: "mentoring.recorded",
-    title: "Mentoria registrada para Bruno Almeida: Arquitetura de Eventos",
+    title: "Mentoria registrada para Bruno Almeida: Modelagem do data mart de logística",
     link: "/mentoring",
     occurredAt: new Date(now - 3 * DAY_MS).toISOString(),
     readAt: new Date(now - 2 * DAY_MS).toISOString(),
     architectId: "demo-bruno-almeida",
-    teamId: "team-integration",
+    teamId: DEMONSTRATION_TEAM_ID,
   },
 ];
 
@@ -116,19 +120,16 @@ export class InMemoryNoticesGateway implements NoticesGateway {
   readonly dataOrigin: DataOrigin = "demonstration";
 
   private readonly store: Notice[];
-  private readonly architectTeams: Record<string, string>;
 
   constructor(
     private readonly viewer: () => Promise<NoticesViewer>,
     seed: Notice[] = fixtureNotices(Date.now()),
-    architectTeams?: Record<string, string>,
   ) {
     this.store = seed.map((notice) => ({ ...notice }));
-    this.architectTeams = architectTeams ?? InMemoryNoticesGateway.fixtureArchitectTeams();
   }
 
   notices = async (filter: NoticesFilter): Promise<NoticesPage> => {
-    const scoped = await this.scopedNotices();
+    const { ledTeamIds, notices: scoped } = await this.inbox();
     const ordered = [...scoped].sort((left, right) =>
       right.occurredAt.localeCompare(left.occurredAt),
     );
@@ -141,55 +142,52 @@ export class InMemoryNoticesGateway implements NoticesGateway {
     const limited = filter.limit === undefined ? byCursor : byCursor.slice(0, filter.limit);
     return {
       dataOrigin: this.dataOrigin,
-      notices: limited.map((notice) => ({ ...notice })),
+      notices: limited.map((notice) => ({
+        ...notice,
+        teamId: this.teamAddressed(notice, ledTeamIds),
+      })),
       unreadCount: scoped.filter((notice) => notice.readAt === null).length,
     };
   };
 
   markNoticeRead = async (noticeId: string): Promise<void> => {
-    const scoped = await this.scopedNotices();
+    const { notices: scoped } = await this.inbox();
     const found = scoped.find((notice) => notice.id === noticeId);
     if (found && found.readAt === null) found.readAt = new Date().toISOString();
   };
 
   markAllNoticesRead = async (): Promise<void> => {
     const readAt = new Date().toISOString();
-    for (const notice of await this.scopedNotices()) {
+    const { notices: scoped } = await this.inbox();
+    for (const notice of scoped) {
       if (notice.readAt === null) notice.readAt = readAt;
     }
   };
 
-  private async scopedNotices(): Promise<Notice[]> {
+  private async inbox(): Promise<{ ledTeamIds: string[]; notices: Notice[] }> {
     const viewer = await this.viewer();
-    if (viewer.role === "admin") return this.store;
-    if (viewer.role === "lead") {
-      const ledTeamIds = this.ledTeamIds(viewer);
-      return this.store.filter(
-        (notice) =>
-          (notice.teamId !== null && ledTeamIds.includes(notice.teamId)) ||
-          (viewer.architectId !== null && notice.architectId === viewer.architectId),
-      );
-    }
-    if (viewer.architectId === null) return [];
-    return this.store.filter((notice) => notice.architectId === viewer.architectId);
+    const ledTeamIds = this.ledTeamIds(viewer);
+    return {
+      ledTeamIds,
+      notices: this.store.filter((notice) => this.reaches(notice, viewer, ledTeamIds)),
+    };
+  }
+
+  private reaches(notice: Notice, viewer: NoticesViewer, ledTeamIds: string[]): boolean {
+    if (viewer.architectId !== null && notice.architectId === viewer.architectId) return true;
+    if (ledTeamIds.length === 0) return false;
+    if (notice.teamId === DEMONSTRATION_TEAM_ID) return true;
+    return notice.teamId !== null && ledTeamIds.includes(notice.teamId);
+  }
+
+  private teamAddressed(notice: Notice, ledTeamIds: string[]): string | null {
+    if (notice.teamId !== DEMONSTRATION_TEAM_ID) return notice.teamId;
+    return ledTeamIds[0] ?? notice.teamId;
   }
 
   private ledTeamIds(viewer: NoticesViewer): string[] {
-    const byMembership = (viewer.memberships ?? [])
-      .filter((membership) => membership.role === "tech_lead" || membership.role === "manager")
+    return (viewer.memberships ?? [])
+      .filter((membership) => LEADING_TEAM_ROLES.includes(membership.role))
       .map((membership) => membership.teamId);
-    if (byMembership.length > 0) return byMembership;
-    if (viewer.memberships !== undefined) return [];
-    const byArchitect =
-      viewer.architectId === null ? null : this.architectTeams[viewer.architectId];
-    return byArchitect === undefined || byArchitect === null ? [] : [byArchitect];
-  }
-
-  private static fixtureArchitectTeams(): Record<string, string> {
-    return {
-      "demo-ana-martins": "team-integration",
-      "demo-bruno-almeida": "team-integration",
-      "demo-carla-souza": "team-architecture",
-    };
   }
 }
