@@ -376,7 +376,7 @@
   },
   "tests/lib/accessibility/second-channel.test.ts": {
     "id-length": {
-      "count": 6
+      "count": 4
     }
   },
   "tests/lib/api-client-envelope.test.ts": {
