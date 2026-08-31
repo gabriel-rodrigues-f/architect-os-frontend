@@ -34,7 +34,7 @@ const leadWithNoOne: SessionUser = {
   id: "test-lead-sem-ninguem",
   email: "lead-sem-ninguem@company.com",
   name: "Lead Sem Ninguém",
-  role: "lead",
+  role: "tech_lead",
   architectId: null,
   status: "active",
   mustChangePassword: false,

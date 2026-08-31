@@ -70,7 +70,7 @@ test.beforeAll(async ({ playwright }) => {
 
   const created = await json<{ user: { id: string }; temporaryPassword: string }>(
     await api.post(apiPath("/auth/users"), {
-      data: { name: "E2E PDI Lead", email: LEAD_EMAIL, role: "lead" },
+      data: { name: "E2E PDI Lead", email: LEAD_EMAIL, role: "tech_lead" },
     }),
   );
   leadUserId = created.user.id;

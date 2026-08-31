@@ -56,6 +56,8 @@ interface NavItem {
 
   teamRuleReachOnly?: boolean;
 
+  calibrationReachOnly?: boolean;
+
   teamAnalysisOnly?: boolean;
 
   ownCareerOnly?: boolean;
@@ -148,7 +150,12 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Grid3x3,
         adminOnly: true,
       },
-      { to: "/calibration", labelKey: "nav.calibration", icon: BarChart3, adminOnly: true },
+      {
+        to: "/calibration",
+        labelKey: "nav.calibration",
+        icon: BarChart3,
+        calibrationReachOnly: true,
+      },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
@@ -166,6 +173,7 @@ class NavigationOfUser {
     if (item.teamRuleReachOnly && !(user && this.policy.canConfigureAnyTeamRules(user))) {
       return false;
     }
+    if (item.calibrationReachOnly && !(user && this.policy.canCalibrate(user))) return false;
     if (item.teamAnalysisOnly && !(user && this.policy.canAnalyzeTeam(user))) return false;
     return !(item.ownCareerOnly && this.ownArchitectId === null);
   }

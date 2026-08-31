@@ -41,15 +41,44 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 const fetchMock = vi.fn();
 
+const TIME_DE_ANA = "time-de-ana";
+
 const fixtureLeadOfAna: SessionUser = {
   id: "test-lead-de-ana",
   email: "lead-de-ana@company.com",
   name: "Lead de Ana",
-  role: "lead",
+  role: "tech_lead",
   architectId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
+};
+
+/**
+ * ADR-0047 do backend — o `lead` morreu e virou `manager` + `tech_lead`. O
+ * ternário do painel não era exaustivo: papel que não fosse `lead` nem
+ * `member` caía no `AdminHome` por OMISSÃO, calado. O gestor é o caso que
+ * morde na aplicação do dono (`gestor@synapse.com.br`).
+ */
+const fixtureGestorDeAna: SessionUser = {
+  id: "test-gestor-de-ana",
+  email: "gestor-de-ana@company.com",
+  name: "Gestor de Ana",
+  role: "manager",
+  architectId: null,
+  status: "active",
+  mustChangePassword: false,
+  createdAt: "2026-01-01T00:00:00Z",
+  memberships: [{ teamId: TIME_DE_ANA, role: "manager" }],
+};
+
+const fixtureTechLeadDeAna: SessionUser = {
+  ...fixtureGestorDeAna,
+  id: "test-techlead-de-ana",
+  email: "techlead-de-ana@company.com",
+  name: "Tech Lead de Ana",
+  role: "tech_lead",
+  memberships: [{ teamId: TIME_DE_ANA, role: "tech_lead" }],
 };
 
 const DashboardPage = DashboardRoute.options.component as () => ReactNode;
@@ -58,6 +87,17 @@ const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 function renderAs(user: SessionUser, state: AppState = fixtureState) {
   mockAppFetch(fetchMock, { user, state });
   return renderWithApp(<DashboardPage />);
+}
+
+/** Ana no time da liderança da sessão, com o recorte que o servidor faria. */
+function renderAsLeaderOfAna(user: SessionUser) {
+  const state: AppState = {
+    ...fixtureState,
+    architects: fixtureState.architects.map((architect) =>
+      architect.id === "ana" ? { ...architect, teamId: TIME_DE_ANA } : architect,
+    ),
+  };
+  return renderAs(user, scopedFixtureStateFor(user, state, [TIME_DE_ANA]));
 }
 
 describe("Painel — Home por papel", () => {
@@ -101,14 +141,22 @@ describe("Painel — Home por papel", () => {
     expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
   });
 
-  it("lead com pessoa atribuída vê a evidência Pending dela na fila", async () => {
-    const state: AppState = {
-      ...fixtureState,
-      architects: fixtureState.architects.map((a) =>
-        a.id === "ana" ? { ...a, teamId: "time-de-ana" } : a,
-      ),
-    };
-    renderAs(fixtureLeadOfAna, scopedFixtureStateFor(fixtureLeadOfAna, state, ["time-de-ana"]));
+  it("gestor vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
+    renderAsLeaderOfAna(fixtureGestorDeAna);
+    await screen.findByText("Pendências do Lead");
+    expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
+    expect(await screen.findByText(/ADR-014/)).toBeTruthy();
+  });
+
+  it("tech lead vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
+    renderAsLeaderOfAna(fixtureTechLeadDeAna);
+    await screen.findByText("Pendências do Lead");
+    expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
+    expect(await screen.findByText(/ADR-014/)).toBeTruthy();
+  });
+
+  it("sessão de liderança SEM vínculo se apoia no recorte do servidor e vê a fila", async () => {
+    renderAsLeaderOfAna(fixtureLeadOfAna);
     await screen.findByText("Pendências do Lead");
     // "e1" na fixture: evidência Pending de "ana", título "ADR-014".
     expect(await screen.findByText(/ADR-014/)).toBeTruthy();

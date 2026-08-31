@@ -5,8 +5,8 @@ import type { SessionUser } from "@/lib/api";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
-  fixtureTeamLeadUser,
-  fixtureUnassignedLeadUser,
+  fixtureAssignedTechLeadUser,
+  fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
 
 /**
@@ -67,8 +67,8 @@ describe("menu do profissional — o que é dele aparece", () => {
     for (const user of [
       fixtureMemberUser,
       fixtureAdminUser,
-      fixtureTeamLeadUser,
-      fixtureUnassignedLeadUser,
+      fixtureAssignedTechLeadUser,
+      fixtureUnassignedTechLeadUser,
     ]) {
       expect(destinos(user).filter((destino) => destino.includes("$"))).toEqual([]);
     }
@@ -78,7 +78,7 @@ describe("menu do profissional — o que é dele aparece", () => {
     expect(destinos(fixtureAdminUser)).not.toContain("/architects/ana/roadmap");
     expect(destinos(fixtureAdminUser).some((destino) => destino.includes("/roadmap"))).toBe(false);
     expect(
-      destinos(fixtureUnassignedLeadUser).some((destino) => destino.includes("/roadmap")),
+      destinos(fixtureUnassignedTechLeadUser).some((destino) => destino.includes("/roadmap")),
     ).toBe(false);
   });
 
@@ -96,16 +96,16 @@ describe("menu do profissional — o que não é dele some", () => {
 
   it("o grupo Administração desaparece do menu de quem não administra", () => {
     expect(rotulosDeGrupo(fixtureMemberUser)).not.toContain("nav.group.admin");
-    expect(rotulosDeGrupo(fixtureUnassignedLeadUser)).not.toContain("nav.group.admin");
-    expect(rotulosDeGrupo(fixtureTeamLeadUser)).not.toContain("nav.group.admin");
+    expect(rotulosDeGrupo(fixtureUnassignedTechLeadUser)).not.toContain("nav.group.admin");
+    expect(rotulosDeGrupo(fixtureAssignedTechLeadUser)).not.toContain("nav.group.admin");
     expect(rotulosDeGrupo(fixtureAdminUser)).toContain("nav.group.admin");
   });
 
   it("quem lidera e quem administra continuam com as cinco ferramentas de time", () => {
     for (const destino of ANALISE_DO_TIME) {
       expect(destinos(fixtureAdminUser), destino).toContain(destino);
-      expect(destinos(fixtureTeamLeadUser), destino).toContain(destino);
-      expect(destinos(fixtureUnassignedLeadUser), destino).toContain(destino);
+      expect(destinos(fixtureAssignedTechLeadUser), destino).toContain(destino);
+      expect(destinos(fixtureUnassignedTechLeadUser), destino).toContain(destino);
     }
   });
 });

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as PlansRoute } from "@/routes/development-plans";
 import { type AppState, type SessionUser } from "@/lib/api";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -265,14 +265,15 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
       ),
     };
     const fixtureLeadOfAna: SessionUser = {
-      id: "test-lead-ana",
-      email: "lead-ana@company.com",
+      id: "test-tech-lead-ana",
+      email: "tech-lead-ana@company.com",
       name: "Tech Lead da Ana",
-      role: "lead",
+      role: "tech_lead",
       architectId: null,
       status: "active",
       mustChangePassword: false,
       createdAt: "2026-01-01T00:00:00Z",
+      memberships: [{ teamId: fixtureTeamId, role: "tech_lead" }],
     };
 
     function mockFetchAs(user: SessionUser, state: AppState) {

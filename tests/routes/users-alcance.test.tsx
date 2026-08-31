@@ -9,7 +9,7 @@ import {
   fixtureAdminUser,
   fixtureMemberUser,
   fixtureState,
-  fixtureUnassignedLeadUser,
+  fixtureUnassignedTechLeadUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
@@ -76,7 +76,7 @@ describe("/users nega DADO a quem não é admin — a tela é a última barreira
   });
 
   it("lead também não — o diretório de contas é administrativo, não de liderança", async () => {
-    renderAs(fixtureUnassignedLeadUser);
+    renderAs(fixtureUnassignedTechLeadUser);
     expect(
       await screen.findByText("Diretório de contas é restrito a administradores."),
     ).toBeTruthy();

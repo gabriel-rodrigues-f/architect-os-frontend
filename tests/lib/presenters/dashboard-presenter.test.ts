@@ -9,9 +9,11 @@ import {
 } from "@/lib/presenters";
 import { createSelectors } from "@/lib/selectors";
 import {
+  fixtureAdminUser,
+  fixtureAssignedManagerUser,
   fixtureState,
-  fixtureTeamLeadUser,
-  fixtureUnassignedLeadUser,
+  fixtureAssignedTechLeadUser,
+  fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
 
 /**
@@ -320,7 +322,7 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
  * presenter. Estes casos são o espelho literal daquelas linhas.
  */
 describe("DashboardPresenter — filas de pendência do líder", () => {
-  const leadDoTime = fixtureTeamLeadUser;
+  const leadDoTime = fixtureAssignedTechLeadUser;
 
   const stateWith = (patch: Partial<AppState>): AppState => ({ ...fixtureState, ...patch });
 
@@ -340,11 +342,25 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
     expect(queuesOf(comInativo).people.map((architect) => architect.id)).toEqual(["ana"]);
   });
 
+  it("o gestor recolhe as mesmas pendências do tech lead — alcance não distingue os dois", () => {
+    const gestor = { ...fixtureAssignedManagerUser };
+
+    expect(queuesOf(fixtureState, gestor).people.map((architect) => architect.id)).toEqual([
+      "ana",
+      "bruno",
+    ]);
+  });
+
+  it("o admin NÃO tem fila de líder — a fila é de quem tem vínculo, sem bypass", () => {
+    expect(queuesOf(fixtureState, fixtureAdminUser).people).toEqual([]);
+    expect(queuesOf(fixtureState, fixtureAdminUser).totalPending).toBe(0);
+  });
+
   it("lead sem vínculo nenhum e sem time não recolhe pendência alguma", () => {
     const semTime = stateWith({
       architects: fixtureState.architects.map((architect) => ({ ...architect, teamId: null })),
     });
-    const queues = queuesOf(semTime, fixtureUnassignedLeadUser);
+    const queues = queuesOf(semTime, fixtureUnassignedTechLeadUser);
     expect(queues.people).toEqual([]);
     expect(queues.pendingEvidence).toEqual([]);
     expect(queues.totalPending).toBe(0);

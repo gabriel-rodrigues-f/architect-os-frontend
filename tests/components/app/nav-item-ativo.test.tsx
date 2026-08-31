@@ -28,8 +28,8 @@ import { ThemeProvider } from "@/lib/theme";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
-  fixtureTeamLeadUser,
-  fixtureUnassignedLeadUser,
+  fixtureAssignedTechLeadUser,
+  fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 
@@ -99,8 +99,8 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
     const perfis = [
       fixtureAdminUser,
       fixtureMemberUser,
-      fixtureTeamLeadUser,
-      fixtureUnassignedLeadUser,
+      fixtureAssignedTechLeadUser,
+      fixtureUnassignedTechLeadUser,
     ];
     for (const user of perfis) {
       const itens = filterNavGroups(NAV_GROUPS, user).flatMap((grupo) => grupo.items);

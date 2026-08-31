@@ -14,7 +14,8 @@ import {
 import { calibrationApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { requireAdminReach } from "@/lib/route-guards";
+import { requireCalibrationReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
 import { CalibrationViewModel } from "@/lib/view-models";
 
@@ -25,11 +26,11 @@ export const Route = createFileRoute("/calibration")({
       {
         name: "description",
         content:
-          "Distribuição de notas por avaliador, lado a lado. Hoje visível só para administradores; abre para gestores quando o modelo de 4 perfis existir (CONTRATO PRD-03).",
+          "Distribuição de notas por avaliador, lado a lado. Visível para gestores e administradores (CONTRATO PRD-03).",
       },
     ],
   }),
-  beforeLoad: requireAdminReach,
+  beforeLoad: requireCalibrationReach,
   component: CalibrationPage,
 });
 
@@ -49,21 +50,22 @@ function CalibrationPage() {
   const { t } = useI18n();
   const vm = useCalibrationViewModel();
   const store = useStore();
-  const isAdmin = useCurrentUser().role === "admin";
+  const user = useCurrentUser();
+  const canCalibrate = defaultUiAuthorizationPolicy.canCalibrate(user);
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
 
   const query = useQuery({
     queryKey: ["calibration", cycleId],
     queryFn: () => calibrationApi.calibration(cycleId ?? ""),
-    enabled: isAdmin && cycleId !== null,
+    enabled: canCalibrate && cycleId !== null,
   });
 
-  if (!isAdmin) {
+  if (!canCalibrate) {
     return (
       <>
         <PageHeader title={t("calibration.title")} description={t("calibration.description")} />
-        <EmptyState title={t("calibration.adminOnly")} hint={t("calibration.adminOnlyHint")} />
+        <EmptyState title={t("calibration.restricted")} hint={t("calibration.restrictedHint")} />
       </>
     );
   }

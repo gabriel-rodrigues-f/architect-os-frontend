@@ -40,17 +40,17 @@ import {
 const REAL_TEAM_ID = "time-do-lead-eef4b11a-31be-40ca-9b97-2889851e85c3";
 
 const techLead: NoticesViewer = {
-  role: "lead",
+  role: "tech_lead",
   architectId: null,
   memberships: [{ teamId: REAL_TEAM_ID, role: "tech_lead" }],
 };
 const gestor: NoticesViewer = {
-  role: "lead",
+  role: "tech_lead",
   architectId: null,
   memberships: [{ teamId: REAL_TEAM_ID, role: "manager" }],
 };
 const administrador: NoticesViewer = { role: "admin", architectId: null, memberships: [] };
-const leadSemVinculo: NoticesViewer = { role: "lead", architectId: null, memberships: [] };
+const techLeadSemVinculo: NoticesViewer = { role: "tech_lead", architectId: null, memberships: [] };
 const memberAna: NoticesViewer = { role: "member", architectId: "demo-ana-martins" };
 const memberCarla: NoticesViewer = { role: "member", architectId: "demo-carla-souza" };
 const memberWithoutArchitect: NoticesViewer = { role: "member", architectId: null };
@@ -158,7 +158,7 @@ describe("InMemoryNoticesGateway — recorte por destinatário (o mock É o serv
 
   it("vínculo de MEMBRO não concede o escopo do time — quem não lidera não lê o time", async () => {
     const apenasMembro: NoticesViewer = {
-      role: "lead",
+      role: "tech_lead",
       architectId: null,
       memberships: [{ teamId: REAL_TEAM_ID, role: "member" }],
     };
@@ -295,7 +295,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
 
   it("marcar todos como lidos não alcança o aviso do time alheio", async () => {
     const doTimeVizinho: NoticesViewer = {
-      role: "lead",
+      role: "tech_lead",
       architectId: null,
       memberships: [{ teamId: "time-que-o-lead-nao-lidera", role: "tech_lead" }],
     };
@@ -322,13 +322,13 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
   });
 
   it("quem não lidera time nenhum não herda o escopo do time pelo papel", async () => {
-    const page = await gatewayFor(leadSemVinculo).notices({ status: "all" });
+    const page = await gatewayFor(techLeadSemVinculo).notices({ status: "all" });
     expect(page.notices).toEqual([]);
     expect(page.unreadCount).toBe(0);
   });
 
   it("sessão sem o campo memberships (backend antigo) falha FECHADA, nunca aberta", async () => {
-    const sessaoAntiga: NoticesViewer = { role: "lead", architectId: null };
+    const sessaoAntiga: NoticesViewer = { role: "tech_lead", architectId: null };
     const page = await gatewayFor(sessaoAntiga).notices({ status: "all" });
     expect(page.notices).toEqual([]);
     expect(page.unreadCount).toBe(0);

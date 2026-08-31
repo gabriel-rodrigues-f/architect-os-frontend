@@ -7,9 +7,9 @@
     "/architects/$architectId/statement": { "alcance": "autenticado" },
     "/assessments": { "alcance": "autenticado" },
     "/calibration": {
-      "alcance": "admin",
-      "guarda": "requireAdminReach",
-      "sinal": "isAdmin",
+      "alcance": "calibracao",
+      "guarda": "requireCalibrationReach",
+      "sinal": "canCalibrate",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/calibration.test.tsx"

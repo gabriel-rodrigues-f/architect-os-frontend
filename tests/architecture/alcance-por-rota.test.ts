@@ -73,19 +73,26 @@ const FIXTURE = join(raizDoRepositorio, "tests", "architecture", "alcance-por-ro
 const STORE = join(raizDoRepositorio, "src", "lib", "store.tsx");
 const DIRETORIO_LIB = join(raizDoRepositorio, "src", "lib");
 
-type Alcance = "publica" | "autenticado" | "admin" | "lead-com-vinculo";
+type Alcance = "publica" | "autenticado" | "admin" | "lead-com-vinculo" | "calibracao";
 type Negativa = "tela-nega" | "somente-leitura";
 
-const ALCANCES: readonly Alcance[] = ["publica", "autenticado", "admin", "lead-com-vinculo"];
+const ALCANCES: readonly Alcance[] = [
+  "publica",
+  "autenticado",
+  "admin",
+  "lead-com-vinculo",
+  "calibracao",
+];
 
 /** Qual guarda de navegação cada alcance restrito obriga. */
 const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
   admin: "requireAdminReach",
   "lead-com-vinculo": "requireLeadReach",
+  calibracao: "requireCalibrationReach",
 };
 
 /** Contas que NÃO alcançam uma rota restrita — o gêmeo de tela usa uma delas. */
-const FIXTURES_DE_QUEM_NAO_ALCANCA = ["fixtureMemberUser", "fixtureUnassignedLeadUser"];
+const FIXTURES_DE_QUEM_NAO_ALCANCA = ["fixtureMemberUser", "fixtureUnassignedTechLeadUser"];
 
 /** Declarar "somente leitura" sem dizer por quê é o mesmo buraco com outro nome. */
 const TAMANHO_MINIMO_DA_JUSTIFICATIVA = 60;
@@ -95,8 +102,9 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 const DISTRIBUICAO_ESPERADA = {
   autenticado: 18,
-  admin: 3,
+  admin: 2,
   "lead-com-vinculo": 1,
+  calibracao: 1,
 };
 
 interface CatalogoGlobal {
