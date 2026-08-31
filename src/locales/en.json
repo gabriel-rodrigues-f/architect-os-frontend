@@ -831,8 +831,6 @@
   "cycle.dialog.duplicate": "A cycle {nome} already exists.",
   "cycle.dialog.start": "Start",
   "cycle.dialog.end": "End",
-  "cycle.evolution.title": "Progress per capability",
-  "cycle.evolution.subtitle": "Comparison between closed cycles and the current one.",
   "cycle.architect": "Architect",
   "cycle.activate": "Activate",
   "cycle.close": "Close",

@@ -831,8 +831,6 @@
   "cycle.dialog.duplicate": "Já existe um ciclo {nome}.",
   "cycle.dialog.start": "Início",
   "cycle.dialog.end": "Fim",
-  "cycle.evolution.title": "Evolução por capacidade",
-  "cycle.evolution.subtitle": "Comparativo entre ciclos concluídos e o ciclo atual.",
   "cycle.architect": "Arquiteto",
   "cycle.activate": "Ativar",
   "cycle.close": "Encerrar",

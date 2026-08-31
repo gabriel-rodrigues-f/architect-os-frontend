@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   ArchitectSelectCombobox,
   ConfirmDialog,
-  EvolutionLine,
   LevelBadge,
   PageHeader,
   SectionCard,
@@ -74,16 +73,6 @@ function CyclesPage() {
   };
 
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
-  const chartData = closedCycles.map((c) => {
-    const row: Record<string, string | number> = { cycle: c.name };
-
-    for (const d of sel.capabilityAverages(architectId, c.id)) {
-      if (d.avg !== undefined) row[d.capability.id] = d.avg;
-    }
-    return row;
-  });
-
-  const series = store.capabilities.map((c) => ({ key: c.id, label: c.name }));
 
   const compare = store.competencies.slice(0, 12).map((c) => {
     const levels = closedCycles.map((cy) => ({
@@ -217,12 +206,7 @@ function CyclesPage() {
         </DialogContent>
       </Dialog>
 
-      <SectionCard title={t("cycle.evolution.title")} description={t("cycle.evolution.subtitle")}>
-        <EvolutionLine data={chartData} series={series} />
-      </SectionCard>
-
       <SectionCard
-        className="mt-6"
         title={t("cycle.compare.title")}
         description={
           store.competencies.length > compare.length
