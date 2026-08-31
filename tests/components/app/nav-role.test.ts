@@ -63,13 +63,20 @@ describe("AppShell — navegação recortada por papel", () => {
   });
 
   /**
-   * Tela 3 (spec §3, CONTRATO PRD-03) — calibração é só gestor + admin. O
-   * modelo de quatro papéis já distingue gestor de tech lead (backend
-   * ADR-0047), mas a navegação segue admin-only: abrir para o gestor é
-   * decisão de produto, não consequência do vocabulário.
+   * Tela 3 (spec §3, CONTRATO PRD-03) — a calibração é de gestor + admin. Com
+   * os quatro papéis (backend ADR-0047) o contrato ficou dizível: o destino
+   * aparece para quem calibra e some para quem não calibra. Enquanto só
+   * existia `lead`, abrir a navegação teria entregado a leitura ao tech lead
+   * junto — por isso a rota nasceu admin-only.
    */
-  it("calibração é admin-only na navegação — nem gestor nem tech lead a veem", () => {
-    for (const role of ["member", "tech_lead", "manager"] as const) {
+  it("o gestor vê o destino de Calibração — é dele a leitura que o contrato reserva", () => {
+    const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel("manager"));
+    const paths = groups.flatMap((group) => group.items.map((item) => item.to));
+    expect(paths).toContain("/calibration");
+  });
+
+  it("member e tech lead não veem o destino de Calibração", () => {
+    for (const role of ["member", "tech_lead"] as const) {
       const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel(role));
       const paths = groups.flatMap((group) => group.items.map((item) => item.to));
       expect(paths, role).not.toContain("/calibration");

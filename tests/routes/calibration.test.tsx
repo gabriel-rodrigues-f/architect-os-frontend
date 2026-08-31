@@ -8,6 +8,7 @@ import type { CalibrationGateway } from "@/lib/gateways/calibration.gateway";
 import { Route as CalibrationRoute } from "@/routes/calibration";
 import {
   fixtureAdminUser,
+  fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureUnassignedTechLeadUser,
   fixtureState,
@@ -18,10 +19,12 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 /**
  * Tela 3 (spec §3) — calibração entre líderes, distribuição de notas por
  * avaliador LADO A LADO. CONTRATO PRD-03: visível só para gestor + admin.
- * TODO nominal da spec: hoje o papel `lead` não distingue gestor de tech
- * lead, então a rota fica ADMIN-ONLY (`requireAdminReach`) até o modelo de
- * 4 perfis existir (onda 12+) — abrir para gestor é trocar a guarda, e este
- * teste é o lembrete vivo dessa decisão.
+ *
+ * A rota era ADMIN-ONLY por FALTA de vocabulário: `lead` não distinguia
+ * gestor de tech lead, e abrir para `lead` teria dado a leitura ao tech lead
+ * — exatamente quem o contrato exclui. Com os quatro papéis (backend
+ * ADR-0047) a distinção existe, e o contrato passa a ser dizível: o gestor
+ * entra, o tech lead não.
  *
  * Os dados vêm do InMemoryCalibrationGateway (PRD-03 backend na onda 21):
  * Marina 4.00 (leniente), Ricardo 3.00 (central), Paula 2.13 (severa) —
@@ -98,7 +101,7 @@ describe("/calibration — distribuição de notas por avaliador", () => {
  * para member/lead. Contra o código atual nasceram VERMELHOS (a tela
  * mostrava Marina/Ricardo/Paula para qualquer papel).
  */
-describe("/calibration nega DADO a quem não é admin — a tela é a última barreira", () => {
+describe("/calibration nega DADO a quem não calibra — a tela é a última barreira", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
@@ -113,16 +116,32 @@ describe("/calibration nega DADO a quem não é admin — a tela é a última ba
 
   it("member não recebe a tela: aviso de acesso restrito, zero avaliadores, zero KPIs", async () => {
     renderAs(fixtureMemberUser);
-    expect(await screen.findByText("Calibração é restrita a administradores.")).toBeTruthy();
+    expect(
+      await screen.findByText("Calibração é restrita a gestores e administradores."),
+    ).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
     expect(screen.queryByText("Paula Souza")).toBeNull();
     expect(screen.queryByText("Média geral")).toBeNull();
   });
 
-  it("lead também não — CONTRATO PRD-03: gestor só entra quando os 4 perfis existirem", async () => {
+  /**
+   * O tech lead é a metade do antigo `lead` que o CONTRATO PRD-03 EXCLUI. Sem
+   * este caso, "abrir para o gestor" viraria "abrir para quem lidera" — que é
+   * o vazamento que a falta de vocabulário vinha impedindo por acidente.
+   */
+  it("tech lead não recebe a tela — o contrato reserva a leitura a gestor + admin", async () => {
     renderAs(fixtureUnassignedTechLeadUser);
-    expect(await screen.findByText("Calibração é restrita a administradores.")).toBeTruthy();
+    expect(
+      await screen.findByText("Calibração é restrita a gestores e administradores."),
+    ).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
+  });
+
+  it("o gestor recebe a tela INTEIRA — é dele a leitura que o contrato reserva", async () => {
+    renderAs(fixtureAssignedManagerUser);
+    expect(await screen.findByText("Marina Lopes")).toBeTruthy();
+    expect(screen.getByText("Média geral")).toBeTruthy();
+    expect(screen.queryByText("Calibração é restrita a gestores e administradores.")).toBeNull();
   });
 });
 
@@ -142,7 +161,7 @@ describe("/calibration nega DADO a quem não é admin — a tela é a última ba
  * ele o par não pinaria nada, porque um `enabled` sempre-falso (ciclo nulo,
  * por exemplo) também deixaria os dois negativos verdes.
  */
-describe("/calibration não CONSULTA para quem não é admin — o `enabled` é parte da barreira", () => {
+describe("/calibration não CONSULTA para quem não calibra — o `enabled` é parte da barreira", () => {
   let calibrationSpy: MockInstance<CalibrationGateway["calibration"]>;
 
   beforeEach(() => {
@@ -170,13 +189,19 @@ describe("/calibration não CONSULTA para quem não é admin — o `enabled` é 
 
   it("member: a consulta não sai — nem para o ciclo ativo, nem para nenhum outro", async () => {
     renderAs(fixtureMemberUser);
-    await screen.findByText("Calibração é restrita a administradores.");
+    await screen.findByText("Calibração é restrita a gestores e administradores.");
     expect(calibrationSpy).not.toHaveBeenCalled();
   });
 
-  it("lead: a consulta não sai — CONTRATO PRD-03 reserva a calibração a gestor + admin", async () => {
+  it("tech lead: a consulta não sai — CONTRATO PRD-03 reserva a calibração a gestor + admin", async () => {
     renderAs(fixtureUnassignedTechLeadUser);
-    await screen.findByText("Calibração é restrita a administradores.");
+    await screen.findByText("Calibração é restrita a gestores e administradores.");
     expect(calibrationSpy).not.toHaveBeenCalled();
+  });
+
+  it("gestor: a consulta SAI, com o ciclo ativo — o `enabled` abre junto com a tela", async () => {
+    renderAs(fixtureAssignedManagerUser);
+    await screen.findByText("Marina Lopes");
+    expect(calibrationSpy).toHaveBeenCalledWith("2026-h2");
   });
 });

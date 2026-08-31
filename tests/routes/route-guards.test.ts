@@ -4,10 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionUser } from "@/lib/api";
 import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
-import { requireLeadReach } from "@/lib/route-guards";
+import { requireCalibrationReach, requireLeadReach } from "@/lib/route-guards";
 import { SESSION_QUERY_KEY } from "@/lib/session-query";
 import {
   fixtureAdminUser,
+  fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureAssignedTechLeadUser,
   fixtureUnassignedTechLeadUser,
@@ -62,12 +63,22 @@ describe("guardas de navegação das telas administrativas", () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/competency-matrix")).toBe("/");
   });
 
-  it("nega /calibration a quem não é admin na navegação interna (PRD-03: só gestor+admin)", async () => {
+  it("nega /calibration ao member na navegação interna (PRD-03: só gestor+admin)", async () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/calibration")).toBe("/");
+  });
+
+  it("nega /calibration ao tech lead — é a metade da liderança que o contrato exclui", async () => {
+    expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, "/calibration")).toBe("/");
   });
 
   it("mantém /calibration aberta para admin", async () => {
     expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/calibration");
+  });
+
+  it("abre /calibration para o gestor", async () => {
+    expect(await navegarComoUsuario(fixtureAssignedManagerUser, "/calibration")).toBe(
+      "/calibration",
+    );
   });
 
   it("mantém /users aberta para admin", async () => {
@@ -155,5 +166,53 @@ describe("requireLeadReach — a guarda da régua do time", () => {
 
   it("deixa passar o admin", async () => {
     expect(await alcancaTelaDaRegua(fixtureAdminUser)).toBe(true);
+  });
+});
+
+/**
+ * CONTRATO PRD-03, "visível só para gestor + admin" — a 3ª guarda do arquivo.
+ * A calibração era `requireAdminReach` por FALTA de vocabulário: com um único
+ * papel `lead`, abrir a rota teria entregado a leitura ao tech lead, que o
+ * contrato exclui. Os quatro papéis (backend ADR-0047) tornam a linha
+ * dizível, e esta é a metade de navegação dela.
+ *
+ * O alcance é o PAPEL, não o vínculo: o contrato fala de gestor, sem dizer
+ * "gestor daquele time" — a calibração é uma leitura de distribuição entre
+ * avaliadores, não uma ação sobre alguém. Por isso o gestor SEM vínculo
+ * nenhum também passa, e o caso está aqui para que essa escolha seja
+ * deliberada, e não um efeito colateral da fixture.
+ */
+async function alcancaCalibracao(user: SessionUser): Promise<boolean> {
+  const queryClient = createAppQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, user);
+  try {
+    await requireCalibrationReach({ context: { queryClient } });
+    return true;
+  } catch (erro) {
+    if (isRedirect(erro)) return false;
+    throw erro;
+  }
+}
+
+describe("requireCalibrationReach — a guarda da leitura de calibração", () => {
+  it("nega a quem é member", async () => {
+    expect(await alcancaCalibracao(fixtureMemberUser)).toBe(false);
+  });
+
+  it("nega ao tech lead, mesmo com vínculo no time", async () => {
+    expect(await alcancaCalibracao(fixtureAssignedTechLeadUser)).toBe(false);
+  });
+
+  it("deixa passar o gestor", async () => {
+    expect(await alcancaCalibracao(fixtureAssignedManagerUser)).toBe(true);
+  });
+
+  it("deixa passar o gestor SEM vínculo — o alcance é o papel, não o time", async () => {
+    const gestorSemVinculo: SessionUser = { ...fixtureAssignedManagerUser, memberships: [] };
+    expect(await alcancaCalibracao(gestorSemVinculo)).toBe(true);
+  });
+
+  it("deixa passar o admin", async () => {
+    expect(await alcancaCalibracao(fixtureAdminUser)).toBe(true);
   });
 });
