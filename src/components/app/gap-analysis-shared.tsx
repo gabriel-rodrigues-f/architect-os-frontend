@@ -165,7 +165,7 @@ export function GapTable({
   );
 }
 
-export const MAX_HEATMAP_COLUMNS = 12;
+export const MAX_HEATMAP_COLUMNS = 20;
 
 export function capHeatmapColumns<C extends { id: string }>(
   capabilities: readonly C[],

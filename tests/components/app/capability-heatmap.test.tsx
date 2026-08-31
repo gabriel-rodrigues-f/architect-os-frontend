@@ -2,6 +2,7 @@ import { cleanup, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
+import { MAX_HEATMAP_COLUMNS } from "@/components/app/gap-analysis-shared";
 import { type AppState } from "@/lib/api";
 import { createSelectors } from "@/lib/selectors";
 import { fixtureState } from "../../helpers/fixtures";
@@ -120,15 +121,18 @@ describe("CapabilityHeatmap", () => {
     expect(itens.some((i) => i.textContent?.startsWith("L5"))).toBe(true);
   });
 
-  it("coluna cortada pelo teto de colunas não renderiza; 'mostrar todas' traz de volta", async () => {
-    // 13 capacidades (> MAX_HEATMAP_COLUMNS = 12) — a de menor gap sai do corte.
-    const manyCaps = Array.from({ length: 13 }, (_, i) => ({
+  const comCatalogoDe = (quantas: number): AppState => ({
+    ...fixtureState,
+    capabilities: Array.from({ length: quantas }, (_, i) => ({
       ...fixtureState.capabilities[0]!,
-      id: `cap-${i}`,
-      name: `Capacidade ${i}`,
-      short: `C${i}`,
-    }));
-    const state: AppState = { ...fixtureState, capabilities: manyCaps };
+      id: `cap-${String(i)}`,
+      name: `Capacidade ${String(i)}`,
+      short: `C${String(i)}`,
+    })),
+  });
+
+  const renderComCatalogoDe = (quantas: number) => {
+    const state = comCatalogoDe(quantas);
     mockAppFetch(fetchMock, { state });
     const sel = createSelectors(state);
     renderWithApp(
@@ -138,11 +142,33 @@ describe("CapabilityHeatmap", () => {
         capabilityAveragesFor={sel.capabilityAverages}
       />,
     );
+  };
+
+  it("coluna cortada pelo teto de colunas não renderiza; 'mostrar todas' traz de volta", async () => {
+    // 21 capacidades (> MAX_HEATMAP_COLUMNS) — a de menor gap sai do corte.
+    renderComCatalogoDe(MAX_HEATMAP_COLUMNS + 1);
 
     await screen.findByText("Ana Martins");
     const headers = screen.getAllByRole("columnheader");
-    // 1 coluna de arquiteto + 12 capacidades visíveis (uma cortada).
-    expect(headers.length).toBe(1 + 12);
+    expect(headers.length).toBe(1 + MAX_HEATMAP_COLUMNS);
     expect(screen.getByRole("button", { name: /todas/i })).toBeTruthy();
+  });
+
+  /**
+   * ONDA21/mapa-unico, item V7 do dono — o catálogo real tem 13 capacidades e
+   * o teto de 12 escondia exatamente UMA, produzindo a frase "Mostrando as 12
+   * capacidades com pior gap de 13", que o dono leu e perguntou o que
+   * significava. Esconder 1 de 13 não encurta rolagem nenhuma: a tabela já
+   * rola por desenho, com coluna de nome fixa e gradientes de borda. O teto
+   * existe para o catálogo que de fato transbordou a tela, não para cobrar uma
+   * capacidade escondida e uma frase confusa por meia rolagem economizada.
+   */
+  it("um catálogo do tamanho do real (13) aparece inteiro, sem aviso de corte", async () => {
+    renderComCatalogoDe(13);
+
+    await screen.findByText("Ana Martins");
+    expect(screen.getAllByRole("columnheader").length).toBe(1 + 13);
+    expect(screen.queryByText(/Mostrando as/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /todas/i })).toBeNull();
   });
 });
