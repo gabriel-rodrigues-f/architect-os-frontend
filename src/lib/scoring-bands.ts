@@ -18,6 +18,8 @@ export interface ScoringBand {
 
 export type ScoringBands = Record<ScoringScale, readonly ScoringBand[]>;
 
+export type ServedScoringBands = Partial<Record<ScoringScale, readonly ScoringBand[] | undefined>>;
+
 type DefaultScoringBand = ScoringBand & { labelKey: MessageKey };
 
 export const DEFAULT_SCORING_BANDS: Record<
@@ -231,9 +233,7 @@ export class GapSeverityRuler {
 export class ScoringRuler {
   private constructor(readonly scales: ScoringBands) {}
 
-  static fromLoaded(
-    loaded?: Partial<Record<ScoringScale, readonly ScoringBand[] | undefined>>,
-  ): ScoringRuler {
+  static fromLoaded(loaded?: ServedScoringBands): ScoringRuler {
     const served = (scale: ScoringScale): readonly ScoringBand[] => {
       const bands = loaded?.[scale];
       return bands !== undefined && bands.length > 0 ? bands : DEFAULT_SCORING_BANDS[scale];

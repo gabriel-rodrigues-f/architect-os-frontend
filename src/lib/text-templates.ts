@@ -9,6 +9,8 @@ export const TEXT_TEMPLATE_VARIABLES: Record<TextTemplateKey, readonly string[]>
 
 export type TextTemplates = Record<TextTemplateKey, Record<string, string>>;
 
+export type ServedTextTemplates = Record<string, Record<string, string> | undefined>;
+
 const BASE_LOCALE_TEXT_TEMPLATES: Record<TextTemplateKey, string> = {
   "pdi.objective.fromGap": "Evoluir {competencia} do nível {atual} para o nível {alvo}",
 };
@@ -61,7 +63,7 @@ export class TextTemplateRenderer {
     private readonly locale: string,
   ) {}
 
-  static resolve(loaded?: Record<string, Record<string, string> | undefined>): TextTemplates {
+  static resolve(loaded?: ServedTextTemplates): TextTemplates {
     const served = (key: TextTemplateKey): Record<string, string> => {
       const nonBlank = Object.entries(loaded?.[key] ?? {}).filter(
         ([, template]) => template.trim().length > 0,
@@ -76,7 +78,7 @@ export class TextTemplateRenderer {
   }
 
   static fromLoaded(
-    loaded?: Record<string, Record<string, string> | undefined>,
+    loaded?: ServedTextTemplates,
     locale: string = BASE_LOCALE,
   ): TextTemplateRenderer {
     return TextTemplateRenderer.over(TextTemplateRenderer.resolve(loaded), locale);
