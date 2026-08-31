@@ -24,6 +24,7 @@ import { useCurrentUser } from "@/lib/auth";
 import type { CareerLevel } from "@/lib/domain";
 import type { TeamRuleView } from "@/lib/gateways/career.gateway";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { requireLeadReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useOperationalSettings, useStore } from "@/lib/store";
@@ -47,6 +48,7 @@ const LEVEL_OPTIONS = [1, 2, 3, 4, 5];
 
 function TeamRulesPage() {
   const { t } = useI18n();
+  const help = usePageHelp("teamRules");
   const user = useCurrentUser();
   const canConfigure = defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user);
 
@@ -64,7 +66,11 @@ function TeamRulesPage() {
   if (!canConfigure) {
     return (
       <>
-        <PageHeader title={t("teamRules.title")} description={t("teamRules.description")} />
+        <PageHeader
+          title={t("teamRules.title")}
+          description={t("teamRules.description")}
+          help={help}
+        />
         <EmptyState title={t("teamRules.leadOnly")} hint={t("teamRules.leadOnlyHint")} />
       </>
     );
@@ -81,7 +87,11 @@ function TeamRulesPage() {
 
   return (
     <>
-      <PageHeader title={t("teamRules.title")} description={t("teamRules.description")} />
+      <PageHeader
+        title={t("teamRules.title")}
+        description={t("teamRules.description")}
+        help={help}
+      />
 
       {teamId === null || careerLevel === null ? (
         <EmptyState title={t("teamRules.noTeam")} />

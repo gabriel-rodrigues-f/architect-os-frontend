@@ -15,6 +15,7 @@ import {
 import { calibrationApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { usePageHelp } from "@/lib/page-help";
 import { requireCalibrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
@@ -49,6 +50,7 @@ const CARDS_SKELETON = (
 
 function CalibrationPage() {
   const { t } = useI18n();
+  const help = usePageHelp("calibration");
   const vm = useCalibrationViewModel();
   const store = useStore();
   const user = useCurrentUser();
@@ -65,7 +67,11 @@ function CalibrationPage() {
   if (!canCalibrate) {
     return (
       <>
-        <PageHeader title={t("calibration.title")} description={t("calibration.description")} />
+        <PageHeader
+          title={t("calibration.title")}
+          description={t("calibration.description")}
+          help={help}
+        />
         <EmptyState title={t("calibration.restricted")} hint={t("calibration.restrictedHint")} />
       </>
     );
@@ -73,7 +79,11 @@ function CalibrationPage() {
 
   return (
     <>
-      <PageHeader title={t("calibration.title")} description={t("calibration.description")} />
+      <PageHeader
+        title={t("calibration.title")}
+        description={t("calibration.description")}
+        help={help}
+      />
 
       {cycleId === null ? (
         <EmptyState title={t("calibration.noCycle")} />

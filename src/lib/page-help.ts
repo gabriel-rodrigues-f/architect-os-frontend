@@ -19,7 +19,9 @@ type PageHelpRouteKey =
   | "settings"
   | "users"
   | "architectProfile"
-  | "architectEvolution";
+  | "architectEvolution"
+  | "teamRules"
+  | "calibration";
 
 export function usePageHelp(route: PageHelpRouteKey): {
   lead: PageHelpContent;
