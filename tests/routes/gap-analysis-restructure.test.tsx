@@ -24,7 +24,7 @@ import { Route as GapRoute } from "@/routes/gap-analysis";
 import { type AppState } from "@/lib/api";
 import type { Assessment, Competency } from "@/lib/domain";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { renderWithApp } from "../helpers/render-app";
+import { configurationRoute, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -118,6 +118,8 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
           }),
         );
       }
+      const configuration = configurationRoute(String(url));
+      if (configuration) return Promise.resolve(configuration);
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
   });
@@ -196,6 +198,8 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
           }),
         );
       }
+      const configuration = configurationRoute(String(url));
+      if (configuration) return Promise.resolve(configuration);
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
 
@@ -278,6 +282,8 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
           }),
         );
       }
+      const configuration = configurationRoute(String(url));
+      if (configuration) return Promise.resolve(configuration);
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
 
