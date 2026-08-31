@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
+import en from "@/locales/en.json";
+import pt from "@/locales/pt.json";
+
 /**
  * Toda tela se explica — a catraca do `?`.
  *
@@ -92,6 +95,44 @@ class Tela {
   }
 }
 
+/**
+ * O `?` existir não é o mesmo que o `?` dizer alguma coisa.
+ *
+ * `usePageHelp("x")` monta as chaves `help.x.<persona>.<campo>` e o `t()` devolve a
+ * própria chave quando ela não existe. Sem esta varredura, uma tela podia passar na
+ * catraca acima e abrir o popover mostrando `help.notices.lead.what` cru para o
+ * usuário — verde por fora, oco por dentro. O teste de i18n não pega isso: ele
+ * confere pt contra en, e uma chave que falta nos DOIS está em paridade perfeita.
+ */
+class ChavesDaAjuda {
+  private static readonly PERSONAS = ["lead", "member"] as const;
+  private static readonly CAMPOS = ["title", "what", "comesFrom", "nextStep"] as const;
+
+  static pedidasPelasTelas(): readonly string[] {
+    const fontes = ChavesDaAjuda.arquivosDe(resolve(AQUI, "../../src"));
+    const rotas = new Set<string>();
+    for (const arquivo of fontes) {
+      for (const achado of readFileSync(arquivo, "utf8").matchAll(/usePageHelp\("([^"]+)"\)/g)) {
+        const rota = achado[1];
+        if (rota !== undefined) rotas.add(rota);
+      }
+    }
+    return [...rotas].flatMap((rota) =>
+      ChavesDaAjuda.PERSONAS.flatMap((persona) =>
+        ChavesDaAjuda.CAMPOS.map((campo) => `help.${rota}.${persona}.${campo}`),
+      ),
+    );
+  }
+
+  private static arquivosDe(raiz: string): string[] {
+    return readdirSync(raiz, { withFileTypes: true }).flatMap((entrada) => {
+      const caminho = join(raiz, entrada.name);
+      if (entrada.isDirectory()) return ChavesDaAjuda.arquivosDe(caminho);
+      return /\.tsx?$/.test(entrada.name) ? [caminho] : [];
+    });
+  }
+}
+
 const telas = readdirSync(ROTAS)
   .filter((arquivo) => arquivo.endsWith(".tsx") && !arquivo.endsWith(".gen.tsx"))
   .map((arquivo) => Tela.ler(arquivo))
@@ -122,5 +163,29 @@ describe("toda tela se explica", () => {
       (arquivo) => !telas.find((tela) => tela.arquivo === arquivo)?.muda,
     );
     expect(jaPagas, "tire da lista: a catraca só desce quando a lista desce junto").toEqual([]);
+  });
+
+  it("toda chave de ajuda que uma tela pede EXISTE, nos dois idiomas", () => {
+    const pedidas = ChavesDaAjuda.pedidasPelasTelas();
+    expect(pedidas.length, "nenhuma tela chama usePageHelp — a varredura quebrou").toBeGreaterThan(
+      100,
+    );
+    const dicionarios: ReadonlyArray<readonly [string, Record<string, unknown>]> = [
+      ["pt", pt as Record<string, unknown>],
+      ["en", en as Record<string, unknown>],
+    ];
+    const ausentes = dicionarios.flatMap(([idioma, dicionario]) =>
+      pedidas
+        .filter((chave) => typeof dicionario[chave] !== "string")
+        .map((chave) => `${idioma}:${chave}`),
+    );
+    expect(ausentes, "o popover mostraria a chave crua para o usuário").toEqual([]);
+  });
+
+  it("nenhuma ajuda é texto vazio — o ? abriria em branco", () => {
+    const vazias = ChavesDaAjuda.pedidasPelasTelas().filter(
+      (chave) => ((pt as Record<string, unknown>)[chave] as string | undefined)?.trim() === "",
+    );
+    expect(vazias).toEqual([]);
   });
 });
