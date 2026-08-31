@@ -531,8 +531,8 @@
   "evolution.filters.capabilities": "Capacidades",
   "evolution.loading": "Carregando evolução…",
   "evolution.error": "Não foi possível carregar a evolução.",
-  "evolution.kpi.initialAverage": "Nível médio inicial",
-  "evolution.kpi.currentAverage": "Nível médio atual",
+  "evolution.kpi.initialAverage": "Nível médio no início do período",
+  "evolution.kpi.currentAverage": "Nível médio no fim do período",
   "evolution.kpi.delta": "Δ evolução",
   "evolution.kpi.coverage": "Cobertura",
   "evolution.kpi.mentoring": "Mentorias no período",
@@ -986,7 +986,7 @@
   "notices.error": "Não foi possível carregar os avisos.",
   "dataOrigin.demonstration": "Dados de demonstração: esta tela ainda não lê a organização. O conteúdo abaixo é um exemplo fabricado, não informação real de ninguém.",
   "arch.stat.avgLevel": "Nível médio",
-  "arch.stat.avgLevelHint": "Média das competências avaliadas",
+  "arch.stat.avgLevelHint": "Média das capacidades avaliadas no ciclo atual",
   "arch.stat.avgLevelHintPartial": "{covered} de {total} capacidades com avaliação oficial neste ciclo",
   "arch.stat.openGaps": "Gaps abertos",
   "arch.stat.openGapsHint": "Competências abaixo do nível esperado",
@@ -1387,5 +1387,8 @@
   "ref.taxonomies.actionTypes": "Tipos de ação",
   "ref.taxonomies.evidenceTypes": "Tipos de evidência",
   "nav.myCareer": "Minha carreira",
-  "nav.group.ruler": "A Régua"
+  "nav.group.ruler": "A Régua",
+  "pdi.newAction.blocked.approved": "PDI aprovado — peça ajustes para incluir nova ação",
+  "pdi.newAction.blocked.completed": "PDI concluído — este ciclo não recebe ação nova",
+  "pdi.newAction.blocked.notYours": "Você não pode incluir ação no PDI desta pessoa"
 }

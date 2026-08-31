@@ -132,7 +132,7 @@ function ArchitectRoadmap() {
             ) : (
               <AdherenceSummary
                 label={t("roadmap.currentLevelLabel", { nome: currentLevel.name })}
-                percentage={data.adherence.percentage}
+                percentage={vm.adherencePercent(data)}
                 missingCount={data.adherence.missingRequired.length}
               />
             )
@@ -150,7 +150,7 @@ function ArchitectRoadmap() {
               ) : (
                 <AdherenceSummary
                   label={t("roadmap.nextLevelLabel", { nome: nextLevel.name })}
-                  percentage={data.adherence.percentage}
+                  percentage={vm.adherencePercent(data)}
                   missingCount={data.adherence.missingRequired.length}
                 />
               )

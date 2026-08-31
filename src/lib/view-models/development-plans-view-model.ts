@@ -34,7 +34,7 @@ export class DevelopmentPlansViewModel {
   }
 
   workflowFor(plan: DevelopmentPlan | undefined, reach: PlanActorReach): PlanWorkflowPolicy {
-    return new PlanWorkflowPolicy(this.statusOf(plan), reach);
+    return PlanWorkflowPolicy.forPlan(plan, reach);
   }
 
   async approve(planId: string): Promise<DevelopmentPlan> {

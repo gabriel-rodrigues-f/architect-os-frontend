@@ -13,6 +13,7 @@ import {
   SectionGroup,
   semanticTone,
   StatCard,
+  TreatGapInPlanAction,
 } from "@/components/app";
 import { useLabels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -266,16 +267,11 @@ function ArchitectWorkspace() {
                       <span className="text-xs text-muted-foreground">→ {g.item.target}</span>
                       <GapBadge gap={g.gap} />
                       {canEditOwn && !inPlan && (
-                        <Link
-                          to="/development-plans"
-                          search={{
-                            architectId: architect.id,
-                            competencyId: g.item.competencyId,
-                          }}
-                          className="whitespace-nowrap text-xs text-primary hover:underline"
-                        >
-                          {t("arch.gaps.addToPlan")}
-                        </Link>
+                        <TreatGapInPlanAction
+                          architectId={architect.id}
+                          competencyId={g.item.competencyId}
+                          label={t("arch.gaps.addToPlan")}
+                        />
                       )}
                     </span>
                   </li>

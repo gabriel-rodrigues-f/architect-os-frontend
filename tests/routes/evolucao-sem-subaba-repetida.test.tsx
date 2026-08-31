@@ -186,7 +186,7 @@ describe("Evolução do arquiteto — nenhuma subvisão repete a vizinha", () =>
     expect(visivel, "nenhuma subvisão visível").toBeTruthy();
     const painel = within(visivel!);
 
-    expect(painel.getByText("Nível médio inicial")).toBeTruthy();
+    expect(painel.getByText("Nível médio no início do período")).toBeTruthy();
     expect(painel.getByText("Maiores mudanças no período")).toBeTruthy();
     expect(
       painel.getByText(
