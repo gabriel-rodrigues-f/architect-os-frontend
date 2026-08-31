@@ -3,13 +3,7 @@ import type { ReactNode } from "react";
 import { SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-
-interface QuerySectionQuery<T> {
-  data: T | undefined;
-  isPending: boolean;
-  isError: boolean;
-  refetch: () => unknown;
-}
+import type { QueryState } from "@/lib/observed-query";
 
 export function QuerySection<T>({
   query,
@@ -21,7 +15,7 @@ export function QuerySection<T>({
   isEmpty,
   children,
 }: {
-  query: QuerySectionQuery<T>;
+  query: QueryState<T>;
 
   title?: string;
   description?: string;
