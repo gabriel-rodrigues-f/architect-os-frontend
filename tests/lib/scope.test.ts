@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { isLeadCapable, type SessionUser, type UserRole } from "@/lib/api";
 import { UiAuthorizationPolicy } from "@/lib/scope";
 import {
   fixtureAdminUser,
@@ -190,5 +191,85 @@ describe("o lead-arquiteto que lidera o próprio time", () => {
 
   it("sem vínculo, nada muda: continua não sendo lead de si mesmo", () => {
     expect(policy.isLeadOf({ ...leadArquiteto, memberships: [] }, eleMesmo)).toBe(false);
+  });
+});
+
+/**
+ * ADR-0047 do backend — `users.role` deixou de ser `(admin, lead, member)` e
+ * passou a `(admin, manager, tech_lead, member)`. Nenhum zod valida
+ * `/auth/me` aqui: com o backend novo e a política velha não há erro de
+ * parse, o ramo errado é escolhido em silêncio. Estes casos são o oráculo
+ * dos dois eixos do ADR:
+ *
+ *   ALCANCE = união dos times com vínculo de liderança, exigido papel de
+ *   liderança (gestor OU tech lead);
+ *   PODER ESTRITO = papel global E vínculo NAQUELE time, os dois iguais.
+ */
+describe("os quatro papéis — alcance é união, poder é estrito", () => {
+  const policy = new UiAuthorizationPolicy();
+  const TIME = "time-plataforma";
+  const OUTRO_TIME = "time-integracao";
+  const anaNoTime = { id: "ana", teamId: TIME };
+
+  const conta = (role: string, memberships: readonly { teamId: string; role: string }[]) =>
+    ({
+      ...fixtureMemberUser,
+      id: `conta-${role}`,
+      architectId: null,
+      role,
+      memberships,
+    }) as unknown as SessionUser;
+
+  const gestor = conta("manager", [{ teamId: TIME, role: "manager" }]);
+  const techLead = conta("tech_lead", [{ teamId: TIME, role: "tech_lead" }]);
+  const doisChapeus = conta("manager", [
+    { teamId: TIME, role: "manager" },
+    { teamId: OUTRO_TIME, role: "tech_lead" },
+  ]);
+
+  it("o gestor alcança o roster do time onde tem vínculo", () => {
+    expect(policy.isLeadOf(gestor, anaNoTime)).toBe(true);
+    expect(policy.canActFor(gestor, anaNoTime)).toBe(true);
+  });
+
+  it("o tech lead alcança o roster do time onde tem vínculo", () => {
+    expect(policy.isLeadOf(techLead, anaNoTime)).toBe(true);
+    expect(policy.canActFor(techLead, anaNoTime)).toBe(true);
+  });
+
+  it("os dois regem a régua do time onde têm vínculo", () => {
+    expect(policy.canConfigureRulesOf(gestor, TIME)).toBe(true);
+    expect(policy.canConfigureRulesOf(techLead, TIME)).toBe(true);
+    expect(policy.canConfigureAnyTeamRules(gestor)).toBe(true);
+    expect(policy.canConfigureAnyTeamRules(techLead)).toBe(true);
+  });
+
+  it("a conta de dois chapéus alcança os DOIS times — alcance é a união dos vínculos", () => {
+    expect([...(policy.configurableTeamIds(doisChapeus) as ReadonlySet<string>)].sort()).toEqual([
+      OUTRO_TIME,
+      TIME,
+    ]);
+  });
+
+  it("member com vínculo de liderança continua sem alcance — papel E vínculo, juntos", () => {
+    const membroComVinculo = conta("member", [{ teamId: TIME, role: "manager" }]);
+
+    expect(policy.isLeadOf(membroComVinculo, anaNoTime)).toBe(false);
+    expect(policy.canConfigureRulesOf(membroComVinculo, TIME)).toBe(false);
+  });
+
+  it("o poder estrito de tech lead exige papel E vínculo tech_lead — o gestor NÃO passa", () => {
+    const gestorComVinculoTecnico = conta("manager", [{ teamId: TIME, role: "tech_lead" }]);
+
+    expect(policy.isAssignedTechLeadOf(techLead, anaNoTime)).toBe(true);
+    expect(policy.isAssignedTechLeadOf(gestorComVinculoTecnico, anaNoTime)).toBe(false);
+    expect(policy.isAssignedTechLeadOf(doisChapeus, anaNoTime)).toBe(false);
+  });
+
+  it("gestor e tech lead são capazes de liderança para o texto de ajuda e o catálogo", () => {
+    expect(isLeadCapable("manager" as UserRole)).toBe(true);
+    expect(isLeadCapable("tech_lead" as UserRole)).toBe(true);
+    expect(isLeadCapable("admin")).toBe(true);
+    expect(isLeadCapable("member")).toBe(false);
   });
 });

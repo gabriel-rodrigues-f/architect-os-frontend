@@ -52,6 +52,33 @@ const fixtureLeadOfAna: SessionUser = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
+/**
+ * ADR-0047 do backend — o `lead` morreu e virou `manager` + `tech_lead`. O
+ * ternário do painel não era exaustivo: papel que não fosse `lead` nem
+ * `member` caía no `AdminHome` por OMISSÃO, calado. O gestor é o caso que
+ * morde na aplicação do dono (`gestor@synapse.com.br`).
+ */
+const fixtureGestorDeAna = {
+  id: "test-gestor-de-ana",
+  email: "gestor-de-ana@company.com",
+  name: "Gestor de Ana",
+  role: "manager",
+  architectId: null,
+  status: "active",
+  mustChangePassword: false,
+  createdAt: "2026-01-01T00:00:00Z",
+  memberships: [{ teamId: "time-de-ana", role: "manager" }],
+} as unknown as SessionUser;
+
+const fixtureTechLeadDeAna = {
+  ...fixtureGestorDeAna,
+  id: "test-techlead-de-ana",
+  email: "techlead-de-ana@company.com",
+  name: "Tech Lead de Ana",
+  role: "tech_lead",
+  memberships: [{ teamId: "time-de-ana", role: "tech_lead" }],
+} as unknown as SessionUser;
+
 const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 
 /** OO3-11/D-7 — setup compartilhado em `render-app.tsx`. */
@@ -99,6 +126,35 @@ describe("Painel — Home por papel", () => {
     await screen.findByText("Pendências do Lead");
     expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
     expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
+  });
+
+  it("gestor vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
+    const state: AppState = {
+      ...fixtureState,
+      architects: fixtureState.architects.map((a) =>
+        a.id === "ana" ? { ...a, teamId: "time-de-ana" } : a,
+      ),
+    };
+    renderAs(fixtureGestorDeAna, scopedFixtureStateFor(fixtureGestorDeAna, state, ["time-de-ana"]));
+    await screen.findByText("Pendências do Lead");
+    expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
+    expect(await screen.findByText(/ADR-014/)).toBeTruthy();
+  });
+
+  it("tech lead vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
+    const state: AppState = {
+      ...fixtureState,
+      architects: fixtureState.architects.map((a) =>
+        a.id === "ana" ? { ...a, teamId: "time-de-ana" } : a,
+      ),
+    };
+    renderAs(
+      fixtureTechLeadDeAna,
+      scopedFixtureStateFor(fixtureTechLeadDeAna, state, ["time-de-ana"]),
+    );
+    await screen.findByText("Pendências do Lead");
+    expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
+    expect(await screen.findByText(/ADR-014/)).toBeTruthy();
   });
 
   it("lead com pessoa atribuída vê a evidência Pending dela na fila", async () => {
