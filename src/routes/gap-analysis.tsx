@@ -6,6 +6,7 @@ import {
   CapabilityRadar,
   EmptyState,
   GapBadge,
+  GapClosureSection,
   NameList,
   PageHeader,
   SectionCard,
@@ -123,6 +124,10 @@ function GapPage() {
           </SectionCard>
         </div>
       )}
+
+      <div className="mt-6">
+        <GapClosureSection />
+      </div>
     </>
   );
 }

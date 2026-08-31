@@ -121,6 +121,47 @@ export const calibrationResponseSchema = z.object({
     .optional(),
 });
 
+const gapCycleTotal = z.object({
+  cycleId: z.string(),
+  cycleName: z.string(),
+  totalGap: z.number(),
+  pairCount: z.number(),
+});
+
+const gapMovement = z.object({
+  kind: z.enum(["CLOSED", "REDUCED", "INCREASED", "OPENED", "DROPPED", "STABLE"]),
+  pairCount: z.number(),
+  amount: z.number(),
+});
+
+export const gapClosureResponseSchema = z.object({
+  waterfall: z
+    .object({
+      from: gapCycleTotal,
+      to: gapCycleTotal,
+      movements: z.array(gapMovement),
+    })
+    .nullable(),
+  velocity: z
+    .object({
+      fromCycleId: z.string(),
+      toCycleId: z.string(),
+      gapsOpenAtStart: z.number(),
+      gapsClosed: z.number(),
+      gapsOpened: z.number(),
+      netClosed: z.number(),
+      closureRate: z.number().nullable(),
+      elapsedDays: z.number(),
+      closedPerDay: z.number().nullable(),
+    })
+    .nullable(),
+});
+
+export const gapClosureExplanationResponseSchema = z.object({
+  subject: z.string(),
+  text: z.string(),
+});
+
 const careerLevel = z.object({
   id: z.string(),
   name: z.string(),
