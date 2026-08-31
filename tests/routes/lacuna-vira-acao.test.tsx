@@ -179,4 +179,27 @@ describe("Plano — o destino abre a criação do item já na competência receb
     await screen.findByText("Maiores gaps");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+
+  /**
+   * O plano aprovado fecha o diagnóstico: a lista de sugestões some junto
+   * com o gatilho de criar item. O endereço digitado à mão não pode ser a
+   * porta lateral que reabre o que a aprovação fechou.
+   */
+  it("não abre em plano já aprovado, nem para quem pode agir pela pessoa", async () => {
+    irPara("?architectId=ana&competencyId=cloud-serverless");
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoBase });
+    renderWithApp(<PlansPage />);
+
+    await screen.findByText("Maiores gaps");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("ignora competência que não existe em vez de quebrar a tela", async () => {
+    irPara("?architectId=ana&competencyId=competencia-que-nao-existe");
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoComPlanoEmRascunho });
+    renderWithApp(<PlansPage />);
+
+    await screen.findByText("Maiores gaps");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
 });
