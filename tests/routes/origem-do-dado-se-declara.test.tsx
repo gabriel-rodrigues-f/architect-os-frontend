@@ -32,7 +32,7 @@ import { HttpCalibrationGateway } from "@/lib/gateways/calibration.gateway";
 import { HttpNoticesGateway } from "@/lib/gateways/notices.gateway";
 import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as NoticesRoute } from "@/routes/notices";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureState, fixtureTeamLeadUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -138,12 +138,20 @@ describe("/calibration declara que a distribuição é de demonstração", () =>
   });
 });
 
+/**
+ * Onda 21 — a sessão daqui passou a ser a do TECH LEAD, não a do admin.
+ * O mock de avisos deixou de tratar admin como destinatário universal: o
+ * CONTRATO do PRD-02 nomeia dois destinatários (o líder, pelo TIME; a pessoa,
+ * pelos próprios avisos) e o admin não é nenhum dos dois. Com sessão de admin
+ * a Central abre vazia — e uma tela vazia não prova nada sobre carimbo de
+ * origem. O que este arquivo verifica continua sendo o carimbo, não o recorte.
+ */
 describe("o sino de avisos declara que os avisos são de demonstração", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureTeamLeadUser,
       state: fixtureState,
       routes: [noticesRoute],
     });
@@ -158,7 +166,7 @@ describe("o sino de avisos declara que os avisos são de demonstração", () => 
   it("com o gateway in-memory registrado, o sino declara a origem do dado", async () => {
     renderWithApp(<NoticeBell />);
     await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-    await screen.findByText(/Avaliação de Bruno Almeida está parada/);
+    await screen.findByText(/Evidência de Carla Souza espera revisão/);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 
@@ -172,7 +180,7 @@ describe("o sino de avisos declara que os avisos são de demonstração", () => 
 
   it("a central de avisos inteira declara a origem enquanto o mock a serve", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText(/Avaliação de Bruno Almeida está parada/);
+    await screen.findByText(/Evidência de Carla Souza espera revisão/);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 
