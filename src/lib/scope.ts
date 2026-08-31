@@ -43,6 +43,10 @@ export class UiAuthorizationPolicy {
     return user.role === "admin";
   }
 
+  canAnalyzeTeam(user: SessionUser): boolean {
+    return user.role !== "member";
+  }
+
   canConfigureRulesOf(user: SessionUser, teamId: string): boolean {
     const reach = this.configurableTeamIds(user);
     return reach === "all" || reach.has(teamId);

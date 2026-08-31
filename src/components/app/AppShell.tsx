@@ -5,6 +5,7 @@ import {
   CalendarRange,
   ChevronDown,
   ClipboardCheck,
+  Compass,
   GitCompare,
   GraduationCap,
   Grid3x3,
@@ -54,7 +55,13 @@ interface NavItem {
   adminOnly?: boolean;
 
   teamRuleReachOnly?: boolean;
+
+  teamAnalysisOnly?: boolean;
+
+  ownCareerOnly?: boolean;
 }
+
+const OWN_ARCHITECT_PARAM = "$architectId";
 
 interface NavGroup {
   labelKey?: MessageKey;
@@ -62,6 +69,17 @@ interface NavGroup {
 }
 
 export const NAV_GROUPS: NavGroup[] = [
+  {
+    items: [
+      {
+        to: `/architects/${OWN_ARCHITECT_PARAM}/roadmap`,
+        labelKey: "nav.myCareer",
+        icon: Compass,
+        activePrefixes: [`/architects/${OWN_ARCHITECT_PARAM}`],
+        ownCareerOnly: true,
+      },
+    ],
+  },
   {
     labelKey: "nav.group.operation",
     items: [
@@ -73,11 +91,31 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     labelKey: "nav.capabilities",
     items: [
-      { to: "/capability-map", labelKey: "cap.tabs.coverage", icon: Map },
-      { to: "/gap-analysis", labelKey: "cap.tabs.priorities", icon: ListOrdered },
-      { to: "/progression", labelKey: "cap.tabs.progression", icon: TrendingUp },
-      { to: "/training-needs", labelKey: "cap.tabs.collective", icon: Layers },
-      { to: "/compare", labelKey: "cap.tabs.comparison", icon: GitCompare },
+      { to: "/capability-map", labelKey: "cap.tabs.coverage", icon: Map, teamAnalysisOnly: true },
+      {
+        to: "/gap-analysis",
+        labelKey: "cap.tabs.priorities",
+        icon: ListOrdered,
+        teamAnalysisOnly: true,
+      },
+      {
+        to: "/progression",
+        labelKey: "cap.tabs.progression",
+        icon: TrendingUp,
+        teamAnalysisOnly: true,
+      },
+      {
+        to: "/training-needs",
+        labelKey: "cap.tabs.collective",
+        icon: Layers,
+        teamAnalysisOnly: true,
+      },
+      {
+        to: "/compare",
+        labelKey: "cap.tabs.comparison",
+        icon: GitCompare,
+        teamAnalysisOnly: true,
+      },
     ],
   },
   {
@@ -86,6 +124,19 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/development-plans", labelKey: "nav.developmentPlans", icon: Target },
       { to: "/learning-paths", labelKey: "nav.learningPaths", icon: BookOpen },
       { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
+      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
+    ],
+  },
+  {
+    labelKey: "nav.group.ruler",
+    items: [
+      {
+        to: "/team-rules",
+        labelKey: "nav.teamRules",
+        icon: Ruler,
+        teamRuleReachOnly: true,
+      },
+      { to: "/settings", labelKey: "nav.settings", icon: Scale },
     ],
   },
   {
@@ -97,32 +148,52 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Grid3x3,
         adminOnly: true,
       },
-      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
       { to: "/calibration", labelKey: "nav.calibration", icon: BarChart3, adminOnly: true },
-      {
-        to: "/team-rules",
-        labelKey: "nav.teamRules",
-        icon: Ruler,
-        teamRuleReachOnly: true,
-      },
-
-      { to: "/settings", labelKey: "nav.settings", icon: Scale },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
 ];
 
+class NavigationOfUser {
+  constructor(
+    private readonly user: SessionUser | undefined,
+    private readonly policy = defaultUiAuthorizationPolicy,
+  ) {}
+
+  reaches(item: NavItem): boolean {
+    const user = this.user;
+    if (item.adminOnly && !(user && this.policy.isAdmin(user))) return false;
+    if (item.teamRuleReachOnly && !(user && this.policy.canConfigureAnyTeamRules(user))) {
+      return false;
+    }
+    if (item.teamAnalysisOnly && !(user && this.policy.canAnalyzeTeam(user))) return false;
+    return !(item.ownCareerOnly && this.ownArchitectId === null);
+  }
+
+  addressed(item: NavItem): NavItem {
+    const architectId = this.ownArchitectId;
+    if (!item.ownCareerOnly || architectId === null) return item;
+    const resolve = (path: string) => path.replace(OWN_ARCHITECT_PARAM, architectId);
+    return {
+      ...item,
+      to: resolve(item.to),
+      ...(item.activePrefixes ? { activePrefixes: item.activePrefixes.map(resolve) } : {}),
+    };
+  }
+
+  private get ownArchitectId(): string | null {
+    return this.user?.architectId ?? null;
+  }
+}
+
 export function filterNavGroups(groups: NavGroup[], user: SessionUser | undefined): NavGroup[] {
+  const navigation = new NavigationOfUser(user);
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => {
-        if (item.adminOnly && !(user && defaultUiAuthorizationPolicy.isAdmin(user))) return false;
-        return !(
-          item.teamRuleReachOnly &&
-          !(user && defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user))
-        );
-      }),
+      items: group.items
+        .filter((item) => navigation.reaches(item))
+        .map((item) => navigation.addressed(item)),
     }))
     .filter((group) => group.items.length > 0);
 }
