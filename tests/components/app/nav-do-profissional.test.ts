@@ -77,7 +77,9 @@ describe("menu do profissional — o que é dele aparece", () => {
   it("quem não tem arquiteto vinculado não recebe o item — não há carreira a mostrar", () => {
     expect(destinos(fixtureAdminUser)).not.toContain("/architects/ana/roadmap");
     expect(destinos(fixtureAdminUser).some((destino) => destino.includes("/roadmap"))).toBe(false);
-    expect(destinos(fixtureUnassignedLeadUser).some((d) => d.includes("/roadmap"))).toBe(false);
+    expect(
+      destinos(fixtureUnassignedLeadUser).some((destino) => destino.includes("/roadmap")),
+    ).toBe(false);
   });
 
   it("sem sessão o menu não inventa carreira de ninguém", () => {
