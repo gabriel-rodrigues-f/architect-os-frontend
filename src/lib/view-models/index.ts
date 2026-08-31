@@ -7,6 +7,7 @@ export * from "./catalog-import-editor";
 export * from "./competency-matrix-view-model";
 export * from "./curation-policy-editor";
 export * from "./development-plans-view-model";
+export * from "./gap-closure-view-model";
 export * from "./learning-paths-view-model";
 export * from "./mentoring-view-model";
 export * from "./notices-view-model";

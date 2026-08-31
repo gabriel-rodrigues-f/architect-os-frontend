@@ -1,4 +1,5 @@
 export * from "./AdherenceSummary";
+export * from "./AiExplanation";
 export * from "./AppShell";
 export * from "./ArchitectFilter";
 export * from "./ArchitectNameCombobox";
@@ -12,6 +13,7 @@ export * from "./DataOriginCallout";
 export * from "./EvaluatorDistributionCard";
 export * from "./FilterField";
 export * from "./FilterTriggerButton";
+export * from "./GapClosureSection";
 export * from "./LearningPathCoverageList";
 export * from "./LoginScreen";
 export * from "./MultiSelectFilter";
