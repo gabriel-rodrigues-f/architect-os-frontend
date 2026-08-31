@@ -1,9 +1,4 @@
-import {
-  renderTemplate,
-  templateVariablesIn,
-  TEXT_TEMPLATE_VARIABLES,
-  type TextTemplateKey,
-} from "../text-templates";
+import { TextTemplate, TEXT_TEMPLATE_VARIABLES, type TextTemplateKey } from "../text-templates";
 
 export class TextTemplateEditor {
   private constructor(
@@ -26,7 +21,9 @@ export class TextTemplateEditor {
   }
 
   get unknownVariables(): string[] {
-    return templateVariablesIn(this.draft).filter((name) => !this.allowedVariables.includes(name));
+    return TextTemplate.of(this.draft).variableNames.filter(
+      (name) => !this.allowedVariables.includes(name),
+    );
   }
 
   get isEmpty(): boolean {
@@ -42,6 +39,6 @@ export class TextTemplateEditor {
   }
 
   preview(sampleVariables: Record<string, string | number>): string {
-    return renderTemplate(this.draft, sampleVariables);
+    return TextTemplate.of(this.draft).render(sampleVariables);
   }
 }

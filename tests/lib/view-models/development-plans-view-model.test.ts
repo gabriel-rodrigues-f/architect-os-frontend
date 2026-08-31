@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { DevelopmentPlan, SmartGoal } from "@/lib/domain";
 import type { Gap } from "@/lib/selectors";
-import { objectiveFromGapRenderer, withDefaultTextTemplates } from "@/lib/text-templates";
+import { TextTemplateRenderer } from "@/lib/text-templates";
 import { DevelopmentPlansViewModel, type DevelopmentPlanService } from "@/lib/view-models";
 
 /**
@@ -313,7 +313,7 @@ describe("DevelopmentPlansViewModel", () => {
       const service = fakeService();
       const vm = new DevelopmentPlansViewModel(
         service,
-        objectiveFromGapRenderer(withDefaultTextTemplates(), "en"),
+        TextTemplateRenderer.fromLoaded(undefined, "en").objectiveFromGap,
       );
       await vm.createItemFromGap("ana", officialGap, draft, "Ana Martins");
       expect(service.createPlanItemFromGap).toHaveBeenCalledWith(
@@ -326,12 +326,12 @@ describe("DevelopmentPlansViewModel", () => {
       const service = fakeService();
       const vm = new DevelopmentPlansViewModel(
         service,
-        objectiveFromGapRenderer(
-          withDefaultTextTemplates({
+        TextTemplateRenderer.fromLoaded(
+          {
             "pdi.objective.fromGap": { pt: "Levar {competencia} ao nível {alvo} (hoje {atual})" },
-          }),
+          },
           "pt",
-        ),
+        ).objectiveFromGap,
       );
       await vm.createItemFromGap("ana", officialGap, draft, "Ana Martins");
       expect(service.createPlanItemFromGap).toHaveBeenCalledWith(

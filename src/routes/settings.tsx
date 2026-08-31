@@ -42,7 +42,7 @@ import {
 } from "@/lib/view-models";
 import { defaultDateFormatter } from "@/lib/text";
 import {
-  renderTemplate,
+  TextTemplate,
   TEXT_TEMPLATE_KEYS,
   TEXT_TEMPLATE_VARIABLES,
   type TextTemplateKey,
@@ -680,7 +680,7 @@ function TemplateLocaleEditor({
   const editing = editor !== null;
   const samples = sampleVariablesFor(templateKey, t);
 
-  const previewText = renderTemplate(editing ? editor.draft : current, samples);
+  const previewText = TextTemplate.of(editing ? editor.draft : current).render(samples);
 
   const save = async () => {
     if (!editor || !editor.isValid) return;

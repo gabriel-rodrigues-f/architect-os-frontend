@@ -55,8 +55,7 @@ import {
 } from "./vocabularies";
 import { defaultNameFormatter } from "./text";
 import {
-  objectiveFromGapRenderer,
-  withDefaultTextTemplates,
+  TextTemplateRenderer,
   type RenderObjectiveFromGap,
   type TextTemplates,
 } from "./text-templates";
@@ -84,7 +83,7 @@ export function useGapSeverityRuler(): GapSeverityRuler {
 
 export function useTextTemplates(): TextTemplates {
   const { data } = useQuery(configurationCatalog.textTemplates.options);
-  return useMemo(() => withDefaultTextTemplates(data), [data]);
+  return useMemo(() => TextTemplateRenderer.resolve(data), [data]);
 }
 
 export function useCurationPolicy(): CurationPolicy {
@@ -126,7 +125,10 @@ export function useVocabulary(name: VocabularyName): {
 export function useObjectiveFromGap(): RenderObjectiveFromGap {
   const templates = useTextTemplates();
   const { locale } = useI18n();
-  return useMemo(() => objectiveFromGapRenderer(templates, locale), [templates, locale]);
+  return useMemo(
+    () => TextTemplateRenderer.over(templates, locale).objectiveFromGap,
+    [templates, locale],
+  );
 }
 
 export interface Api extends AppState {
