@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 import {
   ArchitectFilter,
@@ -13,6 +14,8 @@ import {
 import type { ConsolidatedGapRow } from "@/lib/selectors";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { useSelectors } from "@/lib/store";
+import { FurthestFromTarget } from "@/lib/view-models";
 
 export const Route = createFileRoute("/gap-analysis")({
   head: () => ({
@@ -32,6 +35,7 @@ export const Route = createFileRoute("/gap-analysis")({
 function GapPage() {
   const { t } = useI18n();
   const help = usePageHelp("gapAnalysis");
+  const sel = useSelectors();
   const {
     store,
     selected,
@@ -43,6 +47,11 @@ function GapPage() {
     opportunity,
     scopeLabel,
   } = useGapAnalysisData();
+
+  const furthestFromTarget = useMemo(
+    () => new FurthestFromTarget(architects, sel.progressionGapsFor),
+    [architects, sel],
+  );
 
   return (
     <>
@@ -93,7 +102,11 @@ function GapPage() {
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-destructive">
                   {t("gap.priorities.blocking.title")}
                 </h3>
-                <GapPriorityList rows={blocking} emptyLabel={t("gap.priorities.blocking.none")} />
+                <GapPriorityList
+                  rows={blocking}
+                  emptyLabel={t("gap.priorities.blocking.none")}
+                  furthestFromTarget={furthestFromTarget}
+                />
               </div>
               <div>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -102,6 +115,7 @@ function GapPage() {
                 <GapPriorityList
                   rows={opportunity}
                   emptyLabel={t("gap.priorities.opportunity.none")}
+                  furthestFromTarget={furthestFromTarget}
                 />
               </div>
             </div>
@@ -112,7 +126,15 @@ function GapPage() {
   );
 }
 
-function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emptyLabel: string }) {
+function GapPriorityList({
+  rows,
+  emptyLabel,
+  furthestFromTarget,
+}: {
+  rows: ConsolidatedGapRow[];
+  emptyLabel: string;
+  furthestFromTarget: FurthestFromTarget;
+}) {
   const { t } = useI18n();
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
   return (
@@ -141,6 +163,10 @@ function GapPriorityList({ rows, emptyLabel }: { rows: ConsolidatedGapRow[]; emp
             <GapBadge gap={row.maxGap} />
             <Link
               to="/development-plans"
+              search={{
+                architectId: furthestFromTarget.architectFor(row.competencyId),
+                competencyId: row.competencyId,
+              }}
               className="whitespace-nowrap text-xs text-primary hover:underline"
             >
               {t("gap.priorities.action")}

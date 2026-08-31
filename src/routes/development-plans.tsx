@@ -37,6 +37,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import type { PlanWorkflowPolicy } from "@/lib/plan-workflow-policy";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { initialSearchParam, replaceSearchParam } from "@/lib/search-params";
 import type { Gap } from "@/lib/selectors";
 import { useObjectiveFromGap, useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
@@ -54,6 +55,7 @@ function useDevelopmentPlansViewModel() {
 
 const developmentPlansSearchSchema = z.object({
   architectId: z.string().optional(),
+  competencyId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/development-plans")({
@@ -91,7 +93,13 @@ function PlansPage() {
 
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
 
-  const [creatingForCompetencyId, setCreatingForCompetencyId] = useState<string | null>(null);
+  const [competencyInFocus, setCompetencyInFocus] = useState<string>(
+    () => initialSearchParam("competencyId") ?? "",
+  );
+  const focusCompetency = (competencyId: string) => {
+    setCompetencyInFocus(competencyId);
+    replaceSearchParam("competencyId", competencyId === "" ? undefined : competencyId);
+  };
   const { t } = useI18n();
 
   const creating = useAsyncSubmit(t("pdi.newItem.error"));
@@ -112,8 +120,8 @@ function PlansPage() {
 
   const suggestions = viewModel.suggestions(gaps, plan);
 
-  const creatingForGap = creatingForCompetencyId
-    ? gaps.find((g) => g.item.competencyId === creatingForCompetencyId)
+  const creatingForGap = workflow.canEditDiagnostic
+    ? viewModel.treatableGap(gaps, plan, competencyInFocus)
     : undefined;
 
   return (
@@ -173,7 +181,7 @@ function PlansPage() {
                       size="sm"
                       variant="ghost"
                       className="mt-2 px-0"
-                      onClick={() => setCreatingForCompetencyId(g.item.competencyId)}
+                      onClick={() => focusCompetency(g.item.competencyId)}
                     >
                       <Sparkles className="mr-1.5 h-3.5 w-3.5" /> {t("pdi.suggestions.add")}
                     </Button>
@@ -211,13 +219,13 @@ function PlansPage() {
           error={creating.error}
           onCancel={() => {
             creating.clearError();
-            setCreatingForCompetencyId(null);
+            focusCompetency("");
           }}
           onSave={async (draft) => {
             const result = await creating.run(() =>
               viewModel.createItemFromGap(architectId, creatingForGap, draft, architect.name),
             );
-            if (result.ok) setCreatingForCompetencyId(null);
+            if (result.ok) focusCompetency("");
           }}
         />
       )}
