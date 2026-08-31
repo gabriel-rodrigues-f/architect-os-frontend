@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { PageHeader, QuerySection, SectionCard, StatusBadge } from "@/components/app";
+import { PageHeader, QuerySection, RoleSelect, SectionCard, StatusBadge } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,12 +27,12 @@ export const Route = createFileRoute("/users")({
       { title: "Usuários — Synapse" },
       {
         name: "description",
-        content: "Contas de acesso: papel (administrador, Tech Lead, membro) e status.",
+        content: "Contas de acesso: papel (administrador, gestor, Tech Lead, membro) e status.",
       },
       { property: "og:title", content: "Usuários — Synapse" },
       {
         property: "og:description",
-        content: "Quem administra o sistema e quem revisa como Tech Lead.",
+        content: "Quem administra o sistema, quem gere o time e quem revisa como Tech Lead.",
       },
     ],
   }),
@@ -298,20 +298,7 @@ function EditUserDialog({
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div>
-            <Label htmlFor="edit-user-role">{t("users.col.role")}</Label>
-            <select
-              id="edit-user-role"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
-            >
-              <option value="member">{t("users.role.member")}</option>
-              <option value="tech_lead">{t("users.role.tech_lead")}</option>
-              <option value="manager">{t("users.role.manager")}</option>
-              <option value="admin">{t("users.role.admin")}</option>
-            </select>
-          </div>
+          <RoleSelect id="edit-user-role" value={role} onChange={setRole} />
           <div>
             <Label htmlFor="edit-user-status">{t("users.col.status")}</Label>
             <select
@@ -414,20 +401,7 @@ function CreateUserDialog({
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div>
-            <Label htmlFor="new-user-role">{t("users.col.role")}</Label>
-            <select
-              id="new-user-role"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
-            >
-              <option value="member">{t("users.role.member")}</option>
-              <option value="tech_lead">{t("users.role.tech_lead")}</option>
-              <option value="manager">{t("users.role.manager")}</option>
-              <option value="admin">{t("users.role.admin")}</option>
-            </select>
-          </div>
+          <RoleSelect id="new-user-role" value={role} onChange={setRole} />
           {error && (
             <p className="text-sm text-destructive" role="alert">
               {error}

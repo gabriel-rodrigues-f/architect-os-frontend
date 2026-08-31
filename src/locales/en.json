@@ -1073,7 +1073,7 @@
   "nav.users": "Users",
   "nav.settings": "Progression Policy",
   "users.title": "Users",
-  "users.subtitle": "Access accounts: who administers the system and who reviews as Tech Lead.",
+  "users.subtitle": "Access accounts: who administers the system, who manages the team and who reviews as Tech Lead.",
   "users.list.title": "Registered accounts",
   "users.list.subtitle": "Role and status of each account. Only an administrator changes this.",
   "users.col.name": "Name",

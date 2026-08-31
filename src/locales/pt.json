@@ -1073,7 +1073,7 @@
   "nav.users": "Usuários",
   "nav.settings": "Política de Progressão",
   "users.title": "Usuários",
-  "users.subtitle": "Contas de acesso: quem administra o sistema e quem revisa como Tech Lead.",
+  "users.subtitle": "Contas de acesso: quem administra o sistema, quem gere o time e quem revisa como Tech Lead.",
   "users.list.title": "Contas cadastradas",
   "users.list.subtitle": "Papel e status de cada conta. Só um administrador altera.",
   "users.col.name": "Nome",

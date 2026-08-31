@@ -7,6 +7,14 @@ export type UserRole = (typeof USER_ROLES)[number];
 export type UserStatus = "active" | "disabled";
 export type TeamMemberRole = TeamLeadershipRole | "member";
 
+export class UserRoles {
+  static readonly ALL = USER_ROLES;
+
+  static includes(role: string): role is UserRole {
+    return (USER_ROLES as readonly string[]).includes(role);
+  }
+}
+
 export class TeamLeadershipRoles {
   static readonly ALL = TEAM_LEADERSHIP_ROLES;
 
