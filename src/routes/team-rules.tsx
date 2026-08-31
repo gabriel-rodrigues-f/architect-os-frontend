@@ -14,10 +14,10 @@ import {
   SingleSelectFilter,
 } from "@/components/app";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { FilterField } from "@/components/app/FilterField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAsyncSubmit, useSuccessToast, useTeamRuleEditorViewModel } from "@/hooks";
 import { ApiError, api, teamsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
@@ -87,7 +87,7 @@ function TeamRulesPage() {
         <EmptyState title={t("teamRules.noTeam")} />
       ) : (
         <>
-          <div className="mb-6 flex flex-wrap items-end gap-4">
+          <div className="mb-6 grid max-w-xl gap-4 sm:grid-cols-2">
             <SingleSelectFilter
               id="team-rule-team"
               label={t("teamRules.filter.team")}
@@ -244,7 +244,7 @@ function TeamRuleEditor({
         title={t("teamRules.capabilities.title")}
         description={t("teamRules.capabilities.subtitle")}
       >
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="grid max-w-xl items-start gap-4 sm:grid-cols-2">
           <MultiSelectFilter
             id="team-rule-capabilities"
             label={t("teamRules.capabilities.label")}
@@ -267,8 +267,7 @@ function TeamRuleEditor({
             noneSummaryLabel={t("teamRules.capabilities.none")}
           />
 
-          <div className="space-y-1.5">
-            <Label htmlFor="team-rule-minimum">{t("teamRules.minimum.label")}</Label>
+          <FilterField label={t("teamRules.minimum.label")} htmlFor="team-rule-minimum">
             <Input
               id="team-rule-minimum"
               type="number"
@@ -282,13 +281,16 @@ function TeamRuleEditor({
             <p className="text-xs text-muted-foreground">
               {t("teamRules.minimum.hint", { piso: floor })}
             </p>
-          </div>
+          </FilterField>
         </div>
 
         {chosenCapabilities.length > 0 && (
           <ul className="mt-4 flex flex-wrap gap-2">
             {chosenCapabilities.map((capability) => (
-              <li key={capability.id} className="flex items-center gap-1.5 text-sm">
+              <li
+                key={capability.id}
+                className="flex items-center gap-1.5 rounded-md bg-secondary px-2.5 py-1.5 text-sm"
+              >
                 <span>{capability.name}</span>
                 {capability.curation.status === "REQUIRES_CURATION" && (
                   <Badge variant="outline">{t("teamRules.capability.requiresCuration")}</Badge>

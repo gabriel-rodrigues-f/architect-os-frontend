@@ -1385,5 +1385,7 @@
   "ref.taxonomies.title": "Taxonomies",
   "ref.taxonomies.subtitle": "Accepted development action and evidence types.",
   "ref.taxonomies.actionTypes": "Action types",
-  "ref.taxonomies.evidenceTypes": "Evidence types"
+  "ref.taxonomies.evidenceTypes": "Evidence types",
+  "nav.myCareer": "My career",
+  "nav.group.ruler": "The Rule"
 }

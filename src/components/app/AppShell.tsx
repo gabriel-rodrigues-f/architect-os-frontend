@@ -5,6 +5,7 @@ import {
   CalendarRange,
   ChevronDown,
   ClipboardCheck,
+  Compass,
   GitCompare,
   GraduationCap,
   Grid3x3,
@@ -54,7 +55,13 @@ interface NavItem {
   adminOnly?: boolean;
 
   teamRuleReachOnly?: boolean;
+
+  teamAnalysisOnly?: boolean;
+
+  ownCareerOnly?: boolean;
 }
+
+const OWN_ARCHITECT_PARAM = "$architectId";
 
 interface NavGroup {
   labelKey?: MessageKey;
@@ -62,6 +69,17 @@ interface NavGroup {
 }
 
 export const NAV_GROUPS: NavGroup[] = [
+  {
+    items: [
+      {
+        to: `/architects/${OWN_ARCHITECT_PARAM}/roadmap`,
+        labelKey: "nav.myCareer",
+        icon: Compass,
+        activePrefixes: [`/architects/${OWN_ARCHITECT_PARAM}`],
+        ownCareerOnly: true,
+      },
+    ],
+  },
   {
     labelKey: "nav.group.operation",
     items: [
@@ -73,11 +91,31 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     labelKey: "nav.capabilities",
     items: [
-      { to: "/capability-map", labelKey: "cap.tabs.coverage", icon: Map },
-      { to: "/gap-analysis", labelKey: "cap.tabs.priorities", icon: ListOrdered },
-      { to: "/progression", labelKey: "cap.tabs.progression", icon: TrendingUp },
-      { to: "/training-needs", labelKey: "cap.tabs.collective", icon: Layers },
-      { to: "/compare", labelKey: "cap.tabs.comparison", icon: GitCompare },
+      { to: "/capability-map", labelKey: "cap.tabs.coverage", icon: Map, teamAnalysisOnly: true },
+      {
+        to: "/gap-analysis",
+        labelKey: "cap.tabs.priorities",
+        icon: ListOrdered,
+        teamAnalysisOnly: true,
+      },
+      {
+        to: "/progression",
+        labelKey: "cap.tabs.progression",
+        icon: TrendingUp,
+        teamAnalysisOnly: true,
+      },
+      {
+        to: "/training-needs",
+        labelKey: "cap.tabs.collective",
+        icon: Layers,
+        teamAnalysisOnly: true,
+      },
+      {
+        to: "/compare",
+        labelKey: "cap.tabs.comparison",
+        icon: GitCompare,
+        teamAnalysisOnly: true,
+      },
     ],
   },
   {
@@ -86,6 +124,19 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/development-plans", labelKey: "nav.developmentPlans", icon: Target },
       { to: "/learning-paths", labelKey: "nav.learningPaths", icon: BookOpen },
       { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
+      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
+    ],
+  },
+  {
+    labelKey: "nav.group.ruler",
+    items: [
+      {
+        to: "/team-rules",
+        labelKey: "nav.teamRules",
+        icon: Ruler,
+        teamRuleReachOnly: true,
+      },
+      { to: "/settings", labelKey: "nav.settings", icon: Scale },
     ],
   },
   {
@@ -97,41 +148,60 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Grid3x3,
         adminOnly: true,
       },
-      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
       { to: "/calibration", labelKey: "nav.calibration", icon: BarChart3, adminOnly: true },
-      {
-        to: "/team-rules",
-        labelKey: "nav.teamRules",
-        icon: Ruler,
-        teamRuleReachOnly: true,
-      },
-
-      { to: "/settings", labelKey: "nav.settings", icon: Scale },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
 ];
 
+class NavigationOfUser {
+  constructor(
+    private readonly user: SessionUser | undefined,
+    private readonly policy = defaultUiAuthorizationPolicy,
+  ) {}
+
+  reaches(item: NavItem): boolean {
+    const user = this.user;
+    if (item.adminOnly && !(user && this.policy.isAdmin(user))) return false;
+    if (item.teamRuleReachOnly && !(user && this.policy.canConfigureAnyTeamRules(user))) {
+      return false;
+    }
+    if (item.teamAnalysisOnly && !(user && this.policy.canAnalyzeTeam(user))) return false;
+    return !(item.ownCareerOnly && this.ownArchitectId === null);
+  }
+
+  addressed(item: NavItem): NavItem {
+    const architectId = this.ownArchitectId;
+    if (!item.ownCareerOnly || architectId === null) return item;
+    const resolve = (path: string) => path.replace(OWN_ARCHITECT_PARAM, architectId);
+    return {
+      ...item,
+      to: resolve(item.to),
+      ...(item.activePrefixes ? { activePrefixes: item.activePrefixes.map(resolve) } : {}),
+    };
+  }
+
+  private get ownArchitectId(): string | null {
+    return this.user?.architectId ?? null;
+  }
+}
+
 export function filterNavGroups(groups: NavGroup[], user: SessionUser | undefined): NavGroup[] {
+  const navigation = new NavigationOfUser(user);
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => {
-        if (item.adminOnly && !(user && defaultUiAuthorizationPolicy.isAdmin(user))) return false;
-        return !(
-          item.teamRuleReachOnly &&
-          !(user && defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user))
-        );
-      }),
+      items: group.items
+        .filter((item) => navigation.reaches(item))
+        .map((item) => navigation.addressed(item)),
     }))
     .filter((group) => group.items.length > 0);
 }
 
-function isNavItemActive(item: NavItem, pathname: string): boolean {
+export function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (item.to === "/") return pathname === "/";
-  return (
-    pathname.startsWith(item.to) ||
-    (item.activePrefixes?.some((p) => pathname.startsWith(p)) ?? false)
+  return [item.to, ...(item.activePrefixes ?? [])].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }
 
@@ -160,6 +230,8 @@ const SIDEBAR_DEFAULT = 264;
 const SIDEBAR_MIN = 208;
 const SIDEBAR_MAX = 420;
 const SIDEBAR_RAIL = 64;
+
+const BRAND_HEADER_HEIGHT = "h-[74px]";
 
 const clampWidth = (value: number) => Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, value));
 
@@ -354,41 +426,54 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             />
           )}
-          <div
-            className={cn(
-              "flex items-center py-5 transition-[padding] duration-300",
-              collapsed ? "justify-center px-0" : "gap-2.5 px-5",
-            )}
-          >
+          <div className={cn("relative shrink-0 overflow-hidden", BRAND_HEADER_HEIGHT)}>
             <div
               className={cn(
-                "min-w-0 overflow-hidden leading-tight transition-all duration-300",
-                collapsed ? "w-0 opacity-0" : "w-auto flex-1 opacity-100",
+                "flex justify-end pt-5 transition-[padding] duration-300",
+                reducedMotion && "transition-none",
+                collapsed ? "px-[18px]" : "px-3.5",
               )}
             >
-              <p className="whitespace-nowrap font-display text-sm font-semibold">Synapse</p>
-              <p className="whitespace-nowrap text-meta text-sidebar-foreground/60">
-                {t("shell.subtitle")}
-              </p>
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                aria-label={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
+                title={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
+                aria-expanded={!collapsed}
+                className={cn(
+                  "shrink-0 rounded-md p-1.5 text-sidebar-foreground/70 transition-colors",
+                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                )}
+              >
+                {collapsed ? (
+                  <PanelLeftOpen className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              aria-label={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
-              title={collapsed ? t("shell.showMenu") : t("shell.hideMenu")}
-              aria-expanded={!collapsed}
+            <p
               className={cn(
-                "shrink-0 rounded-md p-1.5 text-sidebar-foreground/70 transition-colors",
-                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                !collapsed && "-mr-1.5",
+                "absolute whitespace-nowrap font-display font-semibold leading-none",
+                "transition-all duration-300 ease-in-out",
+                reducedMotion && "transition-none",
+                collapsed
+                  ? "left-1/2 top-[52px] -translate-x-1/2 text-[10px]"
+                  : "left-5 top-[22px] text-sm",
               )}
             >
-              {collapsed ? (
-                <PanelLeftOpen className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
+              Synapse
+            </p>
+            <p
+              className={cn(
+                "absolute left-5 top-[42px] whitespace-nowrap text-[length:var(--text-meta)] text-sidebar-foreground/60",
+                "transition-opacity duration-300",
+                reducedMotion && "transition-none",
+                collapsed ? "opacity-0" : "opacity-100",
               )}
-            </button>
+            >
+              {t("shell.subtitle")}
+            </p>
           </div>
 
           <nav
