@@ -15,6 +15,10 @@ export class PlanWorkflowPolicy {
     private readonly reach: PlanActorReach,
   ) {}
 
+  static forPlan(plan: DevelopmentPlan | undefined, reach: PlanActorReach): PlanWorkflowPolicy {
+    return new PlanWorkflowPolicy(plan?.status ?? "Draft", reach);
+  }
+
   get canApprove(): boolean {
     return this.status === "Draft" && this.reach.isLeadOfArchitect;
   }
@@ -47,6 +51,13 @@ export class PlanWorkflowPolicy {
 
   get canRescheduleItems(): boolean {
     return this.canEditExecution && this.status === "Approved";
+  }
+
+  get newActionBlockedReasonKey(): MessageKey | undefined {
+    if (this.canEditDiagnostic) return undefined;
+    if (!this.reach.actsForArchitect) return "pdi.newAction.blocked.notYours";
+    if (this.status === "Completed") return "pdi.newAction.blocked.completed";
+    return "pdi.newAction.blocked.approved";
   }
 
   completionBlockedReasonKey(items: readonly DevelopmentPlanItem[]): MessageKey | undefined {

@@ -1387,5 +1387,8 @@
   "ref.taxonomies.actionTypes": "Action types",
   "ref.taxonomies.evidenceTypes": "Evidence types",
   "nav.myCareer": "My career",
-  "nav.group.ruler": "The Rule"
+  "nav.group.ruler": "The Rule",
+  "pdi.newAction.blocked.approved": "Development plan approved — request changes to add a new action",
+  "pdi.newAction.blocked.completed": "Development plan completed — this cycle takes no new action",
+  "pdi.newAction.blocked.notYours": "You cannot add an action to this person's development plan"
 }

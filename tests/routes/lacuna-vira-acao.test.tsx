@@ -140,9 +140,15 @@ describe("Prioridades — 'Tratar no PDI' carrega pessoa e competência", () => 
   });
 });
 
+/**
+ * O estado é o de RASCUNHO desde a decisão do dono (opção B): com o PDI
+ * aprovado o gatilho continua visível, porém desabilitado e explicando a
+ * regra — quem prende esse caso é `pdi-aprovado-explica-o-botao.test.tsx`.
+ * Aqui o que se prende é o DESTINO do gatilho quando ele funciona.
+ */
 describe("Perfil — '+ PDI' carrega a competência da linha clicada", () => {
   it("cada lacuna aponta para a própria competência, não para um destino genérico", async () => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoBase });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<ProfilePage />);
 
     const acao = await screen.findByRole("link", { name: "+ PDI" });

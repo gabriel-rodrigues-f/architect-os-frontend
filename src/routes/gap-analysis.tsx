@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 
 import {
@@ -9,6 +9,7 @@ import {
   NameList,
   PageHeader,
   SectionCard,
+  TreatGapInPlanAction,
   useGapAnalysisData,
 } from "@/components/app";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
@@ -161,16 +162,11 @@ function GapPriorityList({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <GapBadge gap={row.maxGap} />
-            <Link
-              to="/development-plans"
-              search={{
-                architectId: furthestFromTarget.architectFor(row.competencyId),
-                competencyId: row.competencyId,
-              }}
-              className="whitespace-nowrap text-xs text-primary hover:underline"
-            >
-              {t("gap.priorities.action")}
-            </Link>
+            <TreatGapInPlanAction
+              architectId={furthestFromTarget.architectFor(row.competencyId)}
+              competencyId={row.competencyId}
+              label={t("gap.priorities.action")}
+            />
           </div>
         </li>
       ))}

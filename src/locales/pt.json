@@ -1387,5 +1387,8 @@
   "ref.taxonomies.actionTypes": "Tipos de ação",
   "ref.taxonomies.evidenceTypes": "Tipos de evidência",
   "nav.myCareer": "Minha carreira",
-  "nav.group.ruler": "A Régua"
+  "nav.group.ruler": "A Régua",
+  "pdi.newAction.blocked.approved": "PDI aprovado — peça ajustes para incluir nova ação",
+  "pdi.newAction.blocked.completed": "PDI concluído — este ciclo não recebe ação nova",
+  "pdi.newAction.blocked.notYours": "Você não pode incluir ação no PDI desta pessoa"
 }
