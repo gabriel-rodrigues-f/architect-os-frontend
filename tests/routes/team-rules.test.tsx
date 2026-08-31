@@ -144,9 +144,9 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
     expect(screen.getByRole("button", { name: "Definir régua" })).toBeTruthy();
   });
 
-  it("o rodapé mostra o peso por razão: obrigatórias ×1,5 e opcionais", async () => {
+  it("o rodapé mostra o peso por razão: restritivas ×1,5 e não restritivas", async () => {
     renderAs(fixtureAdminUser, [comRegua]);
-    expect(await screen.findByText("1 obrigatórias ×1,5 + 1 opcionais")).toBeTruthy();
+    expect(await screen.findByText("1 restritivas ×1,5 + 1 não restritivas")).toBeTruthy();
   });
 
   it("capacidade que exige curadoria continua selecionável, com aviso — teto é sinal, nunca trava", async () => {

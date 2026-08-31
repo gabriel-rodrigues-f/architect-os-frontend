@@ -47,7 +47,7 @@ import {
  *
  * O invariante desta rede é a DISCRIMINAÇÃO: razões diferentes têm de virar
  * porcentagens diferentes na tela. O segundo número do CONTRATO ("quantas
- * obrigatórias faltam") continua junto — nunca um só.
+ * restritivas faltam") continua junto — nunca um só.
  */
 const fetchMock = vi.fn();
 
@@ -141,7 +141,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
     expect(percentualDe(atual)).not.toBe(percentualDe(proximo));
   });
 
-  it("mantém os DOIS números do CONTRATO — porcentagem e obrigatórias faltantes", async () => {
+  it("mantém os DOIS números do CONTRATO — porcentagem e restritivas faltantes", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
       state: anaNoNivelDois,
@@ -149,8 +149,8 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
     });
     renderWithApp(<RoadmapPage />);
 
-    expect(await screen.findByText("Falta 1 competência obrigatória")).toBeTruthy();
-    expect(await screen.findByText("Faltam 7 competências obrigatórias")).toBeTruthy();
+    expect(await screen.findByText("Falta 1 competência restritiva")).toBeTruthy();
+    expect(await screen.findByText("Faltam 7 competências restritivas")).toBeTruthy();
   });
 
   it("aderência plena vira 100%, não 1%", async () => {

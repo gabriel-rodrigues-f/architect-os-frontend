@@ -447,8 +447,8 @@ function TeamRuleEditor({
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
           <p className="text-sm font-medium tabular-nums">
             {t("teamRules.footer.weight", {
-              obrigatorias: editor.requiredCount,
-              opcionais: editor.optionalCount,
+              restritivas: editor.requiredCount,
+              naoRestritivas: editor.optionalCount,
             })}
           </p>
           <Button
