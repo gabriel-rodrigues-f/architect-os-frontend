@@ -100,9 +100,11 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
   // só nesta primeira asserção pós-reload, não porque a rota é lenta.
   await page.goto(`/architects/${architectId}/evolution`);
   await expect(page.getByRole("heading", { name: /^Evolução —/ })).toBeVisible({ timeout: 15000 });
-  // FE-360-005 — a tela virou 4 subvisões (Resumo/Capacidades/Competências/
-  // Linha do tempo); "Comparativo início × fim" mora na aba Competências,
-  // não aparece mais direto no Resumo (que é a aba padrão).
+  // FE-360-005, recortado pela onda 21 (apagar-o-vazio) — a tela tem DUAS
+  // subvisões (Resumo/Competências): "Capacidades" fundiu-se ao Resumo (era
+  // o mesmo gráfico) e "Linha do tempo" saiu (a história mora na aba irmã
+  // "Extrato"). "Comparativo início × fim" mora na aba Competências, não
+  // aparece direto no Resumo (que é a aba padrão).
   await expect(page.getByRole("tab", { name: "Resumo" })).toBeVisible();
   await expect(page.getByText("Comparativo início × fim")).not.toBeVisible();
   await expect(page.getByText("Perfil por capacidade")).not.toBeVisible();

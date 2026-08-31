@@ -58,7 +58,7 @@ export const Route = createFileRoute("/settings")({
       {
         name: "description",
         content:
-          "Referência do modelo: escala de proficiência, perfis por cargo, tipos de ação e evidência.",
+          "A régua da progressão: mínimo de capacidades qualificadas, faixas, textos, catálogo e vocabulários.",
       },
       { property: "og:title", content: "Política de Progressão — Synapse" },
       {
@@ -72,7 +72,6 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const store = useStore();
-  const careerLevels = useCareerLevelsByRank();
   const labels = useLabels();
   const { t, locale } = useI18n();
   const help = usePageHelp("settings");
@@ -128,48 +127,6 @@ function SettingsPage() {
                 </li>
               ))}
             </ul>
-          </SectionCard>
-
-          <SectionCard title={t("ref.profiles")} description={t("ref.profiles.subtitle")}>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[420px] text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th scope="col" className="py-2">
-                      {t("ref.capability")}
-                    </th>
-                    {careerLevels.map((cl) => (
-                      <th key={cl.id} scope="col" className="py-2 text-center">
-                        {labels.roleShort(cl.name)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {store.capabilities.map((cat) => (
-                    <tr key={cat.id} className="border-b border-border/60 last:border-0">
-                      <td className="py-2 font-medium">{cat.name}</td>
-                      {careerLevels.map((cl) => (
-                        <td key={cl.id} className="py-2 text-center tabular-nums">
-                          —
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </SectionCard>
-
-          <SectionCard title={t("ref.taxonomies.title")} description={t("ref.taxonomies.subtitle")}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("ref.taxonomies.actionTypes")}
-            </p>
-            <TaxonomyChips vocabulary="ACTION_TYPE" />
-            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("ref.taxonomies.evidenceTypes")}
-            </p>
-            <TaxonomyChips vocabulary="EVIDENCE_TYPE" />
           </SectionCard>
         </div>
       </SectionGroup>
@@ -962,19 +919,6 @@ function OperationalSettingsSection() {
         </p>
       </div>
     </SectionCard>
-  );
-}
-
-function TaxonomyChips({ vocabulary }: { vocabulary: VocabularyName }) {
-  const { options, label } = useVocabulary(vocabulary);
-  return (
-    <div className="mt-1 flex flex-wrap gap-1.5">
-      {options.map((option) => (
-        <span key={option.code} className="rounded-md bg-secondary px-2 py-0.5 text-xs">
-          {label(option.code)}
-        </span>
-      ))}
-    </div>
   );
 }
 

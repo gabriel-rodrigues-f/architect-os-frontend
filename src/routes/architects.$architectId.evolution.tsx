@@ -3,7 +3,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  CareerEventItem,
   EvolutionLine,
   PageHeader,
   ProficiencyTimeline,
@@ -24,7 +23,6 @@ import { useSelectors, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { defaultDateFormatter } from "@/lib/text";
 import { downloadBlob } from "@/lib/download";
-import { CareerStatementViewModel } from "@/lib/view-models";
 
 export const Route = createFileRoute("/architects/$architectId/evolution")({
   head: () => ({
@@ -57,23 +55,19 @@ function rangeForPreset(
   }
 }
 
-type EvolutionView = "resumo" | "capacidades" | "competencias" | "timeline";
+type EvolutionView = "resumo" | "competencias";
 const VIEWS: { id: EvolutionView; labelKey: MessageKey }[] = [
   { id: "resumo", labelKey: "evolution.view.summary" },
-  { id: "capacidades", labelKey: "evolution.view.capabilities" },
   { id: "competencias", labelKey: "evolution.view.competencies" },
-  { id: "timeline", labelKey: "evolution.view.timeline" },
 ];
 
 const MAX_DEFAULT_SERIES = 6;
-
-const TIMELINE_PAGE_SIZE = 25;
 
 function ArchitectEvolution() {
   const { architectId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const help = usePageHelp("architectEvolution");
   const architect = sel.architectById(architectId);
 
@@ -95,7 +89,6 @@ function ArchitectEvolution() {
   }, [view]);
   const [showAllSeries, setShowAllSeries] = useState(false);
   const [competencySearch, setCompetencySearch] = useState("");
-  const [timelineVisibleCount, setTimelineVisibleCount] = useState(TIMELINE_PAGE_SIZE);
 
   const range = rangeForPreset(preset, custom);
 
@@ -184,21 +177,6 @@ function ArchitectEvolution() {
     if (!query) return sortedComparisons;
     return sortedComparisons.filter((c) => c.competencyName.toLowerCase().includes(query));
   }, [sortedComparisons, competencySearch]);
-
-  const sortedEvents = useMemo(
-    () =>
-      data ? [...data.events].sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate)) : [],
-    [data],
-  );
-
-  const statementVm = useMemo(
-    () =>
-      new CareerStatementViewModel(
-        t,
-        (id) => data?.competencySeries.find((c) => c.competencyId === id)?.competencyName,
-      ),
-    [t, data],
-  );
 
   const topChanges = useMemo(
     () =>
@@ -417,7 +395,43 @@ function ArchitectEvolution() {
                   onToggle={() => setShowAllSeries((v) => !v)}
                   t={t}
                 />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t("evolution.chart.capability.hint")}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {data.capabilitySeries.map((s) => (
+                    <button
+                      key={s.capabilityId}
+                      type="button"
+                      className={`rounded-full border px-3 py-1 text-xs ${focusedCapabilityId === s.capabilityId ? "border-primary bg-primary/10 text-primary" : "border-input text-muted-foreground hover:bg-accent"}`}
+                      onClick={() =>
+                        setFocusedCapabilityId((id) =>
+                          id === s.capabilityId ? null : s.capabilityId,
+                        )
+                      }
+                    >
+                      {s.capabilityName}
+                    </button>
+                  ))}
+                </div>
               </SectionCard>
+
+              {focusedCapabilityId && focusedCompetencies.length > 0 && (
+                <SectionCard title={t("evolution.chart.competency.title")} className="mb-6">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {focusedCompetencies.map((c) => (
+                      <div key={c.competencyId}>
+                        <p className="mb-1 text-sm font-medium">{c.competencyName}</p>
+                        <ProficiencyTimeline
+                          label={c.competencyName}
+                          height={180}
+                          data={c.events.map((e) => ({ date: e.effectiveDate, level: e.toLevel }))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </SectionCard>
+              )}
 
               <SectionCard
                 title={t("evolution.summary.topChanges.title")}
@@ -448,58 +462,6 @@ function ArchitectEvolution() {
                   </ul>
                 )}
               </SectionCard>
-            </div>
-
-            <div role="tabpanel" hidden={view !== "capacidades"}>
-              <SectionCard title={t("evolution.chart.capability.title")} className="mb-6">
-                <EvolutionLine
-                  data={capabilityChartData.rows}
-                  series={capabilityChartData.series}
-                  height={280}
-                />
-                <SeriesLimitNotice
-                  total={data.capabilitySeries.length}
-                  showingAll={showAllSeries}
-                  onToggle={() => setShowAllSeries((v) => !v)}
-                  t={t}
-                />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {t("evolution.chart.capability.hint")}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {data.capabilitySeries.map((s) => (
-                    <button
-                      key={s.capabilityId}
-                      type="button"
-                      className={`rounded-full border px-3 py-1 text-xs ${focusedCapabilityId === s.capabilityId ? "border-primary bg-primary/10 text-primary" : "border-input text-muted-foreground hover:bg-accent"}`}
-                      onClick={() =>
-                        setFocusedCapabilityId((id) =>
-                          id === s.capabilityId ? null : s.capabilityId,
-                        )
-                      }
-                    >
-                      {s.capabilityName}
-                    </button>
-                  ))}
-                </div>
-              </SectionCard>
-
-              {focusedCapabilityId && focusedCompetencies.length > 0 && (
-                <SectionCard title={t("evolution.chart.competency.title")}>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {focusedCompetencies.map((c) => (
-                      <div key={c.competencyId}>
-                        <p className="mb-1 text-sm font-medium">{c.competencyName}</p>
-                        <ProficiencyTimeline
-                          label={c.competencyName}
-                          height={180}
-                          data={c.events.map((e) => ({ date: e.effectiveDate, level: e.toLevel }))}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </SectionCard>
-              )}
             </div>
 
             <div role="tabpanel" hidden={view !== "competencias"}>
@@ -574,48 +536,6 @@ function ArchitectEvolution() {
                     </tbody>
                   </table>
                 </div>
-              </SectionCard>
-            </div>
-
-            <div role="tabpanel" hidden={view !== "timeline"}>
-              <SectionCard title={t("evolution.timeline.title")}>
-                {sortedEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("evolution.timeline.empty")}</p>
-                ) : (
-                  <>
-                    <ul className="divide-y divide-border/60">
-                      {sortedEvents.slice(0, timelineVisibleCount).map((event) => (
-                        <li key={event.id}>
-                          <CareerEventItem
-                            entry={statementVm.competencyStepEntry(event, architectId)}
-                            meta={`${defaultDateFormatter.formatDate(event.effectiveDate, locale) ?? event.effectiveDate} · ${
-                              event.sourceType === "MENTORING"
-                                ? t("evolution.source.mentoring")
-                                : t("evolution.source.assessment")
-                            }`}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                    {timelineVisibleCount < sortedEvents.length && (
-                      <div className="mt-4 flex items-center justify-between">
-                        <p className="text-xs text-muted-foreground">
-                          {t("evolution.timeline.shown", {
-                            n: Math.min(timelineVisibleCount, sortedEvents.length),
-                            total: sortedEvents.length,
-                          })}
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setTimelineVisibleCount((n) => n + TIMELINE_PAGE_SIZE)}
-                        >
-                          {t("evolution.timeline.loadMore")}
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
               </SectionCard>
             </div>
           </>
