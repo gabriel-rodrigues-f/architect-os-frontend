@@ -15,22 +15,39 @@ export function ArchitectFilter({
   selected,
   onChange,
   label = undefined,
+  max = undefined,
 }: {
   architects: Architect[];
   selected: string[];
   onChange: (ids: string[]) => void;
   label?: string;
+  /**
+   * Teto de pessoas selecionáveis. Quando ele existe, a opção "Todo o time"
+   * some — marcar o time inteiro contradiz um teto — e as pessoas não
+   * escolhidas ficam desabilitadas assim que ele é atingido, para a recusa
+   * ser visível antes do clique em vez de depois.
+   */
+  max?: number;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
+  const temTeto = max !== undefined;
+  const noTeto = max !== undefined && selected.length >= max;
+
   const { optionProps, onListKeyDown, onTriggerKeyDown } = useOptionListNavigation({
-    optionCount: architects.length + 1,
+    optionCount: temTeto ? architects.length : architects.length + 1,
     openList: () => setOpen(true),
   });
 
-  const toggle = (id: string) =>
-    onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
+  const toggle = (id: string) => {
+    if (selected.includes(id)) {
+      onChange(selected.filter((s) => s !== id));
+      return;
+    }
+    if (max !== undefined && selected.length >= max) return;
+    onChange([...selected, id]);
+  };
 
   const selectedVisible = selected.filter((id) => architects.some((a) => a.id === id));
   const allSelected = architects.length > 0 && selectedVisible.length === architects.length;
@@ -68,35 +85,43 @@ export function ArchitectFilter({
         align="end"
         className="w-64 max-h-72 overflow-y-auto p-1"
       >
-        <button
-          {...optionProps(0)}
-          type="button"
-          onClick={() => onChange(allSelected ? [] : architects.map((a) => a.id))}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
-        >
-          <Checkbox
-            checked={allSelected ? true : selectedVisible.length === 0 ? false : "indeterminate"}
-            aria-hidden="true"
-            tabIndex={-1}
-            className="pointer-events-none"
-          />
-          <span className="font-medium">{t("filter.wholeTeamOption")}</span>
-        </button>
-        <div className="my-1 border-t border-border" />
+        {!temTeto && (
+          <>
+            <button
+              {...optionProps(0)}
+              type="button"
+              onClick={() => onChange(allSelected ? [] : architects.map((a) => a.id))}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
+            >
+              <Checkbox
+                checked={
+                  allSelected ? true : selectedVisible.length === 0 ? false : "indeterminate"
+                }
+                aria-hidden="true"
+                tabIndex={-1}
+                className="pointer-events-none"
+              />
+              <span className="font-medium">{t("filter.wholeTeamOption")}</span>
+            </button>
+            <div className="my-1 border-t border-border" />
+          </>
+        )}
         {architects.map((a, index) => {
           const active = selected.includes(a.id);
           return (
             <button
               key={a.id}
-              {...optionProps(index + 1)}
+              {...optionProps(temTeto ? index : index + 1)}
               type="button"
               role="option"
               aria-selected={active}
+              disabled={noTeto && !active}
               onClick={() => toggle(a.id)}
-              title={a.name}
+              title={noTeto && !active ? t("filter.maxReached", { n: max ?? 0 }) : a.name}
               className={cn(
                 "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none",
                 active && "font-medium",
+                noTeto && !active && "cursor-not-allowed opacity-40 hover:bg-transparent",
               )}
             >
               <Checkbox

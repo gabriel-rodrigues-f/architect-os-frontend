@@ -27,6 +27,28 @@ function useHeatmapColumns(
   };
 }
 
+/**
+ * O dono pediu, olhando a tela: "quero visualizar no máximo 5 linhas de
+ * pessoas; a partir do quinto, deve haver scroll dos arquitetos."
+ *
+ * O teto era `max-h-[480px]`, um número de pixels que casava com 5 linhas por
+ * acidente da fonte e do espaçamento de hoje — e que passava a caber 6 assim
+ * que qualquer um dos dois mudasse. Agora o teto é contado em PESSOAS e
+ * derivado da altura real da linha, então a regra sobrevive a mudança de tema.
+ */
+class JanelaDoMapa {
+  static readonly PESSOAS_VISIVEIS = 5;
+
+  private static readonly ALTURA_DA_LINHA_REM = 2.5;
+
+  private static readonly ALTURA_DO_CABECALHO_REM = 2;
+
+  static alturaPara(pessoas: number): string {
+    const rem = JanelaDoMapa.ALTURA_DO_CABECALHO_REM + pessoas * JanelaDoMapa.ALTURA_DA_LINHA_REM;
+    return `${String(rem)}rem`;
+  }
+}
+
 export function CapabilityHeatmap({
   architects,
   capabilities,
@@ -57,7 +79,12 @@ export function CapabilityHeatmap({
       />
       <LevelScaleKey />
       <div className="relative">
-        <div ref={scrollRef} data-testid="heatmap-scroll" className="max-h-[480px] overflow-auto">
+        <div
+          ref={scrollRef}
+          data-testid="heatmap-scroll"
+          className="overflow-auto"
+          style={{ maxHeight: JanelaDoMapa.alturaPara(JanelaDoMapa.PESSOAS_VISIVEIS) }}
+        >
           <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
             <thead>
               <tr>

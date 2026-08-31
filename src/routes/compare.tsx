@@ -82,6 +82,7 @@ function ComparePage() {
             selected={selected}
             onChange={setSelected}
             label={t("compare.selector.label")}
+            max={2}
           />
         }
       />
