@@ -188,20 +188,20 @@ export const tokenRegistry = new TokenRegistry().register(
   {
     name: "level-4",
     role: "fill",
-    light: parseOklch("oklch(0.82 0.11 165)"),
+    light: parseOklch("oklch(0.9 0.07 165)"),
     contrastAgainst: "level-4-fg",
     minContrast: 4.5,
   },
   {
     name: "level-5",
     role: "fill",
-    light: parseOklch("oklch(0.68 0.13 195)"),
+    light: parseOklch("oklch(0.9 0.075 195)"),
     contrastAgainst: "level-5-fg",
     minContrast: 4.5,
   },
 
   { name: "level-1-fg", role: "content", light: parseOklch("oklch(0.4 0.14 25)") },
-  { name: "level-2-fg", role: "content", light: parseOklch("oklch(0.42 0.11 65)") },
+  { name: "level-2-fg", role: "content", light: parseOklch("oklch(0.39 0.11 65)") },
   { name: "level-3-fg", role: "content", light: parseOklch("oklch(0.38 0.1 130)") },
   { name: "level-4-fg", role: "content", light: parseOklch("oklch(0.3 0.08 170)") },
 
