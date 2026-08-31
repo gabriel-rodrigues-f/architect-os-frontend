@@ -1,5 +1,5 @@
 {
-  "total": 121,
+  "total": 113,
   "porArquivo": {
     "src/components/app/AppShell.tsx": 6,
     "src/components/app/ArchitectFilter.tsx": 1,
@@ -35,7 +35,6 @@
     "src/lib/labels.ts": 1,
     "src/lib/operational-settings.ts": 2,
     "src/lib/optimistic-lock.ts": 1,
-    "src/lib/scoring-bands.ts": 8,
     "src/lib/search-params.ts": 2,
     "src/lib/selectors.ts": 6,
     "src/lib/session-policy.ts": 2,

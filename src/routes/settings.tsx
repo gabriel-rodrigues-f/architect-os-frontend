@@ -11,9 +11,8 @@ import { useLabels } from "@/lib/labels";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import {
-  classifyBand,
-  messageKeyOrDefault,
   SCORING_SCALES,
+  ScoringBandSet,
   type BandTone,
   type ScoringBand,
   type ScoringScale,
@@ -22,7 +21,7 @@ import {
   useCareerLevelsByRank,
   useCurationPolicy,
   useOperationalSettings,
-  useScoringBands,
+  useScoringRuler,
   useStore,
   useTextTemplates,
   useVocabularies,
@@ -306,14 +305,14 @@ const SCALE_SAMPLE: Record<ScoringScale, string> = {
 };
 
 function ScoringBandsSection() {
-  const bands = useScoringBands();
+  const ruler = useScoringRuler();
   const { t } = useI18n();
 
   return (
     <SectionCard title={t("config.bands.title")} description={t("config.bands.subtitle")}>
       <div className="space-y-6">
         {SCORING_SCALES.map((scale) => (
-          <ScoringScaleEditor key={scale} scale={scale} current={bands[scale]} />
+          <ScoringScaleEditor key={scale} scale={scale} current={ruler.forScale(scale).bands} />
         ))}
       </div>
     </SectionCard>
@@ -329,7 +328,7 @@ function BandChip({ band }: { band: ScoringBand }) {
         gapTone[band.tone],
       )}
     >
-      {t(messageKeyOrDefault(band.labelKey, TONE_LABEL_KEY[band.tone]))}
+      {t(ScoringBandSet.messageKeyOr(band.labelKey, TONE_LABEL_KEY[band.tone]))}
     </span>
   );
 }
@@ -360,7 +359,7 @@ function ScoringScaleEditor({
   const sampleValue = Number(sample);
   const previewBand =
     previewSource.length > 0 && sample.trim().length > 0 && Number.isFinite(sampleValue)
-      ? classifyBand(previewSource, sampleValue)
+      ? ScoringBandSet.of(previewSource).classify(sampleValue)
       : undefined;
 
   const save = async () => {

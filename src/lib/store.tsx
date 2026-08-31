@@ -36,8 +36,7 @@ import { useI18n } from "./i18n";
 import { MutationRunner, type MutationCache } from "./mutation-runner";
 import { expectedVersionOf, UnknownExpectedVersionError } from "./optimistic-lock";
 import {
-  gapSeverityRulerFrom,
-  withDefaultScoringBands,
+  ScoringRuler,
   type GapSeverityRuler,
   type ScoringBand,
   type ScoringBands,
@@ -69,14 +68,18 @@ export function useCareerLevelsByRank(): CareerLevel[] {
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
 }
 
-export function useScoringBands(): ScoringBands {
+export function useScoringRuler(): ScoringRuler {
   const { data } = useQuery(configurationCatalog.scoringBands.options);
-  return useMemo(() => withDefaultScoringBands(data), [data]);
+  return useMemo(() => ScoringRuler.fromLoaded(data), [data]);
+}
+
+export function useScoringBands(): ScoringBands {
+  return useScoringRuler().scales;
 }
 
 export function useGapSeverityRuler(): GapSeverityRuler {
-  const bands = useScoringBands();
-  return useMemo(() => gapSeverityRulerFrom(bands.GAP_SEVERITY), [bands]);
+  const ruler = useScoringRuler();
+  return useMemo(() => ruler.gapSeverity, [ruler]);
 }
 
 export function useTextTemplates(): TextTemplates {

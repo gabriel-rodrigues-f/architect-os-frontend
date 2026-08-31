@@ -1,17 +1,16 @@
 import type { Architect, Capability } from "../domain";
 import type { MessageKey } from "../i18n";
 import {
-  concentrationRiskMaxReferencesFrom,
   DEFAULT_SCORING_BANDS,
-  proficiencyViewBandsFrom,
+  ScoringBandSet,
   type ProficiencyViewBand,
   type ScoringBand,
 } from "../scoring-bands";
 import type { CapabilityAverage } from "../selectors";
 
-export const BANDS: readonly ProficiencyViewBand[] = proficiencyViewBandsFrom(
+export const BANDS: readonly ProficiencyViewBand[] = ScoringBandSet.of(
   DEFAULT_SCORING_BANDS.PROFICIENCY,
-);
+).proficiencyViewBands;
 
 export type RiskState =
   "insufficientData" | "noReference" | "concentrationRisk" | "distributedCoverage";
@@ -42,10 +41,10 @@ export class CapabilityCoveragePresenter {
       CONCENTRATION_RISK: readonly ScoringBand[];
     } = DEFAULT_SCORING_BANDS,
   ) {
-    this.bands = proficiencyViewBandsFrom(scales.PROFICIENCY);
-    this.concentrationRiskMaxReferences = concentrationRiskMaxReferencesFrom(
+    this.bands = ScoringBandSet.of(scales.PROFICIENCY).proficiencyViewBands;
+    this.concentrationRiskMaxReferences = ScoringBandSet.of(
       scales.CONCENTRATION_RISK,
-    );
+    ).concentrationRiskMaxReferences;
   }
 
   classifyRisk(assessedCount: number, referenceCount: number): RiskState {
