@@ -5,6 +5,7 @@ import { defaultContainer } from "./gateways/container";
 const {
   apiClient: defaultApiClient,
   sessionPolicy,
+  analyticsGateway,
   architectsGateway,
   assessmentGateway,
   authGateway,
@@ -42,6 +43,7 @@ export const authApi = { ...authGateway };
 export const stateContextsApi = { ...stateContextsGateway };
 export const evolutionApi = { ...evolutionGateway };
 export const calibrationApi = { ...calibrationGateway };
+export const analyticsApi = { ...analyticsGateway };
 export const noticesApi = { ...noticesGateway };
 export const reportsApi = { ...reportsGateway };
 export const teamsApi = { ...teamsGateway };
