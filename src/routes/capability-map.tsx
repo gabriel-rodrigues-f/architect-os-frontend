@@ -1,20 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import {
+  Callout,
   type CardsOrTable,
   EmptyState,
-  NameList,
   PageHeader,
   SectionCard,
   useCardsAndTableViews,
   ViewToggle,
 } from "@/components/app";
 import { Badge } from "@/components/ui/badge";
+import type { Architect } from "@/lib/domain";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useScoringBands, useSelectors, useStore } from "@/lib/store";
+import { defaultNameFormatter } from "@/lib/text";
 
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
@@ -53,6 +55,9 @@ function CapabilityMapPage() {
     [store.capabilities, sel, scoringBands],
   );
   const withRisk = presenter.areas(population);
+  const exposed = withRisk.filter(
+    (area) => area.risk === "concentrationRisk" || area.risk === "noReference",
+  );
 
   const view: CardsOrTable = viewOverride ?? (withRisk.length > 8 ? "table" : "cards");
 
@@ -66,6 +71,8 @@ function CapabilityMapPage() {
         <EmptyState title={t("cap.empty.noScope.title")} hint={t("cap.empty.noScope.hint")} />
       ) : (
         <>
+          {exposed.length > 0 && <NextStepCallout exposedCount={exposed.length} />}
+
           <div className="mb-3 flex justify-end">
             <ViewToggle view={view} onChange={setViewOverride} options={cardsAndTableViews} />
           </div>
@@ -128,14 +135,14 @@ function CapabilityMapPage() {
                         <Group
                           key={band.key}
                           label={t(band.labelKey)}
-                          people={band.people.map((p) => p.architect.name)}
+                          people={band.people.map((p) => p.architect)}
                           tone={band.tone}
                         />
                       ))}
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground">
                       {t("cap.references.label")}{" "}
-                      <NameList names={area.references.map((p) => p.architect.name)} />
+                      <ProfileLinkList people={area.references.map((p) => p.architect)} />
                     </p>
                     {area.notAssessed > 0 && (
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -168,7 +175,15 @@ function RiskBadge({ risk, referenceCount }: { risk: RiskState; referenceCount: 
   );
 }
 
-function Group({ label, people, tone }: { label: string; people: string[]; tone: string }) {
+function Group({
+  label,
+  people,
+  tone,
+}: {
+  label: string;
+  people: readonly Architect[];
+  tone: string;
+}) {
   return (
     <div className="surface-inset p-3">
       <div className="flex items-center justify-between">
@@ -180,8 +195,59 @@ function Group({ label, people, tone }: { label: string; people: string[]; tone:
         </span>
       </div>
       <p className="mt-1 text-sm">
-        <NameList names={people} emptyLabel="—" />
+        <ProfileLinkList people={people} emptyLabel="—" />
       </p>
     </div>
+  );
+}
+
+function ProfileLinkList({
+  people,
+  max = 5,
+  emptyLabel,
+}: {
+  people: readonly Architect[];
+  max?: number;
+  emptyLabel?: string;
+}) {
+  const { t } = useI18n();
+  if (people.length === 0) return <>{emptyLabel ?? t("common.none")}</>;
+  const { shown, remaining } = defaultNameFormatter.truncateNames(
+    people.map((architect) => architect.name),
+    max,
+  );
+  return (
+    <span title={people.map((architect) => architect.name).join(", ")}>
+      {people.slice(0, shown.length).map((architect, index) => (
+        <span key={architect.id}>
+          {index > 0 && ", "}
+          <Link
+            to="/architects/$architectId"
+            params={{ architectId: architect.id }}
+            className="underline-offset-2 hover:text-primary hover:underline"
+          >
+            {architect.name}
+          </Link>
+        </span>
+      ))}
+      {remaining > 0 && ` ${t("common.andMoreCount", { n: remaining })}`}
+    </span>
+  );
+}
+
+function NextStepCallout({ exposedCount }: { exposedCount: number }) {
+  const { t } = useI18n();
+  return (
+    <Callout tone="warning" className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <p>{t("cap.nextStep.exposed", { n: exposedCount })}</p>
+      <span className="flex flex-wrap items-center gap-3 font-medium">
+        <Link to="/mentoring" className="underline underline-offset-2">
+          {t("cap.nextStep.mentoring")}
+        </Link>
+        <Link to="/training-needs" className="underline underline-offset-2">
+          {t("cap.nextStep.trainingNeeds")}
+        </Link>
+      </span>
+    </Callout>
   );
 }
