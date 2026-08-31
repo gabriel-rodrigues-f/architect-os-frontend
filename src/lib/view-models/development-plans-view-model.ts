@@ -54,9 +54,21 @@ export class DevelopmentPlansViewModel {
   }
 
   suggestions(positiveGaps: readonly Gap[], plan: DevelopmentPlan | undefined): Gap[] {
+    return positiveGaps.filter(this.untreated(plan)).slice(0, 5);
+  }
+
+  treatableGap(
+    positiveGaps: readonly Gap[],
+    plan: DevelopmentPlan | undefined,
+    competencyId: string,
+  ): Gap | undefined {
     return positiveGaps
-      .filter((g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId))
-      .slice(0, 5);
+      .filter(this.untreated(plan))
+      .find((g) => g.item.competencyId === competencyId);
+  }
+
+  private untreated(plan: DevelopmentPlan | undefined): (gap: Gap) => boolean {
+    return (gap) => !plan?.items.some((item) => item.competencyId === gap.item.competencyId);
   }
 
   setItemActionType(planId: string, itemId: string, actionType: ActionType): void {

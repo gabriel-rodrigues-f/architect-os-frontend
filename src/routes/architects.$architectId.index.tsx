@@ -268,7 +268,10 @@ function ArchitectWorkspace() {
                       {canEditOwn && !inPlan && (
                         <Link
                           to="/development-plans"
-                          search={{ architectId: architect.id }}
+                          search={{
+                            architectId: architect.id,
+                            competencyId: g.item.competencyId,
+                          }}
                           className="whitespace-nowrap text-xs text-primary hover:underline"
                         >
                           {t("arch.gaps.addToPlan")}

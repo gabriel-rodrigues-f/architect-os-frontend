@@ -221,7 +221,7 @@
   },
   "src/lib/view-models/development-plans-view-model.ts": {
     "id-length": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/view-models/learning-paths-view-model.ts": {
@@ -281,7 +281,7 @@
   },
   "src/routes/development-plans.tsx": {
     "id-length": {
-      "count": 19
+      "count": 18
     }
   },
   "src/routes/gap-analysis.tsx": {

@@ -22,7 +22,9 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
       const entries = Object.entries((search ?? {}) as Record<string, unknown>).filter(
         ([, value]) => value !== undefined && value !== null,
       );
-      const query = new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString();
+      const query = new URLSearchParams(
+        entries.map(([nome, valor]) => [nome, String(valor)]),
+      ).toString();
       return (
         <a href={`${to ?? ""}${query ? `?${query}` : ""}`} {...rest}>
           {children}
@@ -96,8 +98,8 @@ const planoEmRascunho = (plan: DevelopmentPlan): DevelopmentPlan => ({
 
 const estadoBase: AppState = {
   ...fixtureState,
-  assessments: fixtureState.assessments.map((a) =>
-    comServerlessEmAbertoParaAna(comIamMaisLongeParaBruno(a)),
+  assessments: fixtureState.assessments.map((assessment) =>
+    comServerlessEmAbertoParaAna(comIamMaisLongeParaBruno(assessment)),
   ),
 };
 
