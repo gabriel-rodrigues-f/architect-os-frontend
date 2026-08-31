@@ -24,11 +24,11 @@ import type {
   ProficiencyUpdate,
   TeamLevelRule,
 } from "./domain";
-import { withDefaultCurationPolicy, type CurationPolicy } from "./curation-policy";
+import { EffectiveCurationPolicy, type CurationPolicy } from "./curation-policy";
 import { configurationCatalog, RulerConfiguration } from "./configuration-queries";
 import { appStateQuery, STATE_QUERY_KEY } from "./session-query";
 import {
-  withDefaultOperationalSettings,
+  EffectiveOperationalSettings,
   type AppSettingValue,
   type OperationalSettings,
 } from "./operational-settings";
@@ -86,12 +86,12 @@ export function useTextTemplates(): TextTemplates {
 
 export function useCurationPolicy(): CurationPolicy {
   const { data } = useQuery(configurationCatalog.curationPolicy.options);
-  return useMemo(() => withDefaultCurationPolicy(data), [data]);
+  return useMemo(() => EffectiveCurationPolicy.resolve(data), [data]);
 }
 
 export function useOperationalSettings(): OperationalSettings {
   const { data } = useQuery(configurationCatalog.operationalSettings.options);
-  return useMemo(() => withDefaultOperationalSettings(data), [data]);
+  return useMemo(() => EffectiveOperationalSettings.resolve(data), [data]);
 }
 
 export function useVocabularies(): Vocabularies {

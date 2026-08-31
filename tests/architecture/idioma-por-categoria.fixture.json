@@ -1,5 +1,5 @@
 {
-  "total": 104,
+  "total": 101,
   "porArquivo": {
     "src/components/app/AppShell.tsx": 6,
     "src/components/app/ArchitectFilter.tsx": 1,
@@ -20,7 +20,6 @@
     "src/lib/catalog-import.ts": 1,
     "src/lib/collections.ts": 1,
     "src/lib/context-scope.tsx": 1,
-    "src/lib/curation-policy.ts": 1,
     "src/lib/design/color.ts": 2,
     "src/lib/design/stylesheet.ts": 1,
     "src/lib/design/tokens.ts": 4,
@@ -33,7 +32,6 @@
     "src/lib/gateways/notices.gateway.ts": 1,
     "src/lib/i18n/registry.ts": 8,
     "src/lib/labels.ts": 1,
-    "src/lib/operational-settings.ts": 2,
     "src/lib/optimistic-lock.ts": 1,
     "src/lib/search-params.ts": 2,
     "src/lib/selectors.ts": 6,

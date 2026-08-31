@@ -30,30 +30,51 @@ export interface AppSettingsResponse {
   settings: AppSettingRecord[];
 }
 
-export const DEFAULT_OPERATIONAL_SETTINGS: OperationalSettings = {
-  cycleCadence: "SEMIANNUAL",
-  careerMinimumQualifiedFloor: 3,
-  trainingCollectiveInterventionThreshold: 3,
-};
+class ServedAppSettings {
+  private constructor(private readonly byKey: Map<string, AppSettingValue>) {}
 
-const intAtLeastOne = (value: AppSettingValue | undefined, fallback: number): number =>
-  typeof value === "number" && Number.isInteger(value) && value >= 1 ? value : fallback;
+  static in(response: AppSettingsResponse): ServedAppSettings {
+    return new ServedAppSettings(
+      new Map(response.settings.map((record) => [record.key, record.value])),
+    );
+  }
 
-export function withDefaultOperationalSettings(loaded?: AppSettingsResponse): OperationalSettings {
-  if (!loaded) return DEFAULT_OPERATIONAL_SETTINGS;
-  const byKey = new Map(loaded.settings.map((record) => [record.key, record.value]));
-  const cadence = byKey.get("cycle.cadence");
-  return {
-    cycleCadence: (CYCLE_CADENCES as readonly AppSettingValue[]).includes(cadence ?? "")
-      ? (cadence as CycleCadence)
-      : DEFAULT_OPERATIONAL_SETTINGS.cycleCadence,
-    careerMinimumQualifiedFloor: intAtLeastOne(
-      byKey.get("career.minimumQualifiedFloor"),
-      DEFAULT_OPERATIONAL_SETTINGS.careerMinimumQualifiedFloor,
-    ),
-    trainingCollectiveInterventionThreshold: intAtLeastOne(
-      byKey.get("training.collectiveInterventionThreshold"),
-      DEFAULT_OPERATIONAL_SETTINGS.trainingCollectiveInterventionThreshold,
-    ),
+  cadenceOr(fallback: CycleCadence): CycleCadence {
+    const served = this.byKey.get("cycle.cadence");
+    return (CYCLE_CADENCES as readonly AppSettingValue[]).includes(served ?? "")
+      ? (served as CycleCadence)
+      : fallback;
+  }
+
+  countOr(key: AppSettingKey, fallback: number): number {
+    const served = this.byKey.get(key);
+    return typeof served === "number" && Number.isInteger(served) && served >= 1
+      ? served
+      : fallback;
+  }
+}
+
+export class EffectiveOperationalSettings {
+  static readonly defaults: OperationalSettings = {
+    cycleCadence: "SEMIANNUAL",
+    careerMinimumQualifiedFloor: 3,
+    trainingCollectiveInterventionThreshold: 3,
   };
+
+  static resolve(loaded?: AppSettingsResponse): OperationalSettings {
+    const { defaults } = EffectiveOperationalSettings;
+    if (!loaded) return defaults;
+    const served = ServedAppSettings.in(loaded);
+    return {
+      cycleCadence: served.cadenceOr(defaults.cycleCadence),
+      careerMinimumQualifiedFloor: served.countOr(
+        "career.minimumQualifiedFloor",
+        defaults.careerMinimumQualifiedFloor,
+      ),
+      trainingCollectiveInterventionThreshold: served.countOr(
+        "training.collectiveInterventionThreshold",
+        defaults.trainingCollectiveInterventionThreshold,
+      ),
+    };
+  }
 }

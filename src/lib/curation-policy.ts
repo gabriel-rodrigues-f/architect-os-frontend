@@ -4,11 +4,14 @@ export interface CurationPolicy {
   requiredNonRestrictive: number;
 }
 
-export const DEFAULT_CURATION_POLICY: CurationPolicy = {
-  maxActiveCompetencies: 6,
-  requiredRestrictive: 3,
-  requiredNonRestrictive: 3,
-};
+export class EffectiveCurationPolicy {
+  static readonly defaults: CurationPolicy = {
+    maxActiveCompetencies: 6,
+    requiredRestrictive: 3,
+    requiredNonRestrictive: 3,
+  };
 
-export const withDefaultCurationPolicy = (loaded?: CurationPolicy): CurationPolicy =>
-  loaded ?? DEFAULT_CURATION_POLICY;
+  static resolve(loaded?: CurationPolicy): CurationPolicy {
+    return loaded ?? EffectiveCurationPolicy.defaults;
+  }
+}
