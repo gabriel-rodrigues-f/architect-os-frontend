@@ -932,7 +932,14 @@ export function StoreProvider({
   const ruler = useRulerConfiguration();
 
   if (mode === "blob") {
-    if (isError) return <ConnectionError error={error} onRetry={() => void refetch()} />;
+    if (isError)
+      return (
+        <ConnectionError
+          error={error}
+          onRetry={() => void refetch()}
+          resource={apiPath("/state")}
+        />
+      );
     if (isPending || !data) return <LoadingState />;
   }
 
@@ -964,11 +971,11 @@ export function LoadingState() {
 export function ConnectionError({
   error,
   onRetry,
-  resource = apiPath("/state"),
+  resource,
 }: {
   error: unknown;
   onRetry: () => void;
-  resource?: string;
+  resource: string;
 }) {
   const rawMessage = error instanceof Error ? error.message : "Erro desconhecido";
   if (import.meta.env.DEV) console.error(`[store] falha ao carregar ${resource}:`, error);

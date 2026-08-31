@@ -10,6 +10,7 @@ import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/compone
 import { noticesApi } from "@/lib/api";
 import type { Notice } from "@/lib/gateways/notices.gateway";
 import { useI18n } from "@/lib/i18n";
+import { ObservedQuery } from "@/lib/observed-query";
 import { NoticesViewModel } from "@/lib/view-models";
 
 const BELL_LIMIT = 5;
@@ -39,7 +40,8 @@ export function NoticeBell() {
     router.history.push(notice.link);
   };
 
-  const unreadCount = query.data?.unreadCount ?? 0;
+  const reading = new ObservedQuery(query);
+  const unreadCount = reading.data?.unreadCount ?? 0;
 
   return (
     <Popover>
@@ -70,7 +72,7 @@ export function NoticeBell() {
           {t("notices.title")}
         </p>
         <QuerySection
-          query={query}
+          query={reading}
           skeleton={<div className="h-24 animate-pulse rounded-md bg-secondary" />}
           errorMessage={t("notices.error")}
         >
