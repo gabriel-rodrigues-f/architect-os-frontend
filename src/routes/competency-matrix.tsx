@@ -30,7 +30,7 @@ import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { requireAdminReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useCareerLevelsByRank, useCurationPolicy, useStore } from "@/lib/store";
+import { useCurationPolicy, useStore } from "@/lib/store";
 import { CatalogImportEditor, CompetencyMatrixViewModel } from "@/lib/view-models";
 
 function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
@@ -51,7 +51,7 @@ export const Route = createFileRoute("/competency-matrix")({
       {
         name: "description",
         content:
-          "Catálogo de competências de arquitetura agrupadas por capacidade, com níveis esperados por cargo.",
+          "Catálogo de competências de arquitetura agrupadas por capacidade técnica e de negócio.",
       },
       { property: "og:title", content: "Matriz de Competências — Synapse" },
       {
@@ -65,7 +65,6 @@ export const Route = createFileRoute("/competency-matrix")({
 
 function MatrixPage() {
   const store = useStore();
-  const careerLevels = useCareerLevelsByRank();
   const viewModel = useCompetencyMatrixViewModel();
 
   const isAdmin = viewModel.isAdmin(useCurrentUser());
@@ -325,11 +324,6 @@ function MatrixPage() {
                             <th scope="col" className="py-2">
                               {t("col.competency")}
                             </th>
-                            {careerLevels.map((cl) => (
-                              <th key={cl.id} scope="col" className="py-2 text-center">
-                                {labels.roleShort(cl.name)}
-                              </th>
-                            ))}
                             <th scope="col" />
                           </tr>
                         </thead>
@@ -337,11 +331,6 @@ function MatrixPage() {
                           {comps.map((c) => (
                             <tr key={c.id} className="border-b border-border/60 last:border-0">
                               <td className="py-2 font-medium">{c.name}</td>
-                              {careerLevels.map((cl) => (
-                                <td key={cl.id} className="py-2 text-center">
-                                  <LevelBadge level={undefined} />
-                                </td>
-                              ))}
                               <td className="py-2 text-right">
                                 {isAdmin && (
                                   <div className="flex items-center justify-end gap-1">
