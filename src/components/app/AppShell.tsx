@@ -466,7 +466,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </p>
             <p
               className={cn(
-                "absolute left-5 top-[42px] whitespace-nowrap text-meta text-sidebar-foreground/60",
+                "absolute left-5 top-[42px] whitespace-nowrap text-[length:var(--text-meta)] text-sidebar-foreground/60",
                 "transition-opacity duration-300",
                 reducedMotion && "transition-none",
                 collapsed ? "opacity-0" : "opacity-100",
