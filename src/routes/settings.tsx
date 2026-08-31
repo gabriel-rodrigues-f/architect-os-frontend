@@ -5,9 +5,10 @@ import { toast } from "sonner";
 import { gapTone, LevelBadge, PageHeader, SectionCard, SectionGroup } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
-import { LEVELS, type CareerLevel, type TeamLevelRule } from "@/lib/domain";
+import { LEVELS, type CareerLevel } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
+import { ProgressionMinimumPresenter } from "@/lib/presenters";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import {
@@ -157,20 +158,16 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
             </tr>
           </thead>
           <tbody>
-            {careerLevels.map((level) => {
-              const rules = store.teamLevelRules.filter((r) => r.careerLevelId === level.id);
-              const rule = rules.length === 1 ? rules[0] : undefined;
-              return (
-                <CareerPolicyRow
-                  key={level.id}
-                  level={level}
-                  rule={rule}
-                  floor={floor}
-                  readyCapabilities={readyCapabilities}
-                  isAdmin={isAdmin}
-                />
-              );
-            })}
+            {careerLevels.map((level) => (
+              <CareerPolicyRow
+                key={level.id}
+                level={level}
+                minimum={ProgressionMinimumPresenter.forCareerLevel(store.teamLevelRules, level.id)}
+                floor={floor}
+                readyCapabilities={readyCapabilities}
+                isAdmin={isAdmin}
+              />
+            ))}
           </tbody>
         </table>
       </div>
@@ -180,23 +177,22 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
 
 function CareerPolicyRow({
   level,
-  rule,
+  minimum,
   floor,
   readyCapabilities,
   isAdmin,
 }: {
   level: CareerLevel;
-  rule: TeamLevelRule | undefined;
-
+  minimum: ProgressionMinimumPresenter;
   floor: number;
   readyCapabilities: number;
   isAdmin: boolean;
 }) {
-  const minimum = rule?.minimumQualifiedCapabilities;
+  const rule = minimum.soleTeamRule;
   const store = useStore();
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(minimum ?? floor));
+  const [draft, setDraft] = useState(String(minimum.agreedMinimum ?? floor));
 
   const {
     submitting: saving,
@@ -208,7 +204,7 @@ function CareerPolicyRow({
 
   const draftValue = Number(draft);
   const canSave = Number.isInteger(draftValue) && draftValue >= floor;
-  const impossible = minimum !== undefined && minimum > readyCapabilities;
+  const unreachableMinimum = minimum.unreachableMinimum(readyCapabilities);
 
   const save = async () => {
     if (!canSave || !rule) return;
@@ -224,11 +220,14 @@ function CareerPolicyRow({
       <td className="py-2">
         <p className="font-medium">{level.name}</p>
         <p className="text-xs text-muted-foreground">
-          {t("policy.row.hint", { nivel: level.name, minimo: minimum ?? "—" })}
+          <CareerPolicyHint level={level} minimum={minimum} />
         </p>
-        {impossible && (
+        {unreachableMinimum !== undefined && (
           <p className="mt-1 text-xs text-destructive" role="alert">
-            {t("policy.row.warning", { minimo: minimum, prontas: readyCapabilities })}
+            {t("policy.row.warning", {
+              minimo: unreachableMinimum,
+              prontas: readyCapabilities,
+            })}
           </p>
         )}
       </td>
@@ -244,7 +243,7 @@ function CareerPolicyRow({
             onChange={(e) => setDraft(e.target.value)}
           />
         ) : (
-          <span className="tabular-nums">{minimum ?? "—"}</span>
+          <CareerPolicyMinimumCell minimum={minimum} />
         )}
         {error && (
           <p className="mt-1 text-xs text-destructive" role="alert">
@@ -273,16 +272,64 @@ function CareerPolicyRow({
               </Button>
             </div>
           ) : (
-            rule && (
-              <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-                {t("common.edit")}
-              </Button>
-            )
+            <>
+              {rule && (
+                <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+                  {t("common.edit")}
+                </Button>
+              )}
+              {minimum.configuredByEachTeam && (
+                <p className="text-xs text-muted-foreground">{t("policy.row.perTeamRule")}</p>
+              )}
+            </>
           )}
         </td>
       )}
     </tr>
   );
+}
+
+const NO_TEAM_RULE_MARK = "—";
+
+function CareerPolicyHint({
+  level,
+  minimum,
+}: {
+  level: CareerLevel;
+  minimum: ProgressionMinimumPresenter;
+}) {
+  const { t } = useI18n();
+  const reading = minimum.reading;
+
+  if (reading.kind === "absent") return <>{t("policy.row.hint.absent", { nivel: level.name })}</>;
+  if (reading.kind === "divergent") {
+    return (
+      <>
+        {t("policy.row.hint.varies", {
+          nivel: level.name,
+          menor: reading.lowest,
+          maior: reading.highest,
+        })}
+      </>
+    );
+  }
+  return <>{t("policy.row.hint", { nivel: level.name, minimo: reading.minimum })}</>;
+}
+
+function CareerPolicyMinimumCell({ minimum }: { minimum: ProgressionMinimumPresenter }) {
+  const { t } = useI18n();
+  const reading = minimum.reading;
+
+  if (reading.kind === "absent") return <span className="tabular-nums">{NO_TEAM_RULE_MARK}</span>;
+  if (reading.kind === "divergent") {
+    return (
+      <>
+        <span className="tabular-nums">{reading.listed}</span>
+        <p className="text-xs font-normal text-muted-foreground">{t("policy.row.variesByTeam")}</p>
+      </>
+    );
+  }
+  return <span className="tabular-nums">{reading.minimum}</span>;
 }
 
 const SCALE_TITLE_KEY: Record<ScoringScale, MessageKey> = {

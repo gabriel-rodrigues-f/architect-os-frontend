@@ -2,7 +2,8 @@ import { cleanup, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AppState, TeamLevelRule } from "@/lib/api";
+import type { AppState } from "@/lib/api";
+import type { TeamLevelRule } from "@/lib/domain";
 import { Route as SettingsRoute } from "@/routes/settings";
 import { fixtureAdminUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
@@ -35,7 +36,7 @@ const regra = (id: string, teamId: string, minimo: number): TeamLevelRule => ({
 const estadoCom = (regras: readonly TeamLevelRule[]): AppState => ({
   ...fixtureState,
   teamLevelRules: [
-    ...fixtureState.teamLevelRules.filter((r) => r.careerLevelId !== NIVEL_I),
+    ...fixtureState.teamLevelRules.filter((rule) => rule.careerLevelId !== NIVEL_I),
     ...regras,
   ],
 });
@@ -95,6 +96,27 @@ describe("Política de Progressão com mais de um time no alcance", () => {
     expect(celula.textContent).toContain("5");
     expect(celula.textContent).not.toContain("—");
     expect(await within(await linhaDoNivel()).findByText(/varia/i)).toBeTruthy();
+  });
+
+  /**
+   * O mesmo silêncio, no aviso: com N réguas `minimum` era `undefined`, e o
+   * alerta de "a política exige mais capacidades do que existem prontas"
+   * simplesmente não aparecia para quem alcança dois times. A régua vinculante
+   * é a MAIS ALTA — 5 exigidas contra 2 capacidades READY na fixture.
+   */
+  it("continua avisando que a régua é inalcançável, pelo maior mínimo entre os times", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state: estadoCom([
+        regra("regra-plataforma-i", fixtureTeamId, 3),
+        regra("regra-integracoes-i", OUTRO_TIME, 5),
+      ]),
+      routes: [careerLevelsRoute],
+    });
+    renderWithApp(<SettingsPage />);
+
+    const alerta = await within(await linhaDoNivel()).findByRole("alert");
+    expect(alerta.textContent).toContain("5");
   });
 
   it("o travessão fica reservado para quando nenhum time definiu régua", async () => {
