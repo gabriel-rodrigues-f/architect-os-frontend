@@ -14,7 +14,6 @@ import {
 import { useMemo } from "react";
 
 import {
-  CapabilityHeatmap,
   CapabilityRadar,
   GapBadge,
   LevelBadge,
@@ -111,7 +110,6 @@ function AdminHome() {
   const store = useStore();
   const sel = useSelectors();
   const { t } = useI18n();
-  const labels = useLabels();
   const help = usePageHelp("dash");
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
 
@@ -175,8 +173,28 @@ function AdminHome() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <SectionCard title={t("dash.heatmap.title")} description={t("dash.heatmap.subtitle")}>
-          <p className="mb-3 text-xs text-muted-foreground">
+        <SectionCard title={t("dash.priorities.title")} description={t("dash.priorities.subtitle")}>
+          <ul className="space-y-3">
+            {topGaps.map((g, i) => (
+              <li
+                key={`${g.architect.id}-${g.item.competencyId}-${i}`}
+                className="flex items-start justify-between gap-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">{g.competency?.name}</p>
+                  <p className="text-xs text-muted-foreground">{g.architect.name}</p>
+                </div>
+                <GapBadge gap={g.gap} />
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+
+        <SectionCard
+          title={t("dash.cycleAssessment.title")}
+          description={t("dash.cycleAssessment.subtitle")}
+        >
+          <p className="text-sm text-muted-foreground">
             {t("dash.coverage", {
               completed: assessmentCoverage.completed,
               total: architects.length,
@@ -185,43 +203,10 @@ function AdminHome() {
               notStarted: assessmentCoverage.notStarted,
             })}
           </p>
-          <CapabilityHeatmap
-            architects={architects}
-            capabilities={store.capabilities}
-            capabilityAveragesFor={sel.capabilityAverages}
-            linkToProfile
-          />
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            {[1, 2, 3, 4, 5].map((l) => (
-              <span key={l} className="flex items-center gap-1.5">
-                <span className="h-3 w-6 rounded" style={{ background: `var(--level-${l})` }} />
-                {l} · {labels.levelName[l as keyof typeof labels.levelName]}
-              </span>
-            ))}
-          </div>
+          <Link to="/progression" className="mt-3 inline-block text-sm text-primary underline">
+            {t("dash.heatmap.whereItLives")}
+          </Link>
         </SectionCard>
-
-        <div className="space-y-6">
-          <SectionCard
-            title={t("dash.priorities.title")}
-            description={t("dash.priorities.subtitle")}
-          >
-            <ul className="space-y-3">
-              {topGaps.map((g, i) => (
-                <li
-                  key={`${g.architect.id}-${g.item.competencyId}-${i}`}
-                  className="flex items-start justify-between gap-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{g.competency?.name}</p>
-                    <p className="text-xs text-muted-foreground">{g.architect.name}</p>
-                  </div>
-                  <GapBadge gap={g.gap} />
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-        </div>
       </div>
     </>
   );
