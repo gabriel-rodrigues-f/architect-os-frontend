@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import {
+  Callout,
   DataOriginCallout,
   EmptyState,
   EvaluatorDistributionCard,
@@ -97,7 +98,16 @@ function CalibrationPage() {
               <>
                 <DataOriginCallout origin={data.dataOrigin} className="mb-6" />
                 {data.evaluators.length === 0 ? (
-                  <EmptyState title={t("calibration.empty")} hint={t("calibration.emptyHint")} />
+                  (data.unattributed?.itemsCount ?? 0) > 0 ? (
+                    <Callout tone="warning">
+                      <strong>{t("calibration.unattributed.title")}</strong>{" "}
+                      {t("calibration.unattributed.hint", {
+                        n: data.unattributed?.itemsCount ?? 0,
+                      })}
+                    </Callout>
+                  ) : (
+                    <EmptyState title={t("calibration.empty")} hint={t("calibration.emptyHint")} />
+                  )
                 ) : (
                   <>
                     <div className="mb-6 grid gap-4 sm:grid-cols-3">

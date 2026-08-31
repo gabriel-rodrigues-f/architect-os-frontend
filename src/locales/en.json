@@ -1065,6 +1065,8 @@
   "calibration.deviation.warning": "Deviation of {delta} from the overall average — worth reviewing the ruler with this evaluator.",
   "calibration.empty": "No scored assessments in this cycle",
   "calibration.emptyHint": "Once evaluators score assessments, the distribution shows up here.",
+  "calibration.unattributed.title": "Scores without a recorded author",
+  "calibration.unattributed.hint": "This cycle has {n} scores from before authorship was recorded. The per-evaluator distribution only exists for scores given from this version onward.",
   "calibration.noCycle": "No cycle available",
   "calibration.error": "Could not load the calibration data.",
   "chart.distribution.label": "Score distribution",

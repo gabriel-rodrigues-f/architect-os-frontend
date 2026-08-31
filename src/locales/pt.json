@@ -1065,6 +1065,8 @@
   "calibration.deviation.warning": "Desvio de {delta} contra a média geral — vale conferir a régua com este avaliador.",
   "calibration.empty": "Nenhuma avaliação com nota neste ciclo",
   "calibration.emptyHint": "Quando os avaliadores derem notas, a distribuição aparece aqui.",
+  "calibration.unattributed.title": "Notas sem autor registrado",
+  "calibration.unattributed.hint": "Este ciclo tem {n} notas anteriores ao registro de autoria. A distribuição por avaliador só existe para notas dadas a partir desta versão.",
   "calibration.noCycle": "Nenhum ciclo disponível",
   "calibration.error": "Não foi possível carregar a calibração.",
   "chart.distribution.label": "Distribuição de notas",

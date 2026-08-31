@@ -27,7 +27,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { NoticeBell } from "@/components/app/NoticeBell";
 import { apiPath } from "@/lib/api-path";
 import { Route as NoticesRoute } from "@/routes/notices";
-import { fixtureState, fixtureTeamLeadUser } from "../helpers/fixtures";
+import { fixtureState, fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -89,7 +89,7 @@ const montaSessaoDoLead = (rota: FetchRoute) => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   mockAppFetch(fetchMock, {
-    user: fixtureTeamLeadUser,
+    user: fixtureAssignedTechLeadUser,
     state: fixtureState,
     routes: [rota],
   });

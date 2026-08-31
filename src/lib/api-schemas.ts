@@ -112,6 +112,13 @@ export const calibrationResponseSchema = z.object({
     average: z.number().nullable(),
   }),
   evaluators: z.array(calibrationEvaluator),
+  unattributed: z
+    .object({
+      distribution: levelDistribution,
+      average: z.number().nullable(),
+      itemsCount: z.number(),
+    })
+    .optional(),
 });
 
 const careerLevel = z.object({

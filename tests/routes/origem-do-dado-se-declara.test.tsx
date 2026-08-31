@@ -103,7 +103,7 @@ const registraGatewayDeDemonstracao = () => {
     new InMemoryCalibrationGateway().calibration,
   );
   vi.spyOn(noticesApi, "notices").mockImplementation(
-    new InMemoryNoticesGateway(() => Promise.resolve(fixtureTeamLeadUser)).notices,
+    new InMemoryNoticesGateway(() => Promise.resolve(fixtureAssignedTechLeadUser)).notices,
   );
 };
 

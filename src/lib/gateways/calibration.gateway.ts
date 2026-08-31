@@ -21,6 +21,13 @@ export interface CalibrationSnapshot extends OriginatedData {
     average: number | null;
   };
   evaluators: CalibrationEvaluator[];
+  unattributed?:
+    | {
+        distribution: LevelDistribution;
+        average: number | null;
+        itemsCount: number;
+      }
+    | undefined;
 }
 
 export interface CalibrationGateway {
