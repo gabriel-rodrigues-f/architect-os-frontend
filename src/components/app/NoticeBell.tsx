@@ -3,6 +3,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { Bell } from "lucide-react";
 import { useMemo } from "react";
 
+import { DataOriginCallout } from "@/components/app/DataOriginCallout";
 import { NoticeList } from "@/components/app/NoticeList";
 import { QuerySection } from "@/components/app/QuerySection";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -73,18 +74,21 @@ export function NoticeBell() {
           skeleton={<div className="h-24 animate-pulse rounded-md bg-secondary" />}
           errorMessage={t("notices.error")}
         >
-          {(data) =>
-            data.notices.length === 0 ? (
-              <p className="px-2 py-3 text-sm text-muted-foreground">{t("notices.empty")}</p>
-            ) : (
-              <NoticeList
-                notices={vm.latest(data.notices, BELL_LIMIT)}
-                unreadOf={(notice) => vm.isUnread(notice)}
-                onOpen={openNotice}
-                itemWrapper={(element) => <PopoverClose asChild>{element}</PopoverClose>}
-              />
-            )
-          }
+          {(data) => (
+            <>
+              <DataOriginCallout origin={data.dataOrigin} className="mx-2 mb-2" />
+              {data.notices.length === 0 ? (
+                <p className="px-2 py-3 text-sm text-muted-foreground">{t("notices.empty")}</p>
+              ) : (
+                <NoticeList
+                  notices={vm.latest(data.notices, BELL_LIMIT)}
+                  unreadOf={(notice) => vm.isUnread(notice)}
+                  onOpen={openNotice}
+                  itemWrapper={(element) => <PopoverClose asChild>{element}</PopoverClose>}
+                />
+              )}
+            </>
+          )}
         </QuerySection>
         <div className="mt-1 border-t border-border px-2 pt-2">
           <PopoverClose asChild>

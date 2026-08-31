@@ -1,6 +1,7 @@
 import { noticesResponseSchema } from "../api-schemas";
 import type { ApiClient } from "../api-client";
 import type { SessionUser } from "./auth.gateway";
+import type { DataOrigin, OriginatedData } from "./data-origin";
 
 export interface Notice {
   id: string;
@@ -13,7 +14,7 @@ export interface Notice {
   teamId: string | null;
 }
 
-export interface NoticesPage {
+export interface NoticesPage extends OriginatedData {
   notices: Notice[];
   unreadCount: number;
 }
@@ -27,12 +28,15 @@ export interface NoticesFilter {
 }
 
 export interface NoticesGateway {
+  readonly dataOrigin: DataOrigin;
   notices(filter: NoticesFilter): Promise<NoticesPage>;
   markNoticeRead(noticeId: string): Promise<void>;
   markAllNoticesRead(): Promise<void>;
 }
 
 export class HttpNoticesGateway implements NoticesGateway {
+  readonly dataOrigin: DataOrigin = "organization";
+
   constructor(private readonly client: ApiClient) {}
 
   notices = (filter: NoticesFilter): Promise<NoticesPage> => {
@@ -40,8 +44,8 @@ export class HttpNoticesGateway implements NoticesGateway {
     if (filter.limit !== undefined) query.set("limit", String(filter.limit));
     if (filter.before !== undefined) query.set("before", filter.before);
     return this.client
-      .request<NoticesPage>(`/notices?${query.toString()}`)
-      .then((data) => noticesResponseSchema.parse(data));
+      .request<unknown>(`/notices?${query.toString()}`)
+      .then((data) => ({ ...noticesResponseSchema.parse(data), dataOrigin: this.dataOrigin }));
   };
 
   markNoticeRead = (noticeId: string): Promise<void> =>
@@ -50,7 +54,7 @@ export class HttpNoticesGateway implements NoticesGateway {
   markAllNoticesRead = (): Promise<void> => this.client.post<void>("/notices/read-all", {});
 }
 
-export type NoticesViewer = Pick<SessionUser, "role" | "architectId">;
+export type NoticesViewer = Pick<SessionUser, "role" | "architectId" | "memberships">;
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -109,6 +113,8 @@ const fixtureNotices = (now: number): Notice[] => [
 ];
 
 export class InMemoryNoticesGateway implements NoticesGateway {
+  readonly dataOrigin: DataOrigin = "demonstration";
+
   private readonly store: Notice[];
   private readonly architectTeams: Record<string, string>;
 
@@ -134,6 +140,7 @@ export class InMemoryNoticesGateway implements NoticesGateway {
         : byStatus.filter((notice) => notice.occurredAt < filter.before!);
     const limited = filter.limit === undefined ? byCursor : byCursor.slice(0, filter.limit);
     return {
+      dataOrigin: this.dataOrigin,
       notices: limited.map((notice) => ({ ...notice })),
       unreadCount: scoped.filter((notice) => notice.readAt === null).length,
     };
@@ -156,10 +163,10 @@ export class InMemoryNoticesGateway implements NoticesGateway {
     const viewer = await this.viewer();
     if (viewer.role === "admin") return this.store;
     if (viewer.role === "lead") {
-      const teamId = this.viewerTeamId(viewer);
+      const ledTeamIds = this.ledTeamIds(viewer);
       return this.store.filter(
         (notice) =>
-          (teamId !== null && notice.teamId === teamId) ||
+          (notice.teamId !== null && ledTeamIds.includes(notice.teamId)) ||
           (viewer.architectId !== null && notice.architectId === viewer.architectId),
       );
     }
@@ -167,9 +174,15 @@ export class InMemoryNoticesGateway implements NoticesGateway {
     return this.store.filter((notice) => notice.architectId === viewer.architectId);
   }
 
-  private viewerTeamId(viewer: NoticesViewer): string | null {
-    if (viewer.architectId === null) return null;
-    return this.architectTeams[viewer.architectId] ?? null;
+  private ledTeamIds(viewer: NoticesViewer): string[] {
+    const byMembership = (viewer.memberships ?? [])
+      .filter((membership) => membership.role === "tech_lead" || membership.role === "manager")
+      .map((membership) => membership.teamId);
+    if (byMembership.length > 0) return byMembership;
+    if (viewer.memberships !== undefined) return [];
+    const byArchitect =
+      viewer.architectId === null ? null : this.architectTeams[viewer.architectId];
+    return byArchitect === undefined || byArchitect === null ? [] : [byArchitect];
   }
 
   private static fixtureArchitectTeams(): Record<string, string> {
