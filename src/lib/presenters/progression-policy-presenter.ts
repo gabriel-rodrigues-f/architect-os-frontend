@@ -48,10 +48,6 @@ export class ProgressionMinimumPresenter {
     return this.rules.length === 1 ? this.rules[0] : undefined;
   }
 
-  get configuredByEachTeam(): boolean {
-    return this.rules.length > 1;
-  }
-
   unreachableMinimum(readyCapabilities: number): number | undefined {
     const reading = this.reading;
     const highest =

@@ -129,6 +129,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
 
     const celula = await celulaDoMinimo();
     expect(celula.textContent).toContain("—");
+    expect(within(await linhaDoNivel()).getByText(/régua de cada time/i)).toBeTruthy();
   });
 
   it("com N réguas o admin não fica com um botão de salvar que não salva — a tela diz onde se configura", async () => {

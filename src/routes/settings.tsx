@@ -278,7 +278,7 @@ function CareerPolicyRow({
                   {t("common.edit")}
                 </Button>
               )}
-              {minimum.configuredByEachTeam && (
+              {!rule && (
                 <p className="text-xs text-muted-foreground">{t("policy.row.perTeamRule")}</p>
               )}
             </>
