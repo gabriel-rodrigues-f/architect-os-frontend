@@ -50,7 +50,8 @@ function CalibrationPage() {
   const { t } = useI18n();
   const vm = useCalibrationViewModel();
   const store = useStore();
-  const canCalibrate = defaultUiAuthorizationPolicy.canCalibrate(useCurrentUser());
+  const user = useCurrentUser();
+  const canCalibrate = defaultUiAuthorizationPolicy.canCalibrate(user);
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
 
