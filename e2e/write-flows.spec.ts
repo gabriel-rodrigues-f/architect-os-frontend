@@ -60,7 +60,7 @@ async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>)
 async function createAndActivateUser(
   playwright: typeof import("playwright-core"),
   api: APIRequestContext,
-  input: { name: string; email: string; role: "member" | "lead"; architectId?: string },
+  input: { name: string; email: string; role: "member" | "tech_lead"; architectId?: string },
 ): Promise<string> {
   const created = await json<{ user: { id: string }; temporaryPassword: string }>(
     await api.post(apiPath("/auth/users"), { data: input }),
@@ -155,7 +155,7 @@ test.beforeAll(async ({ playwright }) => {
   const leadUserId = await createAndActivateUser(playwright, api, {
     name: "E2E Fluxos Lead",
     email: LEAD_EMAIL,
-    role: "lead",
+    role: "tech_lead",
   });
   teamId = await linkLeadToArchitects({
     databaseUrl: DATABASE_URL,

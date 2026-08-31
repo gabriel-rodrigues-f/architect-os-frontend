@@ -22,7 +22,7 @@ import { discoverRoutePaths } from "./route-inventory";
  *      teste de navegação COM a lista completa no erro (a captura fica
  *      salva mesmo assim: tela quebrada é achado, e o PNG é a prova).
  *
- * Papel via E2E_NAV_ROLE (admin|lead|member, default admin) — o recorte
+ * Papel via E2E_NAV_ROLE (admin|manager|tech_lead|member, default admin) — o recorte
  * por papel na tela é exatamente o que o QA-UX compara. Tema claro sempre;
  * escuro opcional via E2E_NAV_DARK=1. Rota que o papel não alcança
  * não é falha: member vê aviso in-place em /users e /competency-matrix em leitura (SEM redirect — o QA provou que redirect não acontece); a captura mostra
@@ -38,9 +38,13 @@ const CREDENTIALS: Record<string, { email?: string; password?: string }> = {
     email: process.env["E2E_ADMIN_EMAIL"],
     password: process.env["E2E_ADMIN_PASSWORD"],
   },
-  lead: {
-    email: process.env["E2E_LEAD_EMAIL"],
-    password: process.env["E2E_LEAD_PASSWORD"],
+  manager: {
+    email: process.env["E2E_MANAGER_EMAIL"],
+    password: process.env["E2E_MANAGER_PASSWORD"],
+  },
+  tech_lead: {
+    email: process.env["E2E_TECH_LEAD_EMAIL"],
+    password: process.env["E2E_TECH_LEAD_PASSWORD"],
   },
   member: {
     email: process.env["E2E_MEMBER_EMAIL"],
@@ -56,7 +60,9 @@ const PASSWORD = CREDENTIALS[ROLE]?.password;
 // precisa valer em qualquer execução — pulá-la junto foi exatamente o furo
 // que a prova do vermelho pegou na primeira rodada.
 const SEM_CREDENCIAL = `Sem credencial para o papel "${ROLE}" (E2E_${ROLE.toUpperCase()}_EMAIL/_PASSWORD${
-  ROLE === "admin" ? "" : " — o seed local só cria admin e member; lead exige env explícita"
+  ROLE === "admin"
+    ? ""
+    : " — o seed local só cria admin e member; gestor e tech lead exigem env explícita"
 }).`;
 
 const SCREENSHOTS_DIR = join(dirname(fileURLToPath(import.meta.url)), "screenshots");
