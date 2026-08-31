@@ -67,9 +67,15 @@ const caixaDoServidor = (notices: unknown[], unreadCount: number): FetchRoute =>
   return rota;
 };
 
-const escritasDeAviso = (): { href: string; method: string; body: string | undefined }[] =>
-  fetchMock.mock.calls
-    .map(([input, init]: [string | URL | Request, RequestInit | undefined]) => ({
+interface ChamadaDeEscrita {
+  href: string;
+  method: string;
+  body: string | undefined;
+}
+
+const escritasDeAviso = (): ChamadaDeEscrita[] =>
+  (fetchMock.mock.calls as [string | URL | Request, RequestInit | undefined][])
+    .map(([input, init]) => ({
       href: String(input),
       method: (init?.method ?? "GET").toUpperCase(),
       body: typeof init?.body === "string" ? init.body : undefined,
@@ -108,9 +114,9 @@ describe("o sino do lead mostra a caixa que o servidor devolveu", () => {
     renderWithApp(<NoticeBell />);
     await abreOSino();
     await screen.findByText(AVISO_DO_TIME.title);
-    expect(screen.getAllByText(/registrada|concluída|espera revisão|parada|rascunho/i)).toHaveLength(
-      1,
-    );
+    expect(
+      screen.getAllByText(/registrada|concluída|espera revisão|parada|rascunho/i),
+    ).toHaveLength(1);
   });
 
   it("com a caixa vazia no servidor, diz que não há aviso em vez de inventar", async () => {
