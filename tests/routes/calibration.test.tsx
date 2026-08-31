@@ -9,7 +9,7 @@ import { Route as CalibrationRoute } from "@/routes/calibration";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
-  fixtureUnassignedLeadUser,
+  fixtureUnassignedTechLeadUser,
   fixtureState,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
@@ -120,7 +120,7 @@ describe("/calibration nega DADO a quem não é admin — a tela é a última ba
   });
 
   it("lead também não — CONTRATO PRD-03: gestor só entra quando os 4 perfis existirem", async () => {
-    renderAs(fixtureUnassignedLeadUser);
+    renderAs(fixtureUnassignedTechLeadUser);
     expect(await screen.findByText("Calibração é restrita a administradores.")).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
   });
@@ -175,7 +175,7 @@ describe("/calibration não CONSULTA para quem não é admin — o `enabled` é 
   });
 
   it("lead: a consulta não sai — CONTRATO PRD-03 reserva a calibração a gestor + admin", async () => {
-    renderAs(fixtureUnassignedLeadUser);
+    renderAs(fixtureUnassignedTechLeadUser);
     await screen.findByText("Calibração é restrita a administradores.");
     expect(calibrationSpy).not.toHaveBeenCalled();
   });

@@ -9,7 +9,7 @@ import { apiPath } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { createAppQueryClient } from "@/lib/query-client";
 import { requireLeadReach } from "@/lib/route-guards";
-import { fixtureTeamLeadUser } from "../helpers/fixtures";
+import { fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 
 /**
  * Fase C, achado A1 do QA adversarial — `POST /auth/login` devolve o usuário
@@ -36,7 +36,7 @@ const fetchMock = vi.fn();
  * descarta o campo que só `/auth/me` monta.
  */
 const payloadDeLogin = JSON.stringify({
-  user: { ...fixtureTeamLeadUser, memberships: undefined },
+  user: { ...fixtureAssignedTechLeadUser, memberships: undefined },
 });
 
 let queryClient: QueryClient;
@@ -62,7 +62,7 @@ function SessionProbe() {
       <p>{`DESTINOS:${destinos.join(",")}`}</p>
       <button
         type="button"
-        onClick={() => void login(fixtureTeamLeadUser.email, "synapse-local-dev")}
+        onClick={() => void login(fixtureAssignedTechLeadUser.email, "synapse-local-dev")}
       >
         Entrar
       </button>
@@ -78,7 +78,9 @@ const entrarPelaTelaDeLogin = async () => {
   );
   await screen.findByText("SEM SESSAO");
   await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
-  await waitFor(() => expect(screen.getByText(`SESSAO:${fixtureTeamLeadUser.email}`)).toBeTruthy());
+  await waitFor(() =>
+    expect(screen.getByText(`SESSAO:${fixtureAssignedTechLeadUser.email}`)).toBeTruthy(),
+  );
 };
 
 describe("auth — a sessão de quem acabou de logar carrega os vínculos do time (A1)", () => {
@@ -110,7 +112,7 @@ describe("auth — a sessão de quem acabou de logar carrega os vínculos do tim
           );
         }
         return Promise.resolve(
-          new Response(JSON.stringify(fixtureTeamLeadUser), {
+          new Response(JSON.stringify(fixtureAssignedTechLeadUser), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),

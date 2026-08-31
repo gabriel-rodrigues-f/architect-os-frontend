@@ -9,7 +9,7 @@ import {
   fixtureAdminUser,
   fixtureMemberUser,
   fixtureState,
-  fixtureUnassignedLeadUser,
+  fixtureUnassignedTechLeadUser,
 } from "../helpers/fixtures";
 import {
   emptyEligibilityRoute,
@@ -32,7 +32,7 @@ const fetchMock = vi.fn();
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
 function mockSession(
-  user: typeof fixtureAdminUser | typeof fixtureMemberUser | typeof fixtureUnassignedLeadUser,
+  user: typeof fixtureAdminUser | typeof fixtureMemberUser | typeof fixtureUnassignedTechLeadUser,
   state: AppState,
 ) {
   mockAppFetch(fetchMock, { user, state, routes: [emptyEligibilityRoute] });
@@ -161,7 +161,7 @@ describe("Avaliações — campos por papel e status", () => {
    * líder/final, em vez de preencher e devolver 403 tarde.
    */
   it("lead não vê líder/final editáveis para arquiteto sem time", async () => {
-    mockSession(fixtureUnassignedLeadUser, {
+    mockSession(fixtureUnassignedTechLeadUser, {
       ...inReviewState,
       architects: inReviewState.architects.map((architect) => ({
         ...architect,

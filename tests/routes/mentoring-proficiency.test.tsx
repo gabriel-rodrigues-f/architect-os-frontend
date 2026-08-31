@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "@/lib/api";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -21,14 +21,15 @@ import { apiPath } from "@/lib/api-path";
  */
 
 const LEAD_USER: SessionUser = {
-  id: "test-lead-ana",
-  email: "lead-da-ana@company.com",
-  name: "Lead da Ana",
-  role: "lead",
+  id: "test-tech-lead-ana",
+  email: "tech-lead-da-ana@company.com",
+  name: "Tech Lead da Ana",
+  role: "tech_lead",
   architectId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
+  memberships: [{ teamId: fixtureTeamId, role: "tech_lead" }],
 };
 
 /**

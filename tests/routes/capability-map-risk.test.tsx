@@ -111,7 +111,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
       id: "test-lead-de-ana",
       email: "lead-de-ana@company.com",
       name: "Lead de Ana",
-      role: "lead",
+      role: "tech_lead",
       architectId: null,
       status: "active",
       mustChangePassword: false,

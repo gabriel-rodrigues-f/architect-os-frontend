@@ -1,8 +1,23 @@
 import type { ApiClient } from "../api-client";
 
-export type UserRole = "admin" | "lead" | "member";
+export const TEAM_LEADERSHIP_ROLES = ["manager", "tech_lead"] as const;
+export type TeamLeadershipRole = (typeof TEAM_LEADERSHIP_ROLES)[number];
+export const USER_ROLES = ["admin", ...TEAM_LEADERSHIP_ROLES, "member"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
 export type UserStatus = "active" | "disabled";
-export type TeamMemberRole = "manager" | "tech_lead" | "member";
+export type TeamMemberRole = TeamLeadershipRole | "member";
+
+export class TeamLeadershipRoles {
+  static readonly ALL = TEAM_LEADERSHIP_ROLES;
+
+  static readonly MANAGER = TEAM_LEADERSHIP_ROLES[0];
+
+  static readonly TECH_LEAD = TEAM_LEADERSHIP_ROLES[1];
+
+  static includes(role: string): role is TeamLeadershipRole {
+    return (TEAM_LEADERSHIP_ROLES as readonly string[]).includes(role);
+  }
+}
 
 export interface TeamMembership {
   teamId: string;

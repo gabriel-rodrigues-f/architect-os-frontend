@@ -10,7 +10,7 @@ import {
 import {
   fixtureAdminUser,
   fixtureMemberUser,
-  fixtureUnassignedLeadUser,
+  fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
 
 /**
@@ -87,7 +87,7 @@ describe("AssessmentViewModel", () => {
   describe("permissionsFor", () => {
     it("dono em Draft: canEditSelf/canSubmit, nunca isLead mesmo se a conta também lidera", () => {
       const { vm } = makeVm();
-      const ownerAsLeadToo = { ...fixtureMemberUser, role: "lead" as const };
+      const ownerAsLeadToo = { ...fixtureMemberUser, role: "tech_lead" as const };
       const result = vm.permissionsFor(ownerAsLeadToo, "ana", anaArchitect, baseAssessment);
       expect(result.isOwner).toBe(true);
       expect(result.isLead).toBe(false);
@@ -99,7 +99,12 @@ describe("AssessmentViewModel", () => {
     it("Tech Lead responsável em In Review: canEditLeaderFinal/canComplete", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "In Review" as const };
-      const result = vm.permissionsFor(fixtureUnassignedLeadUser, "ana", anaArchitect, assessment);
+      const result = vm.permissionsFor(
+        fixtureUnassignedTechLeadUser,
+        "ana",
+        anaArchitect,
+        assessment,
+      );
       expect(result.isOwner).toBe(false);
       expect(result.isLead).toBe(true);
       expect(result.canEditLeaderFinal).toBe(true);
@@ -111,7 +116,12 @@ describe("AssessmentViewModel", () => {
       const { vm } = makeVm();
       const teamlessAna = { ...anaArchitect, teamId: null };
       const assessment = { ...baseAssessment, status: "In Review" as const };
-      const result = vm.permissionsFor(fixtureUnassignedLeadUser, "ana", teamlessAna, assessment);
+      const result = vm.permissionsFor(
+        fixtureUnassignedTechLeadUser,
+        "ana",
+        teamlessAna,
+        assessment,
+      );
       expect(result.isLead).toBe(false);
       expect(result.canEditLeaderFinal).toBe(false);
     });
@@ -128,7 +138,12 @@ describe("AssessmentViewModel", () => {
     it("Completed: canReopen só para o Tech Lead responsável", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "Completed" as const };
-      const result = vm.permissionsFor(fixtureUnassignedLeadUser, "ana", anaArchitect, assessment);
+      const result = vm.permissionsFor(
+        fixtureUnassignedTechLeadUser,
+        "ana",
+        anaArchitect,
+        assessment,
+      );
       expect(result.isCompleted).toBe(true);
       expect(result.canReopen).toBe(true);
       expect(result.canEditSelf).toBe(false);

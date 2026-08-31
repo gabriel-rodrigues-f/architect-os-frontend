@@ -45,7 +45,7 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
   },
   {
     nome: "edição de usuário",
-    enviar: () => authApi.updateUser("u-1", { role: "lead" }),
+    enviar: () => authApi.updateUser("u-1", { role: "tech_lead" }),
     caminho: "/api/v1/auth/users/u-1",
   },
   {

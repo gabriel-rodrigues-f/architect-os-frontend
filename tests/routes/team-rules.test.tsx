@@ -10,8 +10,8 @@ import {
   fixtureMemberUser,
   fixtureState,
   fixtureTeamId,
-  fixtureTeamLeadUser,
-  fixtureUnassignedLeadUser,
+  fixtureAssignedTechLeadUser,
+  fixtureUnassignedTechLeadUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
 import {
@@ -102,7 +102,7 @@ describe("/team-rules nega DADO a quem não rege régua — a tela é a última 
   });
 
   it("lead sem vínculo também não — não há time que ele reja", async () => {
-    renderAs(fixtureUnassignedLeadUser, [comRegua]);
+    renderAs(fixtureUnassignedTechLeadUser, [comRegua]);
     expect(
       await screen.findByText("Configurar a régua do time é restrito a quem lidera o time."),
     ).toBeTruthy();
@@ -111,7 +111,7 @@ describe("/team-rules nega DADO a quem não rege régua — a tela é a última 
   });
 
   it("lead com vínculo só enxerga os times que rege — nunca a lista inteira", async () => {
-    renderAs(fixtureTeamLeadUser, [comRegua]);
+    renderAs(fixtureAssignedTechLeadUser, [comRegua]);
     expect(await screen.findByText("Time Plataforma")).toBeTruthy();
 
     await userEvent.click(screen.getByLabelText("Time"));

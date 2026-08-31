@@ -57,7 +57,7 @@ export class DashboardPresenter {
 
   pendingQueuesFor(user: SessionUser): LeadPendingQueues {
     const people = this.state.architects.filter(
-      (architect) => architect.active && this.authorization.isAssignedTechLeadOf(user, architect),
+      (architect) => architect.active && this.authorization.leadsTeamOf(user, architect),
     );
 
     const awaitingCalibration = people

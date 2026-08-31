@@ -9,8 +9,8 @@ import { SESSION_QUERY_KEY } from "@/lib/session-query";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
-  fixtureTeamLeadUser,
-  fixtureUnassignedLeadUser,
+  fixtureAssignedTechLeadUser,
+  fixtureUnassignedTechLeadUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
 import { mockAppFetch } from "../helpers/render-app";
@@ -108,13 +108,13 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
    * mostra "não encontrado" — nada do perfil chega ao navegador.
    */
   it("lead sem atribuição permanece na URL e não recebe o arquiteto no payload", async () => {
-    expect(await navegarComoUsuario(fixtureUnassignedLeadUser, "/architects/bruno")).toBe(
+    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/architects/bruno")).toBe(
       "/architects/bruno",
     );
   });
 
   it("nega /users a um lead", async () => {
-    expect(await navegarComoUsuario(fixtureUnassignedLeadUser, "/users")).toBe("/");
+    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/users")).toBe("/");
   });
 });
 
@@ -146,11 +146,11 @@ describe("requireLeadReach — a guarda da régua do time", () => {
   });
 
   it("nega ao lead sem vínculo nenhum — não há régua que ele reja", async () => {
-    expect(await alcancaTelaDaRegua(fixtureUnassignedLeadUser)).toBe(false);
+    expect(await alcancaTelaDaRegua(fixtureUnassignedTechLeadUser)).toBe(false);
   });
 
   it("deixa passar o lead com vínculo no time", async () => {
-    expect(await alcancaTelaDaRegua(fixtureTeamLeadUser)).toBe(true);
+    expect(await alcancaTelaDaRegua(fixtureAssignedTechLeadUser)).toBe(true);
   });
 
   it("deixa passar o admin", async () => {

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { filterNavGroups, isNavItemHiddenByCollapse, NAV_GROUPS } from "@/components/app/AppShell";
+import type { UserRole } from "@/lib/api";
 import {
   fixtureAdminUser,
+  fixtureAssignedManagerUser,
   fixtureMemberUser,
-  fixtureTeamLeadUser,
-  fixtureUnassignedLeadUser,
+  fixtureAssignedTechLeadUser,
+  fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
 
 /**
@@ -14,12 +16,13 @@ import {
  * `memberships`. As asserções de papel abaixo continuam idênticas; só a
  * forma de dizer "este papel" mudou, via `usuarioDoPapel`.
  */
-const usuarioDoPapel = (role: string) =>
+const usuarioDoPapel = (role: UserRole) =>
   ({
     member: fixtureMemberUser,
-    lead: fixtureUnassignedLeadUser,
+    tech_lead: fixtureUnassignedTechLeadUser,
+    manager: fixtureAssignedManagerUser,
     admin: fixtureAdminUser,
-  })[role]!;
+  })[role];
 
 /**
  * QW-01/QW-02 (Seção 32, Quick Wins, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-
@@ -45,7 +48,7 @@ describe("AppShell — navegação recortada por papel", () => {
   });
 
   it("lead também não vê os destinos admin-only", () => {
-    const groups = filterNavGroups(NAV_GROUPS, fixtureUnassignedLeadUser);
+    const groups = filterNavGroups(NAV_GROUPS, fixtureUnassignedTechLeadUser);
     const paths = groups.flatMap((g) => g.items.map((i) => i.to));
     expect(paths).not.toContain("/competency-matrix");
     expect(paths).not.toContain("/users");
@@ -60,12 +63,13 @@ describe("AppShell — navegação recortada por papel", () => {
   });
 
   /**
-   * Tela 3 (spec §3, CONTRATO PRD-03) — calibração é só gestor + admin, e o
-   * papel `lead` de hoje não distingue gestor de tech lead: até os 4 perfis
-   * existirem, /calibration é admin-only também na navegação.
+   * Tela 3 (spec §3, CONTRATO PRD-03) — calibração é só gestor + admin. O
+   * modelo de quatro papéis já distingue gestor de tech lead (backend
+   * ADR-0047), mas a navegação segue admin-only: abrir para o gestor é
+   * decisão de produto, não consequência do vocabulário.
    */
-  it("calibração é admin-only na navegação até o modelo de 4 perfis", () => {
-    for (const role of ["member", "lead"]) {
+  it("calibração é admin-only na navegação — nem gestor nem tech lead a veem", () => {
+    for (const role of ["member", "tech_lead", "manager"] as const) {
       const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel(role));
       const paths = groups.flatMap((group) => group.items.map((item) => item.to));
       expect(paths, role).not.toContain("/calibration");
@@ -73,7 +77,7 @@ describe("AppShell — navegação recortada por papel", () => {
   });
 
   it("/settings (Política de Progressão) aparece na navegação para todos os papéis", () => {
-    for (const role of ["member", "lead", "admin"]) {
+    for (const role of ["member", "tech_lead", "manager", "admin"] as const) {
       const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel(role));
       const paths = groups.flatMap((g) => g.items.map((i) => i.to));
       expect(paths).toContain("/settings");
@@ -91,8 +95,8 @@ describe("AppShell — navegação recortada por papel", () => {
     const destinos = (user: typeof fixtureAdminUser) =>
       filterNavGroups(NAV_GROUPS, user).flatMap((group) => group.items.map((item) => item.to));
     expect(destinos(fixtureAdminUser)).toContain("/team-rules");
-    expect(destinos(fixtureTeamLeadUser)).toContain("/team-rules");
-    expect(destinos(fixtureUnassignedLeadUser)).not.toContain("/team-rules");
+    expect(destinos(fixtureAssignedTechLeadUser)).toContain("/team-rules");
+    expect(destinos(fixtureUnassignedTechLeadUser)).not.toContain("/team-rules");
     expect(destinos(fixtureMemberUser)).not.toContain("/team-rules");
   });
 

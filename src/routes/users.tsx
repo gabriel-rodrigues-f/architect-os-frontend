@@ -194,7 +194,8 @@ function UsersPage() {
 
 const roleTone: Record<UserRole, "neutral" | "progress" | "done"> = {
   admin: "done",
-  lead: "progress",
+  manager: "progress",
+  tech_lead: "progress",
   member: "neutral",
 };
 
@@ -306,7 +307,8 @@ function EditUserDialog({
               onChange={(e) => setRole(e.target.value as UserRole)}
             >
               <option value="member">{t("users.role.member")}</option>
-              <option value="lead">{t("users.role.lead")}</option>
+              <option value="tech_lead">{t("users.role.tech_lead")}</option>
+              <option value="manager">{t("users.role.manager")}</option>
               <option value="admin">{t("users.role.admin")}</option>
             </select>
           </div>
@@ -421,7 +423,8 @@ function CreateUserDialog({
               onChange={(e) => setRole(e.target.value as UserRole)}
             >
               <option value="member">{t("users.role.member")}</option>
-              <option value="lead">{t("users.role.lead")}</option>
+              <option value="tech_lead">{t("users.role.tech_lead")}</option>
+              <option value="manager">{t("users.role.manager")}</option>
               <option value="admin">{t("users.role.admin")}</option>
             </select>
           </div>

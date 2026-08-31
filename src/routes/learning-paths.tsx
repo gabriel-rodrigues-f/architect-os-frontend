@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isLeadCapable } from "@/lib/api";
+import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 import { useServerDraft, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -76,7 +77,7 @@ function LearningPage() {
   const canEdit = (path: LearningPath) => {
     if (user.role === "admin") return true;
     if (path.createdByUserId) return path.createdByUserId === user.id;
-    return user.role === "lead";
+    return TeamLeadershipRoles.includes(user.role);
   };
 
   const canEditProgress = (architectId: string) =>

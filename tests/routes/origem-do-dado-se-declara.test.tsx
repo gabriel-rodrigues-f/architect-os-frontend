@@ -32,7 +32,7 @@ import { HttpCalibrationGateway } from "@/lib/gateways/calibration.gateway";
 import { HttpNoticesGateway } from "@/lib/gateways/notices.gateway";
 import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as NoticesRoute } from "@/routes/notices";
-import { fixtureAdminUser, fixtureState, fixtureTeamLeadUser } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureState, fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -151,7 +151,7 @@ describe("o sino de avisos declara que os avisos são de demonstração", () => 
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
-      user: fixtureTeamLeadUser,
+      user: fixtureAssignedTechLeadUser,
       state: fixtureState,
       routes: [noticesRoute],
     });

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { useMemo } from "react";
+import type { ReactNode } from "react";
 
 import {
   CapabilityRadar,
@@ -21,6 +22,7 @@ import {
   SectionCard,
   StatCard,
 } from "@/components/app";
+import type { UserRole } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import {
@@ -67,17 +69,19 @@ const PAINEL_CONTEXTS: readonly ContextScopeRequest[] = [
   "evidences",
 ];
 
+const HOME_BY_ROLE = {
+  admin: AdminHome,
+  manager: LeadHome,
+  tech_lead: LeadHome,
+  member: MemberHome,
+} satisfies Record<UserRole, () => ReactNode>;
+
 function Dashboard() {
   const user = useCurrentUser();
+  const Home = HOME_BY_ROLE[user.role];
   return (
     <ContextScope contexts={PAINEL_CONTEXTS}>
-      {user.role === "lead" ? (
-        <LeadHome />
-      ) : user.role === "member" ? (
-        <MemberHome />
-      ) : (
-        <AdminHome />
-      )}
+      <Home />
     </ContextScope>
   );
 }

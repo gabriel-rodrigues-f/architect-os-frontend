@@ -1,4 +1,5 @@
 import type { AppState, SessionUser } from "@/lib/api";
+import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 
 /**
  * Sessão de admin — o Tech Lead surrogate do modelo de contas atual (ver
@@ -30,16 +31,16 @@ export const fixtureMemberUser: SessionUser = {
 };
 
 /**
- * Sessão de lead sem nenhum arquiteto no escopo (o recorte do servidor não
- * lhe entrega ninguém) — usada para provar que `isLeadOf` nega por padrão
- * sobre arquiteto sem time, em vez de liberar campo pra qualquer conta
- * `lead` da empresa (UX-001, semântica pós-Fase 2: o vínculo é o TIME).
+ * Sessão de tech lead sem nenhum arquiteto no escopo (o recorte do servidor
+ * não lhe entrega ninguém) — usada para provar que `isLeadOf` nega por padrão
+ * sobre arquiteto sem time, em vez de liberar campo pra qualquer conta de
+ * liderança da empresa (UX-001, semântica pós-Fase 2: o vínculo é o TIME).
  */
-export const fixtureUnassignedLeadUser: SessionUser = {
-  id: "test-lead-sem-atribuicao",
-  email: "lead-sem-atribuicao@company.com",
-  name: "Lead sem atribuição",
-  role: "lead",
+export const fixtureUnassignedTechLeadUser: SessionUser = {
+  id: "test-tech-lead-sem-atribuicao",
+  email: "tech-lead-sem-atribuicao@company.com",
+  name: "Tech Lead sem atribuição",
+  role: "tech_lead",
   architectId: null,
   status: "active",
   mustChangePassword: false,
@@ -47,21 +48,39 @@ export const fixtureUnassignedLeadUser: SessionUser = {
 };
 
 /**
- * Onda 17.1 — a sessão passou a expor `memberships`. Este é o lead COM
+ * Onda 17.1 — a sessão passou a expor `memberships`. Este é o tech lead COM
  * vínculo de tech lead no time, a conta que de fato rege a régua daquele
- * time (backend `isLeadOfTeam`). O par dele é o `fixtureUnassignedLeadUser`:
- * mesmo papel, sem vínculo nenhum — e por isso sem régua para configurar.
+ * time (backend `isLeadOfTeam`). O par dele é o
+ * `fixtureUnassignedTechLeadUser`: mesmo papel, sem vínculo nenhum — e por
+ * isso sem régua para configurar.
  */
-export const fixtureTeamLeadUser: SessionUser = {
-  id: "test-lead-do-time",
-  email: "lead-do-time@company.com",
-  name: "Lead do time",
-  role: "lead",
+export const fixtureAssignedTechLeadUser: SessionUser = {
+  id: "test-tech-lead-do-time",
+  email: "tech-lead-do-time@company.com",
+  name: "Tech Lead do time",
+  role: "tech_lead",
   architectId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
   memberships: [{ teamId: "time-plataforma", role: "tech_lead" }],
+};
+
+/**
+ * Fase 3 (backend ADR-0047) — o gestor COM vínculo de gestor no time. Mesmo
+ * ALCANCE do tech lead atribuído (a união dos vínculos de liderança), poder
+ * diferente: a ficha funcional é dele, a proficiência observada não.
+ */
+export const fixtureAssignedManagerUser: SessionUser = {
+  id: "test-gestor-do-time",
+  email: "gestor-do-time@company.com",
+  name: "Gestor do time",
+  role: "manager",
+  architectId: null,
+  status: "active",
+  mustChangePassword: false,
+  createdAt: "2026-01-01T00:00:00Z",
+  memberships: [{ teamId: "time-plataforma", role: "manager" }],
 };
 
 /**
@@ -409,7 +428,7 @@ export function scopedFixtureStateFor(
 
   const visibleIds = new Set<string>();
   if (user.architectId) visibleIds.add(user.architectId);
-  const scopeGrantingTeams = new Set(user.role === "lead" ? leadTeamIds : []);
+  const scopeGrantingTeams = new Set(TeamLeadershipRoles.includes(user.role) ? leadTeamIds : []);
   for (const architect of state.architects) {
     if (architect.teamId && scopeGrantingTeams.has(architect.teamId)) {
       visibleIds.add(architect.id);

@@ -85,7 +85,7 @@ const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
 };
 
 /** Contas que NÃO alcançam uma rota restrita — o gêmeo de tela usa uma delas. */
-const FIXTURES_DE_QUEM_NAO_ALCANCA = ["fixtureMemberUser", "fixtureUnassignedLeadUser"];
+const FIXTURES_DE_QUEM_NAO_ALCANCA = ["fixtureMemberUser", "fixtureUnassignedTechLeadUser"];
 
 /** Declarar "somente leitura" sem dizer por quê é o mesmo buraco com outro nome. */
 const TAMANHO_MINIMO_DA_JUSTIFICATIVA = 60;

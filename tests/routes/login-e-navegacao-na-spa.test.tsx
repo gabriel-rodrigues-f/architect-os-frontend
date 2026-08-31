@@ -50,7 +50,7 @@ const contaAutenticada: SessionUser = {
   id: "test-lead-do-time",
   email: "techlead@synapse.local",
   name: "Lead do time",
-  role: "lead",
+  role: "tech_lead",
   architectId: null,
   status: "active",
   mustChangePassword: false,
