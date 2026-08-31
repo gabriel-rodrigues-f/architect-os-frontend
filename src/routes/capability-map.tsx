@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
-import { EmptyState, NameList, PageHeader, SectionCard, ViewToggle } from "@/components/app";
+import {
+  type CardsOrTable,
+  EmptyState,
+  NameList,
+  PageHeader,
+  SectionCard,
+  useCardsAndTableViews,
+  ViewToggle,
+} from "@/components/app";
 import { Badge } from "@/components/ui/badge";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { useI18n } from "@/lib/i18n";
@@ -11,13 +19,13 @@ import { useScoringBands, useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
     meta: [
-      { title: "Cobertura de Capacidades — Synapse" },
+      { title: "De quem o time depende — Synapse" },
       {
         name: "description",
         content:
           "Mapa das capacidades técnicas disponíveis no time de arquitetura, com risco de concentração e lacunas de proficiência.",
       },
-      { property: "og:title", content: "Cobertura de Capacidades — Synapse" },
+      { property: "og:title", content: "De quem o time depende — Synapse" },
       {
         property: "og:description",
         content:
@@ -33,7 +41,8 @@ function CapabilityMapPage() {
   const sel = useSelectors();
   const { t } = useI18n();
   const help = usePageHelp("capabilityMap");
-  const [viewOverride, setViewOverride] = useState<"cards" | "table" | null>(null);
+  const [viewOverride, setViewOverride] = useState<CardsOrTable | null>(null);
+  const cardsAndTableViews = useCardsAndTableViews();
 
   const population = sel.activeArchitects;
 
@@ -45,7 +54,7 @@ function CapabilityMapPage() {
   );
   const withRisk = presenter.areas(population);
 
-  const view: "cards" | "table" = viewOverride ?? (withRisk.length > 8 ? "table" : "cards");
+  const view: CardsOrTable = viewOverride ?? (withRisk.length > 8 ? "table" : "cards");
 
   return (
     <>
@@ -58,12 +67,7 @@ function CapabilityMapPage() {
       ) : (
         <>
           <div className="mb-3 flex justify-end">
-            <ViewToggle
-              view={view}
-              onChange={setViewOverride}
-              cardsLabel={t("team.view.cards")}
-              tableLabel={t("team.view.table")}
-            />
+            <ViewToggle view={view} onChange={setViewOverride} options={cardsAndTableViews} />
           </div>
 
           <div className="max-h-[calc(100vh-260px)] overflow-y-auto">

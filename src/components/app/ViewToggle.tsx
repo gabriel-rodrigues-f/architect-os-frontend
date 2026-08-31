@@ -1,50 +1,54 @@
+import type { LucideIcon } from "lucide-react";
 import { LayoutGrid, Table2 } from "lucide-react";
 
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-export function ViewToggle({
+export interface ViewOption<T extends string> {
+  value: T;
+  label: string;
+  icon: LucideIcon;
+}
+
+export type CardsOrTable = "cards" | "table";
+
+export function useCardsAndTableViews(): readonly ViewOption<CardsOrTable>[] {
+  const { t } = useI18n();
+  return [
+    { value: "cards", label: t("team.view.cards"), icon: LayoutGrid },
+    { value: "table", label: t("team.view.table"), icon: Table2 },
+  ];
+}
+
+export function ViewToggle<T extends string>({
   view,
   onChange,
-  cardsLabel,
-  tableLabel,
+  options,
 }: {
-  view: "cards" | "table";
-  onChange: (view: "cards" | "table") => void;
-  cardsLabel: string;
-  tableLabel: string;
+  view: T;
+  onChange: (view: T) => void;
+  options: readonly ViewOption<T>[];
 }) {
   return (
     <div className="inline-flex items-center gap-0.5 rounded-md border border-input p-0.5">
-      <button
-        type="button"
-        aria-label={cardsLabel}
-        aria-pressed={view === "cards"}
-        title={cardsLabel}
-        onClick={() => onChange("cards")}
-        className={cn(
-          "rounded p-1.5 transition-colors",
-          view === "cards"
-            ? "bg-secondary text-foreground"
-            : "text-muted-foreground hover:text-foreground",
-        )}
-      >
-        <LayoutGrid className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        aria-label={tableLabel}
-        aria-pressed={view === "table"}
-        title={tableLabel}
-        onClick={() => onChange("table")}
-        className={cn(
-          "rounded p-1.5 transition-colors",
-          view === "table"
-            ? "bg-secondary text-foreground"
-            : "text-muted-foreground hover:text-foreground",
-        )}
-      >
-        <Table2 className="h-4 w-4" />
-      </button>
+      {options.map(({ value, label, icon: Icon }) => (
+        <button
+          key={value}
+          type="button"
+          aria-label={label}
+          aria-pressed={view === value}
+          title={label}
+          onClick={() => onChange(value)}
+          className={cn(
+            "rounded p-1.5 transition-colors",
+            view === value
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      ))}
     </div>
   );
 }
