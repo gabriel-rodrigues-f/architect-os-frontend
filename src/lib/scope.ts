@@ -25,6 +25,11 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
  *   PODER ESTRITO (`isAssignedTechLeadOf`) exige papel global E vínculo
  *   naquele time, os dois iguais — é o que o backend guarda na proficiência
  *   observada e na reabertura de PDI.
+ *
+ * `canCalibrate` é de um terceiro tipo, e por isso não se apoia em nenhum dos
+ * dois: o CONTRATO PRD-03 reserva a leitura de calibração a gestor + admin
+ * SEM falar de time, porque ela compara avaliadores entre si em vez de agir
+ * sobre alguém. Papel global, vínculo nenhum.
  */
 export class UiAuthorizationPolicy {
   canActFor(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
@@ -49,6 +54,10 @@ export class UiAuthorizationPolicy {
 
   canAnalyzeTeam(user: SessionUser): boolean {
     return user.role !== "member";
+  }
+
+  canCalibrate(user: SessionUser): boolean {
+    return this.isAdmin(user) || user.role === TeamLeadershipRoles.MANAGER;
   }
 
   canConfigureRulesOf(user: SessionUser, teamId: string): boolean {

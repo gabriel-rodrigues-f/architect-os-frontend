@@ -20,6 +20,9 @@ class NavigationBarrier {
   requireLeadReach: RouteGuard = ({ context }) =>
     this.requireReach(context, (user) => this.policy.canConfigureAnyTeamRules(user));
 
+  requireCalibrationReach: RouteGuard = ({ context }) =>
+    this.requireReach(context, (user) => this.policy.canCalibrate(user));
+
   private async requireReach(
     context: RouteGuardContext,
     allows: (user: SessionUser) => boolean,
@@ -44,3 +47,4 @@ const navigationBarrier = new NavigationBarrier(defaultUiAuthorizationPolicy);
 
 export const requireAdminReach = navigationBarrier.requireAdminReach;
 export const requireLeadReach = navigationBarrier.requireLeadReach;
+export const requireCalibrationReach = navigationBarrier.requireCalibrationReach;
