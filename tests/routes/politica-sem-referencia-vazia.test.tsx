@@ -38,7 +38,13 @@ const vocabulariesRoute: FetchRoute = (href) =>
           { vocabulary: "EVIDENCE_TYPE", code: "ADR", label: "ADR", order: 1, active: true },
         ],
         LEARNING_ITEM_TYPE: [
-          { vocabulary: "LEARNING_ITEM_TYPE", code: "COURSE", label: "Curso", order: 1, active: true },
+          {
+            vocabulary: "LEARNING_ITEM_TYPE",
+            code: "COURSE",
+            label: "Curso",
+            order: 1,
+            active: true,
+          },
         ],
         ACTION_TYPE: [
           { vocabulary: "ACTION_TYPE", code: "LEARN", label: "Aprender", order: 1, active: true },
