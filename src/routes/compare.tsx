@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Radar, Table2 } from "lucide-react";
+import { useState } from "react";
 
 import {
   ArchitectFilter,
@@ -9,6 +11,7 @@ import {
   LevelScaleKey,
   PageHeader,
   SectionCard,
+  ViewToggle,
 } from "@/components/app";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -31,6 +34,8 @@ export const Route = createFileRoute("/compare")({
   component: ComparePage,
 });
 
+type ComparisonView = "radar" | "table";
+
 function ComparePage() {
   const { t } = useI18n();
   const help = usePageHelp("compare");
@@ -38,6 +43,12 @@ function ComparePage() {
   const sel = useSelectors();
 
   const [selected, setSelected] = useSearchParamList("selected", () => []);
+  const [view, setView] = useState<ComparisonView>("radar");
+
+  const views = [
+    { value: "radar" as const, label: t("compare.view.radar"), icon: Radar },
+    { value: "table" as const, label: t("compare.view.table"), icon: Table2 },
+  ];
 
   const architects = Selection.explicit(selected).apply(store.architects);
   const series: EvolutionSeries[] = architects.map((a) => ({ key: a.id, label: a.name }));
@@ -78,65 +89,65 @@ function ComparePage() {
       {architects.length < 2 ? (
         <EmptyState title={t("compare.empty")} />
       ) : (
-        <>
-          <SectionCard title={t("compare.radar.title")} description={t("compare.radar.subtitle")}>
+        <SectionCard
+          title={t(view === "radar" ? "compare.radar.title" : "compare.table.title")}
+          description={t(view === "radar" ? "compare.radar.subtitle" : "compare.table.subtitle")}
+          actions={<ViewToggle view={view} onChange={setView} options={views} />}
+        >
+          {view === "radar" ? (
             <ComparisonRadar data={radarData} series={series} />
-          </SectionCard>
-
-          <SectionCard
-            className="mt-6"
-            title={t("compare.table.title")}
-            description={t("compare.table.subtitle")}
-          >
-            <LevelScaleKey />
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
-                <thead>
-                  <tr>
-                    <th
-                      scope="col"
-                      className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                    >
-                      {t("col.capability")}
-                    </th>
-                    {architects.map((a) => (
+          ) : (
+            <>
+              <LevelScaleKey />
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
+                  <thead>
+                    <tr>
                       <th
-                        key={a.id}
                         scope="col"
-                        className="px-1 text-center text-meta font-medium text-muted-foreground"
+                        className="w-44 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
                       >
-                        {a.name}
+                        {t("col.capability")}
                       </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {store.capabilities.map((capability) => (
-                    <tr key={capability.id}>
-                      <th
-                        scope="row"
-                        className="py-1 text-left text-sm font-medium"
-                        title={capability.name}
-                      >
-                        {sel.capabilityShortLabel(capability)}
-                      </th>
-                      {architects.map((a) => {
-                        const avg = averagesByArchitect.get(a.id)?.get(capability.id);
-                        return (
-                          <td key={a.id} className="min-w-[52px]">
-                            <LevelHeatCell
-                              level={avg === undefined ? undefined : Math.round(avg)}
-                            />
-                          </td>
-                        );
-                      })}
+                      {architects.map((a) => (
+                        <th
+                          key={a.id}
+                          scope="col"
+                          className="px-1 text-center text-meta font-medium text-muted-foreground"
+                        >
+                          {a.name}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </SectionCard>
-        </>
+                  </thead>
+                  <tbody>
+                    {store.capabilities.map((capability) => (
+                      <tr key={capability.id}>
+                        <th
+                          scope="row"
+                          className="py-1 text-left text-sm font-medium"
+                          title={capability.name}
+                        >
+                          {sel.capabilityShortLabel(capability)}
+                        </th>
+                        {architects.map((a) => {
+                          const avg = averagesByArchitect.get(a.id)?.get(capability.id);
+                          return (
+                            <td key={a.id} className="min-w-[52px]">
+                              <LevelHeatCell
+                                level={avg === undefined ? undefined : Math.round(avg)}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </SectionCard>
       )}
     </>
   );
