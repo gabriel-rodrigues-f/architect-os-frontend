@@ -59,7 +59,7 @@ export const architectAdherenceResponseSchema = z.object({
   teamId: z.string().nullable(),
   careerLevelId: z.string(),
   adherence: z.object({
-    percentage: z.number(),
+    percentage: z.number().min(0).max(1),
     missingRequired: z.array(
       z.object({
         competencyId: z.string(),

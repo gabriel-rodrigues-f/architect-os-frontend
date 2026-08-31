@@ -43,6 +43,10 @@ export class CareerRoadmapViewModel {
     return above[0] ?? null;
   }
 
+  adherencePercent(adherence: ArchitectAdherence): number {
+    return adherence.adherence.percentage * 100;
+  }
+
   missingRequired(adherence: ArchitectAdherence): MissingCompetencyView[] {
     return adherence.adherence.missingRequired
       .map((missing) => ({
