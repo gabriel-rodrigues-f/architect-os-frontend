@@ -75,7 +75,9 @@ export function ContextScope({
     queries: requests.map((request) => stateContextCatalog.queryOptionsOf(request)),
   });
 
-  const failed = results.find((result) => result.isError);
+  const failedIndex = results.findIndex((result) => result.isError);
+  const failed = results[failedIndex];
+  const failedRequest = requests[failedIndex];
   const pending = results.some((result) => result.isPending);
   const state =
     pending || failed
@@ -97,7 +99,14 @@ export function ContextScope({
     [revision, contextsKey, pending, queryClient],
   );
 
-  if (failed) return <ConnectionError error={failed.error} onRetry={() => void failed.refetch()} />;
+  if (failed && failedRequest)
+    return (
+      <ConnectionError
+        error={failed.error}
+        onRetry={() => void failed.refetch()}
+        resource={failedRequest.name}
+      />
+    );
   if (value === null) return <LoadingState />;
 
   return <StoreApiContext.Provider value={value}>{children}</StoreApiContext.Provider>;
