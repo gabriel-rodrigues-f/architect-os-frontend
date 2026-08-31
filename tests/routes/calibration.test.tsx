@@ -14,7 +14,8 @@ import {
   fixtureState,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { apiPath } from "@/lib/api-path";
+import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
  * Tela 3 (spec §3) — calibração entre líderes, distribuição de notas por
@@ -26,19 +27,72 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * ADR-0047) a distinção existe, e o contrato passa a ser dizível: o gestor
  * entra, o tech lead não.
  *
- * Os dados vêm do InMemoryCalibrationGateway (PRD-03 backend na onda 21):
- * Marina 4.00 (leniente), Ricardo 3.00 (central), Paula 2.13 (severa) —
- * média geral ~3.12; Marina e Paula passam do limiar de alerta (0.5).
+ * Os dados vêm de `GET /calibration` (onda 24 ligou o gateway HTTP no
+ * container; antes era o InMemoryCalibrationGateway): Marina 4.00
+ * (leniente), Ricardo 3.00 (central), Paula 2.13 (severa) — média geral
+ * ~3.12; Marina e Paula passam do limiar de alerta (0.5). O recorte de quem
+ * aparece na distribuição é do SERVIDOR; o que se afirma aqui é a leitura.
  */
 const fetchMock = vi.fn();
 
 const CalibrationPage = CalibrationRoute.options.component as () => ReactNode;
 
+const distribuicaoDe = (
+  counts: [number, number, number, number, number],
+): Record<"1" | "2" | "3" | "4" | "5", number> => ({
+  "1": counts[0],
+  "2": counts[1],
+  "3": counts[2],
+  "4": counts[3],
+  "5": counts[4],
+});
+
+const calibracaoDoServidor = {
+  cycleId: "2026-h2",
+  overall: { distribution: distribuicaoDe([5, 11, 16, 13, 7]), average: 162 / 52 },
+  evaluators: [
+    {
+      userId: "evaluator-lenient",
+      name: "Marina Lopes",
+      teamIds: ["team-integration"],
+      distribution: distribuicaoDe([0, 1, 4, 9, 6]),
+      average: 4,
+      itemsCount: 20,
+      assessmentsCount: 4,
+    },
+    {
+      userId: "evaluator-central",
+      name: "Ricardo Nunes",
+      teamIds: ["team-architecture"],
+      distribution: distribuicaoDe([1, 3, 8, 3, 1]),
+      average: 3,
+      itemsCount: 16,
+      assessmentsCount: 3,
+    },
+    {
+      userId: "evaluator-severe",
+      name: "Paula Souza",
+      teamIds: ["team-platform"],
+      distribution: distribuicaoDe([4, 7, 4, 1, 0]),
+      average: 2.125,
+      itemsCount: 16,
+      assessmentsCount: 3,
+    },
+  ],
+};
+
+const calibrationRoute: FetchRoute = (href) =>
+  href.includes(apiPath("/calibration")) ? jsonResponse(calibracaoDoServidor) : undefined;
+
 describe("/calibration — distribuição de notas por avaliador", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state: fixtureState,
+      routes: [calibrationRoute],
+    });
   });
 
   afterEach(() => {
@@ -110,7 +164,11 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
   const renderAs = (user: typeof fixtureMemberUser) => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user, state: scopedFixtureStateFor(user) });
+    mockAppFetch(fetchMock, {
+      user,
+      state: scopedFixtureStateFor(user),
+      routes: [calibrationRoute],
+    });
     renderWithApp(<CalibrationPage />);
   };
 
@@ -151,10 +209,10 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
  * condição deixava a suíte inteira verde, porque os testes acima só afirmam o
  * que a TELA renderiza, e a tela nega por conta própria (`if (!isAdmin)`).
  *
- * Hoje o dano é teórico — o gateway de calibração é in-memory e responder para
- * um member não sai da aba. Vira dano real no PRD-03, quando o gateway virar
- * HTTP: a consulta sairia para o servidor em nome de quem não pode vê-la, e a
- * única barreira restante seria o backend.
+ * O dano deixou de ser teórico na onda 24, que ligou o gateway HTTP: a
+ * consulta agora SAI para o servidor: com o `isAdmin` fora do `enabled`, ela
+ * sairia em nome de quem não pode vê-la e a única barreira restante seria o
+ * backend.
  *
  * Estes testes afirmam o DISPARO, não a renderização: o queryFn da calibração
  * não é chamado para member nem para lead. O primeiro caso é o controle — sem
@@ -177,7 +235,11 @@ describe("/calibration não CONSULTA para quem não calibra — o `enabled` é p
   const renderAs = (user: SessionUser) => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user, state: scopedFixtureStateFor(user) });
+    mockAppFetch(fetchMock, {
+      user,
+      state: scopedFixtureStateFor(user),
+      routes: [calibrationRoute],
+    });
     renderWithApp(<CalibrationPage />);
   };
 

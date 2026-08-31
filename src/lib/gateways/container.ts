@@ -3,7 +3,7 @@ import { SessionPolicy } from "../session-policy";
 import { HttpArchitectsGateway, type ArchitectsGateway } from "./architects.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
 import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
-import { InMemoryCalibrationGateway, type CalibrationGateway } from "./calibration.gateway";
+import { HttpCalibrationGateway, type CalibrationGateway } from "./calibration.gateway";
 import { HttpCareerGateway, type CareerGateway } from "./career.gateway";
 import { HttpCatalogGateway, type CatalogGateway } from "./catalog.gateway";
 import { HttpConfigGateway, type ConfigGateway } from "./config.gateway";
@@ -13,7 +13,7 @@ import { HttpEvidenceGateway, type EvidenceGateway } from "./evidence.gateway";
 import { HttpEvolutionGateway, type EvolutionGateway } from "./evolution.gateway";
 import { HttpLearningGateway, type LearningGateway } from "./learning.gateway";
 import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway";
-import { InMemoryNoticesGateway, type NoticesGateway } from "./notices.gateway";
+import { HttpNoticesGateway, type NoticesGateway } from "./notices.gateway";
 import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
 import { HttpStateContextsGateway, type StateContextsGateway } from "./state-contexts.gateway";
 import { HttpTeamsGateway, type TeamsGateway } from "./teams.gateway";
@@ -51,7 +51,7 @@ export class FrontendContainer {
     this.architectsGateway = new HttpArchitectsGateway(this.apiClient);
     this.assessmentGateway = new HttpAssessmentGateway(this.apiClient);
     this.authGateway = new HttpAuthGateway(this.apiClient);
-    this.calibrationGateway = new InMemoryCalibrationGateway();
+    this.calibrationGateway = new HttpCalibrationGateway(this.apiClient);
     this.careerGateway = new HttpCareerGateway(this.apiClient);
     this.catalogGateway = new HttpCatalogGateway(this.apiClient);
     this.configGateway = new HttpConfigGateway(this.apiClient);
@@ -61,7 +61,7 @@ export class FrontendContainer {
     this.evolutionGateway = new HttpEvolutionGateway(this.apiClient);
     this.learningGateway = new HttpLearningGateway(this.apiClient);
     this.mentoringGateway = new HttpMentoringGateway(this.apiClient);
-    this.noticesGateway = new InMemoryNoticesGateway(() => this.authGateway.me());
+    this.noticesGateway = new HttpNoticesGateway(this.apiClient);
     this.reportsGateway = new HttpReportsGateway(this.apiClient);
     this.stateContextsGateway = new HttpStateContextsGateway(config.baseUrl, (error) =>
       this.sessionPolicy.reviewFailure(error),

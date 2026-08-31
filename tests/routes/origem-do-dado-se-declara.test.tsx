@@ -25,34 +25,33 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { NoticeBell } from "@/components/app/NoticeBell";
-import { ApiClient } from "@/lib/api-client";
 import { apiPath } from "@/lib/api-path";
 import { calibrationApi, noticesApi } from "@/lib/api";
-import { HttpCalibrationGateway } from "@/lib/gateways/calibration.gateway";
-import { HttpNoticesGateway } from "@/lib/gateways/notices.gateway";
+import { InMemoryCalibrationGateway } from "@/lib/gateways/calibration.gateway";
+import { InMemoryNoticesGateway } from "@/lib/gateways/notices.gateway";
 import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as NoticesRoute } from "@/routes/notices";
 import { fixtureAdminUser, fixtureState, fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
- * Duas telas estão NO AR servidas por gateway in-memory (`container.ts`:
- * `InMemoryCalibrationGateway` e `InMemoryNoticesGateway`), porque o backend
- * delas — PRD-03 e PRD-02 — ainda não existe. Quem abre /calibration vê
- * distribuição de notas FABRICADA com cara de dado da organização; quem abre
- * o sino vê avisos FABRICADOS. Numa demonstração para a empresa isso é pior
+ * Duas telas ficaram NO AR servidas por gateway in-memory enquanto o backend
+ * delas — PRD-02 e PRD-03 — não existia. Quem abria /calibration via
+ * distribuição de notas FABRICADA com cara de dado da organização; quem abria
+ * o sino via avisos FABRICADOS. Numa demonstração para a empresa isso é pior
  * do que a tela não existir.
  *
  * O invariante desta rede: a declaração vem de QUEM SABE — o gateway carimba
  * a origem do dado no que devolve — e não de um texto fixo na tela. Por isso
- * cada tela é exercitada nas DUAS direções: com o gateway in-memory
- * registrado (o container de produção de hoje) a declaração aparece; com o
- * gateway HTTP real registrado ela some sozinha, sem ninguém lembrar de tirar
- * o aviso quando o PRD-02/PRD-03 chegar.
+ * cada tela é exercitada nas DUAS direções.
  *
- * A direção "real" não usa dublê feito à mão: instancia o `Http*Gateway` de
- * verdade sobre o `fetch` mockado. Trocar a linha do container é exatamente
- * isso.
+ * A onda 24 ligou os gateways HTTP no container, e é essa a virada que este
+ * arquivo agora prende: a direção "organização" NÃO registra dublê nenhum —
+ * é o container de produção respondendo ao `fetch` mockado, e a declaração
+ * some SOZINHA, sem ninguém ter apagado o aviso à mão. A direção
+ * "demonstração" registra o gateway in-memory de propósito, para provar que
+ * o carimbo continua sendo o que acende o aviso: se um gateway fabricado
+ * voltar ao container, a tela volta a declarar por conta própria.
  */
 const fetchMock = vi.fn();
 
@@ -99,15 +98,16 @@ const calibrationRoute: FetchRoute = (href) =>
 const noticesRoute: FetchRoute = (href) =>
   href.includes(apiPath("/notices")) ? jsonResponse(avisosDaOrganizacao) : undefined;
 
-const registraGatewayReal = () => {
-  const client = new ApiClient();
+const registraGatewayDeDemonstracao = () => {
   vi.spyOn(calibrationApi, "calibration").mockImplementation(
-    new HttpCalibrationGateway(client).calibration,
+    new InMemoryCalibrationGateway().calibration,
   );
-  vi.spyOn(noticesApi, "notices").mockImplementation(new HttpNoticesGateway(client).notices);
+  vi.spyOn(noticesApi, "notices").mockImplementation(
+    new InMemoryNoticesGateway(() => Promise.resolve(fixtureTeamLeadUser)).notices,
+  );
 };
 
-describe("/calibration declara que a distribuição é de demonstração", () => {
+describe("/calibration declara a origem da distribuição que está mostrando", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -125,13 +125,13 @@ describe("/calibration declara que a distribuição é de demonstração", () =>
   });
 
   it("com o gateway in-memory registrado, a tela diz na cara que o dado é fabricado", async () => {
+    registraGatewayDeDemonstracao();
     renderWithApp(<CalibrationPage />);
     await screen.findByText("Marina Lopes");
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 
-  it("com o gateway HTTP real registrado, a declaração some sozinha", async () => {
-    registraGatewayReal();
+  it("com o container de produção, a declaração some sozinha", async () => {
     renderWithApp(<CalibrationPage />);
     await screen.findByText("Avaliadora Real");
     expect(screen.queryByText(DECLARACAO)).toBeNull();
@@ -146,7 +146,7 @@ describe("/calibration declara que a distribuição é de demonstração", () =>
  * a Central abre vazia — e uma tela vazia não prova nada sobre carimbo de
  * origem. O que este arquivo verifica continua sendo o carimbo, não o recorte.
  */
-describe("o sino de avisos declara que os avisos são de demonstração", () => {
+describe("o sino de avisos declara a origem dos avisos que está mostrando", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -164,28 +164,28 @@ describe("o sino de avisos declara que os avisos são de demonstração", () => 
   });
 
   it("com o gateway in-memory registrado, o sino declara a origem do dado", async () => {
+    registraGatewayDeDemonstracao();
     renderWithApp(<NoticeBell />);
     await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
     await screen.findByText(/Evidência de Carla Souza espera revisão/);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 
-  it("com o gateway HTTP real registrado, o sino não declara nada", async () => {
-    registraGatewayReal();
+  it("com o container de produção, o sino não declara nada", async () => {
     renderWithApp(<NoticeBell />);
     await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
     await screen.findByText("Avaliação real está parada");
     expect(screen.queryByText(DECLARACAO)).toBeNull();
   });
 
-  it("a central de avisos inteira declara a origem enquanto o mock a serve", async () => {
+  it("a central de avisos inteira declara a origem se um mock voltar a serví-la", async () => {
+    registraGatewayDeDemonstracao();
     renderWithApp(<NoticesPage />);
     await screen.findByText(/Evidência de Carla Souza espera revisão/);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 
-  it("com o gateway HTTP real registrado, a central de avisos não declara nada", async () => {
-    registraGatewayReal();
+  it("com o container de produção, a central de avisos não declara nada", async () => {
     renderWithApp(<NoticesPage />);
     await screen.findByText("Avaliação real está parada");
     expect(screen.queryByText(DECLARACAO)).toBeNull();
