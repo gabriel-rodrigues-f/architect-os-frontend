@@ -13,6 +13,7 @@ import {
   SpecializationCombobox,
   TeamRosterView,
   useArchitectForm,
+  useCardsAndTableViews,
   useTeamRoster,
   ViewToggle,
 } from "@/components/app";
@@ -84,6 +85,7 @@ function TeamRoster() {
 
   const form = useArchitectForm();
   const roster = useTeamRoster(isAdmin);
+  const cardsAndTableViews = useCardsAndTableViews();
 
   const careerLevels = useCareerLevelsByRank();
 
@@ -181,8 +183,7 @@ function TeamRoster() {
             <ViewToggle
               view={roster.view}
               onChange={roster.setViewOverride}
-              cardsLabel={t("team.view.cards")}
-              tableLabel={t("team.view.table")}
+              options={cardsAndTableViews}
             />
           </div>
 
