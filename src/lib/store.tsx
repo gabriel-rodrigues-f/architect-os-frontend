@@ -46,9 +46,7 @@ import { createSelectors, emptyState } from "./selectors";
 import type { VocabularyItemInput, VocabularyItemPatch } from "./gateways/config.gateway";
 import type { CatalogImportPayload, CatalogImportSummary } from "./catalog-import";
 import {
-  activeVocabularyOptions,
-  vocabularyLabelOf,
-  withDefaultVocabularies,
+  VocabularyCatalog,
   type Vocabularies,
   type VocabularyItem,
   type VocabularyName,
@@ -98,7 +96,7 @@ export function useOperationalSettings(): OperationalSettings {
 
 export function useVocabularies(): Vocabularies {
   const { data } = useQuery(configurationCatalog.vocabularies.options);
-  return useMemo(() => withDefaultVocabularies(data), [data]);
+  return useMemo(() => VocabularyCatalog.resolve(data), [data]);
 }
 
 export function useVocabulary(name: VocabularyName): {
@@ -109,15 +107,15 @@ export function useVocabulary(name: VocabularyName): {
   const vocabularies = useVocabularies();
   const { t } = useI18n();
   return useMemo(() => {
-    const items = vocabularies[name];
+    const vocabulary = VocabularyCatalog.over(vocabularies).named(name);
     const translate = (labelKey: string): string | undefined => {
       const text = t(labelKey as Parameters<typeof t>[0]);
       return text === labelKey ? undefined : text;
     };
     return {
-      items,
-      options: activeVocabularyOptions(items),
-      label: (code: string) => vocabularyLabelOf(items, code, translate),
+      items: vocabulary.items,
+      options: vocabulary.activeOptions,
+      label: (code: string) => vocabulary.labelOf(code, translate),
     };
   }, [vocabularies, name, t]);
 }

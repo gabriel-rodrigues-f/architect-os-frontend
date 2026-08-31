@@ -1,5 +1,5 @@
 {
-  "total": 108,
+  "total": 104,
   "porArquivo": {
     "src/components/app/AppShell.tsx": 6,
     "src/components/app/ArchitectFilter.tsx": 1,
@@ -47,7 +47,6 @@
     "src/lib/theme.tsx": 1,
     "src/lib/view-models/plan-item-from-gap.ts": 1,
     "src/lib/view-models/team-view-model.ts": 1,
-    "src/lib/vocabularies.ts": 4,
     "src/routes/__root.tsx": 3,
     "src/routes/architects.$architectId.evolution.tsx": 1,
     "src/routes/architects.$architectId.index.tsx": 1,

@@ -16,17 +16,7 @@ export interface VocabularyItem {
 
 export type Vocabularies = Record<VocabularyName, VocabularyItem[]>;
 
-const seed = (
-  vocabulary: VocabularyName,
-  entries: readonly (readonly [code: string, labelKey: string])[],
-): VocabularyItem[] =>
-  entries.map(([code, labelKey], index) => ({
-    vocabulary,
-    code,
-    labelKey,
-    sortOrder: index + 1,
-    active: true,
-  }));
+type TranslateLabelKey = (labelKey: string) => string | undefined;
 
 const SEED_LABEL_KEYS: Record<VocabularyName, readonly string[]> = {
   EVIDENCE_TYPE: [
@@ -70,43 +60,74 @@ const SEED_CODES: Record<VocabularyName, readonly string[]> = {
   ACTION_TYPE: ACTION_TYPES,
 };
 
-export const DEFAULT_VOCABULARIES: Vocabularies = Object.fromEntries(
-  VOCABULARY_NAMES.map((name) => [
-    name,
-    seed(
+export class Vocabulary {
+  private constructor(
+    readonly name: VocabularyName,
+    readonly items: VocabularyItem[],
+  ) {}
+
+  static of(name: VocabularyName, items: VocabularyItem[]): Vocabulary {
+    return new Vocabulary(name, items);
+  }
+
+  static seeded(name: VocabularyName): Vocabulary {
+    const labelKeys = SEED_LABEL_KEYS[name];
+    return Vocabulary.of(
       name,
       SEED_CODES[name].flatMap((code, index) => {
-        const labelKey = SEED_LABEL_KEYS[name][index];
-        return labelKey === undefined ? [] : [[code, labelKey] as const];
+        const labelKey = labelKeys[index];
+        return labelKey === undefined
+          ? []
+          : [{ vocabulary: name, code, labelKey, sortOrder: index + 1, active: true }];
       }),
-    ),
-  ]),
-) as Vocabularies;
+    );
+  }
 
-export function withDefaultVocabularies(loaded?: Partial<Vocabularies>): Vocabularies {
-  if (!loaded) return DEFAULT_VOCABULARIES;
-  return Object.fromEntries(
-    VOCABULARY_NAMES.map((name) => {
-      const items = loaded[name];
-      return [name, items && items.length > 0 ? items : DEFAULT_VOCABULARIES[name]];
-    }),
-  ) as Vocabularies;
+  get activeOptions(): VocabularyItem[] {
+    return this.items
+      .filter((item) => item.active)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
+  }
+
+  labelOf(code: string, translate: TranslateLabelKey): string {
+    const item = this.items.find((candidate) => candidate.code === code);
+    if (!item) return code;
+    return translate(item.labelKey) ?? code;
+  }
 }
 
-export function activeVocabularyOptions(items: readonly VocabularyItem[]): VocabularyItem[] {
-  return items
-    .filter((item) => item.active)
-    .sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
+export class VocabularyCatalog {
+  private constructor(readonly vocabularies: Vocabularies) {}
+
+  static over(vocabularies: Vocabularies): VocabularyCatalog {
+    return new VocabularyCatalog(vocabularies);
+  }
+
+  static get seeded(): VocabularyCatalog {
+    return VocabularyCatalog.over(
+      Object.fromEntries(
+        VOCABULARY_NAMES.map((name) => [name, Vocabulary.seeded(name).items]),
+      ) as Vocabularies,
+    );
+  }
+
+  static resolve(loaded?: Partial<Vocabularies>): Vocabularies {
+    if (!loaded) return DEFAULT_VOCABULARIES;
+    return Object.fromEntries(
+      VOCABULARY_NAMES.map((name) => {
+        const items = loaded[name];
+        return [name, items && items.length > 0 ? items : DEFAULT_VOCABULARIES[name]];
+      }),
+    ) as Vocabularies;
+  }
+
+  static fromLoaded(loaded?: Partial<Vocabularies>): VocabularyCatalog {
+    return VocabularyCatalog.over(VocabularyCatalog.resolve(loaded));
+  }
+
+  named(name: VocabularyName): Vocabulary {
+    return Vocabulary.of(name, this.vocabularies[name]);
+  }
 }
 
-type TranslateLabelKey = (labelKey: string) => string | undefined;
-
-export function vocabularyLabelOf(
-  items: readonly VocabularyItem[],
-  code: string,
-  translate: TranslateLabelKey,
-): string {
-  const item = items.find((candidate) => candidate.code === code);
-  if (!item) return code;
-  return translate(item.labelKey) ?? code;
-}
+export const DEFAULT_VOCABULARIES: Vocabularies = VocabularyCatalog.seeded.vocabularies;
