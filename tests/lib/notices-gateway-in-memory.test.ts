@@ -334,3 +334,90 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
     expect(page.unreadCount).toBe(0);
   });
 });
+
+/**
+ * Ressalva herdada: `markNoticeRead` recebe um id CRU vindo da tela. O código
+ * já procura o aviso dentro do recorte de quem chama, mas nada prendia isso —
+ * trocar a busca por uma varredura na base inteira passava com a suíte verde,
+ * e aí um id conhecido (eles aparecem no `link` e no DOM) marca como lido o
+ * aviso de um time que não é o meu. Sumiria da caixa do lead ao lado sem que
+ * ninguém do time dele tivesse lido.
+ *
+ * `markAllNoticesRead` já tinha essa rede; a de um aviso só, não. As
+ * asserções são de CONTEÚDO — o título que precisa continuar não lido na
+ * caixa do vizinho —, nunca de referência.
+ */
+describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recorte", () => {
+  const TITULO_ALHEIO = "Avaliação de Fulano do Time Vizinho está parada";
+  const ID_ALHEIO = "aviso-de-outro-time";
+
+  const avisoDeOutroTime: Notice = {
+    id: ID_ALHEIO,
+    eventType: "assessment.stalled",
+    title: TITULO_ALHEIO,
+    link: "/assessments",
+    occurredAt: new Date().toISOString(),
+    readAt: null,
+    architectId: "arquiteto-de-outro-time",
+    teamId: "time-que-o-lead-nao-lidera",
+  };
+
+  const avisoDoTimeEmDemonstracao: Notice = {
+    id: "aviso-do-time-do-lead",
+    eventType: "evidence.awaitingReview",
+    title: "Evidência de Carla Souza espera revisão: Desenho do data mart de logística",
+    link: "/architects/demo-carla-souza",
+    occurredAt: new Date(Date.now() - 60_000).toISOString(),
+    readAt: null,
+    architectId: "demo-carla-souza",
+    teamId: DEMONSTRATION_TEAM_ID,
+  };
+
+  const doTimeVizinho: NoticesViewer = {
+    role: "tech_lead",
+    architectId: null,
+    memberships: [{ teamId: "time-que-o-lead-nao-lidera", role: "tech_lead" }],
+  };
+
+  const comDoisTimes = () => {
+    let viewer = techLead;
+    const gateway = new InMemoryNoticesGateway(
+      () => Promise.resolve(viewer),
+      [avisoDeOutroTime, avisoDoTimeEmDemonstracao],
+    );
+    return { gateway, olharComo: (proximo: NoticesViewer) => (viewer = proximo) };
+  };
+
+  it("o lead não marca como lido o aviso de um time que não lidera, mesmo sabendo o id", async () => {
+    const { gateway, olharComo } = comDoisTimes();
+    await gateway.markNoticeRead(ID_ALHEIO);
+    olharComo(doTimeVizinho);
+    const page = await gateway.notices({ status: "unread" });
+    expect(page.notices.map((item) => item.title)).toContain(TITULO_ALHEIO);
+  });
+
+  it("o member não marca como lido o aviso do time — só alcança os próprios", async () => {
+    const gateway = new InMemoryNoticesGateway(() => Promise.resolve(memberAna));
+    const doTime = (await gatewayFor(techLead).notices({ status: "unread" })).notices.find(
+      (item) => item.architectId !== "demo-ana-martins",
+    );
+    expect(doTime).toBeDefined();
+    await gateway.markNoticeRead(doTime!.id);
+    const leadDepois = await gatewayFor(techLead).notices({ status: "unread" });
+    expect(leadDepois.notices.map((item) => item.id)).toContain(doTime!.id);
+  });
+
+  it("dentro do recorte, marcar um aviso continua funcionando — a rede não é vácuo", async () => {
+    const { gateway } = comDoisTimes();
+    await gateway.markNoticeRead(avisoDoTimeEmDemonstracao.id);
+    const page = await gateway.notices({ status: "unread" });
+    expect(page.notices.map((item) => item.title)).not.toContain(avisoDoTimeEmDemonstracao.title);
+  });
+
+  it("id que não existe em base nenhuma não derruba nem inventa leitura", async () => {
+    const { gateway } = comDoisTimes();
+    await gateway.markNoticeRead("id-que-nao-existe");
+    const page = await gateway.notices({ status: "unread" });
+    expect(page.unreadCount).toBe(1);
+  });
+});
