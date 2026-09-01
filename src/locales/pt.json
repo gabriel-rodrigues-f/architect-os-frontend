@@ -15,6 +15,7 @@
   "shell.hideMenu": "Esconder menu lateral",
   "shell.showMenu": "Mostrar menu lateral",
   "shell.openMenu": "Abrir menu de navegação",
+  "shell.idleWarning": "Você ainda está aí?",
   "prefs.title": "Preferências",
   "prefs.theme": "Tema",
   "prefs.theme.light": "Claro",

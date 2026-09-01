@@ -32,6 +32,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 
 
 import { NoticeBell } from "@/components/app/NoticeBell";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
+import { semanticTone } from "@/components/app/ui-bits";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -43,6 +44,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { readMigratedItem } from "@/lib/storage";
 import { useCycleSelection } from "@/lib/context-scope";
+import { useIdleSession } from "@/lib/use-idle-session";
 import { useTheme, type Theme } from "@/lib/theme";
 
 interface NavItem {
@@ -254,6 +256,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
   const { t } = useI18n();
+
+  const idlePhase = useIdleSession({
+    active: user !== null,
+    onEnd: () => {
+      void logout();
+    },
+  });
 
   const navGroups = filterNavGroups(NAV_GROUPS, user ?? undefined);
   const reducedMotion = useReducedMotion();
@@ -564,6 +573,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
+            {idlePhase === "warning" ? (
+              <div
+                role="alert"
+                className={cn(
+                  semanticTone.warning,
+                  "border-b border-border px-5 py-2 text-sm font-medium lg:px-8",
+                )}
+              >
+                {t("shell.idleWarning")}
+              </div>
+            ) : null}
             <div
               className={cn(
                 PAGE_CONTAINER,
