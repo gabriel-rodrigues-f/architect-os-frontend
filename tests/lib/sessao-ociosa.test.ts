@@ -308,6 +308,88 @@ describe("sessão ociosa — atividade em QUALQUER aba conta para TODAS", () => 
 });
 
 /**
+ * As duas camadas que ligam as abas, cada uma provada com a outra DESLIGADA.
+ * Elas existem juntas porque falham por motivos diferentes: o `BroadcastChannel`
+ * não alcança aba congelada nem existe em navegador velho, e o `localStorage`
+ * LANÇA em janela privativa ou com dados de site bloqueados.
+ *
+ * Timers reais aqui: no jsdom a entrega do `BroadcastChannel` não acontece com
+ * temporizador falso (medido — `advanceTimersByTimeAsync(0)` não entrega nada).
+ * Por isso este bloco não fica no describe das fases, que precisa do relógio
+ * falso; aqui o objeto sob teste é só a camada de compartilhamento.
+ */
+describe("sessão ociosa — as duas camadas que ligam as abas", () => {
+  const abertas: CrossTabIdleActivity[] = [];
+
+  const abrir = () => {
+    const compartilhamento = new CrossTabIdleActivity();
+    abertas.push(compartilhamento);
+    return compartilhamento;
+  };
+
+  const respirar = () => new Promise((resolver) => setTimeout(resolver, 5));
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    for (const aberta of abertas.splice(0)) aberta.dispose();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    window.localStorage.clear();
+  });
+
+  it("com o localStorage BLOQUEADO, a transmissão ainda leva a atividade de uma aba à outra", async () => {
+    const explodir = () => {
+      throw new Error("acesso ao armazenamento negado");
+    };
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(explodir);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(explodir);
+
+    const recebidos: number[] = [];
+    const ouvinte = abrir();
+    ouvinte.subscribe((at) => recebidos.push(at));
+    const emissor = abrir();
+    emissor.subscribe(() => undefined);
+
+    emissor.publish(INICIO + 5 * MINUTO);
+    await respirar();
+
+    expect(recebidos).toEqual([INICIO + 5 * MINUTO]);
+  });
+
+  it("sem BroadcastChannel no navegador, o carimbo compartilhado ainda é lido pela outra aba", () => {
+    vi.stubGlobal("BroadcastChannel", undefined);
+
+    const emissor = abrir();
+    emissor.subscribe(() => undefined);
+    const leitor = abrir();
+    leitor.subscribe(() => undefined);
+
+    emissor.publish(INICIO + 5 * MINUTO);
+
+    expect(leitor.read()).toBe(INICIO + 5 * MINUTO);
+  });
+
+  it("sem nenhuma das duas, ler devolve 'não sei' em vez de estourar", () => {
+    vi.stubGlobal("BroadcastChannel", undefined);
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("acesso ao armazenamento negado");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("acesso ao armazenamento negado");
+    });
+
+    const sozinha = abrir();
+    sozinha.subscribe(() => undefined);
+
+    expect(() => sozinha.publish(INICIO)).not.toThrow();
+    expect(sozinha.read()).toBeNull();
+  });
+});
+
+/**
  * ARMADILHA 3 — O QUE CONTA COMO "MEXER NA TELA", E O CUSTO DISSO.
  */
 describe("sessão ociosa — o que conta como mexer na tela, e o custo", () => {
