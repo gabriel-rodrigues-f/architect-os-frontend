@@ -483,25 +483,37 @@ describe("sessão ociosa — o que conta como mexer na tela, e o custo", () => {
     const addWin = window.addEventListener.bind(window);
     const remWin = window.removeEventListener.bind(window);
 
-    vi.spyOn(document, "addEventListener").mockImplementation(((t: string, l: never, o: never) => {
-      pegos.push(chaveDe("document", t, o));
-      return addDoc(t, l, o);
+    vi.spyOn(document, "addEventListener").mockImplementation(((
+      tipo: string,
+      ouvinte: never,
+      opcoes: never,
+    ) => {
+      pegos.push(chaveDe("document", tipo, opcoes));
+      return addDoc(tipo, ouvinte, opcoes);
     }) as typeof document.addEventListener);
     vi.spyOn(document, "removeEventListener").mockImplementation(((
-      t: string,
-      l: never,
-      o: never,
+      tipo: string,
+      ouvinte: never,
+      opcoes: never,
     ) => {
-      devolvidos.push(chaveDe("document", t, o));
-      return remDoc(t, l, o);
+      devolvidos.push(chaveDe("document", tipo, opcoes));
+      return remDoc(tipo, ouvinte, opcoes);
     }) as typeof document.removeEventListener);
-    vi.spyOn(window, "addEventListener").mockImplementation(((t: string, l: never, o: never) => {
-      pegos.push(chaveDe("window", t, o));
-      return addWin(t, l, o);
+    vi.spyOn(window, "addEventListener").mockImplementation(((
+      tipo: string,
+      ouvinte: never,
+      opcoes: never,
+    ) => {
+      pegos.push(chaveDe("window", tipo, opcoes));
+      return addWin(tipo, ouvinte, opcoes);
     }) as typeof window.addEventListener);
-    vi.spyOn(window, "removeEventListener").mockImplementation(((t: string, l: never, o: never) => {
-      devolvidos.push(chaveDe("window", t, o));
-      return remWin(t, l, o);
+    vi.spyOn(window, "removeEventListener").mockImplementation(((
+      tipo: string,
+      ouvinte: never,
+      opcoes: never,
+    ) => {
+      devolvidos.push(chaveDe("window", tipo, opcoes));
+      return remWin(tipo, ouvinte, opcoes);
     }) as typeof window.removeEventListener);
 
     for (let volta = 0; volta < 5; volta += 1) {
