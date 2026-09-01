@@ -15,6 +15,7 @@
   "shell.hideMenu": "Hide sidebar",
   "shell.showMenu": "Show sidebar",
   "shell.openMenu": "Open navigation menu",
+  "shell.idleWarning": "Are you still there?",
   "prefs.title": "Preferences",
   "prefs.theme": "Theme",
   "prefs.theme.light": "Light",
