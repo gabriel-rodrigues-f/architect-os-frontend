@@ -453,24 +453,90 @@ describe("sessão ociosa — o que conta como mexer na tela, e o custo", () => {
     expect(escrever.mock.calls.length).toBeLessThanOrEqual(1);
   });
 
-  /** Ouvinte vazado num `document` de teste vira flake para outra pessoa. */
-  it("ao parar, devolve TODOS os ouvintes que pegou — nenhum vaza", () => {
+  /**
+   * Ouvinte vazado num `document` de teste vira flake para outra pessoa.
+   *
+   * A PRIMEIRA versão deste teste era DECORATIVA, e quem provou foi o QA
+   * adversarial da própria onda: o espião substituía `addEventListener` sem
+   * chamar o original — então nenhum ouvinte chegava a ser pendurado, e nenhum
+   * podia vazar — e a chave anotada não incluía a flag de captura, que é
+   * justamente o que faz `removeEventListener` casar ou não. Apagar
+   * `{ capture: true }` do `stop()` deixava 37/37 VERDE com o vazamento dentro.
+   *
+   * As duas versões abaixo consertam isso por caminhos independentes: a
+   * primeira espiona MAS CHAMA O ORIGINAL e compara incluindo a captura; a
+   * segunda não usa espião nenhum e prova o comportamento.
+   */
+  it("montar e desmontar 5 vezes não deixa um único ouvinte pendurado", () => {
     const pegos: string[] = [];
     const devolvidos: string[] = [];
-    const anotar = (lista: string[], alvo: string) => (tipo: string) => {
-      lista.push(`${alvo}:${tipo}`);
+    const chaveDe = (alvo: string, tipo: string, opcoes: unknown): string => {
+      const captura =
+        typeof opcoes === "object" && opcoes !== null && "capture" in opcoes
+          ? Boolean((opcoes as { capture?: unknown }).capture)
+          : opcoes === true;
+      return `${alvo}:${tipo}:capture=${String(captura)}`;
     };
 
-    vi.spyOn(document, "addEventListener").mockImplementation(anotar(pegos, "document"));
-    vi.spyOn(document, "removeEventListener").mockImplementation(anotar(devolvidos, "document"));
-    vi.spyOn(window, "addEventListener").mockImplementation(anotar(pegos, "window"));
-    vi.spyOn(window, "removeEventListener").mockImplementation(anotar(devolvidos, "window"));
+    const addDoc = document.addEventListener.bind(document);
+    const remDoc = document.removeEventListener.bind(document);
+    const addWin = window.addEventListener.bind(window);
+    const remWin = window.removeEventListener.bind(window);
 
-    watch.start();
-    watch.stop();
+    vi.spyOn(document, "addEventListener").mockImplementation(((t: string, l: never, o: never) => {
+      pegos.push(chaveDe("document", t, o));
+      return addDoc(t, l, o);
+    }) as typeof document.addEventListener);
+    vi.spyOn(document, "removeEventListener").mockImplementation(((
+      t: string,
+      l: never,
+      o: never,
+    ) => {
+      devolvidos.push(chaveDe("document", t, o));
+      return remDoc(t, l, o);
+    }) as typeof document.removeEventListener);
+    vi.spyOn(window, "addEventListener").mockImplementation(((t: string, l: never, o: never) => {
+      pegos.push(chaveDe("window", t, o));
+      return addWin(t, l, o);
+    }) as typeof window.addEventListener);
+    vi.spyOn(window, "removeEventListener").mockImplementation(((t: string, l: never, o: never) => {
+      devolvidos.push(chaveDe("window", t, o));
+      return remWin(t, l, o);
+    }) as typeof window.removeEventListener);
+
+    for (let volta = 0; volta < 5; volta += 1) {
+      const solto = new IdleSessionWatch(
+        new IdleSessionMonitor(
+          new IdleSessionBudget(9, 10),
+          new CrossTabIdleActivity(),
+          () => undefined,
+        ),
+      );
+      solto.start();
+      solto.stop();
+    }
 
     expect(pegos.length).toBeGreaterThan(0);
     expect([...devolvidos].sort()).toEqual([...pegos].sort());
+  });
+
+  it("depois do stop, atividade no document não alcança mais o vigia parado", () => {
+    const monitor = new IdleSessionMonitor(
+      new IdleSessionBudget(9, 10),
+      new CrossTabIdleActivity(),
+      () => undefined,
+    );
+    const espiao = vi.spyOn(monitor, "registerActivity");
+    const solto = new IdleSessionWatch(monitor);
+
+    solto.start();
+    espiao.mockClear();
+    solto.stop();
+
+    document.dispatchEvent(new Event("scroll"));
+    document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+
+    expect(espiao, "ouvinte pendurado depois do stop").not.toHaveBeenCalled();
   });
 
   it("ao parar, o relógio para junto: nenhuma fase nova depois do stop", () => {
