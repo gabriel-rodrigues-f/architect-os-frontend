@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -60,4 +60,38 @@ export function discoverRoutes(): DiscoveredRoute[] {
 
 export function discoverRoutePaths(): string[] {
   return discoverRoutes().map((route) => route.path);
+}
+
+/**
+ * Onda 33 — quem ALCANÇA cada rota, lido da mesma declaração que a catraca
+ * `tests/architecture/alcance-por-rota.test.ts` confere contra o código.
+ * A captura por papel precisa saber onde cada papel deveria aterrissar
+ * (abrir a tela ou ser devolvido à home pela guarda), e reescrever essa
+ * tabela no spec seria a segunda cópia da matriz de alcance (`REGRAS.md`
+ * 6). Aqui só se lê; quem muda alcance muda o fixture, e a catraca cobra
+ * a guarda no código.
+ */
+export type DeclaredReach =
+  | "publica"
+  | "autenticado"
+  | "admin"
+  | "lead-com-vinculo"
+  | "calibracao"
+  | "lideranca"
+  | "ficha-de-carreira";
+
+const FIXTURE_DE_ALCANCE = join(
+  RAIZ_DO_REPOSITORIO,
+  "tests",
+  "architecture",
+  "alcance-por-rota.fixture.json",
+);
+
+export function declaredReachByRoute(): Record<string, DeclaredReach> {
+  const fixture = JSON.parse(readFileSync(FIXTURE_DE_ALCANCE, "utf8")) as {
+    rotas: Record<string, { alcance: DeclaredReach }>;
+  };
+  return Object.fromEntries(
+    Object.entries(fixture.rotas).map(([path, declaracao]) => [path, declaracao.alcance]),
+  );
 }

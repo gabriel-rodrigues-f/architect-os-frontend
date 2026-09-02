@@ -1,11 +1,11 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { test, expect, type Page } from "@playwright/test";
 
 import { apiPath } from "../src/lib/api-path";
-import { discoverRoutePaths } from "./route-inventory";
+import { declaredReachByRoute, discoverRoutePaths, type DeclaredReach } from "./route-inventory";
 
 /**
  * Gate de entrega — navegação completa com captura por tela (onda13/
@@ -24,10 +24,24 @@ import { discoverRoutePaths } from "./route-inventory";
  *
  * Papel via E2E_NAV_ROLE (admin|manager|tech_lead|member, default admin) — o recorte
  * por papel na tela é exatamente o que o QA-UX compara. Tema claro sempre;
- * escuro opcional via E2E_NAV_DARK=1. Rota que o papel não alcança
- * não é falha: member vê aviso in-place em /users e /competency-matrix em leitura (SEM redirect — o QA provou que redirect não acontece); a captura mostra
- * onde o papel aterrissou, e o destino final fica registrado no anexo
- * `navegacao-resumo` do relatório.
+ * escuro opcional via E2E_NAV_DARK=1.
+ *
+ * Terceira rede (onda 33): rota que o papel NÃO alcança tem de NEGÁ-LO —
+ * ou a guarda o devolve à home, ou a tela nega em vez de desenhar o
+ * conteúdo. Desde a onda 31 a guarda `requireLeadershipReach` /
+ * `requireCareerFileReach` redireciona o profissional em `/team`,
+ * `/settings` e nas quatro rotas da própria ficha na navegação INTERNA
+ * (provado em `tests/routes/route-guards.test.ts`); no acesso DIRETO por
+ * URL — o que esta captura faz, com `page.goto` — o `beforeLoad` roda no
+ * SSR cego à sessão (`route-guards.ts` devolve `null` sem `window`) e a
+ * barreira é a tela, como o QA da onda 17 mediu e `DECISOES.md` registra.
+ * Medido nesta fatia (2026-09-02): nenhuma das 11 rotas restritas
+ * redireciona no acesso direto; todas negam na tela. Por isso a rede aceita
+ * as DUAS formas de negativa e reprova a terceira: aterrissar na tela com o
+ * conteúdo. Quem alcança, ao contrário, tem de ficar na URL. A tabela de
+ * quem alcança o quê é a do fixture de alcance por rota (`route-inventory.ts`
+ * → `declaredReachByRoute`), nunca uma cópia aqui; o texto da negativa vem
+ * do próprio `pt.json`, pela chave que cada tela usa.
  */
 const API_URL = process.env["E2E_API_URL"] ?? "http://localhost:4000";
 const ROLE = process.env["E2E_NAV_ROLE"] ?? "admin";
@@ -55,6 +69,25 @@ const CREDENTIALS: Record<string, { email?: string; password?: string }> = {
 const EMAIL = CREDENTIALS[ROLE]?.email;
 const PASSWORD = CREDENTIALS[ROLE]?.password;
 
+/**
+ * Papel × alcance declarado. As contas de `seed:access-profiles` têm
+ * vínculo (o gestor rege dois times, o tech lead um), por isso os dois
+ * alcançam `lead-com-vinculo`; o profissional visita a PRÓPRIA ficha
+ * (`resolveArchitectId` prefere o `architectId` da sessão), que a guarda
+ * `requireCareerFileReach` nega a ele.
+ */
+const TODOS = ["admin", "manager", "tech_lead", "member"] as const;
+const LIDERANCA = ["admin", "manager", "tech_lead"] as const;
+const PAPEIS_QUE_ALCANCAM: Record<DeclaredReach, readonly string[]> = {
+  publica: TODOS,
+  autenticado: TODOS,
+  admin: ["admin"],
+  "lead-com-vinculo": LIDERANCA,
+  calibracao: ["admin", "manager"],
+  lideranca: LIDERANCA,
+  "ficha-de-carreira": LIDERANCA,
+};
+
 // A falta de credencial pula SÓ a navegação (mais abaixo, dentro do teste):
 // a rede de cobertura rota↔visita não depende de backend nem de login e
 // precisa valer em qualquer execução — pulá-la junto foi exatamente o furo
@@ -66,6 +99,32 @@ const SEM_CREDENCIAL = `Sem credencial para o papel "${ROLE}" (E2E_${ROLE.toUppe
 }).`;
 
 const SCREENSHOTS_DIR = join(dirname(fileURLToPath(import.meta.url)), "screenshots");
+
+const TEXTOS_PT = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "src", "locales", "pt.json"),
+    "utf8",
+  ),
+) as Record<string, string>;
+
+/**
+ * A negativa que cada tela restrita desenha para quem não a alcança — a
+ * chave de `pt.json` que o gêmeo de tela de cada rota afirma. Sem entrada
+ * (`/competency-matrix`, negativa `somente-leitura` no fixture) a tela abre
+ * em leitura e não há texto a cobrar.
+ */
+const NEGATIVA_NA_TELA: Readonly<Record<string, string>> = {
+  "/architects/$architectId": "arch.careerFile.ownOutOfReach",
+  "/architects/$architectId/evolution": "arch.careerFile.ownOutOfReach",
+  "/architects/$architectId/roadmap": "arch.careerFile.ownOutOfReach",
+  "/architects/$architectId/statement": "arch.careerFile.ownOutOfReach",
+  "/calibration": "calibration.restricted",
+  "/settings": "ref.leadershipOnly",
+  "/team": "team.leadershipOnly",
+  "/team-rules": "teamRules.leadOnly",
+  "/teams": "teams.restricted",
+  "/users": "users.adminOnly",
+};
 
 /**
  * Mapa rota → como visitá-la. As chaves são EXATAMENTE os caminhos que
@@ -145,6 +204,14 @@ async function resolveArchitectId(
     if (!logged.ok()) {
       throw new Error(`login de ${EMAIL} na API falhou: ${logged.status()}`);
     }
+    const me = await api.get(apiPath("/auth/me"));
+    if (me.ok()) {
+      const session = (await me.json()) as { data?: { architectId?: string | null } } & {
+        architectId?: string | null;
+      };
+      const own = session.data?.architectId ?? session.architectId;
+      if (own) return own;
+    }
     const response = await api.get(apiPath("/architects"));
     if (!response.ok()) return null;
     const body: unknown = await response.json();
@@ -197,8 +264,10 @@ for (const tema of TEMAS) {
 
       await login(page);
 
+      const alcanceDeclarado = declaredReachByRoute();
       const quebradas: string[] = [];
       const semEstado: string[] = [];
+      const foraDoAlcanceEsperado: string[] = [];
       const resumo: string[] = [];
 
       for (const rota of Object.keys(VISITAS).sort()) {
@@ -221,9 +290,34 @@ for (const tema of TEMAS) {
         }
 
         const destino = new URL(page.url()).pathname;
-        resumo.push(
-          `${rota} → ${destino}${destino !== url.split("?")[0] ? " (redirecionada)" : ""}`,
-        );
+        const redirecionada = destino !== url.split("?")[0];
+        resumo.push(`${rota} → ${destino}${redirecionada ? " (redirecionada)" : ""}`);
+
+        const alcance = alcanceDeclarado[rota];
+        if (alcance === undefined) {
+          throw new Error(
+            `${rota} não tem alcance declarado em tests/architecture/alcance-por-rota.fixture.json`,
+          );
+        }
+        const alcanca = PAPEIS_QUE_ALCANCAM[alcance].includes(ROLE);
+        if (alcanca && redirecionada) {
+          foraDoAlcanceEsperado.push(
+            `${rota} (alcance "${alcance}": deveria abrir, foi para ${destino})`,
+          );
+        } else if (!alcanca && destino !== "/") {
+          const chave = NEGATIVA_NA_TELA[rota];
+          const negativa = chave === undefined ? undefined : TEXTOS_PT[chave];
+          if (chave !== undefined && negativa === undefined) {
+            throw new Error(`chave ${chave} da negativa de ${rota} não existe em pt.json`);
+          }
+          const negou =
+            negativa === undefined || (await page.getByText(negativa, { exact: true }).isVisible());
+          if (!negou) {
+            foraDoAlcanceEsperado.push(
+              `${rota} (alcance "${alcance}": ficou em ${destino} sem a negativa "${negativa}")`,
+            );
+          }
+        }
 
         await page.screenshot({
           path: join(dir, `${slugDaRota(rota)}.png`),
@@ -244,6 +338,10 @@ for (const tema of TEMAS) {
       expect(
         quebradas,
         `Tela(s) quebrada(s) durante a navegação como ${ROLE} — as capturas em e2e/screenshots/${ROLE}/${tema}/ são a prova: ${quebradas.join(", ")}`,
+      ).toEqual([]);
+      expect(
+        foraDoAlcanceEsperado,
+        `Rota(s) em que o papel ${ROLE} aterrissou fora do alcance declarado em tests/architecture/alcance-por-rota.fixture.json: ${foraDoAlcanceEsperado.join(", ")}`,
       ).toEqual([]);
     });
   });

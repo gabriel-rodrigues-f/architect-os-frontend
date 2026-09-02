@@ -59,7 +59,7 @@ test.beforeAll(async ({ playwright }) => {
     await api.post(apiPath("/architects"), {
       data: {
         name: "E2E PDI Lifecycle",
-        role: "Arquiteto de Soluções II",
+        role: "Pleno",
         yearsAsArchitect: 2,
         specialization: "E2E",
         email: `${ARCHITECT_SEED}@architect-os.local`,
@@ -89,7 +89,7 @@ test.beforeAll(async ({ playwright }) => {
   await guest.dispose();
 
   teamId = await linkLeadToArchitects({
-    databaseUrl: DATABASE_URL,
+    api,
     runId: `pdi-${RUN_ID}`,
     leadUserId,
     architectIds: [architectId],

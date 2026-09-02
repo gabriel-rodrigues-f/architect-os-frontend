@@ -103,7 +103,7 @@ test.beforeAll(async ({ playwright }) => {
     await api.post(apiPath("/architects"), {
       data: {
         name: "E2E Golden Path",
-        role: "Arquiteto de Soluções II",
+        role: "Pleno",
         yearsAsArchitect: 3,
         specialization: "E2E",
         email: `${ARCHITECT_SEED}@architect-os.local`,
@@ -135,7 +135,7 @@ test.beforeAll(async ({ playwright }) => {
   });
 
   teamId = await linkLeadToArchitects({
-    databaseUrl: DATABASE_URL,
+    api,
     runId: `gp-${RUN_ID}`,
     leadUserId,
     architectIds: [architectId],
@@ -177,7 +177,7 @@ test("Admin — painel executivo, navegação restrita e diretório de usuários
   await expect(page.getByText("E2E Lead")).toBeVisible();
 });
 
-test("Member — Minha Evolução, navegação restrita e workspace próprio", async ({ page }) => {
+test("Member — Minha Evolução, navegação restrita e a própria ficha negada", async ({ page }) => {
   await login(page, MEMBER_EMAIL, PASSWORD);
 
   await expect(page.getByText("Minha Evolução")).toBeVisible();
@@ -187,9 +187,15 @@ test("Member — Minha Evolução, navegação restrita e workspace próprio", a
   await expect(page.getByRole("link", { name: "Matriz de Competências" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Usuários" })).toHaveCount(0);
 
+  // Onda 31 (pedido do dono: o profissional não vê os próprios números): a
+  // ficha de carreira dele é lida por quem o lidera. No acesso direto por
+  // URL a guarda é cega à sessão (SSR) e quem nega é a TELA — sem os
+  // "Próximos passos" que ela mostrava antes.
   await page.goto(`/architects/${architectId}`);
-  await expect(page.getByText("Próximos passos")).toBeVisible();
-  await expect(page.getByText("Nada pendente no momento.")).toBeVisible();
+  await expect(
+    page.getByText("A sua ficha de carreira é lida por quem lidera você."),
+  ).toBeVisible();
+  await expect(page.getByText("Próximos passos")).toHaveCount(0);
 });
 
 test("Lead — Pendências do Lead escopadas à própria liderança", async ({ page }) => {
