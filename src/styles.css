@@ -237,7 +237,7 @@
 
   /*
     Vocabulário visual do produto — escala de proficiência e severidade de
-    lacuna. Gerado por `src/lib/design/tokens.ts`: a variante escura é
+    distância. Gerado por `src/lib/design/tokens.ts`: a variante escura é
     derivada por regra e auditada em `design-tokens.test.ts`, não escrita à
     mão. Para alterar, mude a definição lá e regenere.
   */

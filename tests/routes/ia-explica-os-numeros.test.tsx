@@ -153,7 +153,7 @@ describe("a explicação por IA acompanha os números do fechamento de lacunas",
   it("sem os números não há o que explicar: o botão nem aparece", async () => {
     renderGap([closureQuebrada, explanationRoute]);
 
-    await screen.findByText(/não foi possível carregar o fechamento de lacunas/i);
+    await screen.findByText(/não foi possível carregar a evolução entre ciclos/i);
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: /explicar os números/i })).toBeNull();
     });

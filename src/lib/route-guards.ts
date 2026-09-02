@@ -11,6 +11,11 @@ export interface RouteGuardContext {
 
 type RouteGuard = (args: { context: RouteGuardContext }) => Promise<void>;
 
+type CareerFileRouteGuard = (args: {
+  context: RouteGuardContext;
+  params: { architectId: string };
+}) => Promise<void>;
+
 class NavigationBarrier {
   constructor(private readonly policy: UiAuthorizationPolicy) {}
 
@@ -22,6 +27,12 @@ class NavigationBarrier {
 
   requireCalibrationReach: RouteGuard = ({ context }) =>
     this.requireReach(context, (user) => this.policy.canCalibrate(user));
+
+  requireLeadershipReach: RouteGuard = ({ context }) =>
+    this.requireReach(context, (user) => this.policy.isLeadership(user));
+
+  requireCareerFileReach: CareerFileRouteGuard = ({ context, params }) =>
+    this.requireReach(context, (user) => this.policy.canOpenCareerFileOf(user, params.architectId));
 
   private async requireReach(
     context: RouteGuardContext,
@@ -48,3 +59,5 @@ const navigationBarrier = new NavigationBarrier(defaultUiAuthorizationPolicy);
 export const requireAdminReach = navigationBarrier.requireAdminReach;
 export const requireLeadReach = navigationBarrier.requireLeadReach;
 export const requireCalibrationReach = navigationBarrier.requireCalibrationReach;
+export const requireLeadershipReach = navigationBarrier.requireLeadershipReach;
+export const requireCareerFileReach = navigationBarrier.requireCareerFileReach;

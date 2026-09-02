@@ -252,7 +252,6 @@ function MemberHome() {
   const capabilityAvgs = sel.capabilityAverages(architectId);
 
   const gaps = personal.openGaps(architectId);
-  const { avg, covered, total } = sel.coverageFor(architectId);
   const assessment = sel.assessmentFor(architectId);
   const plan = sel.planFor(architectId);
   const itemsByStatus = personal.planItemCounts(architectId);
@@ -267,22 +266,7 @@ function MemberHome() {
         help={help}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t("arch.stat.avgLevel")}
-          value={avg === undefined ? "—" : avg.toFixed(2)}
-          hint={
-            covered < total
-              ? t("arch.stat.avgLevelHintPartial", { covered, total })
-              : t("arch.stat.avgLevelHint")
-          }
-          icon={<Layers className="h-4 w-4" />}
-        />
-        <StatCard
-          label={t("arch.stat.openGaps")}
-          value={gaps.length}
-          icon={<TriangleAlert className="h-4 w-4" />}
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
         <StatCard
           label={t("dash.member.assessmentStatus")}
           value={

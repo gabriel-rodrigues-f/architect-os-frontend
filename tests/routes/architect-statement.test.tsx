@@ -190,6 +190,11 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
     expect(screen.queryByText(/Transição de nível:/)).toBeNull();
   });
 
+  /**
+   * Onda 31 — a própria pessoa deixou de ABRIR o extrato (o dono tirou do
+   * profissional os próprios números); a negativa da tela é o que ela vê, e
+   * o botão de imprimir continua fora do alcance dela.
+   */
   it("as ações de gerar (imprimir) aparecem para admin/líder, nunca para a própria pessoa", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
@@ -207,7 +212,8 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       routes: statementRoutes(),
     });
     renderWithApp(<StatementPage />);
-    await screen.findByText("Evidência: ADR-014");
+    await screen.findByText("A sua ficha de carreira é lida por quem lidera você.");
+    expect(screen.queryByText("Evidência: ADR-014")).toBeNull();
     expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
   });
 

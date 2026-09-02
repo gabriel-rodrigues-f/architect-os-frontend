@@ -83,12 +83,21 @@ describe("AppShell — navegação recortada por papel", () => {
     }
   });
 
-  it("/settings (Política de Progressão) aparece na navegação para todos os papéis", () => {
-    for (const role of ["member", "tech_lead", "manager", "admin"] as const) {
-      const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel(role));
-      const paths = groups.flatMap((g) => g.items.map((i) => i.to));
-      expect(paths).toContain("/settings");
+  /**
+   * Onda 31 — o dono reverteu o B-15 para o profissional (2026-09-01): "o
+   * profissional não pode ver os menus 'time' e 'política de Progressão'".
+   * A política continua legível para quem lidera; o profissional a conhece
+   * pela liderança dele, não pela tela.
+   */
+  it("/settings (Política de Progressão) aparece para quem lidera e some para o member", () => {
+    const destinosDe = (role: UserRole) =>
+      filterNavGroups(NAV_GROUPS, usuarioDoPapel(role)).flatMap((group) =>
+        group.items.map((item) => item.to),
+      );
+    for (const role of ["tech_lead", "manager", "admin"] as const) {
+      expect(destinosDe(role), role).toContain("/settings");
     }
+    expect(destinosDe("member")).not.toContain("/settings");
   });
 
   /**

@@ -125,6 +125,21 @@ describe("Painel — Home por papel", () => {
     expect(await screen.findByText("Meu PDI")).toBeTruthy();
   });
 
+  /**
+   * Onda 31 — pedido literal do dono (2026-09-01): "eu não quero que o
+   * profissional veja seus números de avaliação. isso pode influenciá-lo
+   * negativamente. pode remover o 'Nível médio' e 'gaps abertos'". Os dois
+   * cartões saem SÓ da visão do profissional; a ficha que a liderança abre
+   * continua com eles.
+   */
+  it("member não vê 'Nível médio' nem a contagem de competências em evolução no painel", async () => {
+    renderAs(fixtureMemberUser);
+    await screen.findByText("Minha Evolução");
+    expect(await screen.findByText("Avaliação")).toBeTruthy();
+    expect(screen.queryByText("Nível médio")).toBeNull();
+    expect(screen.queryByText("Competências em evolução")).toBeNull();
+  });
+
   it("member sem architectId vinculado vê o estado de conta não vinculada", async () => {
     const unlinked: SessionUser = { ...fixtureMemberUser, architectId: null };
     renderAs(unlinked);

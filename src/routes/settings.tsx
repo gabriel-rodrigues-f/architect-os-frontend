@@ -2,7 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { gapTone, LevelBadge, PageHeader, SectionCard, SectionGroup } from "@/components/app";
+import {
+  gapTone,
+  LevelBadge,
+  OutOfReachScreen,
+  PageHeader,
+  SectionCard,
+  SectionGroup,
+} from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { LEVELS, type CareerLevel } from "@/lib/domain";
@@ -11,6 +18,8 @@ import { useLabels } from "@/lib/labels";
 import { ProgressionMinimumPresenter } from "@/lib/presenters";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireLeadershipReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import {
   SCORING_SCALES,
   ScoringBandSet,
@@ -68,6 +77,7 @@ export const Route = createFileRoute("/settings")({
       },
     ],
   }),
+  beforeLoad: requireLeadershipReach,
   component: SettingsPage,
 });
 
@@ -76,7 +86,20 @@ function SettingsPage() {
   const labels = useLabels();
   const { t, locale } = useI18n();
   const help = usePageHelp("settings");
-  const isAdmin = useCurrentUser().role === "admin";
+  const user = useCurrentUser();
+  const isAdmin = user.role === "admin";
+  const isLeadership = defaultUiAuthorizationPolicy.isLeadership(user);
+
+  if (!isLeadership) {
+    return (
+      <OutOfReachScreen
+        title={t("ref.title")}
+        help={help}
+        reason={t("ref.leadershipOnly")}
+        hint={t("ref.leadershipOnlyHint")}
+      />
+    );
+  }
 
   return (
     <>
