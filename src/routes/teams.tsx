@@ -24,17 +24,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
-import { authApi, teamRosterApi, teamsApi, type SessionUser } from "@/lib/api";
+import { authApi, teamRosterApi, teamsApi, teamTransitionsApi, type SessionUser } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { TeamMemberRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
 import type { TeamRosterMember } from "@/lib/gateways/team-roster.gateway";
+import type {
+  CalendarPeriod,
+  TeamTransitions,
+  TeamTransitionsRow,
+} from "@/lib/gateways/team-transitions.gateway";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
-import { TeamRegistryViewModel, TeamStatusFilters, type TeamStatusFilter } from "@/lib/view-models";
+import {
+  TeamRegistryViewModel,
+  TeamStatusFilters,
+  TeamTransitionsViewModel,
+  type TeamStatusFilter,
+} from "@/lib/view-models";
 
 export const Route = createFileRoute("/teams")({
   beforeLoad: requireLeadReach,
@@ -64,12 +74,18 @@ function useTeamRegistryViewModel(): TeamRegistryViewModel {
   return useMemo(() => new TeamRegistryViewModel(defaultUiAuthorizationPolicy), []);
 }
 
+function useTeamTransitionsViewModel(): TeamTransitionsViewModel {
+  return useMemo(() => new TeamTransitionsViewModel(defaultUiAuthorizationPolicy), []);
+}
+
 function TeamsPage() {
   const { t } = useI18n();
   const help = usePageHelp("teams");
   const user = useCurrentUser();
   const registry = useTeamRegistryViewModel();
+  const comparison = useTeamTransitionsViewModel();
   const canCompose = registry.canCompose(user);
+  const canCompare = comparison.canCompare(user);
   const canAdminister = registry.canAdminister(user);
   const queryClient = useQueryClient();
   const notifySuccess = useSuccessToast();
@@ -97,6 +113,11 @@ function TeamsPage() {
       <>
         <PageHeader title={t("teams.title")} description={t("teams.subtitle")} help={help} />
         <EmptyState title={t("teams.restricted")} hint={t("teams.restrictedHint")} />
+        {canCompare && (
+          <div className="mt-6">
+            <TeamTransitionsSection comparison={comparison} />
+          </div>
+        )}
       </>
     );
   }
@@ -183,6 +204,7 @@ function TeamsPage() {
               {chosen && (
                 <TeamRoster key={chosen.id} team={chosen} user={user} registry={registry} />
               )}
+              {canCompare && <TeamTransitionsSection comparison={comparison} />}
             </div>
           );
         }}
@@ -328,6 +350,184 @@ function TeamTable({
         </div>
       )}
     </SectionCard>
+  );
+}
+
+function TeamTransitionsSection({ comparison }: { comparison: TeamTransitionsViewModel }) {
+  const { t } = useI18n();
+  const [period, setPeriod] = useState<CalendarPeriod>(() => comparison.defaultPeriod());
+  const periodIsValid = comparison.periodIsValid(period);
+
+  const transitionsQuery = useQuery({
+    queryKey: comparison.queryKey(period),
+    queryFn: () => teamTransitionsApi.compareTeamTransitions({ period }),
+    staleTime: 60_000,
+    enabled: periodIsValid,
+  });
+
+  return (
+    <SectionCard
+      title={t("teams.transitions.title")}
+      description={t("teams.transitions.subtitle")}
+      collapsible
+      storageKey="teams.transitions"
+    >
+      <div className="mb-4 grid max-w-md gap-3 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="teams-transitions-from">{t("teams.transitions.from")}</Label>
+          <Input
+            id="teams-transitions-from"
+            type="date"
+            value={period.from}
+            onChange={(event) => setPeriod({ ...period, from: event.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="teams-transitions-to">{t("teams.transitions.to")}</Label>
+          <Input
+            id="teams-transitions-to"
+            type="date"
+            value={period.to}
+            onChange={(event) => setPeriod({ ...period, to: event.target.value })}
+          />
+        </div>
+      </div>
+      {periodIsValid ? (
+        <QuerySection
+          query={transitionsQuery}
+          errorMessage={
+            comparison.readingFailureOf(transitionsQuery.error) ?? t("teams.transitions.error")
+          }
+          skeleton={
+            <p className="text-sm text-muted-foreground">{t("teams.transitions.loading")}</p>
+          }
+        >
+          {(transitions) => (
+            <TeamTransitionsTable transitions={transitions} comparison={comparison} />
+          )}
+        </QuerySection>
+      ) : (
+        <p className="text-sm text-destructive" role="alert">
+          {t("teams.transitions.invalidPeriod")}
+        </p>
+      )}
+    </SectionCard>
+  );
+}
+
+function TeamTransitionsTable({
+  transitions,
+  comparison,
+}: {
+  transitions: TeamTransitions;
+  comparison: TeamTransitionsViewModel;
+}) {
+  const { t, locale } = useI18n();
+  const rows = comparison.ranked(transitions.teams);
+
+  return (
+    <>
+      <DataOriginCallout origin={transitions.dataOrigin} className="mb-3" />
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("teams.transitions.empty")}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm" aria-label={t("teams.transitions.title")}>
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th scope="col" className="py-2">
+                  {t("teams.transitions.col.team")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("teams.transitions.col.transitions")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("teams.transitions.col.pairs")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("teams.transitions.col.averageDays")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("teams.transitions.col.activePeople")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("teams.transitions.col.rate")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <TeamTransitionsRowView
+                  key={row.teamId}
+                  row={row}
+                  comparison={comparison}
+                  locale={locale}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {transitions.withoutRecordedTeam !== null && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          {t("teams.transitions.withoutRecordedTeam", { n: transitions.withoutRecordedTeam })}
+        </p>
+      )}
+    </>
+  );
+}
+
+function TeamTransitionsRowView({
+  row,
+  comparison,
+  locale,
+}: {
+  row: TeamTransitionsRow;
+  comparison: TeamTransitionsViewModel;
+  locale: string;
+}) {
+  const { t } = useI18n();
+  const pairs = comparison.pairsOf(row);
+  const averageDays = comparison.averageDaysOf(row, locale);
+  const rate = comparison.rateOf(row, locale);
+
+  return (
+    <tr className="border-b border-border/60 last:border-0 align-top">
+      <td className="py-2 font-medium">{row.teamName}</td>
+      <td className="py-2 tabular-nums">{row.transitions}</td>
+      <td className="py-2">
+        {pairs.length === 0 ? (
+          "—"
+        ) : (
+          <ul className="space-y-0.5">
+            {pairs.map((pair) => (
+              <li key={`${pair.fromRole}→${pair.toRole}`}>
+                {t("teams.transitions.pair", {
+                  de: pair.fromRole,
+                  para: pair.toRole,
+                  n: pair.transitions,
+                })}
+              </li>
+            ))}
+          </ul>
+        )}
+      </td>
+      <td className="py-2 tabular-nums">
+        {averageDays === null ? (
+          "—"
+        ) : (
+          <>
+            {t("teams.transitions.days", { n: averageDays })}
+            <span className="ml-1 text-xs text-muted-foreground">
+              ({t("teams.transitions.measured", { n: row.measuredOrigins, total: row.transitions })}
+              )
+            </span>
+          </>
+        )}
+      </td>
+      <td className="py-2 tabular-nums">{row.activeArchitects}</td>
+      <td className="py-2 tabular-nums">{rate ?? "—"}</td>
+    </tr>
   );
 }
 
