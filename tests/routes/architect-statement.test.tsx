@@ -1,4 +1,5 @@
 import { cleanup, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -125,7 +126,26 @@ const stateWithMentoring: AppState = {
   ],
 };
 
+const teamTransition = {
+  kind: "teamTransition",
+  id: "tt-1",
+  occurredOn: "2026-02-15",
+  fromTeamName: "Plataforma",
+  toTeamName: "Dados",
+  reason: "Reforço do time de dados",
+};
+
 const statementRoutes = ({ failTransitions = false } = {}) => [
+  (href: string, init?: RequestInit): Response | undefined =>
+    href.endsWith(apiPath("/reports/career-statement")) && init?.method === "POST"
+      ? jsonResponse({
+          architect: { id: "ana", name: "Ana Martins", role: "Pleno" },
+          range: { from: "2000-01-01", to: "2026-12-31" },
+          kinds: ["teamTransition"],
+          totals: { teamTransition: 1 },
+          entries: [teamTransition],
+        })
+      : undefined,
   (href: string): Response | undefined => {
     if (href.endsWith(apiPath("/architects/ana/career-level-transitions"))) {
       return failTransitions
@@ -211,6 +231,40 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
     await screen.findByText("A sua ficha de carreira é lida por quem lidera você.");
     expect(screen.queryByText("Evidência: ADR-014")).toBeNull();
     expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
+  });
+
+  /**
+   * Onda 35, item 17 do dono: a mudança de time tem motivo e vira transição.
+   * O Extrato pede ao relatório de carreira SÓ as transições de time da
+   * pessoa e as mostra como linha própria — título com origem e destino,
+   * motivo no detalhe, tipo filtrável ao lado dos outros.
+   */
+  it("a mudança de time aparece no extrato com o motivo, e o filtro lista o tipo", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state: stateWithMentoring,
+      routes: statementRoutes(),
+    });
+    renderWithApp(<StatementPage />);
+
+    expect(await screen.findByText("Mudou do time Plataforma para Dados")).toBeTruthy();
+    expect(screen.getByText("Reforço do time de dados")).toBeTruthy();
+    expect(screen.getByText("Mudança de time")).toBeTruthy();
+
+    const pedido = fetchMock.mock.calls.find(
+      ([href, init]) =>
+        String(href).endsWith(apiPath("/reports/career-statement")) &&
+        (init as RequestInit | undefined)?.method === "POST",
+    );
+    const corpo = JSON.parse(String((pedido?.[1] as RequestInit).body)) as {
+      architectId: string;
+      kinds: string[];
+    };
+    expect(corpo.architectId).toBe("ana");
+    expect(corpo.kinds).toEqual(["teamTransition"]);
+
+    await userEvent.click(screen.getByRole("button", { name: /Tipos de entrada/ }));
+    expect(await screen.findByRole("option", { name: /Mudança de time/ })).toBeTruthy();
   });
 
   it("'Ver origem' navega para a fonte da entrada", async () => {

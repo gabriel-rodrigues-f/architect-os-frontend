@@ -6,6 +6,7 @@ import type {
   Evidence,
   MentoringSession,
 } from "@/lib/domain";
+import type { TeamTransitionRecord } from "@/lib/gateways/reports.gateway";
 import { CareerStatementViewModel, type StatementSources } from "@/lib/view-models";
 
 /**
@@ -88,9 +89,18 @@ const mentoring: MentoringSession = {
   actions: "",
 };
 
+const teamTransition: TeamTransitionRecord = {
+  id: "tt-1",
+  occurredOn: "2026-02-15",
+  fromTeamName: "Plataforma",
+  toTeamName: "Dados",
+  reason: "Reforço do time de dados",
+};
+
 const sources: StatementSources = {
   architectId: "ana",
   transitions: [transition],
+  teamTransitions: [teamTransition],
   competencyEvents: [competencyEvent],
   evidences: [evidence],
   planEvents: [planEvent],
@@ -102,6 +112,7 @@ describe("CareerStatementViewModel — normalização das 5 fontes", () => {
     const entries = vm().entries(sources);
     expect(entries.map((entry) => entry.kind)).toEqual([
       "transition",
+      "teamTransition",
       "pdi",
       "evidence",
       "mentoring",
@@ -130,7 +141,7 @@ describe("CareerStatementViewModel — normalização das 5 fontes", () => {
   it("agrupa por ano, do mais recente para o mais antigo", () => {
     const groups = vm().groupByYear(vm().entries(sources));
     expect(groups.map((group) => group.year)).toEqual(["2026", "2025"]);
-    expect(groups[0]?.entries).toHaveLength(3);
+    expect(groups[0]?.entries).toHaveLength(4);
     expect(groups[1]?.entries).toHaveLength(2);
   });
 
@@ -163,5 +174,46 @@ describe("CareerStatementViewModel — normalização das 5 fontes", () => {
     expect(range.from).toBe("2000-01-01");
     const recent = vm().rangeForPreset("90");
     expect(recent.from < recent.to).toBe(true);
+  });
+});
+
+/**
+ * Onda 35, item 17 do dono: a mudança de time passou a exigir motivo e a ser
+ * gravada como transição. O Extrato é a história da pessoa — a troca de time
+ * entra nele como a transição de nível entra: título com origem e destino,
+ * motivo no detalhe, e ordenada pela data junto das outras entradas.
+ */
+describe("CareerStatementViewModel — mudança de time no extrato", () => {
+  it("com time anterior: 'mudou do time X para Y', motivo no detalhe, link para o perfil", () => {
+    const entry = vm()
+      .entries(sources)
+      .find((candidate) => candidate.kind === "teamTransition");
+    expect(entry?.id).toBe("team-transition-tt-1");
+    expect(entry?.title).toBe("statement.entry.teamTransition Plataforma Dados");
+    expect(entry?.detail).toBe("Reforço do time de dados");
+    expect(entry?.link).toBe("/architects/ana");
+  });
+
+  it("sem time anterior: 'entrou no time Y'", () => {
+    const entry = vm()
+      .entries({ ...sources, teamTransitions: [{ ...teamTransition, fromTeamName: null }] })
+      .find((candidate) => candidate.kind === "teamTransition");
+    expect(entry?.title).toBe("statement.entry.teamTransitionFirst Dados");
+  });
+
+  it("entra na ordem cronológica junto das outras entradas e responde ao filtro de tipo", () => {
+    const feed = vm();
+    const entries = feed.entries(sources);
+    expect(entries.map((entry) => entry.date)).toEqual([
+      "2026-03-10T12:00:00.000Z",
+      "2026-02-15",
+      "2026-02-01T09:00:00.000Z",
+      "2026-01-20",
+      "2025-12-15",
+      "2025-11-05",
+    ]);
+    expect(feed.filterByKinds(entries, ["teamTransition"]).map((entry) => entry.id)).toEqual([
+      "team-transition-tt-1",
+    ]);
   });
 });

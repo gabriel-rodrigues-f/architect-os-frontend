@@ -95,6 +95,19 @@ export const teamTransitionsResponseSchema = z.object({
   withoutRecordedTeam: z.number().nullable(),
 });
 
+export const careerStatementTeamTransitionsResponseSchema = z.object({
+  entries: z.array(
+    z.object({
+      kind: z.literal("teamTransition"),
+      id: z.string(),
+      occurredOn: z.string(),
+      fromTeamName: z.string().nullable(),
+      toTeamName: z.string(),
+      reason: z.string(),
+    }),
+  ),
+});
+
 export const architectAdherenceResponseSchema = z.object({
   architectId: z.string(),
   teamId: z.string().nullable(),

@@ -5,10 +5,12 @@ import type {
   Evidence,
   MentoringSession,
 } from "../domain";
+import type { TeamTransitionRecord } from "../gateways/reports.gateway";
 import type { MessageKey } from "../i18n";
 import { defaultDateFormatter } from "../text";
 
-export type StatementEntryKind = "transition" | "competencyStep" | "evidence" | "pdi" | "mentoring";
+export type StatementEntryKind =
+  "transition" | "teamTransition" | "competencyStep" | "evidence" | "pdi" | "mentoring";
 
 export interface StatementEntry {
   id: string;
@@ -29,6 +31,7 @@ export type StatementCompetencyEvent = ArchitectEvolutionResult["events"][number
 export interface StatementSources {
   architectId: string;
   transitions: readonly CareerLevelTransition[];
+  teamTransitions: readonly TeamTransitionRecord[];
   competencyEvents: readonly StatementCompetencyEvent[];
   evidences: readonly Evidence[];
   planEvents: readonly DevelopmentPlanEvent[];
@@ -82,6 +85,9 @@ export class CareerStatementViewModel {
         detail: transition.reason || null,
         link: profileLink,
       })),
+      ...sources.teamTransitions.map((transition) =>
+        this.teamTransitionEntry(transition, profileLink),
+      ),
       ...sources.competencyEvents.map((event) =>
         this.competencyStepEntry(event, sources.architectId),
       ),
@@ -111,6 +117,23 @@ export class CareerStatementViewModel {
       })),
     ];
     return all.sort((left, right) => right.date.localeCompare(left.date));
+  }
+
+  teamTransitionEntry(transition: TeamTransitionRecord, link: string): StatementEntry {
+    return {
+      id: `team-transition-${transition.id}`,
+      kind: "teamTransition",
+      date: transition.occurredOn,
+      title:
+        transition.fromTeamName === null
+          ? this.translate("statement.entry.teamTransitionFirst", { to: transition.toTeamName })
+          : this.translate("statement.entry.teamTransition", {
+              from: transition.fromTeamName,
+              to: transition.toTeamName,
+            }),
+      detail: transition.reason || null,
+      link,
+    };
   }
 
   competencyStepEntry(event: StatementCompetencyEvent, architectId: string): StatementEntry {

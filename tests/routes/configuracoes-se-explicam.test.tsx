@@ -46,6 +46,36 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/**
+ * Onda 35, item 11 do dono (2026-09-02), literal: "as descrições. eu quero um
+ * pequeno interrogação em cada parte pra saber como utilizar cada coisa, o
+ * mesmo que utilizamos nos títulos da aplicação." — os três cartões que o
+ * item 13 não cobria: a Política de Progressão e as duas referências.
+ */
+const CARTOES_DO_ITEM_11 = ["Política de Progressão", "Escala de proficiência", "Ciclos"] as const;
+
+describe("a Política de Progressão e as referências se explicam", () => {
+  it.each(CARTOES_DO_ITEM_11)('"%s" tem o ? ao lado do título', async (cartao) => {
+    renderWithApp(<SettingsPage />);
+    await screen.findByText("Vocabulários");
+
+    expect(screen.getByRole("button", { name: `Como configurar ${cartao}` })).toBeTruthy();
+  });
+
+  it("o ? da Política diz que o mínimo conta grupos prontos e que elegibilidade não promove sozinha", async () => {
+    renderWithApp(<SettingsPage />);
+    await screen.findByText("Vocabulários");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Como configurar Política de Progressão" }),
+    );
+
+    const dialogo = await screen.findByRole("dialog");
+    expect(dialogo.textContent).toMatch(/grupos prontos/i);
+    expect(dialogo.textContent).toMatch(/nunca promove/i);
+  });
+});
+
 describe("cada grupo de configuração se explica", () => {
   it.each(GRUPOS_QUE_O_DONO_NOMEOU)('"%s" tem o ? ao lado do título', async (grupo) => {
     renderWithApp(<SettingsPage />);

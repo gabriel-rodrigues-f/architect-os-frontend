@@ -5,6 +5,7 @@ import type { StatementEntry, StatementEntryKind, StatementYearGroup } from "@/l
 
 const KIND_LABEL_KEY: Record<StatementEntryKind, MessageKey> = {
   transition: "statement.kind.transition",
+  teamTransition: "statement.kind.teamTransition",
   competencyStep: "statement.kind.competencyStep",
   evidence: "statement.kind.evidence",
   pdi: "statement.kind.pdi",
@@ -13,6 +14,7 @@ const KIND_LABEL_KEY: Record<StatementEntryKind, MessageKey> = {
 
 const KIND_CHIP: Record<StatementEntryKind, string> = {
   transition: "bg-primary/10 text-primary",
+  teamTransition: "bg-primary/10 text-primary",
   competencyStep: semanticTone.success,
   evidence: "bg-secondary text-secondary-foreground",
   pdi: semanticTone.warning,

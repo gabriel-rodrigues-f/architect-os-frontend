@@ -126,7 +126,11 @@ function SettingsPage() {
 
       <SectionGroup className="mt-8" title={t("ref.referenceSectionTitle")}>
         <div className="grid gap-6 xl:grid-cols-2">
-          <SectionCard title={t("ref.scale")} description={t("ref.scale.subtitle")}>
+          <SectionCard
+            title={t("ref.scale")}
+            description={t("ref.scale.subtitle")}
+            help={<SectionHelp section="scale" />}
+          >
             <ul className="space-y-2">
               {LEVELS.map((l) => (
                 <li key={l.level} className="flex items-start gap-3 surface-inset p-3">
@@ -139,7 +143,11 @@ function SettingsPage() {
             </ul>
           </SectionCard>
 
-          <SectionCard title={t("ref.cycles")} description={t("ref.cycles.subtitle")}>
+          <SectionCard
+            title={t("ref.cycles")}
+            description={t("ref.cycles.subtitle")}
+            help={<SectionHelp section="cycles" />}
+          >
             <ul className="space-y-2">
               {store.cycles.map((c) => (
                 <li
@@ -188,7 +196,11 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
   const scope = ProgressionPolicyScope.fromChoice(teamChoice, teams);
 
   return (
-    <SectionCard title={t("policy.title")} description={t("policy.subtitle")}>
+    <SectionCard
+      title={t("policy.title")}
+      description={t("policy.subtitle")}
+      help={<SectionHelp section="policy" />}
+    >
       {teams.length > 0 && (
         <div className="mb-4 max-w-xs">
           <SingleSelectFilter
