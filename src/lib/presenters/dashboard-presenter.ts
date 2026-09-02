@@ -195,10 +195,12 @@ export class PersonalDashboardPresenter {
     };
   }
 
+  evidencesOf(architectId: string): Evidence[] {
+    return this.state.evidences.filter((evidence) => evidence.architectId === architectId);
+  }
+
   pendingEvidenceCount(architectId: string): number {
-    return this.state.evidences.filter(
-      (e) => e.architectId === architectId && e.status === "Pending",
-    ).length;
+    return this.evidencesOf(architectId).filter((evidence) => evidence.status === "Pending").length;
   }
 
   assignedPaths(architectId: string): LearningPath[] {

@@ -1,3 +1,4 @@
+export * from "./use-architect-profile-view-model";
 export * from "./use-async-submit";
 export * from "./use-display-preferences";
 export * from "./use-media-query";

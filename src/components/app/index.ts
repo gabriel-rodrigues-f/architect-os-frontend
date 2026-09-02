@@ -31,6 +31,7 @@ export * from "./TruncationNotice";
 export * from "./ViewToggle";
 export * from "./assessments-shared";
 export * from "./charts";
+export * from "./evidence-shared";
 export * from "./gap-analysis-shared";
 export * from "./level-encoding";
 export * from "./mentoring-shared";

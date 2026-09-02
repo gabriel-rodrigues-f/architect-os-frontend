@@ -4,21 +4,22 @@ import { useMemo, useState } from "react";
 import {
   Bar,
   CapabilityRadar,
+  EvidenceDialog,
+  EvidenceStatusBadge,
   GapBadge,
   Initials,
   LevelBadge,
   OutOfReachScreen,
   PageHeader,
   ProfileTabs,
+  ResubmitEvidenceDialog,
   SectionCard,
   SectionGroup,
-  semanticTone,
   StatCard,
   TreatGapInPlanAction,
 } from "@/components/app";
 import { useLabels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -29,8 +30,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { type DevelopmentPlan, type Evidence, type EvidenceType } from "@/lib/domain";
-import { useSuccessToast, useToastSubmit } from "@/hooks";
+import { type Evidence } from "@/lib/domain";
+import { useArchitectProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
@@ -40,12 +41,7 @@ import { requireCareerFileReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
-import { ArchitectProfileViewModel, LearningPathsViewModel } from "@/lib/view-models";
-
-function useArchitectProfileViewModel(): ArchitectProfileViewModel {
-  const store = useStore();
-  return useMemo(() => new ArchitectProfileViewModel(store), [store]);
-}
+import { LearningPathsViewModel } from "@/lib/view-models";
 
 export const Route = createFileRoute("/architects/$architectId/")({
   head: () => ({
@@ -359,7 +355,7 @@ function ArchitectWorkspace() {
                         {itemEvidences.map((e) => (
                           <li key={e.id} className="flex items-center gap-1.5">
                             <span className="text-xs text-muted-foreground">{e.title}</span>
-                            <EvidenceStatusBadge status={e.status} labels={labels} />
+                            <EvidenceStatusBadge status={e.status} />
                           </li>
                         ))}
                       </ul>
@@ -405,7 +401,7 @@ function ArchitectWorkspace() {
                 <li key={e.id} className="surface-inset p-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium">{e.title}</p>
-                    <EvidenceStatusBadge status={e.status} labels={labels} />
+                    <EvidenceStatusBadge status={e.status} />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {evidenceTypes.label(e.type)}
@@ -459,283 +455,6 @@ function ArchitectWorkspace() {
         </SectionCard>
       </SectionGroup>
     </>
-  );
-}
-
-const EVIDENCE_STATUS_TONE: Record<Evidence["status"], string> = {
-  Pending: "bg-secondary text-muted-foreground",
-  Accepted: semanticTone.success,
-  "Needs Improvement": semanticTone.warning,
-  Rejected: "bg-destructive/15 text-destructive",
-};
-
-function EvidenceStatusBadge({
-  status,
-  labels,
-}: {
-  status: Evidence["status"];
-  labels: ReturnType<typeof useLabels>;
-}) {
-  return (
-    <span
-      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${EVIDENCE_STATUS_TONE[status]}`}
-    >
-      {labels.evidenceStatus[status]}
-    </span>
-  );
-}
-
-function EvidenceDialog({
-  architectId,
-  plan,
-}: {
-  architectId: string;
-  plan: DevelopmentPlan | undefined;
-}) {
-  const planItems = plan?.items ?? [];
-  const { t } = useI18n();
-  const labels = useLabels();
-  const viewModel = useArchitectProfileViewModel();
-
-  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState(() => evidenceTypes.options[0]?.code ?? "");
-  const [date, setDate] = useState(defaultDateFormatter.todayIso());
-  const [complexity, setComplexity] = useState<"Low" | "Medium" | "High">("Medium");
-  const [description, setDescription] = useState("");
-  const [project, setProject] = useState("");
-  const [url, setUrl] = useState("");
-  const [issuer, setIssuer] = useState("");
-  const [pdiItemId, setPdiItemId] = useState("");
-
-  const { submitting: saving, run } = useToastSubmit();
-  const notifySuccess = useSuccessToast();
-  const isCertification = type === "Certification";
-
-  const salvar = async () => {
-    const nome = title.trim();
-    if (!nome || !type) return;
-    const result = await run(() =>
-      viewModel.registerEvidence(architectId, {
-        title,
-        description,
-        type: type as EvidenceType,
-        date,
-        complexity,
-        project,
-        url,
-        issuer,
-        pdiItemId,
-      }),
-    );
-    if (!result.ok) return;
-    notifySuccess("msg.evidence.create.success", { titulo: nome }, result.value);
-    setTitle("");
-    setDescription("");
-    setProject("");
-    setUrl("");
-    setIssuer("");
-    setPdiItemId("");
-    setOpen(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="secondary">
-          {t("arch.register")}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("ev.dialog.title")}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="ev-title">{t("ev.field.title")}</Label>
-            <Input
-              id="ev-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && salvar()}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="ev-type">{t("ev.field.type")}</Label>
-              <select
-                id="ev-type"
-                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-              >
-                {evidenceTypes.options.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {evidenceTypes.label(option.code)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="ev-date">{t("ev.field.date")}</Label>
-              <Input
-                id="ev-date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && salvar()}
-              />
-            </div>
-          </div>
-          {isCertification && (
-            <div>
-              <Label htmlFor="ev-issuer">{t("ev.field.issuer")}</Label>
-              <Input
-                id="ev-issuer"
-                value={issuer}
-                onChange={(e) => setIssuer(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && salvar()}
-              />
-            </div>
-          )}
-          <div>
-            <Label htmlFor="ev-complexity">{t("ev.field.complexity")}</Label>
-            <select
-              id="ev-complexity"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={complexity}
-              onChange={(e) => setComplexity(e.target.value as "Low" | "Medium" | "High")}
-            >
-              <option value="Low">{labels.complexity.Low}</option>
-              <option value="Medium">{labels.complexity.Medium}</option>
-              <option value="High">{labels.complexity.High}</option>
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="ev-project">{t("ev.field.project")}</Label>
-            <Input
-              id="ev-project"
-              value={project}
-              onChange={(e) => setProject(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && salvar()}
-            />
-          </div>
-          <div>
-            <Label htmlFor="ev-url">{t("ev.field.link")}</Label>
-            <Input
-              id="ev-url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && salvar()}
-            />
-          </div>
-          <div>
-            <Label htmlFor="ev-description">{t("ev.field.description")}</Label>
-            <Textarea
-              id="ev-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          {planItems.length > 0 && (
-            <div>
-              <Label htmlFor="ev-pdi">{t("ev.field.pdiLink")}</Label>
-              <select
-                id="ev-pdi"
-                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                value={pdiItemId}
-                onChange={(e) => setPdiItemId(e.target.value)}
-              >
-                <option value="">{t("ev.field.pdiLink.none")}</option>
-                {planItems.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.objective || i.id}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
-            Cancelar
-          </Button>
-          <Button disabled={!title.trim() || saving} onClick={() => void salvar()}>
-            {saving ? t("ev.saving") : t("ev.save")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
-  const { t } = useI18n();
-  const viewModel = useArchitectProfileViewModel();
-  const [open, setOpen] = useState(false);
-  const [description, setDescription] = useState(evidence.description);
-  const [url, setUrl] = useState(evidence.url ?? "");
-
-  const { submitting: saving, run } = useToastSubmit();
-  const notifySuccess = useSuccessToast();
-
-  const submit = async () => {
-    const result = await run(() => viewModel.resubmit(evidence, { description, url }));
-    if (!result.ok) return;
-    notifySuccess("msg.evidence.resubmit.success", { titulo: evidence.title }, result.value);
-    setOpen(false);
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) {
-          setDescription(evidence.description);
-          setUrl(evidence.url ?? "");
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-auto px-0 text-xs">
-          {t("ev.resubmit.action")}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("ev.resubmit.title")}</DialogTitle>
-        </DialogHeader>
-        {evidence.leaderComment && (
-          <p className="rounded-md bg-secondary px-3 py-2 text-sm text-muted-foreground">
-            "{evidence.leaderComment}"
-          </p>
-        )}
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="ev-resubmit-description">{t("ev.field.description")}</Label>
-            <Textarea
-              id="ev-resubmit-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="ev-resubmit-url">{t("ev.field.link")}</Label>
-            <Input id="ev-resubmit-url" value={url} onChange={(e) => setUrl(e.target.value)} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
-            {t("ev.resubmit.cancel")}
-          </Button>
-          <Button onClick={() => void submit()} disabled={saving}>
-            {saving ? t("ev.resubmit.saving") : t("ev.resubmit.save")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
