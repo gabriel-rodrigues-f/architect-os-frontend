@@ -14,6 +14,7 @@ import { Selection } from "@/lib/selection";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { teamsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -22,6 +23,7 @@ import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import {
   emptyArchitectForm,
+  TeamOrLevelChange,
   TeamViewModel,
   type ArchitectFormRole,
   type ArchitectFormValues,
@@ -81,7 +83,7 @@ export function useArchitectForm() {
       primarySpecializationCompetencyId: architect.primarySpecializationCompetencyId ?? null,
       years: String(architect.yearsAsArchitect),
       email: architect.email,
-      teamId: architect.teamId ?? null,
+      teamId: null,
     });
     setEditing(architect.id);
   };
@@ -139,31 +141,9 @@ export function useTeamRoster(isAdmin: boolean) {
   const careerLevels = useCareerLevelsByRank();
   const [roleSelection, setRoleSelection] = useState<string[] | null>(null);
   const roleFilter = roleSelection ?? careerLevels.map((l) => l.name);
-  const [specializationFilter, setSpecializationFilter] = useState<string[]>(() => {
-    const used = new Set(
-      store.architects
-        .map((a) => a.primarySpecializationCompetencyId)
-        .filter((id): id is string => !!id),
-    );
-    const ids = [...used];
-    if (store.architects.some((a) => !a.primarySpecializationCompetencyId))
-      ids.push(NO_SPECIALIZATION);
-    return ids;
-  });
-  const [capabilityFilter, setCapabilityFilter] = useState<string[]>(() => {
-    const ids = store.capabilities.map((c) => c.id);
-    const hasNone = store.architects.some((a) => {
-      const competency = a.primarySpecializationCompetencyId
-        ? sel.competencyById(a.primarySpecializationCompetencyId)
-        : undefined;
-      return !competency;
-    });
-    return hasNone ? [...ids, NO_CAPABILITY] : ids;
-  });
-
-  const [nameSelection, setNameSelection] = useState<string[]>(() =>
-    store.architects.map((a) => a.id),
-  );
+  const [specializationSelection, setSpecializationSelection] = useState<string[] | null>(null);
+  const [capabilitySelection, setCapabilitySelection] = useState<string[] | null>(null);
+  const [nameSelectionChosen, setNameSelectionChosen] = useState<string[] | null>(null);
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "level" | "recent">("name-asc");
   const [page, setPage] = useState(1);
 
@@ -172,7 +152,14 @@ export function useTeamRoster(isAdmin: boolean) {
 
   useEffect(() => {
     setPage(1);
-  }, [nameSelection, statusFilter, roleSelection, specializationFilter, capabilityFilter, sort]);
+  }, [
+    nameSelectionChosen,
+    statusFilter,
+    roleSelection,
+    specializationSelection,
+    capabilitySelection,
+    sort,
+  ]);
 
   const lastMentoringByArchitect = useMemo(() => {
     const map = new Map<string, string>();
@@ -233,6 +220,19 @@ export function useTeamRoster(isAdmin: boolean) {
     }
     return options;
   }, [store.capabilities, store.architects, sel, t]);
+
+  const specializationFilter = useMemo(
+    () => specializationSelection ?? specializationOptions.map((option) => option.id),
+    [specializationSelection, specializationOptions],
+  );
+  const capabilityFilter = useMemo(
+    () => capabilitySelection ?? capabilityOptions.map((option) => option.id),
+    [capabilitySelection, capabilityOptions],
+  );
+  const nameSelection = useMemo(
+    () => nameSelectionChosen ?? store.architects.map((a) => a.id),
+    [nameSelectionChosen, store.architects],
+  );
 
   const filtered = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
@@ -318,7 +318,7 @@ export function useTeamRoster(isAdmin: boolean) {
     activeFilterChips.push({
       key: "name",
       label: t("team.filter.chip.name", { n: nameSelection.length }),
-      onRemove: () => setNameSelection(store.architects.map((a) => a.id)),
+      onRemove: () => setNameSelectionChosen(null),
     });
   }
   if (isAdmin && !(statusFilter.length === 1 && statusFilter[0] === "active")) {
@@ -339,23 +339,23 @@ export function useTeamRoster(isAdmin: boolean) {
     activeFilterChips.push({
       key: "spec",
       label: `${t("team.filter.specialization")}: ${summarize(specializationFilter, specializationOptions)}`,
-      onRemove: () => setSpecializationFilter(specializationOptions.map((o) => o.id)),
+      onRemove: () => setSpecializationSelection(null),
     });
   }
   if (capabilityFilter.length !== capabilityOptions.length) {
     activeFilterChips.push({
       key: "cap",
       label: `${t("team.filter.capability")}: ${summarize(capabilityFilter, capabilityOptions)}`,
-      onRemove: () => setCapabilityFilter(capabilityOptions.map((o) => o.id)),
+      onRemove: () => setCapabilitySelection(null),
     });
   }
 
   const clearFilters = () => {
-    setNameSelection(store.architects.map((a) => a.id));
+    setNameSelectionChosen(null);
     setStatusFilter(["active"]);
     setRoleSelection(null);
-    setSpecializationFilter(specializationOptions.map((o) => o.id));
-    setCapabilityFilter(capabilityOptions.map((o) => o.id));
+    setSpecializationSelection(null);
+    setCapabilitySelection(null);
     setSort("name-asc");
   };
 
@@ -365,11 +365,11 @@ export function useTeamRoster(isAdmin: boolean) {
     roleFilter,
     setRoleFilter: setRoleSelection as (ids: string[]) => void,
     specializationFilter,
-    setSpecializationFilter,
+    setSpecializationFilter: setSpecializationSelection as (ids: string[]) => void,
     capabilityFilter,
-    setCapabilityFilter,
+    setCapabilityFilter: setCapabilitySelection as (ids: string[]) => void,
     nameSelection,
-    setNameSelection,
+    setNameSelection: setNameSelectionChosen as (ids: string[]) => void,
     sort,
     setSort,
     page,
@@ -392,11 +392,13 @@ export function useTeamRoster(isAdmin: boolean) {
   };
 }
 
-export function CareerLevelTransitionDialog({
+export function TeamOrLevelChangeDialog({
   architect,
+  teams,
   onClose,
 }: {
   architect: Architect;
+  teams: readonly TeamSummary[];
   onClose: () => void;
 }) {
   const { t } = useI18n();
@@ -404,44 +406,69 @@ export function CareerLevelTransitionDialog({
   const notifySuccess = useSuccessToast();
 
   const careerLevels = useCareerLevelsByRank();
-  const [toRole, setToRole] = useState<RoleName>(architect.role);
+  const [toRole, setToRole] = useState<ArchitectFormRole>("");
+  const [toTeamId, setToTeamId] = useState<string | null>(architect.teamId ?? null);
+  const change = new TeamOrLevelChange(architect, toRole, toTeamId);
+  const currentTeam = viewModel.teamNameOf(architect.teamId, teams) ?? t("team.form.team.none");
 
   return (
     <CommandWithReasonDialog
       title={t("team.transition.title", { nome: architect.name })}
-      body={t("team.transition.body", { atual: architect.role })}
+      body={t("team.transition.body", { atual: architect.role, time: currentTeam })}
       reasonInputId="transition-reason"
       reasonLabel={t("team.transition.reasonLabel")}
       reasonPlaceholder={t("team.transition.reasonPlaceholder")}
       confirmLabel={t("team.transition.confirm")}
       submittingLabel={t("team.transition.submitting")}
       fallbackError={t("team.transition.error")}
-      canSubmit={toRole !== architect.role}
+      canSubmit={change.isEffective}
       extraFields={() => (
-        <div>
-          <Label htmlFor="transition-to-role">{t("team.transition.toRole")}</Label>
-          <select
-            id="transition-to-role"
-            className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-            value={toRole}
-            onChange={(e) => setToRole(e.target.value as RoleName)}
-          >
-            {careerLevels.map((l) => (
-              <option key={l.id}>{l.name}</option>
-            ))}
-          </select>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="transition-to-role">{t("team.transition.toRole")}</Label>
+            <select
+              id="transition-to-role"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={toRole}
+              onChange={(e) => setToRole(e.target.value as ArchitectFormRole)}
+            >
+              <option value="">{t("team.transition.keepRole")}</option>
+              {viewModel.otherCareerLevels(careerLevels, architect.role).map((l) => (
+                <option key={l.id} value={l.name}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="transition-to-team">{t("team.transition.toTeam")}</Label>
+            <select
+              id="transition-to-team"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={toTeamId ?? ""}
+              onChange={(e) => setToTeamId(e.target.value === "" ? null : e.target.value)}
+            >
+              <option value="">{t("team.form.team.none")}</option>
+              {viewModel.allocatableTeams(teams).map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
       onSubmit={(reason) =>
-        viewModel
-          .transitionCareerLevel(architect.id, toRole, reason)
-          .then((updated) =>
-            notifySuccess(
-              "msg.people.careerLevelTransition.success",
-              { nome: architect.name },
-              updated,
-            ),
-          )
+        viewModel.changeTeamOrLevel(change, reason).then((updated) =>
+          notifySuccess(
+            "msg.people.careerLevelTransition.success",
+            {
+              nome: architect.name,
+              time: viewModel.teamNameOf(updated.teamId, teams) ?? t("team.form.team.none"),
+            },
+            updated,
+          ),
+        )
       }
       onClose={onClose}
     />

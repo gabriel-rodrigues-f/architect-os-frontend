@@ -22,12 +22,16 @@ function fakeService(): TeamRosterService & {
   updateArchitect: ReturnType<typeof vi.fn>;
   transitionCareerLevel: ReturnType<typeof vi.fn>;
   deactivate: ReturnType<typeof vi.fn>;
+  allocateArchitectToTeam: ReturnType<typeof vi.fn>;
+  releaseArchitectFromTeam: ReturnType<typeof vi.fn>;
 } {
   return {
     addArchitect: vi.fn(async (input) => ({ ...input, id: "novo-id", version: 1 }) as Architect),
     updateArchitect: vi.fn(),
     transitionCareerLevel: vi.fn(async () => ({ id: "ana" }) as Architect),
     deactivate: vi.fn(async () => ({ id: "ana" }) as Architect),
+    allocateArchitectToTeam: vi.fn(async () => ({ id: "ana" }) as Architect),
+    releaseArchitectFromTeam: vi.fn(async () => ({ id: "ana" }) as Architect),
   };
 }
 
@@ -167,7 +171,6 @@ describe("TeamViewModel", () => {
         yearsAsArchitect: 2,
         primarySpecializationCompetencyId: null,
         email: "carla@company.com",
-        teamId: null,
       });
       const [, patch] = service.updateArchitect.mock.calls[0]!;
       expect(patch).not.toHaveProperty("role");
@@ -175,17 +178,20 @@ describe("TeamViewModel", () => {
     });
   });
 
-  describe("submit — o time viaja como teamId na edição (onda 33)", () => {
-    it("'Sem time' é teamId nulo explícito; time escolhido é o id dele", async () => {
+  /**
+   * Onda 35 — achado 17 do dono (2026-09-02): "Depois de cadastrado, o time
+   * não muda pelo lápis; só pelo diálogo da setinha, com motivo obrigatório."
+   * A onda 33 fazia o `teamId` viajar no PATCH da edição; isso sai.
+   */
+  describe("submit — a edição NUNCA carrega teamId (onda 35)", () => {
+    it("mesmo com time no formulário, o PATCH não leva teamId — o time muda só por changeTeamOrLevel", async () => {
       const service = fakeService();
       const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
 
       await vm.submit({ ...baseForm, teamId: "time-dados" }, "ana");
 
-      expect(service.updateArchitect).toHaveBeenCalledWith(
-        "ana",
-        expect.objectContaining({ teamId: "time-dados" }),
-      );
+      const patch: unknown = service.updateArchitect.mock.calls[0]?.[1];
+      expect(patch).not.toHaveProperty("teamId");
     });
 
     it("allocatableTeams oferece só os times ativos", () => {

@@ -1,7 +1,29 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * `<Link>` do TanStack Router precisa de um `RouterProvider` real; desde a
+ * onda 35 o Quadro sem ninguém para vincular aponta o cadastro por `<Link>`.
+ * Troca por âncora comum — não é o que se testa aqui.
+ */
+vi.mock("@tanstack/react-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
+  return {
+    ...actual,
+    Link: ({
+      children,
+      to,
+      params: _params,
+      ...rest
+    }: ComponentProps<"a"> & { to?: string; params?: unknown }) => (
+      <a href={to} {...rest}>
+        {children}
+      </a>
+    ),
+  };
+});
 
 import { apiPath } from "@/lib/api-path";
 import { teamRosterApi, type SessionUser } from "@/lib/api";

@@ -77,17 +77,17 @@ describe("Time — níveis de carreira vêm de career_levels, não de array fixo
     expect(select.value).toBe("Júnior");
   });
 
-  it("o diálogo de transição de nível oferece os 4 níveis carregados", async () => {
+  it("o diálogo 'Mudar time ou nível' oferece os níveis carregados MENOS o atual (onda 35, achado 7)", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Mudar nível de carreira de Ana Martins" }),
+      screen.getByRole("button", { name: "Mudar time ou nível de Ana Martins" }),
     );
     const select = (await screen.findByLabelText("Novo nível")) as HTMLSelectElement;
     expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
+      "Manter o nível atual",
       "Júnior",
-      "Pleno",
       "Sênior",
       "Especialista",
     ]);

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { authApi, teamRosterApi, teamsApi, teamTransitionsApi, type SessionUser } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
@@ -875,34 +876,52 @@ function MembershipForm({
       <p className="mt-0.5 max-w-prose text-sm text-muted-foreground">
         {t("teams.membership.subtitle")}
       </p>
-      <div className="mt-3 grid items-end gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
-        <SingleSelectFilter
-          id={`team-membership-user-${team.id}`}
-          label={t("teams.membership.person")}
-          value={userId}
-          onChange={setUserId}
-          options={[
-            { value: "", label: t("teams.membership.choosePerson") },
-            ...accounts.map((account) => ({ value: account.id, label: account.name })),
-          ]}
-        />
-        <SingleSelectFilter
-          id={`team-membership-role-${team.id}`}
-          label={t("teams.membership.role")}
-          value={role}
-          onChange={(value) => TeamMemberRoles.includes(value) && setRole(value)}
-          options={roles.map((option) => ({ value: option, label: t(`users.role.${option}`) }))}
-        />
-        <Button size="sm" disabled={!ready} onClick={() => void assign()}>
-          {t("teams.membership.assign")}
-        </Button>
-      </div>
+      {accounts.length === 0 ? (
+        <div className="mt-3">
+          <RegisterPersonPrompt message={t("teams.membership.nobody")} to="/users" />
+        </div>
+      ) : (
+        <div className="mt-3 grid items-end gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
+          <SingleSelectFilter
+            id={`team-membership-user-${team.id}`}
+            label={t("teams.membership.person")}
+            value={userId}
+            onChange={setUserId}
+            options={[
+              { value: "", label: t("teams.membership.choosePerson") },
+              ...accounts.map((account) => ({ value: account.id, label: account.name })),
+            ]}
+          />
+          <SingleSelectFilter
+            id={`team-membership-role-${team.id}`}
+            label={t("teams.membership.role")}
+            value={role}
+            onChange={(value) => TeamMemberRoles.includes(value) && setRole(value)}
+            options={roles.map((option) => ({ value: option, label: t(`users.role.${option}`) }))}
+          />
+          <Button size="sm" disabled={!ready} onClick={() => void assign()}>
+            {t("teams.membership.assign")}
+          </Button>
+        </div>
+      )}
       {error && (
         <p className="mt-2 text-sm text-destructive" role="alert">
           {error}
         </p>
       )}
     </div>
+  );
+}
+
+function RegisterPersonPrompt({ message, to }: { message: string; to: "/users" | "/team" }) {
+  const { t } = useI18n();
+  return (
+    <p className="text-sm text-muted-foreground">
+      <span>{message}</span>{" "}
+      <Link to={to} className="font-medium text-primary underline-offset-4 hover:underline">
+        {t("teams.people.registerCta")}
+      </Link>
+    </p>
   );
 }
 
@@ -1084,14 +1103,18 @@ function AllocatePersonDialog({
   const { t } = useI18n();
   const store = useStore();
   const [architectId, setArchitectId] = useState("");
+  const [reason, setReason] = useState("");
   const { submitting, error, run } = useAsyncSubmit(
     (failure) => registry.allocationRefusalOf(failure) ?? t("teams.people.error"),
   );
   const chosen = candidates.find((candidate) => candidate.id === architectId);
+  const justified = reason.trim() !== "";
 
   const allocate = async () => {
-    if (!chosen) return;
-    const result = await run(() => store.allocateArchitectToTeam(chosen.id, team.id));
+    if (!chosen || !justified) return;
+    const result = await run(() =>
+      store.allocateArchitectToTeam(chosen.id, team.id, reason.trim()),
+    );
     if (result.ok) onAllocated(chosen, result.value);
   };
 
@@ -1104,24 +1127,39 @@ function AllocatePersonDialog({
         <p className="text-sm text-muted-foreground">{t("teams.people.allocateDescription")}</p>
         <div className="grid gap-3">
           {candidates.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("teams.people.nobodyToAllocate")}</p>
+            <RegisterPersonPrompt message={t("teams.people.nobodyToAllocate")} to="/team" />
           ) : (
-            <SingleSelectFilter
-              id={`team-allocate-${team.id}`}
-              label={t("teams.people.person")}
-              value={architectId}
-              onChange={setArchitectId}
-              options={[
-                { value: "", label: t("teams.people.choosePerson") },
-                ...candidates.map((candidate) => ({
-                  value: candidate.id,
-                  label: t("teams.people.candidate", {
-                    nome: candidate.name,
-                    time: registry.teamNameOf(candidate.teamId, teams) ?? t("teams.people.noTeam"),
-                  }),
-                })),
-              ]}
-            />
+            <>
+              <SingleSelectFilter
+                id={`team-allocate-${team.id}`}
+                label={t("teams.people.person")}
+                value={architectId}
+                onChange={setArchitectId}
+                options={[
+                  { value: "", label: t("teams.people.choosePerson") },
+                  ...candidates.map((candidate) => ({
+                    value: candidate.id,
+                    label: t("teams.people.candidate", {
+                      nome: candidate.name,
+                      time:
+                        registry.teamNameOf(candidate.teamId, teams) ?? t("teams.people.noTeam"),
+                    }),
+                  })),
+                ]}
+              />
+              <div>
+                <Label htmlFor={`team-allocate-reason-${team.id}`}>
+                  {t("teams.people.reasonLabel")}
+                </Label>
+                <Textarea
+                  id={`team-allocate-reason-${team.id}`}
+                  className="mt-1"
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  placeholder={t("teams.people.reasonPlaceholder")}
+                />
+              </div>
+            </>
           )}
           {error && (
             <p className="text-sm text-destructive" role="alert">
@@ -1133,7 +1171,7 @@ function AllocatePersonDialog({
           <Button variant="outline" onClick={onCancel} disabled={submitting}>
             {t("common.cancel")}
           </Button>
-          <Button disabled={!chosen || submitting} onClick={() => void allocate()}>
+          <Button disabled={!chosen || !justified || submitting} onClick={() => void allocate()}>
             {t("teams.people.confirmAllocate")}
           </Button>
         </DialogFooter>
