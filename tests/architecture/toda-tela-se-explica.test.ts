@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
+import { SECTION_HELP_KEYS } from "@/lib/page-help";
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 
@@ -124,6 +125,20 @@ class ChavesDaAjuda {
     );
   }
 
+  /**
+   * Onda 35, item 13: o `?` desceu do cabeçalho da página para o título de
+   * cada grupo de configuração (`useSectionHelp`). A lista de grupos é a
+   * fonte da verdade em `page-help.ts`; cada um pede título, finalidade e
+   * como configurar — e o mesmo buraco vale: chave ausente é popover cru.
+   */
+  private static readonly CAMPOS_DE_SECAO = ["title", "purpose", "how"] as const;
+
+  static pedidasPelasSecoes(): readonly string[] {
+    return SECTION_HELP_KEYS.flatMap((secao) =>
+      ChavesDaAjuda.CAMPOS_DE_SECAO.map((campo) => `help.section.${secao}.${campo}`),
+    );
+  }
+
   private static arquivosDe(raiz: string): string[] {
     return readdirSync(raiz, { withFileTypes: true }).flatMap((entrada) => {
       const caminho = join(raiz, entrada.name);
@@ -187,5 +202,23 @@ describe("toda tela se explica", () => {
       (chave) => ((pt as Record<string, unknown>)[chave] as string | undefined)?.trim() === "",
     );
     expect(vazias).toEqual([]);
+  });
+
+  it("todo grupo de configuração se explica — as três chaves existem e têm texto, nos dois idiomas", () => {
+    const pedidas = ChavesDaAjuda.pedidasPelasSecoes();
+    expect(pedidas.length, "nenhum grupo declarado — a lista de seções sumiu").toBeGreaterThan(20);
+    const dicionarios: ReadonlyArray<readonly [string, Record<string, unknown>]> = [
+      ["pt", pt as Record<string, unknown>],
+      ["en", en as Record<string, unknown>],
+    ];
+    const defeituosas = dicionarios.flatMap(([idioma, dicionario]) =>
+      pedidas
+        .filter((chave) => {
+          const texto = dicionario[chave];
+          return typeof texto !== "string" || texto.trim() === "";
+        })
+        .map((chave) => `${idioma}:${chave}`),
+    );
+    expect(defeituosas, "o ? do grupo abriria cru ou em branco").toEqual([]);
   });
 });

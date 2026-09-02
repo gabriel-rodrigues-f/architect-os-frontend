@@ -395,6 +395,7 @@ export function SectionCard({
   collapsible = false,
   defaultOpen = true,
   storageKey,
+  help,
 }: {
   title: string;
   description?: string;
@@ -405,19 +406,30 @@ export function SectionCard({
   collapsible?: boolean;
   defaultOpen?: boolean;
   storageKey?: string;
+  help?: ReactNode;
 }) {
   const titleId = useId();
   const contentId = useId();
   const Heading = SECTION_HEADING_TAG[useContext(SectionHeadingLevelContext)];
   const { open, toggle } = useSectionVisibility(storageKey, defaultOpen);
   const shown = !collapsible || open;
+  const heading = (
+    <Heading id={titleId} className="font-display text-base font-semibold">
+      {title}
+    </Heading>
+  );
   return (
     <section id={id} aria-labelledby={titleId} className={cn("surface-card p-5", className)}>
       <div className={cn("flex flex-wrap items-start justify-between gap-3", shown && "mb-4")}>
         <div>
-          <Heading id={titleId} className="font-display text-base font-semibold">
-            {title}
-          </Heading>
+          {help ? (
+            <div className="flex items-center gap-1.5">
+              {heading}
+              {help}
+            </div>
+          ) : (
+            heading
+          )}
           {description && (
             <p className="mt-0.5 max-w-prose text-sm text-muted-foreground">{description}</p>
           )}

@@ -2,6 +2,10 @@ import { cleanup, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
+);
+
 import { Route as SettingsRoute } from "@/routes/settings";
 import { fixtureAdminUser } from "../helpers/fixtures";
 import {
@@ -95,7 +99,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
     renderWithApp(<SettingsPage />);
 
     const alerta = await within(await linhaDoNivel()).findByRole("alert");
-    expect(alerta.textContent).toContain("5");
+    expect(alerta.textContent).toContain("Faltam 3 competências prontas");
   });
 
   it("o travessão fica reservado para quando nenhum time definiu régua", async () => {

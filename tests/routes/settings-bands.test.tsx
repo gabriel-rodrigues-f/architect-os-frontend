@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
+);
+
 import { Route as SettingsRoute } from "@/routes/settings";
 import { fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
 import {

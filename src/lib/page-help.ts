@@ -1,5 +1,29 @@
-import { type PageHelpContent } from "@/components/app";
+import type { PageHelpContent, SectionHelpContent } from "@/components/app";
 import { useI18n } from "@/lib/i18n";
+
+export const SECTION_HELP_KEYS = [
+  "bands",
+  "bands.GAP_SEVERITY",
+  "bands.PROFICIENCY",
+  "bands.CONCENTRATION_RISK",
+  "curation",
+  "templates",
+  "operational",
+  "vocab",
+  "vocab.EVIDENCE_TYPE",
+  "vocab.LEARNING_ITEM_TYPE",
+  "vocab.ACTION_TYPE",
+] as const;
+export type SectionHelpKey = (typeof SECTION_HELP_KEYS)[number];
+
+export function useSectionHelp(section: SectionHelpKey): SectionHelpContent {
+  const { t } = useI18n();
+  return {
+    title: t(`help.section.${section}.title`),
+    purpose: t(`help.section.${section}.purpose`),
+    how: t(`help.section.${section}.how`),
+  };
+}
 
 type PageHelpRouteKey =
   | "dash"

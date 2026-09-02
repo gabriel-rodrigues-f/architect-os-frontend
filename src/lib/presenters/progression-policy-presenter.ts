@@ -1,4 +1,26 @@
 import type { TeamLevelRule } from "../domain";
+import type { MessageKey } from "../i18n";
+
+export class ReadyCompetencyShortfall {
+  private constructor(readonly missing: number) {}
+
+  static between(minimum: number, readyCompetencies: number): ReadyCompetencyShortfall {
+    if (!Number.isFinite(minimum)) return ReadyCompetencyShortfall.none();
+    return new ReadyCompetencyShortfall(Math.max(0, minimum - readyCompetencies));
+  }
+
+  static none(): ReadyCompetencyShortfall {
+    return new ReadyCompetencyShortfall(0);
+  }
+
+  get blocksSaving(): boolean {
+    return this.missing > 0;
+  }
+
+  get messageKey(): MessageKey {
+    return this.missing === 1 ? "policy.row.shortfall.one" : "policy.row.shortfall.many";
+  }
+}
 
 export type ProgressionMinimumReading =
   | { readonly kind: "absent" }
@@ -104,15 +126,11 @@ export class ProgressionMinimumPresenter {
     return this.scope.team?.id ?? this.soleTeamRule?.teamId;
   }
 
-  unreachableMinimum(readyCapabilities: number): number | undefined {
+  shortfall(readyCompetencies: number): ReadyCompetencyShortfall {
     const reading = this.reading;
-    const highest =
-      reading.kind === "absent"
-        ? undefined
-        : reading.kind === "agreed"
-          ? reading.minimum
-          : reading.highest;
-    return highest !== undefined && highest > readyCapabilities ? highest : undefined;
+    if (reading.kind === "absent") return ReadyCompetencyShortfall.none();
+    const binding = reading.kind === "agreed" ? reading.minimum : reading.highest;
+    return ReadyCompetencyShortfall.between(binding, readyCompetencies);
   }
 
   private get minimums(): number[] {

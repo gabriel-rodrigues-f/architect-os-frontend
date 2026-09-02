@@ -366,7 +366,7 @@ test("Admin adiciona um código ao vocabulário de tipos de evidência", async (
 
   const bloco = page
     .locator("div.surface-inset")
-    .filter({ has: page.getByText("EVIDENCE_TYPE", { exact: true }) });
+    .filter({ has: page.getByText("Tipos de evidência", { exact: true }) });
   await bloco.getByRole("button", { name: "Novo código" }).click();
   await bloco.locator("#vocab-new-code-EVIDENCE_TYPE").fill(VOCAB_CODE);
   await bloco.locator("#vocab-new-labelkey-EVIDENCE_TYPE").fill(`evidenceType.e2e${RUN_ID}`);
@@ -379,7 +379,7 @@ test("Admin adiciona um código ao vocabulário de tipos de evidência", async (
   await expect(
     page
       .locator("div.surface-inset")
-      .filter({ has: page.getByText("EVIDENCE_TYPE", { exact: true }) })
+      .filter({ has: page.getByText("Tipos de evidência", { exact: true }) })
       .getByText(VOCAB_CODE)
       .first(),
   ).toBeVisible();

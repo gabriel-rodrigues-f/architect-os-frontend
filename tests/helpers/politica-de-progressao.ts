@@ -53,6 +53,20 @@ export const estadoCom = (regras: readonly TeamLevelRule[]): AppState => ({
   teamLevelRules: [...regras],
 });
 
+/**
+ * Onda 35, item 12 — o mínimo não pode passar do que existe pronto. A fixture
+ * base tem 2 capacidades prontas; um teste que grava mínimo maior precisa
+ * declarar quantas prontas existem, senão a tela apaga o Salvar de propósito.
+ */
+export const capacidadesProntas = (quantas: number): AppState["capabilities"] =>
+  Array.from({ length: quantas }, (_, indice) => ({
+    id: `pronta-${indice + 1}`,
+    name: `Capacidade pronta ${indice + 1}`,
+    short: `P${indice + 1}`,
+    active: true,
+    curation: { activeCompetencyCount: 2, status: "READY" as const },
+  }));
+
 export async function linhaDoNivel(nivel = "Júnior"): Promise<HTMLTableRowElement> {
   const nome = await screen.findByText(nivel);
   return nome.closest("tr") as HTMLTableRowElement;

@@ -4,6 +4,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiPath } from "@/lib/api-path";
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
+);
+
 import { Route as SettingsRoute } from "@/routes/settings";
 import { fixtureAdminUser, fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 import {
@@ -11,6 +15,7 @@ import {
   NIVEL_PLENO,
   TIME_INTEGRACOES,
   TIME_PLATAFORMA,
+  capacidadesProntas,
   celulaDoMinimo,
   doisTimesRoute,
   estadoCom,
@@ -68,12 +73,15 @@ const reguasDeIntegracoesRoute: FetchRoute = (href, init) => {
   );
 };
 
-const doisTimesDivergem = () =>
-  estadoCom([
+/** Seis prontas: o teste grava mínimo 6, e a tela (onda 35) recusa acima do pronto. */
+const doisTimesDivergem = () => ({
+  ...estadoCom([
     regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
     regra("regra-integracoes-i", TIME_INTEGRACOES, 5),
     regra("regra-plataforma-ii", TIME_PLATAFORMA, 4, NIVEL_PLENO),
-  ]);
+  ]),
+  capabilities: capacidadesProntas(6),
+});
 
 const seletorDeTime = () => screen.findByLabelText("Time", { selector: "button" });
 

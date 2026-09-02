@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 import { apiPath } from "@/lib/api-path";
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
+);
+
 import { Route as SettingsRoute } from "@/routes/settings";
 import {
   careerLevelsRoute,
