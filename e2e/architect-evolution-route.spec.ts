@@ -91,7 +91,14 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
   await page.locator("#email").fill(ADMIN_EMAIL!);
   await page.locator("#password").fill(ADMIN_PASSWORD!);
   await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
-  await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible();
+  // Este é o PRIMEIRO spec da rodada (ordem alfabética): o painel do admin
+  // chega depois do fan-out inteiro do estado, com todo cache do backend
+  // frio — medido em três rodadas de entrega (2026-09-02), sempre entre 5 e
+  // 7 s, nunca na segunda vez. Mesma folga da asserção pós-reload abaixo,
+  // pelo mesmo motivo: a tela não é lenta, a rodada é que nasce fria.
+  await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible({
+    timeout: 15000,
+  });
 
   // Deep-link direto na URL da aba — era exatamente o caminho quebrado. É
   // um reload de página cheia (não navegação client-side): a SPA remonta do
