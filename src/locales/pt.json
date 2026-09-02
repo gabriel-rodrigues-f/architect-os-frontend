@@ -257,7 +257,7 @@
   "help.assessments.lead.nextStep": "Após o envio do arquiteto, calibre as notas e conclua — a nota final passa a valer no Painel.",
   "help.assessments.member.title": "Avaliação de Competências",
   "help.assessments.member.what": "Sua avaliação do ciclo: proponha o portfólio (mín. 3 capacidades) e preencha a autoavaliação. Seus números de avaliação — nota do Tech Lead, alvo e nota final — ficam com a liderança.",
-  "help.assessments.member.comesFrom": "As competências vêm do portfólio que você propõe; evidências aceitas aparecem como contexto.",
+  "help.assessments.member.comesFrom": "As competências vêm do portfólio que você propõe; o alvo do seu nível vem da Régua do Time e fica com a liderança. Evidências aceitas aparecem como contexto.",
   "help.assessments.member.nextStep": "Preencha tudo e clique \"Enviar para revisão\" — depois disso só o Tech Lead edita, e o resultado chega por ele.",
   "help.developmentPlans.lead.title": "Plano de Desenvolvimento",
   "help.developmentPlans.lead.what": "O plano de desenvolvimento da pessoa no ciclo: ações por competência com tipo, prazo e dedicação.",
