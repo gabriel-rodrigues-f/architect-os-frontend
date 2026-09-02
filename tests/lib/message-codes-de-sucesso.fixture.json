@@ -329,13 +329,13 @@
     "team.membership.assign.success": {
       "rota": "POST /teams/:teamId/memberships",
       "arquivo": "src/modules/auth/infrastructure/controllers/team-membership.controller.ts",
-      "linha": 69,
+      "linha": 90,
       "resposta": "created"
     },
     "team.membership.reassign.success": {
       "rota": "PATCH /teams/:teamId/memberships/:userId/:role",
       "arquivo": "src/modules/auth/infrastructure/controllers/team-membership.controller.ts",
-      "linha": 93,
+      "linha": 114,
       "resposta": "ok"
     },
     "team.register.success": {
