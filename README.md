@@ -14,7 +14,7 @@ Pré-requisito: **Node ≥ 20.19** (o Vite 8 / rolldown não roda em versões an
 cd frontend
 nvm use          # lê o .nvmrc (Node 24.16)
 npm install
-npm run start    # ou npm run dev; roda em primeiro plano, Ctrl+C encerra
+npm run dev      # servidor de desenvolvimento (vite); `npm start` sobe o build SSR em node (.output)
 ```
 
 - App: http://localhost:8080

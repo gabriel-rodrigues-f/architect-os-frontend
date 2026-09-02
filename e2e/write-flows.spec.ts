@@ -303,7 +303,7 @@ test("Member cria uma ação de PDI a partir do maior gap", async ({ page }) => 
 
   await page.goto(`/development-plans?architectId=${architectId}`);
 
-  const sugestoes = page.locator("section, div").filter({ hasText: "Maiores gaps" });
+  const sugestoes = page.locator("section, div").filter({ hasText: "Maiores distâncias" });
   const adicionar = page.getByRole("button", { name: "Adicionar ao PDI" }).first();
   await expect(
     adicionar,

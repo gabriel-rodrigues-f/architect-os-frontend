@@ -25,6 +25,9 @@ COPY src ./src
 # dependências de runtime para dentro de `.output`, por isso não há estágio
 # `prod-deps` aqui: o backend precisa dele porque `tsc` não empacota; o
 # nitro empacota.
+# Base da API e de BUILD (import.meta.env). Vazia = mesma origem (/api/v1 atras do Ingress).
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # ---------- runtime ----------
