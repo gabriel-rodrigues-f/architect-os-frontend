@@ -216,3 +216,27 @@ describe("requireCalibrationReach — a guarda da leitura de calibração", () =
     expect(await alcancaCalibracao(fixtureAdminUser)).toBe(true);
   });
 });
+
+/**
+ * Onda 31 — `/teams`, o cadastro de times e o quadro de cada um. A rota
+ * usa a MESMA `requireLeadReach` de `/team-rules`: alcança quem tem vínculo de
+ * liderança; a distinção de PODER (só o gestor designado compõe o quadro) é
+ * da tela, provada em `teams.test.tsx`.
+ */
+describe("guardas de navegação do cadastro de times", () => {
+  it("nega /teams ao member", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/teams")).toBe("/");
+  });
+
+  it("nega /teams ao tech lead sem vínculo — não há time que ele alcance", async () => {
+    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/teams")).toBe("/");
+  });
+
+  it("abre /teams para o gestor com vínculo", async () => {
+    expect(await navegarComoUsuario(fixtureAssignedManagerUser, "/teams")).toBe("/teams");
+  });
+
+  it("mantém /teams aberta para admin", async () => {
+    expect(await navegarComoUsuario(fixtureAdminUser, "/teams")).toBe("/teams");
+  });
+});

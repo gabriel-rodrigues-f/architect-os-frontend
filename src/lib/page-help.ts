@@ -21,6 +21,7 @@ type PageHelpRouteKey =
   | "architectProfile"
   | "architectEvolution"
   | "teamRules"
+  | "teams"
   | "calibration"
   | "notices"
   | "architectRoadmap"

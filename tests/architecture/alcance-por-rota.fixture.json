@@ -54,6 +54,14 @@
         }
       ]
     },
+    "/teams": {
+      "alcance": "lead-com-vinculo",
+      "guarda": "requireLeadReach",
+      "sinal": "canCompose",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/teams.test.tsx"
+    },
     "/training-needs": { "alcance": "autenticado" },
     "/users": {
       "alcance": "admin",

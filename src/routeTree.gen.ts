@@ -25,6 +25,7 @@ import { Route as ProgressionRouteImport } from './routes/progression'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TeamRulesRouteImport } from './routes/team-rules'
+import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ArchitectsArchitectIdRouteImport } from './routes/architects.$architectId'
@@ -113,6 +114,11 @@ const TeamRulesRoute = TeamRulesRouteImport.update({
   path: '/team-rules',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeamsRoute = TeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrainingNeedsRoute = TrainingNeedsRouteImport.update({
   id: '/training-needs',
   path: '/training-needs',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
+  '/teams': typeof TeamsRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
+  '/teams': typeof TeamsRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
   '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
+  '/teams': typeof TeamsRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
   '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/team-rules'
+    | '/teams'
     | '/training-needs'
     | '/users'
     | '/architects/$architectId'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/team-rules'
+    | '/teams'
     | '/training-needs'
     | '/users'
     | '/architects/$architectId/evolution'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/team-rules'
+    | '/teams'
     | '/training-needs'
     | '/users'
     | '/architects/$architectId'
@@ -322,6 +334,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   TeamRoute: typeof TeamRoute
   TeamRulesRoute: typeof TeamRulesRoute
+  TeamsRoute: typeof TeamsRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
   UsersRoute: typeof UsersRoute
   ArchitectsArchitectIdRoute: typeof ArchitectsArchitectIdRouteWithChildren
@@ -441,6 +454,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeamRulesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/teams': {
+      id: '/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof TeamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/training-needs': {
       id: '/training-needs'
       path: '/training-needs'
@@ -529,6 +549,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   TeamRoute: TeamRoute,
   TeamRulesRoute: TeamRulesRoute,
+  TeamsRoute: TeamsRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
   UsersRoute: UsersRoute,
   ArchitectsArchitectIdRoute: ArchitectsArchitectIdRouteWithChildren,
