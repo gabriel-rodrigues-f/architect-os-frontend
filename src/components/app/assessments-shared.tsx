@@ -28,7 +28,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { STATE_QUERY_KEY, useOperationalSettings, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { AssessmentViewModel } from "@/lib/view-models";
+import { AssessmentViewModel, type AssessmentCompletionBrief } from "@/lib/view-models";
 
 function useAssessmentViewModel(): AssessmentViewModel {
   const store = useStore();
@@ -41,8 +41,16 @@ export function useAssessmentPermissions(
   assessment: Assessment | undefined,
 ) {
   const user = useCurrentUser();
+  const store = useStore();
   const viewModel = useAssessmentViewModel();
-  return viewModel.permissionsFor(user, architectId, selectedArchitect, assessment);
+  const completion: AssessmentCompletionBrief = viewModel.completionBriefFor(
+    assessment,
+    store.competencies,
+  );
+  return {
+    ...viewModel.permissionsFor(user, architectId, selectedArchitect, assessment),
+    completion,
+  };
 }
 
 function commentCountLabel(total: number, t: I18nApi["t"]) {
@@ -696,23 +704,40 @@ function LevelSelect({
   onChange: (v: Level) => void;
   ariaLabel: string;
 }) {
+  const chosen = value !== null;
   return (
     <select
       aria-label={ariaLabel}
-      className="w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
+      data-chosen={chosen ? "true" : "false"}
+      className={cn(
+        "w-full rounded-md border bg-card px-2 py-1 text-sm",
+        chosen ? "border-primary font-semibold" : "border-input text-muted-foreground",
+      )}
       value={value ?? ""}
       onChange={(e) => onChange(Number(e.target.value) as Level)}
     >
-      <option value="" disabled>
+      <option value="" disabled aria-selected={!chosen}>
         —
       </option>
       {[1, 2, 3, 4, 5].map((l) => (
-        <option key={l} value={l}>
-          {l}
+        <option key={l} value={l} aria-selected={value === l}>
+          {value === l ? `✓ ${l}` : l}
         </option>
       ))}
     </select>
   );
+}
+
+function AssessmentDistance({ item }: { item: AssessmentItem }) {
+  const { t } = useI18n();
+  if (item.final === null) {
+    return (
+      <span className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">
+        {t("asmt.distance.awaitingFinal")}
+      </span>
+    );
+  }
+  return <GapBadge gap={item.target - item.final} />;
 }
 
 export function CapabilityAssessmentCard({
@@ -829,7 +854,6 @@ export function CapabilityAssessmentCard({
                 const item = assessment.items.find((i) => i.competencyId === c.id);
                 if (!item) return null;
 
-                const gap = item.final === null ? undefined : item.target - item.final;
                 const diverges =
                   item.self !== null && item.leader !== null && item.self !== item.leader;
 
@@ -904,7 +928,7 @@ export function CapabilityAssessmentCard({
                             )}
                           </td>
                           <td className="py-2">
-                            <GapBadge gap={gap} />
+                            <AssessmentDistance item={item} />
                           </td>
                         </>
                       )}
@@ -995,7 +1019,6 @@ function CompetencyStackedCard({
   const user = useCurrentUser();
   const viewModel = useAssessmentViewModel();
 
-  const gap = item.final === null ? undefined : item.target - item.final;
   const diverges = item.self !== null && item.leader !== null && item.self !== item.leader;
 
   const acceptedEvidence = store.evidences.filter(
@@ -1020,7 +1043,7 @@ function CompetencyStackedCard({
             />
           )}
         </span>
-        {seesAssessmentNumbers && <GapBadge gap={gap} />}
+        {seesAssessmentNumbers && <AssessmentDistance item={item} />}
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3">

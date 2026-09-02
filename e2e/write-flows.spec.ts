@@ -292,6 +292,9 @@ test("Tech Lead pontua pela UI e conclui a avaliação", async ({ page, playwrig
   await finalPersisted;
 
   await page.getByRole("button", { name: "Concluir avaliação" }).click();
+  const confirmacao = page.getByRole("dialog");
+  await expect(confirmacao).toContainText("Concluir a avaliação de");
+  await confirmacao.getByRole("button", { name: "Confirmar e concluir" }).click();
   await expect(statusBar(page)).toContainText("Concluída");
 
   await page.reload();

@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -216,6 +216,11 @@ describe("Avaliações — campos por papel e status", () => {
     expect(linha.querySelectorAll("select")).toHaveLength(2);
 
     await userEvent.click(screen.getByRole("button", { name: "Concluir avaliação" }));
+    // Onda 33 — concluir pede confirmação explícita antes de fechar o ciclo.
+    const confirmacao = await screen.findByRole("dialog");
+    await userEvent.click(
+      within(confirmacao).getByRole("button", { name: "Confirmar e concluir" }),
+    );
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull(),
     );

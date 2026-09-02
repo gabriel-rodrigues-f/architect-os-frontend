@@ -10,6 +10,7 @@ import {
   CapabilityAssessmentCard,
   CapabilityCombobox,
   CareerPortfolioSection,
+  ConfirmDialog,
   DevelopmentSummarySection,
   PageHeader,
   SectionCard,
@@ -71,6 +72,7 @@ function AssessmentsPage() {
   const [openError, setOpenError] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [transitionError, setTransitionError] = useState<string | null>(null);
+  const [confirmingCompletion, setConfirmingCompletion] = useState(false);
 
   const assessment = sel.assessmentFor(architectId, cycleId);
   const selectedArchitect = sel.architectById(architectId);
@@ -88,6 +90,7 @@ function AssessmentsPage() {
     incompleteSelf,
     incompleteLeaderFinal,
     seesAssessmentNumbers,
+    completion,
   } = useAssessmentPermissions(architectId, selectedArchitect, assessment);
 
   const selected = store.capabilities.filter((c) => capabilityIds.includes(c.id));
@@ -207,8 +210,7 @@ function AssessmentsPage() {
                 size="sm"
                 variant="secondary"
                 disabled={transitioning || incompleteLeaderFinal}
-                title={incompleteLeaderFinal ? t("asmt.incompleteLeaderFinal") : undefined}
-                onClick={() => transition("Completed")}
+                onClick={() => setConfirmingCompletion(true)}
               >
                 {transitioning ? t("asmt.completing") : t("asmt.complete")}
               </Button>
@@ -229,7 +231,11 @@ function AssessmentsPage() {
           )}
           {canComplete && incompleteLeaderFinal && (
             <p className="w-full text-xs text-muted-foreground">
-              {t("asmt.incompleteLeaderFinal")}
+              {t("asmt.incompleteLeaderFinal.pending", {
+                lista: completion.pendingLeaderFinal
+                  .map((competency) => competency.name)
+                  .join(", "),
+              })}
             </p>
           )}
           {transitionError && (
@@ -238,6 +244,31 @@ function AssessmentsPage() {
             </p>
           )}
         </div>
+      )}
+
+      {assessment && canComplete && (
+        <ConfirmDialog
+          open={confirmingCompletion}
+          destructive={false}
+          title={t("asmt.completeConfirm.title", { nome: selectedArchitect?.name ?? "" })}
+          description={t("asmt.completeConfirm.summary", {
+            nome: selectedArchitect?.name ?? "",
+            competencias:
+              completion.competencyCount === 1
+                ? t("asmt.competencyCount.one")
+                : t("asmt.competencyCount.many", { n: completion.competencyCount }),
+            divergencia:
+              completion.divergentCount === 0
+                ? t("asmt.completeConfirm.divergence.none")
+                : t("asmt.completeConfirm.divergence.some", { d: completion.divergentCount }),
+          })}
+          confirmLabel={t("asmt.completeConfirm.confirm")}
+          onConfirm={() => {
+            setConfirmingCompletion(false);
+            transition("Completed");
+          }}
+          onCancel={() => setConfirmingCompletion(false)}
+        />
       )}
 
       {assessment && (
