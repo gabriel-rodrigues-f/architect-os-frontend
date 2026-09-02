@@ -176,7 +176,7 @@
   },
   "src/lib/presenters/dashboard-presenter.ts": {
     "id-length": {
-      "count": 18
+      "count": 17
     }
   },
   "src/lib/presenters/team-report-presenter.ts": {
@@ -251,7 +251,7 @@
   },
   "src/routes/architects.$architectId.index.tsx": {
     "id-length": {
-      "count": 36
+      "count": 19
     }
   },
   "src/routes/assessments.tsx": {
