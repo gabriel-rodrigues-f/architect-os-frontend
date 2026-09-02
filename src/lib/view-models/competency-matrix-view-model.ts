@@ -1,6 +1,7 @@
 import type { SessionUser } from "../api";
 import { EffectiveCurationPolicy, type CurationPolicy } from "../curation-policy";
 import type { Capability, Competency } from "../domain";
+import type { CompetencyRemovalSummary } from "../gateways/catalog.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
 import type { Api } from "../store";
 
@@ -12,7 +13,15 @@ export type CatalogService = Pick<
   | "addCompetency"
   | "updateCompetency"
   | "removeCompetency"
+  | "removeCompetencies"
 >;
+
+export interface CurationBrief {
+  status: Capability["curation"]["status"];
+  active: number;
+  max: number;
+  over: number;
+}
 
 /**
  * Fase 2 (backend ADRs 0032-0034) — o catálogo global é definição pura:
@@ -51,6 +60,17 @@ export class CompetencyMatrixViewModel {
     this.service.updateCapability(id, { active: true });
   }
 
+  curationBriefFor(capability: Pick<Capability, "curation">): CurationBrief {
+    const max = this.curationPolicy.maxActiveCompetencies;
+    const active = capability.curation.activeCompetencyCount;
+    return {
+      status: capability.curation.status,
+      active,
+      max,
+      over: Math.max(0, active - max),
+    };
+  }
+
   isCapabilityAtCapacity(capability: Pick<Capability, "curation">): boolean {
     return capability.curation.activeCompetencyCount >= this.curationPolicy.maxActiveCompetencies;
   }
@@ -73,6 +93,10 @@ export class CompetencyMatrixViewModel {
 
   removeCompetency(id: string): Promise<{ archived: boolean }> {
     return this.service.removeCompetency(id);
+  }
+
+  removeCompetencies(competencyIds: string[]): Promise<CompetencyRemovalSummary> {
+    return this.service.removeCompetencies(competencyIds);
   }
 
   restoreCompetency(id: string): void {

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { api, ApiError, type AppState, type CommentInput } from "./api";
 import { apiPath } from "./api-path";
+import type { CompetencyRemovalSummary } from "./gateways/catalog.gateway";
 import type { TextTemplateRecord } from "./gateways/config.gateway";
 import type {
   Architect,
@@ -189,6 +190,7 @@ export interface Api extends AppState {
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
 
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
+  removeCompetencies: (competencyIds: string[]) => Promise<CompetencyRemovalSummary>;
 
   addCapability: (
     c: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
@@ -512,6 +514,38 @@ export function buildApi(
               ? s.competencies.map((c) => (c.id === id ? { ...c, active: false } : c))
               : s.competencies.filter((c) => c.id !== id),
           }),
+      ),
+
+    removeCompetencies: (competencyIds) =>
+      runner.guarded(
+        () => api.removeCompetencies(competencyIds),
+        ({ outcomes }) =>
+          (state) => {
+            const removed = new Set(
+              outcomes
+                .filter((outcome) => outcome.outcome === "removed")
+                .map((outcome) => outcome.competencyId),
+            );
+            const archived = new Set(
+              outcomes
+                .filter((outcome) => outcome.outcome === "archived")
+                .map((outcome) => outcome.competencyId),
+            );
+            return {
+              ...state,
+              competencies: state.competencies
+                .filter((competency) => !removed.has(competency.id))
+                .map((competency) =>
+                  archived.has(competency.id) ? { ...competency, active: false } : competency,
+                ),
+              learningPaths: state.learningPaths.map((learningPath) => ({
+                ...learningPath,
+                competencyIds: learningPath.competencyIds.filter(
+                  (competencyId) => !removed.has(competencyId),
+                ),
+              })),
+            };
+          },
       ),
 
     addCapability: (c) =>

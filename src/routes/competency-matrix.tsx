@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleAlert, CircleCheck, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -11,8 +11,8 @@ import {
   SectionCard,
   SingleSelectFilter,
 } from "@/components/app";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -22,16 +22,23 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { LEVELS, type Competency, type Capability } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import type { AffectedRecords, CompetencyRemovalOutcome } from "@/lib/gateways/catalog.gateway";
+import { useI18n, type MessageKey } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { requireAdminReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCurationPolicy, useStore } from "@/lib/store";
-import { CatalogImportEditor, CompetencyMatrixViewModel } from "@/lib/view-models";
+import {
+  CatalogImportEditor,
+  CompetencyMatrixViewModel,
+  CompetencySelection,
+  type CurationBrief,
+} from "@/lib/view-models";
 
 function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
   const store = useStore();
@@ -95,6 +102,61 @@ function MatrixPage() {
       return next;
     });
 
+  const [selecting, setSelecting] = useState(false);
+  const [selection, setSelection] = useState(() => CompetencySelection.empty());
+  const [confirmBulkRemoval, setConfirmBulkRemoval] = useState(false);
+  const [bulkRemovalResult, setBulkRemovalResult] = useState<{
+    outcomes: CompetencyRemovalOutcome[];
+    names: Map<string, string>;
+  } | null>(null);
+  const { submitting: removing, run: runRemoval } = useToastSubmit();
+
+  const startSelecting = () => {
+    setSelection(CompetencySelection.empty());
+    setSelecting(true);
+    setExpandedIds(new Set(store.capabilities.map((capability) => capability.id)));
+  };
+  const stopSelecting = () => {
+    setSelecting(false);
+    setSelection(CompetencySelection.empty());
+  };
+
+  const removeSelected = async () => {
+    const chosen = selection.chosenFrom(store.competencies);
+    const result = await runRemoval(() =>
+      viewModel.removeCompetencies(chosen.map((competency) => competency.id)),
+    );
+    setConfirmBulkRemoval(false);
+    if (!result.ok) return;
+    const outcomes = result.value.outcomes;
+    setBulkRemovalResult({
+      outcomes,
+      names: new Map(chosen.map((competency) => [competency.id, competency.name])),
+    });
+    notifySuccess(
+      "matrix.bulkRemoval.toast",
+      {
+        removidas: outcomes.filter((outcome) => outcome.outcome === "removed").length,
+        arquivadas: outcomes.filter((outcome) => outcome.outcome === "archived").length,
+      },
+      result.value,
+    );
+    stopSelecting();
+  };
+
+  const removeConfirmedCompetency = async () => {
+    if (!confirmDelete) return;
+    const { competency } = confirmDelete;
+    const result = await runRemoval(() => viewModel.removeCompetency(competency.id));
+    setConfirmDelete(null);
+    if (!result.ok) return;
+    toast.success(
+      result.value.archived
+        ? t("matrix.archive.toast", { nome: competency.name })
+        : t("matrix.delete.toast", { nome: competency.name }),
+    );
+  };
+
   const startEditingCapability = (capability: Capability) => {
     setEditingCapability(capability);
     setEditCapabilityName(capability.name);
@@ -112,13 +174,15 @@ function MatrixPage() {
 
   const removeCapability = async () => {
     if (!confirmDeleteCapability) return;
-    const { archived } = await viewModel.removeCapability(confirmDeleteCapability.id);
-    toast.success(
-      archived
-        ? t("cap.archive.toast", { nome: confirmDeleteCapability.name })
-        : t("cap.delete.toast", { nome: confirmDeleteCapability.name }),
-    );
+    const capability = confirmDeleteCapability;
+    const result = await runRemoval(() => viewModel.removeCapability(capability.id));
     setConfirmDeleteCapability(null);
+    if (!result.ok) return;
+    toast.success(
+      result.value.archived
+        ? t("cap.archive.toast", { nome: capability.name })
+        : t("cap.delete.toast", { nome: capability.name }),
+    );
   };
 
   const capabilityCompetencyCount = (capabilityId: string) =>
@@ -198,7 +262,31 @@ function MatrixPage() {
             <Button variant="outline" size="sm" onClick={() => setExpandedIds(new Set())}>
               {t("matrix.collapseAll")}
             </Button>
+            {isAdmin && (
+              <Button
+                variant={selecting ? "secondary" : "outline"}
+                size="sm"
+                aria-pressed={selecting}
+                onClick={selecting ? stopSelecting : startSelecting}
+              >
+                {selecting ? t("matrix.select.cancel") : t("matrix.select.start")}
+              </Button>
+            )}
           </div>
+        </div>
+      )}
+
+      {selecting && (
+        <div className="surface-inset mb-4 flex flex-wrap items-center justify-between gap-3 p-3">
+          <p className="text-sm text-muted-foreground">{t("matrix.select.hint")}</p>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={selection.isEmpty || removing}
+            onClick={() => setConfirmBulkRemoval(true)}
+          >
+            {t("matrix.select.removeSelected", { n: selection.count })}
+          </Button>
         </div>
       )}
 
@@ -252,14 +340,18 @@ function MatrixPage() {
                   })}
                   actions={
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge
-                        variant={cat.curation.status === "READY" ? "default" : "outline"}
-                        className="text-[10px]"
-                      >
-                        {cat.curation.status === "READY"
-                          ? t("matrix.curation.ready")
-                          : t("matrix.curation.requiresCuration")}
-                      </Badge>
+                      {selecting && (
+                        <Checkbox
+                          aria-label={t("matrix.select.capability", { nome: cat.name })}
+                          checked={selection.capabilityCheckbox(cat.id, store.competencies)}
+                          onCheckedChange={() =>
+                            setSelection((current) =>
+                              current.toggleCapability(cat.id, store.competencies),
+                            )
+                          }
+                        />
+                      )}
+                      <CurationStatusControl brief={viewModel.curationBriefFor(cat)} />
                       {isAdmin && (
                         <div className="flex items-center gap-1">
                           <Button
@@ -320,6 +412,7 @@ function MatrixPage() {
                       <table className="w-full min-w-[640px] text-sm">
                         <thead>
                           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                            {selecting && <th scope="col" className="w-8 py-2" />}
                             <th scope="col" className="py-2">
                               {t("col.competency")}
                             </th>
@@ -329,6 +422,17 @@ function MatrixPage() {
                         <tbody>
                           {comps.map((c) => (
                             <tr key={c.id} className="border-b border-border/60 last:border-0">
+                              {selecting && (
+                                <td className="py-2">
+                                  <Checkbox
+                                    aria-label={t("matrix.select.competency", { nome: c.name })}
+                                    checked={selection.has(c.id)}
+                                    onCheckedChange={() =>
+                                      setSelection((current) => current.toggle(c.id))
+                                    }
+                                  />
+                                </td>
+                              )}
                               <td className="py-2 font-medium">{c.name}</td>
                               <td className="py-2 text-right">
                                 {isAdmin && (
@@ -375,18 +479,40 @@ function MatrixPage() {
         })}
         description={t("matrix.delete.confirmDescription")}
         onCancel={() => setConfirmDelete(null)}
-        onConfirm={async () => {
-          if (confirmDelete) {
-            const { archived } = await viewModel.removeCompetency(confirmDelete.competency.id);
-            toast.success(
-              archived
-                ? t("matrix.archive.toast", { nome: confirmDelete.competency.name })
-                : t("matrix.delete.toast", { nome: confirmDelete.competency.name }),
-            );
-          }
-          setConfirmDelete(null);
+        onConfirm={() => void removeConfirmedCompetency()}
+      />
+
+      <ConfirmDialog
+        open={confirmBulkRemoval}
+        title={
+          selection.count === 1
+            ? t("matrix.bulkRemoval.confirmTitleOne")
+            : t("matrix.bulkRemoval.confirmTitle", { n: selection.count })
+        }
+        description={
+          <>
+            <span className="block">{t("matrix.bulkRemoval.confirmDescription")}</span>
+            <span className="mt-2 block font-medium text-foreground">
+              {selection
+                .chosenFrom(store.competencies)
+                .map((competency) => competency.name)
+                .join(" · ")}
+            </span>
+          </>
+        }
+        onCancel={() => setConfirmBulkRemoval(false)}
+        onConfirm={() => {
+          if (!removing) void removeSelected();
         }}
       />
+
+      {bulkRemovalResult && (
+        <BulkRemovalResultDialog
+          outcomes={bulkRemovalResult.outcomes}
+          names={bulkRemovalResult.names}
+          onClose={() => setBulkRemovalResult(null)}
+        />
+      )}
 
       <Dialog
         open={editingCapability !== null}
@@ -443,6 +569,85 @@ function MatrixPage() {
       )}
       {importing && <CatalogImportDialog onClose={() => setImporting(false)} />}
     </>
+  );
+}
+
+function CurationStatusControl({ brief }: { brief: CurationBrief }) {
+  const { t } = useI18n();
+  const ready = brief.status === "READY";
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant={ready ? "secondary" : "outline"} aria-haspopup="dialog">
+          {ready ? <CircleCheck aria-hidden /> : <CircleAlert aria-hidden />}
+          {ready ? t("matrix.curation.ready") : t("matrix.curation.requiresCuration")}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)] space-y-2 text-sm">
+        <p className="font-display font-semibold">{t("matrix.curation.explain.title")}</p>
+        <p>
+          {ready
+            ? t("matrix.curation.explain.ready", { ativas: brief.active, max: brief.max })
+            : t("matrix.curation.explain.requiresCuration", {
+                ativas: brief.active,
+                max: brief.max,
+                acima: brief.over,
+              })}
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function BulkRemovalResultDialog({
+  outcomes,
+  names,
+  onClose,
+}: {
+  outcomes: CompetencyRemovalOutcome[];
+  names: Map<string, string>;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const affectedText = (affected: AffectedRecords) =>
+    (Object.entries(affected) as [keyof AffectedRecords, number][])
+      .filter(([, count]) => count > 0)
+      .map(([kind, count]) =>
+        t(`matrix.bulkRemoval.affected.${kind}.${count === 1 ? "one" : "other"}` as MessageKey, {
+          n: count,
+        }),
+      )
+      .join(", ");
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("matrix.bulkRemoval.result.title")}</DialogTitle>
+        </DialogHeader>
+        <ul className="max-h-[60vh] space-y-2 overflow-y-auto text-sm">
+          {outcomes.map((outcome) => {
+            const affected = affectedText(outcome.affected);
+            return (
+              <li key={outcome.competencyId} className="flex flex-col">
+                <span className="font-medium">
+                  {names.get(outcome.competencyId) ?? outcome.competencyId}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {outcome.outcome === "removed"
+                    ? t("matrix.bulkRemoval.result.removed")
+                    : t("matrix.bulkRemoval.result.archived")}
+                  {affected ? ` (${affected})` : ""}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <DialogFooter>
+          <Button onClick={onClose}>{t("matrix.bulkRemoval.result.close")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

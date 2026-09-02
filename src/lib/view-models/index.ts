@@ -5,6 +5,7 @@ export * from "./career-roadmap-view-model";
 export * from "./career-statement-view-model";
 export * from "./catalog-import-editor";
 export * from "./competency-matrix-view-model";
+export * from "./competency-selection";
 export * from "./curation-policy-editor";
 export * from "./development-plans-view-model";
 export * from "./gap-closure-view-model";
