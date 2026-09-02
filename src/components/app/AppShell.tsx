@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
   BookOpen,
+  Building2,
   CalendarRange,
   ChevronDown,
   ClipboardCheck,
@@ -59,6 +60,8 @@ interface NavItem {
   teamRuleReachOnly?: boolean;
 
   calibrationReachOnly?: boolean;
+
+  teamCompositionReachOnly?: boolean;
 
   teamAnalysisOnly?: boolean;
 
@@ -160,6 +163,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: BarChart3,
         calibrationReachOnly: true,
       },
+      { to: "/teams", labelKey: "nav.teams", icon: Building2, teamCompositionReachOnly: true },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
@@ -178,6 +182,9 @@ class NavigationOfUser {
       return false;
     }
     if (item.calibrationReachOnly && !(user && this.policy.canCalibrate(user))) return false;
+    if (item.teamCompositionReachOnly && !(user && this.policy.canComposeAnyTeam(user))) {
+      return false;
+    }
     if (item.teamAnalysisOnly && !(user && this.policy.canAnalyzeTeam(user))) return false;
     if (item.leadershipOnly && !(user && this.policy.isLeadership(user))) return false;
     return !item.ownCareerOnly || this.reachesOwnCareer();

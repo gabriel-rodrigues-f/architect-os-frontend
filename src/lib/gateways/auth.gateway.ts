@@ -5,7 +5,8 @@ export type TeamLeadershipRole = (typeof TEAM_LEADERSHIP_ROLES)[number];
 export const USER_ROLES = ["admin", ...TEAM_LEADERSHIP_ROLES, "member"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 export type UserStatus = "active" | "disabled";
-export type TeamMemberRole = TeamLeadershipRole | "member";
+export const TEAM_MEMBER_ROLES = [...TEAM_LEADERSHIP_ROLES, "member"] as const;
+export type TeamMemberRole = (typeof TEAM_MEMBER_ROLES)[number];
 
 export class UserRoles {
   static readonly ALL = USER_ROLES;
@@ -24,6 +25,16 @@ export class TeamLeadershipRoles {
 
   static includes(role: string): role is TeamLeadershipRole {
     return (TEAM_LEADERSHIP_ROLES as readonly string[]).includes(role);
+  }
+}
+
+export class TeamMemberRoles {
+  static readonly ALL = TEAM_MEMBER_ROLES;
+
+  static readonly MANAGER = TEAM_LEADERSHIP_ROLES[0];
+
+  static includes(role: string): role is TeamMemberRole {
+    return (TEAM_MEMBER_ROLES as readonly string[]).includes(role);
   }
 }
 

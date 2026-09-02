@@ -52,7 +52,7 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
  * só este repositório está clonado.
  */
 
-const CODIGOS_ESPERADOS = 53;
+const CODIGOS_ESPERADOS = 58;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
@@ -218,7 +218,7 @@ describe("ARQ-18 — chaves de tradução que nenhum código emite", () => {
 });
 
 describe("ARQ-18 — procedência da cópia do fixture do backend", () => {
-  it("a cópia enxerga os 53 códigos que o backend declara emitir", () => {
+  it("a cópia enxerga os 58 códigos que o backend declara emitir", () => {
     expect(Object.keys(CODIGOS_EMITIDOS)).toHaveLength(CODIGOS_ESPERADOS);
   });
 
