@@ -62,6 +62,8 @@ interface NavItem {
 
   teamAnalysisOnly?: boolean;
 
+  leadershipOnly?: boolean;
+
   ownCareerOnly?: boolean;
 }
 
@@ -88,7 +90,7 @@ export const NAV_GROUPS: NavGroup[] = [
     labelKey: "nav.group.operation",
     items: [
       { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
-      { to: "/team", labelKey: "nav.team", icon: Users },
+      { to: "/team", labelKey: "nav.team", icon: Users, leadershipOnly: true },
       { to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck },
     ],
   },
@@ -140,7 +142,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Ruler,
         teamRuleReachOnly: true,
       },
-      { to: "/settings", labelKey: "nav.settings", icon: Scale },
+      { to: "/settings", labelKey: "nav.settings", icon: Scale, leadershipOnly: true },
     ],
   },
   {
@@ -177,7 +179,14 @@ class NavigationOfUser {
     }
     if (item.calibrationReachOnly && !(user && this.policy.canCalibrate(user))) return false;
     if (item.teamAnalysisOnly && !(user && this.policy.canAnalyzeTeam(user))) return false;
-    return !(item.ownCareerOnly && this.ownArchitectId === null);
+    if (item.leadershipOnly && !(user && this.policy.isLeadership(user))) return false;
+    return !item.ownCareerOnly || this.reachesOwnCareer();
+  }
+
+  private reachesOwnCareer(): boolean {
+    const architectId = this.ownArchitectId;
+    if (!this.user || architectId === null) return false;
+    return this.policy.canOpenCareerFileOf(this.user, architectId);
   }
 
   addressed(item: NavItem): NavItem {

@@ -279,3 +279,38 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
     expect(isLeadCapable("member")).toBe(false);
   });
 });
+
+/**
+ * Onda 31 — o dono tirou do profissional os próprios números (2026-09-01):
+ * "eu não quero que o profissional veja seus números de avaliação. isso
+ * pode influenciá-lo negativamente" · "o profissional não pode ver os menus
+ * 'time' e 'política de Progressão'". Duas perguntas novas para a política,
+ * e as duas nascem aqui antes de qualquer menu ou guarda as consultar.
+ */
+describe("o profissional não vê os próprios números", () => {
+  const policy = new UiAuthorizationPolicy();
+
+  it("liderança é gestor, tech lead ou admin — o member não é", () => {
+    expect(policy.isLeadership(fixtureAdminUser)).toBe(true);
+    expect(policy.isLeadership(fixtureAssignedTechLeadUser)).toBe(true);
+    expect(policy.isLeadership(fixtureUnassignedTechLeadUser)).toBe(true);
+    expect(policy.isLeadership({ ...fixtureAdminUser, role: "manager" })).toBe(true);
+    expect(policy.isLeadership(fixtureMemberUser)).toBe(false);
+  });
+
+  it("o member NÃO abre a própria ficha de carreira", () => {
+    expect(policy.canOpenCareerFileOf(fixtureMemberUser, "ana")).toBe(false);
+  });
+
+  it("a ficha de OUTRA pessoa continua com o member — quem a nega é o recorte do servidor", () => {
+    expect(policy.canOpenCareerFileOf(fixtureMemberUser, "bruno")).toBe(true);
+  });
+
+  it("quem lidera abre qualquer ficha, inclusive a própria quando tem arquiteto vinculado", () => {
+    expect(policy.canOpenCareerFileOf(fixtureAdminUser, "ana")).toBe(true);
+    expect(policy.canOpenCareerFileOf(fixtureAssignedTechLeadUser, "ana")).toBe(true);
+    expect(
+      policy.canOpenCareerFileOf({ ...fixtureAssignedTechLeadUser, architectId: "ana" }, "ana"),
+    ).toBe(true);
+  });
+});

@@ -44,7 +44,10 @@ const SRC = join(RAIZ, "src");
 const PALAVRA_PROIBIDA_NAS_DUAS_LINGUAS = /lacuna/i;
 const PALAVRA_PROIBIDA_EM_INGLES = /\bgaps?\b/i;
 
-const ARQUIVOS_GERADOS = [join("src", "lib", "api-contract.gen.ts"), join("src", "routeTree.gen.ts")];
+const ARQUIVOS_GERADOS = [
+  join("src", "lib", "api-contract.gen.ts"),
+  join("src", "routeTree.gen.ts"),
+];
 
 interface Ocorrencia {
   readonly onde: string;

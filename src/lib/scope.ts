@@ -53,7 +53,16 @@ export class UiAuthorizationPolicy {
   }
 
   canAnalyzeTeam(user: SessionUser): boolean {
+    return this.isLeadership(user);
+  }
+
+  isLeadership(user: SessionUser): boolean {
     return user.role !== "member";
+  }
+
+  canOpenCareerFileOf(user: SessionUser, architectId: string): boolean {
+    if (this.isLeadership(user)) return true;
+    return user.architectId !== architectId;
   }
 
   canCalibrate(user: SessionUser): boolean {
