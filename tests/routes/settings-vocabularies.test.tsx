@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureMemberUser } from "../helpers/fixtures";
+import { fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -68,9 +68,13 @@ afterEach(() => {
 });
 
 describe("Vocabulários (CFG-06 admin UI)", () => {
+  /**
+   * Onda 31 — o member deixou de alcançar /settings (o dono tirou a Política
+   * de Progressão do profissional); o não-admin que ainda a lê é o tech lead.
+   */
   it("não-admin não vê a seção", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureMemberUser,
+      user: fixtureUnassignedTechLeadUser,
       routes: [careerLevelsRoute, vocabulariesGetRoute],
     });
     renderWithApp(<SettingsPage />);

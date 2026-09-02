@@ -7,6 +7,7 @@ import {
   DataViewToolbar,
   DeactivateDialog,
   MultiSelectFilter,
+  OutOfReachScreen,
   PageHeader,
   Pagination,
   SingleSelectFilter,
@@ -34,6 +35,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireLeadershipReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useStore } from "@/lib/store";
 import { TeamViewModel } from "@/lib/view-models";
@@ -54,6 +56,7 @@ export const Route = createFileRoute("/team")({
       },
     ],
   }),
+  beforeLoad: requireLeadershipReach,
   component: TeamPage,
 });
 
@@ -68,6 +71,22 @@ const TEAM_CONTEXTS: readonly ContextScopeRequest[] = [
 ];
 
 function TeamPage() {
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("team");
+  const isLeadership = defaultUiAuthorizationPolicy.isLeadership(user);
+
+  if (!isLeadership) {
+    return (
+      <OutOfReachScreen
+        title={t("team.title")}
+        help={help}
+        reason={t("team.leadershipOnly")}
+        hint={t("team.leadershipOnlyHint")}
+      />
+    );
+  }
+
   return (
     <ContextScope contexts={TEAM_CONTEXTS}>
       <TeamRoster />

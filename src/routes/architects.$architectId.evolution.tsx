@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   EvolutionLine,
+  OutOfReachScreen,
   PageHeader,
   ProficiencyTimeline,
   ProfileTabs,
@@ -15,9 +16,12 @@ import {
 import { useToastSubmit } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { evolutionApi, reportsApi } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
 import type { CompetencyEvolutionComparison, EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireCareerFileReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -28,8 +32,30 @@ export const Route = createFileRoute("/architects/$architectId/evolution")({
   head: () => ({
     meta: [{ title: "Evolução — Synapse" }],
   }),
+  beforeLoad: requireCareerFileReach,
   component: ArchitectEvolution,
 });
+
+function ArchitectEvolution() {
+  const { architectId } = Route.useParams();
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("architectEvolution");
+  const canOpenCareerFile = defaultUiAuthorizationPolicy.canOpenCareerFileOf(user, architectId);
+
+  if (!canOpenCareerFile) {
+    return (
+      <OutOfReachScreen
+        title={t("arch.tabs.evolution")}
+        help={help}
+        reason={t("arch.careerFile.ownOutOfReach")}
+        hint={t("arch.careerFile.ownOutOfReachHint")}
+      />
+    );
+  }
+
+  return <EvolutionOfArchitect architectId={architectId} />;
+}
 
 type PeriodPreset = "30" | "60" | "90" | "180" | "365" | "all" | "custom";
 
@@ -63,8 +89,7 @@ const VIEWS: { id: EvolutionView; labelKey: MessageKey }[] = [
 
 const MAX_DEFAULT_SERIES = 6;
 
-function ArchitectEvolution() {
-  const { architectId } = Route.useParams();
+function EvolutionOfArchitect({ architectId }: { architectId: string }) {
   const store = useStore();
   const sel = useSelectors();
   const { t } = useI18n();

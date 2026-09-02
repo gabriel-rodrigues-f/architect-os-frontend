@@ -7,6 +7,7 @@ import {
   CareerEventTimeline,
   EmptyState,
   MultiSelectFilter,
+  OutOfReachScreen,
   PageHeader,
   ProfileTabs,
   SingleSelectFilter,
@@ -19,6 +20,7 @@ import { downloadBlob } from "@/lib/download";
 import type { EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireCareerFileReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
@@ -40,8 +42,31 @@ export const Route = createFileRoute("/architects/$architectId/statement")({
       },
     ],
   }),
+  beforeLoad: requireCareerFileReach,
   component: ArchitectStatement,
 });
+
+function ArchitectStatement() {
+  const { architectId } = Route.useParams();
+  const { user } = useAuth();
+  const { t } = useI18n();
+  const help = usePageHelp("architectStatement");
+  const canOpenCareerFile =
+    user !== null && defaultUiAuthorizationPolicy.canOpenCareerFileOf(user, architectId);
+
+  if (!canOpenCareerFile) {
+    return (
+      <OutOfReachScreen
+        title={t("arch.tabs.statement")}
+        help={help}
+        reason={t("arch.careerFile.ownOutOfReach")}
+        hint={t("arch.careerFile.ownOutOfReachHint")}
+      />
+    );
+  }
+
+  return <StatementOfArchitect architectId={architectId} />;
+}
 
 const STATEMENT_KINDS: readonly StatementEntryKind[] = [
   "transition",
@@ -77,8 +102,7 @@ function useCareerStatementViewModel(): CareerStatementViewModel {
   );
 }
 
-function ArchitectStatement() {
-  const { architectId } = Route.useParams();
+function StatementOfArchitect({ architectId }: { architectId: string }) {
   const store = useStore();
   const sel = useSelectors();
   const { t, locale } = useI18n();

@@ -7,6 +7,7 @@ import {
   GapBadge,
   Initials,
   LevelBadge,
+  OutOfReachScreen,
   PageHeader,
   ProfileTabs,
   SectionCard,
@@ -35,6 +36,7 @@ import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters";
+import { requireCareerFileReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
@@ -61,6 +63,7 @@ export const Route = createFileRoute("/architects/$architectId/")({
       },
     ],
   }),
+  beforeLoad: requireCareerFileReach,
   component: ArchitectProfile,
   notFoundComponent: ArchitectNotFound,
 });
@@ -85,6 +88,22 @@ const profileContextsFor = (architectId: string): readonly ContextScopeRequest[]
 
 function ArchitectProfile() {
   const { architectId } = Route.useParams();
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("architectProfile");
+  const canOpenCareerFile = defaultUiAuthorizationPolicy.canOpenCareerFileOf(user, architectId);
+
+  if (!canOpenCareerFile) {
+    return (
+      <OutOfReachScreen
+        title={t("arch.careerFile.title")}
+        help={help}
+        reason={t("arch.careerFile.ownOutOfReach")}
+        hint={t("arch.careerFile.ownOutOfReachHint")}
+      />
+    );
+  }
+
   return (
     <ContextScope contexts={profileContextsFor(architectId)}>
       <ArchitectWorkspace />

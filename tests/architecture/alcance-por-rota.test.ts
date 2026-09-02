@@ -70,10 +70,27 @@ import { discoverRoutes } from "../../e2e/route-inventory";
 
 const raizDoRepositorio = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FIXTURE = join(raizDoRepositorio, "tests", "architecture", "alcance-por-rota.fixture.json");
-const STORE = join(raizDoRepositorio, "src", "lib", "store.tsx");
 const DIRETORIO_LIB = join(raizDoRepositorio, "src", "lib");
 
-type Alcance = "publica" | "autenticado" | "admin" | "lead-com-vinculo" | "calibracao";
+/**
+ * Os módulos de `lib/` que abrem consulta e que a varredura LÊ. `store.tsx`
+ * desde a onda 19; `context-scope.tsx` desde a onda 31, quando `/team` e a
+ * ficha de carreira — que montam `<ContextScope>` — passaram a ser
+ * restritas e o tripwire abaixo cobrou a extensão.
+ */
+const MODULOS_DE_CONSULTA_VARRIDOS = [
+  join(DIRETORIO_LIB, "store.tsx"),
+  join(DIRETORIO_LIB, "context-scope.tsx"),
+];
+
+type Alcance =
+  | "publica"
+  | "autenticado"
+  | "admin"
+  | "lead-com-vinculo"
+  | "calibracao"
+  | "lideranca"
+  | "ficha-de-carreira";
 type Negativa = "tela-nega" | "somente-leitura";
 
 const ALCANCES: readonly Alcance[] = [
@@ -82,6 +99,8 @@ const ALCANCES: readonly Alcance[] = [
   "admin",
   "lead-com-vinculo",
   "calibracao",
+  "lideranca",
+  "ficha-de-carreira",
 ];
 
 /** Qual guarda de navegação cada alcance restrito obriga. */
@@ -89,6 +108,8 @@ const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
   admin: "requireAdminReach",
   "lead-com-vinculo": "requireLeadReach",
   calibracao: "requireCalibrationReach",
+  lideranca: "requireLeadershipReach",
+  "ficha-de-carreira": "requireCareerFileReach",
 };
 
 /** Contas que NÃO alcançam uma rota restrita — o gêmeo de tela usa uma delas. */
@@ -101,10 +122,12 @@ const TAMANHO_MINIMO_DA_JUSTIFICATIVA = 60;
 const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 const DISTRIBUICAO_ESPERADA = {
-  autenticado: 18,
+  autenticado: 12,
   admin: 2,
   "lead-com-vinculo": 1,
   calibracao: 1,
+  lideranca: 2,
+  "ficha-de-carreira": 4,
 };
 
 interface CatalogoGlobal {
@@ -131,11 +154,13 @@ interface ConsultaDaRota {
 }
 
 /**
- * Os hooks de consulta que um módulo exporta. Fecho por PONTO FIXO: hook é
- * de consulta se chamar `useQuery(` ou se chamar outro hook de consulta do
- * mesmo módulo — senão `useGapSeverityRuler()`, que só chama
- * `useScoringBands()`, voltaria a ser invisível pelo mesmo motivo que
- * `useCareerLevelsByRank()` era.
+ * Os hooks E componentes de consulta que um módulo exporta. Fecho por PONTO
+ * FIXO: é de consulta quem chama `useQuery(`/`useQueries(` ou quem chama
+ * outro de consulta do mesmo módulo — senão `useGapSeverityRuler()`, que só
+ * chama `useScoringBands()`, voltaria a ser invisível pelo mesmo motivo que
+ * `useCareerLevelsByRank()` era. `<ContextScope>` é um componente que abre
+ * as consultas de contexto ao montar: conta como consulta, e a rota o
+ * referencia como JSX, não como chamada.
  */
 class HooksDeConsulta {
   private constructor(private readonly blocos: ReadonlyMap<string, string>) {}
@@ -146,7 +171,7 @@ class HooksDeConsulta {
     const blocos = new Map<string, string>();
     for (const [ordem, inicio] of inicios.entries()) {
       const bloco = texto.slice(inicio, inicios[ordem + 1] ?? texto.length);
-      const nome = /^export function (use[A-Za-z0-9_]*)/.exec(bloco)?.[1];
+      const nome = /^export function ([A-Za-z0-9_]+)/.exec(bloco)?.[1];
       if (nome !== undefined) blocos.set(nome, bloco);
     }
     return new HooksDeConsulta(blocos);
@@ -167,8 +192,15 @@ class HooksDeConsulta {
   }
 
   private static consulta(bloco: string, conhecidos: ReadonlySet<string>): boolean {
-    if (/\buseQuery\(/.test(bloco)) return true;
-    return [...conhecidos].some((nome) => new RegExp(`\\b${nome}\\s*\\(`).test(bloco));
+    if (/\buseQuer(?:y|ies)\(/.test(bloco)) return true;
+    return [...conhecidos].some((nome) => HooksDeConsulta.referencia(nome).test(bloco));
+  }
+
+  /** Hook é chamado (`useX(`); componente é montado (`<X`). */
+  static referencia(nome: string): RegExp {
+    return nome.startsWith("use")
+      ? new RegExp(`\\b${nome}\\s*\\(`, "g")
+      : new RegExp(`<${nome}\\b`, "g");
   }
 }
 
@@ -176,21 +208,23 @@ class HooksDeConsulta {
  * Módulos de `lib/` que abrem consulta e que esta varredura NÃO lê. Enquanto
  * nenhuma rota restrita importar um deles, o limite é teórico; no dia em que
  * importar, o tripwire abaixo cobra a extensão da varredura em vez de deixar
- * a promessa crescer sozinha.
+ * a promessa crescer sozinha — foi assim que `context-scope.tsx` entrou.
  */
 class ModulosDeConsultaForaDaVarredura {
   static get nomes(): string[] {
     return readdirSync(DIRETORIO_LIB, { recursive: true, withFileTypes: true })
       .filter((entrada) => entrada.isFile() && /\.tsx?$/.test(entrada.name))
       .map((entrada) => join(entrada.parentPath, entrada.name))
-      .filter((arquivo) => arquivo !== STORE)
-      .filter((arquivo) => /\buseQuery\(/.test(readFileSync(arquivo, "utf8")))
+      .filter((arquivo) => !MODULOS_DE_CONSULTA_VARRIDOS.includes(arquivo))
+      .filter((arquivo) => /\buseQuer(?:y|ies)\(/.test(readFileSync(arquivo, "utf8")))
       .map((arquivo) => `@/lib/${relative(DIRETORIO_LIB, arquivo).replace(/\.tsx?$/, "")}`)
       .sort();
   }
 }
 
-const HOOKS_DE_CONSULTA_DO_STORE = HooksDeConsulta.de(STORE).nomes;
+const HOOKS_DE_CONSULTA_DO_STORE = MODULOS_DE_CONSULTA_VARRIDOS.flatMap(
+  (modulo) => HooksDeConsulta.de(modulo).nomes,
+);
 
 class Fixture {
   private static conteudo: Readonly<Record<string, DeclaracaoDeAlcance>> | undefined;
@@ -299,11 +333,11 @@ class FonteDaRota {
    */
   private get consultasEmHook(): ConsultaDaRota[] {
     return HOOKS_DE_CONSULTA_DO_STORE.flatMap((hook) =>
-      [...this.texto.matchAll(new RegExp(`\\b${hook}\\s*\\(`, "g"))].map((achado) => ({
+      [...this.texto.matchAll(HooksDeConsulta.referencia(hook))].map((achado) => ({
         inicio: achado.index,
         corpo: "",
         hook,
-        rotulo: `${hook}()`,
+        rotulo: hook.startsWith("use") ? `${hook}()` : `<${hook}>`,
       })),
     );
   }
@@ -375,7 +409,7 @@ const naoDeclaradas = (
 };
 
 describe("alcance por rota — toda rota declara quem a alcança", () => {
-  it("nenhuma rota do código fica sem declaração, e a declaração é uma das quatro", () => {
+  it("nenhuma rota do código fica sem declaração, e a declaração é um alcance conhecido", () => {
     const semDeclaracao = rotasDoCodigo
       .map((rota) => ({ caminho: rota.path, alcance: Fixture.rotas[rota.path]?.alcance }))
       .filter(({ alcance }) => alcance === undefined || !ALCANCES.includes(alcance))

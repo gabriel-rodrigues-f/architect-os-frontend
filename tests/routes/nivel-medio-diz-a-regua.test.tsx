@@ -26,12 +26,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { Route as DashboardRoute } from "@/routes/index";
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
 import type { ArchitectEvolutionResult } from "@/lib/domain";
 import { apiPath } from "@/lib/api-path";
-import { fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -50,7 +49,6 @@ import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app
  */
 const fetchMock = vi.fn();
 
-const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 const EvolutionPage = EvolutionRoute.options.component as () => ReactNode;
 
@@ -93,18 +91,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/**
+ * Onda 31 — o dono tirou do profissional os próprios números (2026-09-01):
+ * o Painel do member não mostra mais "Nível médio", e a ficha e a evolução
+ * são lidas por quem lidera. As telas comparadas aqui passam a ser as da
+ * LIDERANÇA sobre a mesma pessoa — a régua e o número continuam tendo de
+ * concordar entre a Visão geral e a Evolução.
+ */
 describe("Nível médio — cada tela diz qual régua usa", () => {
-  it("o Painel calcula por capacidade e o rótulo anuncia capacidade", async () => {
-    mockAppFetch(fetchMock, { user: fixtureMemberUser, state: fixtureState });
-    renderWithApp(<DashboardPage />);
-
-    expect(await screen.findByText(MEDIA_POR_CAPACIDADE)).toBeTruthy();
-    expect(screen.queryByText(MEDIA_POR_COMPETENCIA)).toBeNull();
-    expect(await screen.findByText(/capacidades avaliadas no ciclo atual/)).toBeTruthy();
-  });
-
-  it("o Perfil usa a MESMA régua e o MESMO número da mesma pessoa", async () => {
-    mockAppFetch(fetchMock, { user: fixtureMemberUser, state: fixtureState });
+  it("o Perfil calcula por capacidade e o rótulo anuncia capacidade", async () => {
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
     renderWithApp(<ProfilePage />);
 
     expect(await screen.findByText(MEDIA_POR_CAPACIDADE)).toBeTruthy();
@@ -112,8 +108,8 @@ describe("Nível médio — cada tela diz qual régua usa", () => {
     expect(await screen.findByText(/capacidades avaliadas no ciclo atual/)).toBeTruthy();
   });
 
-  it("nenhuma das duas telas promete média de competências", async () => {
-    mockAppFetch(fetchMock, { user: fixtureMemberUser, state: fixtureState });
+  it("a ficha não promete média de competências", async () => {
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
     const { container } = renderWithApp(<ProfilePage />);
 
     await screen.findByText(MEDIA_POR_CAPACIDADE);
@@ -129,7 +125,7 @@ describe("Nível médio — cada tela diz qual régua usa", () => {
    */
   it("a Evolução anuncia a régua do PERÍODO, não um 'atual' que disputa com o ciclo", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureMemberUser,
+      user: fixtureAdminUser,
       state: fixtureState,
       routes: [
         (href) =>

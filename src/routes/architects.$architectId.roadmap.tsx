@@ -8,14 +8,18 @@ import {
   GapBadge,
   LearningPathCoverageList,
   LevelBadge,
+  OutOfReachScreen,
   PageHeader,
   ProfileTabs,
   QuerySection,
 } from "@/components/app";
 import { api } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
 import type { CareerLevel } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireCareerFileReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import {
   CareerRoadmapViewModel,
@@ -34,8 +38,30 @@ export const Route = createFileRoute("/architects/$architectId/roadmap")({
       },
     ],
   }),
+  beforeLoad: requireCareerFileReach,
   component: ArchitectRoadmap,
 });
+
+function ArchitectRoadmap() {
+  const { architectId } = Route.useParams();
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("architectRoadmap");
+  const canOpenCareerFile = defaultUiAuthorizationPolicy.canOpenCareerFileOf(user, architectId);
+
+  if (!canOpenCareerFile) {
+    return (
+      <OutOfReachScreen
+        title={t("arch.tabs.roadmap")}
+        help={help}
+        reason={t("arch.careerFile.ownOutOfReach")}
+        hint={t("arch.careerFile.ownOutOfReachHint")}
+      />
+    );
+  }
+
+  return <RoadmapOfArchitect architectId={architectId} />;
+}
 
 function useCareerRoadmapViewModel(): CareerRoadmapViewModel {
   const sel = useSelectors();
@@ -50,8 +76,7 @@ function useCareerRoadmapViewModel(): CareerRoadmapViewModel {
 const SUMMARY_SKELETON = <div className="h-28 animate-pulse rounded-md bg-secondary" />;
 const SECTION_SKELETON = <div className="h-24 animate-pulse rounded-md bg-secondary" />;
 
-function ArchitectRoadmap() {
-  const { architectId } = Route.useParams();
+function RoadmapOfArchitect({ architectId }: { architectId: string }) {
   const sel = useSelectors();
   const store = useStore();
   const { t } = useI18n();
