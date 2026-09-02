@@ -1,13 +1,15 @@
-import { createContext, useContext, useId, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Info } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useGapSeverityRuler } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
+import { defaultSectionVisibilityMemory } from "@/lib/section-visibility";
 import { defaultNameFormatter } from "@/lib/text";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -334,6 +336,55 @@ export function SectionGroup({
   );
 }
 
+function useSectionVisibility(
+  storageKey: string | undefined,
+  defaultOpen: boolean,
+): { open: boolean; toggle: () => void } {
+  const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (storageKey === undefined) return;
+    const remembered = defaultSectionVisibilityMemory.recall(storageKey);
+    if (remembered !== null) setOpen(remembered);
+  }, [storageKey]);
+  const toggle = () => {
+    const next = !open;
+    if (storageKey !== undefined) defaultSectionVisibilityMemory.remember(storageKey, next);
+    setOpen(next);
+  };
+  return { open, toggle };
+}
+
+function SectionToggle({
+  title,
+  open,
+  contentId,
+  onToggle,
+}: {
+  title: string;
+  open: boolean;
+  contentId: string;
+  onToggle: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      aria-expanded={open}
+      aria-controls={contentId}
+      aria-label={t(open ? "section.hideNamed" : "section.showNamed", { nome: title })}
+      onClick={onToggle}
+    >
+      {t(open ? "section.hide" : "section.show")}
+      <ChevronDown
+        className={cn("h-4 w-4 transition-transform", !open && "-rotate-90")}
+        aria-hidden="true"
+      />
+    </Button>
+  );
+}
+
 export function SectionCard({
   title,
   description,
@@ -341,6 +392,9 @@ export function SectionCard({
   children,
   className,
   id,
+  collapsible = false,
+  defaultOpen = true,
+  storageKey,
 }: {
   title: string;
   description?: string;
@@ -348,12 +402,18 @@ export function SectionCard({
   children: ReactNode;
   className?: string;
   id?: string;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  storageKey?: string;
 }) {
   const titleId = useId();
+  const contentId = useId();
   const Heading = SECTION_HEADING_TAG[useContext(SectionHeadingLevelContext)];
+  const { open, toggle } = useSectionVisibility(storageKey, defaultOpen);
+  const shown = !collapsible || open;
   return (
     <section id={id} aria-labelledby={titleId} className={cn("surface-card p-5", className)}>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div className={cn("flex flex-wrap items-start justify-between gap-3", shown && "mb-4")}>
         <div>
           <Heading id={titleId} className="font-display text-base font-semibold">
             {title}
@@ -362,9 +422,16 @@ export function SectionCard({
             <p className="mt-0.5 max-w-prose text-sm text-muted-foreground">{description}</p>
           )}
         </div>
-        {actions}
+        {(actions || collapsible) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {actions}
+            {collapsible && (
+              <SectionToggle title={title} open={open} contentId={contentId} onToggle={toggle} />
+            )}
+          </div>
+        )}
       </div>
-      {children}
+      {collapsible ? open && <div id={contentId}>{children}</div> : children}
     </section>
   );
 }
