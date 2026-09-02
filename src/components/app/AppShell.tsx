@@ -93,7 +93,13 @@ export const NAV_GROUPS: NavGroup[] = [
     labelKey: "nav.group.operation",
     items: [
       { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
-      { to: "/team", labelKey: "nav.team", icon: Users, leadershipOnly: true },
+      {
+        to: "/team",
+        labelKey: "nav.team",
+        icon: Users,
+        activePrefixes: ["/architects"],
+        leadershipOnly: true,
+      },
       { to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck },
     ],
   },
@@ -224,19 +230,40 @@ export function filterNavGroups(groups: NavGroup[], user: SessionUser | undefine
     .filter((group) => group.items.length > 0);
 }
 
-export function isNavItemActive(item: NavItem, pathname: string): boolean {
-  if (item.to === "/") return pathname === "/";
-  return [item.to, ...(item.activePrefixes ?? [])].some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+class NavRouteMatch {
+  constructor(private readonly pathname: string) {}
+
+  specificityOf(item: NavItem): number {
+    if (item.to === "/") return this.pathname === "/" ? 1 : -1;
+    return [item.to, ...(item.activePrefixes ?? [])].reduce(
+      (best, prefix) => (this.covers(prefix) ? Math.max(best, prefix.length) : best),
+      -1,
+    );
+  }
+
+  private covers(prefix: string): boolean {
+    return this.pathname === prefix || this.pathname.startsWith(`${prefix}/`);
+  }
+}
+
+export function isNavItemActive(
+  item: NavItem,
+  pathname: string,
+  siblings: readonly NavItem[] = [],
+): boolean {
+  const match = new NavRouteMatch(pathname);
+  const own = match.specificityOf(item);
+  if (own < 0) return false;
+  return siblings.every((sibling) => sibling === item || match.specificityOf(sibling) <= own);
 }
 
 export function isNavItemHiddenByCollapse(
   item: NavItem,
   pathname: string,
   isGroupCollapsed: boolean,
+  siblings: readonly NavItem[] = [],
 ): boolean {
-  return isGroupCollapsed && !isNavItemActive(item, pathname);
+  return isGroupCollapsed && !isNavItemActive(item, pathname, siblings);
 }
 
 const navGroupPanelId = (labelKey: string) => `nav-group-${labelKey.replace(/\./g, "-")}`;
@@ -281,6 +308,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   const navGroups = filterNavGroups(NAV_GROUPS, user ?? undefined);
+  const navItems = navGroups.flatMap((group) => group.items);
   const reducedMotion = useReducedMotion();
 
   const [collapsed, setCollapsed] = useState(false);
@@ -386,7 +414,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   const renderDesktopNavItem = (item: NavItem, hidden = false) => {
-    const active = isNavItemActive(item, pathname);
+    const active = isNavItemActive(item, pathname, navItems);
     const label = t(item.labelKey);
     const link = (
       <Link
@@ -543,6 +571,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   groupLabel={t(group.labelKey)}
                   headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground/80"
                   renderItem={renderDesktopNavItem}
+                  siblings={navItems}
                 />
               );
             })}
@@ -671,6 +700,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 reducedMotion={reducedMotion}
                 groupLabel={group.labelKey ? t(group.labelKey) : ""}
                 idPrefix="mobile-"
+                siblings={navItems}
                 headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground/80"
                 renderItem={(item, hidden) => (
                   <Link
@@ -680,7 +710,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     {...outOfReachProps(hidden)}
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                      isNavItemActive(item, pathname)
+                      isNavItemActive(item, pathname, navItems)
                         ? "bg-secondary font-medium text-foreground"
                         : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                     )}
@@ -721,6 +751,7 @@ function NavGroupSection({
   idPrefix = "",
   headerClassName,
   renderItem,
+  siblings,
 }: {
   group: NavGroup;
   groupIndex: number;
@@ -732,6 +763,7 @@ function NavGroupSection({
   idPrefix?: string;
   headerClassName: string;
   renderItem: (item: NavItem, hidden: boolean) => ReactNode;
+  siblings: readonly NavItem[];
 }) {
   const wrapperClassName = groupIndex > 0 ? "pt-2" : "";
 
@@ -767,7 +799,7 @@ function NavGroupSection({
       </button>
       <div id={panelId} className="space-y-0.5">
         {group.items.map((item) => {
-          const hidden = isNavItemHiddenByCollapse(item, pathname, isGroupCollapsed);
+          const hidden = isNavItemHiddenByCollapse(item, pathname, isGroupCollapsed, siblings);
           return (
             <div
               key={item.to}

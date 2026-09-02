@@ -24,6 +24,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { AppShell, filterNavGroups, isNavItemActive, NAV_GROUPS } from "@/components/app/AppShell";
+import type { SessionUser } from "@/lib/api";
 import { ThemeProvider } from "@/lib/theme";
 import {
   fixtureAdminUser,
@@ -49,6 +50,9 @@ import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
  */
 const fetchMock = vi.fn();
 
+/** Quem lidera E é arquiteto: o único caso em que "Minha carreira" ainda aparece. */
+const liderComArquiteto: SessionUser = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+
 const itensAtivos = (): string[] => {
   const aside = document.querySelector("aside");
   if (!aside) throw new Error("a coluna lateral não montou");
@@ -71,8 +75,9 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
     vi.unstubAllGlobals();
   });
 
-  const renderEm = async (pathname: string) => {
+  const renderEm = async (pathname: string, user: SessionUser = fixtureAdminUser) => {
     routerState.pathname = pathname;
+    mockAppFetch(fetchMock, { user });
     renderWithApp(
       <ThemeProvider>
         <AppShell>
@@ -95,17 +100,49 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
     expect(itensAtivos()).toEqual(["Time"]);
   });
 
+  /**
+   * Onda 35 — achado 9 do dono (2026-09-02), literal: "Ao ver um
+   * profissional, a barra lateral deve marcar 'Time'." A ficha
+   * (/architects/$id/*) é aberta a partir do roster de /team e nenhum item
+   * acendia. Quem lidera E tem a própria ficha continua com "Minha carreira"
+   * acesa na PRÓPRIA ficha — o item mais específico ganha; em qualquer outra
+   * ficha, é o Time.
+   */
+  it("na ficha de uma pessoa (/architects/ana) o Time acende", async () => {
+    await renderEm("/architects/ana");
+
+    expect(itensAtivos()).toEqual(["Time"]);
+  });
+
+  it("nas abas da ficha (/architects/ana/evolution) o Time continua aceso", async () => {
+    await renderEm("/architects/ana/evolution");
+
+    expect(itensAtivos()).toEqual(["Time"]);
+  });
+
+  it("quem lidera e tem a própria ficha: na própria, só Minha carreira; na de outra pessoa, só Time", async () => {
+    await renderEm("/architects/ana/roadmap", liderComArquiteto);
+    expect(itensAtivos()).toEqual(["Minha carreira"]);
+    cleanup();
+
+    await renderEm("/architects/bruno", liderComArquiteto);
+    expect(itensAtivos()).toEqual(["Time"]);
+  });
+
   it("nenhuma rota do menu acende mais de um item, para nenhum papel", () => {
     const perfis = [
       fixtureAdminUser,
       fixtureMemberUser,
       fixtureAssignedTechLeadUser,
       fixtureUnassignedTechLeadUser,
+      liderComArquiteto,
     ];
     for (const user of perfis) {
       const itens = filterNavGroups(NAV_GROUPS, user).flatMap((grupo) => grupo.items);
       for (const rota of itens.map((item) => item.to)) {
-        const acesos = itens.filter((item) => isNavItemActive(item, rota)).map((item) => item.to);
+        const acesos = itens
+          .filter((item) => isNavItemActive(item, rota, itens))
+          .map((item) => item.to);
         expect(acesos, `${user.email} em ${rota}`).toEqual([rota]);
       }
     }
