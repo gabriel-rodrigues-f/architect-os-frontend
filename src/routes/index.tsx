@@ -15,11 +15,9 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 
 import {
-  CapabilityRadar,
   EvidenceDialog,
   EvidenceStatusBadge,
   GapBadge,
-  LevelBadge,
   PageHeader,
   ResubmitEvidenceDialog,
   SectionCard,
@@ -254,9 +252,6 @@ function MemberHome() {
     );
   }
 
-  const capabilityAvgs = sel.capabilityAverages(architectId);
-
-  const gaps = personal.openGaps(architectId);
   const assessment = sel.assessmentFor(architectId);
   const plan = sel.planFor(architectId);
   const itemsByStatus = personal.planItemCounts(architectId);
@@ -288,16 +283,6 @@ function MemberHome() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
-          <CapabilityRadar
-            data={capabilityAvgs.map((d) => ({
-              capability: sel.capabilityShortLabel(d.capability),
-              atual: d.avg ?? 0,
-              alvo: d.target ?? 0,
-            }))}
-          />
-        </SectionCard>
-
         <SectionCard title={t("dash.member.pdi.title")} description={t("dash.member.pdi.subtitle")}>
           {!plan ? (
             <p className="text-sm text-muted-foreground">{t("dash.member.pdi.none")}</p>
@@ -345,29 +330,6 @@ function MemberHome() {
           >
             {t("dash.member.pdi.cta")}
           </Link>
-        </SectionCard>
-      </div>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <SectionCard
-          title={t("dash.priorities.title")}
-          description={t("dash.member.gaps.subtitle")}
-        >
-          <ul className="space-y-3">
-            {gaps.slice(0, 6).map((g) => (
-              <li key={g.item.competencyId} className="flex items-center justify-between gap-3">
-                <span className="truncate text-sm">{g.competency?.name}</span>
-                <span className="flex items-center gap-2">
-                  <LevelBadge level={g.item.final} />
-                  <span className="text-xs text-muted-foreground">→ {g.item.target}</span>
-                  <GapBadge gap={g.gap} />
-                </span>
-              </li>
-            ))}
-            {gaps.length === 0 && (
-              <p className="text-sm text-muted-foreground">{t("arch.gaps.none")}</p>
-            )}
-          </ul>
         </SectionCard>
 
         <SectionCard

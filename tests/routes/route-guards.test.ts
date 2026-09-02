@@ -9,6 +9,7 @@ import {
   requireCareerFileReach,
   requireLeadReach,
   requireLeadershipReach,
+  requireTeamAnalysisReach,
 } from "@/lib/route-guards";
 import { SESSION_QUERY_KEY } from "@/lib/session-query";
 import {
@@ -334,5 +335,68 @@ describe("guardas de navegação do cadastro de times", () => {
 
   it("mantém /teams aberta para admin", async () => {
     expect(await navegarComoUsuario(fixtureAdminUser, "/teams")).toBe("/teams");
+  });
+});
+
+/**
+ * Onda 33 — achado (4) da revisão de PO (2026-09-02): a decisão "o
+ * profissional não vê os próprios números" estava executada pela metade.
+ * Ciclos mostrava a ele "Nível final por ciclo: L4 → L5", e as cinco telas
+ * de análise do time — tiradas do MENU na onda 31 — "saíram do menu e
+ * ficaram na URL, com os números dele dentro". Aqui se fecha a URL: Ciclos
+ * entra na régua da liderança (`requireLeadershipReach`) e as cinco ganham
+ * a guarda nomeada `requireTeamAnalysisReach`, sobre `canAnalyzeTeam` — a
+ * MESMA política que já recortava o menu, agora ligada na navegação.
+ */
+const ANALISE_DO_TIME = [
+  "/progression",
+  "/gap-analysis",
+  "/training-needs",
+  "/capability-map",
+  "/compare",
+];
+
+describe("o profissional não navega até Ciclos nem até a análise do time", () => {
+  it("nega /cycles ao member", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/cycles")).toBe("/");
+  });
+
+  it.each(ANALISE_DO_TIME)("nega %s ao member", async (href) => {
+    expect(await navegarComoUsuario(fixtureMemberUser, href)).toBe("/");
+  });
+
+  it("mantém /cycles e as cinco para quem lidera, com ou sem vínculo, e para o admin", async () => {
+    for (const user of [
+      fixtureAdminUser,
+      fixtureAssignedManagerUser,
+      fixtureAssignedTechLeadUser,
+      fixtureUnassignedTechLeadUser,
+    ]) {
+      for (const href of ["/cycles", ...ANALISE_DO_TIME]) {
+        expect(await navegarComoUsuario(user, href), `${user.role} → ${href}`).toBe(href);
+      }
+    }
+  });
+});
+
+async function alcancaAnaliseDoTime(user: SessionUser): Promise<boolean> {
+  const queryClient = createAppQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, user);
+  try {
+    await requireTeamAnalysisReach({ context: { queryClient } });
+    return true;
+  } catch (erro) {
+    if (isRedirect(erro)) return false;
+    throw erro;
+  }
+}
+
+describe("requireTeamAnalysisReach — a guarda da análise do time", () => {
+  it("o member não passa; quem lidera passa, com ou sem vínculo; o admin passa", async () => {
+    expect(await alcancaAnaliseDoTime(fixtureMemberUser)).toBe(false);
+    expect(await alcancaAnaliseDoTime(fixtureUnassignedTechLeadUser)).toBe(true);
+    expect(await alcancaAnaliseDoTime(fixtureAssignedTechLeadUser)).toBe(true);
+    expect(await alcancaAnaliseDoTime(fixtureAssignedManagerUser)).toBe(true);
+    expect(await alcancaAnaliseDoTime(fixtureAdminUser)).toBe(true);
   });
 });

@@ -7,13 +7,17 @@ import {
   CapabilityHeatmap,
   EmptyState,
   GapTable,
+  OutOfReachScreen,
   PageHeader,
   SectionCard,
   useGapAnalysisData,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireTeamAnalysisReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useGapSeverityRuler, useSelectors } from "@/lib/store";
 import { exportTeamReportCsv } from "@/lib/team-report-csv";
 
@@ -32,10 +36,31 @@ export const Route = createFileRoute("/progression")({
       },
     ],
   }),
+  beforeLoad: requireTeamAnalysisReach,
   component: ProgressionPage,
 });
 
 function ProgressionPage() {
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("progression");
+  const canAnalyzeTeam = defaultUiAuthorizationPolicy.canAnalyzeTeam(user);
+
+  if (!canAnalyzeTeam) {
+    return (
+      <OutOfReachScreen
+        title={t("progression.title")}
+        help={help}
+        reason={t("cap.teamAnalysisOnly")}
+        hint={t("cap.teamAnalysisOnlyHint")}
+      />
+    );
+  }
+
+  return <TeamProgression />;
+}
+
+function TeamProgression() {
   const { t } = useI18n();
   const help = usePageHelp("progression");
   const sel = useSelectors();

@@ -133,7 +133,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/development-plans", labelKey: "nav.developmentPlans", icon: Target },
       { to: "/learning-paths", labelKey: "nav.learningPaths", icon: BookOpen },
       { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
-      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange },
+      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange, leadershipOnly: true },
     ],
   },
   {

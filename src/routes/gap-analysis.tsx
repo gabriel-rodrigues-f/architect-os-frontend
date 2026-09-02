@@ -8,14 +8,18 @@ import {
   GapBadge,
   GapClosureSection,
   NameList,
+  OutOfReachScreen,
   PageHeader,
   SectionCard,
   TreatGapInPlanAction,
   useGapAnalysisData,
 } from "@/components/app";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireTeamAnalysisReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors } from "@/lib/store";
 import { FurthestFromTarget } from "@/lib/view-models";
 
@@ -31,10 +35,31 @@ export const Route = createFileRoute("/gap-analysis")({
       { property: "og:description", content: "Radar e prioridades de desenvolvimento." },
     ],
   }),
+  beforeLoad: requireTeamAnalysisReach,
   component: GapPage,
 });
 
 function GapPage() {
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("gapAnalysis");
+  const canAnalyzeTeam = defaultUiAuthorizationPolicy.canAnalyzeTeam(user);
+
+  if (!canAnalyzeTeam) {
+    return (
+      <OutOfReachScreen
+        title={t("gap.title")}
+        help={help}
+        reason={t("cap.teamAnalysisOnly")}
+        hint={t("cap.teamAnalysisOnlyHint")}
+      />
+    );
+  }
+
+  return <TeamPriorities />;
+}
+
+function TeamPriorities() {
   const { t } = useI18n();
   const help = usePageHelp("gapAnalysis");
   const sel = useSelectors();

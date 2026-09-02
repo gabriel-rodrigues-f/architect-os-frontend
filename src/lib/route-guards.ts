@@ -31,6 +31,9 @@ class NavigationBarrier {
   requireLeadershipReach: RouteGuard = ({ context }) =>
     this.requireReach(context, (user) => this.policy.isLeadership(user));
 
+  requireTeamAnalysisReach: RouteGuard = ({ context }) =>
+    this.requireReach(context, (user) => this.policy.canAnalyzeTeam(user));
+
   requireCareerFileReach: CareerFileRouteGuard = ({ context, params }) =>
     this.requireReach(context, (user) => this.policy.canOpenCareerFileOf(user, params.architectId));
 
@@ -60,4 +63,5 @@ export const requireAdminReach = navigationBarrier.requireAdminReach;
 export const requireLeadReach = navigationBarrier.requireLeadReach;
 export const requireCalibrationReach = navigationBarrier.requireCalibrationReach;
 export const requireLeadershipReach = navigationBarrier.requireLeadershipReach;
+export const requireTeamAnalysisReach = navigationBarrier.requireTeamAnalysisReach;
 export const requireCareerFileReach = navigationBarrier.requireCareerFileReach;

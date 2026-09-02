@@ -78,6 +78,7 @@ export type DeclaredReach =
   | "lead-com-vinculo"
   | "calibracao"
   | "lideranca"
+  | "analise-de-time"
   | "ficha-de-carreira";
 
 const FIXTURE_DE_ALCANCE = join(

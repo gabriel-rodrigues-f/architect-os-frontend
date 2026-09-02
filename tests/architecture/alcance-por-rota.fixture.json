@@ -47,10 +47,20 @@
       "provaDeTela": "tests/routes/calibration.test.tsx"
     },
     "/capability-map": {
-      "alcance": "autenticado"
+      "alcance": "analise-de-time",
+      "guarda": "requireTeamAnalysisReach",
+      "sinal": "canAnalyzeTeam",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/compare": {
-      "alcance": "autenticado"
+      "alcance": "analise-de-time",
+      "guarda": "requireTeamAnalysisReach",
+      "sinal": "canAnalyzeTeam",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/competency-matrix": {
       "alcance": "admin",
@@ -68,13 +78,23 @@
       ]
     },
     "/cycles": {
-      "alcance": "autenticado"
+      "alcance": "lideranca",
+      "guarda": "requireLeadershipReach",
+      "sinal": "isLeadership",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/lideranca-nega-o-profissional.test.tsx"
     },
     "/development-plans": {
       "alcance": "autenticado"
     },
     "/gap-analysis": {
-      "alcance": "autenticado"
+      "alcance": "analise-de-time",
+      "guarda": "requireTeamAnalysisReach",
+      "sinal": "canAnalyzeTeam",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/learning-paths": {
       "alcance": "autenticado"
@@ -86,7 +106,12 @@
       "alcance": "autenticado"
     },
     "/progression": {
-      "alcance": "autenticado"
+      "alcance": "analise-de-time",
+      "guarda": "requireTeamAnalysisReach",
+      "sinal": "canAnalyzeTeam",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/settings": {
       "alcance": "lideranca",
@@ -127,7 +152,12 @@
       "provaDeTela": "tests/routes/teams.test.tsx"
     },
     "/training-needs": {
-      "alcance": "autenticado"
+      "alcance": "analise-de-time",
+      "guarda": "requireTeamAnalysisReach",
+      "sinal": "canAnalyzeTeam",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/users": {
       "alcance": "admin",

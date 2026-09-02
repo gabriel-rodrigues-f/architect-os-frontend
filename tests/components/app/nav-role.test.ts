@@ -39,12 +39,17 @@ const usuarioDoPapel = (role: UserRole) =>
  * legítimo pra qualquer um; só editar continua restrito a admin.
  */
 describe("AppShell — navegação recortada por papel", () => {
-  it("member não vê Matriz de Competências nem Usuários, mas continua vendo Ciclos", () => {
+  /**
+   * Onda 33 — Ciclos deixou de ser do profissional: a metade de baixo da
+   * tela compara o nível final DELE ciclo a ciclo, e a decisão do dono é que
+   * ele não vê os próprios números. O item vira `leadershipOnly`.
+   */
+  it("member não vê Matriz de Competências, Usuários nem Ciclos", () => {
     const groups = filterNavGroups(NAV_GROUPS, fixtureMemberUser);
     const paths = groups.flatMap((g) => g.items.map((i) => i.to));
     expect(paths).not.toContain("/competency-matrix");
     expect(paths).not.toContain("/users");
-    expect(paths).toContain("/cycles");
+    expect(paths).not.toContain("/cycles");
   });
 
   it("lead também não vê os destinos admin-only", () => {

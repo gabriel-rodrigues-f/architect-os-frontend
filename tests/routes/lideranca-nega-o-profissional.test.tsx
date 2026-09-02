@@ -21,6 +21,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { apiPath } from "@/lib/api-path";
 import type { SessionUser } from "@/lib/api";
+import { Route as CyclesRoute } from "@/routes/cycles";
 import { Route as SettingsRoute } from "@/routes/settings";
 import { Route as TeamRoute } from "@/routes/team";
 import {
@@ -50,9 +51,11 @@ const fetchMock = vi.fn();
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const CyclesPage = CyclesRoute.options.component as () => ReactNode;
 
 const TIME_VISAO_DE_LIDERANCA = "O Time é uma visão de liderança.";
 const POLITICA_LEITURA_DE_LIDERANCA = "A Política de Progressão é uma leitura de liderança.";
+const CICLOS_LEITURA_DE_LIDERANCA = "Os Ciclos de Desenvolvimento são uma leitura de liderança.";
 
 function pediu(caminho: string): boolean {
   return fetchMock.mock.calls.some(([entrada]) =>
@@ -129,5 +132,43 @@ describe("/settings nega o profissional — a tela é a última barreira", () =>
       await screen.findByRole("heading", { level: 1, name: "Política de Progressão" }),
     ).toBeTruthy();
     expect(screen.queryByText(POLITICA_LEITURA_DE_LIDERANCA)).toBeNull();
+  });
+});
+
+/**
+ * Onda 33 — achado (4) da revisão de PO (2026-09-02): Ciclos mostrava ao
+ * profissional "Comparação de competências — Nível final por ciclo (L4 →
+ * L5)", competência a competência, e remetia a uma Matriz que ele não tem.
+ * É a metade de baixo da tela que a decisão do dono manda esconder; a tela
+ * inteira passa a ser leitura de liderança.
+ */
+describe("/cycles nega o profissional — a tela é a última barreira", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("member recebe a negativa, e o nível final por ciclo não é desenhado", async () => {
+    const { container } = renderAs(fixtureMemberUser, <CyclesPage />);
+    expect(await screen.findByText(CICLOS_LEITURA_DE_LIDERANCA)).toBeTruthy();
+    expect(screen.queryByText("Comparação de competências")).toBeNull();
+    expect([...container.querySelectorAll("table")]).toEqual([]);
+  });
+
+  it("a tela negada continua se explicando — o ? está lá", async () => {
+    renderAs(fixtureMemberUser, <CyclesPage />);
+    await screen.findByText(CICLOS_LEITURA_DE_LIDERANCA);
+    expect(screen.getByRole("button", { name: /como usar/i })).toBeTruthy();
+  });
+
+  it("o tech lead alcança os ciclos e a comparação — para os outros papéis nada muda", async () => {
+    renderAs(fixtureAssignedTechLeadUser, <CyclesPage />);
+    expect(await screen.findByText("Comparação de competências")).toBeTruthy();
+    expect(screen.queryByText(CICLOS_LEITURA_DE_LIDERANCA)).toBeNull();
   });
 });
