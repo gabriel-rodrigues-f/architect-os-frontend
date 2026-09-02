@@ -38,7 +38,7 @@ export const Route = createFileRoute("/architects/$architectId/statement")({
       {
         name: "description",
         content:
-          "Extrato de carreira: transições, degraus, evidências, PDIs e mentorias em ordem cronológica, gerado pelo líder.",
+          "Extrato de carreira: transições de nível e de time, degraus, evidências, PDIs e mentorias em ordem cronológica, gerado pelo líder.",
       },
     ],
   }),
@@ -70,6 +70,7 @@ function ArchitectStatement() {
 
 const STATEMENT_KINDS: readonly StatementEntryKind[] = [
   "transition",
+  "teamTransition",
   "competencyStep",
   "evidence",
   "pdi",
@@ -78,6 +79,7 @@ const STATEMENT_KINDS: readonly StatementEntryKind[] = [
 
 const KIND_LABEL_KEY: Record<StatementEntryKind, MessageKey> = {
   transition: "statement.kind.transition",
+  teamTransition: "statement.kind.teamTransition",
   competencyStep: "statement.kind.competencyStep",
   evidence: "statement.kind.evidence",
   pdi: "statement.kind.pdi",
@@ -130,6 +132,11 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
     queryFn: () => api.careerLevelTransitions(architectId),
     enabled: architect !== undefined,
   });
+  const teamTransitionsQuery = useQuery({
+    queryKey: ["statement-team-transitions", architectId],
+    queryFn: () => reportsApi.teamTransitionsOf(architectId, allTimeFilters.range),
+    enabled: architect !== undefined,
+  });
   const stepsQuery = useQuery({
     queryKey: ["statement-steps", architectId],
     queryFn: () => evolutionApi.architect(architectId, allTimeFilters),
@@ -150,6 +157,7 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
       vm.entries({
         architectId,
         transitions: transitionsQuery.data ?? [],
+        teamTransitions: teamTransitionsQuery.data ?? [],
         competencyEvents: stepsQuery.data?.events ?? [],
         evidences: store.evidences.filter((evidence) => evidence.architectId === architectId),
         planEvents: planEventsQuery.data ?? [],
@@ -157,7 +165,15 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
           (session) => session.menteeId === architectId,
         ),
       }),
-    [vm, architectId, transitionsQuery.data, stepsQuery.data, planEventsQuery.data, store],
+    [
+      vm,
+      architectId,
+      transitionsQuery.data,
+      teamTransitionsQuery.data,
+      stepsQuery.data,
+      planEventsQuery.data,
+      store,
+    ],
   );
 
   if (!architect) {
@@ -189,6 +205,7 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
 
   const sources = [
     { query: transitionsQuery, labelKey: "statement.source.transitions" as const },
+    { query: teamTransitionsQuery, labelKey: "statement.source.teamTransitions" as const },
     { query: stepsQuery, labelKey: "statement.source.steps" as const },
     { query: planEventsQuery, labelKey: "statement.source.pdiEvents" as const },
   ];
