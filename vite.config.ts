@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // K8S-02: em Kubernetes o frontend roda em Node (`node .output/server/index.mjs`, lendo
+  // PORT/HOST). Sem isto o wrapper cai no `cloudflare-module` — preset de saída já mudou
+  // de forma silenciosa antes (frontend/REGRAS.md, regra 2); a catraca é
+  // tests/architecture/saida-do-build-e-node.test.ts. Só vale no `vite build`; o `vite dev`
+  // não passa pelo nitro.
+  nitro: { preset: "node-server" },
 });
