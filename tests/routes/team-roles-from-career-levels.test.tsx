@@ -65,7 +65,7 @@ describe("Time — níveis de carreira vêm de career_levels, não de array fixo
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
-    await userEvent.click(screen.getByRole("button", { name: "Cadastrar arquiteto" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar profissional" }));
     const select = (await screen.findByLabelText("Cargo")) as HTMLSelectElement;
     expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
       "Júnior",

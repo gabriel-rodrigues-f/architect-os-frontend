@@ -76,7 +76,7 @@ async function login(page: Page): Promise<void> {
   await page.locator("#email").fill(ADMIN_EMAIL!);
   await page.locator("#password").fill(ADMIN_PASSWORD!);
   await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
-  await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible();
+  await expect(page.getByText("Painel de Capacidades")).toBeVisible();
 }
 
 interface TriggerMeasure {
@@ -171,10 +171,10 @@ test("/assessments — os dois seletores do cabeçalho com 36px e a MESMA largur
 }) => {
   await login(page);
   await page.goto("/assessments");
-  await expect(page.getByRole("combobox", { name: "Arquiteto" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Profissional" })).toBeVisible();
 
   const measures = await measureTriggers(page);
-  const person = measures.find((medida) => medida.name === "Arquiteto");
+  const person = measures.find((medida) => medida.name === "Profissional");
   const capabilities = measures.find((medida) => medida.name === "Capacidades");
   expect(person, "combobox de pessoa presente em /assessments").toBeTruthy();
   expect(capabilities, "seletor de capacidades presente em /assessments").toBeTruthy();

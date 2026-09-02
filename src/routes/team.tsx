@@ -46,13 +46,12 @@ export const Route = createFileRoute("/team")({
       { title: "Time — Synapse" },
       {
         name: "description",
-        content:
-          "Time de Arquitetos de Soluções, níveis médios, gaps e progresso de desenvolvimento.",
+        content: "Time, níveis médios, gaps e progresso de desenvolvimento.",
       },
       { property: "og:title", content: "Time — Synapse" },
       {
         property: "og:description",
-        content: "Gestão do time de arquitetura: perfis, níveis e desenvolvimento.",
+        content: "Gestão do time: perfis, níveis e desenvolvimento.",
       },
     ],
   }),

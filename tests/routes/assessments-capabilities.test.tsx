@@ -147,7 +147,7 @@ describe("Avaliações — seleção de capacidades", () => {
     renderPage();
     await screen.findByText("Kubernetes");
 
-    const arquitetos = screen.getByRole("combobox", { name: "Arquiteto" });
+    const arquitetos = screen.getByRole("combobox", { name: "Profissional" });
     expect(arquitetos.tagName).toBe("BUTTON");
 
     await userEvent.click(arquitetos);

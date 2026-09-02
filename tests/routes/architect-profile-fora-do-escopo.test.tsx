@@ -66,7 +66,7 @@ describe("perfil fora do escopo cai no estado 'não encontrado' da própria tela
   it("member em /architects/bruno vê 'Arquiteto não encontrado.' com caminho de volta", async () => {
     renderWithApp(<ProfilePage />);
 
-    expect(await screen.findByText(/Arquiteto não encontrado\./)).toBeTruthy();
+    expect(await screen.findByText(/Profissional não encontrado\./)).toBeTruthy();
     expect(screen.getByText(/Voltar/)).toBeTruthy();
   });
 
@@ -74,7 +74,7 @@ describe("perfil fora do escopo cai no estado 'não encontrado' da própria tela
     window.localStorage.setItem("synapse:locale", "en");
     renderWithApp(<ProfilePage />);
 
-    expect(await screen.findByText(/Architect not found\./)).toBeTruthy();
-    expect(screen.queryByText(/Arquiteto não encontrado\./)).toBeNull();
+    expect(await screen.findByText(/Professional not found\./)).toBeTruthy();
+    expect(screen.queryByText(/Profissional não encontrado\./)).toBeNull();
   });
 });

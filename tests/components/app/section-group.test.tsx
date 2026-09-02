@@ -114,7 +114,7 @@ describe("largura de leitura", () => {
 
   it("a descrição do card também", () => {
     const { container } = render(
-      <SectionCard title="Time" description="Arquitetos ativos no ciclo.">
+      <SectionCard title="Time" description="Profissionais ativos no ciclo.">
         <p>e</p>
       </SectionCard>,
     );

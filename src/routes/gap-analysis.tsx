@@ -29,7 +29,7 @@ export const Route = createFileRoute("/gap-analysis")({
       { title: "Prioridades de Desenvolvimento — Synapse" },
       {
         name: "description",
-        content: "Radar de arquitetura e ranking de prioridades de desenvolvimento por pessoa.",
+        content: "Radar de capacidades e ranking de prioridades de desenvolvimento por pessoa.",
       },
       { property: "og:title", content: "Prioridades de Desenvolvimento — Synapse" },
       { property: "og:description", content: "Radar e prioridades de desenvolvimento." },

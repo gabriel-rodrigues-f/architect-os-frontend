@@ -113,15 +113,15 @@ describe("Painel — Home por papel", () => {
 
   it("admin vê a visão executiva de time (inalterada)", async () => {
     renderAs(fixtureAdminUser);
-    await screen.findByText("Painel de Capacidades de Arquitetura");
-    expect(screen.getByText("Arquitetos")).toBeTruthy();
+    await screen.findByText("Painel de Capacidades");
+    expect(screen.getByText("Profissionais")).toBeTruthy();
   });
 
   it("member vê 'Minha Evolução', não a visão de time", async () => {
     renderAs(fixtureMemberUser);
     await screen.findByText("Minha Evolução");
-    expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
-    expect(screen.queryByText("Arquitetos")).toBeNull();
+    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
+    expect(screen.queryByText("Profissionais")).toBeNull();
     expect(await screen.findByText("Meu PDI")).toBeTruthy();
   });
 
@@ -152,21 +152,21 @@ describe("Painel — Home por papel", () => {
   it("lead sem pessoa atribuída vê o estado vazio, não a visão de time", async () => {
     renderAs(fixtureLeadOfAna, scopedFixtureStateFor(fixtureLeadOfAna));
     await screen.findByText("Pendências do Lead");
-    expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
+    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
     expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
   });
 
   it("gestor vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
     renderAsLeaderOfAna(fixtureGestorDeAna);
     await screen.findByText("Pendências do Lead");
-    expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
+    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
     expect(await screen.findByText(/ADR-014/)).toBeTruthy();
   });
 
   it("tech lead vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
     renderAsLeaderOfAna(fixtureTechLeadDeAna);
     await screen.findByText("Pendências do Lead");
-    expect(screen.queryByText("Painel de Capacidades de Arquitetura")).toBeNull();
+    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
     expect(await screen.findByText(/ADR-014/)).toBeTruthy();
   });
 

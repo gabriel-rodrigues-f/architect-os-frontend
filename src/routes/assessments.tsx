@@ -43,7 +43,8 @@ export const Route = createFileRoute("/assessments")({
       { property: "og:title", content: "Avaliações — Synapse" },
       {
         property: "og:description",
-        content: "Conduza assessments de competências com comentários do arquiteto e do Tech Lead.",
+        content:
+          "Conduza assessments de competências com comentários do profissional e do Tech Lead.",
       },
     ],
   }),

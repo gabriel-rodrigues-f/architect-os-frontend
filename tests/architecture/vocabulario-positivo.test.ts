@@ -48,6 +48,20 @@ import pt from "@/locales/pt.json";
  * (`arquiteto-de-solucoes-i|ii|iii`) são identificadores, ficam, e a catraca
  * não os lê: ela reprova só o NOME numerado, em pt e em en, nos valores dos
  * dicionários, nos literais de `src/` e nas fixtures de `tests/helpers/`.
+ *
+ * Terceira palavra, mesmo mecanismo (dono, onda 35, 2026-09-02, item 5):
+ * "'Cadastrar Arquiteto' → 'Cadastrar profissional'. Não estamos mais lidando
+ * com uma aplicação somente de arquitetos. agora utilizaremos para todos os
+ * times técnicos de maneira agnóstica." A pessoa é "profissional" — em pt e
+ * em en — e o time não se chama mais "de Arquitetura" nos títulos ("Painel
+ * de Capacidades", "liderança do time"). A régua reprova "arquiteto(a)(s)" e
+ * "architect(s)" como PALAVRA, nunca "arquitetura"/"architecture": o tipo de
+ * evidência "Desenho de arquitetura" é atividade técnica, não o nome do time.
+ * Identificador continua fora: a rota `/architects`, as chaves `asmt.architect`
+ * e os ids de nível `arquiteto-de-solucoes-i|ii|iii` são endereço, não
+ * vocabulário — por isso em `src/` só a palavra PORTUGUESA é varrida (a
+ * inglesa vive em todo literal de rota e chave de tradução). As exceções de
+ * `src/` estão nomeadas uma a uma em EXCECOES_DE_SRC, com o motivo.
  */
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
@@ -59,6 +73,25 @@ const PALAVRA_PROIBIDA_NAS_DUAS_LINGUAS = /lacuna/i;
 const ANGLICISMO_PROIBIDO_NAS_DUAS_LINGUAS = /\bgaps?\b/i;
 const NIVEL_NUMERADO_EM_PORTUGUES = /Arquiteto de Solu(?:ç|c)(?:ões|oes)\s+(?:I{1,3}|IV|[1-4])\b/i;
 const NIVEL_NUMERADO_EM_INGLES = /Solutions? Architect\s+(?:I{1,3}|IV|[1-4])\b/i;
+const PESSOA_DO_TIME_ANTIGO_EM_PORTUGUES = /\barquitet[oa]s?\b/i;
+const PESSOA_DO_TIME_ANTIGO_EM_INGLES = /\barchitects?\b/i;
+const QUALIFICADOR_DO_TIME_ANTIGO_EM_PORTUGUES =
+  /\b(?:Lideran[çc]a|Capacidades|Radar) de Arquitetura\b/i;
+const QUALIFICADOR_DO_TIME_ANTIGO_EM_INGLES =
+  /\bArchitecture (?:Leadership|Capabilit(?:y|ies)|Radar)\b/i;
+
+/**
+ * Literais de `src/` que ainda dizem "arquiteto", cada um com o motivo de
+ * existir. Linha aqui é dívida declarada com dono, nunca atalho: pagar a
+ * dívida exige tirá-la da lista.
+ */
+const EXCECOES_DE_SRC: ReadonlyArray<{ readonly onde: string; readonly motivo: string }> = [
+  {
+    onde: join("src", "lib", "gateways", "team-allocation.gateway.ts"),
+    motivo:
+      "oráculo em memória de ARCHITECT_NOT_FOUND: espelha a mensagem do backend (CONTRATO: as mensagens PT-BR são contrato); muda quando o backend renomear a entidade",
+  },
+];
 
 const ARQUIVOS_GERADOS = [
   join("src", "lib", "api-contract.gen.ts"),
@@ -199,5 +232,55 @@ describe("nível de carreira agnóstico — 'Júnior/II/III' não volta", () => 
 
   it("a varredura das fixtures lê alguma coisa — se vier vazia, a catraca é decorativa", () => {
     expect(textosDasFixtures.ocorrencias.length).toBeGreaterThan(50);
+  });
+});
+
+describe("time agnóstico — 'arquiteto' não volta ao texto de usuário", () => {
+  it("nenhum valor do pt.json chama a pessoa de 'arquiteto' nem o time de 'de Arquitetura'", () => {
+    const dicionario = new Dicionario("pt", pt, [
+      PESSOA_DO_TIME_ANTIGO_EM_PORTUGUES,
+      QUALIFICADOR_DO_TIME_ANTIGO_EM_PORTUGUES,
+    ]);
+    expect(dicionario.infratoras).toEqual([]);
+  });
+
+  it("nenhum valor do en.json chama a pessoa de 'architect' nem o time de 'Architecture …'", () => {
+    const dicionario = new Dicionario("en", en, [
+      PESSOA_DO_TIME_ANTIGO_EM_INGLES,
+      QUALIFICADOR_DO_TIME_ANTIGO_EM_INGLES,
+    ]);
+    expect(dicionario.infratoras).toEqual([]);
+  });
+
+  it("nenhum literal de src/ diz 'arquiteto' fora das exceções nomeadas — meta description e texto cru inclusos", () => {
+    const foraDasExcecoes = textosDaFonte
+      .infratoras(PESSOA_DO_TIME_ANTIGO_EM_PORTUGUES)
+      .filter(
+        (ocorrencia) =>
+          !EXCECOES_DE_SRC.some((excecao) => ocorrencia.onde.startsWith(excecao.onde)),
+      );
+    expect(foraDasExcecoes).toEqual([]);
+  });
+
+  it("toda exceção de src/ ainda existe — exceção sem infrator é lista que só cresce", () => {
+    const infratoras = textosDaFonte.infratoras(PESSOA_DO_TIME_ANTIGO_EM_PORTUGUES);
+    const mortas = EXCECOES_DE_SRC.filter(
+      (excecao) => !infratoras.some((ocorrencia) => ocorrencia.onde.startsWith(excecao.onde)),
+    );
+    expect(mortas).toEqual([]);
+  });
+
+  it("a régua da pessoa não confunde 'arquitetura' (atividade) com 'arquiteto' (pessoa)", () => {
+    expect(PESSOA_DO_TIME_ANTIGO_EM_PORTUGUES.test("Desenho de arquitetura")).toBe(false);
+    expect(PESSOA_DO_TIME_ANTIGO_EM_INGLES.test("Architecture review")).toBe(false);
+    expect(PESSOA_DO_TIME_ANTIGO_EM_PORTUGUES.test("Cadastrar arquiteto")).toBe(true);
+    expect(PESSOA_DO_TIME_ANTIGO_EM_PORTUGUES.test("Arquiteto(a) adicionado(a)")).toBe(true);
+    expect(PESSOA_DO_TIME_ANTIGO_EM_INGLES.test("Add architect")).toBe(true);
+    expect(
+      QUALIFICADOR_DO_TIME_ANTIGO_EM_PORTUGUES.test("Painel de Capacidades de Arquitetura"),
+    ).toBe(true);
+    expect(QUALIFICADOR_DO_TIME_ANTIGO_EM_INGLES.test("Architecture Capability Dashboard")).toBe(
+      true,
+    );
   });
 });

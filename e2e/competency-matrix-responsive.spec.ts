@@ -96,7 +96,7 @@ for (const viewport of VIEWPORTS) {
     await page.locator("#email").fill(ADMIN_EMAIL!);
     await page.locator("#password").fill(ADMIN_PASSWORD!);
     await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
-    await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible();
+    await expect(page.getByText("Painel de Capacidades")).toBeVisible();
 
     await page.goto("/competency-matrix");
     // O card da capacidade nasce recolhido — a busca força a expansão do

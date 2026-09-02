@@ -60,15 +60,15 @@ describe("o mapa de calor mora em um lugar só", () => {
 
   it("o Painel do admin não desenha mais a matriz pessoa × capacidade", async () => {
     renderWithApp(<DashboardPage />);
-    await screen.findByText("Painel de Capacidades de Arquitetura");
+    await screen.findByText("Painel de Capacidades");
 
     expect(screen.queryByTestId("heatmap-scroll")).toBeNull();
-    expect(screen.queryByRole("columnheader", { name: "Arquiteto" })).toBeNull();
+    expect(screen.queryByRole("columnheader", { name: "Profissional" })).toBeNull();
   });
 
   it("o Painel do admin mantém a cobertura da avaliação do ciclo, que não é cópia de ninguém", async () => {
     renderWithApp(<DashboardPage />);
-    await screen.findByText("Painel de Capacidades de Arquitetura");
+    await screen.findByText("Painel de Capacidades");
 
     expect(screen.getByText(/Avaliação do ciclo:/)).toBeTruthy();
   });

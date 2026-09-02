@@ -80,7 +80,7 @@ describe("Time — cadastro sem dado fabricado", () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
-    await userEvent.click(screen.getByRole("button", { name: "Cadastrar arquiteto" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar profissional" }));
     const salvar = screen.getByRole("button", { name: "Salvar" });
     expect((salvar as HTMLButtonElement).disabled).toBe(true);
 
@@ -90,7 +90,7 @@ describe("Time — cadastro sem dado fabricado", () => {
     await userEvent.type(screen.getByLabelText("E-mail"), "nova.pessoa@company.com");
     expect((salvar as HTMLButtonElement).disabled).toBe(true);
 
-    await userEvent.type(screen.getByLabelText("Tempo como arquiteto (anos)"), "2");
+    await userEvent.type(screen.getByLabelText("Tempo de experiência (anos)"), "2");
     expect((salvar as HTMLButtonElement).disabled).toBe(false);
   });
 
@@ -98,10 +98,10 @@ describe("Time — cadastro sem dado fabricado", () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
-    await userEvent.click(screen.getByRole("button", { name: "Cadastrar arquiteto" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar profissional" }));
     await userEvent.type(screen.getByLabelText("Nome"), "Nova Pessoa");
     await userEvent.type(screen.getByLabelText("E-mail"), "nova.pessoa@company.com");
-    await userEvent.type(screen.getByLabelText("Tempo como arquiteto (anos)"), "2");
+    await userEvent.type(screen.getByLabelText("Tempo de experiência (anos)"), "2");
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
 
     const isCreateCall = (call: unknown[]) => {

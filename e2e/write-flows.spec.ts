@@ -359,7 +359,7 @@ test("Tech Lead registra uma evidência na ficha do liderado", async ({ page }) 
 });
 
 test("Admin adiciona um código ao vocabulário de tipos de evidência", async ({ page }) => {
-  await login(page, ADMIN_EMAIL!, ADMIN_PASSWORD!, "Painel de Capacidades de Arquitetura");
+  await login(page, ADMIN_EMAIL!, ADMIN_PASSWORD!, "Painel de Capacidades");
 
   await page.goto("/settings");
   await expect(page.getByText("Vocabulários", { exact: true })).toBeVisible();
