@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,13 +10,15 @@ import {
   PageHeader,
   SectionCard,
   SectionGroup,
+  SingleSelectFilter,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
+import { teamsApi } from "@/lib/api";
 import { LEVELS, type CareerLevel } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
-import { ProgressionMinimumPresenter } from "@/lib/presenters";
+import { ProgressionMinimumPresenter, ProgressionPolicyScope } from "@/lib/presenters";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadershipReach } from "@/lib/route-guards";
@@ -165,9 +168,36 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
 
   const floor = useOperationalSettings().careerMinimumQualifiedFloor;
   const { t } = useI18n();
+  const user = useCurrentUser();
+  const canChooseTeam = defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user);
+  const teamsQuery = useQuery({
+    queryKey: ["teams"],
+    queryFn: teamsApi.teams,
+    staleTime: 60_000,
+    enabled: canChooseTeam,
+  });
+  const [teamChoice, setTeamChoice] = useState(ProgressionPolicyScope.ALL_TEAMS_CHOICE);
+  const teams = ProgressionPolicyScope.choosable(teamsQuery.data ?? [], (teamId) =>
+    defaultUiAuthorizationPolicy.canConfigureRulesOf(user, teamId),
+  );
+  const scope = ProgressionPolicyScope.fromChoice(teamChoice, teams);
 
   return (
     <SectionCard title={t("policy.title")} description={t("policy.subtitle")}>
+      {teams.length > 0 && (
+        <div className="mb-4 max-w-xs">
+          <SingleSelectFilter
+            id="policy-team"
+            label={t("policy.team")}
+            value={scope.choice}
+            onChange={setTeamChoice}
+            options={[
+              { value: ProgressionPolicyScope.ALL_TEAMS_CHOICE, label: t("policy.team.all") },
+              ...teams.map((team) => ({ value: team.id, label: team.name })),
+            ]}
+          />
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[420px] text-sm">
           <thead>
@@ -184,9 +214,13 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
           <tbody>
             {careerLevels.map((level) => (
               <CareerPolicyRow
-                key={level.id}
+                key={`${scope.choice}:${level.id}`}
                 level={level}
-                minimum={ProgressionMinimumPresenter.forCareerLevel(store.teamLevelRules, level.id)}
+                minimum={ProgressionMinimumPresenter.forCareerLevel(
+                  store.teamLevelRules,
+                  level.id,
+                  scope,
+                )}
                 floor={floor}
                 readyCapabilities={readyCapabilities}
                 isAdmin={isAdmin}
@@ -212,7 +246,7 @@ function CareerPolicyRow({
   readyCapabilities: number;
   isAdmin: boolean;
 }) {
-  const rule = minimum.soleTeamRule;
+  const editableTeamId = minimum.editableTeamId;
   const store = useStore();
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
@@ -231,8 +265,10 @@ function CareerPolicyRow({
   const unreachableMinimum = minimum.unreachableMinimum(readyCapabilities);
 
   const save = async () => {
-    if (!canSave || !rule) return;
-    const result = await run(() => store.defineTeamRuleMinimum(rule.teamId, level.id, draftValue));
+    if (!canSave || editableTeamId === undefined) return;
+    const result = await run(() =>
+      store.defineTeamRuleMinimum(editableTeamId, level.id, draftValue),
+    );
     if (result.ok) {
       notifySuccess("msg.career.teamRule.define.success", { nome: level.name }, result.value);
       setEditing(false);
@@ -285,7 +321,7 @@ function CareerPolicyRow({
                 disabled={saving}
                 onClick={() => {
                   setEditing(false);
-                  setDraft(String(minimum ?? floor));
+                  setDraft(String(minimum.agreedMinimum ?? floor));
                   clearError();
                 }}
               >
@@ -297,12 +333,12 @@ function CareerPolicyRow({
             </div>
           ) : (
             <>
-              {rule && (
+              {editableTeamId !== undefined && (
                 <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
                   {t("common.edit")}
                 </Button>
               )}
-              {!rule && (
+              {editableTeamId === undefined && (
                 <p className="text-xs text-muted-foreground">{t("policy.row.perTeamRule")}</p>
               )}
             </>
@@ -325,7 +361,13 @@ function CareerPolicyHint({
   const { t } = useI18n();
   const reading = minimum.reading;
 
-  if (reading.kind === "absent") return <>{t("policy.row.hint.absent", { nivel: level.name })}</>;
+  if (reading.kind === "absent") {
+    return minimum.team ? (
+      <>{t("policy.row.hint.absentForTeam", { time: minimum.team.name, nivel: level.name })}</>
+    ) : (
+      <>{t("policy.row.hint.absent", { nivel: level.name })}</>
+    );
+  }
   if (reading.kind === "divergent") {
     return (
       <>
