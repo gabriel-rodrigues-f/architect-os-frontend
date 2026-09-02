@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   CrossTabIdleActivity,
-  defaultIdleSessionBudget,
   IdleSessionBudget,
   IdleSessionMonitor,
   IdleSessionWatch,
@@ -49,17 +48,33 @@ class RegistroDeFases {
 const MINUTO = 60_000;
 const INICIO = new Date("2026-08-31T09:00:00.000Z").getTime();
 
-describe("orçamento de ociosidade — as duas constantes, juntas e nomeadas", () => {
-  it("o padrão da casa é o orçamento TOTAL de 10 minutos: aviso aos 9, fim aos 10", () => {
-    expect(defaultIdleSessionBudget.warnAfterIdleMinutes).toBe(9);
-    expect(defaultIdleSessionBudget.endAfterIdleMinutes).toBe(10);
-    expect(defaultIdleSessionBudget.warnAfterMs).toBe(9 * MINUTO);
-    expect(defaultIdleSessionBudget.endAfterMs).toBe(10 * MINUTO);
+describe("orçamento de ociosidade — um número configurado, o aviso derivado dele", () => {
+  /**
+   * ONDA 31 — o dono quer o tempo configurável pelo administrador, piso 5.
+   * A constante `defaultIdleSessionBudget` morreu: o orçamento nasce do
+   * `session.idleTimeoutMinutes` servido, e o aviso é SEMPRE timeout − 1.
+   */
+  it("o padrão da casa (10) nasce do timeout: aviso aos 9, fim aos 10", () => {
+    const padrao = IdleSessionBudget.fromIdleTimeoutMinutes(10);
+    expect(padrao.warnAfterIdleMinutes).toBe(9);
+    expect(padrao.endAfterIdleMinutes).toBe(10);
+    expect(padrao.warnAfterMs).toBe(9 * MINUTO);
+    expect(padrao.endAfterMs).toBe(10 * MINUTO);
+  });
+
+  it("no piso do dono (5), o aviso aparece aos 4 e o fim aos 5", () => {
+    const piso = IdleSessionBudget.fromIdleTimeoutMinutes(5);
+    expect(piso.phaseAfter(4 * MINUTO - 1)).toBe("active");
+    expect(piso.phaseAfter(4 * MINUTO)).toBe("warning");
+    expect(piso.phaseAfter(5 * MINUTO - 1)).toBe("warning");
+    expect(piso.phaseAfter(5 * MINUTO)).toBe("ended");
   });
 
   /** "1 minuto após a mensagem" — a folga é a diferença, não uma terceira constante. */
-  it("a folga entre o aviso e o fim é 1 minuto, derivada — não é constante solta", () => {
-    expect(defaultIdleSessionBudget.graceMs).toBe(MINUTO);
+  it("a folga entre o aviso e o fim é 1 minuto, derivada — qualquer que seja o timeout", () => {
+    for (const minutos of [5, 7, 10, 30]) {
+      expect(IdleSessionBudget.fromIdleTimeoutMinutes(minutos).graceMs, `${minutos}`).toBe(MINUTO);
+    }
   });
 
   it("a fase é função pura do tempo ocioso, nunca de um timer que disparou", () => {

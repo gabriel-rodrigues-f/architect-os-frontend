@@ -1,32 +1,45 @@
-import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { configurationCatalog } from "./configuration-queries";
 import {
   CrossTabIdleActivity,
-  defaultIdleSessionBudget,
+  IdleSessionBudget,
   IdleSessionMonitor,
   IdleSessionWatch,
-  type IdleSessionBudget,
   type IdleSessionPhase,
 } from "./idle-session";
+import { EffectiveOperationalSettings } from "./operational-settings";
 
 export function useIdleSession({
   active,
   onEnd,
-  budget = defaultIdleSessionBudget,
 }: {
   active: boolean;
   onEnd: () => void;
-  budget?: IdleSessionBudget;
 }): IdleSessionPhase {
   const [phase, setPhase] = useState<IdleSessionPhase>("active");
   const endSession = useRef(onEnd);
+
+  const { data: idleTimeoutMinutes } = useQuery({
+    ...configurationCatalog.operationalSettings.options,
+    select: (loaded) => EffectiveOperationalSettings.resolve(loaded).sessionIdleTimeoutMinutes,
+  });
+
+  const budget = useMemo(
+    () =>
+      idleTimeoutMinutes === undefined
+        ? null
+        : IdleSessionBudget.fromIdleTimeoutMinutes(idleTimeoutMinutes),
+    [idleTimeoutMinutes],
+  );
 
   useEffect(() => {
     endSession.current = onEnd;
   }, [onEnd]);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || budget === null) {
       setPhase("active");
       return;
     }
