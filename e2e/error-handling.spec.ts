@@ -113,8 +113,10 @@ test("member acessando /calibration direto pela URL vê o aviso de restrição, 
   // QA da onda 17, achado bloqueante: no acesso direto o beforeLoad não roda
   // no cliente (SSR + hidratação) e a tela abria INTEIRA, com o dado do
   // gateway em memória. O twin de /users acima: a tela é a última barreira.
+  // PRD-03: a leitura é de gestor E administrador — o texto da negativa
+  // mudou junto com o alcance (`calibration.restricted`).
   await page.goto("/calibration");
-  await expect(page.getByText("Calibração é restrita a administradores.")).toBeVisible();
+  await expect(page.getByText("Calibração é restrita a gestores e administradores.")).toBeVisible();
   await expect(page.getByText("Marina Lopes")).toHaveCount(0);
   await expect(page.getByText("Média geral")).toHaveCount(0);
 });
