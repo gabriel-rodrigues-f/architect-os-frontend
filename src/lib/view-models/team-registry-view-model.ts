@@ -1,8 +1,8 @@
-import { ApiError } from "../api-errors";
+import { ApiError, UserFacingError } from "../api-errors";
 import type { Architect } from "../domain";
 import type { SessionUser, TeamMemberRole } from "../gateways/auth.gateway";
 import { TeamMemberRoles } from "../gateways/auth.gateway";
-import type { TeamMembershipBond, TeamSummary } from "../gateways/teams.gateway";
+import type { TeamSummary } from "../gateways/teams.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
 
 export const TEAM_STATUS_FILTERS = ["active", "inactive", "all"] as const;
@@ -29,41 +29,6 @@ export class TeamDeactivationRefusal {
   }
 }
 
-export class SessionBondLedger {
-  private constructor(private readonly bonds: readonly TeamMembershipBond[]) {}
-
-  static empty(): SessionBondLedger {
-    return new SessionBondLedger([]);
-  }
-
-  bondsOf(teamId: string): TeamMembershipBond[] {
-    return this.bonds.filter((bond) => bond.teamId === teamId);
-  }
-
-  withBond(bond: TeamMembershipBond): SessionBondLedger {
-    return new SessionBondLedger([
-      ...this.without(bond.teamId, bond.userId, bond.role),
-      { teamId: bond.teamId, userId: bond.userId, role: bond.role },
-    ]);
-  }
-
-  withReassignedBond(previousRole: TeamMemberRole, bond: TeamMembershipBond): SessionBondLedger {
-    return new SessionBondLedger(this.without(bond.teamId, bond.userId, previousRole)).withBond(
-      bond,
-    );
-  }
-
-  withoutBond(teamId: string, userId: string, role: TeamMemberRole): SessionBondLedger {
-    return new SessionBondLedger(this.without(teamId, userId, role));
-  }
-
-  private without(teamId: string, userId: string, role: TeamMemberRole): TeamMembershipBond[] {
-    return this.bonds.filter(
-      (bond) => !(bond.teamId === teamId && bond.userId === userId && bond.role === role),
-    );
-  }
-}
-
 export class TeamRegistryViewModel {
   constructor(private readonly policy: UiAuthorizationPolicy) {}
 
@@ -83,6 +48,22 @@ export class TeamRegistryViewModel {
     return TeamMemberRoles.ALL.filter(
       (role) => role !== TeamMemberRoles.MANAGER || this.policy.isAdmin(user),
     );
+  }
+
+  canAlterBondWithRole(user: SessionUser, role: TeamMemberRole): boolean {
+    return this.membershipRolesOfferedTo(user).includes(role);
+  }
+
+  rolesToMoveTo(user: SessionUser, currentRole: TeamMemberRole): TeamMemberRole[] {
+    return this.membershipRolesOfferedTo(user).filter((role) => role !== currentRole);
+  }
+
+  rosterQueryKey(teamId: string): readonly ["team-roster", string] {
+    return ["team-roster", teamId];
+  }
+
+  readingFailureOf(error: unknown): string | null {
+    return error instanceof UserFacingError ? error.message : null;
   }
 
   reachableTeams(user: SessionUser, teams: readonly TeamSummary[]): TeamSummary[] {

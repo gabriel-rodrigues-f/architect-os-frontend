@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import {
   Callout,
   ConfirmDialog,
+  DataOriginCallout,
   EmptyState,
   PageHeader,
   QuerySection,
@@ -23,21 +24,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
-import { authApi, teamsApi, type SessionUser } from "@/lib/api";
+import { authApi, teamRosterApi, teamsApi, type SessionUser } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { TeamMemberRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
+import type { TeamRosterMember } from "@/lib/gateways/team-roster.gateway";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
-import {
-  SessionBondLedger,
-  TeamRegistryViewModel,
-  TeamStatusFilters,
-  type TeamStatusFilter,
-} from "@/lib/view-models";
+import { TeamRegistryViewModel, TeamStatusFilters, type TeamStatusFilter } from "@/lib/view-models";
 
 export const Route = createFileRoute("/teams")({
   beforeLoad: requireLeadReach,
@@ -47,7 +44,7 @@ export const Route = createFileRoute("/teams")({
       {
         name: "description",
         content:
-          "Cadastro de times: quem é o gestor, o tech lead e as pessoas de cada um, com os vínculos que o serviço confirma.",
+          "Cadastro de times: quem é o gestor, o tech lead e as pessoas de cada um, com os vínculos que o serviço registra.",
       },
     ],
   }),
@@ -56,6 +53,12 @@ export const Route = createFileRoute("/teams")({
 
 const TEAMS_QUERY_KEY = ["teams"] as const;
 const ACCOUNTS_QUERY_KEY = ["auth-users"] as const;
+
+const ROLE_BADGE_TONE: Record<TeamMemberRole, "done" | "progress" | "neutral"> = {
+  manager: "done",
+  tech_lead: "progress",
+  member: "neutral",
+};
 
 function useTeamRegistryViewModel(): TeamRegistryViewModel {
   return useMemo(() => new TeamRegistryViewModel(defaultUiAuthorizationPolicy), []);
@@ -78,7 +81,6 @@ function TeamsPage() {
   const [refusal, setRefusal] = useState<{ team: TeamSummary; activeArchitects: number } | null>(
     null,
   );
-  const [ledger, setLedger] = useState(() => SessionBondLedger.empty());
   const { error: deactivationError, run: runDeactivation } = useAsyncSubmit(
     t("teams.deactivate.error"),
   );
@@ -161,8 +163,6 @@ function TeamsPage() {
 
       <QuerySection
         query={teamsQuery}
-        title={t("teams.list.title")}
-        description={t("teams.list.subtitle")}
         errorMessage={t("teams.error.load")}
         skeleton={<p className="text-sm text-muted-foreground">{t("teams.loading")}</p>}
       >
@@ -181,14 +181,7 @@ function TeamsPage() {
                 onDeactivate={setDeactivating}
               />
               {chosen && (
-                <TeamRoster
-                  key={chosen.id}
-                  team={chosen}
-                  user={user}
-                  registry={registry}
-                  ledger={ledger}
-                  onLedgerChange={setLedger}
-                />
+                <TeamRoster key={chosen.id} team={chosen} user={user} registry={registry} />
               )}
             </div>
           );
@@ -255,80 +248,85 @@ function TeamTable({
   const { t } = useI18n();
   const store = useStore();
 
-  if (teams.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("teams.list.empty")}</p>;
-  }
-
   return (
-    <SectionCard title={t("teams.list.title")} description={t("teams.list.subtitle")}>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th scope="col" className="py-2">
-                {t("teams.col.name")}
-              </th>
-              <th scope="col" className="py-2">
-                {t("teams.col.status")}
-              </th>
-              <th scope="col" className="py-2">
-                {t("teams.col.people")}
-              </th>
-              <th scope="col" className="py-2">
-                {t("teams.col.actions")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {teams.map((team) => (
-              <tr key={team.id} className="border-b border-border/60 last:border-0">
-                <td className="py-2 font-medium">{team.name}</td>
-                <td className="py-2">
-                  <StatusBadge
-                    tone={team.active ? "done" : "neutral"}
-                    label={team.active ? t("teams.badge.active") : t("teams.badge.inactive")}
-                  />
-                </td>
-                <td className="py-2 tabular-nums">
-                  {registry.activePeopleOf(team.id, store.architects).length}
-                </td>
-                <td className="py-2">
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      aria-label={t("teams.roster.actionFor", { nome: team.name })}
-                      onClick={() => onRoster(team)}
-                    >
-                      {t("teams.roster.action")}
-                    </Button>
-                    {canAdminister && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        aria-label={t("teams.rename.actionFor", { nome: team.name })}
-                        onClick={() => onRename(team)}
-                      >
-                        {t("teams.rename.action")}
-                      </Button>
-                    )}
-                    {canAdminister && team.active && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        aria-label={t("teams.deactivate.actionFor", { nome: team.name })}
-                        onClick={() => onDeactivate(team)}
-                      >
-                        {t("teams.deactivate.action")}
-                      </Button>
-                    )}
-                  </div>
-                </td>
+    <SectionCard
+      title={t("teams.list.title")}
+      description={t("teams.list.subtitle")}
+      collapsible
+      storageKey="teams.registry"
+    >
+      {teams.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("teams.list.empty")}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm" aria-label={t("teams.list.title")}>
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th scope="col" className="py-2">
+                  {t("teams.col.name")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("teams.col.status")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("teams.col.people")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("teams.col.actions")}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {teams.map((team) => (
+                <tr key={team.id} className="border-b border-border/60 last:border-0">
+                  <td className="py-2 font-medium">{team.name}</td>
+                  <td className="py-2">
+                    <StatusBadge
+                      tone={team.active ? "done" : "neutral"}
+                      label={team.active ? t("teams.badge.active") : t("teams.badge.inactive")}
+                    />
+                  </td>
+                  <td className="py-2 tabular-nums">
+                    {registry.activePeopleOf(team.id, store.architects).length}
+                  </td>
+                  <td className="py-2">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        aria-label={t("teams.roster.actionFor", { nome: team.name })}
+                        onClick={() => onRoster(team)}
+                      >
+                        {t("teams.roster.action")}
+                      </Button>
+                      {canAdminister && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label={t("teams.rename.actionFor", { nome: team.name })}
+                          onClick={() => onRename(team)}
+                        >
+                          {t("teams.rename.action")}
+                        </Button>
+                      )}
+                      {canAdminister && team.active && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label={t("teams.deactivate.actionFor", { nome: team.name })}
+                          onClick={() => onDeactivate(team)}
+                        >
+                          {t("teams.deactivate.action")}
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </SectionCard>
   );
 }
@@ -337,20 +335,16 @@ function TeamRoster({
   team,
   user,
   registry,
-  ledger,
-  onLedgerChange,
 }: {
   team: TeamSummary;
   user: SessionUser;
   registry: TeamRegistryViewModel;
-  ledger: SessionBondLedger;
-  onLedgerChange: (ledger: SessionBondLedger) => void;
 }) {
   const { t } = useI18n();
   const store = useStore();
+  const queryClient = useQueryClient();
   const canReadDirectory = registry.canReadAccountDirectory(user);
   const people = registry.activePeopleOf(team.id, store.architects);
-  const bonds = ledger.bondsOf(team.id);
 
   const accountsQuery = useQuery({
     queryKey: ACCOUNTS_QUERY_KEY,
@@ -359,15 +353,19 @@ function TeamRoster({
     enabled: canReadDirectory,
   });
   const accounts = registry.linkableAccounts(accountsQuery.data ?? []);
-  const accountName = (userId: string): string =>
-    (accountsQuery.data ?? []).find((account) => account.id === userId)?.name ?? userId;
+  const reloadRoster = () =>
+    queryClient.invalidateQueries({ queryKey: registry.rosterQueryKey(team.id) });
 
   return (
     <SectionCard
       title={t("teams.roster.title", { nome: team.name })}
       description={t("teams.roster.subtitle")}
+      collapsible
+      storageKey="teams.roster"
     >
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="space-y-4">
+        <TeamRosterRows team={team} user={user} registry={registry} onChanged={reloadRoster} />
+
         <SectionCard
           title={t("teams.roster.people.title")}
           description={t("teams.roster.people.subtitle")}
@@ -385,30 +383,6 @@ function TeamRoster({
             </ul>
           )}
         </SectionCard>
-
-        <SectionCard
-          title={t("teams.roster.bonds.title")}
-          description={t("teams.roster.bonds.subtitle")}
-        >
-          {bonds.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("teams.roster.bonds.empty")}</p>
-          ) : (
-            <ul className="space-y-1 text-sm">
-              {bonds.map((bond) => (
-                <li
-                  key={`${bond.userId}:${bond.role}`}
-                  className="flex items-center justify-between gap-2"
-                >
-                  <span className="font-medium">{accountName(bond.userId)}</span>
-                  <StatusBadge
-                    tone={bond.role === TeamMemberRoles.MANAGER ? "done" : "progress"}
-                    label={t(`users.role.${bond.role}`)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
       </div>
 
       {canReadDirectory ? (
@@ -416,8 +390,7 @@ function TeamRoster({
           team={team}
           accounts={accounts}
           roles={registry.membershipRolesOfferedTo(user)}
-          ledger={ledger}
-          onLedgerChange={onLedgerChange}
+          onChanged={reloadRoster}
         />
       ) : (
         <Callout tone="warning" className="mt-4">
@@ -428,53 +401,276 @@ function TeamRoster({
   );
 }
 
+function TeamRosterRows({
+  team,
+  user,
+  registry,
+  onChanged,
+}: {
+  team: TeamSummary;
+  user: SessionUser;
+  registry: TeamRegistryViewModel;
+  onChanged: () => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
+  const [releasing, setReleasing] = useState<TeamRosterMember | null>(null);
+  const [reassigning, setReassigning] = useState<TeamRosterMember | null>(null);
+  const { error, run } = useAsyncSubmit(t("teams.membership.error"));
+
+  const rosterQuery = useQuery({
+    queryKey: registry.rosterQueryKey(team.id),
+    queryFn: () => teamRosterApi.rosterOf(team.id),
+    staleTime: 30_000,
+  });
+
+  const release = async (member: TeamRosterMember) => {
+    setReleasing(null);
+    const result = await run(() =>
+      teamsApi.releaseTeamMembership(team.id, member.userId, member.role),
+    );
+    if (!result.ok) return;
+    await onChanged();
+    notifySuccess("teams.membership.released");
+  };
+
+  const roleLabel = (role: TeamMemberRole) => t(`users.role.${role}`);
+
+  const rows = () => {
+    if (rosterQuery.isPending) {
+      return <p className="text-sm text-muted-foreground">{t("teams.roster.rows.loading")}</p>;
+    }
+    if (rosterQuery.isError || rosterQuery.data === undefined) {
+      return (
+        <>
+          <p className="text-sm text-destructive" role="alert">
+            {registry.readingFailureOf(rosterQuery.error) ?? t("teams.roster.rows.error")}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2"
+            onClick={() => void rosterQuery.refetch()}
+          >
+            {t("common.retry")}
+          </Button>
+        </>
+      );
+    }
+    const roster = rosterQuery.data;
+    return (
+      <>
+        <DataOriginCallout origin={roster.dataOrigin} className="mb-3" />
+        {roster.reading === "unavailable" ? (
+          <Callout tone="warning">{t("teams.roster.rows.unavailable")}</Callout>
+        ) : roster.members.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("teams.roster.rows.empty")}</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table
+              className="w-full min-w-[640px] text-sm"
+              aria-label={t("teams.roster.rows.title")}
+            >
+              <thead>
+                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th scope="col" className="py-2">
+                    {t("teams.roster.col.person")}
+                  </th>
+                  <th scope="col" className="py-2">
+                    {t("teams.roster.col.email")}
+                  </th>
+                  <th scope="col" className="py-2">
+                    {t("teams.roster.col.role")}
+                  </th>
+                  <th scope="col" className="py-2">
+                    {t("teams.roster.col.actions")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {roster.members.map((member) => (
+                  <tr
+                    key={`${member.userId}:${member.role}`}
+                    className="border-b border-border/60 last:border-0"
+                  >
+                    <td className="py-2 font-medium">{member.name}</td>
+                    <td className="py-2 text-muted-foreground">{member.email}</td>
+                    <td className="py-2">
+                      <StatusBadge
+                        tone={ROLE_BADGE_TONE[member.role]}
+                        label={roleLabel(member.role)}
+                      />
+                    </td>
+                    <td className="py-2">
+                      {registry.canAlterBondWithRole(user, member.role) && (
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            aria-label={t("teams.membership.reassignFor", { nome: member.name })}
+                            onClick={() => setReassigning(member)}
+                          >
+                            {t("teams.membership.reassign")}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            aria-label={t("teams.membership.releaseFor", { nome: member.name })}
+                            onClick={() => setReleasing(member)}
+                          >
+                            {t("teams.membership.release")}
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <SectionCard title={t("teams.roster.rows.title")} description={t("teams.roster.rows.subtitle")}>
+      {rows()}
+      {error && (
+        <p className="mt-2 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+
+      <ConfirmDialog
+        open={releasing !== null}
+        title={releasing && t("teams.membership.releaseConfirmTitle", { nome: releasing.name })}
+        description={
+          releasing &&
+          t("teams.membership.releaseConfirmDescription", {
+            nome: releasing.name,
+            papel: roleLabel(releasing.role),
+          })
+        }
+        confirmLabel={t("teams.membership.release")}
+        onCancel={() => setReleasing(null)}
+        onConfirm={() => releasing && void release(releasing)}
+      />
+
+      {reassigning && (
+        <MembershipRoleDialog
+          team={team}
+          member={reassigning}
+          roles={registry.rolesToMoveTo(user, reassigning.role)}
+          onCancel={() => setReassigning(null)}
+          onMoved={async (bond) => {
+            await onChanged();
+            notifySuccess("msg.team.membership.reassign.success", {}, bond);
+            setReassigning(null);
+          }}
+        />
+      )}
+    </SectionCard>
+  );
+}
+
+function MembershipRoleDialog({
+  team,
+  member,
+  roles,
+  onCancel,
+  onMoved,
+}: {
+  team: TeamSummary;
+  member: TeamRosterMember;
+  roles: readonly TeamMemberRole[];
+  onCancel: () => void;
+  onMoved: (bond: unknown) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const [role, setRole] = useState<TeamMemberRole | "">("");
+  const { submitting, error, run } = useAsyncSubmit(t("teams.membership.error"));
+  const roleLabel = (value: TeamMemberRole) => t(`users.role.${value}`);
+
+  const move = () =>
+    run(async () => {
+      if (role === "") return;
+      const bond = await teamsApi.reassignTeamMembershipRole(
+        team.id,
+        member.userId,
+        member.role,
+        role,
+      );
+      await onMoved(bond);
+    });
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("teams.membership.reassignFor", { nome: member.name })}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          {t("teams.membership.reassignDescription", {
+            nome: member.name,
+            papel: roleLabel(member.role),
+          })}
+        </p>
+        <div className="grid gap-3">
+          <SingleSelectFilter
+            id={`team-membership-move-${team.id}-${member.userId}`}
+            label={t("teams.membership.newRole")}
+            value={role}
+            onChange={(value) => TeamMemberRoles.includes(value) && setRole(value)}
+            options={[
+              { value: "", label: t("teams.membership.chooseRole") },
+              ...roles.map((option) => ({ value: option, label: roleLabel(option) })),
+            ]}
+          />
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>
+            {t("common.cancel")}
+          </Button>
+          <Button disabled={role === "" || submitting} onClick={() => void move()}>
+            {t("teams.membership.reassign")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function MembershipForm({
   team,
   accounts,
   roles,
-  ledger,
-  onLedgerChange,
+  onChanged,
 }: {
   team: TeamSummary;
   accounts: readonly SessionUser[];
   roles: readonly TeamMemberRole[];
-  ledger: SessionBondLedger;
-  onLedgerChange: (ledger: SessionBondLedger) => void;
+  onChanged: () => Promise<void>;
 }) {
   const { t } = useI18n();
   const notifySuccess = useSuccessToast();
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState<TeamMemberRole>(roles[0] ?? "member");
-  const [newRole, setNewRole] = useState<TeamMemberRole>(roles[0] ?? "member");
   const { submitting, error, run } = useAsyncSubmit(t("teams.membership.error"));
 
-  const roleOptions = roles.map((option) => ({ value: option, label: t(`users.role.${option}`) }));
-  const chooseRole = (setter: (role: TeamMemberRole) => void) => (value: string) => {
-    if (TeamMemberRoles.includes(value)) setter(value);
-  };
   const ready = userId !== "" && !submitting;
 
   const assign = async () => {
     const result = await run(() => teamsApi.assignTeamMembership(team.id, userId, role));
     if (!result.ok) return;
-    onLedgerChange(ledger.withBond(result.value));
+    await onChanged();
+    setUserId("");
     notifySuccess("msg.team.membership.assign.success", {}, result.value);
-  };
-
-  const reassign = async () => {
-    const result = await run(() =>
-      teamsApi.reassignTeamMembershipRole(team.id, userId, role, newRole),
-    );
-    if (!result.ok) return;
-    onLedgerChange(ledger.withReassignedBond(role, result.value));
-    notifySuccess("msg.team.membership.reassign.success", {}, result.value);
-  };
-
-  const release = async () => {
-    const result = await run(() => teamsApi.releaseTeamMembership(team.id, userId, role));
-    if (!result.ok) return;
-    onLedgerChange(ledger.withoutBond(team.id, userId, role));
-    notifySuccess("teams.membership.released");
   };
 
   return (
@@ -498,33 +694,11 @@ function MembershipForm({
           id={`team-membership-role-${team.id}`}
           label={t("teams.membership.role")}
           value={role}
-          onChange={chooseRole(setRole)}
-          options={roleOptions}
+          onChange={(value) => TeamMemberRoles.includes(value) && setRole(value)}
+          options={roles.map((option) => ({ value: option, label: t(`users.role.${option}`) }))}
         />
-        <div className="flex gap-2">
-          <Button size="sm" disabled={!ready} onClick={() => void assign()}>
-            {t("teams.membership.assign")}
-          </Button>
-          <Button size="sm" variant="outline" disabled={!ready} onClick={() => void release()}>
-            {t("teams.membership.release")}
-          </Button>
-        </div>
-      </div>
-      <div className="mt-3 grid items-end gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-        <SingleSelectFilter
-          id={`team-membership-new-role-${team.id}`}
-          label={t("teams.membership.newRole")}
-          value={newRole}
-          onChange={chooseRole(setNewRole)}
-          options={roleOptions}
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!ready || newRole === role}
-          onClick={() => void reassign()}
-        >
-          {t("teams.membership.reassign")}
+        <Button size="sm" disabled={!ready} onClick={() => void assign()}>
+          {t("teams.membership.assign")}
         </Button>
       </div>
       {error && (
