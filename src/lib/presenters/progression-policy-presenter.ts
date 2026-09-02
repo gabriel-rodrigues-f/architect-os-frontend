@@ -10,19 +10,67 @@ export type ProgressionMinimumReading =
       readonly listed: string;
     };
 
+export interface ProgressionPolicyTeam {
+  readonly id: string;
+  readonly name: string;
+}
+
+export class ProgressionPolicyScope {
+  static readonly ALL_TEAMS_CHOICE = "todos-os-times";
+
+  private constructor(readonly team: ProgressionPolicyTeam | undefined) {}
+
+  static allTeams(): ProgressionPolicyScope {
+    return new ProgressionPolicyScope(undefined);
+  }
+
+  static ofTeam(team: ProgressionPolicyTeam): ProgressionPolicyScope {
+    return new ProgressionPolicyScope(team);
+  }
+
+  static fromChoice(
+    choice: string,
+    teams: readonly ProgressionPolicyTeam[],
+  ): ProgressionPolicyScope {
+    const team = teams.find((candidate) => candidate.id === choice);
+    return team ? ProgressionPolicyScope.ofTeam(team) : ProgressionPolicyScope.allTeams();
+  }
+
+  static choosable(
+    teams: readonly { id: string; name: string; active: boolean }[],
+    configurable: (teamId: string) => boolean,
+  ): ProgressionPolicyTeam[] {
+    return teams
+      .filter((team) => team.active && configurable(team.id))
+      .map((team) => ({ id: team.id, name: team.name }));
+  }
+
+  get choice(): string {
+    return this.team?.id ?? ProgressionPolicyScope.ALL_TEAMS_CHOICE;
+  }
+
+  includes(rule: TeamLevelRule): boolean {
+    return this.team === undefined || rule.teamId === this.team.id;
+  }
+}
+
 export class ProgressionMinimumPresenter {
   private readonly rules: readonly TeamLevelRule[];
+  private readonly scope: ProgressionPolicyScope;
 
-  private constructor(rules: readonly TeamLevelRule[]) {
+  private constructor(rules: readonly TeamLevelRule[], scope: ProgressionPolicyScope) {
     this.rules = rules;
+    this.scope = scope;
   }
 
   static forCareerLevel(
     teamLevelRules: readonly TeamLevelRule[],
     careerLevelId: string,
+    scope: ProgressionPolicyScope = ProgressionPolicyScope.allTeams(),
   ): ProgressionMinimumPresenter {
     return new ProgressionMinimumPresenter(
-      teamLevelRules.filter((rule) => rule.careerLevelId === careerLevelId),
+      teamLevelRules.filter((rule) => rule.careerLevelId === careerLevelId && scope.includes(rule)),
+      scope,
     );
   }
 
@@ -44,8 +92,16 @@ export class ProgressionMinimumPresenter {
     return reading.kind === "agreed" ? reading.minimum : undefined;
   }
 
+  get team(): ProgressionPolicyTeam | undefined {
+    return this.scope.team;
+  }
+
   get soleTeamRule(): TeamLevelRule | undefined {
     return this.rules.length === 1 ? this.rules[0] : undefined;
+  }
+
+  get editableTeamId(): string | undefined {
+    return this.scope.team?.id ?? this.soleTeamRule?.teamId;
   }
 
   unreachableMinimum(readyCapabilities: number): number | undefined {
