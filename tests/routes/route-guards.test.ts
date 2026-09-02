@@ -4,7 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionUser } from "@/lib/api";
 import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
-import { requireCalibrationReach, requireLeadReach } from "@/lib/route-guards";
+import {
+  requireCalibrationReach,
+  requireCareerFileReach,
+  requireLeadReach,
+  requireLeadershipReach,
+} from "@/lib/route-guards";
 import { SESSION_QUERY_KEY } from "@/lib/session-query";
 import {
   fixtureAdminUser,
@@ -103,8 +108,13 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
     );
   });
 
-  it("mantém o próprio perfil aberto para o member dono dele", async () => {
-    expect(await navegarComoUsuario(fixtureMemberUser, "/architects/ana")).toBe("/architects/ana");
+  /**
+   * Onda 31 — invertido pelo dono (2026-09-01): "eu não quero que o
+   * profissional veja seus números de avaliação". A própria ficha é o lugar
+   * onde esses números moram; o member é devolvido ao painel.
+   */
+  it("nega ao member o PRÓPRIO perfil — os números dele são lidos por quem o lidera", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/architects/ana")).toBe("/");
   });
 
   it("mantém qualquer perfil aberto para admin", async () => {
@@ -218,11 +228,97 @@ describe("requireCalibrationReach — a guarda da leitura de calibração", () =
 });
 
 /**
- * Onda 31 — `/teams`, o cadastro de times e o quadro de cada um. A rota
- * usa a MESMA `requireLeadReach` de `/team-rules`: alcança quem tem vínculo de
- * liderança; a distinção de PODER (só o gestor designado compõe o quadro) é
- * da tela, provada em `teams.test.tsx`.
+ * Onda 31 — pedido literal do dono (2026-09-01): "'Minha Carreira' pode ser
+ * removido da role do profissional" · "o profissional não pode ver os menus
+ * 'time' e 'política de Progressão'". Tirar do menu não fecha a URL (a
+ * lição da onda 17); estas são as guardas que fecham, e a metade de
+ * navegação delas. A ficha de um LIDERADO continua aberta para quem lidera:
+ * são as mesmas rotas, e o dono não pediu para quebrá-las.
  */
+const FICHA_DE_ANA = [
+  "/architects/ana",
+  "/architects/ana/evolution",
+  "/architects/ana/roadmap",
+  "/architects/ana/statement",
+];
+
+describe("o profissional não navega até os próprios números", () => {
+  it("nega /team ao member", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/team")).toBe("/");
+  });
+
+  it("nega /settings ao member", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/settings")).toBe("/");
+  });
+
+  it.each(FICHA_DE_ANA)("nega ao member a própria ficha em %s", async (href) => {
+    expect(await navegarComoUsuario(fixtureMemberUser, href)).toBe("/");
+  });
+
+  it("mantém /team e /settings para quem lidera, com ou sem vínculo, e para o admin", async () => {
+    for (const user of [
+      fixtureAdminUser,
+      fixtureAssignedTechLeadUser,
+      fixtureUnassignedTechLeadUser,
+    ]) {
+      expect(await navegarComoUsuario(user, "/team"), user.role).toBe("/team");
+      expect(await navegarComoUsuario(user, "/settings"), user.role).toBe("/settings");
+    }
+  });
+
+  it("mantém a ficha de um liderado aberta para o tech lead com vínculo — as rotas não quebram", async () => {
+    for (const href of FICHA_DE_ANA) {
+      expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, href), href).toBe(href);
+    }
+  });
+});
+
+async function alcancaLideranca(user: SessionUser): Promise<boolean> {
+  const queryClient = createAppQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, user);
+  try {
+    await requireLeadershipReach({ context: { queryClient } });
+    return true;
+  } catch (erro) {
+    if (isRedirect(erro)) return false;
+    throw erro;
+  }
+}
+
+async function alcancaFichaDe(user: SessionUser, architectId: string): Promise<boolean> {
+  const queryClient = createAppQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, user);
+  try {
+    await requireCareerFileReach({ context: { queryClient }, params: { architectId } });
+    return true;
+  } catch (erro) {
+    if (isRedirect(erro)) return false;
+    throw erro;
+  }
+}
+
+describe("requireLeadershipReach e requireCareerFileReach — as guardas do profissional", () => {
+  it("a liderança passa; o member não", async () => {
+    expect(await alcancaLideranca(fixtureMemberUser)).toBe(false);
+    expect(await alcancaLideranca(fixtureUnassignedTechLeadUser)).toBe(true);
+    expect(await alcancaLideranca(fixtureAssignedManagerUser)).toBe(true);
+    expect(await alcancaLideranca(fixtureAdminUser)).toBe(true);
+  });
+
+  it("a ficha PRÓPRIA é negada ao member; a de outra pessoa passa pela guarda e cai no recorte do servidor", async () => {
+    expect(await alcancaFichaDe(fixtureMemberUser, "ana")).toBe(false);
+    expect(await alcancaFichaDe(fixtureMemberUser, "bruno")).toBe(true);
+  });
+
+  it("quem lidera abre qualquer ficha, inclusive a própria quando tem arquiteto vinculado", async () => {
+    expect(await alcancaFichaDe(fixtureAssignedTechLeadUser, "ana")).toBe(true);
+    expect(
+      await alcancaFichaDe({ ...fixtureAssignedTechLeadUser, architectId: "ana" }, "ana"),
+    ).toBe(true);
+    expect(await alcancaFichaDe(fixtureAdminUser, "ana")).toBe(true);
+  });
+});
+
 describe("guardas de navegação do cadastro de times", () => {
   it("nega /teams ao member", async () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/teams")).toBe("/");
