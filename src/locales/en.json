@@ -1503,6 +1503,7 @@
   "msg.catalog.competency.delete.success": "Competency deleted.",
   "msg.career.teamRule.swapRequirement.success": "Requirement swapped on the team rule.",
   "msg.catalog.import.success": "Catalog imported: {capCriadas} capability(ies) created, {capAtualizadas} updated; {compCriadas} competency(ies) created, {compAtualizadas} updated.",
+  "msg.catalog.competency.bulkRemoval.success": "Bulk removal completed.",
   "msg.config.bands.update.success": "Ruler \"{escala}\" updated.",
   "msg.config.template.update.success": "Template \"{key}\" ({locale}) updated.",
   "msg.config.curationPolicy.update.success": "Catalog curation policy updated.",

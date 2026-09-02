@@ -820,6 +820,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/competencies/bulk-removal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        competencyIds: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/career-levels": {
         parameters: {
             query?: never;
@@ -1500,6 +1539,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         teamId: string;
+                        reason: string;
                     };
                 };
             };
@@ -3620,13 +3660,14 @@ export interface paths {
                         /**
                          * @default [
                          *       "careerLevelTransition",
+                         *       "teamTransition",
                          *       "competencyStep",
                          *       "evidence",
                          *       "developmentPlan",
                          *       "mentoring"
                          *     ]
                          */
-                        kinds?: ("careerLevelTransition" | "competencyStep" | "evidence" | "developmentPlan" | "mentoring")[];
+                        kinds?: ("careerLevelTransition" | "teamTransition" | "competencyStep" | "evidence" | "developmentPlan" | "mentoring")[];
                     };
                 };
             };
@@ -3673,13 +3714,14 @@ export interface paths {
                         /**
                          * @default [
                          *       "careerLevelTransition",
+                         *       "teamTransition",
                          *       "competencyStep",
                          *       "evidence",
                          *       "developmentPlan",
                          *       "mentoring"
                          *     ]
                          */
-                        kinds?: ("careerLevelTransition" | "competencyStep" | "evidence" | "developmentPlan" | "mentoring")[];
+                        kinds?: ("careerLevelTransition" | "teamTransition" | "competencyStep" | "evidence" | "developmentPlan" | "mentoring")[];
                     };
                 };
             };

@@ -101,43 +101,49 @@
     "catalog.capability.create.success": {
       "rota": "POST /capabilities",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 44,
+      "linha": 46,
       "resposta": "created"
     },
     "catalog.capability.delete.success": {
       "rota": "DELETE /capabilities/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 74,
+      "linha": 76,
       "resposta": "ok"
     },
     "catalog.capability.update.success": {
       "rota": "PATCH /capabilities/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 60,
+      "linha": 62,
+      "resposta": "ok"
+    },
+    "catalog.competency.bulkRemoval.success": {
+      "rota": "POST /competencies/bulk-removal",
+      "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
+      "linha": 149,
       "resposta": "ok"
     },
     "catalog.competency.create.success": {
       "rota": "POST /competencies",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 93,
+      "linha": 95,
       "resposta": "created"
     },
     "catalog.competency.delete.success": {
       "rota": "DELETE /competencies/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 134,
+      "linha": 136,
       "resposta": "ok"
     },
     "catalog.competency.update.success": {
       "rota": "PATCH /competencies/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 109,
+      "linha": 111,
       "resposta": "ok"
     },
     "catalog.import.success": {
       "rota": "POST /catalog/import",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 122,
+      "linha": 124,
       "resposta": "ok"
     },
     "config.bands.update.success": {
@@ -257,7 +263,7 @@
     "people.allocate.success": {
       "rota": "POST /architects/:id/team-allocation",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 155,
+      "linha": 156,
       "resposta": "ok"
     },
     "people.careerLevelTransition.success": {
@@ -281,7 +287,7 @@
     "people.release.success": {
       "rota": "DELETE /architects/:id/team-allocation",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 169,
+      "linha": 170,
       "resposta": "ok"
     },
     "people.update.success": {
