@@ -265,7 +265,7 @@ describe("activeArchitects", () => {
       {
         id: "carla",
         name: "Carla Inativa",
-        role: "Arquiteto de Soluções I",
+        role: "Júnior",
         yearsAsArchitect: 2,
         specialization: "Data",
         email: "carla@company.com",
@@ -384,7 +384,7 @@ describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
   const carla: AppState["architects"][number] = {
     id: "carla",
     name: "Carla Souza",
-    role: "Arquiteto de Soluções III",
+    role: "Sênior",
     yearsAsArchitect: 9,
     specialization: "Data",
     email: "carla@company.com",

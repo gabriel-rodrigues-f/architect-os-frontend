@@ -213,7 +213,7 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
     const architects: Architect[] = Array.from({ length: ARCHITECTS }, (_, i) => ({
       id: `arq-${i}`,
       name: `Arquiteto ${i}`,
-      role: "Arquiteto de Soluções II",
+      role: "Pleno",
       yearsAsArchitect: 5,
       specialization: "Integration",
       email: `arq-${i}@company.com`,

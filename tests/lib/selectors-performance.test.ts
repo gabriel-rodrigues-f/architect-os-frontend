@@ -47,7 +47,7 @@ function buildLargeState(): AppState {
   const architects: Architect[] = Array.from({ length: ARCHITECTS }, (_, i) => ({
     id: `arq-${i}`,
     name: `Arquiteto ${i}`,
-    role: "Arquiteto de Soluções II",
+    role: "Pleno",
     yearsAsArchitect: 5,
     specialization: "Arquitetura de Soluções",
     email: `arq-${i}@empresa.com`,

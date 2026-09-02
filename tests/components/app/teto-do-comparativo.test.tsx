@@ -29,7 +29,7 @@ import { I18nProvider } from "@/lib/i18n";
 const pessoa = (id: string, name: string): Architect => ({
   id,
   name,
-  role: "Arquiteto de Soluções II",
+  role: "Pleno",
   yearsAsArchitect: 3,
   specialization: "",
   email: `${id}@a.com`,

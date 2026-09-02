@@ -59,7 +59,7 @@ export const Route = createFileRoute("/architects/$architectId/")({
       { property: "og:title", content: "Architect Profile — Synapse" },
       {
         property: "og:description",
-        content: "Visão 360 do desenvolvimento técnico individual do Arquiteto de Soluções.",
+        content: "Visão 360 do desenvolvimento técnico individual do arquiteto.",
       },
     ],
   }),

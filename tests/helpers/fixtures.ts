@@ -90,9 +90,9 @@ export const fixtureAssignedManagerUser: SessionUser = {
  * este fixture.
  */
 export const fixtureCareerLevels = [
-  { id: "arquiteto-de-solucoes-i", name: "Arquiteto de Soluções I", rank: 1 },
-  { id: "arquiteto-de-solucoes-ii", name: "Arquiteto de Soluções II", rank: 2 },
-  { id: "arquiteto-de-solucoes-iii", name: "Arquiteto de Soluções III", rank: 3 },
+  { id: "arquiteto-de-solucoes-i", name: "Júnior", rank: 1 },
+  { id: "arquiteto-de-solucoes-ii", name: "Pleno", rank: 2 },
+  { id: "arquiteto-de-solucoes-iii", name: "Sênior", rank: 3 },
 ];
 
 /** O time da fixture — pós-Fase 2 o vínculo de escopo e da régua é o TIME. */
@@ -174,7 +174,7 @@ export const fixtureState: AppState = {
     {
       id: "ana",
       name: "Ana Martins",
-      role: "Arquiteto de Soluções II",
+      role: "Pleno",
       yearsAsArchitect: 6,
       specialization: "Integration",
       email: "ana@company.com",
@@ -185,7 +185,7 @@ export const fixtureState: AppState = {
     {
       id: "bruno",
       name: "Bruno Almeida",
-      role: "Arquiteto de Soluções I",
+      role: "Júnior",
       yearsAsArchitect: 3,
       specialization: "Cloud",
       email: "bruno@company.com",

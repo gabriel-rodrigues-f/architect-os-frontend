@@ -156,7 +156,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
         {
           id: "carla",
           name: "Carla Souza",
-          role: "Arquiteto de Soluções II",
+          role: "Pleno",
           yearsAsArchitect: 5,
           specialization: "Dados",
           email: "carla@company.com",

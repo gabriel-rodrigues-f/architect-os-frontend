@@ -137,7 +137,7 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
   it("404 TeamRuleNotFoundError vira 'ainda não tem régua', nunca erro de tela", async () => {
     renderAs(fixtureAdminUser, [semRegua]);
     expect(
-      await screen.findByText("Este time ainda não tem régua para Arquiteto de Soluções I.", {
+      await screen.findByText("Este time ainda não tem régua para Júnior.", {
         exact: false,
       }),
     ).toBeTruthy();

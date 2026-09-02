@@ -35,14 +35,26 @@ import pt from "@/locales/pt.json";
  * o nome; e em `src/` só lê literal de texto, nunca identificador. Em
  * `src/`, "gap" não é reprovado: `className="flex gap-2"` é Tailwind, e a
  * palavra inglesa isolada só vive nos literais de en.json.
+ *
+ * Segunda palavra, mesmo mecanismo (dono, 2026-09-02): "de modo geral em
+ * toda a solução eu não quero mais o conceito de Arquiteto de Soluções 1, 2
+ * ou 3. eu quero Junior, Pleno e Senior, isso vale para todos os times".
+ * O nome do nível é DADO — vem de `GET /career-levels` — e nunca deveria ter
+ * sido fixado em texto de tela, em tipo ou em fixture. Os IDS
+ * (`arquiteto-de-solucoes-i|ii|iii`) são identificadores, ficam, e a catraca
+ * não os lê: ela reprova só o NOME numerado, em pt e em en, nos valores dos
+ * dicionários, nos literais de `src/` e nas fixtures de `tests/helpers/`.
  */
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ = resolve(AQUI, "../..");
 const SRC = join(RAIZ, "src");
+const FIXTURES = join(RAIZ, "tests", "helpers");
 
 const PALAVRA_PROIBIDA_NAS_DUAS_LINGUAS = /lacuna/i;
 const PALAVRA_PROIBIDA_EM_INGLES = /\bgaps?\b/i;
+const NIVEL_NUMERADO_EM_PORTUGUES = /Arquiteto de Solu(?:ç|c)(?:ões|oes)\s+(?:I{1,3}|IV|[1-4])\b/i;
+const NIVEL_NUMERADO_EM_INGLES = /Solutions? Architect\s+(?:I{1,3}|IV|[1-4])\b/i;
 
 const ARQUIVOS_GERADOS = [
   join("src", "lib", "api-contract.gen.ts"),
@@ -122,6 +134,7 @@ class TextosDaFonte {
 }
 
 const textosDaFonte = TextosDaFonte.de(SRC);
+const textosDasFixtures = TextosDaFonte.de(FIXTURES);
 
 describe("vocabulário positivo — 'lacuna' não volta", () => {
   it("nenhum valor do pt.json diz 'lacuna'", () => {
@@ -150,5 +163,34 @@ describe("vocabulário positivo — 'lacuna' não volta", () => {
       ocorrencia.onde.startsWith(join("src", "routes")),
     );
     expect(metaDescriptions.length).toBeGreaterThan(20);
+  });
+});
+
+describe("nível de carreira agnóstico — 'Júnior/II/III' não volta", () => {
+  it("nenhum valor do pt.json numera o nível como 'Júnior/II/III'", () => {
+    const dicionario = new Dicionario("pt", pt, [NIVEL_NUMERADO_EM_PORTUGUES]);
+    expect(dicionario.infratoras).toEqual([]);
+  });
+
+  it("nenhum valor do en.json numera o nível — nem em português, nem como 'Solutions Architect I'", () => {
+    const dicionario = new Dicionario("en", en, [
+      NIVEL_NUMERADO_EM_PORTUGUES,
+      NIVEL_NUMERADO_EM_INGLES,
+    ]);
+    expect(dicionario.infratoras).toEqual([]);
+  });
+
+  it("nenhum literal de src/ fixa o nome numerado do nível — nem em tipo, nem em texto: o nome vem da API", () => {
+    expect(textosDaFonte.infratoras(NIVEL_NUMERADO_EM_PORTUGUES)).toEqual([]);
+    expect(textosDaFonte.infratoras(NIVEL_NUMERADO_EM_INGLES)).toEqual([]);
+  });
+
+  it("as fixtures de tests/helpers/ nascem com os nomes novos", () => {
+    expect(textosDasFixtures.infratoras(NIVEL_NUMERADO_EM_PORTUGUES)).toEqual([]);
+    expect(textosDasFixtures.infratoras(NIVEL_NUMERADO_EM_INGLES)).toEqual([]);
+  });
+
+  it("a varredura das fixtures lê alguma coisa — se vier vazia, a catraca é decorativa", () => {
+    expect(textosDasFixtures.ocorrencias.length).toBeGreaterThan(50);
   });
 });

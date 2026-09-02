@@ -114,13 +114,13 @@ describe("appStateSchema — role de arquiteto aceita nomes além dos 3 conhecid
     const withFourthLevelRole = {
       ...fixtureState,
       architects: [
-        { ...fixtureState.architects[0], role: "Arquiteto de Soluções IV" },
+        { ...fixtureState.architects[0], role: "Especialista" },
         ...fixtureState.architects.slice(1),
       ],
     };
     expect(() => appStateSchema.parse(withFourthLevelRole)).not.toThrow();
     const parsed = appStateSchema.parse(withFourthLevelRole);
-    expect(parsed.architects[0]?.role).toBe("Arquiteto de Soluções IV");
+    expect(parsed.architects[0]?.role).toBe("Especialista");
   });
 
   it("os 3 nomes conhecidos continuam validando normalmente", () => {

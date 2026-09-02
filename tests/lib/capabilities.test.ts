@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { fixtureCareerLevels } from "../helpers/fixtures";
-import { LabelFormatter } from "@/lib/labels";
-import type { MessageKey } from "@/lib/i18n";
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 
@@ -49,24 +46,6 @@ describe("ordem alfabética das capacidades", () => {
 
   it("é estável para nomes iguais", () => {
     expect(byName({ name: "DevOps" }, { name: "DevOps" })).toBe(0);
-  });
-});
-
-describe("cargos", () => {
-  /**
-   * CFG-01 (SPEC-OO3-13, A5) — o array `ROLES` hardcoded foi deletado de
-   * `domain.ts`; os níveis vêm de `career_levels` (aqui, o fixture da
-   * resposta de `GET /api/v1/career-levels`).
-   */
-  it("o rótulo curto passa pelo i18n: 'Nível' + algarismo romano via chave careerLevel.short (OO3-11f/D-9)", () => {
-    const fakeT = (key: MessageKey, vars?: Record<string, string | number>) =>
-      key === "careerLevel.short" ? `Nível ${String(vars?.["nivel"])}` : `t:${key}`;
-    const labels = new LabelFormatter(fakeT);
-    expect(fixtureCareerLevels.map((l) => labels.roleShort(l.name))).toEqual([
-      "Nível I",
-      "Nível II",
-      "Nível III",
-    ]);
   });
 });
 

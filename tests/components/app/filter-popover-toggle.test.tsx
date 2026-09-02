@@ -34,7 +34,7 @@ const architects: Architect[] = [
   {
     id: "ana",
     name: "Ana Martins",
-    role: "Arquiteto de Soluções II",
+    role: "Pleno",
     yearsAsArchitect: 4,
     specialization: "",
     email: "a@a.com",
@@ -44,7 +44,7 @@ const architects: Architect[] = [
   {
     id: "bruno",
     name: "Bruno Almeida",
-    role: "Arquiteto de Soluções I",
+    role: "Júnior",
     yearsAsArchitect: 2,
     specialization: "",
     email: "b@b.com",

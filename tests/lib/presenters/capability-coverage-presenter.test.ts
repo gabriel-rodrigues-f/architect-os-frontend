@@ -25,7 +25,7 @@ const capability = (id: string, active = true): Capability => ({
 const architect = (id: string): Architect => ({
   id,
   name: id,
-  role: "Arquiteto de Soluções I",
+  role: "Júnior",
   yearsAsArchitect: 1,
   specialization: "",
   email: `${id}@x`,

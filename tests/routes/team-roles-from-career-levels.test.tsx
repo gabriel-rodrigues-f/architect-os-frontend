@@ -35,7 +35,7 @@ import { apiPath } from "@/lib/api-path";
  */
 const fourLevels = [
   ...fixtureCareerLevels,
-  { id: "arquiteto-de-solucoes-iv", name: "Arquiteto de Soluções IV", rank: 4 },
+  { id: "arquiteto-de-solucoes-iv", name: "Especialista", rank: 4 },
 ];
 
 const fetchMock = vi.fn();
@@ -68,13 +68,13 @@ describe("Time — níveis de carreira vêm de career_levels, não de array fixo
     await userEvent.click(screen.getByRole("button", { name: "Cadastrar arquiteto" }));
     const select = (await screen.findByLabelText("Cargo")) as HTMLSelectElement;
     expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
-      "Arquiteto de Soluções I",
-      "Arquiteto de Soluções II",
-      "Arquiteto de Soluções III",
-      "Arquiteto de Soluções IV",
+      "Júnior",
+      "Pleno",
+      "Sênior",
+      "Especialista",
     ]);
     // O nível padrão do cadastro é o primeiro nível real (menor rank).
-    expect(select.value).toBe("Arquiteto de Soluções I");
+    expect(select.value).toBe("Júnior");
   });
 
   it("o diálogo de transição de nível oferece os 4 níveis carregados", async () => {
@@ -86,10 +86,10 @@ describe("Time — níveis de carreira vêm de career_levels, não de array fixo
     );
     const select = (await screen.findByLabelText("Novo nível")) as HTMLSelectElement;
     expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
-      "Arquiteto de Soluções I",
-      "Arquiteto de Soluções II",
-      "Arquiteto de Soluções III",
-      "Arquiteto de Soluções IV",
+      "Júnior",
+      "Pleno",
+      "Sênior",
+      "Especialista",
     ]);
   });
 
