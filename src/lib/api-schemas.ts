@@ -60,6 +60,15 @@ export const teamMembershipBondSchema = z.object({
   role: z.enum(["manager", "tech_lead", "member"]),
 });
 
+export const teamRosterMemberSchema = z.object({
+  userId: z.string(),
+  name: z.string(),
+  email: z.string(),
+  role: z.enum(["manager", "tech_lead", "member"]),
+});
+
+export const teamRosterResponseSchema = z.array(teamRosterMemberSchema);
+
 export const architectAdherenceResponseSchema = z.object({
   architectId: z.string(),
   teamId: z.string().nullable(),
