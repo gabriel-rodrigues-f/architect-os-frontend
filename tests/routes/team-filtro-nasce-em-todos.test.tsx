@@ -82,7 +82,7 @@ describe("/team — os filtros nascem em 'Todos', também depois do primeiro cad
     const dialogo = within(await screen.findByRole("dialog"));
     await userEvent.type(dialogo.getByLabelText("Nome"), "Primeira Pessoa");
     await userEvent.type(dialogo.getByLabelText("E-mail"), "primeira@company.com");
-    await userEvent.type(dialogo.getByLabelText(/Tempo como/), "3");
+    await userEvent.type(dialogo.getByLabelText(/Tempo de experiência/), "3");
     await userEvent.click(dialogo.getByRole("button", { name: "Salvar" }));
 
     expect(await screen.findByText("Primeira Pessoa")).toBeTruthy();

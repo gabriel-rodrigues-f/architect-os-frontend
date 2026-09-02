@@ -93,7 +93,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   it("com ciclo cadastrado, o Painel do admin continua o que era — sem a mensagem", async () => {
     prepararPainel(fixtureAdminUser, fixtureState);
 
-    expect(await screen.findByText("Painel de Capacidades de Arquitetura")).toBeTruthy();
+    expect(await screen.findByText("Painel de Capacidades")).toBeTruthy();
     expect(screen.queryByText(MENSAGEM)).toBeNull();
     expect(screen.queryByRole("link", { name: BOTAO })).toBeNull();
   });
