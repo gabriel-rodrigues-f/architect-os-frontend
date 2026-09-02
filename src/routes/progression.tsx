@@ -23,10 +23,13 @@ export const Route = createFileRoute("/progression")({
       { title: "Progressão — Synapse" },
       {
         name: "description",
-        content: "Mapa de calor de níveis e tabela de lacunas de progressão do time.",
+        content: "Mapa de calor de níveis e tabela de competências em evolução do time.",
       },
       { property: "og:title", content: "Progressão — Synapse" },
-      { property: "og:description", content: "Mapa de calor e tabela de lacunas do time." },
+      {
+        property: "og:description",
+        content: "Mapa de calor e tabela de competências em evolução do time.",
+      },
     ],
   }),
   component: ProgressionPage,
