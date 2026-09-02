@@ -18,6 +18,10 @@ import { HttpNoticesGateway, type NoticesGateway } from "./notices.gateway";
 import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
 import { HttpStateContextsGateway, type StateContextsGateway } from "./state-contexts.gateway";
 import { HttpTeamRosterGateway, type TeamRosterGateway } from "./team-roster.gateway";
+import {
+  HttpTeamTransitionsGateway,
+  type TeamTransitionsGateway,
+} from "./team-transitions.gateway";
 import { HttpTeamsGateway, type TeamsGateway } from "./teams.gateway";
 
 interface FrontendConfig {
@@ -46,6 +50,7 @@ export class FrontendContainer {
   readonly stateContextsGateway: StateContextsGateway;
   readonly teamRosterGateway: TeamRosterGateway;
   readonly teamsGateway: TeamsGateway;
+  readonly teamTransitionsGateway: TeamTransitionsGateway;
 
   private constructor(config: FrontendConfig) {
     this.sessionPolicy = new SessionPolicy();
@@ -73,6 +78,7 @@ export class FrontendContainer {
     );
     this.teamRosterGateway = new HttpTeamRosterGateway(this.apiClient);
     this.teamsGateway = new HttpTeamsGateway(this.apiClient);
+    this.teamTransitionsGateway = new HttpTeamTransitionsGateway(this.apiClient);
   }
 
   static create(config: FrontendConfig = {}): FrontendContainer {

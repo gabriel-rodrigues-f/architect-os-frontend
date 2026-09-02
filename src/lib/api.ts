@@ -24,6 +24,7 @@ const {
   stateContextsGateway,
   teamRosterGateway,
   teamsGateway,
+  teamTransitionsGateway,
 } = defaultContainer;
 
 export const api = {
@@ -49,6 +50,7 @@ export const noticesApi = { ...noticesGateway };
 export const reportsApi = { ...reportsGateway };
 export const teamsApi = { ...teamsGateway };
 export const teamRosterApi = { ...teamRosterGateway };
+export const teamTransitionsApi = { ...teamTransitionsGateway };
 
 export { sessionPolicy };
 
