@@ -52,7 +52,7 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
  * só este repositório está clonado.
  */
 
-const CODIGOS_ESPERADOS = 58;
+const CODIGOS_ESPERADOS = 60;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
@@ -87,18 +87,10 @@ const CODIGOS_SEM_TRADUCAO: readonly string[] = [
  * **Não apagar por conta própria.** As duas são o outro lado exato dos dois
  * códigos sem tradução: apagá-las ou renomeá-las é a mesma mudança de
  * contrato, e ela decide qual lado cede.
- *
- * `msg.people.allocate.success` e `msg.people.release.success` (onda 33,
- * fatia `time-recebe-pessoas`) são a metade consumidora de códigos que o
- * backend passa a emitir na MESMA onda (`POST/DELETE
- * /architects/:id/team-allocation`). Elas saem desta lista no `cp` do
- * fixture na integração — quando o código chegar, a chave deixa de ser morta.
  */
 const CHAVES_SEM_EMISSOR: readonly string[] = [
   "msg.user.create.success",
   "msg.user.update.success",
-  "msg.people.allocate.success",
-  "msg.people.release.success",
 ];
 
 const FALLBACK_GENERICO = "users.title" as MessageKey;
