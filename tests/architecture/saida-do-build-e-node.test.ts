@@ -49,4 +49,23 @@ describe("a saída do build é um servidor Node (K8S-02)", () => {
     expect(scripts["dev"]).toBe("vite dev");
   });
 
+  it("o Dockerfile existe, fala o idioma do backend e sobe o servidor Node na 3000", () => {
+    expect(existsSync(join(raizDoRepositorio, "Dockerfile"))).toBe(true);
+    const dockerfile = conteudoDe("Dockerfile");
+    expect(dockerfile).toMatch(/^FROM node:24-alpine AS build$/m);
+    expect(dockerfile).toMatch(/^FROM node:24-alpine AS runtime$/m);
+    expect(dockerfile).toMatch(/apk add --no-cache tini/);
+    expect(dockerfile).toMatch(/^USER node$/m);
+    expect(dockerfile).toMatch(/^EXPOSE 3000$/m);
+    expect(dockerfile).toMatch(/^HEALTHCHECK /m);
+    expect(dockerfile).toMatch(/^ENTRYPOINT \["\/sbin\/tini", "--"\]$/m);
+    expect(dockerfile).toMatch(/^CMD \["node", "\.output\/server\/index\.mjs"\]$/m);
+  });
+
+  it(".dockerignore mantém node_modules e .output do host fora do contexto da imagem", () => {
+    expect(existsSync(join(raizDoRepositorio, ".dockerignore"))).toBe(true);
+    const linhas = conteudoDe(".dockerignore").split("\n");
+    expect(linhas).toContain("node_modules");
+    expect(linhas).toContain(".output");
+  });
 });

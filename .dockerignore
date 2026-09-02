@@ -1,0 +1,17 @@
+node_modules
+.output
+.nitro
+.tanstack
+.wrangler
+.worktrees
+.git
+.env
+.env.*
+!.env.example
+*.log
+coverage
+dist
+e2e
+playwright-report
+test-results
+tests
