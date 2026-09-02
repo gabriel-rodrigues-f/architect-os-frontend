@@ -54,7 +54,7 @@ test.beforeAll(async ({ playwright }) => {
     await api.post(apiPath("/architects"), {
       data: {
         name: ARCHITECT_NAME,
-        role: "Arquiteto de Soluções I",
+        role: "Júnior",
         yearsAsArchitect: 1,
         specialization: "E2E",
         email: `${ARCHITECT_SEED}@architect-os.local`,

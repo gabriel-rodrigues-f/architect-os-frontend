@@ -48,7 +48,7 @@ test.beforeAll(async ({ playwright }) => {
   const created = await api.post(apiPath("/architects"), {
     data: {
       name: "E2E Régua de Filtros",
-      role: "Arquiteto de Soluções II",
+      role: "Pleno",
       yearsAsArchitect: 3,
       specialization: "E2E",
       email: ARCHITECT_EMAIL,
