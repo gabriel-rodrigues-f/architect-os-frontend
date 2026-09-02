@@ -28,6 +28,7 @@ function fakeService(): CatalogService & {
   addCompetency: ReturnType<typeof vi.fn>;
   updateCompetency: ReturnType<typeof vi.fn>;
   removeCompetency: ReturnType<typeof vi.fn>;
+  removeCompetencies: ReturnType<typeof vi.fn>;
 } {
   return {
     addCapability: vi.fn(async (input) => ({ ...input, id: "nova-capacidade" }) as Capability),
@@ -36,6 +37,7 @@ function fakeService(): CatalogService & {
     addCompetency: vi.fn(async (input) => ({ ...input, id: "nova-competencia" }) as Competency),
     updateCompetency: vi.fn(),
     removeCompetency: vi.fn(async () => ({ archived: false })),
+    removeCompetencies: vi.fn(async () => ({ outcomes: [] })),
   };
 }
 
