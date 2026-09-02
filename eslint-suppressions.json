@@ -401,7 +401,7 @@
   },
   "tests/lib/capabilities.test.ts": {
     "id-length": {
-      "count": 4
+      "count": 3
     }
   },
   "tests/lib/collections.test.ts": {

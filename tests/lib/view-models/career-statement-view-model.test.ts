@@ -29,8 +29,8 @@ const vm = () =>
 const transition: CareerLevelTransition = {
   id: "tr-1",
   architectId: "ana",
-  fromRole: "Arquiteto de Soluções I",
-  toRole: "Arquiteto de Soluções II",
+  fromRole: "Júnior",
+  toRole: "Pleno",
   actorUserId: "user-lead",
   reason: "Promoção do ciclo",
   occurredAt: "2026-03-10T12:00:00.000Z",

@@ -12,8 +12,7 @@ export const LEVELS: { level: Level }[] = [
   { level: 5 },
 ];
 
-export type RoleName =
-  "Arquiteto de Soluções I" | "Arquiteto de Soluções II" | "Arquiteto de Soluções III";
+export type RoleName = CareerLevel["name"];
 
 export interface CareerLevel {
   id: string;

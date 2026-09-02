@@ -32,7 +32,7 @@ const fetchMock = vi.fn();
 const carla: AppState["architects"][number] = {
   id: "carla",
   name: "Carla Souza",
-  role: "Arquiteto de Soluções II",
+  role: "Pleno",
   yearsAsArchitect: 5,
   specialization: "Segurança",
   email: "carla@company.com",

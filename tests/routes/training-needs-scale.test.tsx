@@ -46,7 +46,7 @@ const MANY_COMPETENCIES: Competency[] = Array.from({ length: 16 }, (_, i) => ({
 const carla: AppState["architects"][number] = {
   id: "carla",
   name: "Carla Souza",
-  role: "Arquiteto de Soluções II",
+  role: "Pleno",
   yearsAsArchitect: 5,
   specialization: "",
   email: "carla@company.com",

@@ -56,7 +56,7 @@ export const Route = createFileRoute("/competency-matrix")({
       { property: "og:title", content: "Matriz de Competências — Synapse" },
       {
         property: "og:description",
-        content: "Crie, edite e organize as competências esperadas de um Arquiteto de Soluções.",
+        content: "Crie, edite e organize as competências esperadas de um arquiteto.",
       },
     ],
   }),

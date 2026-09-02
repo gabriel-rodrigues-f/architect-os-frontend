@@ -126,7 +126,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
         {
           id: "carla",
           name: "Carla Souza",
-          role: "Arquiteto de Soluções III",
+          role: "Sênior",
           yearsAsArchitect: 8,
           specialization: "Cloud",
           email: "carla@company.com",

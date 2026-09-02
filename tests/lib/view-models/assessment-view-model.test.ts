@@ -66,7 +66,7 @@ const baseAssessment: Assessment = {
 const anaArchitect: Architect = {
   id: "ana",
   name: "Ana Martins",
-  role: "Arquiteto de Soluções I",
+  role: "Júnior",
   yearsAsArchitect: 2,
   specialization: "",
   email: "ana@company.com",

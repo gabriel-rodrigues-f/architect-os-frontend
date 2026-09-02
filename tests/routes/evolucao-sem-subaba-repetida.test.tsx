@@ -67,7 +67,7 @@ const resultado: ArchitectEvolutionResult = {
   architect: {
     id: "ana",
     name: "Ana Martins",
-    role: "Arquiteto de Soluções II",
+    role: "Pleno",
     careerLevelName: null,
   },
   summary: {

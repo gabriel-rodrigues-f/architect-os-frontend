@@ -51,8 +51,8 @@ const StatementPage = StatementRoute.options.component as () => ReactNode;
 const transition = {
   id: "tr-1",
   architectId: "ana",
-  fromRole: "Arquiteto de Soluções I",
-  toRole: "Arquiteto de Soluções II",
+  fromRole: "Júnior",
+  toRole: "Pleno",
   actorUserId: "user-lead",
   reason: "Promoção do ciclo",
   occurredAt: "2026-03-10T12:00:00.000Z",
@@ -77,7 +77,7 @@ const evolutionResult = {
   architect: {
     id: "ana",
     name: "Ana Martins",
-    role: "Arquiteto de Soluções II",
+    role: "Pleno",
     careerLevelName: null,
   },
   summary: {
@@ -164,11 +164,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
     });
     renderWithApp(<StatementPage />);
 
-    expect(
-      await screen.findByText(
-        "Transição de nível: Arquiteto de Soluções I → Arquiteto de Soluções II",
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByText("Transição de nível: Júnior → Pleno")).toBeTruthy();
     expect(screen.getByText("Evidência: ADR-014")).toBeTruthy();
     expect(screen.getByText("PDI aprovado")).toBeTruthy();
     expect(screen.getByText("Mentoria: Arquitetura de Eventos")).toBeTruthy();

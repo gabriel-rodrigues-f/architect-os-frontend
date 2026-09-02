@@ -117,7 +117,7 @@ describe("Time — cadastro sem dado fabricado", () => {
     expect(body["email"]).toBe("nova.pessoa@company.com");
     expect(body["yearsAsArchitect"]).toBe(2);
     // ENG-04 — o cargo vem do nível de carreira escolhido, nunca de um `?? ""`.
-    expect(body["role"]).toBe("Arquiteto de Soluções I");
+    expect(body["role"]).toBe("Júnior");
     expect(body).not.toHaveProperty("strongDomain");
     expect(body).not.toHaveProperty("gapDomain");
     expect(body).not.toHaveProperty("performance");

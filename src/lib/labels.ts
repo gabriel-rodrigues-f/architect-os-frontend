@@ -155,7 +155,7 @@ type LabelMaps = {
 export interface LabelFormatter extends LabelMaps {}
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging -- par do merge acima.
 export class LabelFormatter {
-  constructor(private readonly t: Translate) {
+  constructor(t: Translate) {
     Object.assign(
       this,
       Object.fromEntries(
@@ -165,10 +165,6 @@ export class LabelFormatter {
         ]),
       ),
     );
-  }
-
-  roleShort(role: string): string {
-    return this.t("careerLevel.short", { nivel: role.replace("Arquiteto de Soluções ", "") });
   }
 }
 

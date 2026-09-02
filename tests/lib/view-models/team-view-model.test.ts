@@ -33,7 +33,7 @@ function fakeService(): TeamRosterService & {
 
 const baseForm: ArchitectFormValues = {
   name: "Carla Nogueira",
-  role: "Arquiteto de Soluções I",
+  role: "Júnior",
   specialization: "",
   primarySpecializationCompetencyId: null,
   years: "2",
@@ -89,7 +89,7 @@ describe("TeamViewModel", () => {
         primarySpecializationCompetencyId: null,
         email: "carla@company.com",
         specialization: "",
-        role: "Arquiteto de Soluções I",
+        role: "Júnior",
         active: true,
       });
     });
@@ -175,12 +175,12 @@ describe("TeamViewModel", () => {
       const service = fakeService();
       const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
 
-      await vm.transitionCareerLevel("ana", "Arquiteto de Soluções III", "promoção do ciclo");
+      await vm.transitionCareerLevel("ana", "Sênior", "promoção do ciclo");
       await vm.deactivate("ana", "saiu da empresa");
 
       expect(service.transitionCareerLevel).toHaveBeenCalledWith(
         "ana",
-        "Arquiteto de Soluções III",
+        "Sênior",
         "promoção do ciclo",
       );
       expect(service.deactivate).toHaveBeenCalledWith("ana", "saiu da empresa");
@@ -192,9 +192,7 @@ describe("TeamViewModel", () => {
       service.deactivate.mockRejectedValueOnce(new Error("conflito"));
       const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
 
-      await expect(
-        vm.transitionCareerLevel("ana", "Arquiteto de Soluções III", "x"),
-      ).rejects.toThrow("conflito");
+      await expect(vm.transitionCareerLevel("ana", "Sênior", "x")).rejects.toThrow("conflito");
       await expect(vm.deactivate("ana", "x")).rejects.toThrow("conflito");
     });
   });
@@ -202,9 +200,9 @@ describe("TeamViewModel", () => {
 
 describe("emptyArchitectForm", () => {
   it("nasce vazio, com o role padrão recebido e sem fallback nenhum preenchido", () => {
-    expect(emptyArchitectForm("Arquiteto de Soluções I")).toEqual({
+    expect(emptyArchitectForm("Júnior")).toEqual({
       name: "",
-      role: "Arquiteto de Soluções I",
+      role: "Júnior",
       specialization: "",
       primarySpecializationCompetencyId: null,
       years: "",

@@ -37,7 +37,7 @@ const admin: SessionUser = {
 const carla: Architect = {
   id: "carla",
   name: "Carla Nunes",
-  role: "Arquiteto de Soluções I",
+  role: "Júnior",
   yearsAsArchitect: 2,
   specialization: "",
   email: "carla@company.com",

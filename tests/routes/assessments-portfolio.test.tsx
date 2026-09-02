@@ -45,8 +45,8 @@ const state: AppState = {
 };
 
 const eligibilityBase: AssessmentEligibility = {
-  currentCareerLevel: { id: "arquiteto-de-solucoes-ii", name: "Arquiteto de Soluções II", rank: 2 },
-  nextCareerLevel: { id: "arquiteto-de-solucoes-iii", name: "Arquiteto de Soluções III", rank: 3 },
+  currentCareerLevel: { id: "arquiteto-de-solucoes-ii", name: "Pleno", rank: 2 },
+  nextCareerLevel: { id: "arquiteto-de-solucoes-iii", name: "Sênior", rank: 3 },
   policy: { careerLevelId: "arquiteto-de-solucoes-iii", minimumQualifiedCapabilities: 3 },
   capabilities: [],
   qualifiedConfirmedCount: 0,

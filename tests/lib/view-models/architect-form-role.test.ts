@@ -31,9 +31,7 @@ describe("cadastro de arquiteto sem nível de carreira configurado", () => {
     const viewModel = new TeamViewModel(service() as unknown as Api, defaultUiAuthorizationPolicy);
 
     expect(viewModel.validate(filledForm()).canSubmit).toBe(false);
-    expect(viewModel.validate({ ...filledForm(), role: "Arquiteto de Soluções I" }).canSubmit).toBe(
-      true,
-    );
+    expect(viewModel.validate({ ...filledForm(), role: "Júnior" }).canSubmit).toBe(true);
   });
 
   it("recusa a criação em vez de mandar um cargo vazio para o servidor", async () => {

@@ -46,11 +46,6 @@ describe("LabelFormatter", () => {
     }
   });
 
-  it("roleShort traduz via careerLevel.short com o algarismo do nível (OO3-11f/D-9)", () => {
-    const withVars = new LabelFormatter((key, vars) => `${key}|${JSON.stringify(vars)}`);
-    expect(withVars.roleShort("Arquiteto de Soluções II")).toBe('careerLevel.short|{"nivel":"II"}');
-  });
-
   it("cada instância computa os mapas a partir do `t` recebido — duas instâncias com `t`s diferentes não compartilham estado", () => {
     const other = new LabelFormatter((key) => `outro:${key}`);
     expect(other.planStatus.Draft).toBe("outro:status.draft");
