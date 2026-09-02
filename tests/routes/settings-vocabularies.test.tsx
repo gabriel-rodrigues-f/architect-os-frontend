@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
+);
+
 import { Route as SettingsRoute } from "@/routes/settings";
 import { fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
 import {
@@ -52,8 +56,8 @@ const countGets = (suffix: string) =>
   }).length;
 
 async function vocabularySection(): Promise<HTMLElement> {
-  // O nome técnico do vocabulário só aparece no bloco da aba (o glossário usa o rótulo traduzido).
-  const title = await screen.findByText("EVIDENCE_TYPE");
+  // Onda 35, item 14: o cabeçalho do bloco é o NOME do grupo, nunca o código técnico.
+  const title = await screen.findByText("Tipos de evidência");
   return title.closest("div.surface-inset") as HTMLElement;
 }
 
@@ -65,6 +69,41 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+});
+
+/**
+ * Onda 35, item 14 do dono (2026-09-02), literal: "Vocabulários mostram
+ * 'ACTION_TYPE' e 'Apply · actionType.apply' (código cru)." Pedido: texto
+ * humano — cabeçalho é o nome do grupo, a linha mostra o rótulo, e o código
+ * técnico fica só num "código: …" discreto com o resto no tooltip.
+ */
+describe("Vocabulários falam a língua de quem configura", () => {
+  it("nenhum bloco mostra o nome técnico do vocabulário como cabeçalho", async () => {
+    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, vocabulariesGetRoute] });
+    renderWithApp(<SettingsPage />);
+
+    await vocabularySection();
+    expect(screen.queryByText("EVIDENCE_TYPE")).toBeNull();
+    expect(screen.queryByText("LEARNING_ITEM_TYPE")).toBeNull();
+    expect(screen.queryByText("ACTION_TYPE")).toBeNull();
+    expect(screen.getByText("Tipos de ação do PDI")).toBeTruthy();
+    expect(screen.getByText("Tipos de item de trilha")).toBeTruthy();
+  });
+
+  it("a linha mostra o rótulo; o código vem discreto e a chave de rótulo só no tooltip", async () => {
+    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, vocabulariesGetRoute] });
+    renderWithApp(<SettingsPage />);
+
+    const block = await vocabularySection();
+    await waitFor(() => {
+      expect(within(block).getByText("código: ADR")).toBeTruthy();
+    });
+    expect(within(block).queryByText(/ADR · evidenceType\.adr · #1/)).toBeNull();
+    expect(within(block).queryByText(/evidenceType\.adr/)).toBeNull();
+    expect(within(block).getByText("código: ADR").getAttribute("title")).toContain(
+      "evidenceType.adr",
+    );
+  });
 });
 
 describe("Vocabulários (CFG-06 admin UI)", () => {

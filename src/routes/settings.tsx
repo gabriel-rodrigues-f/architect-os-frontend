@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,6 +10,7 @@ import {
   PageHeader,
   SectionCard,
   SectionGroup,
+  SectionHelp,
   SingleSelectFilter,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,11 @@ import { teamsApi } from "@/lib/api";
 import { LEVELS, type CareerLevel } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { useLabels } from "@/lib/labels";
-import { ProgressionMinimumPresenter, ProgressionPolicyScope } from "@/lib/presenters";
+import {
+  ProgressionMinimumPresenter,
+  ProgressionPolicyScope,
+  ReadyCompetencyShortfall,
+} from "@/lib/presenters";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadershipReach } from "@/lib/route-guards";
@@ -261,8 +266,10 @@ function CareerPolicyRow({
   const notifySuccess = useSuccessToast();
 
   const draftValue = Number(draft);
-  const canSave = Number.isInteger(draftValue) && draftValue >= floor;
-  const unreachableMinimum = minimum.unreachableMinimum(readyCapabilities);
+  const shortfall = editing
+    ? ReadyCompetencyShortfall.between(draftValue, readyCapabilities)
+    : minimum.shortfall(readyCapabilities);
+  const canSave = Number.isInteger(draftValue) && draftValue >= floor && !shortfall.blocksSaving;
 
   const save = async () => {
     if (!canSave || editableTeamId === undefined) return;
@@ -282,14 +289,7 @@ function CareerPolicyRow({
         <p className="text-xs text-muted-foreground">
           <CareerPolicyHint level={level} minimum={minimum} />
         </p>
-        {unreachableMinimum !== undefined && (
-          <p className="mt-1 text-xs text-destructive" role="alert">
-            {t("policy.row.warning", {
-              minimo: unreachableMinimum,
-              prontas: readyCapabilities,
-            })}
-          </p>
-        )}
+        <ReadyCompetencyShortfallNotice shortfall={shortfall} />
       </td>
       <td className="py-2 text-center">
         {editing ? (
@@ -346,6 +346,21 @@ function CareerPolicyRow({
         </td>
       )}
     </tr>
+  );
+}
+
+function ReadyCompetencyShortfallNotice({ shortfall }: { shortfall: ReadyCompetencyShortfall }) {
+  const { t } = useI18n();
+  if (!shortfall.blocksSaving) return null;
+  return (
+    <p className="mt-1 text-xs" role="alert">
+      <Link
+        to="/competency-matrix"
+        className="font-medium text-destructive underline underline-offset-2 hover:text-destructive/80"
+      >
+        {t(shortfall.messageKey, { n: shortfall.missing })}
+      </Link>
+    </p>
   );
 }
 
@@ -422,7 +437,11 @@ function ScoringBandsSection() {
   const { t } = useI18n();
 
   return (
-    <SectionCard title={t("config.bands.title")} description={t("config.bands.subtitle")}>
+    <SectionCard
+      title={t("config.bands.title")}
+      description={t("config.bands.subtitle")}
+      help={<SectionHelp section="bands" />}
+    >
       <div className="space-y-6">
         {SCORING_SCALES.map((scale) => (
           <ScoringScaleEditor key={scale} scale={scale} current={ruler.forScale(scale).bands} />
@@ -493,7 +512,10 @@ function ScoringScaleEditor({
   return (
     <div className="surface-inset p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium">{t(SCALE_TITLE_KEY[scale])}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium">{t(SCALE_TITLE_KEY[scale])}</p>
+          <SectionHelp section={`bands.${scale}`} />
+        </div>
         {editing ? (
           <div className="flex justify-end gap-1.5">
             <Button
@@ -637,7 +659,11 @@ function CurationPolicySection() {
   };
 
   return (
-    <SectionCard title={t("config.curation.title")} description={t("config.curation.subtitle")}>
+    <SectionCard
+      title={t("config.curation.title")}
+      description={t("config.curation.subtitle")}
+      help={<SectionHelp section="curation" />}
+    >
       <div className="surface-inset p-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium">{t("config.curation.policyTitle")}</p>
@@ -731,7 +757,11 @@ function TextTemplatesSection() {
   const { t } = useI18n();
 
   return (
-    <SectionCard title={t("config.templates.title")} description={t("config.templates.subtitle")}>
+    <SectionCard
+      title={t("config.templates.title")}
+      description={t("config.templates.subtitle")}
+      help={<SectionHelp section="templates" />}
+    >
       <div className="space-y-6">
         {TEXT_TEMPLATE_KEYS.map((key) => {
           const localeTemplates = Object.entries(templates[key]).sort(([a], [b]) =>
@@ -935,6 +965,7 @@ function OperationalSettingsSection() {
     <SectionCard
       title={t("config.operational.title")}
       description={t("config.operational.subtitle")}
+      help={<SectionHelp section="operational" />}
     >
       <div className="surface-inset p-3">
         <div className="flex items-center justify-between gap-2">
@@ -1050,7 +1081,11 @@ function VocabulariesSection() {
   const { t } = useI18n();
 
   return (
-    <SectionCard title={t("config.vocab.title")} description={t("config.vocab.subtitle")}>
+    <SectionCard
+      title={t("config.vocab.title")}
+      description={t("config.vocab.subtitle")}
+      help={<SectionHelp section="vocab" />}
+    >
       <div className="space-y-6">
         {VOCABULARY_NAMES.map((name) => (
           <VocabularyBlock key={name} name={name} items={vocabularies[name]} />
@@ -1119,9 +1154,9 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
   return (
     <div className="surface-inset p-3">
       <div className="flex items-center justify-between gap-2">
-        <div>
+        <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium">{t(VOCABULARY_TITLE_KEY[name])}</p>
-          <p className="text-xs text-muted-foreground">{name}</p>
+          <SectionHelp section={`vocab.${name}`} />
         </div>
         {draft === null && (
           <Button
@@ -1147,7 +1182,7 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
             >
               {isEditing ? (
                 <>
-                  <span className="font-medium">{item.code}</span>
+                  <span className="font-medium">{label(item.code)}</span>
                   <input
                     aria-label={t("config.vocab.editLabelKey", { code: item.code })}
                     className="min-w-0 flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
@@ -1195,8 +1230,14 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
                   >
                     {label(item.code)}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    {item.code} · {item.labelKey} · #{item.sortOrder}
+                  <span
+                    className="text-xs text-muted-foreground"
+                    title={t("config.vocab.technical", {
+                      labelKey: item.labelKey,
+                      sortOrder: item.sortOrder,
+                    })}
+                  >
+                    {t("config.vocab.code", { code: item.code })}
                   </span>
                   {!item.active && (
                     <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] uppercase">
