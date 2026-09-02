@@ -1,12 +1,19 @@
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AppState } from "@/lib/api";
-import type { TeamLevelRule } from "@/lib/domain";
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureAdminUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
-import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { fixtureAdminUser } from "../helpers/fixtures";
+import {
+  TIME_INTEGRACOES,
+  TIME_PLATAFORMA,
+  celulaDoMinimo,
+  estadoCom,
+  linhaDoNivel,
+  niveisDeCarreiraRoute,
+  regra,
+} from "../helpers/politica-de-progressao";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * O travessão da coluna "mínimo de capacidades qualificadas" tem de significar
@@ -17,41 +24,13 @@ import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/rende
  * membro alcançam um time só, recebem UMA régua, e veem o número. Os dois
  * perfis de maior alcance viam MENOS que os de menor alcance, na mesma tela,
  * e "duas réguas que concordam" ficava indistinguível de "nenhuma régua".
+ *
+ * Sem seletor de time acionado (onda 32), o padrão "Todos os times" mantém
+ * exatamente este agregado.
  */
 
 const fetchMock = vi.fn();
 const SettingsPage = SettingsRoute.options.component as () => ReactNode;
-
-const OUTRO_TIME = "time-integracoes";
-const NIVEL_I = "arquiteto-de-solucoes-i";
-
-const regra = (id: string, teamId: string, minimo: number): TeamLevelRule => ({
-  id,
-  teamId,
-  careerLevelId: NIVEL_I,
-  minimumQualifiedCapabilities: minimo,
-});
-
-/** O `/state` que o servidor manda para quem alcança N times. */
-const estadoCom = (regras: readonly TeamLevelRule[]): AppState => ({
-  ...fixtureState,
-  teamLevelRules: [
-    ...fixtureState.teamLevelRules.filter((rule) => rule.careerLevelId !== NIVEL_I),
-    ...regras,
-  ],
-});
-
-/** A célula do mínimo na linha do nível de carreira. */
-async function celulaDoMinimo(nivel = "Arquiteto de Soluções I"): Promise<HTMLElement> {
-  const nome = await screen.findByText(nivel);
-  const linha = nome.closest("tr") as HTMLTableRowElement;
-  return linha.querySelectorAll("td")[1] as HTMLElement;
-}
-
-async function linhaDoNivel(nivel = "Arquiteto de Soluções I"): Promise<HTMLTableRowElement> {
-  const nome = await screen.findByText(nivel);
-  return nome.closest("tr") as HTMLTableRowElement;
-}
 
 beforeEach(() => {
   fetchMock.mockReset();
@@ -68,10 +47,10 @@ describe("Política de Progressão com mais de um time no alcance", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
       state: estadoCom([
-        regra("regra-plataforma-i", fixtureTeamId, 3),
-        regra("regra-integracoes-i", OUTRO_TIME, 3),
+        regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
+        regra("regra-integracoes-i", TIME_INTEGRACOES, 3),
       ]),
-      routes: [careerLevelsRoute],
+      routes: [niveisDeCarreiraRoute],
     });
     renderWithApp(<SettingsPage />);
 
@@ -84,10 +63,10 @@ describe("Política de Progressão com mais de um time no alcance", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
       state: estadoCom([
-        regra("regra-plataforma-i", fixtureTeamId, 3),
-        regra("regra-integracoes-i", OUTRO_TIME, 5),
+        regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
+        regra("regra-integracoes-i", TIME_INTEGRACOES, 5),
       ]),
-      routes: [careerLevelsRoute],
+      routes: [niveisDeCarreiraRoute],
     });
     renderWithApp(<SettingsPage />);
 
@@ -108,10 +87,10 @@ describe("Política de Progressão com mais de um time no alcance", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
       state: estadoCom([
-        regra("regra-plataforma-i", fixtureTeamId, 3),
-        regra("regra-integracoes-i", OUTRO_TIME, 5),
+        regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
+        regra("regra-integracoes-i", TIME_INTEGRACOES, 5),
       ]),
-      routes: [careerLevelsRoute],
+      routes: [niveisDeCarreiraRoute],
     });
     renderWithApp(<SettingsPage />);
 
@@ -123,7 +102,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
       state: estadoCom([]),
-      routes: [careerLevelsRoute],
+      routes: [niveisDeCarreiraRoute],
     });
     renderWithApp(<SettingsPage />);
 
@@ -136,10 +115,10 @@ describe("Política de Progressão com mais de um time no alcance", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
       state: estadoCom([
-        regra("regra-plataforma-i", fixtureTeamId, 3),
-        regra("regra-integracoes-i", OUTRO_TIME, 3),
+        regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
+        regra("regra-integracoes-i", TIME_INTEGRACOES, 3),
       ]),
-      routes: [careerLevelsRoute],
+      routes: [niveisDeCarreiraRoute],
     });
     renderWithApp(<SettingsPage />);
 
@@ -151,8 +130,8 @@ describe("Política de Progressão com mais de um time no alcance", () => {
   it("com UMA régua o admin continua editando pela própria tela", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
-      state: estadoCom([regra("regra-plataforma-i", fixtureTeamId, 3)]),
-      routes: [careerLevelsRoute],
+      state: estadoCom([regra("regra-plataforma-i", TIME_PLATAFORMA, 3)]),
+      routes: [niveisDeCarreiraRoute],
     });
     renderWithApp(<SettingsPage />);
 
