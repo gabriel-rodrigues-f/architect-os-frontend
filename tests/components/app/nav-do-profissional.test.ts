@@ -49,8 +49,13 @@ const ANALISE_DO_TIME = [
   "/compare",
 ];
 
-/** Os dois menus que o dono tirou do profissional, nominalmente. */
-const MENUS_DA_LIDERANCA = ["/team", "/settings"];
+/**
+ * Os dois menus que o dono tirou do profissional, nominalmente — e, desde a
+ * onda 33, Ciclos: a revisão de PO (2026-09-02) mediu que a tela mostrava
+ * ao profissional "Nível final por ciclo: L4 → L5" competência a
+ * competência, o número que a decisão do dono manda esconder.
+ */
+const MENUS_DA_LIDERANCA = ["/team", "/settings", "/cycles"];
 
 describe("menu do profissional — os números dele não aparecem para ele", () => {
   it("o profissional não recebe 'Minha carreira' — nem endereçado, nem cru", () => {
@@ -146,7 +151,7 @@ describe("menu do profissional — o que não é dele some", () => {
 });
 
 describe("menu do profissional — nada que ele usa é levado junto", () => {
-  it("as seis telas que o profissional alcança de verdade continuam no menu", () => {
+  it("as cinco telas que o profissional alcança de verdade continuam no menu", () => {
     const dele = destinos(fixtureMemberUser);
     for (const destino of [
       "/",
@@ -154,13 +159,12 @@ describe("menu do profissional — nada que ele usa é levado junto", () => {
       "/development-plans",
       "/learning-paths",
       "/mentoring",
-      "/cycles",
     ]) {
       expect(dele, destino).toContain(destino);
     }
   });
 
-  it("o menu dele tem seis itens, e nenhum deles é de gestão de time nem de números dele", () => {
-    expect(destinos(fixtureMemberUser)).toHaveLength(6);
+  it("o menu dele tem cinco itens, e nenhum deles é de gestão de time nem de números dele", () => {
+    expect(destinos(fixtureMemberUser)).toHaveLength(5);
   });
 });

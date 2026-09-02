@@ -38,7 +38,11 @@ import { declaredReachByRoute, discoverRoutePaths, type DeclaredReach } from "./
  * Medido nesta fatia (2026-09-02): nenhuma das 11 rotas restritas
  * redireciona no acesso direto; todas negam na tela. Por isso a rede aceita
  * as DUAS formas de negativa e reprova a terceira: aterrissar na tela com o
- * conteúdo. Quem alcança, ao contrário, tem de ficar na URL. A tabela de
+ * conteúdo. Onda 33 (`profissional-sem-numeros`): `/cycles` entrou na
+ * régua da liderança e as cinco telas de análise do time ganharam a guarda
+ * `requireTeamAnalysisReach` — o profissional é REDIRECIONADO nelas na
+ * navegação interna e, no acesso direto, recebe a negativa da tela; as
+ * duas formas passam aqui, e a chave de cada negativa está no mapa abaixo. Quem alcança, ao contrário, tem de ficar na URL. A tabela de
  * quem alcança o quê é a do fixture de alcance por rota (`route-inventory.ts`
  * → `declaredReachByRoute`), nunca uma cópia aqui; o texto da negativa vem
  * do próprio `pt.json`, pela chave que cada tela usa.
@@ -85,6 +89,7 @@ const PAPEIS_QUE_ALCANCAM: Record<DeclaredReach, readonly string[]> = {
   "lead-com-vinculo": LIDERANCA,
   calibracao: ["admin", "manager"],
   lideranca: LIDERANCA,
+  "analise-de-time": LIDERANCA,
   "ficha-de-carreira": LIDERANCA,
 };
 
@@ -119,10 +124,16 @@ const NEGATIVA_NA_TELA: Readonly<Record<string, string>> = {
   "/architects/$architectId/roadmap": "arch.careerFile.ownOutOfReach",
   "/architects/$architectId/statement": "arch.careerFile.ownOutOfReach",
   "/calibration": "calibration.restricted",
+  "/capability-map": "cap.teamAnalysisOnly",
+  "/compare": "cap.teamAnalysisOnly",
+  "/cycles": "cycle.leadershipOnly",
+  "/gap-analysis": "cap.teamAnalysisOnly",
+  "/progression": "cap.teamAnalysisOnly",
   "/settings": "ref.leadershipOnly",
   "/team": "team.leadershipOnly",
   "/team-rules": "teamRules.leadOnly",
   "/teams": "teams.restricted",
+  "/training-needs": "cap.teamAnalysisOnly",
   "/users": "users.adminOnly",
 };
 

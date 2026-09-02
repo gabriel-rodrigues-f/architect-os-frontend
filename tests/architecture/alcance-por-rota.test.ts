@@ -90,6 +90,7 @@ type Alcance =
   | "lead-com-vinculo"
   | "calibracao"
   | "lideranca"
+  | "analise-de-time"
   | "ficha-de-carreira";
 type Negativa = "tela-nega" | "somente-leitura";
 
@@ -100,6 +101,7 @@ const ALCANCES: readonly Alcance[] = [
   "lead-com-vinculo",
   "calibracao",
   "lideranca",
+  "analise-de-time",
   "ficha-de-carreira",
 ];
 
@@ -109,6 +111,7 @@ const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
   "lead-com-vinculo": "requireLeadReach",
   calibracao: "requireCalibrationReach",
   lideranca: "requireLeadershipReach",
+  "analise-de-time": "requireTeamAnalysisReach",
   "ficha-de-carreira": "requireCareerFileReach",
 };
 
@@ -122,11 +125,12 @@ const TAMANHO_MINIMO_DA_JUSTIFICATIVA = 60;
 const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 const DISTRIBUICAO_ESPERADA = {
-  autenticado: 12,
+  autenticado: 6,
   admin: 2,
   "lead-com-vinculo": 2,
   calibracao: 1,
-  lideranca: 2,
+  lideranca: 3,
+  "analise-de-time": 5,
   "ficha-de-carreira": 4,
 };
 

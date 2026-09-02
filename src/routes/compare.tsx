@@ -9,12 +9,16 @@ import {
   type EvolutionSeries,
   LevelHeatCell,
   LevelScaleKey,
+  OutOfReachScreen,
   PageHeader,
   SectionCard,
   ViewToggle,
 } from "@/components/app";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireTeamAnalysisReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamList } from "@/hooks";
@@ -31,12 +35,33 @@ export const Route = createFileRoute("/compare")({
       { property: "og:description", content: "Radar sobreposto e tabela lado a lado por pessoa." },
     ],
   }),
+  beforeLoad: requireTeamAnalysisReach,
   component: ComparePage,
 });
 
 type ComparisonView = "radar" | "table";
 
 function ComparePage() {
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("compare");
+  const canAnalyzeTeam = defaultUiAuthorizationPolicy.canAnalyzeTeam(user);
+
+  if (!canAnalyzeTeam) {
+    return (
+      <OutOfReachScreen
+        title={t("compare.title")}
+        help={help}
+        reason={t("cap.teamAnalysisOnly")}
+        hint={t("cap.teamAnalysisOnlyHint")}
+      />
+    );
+  }
+
+  return <ProfessionalsComparison />;
+}
+
+function ProfessionalsComparison() {
   const { t } = useI18n();
   const help = usePageHelp("compare");
   const store = useStore();

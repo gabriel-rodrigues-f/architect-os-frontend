@@ -6,6 +6,7 @@ import {
   ArchitectSelectCombobox,
   ConfirmDialog,
   LevelBadge,
+  OutOfReachScreen,
   PageHeader,
   SectionCard,
 } from "@/components/app";
@@ -26,6 +27,8 @@ import { useLabels } from "@/lib/labels";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import type { CycleCadence } from "@/lib/operational-settings";
 import { usePageHelp } from "@/lib/page-help";
+import { requireLeadershipReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useOperationalSettings, useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 
@@ -45,10 +48,31 @@ export const Route = createFileRoute("/cycles")({
       },
     ],
   }),
+  beforeLoad: requireLeadershipReach,
   component: CyclesPage,
 });
 
 function CyclesPage() {
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("cycles");
+  const isLeadership = defaultUiAuthorizationPolicy.isLeadership(user);
+
+  if (!isLeadership) {
+    return (
+      <OutOfReachScreen
+        title={t("cycle.title")}
+        help={help}
+        reason={t("cycle.leadershipOnly")}
+        hint={t("cycle.leadershipOnlyHint")}
+      />
+    );
+  }
+
+  return <CycleAdministration />;
+}
+
+function CycleAdministration() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();

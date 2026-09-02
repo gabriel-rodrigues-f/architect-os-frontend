@@ -5,6 +5,7 @@ import {
   Callout,
   type CardsOrTable,
   EmptyState,
+  OutOfReachScreen,
   PageHeader,
   SectionCard,
   useCardsAndTableViews,
@@ -13,8 +14,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { Architect } from "@/lib/domain";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireTeamAnalysisReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useScoringBands, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 
@@ -35,10 +39,31 @@ export const Route = createFileRoute("/capability-map")({
       },
     ],
   }),
+  beforeLoad: requireTeamAnalysisReach,
   component: CapabilityMapPage,
 });
 
 function CapabilityMapPage() {
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("capabilityMap");
+  const canAnalyzeTeam = defaultUiAuthorizationPolicy.canAnalyzeTeam(user);
+
+  if (!canAnalyzeTeam) {
+    return (
+      <OutOfReachScreen
+        title={t("cap.title")}
+        help={help}
+        reason={t("cap.teamAnalysisOnly")}
+        hint={t("cap.teamAnalysisOnlyHint")}
+      />
+    );
+  }
+
+  return <TeamCapabilityCoverage />;
+}
+
+function TeamCapabilityCoverage() {
   const store = useStore();
   const sel = useSelectors();
   const { t } = useI18n();

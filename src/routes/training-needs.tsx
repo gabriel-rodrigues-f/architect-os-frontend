@@ -1,12 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { GapBadge, PageHeader, SectionCard, TruncationNotice } from "@/components/app";
+import {
+  GapBadge,
+  OutOfReachScreen,
+  PageHeader,
+  SectionCard,
+  TruncationNotice,
+} from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireTeamAnalysisReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Competency } from "@/lib/domain";
 import type { TrainingNeed } from "@/lib/selectors";
 import { useOperationalSettings, useSelectors, useStore } from "@/lib/store";
@@ -27,10 +35,31 @@ export const Route = createFileRoute("/training-needs")({
       },
     ],
   }),
+  beforeLoad: requireTeamAnalysisReach,
   component: TrainingNeedsPage,
 });
 
 function TrainingNeedsPage() {
+  const user = useCurrentUser();
+  const { t } = useI18n();
+  const help = usePageHelp("trainingNeeds");
+  const canAnalyzeTeam = defaultUiAuthorizationPolicy.canAnalyzeTeam(user);
+
+  if (!canAnalyzeTeam) {
+    return (
+      <OutOfReachScreen
+        title={t("needs.title")}
+        help={help}
+        reason={t("cap.teamAnalysisOnly")}
+        hint={t("cap.teamAnalysisOnlyHint")}
+      />
+    );
+  }
+
+  return <TeamTrainingNeeds />;
+}
+
+function TeamTrainingNeeds() {
   const store = useStore();
   const sel = useSelectors();
   const user = useCurrentUser();
