@@ -8,6 +8,10 @@ export class IdleSessionBudget {
     readonly endAfterIdleMinutes: number,
   ) {}
 
+  static fromIdleTimeoutMinutes(endAfterIdleMinutes: number): IdleSessionBudget {
+    return new IdleSessionBudget(endAfterIdleMinutes - 1, endAfterIdleMinutes);
+  }
+
   get warnAfterMs(): number {
     return this.warnAfterIdleMinutes * IdleSessionBudget.MINUTE_MS;
   }
@@ -26,8 +30,6 @@ export class IdleSessionBudget {
     return "active";
   }
 }
-
-export const defaultIdleSessionBudget = new IdleSessionBudget(9, 10);
 
 export interface IdleActivitySharing {
   subscribe(listener: (at: number) => void): void;

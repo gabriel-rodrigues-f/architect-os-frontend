@@ -1,17 +1,38 @@
-import type {
-  AppSettingKey,
-  AppSettingValue,
-  CycleCadence,
-  OperationalSettings,
+import {
+  EffectiveOperationalSettings,
+  type AppSettingKey,
+  type AppSettingValue,
+  type CycleCadence,
+  type OperationalSettings,
 } from "../operational-settings";
 
-export type OperationalNumberField = "floor" | "threshold";
+export type OperationalNumberField = "floor" | "threshold" | "idleTimeout";
 
-export const OPERATIONAL_NUMBER_FIELDS: readonly OperationalNumberField[] = ["floor", "threshold"];
+export const OPERATIONAL_NUMBER_FIELDS: readonly OperationalNumberField[] = [
+  "floor",
+  "threshold",
+  "idleTimeout",
+];
 
 const FIELD_TO_KEY: Record<OperationalNumberField, AppSettingKey> = {
   floor: "career.minimumQualifiedFloor",
   threshold: "training.collectiveInterventionThreshold",
+  idleTimeout: "session.idleTimeoutMinutes",
+};
+
+export const OPERATIONAL_FIELD_MINIMUM: Record<OperationalNumberField, number> = {
+  floor: 1,
+  threshold: 1,
+  idleTimeout: EffectiveOperationalSettings.sessionIdleTimeoutMinimumMinutes,
+};
+
+export type OperationalSettingsErrorKey =
+  "config.operational.error.number" | "config.operational.error.idleTimeout";
+
+const FIELD_ERROR_KEY: Record<OperationalNumberField, OperationalSettingsErrorKey> = {
+  floor: "config.operational.error.number",
+  threshold: "config.operational.error.number",
+  idleTimeout: "config.operational.error.idleTimeout",
 };
 
 export class OperationalSettingsEditor {
@@ -26,6 +47,7 @@ export class OperationalSettingsEditor {
     return new OperationalSettingsEditor(settings, settings.cycleCadence, {
       floor: String(settings.careerMinimumQualifiedFloor),
       threshold: String(settings.trainingCollectiveInterventionThreshold),
+      idleTimeout: String(settings.sessionIdleTimeoutMinutes),
     });
   }
 
@@ -44,20 +66,26 @@ export class OperationalSettingsEditor {
     return this.cadence !== this.baseline.cycleCadence;
   }
 
-  private parsedNumbers(): Record<OperationalNumberField, number> | null {
-    const values = {} as Record<OperationalNumberField, number>;
+  private firstInvalidField(): OperationalNumberField | null {
     for (const field of OPERATIONAL_NUMBER_FIELDS) {
       const text = this.drafts[field];
-      if (text.trim().length === 0) return null;
+      if (text.trim().length === 0) return field;
       const value = Number(text);
-      if (!Number.isInteger(value) || value < 1) return null;
-      values[field] = value;
+      if (!Number.isInteger(value) || value < OPERATIONAL_FIELD_MINIMUM[field]) return field;
     }
+    return null;
+  }
+
+  private parsedNumbers(): Record<OperationalNumberField, number> | null {
+    if (this.firstInvalidField() !== null) return null;
+    const values = {} as Record<OperationalNumberField, number>;
+    for (const field of OPERATIONAL_NUMBER_FIELDS) values[field] = Number(this.drafts[field]);
     return values;
   }
 
-  get errorKey(): "config.operational.error.number" | null {
-    return this.parsedNumbers() === null ? "config.operational.error.number" : null;
+  get errorKey(): OperationalSettingsErrorKey | null {
+    const invalid = this.firstInvalidField();
+    return invalid === null ? null : FIELD_ERROR_KEY[invalid];
   }
 
   get isValid(): boolean {
@@ -73,6 +101,8 @@ export class OperationalSettingsEditor {
       changes.push({ key: FIELD_TO_KEY.floor, value: numbers.floor });
     if (numbers.threshold !== this.baseline.trainingCollectiveInterventionThreshold)
       changes.push({ key: FIELD_TO_KEY.threshold, value: numbers.threshold });
+    if (numbers.idleTimeout !== this.baseline.sessionIdleTimeoutMinutes)
+      changes.push({ key: FIELD_TO_KEY.idleTimeout, value: numbers.idleTimeout });
     return changes;
   }
 }

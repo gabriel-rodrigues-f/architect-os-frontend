@@ -5,6 +5,7 @@ const APP_SETTING_KEYS = [
   "cycle.cadence",
   "career.minimumQualifiedFloor",
   "training.collectiveInterventionThreshold",
+  "session.idleTimeoutMinutes",
 ] as const;
 export type AppSettingKey = (typeof APP_SETTING_KEYS)[number];
 
@@ -14,6 +15,7 @@ export interface OperationalSettings {
   cycleCadence: CycleCadence;
   careerMinimumQualifiedFloor: number;
   trainingCollectiveInterventionThreshold: number;
+  sessionIdleTimeoutMinutes: number;
 }
 
 export interface AppSettingRecord {
@@ -46,19 +48,22 @@ class ServedAppSettings {
       : fallback;
   }
 
-  countOr(key: AppSettingKey, fallback: number): number {
+  countOr(key: AppSettingKey, fallback: number, minimum = 1): number {
     const served = this.byKey.get(key);
-    return typeof served === "number" && Number.isInteger(served) && served >= 1
+    return typeof served === "number" && Number.isInteger(served) && served >= minimum
       ? served
       : fallback;
   }
 }
 
 export class EffectiveOperationalSettings {
+  static readonly sessionIdleTimeoutMinimumMinutes = 5;
+
   static readonly defaults: OperationalSettings = {
     cycleCadence: "SEMIANNUAL",
     careerMinimumQualifiedFloor: 3,
     trainingCollectiveInterventionThreshold: 3,
+    sessionIdleTimeoutMinutes: 10,
   };
 
   static resolve(loaded?: AppSettingsResponse): OperationalSettings {
@@ -74,6 +79,11 @@ export class EffectiveOperationalSettings {
       trainingCollectiveInterventionThreshold: served.countOr(
         "training.collectiveInterventionThreshold",
         defaults.trainingCollectiveInterventionThreshold,
+      ),
+      sessionIdleTimeoutMinutes: served.countOr(
+        "session.idleTimeoutMinutes",
+        defaults.sessionIdleTimeoutMinutes,
+        EffectiveOperationalSettings.sessionIdleTimeoutMinimumMinutes,
       ),
     };
   }

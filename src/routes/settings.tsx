@@ -33,6 +33,7 @@ import {
   CURATION_POLICY_FIELDS,
   CurationPolicyEditor,
   NewVocabularyCodeEditor,
+  OPERATIONAL_FIELD_MINIMUM,
   OPERATIONAL_NUMBER_FIELDS,
   OperationalSettingsEditor,
   ScoringBandsEditor,
@@ -826,6 +827,7 @@ const CADENCE_LABEL_KEY: Record<CycleCadence, MessageKey> = {
 const OPERATIONAL_FIELD_LABEL_KEY: Record<OperationalNumberField, MessageKey> = {
   floor: "config.operational.field.floor",
   threshold: "config.operational.field.threshold",
+  idleTimeout: "config.operational.field.idleTimeout",
 };
 
 function OperationalSettingsSection() {
@@ -861,6 +863,7 @@ function OperationalSettingsSection() {
   const effectiveValues: Record<OperationalNumberField, number> = {
     floor: settings.careerMinimumQualifiedFloor,
     threshold: settings.trainingCollectiveInterventionThreshold,
+    idleTimeout: settings.sessionIdleTimeoutMinutes,
   };
 
   return (
@@ -899,7 +902,7 @@ function OperationalSettingsSection() {
           )}
         </div>
 
-        <div className="mt-2 grid gap-3 sm:grid-cols-3">
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <div>
             <label className="text-xs text-muted-foreground" htmlFor="operational-cadence">
               {t("config.operational.field.cadence")}
@@ -933,7 +936,7 @@ function OperationalSettingsSection() {
                 <input
                   id={`operational-${field}`}
                   type="number"
-                  min={1}
+                  min={OPERATIONAL_FIELD_MINIMUM[field]}
                   step={1}
                   disabled={saving}
                   className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"
@@ -962,6 +965,9 @@ function OperationalSettingsSection() {
 
         <p className="mt-3 text-xs text-muted-foreground">
           {t("config.operational.cadenceImpact")}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("config.operational.idleTimeoutImpact")}
         </p>
       </div>
     </SectionCard>
