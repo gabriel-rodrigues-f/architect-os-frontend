@@ -83,7 +83,7 @@ test.beforeAll(async ({ playwright }) => {
   await guest.dispose();
 
   teamId = await linkLeadToArchitects({
-    databaseUrl: DATABASE_URL,
+    api,
     runId: `ment-${RUN_ID}`,
     leadUserId: created.user.id,
     architectIds: [architectId],

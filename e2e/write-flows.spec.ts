@@ -158,7 +158,7 @@ test.beforeAll(async ({ playwright }) => {
     role: "tech_lead",
   });
   teamId = await linkLeadToArchitects({
-    databaseUrl: DATABASE_URL,
+    api,
     runId: `flux-${RUN_ID}`,
     leadUserId,
     architectIds: [architectId],
@@ -326,8 +326,14 @@ test("Member cria uma ação de PDI a partir do maior gap", async ({ page }) => 
   await expect(page.getByText(ACTION_PLAN)).toBeVisible();
 });
 
-test("Member registra uma evidência no próprio perfil", async ({ page }) => {
-  await login(page, MEMBER_EMAIL, PASSWORD, "Minha Evolução");
+// Onda 31 tirou do profissional a própria ficha de carreira — e com ela o
+// ÚNICO ponto da aplicação que registra evidência (`EvidenceDialog` só vive
+// em `architects.$architectId.index.tsx`, atrás de `canActFor`). O gesto
+// continua existindo para quem lidera: o Tech Lead registra na ficha do
+// liderado. A lacuna do profissional está relatada na fatia; o spec cobre o
+// caminho que a aplicação oferece hoje.
+test("Tech Lead registra uma evidência na ficha do liderado", async ({ page }) => {
+  await login(page, LEAD_EMAIL, PASSWORD, "Pendências do Lead");
 
   await page.goto(`/architects/${architectId}`);
   await expect(page.getByText("Evidências", { exact: true }).first()).toBeVisible();
