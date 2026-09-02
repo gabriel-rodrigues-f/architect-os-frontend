@@ -117,7 +117,7 @@ describe("régua única de severidade (OO3-11i)", () => {
         createElement(I18nProvider, null, createElement(GapBadge, { gap })),
       ),
     );
-    const badgeText = screen.getByText(/Gap 2/).textContent;
+    const badgeText = screen.getByText(/Distância 2/).textContent;
 
     // Presenter com um `t` real de pt (as mesmas mensagens que o I18nProvider serve).
     const ptT: T = (key, params) => {

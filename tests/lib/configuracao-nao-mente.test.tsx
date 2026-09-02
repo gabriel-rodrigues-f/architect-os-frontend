@@ -29,7 +29,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
 const fetchMock = vi.fn();
 
 const TELA_DE_FALHA = "Não foi possível acessar o serviço";
-const RECADO_DA_REGUA = "Gap 2 · Prioridade alta";
+const RECADO_DA_REGUA = "Distância 2 · Prioridade alta";
 
 const rotaQueFalha =
   (caminho: string): FetchRoute =>

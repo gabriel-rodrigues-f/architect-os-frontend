@@ -87,6 +87,7 @@ function AssessmentsPage() {
     canReopen,
     incompleteSelf,
     incompleteLeaderFinal,
+    seesAssessmentNumbers,
   } = useAssessmentPermissions(architectId, selectedArchitect, assessment);
 
   const selected = store.capabilities.filter((c) => capabilityIds.includes(c.id));
@@ -140,7 +141,7 @@ function AssessmentsPage() {
     <>
       <PageHeader
         title={t("asmt.title")}
-        description={t("asmt.subtitle")}
+        description={t(seesAssessmentNumbers ? "asmt.subtitle" : "asmt.subtitle.professional")}
         help={help}
         actions={
           <div className="flex flex-wrap gap-2">
@@ -336,6 +337,7 @@ function AssessmentsPage() {
               status={status}
               canEditSelf={canEditSelf}
               canEditLeaderFinal={canEditLeaderFinal}
+              seesAssessmentNumbers={seesAssessmentNumbers}
               architectId={architectId}
               openComment={openComment}
               onToggleComment={(id) => setOpenComment((prev) => (prev === id ? null : id))}

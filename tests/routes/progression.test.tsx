@@ -122,10 +122,10 @@ describe("Progressão — heatmap, tabela e maestria", () => {
 
   it("a tabela de progressão marca o tipo de cada linha (Bloqueante/Oportunidade)", async () => {
     renderProgression();
-    await screen.findByText("Tabela de Gaps de Progressão");
+    await screen.findByText("Tabela de Progressão das Competências em Evolução");
 
     const progressionTable = screen
-      .getByText("Tabela de Gaps de Progressão")
+      .getByText("Tabela de Progressão das Competências em Evolução")
       .closest(".surface-card") as HTMLElement;
 
     const iacRow = within(progressionTable).getByText("Infra as Code").closest("tr")!;
@@ -137,10 +137,10 @@ describe("Progressão — heatmap, tabela e maestria", () => {
 
   it("Nível III (MASTERY) some da tabela de progressão e aparece só na seção de maestria, sem linguagem de bloqueio", async () => {
     renderProgression();
-    await screen.findByText("Tabela de Gaps de Progressão");
+    await screen.findByText("Tabela de Progressão das Competências em Evolução");
 
     const progressionTable = screen
-      .getByText("Tabela de Gaps de Progressão")
+      .getByText("Tabela de Progressão das Competências em Evolução")
       .closest(".surface-card")!;
     // Bruno está em MASTERY neste ciclo — os gaps dele não contam mais como progressão.
     expect(progressionTable.textContent).not.toContain("Kubernetes");
@@ -158,10 +158,10 @@ describe("Progressão — heatmap, tabela e maestria", () => {
   /** ENT-09-016 — cabeçalho fixo nas tabelas que crescem com o time/catálogo. */
   it("o cabeçalho da tabela de progressão e do heatmap fica fixo ao rolar (sticky)", async () => {
     renderProgression();
-    await screen.findByText("Tabela de Gaps de Progressão");
+    await screen.findByText("Tabela de Progressão das Competências em Evolução");
 
     const progressionTable = screen
-      .getByText("Tabela de Gaps de Progressão")
+      .getByText("Tabela de Progressão das Competências em Evolução")
       .closest(".surface-card") as HTMLElement;
     const competencyHeader = within(progressionTable).getByRole("columnheader", {
       name: "Competência",
@@ -180,7 +180,7 @@ describe("Progressão — heatmap, tabela e maestria", () => {
   it("abrir a tela com ?selected= na URL respeita o recorte", async () => {
     window.history.replaceState(null, "", "/progression?selected=ana");
     renderProgression();
-    await screen.findByText("Tabela de Gaps de Progressão");
+    await screen.findByText("Tabela de Progressão das Competências em Evolução");
 
     const heatmap = screen.getByRole("columnheader", { name: "Arquiteto" }).closest("table")!;
     expect(heatmap.textContent).toContain("Ana Martins");

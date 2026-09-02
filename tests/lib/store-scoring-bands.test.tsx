@@ -36,7 +36,7 @@ describe("useScoringBands via GapBadge (CFG-02)", () => {
   it("fallback: sem bands carregados, gap 2 mantém o rótulo antigo (Prioridade alta)", async () => {
     mockAppFetch(fetchMock, { routes: [bandsRoute({})] });
     renderWithApp(<GapBadge gap={2} />);
-    expect(await screen.findByText("Gap 2 · Prioridade alta")).toBeTruthy();
+    expect(await screen.findByText("Distância 2 · Prioridade alta")).toBeTruthy();
   });
 
   it("bands do servidor mudam a régua: com critical a partir de 2, gap 2 vira Crítico", async () => {
@@ -73,6 +73,6 @@ describe("useScoringBands via GapBadge (CFG-02)", () => {
       ],
     });
     renderWithApp(<GapBadge gap={2} />);
-    expect(await screen.findByText("Gap 2 · Crítico")).toBeTruthy();
+    expect(await screen.findByText("Distância 2 · Crítico")).toBeTruthy();
   });
 });

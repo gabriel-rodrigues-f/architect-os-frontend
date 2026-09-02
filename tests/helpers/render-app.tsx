@@ -228,3 +228,23 @@ export function renderWithApp(
 ): ReturnType<typeof render> {
   return render(<AppWrapper storeMode={storeMode}>{ui}</AppWrapper>);
 }
+
+/**
+ * Faz `useNarrowViewport(768)` reportar estreito (ou largo) — jsdom não mede
+ * largura. Mesma técnica de `assessments-responsive.test.tsx` (R2-RESP-07);
+ * devolve a função que restaura o `matchMedia` original.
+ */
+export function stubNarrowViewport(matchesNarrow: boolean): () => void {
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes("768") ? matchesNarrow : false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = original;
+  };
+}

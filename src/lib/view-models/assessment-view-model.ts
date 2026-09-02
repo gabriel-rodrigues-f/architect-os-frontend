@@ -40,6 +40,7 @@ interface AssessmentPermissions {
   canReopen: boolean;
   incompleteSelf: boolean;
   incompleteLeaderFinal: boolean;
+  seesAssessmentNumbers: boolean;
 }
 
 export class AssessmentViewModel {
@@ -65,6 +66,7 @@ export class AssessmentViewModel {
     const canComplete = isLead && status === "In Review";
 
     const canReopen = isLead && status === "Completed";
+    const seesAssessmentNumbers = this.policy.isLeadership(user);
 
     const incompleteSelf = assessment?.items.some((i) => i.self === null) ?? false;
     const incompleteLeaderFinal =
@@ -82,6 +84,7 @@ export class AssessmentViewModel {
       canReopen,
       incompleteSelf,
       incompleteLeaderFinal,
+      seesAssessmentNumbers,
     };
   }
 
