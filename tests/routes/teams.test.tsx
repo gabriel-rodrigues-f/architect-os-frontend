@@ -1,7 +1,7 @@
 import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiPath } from "@/lib/api-path";
 import type { SessionUser } from "@/lib/api";
@@ -51,6 +51,13 @@ const rotaDeTimes: FetchRoute = (href, init) =>
 const rotaDeContas: FetchRoute = (href) =>
   href.endsWith(apiPath("/auth/users")) ? jsonResponse(contas) : undefined;
 
+const CAMINHO_DO_QUADRO = apiPath(`/teams/${fixtureTeamId}/memberships`);
+
+const rotaDoQuadroVazio: FetchRoute = (href, init) =>
+  href.endsWith(CAMINHO_DO_QUADRO) && (init?.method ?? "GET") === "GET"
+    ? jsonResponse([])
+    : undefined;
+
 const chamadas = (metodo: string, trecho: string) =>
   fetchMock.mock.calls.filter(
     ([entrada, init]) =>
@@ -68,13 +75,22 @@ function renderAs(user: SessionUser, routes: FetchRoute[] = []) {
   mockAppFetch(fetchMock, {
     user,
     state: scopedFixtureStateFor(user, fixtureState, [fixtureTeamId]),
-    routes: [...routes, rotaDeTimes, rotaDeContas],
+    routes: [...routes, rotaDeTimes, rotaDeContas, rotaDoQuadroVazio],
   });
   return renderWithApp(<TeamsPage />);
 }
 
 const NEGATIVA =
   "Cadastrar times e compor o quadro é restrito ao administrador e ao gestor designado de cada time.";
+
+beforeEach(() => {
+  try {
+    window.localStorage.removeItem("synapse:section-open:teams.registry");
+    window.localStorage.removeItem("synapse:section-open:teams.roster");
+  } catch {
+    return;
+  }
+});
 
 afterEach(() => {
   cleanup();
@@ -214,11 +230,28 @@ describe("/teams — o quadro do time", () => {
     expect(within(quadro).getByText("Bruno Almeida")).toBeTruthy();
   });
 
-  it("admin vincula uma conta com papel, e o vínculo confirmado pelo serviço aparece", async () => {
-    const vinculo: FetchRoute = (href, init) =>
-      href.endsWith(apiPath(`/teams/${fixtureTeamId}/memberships`)) && init?.method === "POST"
-        ? jsonResponse({ teamId: fixtureTeamId, userId: "conta-carla", role: "tech_lead" }, 201)
+  it("admin vincula uma conta com papel, e o quadro é relido: a linha nova vem do serviço, não de um livro-razão da sessão", async () => {
+    let vinculou = false;
+    const vinculo: FetchRoute = (href, init) => {
+      if (!href.endsWith(CAMINHO_DO_QUADRO)) return undefined;
+      if (init?.method === "POST") {
+        vinculou = true;
+        return jsonResponse(
+          { teamId: fixtureTeamId, userId: "conta-carla", role: "tech_lead" },
+          201,
+        );
+      }
+      return vinculou
+        ? jsonResponse([
+            {
+              userId: "conta-carla",
+              name: "Carla Souza",
+              email: "carla@company.com",
+              role: "tech_lead",
+            },
+          ])
         : undefined;
+    };
     renderAs(fixtureAdminUser, [vinculo]);
     await screen.findByText("Time Plataforma");
     await userEvent.click(screen.getByLabelText("Quadro de Time Plataforma"));
@@ -231,11 +264,10 @@ describe("/teams — o quadro do time", () => {
 
     const [, init] = chamadas("POST", "/memberships")[0] as [unknown, RequestInit];
     expect(JSON.parse(String(init.body))).toEqual({ userId: "conta-carla", role: "tech_lead" });
-    const confirmados = (await screen.findByText("Vínculos confirmados nesta sessão")).closest(
-      "section",
-    ) as HTMLElement;
-    expect(within(confirmados).getByText("Carla Souza")).toBeTruthy();
-    expect(within(confirmados).getByText("Tech Lead")).toBeTruthy();
+    const quadro = await screen.findByRole("table", { name: "Vínculos do time" });
+    const linha = (await within(quadro).findByText("Carla Souza")).closest("tr") as HTMLElement;
+    expect(within(linha).getByText("Tech Lead")).toBeTruthy();
+    expect(screen.queryByText("Vínculos confirmados nesta sessão")).toBeNull();
   });
 
   it("o 403 do serviço nomeia o que foi negado — a tela mostra a mensagem dele, não inventa outra", async () => {
