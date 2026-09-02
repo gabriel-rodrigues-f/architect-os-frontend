@@ -135,6 +135,25 @@ describe("AssessmentViewModel", () => {
       expect(result.canEditLeaderFinal).toBe(true);
     });
 
+    it("os números de avaliação (líder, alvo, final) são da liderança: o profissional não os vê, mesmo sendo o dono", () => {
+      const { vm } = makeVm();
+      const completed = { ...baseAssessment, status: "Completed" as const };
+      expect(
+        vm.permissionsFor(fixtureMemberUser, "ana", anaArchitect, completed).seesAssessmentNumbers,
+      ).toBe(false);
+      expect(
+        vm.permissionsFor(fixtureUnassignedTechLeadUser, "ana", anaArchitect, completed)
+          .seesAssessmentNumbers,
+      ).toBe(true);
+      expect(
+        vm.permissionsFor(fixtureAdminUser, "ana", anaArchitect, completed).seesAssessmentNumbers,
+      ).toBe(true);
+      const ownerAsLeadToo = { ...fixtureMemberUser, role: "tech_lead" as const };
+      expect(
+        vm.permissionsFor(ownerAsLeadToo, "ana", anaArchitect, completed).seesAssessmentNumbers,
+      ).toBe(true);
+    });
+
     it("Completed: canReopen só para o Tech Lead responsável", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "Completed" as const };

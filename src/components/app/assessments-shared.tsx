@@ -27,6 +27,7 @@ import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { STATE_QUERY_KEY, useOperationalSettings, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
+import { cn } from "@/lib/utils";
 import { AssessmentViewModel } from "@/lib/view-models";
 
 function useAssessmentViewModel(): AssessmentViewModel {
@@ -720,6 +721,7 @@ export function CapabilityAssessmentCard({
   status,
   canEditSelf,
   canEditLeaderFinal,
+  seesAssessmentNumbers,
   architectId,
   openComment,
   onToggleComment,
@@ -729,6 +731,7 @@ export function CapabilityAssessmentCard({
   status: Assessment["status"] | undefined;
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
+  seesAssessmentNumbers: boolean;
   architectId: string;
   openComment: string | null;
   onToggleComment: (competencyId: string) => void;
@@ -746,7 +749,7 @@ export function CapabilityAssessmentCard({
   const answeredCount = comps.filter((c) => {
     const item = assessment.items.find((i) => i.competencyId === c.id);
     if (!item) return false;
-    return status === "Draft" ? item.self !== null : item.final !== null;
+    return status === "Draft" || !seesAssessmentNumbers ? item.self !== null : item.final !== null;
   }).length;
 
   return (
@@ -777,6 +780,7 @@ export function CapabilityAssessmentCard({
                 architectId={architectId}
                 canEditSelf={canEditSelf}
                 canEditLeaderFinal={canEditLeaderFinal}
+                seesAssessmentNumbers={seesAssessmentNumbers}
                 openComment={openComment}
                 onToggleComment={onToggleComment}
               />
@@ -785,7 +789,12 @@ export function CapabilityAssessmentCard({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
+          <table
+            className={cn(
+              "w-full text-sm",
+              seesAssessmentNumbers ? "min-w-[820px]" : "min-w-[480px]",
+            )}
+          >
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th scope="col" className="py-2">
@@ -794,18 +803,22 @@ export function CapabilityAssessmentCard({
                 <th scope="col" className="w-24 py-2 text-center">
                   {t("asmt.col.self")}
                 </th>
-                <th scope="col" className="w-24 py-2 text-center">
-                  {t("asmt.col.techLead")}
-                </th>
-                <th scope="col" className="w-24 py-2 text-center">
-                  {t("asmt.col.target")}
-                </th>
-                <th scope="col" className="w-24 py-2 text-center">
-                  {t("asmt.col.final")}
-                </th>
-                <th scope="col" className="w-44 py-2">
-                  {t("asmt.col.gap")}
-                </th>
+                {seesAssessmentNumbers && (
+                  <>
+                    <th scope="col" className="w-24 py-2 text-center">
+                      {t("asmt.col.techLead")}
+                    </th>
+                    <th scope="col" className="w-24 py-2 text-center">
+                      {t("asmt.col.target")}
+                    </th>
+                    <th scope="col" className="w-24 py-2 text-center">
+                      {t("asmt.col.final")}
+                    </th>
+                    <th scope="col" className="w-44 py-2">
+                      {t("asmt.col.gap")}
+                    </th>
+                  </>
+                )}
                 <th scope="col" className="w-24 py-2 text-right">
                   {t("asmt.col.notes")}
                 </th>
@@ -853,42 +866,48 @@ export function CapabilityAssessmentCard({
                           <LevelBadge level={item.self ?? undefined} />
                         )}
                       </td>
-                      <td className="px-1 py-2">
-                        <div className="flex items-center gap-1">
-                          {canEditLeaderFinal ? (
-                            <LevelSelect
-                              value={item.leader}
-                              onChange={(v) => viewModel.updateLeaderScore(assessment.id, c.id, v)}
-                              ariaLabel={t("asmt.select.leader", { competency: c.name })}
-                            />
-                          ) : (
-                            <LevelBadge level={item.leader ?? undefined} />
-                          )}
-                          {diverges && (
-                            <AlertTriangle
-                              className="h-3.5 w-3.5 shrink-0 text-[var(--gap-high-fg)]"
-                              aria-label={t("asmt.divergence")}
-                            />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-1 py-2 text-center">
-                        <LevelBadge level={item.target} />
-                      </td>
-                      <td className="px-1 py-2">
-                        {canEditLeaderFinal ? (
-                          <LevelSelect
-                            value={item.final}
-                            onChange={(v) => viewModel.updateFinalScore(assessment.id, c.id, v)}
-                            ariaLabel={t("asmt.select.final", { competency: c.name })}
-                          />
-                        ) : (
-                          <LevelBadge level={item.final ?? undefined} />
-                        )}
-                      </td>
-                      <td className="py-2">
-                        <GapBadge gap={gap} />
-                      </td>
+                      {seesAssessmentNumbers && (
+                        <>
+                          <td className="px-1 py-2">
+                            <div className="flex items-center gap-1">
+                              {canEditLeaderFinal ? (
+                                <LevelSelect
+                                  value={item.leader}
+                                  onChange={(v) =>
+                                    viewModel.updateLeaderScore(assessment.id, c.id, v)
+                                  }
+                                  ariaLabel={t("asmt.select.leader", { competency: c.name })}
+                                />
+                              ) : (
+                                <LevelBadge level={item.leader ?? undefined} />
+                              )}
+                              {diverges && (
+                                <AlertTriangle
+                                  className="h-3.5 w-3.5 shrink-0 text-[var(--gap-high-fg)]"
+                                  aria-label={t("asmt.divergence")}
+                                />
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-1 py-2 text-center">
+                            <LevelBadge level={item.target} />
+                          </td>
+                          <td className="px-1 py-2">
+                            {canEditLeaderFinal ? (
+                              <LevelSelect
+                                value={item.final}
+                                onChange={(v) => viewModel.updateFinalScore(assessment.id, c.id, v)}
+                                ariaLabel={t("asmt.select.final", { competency: c.name })}
+                              />
+                            ) : (
+                              <LevelBadge level={item.final ?? undefined} />
+                            )}
+                          </td>
+                          <td className="py-2">
+                            <GapBadge gap={gap} />
+                          </td>
+                        </>
+                      )}
                       <td className="py-2 text-right">
                         <CommentToggleButton
                           competency={c}
@@ -904,7 +923,7 @@ export function CapabilityAssessmentCard({
                         id={commentPanelId(c.id)}
                         className="border-b border-border/60 bg-secondary/40"
                       >
-                        <td colSpan={7} className="p-3">
+                        <td colSpan={seesAssessmentNumbers ? 7 : 3} className="p-3">
                           {acceptedEvidence.length > 0 && (
                             <div className="mb-3 space-y-1.5 border-b border-border pb-3">
                               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -955,6 +974,7 @@ function CompetencyStackedCard({
   architectId,
   canEditSelf,
   canEditLeaderFinal,
+  seesAssessmentNumbers,
   openComment,
   onToggleComment,
 }: {
@@ -964,6 +984,7 @@ function CompetencyStackedCard({
   architectId: string;
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
+  seesAssessmentNumbers: boolean;
   openComment: string | null;
   onToggleComment: (competencyId: string) => void;
 }) {
@@ -999,7 +1020,7 @@ function CompetencyStackedCard({
             />
           )}
         </span>
-        <GapBadge gap={gap} />
+        {seesAssessmentNumbers && <GapBadge gap={gap} />}
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
@@ -1019,52 +1040,56 @@ function CompetencyStackedCard({
             )}
           </div>
         </div>
-        <div>
-          <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
-            {t("asmt.col.techLead")}
-          </p>
-          <div className="mt-1 flex items-center gap-1">
-            {canEditLeaderFinal ? (
-              <LevelSelect
-                value={item.leader}
-                onChange={(v) => viewModel.updateLeaderScore(assessmentId, competency.id, v)}
-                ariaLabel={t("asmt.select.leader", { competency: competency.name })}
-              />
-            ) : (
-              <LevelBadge level={item.leader ?? undefined} />
-            )}
-            {diverges && (
-              <AlertTriangle
-                className="h-3.5 w-3.5 shrink-0 text-[var(--gap-high-fg)]"
-                aria-label={t("asmt.divergence")}
-              />
-            )}
-          </div>
-        </div>
-        <div>
-          <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
-            {t("asmt.col.target")}
-          </p>
-          <div className="mt-1">
-            <LevelBadge level={item.target} />
-          </div>
-        </div>
-        <div>
-          <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
-            {t("asmt.col.final")}
-          </p>
-          <div className="mt-1">
-            {canEditLeaderFinal ? (
-              <LevelSelect
-                value={item.final}
-                onChange={(v) => viewModel.updateFinalScore(assessmentId, competency.id, v)}
-                ariaLabel={t("asmt.select.final", { competency: competency.name })}
-              />
-            ) : (
-              <LevelBadge level={item.final ?? undefined} />
-            )}
-          </div>
-        </div>
+        {seesAssessmentNumbers && (
+          <>
+            <div>
+              <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
+                {t("asmt.col.techLead")}
+              </p>
+              <div className="mt-1 flex items-center gap-1">
+                {canEditLeaderFinal ? (
+                  <LevelSelect
+                    value={item.leader}
+                    onChange={(v) => viewModel.updateLeaderScore(assessmentId, competency.id, v)}
+                    ariaLabel={t("asmt.select.leader", { competency: competency.name })}
+                  />
+                ) : (
+                  <LevelBadge level={item.leader ?? undefined} />
+                )}
+                {diverges && (
+                  <AlertTriangle
+                    className="h-3.5 w-3.5 shrink-0 text-[var(--gap-high-fg)]"
+                    aria-label={t("asmt.divergence")}
+                  />
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
+                {t("asmt.col.target")}
+              </p>
+              <div className="mt-1">
+                <LevelBadge level={item.target} />
+              </div>
+            </div>
+            <div>
+              <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
+                {t("asmt.col.final")}
+              </p>
+              <div className="mt-1">
+                {canEditLeaderFinal ? (
+                  <LevelSelect
+                    value={item.final}
+                    onChange={(v) => viewModel.updateFinalScore(assessmentId, competency.id, v)}
+                    ariaLabel={t("asmt.select.final", { competency: competency.name })}
+                  />
+                ) : (
+                  <LevelBadge level={item.final ?? undefined} />
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <CommentToggleButton
