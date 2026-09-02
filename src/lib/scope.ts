@@ -75,6 +75,22 @@ export class UiAuthorizationPolicy {
     return this.scopeGrantingTeamsOf(user);
   }
 
+  canComposeAnyTeam(user: SessionUser): boolean {
+    const reach = this.composableTeamIds(user);
+    return reach === "all" || reach.size > 0;
+  }
+
+  canComposeTeam(user: SessionUser, teamId: string): boolean {
+    const reach = this.composableTeamIds(user);
+    return reach === "all" || reach.has(teamId);
+  }
+
+  composableTeamIds(user: SessionUser): "all" | ReadonlySet<string> {
+    if (this.isAdmin(user)) return "all";
+    if (user.role !== TeamLeadershipRoles.MANAGER) return new Set();
+    return this.teamsBoundAs(user, [TeamLeadershipRoles.MANAGER]);
+  }
+
   leadsTeamOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (!architect || !TeamLeadershipRoles.includes(user.role) || architect.teamId == null) {
       return false;
