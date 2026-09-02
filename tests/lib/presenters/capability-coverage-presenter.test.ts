@@ -69,6 +69,18 @@ describe("CapabilityCoveragePresenter.areas", () => {
     expect(area).toMatchObject({ assessedCount: 0, notAssessed: 1, risk: "insufficientData" });
   });
 
+  /**
+   * Onda 35, item 8 — o dono pediu que o número "Sem avaliação" abra a avaliação
+   * de cada pessoa. A lista de QUEM está sem avaliação sai do mesmo cálculo que
+   * produz o número: quem não tem avg naquela capacidade neste ciclo.
+   */
+  it("expõe QUEM está sem avaliação, na ordem da população, e o número é o tamanho dessa lista", () => {
+    const presenter = presenterWithLevels({ ana: 4, carla: undefined, diego: undefined });
+    const [area] = presenter.areas([architect("ana"), architect("carla"), architect("diego")]);
+    expect(area!.unassessed.map((person) => person.id)).toEqual(["carla", "diego"]);
+    expect(area!.notAssessed).toBe(area!.unassessed.length);
+  });
+
   it("referências = avançados + especialistas; 1 referência é risco de concentração, 2+ distribui", () => {
     const umaReferencia = presenterWithLevels({ ana: 4, bruno: 2.5 });
     expect(umaReferencia.areas([architect("ana"), architect("bruno")])[0]).toMatchObject({

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 import {
   Callout,
@@ -12,7 +12,7 @@ import {
   ViewToggle,
 } from "@/components/app";
 import { Badge } from "@/components/ui/badge";
-import type { Architect } from "@/lib/domain";
+import type { Architect, Capability } from "@/lib/domain";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -138,7 +138,19 @@ function TeamCapabilityCoverage() {
                             {band.people.length}
                           </td>
                         ))}
-                        <td className="px-4 py-3 text-center tabular-nums">{area.notAssessed}</td>
+                        <td className="px-4 py-3 text-center tabular-nums">
+                          {area.unassessed.length === 0 ? (
+                            area.notAssessed
+                          ) : (
+                            <UnassessedDisclosure
+                              capability={area.cat}
+                              people={area.unassessed}
+                              className="font-medium underline decoration-dotted underline-offset-2 hover:text-primary"
+                            >
+                              {area.notAssessed}
+                            </UnassessedDisclosure>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <RiskBadge risk={area.risk} referenceCount={area.references.length} />
                         </td>
@@ -169,10 +181,16 @@ function TeamCapabilityCoverage() {
                       {t("cap.references.label")}{" "}
                       <ProfileLinkList people={area.references.map((p) => p.architect)} />
                     </p>
-                    {area.notAssessed > 0 && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {t("cap.notAssessed", { n: area.notAssessed })}
-                      </p>
+                    {area.unassessed.length > 0 && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        <UnassessedDisclosure
+                          capability={area.cat}
+                          people={area.unassessed}
+                          className="text-left underline decoration-dotted underline-offset-2 hover:text-primary"
+                        >
+                          {t("cap.notAssessed", { n: area.notAssessed })}
+                        </UnassessedDisclosure>
+                      </div>
                     )}
                   </SectionCard>
                 ))}
@@ -223,6 +241,53 @@ function Group({
         <ProfileLinkList people={people} emptyLabel="—" />
       </p>
     </div>
+  );
+}
+
+function UnassessedDisclosure({
+  capability,
+  people,
+  className,
+  children,
+}: {
+  capability: Capability;
+  people: readonly Architect[];
+  className: string;
+  children: ReactNode;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const listId = `cap-unassessed-${capability.id}`;
+  const params = { n: people.length, capacidade: capability.name };
+  return (
+    <>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-label={t(open ? "cap.notAssessed.hide" : "cap.notAssessed.reveal", params)}
+        className={className}
+        onClick={() => setOpen((current) => !current)}
+      >
+        {children}
+      </button>
+      {open && (
+        <ul id={listId} aria-label={t("cap.notAssessed.list", params)} className="mt-1 space-y-0.5">
+          {people.map((architect) => (
+            <li key={architect.id}>
+              <Link
+                to="/assessments"
+                search={{ architectId: architect.id }}
+                title={t("cap.notAssessed.openAssessment", { nome: architect.name })}
+                className="text-foreground underline-offset-2 hover:text-primary hover:underline"
+              >
+                {architect.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
