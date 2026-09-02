@@ -50,13 +50,12 @@ export const Route = createFileRoute("/competency-matrix")({
       { title: "Matriz de Competências — Synapse" },
       {
         name: "description",
-        content:
-          "Catálogo de competências de arquitetura agrupadas por capacidade técnica e de negócio.",
+        content: "Catálogo de competências agrupadas por capacidade técnica e de negócio.",
       },
       { property: "og:title", content: "Matriz de Competências — Synapse" },
       {
         property: "og:description",
-        content: "Crie, edite e organize as competências esperadas de um arquiteto.",
+        content: "Crie, edite e organize as competências esperadas de um profissional.",
       },
     ],
   }),

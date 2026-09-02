@@ -44,14 +44,12 @@ export const Route = createFileRoute("/")({
       { title: "Painel — Synapse" },
       {
         name: "description",
-        content:
-          "Visão executiva das capacidades técnicas do time de Arquitetos de Soluções: gaps, PDIs, metas e evolução.",
+        content: "Visão executiva das capacidades técnicas do time: gaps, PDIs, metas e evolução.",
       },
       { property: "og:title", content: "Painel — Synapse" },
       {
         property: "og:description",
-        content:
-          "Visão executiva das capacidades técnicas do time de Arquitetos de Soluções: gaps, PDIs, metas e evolução.",
+        content: "Visão executiva das capacidades técnicas do time: gaps, PDIs, metas e evolução.",
       },
     ],
   }),

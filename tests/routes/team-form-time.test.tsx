@@ -79,7 +79,7 @@ const preencherObrigatorios = async (dialogo: HTMLElement) => {
   const campos = within(dialogo);
   await userEvent.type(campos.getByLabelText("Nome"), "Nova Pessoa");
   await userEvent.type(campos.getByLabelText("E-mail"), "nova.pessoa@company.com");
-  await userEvent.type(campos.getByLabelText("Tempo como arquiteto (anos)"), "2");
+  await userEvent.type(campos.getByLabelText("Tempo de experiência (anos)"), "2");
 };
 
 describe("Time — o campo Time no cadastro e na edição do arquiteto", () => {
@@ -102,7 +102,7 @@ describe("Time — o campo Time no cadastro e na edição do arquiteto", () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
-    await userEvent.click(screen.getByRole("button", { name: "Cadastrar arquiteto" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar profissional" }));
     const dialogo = await screen.findByRole("dialog");
     const select = (await within(dialogo).findByLabelText("Time")) as HTMLSelectElement;
     await waitFor(() => expect(select.options.length).toBe(3));
@@ -126,7 +126,7 @@ describe("Time — o campo Time no cadastro e na edição do arquiteto", () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
-    await userEvent.click(screen.getByRole("button", { name: "Cadastrar arquiteto" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar profissional" }));
     const dialogo = await screen.findByRole("dialog");
     await preencherObrigatorios(dialogo);
     await userEvent.click(within(dialogo).getByRole("button", { name: "Salvar" }));

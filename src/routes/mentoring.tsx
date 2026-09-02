@@ -18,7 +18,7 @@ export const Route = createFileRoute("/mentoring")({
       { title: "Mentoria — Synapse" },
       {
         name: "description",
-        content: "Registro e timeline das sessões de mentoria técnica entre arquitetos.",
+        content: "Registro e timeline das sessões de mentoria técnica entre profissionais.",
       },
       { property: "og:title", content: "Mentoria — Synapse" },
       {

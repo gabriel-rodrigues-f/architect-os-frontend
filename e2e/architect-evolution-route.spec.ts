@@ -96,7 +96,7 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
   // frio — medido em três rodadas de entrega (2026-09-02), sempre entre 5 e
   // 7 s, nunca na segunda vez. Mesma folga da asserção pós-reload abaixo,
   // pelo mesmo motivo: a tela não é lenta, a rodada é que nasce fria.
-  await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible({
+  await expect(page.getByText("Painel de Capacidades")).toBeVisible({
     timeout: 15000,
   });
 

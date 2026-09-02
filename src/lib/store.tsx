@@ -433,7 +433,7 @@ export function buildApi(
     transitionCareerLevel: async (id, toRole, reason) => {
       const expectedVersion = expectedVersionOf(
         state.architects.find((a) => a.id === id)?.version,
-        "deste arquiteto",
+        "deste profissional",
         id,
       );
       return runner.command(
@@ -448,7 +448,7 @@ export function buildApi(
     deactivate: async (id, reason) => {
       const expectedVersion = expectedVersionOf(
         state.architects.find((a) => a.id === id)?.version,
-        "deste arquiteto",
+        "deste profissional",
         id,
       );
       return runner.command(

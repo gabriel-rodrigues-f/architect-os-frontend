@@ -50,12 +50,12 @@ export const Route = createFileRoute("/architects/$architectId/")({
       {
         name: "description",
         content:
-          "Perfil completo do arquiteto: competências, gaps, PDI, metas, mentorias e evidências.",
+          "Perfil completo do profissional: competências, gaps, PDI, metas, mentorias e evidências.",
       },
       { property: "og:title", content: "Architect Profile — Synapse" },
       {
         property: "og:description",
-        content: "Visão 360 do desenvolvimento técnico individual do arquiteto.",
+        content: "Visão 360 do desenvolvimento técnico individual do profissional.",
       },
     ],
   }),
@@ -172,7 +172,7 @@ function ArchitectWorkspace() {
     <>
       <PageHeader
         title={architect.name}
-        description={`${architect.role} · ${sel.specializationLabel(architect)} · ${architect.yearsAsArchitect} anos como arquiteto`}
+        description={`${architect.role} · ${sel.specializationLabel(architect)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
         help={help}
         actions={
           <Link

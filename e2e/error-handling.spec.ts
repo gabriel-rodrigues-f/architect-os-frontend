@@ -130,8 +130,8 @@ test("perfil de um arquiteto inexistente mostra 'não encontrado', não uma tela
   await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
   // Espera o login terminar antes de navegar — sem isto, `goto` corre
   // contra o POST de login ainda em voo e aterrissa deslogado.
-  await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible();
+  await expect(page.getByText("Painel de Capacidades")).toBeVisible();
 
   await page.goto(`/architects/e2e-nao-existe-${RUN_ID}`);
-  await expect(page.getByText("Arquiteto não encontrado.")).toBeVisible();
+  await expect(page.getByText("Profissional não encontrado.")).toBeVisible();
 });

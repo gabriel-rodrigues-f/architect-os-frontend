@@ -127,7 +127,7 @@ describe("a ficha de carreira nega o próprio profissional — a tela é a últi
       { ...fixtureMemberUser, architectId: "bruno" },
       ProfileRoute.options.component as () => ReactNode,
     );
-    expect(await screen.findByText("Arquiteto não encontrado.")).toBeTruthy();
+    expect(await screen.findByText("Profissional não encontrado.")).toBeTruthy();
     expect(screen.queryByText(FICHA_LIDA_PELA_LIDERANCA)).toBeNull();
   });
 });

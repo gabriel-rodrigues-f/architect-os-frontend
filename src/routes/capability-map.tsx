@@ -29,7 +29,7 @@ export const Route = createFileRoute("/capability-map")({
       {
         name: "description",
         content:
-          "Mapa das capacidades técnicas disponíveis no time de arquitetura, com risco de concentração e competências em evolução.",
+          "Mapa das capacidades técnicas disponíveis no time, com risco de concentração e competências em evolução.",
       },
       { property: "og:title", content: "De quem o time depende — Synapse" },
       {

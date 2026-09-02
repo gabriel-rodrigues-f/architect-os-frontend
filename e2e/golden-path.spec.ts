@@ -166,7 +166,7 @@ async function login(page: import("@playwright/test").Page, email: string, passw
 test("Admin — painel executivo, navegação restrita e diretório de usuários", async ({ page }) => {
   await login(page, ADMIN_EMAIL!, ADMIN_PASSWORD!);
 
-  await expect(page.getByText("Painel de Capacidades de Arquitetura")).toBeVisible();
+  await expect(page.getByText("Painel de Capacidades")).toBeVisible();
 
   await page.getByRole("link", { name: "Matriz de Competências" }).click();
   await expect(page).toHaveURL(/\/competency-matrix/);

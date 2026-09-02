@@ -168,7 +168,7 @@ describe("Progressão — heatmap, tabela e maestria", () => {
     });
     expect(competencyHeader.className).toContain("sticky");
 
-    const architectHeader = screen.getByRole("columnheader", { name: "Arquiteto" });
+    const architectHeader = screen.getByRole("columnheader", { name: "Profissional" });
     expect(architectHeader.className).toContain("sticky");
   });
 
@@ -182,7 +182,7 @@ describe("Progressão — heatmap, tabela e maestria", () => {
     renderProgression();
     await screen.findByText("Tabela de Progressão das Competências em Evolução");
 
-    const heatmap = screen.getByRole("columnheader", { name: "Arquiteto" }).closest("table")!;
+    const heatmap = screen.getByRole("columnheader", { name: "Profissional" }).closest("table")!;
     expect(heatmap.textContent).toContain("Ana Martins");
     expect(heatmap.textContent).not.toContain("Bruno Almeida");
   });

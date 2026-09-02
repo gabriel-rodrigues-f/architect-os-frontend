@@ -217,7 +217,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
 
   it("o radar inclui uma coluna de cobertura na tabela equivalente acessível", async () => {
     renderGap();
-    await screen.findByText("Radar de Arquitetura");
+    await screen.findByText("Radar de Capacidades");
     expect(screen.getByRole("columnheader", { name: "Cobertura" })).toBeTruthy();
   });
 
@@ -229,7 +229,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
    */
   it("trocar a seleção no filtro escreve o recorte na URL", async () => {
     renderGap();
-    await screen.findByText("Radar de Arquitetura");
+    await screen.findByText("Radar de Capacidades");
 
     // Time inteiro nasce selecionado — desmarcar Bruno deixa só Ana.
     await userEvent.click(getArchitectFilterTrigger());
@@ -241,7 +241,7 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
   it("abrir a tela com ?selected= na URL respeita o recorte, sem cair no time inteiro", async () => {
     window.history.replaceState(null, "", "/gap-analysis?selected=bruno");
     renderGap();
-    await screen.findByText("Radar de Arquitetura");
+    await screen.findByText("Radar de Capacidades");
 
     const scopeChip = getArchitectFilterTrigger();
     expect(scopeChip.textContent).toContain("Bruno Almeida");

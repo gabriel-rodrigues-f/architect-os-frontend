@@ -148,7 +148,7 @@ describe("Avaliações — comentários por autor", () => {
     // fixtureAdminUser é quem está logado — o comentário dele aparece como "Você".
     expect(await screen.findByText("Você")).toBeTruthy();
     // o outro comentário (autor diferente) aparece com o rótulo do papel.
-    expect(screen.getByText("Arquiteto")).toBeTruthy();
+    expect(screen.getByText("Profissional")).toBeTruthy();
   });
 
   it("bloqueia salvar sem texto", async () => {

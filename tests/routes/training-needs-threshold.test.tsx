@@ -73,7 +73,7 @@ describe("Necessidades de Treinamento — limiar configurável (CFG-05/B6)", () 
     // O subtítulo reflete o limiar efetivo, não um "3" fixo.
     expect(
       await screen.findByText(
-        "Competências em evolução em 2 ou mais arquitetos — candidatas a treinamento coletivo.",
+        "Competências em evolução em 2 ou mais profissionais — candidatas a treinamento coletivo.",
       ),
     ).toBeTruthy();
     expect(await screen.findByRole("button", { name: /Criar trilha coletiva/ })).toBeTruthy();
@@ -85,7 +85,7 @@ describe("Necessidades de Treinamento — limiar configurável (CFG-05/B6)", () 
 
     expect(
       await screen.findByText(
-        "Competências em evolução em 3 ou mais arquitetos — candidatas a treinamento coletivo.",
+        "Competências em evolução em 3 ou mais profissionais — candidatas a treinamento coletivo.",
       ),
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Criar trilha coletiva/ })).toBeNull();

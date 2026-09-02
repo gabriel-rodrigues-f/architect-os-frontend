@@ -28,7 +28,7 @@ export default async function warmUp(config: FullConfig): Promise<void> {
     await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
     await page.locator("nav").first().waitFor({ state: "visible", timeout: 120_000 });
     await page
-      .getByText("Painel de Capacidades de Arquitetura")
+      .getByText("Painel de Capacidades")
       .waitFor({ state: "visible", timeout: 60_000 })
       .catch(() => undefined);
   } finally {

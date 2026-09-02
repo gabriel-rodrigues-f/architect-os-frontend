@@ -95,7 +95,7 @@ describe("ArchitectFilter — 'Todo o time' como alternador de verdade", () => {
     for (const option of screen.getAllByRole("option")) {
       expect(option.querySelector('[role="checkbox"]')?.getAttribute("aria-checked")).toBe("false");
     }
-    expect(screen.getByText("Nenhum arquiteto selecionado")).toBeTruthy();
+    expect(screen.getByText("Nenhum profissional selecionado")).toBeTruthy();
   });
 
   it("clicar em 'Todo o time' já marcado (todos selecionados) desmarca tudo", async () => {

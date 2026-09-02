@@ -102,7 +102,7 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
 
   it("o Painel do admin não muda — as prioridades do time continuam lá", async () => {
     renderAs(fixtureAdminUser);
-    await screen.findByText("Painel de Capacidades de Arquitetura");
+    await screen.findByText("Painel de Capacidades");
 
     expect(await screen.findByText("Principais Prioridades de Desenvolvimento")).toBeTruthy();
   });
