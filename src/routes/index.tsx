@@ -23,6 +23,7 @@ import {
   SectionCard,
   StatCard,
 } from "@/components/app";
+import { Button } from "@/components/ui/button";
 import type { UserRole } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
@@ -110,16 +111,39 @@ function usePersonalDashboardPresenter() {
   return useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
 }
 
+function NoCycleRegistered({
+  title,
+  help,
+}: {
+  title: string;
+  help: ReturnType<typeof usePageHelp>;
+}) {
+  const { t } = useI18n();
+  return (
+    <>
+      <PageHeader title={title} help={help} />
+      <SectionCard title={t("dash.noCycle.title")}>
+        <p className="text-sm text-muted-foreground">{t("dash.noCycle.body")}</p>
+        <Button asChild className="mt-4">
+          <Link to="/cycles">{t("dash.noCycle.cta")}</Link>
+        </Button>
+      </SectionCard>
+    </>
+  );
+}
+
 function AdminHome() {
   const store = useStore();
   const sel = useSelectors();
   const { t } = useI18n();
   const help = usePageHelp("dash");
+  const presenter = useDashboardPresenter();
+  if (presenter.noCycleRegistered) return <NoCycleRegistered title={t("dash.title")} help={help} />;
+
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
 
   const architects = sel.activeArchitects;
 
-  const presenter = useDashboardPresenter();
   const criticalGaps = presenter.criticalGapCount(architects);
   const topGaps = presenter.topGaps(architects);
   const assessmentCoverage = presenter.assessmentCoverage(architects);
@@ -390,6 +414,7 @@ function LeadHome() {
   const labels = useLabels();
   const { t } = useI18n();
   const help = usePageHelp("dashLead");
+  const presenter = useDashboardPresenter();
 
   const {
     people: myPeople,
@@ -398,6 +423,9 @@ function LeadHome() {
     awaitingApproval,
     totalPending,
   } = useLeadPendingQueues();
+
+  if (presenter.noCycleRegistered)
+    return <NoCycleRegistered title={t("dash.lead.title")} help={help} />;
 
   return (
     <>

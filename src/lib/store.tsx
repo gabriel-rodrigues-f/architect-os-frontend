@@ -131,8 +131,6 @@ export function useObjectiveFromGap(): RenderObjectiveFromGap {
 }
 
 export interface Api extends AppState {
-  setActiveCycle: (id: string) => void;
-
   addArchitect: (a: Omit<Architect, "id" | "version">) => Promise<Architect>;
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>) => void;
 
@@ -328,13 +326,6 @@ export function buildApi(
   return {
     ...state,
     capabilities: [...state.capabilities].sort(defaultNameFormatter.byName),
-
-    setActiveCycle: (id) => {
-      runner.optimistic(
-        (s) => ({ ...s, activeCycleId: id }),
-        () => api.setActiveCycle(id),
-      );
-    },
 
     addArchitect: (a) =>
       runner.command(

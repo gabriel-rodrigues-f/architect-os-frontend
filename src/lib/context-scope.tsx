@@ -3,6 +3,7 @@ import { useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { api, type AppState } from "./api";
+import { CycleActivation, type CycleSelectionState } from "./cycle-activation";
 import type { DevelopmentCycle } from "./domain";
 import type { MutationCache } from "./mutation-runner";
 import { MutationRunner } from "./mutation-runner";
@@ -121,6 +122,40 @@ export interface CycleSelection {
 const CYCLES_REQUEST: StateContextRequest = { name: "cycles" };
 const ACTIVE_CYCLE_REQUEST: StateContextRequest = { name: "activeCycle" };
 
+class CycleSelectionCache implements MutationCache<CycleSelectionState> {
+  private readonly cyclesKey = stateContextCatalog.queryKeyOf(CYCLES_REQUEST);
+  private readonly activeCycleKey = stateContextCatalog.queryKeyOf(ACTIVE_CYCLE_REQUEST);
+
+  constructor(private readonly queryClient: QueryClient) {}
+
+  update(mutate: (state: CycleSelectionState) => CycleSelectionState): void {
+    this.queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) =>
+      prev
+        ? { ...prev, ...mutate({ cycles: prev.cycles, activeCycleId: prev.activeCycleId }) }
+        : prev,
+    );
+    const cycles = this.queryClient.getQueryData<DevelopmentCycle[]>(this.cyclesKey);
+    const active = this.queryClient.getQueryData<{ cycleId: string }>(this.activeCycleKey);
+    if (cycles === undefined || active === undefined) {
+      this.invalidateSlices();
+      return;
+    }
+    const next = mutate({ cycles, activeCycleId: active.cycleId });
+    this.queryClient.setQueryData(this.cyclesKey, next.cycles);
+    this.queryClient.setQueryData(this.activeCycleKey, { cycleId: next.activeCycleId });
+  }
+
+  invalidate(): void {
+    void this.queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+    this.invalidateSlices();
+  }
+
+  private invalidateSlices(): void {
+    void this.queryClient.invalidateQueries({ queryKey: this.cyclesKey });
+    void this.queryClient.invalidateQueries({ queryKey: this.activeCycleKey });
+  }
+}
+
 export function useCycleSelection(): CycleSelection {
   const queryClient = useQueryClient();
   const cyclesQuery = useQuery(stateContextCatalog.queryOptionsOf(CYCLES_REQUEST));
@@ -128,24 +163,8 @@ export function useCycleSelection(): CycleSelection {
 
   const runner = useMemo(
     () =>
-      new MutationRunner<string>(
-        {
-          update: (mutate) => {
-            queryClient.setQueryData<{ cycleId: string }>(
-              stateContextCatalog.queryKeyOf(ACTIVE_CYCLE_REQUEST),
-              (prev) => ({ cycleId: mutate(prev?.cycleId ?? "") }),
-            );
-            queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) =>
-              prev ? { ...prev, activeCycleId: mutate(prev.activeCycleId) } : prev,
-            );
-          },
-          invalidate: () => {
-            void queryClient.invalidateQueries({
-              queryKey: stateContextCatalog.queryKeyOf(ACTIVE_CYCLE_REQUEST),
-            });
-            void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
-          },
-        },
+      new MutationRunner<CycleSelectionState>(
+        new CycleSelectionCache(queryClient),
         (message) => toast.error(message),
         MUTATION_FALLBACK_ERROR_MESSAGE,
       ),
@@ -156,8 +175,9 @@ export function useCycleSelection(): CycleSelection {
     cycles: (cyclesQuery.data as DevelopmentCycle[] | undefined) ?? [],
     activeCycleId: (activeQuery.data as { cycleId: string } | undefined)?.cycleId ?? "",
     setActiveCycle: (cycleId) => {
+      const activation = CycleActivation.of(cycleId);
       runner.optimistic(
-        () => cycleId,
+        (state) => activation.appliedTo(state),
         () => api.setActiveCycle(cycleId),
       );
     },

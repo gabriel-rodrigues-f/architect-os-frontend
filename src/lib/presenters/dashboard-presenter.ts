@@ -48,12 +48,16 @@ export class DashboardPresenter {
   constructor(
     private readonly state: Pick<
       AppState,
-      "architects" | "evidences" | "plans" | "learningPaths" | "activeCycleId"
+      "architects" | "evidences" | "plans" | "learningPaths" | "cycles" | "activeCycleId"
     >,
     private readonly sel: Pick<Selectors, "progressionGapsFor" | "assessmentFor" | "planFor">,
     private readonly criticalGapThreshold: number = CRITICAL_GAP_THRESHOLD,
     private readonly authorization: UiAuthorizationPolicy = defaultUiAuthorizationPolicy,
   ) {}
+
+  get noCycleRegistered(): boolean {
+    return this.state.cycles.length === 0;
+  }
 
   pendingQueuesFor(user: SessionUser): LeadPendingQueues {
     const people = this.state.architects.filter(
