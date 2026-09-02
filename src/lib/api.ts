@@ -22,6 +22,7 @@ const {
   noticesGateway,
   reportsGateway,
   stateContextsGateway,
+  teamAllocationGateway,
   teamRosterGateway,
   teamsGateway,
   teamTransitionsGateway,
@@ -39,6 +40,7 @@ export const api = {
   ...learningGateway,
   ...mentoringGateway,
   ...evidenceGateway,
+  ...teamAllocationGateway,
 };
 
 export const authApi = { ...authGateway };

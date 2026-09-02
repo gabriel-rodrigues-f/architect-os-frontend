@@ -4,6 +4,7 @@ import type { SessionUser, TeamMemberRole } from "../gateways/auth.gateway";
 import { TeamMemberRoles } from "../gateways/auth.gateway";
 import type { TeamSummary } from "../gateways/teams.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
+import { defaultNameFormatter } from "../text";
 
 export const TEAM_STATUS_FILTERS = ["active", "inactive", "all"] as const;
 export type TeamStatusFilter = (typeof TEAM_STATUS_FILTERS)[number];
@@ -38,6 +39,10 @@ export class TeamRegistryViewModel {
 
   canCompose(user: SessionUser): boolean {
     return this.policy.canComposeAnyTeam(user);
+  }
+
+  canComposeTeam(user: SessionUser, teamId: string): boolean {
+    return this.policy.canComposeTeam(user, teamId);
   }
 
   canReadAccountDirectory(user: SessionUser): boolean {
@@ -77,6 +82,22 @@ export class TeamRegistryViewModel {
 
   activePeopleOf(teamId: string, architects: readonly Architect[]): Architect[] {
     return architects.filter((architect) => architect.active && architect.teamId === teamId);
+  }
+
+  allocatableTo(teamId: string, architects: readonly Architect[]): Architect[] {
+    return architects
+      .filter((architect) => architect.active && architect.teamId !== teamId)
+      .sort(defaultNameFormatter.byName);
+  }
+
+  teamNameOf(teamId: string | null | undefined, teams: readonly TeamSummary[]): string | null {
+    if (teamId == null) return null;
+    return teams.find((team) => team.id === teamId)?.name ?? null;
+  }
+
+  allocationRefusalOf(error: unknown): string | null {
+    if (!(error instanceof ApiError)) return null;
+    return error.status === 403 || error.status === 409 ? error.message : null;
   }
 
   linkableAccounts(accounts: readonly SessionUser[]): SessionUser[] {

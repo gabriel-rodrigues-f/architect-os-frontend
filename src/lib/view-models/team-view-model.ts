@@ -1,6 +1,7 @@
 import { UserFacingError } from "../api-errors";
 import type { SessionUser } from "../api";
 import type { Architect, RoleName } from "../domain";
+import type { TeamSummary } from "../gateways/teams.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
 import type { Api } from "../store";
 
@@ -15,6 +16,7 @@ export interface ArchitectFormValues {
   primarySpecializationCompetencyId: string | null;
   years: string;
   email: string;
+  teamId: string | null;
 }
 
 export const emptyArchitectForm = (defaultRole: ArchitectFormRole): ArchitectFormValues => ({
@@ -24,6 +26,7 @@ export const emptyArchitectForm = (defaultRole: ArchitectFormRole): ArchitectFor
   primarySpecializationCompetencyId: null,
   years: "",
   email: "",
+  teamId: null,
 });
 
 export type TeamRosterService = Pick<
@@ -39,6 +42,10 @@ export class TeamViewModel {
 
   isAdmin(user: SessionUser): boolean {
     return this.policy.isAdmin(user);
+  }
+
+  allocatableTeams(teams: readonly TeamSummary[]): TeamSummary[] {
+    return teams.filter((team) => team.active);
   }
 
   validate(form: ArchitectFormValues): { yearsValid: boolean; canSubmit: boolean } {
@@ -62,7 +69,7 @@ export class TeamViewModel {
     };
 
     if (editingId) {
-      this.service.updateArchitect(editingId, payload);
+      this.service.updateArchitect(editingId, { ...payload, teamId: form.teamId });
       return;
     }
 
@@ -74,6 +81,7 @@ export class TeamViewModel {
 
     await this.service.addArchitect({
       ...payload,
+      ...(form.teamId === null ? {} : { teamId: form.teamId }),
       specialization: "",
       role: form.role,
       active: true,
