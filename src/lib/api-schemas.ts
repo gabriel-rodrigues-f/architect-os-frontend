@@ -69,6 +69,32 @@ export const teamRosterMemberSchema = z.object({
 
 export const teamRosterResponseSchema = z.array(teamRosterMemberSchema);
 
+const calendarPeriodSchema = z.object({ from: z.string(), to: z.string() });
+
+const levelTransitionPairSchema = z.object({
+  fromRole: z.string(),
+  toRole: z.string(),
+  transitions: z.number(),
+  averageDaysInOriginLevel: z.number().nullable(),
+});
+
+const teamTransitionsRowSchema = z.object({
+  teamId: z.string(),
+  teamName: z.string(),
+  activeArchitects: z.number(),
+  transitions: z.number(),
+  transitionsPerActiveArchitect: z.number().nullable(),
+  measuredOrigins: z.number(),
+  averageDaysInOriginLevel: z.number().nullable(),
+  pairs: z.array(levelTransitionPairSchema),
+});
+
+export const teamTransitionsResponseSchema = z.object({
+  period: calendarPeriodSchema,
+  teams: z.array(teamTransitionsRowSchema),
+  withoutRecordedTeam: z.number().nullable(),
+});
+
 export const architectAdherenceResponseSchema = z.object({
   architectId: z.string(),
   teamId: z.string().nullable(),
