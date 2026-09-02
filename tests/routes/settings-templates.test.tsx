@@ -38,7 +38,7 @@ const countTemplatesGets = () =>
 
 /** O bloco do locale `pt` dentro da seção "Textos". */
 async function ptLocaleBlock(): Promise<HTMLElement> {
-  const section = (await screen.findByText("Objetivo de item de PDI a partir de gap")).closest(
+  const section = (await screen.findByText("Objetivo de item de PDI a partir de competência em evolução")).closest(
     "div.surface-inset",
   ) as HTMLElement;
   const badge = within(section)
@@ -69,7 +69,7 @@ describe("Textos (CFG-03 admin UI)", () => {
     });
     renderWithApp(<SettingsPage />);
     expect(await screen.findByText("Referência do modelo")).toBeTruthy();
-    expect(screen.queryByText("Objetivo de item de PDI a partir de gap")).toBeNull();
+    expect(screen.queryByText("Objetivo de item de PDI a partir de competência em evolução")).toBeNull();
     expect(screen.queryByText("Variáveis disponíveis")).toBeNull();
   });
 

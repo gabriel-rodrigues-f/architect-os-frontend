@@ -173,7 +173,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
     mockAppFetch(fetchMock, { user: fixtureMemberUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
-    await screen.findByText("Maiores gaps");
+    await screen.findByText("Maiores distâncias");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -182,7 +182,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
     mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
-    await screen.findByText("Maiores gaps");
+    await screen.findByText("Maiores distâncias");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -196,7 +196,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
     mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoBase });
     renderWithApp(<PlansPage />);
 
-    await screen.findByText("Maiores gaps");
+    await screen.findByText("Maiores distâncias");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -205,7 +205,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
     mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
-    await screen.findByText("Maiores gaps");
+    await screen.findByText("Maiores distâncias");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

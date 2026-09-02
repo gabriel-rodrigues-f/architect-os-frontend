@@ -38,7 +38,7 @@ const countBandsGets = () =>
 
 /** O bloco da escala GAP_SEVERITY dentro da seção "Réguas e limiares". */
 async function gapScaleBlock(): Promise<HTMLElement> {
-  const title = await screen.findByText("Severidade de gap");
+  const title = await screen.findByText("Severidade de distância");
   return title.closest("div.surface-inset") as HTMLElement;
 }
 

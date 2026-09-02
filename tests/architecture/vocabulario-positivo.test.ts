@@ -22,8 +22,12 @@ import pt from "@/locales/pt.json";
  *
  * A régua, em duas metades:
  *   1. nenhum VALOR de `pt.json` ou `en.json` contém "lacuna" (em qualquer
- *      flexão), e nenhum valor do `en.json` contém "gap" como palavra isolada
- *      — o equivalente inglês do mesmo pedido;
+ *      flexão), e nenhum valor de NENHUM dos dois contém "gap" como palavra
+ *      isolada — em inglês desde a onda 31; em português desde o RUMO AO
+ *      100% (2026-09-02): onde "gap" era a MÉTRICA numérica, a palavra é
+ *      "Distância" ("Distância 0 adequada", "Distância média", "Severidade
+ *      de distância"); onde já era o conceito, fica "competências em
+ *      evolução";
  *   2. nenhuma string literal, template ou texto JSX de `src/` contém
  *      "lacuna" — texto cru na tela é proibido pela régua de i18n, mas as
  *      meta descriptions das rotas são literais legítimas e já carregavam a
@@ -52,7 +56,7 @@ const SRC = join(RAIZ, "src");
 const FIXTURES = join(RAIZ, "tests", "helpers");
 
 const PALAVRA_PROIBIDA_NAS_DUAS_LINGUAS = /lacuna/i;
-const PALAVRA_PROIBIDA_EM_INGLES = /\bgaps?\b/i;
+const ANGLICISMO_PROIBIDO_NAS_DUAS_LINGUAS = /\bgaps?\b/i;
 const NIVEL_NUMERADO_EM_PORTUGUES = /Arquiteto de Solu(?:ç|c)(?:ões|oes)\s+(?:I{1,3}|IV|[1-4])\b/i;
 const NIVEL_NUMERADO_EM_INGLES = /Solutions? Architect\s+(?:I{1,3}|IV|[1-4])\b/i;
 
@@ -137,15 +141,18 @@ const textosDaFonte = TextosDaFonte.de(SRC);
 const textosDasFixtures = TextosDaFonte.de(FIXTURES);
 
 describe("vocabulário positivo — 'lacuna' não volta", () => {
-  it("nenhum valor do pt.json diz 'lacuna'", () => {
-    const dicionario = new Dicionario("pt", pt, [PALAVRA_PROIBIDA_NAS_DUAS_LINGUAS]);
+  it("nenhum valor do pt.json diz 'lacuna' nem 'gap' como palavra isolada — o número se chama 'Distância'", () => {
+    const dicionario = new Dicionario("pt", pt, [
+      PALAVRA_PROIBIDA_NAS_DUAS_LINGUAS,
+      ANGLICISMO_PROIBIDO_NAS_DUAS_LINGUAS,
+    ]);
     expect(dicionario.infratoras).toEqual([]);
   });
 
   it("nenhum valor do en.json diz 'lacuna' nem 'gap' como palavra isolada", () => {
     const dicionario = new Dicionario("en", en, [
       PALAVRA_PROIBIDA_NAS_DUAS_LINGUAS,
-      PALAVRA_PROIBIDA_EM_INGLES,
+      ANGLICISMO_PROIBIDO_NAS_DUAS_LINGUAS,
     ]);
     expect(dicionario.infratoras).toEqual([]);
   });
