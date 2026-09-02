@@ -143,7 +143,11 @@ export interface Api extends AppState {
 
   deactivate: (id: string, reason: string) => Promise<Architect>;
 
-  allocateArchitectToTeam: (architectId: string, teamId: string) => Promise<Architect>;
+  allocateArchitectToTeam: (
+    architectId: string,
+    teamId: string,
+    reason: string,
+  ) => Promise<Architect>;
   releaseArchitectFromTeam: (architectId: string) => Promise<Architect>;
 
   defineTeamRuleMinimum: (
@@ -460,9 +464,9 @@ export function buildApi(
       );
     },
 
-    allocateArchitectToTeam: (architectId, teamId) =>
+    allocateArchitectToTeam: (architectId, teamId, reason) =>
       runner.command(
-        () => api.allocateArchitectToTeam(architectId, teamId),
+        () => api.allocateArchitectToTeam(architectId, teamId, reason),
         (allocated) => (state) => ({
           ...state,
           architects: state.architects.map((architect) =>

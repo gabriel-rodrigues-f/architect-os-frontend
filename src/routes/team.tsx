@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import {
   ArchitectNameCombobox,
-  CareerLevelTransitionDialog,
   DataViewToolbar,
   DeactivateDialog,
   MultiSelectFilter,
@@ -12,6 +11,7 @@ import {
   Pagination,
   SingleSelectFilter,
   SpecializationCombobox,
+  TeamOrLevelChangeDialog,
   TeamRosterView,
   useArchitectForm,
   useCardsAndTableViews,
@@ -277,27 +277,29 @@ function TeamRoster() {
                 </select>
               </div>
             )}
-            <div>
-              <Label htmlFor="team">{t("team.form.team")}</Label>
-              <select
-                id="team"
-                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-                value={form.form.teamId ?? ""}
-                onChange={(event) =>
-                  form.setForm({
-                    ...form.form,
-                    teamId: event.target.value === "" ? null : event.target.value,
-                  })
-                }
-              >
-                <option value="">{t("team.form.team.none")}</option>
-                {form.teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!form.editing && (
+              <div>
+                <Label htmlFor="team">{t("team.form.team")}</Label>
+                <select
+                  id="team"
+                  className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                  value={form.form.teamId ?? ""}
+                  onChange={(event) =>
+                    form.setForm({
+                      ...form.form,
+                      teamId: event.target.value === "" ? null : event.target.value,
+                    })
+                  }
+                >
+                  <option value="">{t("team.form.team.none")}</option>
+                  {form.teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="spec">{t("team.form.spec")}</Label>
@@ -354,8 +356,9 @@ function TeamRoster() {
       )}
 
       {form.transitioning && (
-        <CareerLevelTransitionDialog
+        <TeamOrLevelChangeDialog
           architect={form.transitioning}
+          teams={form.teams}
           onClose={() => form.setTransitioning(null)}
         />
       )}

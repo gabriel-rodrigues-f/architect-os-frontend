@@ -4,26 +4,35 @@ import type { Architect } from "../domain";
 import type { TeamSummary } from "./teams.gateway";
 
 export interface TeamAllocationGateway {
-  allocateArchitectToTeam(architectId: string, teamId: string): Promise<Architect>;
+  allocateArchitectToTeam(architectId: string, teamId: string, reason: string): Promise<Architect>;
   releaseArchitectFromTeam(architectId: string): Promise<Architect>;
 }
 
 export interface TeamAllocationMade {
   readonly architectId: string;
   readonly teamId: string;
+  readonly reason: string;
 }
 
 export class HttpTeamAllocationGateway implements TeamAllocationGateway {
   constructor(private readonly client: ApiClient) {}
 
-  allocateArchitectToTeam = (architectId: string, teamId: string): Promise<Architect> =>
-    this.client.post<Architect>(`/architects/${architectId}/team-allocation`, { teamId });
+  allocateArchitectToTeam = (
+    architectId: string,
+    teamId: string,
+    reason: string,
+  ): Promise<Architect> =>
+    this.client.post<Architect>(`/architects/${architectId}/team-allocation`, { teamId, reason });
 
   releaseArchitectFromTeam = (architectId: string): Promise<Architect> =>
     this.client.del<Architect>(`/architects/${architectId}/team-allocation`);
 }
 
 export class TeamAllocationRefusal {
+  static reasonRequired(): ApiError {
+    return new ApiError("Informe o motivo da mudança de time.", 400, undefined, "VALIDATION_ERROR");
+  }
+
   static architectNotFound(architectId: string): ApiError {
     return new ApiError(
       `Arquiteto ${architectId} não encontrado.`,
@@ -77,7 +86,12 @@ export class InMemoryTeamAllocationGateway implements TeamAllocationGateway {
     this.architectsById = new Map(architects.map((architect) => [architect.id, { ...architect }]));
   }
 
-  allocateArchitectToTeam = (architectId: string, teamId: string): Promise<Architect> => {
+  allocateArchitectToTeam = (
+    architectId: string,
+    teamId: string,
+    reason: string,
+  ): Promise<Architect> => {
+    if (reason.trim() === "") return Promise.reject(TeamAllocationRefusal.reasonRequired());
     const architect = this.architectsById.get(architectId);
     if (!architect) return Promise.reject(TeamAllocationRefusal.architectNotFound(architectId));
     const team = this.teams.find((candidate) => candidate.id === teamId);
@@ -88,7 +102,7 @@ export class InMemoryTeamAllocationGateway implements TeamAllocationGateway {
     }
     const allocated = { ...architect, teamId, version: architect.version + 1 };
     this.architectsById.set(architectId, allocated);
-    this.allocationsMade.push({ architectId, teamId });
+    this.allocationsMade.push({ architectId, teamId, reason });
     return Promise.resolve(allocated);
   };
 

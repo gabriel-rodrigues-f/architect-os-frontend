@@ -75,6 +75,9 @@ const fabio: Architect = {
 
 const CAMINHO_DO_QUADRO = apiPath(`/teams/${fixtureTeamId}/memberships`);
 
+/** Onda 35: alocar exige motivo — `{ teamId, reason }`, 400 sem ele. */
+const MOTIVO = "Reforço na plataforma";
+
 const rotaDeTimes: FetchRoute = (href, init) =>
   href.endsWith(apiPath("/teams")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse(times)
@@ -157,10 +160,13 @@ describe("/teams — alocar pessoa ao time, pelo gateway em memória (o oráculo
     expect(opcoes.some((texto) => texto?.startsWith("Fábio Lima"))).toBe(false);
 
     await userEvent.click(screen.getByRole("option", { name: "Diego Ramos — sem time" }));
+    await userEvent.type(dialogo.getByLabelText("Motivo da mudança"), MOTIVO);
     await userEvent.click(dialogo.getByRole("button", { name: "Alocar" }));
 
     expect(await secaoDePessoas().findByText("Diego Ramos")).toBeTruthy();
-    expect(gateway.allocationsMade).toEqual([{ architectId: "diego", teamId: fixtureTeamId }]);
+    expect(gateway.allocationsMade).toEqual([
+      { architectId: "diego", teamId: fixtureTeamId, reason: MOTIVO },
+    ]);
   });
 
   it("a recusa do serviço aparece no diálogo, com a mensagem dele, e o quadro não muda", async () => {
@@ -176,6 +182,7 @@ describe("/teams — alocar pessoa ao time, pelo gateway em memória (o oráculo
     const dialogo = await abrirODialogoDeAlocacao();
     await userEvent.click(dialogo.getByLabelText("Pessoa"));
     await userEvent.click(screen.getByRole("option", { name: "Diego Ramos — sem time" }));
+    await userEvent.type(dialogo.getByLabelText("Motivo da mudança"), MOTIVO);
     await userEvent.click(dialogo.getByRole("button", { name: "Alocar" }));
 
     expect((await dialogo.findByRole("alert")).textContent).toContain(
@@ -186,7 +193,7 @@ describe("/teams — alocar pessoa ao time, pelo gateway em memória (o oráculo
 });
 
 describe("/teams — alocar e retirar pelo container de produção (o contrato no fio)", () => {
-  it("alocar chama POST /architects/:id/team-allocation com { teamId } e a pessoa passa a listar no quadro", async () => {
+  it("alocar chama POST /architects/:id/team-allocation com { teamId, reason } e a pessoa passa a listar no quadro", async () => {
     const alocacao: FetchRoute = (href, init) => {
       if (href.endsWith(apiPath("/architects/diego/team-allocation")) && init?.method === "POST") {
         const body = JSON.parse(String(init.body)) as { teamId: string };
@@ -203,12 +210,14 @@ describe("/teams — alocar e retirar pelo container de produção (o contrato n
     const dialogo = await abrirODialogoDeAlocacao();
     await userEvent.click(dialogo.getByLabelText("Pessoa"));
     await userEvent.click(screen.getByRole("option", { name: "Diego Ramos — sem time" }));
+    await userEvent.type(dialogo.getByLabelText("Motivo da mudança"), MOTIVO);
     await userEvent.click(dialogo.getByRole("button", { name: "Alocar" }));
 
     expect(await secaoDePessoas().findByText("Diego Ramos")).toBeTruthy();
     const [chamada] = chamadas("POST", apiPath("/architects/diego/team-allocation"));
     expect(JSON.parse(String((chamada?.[1] as RequestInit).body))).toEqual({
       teamId: fixtureTeamId,
+      reason: MOTIVO,
     });
   });
 
@@ -246,6 +255,7 @@ describe("/teams — alocar e retirar pelo container de produção (o contrato n
     const dialogo = await abrirODialogoDeAlocacao();
     await userEvent.click(dialogo.getByLabelText("Pessoa"));
     await userEvent.click(screen.getByRole("option", { name: "Diego Ramos — sem time" }));
+    await userEvent.type(dialogo.getByLabelText("Motivo da mudança"), MOTIVO);
     await userEvent.click(dialogo.getByRole("button", { name: "Alocar" }));
 
     expect((await dialogo.findByRole("alert")).textContent).toContain(

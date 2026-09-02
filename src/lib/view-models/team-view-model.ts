@@ -31,8 +31,33 @@ export const emptyArchitectForm = (defaultRole: ArchitectFormRole): ArchitectFor
 
 export type TeamRosterService = Pick<
   Api,
-  "addArchitect" | "updateArchitect" | "transitionCareerLevel" | "deactivate"
+  | "addArchitect"
+  | "updateArchitect"
+  | "transitionCareerLevel"
+  | "deactivate"
+  | "allocateArchitectToTeam"
+  | "releaseArchitectFromTeam"
 >;
+
+export class TeamOrLevelChange {
+  constructor(
+    readonly architect: Architect,
+    readonly toRole: ArchitectFormRole,
+    readonly toTeamId: string | null,
+  ) {}
+
+  get levelChanged(): boolean {
+    return this.toRole !== "" && this.toRole !== this.architect.role;
+  }
+
+  get teamChanged(): boolean {
+    return this.toTeamId !== (this.architect.teamId ?? null);
+  }
+
+  get isEffective(): boolean {
+    return this.levelChanged || this.teamChanged;
+  }
+}
 
 export class TeamViewModel {
   constructor(
@@ -46,6 +71,18 @@ export class TeamViewModel {
 
   allocatableTeams(teams: readonly TeamSummary[]): TeamSummary[] {
     return teams.filter((team) => team.active);
+  }
+
+  teamNameOf(teamId: string | null | undefined, teams: readonly TeamSummary[]): string | null {
+    if (teamId == null) return null;
+    return teams.find((team) => team.id === teamId)?.name ?? null;
+  }
+
+  otherCareerLevels<TLevel extends { name: string }>(
+    levels: readonly TLevel[],
+    currentRole: RoleName,
+  ): TLevel[] {
+    return levels.filter((level) => level.name !== currentRole);
   }
 
   validate(form: ArchitectFormValues): { yearsValid: boolean; canSubmit: boolean } {
@@ -69,7 +106,7 @@ export class TeamViewModel {
     };
 
     if (editingId) {
-      this.service.updateArchitect(editingId, { ...payload, teamId: form.teamId });
+      this.service.updateArchitect(editingId, payload);
       return;
     }
 
@@ -94,6 +131,21 @@ export class TeamViewModel {
 
   transitionCareerLevel(architectId: string, toRole: RoleName, reason: string): Promise<Architect> {
     return this.service.transitionCareerLevel(architectId, toRole, reason);
+  }
+
+  async changeTeamOrLevel(change: TeamOrLevelChange, reason: string): Promise<Architect> {
+    const { id } = change.architect;
+    let updated = change.architect;
+    if (change.levelChanged && change.toRole !== "") {
+      updated = await this.service.transitionCareerLevel(id, change.toRole, reason);
+    }
+    if (change.teamChanged) {
+      updated =
+        change.toTeamId === null
+          ? await this.service.releaseArchitectFromTeam(id)
+          : await this.service.allocateArchitectToTeam(id, change.toTeamId, reason);
+    }
+    return updated;
   }
 
   deactivate(architectId: string, reason: string): Promise<Architect> {

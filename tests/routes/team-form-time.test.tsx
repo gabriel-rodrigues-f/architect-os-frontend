@@ -136,18 +136,24 @@ describe("Time — o campo Time no cadastro e na edição do arquiteto", () => {
     );
   });
 
-  it("editar abre com o time atual da pessoa e 'Sem time' viaja como teamId nulo", async () => {
+  /**
+   * Onda 35 — achado 17 do dono (2026-09-02): "Depois de cadastrado, o time
+   * não muda pelo lápis; só pelo diálogo da setinha, com motivo obrigatório."
+   * O lápis (Editar) perde o campo Time e o PATCH não carrega `teamId`.
+   */
+  it("editar NÃO oferece o campo Time e o PATCH não carrega teamId — o time muda só por 'Mudar time ou nível'", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
     await userEvent.click(screen.getByLabelText("Editar Ana Martins"));
     const dialogo = await screen.findByRole("dialog");
-    const select = (await within(dialogo).findByLabelText("Time")) as HTMLSelectElement;
-    await waitFor(() => expect(select.value).toBe(fixtureTeamId));
+    await within(dialogo).findByLabelText("Nome");
+    expect(within(dialogo).queryByLabelText("Time")).toBeNull();
 
-    await userEvent.selectOptions(select, "");
     await userEvent.click(within(dialogo).getByRole("button", { name: "Salvar" }));
 
-    await waitFor(() => expect(corpoDa("PATCH", apiPath("/architects/ana"))["teamId"]).toBeNull());
+    await waitFor(() =>
+      expect(corpoDa("PATCH", apiPath("/architects/ana"))).not.toHaveProperty("teamId"),
+    );
   });
 });
