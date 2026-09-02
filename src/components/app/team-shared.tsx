@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -11,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { type Architect, type RoleName } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
+import { teamsApi } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -42,6 +45,15 @@ function useTeamViewModel(): TeamViewModel {
 
 export function useArchitectForm() {
   const viewModel = useTeamViewModel();
+  const isAdmin = viewModel.isAdmin(useCurrentUser());
+
+  const teamsQuery = useQuery({
+    queryKey: ["teams"],
+    queryFn: teamsApi.teams,
+    staleTime: 60_000,
+    enabled: isAdmin,
+  });
+  const teams = viewModel.allocatableTeams(teamsQuery.data ?? []);
 
   const careerLevels = useCareerLevelsByRank();
   const firstCareerLevel = careerLevels[0];
@@ -69,6 +81,7 @@ export function useArchitectForm() {
       primarySpecializationCompetencyId: architect.primarySpecializationCompetencyId ?? null,
       years: String(architect.yearsAsArchitect),
       email: architect.email,
+      teamId: architect.teamId ?? null,
     });
     setEditing(architect.id);
   };
@@ -101,6 +114,7 @@ export function useArchitectForm() {
     setEditing,
     form,
     setForm,
+    teams,
     confirmDeactivate,
     setConfirmDeactivate,
     transitioning,

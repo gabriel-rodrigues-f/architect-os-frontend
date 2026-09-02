@@ -38,6 +38,7 @@ const baseForm: ArchitectFormValues = {
   primarySpecializationCompetencyId: null,
   years: "2",
   email: "carla@company.com",
+  teamId: null,
 };
 
 describe("TeamViewModel", () => {
@@ -92,6 +93,21 @@ describe("TeamViewModel", () => {
         role: "Júnior",
         active: true,
       });
+    });
+
+    it("sem time escolhido, o corpo não carrega teamId; com time escolhido, carrega (onda 33)", async () => {
+      const service = fakeService();
+      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
+
+      await vm.submit(baseForm, null);
+      expect(service.addArchitect).toHaveBeenLastCalledWith(
+        expect.not.objectContaining({ teamId: expect.anything() }),
+      );
+
+      await vm.submit({ ...baseForm, teamId: "time-dados" }, null);
+      expect(service.addArchitect).toHaveBeenLastCalledWith(
+        expect.objectContaining({ teamId: "time-dados" }),
+      );
     });
 
     it("também cria quando editingId é string vazia (convenção de 'diálogo aberto para criar')", async () => {
@@ -151,10 +167,35 @@ describe("TeamViewModel", () => {
         yearsAsArchitect: 2,
         primarySpecializationCompetencyId: null,
         email: "carla@company.com",
+        teamId: null,
       });
       const [, patch] = service.updateArchitect.mock.calls[0]!;
       expect(patch).not.toHaveProperty("role");
       expect(patch).not.toHaveProperty("specialization");
+    });
+  });
+
+  describe("submit — o time viaja como teamId na edição (onda 33)", () => {
+    it("'Sem time' é teamId nulo explícito; time escolhido é o id dele", async () => {
+      const service = fakeService();
+      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
+
+      await vm.submit({ ...baseForm, teamId: "time-dados" }, "ana");
+
+      expect(service.updateArchitect).toHaveBeenCalledWith(
+        "ana",
+        expect.objectContaining({ teamId: "time-dados" }),
+      );
+    });
+
+    it("allocatableTeams oferece só os times ativos", () => {
+      const vm = new TeamViewModel(fakeService(), new UiAuthorizationPolicy());
+      expect(
+        vm.allocatableTeams([
+          { id: "a", name: "A", active: true },
+          { id: "b", name: "B", active: false },
+        ]),
+      ).toEqual([{ id: "a", name: "A", active: true }]);
     });
   });
 
@@ -207,6 +248,7 @@ describe("emptyArchitectForm", () => {
       primarySpecializationCompetencyId: null,
       years: "",
       email: "",
+      teamId: null,
     });
   });
 });

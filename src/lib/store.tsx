@@ -143,6 +143,9 @@ export interface Api extends AppState {
 
   deactivate: (id: string, reason: string) => Promise<Architect>;
 
+  allocateArchitectToTeam: (architectId: string, teamId: string) => Promise<Architect>;
+  releaseArchitectFromTeam: (architectId: string) => Promise<Architect>;
+
   defineTeamRuleMinimum: (
     teamId: string,
     careerLevelId: string,
@@ -456,6 +459,28 @@ export function buildApi(
         }),
       );
     },
+
+    allocateArchitectToTeam: (architectId, teamId) =>
+      runner.command(
+        () => api.allocateArchitectToTeam(architectId, teamId),
+        (allocated) => (state) => ({
+          ...state,
+          architects: state.architects.map((architect) =>
+            architect.id === architectId ? allocated : architect,
+          ),
+        }),
+      ),
+
+    releaseArchitectFromTeam: (architectId) =>
+      runner.command(
+        () => api.releaseArchitectFromTeam(architectId),
+        (released) => (state) => ({
+          ...state,
+          architects: state.architects.map((architect) =>
+            architect.id === architectId ? released : architect,
+          ),
+        }),
+      ),
 
     addCompetency: (c) =>
       runner.command(

@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { authApi, teamRosterApi, teamsApi, teamTransitionsApi, type SessionUser } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import type { Architect } from "@/lib/domain";
 import { TeamMemberRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
 import type { TeamRosterMember } from "@/lib/gateways/team-roster.gateway";
 import type {
@@ -202,7 +203,13 @@ function TeamsPage() {
                 onDeactivate={setDeactivating}
               />
               {chosen && (
-                <TeamRoster key={chosen.id} team={chosen} user={user} registry={registry} />
+                <TeamRoster
+                  key={chosen.id}
+                  team={chosen}
+                  teams={teams}
+                  user={user}
+                  registry={registry}
+                />
               )}
               {canCompare && <TeamTransitionsSection comparison={comparison} />}
             </div>
@@ -533,18 +540,18 @@ function TeamTransitionsRowView({
 
 function TeamRoster({
   team,
+  teams,
   user,
   registry,
 }: {
   team: TeamSummary;
+  teams: readonly TeamSummary[];
   user: SessionUser;
   registry: TeamRegistryViewModel;
 }) {
   const { t } = useI18n();
-  const store = useStore();
   const queryClient = useQueryClient();
   const canReadDirectory = registry.canReadAccountDirectory(user);
-  const people = registry.activePeopleOf(team.id, store.architects);
 
   const accountsQuery = useQuery({
     queryKey: ACCOUNTS_QUERY_KEY,
@@ -566,23 +573,12 @@ function TeamRoster({
       <div className="space-y-4">
         <TeamRosterRows team={team} user={user} registry={registry} onChanged={reloadRoster} />
 
-        <SectionCard
-          title={t("teams.roster.people.title")}
-          description={t("teams.roster.people.subtitle")}
-        >
-          {people.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("teams.roster.people.empty")}</p>
-          ) : (
-            <ul className="space-y-1 text-sm">
-              {people.map((person) => (
-                <li key={person.id} className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{person.name}</span>
-                  <span className="text-muted-foreground">{person.role}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
+        <TeamPeople
+          team={team}
+          teams={teams}
+          registry={registry}
+          canCompose={registry.canComposeTeam(user, team.id)}
+        />
       </div>
 
       {canReadDirectory ? (
@@ -957,6 +953,188 @@ function TeamNameDialog({
           </Button>
           <Button disabled={!canSave} onClick={() => void run(() => onSave(trimmed))}>
             {submitting ? t("teams.name.saving") : t("teams.name.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TeamPeople({
+  team,
+  teams,
+  registry,
+  canCompose,
+}: {
+  team: TeamSummary;
+  teams: readonly TeamSummary[];
+  registry: TeamRegistryViewModel;
+  canCompose: boolean;
+}) {
+  const { t } = useI18n();
+  const store = useStore();
+  const notifySuccess = useSuccessToast();
+  const [allocating, setAllocating] = useState(false);
+  const [releasing, setReleasing] = useState<Architect | null>(null);
+  const { error, run } = useAsyncSubmit(
+    (failure) => registry.allocationRefusalOf(failure) ?? t("teams.people.error"),
+  );
+  const people = registry.activePeopleOf(team.id, store.architects);
+
+  const release = async (person: Architect) => {
+    setReleasing(null);
+    const result = await run(() => store.releaseArchitectFromTeam(person.id));
+    if (!result.ok) return;
+    notifySuccess(
+      "msg.people.release.success",
+      { nome: person.name, time: team.name },
+      result.value,
+    );
+  };
+
+  return (
+    <SectionCard
+      title={t("teams.roster.people.title")}
+      description={t("teams.roster.people.subtitle")}
+      actions={
+        canCompose && (
+          <Button size="sm" onClick={() => setAllocating(true)}>
+            {t("teams.people.allocate")}
+          </Button>
+        )
+      }
+    >
+      {people.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("teams.roster.people.empty")}</p>
+      ) : (
+        <ul className="space-y-1 text-sm">
+          {people.map((person) => (
+            <li key={person.id} className="flex items-center justify-between gap-2">
+              <span className="font-medium">{person.name}</span>
+              <span className="flex items-center gap-3">
+                <span className="text-muted-foreground">{person.role}</span>
+                {canCompose && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    aria-label={t("teams.people.releaseFor", { nome: person.name })}
+                    onClick={() => setReleasing(person)}
+                  >
+                    {t("teams.people.release")}
+                  </Button>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && (
+        <p className="mt-2 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+
+      <ConfirmDialog
+        open={releasing !== null}
+        title={releasing && t("teams.people.releaseConfirmTitle", { nome: releasing.name })}
+        description={
+          releasing && t("teams.people.releaseConfirmDescription", { nome: releasing.name })
+        }
+        confirmLabel={t("teams.people.release")}
+        onCancel={() => setReleasing(null)}
+        onConfirm={() => releasing && void release(releasing)}
+      />
+
+      {allocating && (
+        <AllocatePersonDialog
+          team={team}
+          candidates={registry.allocatableTo(team.id, store.architects)}
+          teams={teams}
+          registry={registry}
+          onCancel={() => setAllocating(false)}
+          onAllocated={(person, allocated) => {
+            notifySuccess(
+              "msg.people.allocate.success",
+              { nome: person.name, time: team.name },
+              allocated,
+            );
+            setAllocating(false);
+          }}
+        />
+      )}
+    </SectionCard>
+  );
+}
+
+function AllocatePersonDialog({
+  team,
+  candidates,
+  teams,
+  registry,
+  onCancel,
+  onAllocated,
+}: {
+  team: TeamSummary;
+  candidates: readonly Architect[];
+  teams: readonly TeamSummary[];
+  registry: TeamRegistryViewModel;
+  onCancel: () => void;
+  onAllocated: (person: Architect, allocated: Architect) => void;
+}) {
+  const { t } = useI18n();
+  const store = useStore();
+  const [architectId, setArchitectId] = useState("");
+  const { submitting, error, run } = useAsyncSubmit(
+    (failure) => registry.allocationRefusalOf(failure) ?? t("teams.people.error"),
+  );
+  const chosen = candidates.find((candidate) => candidate.id === architectId);
+
+  const allocate = async () => {
+    if (!chosen) return;
+    const result = await run(() => store.allocateArchitectToTeam(chosen.id, team.id));
+    if (result.ok) onAllocated(chosen, result.value);
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("teams.people.allocateTitle", { nome: team.name })}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">{t("teams.people.allocateDescription")}</p>
+        <div className="grid gap-3">
+          {candidates.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("teams.people.nobodyToAllocate")}</p>
+          ) : (
+            <SingleSelectFilter
+              id={`team-allocate-${team.id}`}
+              label={t("teams.people.person")}
+              value={architectId}
+              onChange={setArchitectId}
+              options={[
+                { value: "", label: t("teams.people.choosePerson") },
+                ...candidates.map((candidate) => ({
+                  value: candidate.id,
+                  label: t("teams.people.candidate", {
+                    nome: candidate.name,
+                    time: registry.teamNameOf(candidate.teamId, teams) ?? t("teams.people.noTeam"),
+                  }),
+                })),
+              ]}
+            />
+          )}
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={submitting}>
+            {t("common.cancel")}
+          </Button>
+          <Button disabled={!chosen || submitting} onClick={() => void allocate()}>
+            {t("teams.people.confirmAllocate")}
           </Button>
         </DialogFooter>
       </DialogContent>

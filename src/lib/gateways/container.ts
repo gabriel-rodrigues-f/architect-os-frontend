@@ -17,6 +17,7 @@ import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway
 import { HttpNoticesGateway, type NoticesGateway } from "./notices.gateway";
 import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
 import { HttpStateContextsGateway, type StateContextsGateway } from "./state-contexts.gateway";
+import { HttpTeamAllocationGateway, type TeamAllocationGateway } from "./team-allocation.gateway";
 import { HttpTeamRosterGateway, type TeamRosterGateway } from "./team-roster.gateway";
 import {
   HttpTeamTransitionsGateway,
@@ -48,6 +49,7 @@ export class FrontendContainer {
   readonly noticesGateway: NoticesGateway;
   readonly reportsGateway: ReportsGateway;
   readonly stateContextsGateway: StateContextsGateway;
+  readonly teamAllocationGateway: TeamAllocationGateway;
   readonly teamRosterGateway: TeamRosterGateway;
   readonly teamsGateway: TeamsGateway;
   readonly teamTransitionsGateway: TeamTransitionsGateway;
@@ -76,6 +78,7 @@ export class FrontendContainer {
     this.stateContextsGateway = new HttpStateContextsGateway(config.baseUrl, (error) =>
       this.sessionPolicy.reviewFailure(error),
     );
+    this.teamAllocationGateway = new HttpTeamAllocationGateway(this.apiClient);
     this.teamRosterGateway = new HttpTeamRosterGateway(this.apiClient);
     this.teamsGateway = new HttpTeamsGateway(this.apiClient);
     this.teamTransitionsGateway = new HttpTeamTransitionsGateway(this.apiClient);
