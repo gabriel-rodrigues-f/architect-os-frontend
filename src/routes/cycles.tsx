@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import type { DevelopmentCycle } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
+import { useCycleSelection } from "@/lib/context-scope";
 import { CycleCadenceScheme } from "@/lib/cycle-cadence";
 import { useLabels } from "@/lib/labels";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -76,6 +77,7 @@ function CycleAdministration() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
+  const { setActiveCycle: activateCycle } = useCycleSelection();
 
   const isAdmin = useCurrentUser().role === "admin";
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
@@ -147,7 +149,7 @@ function CycleAdministration() {
                     variant="outline"
                     size="sm"
                     className="h-7 px-2 text-xs"
-                    onClick={() => store.setActiveCycle(c.id)}
+                    onClick={() => activateCycle(c.id)}
                   >
                     {t("cycle.activate")}
                   </Button>
