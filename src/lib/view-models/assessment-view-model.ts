@@ -6,6 +6,7 @@ import type {
   AssessmentDevelopmentSummary,
   AssessmentEligibility,
   Capability,
+  Competency,
   Level,
 } from "../domain";
 import type { CommentInput } from "../gateways/assessment.gateway";
@@ -27,6 +28,12 @@ export type AssessmentPortfolioService = Pick<
   | "confirmAssessmentCapability"
   | "updateAssessmentDevelopmentSummary"
 >;
+
+export interface AssessmentCompletionBrief {
+  readonly competencyCount: number;
+  readonly divergentCount: number;
+  readonly pendingLeaderFinal: readonly Competency[];
+}
 
 interface AssessmentPermissions {
   isOwner: boolean;
@@ -85,6 +92,26 @@ export class AssessmentViewModel {
       incompleteSelf,
       incompleteLeaderFinal,
       seesAssessmentNumbers,
+    };
+  }
+
+  completionBriefFor(
+    assessment: Assessment | undefined,
+    competencies: readonly Competency[],
+  ): AssessmentCompletionBrief {
+    const items = assessment?.items ?? [];
+    const divergentCount = items.filter(
+      (item) => item.self !== null && item.leader !== null && item.self !== item.leader,
+    ).length;
+    const pendingIds = new Set(
+      items
+        .filter((item) => item.leader === null || item.final === null)
+        .map((item) => item.competencyId),
+    );
+    return {
+      competencyCount: items.length,
+      divergentCount,
+      pendingLeaderFinal: competencies.filter((competency) => pendingIds.has(competency.id)),
     };
   }
 
