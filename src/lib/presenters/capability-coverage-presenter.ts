@@ -25,6 +25,7 @@ interface CapabilityCoverageArea {
   }[];
   assessedCount: number;
   notAssessed: number;
+  unassessed: Architect[];
   references: { architect: Architect; level: number }[];
   risk: RiskState;
 }
@@ -65,7 +66,10 @@ export class CapabilityCoveragePresenter {
         const assessed = people.filter(
           (p): p is { architect: Architect; level: number } => p.level !== undefined,
         );
-        const notAssessed = people.length - assessed.length;
+        const unassessed = people
+          .filter((person) => person.level === undefined)
+          .map((person) => person.architect);
+        const notAssessed = unassessed.length;
         const bands = this.bands.map((band) => ({
           ...band,
           people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
@@ -74,7 +78,15 @@ export class CapabilityCoveragePresenter {
         const advanced = bands.find((b) => b.key === "advanced")?.people ?? [];
         const references = [...experts, ...advanced];
         const risk = this.classifyRisk(assessed.length, references.length);
-        return { cat, bands, assessedCount: assessed.length, notAssessed, references, risk };
+        return {
+          cat,
+          bands,
+          assessedCount: assessed.length,
+          notAssessed,
+          unassessed,
+          references,
+          risk,
+        };
       });
   }
 }
