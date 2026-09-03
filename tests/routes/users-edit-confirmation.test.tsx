@@ -121,7 +121,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Editar Outro Membro" }));
 
     const dialog = await screen.findByRole("dialog");
-    await userEvent.selectOptions(within(dialog).getByLabelText("Papel"), "admin");
+    await userEvent.selectOptions(within(dialog).getByLabelText("Cargo"), "admin");
     await userEvent.click(within(dialog).getByRole("button", { name: "Salvar alterações" }));
 
     // Vira a etapa de confirmação — nada foi salvo ainda.
@@ -145,7 +145,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await screen.findByText("Outro Membro");
     await userEvent.click(screen.getByRole("button", { name: "Editar Outro Membro" }));
     const dialog = await screen.findByRole("dialog");
-    await userEvent.selectOptions(within(dialog).getByLabelText("Papel"), "admin");
+    await userEvent.selectOptions(within(dialog).getByLabelText("Cargo"), "admin");
     await userEvent.click(within(dialog).getByRole("button", { name: "Salvar alterações" }));
 
     await screen.findByText("Conceder acesso de Administrador");

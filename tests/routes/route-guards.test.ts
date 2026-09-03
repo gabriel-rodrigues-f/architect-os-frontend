@@ -61,7 +61,7 @@ afterEach(() => {
 });
 
 describe("guardas de navegação das telas administrativas", () => {
-  it("nega /users a quem não é admin", async () => {
+  it("nega /users ao profissional — cadastrar pessoa é da liderança", async () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/users")).toBe("/");
   });
 
@@ -135,8 +135,14 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
     );
   });
 
-  it("nega /users a um lead", async () => {
-    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/users")).toBe("/");
+  /**
+   * ONDA 37 — o cadastro unificado abriu /users à liderança: é o único lugar
+   * onde uma pessoa nasce, e o dono definiu que gestor e tech lead cadastram
+   * no time deles. O DIRETÓRIO de contas continua administrativo — quem nega
+   * a leitura é a tela (`users-alcance.test.tsx`), não a navegação.
+   */
+  it("abre /users ao lead — é onde ele cadastra a pessoa do time dele", async () => {
+    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/users")).toBe("/users");
   });
 });
 

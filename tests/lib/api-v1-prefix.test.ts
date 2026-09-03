@@ -39,8 +39,15 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
   },
   { nome: "lista de usuários", enviar: () => authApi.users(), caminho: "/api/v1/auth/users" },
   {
-    nome: "criação de usuário",
-    enviar: () => authApi.createUser({ name: "Ana", email: "ana@exemplo.dev", role: "member" }),
+    nome: "admissão de pessoa no time",
+    enviar: () =>
+      authApi.admitPerson({
+        name: "Ana",
+        email: "ana@exemplo.dev",
+        role: "member",
+        teamId: "time-plataforma",
+        careerLevelId: "arquiteto-de-solucoes-i",
+      }),
     caminho: "/api/v1/auth/users",
   },
   {

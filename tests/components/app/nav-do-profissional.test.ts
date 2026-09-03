@@ -134,11 +134,25 @@ describe("menu do profissional — o que não é dele some", () => {
     }
   });
 
-  it("o grupo Administração desaparece do menu de quem não administra", () => {
+  /**
+   * ONDA 37 — o grupo Administração deixou de ser exclusivo do admin porque
+   * Usuários virou o ÚNICO lugar de cadastro de pessoa, e o dono definiu que
+   * gestor e tech lead cadastram no time deles. Para a liderança o grupo tem
+   * UM item — Usuários; para o profissional continua sumindo inteiro, que é
+   * o achado que este teste guarda.
+   */
+  it("o grupo Administração desaparece do menu do profissional", () => {
     expect(rotulosDeGrupo(fixtureMemberUser)).not.toContain("nav.group.admin");
-    expect(rotulosDeGrupo(fixtureUnassignedTechLeadUser)).not.toContain("nav.group.admin");
-    expect(rotulosDeGrupo(fixtureAssignedTechLeadUser)).not.toContain("nav.group.admin");
     expect(rotulosDeGrupo(fixtureAdminUser)).toContain("nav.group.admin");
+  });
+
+  it("para o tech lead o grupo Administração é só Usuários — o lugar de cadastrar", () => {
+    for (const lead of [fixtureUnassignedTechLeadUser, fixtureAssignedTechLeadUser]) {
+      const administracao = filterNavGroups(NAV_GROUPS, lead).find(
+        (grupo) => grupo.labelKey === "nav.group.admin",
+      );
+      expect(administracao?.items.map((item) => item.to)).toEqual(["/users"]);
+    }
   });
 
   it("quem lidera e quem administra continuam com as cinco ferramentas de time", () => {

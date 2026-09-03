@@ -183,7 +183,7 @@ export const NAV_GROUPS: NavGroup[] = [
         external: true,
         hintKey: "nav.grafanaHint",
       },
-      { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
+      { to: "/users", labelKey: "nav.users", icon: UserCog, leadershipOnly: true },
     ],
   },
 ];

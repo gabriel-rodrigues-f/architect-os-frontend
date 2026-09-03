@@ -48,6 +48,9 @@ function mockBackendQueFalha() {
         if (href.includes(apiPath("/auth/users")) && init?.method !== undefined) {
           return jsonResponse({ code: "INTERNAL", message: "Falha ao gravar a conta" }, 500);
         }
+        if (href.endsWith(apiPath("/teams")) && (init?.method ?? "GET") === "GET") {
+          return jsonResponse([{ id: "time-plataforma", name: "Plataforma", active: true }]);
+        }
         return undefined;
       },
     ],
@@ -75,17 +78,19 @@ describe("Usuários — falha de gravação é anunciada (QA-04)", () => {
     expect(alerta.textContent).toBe("Falha ao gravar a conta");
   });
 
-  it("criar: o erro de criação entra numa região viva", async () => {
+  it("cadastrar: o erro de admissão entra numa região viva", async () => {
     mockBackendQueFalha();
     renderWithApp(<UsersPage />);
 
     await screen.findByText("Outro Membro");
-    await userEvent.click(screen.getByRole("button", { name: "Criar conta" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar pessoa" }));
 
     const dialogo = await screen.findByRole("dialog");
     await userEvent.type(within(dialogo).getByLabelText("Nome"), "Nova Pessoa");
     await userEvent.type(within(dialogo).getByLabelText("E-mail"), "nova@empresa.com");
-    await userEvent.click(within(dialogo).getByRole("button", { name: "Criar conta" }));
+    await userEvent.selectOptions(within(dialogo).getByLabelText("Cargo"), "tech_lead");
+    await userEvent.selectOptions(within(dialogo).getByLabelText("Time"), "time-plataforma");
+    await userEvent.click(within(dialogo).getByRole("button", { name: "Cadastrar pessoa" }));
 
     const alerta = await within(dialogo).findByRole("alert");
     expect(alerta.textContent).toBe("Falha ao gravar a conta");
