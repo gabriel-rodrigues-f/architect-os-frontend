@@ -32,6 +32,11 @@ import { apiPath } from "@/lib/api-path";
  * `ROLES` hardcoded de antes, um 4º nível cadastrado na tabela jamais
  * apareceria (era impossível: o array fixo tinha sempre 3) — este teste
  * serve 4 níveis e exige 4 opções.
+ *
+ * ONDA 37 — a metade do CADASTRO saiu daqui junto com o formulário: a
+ * senioridade da pessoa nova é escolhida em Usuários, e o guard rail dos 4
+ * níveis mora em `users-cadastro-unificado.test.tsx`. O que fica é a metade
+ * de /team: o diálogo "Mudar time ou nível" e o filtro de nível.
  */
 const fourLevels = [
   ...fixtureCareerLevels,
@@ -59,22 +64,6 @@ describe("Time — níveis de carreira vêm de career_levels, não de array fixo
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-  });
-
-  it("o select de cargo do cadastro oferece os 4 níveis carregados, em ordem de rank", async () => {
-    renderWithApp(<TeamPage />);
-    await screen.findByText("Ana Martins");
-
-    await userEvent.click(screen.getByRole("button", { name: "Cadastrar profissional" }));
-    const select = (await screen.findByLabelText("Cargo")) as HTMLSelectElement;
-    expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
-      "Júnior",
-      "Pleno",
-      "Sênior",
-      "Especialista",
-    ]);
-    // O nível padrão do cadastro é o primeiro nível real (menor rank).
-    expect(select.value).toBe("Júnior");
   });
 
   it("o diálogo 'Mudar time ou nível' oferece os níveis carregados MENOS o atual (onda 35, achado 7)", async () => {

@@ -139,6 +139,29 @@ describe("senioridade aparece e some com o cargo", () => {
     );
   });
 
+  /**
+   * CFG-01, guard rail herdado de `team-roles-from-career-levels`: a lista
+   * de senioridade vem de `GET /career-levels` (tabela, por `rank`), nunca
+   * de um array literal. Com o `ROLES` fixo de três, um 4º nível cadastrado
+   * jamais apareceria. Serve quatro e exige quatro, na ordem do rank.
+   */
+  it("um 4º nível cadastrado aparece — a lista vem da tabela, não de array fixo", async () => {
+    const quatroNiveis = [
+      ...fixtureCareerLevels,
+      { id: "arquiteto-de-solucoes-iv", name: "Especialista", rank: 4 },
+    ];
+    const dialogo = await abrirCadastro(fixtureAdminUser, [
+      (href) => (href.endsWith(apiPath("/career-levels")) ? jsonResponse(quatroNiveis) : undefined),
+    ]);
+    await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "member");
+    expect(rotulosDe(dialogo.getByLabelText("Senioridade"))).toEqual([
+      "Júnior",
+      "Pleno",
+      "Sênior",
+      "Especialista",
+    ]);
+  });
+
   it("Tech Lead não tem Senioridade — o campo some da tela", async () => {
     const dialogo = await abrirCadastro(fixtureAdminUser);
     await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "tech_lead");

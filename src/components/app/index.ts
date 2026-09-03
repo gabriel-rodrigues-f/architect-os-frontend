@@ -25,7 +25,6 @@ export * from "./QuerySection";
 export * from "./RoleSelect";
 export * from "./SectionHelp";
 export * from "./SingleSelectFilter";
-export * from "./SpecializationCombobox";
 export * from "./TreatGapInPlanAction";
 export * from "./TruncationNotice";
 export * from "./ViewToggle";
