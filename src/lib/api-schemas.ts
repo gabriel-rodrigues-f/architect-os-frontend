@@ -213,6 +213,60 @@ export const gapClosureExplanationResponseSchema = z.object({
   text: z.string(),
 });
 
+const personAdvice = z.object({
+  subject: z.string(),
+  suggestion: z.literal(true),
+  notice: z.string(),
+  facts: z.array(z.string()),
+  absences: z.array(z.string()),
+  narration: z.string().nullable(),
+  narrationUnavailable: z.string().nullable(),
+});
+
+export const personAdviceResponseSchema = personAdvice;
+
+export const sessionScriptAdviceResponseSchema = personAdvice.extend({
+  agenda: z.union([z.literal("one-on-one"), z.literal("development-plan")]),
+  profile: z.union([z.literal("empirical"), z.literal("moderate"), z.literal("methodical")]),
+  outline: z.array(z.string()),
+});
+
+export const careerReadinessAdviceResponseSchema = personAdvice.extend({
+  readiness: z
+    .object({
+      currentCareerLevel: z.string().nullable(),
+      nextCareerLevel: z.string().nullable(),
+      eligible: z.boolean().nullable(),
+      qualifiedCapabilityCount: z.number(),
+      minimumQualifiedCapabilities: z.number().nullable(),
+    })
+    .nullable(),
+});
+
+export const developmentPlanAdviceResponseSchema = personAdvice.extend({
+  distance: z.object({
+    competencyId: z.string(),
+    competencyName: z.string(),
+    capabilityName: z.string().nullable(),
+    currentLevel: z.number(),
+    requiredLevel: z.number().nullable(),
+    distance: z.number().nullable(),
+  }),
+});
+
+export const workAssistanceResponseSchema = z.object({
+  subject: z.string(),
+  observations: z.array(z.string()),
+  reading: z.string(),
+});
+
+export const stagnationAlertResponseSchema = z.object({
+  subject: z.string(),
+  signals: z.array(z.string()),
+  requiresAttention: z.boolean(),
+  alert: z.string().nullable(),
+});
+
 const careerLevel = z.object({
   id: z.string(),
   name: z.string(),
