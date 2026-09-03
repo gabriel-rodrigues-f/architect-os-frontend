@@ -64,11 +64,6 @@
       "count": 2
     }
   },
-  "src/components/app/SpecializationCombobox.tsx": {
-    "id-length": {
-      "count": 4
-    }
-  },
   "src/components/app/assessments-shared.tsx": {
     "id-length": {
       "count": 25
@@ -96,7 +91,7 @@
   },
   "src/components/app/team-shared.tsx": {
     "id-length": {
-      "count": 27
+      "count": 22
     }
   },
   "src/components/app/ui-bits.tsx": {
@@ -311,7 +306,7 @@
   },
   "src/routes/team.tsx": {
     "id-length": {
-      "count": 9
+      "count": 1
     }
   },
   "src/routes/training-needs.tsx": {
@@ -321,7 +316,7 @@
   },
   "src/routes/users.tsx": {
     "id-length": {
-      "count": 5
+      "count": 3
     }
   },
   "src/server.ts": {
@@ -614,14 +609,9 @@
       "count": 1
     }
   },
-  "tests/routes/team-deactivate.test.tsx": {
-    "id-length": {
-      "count": 2
-    }
-  },
   "tests/routes/team-roles-from-career-levels.test.tsx": {
     "id-length": {
-      "count": 2
+      "count": 1
     }
   },
   "tests/routes/training-needs-scale.test.tsx": {
