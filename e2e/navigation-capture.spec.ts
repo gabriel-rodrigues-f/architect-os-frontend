@@ -134,7 +134,11 @@ const NEGATIVA_NA_TELA: Readonly<Record<string, string>> = {
   "/team-rules": "teamRules.leadOnly",
   "/teams": "teams.restricted",
   "/training-needs": "cap.teamAnalysisOnly",
-  "/users": "users.adminOnly",
+  // `users.adminOnly` é outra negativa da MESMA tela: a que o gestor e o tech
+  // lead veem no lugar do diretório, porque admitem gente sem ver todas as
+  // contas. Quem não alcança a rota — o profissional — recebe esta, desde que
+  // `/users` passou a ser da liderança inteira (ADR-0084).
+  "/users": "users.leadershipOnly",
 };
 
 /**
