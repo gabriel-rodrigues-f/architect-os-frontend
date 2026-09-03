@@ -3,7 +3,7 @@
     "analytics.cacheFlush.success": {
       "rota": "POST /cache/flush",
       "arquivo": "src/modules/analytics/infrastructure/controllers/analytics.controller.ts",
-      "linha": 79,
+      "linha": 77,
       "resposta": "ok"
     },
     "assessment.capability.confirm.success": {
@@ -197,19 +197,19 @@
     "evidence.create.success": {
       "rota": "POST /evidences",
       "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "linha": 128,
+      "linha": 124,
       "resposta": "created"
     },
     "evidence.resubmit.success": {
       "rota": "POST /evidences/:id/resubmit",
       "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "linha": 166,
+      "linha": 162,
       "resposta": "ok"
     },
     "evidence.review.success": {
       "rota": "PATCH /evidences/:id/review",
       "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "linha": 149,
+      "linha": 145,
       "resposta": "ok"
     },
     "learningPath.create.success": {
@@ -293,43 +293,43 @@
     "plan.item.add.success": {
       "rota": "POST /plans/:architectId/items",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 147,
+      "linha": 143,
       "resposta": "created"
     },
     "plan.item.addFromGap.success": {
       "rota": "POST /plans/:architectId/items/from-gap",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 167,
+      "linha": 163,
       "resposta": "created"
     },
     "plan.item.checkin.success": {
       "rota": "POST /plans/:planId/items/:itemId/checkins",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 241,
+      "linha": 237,
       "resposta": "created"
     },
     "plan.item.reschedule.success": {
       "rota": "POST /plans/:planId/items/:itemId/reschedule",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 214,
+      "linha": 210,
       "resposta": "ok"
     },
     "plan.item.update.success": {
       "rota": "PATCH /plans/:planId/items/:itemId",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 190,
+      "linha": 186,
       "resposta": "ok"
     },
     "plan.reopen.success": {
       "rota": "POST /plans/:planId/reopen",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 301,
+      "linha": 297,
       "resposta": "ok"
     },
     "plan.status.update.success": {
       "rota": "PATCH /plans/:planId/status",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 278,
+      "linha": 274,
       "resposta": "ok"
     },
     "team.deactivate.success": {
