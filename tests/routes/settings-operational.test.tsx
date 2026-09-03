@@ -219,7 +219,7 @@ describe("Operação (CFG-05 admin UI)", () => {
     );
   });
 
-  it("piso efetivo do servidor rege a Política de Progressão (min e validação da linha)", async () => {
+  it("o piso operacional NÃO rege mais o campo da régua: 1 é o piso do modelo (onda 36.1)", async () => {
     mockAppFetch(fetchMock, { routes: [careerLevelsRoute, settingsGetRoute("SEMIANNUAL", 4, 3)] });
     renderWithApp(<SettingsPage />);
 
@@ -240,12 +240,16 @@ describe("Operação (CFG-05 admin UI)", () => {
     await userEvent.click(editButtons[0]!);
 
     const input = section.querySelector('input[type="number"]') as HTMLInputElement;
-    expect(input.min).toBe("4");
+    expect(input.min).toBe("1");
     await userEvent.clear(input);
-    await userEvent.type(input, "3"); // abaixo do piso efetivo 4 — antes o literal 3 deixaria salvar
+    await userEvent.type(input, "1"); // abaixo do piso operacional 4, e ainda assim gravável
     const saveButton = within(input.closest("tr") as HTMLElement).getByRole("button", {
       name: "Salvar",
     }) as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(false);
+
+    await userEvent.clear(input);
+    await userEvent.type(input, "0"); // zero continua fora: 1 é o piso, não a ausência de régua
     expect(saveButton.disabled).toBe(true);
   });
 });

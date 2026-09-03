@@ -1,6 +1,25 @@
 import type { TeamLevelRule } from "../domain";
 import type { MessageKey } from "../i18n";
 
+/**
+ * Onda 36.1 — pedido do dono: *"a quantidade de capacidades minima de um time
+ * não pode ser 3, tem que ser 1."* Este é o piso do MODELO, espelho do
+ * `career.schemas` do backend (`minimumQualifiedCapabilities` inteiro >= 1).
+ *
+ * Não confundir com `career.minimumQualifiedFloor` de `app_settings`: aquele é
+ * o mínimo PADRÃO — o que vale para o time sem régua acertada — e continua
+ * sendo o valor que o editor sugere. Usá-lo como limite inferior do campo era
+ * o que impedia gravar 1, e foi o que fez a tela responder 500 quando o
+ * backend ainda tinha CHECK >= 3.
+ */
+export class QualifiedCapabilityMinimum {
+  static readonly FLOOR = 1;
+
+  static admits(value: number): boolean {
+    return Number.isInteger(value) && value >= QualifiedCapabilityMinimum.FLOOR;
+  }
+}
+
 export class ReadyCompetencyShortfall {
   private constructor(readonly missing: number) {}
 

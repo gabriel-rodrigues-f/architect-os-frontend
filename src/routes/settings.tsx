@@ -22,6 +22,7 @@ import { useLabels } from "@/lib/labels";
 import {
   ProgressionMinimumPresenter,
   ProgressionPolicyScope,
+  QualifiedCapabilityMinimum,
   ReadyCompetencyShortfall,
 } from "@/lib/presenters";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -281,7 +282,7 @@ function CareerPolicyRow({
   const shortfall = editing
     ? ReadyCompetencyShortfall.between(draftValue, readyCapabilities)
     : minimum.shortfall(readyCapabilities);
-  const canSave = Number.isInteger(draftValue) && draftValue >= floor && !shortfall.blocksSaving;
+  const canSave = QualifiedCapabilityMinimum.admits(draftValue) && !shortfall.blocksSaving;
 
   const save = async () => {
     if (!canSave || editableTeamId === undefined) return;
@@ -307,7 +308,7 @@ function CareerPolicyRow({
         {editing ? (
           <input
             type="number"
-            min={floor}
+            min={QualifiedCapabilityMinimum.FLOOR}
             step={1}
             disabled={saving}
             className="w-20 rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"
