@@ -43,7 +43,15 @@ interface ProficiencyDraft {
   note?: string | undefined;
 }
 
-function useMentoringSessionForm(menteeOptions: Architect[]) {
+/**
+ * `onRegistered` recebe quem acabou de ganhar a sessão: sem isso a linha do
+ * tempo fica na pessoa que o filtro escolheu por padrão (a primeira em ordem
+ * alfabética) e o registro recém-criado não aparece na tela de quem o criou.
+ */
+function useMentoringSessionForm(
+  menteeOptions: Architect[],
+  onRegistered?: (menteeId: string) => void,
+) {
   const store = useStore();
   const user = useCurrentUser();
   const sel = useSelectors();
@@ -148,6 +156,7 @@ function useMentoringSessionForm(menteeOptions: Architect[]) {
     setMissing([]);
     setShowToast(false);
     setOpen(false);
+    onRegistered?.(form.menteeId);
   };
 
   return {
@@ -380,12 +389,18 @@ export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }
   );
 }
 
-export function NewMentoringSessionDialog({ menteeOptions }: { menteeOptions: Architect[] }) {
+export function NewMentoringSessionDialog({
+  menteeOptions,
+  onRegistered,
+}: {
+  menteeOptions: Architect[];
+  onRegistered?: (menteeId: string) => void;
+}) {
   const { t } = useI18n();
   const store = useStore();
   const user = useCurrentUser();
   const sel = useSelectors();
-  const sessionForm = useMentoringSessionForm(menteeOptions);
+  const sessionForm = useMentoringSessionForm(menteeOptions, onRegistered);
 
   const [competencyFilter, setCompetencyFilter] = useState("");
   const [proficiencyFilter, setProficiencyFilter] = useState("");

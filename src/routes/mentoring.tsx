@@ -51,7 +51,7 @@ function MentoringPage() {
               selected={filter}
               onChange={setFilter}
             />
-            <NewMentoringSessionDialog menteeOptions={menteeOptions} />
+            <NewMentoringSessionDialog menteeOptions={menteeOptions} onRegistered={setFilter} />
           </div>
         }
       />
