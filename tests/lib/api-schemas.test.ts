@@ -93,9 +93,9 @@ describe("appStateSchema — contrato da Fase 2 (régua por time)", () => {
     expect(parsed.architects[0]?.teamId).toBe("time-plataforma");
   });
 
-  it("a FOTO do item de avaliação segue carregando requirementType (fonte da UI)", () => {
+  it("a FOTO do item de avaliação não carrega mais requirementType (onda 36, ADR-0082)", () => {
     const parsed = appStateSchema.parse(fixtureState);
-    expect(parsed.assessments[0]?.items[0]?.requirementType).toBe("NON_RESTRICTIVE");
+    expect(parsed.assessments[0]?.items[0]).not.toHaveProperty("requirementType");
   });
 });
 

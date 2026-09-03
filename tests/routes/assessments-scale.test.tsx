@@ -27,8 +27,6 @@ const MANY_CAPABILITIES: Capability[] = Array.from({ length: 12 }, (_, i) => ({
   active: true,
   curation: {
     activeCompetencyCount: 1,
-    restrictiveCompetencyCount: 0,
-    nonRestrictiveCompetencyCount: 1,
     status: "REQUIRES_CURATION",
   },
 }));
@@ -37,7 +35,6 @@ const MANY_COMPETENCIES: Competency[] = MANY_CAPABILITIES.map((cap, i) => ({
   id: `comp-${i}`,
   name: `Competência ${i}`,
   capabilityId: cap.id,
-  requirementType: "NON_RESTRICTIVE",
   expected: {
     "arquiteto-de-solucoes-i": 2,
     "arquiteto-de-solucoes-ii": 3,

@@ -53,9 +53,7 @@ const comRegua: FetchRoute = (href) =>
         careerLevelId: "arquiteto-de-solucoes-i",
         minimumQualifiedCapabilities: 3,
         capabilityIds: ["cloud"],
-        competencies: [
-          { competencyId: "cloud-k8s", requirementType: "RESTRICTIVE", requiredLevel: 4 },
-        ],
+        competencies: [{ competencyId: "cloud-k8s", requiredLevel: 4 }],
       })
     : undefined;
 

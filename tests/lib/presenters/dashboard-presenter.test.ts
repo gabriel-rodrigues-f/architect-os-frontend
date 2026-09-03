@@ -201,7 +201,6 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
       id: `comp-${i}`,
       name: `Competência ${i}`,
       capabilityId: capability.id,
-      requirementType: "NON_RESTRICTIVE",
       expected: {
         "arquiteto-de-solucoes-i": 3 as Level,
         "arquiteto-de-solucoes-ii": 4 as Level,

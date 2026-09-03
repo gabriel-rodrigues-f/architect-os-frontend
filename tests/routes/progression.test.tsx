@@ -62,7 +62,6 @@ function withBlockingItem(assessment: Assessment): Assessment {
         target: 4,
         final: 2,
         comments: [],
-        requirementType: "RESTRICTIVE",
       },
     ],
   };
@@ -120,7 +119,7 @@ describe("Progressão — heatmap, tabela e maestria", () => {
     window.history.replaceState(null, "", "/");
   });
 
-  it("a tabela de progressão marca o tipo de cada linha (Bloqueante/Oportunidade)", async () => {
+  it("a tabela de progressão não marca tipo de linha — a obrigatoriedade morreu (onda 36)", async () => {
     renderProgression();
     await screen.findByText("Tabela de Progressão das Competências em Evolução");
 
@@ -128,11 +127,10 @@ describe("Progressão — heatmap, tabela e maestria", () => {
       .getByText("Tabela de Progressão das Competências em Evolução")
       .closest(".surface-card") as HTMLElement;
 
-    const iacRow = within(progressionTable).getByText("Infra as Code").closest("tr")!;
-    expect(iacRow.textContent).toContain("Bloqueante");
-
-    const iamRow = within(progressionTable).getByText("IAM").closest("tr")!;
-    expect(iamRow.textContent).toContain("Oportunidade");
+    expect(within(progressionTable).getByText("Infra as Code")).toBeTruthy();
+    expect(within(progressionTable).getByText("IAM")).toBeTruthy();
+    expect(progressionTable.textContent).not.toContain("Bloqueante");
+    expect(progressionTable.textContent).not.toContain("Oportunidade");
   });
 
   it("Nível III (MASTERY) some da tabela de progressão e aparece só na seção de maestria, sem linguagem de bloqueio", async () => {

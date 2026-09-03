@@ -114,11 +114,6 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     caminho: "/api/v1/competencies/cloud-k8s",
   },
   {
-    nome: "troca de obrigatoriedade na régua do time",
-    enviar: () => api.swapTeamRuleRequirement("time-plataforma", "senior", "full-n1", "full-n2"),
-    caminho: "/api/v1/teams/time-plataforma/rules/senior/swap-requirement",
-  },
-  {
     nome: "importação de catálogo",
     enviar: () => api.importCatalog({ capabilities: [] }),
     caminho: "/api/v1/catalog/import",

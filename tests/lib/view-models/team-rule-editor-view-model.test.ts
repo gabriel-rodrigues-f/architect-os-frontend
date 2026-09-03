@@ -33,7 +33,7 @@ const RULE: TeamRuleView = {
   careerLevelId: "pleno",
   minimumQualifiedCapabilities: 4,
   capabilityIds: ["cap-btp"],
-  competencies: [{ competencyId: "clean-core", requirementType: "RESTRICTIVE", requiredLevel: 3 }],
+  competencies: [{ competencyId: "clean-core", requiredLevel: 3 }],
 };
 
 function editorSemRegua(): TeamRuleEditorViewModel {
@@ -83,7 +83,7 @@ describe("TeamRuleEditorViewModel — recusas de contrato", () => {
   });
 
   it("recusa competência cuja capacidade não está na régua", () => {
-    const editor = editorComRegua().withCompetencyRequired("malha", 3);
+    const editor = editorComRegua().withCompetencyInRule("malha", 3);
 
     expect(editor.errorKeys).toContain("teamRules.error.competencyWithoutCapability");
     expect(editor.isValid).toBe(false);
@@ -93,7 +93,7 @@ describe("TeamRuleEditorViewModel — recusas de contrato", () => {
   it("aceita a mesma competência assim que a capacidade dela entra na régua", () => {
     const editor = editorComRegua()
       .withCapability("cap-integracao", true)
-      .withCompetencyRequired("malha", 3);
+      .withCompetencyInRule("malha", 3);
 
     expect(editor.errorKeys).toEqual([]);
     expect(editor.isValid).toBe(true);
@@ -127,9 +127,9 @@ describe("TeamRuleEditorViewModel — rascunho sujo", () => {
     expect(sujo.withMinimum(4).isDirty).toBe(false);
   });
 
-  it("marca sujo ao ligar capacidade, ao trocar obrigatoriedade e ao mexer no nível", () => {
+  it("marca sujo ao ligar capacidade, ao tirar competência da régua e ao mexer no nível", () => {
     expect(editorComRegua().withCapability("cap-integracao", true).isDirty).toBe(true);
-    expect(editorComRegua().withCompetencyOptional("clean-core", 3).isDirty).toBe(true);
+    expect(editorComRegua().withoutCompetency("clean-core").isDirty).toBe(true);
     expect(editorComRegua().withRequiredLevel("clean-core", 4).isDirty).toBe(true);
   });
 
@@ -143,79 +143,35 @@ describe("TeamRuleEditorViewModel — rascunho sujo", () => {
 });
 
 describe("TeamRuleEditorViewModel — o corpo do PUT", () => {
-  it("monta a definição inteira: piso, capacidades e competências", () => {
+  it("monta a definição inteira: piso, capacidades e competências, sem tipo de exigência", () => {
     const editor = editorComRegua()
       .withCapability("cap-integracao", true)
-      .withCompetencyOptional("malha", 2);
+      .withCompetencyInRule("malha", 2);
 
     expect(editor.definition()).toEqual({
       minimumQualifiedCapabilities: 4,
       capabilityIds: ["cap-btp", "cap-integracao"],
       competencies: [
-        { competencyId: "clean-core", requirementType: "RESTRICTIVE", requiredLevel: 3 },
-        { competencyId: "malha", requirementType: "NON_RESTRICTIVE", requiredLevel: 2 },
+        { competencyId: "clean-core", requiredLevel: 3 },
+        { competencyId: "malha", requiredLevel: 2 },
       ],
     });
   });
 });
 
-describe("TeamRuleEditorViewModel — o peso por razão (CONTRATO 2026-08-28)", () => {
-  it("conta obrigatórias e opcionais e fecha o peso em 1,5× + 1×", () => {
+describe("TeamRuleEditorViewModel — toda competência pesa igual (onda 36, ADR-0082)", () => {
+  it("conta as competências da régua — o rodapé da tela fala desse número", () => {
     const editor = editorComRegua()
       .withCapability("cap-integracao", true)
-      .withCompetencyRequired("eventos", 3)
-      .withCompetencyOptional("malha", 2)
-      .withCompetencyOptional("contratos", 2);
+      .withCompetencyInRule("eventos", 3)
+      .withCompetencyInRule("malha", 2)
+      .withCompetencyInRule("contratos", 2);
 
-    expect(editor.requiredCount).toBe(2);
-    expect(editor.optionalCount).toBe(2);
-    expect(editor.totalWeight).toBe(5);
+    expect(editor.competencyCount).toBe(4);
   });
 
-  it("a obrigatória pesa 1,5× o que pesa a opcional, e o conjunto fecha em 100%", () => {
-    const editor = editorComRegua()
-      .withCapability("cap-integracao", true)
-      .withCompetencyRequired("eventos", 3)
-      .withCompetencyRequired("malha", 3)
-      .withCompetencyOptional("contratos", 2);
-
-    const obrigatoria = editor.weightPercentOf("clean-core");
-    const opcional = editor.weightPercentOf("contratos");
-
-    expect(obrigatoria / opcional).toBeCloseTo(1.5, 10);
-    expect(
-      editor.competencies.reduce(
-        (soma, competencia) => soma + editor.weightPercentOf(competencia.competencyId),
-        0,
-      ),
-    ).toBeCloseTo(100, 10);
-  });
-
-  it("sem competência nenhuma, o peso é zero e não divide por zero", () => {
-    const editor = editorSemRegua();
-
-    expect(editor.totalWeight).toBe(0);
-    expect(editor.weightPercentOf("clean-core")).toBe(0);
-  });
-});
-
-describe("TeamRuleEditorViewModel — trocar obrigatoriedade com o par", () => {
-  it("oferece como par só quem está do outro lado da obrigatoriedade", () => {
-    const editor = editorComRegua()
-      .withCapability("cap-integracao", true)
-      .withCompetencyOptional("malha", 2)
-      .withCompetencyOptional("contratos", 2);
-
-    expect(
-      editor.swapCandidatesFor("clean-core").map((candidato) => candidato.competencyId),
-    ).toEqual(["malha", "contratos"]);
-    expect(editor.swapCandidatesFor("malha").map((candidato) => candidato.competencyId)).toEqual([
-      "clean-core",
-    ]);
-  });
-
-  it("competência fora da régua não tem par para trocar", () => {
-    expect(editorComRegua().swapCandidatesFor("malha")).toEqual([]);
+  it("sem competência nenhuma, a contagem é zero", () => {
+    expect(editorSemRegua().competencyCount).toBe(0);
   });
 });
 

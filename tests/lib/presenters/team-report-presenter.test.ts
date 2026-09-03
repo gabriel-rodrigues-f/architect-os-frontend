@@ -21,7 +21,6 @@ const gapRow = (overrides: Partial<ConsolidatedGapRow> = {}): ConsolidatedGapRow
   competencyId: "c1",
   name: "Kubernetes",
   capabilityId: "cloud",
-  requirementType: "RESTRICTIVE",
   people: 2,
   architectNames: ["Ana", "Bruno"],
   totalGap: 3,
@@ -41,8 +40,7 @@ const input = (overrides: Partial<TeamReportInput> = {}): TeamReportInput => ({
     { id: "security", name: "Security", short: "Cld" },
   ],
   capabilityAveragesFor: () => [],
-  blocking: [],
-  opportunity: [],
+  priorities: [],
   mastery: [],
   ...overrides,
 });
@@ -67,22 +65,16 @@ describe("TeamReportPresenter", () => {
     expect(presenter.heatmapBody).toEqual([["Ana", "—"]]);
   });
 
-  it('a coluna "Tipo" some em mastery, e gapRows segue exatamente a ordem de gapColumns', () => {
+  it("sem coluna de tipo (onda 36): gapRows segue exatamente a ordem de gapColumns", () => {
     const presenter = new TeamReportPresenter(fakeT, input());
-    expect(presenter.gapColumns(false)).toHaveLength(8);
-    expect(presenter.gapColumns(true)).toHaveLength(7);
-    expect(presenter.gapColumns(true)).not.toContain("col.type");
+    expect(presenter.gapColumns()).toHaveLength(7);
+    expect(presenter.gapColumns()).not.toContain("col.type");
 
     const row = gapRow();
-    expect(presenter.gapRows([row], false)[0]).toHaveLength(presenter.gapColumns(false).length);
-    expect(presenter.gapRows([row], true)[0]).toHaveLength(presenter.gapColumns(true).length);
-    // ordem: competência, capacidade, [tipo], pessoas, médias, gap, classificação
-    expect(presenter.gapRows([row], false)[0]!.slice(0, 4)).toEqual([
-      "Kubernetes",
-      "Cloud",
-      "gap.type.blocking",
-      2,
-    ]);
+    expect(presenter.gapRows([row], false)[0]).toHaveLength(presenter.gapColumns().length);
+    expect(presenter.gapRows([row], true)[0]).toHaveLength(presenter.gapColumns().length);
+    // ordem: competência, capacidade, pessoas, médias, gap, classificação
+    expect(presenter.gapRows([row], false)[0]!.slice(0, 3)).toEqual(["Kubernetes", "Cloud", 2]);
   });
 
   it("filename usa a data UTC do relatório", () => {

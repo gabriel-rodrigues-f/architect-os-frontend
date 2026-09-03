@@ -36,7 +36,7 @@ function adherence(
     architectId: "ana",
     teamId: "time-integracao",
     careerLevelId: "nivel-pleno",
-    adherence: { percentage: 72, missingRequired: missing },
+    adherence: { percentage: 72, missingCompetencies: missing },
   };
 }
 
@@ -100,7 +100,7 @@ describe("CareerRoadmapViewModel — próximo nível", () => {
 describe("CareerRoadmapViewModel — obrigatórias faltantes (o segundo número do CONTRATO)", () => {
   it("dá nome às faltantes pelo catálogo e calcula o gap, ordenando do maior gap para o menor", () => {
     const vm = makeVm();
-    const missing = vm.missingRequired(
+    const missing = vm.missingCompetencies(
       adherence([
         { competencyId: "comp-clean-core", currentLevel: 2, requiredLevel: 3 },
         { competencyId: "comp-eventos", currentLevel: 1, requiredLevel: 4 },
@@ -113,7 +113,7 @@ describe("CareerRoadmapViewModel — obrigatórias faltantes (o segundo número 
 
   it("competência fora do catálogo não some da lista — aparece pelo id", () => {
     const vm = makeVm();
-    const missing = vm.missingRequired(
+    const missing = vm.missingCompetencies(
       adherence([{ competencyId: "comp-desconhecida", currentLevel: 0, requiredLevel: 2 }]),
     );
     expect(missing).toHaveLength(1);
@@ -130,7 +130,7 @@ describe("CareerRoadmapViewModel — cobertura das trilhas", () => {
 
   it("cruza faltantes com competencyIds das trilhas: só a interseção conta, trilha sem interseção sai", () => {
     const vm = makeVm();
-    const missing = vm.missingRequired(adherence(MISSING));
+    const missing = vm.missingCompetencies(adherence(MISSING));
     const coverage = vm.coverageFor("ana", missing, [
       path({
         id: "trilha-btp",
@@ -148,7 +148,7 @@ describe("CareerRoadmapViewModel — cobertura das trilhas", () => {
 
   it("faltante que nenhuma trilha cobre fica em uncovered — é ela que ganha o CTA de PDI", () => {
     const vm = makeVm();
-    const missing = vm.missingRequired(adherence(MISSING));
+    const missing = vm.missingCompetencies(adherence(MISSING));
     const coverage = vm.coverageFor("ana", missing, [
       path({
         id: "trilha-btp",
@@ -161,7 +161,7 @@ describe("CareerRoadmapViewModel — cobertura das trilhas", () => {
 
   it("o progresso da trilha é o já calculado pela LearningPathsViewModel (reuso, não recontagem)", () => {
     const vm = makeVm();
-    const missing = vm.missingRequired(adherence(MISSING));
+    const missing = vm.missingCompetencies(adherence(MISSING));
     const trilha = path({
       id: "trilha-btp",
       name: "Trilha BTP",
@@ -181,7 +181,7 @@ describe("CareerRoadmapViewModel — cobertura das trilhas", () => {
 
   it("ordena trilhas da que mais cobre para a que menos cobre", () => {
     const vm = makeVm();
-    const missing = vm.missingRequired(adherence(MISSING));
+    const missing = vm.missingCompetencies(adherence(MISSING));
     const coverage = vm.coverageFor("ana", missing, [
       path({ id: "t-1", name: "Cobre uma", competencyIds: ["comp-eventos"] }),
       path({ id: "t-2", name: "Cobre duas", competencyIds: ["comp-clean-core", "comp-cds"] }),
