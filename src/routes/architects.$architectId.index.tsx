@@ -2,16 +2,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import {
+  AiGenerateButton,
+  AiRunResult,
   Bar,
   CapabilityRadar,
   DeactivatedPersonNotice,
   EvidenceDialog,
   EvidenceStatusBadge,
   GapBadge,
+  GenerationProfileField,
   Initials,
   LevelBadge,
   OutOfReachScreen,
   PageHeader,
+  PersonAdviceBody,
   ProfileTabs,
   ResubmitEvidenceDialog,
   SectionCard,
@@ -32,7 +36,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type Evidence } from "@/lib/domain";
-import { useArchitectProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
+import {
+  useArchitectProfileViewModel,
+  useAssistantRun,
+  useSuccessToast,
+  useToastSubmit,
+} from "@/hooks";
+import { personAssistantsApi } from "@/lib/api";
+import { GenerationProfileChoice, type GenerationProfileName } from "@/lib/assistants";
+import type {
+  SessionScriptAdvice,
+  SessionScriptRequest,
+} from "@/lib/gateways/person-assistants.gateway";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
@@ -260,6 +275,8 @@ function ArchitectWorkspace() {
         </SectionCard>
       )}
 
+      {canReviewEvidence && <SessionScriptAssistant architectId={architect.id} />}
+
       <SectionGroup title={t("arch.group.diagnosis")}>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
@@ -460,6 +477,84 @@ function ArchitectWorkspace() {
         </SectionCard>
       </SectionGroup>
     </>
+  );
+}
+
+/**
+ * Item 1 do pedido do dono, LITERAL: *"No perfil do profissional: ações
+ * 'Gerar roteiro de 1:1' e 'Gerar roteiro de PDI', com o seletor de perfil de
+ * geração (Empírico | Moderado | Metodológico, Moderado por padrão) ANTES de
+ * gerar. O resultado é SUGESTÃO, com o próximo passo claro (copiar, editar,
+ * ou abrir a operação que grava)."*
+ *
+ * Duas pautas, dois botões, e nunca um botão com um `<select>` de "tipo": no
+ * backend são duas operações de negócio com roteiros de forma diferente
+ * (ADR-0087), e colapsá-las aqui esconderia isso de quem usa.
+ *
+ * Quem alcança é a LIDERANÇA — a mesma régua do servidor, que responde 403 a
+ * qualquer outro. Esconder não protege nada (a autoridade é o backend); o que
+ * ele evita é a pessoa clicar num botão que só sabe recusar.
+ */
+function SessionScriptAssistant({ architectId }: { architectId: string }) {
+  const { t } = useI18n();
+  const [profile, setProfile] = useState<GenerationProfileName>(GenerationProfileChoice.DEFAULT);
+  const run = useAssistantRun<SessionScriptRequest, SessionScriptAdvice>(
+    ["assistants", "session-script", architectId],
+    (request) => personAssistantsApi.writeSessionScript(request),
+  );
+  const generating = run.running ? run.request?.agenda : undefined;
+
+  return (
+    <SectionCard
+      className="mb-6"
+      title={t("ai.scripts.title")}
+      description={t("ai.scripts.subtitle")}
+    >
+      <GenerationProfileField value={profile} onChange={setProfile} disabled={run.running} />
+      <div className="mt-3 flex flex-wrap gap-2">
+        <AiGenerateButton
+          label={t("ai.scripts.oneOnOne")}
+          running={generating === "one-on-one"}
+          disabled={run.running}
+          onGenerate={() => {
+            run.generate({ architectId, agenda: "one-on-one", profile });
+          }}
+        />
+        <AiGenerateButton
+          label={t("ai.scripts.developmentPlan")}
+          running={generating === "development-plan"}
+          disabled={run.running}
+          onGenerate={() => {
+            run.generate({ architectId, agenda: "development-plan", profile });
+          }}
+        />
+      </div>
+      <AiRunResult run={run}>
+        {(advice) => (
+          <PersonAdviceBody
+            advice={advice}
+            transcriptHeadline={t(
+              advice.agenda === "one-on-one" ? "ai.scripts.oneOnOne" : "ai.scripts.developmentPlan",
+            )}
+            nextStep={
+              advice.agenda === "one-on-one" ? (
+                <Link to="/mentoring" className="text-xs text-primary hover:underline">
+                  {t("ai.scripts.next.mentoring")}
+                </Link>
+              ) : (
+                <Link
+                  to="/development-plans"
+                  search={{ architectId }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {t("ai.scripts.next.plan")}
+                </Link>
+              )
+            }
+          />
+        )}
+      </AiRunResult>
+    </SectionCard>
   );
 }
 

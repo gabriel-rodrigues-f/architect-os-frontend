@@ -28,10 +28,7 @@ import {
   type TeamTransitionsGateway,
 } from "./team-transitions.gateway";
 import { HttpTeamsGateway, type TeamsGateway } from "./teams.gateway";
-import {
-  HttpWorkAssistantsGateway,
-  type WorkAssistantsGateway,
-} from "./work-assistants.gateway";
+import { HttpWorkAssistantsGateway, type WorkAssistantsGateway } from "./work-assistants.gateway";
 
 interface FrontendConfig {
   baseUrl?: string;

@@ -7,6 +7,35 @@ export type GenerationProfileName = (typeof GENERATION_PROFILE_NAMES)[number];
 
 export type SessionAgenda = "one-on-one" | "development-plan";
 
+export const PERSON_DOSSIER_ABSENCES = [
+  "seniority",
+  "team",
+  "teamRuler",
+  "observedLevels",
+  "assessment",
+  "developmentPlan",
+  "learningPath",
+  "evidence",
+  "mentoring",
+  "evolutionHistory",
+] as const;
+
+export type PersonDossierAbsence = (typeof PERSON_DOSSIER_ABSENCES)[number];
+
+/**
+ * A ausência nomeada do dossiê (ADR-0086 §2) vira rótulo de tela por uma
+ * classe, e não por um `t(\`ai.absence.${x}\`)` solto: o nome vem do
+ * servidor como texto livre, e um nome novo do backend não pode virar chave
+ * crua na tela. Desconhecido não se desenha.
+ */
+export class AdviceAbsences {
+  static labelKeyOf(absence: string): `ai.absence.${PersonDossierAbsence}` | null {
+    return (PERSON_DOSSIER_ABSENCES as readonly string[]).includes(absence)
+      ? `ai.absence.${absence as PersonDossierAbsence}`
+      : null;
+  }
+}
+
 /**
  * O PERFIL DE GERAÇÃO, do lado da tela.
  *
@@ -19,11 +48,11 @@ export class GenerationProfileChoice {
   static readonly NAMES = GENERATION_PROFILE_NAMES;
   static readonly DEFAULT: GenerationProfileName = "moderate";
 
-  static labelKeyOf(profile: GenerationProfileName): string {
+  static labelKeyOf(profile: GenerationProfileName): `ai.profile.${GenerationProfileName}` {
     return `ai.profile.${profile}`;
   }
 
-  static hintKeyOf(profile: GenerationProfileName): string {
+  static hintKeyOf(profile: GenerationProfileName): `ai.profile.${GenerationProfileName}.hint` {
     return `ai.profile.${profile}.hint`;
   }
 
@@ -93,6 +122,9 @@ export class AssistantCall {
   }
 }
 
+export type AssistantFailureKey =
+  "ai.failure.timeout" | "ai.failure.offline" | "ai.failure.unknown";
+
 /**
  * Regra 19 do pedido: *"erro da API tratado"* e *"erro amigável"*.
  *
@@ -107,7 +139,7 @@ export class AssistantCall {
  */
 export class AssistantFailureReading {
   private constructor(
-    readonly messageKey: string | null,
+    readonly messageKey: AssistantFailureKey | null,
     readonly serviceMessage: string | null,
   ) {}
 
@@ -125,7 +157,100 @@ export class AssistantFailureReading {
     return new AssistantFailureReading("ai.failure.unknown", null);
   }
 
-  sentence(translate: (key: string) => string): string {
+  sentence(translate: (key: AssistantFailureKey) => string): string {
     return this.serviceMessage ?? translate(this.messageKey ?? "ai.failure.unknown");
+  }
+}
+
+export interface AssistantQueryState<T> {
+  data: T | undefined;
+  error: unknown;
+  isFetching: boolean;
+  refetch: () => unknown;
+}
+
+/**
+ * Regra 19 do pedido do dono, inteira, num lugar só: *"estado de
+ * carregamento; timeout tratado; erro da API tratado; **tentar novamente**;
+ * **sem chamada duplicada** (o botão não dispara duas vezes); erro amigável;
+ * e a IA nunca bloqueia operação determinística."*
+ *
+ * Ela mora numa classe e não num punhado de `useState` porque OITO lugares da
+ * aplicação precisam da mesma máquina, e a versão copiada diverge no primeiro
+ * conserto: já aconteceu nesta casa com o foco do combobox.
+ *
+ * Duas decisões que o tipo não conta sozinho:
+ *
+ *  - o pedido em voo é o ESTADO (`requested`), e a consulta só existe depois
+ *    dele. É isso que faz o seletor de perfil ser lido ANTES de gerar, como o
+ *    dono pediu: mudar o perfil não dispara nada, porque o perfil não é a
+ *    chave da consulta enquanto ninguém clicou;
+ *  - `generate` recusa em silêncio enquanto está rodando, e o botão fica
+ *    desabilitado pelo mesmo `running`. As duas defesas são de propósito: a
+ *    segunda é a que o usuário vê, a primeira é a que sobrevive a um teclado,
+ *    a um duplo clique rápido e a um `onClick` disparado por outro caminho.
+ */
+export class AssistantRunState<P, T> {
+  constructor(
+    private readonly query: AssistantQueryState<T>,
+    readonly request: P | null,
+    private readonly ask: (request: P) => void,
+  ) {}
+
+  get started(): boolean {
+    return this.request !== null;
+  }
+
+  get running(): boolean {
+    return this.started && this.query.isFetching;
+  }
+
+  get advice(): T | undefined {
+    return this.running ? undefined : this.query.data;
+  }
+
+  get failure(): AssistantFailureReading | null {
+    if (this.running) return null;
+    const failure: unknown = this.query.error;
+    return failure === null || failure === undefined ? null : AssistantFailureReading.of(failure);
+  }
+
+  generate(request: P): void {
+    if (this.running) return;
+    this.ask(request);
+  }
+
+  retry(): void {
+    void this.query.refetch();
+  }
+}
+
+export interface TranscribableAdvice {
+  readonly notice: string;
+  readonly facts: readonly string[];
+  readonly narration: string | null;
+  readonly outline?: readonly string[];
+}
+
+/**
+ * O texto que o botão "Copiar" põe na área de transferência.
+ *
+ * O dono pediu *"o próximo passo claro (copiar, editar, ou abrir a operação
+ * que grava)"*, e copiar só serve se o que sai for utilizável fora da tela —
+ * daí a transcrição levar junto os FATOS e o aviso de que aquilo é sugestão.
+ * Copiar só o parágrafo entregaria a interpretação sem a apuração que a
+ * sustenta, que é o contrário do que a frente inteira defende.
+ */
+export class AdviceTranscript {
+  static of(advice: TranscribableAdvice, headline: string): string {
+    const outline = advice.outline ?? [];
+    return [
+      headline,
+      ...(outline.length > 0 ? ["", ...outline.map((step) => `- ${step}`)] : []),
+      ...(advice.narration === null ? [] : ["", advice.narration]),
+      ...(advice.facts.length > 0 ? ["", ...advice.facts.map((fact) => `* ${fact}`)] : []),
+      "",
+      advice.notice,
+    ].join("\n");
   }
 }

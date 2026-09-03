@@ -1,4 +1,5 @@
 export * from "./AdherenceSummary";
+export * from "./ai-shared";
 export * from "./AiExplanation";
 export * from "./AppShell";
 export * from "./ArchitectFilter";
