@@ -1207,6 +1207,8 @@
   "chart.empty.distribution": "No scores to distribute",
   "chart.axis.count": "Count",
   "nav.users": "Users",
+  "nav.grafana": "Grafana",
+  "nav.grafanaHint": "Opens Grafana served by the Ingress at /grafana — requires the application running in the cluster",
   "nav.settings": "Progression Policy",
   "users.title": "Users",
   "users.subtitle": "Access accounts: who administers the system, who manages the team and who reviews as Tech Lead.",

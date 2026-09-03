@@ -1207,6 +1207,8 @@
   "chart.empty.distribution": "Sem notas para distribuir",
   "chart.axis.count": "Quantidade",
   "nav.users": "Usuários",
+  "nav.grafana": "Grafana",
+  "nav.grafanaHint": "Abre o Grafana servido pelo Ingress em /grafana — requer a aplicação em execução no cluster",
   "nav.settings": "Política de Progressão",
   "users.title": "Usuários",
   "users.subtitle": "Contas de acesso: quem administra o sistema, quem gere o time e quem revisa como Tech Lead.",

@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  Activity,
   BarChart3,
   BookOpen,
   Building2,
@@ -68,6 +69,10 @@ interface NavItem {
   leadershipOnly?: boolean;
 
   ownCareerOnly?: boolean;
+
+  external?: boolean;
+
+  hintKey?: MessageKey;
 }
 
 const OWN_ARCHITECT_PARAM = "$architectId";
@@ -170,6 +175,14 @@ export const NAV_GROUPS: NavGroup[] = [
         calibrationReachOnly: true,
       },
       { to: "/teams", labelKey: "nav.teams", icon: Building2, teamCompositionReachOnly: true },
+      {
+        to: "/grafana",
+        labelKey: "nav.grafana",
+        icon: Activity,
+        adminOnly: true,
+        external: true,
+        hintKey: "nav.grafanaHint",
+      },
       { to: "/users", labelKey: "nav.users", icon: UserCog, adminOnly: true },
     ],
   },
@@ -414,21 +427,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   const renderDesktopNavItem = (item: NavItem, hidden = false) => {
-    const active = isNavItemActive(item, pathname, navItems);
+    const active = !item.external && isNavItemActive(item, pathname, navItems);
     const label = t(item.labelKey);
-    const link = (
-      <Link
-        to={item.to}
-        aria-label={label}
-        {...outOfReachProps(hidden)}
-        className={cn(
-          "flex items-center rounded-lg py-2 text-sm transition-colors",
-          collapsed ? "justify-center px-0" : "gap-2.5 px-3",
-          active
-            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-            : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-        )}
-      >
+    const className = cn(
+      "flex items-center rounded-lg py-2 text-sm transition-colors",
+      collapsed ? "justify-center px-0" : "gap-2.5 px-3",
+      active
+        ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+    );
+    const conteudo = (
+      <>
         <item.icon className="h-4 w-4 shrink-0" />
         <span
           data-nav-label
@@ -439,6 +448,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           {label}
         </span>
+      </>
+    );
+    const link = item.external ? (
+      <a
+        href={item.to}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+        title={item.hintKey ? t(item.hintKey) : undefined}
+        {...outOfReachProps(hidden)}
+        className={className}
+      >
+        {conteudo}
+      </a>
+    ) : (
+      <Link to={item.to} aria-label={label} {...outOfReachProps(hidden)} className={className}>
+        {conteudo}
       </Link>
     );
 
@@ -702,23 +728,39 @@ export function AppShell({ children }: { children: ReactNode }) {
                 idPrefix="mobile-"
                 siblings={navItems}
                 headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground/80"
-                renderItem={(item, hidden) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={() => setMobileNavOpen(false)}
-                    {...outOfReachProps(hidden)}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                      isNavItemActive(item, pathname, navItems)
-                        ? "bg-secondary font-medium text-foreground"
-                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
-                    )}
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {t(item.labelKey)}
-                  </Link>
-                )}
+                renderItem={(item, hidden) =>
+                  item.external ? (
+                    <a
+                      key={item.to}
+                      href={item.to}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={item.hintKey ? t(item.hintKey) : undefined}
+                      onClick={() => setMobileNavOpen(false)}
+                      {...outOfReachProps(hidden)}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {t(item.labelKey)}
+                    </a>
+                  ) : (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileNavOpen(false)}
+                      {...outOfReachProps(hidden)}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                        isNavItemActive(item, pathname, navItems)
+                          ? "bg-secondary font-medium text-foreground"
+                          : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                      )}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {t(item.labelKey)}
+                    </Link>
+                  )
+                }
               />
             ))}
           </nav>
