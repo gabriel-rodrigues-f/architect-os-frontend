@@ -315,8 +315,6 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
     defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
   );
 
-  const assignableArchitects = vm.assignableArchitects(store.architects, []);
-
   const toggle = (field: "competencyIds" | "assignedTo", id: string) => {
     if (field === "competencyIds") {
       setCompetencyIds((prev) =>
@@ -394,7 +392,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
             <div>
               <Label>{t("path.edit.assignedTo")}</Label>
               <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
-                {assignableArchitects.map((a) => (
+                {store.architects.map((a) => (
                   <label key={a.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
                       type="checkbox"
@@ -404,7 +402,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
                     <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
-                {assignableArchitects.length === 0 && (
+                {store.architects.length === 0 && (
                   <p className="text-sm text-muted-foreground">{t("filter.noArchitects")}</p>
                 )}
               </div>
@@ -506,8 +504,6 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
     if (field === "competencyIds") vm.toggleCompetency(path, id);
     else vm.toggleAssignment(path, id);
   };
-
-  const assignableArchitects = vm.assignableArchitects(store.architects, path.assignedTo);
 
   const addItem = () => {
     const title = newItem.title.trim();
@@ -636,7 +632,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
             <div>
               <Label>{t("path.edit.assignedTo")}</Label>
               <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
-                {assignableArchitects.map((a) => (
+                {store.architects.map((a) => (
                   <label key={a.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
                       type="checkbox"
@@ -646,7 +642,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                     <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
-                {assignableArchitects.length === 0 && (
+                {store.architects.length === 0 && (
                   <p className="text-sm text-muted-foreground">{t("filter.noArchitects")}</p>
                 )}
               </div>

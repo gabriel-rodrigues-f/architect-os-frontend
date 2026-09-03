@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   Bar,
   CapabilityRadar,
+  DeactivatedPersonNotice,
   EvidenceDialog,
   EvidenceStatusBadge,
   GapBadge,
@@ -183,6 +184,8 @@ function ArchitectWorkspace() {
           </Link>
         }
       />
+
+      <DeactivatedPersonNotice active={architect.active} />
 
       <ProfileTabs architectId={architect.id} active="overview" />
 

@@ -181,7 +181,7 @@ export function useTeamRoster(isAdmin: boolean) {
 
   const specializationOptions = useMemo(() => {
     const used = new Set(
-      store.architects
+      store.architectsIncludingInactive
         .map((a) => a.primarySpecializationCompetencyId)
         .filter((id): id is string => !!id),
     );
@@ -190,7 +190,7 @@ export function useTeamRoster(isAdmin: boolean) {
       .filter((c): c is NonNullable<ReturnType<typeof sel.competencyById>> => !!c)
       .sort(defaultNameFormatter.byName)
       .map((c) => ({ id: c.id, label: c.name }));
-    if (store.architects.some((a) => !a.primarySpecializationCompetencyId)) {
+    if (store.architectsIncludingInactive.some((a) => !a.primarySpecializationCompetencyId)) {
       options.push({
         id: NO_SPECIALIZATION,
         label: t("team.filter.specialization.none"),
@@ -198,14 +198,14 @@ export function useTeamRoster(isAdmin: boolean) {
       });
     }
     return options;
-  }, [store.architects, sel, t]);
+  }, [store.architectsIncludingInactive, sel, t]);
 
   const capabilityOptions = useMemo(() => {
     const options: MultiSelectFilterOption[] = store.capabilities.map((c) => ({
       id: c.id,
       label: c.name,
     }));
-    const hasNone = store.architects.some((a) => {
+    const hasNone = store.architectsIncludingInactive.some((a) => {
       const competency = a.primarySpecializationCompetencyId
         ? sel.competencyById(a.primarySpecializationCompetencyId)
         : undefined;
@@ -219,7 +219,7 @@ export function useTeamRoster(isAdmin: boolean) {
       });
     }
     return options;
-  }, [store.capabilities, store.architects, sel, t]);
+  }, [store.capabilities, store.architectsIncludingInactive, sel, t]);
 
   const specializationFilter = useMemo(
     () => specializationSelection ?? specializationOptions.map((option) => option.id),
@@ -230,15 +230,15 @@ export function useTeamRoster(isAdmin: boolean) {
     [capabilitySelection, capabilityOptions],
   );
   const nameSelection = useMemo(
-    () => nameSelectionChosen ?? store.architects.map((a) => a.id),
-    [nameSelectionChosen, store.architects],
+    () => nameSelectionChosen ?? store.architectsIncludingInactive.map((a) => a.id),
+    [nameSelectionChosen, store.architectsIncludingInactive],
   );
 
   const filtered = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
 
     const nameFilter = Selection.explicit(nameSelection);
-    return store.architects.filter((a) => {
+    return store.architectsIncludingInactive.filter((a) => {
       if (!nameFilter.contains(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
 
@@ -253,7 +253,7 @@ export function useTeamRoster(isAdmin: boolean) {
       return true;
     });
   }, [
-    store.architects,
+    store.architectsIncludingInactive,
     isAdmin,
     statusFilter,
     roleSelection,
@@ -314,7 +314,7 @@ export function useTeamRoster(isAdmin: boolean) {
   };
 
   const activeFilterChips: ActiveFilterChip[] = [];
-  if (nameSelection.length !== store.architects.length) {
+  if (nameSelection.length !== store.architectsIncludingInactive.length) {
     activeFilterChips.push({
       key: "name",
       label: t("team.filter.chip.name", { n: nameSelection.length }),

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Architect, LearningPath, LearningPathItem } from "@/lib/domain";
+import type { LearningPath, LearningPathItem } from "@/lib/domain";
 import { LearningPathsViewModel, type LearningPathService } from "@/lib/view-models";
 import { fixtureAdminUser } from "../../helpers/fixtures";
 
@@ -49,17 +49,6 @@ function path(overrides: Partial<LearningPath> = {}): LearningPath {
     createdAt: "2026-01-01T00:00:00Z",
     ...overrides,
   };
-}
-
-function architect(overrides: Partial<Architect> = {}): Architect {
-  return {
-    id: "ana",
-    name: "Ana Martins",
-    role: "member",
-    yearsAsArchitect: 3,
-    active: true,
-    ...overrides,
-  } as Architect;
 }
 
 describe("LearningPathsViewModel", () => {
@@ -147,28 +136,14 @@ describe("LearningPathsViewModel", () => {
     });
   });
 
-  describe("assignableArchitects", () => {
-    it("AUDITORIA-TERCEIRA-RODADA, EPIC E: inclui ativos e quem já está atribuído mesmo inativo", () => {
-      const { vm } = makeVm();
-      const architects = [
-        architect({ id: "ana", active: true }),
-        architect({ id: "bruno", active: false }),
-        architect({ id: "carla", active: false }),
-      ];
-      const result = vm.assignableArchitects(architects, ["bruno"]);
-      expect(result.map((a) => a.id)).toEqual(["ana", "bruno"]);
-    });
-
-    it("sem ninguém já atribuído (trilha nova), equivale a filtrar só por `active`", () => {
-      const { vm } = makeVm();
-      const architects = [
-        architect({ id: "ana", active: true }),
-        architect({ id: "bruno", active: false }),
-      ];
-      const result = vm.assignableArchitects(architects, []);
-      expect(result.map((a) => a.id)).toEqual(["ana"]);
-    });
-  });
+  /**
+   * FATIA `inativo-some` (dono, 2026-09-03) — `assignableArchitects` existia
+   * para reoferecer quem já estava atribuído MESMO inativo (AUDITORIA-TERCEIRA-
+   * RODADA, EPIC E). O pedido do dono revoga essa exceção: desativado não
+   * aparece em lugar nenhum. A régua virou uma só, e mora no store — a tela
+   * consome `store.architects`, que já nasce ativa —, então o método morreu
+   * junto com o conceito, em vez de virar uma identidade sem dono.
+   */
 
   describe("addItem", () => {
     it("gera id no cliente (lpi-*), corta o título, hora inválida cai para 1", () => {

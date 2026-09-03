@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import {
   AdherenceSummary,
+  DeactivatedPersonNotice,
   EmptyState,
   GapBadge,
   LearningPathCoverageList,
@@ -125,6 +126,8 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
           </Link>
         }
       />
+      <DeactivatedPersonNotice active={architect.active} />
+
       <ProfileTabs architectId={architect.id} active="roadmap" />
     </>
   );

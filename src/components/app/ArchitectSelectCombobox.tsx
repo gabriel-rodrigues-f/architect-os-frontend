@@ -9,7 +9,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Architect } from "@/lib/domain";
@@ -19,7 +18,6 @@ import { cn } from "@/lib/utils";
 
 export function ArchitectSelectCombobox({
   architects,
-  inactiveArchitects = [],
   selectedId,
   onChange,
   label,
@@ -28,7 +26,6 @@ export function ArchitectSelectCombobox({
   id,
 }: {
   architects: readonly Architect[];
-  inactiveArchitects?: readonly Architect[];
   selectedId: string;
   onChange: (id: string) => void;
   label: string;
@@ -40,8 +37,7 @@ export function ArchitectSelectCombobox({
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ordered = [...architects].sort(defaultNameFormatter.byName);
-  const inactiveOrdered = [...inactiveArchitects].sort(defaultNameFormatter.byName);
-  const selected = [...ordered, ...inactiveOrdered].find((a) => a.id === selectedId);
+  const selected = ordered.find((a) => a.id === selectedId);
 
   const select = (architectId: string) => {
     onChange(architectId);
@@ -89,26 +85,6 @@ export function ArchitectSelectCombobox({
                 </CommandItem>
               ))}
             </CommandGroup>
-            {inactiveOrdered.length > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup>
-                  {inactiveOrdered.map((a) => (
-                    <CommandItem key={a.id} value={a.name} onSelect={() => select(a.id)}>
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4 shrink-0",
-                          a.id === selectedId ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                      <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                        {t("architectCombobox.inactiveName", { nome: a.name })}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </>
-            )}
           </CommandList>
         </Command>
       </PopoverContent>

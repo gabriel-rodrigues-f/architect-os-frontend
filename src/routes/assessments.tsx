@@ -56,7 +56,7 @@ function AssessmentsPage() {
   const sel = useSelectors();
   const [architectId, setArchitectId] = useSearchParamString(
     "architectId",
-    () => sel.activeArchitects[0]?.id ?? "",
+    () => store.architects[0]?.id ?? "",
   );
 
   const [cycleId] = useSearchParamString("cycleId", () => store.activeCycleId);
@@ -150,8 +150,7 @@ function AssessmentsPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             <ArchitectSelectCombobox
-              architects={sel.activeArchitects}
-              inactiveArchitects={store.architects.filter((a) => !a.active)}
+              architects={store.architects}
               selectedId={architectId}
               onChange={setArchitectId}
               label={t("asmt.architect")}

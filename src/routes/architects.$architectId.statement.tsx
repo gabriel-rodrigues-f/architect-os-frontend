@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import {
   Callout,
   CareerEventTimeline,
+  DeactivatedPersonNotice,
   EmptyState,
   MultiSelectFilter,
   OutOfReachScreen,
@@ -246,6 +247,8 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
             </div>
           }
         />
+        <DeactivatedPersonNotice active={architect.active} />
+
         <ProfileTabs architectId={architect.id} active="statement" />
 
         <div className="mb-6 flex flex-wrap items-end gap-4">
