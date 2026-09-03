@@ -26,7 +26,7 @@ export function useGapAnalysisData() {
     return store.capabilities.map((cat) => {
       const { atual, alvo } = sel.teamAverageFor(cat.id, architects);
       return {
-        capability: sel.capabilityShortLabel(cat),
+        capability: cat.name,
         atual: Number((atual.avg ?? 0).toFixed(2)),
         alvo: Number((alvo.avg ?? 0).toFixed(2)),
         covered: atual.covered,

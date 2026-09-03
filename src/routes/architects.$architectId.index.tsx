@@ -260,7 +260,7 @@ function ArchitectWorkspace() {
           <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
             <CapabilityRadar
               data={capabilityAvgs.map((d) => ({
-                capability: sel.capabilityShortLabel(d.capability),
+                capability: d.capability.name,
                 atual: d.avg ?? 0,
                 alvo: d.target ?? 0,
               }))}

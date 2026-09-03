@@ -18,10 +18,51 @@ import {
 } from "recharts";
 
 import { useDisplayPreferences, useNarrowViewport } from "@/hooks";
-import { axisTick, CHART_INK, ChartPalette, tooltipStyle, type SeriesStyle } from "@/lib/design";
+import {
+  axisTick,
+  CHART_INK,
+  ChartPalette,
+  RotuloDeEixo,
+  tooltipStyle,
+  type SeriesStyle,
+} from "@/lib/design";
 import type { EvolutionSeries, ProficiencyPoint, RadarPoint } from "@/components/app/charts";
 
 const FALLBACK_STYLE: SeriesStyle = { color: "var(--chart-1)", symbol: "circle" };
+
+/**
+ * Tick do eixo do radar: o nome INTEIRO da capacidade, quebrado por palavras
+ * (`RotuloDeEixo`). O tick padrão do recharts é uma linha só — nomes como
+ * "Engenharia de Plataforma" saíam cortados, e era por isso que o eixo
+ * mostrava o `short` de uma palavra. Cada linha é um `<tspan>`; o bloco é
+ * centrado verticalmente no ponto do eixo para não invadir o polígono.
+ */
+function RadarAxisTick(props: {
+  x?: number;
+  y?: number;
+  textAnchor?: "start" | "end" | "inherit" | "middle";
+  payload?: { value?: unknown };
+}) {
+  const { x: centroX = 0, y: centroY = 0, textAnchor = "middle", payload } = props;
+  const linhas = RotuloDeEixo.emLinhas(String(payload?.value ?? ""));
+  const alturaDaLinha = axisTick.fontSize + 2;
+  const deslocamentoInicial = -((linhas.length - 1) * alturaDaLinha) / 2;
+  return (
+    <text
+      x={centroX}
+      y={centroY}
+      textAnchor={textAnchor}
+      fontSize={axisTick.fontSize}
+      fill={axisTick.fill}
+    >
+      {linhas.map((linha, indice) => (
+        <tspan key={linha} x={centroX} dy={indice === 0 ? deslocamentoInicial : alturaDaLinha}>
+          {linha}
+        </tspan>
+      ))}
+    </text>
+  );
+}
 
 function seriesDot(estilo: SeriesStyle) {
   return (props: { cx?: number; cy?: number; key?: string }) => {
@@ -57,7 +98,7 @@ export function CapabilityRadarFigure({
     <ResponsiveContainer width="100%" height="100%">
       <RadarChart data={data} outerRadius={estreita ? "65%" : "72%"}>
         <PolarGrid stroke={CHART_INK.grid} />
-        <PolarAngleAxis dataKey="capability" tick={axisTick} />
+        <PolarAngleAxis dataKey="capability" tick={<RadarAxisTick />} />
         <PolarRadiusAxis domain={[1, 5]} tickCount={5} tick={false} axisLine={false} />
         <Radar
           name={targetLabel}
@@ -105,7 +146,7 @@ export function ComparisonRadarFigure({
     <ResponsiveContainer width="100%" height="100%">
       <RadarChart data={data} outerRadius={estreita ? "65%" : "72%"}>
         <PolarGrid stroke={CHART_INK.grid} />
-        <PolarAngleAxis dataKey="capability" tick={axisTick} />
+        <PolarAngleAxis dataKey="capability" tick={<RadarAxisTick />} />
         <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
         {series.map((s, i) => {
           const estilo = estilos[i] ?? FALLBACK_STYLE;

@@ -73,3 +73,35 @@ export const tooltipStyle = {
 } as const;
 
 export const axisTick = { fontSize: 11, fill: CHART_INK.axis } as const;
+
+/**
+ * O rótulo de um eixo carrega o NOME INTEIRO e quebra SÓ em espaço.
+ *
+ * Pedido do dono (2026-09-03) diante do radar: o eixo mostrava o campo
+ * `short` da capacidade, e no catálogo da casa o short é uma palavra só
+ * ("Clean" para "Clean Core", "Corporativa" para "Arquitetura
+ * Corporativa") — dois eixos vizinhos pareciam duas capacidades distintas e
+ * o nome verdadeiro não aparecia em lugar nenhum do gráfico.
+ *
+ * `LIMITE` é largura de linha em caracteres, não corte: palavra maior que
+ * ele fica inteira na própria linha. Nada é elidido; juntar as linhas de
+ * volta devolve o nome original.
+ */
+export class RotuloDeEixo {
+  private static readonly LIMITE = 18;
+
+  static emLinhas(texto: string, limite: number = RotuloDeEixo.LIMITE): readonly string[] {
+    const palavras = texto
+      .trim()
+      .split(/\s+/)
+      .filter((palavra) => palavra.length > 0);
+    return palavras.reduce<string[]>((linhas, palavra) => {
+      const ultima = linhas.at(-1);
+      if (ultima === undefined) return [palavra];
+      if (`${ultima} ${palavra}`.length <= limite) {
+        return [...linhas.slice(0, -1), `${ultima} ${palavra}`];
+      }
+      return [...linhas, palavra];
+    }, []);
+  }
+}

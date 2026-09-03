@@ -83,6 +83,12 @@ describe("useGapAnalysisData — memo do recorte da população (F2)", () => {
     const atual = snapshots[snapshots.length - 1]!;
     expect(atual.architects.map((a) => a.id)).toEqual(atual.selected);
     expect(atual.architects.map((a) => a.id)).toEqual(["ana", "bruno"]);
-    expect(atual.radar.map((linha) => linha.capability)).toEqual(["Cloud", "Security"]);
+    // Onda 36.1: o eixo do radar carrega o NOME da capacidade, não o `short`
+    // (pedido do dono — "quero que apareça todo o texto"; o short é uma
+    // palavra só e fazia "Clean Core" parecer duas capacidades).
+    expect(atual.radar.map((linha) => linha.capability)).toEqual([
+      "Cloud Architecture",
+      "Security",
+    ]);
   });
 });

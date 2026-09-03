@@ -87,7 +87,7 @@ function ProfessionalsComparison() {
 
   const radarData = store.capabilities.map((capability) => {
     const row: Record<string, string | number> = {
-      capability: sel.capabilityShortLabel(capability),
+      capability: capability.name,
     };
     for (const architect of architects) {
       row[architect.id] = averagesByArchitect.get(architect.id)?.get(capability.id) ?? 0;
