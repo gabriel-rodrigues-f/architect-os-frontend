@@ -3,9 +3,11 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import type { RoleName } from "@/lib/domain";
 import { useGapSeverityRuler } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
+import { useSeniorityReading } from "@/lib/seniority";
 import { defaultSectionVisibilityMemory } from "@/lib/section-visibility";
 import { defaultNameFormatter } from "@/lib/text";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
@@ -502,6 +504,26 @@ export function FieldLabel({
         </Tooltip>
       </TooltipProvider>
     </div>
+  );
+}
+
+/**
+ * A senioridade como RÓTULO — coluna do Time, cartão, quadro do time. Quando
+ * a pessoa não tem senioridade (gestor e tech lead, onda 37), sai o travessão
+ * da ausência, com o significado no `title` para quem não vê o símbolo.
+ */
+export function Seniority({
+  role,
+  className,
+}: {
+  role: RoleName | null | undefined;
+  className?: string;
+}) {
+  const seniority = useSeniorityReading();
+  return (
+    <span className={className} title={seniority.titleOf(role)}>
+      {seniority.labelOf(role)}
+    </span>
   );
 }
 

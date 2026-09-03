@@ -39,6 +39,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters";
 import { requireCareerFileReach } from "@/lib/route-guards";
+import { useSeniorityReading } from "@/lib/seniority";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
@@ -118,6 +119,7 @@ function ArchitectWorkspace() {
 
   const personal = useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
   const labels = useLabels();
+  const seniority = useSeniorityReading();
 
   const actionTypes = useVocabulary("ACTION_TYPE");
   const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
@@ -173,7 +175,7 @@ function ArchitectWorkspace() {
     <>
       <PageHeader
         title={architect.name}
-        description={`${architect.role} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
+        description={`${seniority.labelOf(architect.role)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
         help={help}
         actions={
           <Link

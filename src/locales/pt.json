@@ -1682,5 +1682,7 @@
   "users.deactivate.reasonLabel": "Motivo da desativação",
   "users.deactivate.reasonPlaceholder": "Por que esta pessoa está sendo desativada?",
   "users.deactivate.submitting": "Desativando…",
-  "users.deactivate.error": "Não foi possível desativar. Recarregue a página e tente de novo."
+  "users.deactivate.error": "Não foi possível desativar. Recarregue a página e tente de novo.",
+  "seniority.absent": "Sem senioridade",
+  "team.transition.noSeniority": "Esta pessoa não tem senioridade: cargo de liderança não recebe nível de carreira. Aqui muda só o time."
 }

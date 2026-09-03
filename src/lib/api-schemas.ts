@@ -297,7 +297,7 @@ export const catalogImportSummarySchema = z.object({
 const architect = z.object({
   id: z.string(),
   name: z.string(),
-  role: roleName,
+  role: roleName.nullable(),
   careerLevelId: z.string().nullish(),
   yearsAsArchitect: z.number(),
   specialization: z.string(),

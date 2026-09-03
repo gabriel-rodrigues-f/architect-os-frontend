@@ -74,10 +74,15 @@ export interface Competency {
   active: boolean;
 }
 
+/**
+ * Onda 37 (backend ADR-0084) — cargo e SENIORIDADE se separaram. Gestor e
+ * tech lead não têm senioridade, e o servidor devolve `role: null` e
+ * `careerLevelId: null` neles: a ausência é o dado, não um erro de leitura.
+ */
 export interface Architect {
   id: string;
   name: string;
-  role: RoleName;
+  role: RoleName | null;
 
   careerLevelId?: string | null | undefined;
   yearsAsArchitect: number;

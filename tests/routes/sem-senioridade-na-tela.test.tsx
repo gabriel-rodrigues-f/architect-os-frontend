@@ -181,7 +181,10 @@ describe("ONDA 37 — quem não tem senioridade não derruba a tela", () => {
     await screen.findByText("Carla Ribeiro");
 
     await userEvent.click(screen.getByLabelText("Nível de carreira"));
-    await userEvent.click(await screen.findByText("Todos os níveis"));
+    const niveis = await screen.findByRole("listbox", { name: "Nível de carreira" });
+    const todosOsNiveis = within(niveis).getByText("Todos os níveis");
+    await userEvent.click(todosOsNiveis);
+    await userEvent.click(todosOsNiveis);
 
     await waitFor(() => expect(screen.queryByText("Carla Ribeiro")).toBeNull());
     expect(screen.getByText("Ana Martins")).toBeTruthy();

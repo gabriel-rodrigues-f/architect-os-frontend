@@ -1,4 +1,4 @@
-import type { Architect, CareerLevelTransition } from "../domain";
+import type { Architect, CareerLevelTransition, RoleName } from "../domain";
 import type { ApiClient } from "../api-client";
 
 export interface ArchitectsGateway {
@@ -16,7 +16,7 @@ export interface ArchitectsGateway {
   ): Promise<Architect>;
   transitionCareerLevel(
     id: string,
-    toRole: Architect["role"],
+    toRole: RoleName,
     reason: string,
     expectedVersion: number,
   ): Promise<Architect>;
@@ -41,7 +41,7 @@ export class HttpArchitectsGateway implements ArchitectsGateway {
 
   transitionCareerLevel = (
     id: string,
-    toRole: Architect["role"],
+    toRole: RoleName,
     reason: string,
     expectedVersion: number,
   ): Promise<Architect> =>

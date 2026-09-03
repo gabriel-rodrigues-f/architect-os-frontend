@@ -24,6 +24,7 @@ import { usePageHelp } from "@/lib/page-help";
 import { requireCareerFileReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
+import { useSeniorityReading } from "@/lib/seniority";
 import { useSelectors, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { defaultDateFormatter } from "@/lib/text";
@@ -94,6 +95,7 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
   const store = useStore();
   const sel = useSelectors();
   const { t } = useI18n();
+  const seniority = useSeniorityReading();
   const help = usePageHelp("architectEvolution");
   const architect = sel.architectById(architectId);
 
@@ -229,7 +231,7 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
     <>
       <PageHeader
         title={t("evolution.title", { nome: architect.name })}
-        description={`${architect.role}${
+        description={`${seniority.labelOf(architect.role)}${
           data?.architect.careerLevelName && data.architect.careerLevelName !== architect.role
             ? ` · ${data.architect.careerLevelName}`
             : ""

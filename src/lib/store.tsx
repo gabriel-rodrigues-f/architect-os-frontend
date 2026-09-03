@@ -26,6 +26,7 @@ import type {
   Level,
   MentoringSession,
   ProficiencyUpdate,
+  RoleName,
   TeamLevelRule,
 } from "./domain";
 import { EffectiveCurationPolicy, type CurationPolicy } from "./curation-policy";
@@ -139,11 +140,7 @@ export interface Api extends AppState {
   addArchitect: (a: Omit<Architect, "id" | "version">) => Promise<Architect>;
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>) => void;
 
-  transitionCareerLevel: (
-    id: string,
-    toRole: Architect["role"],
-    reason: string,
-  ) => Promise<Architect>;
+  transitionCareerLevel: (id: string, toRole: RoleName, reason: string) => Promise<Architect>;
 
   deactivate: (id: string, reason: string) => Promise<Architect>;
 

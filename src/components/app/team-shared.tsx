@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
-import { GapBadge, Initials, LevelBadge } from "@/components/app/ui-bits";
+import { GapBadge, Initials, LevelBadge, Seniority } from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { SeniorityReading, useSeniorityReading } from "@/lib/seniority";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -147,7 +148,7 @@ export function useTeamRoster(isAdmin: boolean) {
       if (!nameFilter.contains(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
 
-      if (roleSelection !== null && !roleSelection.includes(a.role)) return false;
+      if (roleSelection !== null && !SeniorityReading.withinLevels(a, roleSelection)) return false;
       const competency = a.primarySpecializationCompetencyId
         ? sel.competencyById(a.primarySpecializationCompetencyId)
         : undefined;
@@ -283,6 +284,12 @@ export function useTeamRoster(isAdmin: boolean) {
   };
 }
 
+/**
+ * Onda 37 — quem não tem senioridade (gestor e tech lead) muda de TIME por
+ * aqui do mesmo jeito; o que a tela não faz é oferecer-lhe uma senioridade,
+ * porque o domínio recusa (`SENIORITY_NOT_APPLICABLE_TO_LEADERSHIP`). Sem
+ * senioridade, o diálogo é só de time — e continua exigindo motivo.
+ */
 export function TeamOrLevelChangeDialog({
   architect,
   teams,
@@ -297,15 +304,20 @@ export function TeamOrLevelChangeDialog({
   const notifySuccess = useSuccessToast();
 
   const careerLevels = useCareerLevelsByRank();
+  const seniority = useSeniorityReading();
   const [toRole, setToRole] = useState<ArchitectFormRole>("");
   const [toTeamId, setToTeamId] = useState<string | null>(architect.teamId ?? null);
   const change = new TeamOrLevelChange(architect, toRole, toTeamId);
   const currentTeam = viewModel.teamNameOf(architect.teamId, teams) ?? t("team.transition.noTeam");
+  const offersSeniority = SeniorityReading.has(architect);
 
   return (
     <CommandWithReasonDialog
       title={t("team.transition.title", { nome: architect.name })}
-      body={t("team.transition.body", { atual: architect.role, time: currentTeam })}
+      body={t("team.transition.body", {
+        atual: seniority.labelOf(architect.role),
+        time: currentTeam,
+      })}
       reasonInputId="transition-reason"
       reasonLabel={t("team.transition.reasonLabel")}
       reasonPlaceholder={t("team.transition.reasonPlaceholder")}
@@ -315,22 +327,26 @@ export function TeamOrLevelChangeDialog({
       canSubmit={change.isEffective}
       extraFields={() => (
         <div className="grid gap-3">
-          <div>
-            <Label htmlFor="transition-to-role">{t("team.transition.toRole")}</Label>
-            <select
-              id="transition-to-role"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={toRole}
-              onChange={(e) => setToRole(e.target.value as ArchitectFormRole)}
-            >
-              <option value="">{t("team.transition.keepRole")}</option>
-              {viewModel.otherCareerLevels(careerLevels, architect.role).map((l) => (
-                <option key={l.id} value={l.name}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {offersSeniority ? (
+            <div>
+              <Label htmlFor="transition-to-role">{t("team.transition.toRole")}</Label>
+              <select
+                id="transition-to-role"
+                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                value={toRole}
+                onChange={(e) => setToRole(e.target.value as ArchitectFormRole)}
+              >
+                <option value="">{t("team.transition.keepRole")}</option>
+                {viewModel.otherCareerLevels(careerLevels, architect.role).map((l) => (
+                  <option key={l.id} value={l.name}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("team.transition.noSeniority")}</p>
+          )}
           <div>
             <Label htmlFor="transition-to-team">{t("team.transition.toTeam")}</Label>
             <select
@@ -409,9 +425,7 @@ export function TeamRosterView({
               >
                 {a.name}
               </Link>
-              <p className="truncate text-xs text-muted-foreground" title={a.role}>
-                {a.role}
-              </p>
+              <Seniority role={a.role} className="block truncate text-xs text-muted-foreground" />
               <p className="truncate text-xs text-muted-foreground" title={a.email}>
                 {a.email}
               </p>
@@ -523,7 +537,9 @@ export function TeamRosterView({
                     {a.email}
                   </p>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{a.role}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                  <Seniority role={a.role} />
+                </td>
                 {isAdmin && (
                   <td className="max-w-[160px] px-4 py-3 text-muted-foreground">
                     <span className="block truncate" title={a.teamId ?? "—"}>
