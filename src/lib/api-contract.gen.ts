@@ -571,6 +571,9 @@ export interface paths {
                         short?: string;
                         /** @default true */
                         active?: boolean;
+                        competencies: {
+                            name: string;
+                        }[];
                     };
                 };
             };
@@ -1218,16 +1221,12 @@ export interface paths {
                     "application/json": {
                         name: string;
                         role: string;
-                        yearsAsArchitect: number;
-                        /** @default  */
-                        specialization?: string;
                         /** Format: email */
                         email: string;
                         /** @default true */
                         active?: boolean;
                         teamId?: string | null;
                         leadUserId?: unknown;
-                        primarySpecializationCompetencyId?: string | null;
                     };
                 };
             };

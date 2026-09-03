@@ -75,14 +75,14 @@
     "auth.user.create.success": {
       "rota": "POST /auth/users",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 118,
+      "linha": 134,
       "resposta": "created",
       "consumidorAusente": true
     },
     "auth.user.update.success": {
       "rota": "PATCH /auth/users/:id",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 154,
+      "linha": 170,
       "resposta": "ok",
       "consumidorAusente": true
     },
