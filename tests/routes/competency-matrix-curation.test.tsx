@@ -19,14 +19,14 @@ import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/rende
 
 const fetchMock = vi.fn();
 
-/** Capacidade "no limite" (4 ativas, o máximo da política) — READY, sem espaço para nova. */
+/** Capacidade "no limite" (6 ativas, o máximo da política) — READY, sem espaço para nova. */
 const fullCapability: Capability = {
   id: "full",
   name: "Full Capability",
   short: "Full",
   active: true,
   curation: {
-    activeCompetencyCount: 4,
+    activeCompetencyCount: 6,
     status: "READY",
   },
 };
@@ -87,8 +87,8 @@ describe("Matriz de Competências — curadoria e escala", () => {
     // Contagem e status de curadoria moram no cabeçalho do card — visíveis mesmo com a seção recolhida (Seção 40-42).
     await screen.findByText("Cloud Architecture");
 
-    expect(screen.getByText("4/4 máx.")).toBeTruthy();
-    expect(screen.getByText("7/4 máx.")).toBeTruthy();
+    expect(screen.getByText("6/6 máx.")).toBeTruthy();
+    expect(screen.getByText("7/6 máx.")).toBeTruthy();
     expect(screen.getAllByText("Pronta").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Requer curadoria").length).toBeGreaterThan(0);
     expect(screen.queryByText(/restritivas/)).toBeNull();
@@ -99,7 +99,7 @@ describe("Matriz de Competências — curadoria e escala", () => {
     await screen.findByText("Full Capability");
 
     const newCompetencyButtons = screen.getAllByRole("button", { name: "Nova competência" });
-    // A capacidade "cloud" (2/4) permite; "Full Capability" (4/4, o máximo) não.
+    // A capacidade "cloud" (2/6) permite; "Full Capability" (6/6, o máximo) não.
     const fullCapabilityCard = screen.getByText("Full Capability").closest(".surface-card");
     expect(fullCapabilityCard).toBeTruthy();
     const disabledButton = newCompetencyButtons.find((btn) => fullCapabilityCard?.contains(btn));

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { CompetencyCountRange, EffectiveCurationPolicy } from "@/lib/curation-policy";
 import type { Capability, Competency } from "@/lib/domain";
 import { UiAuthorizationPolicy } from "@/lib/scope";
 import { CompetencyMatrixViewModel, type CatalogService } from "@/lib/view-models";
@@ -22,7 +23,7 @@ import { fixtureAdminUser, fixtureMemberUser } from "../../helpers/fixtures";
  * que a tela NÃO envia mais os campos mortos.
  */
 function fakeService(): CatalogService & {
-  addCapability: ReturnType<typeof vi.fn>;
+  foundCapability: ReturnType<typeof vi.fn>;
   updateCapability: ReturnType<typeof vi.fn>;
   removeCapability: ReturnType<typeof vi.fn>;
   addCompetency: ReturnType<typeof vi.fn>;
@@ -31,7 +32,7 @@ function fakeService(): CatalogService & {
   removeCompetencies: ReturnType<typeof vi.fn>;
 } {
   return {
-    addCapability: vi.fn(async (input) => ({ ...input, id: "nova-capacidade" }) as Capability),
+    foundCapability: vi.fn(async (input) => ({ ...input, id: "nova-capacidade" }) as Capability),
     updateCapability: vi.fn(),
     removeCapability: vi.fn(async () => ({ archived: false, competenciesRemoved: 0 })),
     addCompetency: vi.fn(async (input) => ({ ...input, id: "nova-competencia" }) as Competency),
@@ -68,14 +69,16 @@ describe("CompetencyMatrixViewModel", () => {
     });
   });
 
-  describe("createCapability", () => {
-    it("envia o nome cortado (trim) com active:true, sem `short`", async () => {
+  describe("foundCapability", () => {
+    it("entrega ao serviço o ato atômico — capacidade E competências num pedido só", async () => {
       const { vm, service } = makeVm();
-      await vm.createCapability("  Cloud Architecture  ");
-      expect(service.addCapability).toHaveBeenCalledWith({
+      const foundation = {
         name: "Cloud Architecture",
         active: true,
-      });
+        competencies: [{ name: "Kubernetes" }, { name: "Serverless" }, { name: "IAM" }],
+      };
+      await vm.foundCapability(foundation);
+      expect(service.foundCapability).toHaveBeenCalledWith(foundation);
     });
   });
 
@@ -102,16 +105,16 @@ describe("CompetencyMatrixViewModel", () => {
   });
 
   describe("isCapabilityAtCapacity", () => {
-    it("o máximo por capacidade é o da política — 4 por default (onda 36, ADR-0081)", () => {
+    it("o máximo por capacidade é o da política — 6 por default (onda 36.1, ADR-0083)", () => {
       const { vm } = makeVm();
       expect(
         vm.isCapabilityAtCapacity(
-          capability({ curation: { ...capability().curation, activeCompetencyCount: 3 } }),
+          capability({ curation: { ...capability().curation, activeCompetencyCount: 5 } }),
         ),
       ).toBe(false);
       expect(
         vm.isCapabilityAtCapacity(
-          capability({ curation: { ...capability().curation, activeCompetencyCount: 4 } }),
+          capability({ curation: { ...capability().curation, activeCompetencyCount: 6 } }),
         ),
       ).toBe(true);
     });
@@ -186,9 +189,10 @@ describe("CompetencyMatrixViewModel", () => {
       expect(at(3)).toBe(true);
     });
 
-    it("limits expõe a política injetada para os textos da rota", () => {
-      expect(vmMax3.limits).toEqual(policyMax3);
-      expect(makeVm().vm.limits).toEqual({ maxActiveCompetencies: 4 });
+    it("limits expõe o intervalo (piso do modelo, teto da política) para os textos da rota", () => {
+      expect(vmMax3.limits.max).toBe(3);
+      expect(vmMax3.limits.min).toBe(CompetencyCountRange.MINIMUM_ACTIVE_COMPETENCIES);
+      expect(makeVm().vm.limits.max).toBe(EffectiveCurationPolicy.defaults.maxActiveCompetencies);
     });
   });
 });

@@ -34,6 +34,7 @@ import { requireAdminReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCurationPolicy, useStore } from "@/lib/store";
 import {
+  CapabilityFoundationEditor,
   CatalogImportEditor,
   CompetencyMatrixViewModel,
   CompetencySelection,
@@ -337,7 +338,7 @@ function MatrixPage() {
                   title={cat.name}
                   description={t("matrix.competencyCount", {
                     n: cat.curation.activeCompetencyCount,
-                    max: viewModel.limits.maxActiveCompetencies,
+                    max: viewModel.limits.max,
                   })}
                   actions={
                     <div className="flex flex-wrap items-center gap-2">
@@ -363,7 +364,7 @@ function MatrixPage() {
                             title={
                               atCapacity
                                 ? t("matrix.atCapacity.hint", {
-                                    max: viewModel.limits.maxActiveCompetencies,
+                                    max: viewModel.limits.max,
                                   })
                                 : undefined
                             }
@@ -566,7 +567,7 @@ function MatrixPage() {
         <CompetencyCreateDialog capability={creatingIn} onClose={() => setCreatingIn(null)} />
       )}
       {creatingCapability && (
-        <CapabilityCreateDialog onClose={() => setCreatingCapability(false)} />
+        <CapabilityFoundationDialog onClose={() => setCreatingCapability(false)} />
       )}
       {importing && <CatalogImportDialog onClose={() => setImporting(false)} />}
     </>
@@ -793,24 +794,25 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
+function CapabilityFoundationDialog({ onClose }: { onClose: () => void }) {
   const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
-  const [name, setName] = useState("");
+  const limits = viewModel.limits;
+  const [editor, setEditor] = useState(() => CapabilityFoundationEditor.begin(limits));
 
   const { submitting: saving, run } = useToastSubmit();
 
-  const create = async () => {
-    const trimmedName = name.trim();
-    if (!trimmedName) return;
+  const found = async () => {
+    const payload = editor.payload();
+    if (!payload || saving) return;
 
-    const result = await run(() => viewModel.createCapability(name));
+    const result = await run(() => viewModel.foundCapability(payload));
     if (result.ok) onClose();
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+    <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("matrix.newCapability")}</DialogTitle>
         </DialogHeader>
@@ -819,18 +821,57 @@ function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
             <Label htmlFor="new-capability-name">{t("cap.field.name")}</Label>
             <Input
               id="new-capability-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && create()}
+              value={editor.name}
+              disabled={saving}
+              onChange={(e) => setEditor(editor.withName(e.target.value))}
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            {t("matrix.foundation.hint", { min: limits.min, max: limits.max })}
+          </p>
+          {editor.competencyNames.map((competencyName, position) => (
+            <div key={position} className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label htmlFor={`new-capability-competency-${position}`}>
+                  {t("matrix.foundation.competency", { n: position + 1 })}
+                </Label>
+                <Input
+                  id={`new-capability-competency-${position}`}
+                  value={competencyName}
+                  disabled={saving}
+                  onChange={(e) => setEditor(editor.withCompetencyName(position, e.target.value))}
+                />
+              </div>
+              {editor.canRemoveCompetency(position) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={saving}
+                  aria-label={t("matrix.foundation.remove", { n: position + 1 })}
+                  onClick={() => setEditor(editor.removeCompetency(position))}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          ))}
+          {editor.canAddCompetency && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={saving}
+              onClick={() => setEditor(editor.addCompetency())}
+            >
+              {t("matrix.foundation.addAnother")}
+            </Button>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" disabled={saving} onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={create} disabled={!name.trim() || saving}>
-            {t("matrix.add")}
+          <Button onClick={() => void found()} disabled={!editor.isValid || saving}>
+            {t("matrix.foundation.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>
