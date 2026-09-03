@@ -939,8 +939,6 @@ export interface paths {
                         /** @default [] */
                         competencies?: {
                             competencyId: string;
-                            /** @enum {string} */
-                            requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
                             requiredLevel: 1 | 2 | 3 | 4 | 5;
                         }[];
                     };
@@ -957,49 +955,6 @@ export interface paths {
             };
         };
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/teams/{teamId}/rules/{careerLevelId}/swap-requirement": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    teamId: string;
-                    careerLevelId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        competencyId: string;
-                        withCompetencyId: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4286,8 +4241,6 @@ export interface paths {
                 content: {
                     "application/json": {
                         maxActiveCompetencies: number;
-                        requiredRestrictive: number;
-                        requiredNonRestrictive: number;
                     };
                 };
             };

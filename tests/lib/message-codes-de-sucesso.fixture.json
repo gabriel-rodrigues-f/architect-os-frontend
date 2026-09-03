@@ -89,13 +89,7 @@
     "career.teamRule.define.success": {
       "rota": "PUT /teams/:teamId/rules/:careerLevelId",
       "arquivo": "src/modules/career/infrastructure/controllers/career.controller.ts",
-      "linha": 66,
-      "resposta": "ok"
-    },
-    "career.teamRule.swapRequirement.success": {
-      "rota": "POST /teams/:teamId/rules/:careerLevelId/swap-requirement",
-      "arquivo": "src/modules/career/infrastructure/controllers/career.controller.ts",
-      "linha": 90,
+      "linha": 64,
       "resposta": "ok"
     },
     "catalog.capability.create.success": {
