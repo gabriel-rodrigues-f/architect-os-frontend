@@ -2,6 +2,13 @@ import type { Architect, CareerLevelTransition } from "../domain";
 import type { ApiClient } from "../api-client";
 
 export interface ArchitectsGateway {
+  /**
+   * ONDA 37 — Usuários desativa a pessoa (conta + profissional num ato só,
+   * backend ADR-0084) e a desativação carrega `expectedVersion`. A tela de
+   * contas não monta o `/state`, então lê o profissional pelo id que a
+   * própria conta traz.
+   */
+  professional(id: string): Promise<Architect>;
   createArchitect(architect: Omit<Architect, "id" | "version">): Promise<Architect>;
   updateArchitect(
     id: string,
@@ -20,6 +27,9 @@ export interface ArchitectsGateway {
 
 export class HttpArchitectsGateway implements ArchitectsGateway {
   constructor(private readonly client: ApiClient) {}
+
+  professional = (id: string): Promise<Architect> =>
+    this.client.request<Architect>(`/architects/${id}`);
 
   createArchitect = (architect: Omit<Architect, "id" | "version">): Promise<Architect> =>
     this.client.post<Architect>("/architects", architect);

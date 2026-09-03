@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Pencil, TrendingUp, UserCheck, UserX } from "lucide-react";
+import { TrendingUp, UserCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
@@ -9,9 +9,9 @@ import { GapBadge, Initials, LevelBadge } from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { type Architect, type RoleName } from "@/lib/domain";
+import { type Architect } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
-import { useSuccessToast, useToastSubmit } from "@/hooks";
+import { useSuccessToast } from "@/hooks";
 import { teamsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
@@ -21,15 +21,8 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import {
-  emptyArchitectForm,
-  TeamOrLevelChange,
-  TeamViewModel,
-  type ArchitectFormRole,
-  type ArchitectFormValues,
-} from "@/lib/view-models";
+import { TeamOrLevelChange, TeamViewModel, type ArchitectFormRole } from "@/lib/view-models";
 
-const NO_SPECIALIZATION = "__no-specialization__";
 const NO_CAPABILITY = "__no-capability__";
 
 interface EnrichedArchitect {
@@ -45,7 +38,15 @@ function useTeamViewModel(): TeamViewModel {
   return useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
 }
 
-export function useArchitectForm() {
+/**
+ * ONDA 37 — o que sobrou das ações de /team. O dono tirou daqui "Cadastrar
+ * profissional", "Editar profissional" e "Desativar profissional": a pessoa
+ * nasce, muda de cargo e é desativada em Usuários, num ato só. Fica o que é
+ * DESTA tela — mudar time ou nível, que é onde o histórico com motivo mora —
+ * e reativar, porque o filtro "Inativos" só existe aqui: sem ele a
+ * desativação seria irreversível pela interface.
+ */
+export function useTeamRosterActions() {
   const viewModel = useTeamViewModel();
   const isAdmin = viewModel.isAdmin(useCurrentUser());
 
@@ -57,78 +58,15 @@ export function useArchitectForm() {
   });
   const teams = viewModel.allocatableTeams(teamsQuery.data ?? []);
 
-  const careerLevels = useCareerLevelsByRank();
-  const firstCareerLevel = careerLevels[0];
-  const defaultRole: ArchitectFormRole = firstCareerLevel
-    ? (firstCareerLevel.name as RoleName)
-    : "";
-
-  const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState<ArchitectFormValues>(() => emptyArchitectForm(defaultRole));
-
-  const [confirmDeactivate, setConfirmDeactivate] = useState<Architect | null>(null);
-
   const [transitioning, setTransitioning] = useState<Architect | null>(null);
-
-  const openCreate = () => {
-    setForm(emptyArchitectForm(defaultRole));
-    setEditing("");
-  };
-
-  const openEdit = (architect: Architect) => {
-    setForm({
-      name: architect.name,
-      role: architect.role,
-      specialization: architect.specialization,
-      primarySpecializationCompetencyId: architect.primarySpecializationCompetencyId ?? null,
-      years: String(architect.yearsAsArchitect),
-      email: architect.email,
-      teamId: null,
-    });
-    setEditing(architect.id);
-  };
-
-  const { yearsValid, canSubmit } = viewModel.validate(form);
-
-  const { submitting, run } = useToastSubmit();
   const notifySuccess = useSuccessToast();
 
-  const submit = async () => {
-    if (!canSubmit) return;
-
-    if (editing) {
-      await viewModel.submit(form, editing);
-      notifySuccess("msg.people.update.success", { nome: form.name.trim() });
-      setEditing(null);
-    } else {
-      const result = await run(() => viewModel.submit(form, editing));
-      if (result.ok) setEditing(null);
-    }
+  const reactivate = (architect: Architect) => {
+    viewModel.reactivate(architect);
+    notifySuccess("team.reactivate.toast", { nome: architect.name });
   };
 
-  const reactivate = (a: Architect) => {
-    viewModel.reactivate(a);
-    notifySuccess("team.reactivate.toast", { nome: a.name });
-  };
-
-  return {
-    editing,
-    setEditing,
-    form,
-    setForm,
-    teams,
-    confirmDeactivate,
-    setConfirmDeactivate,
-    transitioning,
-    setTransitioning,
-    openCreate,
-    openEdit,
-    yearsValid,
-    canSubmit,
-    submitting,
-    submit,
-    reactivate,
-  };
+  return { teams, transitioning, setTransitioning, reactivate };
 }
 
 export function useTeamRoster(isAdmin: boolean) {
@@ -141,7 +79,6 @@ export function useTeamRoster(isAdmin: boolean) {
   const careerLevels = useCareerLevelsByRank();
   const [roleSelection, setRoleSelection] = useState<string[] | null>(null);
   const roleFilter = roleSelection ?? careerLevels.map((l) => l.name);
-  const [specializationSelection, setSpecializationSelection] = useState<string[] | null>(null);
   const [capabilitySelection, setCapabilitySelection] = useState<string[] | null>(null);
   const [nameSelectionChosen, setNameSelectionChosen] = useState<string[] | null>(null);
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "level" | "recent">("name-asc");
@@ -152,14 +89,7 @@ export function useTeamRoster(isAdmin: boolean) {
 
   useEffect(() => {
     setPage(1);
-  }, [
-    nameSelectionChosen,
-    statusFilter,
-    roleSelection,
-    specializationSelection,
-    capabilitySelection,
-    sort,
-  ]);
+  }, [nameSelectionChosen, statusFilter, roleSelection, capabilitySelection, sort]);
 
   const lastMentoringByArchitect = useMemo(() => {
     const map = new Map<string, string>();
@@ -178,27 +108,6 @@ export function useTeamRoster(isAdmin: boolean) {
     id: l.name,
     label: l.name,
   }));
-
-  const specializationOptions = useMemo(() => {
-    const used = new Set(
-      store.architects
-        .map((a) => a.primarySpecializationCompetencyId)
-        .filter((id): id is string => !!id),
-    );
-    const options: MultiSelectFilterOption[] = [...used]
-      .map((id) => sel.competencyById(id))
-      .filter((c): c is NonNullable<ReturnType<typeof sel.competencyById>> => !!c)
-      .sort(defaultNameFormatter.byName)
-      .map((c) => ({ id: c.id, label: c.name }));
-    if (store.architects.some((a) => !a.primarySpecializationCompetencyId)) {
-      options.push({
-        id: NO_SPECIALIZATION,
-        label: t("team.filter.specialization.none"),
-        isPlaceholder: true,
-      });
-    }
-    return options;
-  }, [store.architects, sel, t]);
 
   const capabilityOptions = useMemo(() => {
     const options: MultiSelectFilterOption[] = store.capabilities.map((c) => ({
@@ -221,10 +130,6 @@ export function useTeamRoster(isAdmin: boolean) {
     return options;
   }, [store.capabilities, store.architects, sel, t]);
 
-  const specializationFilter = useMemo(
-    () => specializationSelection ?? specializationOptions.map((option) => option.id),
-    [specializationSelection, specializationOptions],
-  );
   const capabilityFilter = useMemo(
     () => capabilitySelection ?? capabilityOptions.map((option) => option.id),
     [capabilitySelection, capabilityOptions],
@@ -243,8 +148,6 @@ export function useTeamRoster(isAdmin: boolean) {
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
 
       if (roleSelection !== null && !roleSelection.includes(a.role)) return false;
-      const specKey = a.primarySpecializationCompetencyId ?? NO_SPECIALIZATION;
-      if (!specializationFilter.includes(specKey)) return false;
       const competency = a.primarySpecializationCompetencyId
         ? sel.competencyById(a.primarySpecializationCompetencyId)
         : undefined;
@@ -257,7 +160,6 @@ export function useTeamRoster(isAdmin: boolean) {
     isAdmin,
     statusFilter,
     roleSelection,
-    specializationFilter,
     capabilityFilter,
     nameSelection,
     sel,
@@ -335,13 +237,6 @@ export function useTeamRoster(isAdmin: boolean) {
       onRemove: () => setRoleSelection(null),
     });
   }
-  if (specializationFilter.length !== specializationOptions.length) {
-    activeFilterChips.push({
-      key: "spec",
-      label: `${t("team.filter.specialization")}: ${summarize(specializationFilter, specializationOptions)}`,
-      onRemove: () => setSpecializationSelection(null),
-    });
-  }
   if (capabilityFilter.length !== capabilityOptions.length) {
     activeFilterChips.push({
       key: "cap",
@@ -354,7 +249,6 @@ export function useTeamRoster(isAdmin: boolean) {
     setNameSelectionChosen(null);
     setStatusFilter(["active"]);
     setRoleSelection(null);
-    setSpecializationSelection(null);
     setCapabilitySelection(null);
     setSort("name-asc");
   };
@@ -364,8 +258,6 @@ export function useTeamRoster(isAdmin: boolean) {
     setStatusFilter,
     roleFilter,
     setRoleFilter: setRoleSelection as (ids: string[]) => void,
-    specializationFilter,
-    setSpecializationFilter: setSpecializationSelection as (ids: string[]) => void,
     capabilityFilter,
     setCapabilityFilter: setCapabilitySelection as (ids: string[]) => void,
     nameSelection,
@@ -380,7 +272,6 @@ export function useTeamRoster(isAdmin: boolean) {
     setViewOverride,
     statusOptions,
     roleOptions,
-    specializationOptions,
     capabilityOptions,
     enrichedSorted,
     pageItems,
@@ -409,7 +300,7 @@ export function TeamOrLevelChangeDialog({
   const [toRole, setToRole] = useState<ArchitectFormRole>("");
   const [toTeamId, setToTeamId] = useState<string | null>(architect.teamId ?? null);
   const change = new TeamOrLevelChange(architect, toRole, toTeamId);
-  const currentTeam = viewModel.teamNameOf(architect.teamId, teams) ?? t("team.form.team.none");
+  const currentTeam = viewModel.teamNameOf(architect.teamId, teams) ?? t("team.transition.noTeam");
 
   return (
     <CommandWithReasonDialog
@@ -448,7 +339,7 @@ export function TeamOrLevelChangeDialog({
               value={toTeamId ?? ""}
               onChange={(e) => setToTeamId(e.target.value === "" ? null : e.target.value)}
             >
-              <option value="">{t("team.form.team.none")}</option>
+              <option value="">{t("team.transition.noTeam")}</option>
               {viewModel.allocatableTeams(teams).map((team) => (
                 <option key={team.id} value={team.id}>
                   {team.name}
@@ -464,45 +355,11 @@ export function TeamOrLevelChangeDialog({
             "msg.people.careerLevelTransition.success",
             {
               nome: architect.name,
-              time: viewModel.teamNameOf(updated.teamId, teams) ?? t("team.form.team.none"),
+              time: viewModel.teamNameOf(updated.teamId, teams) ?? t("team.transition.noTeam"),
             },
             updated,
           ),
         )
-      }
-      onClose={onClose}
-    />
-  );
-}
-
-export function DeactivateDialog({
-  architect,
-  onClose,
-}: {
-  architect: Architect;
-  onClose: () => void;
-}) {
-  const { t } = useI18n();
-  const viewModel = useTeamViewModel();
-  const notifySuccess = useSuccessToast();
-
-  return (
-    <CommandWithReasonDialog
-      title={t("team.deactivate.confirmTitle", { nome: architect.name })}
-      body={t("team.deactivate.confirmDescription")}
-      reasonInputId="deactivate-reason"
-      reasonLabel={t("team.deactivate.reasonLabel")}
-      reasonPlaceholder={t("team.deactivate.reasonPlaceholder")}
-      confirmLabel={t("team.deactivate.action")}
-      submittingLabel={t("team.deactivate.submitting")}
-      confirmVariant="destructive"
-      fallbackError={t("team.deactivate.error")}
-      onSubmit={(reason) =>
-        viewModel
-          .deactivate(architect.id, reason)
-          .then((updated) =>
-            notifySuccess("msg.people.deactivate.success", { nome: architect.name }, updated),
-          )
       }
       onClose={onClose}
     />
@@ -528,122 +385,92 @@ export function TeamRosterView({
   view,
   isAdmin,
   onTransition,
-  onEdit,
-  onDeactivate,
   onReactivate,
 }: {
   pageItems: EnrichedArchitect[];
   view: "cards" | "table";
   isAdmin: boolean;
   onTransition: (architect: Architect) => void;
-  onEdit: (architect: Architect) => void;
-  onDeactivate: (architect: Architect) => void;
   onReactivate: (architect: Architect) => void;
 }) {
   const { t } = useI18n();
-  const sel = useSelectors();
 
   return view === "cards" ? (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => {
-        const specialization = sel.specializationLabel(a);
-        return (
-          <div key={a.id} className="surface-card p-5">
-            <div className="flex items-start gap-3">
-              <Initials name={a.name} />
-              <div className="min-w-0 flex-1">
-                <Link
-                  to="/architects/$architectId"
-                  params={{ architectId: a.id }}
-                  className="font-display text-base font-semibold hover:text-primary"
-                >
-                  {a.name}
-                </Link>
-                <p
-                  className="truncate text-xs text-muted-foreground"
-                  title={`${a.role} · ${t("team.card.years", { n: a.yearsAsArchitect })} · ${specialization}`}
-                >
-                  {a.role} · {t("team.card.years", { n: a.yearsAsArchitect })} · {specialization}
-                </p>
-                <p className="truncate text-xs text-muted-foreground" title={a.email}>
-                  {a.email}
-                </p>
-              </div>
-              {isAdmin && (
-                <div className="flex shrink-0 gap-1">
-                  {a.active ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => onTransition(a)}
-                        aria-label={t("team.transition.action", { nome: a.name })}
-                        title={t("team.transition.action", { nome: a.name })}
-                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      >
-                        <TrendingUp className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onEdit(a)}
-                        aria-label={`${t("common.edit")} ${a.name}`}
-                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDeactivate(a)}
-                        aria-label={`${t("team.deactivate.action")} ${a.name}`}
-                        title={t("team.deactivate.action")}
-                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <UserX className="h-3.5 w-3.5" />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => onReactivate(a)}
-                      aria-label={`${t("team.reactivate.action")} ${a.name}`}
-                      title={t("team.reactivate.action")}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    >
-                      <UserCheck className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
-              <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
-            </div>
-
-            <div className="mt-4 space-y-1.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t("team.card.topGaps")}
+      {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => (
+        <div key={a.id} className="surface-card p-5">
+          <div className="flex items-start gap-3">
+            <Initials name={a.name} />
+            <div className="min-w-0 flex-1">
+              <Link
+                to="/architects/$architectId"
+                params={{ architectId: a.id }}
+                className="font-display text-base font-semibold hover:text-primary"
+              >
+                {a.name}
+              </Link>
+              <p className="truncate text-xs text-muted-foreground" title={a.role}>
+                {a.role}
               </p>
-              {top.map((g) => (
-                <div
-                  key={g.item.competencyId}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <span className="min-w-0 flex-1 truncate" title={g.competency?.name}>
-                    {g.competency?.name}
-                  </span>
-                  <GapBadge gap={g.gap} />
-                </div>
-              ))}
-              {top.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {hasOfficial ? t("team.card.noGaps") : t("team.card.notAssessed")}
-                </p>
-              )}
+              <p className="truncate text-xs text-muted-foreground" title={a.email}>
+                {a.email}
+              </p>
             </div>
+            {isAdmin && (
+              <div className="flex shrink-0 gap-1">
+                {a.active ? (
+                  <button
+                    type="button"
+                    onClick={() => onTransition(a)}
+                    aria-label={t("team.transition.action", { nome: a.name })}
+                    title={t("team.transition.action", { nome: a.name })}
+                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onReactivate(a)}
+                    aria-label={`${t("team.reactivate.action")} ${a.name}`}
+                    title={t("team.reactivate.action")}
+                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  >
+                    <UserCheck className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-        );
-      })}
+
+          <div className="mt-4 flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
+            <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
+          </div>
+
+          <div className="mt-4 space-y-1.5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t("team.card.topGaps")}
+            </p>
+            {top.map((g) => (
+              <div
+                key={g.item.competencyId}
+                className="flex items-center justify-between gap-2 text-sm"
+              >
+                <span className="min-w-0 flex-1 truncate" title={g.competency?.name}>
+                  {g.competency?.name}
+                </span>
+                <GapBadge gap={g.gap} />
+              </div>
+            ))}
+            {top.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                {hasOfficial ? t("team.card.noGaps") : t("team.card.notAssessed")}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   ) : (
     <div className="surface-card overflow-x-auto">
@@ -655,9 +482,6 @@ export function TeamRosterView({
             </th>
             <th scope="col" className="px-4 py-3">
               {t("team.table.col.role")}
-            </th>
-            <th scope="col" className="px-4 py-3">
-              {t("team.table.col.specialization")}
             </th>
             {isAdmin && (
               <th scope="col" className="whitespace-nowrap px-4 py-3">
@@ -700,11 +524,6 @@ export function TeamRosterView({
                   </p>
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{a.role}</td>
-                <td className="max-w-[200px] px-4 py-3 text-muted-foreground">
-                  <span className="block truncate" title={sel.specializationLabel(a)}>
-                    {sel.specializationLabel(a)}
-                  </span>
-                </td>
                 {isAdmin && (
                   <td className="max-w-[160px] px-4 py-3 text-muted-foreground">
                     <span className="block truncate" title={a.teamId ?? "—"}>
@@ -736,34 +555,15 @@ export function TeamRosterView({
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
                       {a.active ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => onTransition(a)}
-                            aria-label={t("team.transition.action", { nome: a.name })}
-                            title={t("team.transition.action", { nome: a.name })}
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                          >
-                            <TrendingUp className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onEdit(a)}
-                            aria-label={`${t("common.edit")} ${a.name}`}
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onDeactivate(a)}
-                            aria-label={`${t("team.deactivate.action")} ${a.name}`}
-                            title={t("team.deactivate.action")}
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <UserX className="h-3.5 w-3.5" />
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          onClick={() => onTransition(a)}
+                          aria-label={t("team.transition.action", { nome: a.name })}
+                          title={t("team.transition.action", { nome: a.name })}
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                        >
+                          <TrendingUp className="h-3.5 w-3.5" />
+                        </button>
                       ) : (
                         <Button variant="outline" size="sm" onClick={() => onReactivate(a)}>
                           <UserCheck className="h-3.5 w-3.5" />

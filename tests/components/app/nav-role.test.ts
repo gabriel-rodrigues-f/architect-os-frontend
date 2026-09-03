@@ -52,11 +52,18 @@ describe("AppShell — navegação recortada por papel", () => {
     expect(paths).not.toContain("/cycles");
   });
 
-  it("lead também não vê os destinos admin-only", () => {
+  /**
+   * ONDA 37 — Usuários deixou de ser admin-only: é o ÚNICO lugar de cadastro
+   * de pessoa, e o dono definiu que gestor e tech lead cadastram no time
+   * deles. O diretório de contas continua administrativo (a tela o nega),
+   * mas o DESTINO é da liderança — escondê-lo deixaria as duas personas sem
+   * caminho nenhum para cadastrar.
+   */
+  it("lead também não vê os destinos admin-only, mas alcança Usuários para cadastrar", () => {
     const groups = filterNavGroups(NAV_GROUPS, fixtureUnassignedTechLeadUser);
     const paths = groups.flatMap((g) => g.items.map((i) => i.to));
     expect(paths).not.toContain("/competency-matrix");
-    expect(paths).not.toContain("/users");
+    expect(paths).toContain("/users");
   });
 
   it("admin vê tudo, incluindo os destinos admin-only", () => {

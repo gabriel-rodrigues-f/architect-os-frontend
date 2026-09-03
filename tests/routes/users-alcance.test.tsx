@@ -68,31 +68,38 @@ describe("/users nega DADO a quem não é admin — a tela é a última barreira
 
   it("member recebe a negativa, e nenhuma consulta de contas sai do navegador", async () => {
     renderAs(fixtureMemberUser);
-    expect(
-      await screen.findByText("Diretório de contas é restrito a administradores."),
-    ).toBeTruthy();
+    expect(await screen.findByText("Cadastrar pessoas é da liderança.")).toBeTruthy();
     expect(screen.queryByText("Ana Martins")).toBeNull();
     expect(pediuAsContas()).toBe(false);
   });
 
-  it("lead também não — o diretório de contas é administrativo, não de liderança", async () => {
+  it("quem não é liderança não recebe a ação de cadastrar", async () => {
+    renderAs(fixtureMemberUser);
+    await screen.findByText("Cadastrar pessoas é da liderança.");
+    expect(screen.queryByRole("button", { name: "Cadastrar pessoa" })).toBeNull();
+  });
+
+  /**
+   * ONDA 37 — a rota abriu à liderança porque Usuários virou o único lugar
+   * de cadastro, mas o DIRETÓRIO de contas continua administrativo (o
+   * backend guarda `GET /auth/users` com `requireAdmin`). O lead alcança a
+   * tela, cadastra, e não vê conta nenhuma: as duas metades num teste só,
+   * senão a abertura da navegação viraria vazamento de leitura.
+   */
+  it("lead alcança a tela e cadastra, mas o diretório de contas continua fechado", async () => {
     renderAs(fixtureUnassignedTechLeadUser);
     expect(
       await screen.findByText("Diretório de contas é restrito a administradores."),
     ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cadastrar pessoa" })).toBeTruthy();
+    expect(screen.queryByText("Ana Martins")).toBeNull();
     expect(pediuAsContas()).toBe(false);
   });
 
-  it("quem não é admin não recebe a ação de criar conta", async () => {
-    renderAs(fixtureMemberUser);
-    await screen.findByText("Diretório de contas é restrito a administradores.");
-    expect(screen.queryByRole("button", { name: "Criar conta" })).toBeNull();
-  });
-
-  it("admin alcança o diretório, recebe a ação de criar e as contas chegam à tela", async () => {
+  it("admin alcança o diretório, recebe a ação de cadastrar e as contas chegam à tela", async () => {
     renderAs(fixtureAdminUser);
     expect(await screen.findByText("Ana Martins")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Criar conta" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cadastrar pessoa" })).toBeTruthy();
     expect(pediuAsContas()).toBe(true);
   });
 });

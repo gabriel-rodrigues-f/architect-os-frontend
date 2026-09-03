@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { USER_ROLES, UserRoles } from "@/lib/gateways/auth.gateway";
+import { TEAM_MEMBER_ROLES, USER_ROLES, UserRoles } from "@/lib/gateways/auth.gateway";
 import type { SessionUser } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import pt from "@/locales/pt.json";
@@ -42,8 +42,8 @@ const OTHER_MEMBER: SessionUser = {
 
 const ROTULOS_DE_NEGOCIO = pt as Record<string, string>;
 
-const papeisEsperados = () =>
-  USER_ROLES.map((papel) => [papel, ROTULOS_DE_NEGOCIO[`users.role.${papel}`]]);
+const rotulados = (papeis: readonly string[]) =>
+  papeis.map((papel) => [papel, ROTULOS_DE_NEGOCIO[`users.role.${papel}`]]);
 
 function mockBackend() {
   fetchMock.mockReset();
@@ -61,7 +61,7 @@ function mockBackend() {
 }
 
 const papeisOferecidosEm = (dialog: HTMLElement): (string | null)[][] =>
-  [...within(dialog).getByLabelText("Papel").querySelectorAll("option")].map((opcao) => [
+  [...within(dialog).getByLabelText("Cargo").querySelectorAll("option")].map((opcao) => [
     opcao.getAttribute("value"),
     opcao.textContent,
   ]);
@@ -72,18 +72,26 @@ describe("Usuários — o seletor de papel é derivado do vocabulário", () => {
     vi.unstubAllGlobals();
   });
 
-  it("o diálogo de criação oferece os quatro papéis, na ordem do vocabulário, com o rótulo do dono", async () => {
+  /**
+   * ONDA 37 — o cadastro oferece os CARGOS, e `admin` não é cargo: o dono
+   * definiu "Cargo = papel de acesso: Gerente | Tech Lead | Membro
+   * (admin continua fora do formulário)", e o objeto de valor do backend
+   * (`PersonAppointment`) recusa `admin` mesmo se a tela o oferecesse.
+   * Administrar não é estar num time — é a mesma linha que faz
+   * `TEAM_MEMBER_ROLES` ser `USER_ROLES` sem `admin`.
+   */
+  it("o diálogo de cadastro oferece os cargos do vocabulário, na ordem dele — nunca `admin`", async () => {
     mockBackend();
     renderWithApp(<UsersPage />);
 
     await screen.findByText("Outro Membro");
-    await userEvent.click(screen.getByRole("button", { name: "Criar conta" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar pessoa" }));
 
     const dialog = await screen.findByRole("dialog");
-    expect(papeisOferecidosEm(dialog)).toEqual(papeisEsperados());
+    expect(papeisOferecidosEm(dialog)).toEqual(rotulados(TEAM_MEMBER_ROLES));
   });
 
-  it("o diálogo de edição oferece exatamente a mesma lista — uma tela, uma fonte", async () => {
+  it("o diálogo de edição oferece os quatro papéis — trocar o cargo de quem já existe inclui `admin`", async () => {
     mockBackend();
     renderWithApp(<UsersPage />);
 
@@ -91,7 +99,7 @@ describe("Usuários — o seletor de papel é derivado do vocabulário", () => {
     await userEvent.click(screen.getByRole("button", { name: "Editar Outro Membro" }));
 
     const dialog = await screen.findByRole("dialog");
-    expect(papeisOferecidosEm(dialog)).toEqual(papeisEsperados());
+    expect(papeisOferecidosEm(dialog)).toEqual(rotulados(USER_ROLES));
   });
 
   it("o gestor está entre eles, escrito na palavra do dono", () => {

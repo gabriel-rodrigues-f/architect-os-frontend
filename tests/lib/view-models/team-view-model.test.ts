@@ -2,12 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Architect } from "@/lib/domain";
 import { UiAuthorizationPolicy } from "@/lib/scope";
-import {
-  emptyArchitectForm,
-  TeamViewModel,
-  type ArchitectFormValues,
-  type TeamRosterService,
-} from "@/lib/view-models";
+import { TeamViewModel, type TeamRosterService } from "@/lib/view-models";
 import { fixtureAdminUser, fixtureMemberUser } from "../../helpers/fixtures";
 
 /**
@@ -18,32 +13,18 @@ import { fixtureAdminUser, fixtureMemberUser } from "../../helpers/fixtures";
  * conhece a forma estreita da interface.
  */
 function fakeService(): TeamRosterService & {
-  addArchitect: ReturnType<typeof vi.fn>;
   updateArchitect: ReturnType<typeof vi.fn>;
   transitionCareerLevel: ReturnType<typeof vi.fn>;
-  deactivate: ReturnType<typeof vi.fn>;
   allocateArchitectToTeam: ReturnType<typeof vi.fn>;
   releaseArchitectFromTeam: ReturnType<typeof vi.fn>;
 } {
   return {
-    addArchitect: vi.fn(async (input) => ({ ...input, id: "novo-id", version: 1 }) as Architect),
     updateArchitect: vi.fn(),
     transitionCareerLevel: vi.fn(async () => ({ id: "ana" }) as Architect),
-    deactivate: vi.fn(async () => ({ id: "ana" }) as Architect),
     allocateArchitectToTeam: vi.fn(async () => ({ id: "ana" }) as Architect),
     releaseArchitectFromTeam: vi.fn(async () => ({ id: "ana" }) as Architect),
   };
 }
-
-const baseForm: ArchitectFormValues = {
-  name: "Carla Nogueira",
-  role: "Júnior",
-  specialization: "",
-  primarySpecializationCompetencyId: null,
-  years: "2",
-  email: "carla@company.com",
-  teamId: null,
-};
 
 describe("TeamViewModel", () => {
   describe("isAdmin", () => {
@@ -54,157 +35,13 @@ describe("TeamViewModel", () => {
     });
   });
 
-  describe("validate", () => {
-    const vm = new TeamViewModel(fakeService(), new UiAuthorizationPolicy());
-
-    it("aceita um formulário com nome, e-mail com @ e anos inteiros >= 0", () => {
-      expect(vm.validate(baseForm)).toEqual({ yearsValid: true, canSubmit: true });
-    });
-
-    it("recusa sem nome", () => {
-      expect(vm.validate({ ...baseForm, name: "   " }).canSubmit).toBe(false);
-    });
-
-    it("recusa e-mail sem @", () => {
-      expect(vm.validate({ ...baseForm, email: "carla-sem-arroba" }).canSubmit).toBe(false);
-    });
-
-    it("recusa anos vazio, negativo, ou não inteiro", () => {
-      expect(vm.validate({ ...baseForm, years: "" }).yearsValid).toBe(false);
-      expect(vm.validate({ ...baseForm, years: "-1" }).yearsValid).toBe(false);
-      expect(vm.validate({ ...baseForm, years: "2.5" }).yearsValid).toBe(false);
-    });
-
-    it("aceita zero anos — gente no primeiro dia é um dado real, não um valor inválido", () => {
-      expect(vm.validate({ ...baseForm, years: "0" }).yearsValid).toBe(true);
-    });
-  });
-
-  describe("submit — criação (editingId null)", () => {
-    it("chama addArchitect sem o campo legado, com role e active:true, e nunca chama updateArchitect", async () => {
-      const service = fakeService();
-      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-
-      await vm.submit(baseForm, null);
-
-      expect(service.updateArchitect).not.toHaveBeenCalled();
-      expect(service.addArchitect).toHaveBeenCalledWith({
-        name: "Carla Nogueira",
-        yearsAsArchitect: 2,
-        primarySpecializationCompetencyId: null,
-        email: "carla@company.com",
-        specialization: "",
-        role: "Júnior",
-        active: true,
-      });
-    });
-
-    it("sem time escolhido, o corpo não carrega teamId; com time escolhido, carrega (onda 33)", async () => {
-      const service = fakeService();
-      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-
-      await vm.submit(baseForm, null);
-      expect(service.addArchitect).toHaveBeenLastCalledWith(
-        expect.not.objectContaining({ teamId: expect.anything() }),
-      );
-
-      await vm.submit({ ...baseForm, teamId: "time-dados" }, null);
-      expect(service.addArchitect).toHaveBeenLastCalledWith(
-        expect.objectContaining({ teamId: "time-dados" }),
-      );
-    });
-
-    it("também cria quando editingId é string vazia (convenção de 'diálogo aberto para criar')", async () => {
-      const service = fakeService();
-      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-
-      await vm.submit(baseForm, "");
-
-      expect(service.addArchitect).toHaveBeenCalledTimes(1);
-      expect(service.updateArchitect).not.toHaveBeenCalled();
-    });
-
-    it("nome e e-mail são gravados sem espaço nas pontas (trim)", async () => {
-      const service = fakeService();
-      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-
-      await vm.submit(
-        { ...baseForm, name: "  Carla Nogueira  ", email: " carla@company.com " },
-        null,
-      );
-
-      expect(service.addArchitect).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "Carla Nogueira", email: "carla@company.com" }),
-      );
-    });
-
-    it("nunca envia leadUserId — o campo morreu no contrato da Fase 2 (o vínculo é o time; o backend responde 400 a campo extra)", async () => {
-      const service = fakeService();
-      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-
-      await vm.submit(baseForm, null);
-
-      expect(service.addArchitect).toHaveBeenCalledWith(
-        expect.not.objectContaining({ leadUserId: expect.anything() }),
-      );
-    });
-
-    it("propaga o erro do serviço — quem chama decide o toast (ViewModel não lida com UI)", async () => {
-      const service = fakeService();
-      service.addArchitect.mockRejectedValueOnce(new Error("e-mail já cadastrado"));
-      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-
-      await expect(vm.submit(baseForm, null)).rejects.toThrow("e-mail já cadastrado");
-    });
-  });
-
-  describe("submit — edição (editingId presente)", () => {
-    it("chama updateArchitect com o payload, nunca addArchitect, e NUNCA envia role (ENT-CAR-017)", async () => {
-      const service = fakeService();
-      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-
-      await vm.submit(baseForm, "ana");
-
-      expect(service.addArchitect).not.toHaveBeenCalled();
-      expect(service.updateArchitect).toHaveBeenCalledWith("ana", {
-        name: "Carla Nogueira",
-        yearsAsArchitect: 2,
-        primarySpecializationCompetencyId: null,
-        email: "carla@company.com",
-      });
-      const [, patch] = service.updateArchitect.mock.calls[0]!;
-      expect(patch).not.toHaveProperty("role");
-      expect(patch).not.toHaveProperty("specialization");
-    });
-  });
-
   /**
-   * Onda 35 — achado 17 do dono (2026-09-02): "Depois de cadastrado, o time
-   * não muda pelo lápis; só pelo diálogo da setinha, com motivo obrigatório."
-   * A onda 33 fazia o `teamId` viajar no PATCH da edição; isso sai.
+   * ONDA 37 — `validate`/`submit`/`emptyArchitectForm` e `deactivate` saíram
+   * da classe com o formulário: cadastrar, editar e desativar são de
+   * Usuários agora, e a régua de lá é `PersonAdmission`
+   * (`tests/lib/person-admission.test.ts`). O que sobrou aqui é o que /team
+   * ainda faz: mudar time ou nível, e reativar.
    */
-  describe("submit — a edição NUNCA carrega teamId (onda 35)", () => {
-    it("mesmo com time no formulário, o PATCH não leva teamId — o time muda só por changeTeamOrLevel", async () => {
-      const service = fakeService();
-      const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-
-      await vm.submit({ ...baseForm, teamId: "time-dados" }, "ana");
-
-      const patch: unknown = service.updateArchitect.mock.calls[0]?.[1];
-      expect(patch).not.toHaveProperty("teamId");
-    });
-
-    it("allocatableTeams oferece só os times ativos", () => {
-      const vm = new TeamViewModel(fakeService(), new UiAuthorizationPolicy());
-      expect(
-        vm.allocatableTeams([
-          { id: "a", name: "A", active: true },
-          { id: "b", name: "B", active: false },
-        ]),
-      ).toEqual([{ id: "a", name: "A", active: true }]);
-    });
-  });
-
   describe("reactivate", () => {
     it("chama updateArchitect(id, { active: true }) — mesmo comando que o PATCH genérico usava antes do dedicado de desativação", () => {
       const service = fakeService();
@@ -217,44 +54,26 @@ describe("TeamViewModel", () => {
     });
   });
 
-  describe("transitionCareerLevel / deactivate (OO3-11c)", () => {
-    it("delegam ao serviço com os argumentos exatos", async () => {
+  describe("transitionCareerLevel (OO3-11c)", () => {
+    it("delega ao serviço com os argumentos exatos", async () => {
       const service = fakeService();
       const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
 
       await vm.transitionCareerLevel("ana", "Sênior", "promoção do ciclo");
-      await vm.deactivate("ana", "saiu da empresa");
 
       expect(service.transitionCareerLevel).toHaveBeenCalledWith(
         "ana",
         "Sênior",
         "promoção do ciclo",
       );
-      expect(service.deactivate).toHaveBeenCalledWith("ana", "saiu da empresa");
     });
 
-    it("propagam a rejeição sem engolir — o 409 precisa chegar ao diálogo", async () => {
+    it("propaga a rejeição sem engolir — o 409 precisa chegar ao diálogo", async () => {
       const service = fakeService();
       service.transitionCareerLevel.mockRejectedValueOnce(new Error("conflito"));
-      service.deactivate.mockRejectedValueOnce(new Error("conflito"));
       const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
 
       await expect(vm.transitionCareerLevel("ana", "Sênior", "x")).rejects.toThrow("conflito");
-      await expect(vm.deactivate("ana", "x")).rejects.toThrow("conflito");
-    });
-  });
-});
-
-describe("emptyArchitectForm", () => {
-  it("nasce vazio, com o role padrão recebido e sem fallback nenhum preenchido", () => {
-    expect(emptyArchitectForm("Júnior")).toEqual({
-      name: "",
-      role: "Júnior",
-      specialization: "",
-      primarySpecializationCompetencyId: null,
-      years: "",
-      email: "",
-      teamId: null,
     });
   });
 });

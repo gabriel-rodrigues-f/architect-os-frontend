@@ -1,4 +1,3 @@
-import { UserFacingError } from "../api-errors";
 import type { SessionUser } from "../api";
 import type { Architect, RoleName } from "../domain";
 import type { TeamSummary } from "../gateways/teams.gateway";
@@ -8,33 +7,17 @@ import type { Api } from "../store";
 /** Vazio enquanto nenhum nível de carreira estiver escolhido — nunca um `RoleName` inventado. */
 export type ArchitectFormRole = RoleName | "";
 
-export interface ArchitectFormValues {
-  name: string;
-  role: ArchitectFormRole;
-
-  specialization: string;
-  primarySpecializationCompetencyId: string | null;
-  years: string;
-  email: string;
-  teamId: string | null;
-}
-
-export const emptyArchitectForm = (defaultRole: ArchitectFormRole): ArchitectFormValues => ({
-  name: "",
-  role: defaultRole,
-  specialization: "",
-  primarySpecializationCompetencyId: null,
-  years: "",
-  email: "",
-  teamId: null,
-});
-
+/**
+ * ONDA 37 — o que /team ainda escreve. Cadastrar, editar e desativar saíram
+ * daqui: a pessoa nasce, muda de cargo e é desativada em Usuários, num ato
+ * só (backend ADR-0084). `updateArchitect` fica pela REATIVAÇÃO, que é o
+ * único caminho de volta que a interface tem — o filtro "Inativos" só existe
+ * nesta tela.
+ */
 export type TeamRosterService = Pick<
   Api,
-  | "addArchitect"
   | "updateArchitect"
   | "transitionCareerLevel"
-  | "deactivate"
   | "allocateArchitectToTeam"
   | "releaseArchitectFromTeam"
 >;
@@ -85,46 +68,6 @@ export class TeamViewModel {
     return levels.filter((level) => level.name !== currentRole);
   }
 
-  validate(form: ArchitectFormValues): { yearsValid: boolean; canSubmit: boolean } {
-    const yearsValid =
-      form.years.trim() !== "" && Number.isInteger(Number(form.years)) && Number(form.years) >= 0;
-    const canSubmit =
-      form.name.trim().length > 0 &&
-      form.email.trim().length > 0 &&
-      form.email.includes("@") &&
-      form.role !== "" &&
-      yearsValid;
-    return { yearsValid, canSubmit };
-  }
-
-  async submit(form: ArchitectFormValues, editingId: string | null): Promise<void> {
-    const payload = {
-      name: form.name.trim(),
-      yearsAsArchitect: Number(form.years),
-      primarySpecializationCompetencyId: form.primarySpecializationCompetencyId,
-      email: form.email.trim(),
-    };
-
-    if (editingId) {
-      this.service.updateArchitect(editingId, payload);
-      return;
-    }
-
-    if (form.role === "") {
-      throw new UserFacingError(
-        "Escolha o nível de carreira antes de cadastrar a pessoa. Se a lista está vazia, cadastre os níveis de carreira primeiro.",
-      );
-    }
-
-    await this.service.addArchitect({
-      ...payload,
-      ...(form.teamId === null ? {} : { teamId: form.teamId }),
-      specialization: "",
-      role: form.role,
-      active: true,
-    });
-  }
-
   reactivate(architect: Architect): void {
     this.service.updateArchitect(architect.id, { active: true });
   }
@@ -146,9 +89,5 @@ export class TeamViewModel {
           : await this.service.allocateArchitectToTeam(id, change.toTeamId, reason);
     }
     return updated;
-  }
-
-  deactivate(architectId: string, reason: string): Promise<Architect> {
-    return this.service.deactivate(architectId, reason);
   }
 }

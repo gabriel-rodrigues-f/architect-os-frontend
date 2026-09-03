@@ -160,9 +160,9 @@
       "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/users": {
-      "alcance": "admin",
-      "guarda": "requireAdminReach",
-      "sinal": "isAdmin",
+      "alcance": "lideranca",
+      "guarda": "requireLeadershipReach",
+      "sinal": "isLeadership",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/users-alcance.test.tsx"

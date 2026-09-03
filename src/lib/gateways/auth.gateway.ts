@@ -76,13 +76,29 @@ export interface AuthGateway {
       email: string;
     }>,
   ): Promise<SessionUser>;
-  createUser(input: {
-    name: string;
-    email: string;
-    role: UserRole;
-    architectId?: string | null;
-  }): Promise<{ user: SessionUser; temporaryPassword: string }>;
+  admitPerson(input: PersonAdmissionInput): Promise<AdmittedPerson>;
   changePassword(currentPassword: string, newPassword: string): Promise<void>;
+}
+
+/**
+ * ONDA 37 (backend ADR-0084) — ADMITIR a pessoa no time é uma operação só:
+ * a conta, o profissional e o vínculo de time nascem numa transação. Por
+ * isso o nome não é `createUser` — não se cria um usuário, admite-se uma
+ * pessoa. `architectId` saiu: não se pendura mais conta em profissional
+ * criado antes. `careerLevelId` é a SENIORIDADE, e só o profissional tem.
+ */
+export interface PersonAdmissionInput {
+  name: string;
+  email: string;
+  role: TeamMemberRole;
+  teamId: string;
+  careerLevelId?: string;
+}
+
+export interface AdmittedPerson {
+  user: SessionUser;
+  architectId: string;
+  temporaryPassword: string;
 }
 
 export class HttpAuthGateway implements AuthGateway {
@@ -114,13 +130,8 @@ export class HttpAuthGateway implements AuthGateway {
     }>,
   ): Promise<SessionUser> => this.client.patch<SessionUser>(`/auth/users/${id}`, patch_);
 
-  createUser = (input: {
-    name: string;
-    email: string;
-    role: UserRole;
-    architectId?: string | null;
-  }): Promise<{ user: SessionUser; temporaryPassword: string }> =>
-    this.client.post<{ user: SessionUser; temporaryPassword: string }>("/auth/users", input);
+  admitPerson = (input: PersonAdmissionInput): Promise<AdmittedPerson> =>
+    this.client.post<AdmittedPerson>("/auth/users", input);
 
   changePassword = (currentPassword: string, newPassword: string): Promise<void> =>
     this.client.post<void>("/auth/change-password", { currentPassword, newPassword });

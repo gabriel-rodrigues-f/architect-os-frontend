@@ -172,7 +172,7 @@ function ArchitectWorkspace() {
     <>
       <PageHeader
         title={architect.name}
-        description={`${architect.role} · ${sel.specializationLabel(architect)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
+        description={`${architect.role} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
         help={help}
         actions={
           <Link

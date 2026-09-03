@@ -1,8 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 
-import { PageHeader, QuerySection, RoleSelect, SectionCard, StatusBadge } from "@/components/app";
+import {
+  CommandWithReasonDialog,
+  OutOfReachScreen,
+  PageHeader,
+  QuerySection,
+  RoleSelect,
+  SectionCard,
+  StatusBadge,
+} from "@/components/app";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,26 +21,37 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authApi, type SessionUser, type UserRole } from "@/lib/api";
+import { api, authApi, teamsApi, type SessionUser, type UserRole } from "@/lib/api";
+import type { TeamMemberRole } from "@/lib/gateways/auth.gateway";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireAdminReach } from "@/lib/route-guards";
+import {
+  AdmissionRefusal,
+  defaultPersonAdmissionPolicy,
+  PersonAdmission,
+  type AdmissionField,
+  type PersonAdmissionValues,
+} from "@/lib/person-admission";
+import { requireLeadershipReach } from "@/lib/route-guards";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { useCareerLevelsByRank } from "@/lib/store";
 
 export const Route = createFileRoute("/users")({
-  beforeLoad: requireAdminReach,
+  beforeLoad: requireLeadershipReach,
   head: () => ({
     meta: [
       { title: "Usuários — Synapse" },
       {
         name: "description",
-        content: "Contas de acesso: papel (administrador, gestor, Tech Lead, membro) e status.",
+        content:
+          "Cadastro de pessoas: cargo (administrador, gestor, Tech Lead, membro), senioridade, time e status da conta.",
       },
       { property: "og:title", content: "Usuários — Synapse" },
       {
         property: "og:description",
-        content: "Quem administra o sistema, quem gere o time e quem revisa como Tech Lead.",
+        content: "O único lugar onde uma pessoa é cadastrada: conta e profissional num ato só.",
       },
     ],
   }),
@@ -43,13 +62,34 @@ const USERS_QUERY_KEY = ["auth-users"] as const;
 
 function UsersPage() {
   const { t } = useI18n();
+  const help = usePageHelp("users");
+  const isLeadership = defaultUiAuthorizationPolicy.isLeadership(useCurrentUser());
+
+  if (!isLeadership) {
+    return (
+      <OutOfReachScreen
+        title={t("users.title")}
+        help={help}
+        reason={t("users.leadershipOnly")}
+        hint={t("users.leadershipOnlyHint")}
+      />
+    );
+  }
+
+  return <UsersDirectory />;
+}
+
+function UsersDirectory() {
+  const { t } = useI18n();
   const notifySuccess = useSuccessToast();
   const help = usePageHelp("users");
-  const isAdmin = useCurrentUser().role === "admin";
+  const user = useCurrentUser();
+  const isAdmin = defaultUiAuthorizationPolicy.isAdmin(user);
+  const admits = defaultPersonAdmissionPolicy.admits(user);
   const queryClient = useQueryClient();
-  const [creating, setCreating] = useState(false);
-
+  const [admitting, setAdmitting] = useState(false);
   const [editing, setEditing] = useState<SessionUser | null>(null);
+  const [deactivating, setDeactivating] = useState<SessionUser | null>(null);
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: USERS_QUERY_KEY,
@@ -58,12 +98,14 @@ function UsersPage() {
     enabled: isAdmin,
   });
 
+  const refreshAccounts = () => queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
+
   const updatePatch = async (
-    user: SessionUser,
+    account: SessionUser,
     patch: Partial<{ role: UserRole; status: "active" | "disabled"; name: string; email: string }>,
   ) => {
-    const updated = await authApi.updateUser(user.id, patch);
-    await queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
+    const updated = await authApi.updateUser(account.id, patch);
+    await refreshAccounts();
     notifySuccess("msg.user.update.success", { nome: updated.name }, updated);
   };
 
@@ -74,9 +116,9 @@ function UsersPage() {
         description={t("users.subtitle")}
         help={help}
         actions={
-          isAdmin && (
-            <Button size="sm" onClick={() => setCreating(true)}>
-              {t("users.create.action")}
+          admits && (
+            <Button size="sm" onClick={() => setAdmitting(true)}>
+              {t("users.admit.action")}
             </Button>
           )
         }
@@ -94,7 +136,7 @@ function UsersPage() {
           errorMessage={t("users.error.load")}
           skeleton={<p className="text-sm text-muted-foreground">{t("users.loading")}</p>}
         >
-          {(data) => (
+          {(accounts) => (
             <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-sm">
@@ -112,19 +154,17 @@ function UsersPage() {
                       <th scope="col" className="py-2">
                         {t("users.col.status")}
                       </th>
-                      {isAdmin && (
-                        <th scope="col" className="py-2">
-                          {t("users.col.actions")}
-                        </th>
-                      )}
+                      <th scope="col" className="py-2">
+                        {t("users.col.actions")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.map((user) => (
-                      <tr key={user.id} className="border-b border-border/60 last:border-0">
+                    {accounts.map((account) => (
+                      <tr key={account.id} className="border-b border-border/60 last:border-0">
                         <td className="py-2 font-medium">
-                          {user.name}
-                          {user.mustChangePassword && (
+                          {account.name}
+                          {account.mustChangePassword && (
                             <span
                               className="ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-meta font-normal text-muted-foreground"
                               title={t("users.mustChangePassword.hint")}
@@ -133,31 +173,41 @@ function UsersPage() {
                             </span>
                           )}
                         </td>
-                        <td className="py-2 text-muted-foreground">{user.email}</td>
+                        <td className="py-2 text-muted-foreground">{account.email}</td>
                         <td className="py-2">
                           <StatusBadge
-                            tone={roleTone[user.role]}
-                            label={t(`users.role.${user.role}`)}
+                            tone={roleTone[account.role]}
+                            label={t(`users.role.${account.role}`)}
                           />
                         </td>
                         <td className="py-2">
                           <AccountStatusBadge
-                            status={user.status}
-                            label={t(`users.status.${user.status}`)}
+                            status={account.status}
+                            label={t(`users.status.${account.status}`)}
                           />
                         </td>
-                        {isAdmin && (
-                          <td className="py-2">
+                        <td className="py-2">
+                          <div className="flex gap-1">
                             <Button
                               size="sm"
                               variant="outline"
-                              aria-label={`${t("users.edit.action")} ${user.name}`}
-                              onClick={() => setEditing(user)}
+                              aria-label={`${t("users.edit.action")} ${account.name}`}
+                              onClick={() => setEditing(account)}
                             >
                               {t("users.edit.action")}
                             </Button>
-                          </td>
-                        )}
+                            {account.architectId !== null && account.status === "active" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                aria-label={`${t("users.deactivate.action")} ${account.name}`}
+                                onClick={() => setDeactivating(account)}
+                              >
+                                {t("users.deactivate.action")}
+                              </Button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -168,12 +218,12 @@ function UsersPage() {
         </QuerySection>
       )}
 
-      {creating && (
-        <CreateUserDialog
-          onCancel={() => setCreating(false)}
-          onCreated={() => {
-            setCreating(false);
-            void queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
+      {admitting && (
+        <AdmitPersonDialog
+          onCancel={() => setAdmitting(false)}
+          onAdmitted={() => {
+            setAdmitting(false);
+            void refreshAccounts();
           }}
         />
       )}
@@ -185,6 +235,17 @@ function UsersPage() {
           onSave={async (patch) => {
             await updatePatch(editing, patch);
             setEditing(null);
+          }}
+        />
+      )}
+
+      {deactivating && (
+        <DeactivatePersonDialog
+          account={deactivating}
+          onClose={() => setDeactivating(null)}
+          onDeactivated={() => {
+            setDeactivating(null);
+            void refreshAccounts();
           }}
         />
       )}
@@ -333,48 +394,80 @@ function EditUserDialog({
   );
 }
 
-function CreateUserDialog({
+/**
+ * ONDA 37 — o cadastro unificado. Uma pessoa nasce aqui e em nenhum outro
+ * lugar: conta, profissional e vínculo de time num ato só (backend
+ * ADR-0084). O que a persona pode criar vem de `PersonAdmissionPolicy`, que
+ * espelha a régua do serviço — oferecer o que termina em 403 seria desenhar
+ * um caminho sem saída.
+ */
+function AdmitPersonDialog({
   onCancel,
-  onCreated,
+  onAdmitted,
 }: {
   onCancel: () => void;
-  onCreated: () => void;
+  onAdmitted: () => void;
 }) {
   const { t } = useI18n();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<UserRole>("member");
-  const { submitting, error, run } = useAsyncSubmit(t("users.create.error"));
-  const [result, setResult] = useState<{ email: string; temporaryPassword: string } | null>(null);
+  const user = useCurrentUser();
+  const cargos = defaultPersonAdmissionPolicy.admissibleCargos(user);
+  const careerLevels = useCareerLevelsByRank();
+  const refusalId = useId();
 
-  const canSave = name.trim().length > 1 && email.trim().length > 3;
+  const teamsQuery = useQuery({ queryKey: ["teams"], queryFn: teamsApi.teams, staleTime: 60_000 });
+  const teams = defaultPersonAdmissionPolicy.admissibleTeams(user, teamsQuery.data ?? []);
+  const preselectedTeamId = defaultPersonAdmissionPolicy.preselectedTeamId(
+    user,
+    teamsQuery.data ?? [],
+  );
+
+  const [chosen, setChosen] = useState<PersonAdmissionValues | null>(null);
+  const [refusal, setRefusal] = useState<AdmissionRefusal | null>(null);
+  const [admitted, setAdmitted] = useState<{ email: string; temporaryPassword: string } | null>(
+    null,
+  );
+  const { submitting, run } = useAsyncSubmit(t("users.admit.error"));
+
+  const firstCargo = cargos[0] ?? "member";
+  const values = chosen ?? PersonAdmission.empty(firstCargo, preselectedTeamId);
+  const admission = new PersonAdmission(values);
+  const change = (patch: Partial<PersonAdmissionValues>) => setChosen({ ...values, ...patch });
+
+  const blocked = refusal !== null && refusal.stillApplies(values);
+  const describedBy = (field: AdmissionField) =>
+    blocked && refusal?.field === field ? { "aria-describedby": refusalId } : {};
 
   const submit = async () => {
-    const created = await run(() =>
-      authApi.createUser({ name: name.trim(), email: email.trim(), role }),
-    );
-    if (created.ok)
-      setResult({ email: email.trim(), temporaryPassword: created.value.temporaryPassword });
+    setRefusal(null);
+    const result = await run(() => authApi.admitPerson(admission.toRequest()));
+    if (result.ok) {
+      setAdmitted({
+        email: values.email.trim(),
+        temporaryPassword: result.value.temporaryPassword,
+      });
+      return;
+    }
+    setRefusal(AdmissionRefusal.of(result.error, values));
   };
 
-  if (result) {
+  if (admitted) {
     return (
-      <Dialog open onOpenChange={(open) => !open && onCreated()}>
+      <Dialog open onOpenChange={(open) => !open && onAdmitted()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("users.create.successTitle")}</DialogTitle>
+            <DialogTitle>{t("users.admit.successTitle")}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">{t("users.create.successBody")}</p>
+          <p className="text-sm text-muted-foreground">{t("users.admit.successBody")}</p>
           <div className="surface-inset space-y-1 px-3 py-2 text-sm">
             <p>
               <span className="text-muted-foreground">{t("users.col.email")}: </span>
-              {result.email}
+              {admitted.email}
             </p>
-            <p className="font-mono text-base">{result.temporaryPassword}</p>
+            <p className="font-mono text-base">{admitted.temporaryPassword}</p>
           </div>
-          <p className="text-xs text-destructive">{t("users.create.notRecoverable")}</p>
+          <p className="text-xs text-destructive">{t("users.admit.notRecoverable")}</p>
           <DialogFooter>
-            <Button onClick={onCreated}>{t("users.create.done")}</Button>
+            <Button onClick={onAdmitted}>{t("users.admit.done")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -383,40 +476,157 @@ function CreateUserDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t("users.create.title")}</DialogTitle>
+          <DialogTitle>{t("users.admit.title")}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
           <div>
-            <Label htmlFor="new-user-name">{t("users.col.name")}</Label>
-            <Input id="new-user-name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="new-user-email">{t("users.col.email")}</Label>
+            <Label htmlFor="admit-name">{t("users.col.name")}</Label>
             <Input
-              id="new-user-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="admit-name"
+              value={values.name}
+              {...describedBy("name")}
+              onChange={(event) => change({ name: event.target.value })}
             />
           </div>
-          <RoleSelect id="new-user-role" value={role} onChange={setRole} />
-          {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
+          <div>
+            <Label htmlFor="admit-email">{t("users.col.email")}</Label>
+            <Input
+              id="admit-email"
+              type="email"
+              value={values.email}
+              {...describedBy("email")}
+              onChange={(event) => change({ email: event.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="admit-cargo">{t("users.col.role")}</Label>
+            <select
+              id="admit-cargo"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={values.cargo}
+              {...describedBy("cargo")}
+              onChange={(event) => change({ cargo: event.target.value as TeamMemberRole })}
+            >
+              {cargos.map((cargo) => (
+                <option key={cargo} value={cargo}>
+                  {t(`users.role.${cargo}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {admission.seniorityApplies && (
+            <div>
+              <Label htmlFor="admit-seniority">{t("users.form.seniority")}</Label>
+              <select
+                id="admit-seniority"
+                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+                value={values.careerLevelId ?? ""}
+                {...describedBy("seniority")}
+                onChange={(event) =>
+                  change({ careerLevelId: event.target.value === "" ? null : event.target.value })
+                }
+              >
+                <option value="">{t("users.form.seniority.placeholder")}</option>
+                {careerLevels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <Label htmlFor="admit-team">{t("users.form.team")}</Label>
+            <select
+              id="admit-team"
+              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+              value={values.teamId ?? ""}
+              {...describedBy("team")}
+              onChange={(event) =>
+                change({ teamId: event.target.value === "" ? null : event.target.value })
+              }
+            >
+              <option value="">{t("users.form.team.placeholder")}</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+            {!teamsQuery.isPending && teams.length === 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("users.form.team.noneReachable")}
+              </p>
+            )}
+          </div>
+          {refusal && (
+            <p id={refusalId} className="text-sm text-destructive" role="alert">
+              {refusal.message}
             </p>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={submitting}>
-            {t("users.create.cancel")}
+            {t("users.admit.cancel")}
           </Button>
-          <Button disabled={!canSave || submitting} onClick={() => void submit()}>
-            {submitting ? t("users.create.saving") : t("users.create.save")}
+          <Button
+            disabled={!admission.isComplete || submitting || blocked}
+            onClick={() => void submit()}
+          >
+            {submitting ? t("users.admit.saving") : t("users.admit.action")}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * ONDA 37, consequência declarada 4 — desativar é UM ATO: o backend revoga
+ * as contas da pessoa na mesma transação do ledger de desativação. A tela de
+ * contas não monta o `/state`, então lê o profissional para saber a versão
+ * que a operação exige.
+ */
+function DeactivatePersonDialog({
+  account,
+  onClose,
+  onDeactivated,
+}: {
+  account: SessionUser;
+  onClose: () => void;
+  onDeactivated: () => void;
+}) {
+  const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
+  const architectId = account.architectId ?? "";
+
+  const professional = useQuery({
+    queryKey: ["professional", architectId],
+    queryFn: () => api.professional(architectId),
+    enabled: architectId !== "",
+  });
+
+  return (
+    <CommandWithReasonDialog
+      title={t("users.deactivate.confirmTitle", { nome: account.name })}
+      body={t("users.deactivate.confirmDescription")}
+      reasonInputId="deactivate-person-reason"
+      reasonLabel={t("users.deactivate.reasonLabel")}
+      reasonPlaceholder={t("users.deactivate.reasonPlaceholder")}
+      confirmLabel={t("users.deactivate.action")}
+      submittingLabel={t("users.deactivate.submitting")}
+      confirmVariant="destructive"
+      fallbackError={t("users.deactivate.error")}
+      canSubmit={professional.data !== undefined}
+      onSubmit={async (reason) => {
+        const version = professional.data?.version ?? 0;
+        const updated = await api.deactivate(architectId, reason, version);
+        notifySuccess("msg.people.deactivate.success", { nome: account.name }, updated);
+        onDeactivated();
+      }}
+      onClose={onClose}
+    />
   );
 }
