@@ -125,6 +125,48 @@ describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => 
   });
 });
 
+describe("Matriz — o contador cai depois de desvincular (item 2 do dono)", () => {
+  it("excluir uma competência refaz a leitura do estado e o contador desce", async () => {
+    let removed = false;
+    const removalRoutes: FetchRoute[] = [
+      (href, init) =>
+        href.endsWith(apiPath("/competencies/cloud-k8s")) && init?.method === "DELETE"
+          ? ((removed = true), jsonResponse({ archived: false }))
+          : undefined,
+      (href, init) =>
+        href.endsWith(apiPath("/state")) && (init?.method ?? "GET") === "GET" && removed
+          ? jsonResponse({
+              ...state,
+              capabilities: state.capabilities.map((capability) =>
+                capability.id === "cloud"
+                  ? {
+                      ...capability,
+                      curation: { activeCompetencyCount: 1, status: "READY" as const },
+                    }
+                  : capability,
+              ),
+              competencies: state.competencies.filter(
+                (competency) => competency.id !== "cloud-k8s",
+              ),
+            })
+          : undefined,
+    ];
+    mockAppFetch(fetchMock, {
+      state,
+      routes: [...removalRoutes, careerLevelsRoute, curationPolicyMax3],
+    });
+    renderWithApp(<MatrixPage />);
+    await screen.findByText("Cloud Architecture");
+    expect(cardOf("Cloud Architecture").getByText("2/3 máx.")).toBeTruthy();
+
+    await userEvent.click(screen.getByLabelText("Expandir Cloud Architecture"));
+    await userEvent.click(await screen.findByLabelText("Excluir Kubernetes"));
+    await userEvent.click(await screen.findByRole("button", { name: "Excluir" }));
+
+    expect(await cardOf("Cloud Architecture").findByText("1/3 máx.")).toBeTruthy();
+  });
+});
+
 describe("Matriz — arquivada só se restaura, e a recusa do serviço aparece", () => {
   it("a seção de arquivadas não oferece exclusão definitiva", async () => {
     mockAppFetch(fetchMock, { state, routes: [careerLevelsRoute, curationPolicyMax3] });
