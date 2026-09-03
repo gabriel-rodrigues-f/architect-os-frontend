@@ -3,6 +3,7 @@ export * from "./assessment-view-model";
 export * from "./calibration-view-model";
 export * from "./career-roadmap-view-model";
 export * from "./career-statement-view-model";
+export * from "./capability-foundation-editor";
 export * from "./catalog-import-editor";
 export * from "./competency-matrix-view-model";
 export * from "./competency-selection";

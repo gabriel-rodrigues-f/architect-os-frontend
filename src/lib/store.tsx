@@ -4,7 +4,10 @@ import { toast } from "sonner";
 
 import { api, ApiError, type AppState, type CommentInput } from "./api";
 import { apiPath } from "./api-path";
-import type { CompetencyRemovalSummary } from "./gateways/catalog.gateway";
+import type {
+  CapabilityFoundationPayload,
+  CompetencyRemovalSummary,
+} from "./gateways/catalog.gateway";
 import type { TextTemplateRecord } from "./gateways/config.gateway";
 import type {
   Architect,
@@ -185,14 +188,13 @@ export interface Api extends AppState {
   importCatalog: (payload: CatalogImportPayload) => Promise<CatalogImportSummary>;
 
   addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
+  renameCompetency: (id: string, name: string) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
 
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
   removeCompetencies: (competencyIds: string[]) => Promise<CompetencyRemovalSummary>;
 
-  addCapability: (
-    c: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
-  ) => Promise<Capability>;
+  foundCapability: (foundation: CapabilityFoundationPayload) => Promise<Capability>;
   updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
 
   removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
@@ -492,6 +494,19 @@ export function buildApi(
         )
         .then(refreshCurationCounts),
 
+    renameCompetency: (id, name) =>
+      runner
+        .guarded(
+          () => api.updateCompetency(id, { name }),
+          (renamed) => (current) => ({
+            ...current,
+            competencies: current.competencies.map((competency) =>
+              competency.id === id ? renamed : competency,
+            ),
+          }),
+        )
+        .then(refreshCurationCounts),
+
     updateCompetency: (id, patch) => {
       runner.optimistic(
         (s) => ({
@@ -550,14 +565,16 @@ export function buildApi(
         )
         .then(refreshCurationCounts),
 
-    addCapability: (c) =>
-      runner.command(
-        () => api.createCapability(c),
-        (created) => (s) => ({
-          ...s,
-          capabilities: [...s.capabilities, created].sort(defaultNameFormatter.byName),
-        }),
-      ),
+    foundCapability: (foundation) =>
+      runner
+        .command(
+          () => api.foundCapability(foundation),
+          (created) => (s) => ({
+            ...s,
+            capabilities: [...s.capabilities, created].sort(defaultNameFormatter.byName),
+          }),
+        )
+        .then(refreshCurationCounts),
 
     updateCapability: (id, patch) => {
       runner.optimistic(

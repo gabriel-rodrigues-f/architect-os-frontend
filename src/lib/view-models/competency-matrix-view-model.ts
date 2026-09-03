@@ -1,16 +1,24 @@
 import type { SessionUser } from "../api";
-import { EffectiveCurationPolicy, type CurationPolicy } from "../curation-policy";
+import {
+  CompetencyCountRange,
+  EffectiveCurationPolicy,
+  type CurationPolicy,
+} from "../curation-policy";
 import type { Capability, Competency } from "../domain";
-import type { CompetencyRemovalSummary } from "../gateways/catalog.gateway";
+import type {
+  CapabilityFoundationPayload,
+  CompetencyRemovalSummary,
+} from "../gateways/catalog.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
 import type { Api } from "../store";
 
 export type CatalogService = Pick<
   Api,
-  | "addCapability"
+  | "foundCapability"
   | "updateCapability"
   | "removeCapability"
   | "addCompetency"
+  | "renameCompetency"
   | "updateCompetency"
   | "removeCompetency"
   | "removeCompetencies"
@@ -19,8 +27,10 @@ export type CatalogService = Pick<
 export interface CurationBrief {
   status: Capability["curation"]["status"];
   active: number;
+  min: number;
   max: number;
   over: number;
+  missing: number;
   empty: boolean;
 }
 
@@ -29,8 +39,12 @@ export interface CurationBrief {
  * criar/editar competência é só nome + capacidade + atividade. O nível
  * exigido mora na régua do time (`/teams/:teamId/rules/:careerLevelId`),
  * fora desta tela. Onda 36 (ADRs 0081-0082): o teto de ativas vem da
- * política de curadoria (4 por default, nunca literal aqui) e é máximo, não
- * meta — "Pronta" é ter de 1 até o máximo.
+ * política de curadoria (nunca literal aqui) e é máximo, não meta.
+ *
+ * Onda 36.1/37 (ADRs 0083-0085): o intervalo ganhou PISO — "Pronta" é ter do
+ * mínimo até o máximo, e a capacidade nasce fundada com as competências que a
+ * definem (`foundCapability`), num ato só. Quem conhece os dois números é o
+ * `CompetencyCountRange`; a tela lê `limits`, nunca escreve 3 nem 6.
  */
 export class CompetencyMatrixViewModel {
   constructor(
@@ -39,16 +53,16 @@ export class CompetencyMatrixViewModel {
     private readonly curationPolicy: CurationPolicy = EffectiveCurationPolicy.defaults,
   ) {}
 
-  get limits(): CurationPolicy {
-    return this.curationPolicy;
+  get limits(): CompetencyCountRange {
+    return CompetencyCountRange.of(this.curationPolicy);
   }
 
   isAdmin(user: SessionUser): boolean {
     return this.policy.isAdmin(user);
   }
 
-  createCapability(name: string): Promise<Capability> {
-    return this.service.addCapability({ name: name.trim(), active: true });
+  foundCapability(foundation: CapabilityFoundationPayload): Promise<Capability> {
+    return this.service.foundCapability(foundation);
   }
 
   renameCapability(id: string, name: string): void {
@@ -64,19 +78,21 @@ export class CompetencyMatrixViewModel {
   }
 
   curationBriefFor(capability: Pick<Capability, "curation">): CurationBrief {
-    const max = this.curationPolicy.maxActiveCompetencies;
+    const range = this.limits;
     const active = capability.curation.activeCompetencyCount;
     return {
       status: capability.curation.status,
       active,
-      max,
-      over: Math.max(0, active - max),
+      min: range.min,
+      max: range.max,
+      over: range.aboveMaximum(active),
+      missing: range.missingToMinimum(active),
       empty: active === 0,
     };
   }
 
   isCapabilityAtCapacity(capability: Pick<Capability, "curation">): boolean {
-    return capability.curation.activeCompetencyCount >= this.curationPolicy.maxActiveCompetencies;
+    return this.limits.atCapacity(capability.curation.activeCompetencyCount);
   }
 
   createCompetency(capabilityId: string, name: string): Promise<Competency> {
@@ -91,8 +107,8 @@ export class CompetencyMatrixViewModel {
     return name.trim().length > 0;
   }
 
-  updateCompetency(id: string, name: string): void {
-    this.service.updateCompetency(id, { name: name.trim() });
+  renameCompetency(id: string, name: string): Promise<Competency> {
+    return this.service.renameCompetency(id, name.trim());
   }
 
   removeCompetency(id: string): Promise<{ archived: boolean }> {

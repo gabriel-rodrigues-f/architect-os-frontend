@@ -4,10 +4,19 @@ import { ApiError } from "../api-errors";
 import { catalogImportSummarySchema } from "../api-schemas";
 import type { CatalogImportPayload, CatalogImportSummary } from "../catalog-import";
 
+/**
+ * Onda 37 (backend ADR-0085) — o corpo do ato de fundar a capacidade. A
+ * criação de capacidade VAZIA deixou de existir no contrato: `competencies`
+ * é obrigatório e o serviço recusa fora do intervalo da política.
+ */
+export interface CapabilityFoundationPayload {
+  name: string;
+  active: boolean;
+  competencies: { name: string }[];
+}
+
 export interface CatalogGateway {
-  createCapability(
-    capability: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
-  ): Promise<Capability>;
+  foundCapability(foundation: CapabilityFoundationPayload): Promise<Capability>;
   updateCapability(
     id: string,
     patch_: Partial<Omit<Capability, "id" | "curation">>,
@@ -24,9 +33,8 @@ export interface CatalogGateway {
 export class HttpCatalogGateway implements CatalogGateway {
   constructor(private readonly client: ApiClient) {}
 
-  createCapability = (
-    capability: Omit<Capability, "id" | "curation" | "short"> & { short?: string },
-  ): Promise<Capability> => this.client.post<Capability>("/capabilities", capability);
+  foundCapability = (foundation: CapabilityFoundationPayload): Promise<Capability> =>
+    this.client.post<Capability>("/capabilities", foundation);
 
   updateCapability = (
     id: string,

@@ -21,9 +21,9 @@ import {
  * Onda 36 (itens 2, 3 e 5 do dono) — a Matriz depois do fim da regra do 6 e
  * da obrigatoriedade:
  *
- *  - o contador da capacidade diz "N/{max} máx." com o máximo vindo da
- *    política de curadoria do backend, nunca um literal;
- *  - "Pronta" é 1..max: capacidade com 0 ativas requer curadoria e o
+ *  - o contador da capacidade diz "N/{max} · mín. {min}" com os dois números
+ *    vindos da régua (teto da política, piso do modelo), nunca um literal;
+ *  - "Pronta" é min..max: capacidade abaixo do piso requer curadoria e o
  *    controle explica que falta cadastrar, não que "0 passou do teto";
  *  - competência arquivada só tem "Restaurar" — e quando o serviço recusa a
  *    reativação (5ª ativa), a tela mostra a mensagem DO serviço.
@@ -76,12 +76,12 @@ afterEach(() => {
 });
 
 describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => {
-  it("o contador da capacidade mostra 'N/{max} máx.' com o máximo da política", async () => {
+  it("o contador da capacidade mostra 'N/{max} · mín. {min}' com os dois vindos da régua", async () => {
     mockAppFetch(fetchMock, { state, routes: [careerLevelsRoute, curationPolicyMax3] });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Cloud Architecture");
 
-    expect(cardOf("Cloud Architecture").getByText("2/3 máx.")).toBeTruthy();
+    expect(cardOf("Cloud Architecture").getByText("2/3 · mín. 3")).toBeTruthy();
     expect(screen.queryByText(/\/6/)).toBeNull();
   });
 
@@ -95,7 +95,7 @@ describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => 
     );
 
     const explanation = await screen.findByRole("dialog");
-    expect(explanation.textContent).toContain("0 competências ativas");
+    expect(explanation.textContent).toContain("0 de 3 competências ativas");
     expect(explanation.textContent).toMatch(/cadastre/i);
     expect(explanation.textContent).not.toContain("acima do teto");
   });
@@ -157,13 +157,13 @@ describe("Matriz — o contador cai depois de desvincular (item 2 do dono)", () 
     });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Cloud Architecture");
-    expect(cardOf("Cloud Architecture").getByText("2/3 máx.")).toBeTruthy();
+    expect(cardOf("Cloud Architecture").getByText("2/3 · mín. 3")).toBeTruthy();
 
     await userEvent.click(screen.getByLabelText("Expandir Cloud Architecture"));
     await userEvent.click(await screen.findByLabelText("Excluir Kubernetes"));
     await userEvent.click(await screen.findByRole("button", { name: "Excluir" }));
 
-    expect(await cardOf("Cloud Architecture").findByText("1/3 máx.")).toBeTruthy();
+    expect(await cardOf("Cloud Architecture").findByText("1/3 · mín. 3")).toBeTruthy();
   });
 });
 

@@ -25,7 +25,7 @@ describe("CurationPolicyEditor", () => {
   it("edição é imutável: withField devolve editor novo sem tocar o original", () => {
     const editor = from();
     const next = editor.withField("maxActiveCompetencies", "3");
-    expect(editor.drafts.maxActiveCompetencies).toBe("4");
+    expect(editor.drafts.maxActiveCompetencies).toBe("6");
     expect(next.drafts.maxActiveCompetencies).toBe("3");
   });
 
@@ -41,8 +41,8 @@ describe("CurationPolicyEditor", () => {
     expect(editor.payload()).toBeNull();
   });
 
-  it("fallback: a política efetiva responde máximo 4 quando a query ainda não resolveu", () => {
-    expect(EffectiveCurationPolicy.resolve(undefined)).toEqual({ maxActiveCompetencies: 4 });
+  it("fallback: a política efetiva responde o default do backend quando a query ainda não resolveu", () => {
+    expect(EffectiveCurationPolicy.resolve(undefined)).toEqual({ maxActiveCompetencies: 6 });
     const loaded = { maxActiveCompetencies: 2 };
     expect(EffectiveCurationPolicy.resolve(loaded)).toBe(loaded);
   });

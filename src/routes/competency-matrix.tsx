@@ -26,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { LEVELS, type Competency, type Capability } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
+import { CompetencyNameConflict } from "@/lib/competency-name-conflict";
 import type { AffectedRecords, CompetencyRemovalOutcome } from "@/lib/gateways/catalog.gateway";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
@@ -34,6 +35,7 @@ import { requireAdminReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCurationPolicy, useStore } from "@/lib/store";
 import {
+  CapabilityFoundationEditor,
   CatalogImportEditor,
   CompetencyMatrixViewModel,
   CompetencySelection,
@@ -330,14 +332,14 @@ function MatrixPage() {
               const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
 
               const isExpanded = expandedIds.has(cat.id) || term.length > 0;
-              const atCapacity = viewModel.isCapabilityAtCapacity(cat);
               return (
                 <SectionCard
                   key={cat.id}
                   title={cat.name}
                   description={t("matrix.competencyCount", {
                     n: cat.curation.activeCompetencyCount,
-                    max: viewModel.limits.maxActiveCompetencies,
+                    min: viewModel.limits.min,
+                    max: viewModel.limits.max,
                   })}
                   actions={
                     <div className="flex flex-wrap items-center gap-2">
@@ -352,22 +354,13 @@ function MatrixPage() {
                           }
                         />
                       )}
-                      <CurationStatusControl brief={viewModel.curationBriefFor(cat)} />
+                      <CurationStatusControl
+                        brief={viewModel.curationBriefFor(cat)}
+                        onCreateCompetency={isAdmin ? () => setCreatingIn(cat) : undefined}
+                      />
                       {isAdmin && (
                         <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setCreatingIn(cat)}
-                            disabled={atCapacity}
-                            title={
-                              atCapacity
-                                ? t("matrix.atCapacity.hint", {
-                                    max: viewModel.limits.maxActiveCompetencies,
-                                  })
-                                : undefined
-                            }
-                          >
+                          <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
                             {t("matrix.newCompetency")}
                           </Button>
                           <button
@@ -566,37 +559,62 @@ function MatrixPage() {
         <CompetencyCreateDialog capability={creatingIn} onClose={() => setCreatingIn(null)} />
       )}
       {creatingCapability && (
-        <CapabilityCreateDialog onClose={() => setCreatingCapability(false)} />
+        <CapabilityFoundationDialog onClose={() => setCreatingCapability(false)} />
       )}
       {importing && <CatalogImportDialog onClose={() => setImporting(false)} />}
     </>
   );
 }
 
-function CurationStatusControl({ brief }: { brief: CurationBrief }) {
+function CurationStatusControl({
+  brief,
+  onCreateCompetency,
+}: {
+  brief: CurationBrief;
+  onCreateCompetency?: (() => void) | undefined;
+}) {
   const { t } = useI18n();
   const ready = brief.status === "READY";
+  const below = !ready && brief.missing > 0;
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button size="sm" variant={ready ? "secondary" : "outline"} aria-haspopup="dialog">
           {ready ? <CircleCheck aria-hidden /> : <CircleAlert aria-hidden />}
-          {ready ? t("matrix.curation.ready") : t("matrix.curation.requiresCuration")}
+          {ready
+            ? t("matrix.curation.ready")
+            : below
+              ? t("matrix.curation.belowMinimum", { min: brief.min })
+              : t("matrix.curation.requiresCuration")}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)] space-y-2 text-sm">
         <p className="font-display font-semibold">{t("matrix.curation.explain.title")}</p>
         <p>
           {ready
-            ? t("matrix.curation.explain.ready", { ativas: brief.active, max: brief.max })
-            : brief.empty
-              ? t("matrix.curation.explain.empty", { max: brief.max })
+            ? t("matrix.curation.explain.ready", {
+                ativas: brief.active,
+                min: brief.min,
+                max: brief.max,
+              })
+            : below
+              ? t("matrix.curation.explain.belowMinimum", {
+                  ativas: brief.active,
+                  faltam: brief.missing,
+                  min: brief.min,
+                  max: brief.max,
+                })
               : t("matrix.curation.explain.requiresCuration", {
                   ativas: brief.active,
                   max: brief.max,
                   acima: brief.over,
                 })}
         </p>
+        {below && onCreateCompetency && (
+          <Button size="sm" variant="secondary" onClick={onCreateCompetency}>
+            {t("matrix.newCompetency")}
+          </Button>
+        )}
       </PopoverContent>
     </Popover>
   );
@@ -793,24 +811,43 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
+function CapabilityFoundationDialog({ onClose }: { onClose: () => void }) {
   const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
-  const [name, setName] = useState("");
+  const limits = viewModel.limits;
+  const [editor, setEditor] = useState(() => CapabilityFoundationEditor.begin(limits));
+  const [conflict, setConflict] = useState<CompetencyNameConflict | null>(null);
 
-  const { submitting: saving, run } = useToastSubmit();
+  const {
+    submitting: saving,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit(t("matrix.foundation.failed"));
 
-  const create = async () => {
-    const trimmedName = name.trim();
-    if (!trimmedName) return;
+  const refusedPosition = conflict?.positionIn(editor.competencyNames) ?? -1;
+  const blocked = refusedPosition >= 0;
 
-    const result = await run(() => viewModel.createCapability(name));
-    if (result.ok) onClose();
+  const change = (next: CapabilityFoundationEditor) => {
+    setEditor(next);
+    clearError();
+  };
+
+  const found = async () => {
+    const payload = editor.payload();
+    if (!payload || saving || blocked) return;
+
+    const result = await run(() => viewModel.foundCapability(payload));
+    if (result.ok) {
+      onClose();
+      return;
+    }
+    setConflict(CompetencyNameConflict.from(result.error));
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+    <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("matrix.newCapability")}</DialogTitle>
         </DialogHeader>
@@ -819,18 +856,68 @@ function CapabilityCreateDialog({ onClose }: { onClose: () => void }) {
             <Label htmlFor="new-capability-name">{t("cap.field.name")}</Label>
             <Input
               id="new-capability-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && create()}
+              value={editor.name}
+              disabled={saving}
+              onChange={(e) => change(editor.withName(e.target.value))}
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            {t("matrix.foundation.hint", { min: limits.min, max: limits.max })}
+          </p>
+          {editor.competencyNames.map((competencyName, position) => (
+            <div key={position} className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label htmlFor={`new-capability-competency-${position}`}>
+                  {t("matrix.foundation.competency", { n: position + 1 })}
+                </Label>
+                <Input
+                  id={`new-capability-competency-${position}`}
+                  value={competencyName}
+                  disabled={saving}
+                  aria-invalid={position === refusedPosition}
+                  onChange={(e) => change(editor.withCompetencyName(position, e.target.value))}
+                />
+                {position === refusedPosition && conflict && (
+                  <p className="mt-1 text-xs text-destructive" role="alert">
+                    {conflict.message}
+                  </p>
+                )}
+              </div>
+              {editor.canRemoveCompetency(position) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={saving}
+                  aria-label={t("matrix.foundation.remove", { n: position + 1 })}
+                  onClick={() => change(editor.removeCompetency(position))}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          ))}
+          {editor.canAddCompetency && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={saving}
+              onClick={() => change(editor.addCompetency())}
+            >
+              {t("matrix.foundation.addAnother")}
+            </Button>
+          )}
+          {error && !blocked && (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" disabled={saving} onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={create} disabled={!name.trim() || saving}>
-            {t("matrix.add")}
+          <Button onClick={() => void found()} disabled={!editor.isValid || saving || blocked}>
+            {t("matrix.foundation.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -900,19 +987,25 @@ function CompetencyCreateDialog({
   const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
   const [name, setName] = useState("");
-  const canSave = viewModel.canCreateCompetency(name);
+  const [conflict, setConflict] = useState<CompetencyNameConflict | null>(null);
+  const blocked = conflict?.blocks(name) === true;
+  const canSave = viewModel.canCreateCompetency(name) && !blocked;
 
-  const { submitting: saving, run } = useToastSubmit();
+  const { submitting: saving, error, clearError, run } = useAsyncSubmit(t("matrix.create.failed"));
 
   const save = async () => {
-    if (!canSave) return;
+    if (!canSave || saving) return;
 
     const result = await run(() => viewModel.createCompetency(capability.id, name));
-    if (result.ok) onClose();
+    if (result.ok) {
+      onClose();
+      return;
+    }
+    setConflict(CompetencyNameConflict.from(result.error));
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("matrix.create.title", { capacidade: capability.name })}</DialogTitle>
@@ -923,22 +1016,46 @@ function CompetencyCreateDialog({
             <Input
               id="new-competency-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && save()}
+              disabled={saving}
+              aria-invalid={blocked}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearError();
+              }}
+              onKeyDown={(e) => e.key === "Enter" && void save()}
             />
+            <CompetencyNameRefusal conflict={conflict} blocked={blocked} error={error} />
           </div>
           <p className="text-xs text-muted-foreground">{t("matrix.levelFromRule.hint")}</p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" disabled={saving} onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={save} disabled={!canSave || saving}>
+          <Button onClick={() => void save()} disabled={!canSave || saving}>
             {t("matrix.add")}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CompetencyNameRefusal({
+  conflict,
+  blocked,
+  error,
+}: {
+  conflict: CompetencyNameConflict | null;
+  blocked: boolean;
+  error: string | null;
+}) {
+  const text = blocked && conflict ? conflict.message : !blocked && error ? error : null;
+  if (!text) return null;
+  return (
+    <p className="mt-1 text-xs text-destructive" role="alert">
+      {text}
+    </p>
   );
 }
 
@@ -952,16 +1069,25 @@ function CompetencyEditDialog({
   const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
   const [name, setName] = useState(competency.name);
+  const [conflict, setConflict] = useState<CompetencyNameConflict | null>(null);
+  const blocked = conflict?.blocks(name) === true;
+  const canSave = name.trim().length > 0 && !blocked;
 
-  const save = () => {
-    if (!name.trim()) return;
+  const { submitting: saving, error, clearError, run } = useAsyncSubmit(t("matrix.edit.failed"));
 
-    viewModel.updateCompetency(competency.id, name);
-    onClose();
+  const save = async () => {
+    if (!canSave || saving) return;
+
+    const result = await run(() => viewModel.renameCompetency(competency.id, name));
+    if (result.ok) {
+      onClose();
+      return;
+    }
+    setConflict(CompetencyNameConflict.from(result.error));
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("matrix.edit.title")}</DialogTitle>
@@ -972,17 +1098,25 @@ function CompetencyEditDialog({
             <Input
               id="competency-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && save()}
+              disabled={saving}
+              aria-invalid={blocked}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearError();
+              }}
+              onKeyDown={(e) => e.key === "Enter" && void save()}
             />
+            <CompetencyNameRefusal conflict={conflict} blocked={blocked} error={error} />
           </div>
           <p className="text-xs text-muted-foreground">{t("matrix.levelFromRule.hint")}</p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" disabled={saving} onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={save}>{t("common.save")}</Button>
+          <Button onClick={() => void save()} disabled={!canSave || saving}>
+            {t("common.save")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

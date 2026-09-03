@@ -14,19 +14,21 @@ import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/rende
  * (backend ADRs 0032/0034): a contagem por tipo morreu com
  * `competencies.requirement_type` (obrigatoriedade é da régua do time) e o
  * teto virou SINAL — a Matriz mostra a contagem de ativas e o status
- * READY/REQUIRES_CURATION, e desabilita "Nova competência" no teto.
+ * READY/REQUIRES_CURATION. Onda 37: no teto o botão "Nova competência"
+ * continua acessível e quem recusa é o SERVIÇO (ver
+ * `matriz-mostra-o-intervalo.test.tsx`), então o teste do botão morto saiu.
  */
 
 const fetchMock = vi.fn();
 
-/** Capacidade "no limite" (4 ativas, o máximo da política) — READY, sem espaço para nova. */
+/** Capacidade "no limite" (6 ativas, o máximo da política) — READY, sem espaço para nova. */
 const fullCapability: Capability = {
   id: "full",
   name: "Full Capability",
   short: "Full",
   active: true,
   curation: {
-    activeCompetencyCount: 4,
+    activeCompetencyCount: 6,
     status: "READY",
   },
 };
@@ -87,23 +89,11 @@ describe("Matriz de Competências — curadoria e escala", () => {
     // Contagem e status de curadoria moram no cabeçalho do card — visíveis mesmo com a seção recolhida (Seção 40-42).
     await screen.findByText("Cloud Architecture");
 
-    expect(screen.getByText("4/4 máx.")).toBeTruthy();
-    expect(screen.getByText("7/4 máx.")).toBeTruthy();
+    expect(screen.getByText("6/6 · mín. 3")).toBeTruthy();
+    expect(screen.getByText("7/6 · mín. 3")).toBeTruthy();
     expect(screen.getAllByText("Pronta").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Requer curadoria").length).toBeGreaterThan(0);
     expect(screen.queryByText(/restritivas/)).toBeNull();
-  });
-
-  it("desabilita 'Nova competência' quando a capacidade já está no máximo de ativas", async () => {
-    renderMatrix();
-    await screen.findByText("Full Capability");
-
-    const newCompetencyButtons = screen.getAllByRole("button", { name: "Nova competência" });
-    // A capacidade "cloud" (2/4) permite; "Full Capability" (4/4, o máximo) não.
-    const fullCapabilityCard = screen.getByText("Full Capability").closest(".surface-card");
-    expect(fullCapabilityCard).toBeTruthy();
-    const disabledButton = newCompetencyButtons.find((btn) => fullCapabilityCard?.contains(btn));
-    expect(disabledButton).toHaveProperty("disabled", true);
   });
 
   it("o diálogo de nova competência pede SÓ o nome — obrigatoriedade e níveis exigidos moram na régua do time", async () => {
