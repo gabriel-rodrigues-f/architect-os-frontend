@@ -45,14 +45,12 @@ test.beforeAll(async ({ playwright }) => {
   });
   if (!logged.ok()) throw new Error(`login admin falhou: ${logged.status()}`);
 
+  // ONDA 37 (ADR-0084) — `POST /architects` é a porta LEGADA do profissional
+  // sozinho, e é o bastante aqui: esta régua só precisa de UMA linha em
+  // /team para os filtros existirem, não de uma conta. Tempo de experiência
+  // e especialização saíram do corpo — mandá-los seria escrever no vazio.
   const created = await api.post(apiPath("/architects"), {
-    data: {
-      name: "E2E Régua de Filtros",
-      role: "Pleno",
-      yearsAsArchitect: 3,
-      specialization: "E2E",
-      email: ARCHITECT_EMAIL,
-    },
+    data: { name: "E2E Régua de Filtros", role: "Pleno", email: ARCHITECT_EMAIL },
   });
   if (!created.ok()) throw new Error(`criação de arquiteto falhou: ${created.status()}`);
   const body = (await created.json()) as { data?: { id: string } } & { id?: string };
@@ -153,14 +151,11 @@ test("/team — rótulos 14px, respiro 26px e triggers de 36px em toda a barra d
 
   const measures = await measureTriggers(page);
   const labeled = measures.filter((medida) => medida.label).map((medida) => medida.label!.text);
-  for (const expected of [
-    "Pessoas",
-    "Status",
-    "Nível de carreira",
-    "Especialização",
-    "Capacidade",
-    "Ordenar por",
-  ]) {
+  // ONDA 37 — "Especialização" saiu da lista de propósito: o dono removeu o
+  // campo do cadastro (*"não estou vendo valor"*), e com o campo morto o
+  // filtro que o lia não tem mais o que filtrar. Exigi-lo aqui seria a
+  // régua congelando um campo que a aplicação não tem.
+  for (const expected of ["Pessoas", "Status", "Nível de carreira", "Capacidade", "Ordenar por"]) {
     expect.soft(labeled, `campo com rótulo "${expected}" presente em /team`).toContain(expected);
   }
   assertRuler(measures);

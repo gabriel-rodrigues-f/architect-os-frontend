@@ -1,6 +1,7 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { Client } from "pg";
 import { apiPath } from "../src/lib/api-path";
+import { unwrap as json } from "./team-link";
 
 /**
  * R10-BUG-001 — `architects.$architectId.evolution.tsx` é rota-filha de
@@ -41,17 +42,6 @@ const ARCHITECT_SEED = `e2e-arch-evo-${RUN_ID}`;
 
 let architectId: string;
 
-async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
-  if (!response.ok()) {
-    throw new Error(`${response.url()} → ${response.status()}: ${await response.text()}`);
-  }
-  const body: unknown = await response.json();
-  if (body !== null && typeof body === "object" && !Array.isArray(body) && "data" in body) {
-    return (body as { data: T }).data;
-  }
-  return body as T;
-}
-
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
   await json(
@@ -59,13 +49,13 @@ test.beforeAll(async ({ playwright }) => {
       data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
     }),
   );
+  // ONDA 37 (ADR-0084) — tempo de experiência e especialização saíram do
+  // corpo de `POST /architects`: mandá-los seria escrever no vazio.
   const architect = await json<{ id: string }>(
     await api.post(apiPath("/architects"), {
       data: {
         name: "E2E Evolução Rota",
         role: "Pleno",
-        yearsAsArchitect: 3,
-        specialization: "E2E",
         email: `${ARCHITECT_SEED}@architect-os.local`,
       },
     }),
