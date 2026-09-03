@@ -1,7 +1,14 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
-import { Client } from "pg";
+import { test, expect } from "@playwright/test";
+import {
+  admitPersonToTeam,
+  dischargePeople,
+  PASSWORD,
+  registerTeamWithRules,
+  seniorityNamed,
+  unlinkTeam,
+  unwrap,
+} from "./team-link";
 import { apiPath } from "../src/lib/api-path";
-import { linkLeadToArchitects, unlinkTeam } from "./team-link";
 
 /**
  * E2E de jornada — Admin/Lead/Member (R-015, AUDITORIA-QUINTA-RODADA-360-
@@ -15,6 +22,11 @@ import { linkLeadToArchitects, unlinkTeam } from "./team-link";
  * inequívoca. Ver o incidente de trilhas de teste nunca removidas
  * (`api.integration.test.ts`, afterAll) que motivou essa disciplina.
  *
+ * ONDA 37 (backend ADR-0084) — o TIME nasce primeiro e as duas pessoas
+ * nascem nele. Não há mais profissional criado à parte para depois receber
+ * uma conta: `POST /auth/users` devolve `architectId` porque a conta e o
+ * profissional são o mesmo cadastro.
+ *
  * Requer:
  *   E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD — conta administradora já existente
  *   E2E_DATABASE_URL — opcional, default aponta pro Postgres de dev local
@@ -26,63 +38,15 @@ const DATABASE_URL =
   process.env["E2E_DATABASE_URL"] ?? "postgres://architect:architect@localhost:5433/architect_os";
 
 const RUN_ID = Date.now().toString(36);
-// AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-32 — `id` deixou de
-// ser aceito na criação (gerado sempre pelo servidor); este valor serve só
-// pra dar um endereço único ao arquiteto de teste, nunca vira o `id` real.
-const ARCHITECT_SEED = `e2e-arch-${RUN_ID}`;
+const MEMBER_NAME = "E2E Golden Path";
+const LEAD_NAME = "E2E Golden Lead";
 const MEMBER_EMAIL = `e2e-member-${RUN_ID}@architect-os.local`;
 const LEAD_EMAIL = `e2e-lead-${RUN_ID}@architect-os.local`;
-const PASSWORD = "senha-de-teste-e2e-123";
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
 let architectId: string;
-let memberUserId: string;
-let leadUserId: string;
 let teamId: string;
-
-async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
-  if (!response.ok()) {
-    throw new Error(`${response.url()} → ${response.status()}: ${await response.text()}`);
-  }
-  const body: unknown = await response.json();
-  if (body !== null && typeof body === "object" && !Array.isArray(body) && "data" in body) {
-    return (body as { data: T }).data;
-  }
-  return body as T;
-}
-
-/**
- * Admin cria a conta (nasce com senha temporária e mustChangePassword=true),
- * e a própria conta troca pra `PASSWORD` numa sessão isolada — reusar `api`
- * (sessão do admin) pro login trocaria a sessão no meio da fixture, já que
- * login também grava cookie (Seção 24).
- */
-async function createAndActivateUser(
-  playwright: typeof import("playwright-core"),
-  api: APIRequestContext,
-  input: { name: string; email: string; role: "member" | "tech_lead"; architectId?: string },
-): Promise<string> {
-  const created = await json<{ user: { id: string }; temporaryPassword: string }>(
-    await api.post(apiPath("/auth/users"), { data: input }),
-  );
-
-  const guest = await playwright.request.newContext({ baseURL: API_URL });
-  await json(
-    await guest.post(apiPath("/auth/login"), {
-      data: { email: input.email, password: created.temporaryPassword },
-    }),
-  );
-  const changed = await guest.post(apiPath("/auth/change-password"), {
-    data: { currentPassword: created.temporaryPassword, newPassword: PASSWORD },
-  });
-  if (!changed.ok()) {
-    throw new Error(`troca de senha de ${input.email} falhou: ${changed.status()}`);
-  }
-  await guest.dispose();
-
-  return created.user.id;
-}
 
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
@@ -93,66 +57,48 @@ test.beforeAll(async ({ playwright }) => {
   // browser de verdade) — o cookie que este login grava é reenviado
   // automaticamente nas chamadas seguintes deste mesmo `api`, sem precisar
   // montar nenhum header na mão.
-  await json(
+  await unwrap(
     await api.post(apiPath("/auth/login"), {
       data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
     }),
   );
 
-  const architect = await json<{ id: string }>(
-    await api.post(apiPath("/architects"), {
-      data: {
-        name: "E2E Golden Path",
-        role: "Pleno",
-        yearsAsArchitect: 3,
-        specialization: "E2E",
-        email: `${ARCHITECT_SEED}@architect-os.local`,
-      },
-    }),
-  );
-  architectId = architect.id;
+  teamId = await registerTeamWithRules(api, `gp-${RUN_ID}`);
 
   // SEC-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — cadastro
   // público (`/api/v1/auth/register`) só funciona na instância vazia; com o
   // admin já existindo, toda tentativa de registro público recusa com 403.
-  // A única forma de entrar conta nova a partir daqui é o admin criar
-  // (`POST /api/v1/auth/users`), que devolve senha temporária e nasce com
-  // mustChangePassword=true — mesma jornada real de alguém convidado.
-  // Resolve isso já na fixture (troca pra `PASSWORD`) porque os testes de
-  // UI abaixo logam direto esperando o dashboard, não uma tela de troca de
-  // senha obrigatória.
-  memberUserId = await createAndActivateUser(playwright, api, {
-    name: "E2E Member",
-    email: MEMBER_EMAIL,
-    role: "member",
-    architectId,
-  });
-
-  leadUserId = await createAndActivateUser(playwright, api, {
-    name: "E2E Lead",
+  // A única forma de entrar conta nova a partir daqui é o admin admitir a
+  // pessoa no time, que devolve senha temporária e nasce com
+  // mustChangePassword=true — mesma jornada real de alguém convidado. O
+  // helper já troca a senha porque os testes de UI abaixo logam esperando o
+  // painel, não uma tela de troca de senha obrigatória.
+  await admitPersonToTeam({
+    playwright,
+    api,
+    name: LEAD_NAME,
     email: LEAD_EMAIL,
     role: "tech_lead",
+    teamId,
   });
 
-  teamId = await linkLeadToArchitects({
+  // Senioridade é exigida do profissional e proibida na liderança (ADR-0084).
+  const admittedMember = await admitPersonToTeam({
+    playwright,
     api,
-    runId: `gp-${RUN_ID}`,
-    leadUserId,
-    architectIds: [architectId],
+    name: MEMBER_NAME,
+    email: MEMBER_EMAIL,
+    role: "member",
+    teamId,
+    careerLevelId: await seniorityNamed(api, "Pleno"),
   });
+  architectId = admittedMember.architectId;
 
   await api.dispose();
 });
 
 test.afterAll(async () => {
-  const client = new Client({ connectionString: DATABASE_URL });
-  await client.connect();
-  try {
-    await client.query("DELETE FROM architects WHERE id = $1", [architectId]);
-    await client.query("DELETE FROM users WHERE email IN ($1, $2)", [MEMBER_EMAIL, LEAD_EMAIL]);
-  } finally {
-    await client.end();
-  }
+  await dischargePeople(DATABASE_URL, [MEMBER_EMAIL, LEAD_EMAIL]);
   await unlinkTeam(DATABASE_URL, teamId);
 });
 
@@ -173,15 +119,15 @@ test("Admin — painel executivo, navegação restrita e diretório de usuários
 
   await page.getByRole("link", { name: "Usuários" }).click();
   await expect(page).toHaveURL(/\/users/);
-  await expect(page.getByText("E2E Member")).toBeVisible();
-  await expect(page.getByText("E2E Lead")).toBeVisible();
+  await expect(page.getByText(MEMBER_NAME, { exact: true })).toBeVisible();
+  await expect(page.getByText(LEAD_NAME, { exact: true })).toBeVisible();
 });
 
 test("Member — Minha Evolução, navegação restrita e a própria ficha negada", async ({ page }) => {
   await login(page, MEMBER_EMAIL, PASSWORD);
 
   await expect(page.getByText("Minha Evolução")).toBeVisible();
-  await expect(page.getByText(/E2E Member/)).toBeVisible();
+  await expect(page.getByText(MEMBER_NAME).first()).toBeVisible();
 
   // Nav admin-only não aparece pra quem não é admin (QW-01/QW-02).
   await expect(page.getByRole("link", { name: "Matriz de Competências" })).toHaveCount(0);
@@ -203,12 +149,17 @@ test("Lead — Pendências do Lead escopadas à própria liderança", async ({ p
 
   await expect(page.getByText("Pendências do Lead")).toBeVisible();
 
+  // DUAS pessoas, não uma: pelo cadastro unificado (ADR-0084) o próprio Tech
+  // Lead nasce com profissional no time que lidera — a liderança aparece no
+  // quadro e nas contagens de PESSOAS, só não nas leituras por senioridade
+  // (ela não tem nível de carreira). Contar 1 aqui seria congelar o modelo
+  // velho, em que a conta do lead não tinha profissional nenhum.
   const myPeopleCard = page.locator(".surface-card", { hasText: "Pessoas sob sua liderança" });
-  await expect(myPeopleCard).toContainText("1");
+  await expect(myPeopleCard).toContainText("2");
 
   // Sem avaliação/evidência/PDI pendente ainda — estado "tudo em dia".
   await expect(page.getByText("Nada pendente no momento")).toBeVisible();
 
   await page.goto(`/architects/${architectId}`);
-  await expect(page.getByText("E2E Golden Path")).toBeVisible();
+  await expect(page.getByText(MEMBER_NAME).first()).toBeVisible();
 });
