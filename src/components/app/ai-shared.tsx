@@ -15,6 +15,7 @@ import {
   type GenerationProfileName,
 } from "@/lib/assistants";
 import type { PersonAdvice } from "@/lib/gateways/person-assistants.gateway";
+import type { StagnationAlert, WorkAssistance } from "@/lib/gateways/work-assistants.gateway";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -339,6 +340,148 @@ export function PersonAdviceSection<T extends PersonAdvice & { outline?: string[
             {...(beforeNarration === undefined ? {} : { header: beforeNarration(advice) })}
             {...(nextStep === undefined ? {} : { nextStep: nextStep(advice) })}
           />
+        )}
+      </AiRunResult>
+    </SectionCard>
+  );
+}
+
+/**
+ * ADR-0088 — o que um assistente do TRABALHO desenha, e a ausência que é o
+ * produto: **não há veredito**. Nenhum destes quatro aprova, rejeita, nota ou
+ * classifica; quem decide é o humano, pela operação que já existe ao lado.
+ *
+ * `observations` (o que o sistema apurou por consulta) vem ANTES de `reading`
+ * (a interpretação, a única parte que a IA escreve), e é assim que a tela
+ * repete a primeira regra da casa sem precisar de uma frase explicando-a.
+ */
+export function WorkAssistanceBody({ assistance }: { assistance: WorkAssistance }) {
+  const { t } = useI18n();
+  return (
+    <AiSuggestionFrame>
+      <AdviceFactList label={t("ai.work.observations")} items={assistance.observations} />
+      <p className="mt-3 max-w-prose whitespace-pre-line text-sm">{assistance.reading}</p>
+      <p className="mt-3 max-w-prose text-xs text-muted-foreground">{t("ai.work.disclosure")}</p>
+    </AiSuggestionFrame>
+  );
+}
+
+export function WorkAssistanceRun({
+  actionLabel,
+  queryKey,
+  ask,
+}: {
+  actionLabel: string;
+  queryKey: readonly unknown[];
+  ask: () => Promise<WorkAssistance>;
+}) {
+  const run = useAssistantRun<true, WorkAssistance>(queryKey, () => ask());
+  return (
+    <>
+      <AiGenerateButton
+        label={actionLabel}
+        running={run.running}
+        onGenerate={() => {
+          run.generate(true);
+        }}
+      />
+      <AiRunResult run={run}>
+        {(assistance) => <WorkAssistanceBody assistance={assistance} />}
+      </AiRunResult>
+    </>
+  );
+}
+
+export function WorkAssistanceSection({
+  title,
+  description,
+  actionLabel,
+  queryKey,
+  ask,
+  className,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  queryKey: readonly unknown[];
+  ask: () => Promise<WorkAssistance>;
+  className?: string;
+}) {
+  return (
+    <SectionCard
+      title={title}
+      description={description}
+      {...(className === undefined ? {} : { className })}
+    >
+      <WorkAssistanceRun actionLabel={actionLabel} queryKey={queryKey} ask={ask} />
+    </SectionCard>
+  );
+}
+
+/**
+ * IA-05, e a PROIBIÇÃO literal do dono junto: a expressão é **"Requer
+ * atenção"**, e classificar a pessoa como "baixo desempenho" é proibido. A
+ * palavra proibida tem rede própria em
+ * `tests/architecture/vocabulario-positivo.test.ts`; o que este componente
+ * garante é o outro lado — quando NÃO há o que avisar, a tela diz isso com
+ * todas as letras em vez de deixar um silêncio que cada gestor interpreta
+ * como quiser.
+ *
+ * `requiresAttention` é determinístico: quando é falso o provedor sequer foi
+ * chamado, e o que sobra na tela são os sinais que o sistema detectou.
+ */
+export function StagnationAlertSection({
+  title,
+  description,
+  actionLabel,
+  queryKey,
+  ask,
+  className,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  queryKey: readonly unknown[];
+  ask: () => Promise<StagnationAlert>;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  const run = useAssistantRun<true, StagnationAlert>(queryKey, () => ask());
+  return (
+    <SectionCard
+      title={title}
+      description={description}
+      {...(className === undefined ? {} : { className })}
+    >
+      <AiGenerateButton
+        label={actionLabel}
+        running={run.running}
+        onGenerate={() => {
+          run.generate(true);
+        }}
+      />
+      <AiRunResult run={run}>
+        {(alert) => (
+          <AiSuggestionFrame>
+            <p
+              className={
+                alert.requiresAttention
+                  ? "mt-2 text-sm font-semibold text-destructive"
+                  : "mt-2 text-sm font-medium"
+              }
+            >
+              {alert.requiresAttention
+                ? t("ai.stagnation.requiresAttention")
+                : t("ai.stagnation.clear")}
+            </p>
+            {alert.alert !== null && (
+              <p className="mt-2 max-w-prose whitespace-pre-line text-sm">{alert.alert}</p>
+            )}
+            <AdviceFactList label={t("ai.stagnation.signals")} items={alert.signals} />
+            <p className="mt-3 max-w-prose text-xs text-muted-foreground">
+              {t("ai.stagnation.disclosure")}
+            </p>
+          </AiSuggestionFrame>
         )}
       </AiRunResult>
     </SectionCard>

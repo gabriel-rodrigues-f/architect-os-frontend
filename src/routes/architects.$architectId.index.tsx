@@ -20,8 +20,10 @@ import {
   ResubmitEvidenceDialog,
   SectionCard,
   SectionGroup,
+  StagnationAlertSection,
   StatCard,
   TreatGapInPlanAction,
+  WorkAssistanceRun,
 } from "@/components/app";
 import { useLabels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -42,7 +44,7 @@ import {
   useSuccessToast,
   useToastSubmit,
 } from "@/hooks";
-import { personAssistantsApi } from "@/lib/api";
+import { personAssistantsApi, workAssistantsApi } from "@/lib/api";
 import { GenerationProfileChoice, type GenerationProfileName } from "@/lib/assistants";
 import type {
   SessionScriptAdvice,
@@ -276,6 +278,17 @@ function ArchitectWorkspace() {
       )}
 
       {canReviewEvidence && <SessionScriptAssistant architectId={architect.id} />}
+
+      {canReviewEvidence && (
+        <StagnationAlertSection
+          className="mb-6"
+          title={t("ai.stagnation.title")}
+          description={t("ai.stagnation.subtitle")}
+          actionLabel={t("ai.stagnation.action")}
+          queryKey={["assistants", "stagnation-alert", architect.id]}
+          ask={() => workAssistantsApi.alertAboutStagnation(architect.id)}
+        />
+      )}
 
       <SectionGroup title={t("arch.group.diagnosis")}>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -624,6 +637,14 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
               id="ev-review-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+          <div className="border-t border-border pt-3">
+            <p className="mb-2 text-xs text-muted-foreground">{t("ai.review.subtitle")}</p>
+            <WorkAssistanceRun
+              actionLabel={t("ai.review.action")}
+              queryKey={["assistants", "review-assistance", evidence.id]}
+              ask={() => workAssistantsApi.assistEvidenceReview(evidence.id)}
             />
           </div>
         </div>
