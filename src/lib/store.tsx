@@ -188,6 +188,7 @@ export interface Api extends AppState {
   importCatalog: (payload: CatalogImportPayload) => Promise<CatalogImportSummary>;
 
   addCompetency: (c: Omit<Competency, "id">) => Promise<Competency>;
+  renameCompetency: (id: string, name: string) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
 
   removeCompetency: (id: string) => Promise<{ archived: boolean }>;
@@ -490,6 +491,19 @@ export function buildApi(
         .command(
           () => api.createCompetency(c),
           (created) => (s) => ({ ...s, competencies: [...s.competencies, created] }),
+        )
+        .then(refreshCurationCounts),
+
+    renameCompetency: (id, name) =>
+      runner
+        .guarded(
+          () => api.updateCompetency(id, { name }),
+          (renamed) => (current) => ({
+            ...current,
+            competencies: current.competencies.map((competency) =>
+              competency.id === id ? renamed : competency,
+            ),
+          }),
         )
         .then(refreshCurationCounts),
 

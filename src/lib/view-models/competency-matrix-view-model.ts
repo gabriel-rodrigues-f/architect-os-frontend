@@ -18,6 +18,7 @@ export type CatalogService = Pick<
   | "updateCapability"
   | "removeCapability"
   | "addCompetency"
+  | "renameCompetency"
   | "updateCompetency"
   | "removeCompetency"
   | "removeCompetencies"
@@ -106,8 +107,8 @@ export class CompetencyMatrixViewModel {
     return name.trim().length > 0;
   }
 
-  updateCompetency(id: string, name: string): void {
-    this.service.updateCompetency(id, { name: name.trim() });
+  renameCompetency(id: string, name: string): Promise<Competency> {
+    return this.service.renameCompetency(id, name.trim());
   }
 
   removeCompetency(id: string): Promise<{ archived: boolean }> {

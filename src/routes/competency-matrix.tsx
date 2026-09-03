@@ -26,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { LEVELS, type Competency, type Capability } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
+import { CompetencyNameConflict } from "@/lib/competency-name-conflict";
 import type { AffectedRecords, CompetencyRemovalOutcome } from "@/lib/gateways/catalog.gateway";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
@@ -799,15 +800,33 @@ function CapabilityFoundationDialog({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
   const limits = viewModel.limits;
   const [editor, setEditor] = useState(() => CapabilityFoundationEditor.begin(limits));
+  const [conflict, setConflict] = useState<CompetencyNameConflict | null>(null);
 
-  const { submitting: saving, run } = useToastSubmit();
+  const {
+    submitting: saving,
+    error,
+    clearError,
+    run,
+  } = useAsyncSubmit(t("matrix.foundation.failed"));
+
+  const refusedPosition = conflict?.positionIn(editor.competencyNames) ?? -1;
+  const blocked = refusedPosition >= 0;
+
+  const change = (next: CapabilityFoundationEditor) => {
+    setEditor(next);
+    clearError();
+  };
 
   const found = async () => {
     const payload = editor.payload();
-    if (!payload || saving) return;
+    if (!payload || saving || blocked) return;
 
     const result = await run(() => viewModel.foundCapability(payload));
-    if (result.ok) onClose();
+    if (result.ok) {
+      onClose();
+      return;
+    }
+    setConflict(CompetencyNameConflict.from(result.error));
   };
 
   return (
@@ -823,7 +842,7 @@ function CapabilityFoundationDialog({ onClose }: { onClose: () => void }) {
               id="new-capability-name"
               value={editor.name}
               disabled={saving}
-              onChange={(e) => setEditor(editor.withName(e.target.value))}
+              onChange={(e) => change(editor.withName(e.target.value))}
             />
           </div>
           <p className="text-xs text-muted-foreground">
@@ -839,8 +858,14 @@ function CapabilityFoundationDialog({ onClose }: { onClose: () => void }) {
                   id={`new-capability-competency-${position}`}
                   value={competencyName}
                   disabled={saving}
-                  onChange={(e) => setEditor(editor.withCompetencyName(position, e.target.value))}
+                  aria-invalid={position === refusedPosition}
+                  onChange={(e) => change(editor.withCompetencyName(position, e.target.value))}
                 />
+                {position === refusedPosition && conflict && (
+                  <p className="mt-1 text-xs text-destructive" role="alert">
+                    {conflict.message}
+                  </p>
+                )}
               </div>
               {editor.canRemoveCompetency(position) && (
                 <Button
@@ -848,7 +873,7 @@ function CapabilityFoundationDialog({ onClose }: { onClose: () => void }) {
                   size="sm"
                   disabled={saving}
                   aria-label={t("matrix.foundation.remove", { n: position + 1 })}
-                  onClick={() => setEditor(editor.removeCompetency(position))}
+                  onClick={() => change(editor.removeCompetency(position))}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -860,17 +885,22 @@ function CapabilityFoundationDialog({ onClose }: { onClose: () => void }) {
               variant="outline"
               size="sm"
               disabled={saving}
-              onClick={() => setEditor(editor.addCompetency())}
+              onClick={() => change(editor.addCompetency())}
             >
               {t("matrix.foundation.addAnother")}
             </Button>
+          )}
+          {error && !blocked && (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" disabled={saving} onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={() => void found()} disabled={!editor.isValid || saving}>
+          <Button onClick={() => void found()} disabled={!editor.isValid || saving || blocked}>
             {t("matrix.foundation.submit")}
           </Button>
         </DialogFooter>
@@ -941,19 +971,25 @@ function CompetencyCreateDialog({
   const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
   const [name, setName] = useState("");
-  const canSave = viewModel.canCreateCompetency(name);
+  const [conflict, setConflict] = useState<CompetencyNameConflict | null>(null);
+  const blocked = conflict?.blocks(name) === true;
+  const canSave = viewModel.canCreateCompetency(name) && !blocked;
 
-  const { submitting: saving, run } = useToastSubmit();
+  const { submitting: saving, error, clearError, run } = useAsyncSubmit(t("matrix.create.failed"));
 
   const save = async () => {
-    if (!canSave) return;
+    if (!canSave || saving) return;
 
     const result = await run(() => viewModel.createCompetency(capability.id, name));
-    if (result.ok) onClose();
+    if (result.ok) {
+      onClose();
+      return;
+    }
+    setConflict(CompetencyNameConflict.from(result.error));
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("matrix.create.title", { capacidade: capability.name })}</DialogTitle>
@@ -964,22 +1000,46 @@ function CompetencyCreateDialog({
             <Input
               id="new-competency-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && save()}
+              disabled={saving}
+              aria-invalid={blocked}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearError();
+              }}
+              onKeyDown={(e) => e.key === "Enter" && void save()}
             />
+            <CompetencyNameRefusal conflict={conflict} blocked={blocked} error={error} />
           </div>
           <p className="text-xs text-muted-foreground">{t("matrix.levelFromRule.hint")}</p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" disabled={saving} onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={save} disabled={!canSave || saving}>
+          <Button onClick={() => void save()} disabled={!canSave || saving}>
             {t("matrix.add")}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CompetencyNameRefusal({
+  conflict,
+  blocked,
+  error,
+}: {
+  conflict: CompetencyNameConflict | null;
+  blocked: boolean;
+  error: string | null;
+}) {
+  const text = blocked && conflict ? conflict.message : !blocked && error ? error : null;
+  if (!text) return null;
+  return (
+    <p className="mt-1 text-xs text-destructive" role="alert">
+      {text}
+    </p>
   );
 }
 
@@ -993,16 +1053,25 @@ function CompetencyEditDialog({
   const viewModel = useCompetencyMatrixViewModel();
   const { t } = useI18n();
   const [name, setName] = useState(competency.name);
+  const [conflict, setConflict] = useState<CompetencyNameConflict | null>(null);
+  const blocked = conflict?.blocks(name) === true;
+  const canSave = name.trim().length > 0 && !blocked;
 
-  const save = () => {
-    if (!name.trim()) return;
+  const { submitting: saving, error, clearError, run } = useAsyncSubmit(t("matrix.edit.failed"));
 
-    viewModel.updateCompetency(competency.id, name);
-    onClose();
+  const save = async () => {
+    if (!canSave || saving) return;
+
+    const result = await run(() => viewModel.renameCompetency(competency.id, name));
+    if (result.ok) {
+      onClose();
+      return;
+    }
+    setConflict(CompetencyNameConflict.from(result.error));
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("matrix.edit.title")}</DialogTitle>
@@ -1013,17 +1082,25 @@ function CompetencyEditDialog({
             <Input
               id="competency-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && save()}
+              disabled={saving}
+              aria-invalid={blocked}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearError();
+              }}
+              onKeyDown={(e) => e.key === "Enter" && void save()}
             />
+            <CompetencyNameRefusal conflict={conflict} blocked={blocked} error={error} />
           </div>
           <p className="text-xs text-muted-foreground">{t("matrix.levelFromRule.hint")}</p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" disabled={saving} onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={save}>{t("common.save")}</Button>
+          <Button onClick={() => void save()} disabled={!canSave || saving}>
+            {t("common.save")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

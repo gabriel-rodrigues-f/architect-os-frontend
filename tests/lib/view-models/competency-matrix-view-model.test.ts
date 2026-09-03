@@ -27,6 +27,7 @@ function fakeService(): CatalogService & {
   updateCapability: ReturnType<typeof vi.fn>;
   removeCapability: ReturnType<typeof vi.fn>;
   addCompetency: ReturnType<typeof vi.fn>;
+  renameCompetency: ReturnType<typeof vi.fn>;
   updateCompetency: ReturnType<typeof vi.fn>;
   removeCompetency: ReturnType<typeof vi.fn>;
   removeCompetencies: ReturnType<typeof vi.fn>;
@@ -36,6 +37,10 @@ function fakeService(): CatalogService & {
     updateCapability: vi.fn(),
     removeCapability: vi.fn(async () => ({ archived: false, competenciesRemoved: 0 })),
     addCompetency: vi.fn(async (input) => ({ ...input, id: "nova-competencia" }) as Competency),
+    renameCompetency: vi.fn(
+      async (id: string, name: string) =>
+        ({ id, name, capabilityId: "cloud", active: true }) as Competency,
+    ),
     updateCompetency: vi.fn(),
     removeCompetency: vi.fn(async () => ({ archived: false })),
     removeCompetencies: vi.fn(async () => ({ outcomes: [] })),
@@ -144,13 +149,11 @@ describe("CompetencyMatrixViewModel", () => {
     });
   });
 
-  describe("updateCompetency", () => {
-    it("envia só o nome cortado — nunca capabilityId, requirementType ou expected", () => {
+  describe("renameCompetency", () => {
+    it("envia só o nome cortado, e devolve a promessa para a tela ver a recusa", async () => {
       const { vm, service } = makeVm();
-      vm.updateCompetency("cloud-k8s", "  Kubernetes Avançado  ");
-      expect(service.updateCompetency).toHaveBeenCalledWith("cloud-k8s", {
-        name: "Kubernetes Avançado",
-      });
+      await vm.renameCompetency("cloud-k8s", "  Kubernetes Avançado  ");
+      expect(service.renameCompetency).toHaveBeenCalledWith("cloud-k8s", "Kubernetes Avançado");
     });
   });
 
