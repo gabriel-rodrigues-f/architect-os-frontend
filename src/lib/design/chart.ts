@@ -34,7 +34,7 @@ export class ChartPalette {
   }
 
   forKeys(keys: readonly string[]): SeriesStyle[] {
-    return keys.map((k) => this.forKey(k));
+    return keys.map((chave) => this.forKey(chave));
   }
 }
 
@@ -103,5 +103,31 @@ export class RotuloDeEixo {
       }
       return [...linhas, palavra];
     }, []);
+  }
+}
+
+/**
+ * O ponto onde o rótulo de um eixo polar é desenhado.
+ *
+ * Pedido do dono (2026-09-03) diante do radar: *"quero uma margem um pouco
+ * maior, pouca coisa, apenas pra que as letras não encostem no gráfico"*. O
+ * recharts entrega o ponto colado na borda do polígono; afastar em x ou em y
+ * daria folga desigual conforme o lado do eixo. Afastar na direção do RAIO dá
+ * a mesma folga nos doze lados.
+ */
+export class PontoDoEixo {
+  static afastadoDoCentro(
+    pontoX: number,
+    pontoY: number,
+    centroX: number | undefined,
+    centroY: number | undefined,
+    folga: number,
+  ): readonly [number, number] {
+    if (centroX === undefined || centroY === undefined) return [pontoX, pontoY];
+    const distanciaX = pontoX - centroX;
+    const distanciaY = pontoY - centroY;
+    const raio = Math.hypot(distanciaX, distanciaY);
+    if (raio === 0) return [pontoX, pontoY];
+    return [pontoX + (distanciaX / raio) * folga, pontoY + (distanciaY / raio) * folga];
   }
 }

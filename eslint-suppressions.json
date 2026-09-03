@@ -69,11 +69,6 @@
       "count": 25
     }
   },
-  "src/components/app/charts-recharts.tsx": {
-    "id-length": {
-      "count": 7
-    }
-  },
   "src/components/app/charts.tsx": {
     "id-length": {
       "count": 18
@@ -117,11 +112,6 @@
   "src/lib/cycle-cadence.ts": {
     "id-length": {
       "count": 3
-    }
-  },
-  "src/lib/design/chart.ts": {
-    "id-length": {
-      "count": 1
     }
   },
   "src/lib/design/color.ts": {

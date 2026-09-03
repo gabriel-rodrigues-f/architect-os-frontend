@@ -22,6 +22,7 @@ import {
   axisTick,
   CHART_INK,
   ChartPalette,
+  PontoDoEixo,
   RotuloDeEixo,
   tooltipStyle,
   type SeriesStyle,
@@ -37,13 +38,21 @@ const FALLBACK_STYLE: SeriesStyle = { color: "var(--chart-1)", symbol: "circle" 
  * mostrava o `short` de uma palavra. Cada linha é um `<tspan>`; o bloco é
  * centrado verticalmente no ponto do eixo para não invadir o polígono.
  */
+/** Respiro entre a borda do polígono e a primeira letra do rótulo. */
+const FOLGA_DO_ROTULO = 3;
+
 function RadarAxisTick(props: {
   x?: number;
   y?: number;
+  cx?: number;
+  cy?: number;
   textAnchor?: "start" | "end" | "inherit" | "middle";
   payload?: { value?: unknown };
 }) {
-  const { x: centroX = 0, y: centroY = 0, textAnchor = "middle", payload } = props;
+  const { x: pontoX = 0, y: pontoY = 0, cx, cy, textAnchor = "middle", payload } = props;
+  // O recharts encosta o rótulo na borda do eixo. Empurrar na direção do raio
+  // — e não em x ou y — mantém a folga igual nos doze lados do polígono.
+  const [centroX, centroY] = PontoDoEixo.afastadoDoCentro(pontoX, pontoY, cx, cy, FOLGA_DO_ROTULO);
   const linhas = RotuloDeEixo.emLinhas(String(payload?.value ?? ""));
   const alturaDaLinha = axisTick.fontSize + 2;
   const deslocamentoInicial = -((linhas.length - 1) * alturaDaLinha) / 2;
@@ -140,7 +149,7 @@ export function ComparisonRadarFigure({
   const estreita = useNarrowViewport();
 
   const palette = new ChartPalette();
-  const estilos = palette.forKeys(series.map((s) => s.key));
+  const estilos = palette.forKeys(series.map((serie) => serie.key));
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -148,13 +157,13 @@ export function ComparisonRadarFigure({
         <PolarGrid stroke={CHART_INK.grid} />
         <PolarAngleAxis dataKey="capability" tick={<RadarAxisTick />} />
         <PolarRadiusAxis domain={[0, 5]} tickCount={6} tick={false} axisLine={false} />
-        {series.map((s, i) => {
-          const estilo = estilos[i] ?? FALLBACK_STYLE;
+        {series.map((serie, indice) => {
+          const estilo = estilos[indice] ?? FALLBACK_STYLE;
           return (
             <Radar
-              key={s.key}
-              name={s.label}
-              dataKey={s.key}
+              key={serie.key}
+              name={serie.label}
+              dataKey={serie.key}
               legendType={estilo.symbol}
               stroke={estilo.color}
               strokeWidth={increasedContrast ? 3 : 2}
@@ -185,7 +194,7 @@ export function EvolutionLineFigure({
   const { reducedMotion, increasedContrast } = useDisplayPreferences();
 
   const palette = new ChartPalette();
-  const estilos = palette.forKeys(series.map((s) => s.key));
+  const estilos = palette.forKeys(series.map((serie) => serie.key));
 
   const pontos = data.length <= 12;
 
@@ -201,14 +210,14 @@ export function EvolutionLineFigure({
           cursor={{ stroke: CHART_INK.grid }}
         />
         <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
-        {series.map((s, i) => {
-          const estilo = estilos[i] ?? FALLBACK_STYLE;
+        {series.map((serie, indice) => {
+          const estilo = estilos[indice] ?? FALLBACK_STYLE;
           return (
             <Line
-              key={s.key}
+              key={serie.key}
               type="monotone"
-              dataKey={s.key}
-              name={s.label}
+              dataKey={serie.key}
+              name={serie.label}
               legendType={estilo.symbol}
               stroke={estilo.color}
               strokeWidth={increasedContrast ? 3 : 2}
@@ -243,7 +252,7 @@ export function ProficiencyTimelineFigure({
         <YAxis
           domain={[1, 5]}
           ticks={[1, 2, 3, 4, 5]}
-          tickFormatter={(v: number) => levelNames[v] ?? String(v)}
+          tickFormatter={(nivel: number) => levelNames[nivel] ?? String(nivel)}
           tick={axisTick}
           stroke={CHART_INK.grid}
         />
