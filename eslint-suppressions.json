@@ -21,7 +21,7 @@
   },
   "src/components/app/ArchitectSelectCombobox.tsx": {
     "id-length": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/app/CapabilityCombobox.tsx": {
@@ -86,7 +86,7 @@
   },
   "src/components/app/mentoring-shared.tsx": {
     "id-length": {
-      "count": 38
+      "count": 35
     }
   },
   "src/components/app/team-shared.tsx": {
@@ -186,7 +186,7 @@
   },
   "src/lib/selectors.ts": {
     "id-length": {
-      "count": 20
+      "count": 19
     }
   },
   "src/lib/store.tsx": {
@@ -221,7 +221,7 @@
   },
   "src/lib/view-models/learning-paths-view-model.ts": {
     "id-length": {
-      "count": 6
+      "count": 5
     }
   },
   "src/lib/view-models/mentoring-view-model.ts": {
@@ -251,7 +251,7 @@
   },
   "src/routes/assessments.tsx": {
     "id-length": {
-      "count": 8
+      "count": 7
     }
   },
   "src/routes/capability-map.tsx": {
@@ -271,7 +271,7 @@
   },
   "src/routes/cycles.tsx": {
     "id-length": {
-      "count": 15
+      "count": 14
     }
   },
   "src/routes/development-plans.tsx": {
@@ -516,7 +516,7 @@
   },
   "tests/lib/view-models/learning-paths-view-model.test.ts": {
     "id-length": {
-      "count": 4
+      "count": 2
     }
   },
   "tests/lib/view-models/mentoring-view-model.test.ts": {

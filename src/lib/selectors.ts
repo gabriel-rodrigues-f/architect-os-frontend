@@ -85,6 +85,12 @@ export class SelectorIndex {
   }
 }
 
+export class ArchitectRoster {
+  static active(architects: readonly Architect[]): Architect[] {
+    return architects.filter((architect) => architect.active);
+  }
+}
+
 export class ArchitectSelectors {
   readonly active: Architect[];
 
@@ -92,7 +98,7 @@ export class ArchitectSelectors {
     state: AppState,
     private readonly index: SelectorIndex,
   ) {
-    this.active = state.architects.filter((a) => a.active);
+    this.active = ArchitectRoster.active(state.architects);
   }
 
   byId = (id: string): Architect | undefined => this.index.architectIndex.get(id);

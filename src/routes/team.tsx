@@ -97,7 +97,7 @@ function TeamRoster() {
     <>
       <PageHeader title={t("team.title")} description={t("team.subtitle")} help={help} />
 
-      {store.architects.length === 0 ? (
+      {store.architectsIncludingInactive.length === 0 ? (
         <EmptyStateCard
           title={t("team.empty.title")}
           hint={t("team.empty.hint")}
@@ -112,12 +112,12 @@ function TeamRoster() {
           <DataViewToolbar
             layout="grid-3"
             resultCount={roster.enrichedSorted.length}
-            totalCount={store.architects.length}
+            totalCount={store.architectsIncludingInactive.length}
             activeFilters={roster.activeFilterChips}
             onClearFilters={roster.clearFilters}
           >
             <ArchitectNameCombobox
-              architects={store.architects}
+              architects={store.architectsIncludingInactive}
               selected={roster.nameSelection}
               onChange={roster.setNameSelection}
             />

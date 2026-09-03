@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  DeactivatedPersonNotice,
   EvolutionLine,
   OutOfReachScreen,
   PageHeader,
@@ -254,6 +255,8 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
           </div>
         }
       />
+
+      <DeactivatedPersonNotice active={architect.active} />
 
       <ProfileTabs architectId={architect.id} active="evolution" />
 

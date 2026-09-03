@@ -10,7 +10,7 @@ import {
 } from "@/components/app";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { useSelectors, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/mentoring")({
   head: () => ({
@@ -35,9 +35,7 @@ function MentoringPage() {
   const { t } = useI18n();
   const help = usePageHelp("mentoring");
 
-  const sel = useSelectors();
-
-  const menteeOptions = sel.activeArchitects;
+  const menteeOptions = store.architects;
   const { filter, setFilter, sessions } = useMentoringTimeline();
 
   return (

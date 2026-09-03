@@ -1,6 +1,5 @@
 import type { SessionUser } from "../api";
 import type {
-  Architect,
   LearningItemProgress,
   LearningItemType,
   LearningPath,
@@ -101,13 +100,6 @@ export class LearningPathsViewModel {
         ? current.filter((id) => id !== architectId)
         : [...current, architectId],
     });
-  }
-
-  assignableArchitects(
-    architects: readonly Architect[],
-    alreadyAssignedIds: readonly string[],
-  ): Architect[] {
-    return architects.filter((a) => a.active || alreadyAssignedIds.includes(a.id));
   }
 
   addItem(pathId: string, title: string, type: LearningItemType, hours: string): void {

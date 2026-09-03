@@ -176,8 +176,7 @@ function useMentoringSessionForm(menteeOptions: Architect[]) {
 export function useMentoringTimeline() {
   const store = useStore();
   const orderedArchitects = [...store.architects].sort(defaultNameFormatter.byName);
-  const defaultMenteeId =
-    orderedArchitects.find((a) => a.active)?.id ?? orderedArchitects[0]?.id ?? "";
+  const defaultMenteeId = orderedArchitects[0]?.id ?? "";
   const [filter, setFilter] = useState<string>(defaultMenteeId);
 
   const sessions = [...store.mentoringSessions]
@@ -199,8 +198,7 @@ export function MenteeFilterCombobox({
   const { t } = useI18n();
   return (
     <ArchitectSelectCombobox
-      architects={architects.filter((a) => a.active)}
-      inactiveArchitects={architects.filter((a) => !a.active)}
+      architects={architects}
       selectedId={selected}
       onChange={onChange}
       label={t("mentor.filter.label")}

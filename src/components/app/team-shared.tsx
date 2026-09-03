@@ -114,7 +114,7 @@ export function useTeamRoster(isAdmin: boolean) {
       id: c.id,
       label: c.name,
     }));
-    const hasNone = store.architects.some((a) => {
+    const hasNone = store.architectsIncludingInactive.some((a) => {
       const competency = a.primarySpecializationCompetencyId
         ? sel.competencyById(a.primarySpecializationCompetencyId)
         : undefined;
@@ -128,22 +128,22 @@ export function useTeamRoster(isAdmin: boolean) {
       });
     }
     return options;
-  }, [store.capabilities, store.architects, sel, t]);
+  }, [store.capabilities, store.architectsIncludingInactive, sel, t]);
 
   const capabilityFilter = useMemo(
     () => capabilitySelection ?? capabilityOptions.map((option) => option.id),
     [capabilitySelection, capabilityOptions],
   );
   const nameSelection = useMemo(
-    () => nameSelectionChosen ?? store.architects.map((a) => a.id),
-    [nameSelectionChosen, store.architects],
+    () => nameSelectionChosen ?? store.architectsIncludingInactive.map((a) => a.id),
+    [nameSelectionChosen, store.architectsIncludingInactive],
   );
 
   const filtered = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
 
     const nameFilter = Selection.explicit(nameSelection);
-    return store.architects.filter((a) => {
+    return store.architectsIncludingInactive.filter((a) => {
       if (!nameFilter.contains(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
 
@@ -156,7 +156,7 @@ export function useTeamRoster(isAdmin: boolean) {
       return true;
     });
   }, [
-    store.architects,
+    store.architectsIncludingInactive,
     isAdmin,
     statusFilter,
     roleSelection,
@@ -216,7 +216,7 @@ export function useTeamRoster(isAdmin: boolean) {
   };
 
   const activeFilterChips: ActiveFilterChip[] = [];
-  if (nameSelection.length !== store.architects.length) {
+  if (nameSelection.length !== store.architectsIncludingInactive.length) {
     activeFilterChips.push({
       key: "name",
       label: t("team.filter.chip.name", { n: nameSelection.length }),

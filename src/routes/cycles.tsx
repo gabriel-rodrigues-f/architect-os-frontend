@@ -119,8 +119,7 @@ function CycleAdministration() {
         actions={
           <div className="flex flex-wrap gap-2">
             <ArchitectSelectCombobox
-              architects={sel.activeArchitects}
-              inactiveArchitects={store.architects.filter((a) => !a.active)}
+              architects={store.architects}
               selectedId={architectId}
               onChange={setArchitectId}
               label={t("cycle.architect")}

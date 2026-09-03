@@ -121,19 +121,27 @@ describe("Mentoria — filtro de mentorado (seleção única)", () => {
     expect(screen.queryByText("Todo o time")).toBeNull();
   });
 
-  it("selecionar uma pessoa mostra só a sessão dela, e inativos aparecem com sufixo", async () => {
+  it("selecionar outra pessoa ativa mostra só a sessão dela", async () => {
     renderWithApp(<MentoringPage />);
     await screen.findByText("Sessão com Ana");
 
     await userEvent.click(screen.getByRole("combobox", { name: "Filtrar mentorado" }));
-    const opcaoInativa = await screen.findByText("Carla Nunes (inativo)");
+    await userEvent.click(await screen.findByText("Bruno Almeida"));
 
-    await userEvent.click(opcaoInativa);
-
-    expect(screen.getByText("Sessão com Carla")).toBeTruthy();
     expect(screen.queryByText("Sessão com Ana")).toBeNull();
     expect(screen.getByRole("combobox", { name: "Filtrar mentorado" }).textContent).toContain(
-      "Carla Nunes",
+      "Bruno Almeida",
     );
+  });
+
+  it("quem está desativado não é oferecido, nem com sufixo", async () => {
+    renderWithApp(<MentoringPage />);
+    await screen.findByText("Sessão com Ana");
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Filtrar mentorado" }));
+
+    expect(screen.queryByText("Carla Nunes")).toBeNull();
+    expect(screen.queryByText("Carla Nunes (inativo)")).toBeNull();
+    expect(screen.queryByText("Sessão com Carla")).toBeNull();
   });
 });

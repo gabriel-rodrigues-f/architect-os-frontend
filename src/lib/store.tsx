@@ -46,7 +46,7 @@ import {
   type ScoringBands,
   type ScoringScale,
 } from "./scoring-bands";
-import { createSelectors, emptyState } from "./selectors";
+import { ArchitectRoster, createSelectors, emptyState } from "./selectors";
 import type { VocabularyItemInput, VocabularyItemPatch } from "./gateways/config.gateway";
 import type { CatalogImportPayload, CatalogImportSummary } from "./catalog-import";
 import {
@@ -134,6 +134,8 @@ export function useObjectiveFromGap(): RenderObjectiveFromGap {
 }
 
 export interface Api extends AppState {
+  architectsIncludingInactive: Architect[];
+
   addArchitect: (a: Omit<Architect, "id" | "version">) => Promise<Architect>;
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>) => void;
 
@@ -333,6 +335,9 @@ export function buildApi(
   return {
     ...state,
     capabilities: [...state.capabilities].sort(defaultNameFormatter.byName),
+
+    architects: ArchitectRoster.active(state.architects),
+    architectsIncludingInactive: state.architects,
 
     addArchitect: (a) =>
       runner.command(
@@ -1098,7 +1103,16 @@ export function useStore() {
   return ctx;
 }
 
+/**
+ * Os selectors indexam a lista CRUA de propósito: `architectById` precisa
+ * resolver quem foi desativado para a ficha aberta pelo link de `/team`
+ * continuar de pé. Quem lista, seleciona, desenha ou conta gente consome
+ * `store.architects` (já ativa) ou `sel.activeArchitects`.
+ */
 export function useSelectors() {
   const store = useStore();
-  return useMemo(() => createSelectors(store), [store]);
+  return useMemo(
+    () => createSelectors({ ...store, architects: store.architectsIncludingInactive }),
+    [store],
+  );
 }
