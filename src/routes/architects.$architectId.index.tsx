@@ -47,6 +47,8 @@ import {
 import { personAssistantsApi, workAssistantsApi } from "@/lib/api";
 import { GenerationProfileChoice, type GenerationProfileName } from "@/lib/assistants";
 import type {
+  DevelopmentPlanAdvice,
+  DevelopmentPlanRecommendationRequest,
   SessionScriptAdvice,
   SessionScriptRequest,
 } from "@/lib/gateways/person-assistants.gateway";
@@ -147,6 +149,19 @@ function ArchitectWorkspace() {
 
   const canEditOwn = defaultUiAuthorizationPolicy.canActFor(user, architect);
   const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
+
+  /**
+   * A recomendação de PDI é a única das oito que precisa de um SEGUNDO
+   * argumento — a competência —, e a única cujo alcance no servidor inclui a
+   * própria pessoa. Um `AssistantRunState` por tela e não por linha: a
+   * sugestão aparece uma de cada vez, abaixo da lista, e o pedido em voo diz
+   * qual competência é. N estados por linha custariam N consultas vivas para
+   * mostrar uma.
+   */
+  const planAdvice = useAssistantRun<DevelopmentPlanRecommendationRequest, DevelopmentPlanAdvice>(
+    ["assistants", "development-plan-recommendation", architectId],
+    (request) => personAssistantsApi.recommendDevelopmentPlanItem(request),
+  );
 
   if (!architect) {
     return (
@@ -316,6 +331,23 @@ function ArchitectWorkspace() {
                       <LevelBadge level={g.item.final} />
                       <span className="text-xs text-muted-foreground">→ {g.item.target}</span>
                       <GapBadge gap={g.gap} />
+                      {canEditOwn && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-auto px-0 text-xs"
+                          aria-label={t("ai.plan.actionFor", { nome: g.competency?.name ?? "" })}
+                          disabled={planAdvice.running}
+                          onClick={() => {
+                            planAdvice.generate({
+                              architectId: architect.id,
+                              competencyId: g.item.competencyId,
+                            });
+                          }}
+                        >
+                          {t("ai.plan.action")}
+                        </Button>
+                      )}
                       {canEditOwn && !inPlan && (
                         <TreatGapInPlanAction
                           architectId={architect.id}
@@ -331,6 +363,26 @@ function ArchitectWorkspace() {
                 <p className="text-sm text-muted-foreground">{t("arch.gaps.none")}</p>
               )}
             </ul>
+            <AiRunResult run={planAdvice}>
+              {(advice) => (
+                <PersonAdviceBody
+                  advice={advice}
+                  transcriptHeadline={`${t("ai.plan.title")} — ${advice.distance.competencyName}`}
+                  header={
+                    <p className="mt-2 text-sm font-medium">{advice.distance.competencyName}</p>
+                  }
+                  nextStep={
+                    <Link
+                      to="/development-plans"
+                      search={{ architectId: architect.id }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {t("ai.plan.next")}
+                    </Link>
+                  }
+                />
+              )}
+            </AiRunResult>
           </SectionCard>
         </div>
 
