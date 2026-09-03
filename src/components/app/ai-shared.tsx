@@ -1,13 +1,17 @@
 import { Sparkles } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useAssistantRun } from "@/hooks/use-assistant-run";
 import {
   AdviceAbsences,
   AdviceTranscript,
+  CareerReadinessReading,
   GenerationProfileChoice,
   type AssistantRunState,
+  type CareerReadinessFigures,
   type GenerationProfileName,
 } from "@/lib/assistants";
 import type { PersonAdvice } from "@/lib/gateways/person-assistants.gateway";
@@ -156,16 +160,19 @@ export function AiSuggestionFrame({ children }: { children: ReactNode }) {
 export function PersonAdviceBody({
   advice,
   transcriptHeadline,
+  header,
   nextStep,
 }: {
   advice: PersonAdvice & { outline?: string[] };
   transcriptHeadline: string;
+  header?: ReactNode;
   nextStep?: ReactNode;
 }) {
   const { t } = useI18n();
   const outline = advice.outline ?? [];
   return (
     <AiSuggestionFrame>
+      {header}
       {outline.length > 0 && (
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm">
           {outline.map((step) => (
@@ -241,5 +248,99 @@ export function CopyAdviceButton({ text }: { text: string }) {
     >
       {copied ? t("ai.action.copied") : t("ai.action.copy")}
     </Button>
+  );
+}
+
+/**
+ * O veredito determinístico, desenhado ANTES do parágrafo e independente
+ * dele: é a exigência literal do dono de que ele *"continua aparecendo
+ * SOZINHO quando a IA cai"*. Por isso ele mora aqui e não dentro do bloco de
+ * narração — quem edita este arquivo não consegue acoplar os dois sem
+ * perceber.
+ */
+export function CareerReadinessVerdictLines({ verdict }: { verdict: CareerReadinessFigures }) {
+  const { t } = useI18n();
+  const reading = new CareerReadinessReading(verdict);
+  const transition = reading.transition;
+  const eligibilityKey = reading.eligibilityKey;
+  const qualified = reading.qualified;
+  return (
+    <dl className="mt-2 space-y-1 text-sm">
+      {transition && (
+        <div>
+          <dt className="sr-only">{t("ai.readiness.transition")}</dt>
+          <dd className="font-medium">{`${transition.from} → ${transition.to}`}</dd>
+        </div>
+      )}
+      {eligibilityKey !== null && (
+        <div>
+          <dt className="sr-only">{t("ai.readiness.verdict")}</dt>
+          <dd>{t(eligibilityKey)}</dd>
+        </div>
+      )}
+      {qualified && (
+        <div>
+          <dt className="sr-only">{t("ai.readiness.qualifiedLabel")}</dt>
+          <dd className="text-muted-foreground">
+            {t("ai.readiness.qualified", { n: qualified.count, min: qualified.minimum })}
+          </dd>
+        </div>
+      )}
+    </dl>
+  );
+}
+
+/**
+ * O assistente de uma pessoa, montado inteiro: o botão, os quatro estados e o
+ * corpo da sugestão. Cinco telas precisam exatamente disto (regra de reuso),
+ * e a única coisa que muda entre elas é O QUE se pede e o que se oferece
+ * depois — por isso `ask`, `label` e `nextStep` são parâmetros e o resto não.
+ */
+export function PersonAdviceSection<T extends PersonAdvice & { outline?: string[] }>({
+  title,
+  description,
+  actionLabel,
+  transcriptHeadline,
+  queryKey,
+  ask,
+  className,
+  nextStep,
+  beforeNarration,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  transcriptHeadline: string;
+  queryKey: readonly unknown[];
+  ask: () => Promise<T>;
+  className?: string;
+  nextStep?: (advice: T) => ReactNode;
+  beforeNarration?: (advice: T) => ReactNode;
+}) {
+  const run = useAssistantRun<true, T>(queryKey, () => ask());
+  return (
+    <SectionCard
+      title={title}
+      description={description}
+      {...(className === undefined ? {} : { className })}
+    >
+      <AiGenerateButton
+        label={actionLabel}
+        running={run.running}
+        onGenerate={() => {
+          run.generate(true);
+        }}
+      />
+      <AiRunResult run={run}>
+        {(advice) => (
+          <PersonAdviceBody
+            advice={advice}
+            transcriptHeadline={transcriptHeadline}
+            {...(beforeNarration === undefined ? {} : { header: beforeNarration(advice) })}
+            {...(nextStep === undefined ? {} : { nextStep: nextStep(advice) })}
+          />
+        )}
+      </AiRunResult>
+    </SectionCard>
   );
 }

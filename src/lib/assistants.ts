@@ -254,3 +254,43 @@ export class AdviceTranscript {
     ].join("\n");
   }
 }
+
+export interface CareerReadinessFigures {
+  readonly currentCareerLevel: string | null;
+  readonly nextCareerLevel: string | null;
+  readonly eligible: boolean | null;
+  readonly qualifiedCapabilityCount: number;
+  readonly minimumQualifiedCapabilities: number | null;
+}
+
+/**
+ * O VEREDITO, e a exigência literal do dono sobre ele: *"a elegibilidade
+ * continua sendo calculada pelo motor determinístico; a IA SÓ explica. Se a
+ * IA cair, o veredito continua aparecendo."*
+ *
+ * Ele viaja no mesmo corpo do parágrafo (ADR-0087), então a tela consegue
+ * cumprir essa frase sem uma segunda consulta — e esta classe é quem decide o
+ * que dá para dizer com o que veio. Cada peça tem o próprio `null`: sem
+ * próximo nível não há transição, sem mínimo não há contagem, sem veredito
+ * não há palavra. Nada aqui se aproxima de recalcular elegibilidade: a
+ * segunda cópia dessa regra apareceria como duas telas discordando sobre a
+ * promoção de alguém.
+ */
+export class CareerReadinessReading {
+  constructor(private readonly verdict: CareerReadinessFigures) {}
+
+  get transition(): { from: string; to: string } | null {
+    const { currentCareerLevel: from, nextCareerLevel: to } = this.verdict;
+    return from === null || to === null ? null : { from, to };
+  }
+
+  get eligibilityKey(): "ai.readiness.eligible" | "ai.readiness.notEligible" | null {
+    if (this.verdict.eligible === null) return null;
+    return this.verdict.eligible ? "ai.readiness.eligible" : "ai.readiness.notEligible";
+  }
+
+  get qualified(): { count: number; minimum: number } | null {
+    const minimum = this.verdict.minimumQualifiedCapabilities;
+    return minimum === null ? null : { count: this.verdict.qualifiedCapabilityCount, minimum };
+  }
+}
