@@ -1,5 +1,6 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { apiPath } from "../src/lib/api-path";
+import { unwrap as json } from "./team-link";
 
 /**
  * R10-UX-001 (ORIENTACAO-DECIMA-RODADA-ENTERPRISE-SYNAPSE-2026-08-21.md,
@@ -20,23 +21,17 @@ const ADMIN_PASSWORD = process.env["E2E_ADMIN_PASSWORD"];
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
-/** >80 caracteres — exigido pelo critério de aceite da Seção 6. */
-const LONG_NAME =
-  "Governança de Arquitetura Corporativa Multi-Cloud com Padrões de Observabilidade e Resiliência Distribuída";
+const RUN_ID = Date.now().toString(36);
+
+/**
+ * >80 caracteres — exigido pelo critério de aceite da Seção 6. O sufixo da
+ * rodada é obrigatório desde a onda 36.1: nome de competência é único em
+ * TODA a aplicação, e um nome fixo faria a segunda rodada contra o mesmo
+ * banco recusar com 409.
+ */
+const LONG_NAME = `Governança de Arquitetura Corporativa Multi-Cloud com Padrões de Observabilidade e Resiliência Distribuída ${RUN_ID}`;
 
 let capabilityId: string;
-let competencyId: string;
-
-async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
-  if (!response.ok()) {
-    throw new Error(`${response.url()} → ${response.status()}: ${await response.text()}`);
-  }
-  const body: unknown = await response.json();
-  if (body !== null && typeof body === "object" && !Array.isArray(body) && "data" in body) {
-    return (body as { data: T }).data;
-  }
-  return body as T;
-}
 
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
@@ -45,23 +40,27 @@ test.beforeAll(async ({ playwright }) => {
       data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
     }),
   );
+  // ONDA 37 (backend ADR-0085): a capacidade NASCE COM as competências que a
+  // definem — capacidade vazia deixou de existir, e o corpo exige de 3 a 6.
+  // A primeira é a de nome longo que este spec mede; as outras duas existem
+  // para satisfazer o piso de prontidão, não para serem olhadas.
   // AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-32 — `id` deixou de
   // ser aceito na criação (gerado sempre pelo servidor); captura o id real
   // devolvido em vez de assumir que o valor enviado sobrevive.
   const capability = await json<{ id: string }>(
     await api.post(apiPath("/capabilities"), {
-      data: { name: "E2E Capacidade Responsiva", short: "E2ERESP" },
+      data: {
+        name: `E2E Capacidade Responsiva ${RUN_ID}`,
+        short: `E2ER${RUN_ID.slice(-4).toUpperCase()}`,
+        competencies: [
+          { name: LONG_NAME },
+          { name: `E2E Competência de apoio A ${RUN_ID}` },
+          { name: `E2E Competência de apoio B ${RUN_ID}` },
+        ],
+      },
     }),
   );
   capabilityId = capability.id;
-  // Fase 2 (backend ADR-0032): a competência global é só nome + capacidade —
-  // requirementType/expected morreram no catálogo (400 a campo extra).
-  const competency = await json<{ id: string }>(
-    await api.post(apiPath("/competencies"), {
-      data: { name: LONG_NAME, capabilityId },
-    }),
-  );
-  competencyId = competency.id;
   await api.dispose();
 });
 
@@ -72,9 +71,10 @@ test.afterAll(async ({ playwright }) => {
       data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
     }),
   );
-  // Sem `force`: nenhuma resposta real foi registrada contra esta
-  // competência descartável, então a exclusão de verdade é esperada.
-  await api.delete(apiPath(`/competencies/${competencyId}`));
+  // A capacidade leva as competências dela junto (`DeleteCapability` remove
+  // as duas coisas quando nenhuma está em uso) — e nenhuma resposta real foi
+  // registrada contra estas competências descartáveis, então a exclusão de
+  // verdade é esperada, não o arquivamento.
   await api.delete(apiPath(`/capabilities/${capabilityId}`));
   await api.dispose();
 });
