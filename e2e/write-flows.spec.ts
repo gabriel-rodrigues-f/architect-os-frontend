@@ -2,7 +2,15 @@ import { test, expect, type APIRequestContext, type Page } from "@playwright/tes
 import { Client } from "pg";
 
 import { apiPath } from "../src/lib/api-path";
-import { linkLeadToArchitects, unlinkTeam } from "./team-link";
+import {
+  admitPersonToTeam,
+  dischargePeople,
+  PASSWORD,
+  registerTeamWithRules,
+  seniorityNamed,
+  unlinkTeam,
+  unwrap as json,
+} from "./team-link";
 
 /**
  * Gate de entrega — fluxos de escrita pela UI (onda13/harness-ux).
@@ -30,11 +38,10 @@ const DATABASE_URL =
   process.env["E2E_DATABASE_URL"] ?? "postgres://architect:architect@localhost:5433/architect_os";
 
 const RUN_ID = Date.now().toString(36);
-const ARCHITECT_SEED = `e2e-flux-arch-${RUN_ID}`;
 const ARCHITECT_NAME = "E2E Fluxos de Escrita";
+const LEAD_NAME = "E2E Fluxos Lead";
 const MEMBER_EMAIL = `e2e-flux-member-${RUN_ID}@architect-os.local`;
 const LEAD_EMAIL = `e2e-flux-lead-${RUN_ID}@architect-os.local`;
-const PASSWORD = "senha-de-teste-e2e-123";
 const VOCAB_CODE = `E2E_HARNESS_${RUN_ID.toUpperCase()}`;
 const EVIDENCE_TITLE = `E2E evidência ${RUN_ID}`;
 const ACTION_PLAN = `E2E plano de ação ${RUN_ID} — praticar com revisão do Tech Lead`;
@@ -45,41 +52,6 @@ let architectId: string;
 let assessmentId: string;
 let capabilityIds: string[];
 let teamId: string;
-
-async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
-  if (!response.ok()) {
-    throw new Error(`${response.url()} → ${response.status()}: ${await response.text()}`);
-  }
-  const body: unknown = await response.json();
-  if (body !== null && typeof body === "object" && !Array.isArray(body) && "data" in body) {
-    return (body as { data: T }).data;
-  }
-  return body as T;
-}
-
-async function createAndActivateUser(
-  playwright: typeof import("playwright-core"),
-  api: APIRequestContext,
-  input: { name: string; email: string; role: "member" | "tech_lead"; architectId?: string },
-): Promise<string> {
-  const created = await json<{ user: { id: string }; temporaryPassword: string }>(
-    await api.post(apiPath("/auth/users"), { data: input }),
-  );
-  const guest = await playwright.request.newContext({ baseURL: API_URL });
-  await json(
-    await guest.post(apiPath("/auth/login"), {
-      data: { email: input.email, password: created.temporaryPassword },
-    }),
-  );
-  const changed = await guest.post(apiPath("/auth/change-password"), {
-    data: { currentPassword: created.temporaryPassword, newPassword: PASSWORD },
-  });
-  if (!changed.ok()) {
-    throw new Error(`troca de senha de ${input.email} falhou: ${changed.status()}`);
-  }
-  await guest.dispose();
-  return created.user.id;
-}
 
 async function sessionOf(
   playwright: typeof import("playwright-core"),
@@ -133,36 +105,28 @@ async function scoreItems(api: APIRequestContext, data: Record<string, number>):
 test.beforeAll(async ({ playwright }) => {
   const api = await sessionOf(playwright, ADMIN_EMAIL!, ADMIN_PASSWORD!);
 
-  const architect = await json<{ id: string }>(
-    await api.post(apiPath("/architects"), {
-      data: {
-        name: ARCHITECT_NAME,
-        role: "Pleno",
-        yearsAsArchitect: 2,
-        specialization: "E2E",
-        email: `${ARCHITECT_SEED}@architect-os.local`,
-      },
-    }),
-  );
-  architectId = architect.id;
-
-  await createAndActivateUser(playwright, api, {
-    name: "E2E Fluxos Member",
-    email: MEMBER_EMAIL,
-    role: "member",
-    architectId,
-  });
-  const leadUserId = await createAndActivateUser(playwright, api, {
-    name: "E2E Fluxos Lead",
+  // ONDA 37 (ADR-0084) — o time nasce primeiro e as duas pessoas nascem
+  // nele: a conta e o profissional do member são o MESMO cadastro, e é dele
+  // que sai o `architectId` que esta jornada inteira usa.
+  teamId = await registerTeamWithRules(api, `flux-${RUN_ID}`);
+  await admitPersonToTeam({
+    playwright,
+    api,
+    name: LEAD_NAME,
     email: LEAD_EMAIL,
     role: "tech_lead",
+    teamId,
   });
-  teamId = await linkLeadToArchitects({
+  const admittedMember = await admitPersonToTeam({
+    playwright,
     api,
-    runId: `flux-${RUN_ID}`,
-    leadUserId,
-    architectIds: [architectId],
+    name: ARCHITECT_NAME,
+    email: MEMBER_EMAIL,
+    role: "member",
+    teamId,
+    careerLevelId: await seniorityNamed(api, "Pleno"),
   });
+  architectId = admittedMember.architectId;
 
   const cycles = await json<Array<{ id: string; status: string }>>(
     await api.get(apiPath("/cycles")),
@@ -220,8 +184,6 @@ test.afterAll(async () => {
     await client.query("DELETE FROM professional_state_snapshots WHERE architect_id = $1", [
       architectId,
     ]);
-    await client.query("DELETE FROM architects WHERE id = $1", [architectId]);
-    await client.query("DELETE FROM users WHERE email IN ($1, $2)", [MEMBER_EMAIL, LEAD_EMAIL]);
     await client.query(
       "DELETE FROM domain_vocabularies WHERE vocabulary = 'EVIDENCE_TYPE' AND code = $1",
       [VOCAB_CODE],
@@ -229,6 +191,7 @@ test.afterAll(async () => {
   } finally {
     await client.end();
   }
+  await dischargePeople(DATABASE_URL, [MEMBER_EMAIL, LEAD_EMAIL]);
   await unlinkTeam(DATABASE_URL, teamId);
 });
 

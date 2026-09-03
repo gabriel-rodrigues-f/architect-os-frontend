@@ -1,7 +1,14 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
-import { Client } from "pg";
+import { test, expect } from "@playwright/test";
 import { apiPath } from "../src/lib/api-path";
-import { linkLeadToArchitects, unlinkTeam } from "./team-link";
+import {
+  admitPersonToTeam,
+  dischargePeople,
+  PASSWORD,
+  registerTeamWithRules,
+  seniorityNamed,
+  unlinkTeam,
+  unwrap as json,
+} from "./team-link";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-36 (§33, achado 2) —
@@ -17,30 +24,14 @@ const DATABASE_URL =
   process.env["E2E_DATABASE_URL"] ?? "postgres://architect:architect@localhost:5433/architect_os";
 
 const RUN_ID = Date.now().toString(36);
-// AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-32 — `id` deixou de
-// ser aceito na criação (gerado sempre pelo servidor); este valor serve só
-// pra dar um endereço único ao arquiteto de teste, nunca vira o `id` real.
-const ARCHITECT_SEED = `e2e-ment-arch-${RUN_ID}`;
 const ARCHITECT_NAME = "E2E Mentoring Mentee";
+const MENTEE_EMAIL = `e2e-ment-mentee-${RUN_ID}@architect-os.local`;
 const LEAD_EMAIL = `e2e-ment-lead-${RUN_ID}@architect-os.local`;
-const PASSWORD = "senha-de-teste-e2e-123";
 const TOPIC = `E2E revisão de arquitetura ${RUN_ID}`;
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
-let architectId: string;
 let teamId: string;
-
-async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
-  if (!response.ok()) {
-    throw new Error(`${response.url()} → ${response.status()}: ${await response.text()}`);
-  }
-  const body: unknown = await response.json();
-  if (body !== null && typeof body === "object" && !Array.isArray(body) && "data" in body) {
-    return (body as { data: T }).data;
-  }
-  return body as T;
-}
 
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
@@ -50,57 +41,33 @@ test.beforeAll(async ({ playwright }) => {
     }),
   );
 
-  const architect = await json<{ id: string }>(
-    await api.post(apiPath("/architects"), {
-      data: {
-        name: ARCHITECT_NAME,
-        role: "Júnior",
-        yearsAsArchitect: 1,
-        specialization: "E2E",
-        email: `${ARCHITECT_SEED}@architect-os.local`,
-      },
-    }),
-  );
-  architectId = architect.id;
-
-  const created = await json<{ user: { id: string }; temporaryPassword: string }>(
-    await api.post(apiPath("/auth/users"), {
-      data: { name: "E2E Mentoring Lead", email: LEAD_EMAIL, role: "tech_lead" },
-    }),
-  );
-  const guest = await playwright.request.newContext({ baseURL: API_URL });
-  await json(
-    await guest.post(apiPath("/auth/login"), {
-      data: { email: LEAD_EMAIL, password: created.temporaryPassword },
-    }),
-  );
-  const changed = await guest.post(apiPath("/auth/change-password"), {
-    data: { currentPassword: created.temporaryPassword, newPassword: PASSWORD },
-  });
-  if (!changed.ok()) {
-    throw new Error(`troca de senha de ${LEAD_EMAIL} falhou: ${changed.status()}`);
-  }
-  await guest.dispose();
-
-  teamId = await linkLeadToArchitects({
+  // ONDA 37 (ADR-0084) — o time nasce primeiro; mentor e mentorado nascem
+  // nele. O mentorado deixou de ser profissional solto: conta e profissional
+  // são o mesmo cadastro.
+  teamId = await registerTeamWithRules(api, `ment-${RUN_ID}`);
+  await admitPersonToTeam({
+    playwright,
     api,
-    runId: `ment-${RUN_ID}`,
-    leadUserId: created.user.id,
-    architectIds: [architectId],
+    name: "E2E Mentoring Lead",
+    email: LEAD_EMAIL,
+    role: "tech_lead",
+    teamId,
+  });
+  await admitPersonToTeam({
+    playwright,
+    api,
+    name: ARCHITECT_NAME,
+    email: MENTEE_EMAIL,
+    role: "member",
+    teamId,
+    careerLevelId: await seniorityNamed(api, "Júnior"),
   });
 
   await api.dispose();
 });
 
 test.afterAll(async () => {
-  const client = new Client({ connectionString: DATABASE_URL });
-  await client.connect();
-  try {
-    await client.query("DELETE FROM architects WHERE id = $1", [architectId]);
-    await client.query("DELETE FROM users WHERE email = $1", [LEAD_EMAIL]);
-  } finally {
-    await client.end();
-  }
+  await dischargePeople(DATABASE_URL, [MENTEE_EMAIL, LEAD_EMAIL]);
   await unlinkTeam(DATABASE_URL, teamId);
 });
 

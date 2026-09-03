@@ -1,6 +1,14 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
-import { Client } from "pg";
+import { test, expect } from "@playwright/test";
 import { apiPath } from "../src/lib/api-path";
+import {
+  admitPersonToTeam,
+  dischargePeople,
+  PASSWORD,
+  registerTeam,
+  seniorityNamed,
+  unlinkTeam,
+  unwrap as json,
+} from "./team-link";
 
 /**
  * AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, B-36 (§33, achado 2) —
@@ -20,20 +28,10 @@ const DATABASE_URL =
 
 const RUN_ID = Date.now().toString(36);
 const MEMBER_EMAIL = `e2e-err-member-${RUN_ID}@architect-os.local`;
-const PASSWORD = "senha-de-teste-e2e-123";
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
-async function json<T>(response: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<T> {
-  if (!response.ok()) {
-    throw new Error(`${response.url()} → ${response.status()}: ${await response.text()}`);
-  }
-  const body: unknown = await response.json();
-  if (body !== null && typeof body === "object" && !Array.isArray(body) && "data" in body) {
-    return (body as { data: T }).data;
-  }
-  return body as T;
-}
+let teamId: string;
 
 test.beforeAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: API_URL });
@@ -43,35 +41,25 @@ test.beforeAll(async ({ playwright }) => {
     }),
   );
 
-  const created = await json<{ user: { id: string }; temporaryPassword: string }>(
-    await api.post(apiPath("/auth/users"), {
-      data: { name: "E2E Error Member", email: MEMBER_EMAIL, role: "member" },
-    }),
-  );
-  const guest = await playwright.request.newContext({ baseURL: API_URL });
-  await json(
-    await guest.post(apiPath("/auth/login"), {
-      data: { email: MEMBER_EMAIL, password: created.temporaryPassword },
-    }),
-  );
-  const changed = await guest.post(apiPath("/auth/change-password"), {
-    data: { currentPassword: created.temporaryPassword, newPassword: PASSWORD },
+  // ONDA 37 (ADR-0084) — não existe mais conta sem time: `teamId` é
+  // obrigatório no cadastro. Sem régua de propósito: este spec só precisa da
+  // pessoa capaz de logar, nunca materializa avaliação.
+  teamId = await registerTeam(api, `err-${RUN_ID}`);
+  await admitPersonToTeam({
+    playwright,
+    api,
+    name: "E2E Error Member",
+    email: MEMBER_EMAIL,
+    role: "member",
+    teamId,
+    careerLevelId: await seniorityNamed(api, "Pleno"),
   });
-  if (!changed.ok()) {
-    throw new Error(`troca de senha de ${MEMBER_EMAIL} falhou: ${changed.status()}`);
-  }
-  await guest.dispose();
   await api.dispose();
 });
 
 test.afterAll(async () => {
-  const client = new Client({ connectionString: DATABASE_URL });
-  await client.connect();
-  try {
-    await client.query("DELETE FROM users WHERE email = $1", [MEMBER_EMAIL]);
-  } finally {
-    await client.end();
-  }
+  await dischargePeople(DATABASE_URL, [MEMBER_EMAIL]);
+  await unlinkTeam(DATABASE_URL, teamId);
 });
 
 test("login com senha errada mostra erro e não entra no painel", async ({ page }) => {
@@ -97,8 +85,17 @@ test("member acessando /users direto pela URL vê o aviso de restrição, não o
 
   // Nav não mostra o link (QW-01/QW-02), mas digitar a URL direto é o
   // caminho que realmente testa a autorização, não só a visibilidade do menu.
+  // ONDA 37 — a negativa mudou de dono junto com a tela: /users deixou de ser
+  // "diretório de contas restrito a administradores" e virou o CADASTRO, que
+  // o gestor e o tech lead do time também alcançam. Quem não lidera ninguém
+  // lê de quem é o gesto, não que ele é do admin.
   await page.goto("/users");
-  await expect(page.getByText("Diretório de contas é restrito a administradores.")).toBeVisible();
+  await expect(page.getByText("Cadastrar pessoas é da liderança.")).toBeVisible();
+  await expect(
+    page.getByText(
+      "Quem cadastra é o administrador, o gestor do time ou o tech lead do time. Fale com quem lidera o seu.",
+    ),
+  ).toBeVisible();
 });
 
 test("member acessando /calibration direto pela URL vê o aviso de restrição, não os avaliadores", async ({
