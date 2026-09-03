@@ -72,7 +72,6 @@ function withBlockingItem(assessment: Assessment): Assessment {
         target: 4,
         final: 2,
         comments: [],
-        requirementType: "RESTRICTIVE",
       },
     ],
   };
@@ -96,7 +95,7 @@ const GapPage = GapRoute.options.component as () => ReactNode;
 
 const renderGap = () => renderWithApp(<GapPage />);
 
-describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maestria", () => {
+describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -130,17 +129,18 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
     window.history.replaceState(null, "", "/");
   });
 
-  it("separa bloqueante de oportunidade em listas distintas", async () => {
+  it("as prioridades saem numa lista única — sem bloqueante × oportunidade (onda 36)", async () => {
     renderGap();
-    await screen.findByText("Bloqueantes de progressão");
+    await screen.findByText("Principais Prioridades de Desenvolvimento");
 
-    const blockingSection = screen.getByText("Bloqueantes de progressão").closest("div")!;
-    expect(blockingSection.textContent).toContain("Infra as Code");
-    expect(blockingSection.textContent).not.toContain("IAM");
+    expect(screen.queryByText("Bloqueantes de progressão")).toBeNull();
+    expect(screen.queryByText("Oportunidades de desenvolvimento")).toBeNull();
 
-    const opportunitySection = screen.getByText("Oportunidades de desenvolvimento").closest("div")!;
-    expect(opportunitySection.textContent).toContain("IAM");
-    expect(opportunitySection.textContent).not.toContain("Infra as Code");
+    const prioritiesCard = screen
+      .getByText("Principais Prioridades de Desenvolvimento")
+      .closest(".surface-card") as HTMLElement;
+    expect(prioritiesCard.textContent).toContain("Infra as Code");
+    expect(prioritiesCard.textContent).toContain("IAM");
   });
 
   /**
@@ -204,15 +204,15 @@ describe("Prioridades de Desenvolvimento — bloqueante × oportunidade × maest
     });
 
     renderGap();
-    await screen.findByText("Oportunidades de desenvolvimento");
+    await screen.findByText("Principais Prioridades de Desenvolvimento");
 
-    const opportunitySection = screen
-      .getByText("Oportunidades de desenvolvimento")
-      .closest("div") as HTMLElement;
+    const prioritiesCard = screen
+      .getByText("Principais Prioridades de Desenvolvimento")
+      .closest(".surface-card") as HTMLElement;
     // IAM tem gap para Ana e Carla (2 pessoas) — os dois nomes aparecem, não só o primeiro.
-    expect(within(opportunitySection).getByText(/Ana Martins/)).toBeTruthy();
-    expect(within(opportunitySection).getByText(/Carla Souza/)).toBeTruthy();
-    expect(within(opportunitySection).getByText(/2 pessoa\(s\)/)).toBeTruthy();
+    const iamItem = within(prioritiesCard).getByText("IAM").closest("li") as HTMLElement;
+    expect(within(iamItem).getByText(/Ana Martins, Carla Souza/)).toBeTruthy();
+    expect(within(iamItem).getByText(/2 pessoa\(s\)/)).toBeTruthy();
   });
 
   it("o radar inclui uma coluna de cobertura na tabela equivalente acessível", async () => {

@@ -10,13 +10,11 @@ import { exportTeamReportPdf, TeamReportPdfBuilder } from "@/lib/team-report-pdf
 import ouro from "./team-report-exportacao.fixture.json";
 
 /**
- * Onda 20/R3 — rede de caracterização dos relatórios do time.
- *
- * O CSV e o PDF exportados na tela de progressão nunca tiveram teste: a
- * varredura OO/DDD de 2026-08-29 manda transformá-los em classes, e sem
- * oráculo a reescrita seria fé. A fixture ao lado foi capturada da main
- * `af12f99` ANTES de qualquer linha mudar — é o byte a byte do que o dono
- * baixa hoje.
+ * Onda 20/R3 — rede de caracterização dos relatórios do time. Onda 36
+ * (ADR-0082): a obrigatoriedade morreu — as seções "bloqueantes" e
+ * "oportunidades" viraram UMA seção de prioridades, sem a coluna Tipo, e a
+ * fixture ao lado foi recapturada desta versão (o formato mudou de
+ * propósito; o byte a byte volta a valer daqui em diante).
  *
  * Por que o PDF entra por sha256 e não por bytes literais: o único trecho
  * não determinístico do jsPDF é o `/ID [ <...> <...> ]` do trailer (60 bytes
@@ -39,7 +37,6 @@ const gapRow = (overrides: Partial<ConsolidatedGapRow> = {}): ConsolidatedGapRow
   competencyId: "c1",
   name: 'Kubernetes, "prod"\nmulti-linha',
   capabilityId: "cloud",
-  requirementType: "RESTRICTIVE",
   people: 2,
   architectNames: ["Ana", "Bruno"],
   totalGap: 3,
@@ -68,8 +65,11 @@ const entradaCompleta = (): TeamReportInput => ({
           { capability: sec as never, avg: undefined, target: undefined },
         ]
       : [],
-  blocking: [gapRow(), gapRow({ competencyId: "c2", name: "Terraform", capabilityId: "x" })],
-  opportunity: [gapRow({ competencyId: "c3", name: "Kafka", requirementType: "NON_RESTRICTIVE" })],
+  priorities: [
+    gapRow(),
+    gapRow({ competencyId: "c2", name: "Terraform", capabilityId: "x" }),
+    gapRow({ competencyId: "c3", name: "Kafka" }),
+  ],
   mastery: [gapRow({ competencyId: "c4", name: "Go", maxGap: -2 })],
 });
 
@@ -77,8 +77,7 @@ const entradaSemMastery = (): TeamReportInput => ({ ...entradaCompleta(), master
 
 const entradaVazia = (): TeamReportInput => ({
   ...entradaCompleta(),
-  blocking: [],
-  opportunity: [],
+  priorities: [],
   mastery: [],
 });
 
@@ -130,7 +129,7 @@ describe("exportação do relatório do time — byte a byte contra a main af12f
     expect(new TeamReportCsvBuilder(fakeT, entradaSemMastery()).build()).toBe(ouro.csv.semMastery);
   });
 
-  it("sem gap nenhum, os cabeçalhos de bloqueante e oportunidade continuam saindo", () => {
+  it("sem gap nenhum, o cabeçalho de competências em evolução continua saindo", () => {
     expect(new TeamReportCsvBuilder(fakeT, entradaVazia()).build()).toBe(ouro.csv.vazio);
   });
 

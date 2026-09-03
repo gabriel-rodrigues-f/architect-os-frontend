@@ -13,8 +13,7 @@ export class TeamReportCsvBuilder {
   private readonly presenter: TeamReportPresenter;
 
   private readonly sectionTitle: Record<TeamReportGapSectionKind, MessageKey> = {
-    blocking: "gap.export.csv.blockingSection",
-    opportunity: "gap.export.csv.opportunitySection",
+    priorities: "gap.export.csv.prioritiesSection",
     mastery: "gap.export.csv.masterySection",
   };
 
@@ -54,7 +53,7 @@ export class TeamReportCsvBuilder {
   }
 
   private table(section: TeamReportGapSection): string {
-    let out = this.row(this.presenter.gapColumns(section.mastery));
+    let out = this.row(this.presenter.gapColumns());
     for (const row of this.presenter.gapRows(section.rows, section.mastery)) {
       out += this.row(row);
     }

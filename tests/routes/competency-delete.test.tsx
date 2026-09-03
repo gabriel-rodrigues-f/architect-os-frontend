@@ -7,7 +7,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { type AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
-import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import {
+  careerLevelsRoute,
+  mockAppFetch,
+  renderWithApp,
+  writeRefetchesState,
+} from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -51,8 +56,14 @@ describe("Matriz de Competências — exclusão", () => {
     mockAppFetch(fetchMock, {
       state,
       routes: [
-        (_href, init) =>
-          init?.method === "DELETE" ? new Response(null, { status: 204 }) : undefined,
+        ...writeRefetchesState(
+          (_href, init) =>
+            init?.method === "DELETE" ? new Response(null, { status: 204 }) : undefined,
+          {
+            ...state,
+            competencies: state.competencies.filter((competency) => competency.id !== "cloud-k8s"),
+          },
+        ),
         careerLevelsRoute,
       ],
     });

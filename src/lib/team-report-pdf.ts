@@ -23,8 +23,7 @@ export class TeamReportPdfBuilder {
   private readonly presenter: TeamReportPresenter;
 
   private readonly sectionTitle: Record<TeamReportGapSectionKind, MessageKey> = {
-    blocking: "gap.export.pdf.blockingSection",
-    opportunity: "gap.export.pdf.opportunitySection",
+    priorities: "gap.export.pdf.prioritiesSection",
     mastery: "gap.export.pdf.masterySection",
   };
 
@@ -90,7 +89,7 @@ export class TeamReportPdfBuilder {
     }
     this.writeSectionTitle(this.t(this.sectionTitle[section.kind]));
     this.writeTable(
-      this.presenter.gapColumns(section.mastery),
+      this.presenter.gapColumns(),
       this.presenter.gapRows(section.rows, section.mastery),
     );
   }

@@ -11,6 +11,7 @@ import {
   jsonResponse,
   mockAppFetch,
   renderWithApp,
+  writeRefetchesState,
 } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -40,8 +41,17 @@ const renderPage = (state: AppState) => {
   mockAppFetch(fetchMock, {
     state,
     routes: [
-      (_href, init) =>
-        init?.method === "DELETE" ? jsonResponse({ competenciesRemoved: 0 }) : undefined,
+      ...writeRefetchesState(
+        (_href, init) =>
+          init?.method === "DELETE" ? jsonResponse({ competenciesRemoved: 0 }) : undefined,
+        {
+          ...state,
+          capabilities: state.capabilities.filter((capability) => capability.id !== "cloud"),
+          competencies: state.competencies.filter(
+            (competency) => competency.capabilityId !== "cloud",
+          ),
+        },
+      ),
       careerLevelsRoute,
     ],
   });

@@ -62,12 +62,8 @@ const comRegua: FetchRoute = (href) =>
         minimumQualifiedCapabilities: 3,
         capabilityIds: ["cloud"],
         competencies: [
-          { competencyId: "cloud-k8s", requirementType: "RESTRICTIVE", requiredLevel: 4 },
-          {
-            competencyId: "cloud-serverless",
-            requirementType: "NON_RESTRICTIVE",
-            requiredLevel: 2,
-          },
+          { competencyId: "cloud-k8s", requiredLevel: 4 },
+          { competencyId: "cloud-serverless", requiredLevel: 2 },
         ],
       })
     : undefined;
@@ -144,9 +140,9 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
     expect(screen.getByRole("button", { name: "Definir régua" })).toBeTruthy();
   });
 
-  it("o rodapé mostra o peso por razão: restritivas ×1,5 e não restritivas", async () => {
+  it("o rodapé conta as competências da régua — não há mais peso por tipo", async () => {
     renderAs(fixtureAdminUser, [comRegua]);
-    expect(await screen.findByText("1 restritivas ×1,5 + 1 não restritivas")).toBeTruthy();
+    expect(await screen.findByText("2 competências na régua")).toBeTruthy();
   });
 
   it("capacidade que exige curadoria continua selecionável, com aviso — teto é sinal, nunca trava", async () => {
@@ -179,51 +175,7 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
   });
 });
 
-/**
- * Troca de obrigatoriedade e conflito de versão — as duas metades que
- * saem do rascunho e chegam ao servidor.
- *
- * `swapTeamRuleRequirement` é operação de NEGÓCIO nomeada (não um PUT
- * genérico da régua inteira): troca a obrigatoriedade entre um PAR de
- * competências, e por isso pede confirmação antes de valer. O conflito
- * segue o padrão 409 já vivo no resumo de desenvolvimento
- * (`assessments-shared.tsx`): aviso + recarregar, nunca sobrescrever
- * calado o trabalho de outra pessoa.
- */
 describe("/team-rules — o que sai do rascunho e chega ao servidor", () => {
-  const chamadas = (trecho: string) =>
-    fetchMock.mock.calls.filter((call) => String(call[0]).includes(trecho));
-
-  it("trocar obrigatoriedade passa por confirmação e chama a operação de negócio", async () => {
-    const swapRoute: FetchRoute = (href, init) =>
-      href.includes("/swap-requirement") && (init?.method ?? "GET") === "POST"
-        ? jsonResponse({
-            id: "regra-plataforma-i",
-            teamId: fixtureTeamId,
-            careerLevelId: "arquiteto-de-solucoes-i",
-            minimumQualifiedCapabilities: 3,
-            capabilityIds: ["cloud"],
-            competencies: [
-              { competencyId: "cloud-k8s", requirementType: "NON_RESTRICTIVE", requiredLevel: 4 },
-              {
-                competencyId: "cloud-serverless",
-                requirementType: "RESTRICTIVE",
-                requiredLevel: 2,
-              },
-            ],
-          })
-        : undefined;
-    renderAs(fixtureAdminUser, [swapRoute, comRegua]);
-    await screen.findByText("Kubernetes");
-
-    await userEvent.click(screen.getByLabelText("Trocar obrigatoriedade — Kubernetes"));
-    await userEvent.click(screen.getByRole("option", { name: "Serverless" }));
-
-    expect(chamadas("/swap-requirement")).toHaveLength(0);
-    await userEvent.click(screen.getByRole("button", { name: "Trocar" }));
-    expect(chamadas("/swap-requirement")).toHaveLength(1);
-  });
-
   it("sem rascunho não há o que salvar: o botão nasce desabilitado", async () => {
     renderAs(fixtureAdminUser, [comRegua]);
     await screen.findByText("Kubernetes");

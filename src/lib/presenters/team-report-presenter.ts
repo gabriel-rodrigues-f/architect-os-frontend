@@ -10,14 +10,13 @@ export interface TeamReportInput {
   architects: Pick<Architect, "id" | "name">[];
   capabilities: Pick<Capability, "id" | "name" | "short">[];
   capabilityAveragesFor: (architectId: string) => CapabilityAverage[];
-  blocking: ConsolidatedGapRow[];
-  opportunity: ConsolidatedGapRow[];
+  priorities: ConsolidatedGapRow[];
   mastery: ConsolidatedGapRow[];
 }
 
 export type T = (key: MessageKey, params?: Record<string, string | number>) => string;
 
-export type TeamReportGapSectionKind = "blocking" | "opportunity" | "mastery";
+export type TeamReportGapSectionKind = "priorities" | "mastery";
 
 export interface TeamReportGapSection {
   kind: TeamReportGapSectionKind;
@@ -54,17 +53,15 @@ export class TeamReportPresenter {
 
   get gapSections(): TeamReportGapSection[] {
     return [
-      { kind: "blocking", rows: this.input.blocking, mastery: false },
-      { kind: "opportunity", rows: this.input.opportunity, mastery: false },
+      { kind: "priorities", rows: this.input.priorities, mastery: false },
       { kind: "mastery", rows: this.input.mastery, mastery: true },
     ];
   }
 
-  gapColumns(mastery: boolean): string[] {
+  gapColumns(): string[] {
     return [
       this.t("col.competency"),
       this.t("col.capability"),
-      ...(mastery ? [] : [this.t("col.type")]),
       this.t("col.people"),
       this.t("col.currentAvg"),
       this.t("col.targetAvg"),
@@ -77,7 +74,6 @@ export class TeamReportPresenter {
     return rows.map((row) => [
       row.name,
       this.capabilityName(row.capabilityId),
-      ...(mastery ? [] : [this.gapTypeLabel(row)]),
       row.people,
       row.avgFinal,
       row.avgTarget,
@@ -96,12 +92,6 @@ export class TeamReportPresenter {
 
   private capabilityName(id: string): string {
     return this.input.capabilities.find((c) => c.id === id)?.name ?? id;
-  }
-
-  private gapTypeLabel(row: ConsolidatedGapRow): string {
-    return row.requirementType === "RESTRICTIVE"
-      ? this.t("gap.type.blocking")
-      : this.t("gap.type.opportunity");
   }
 
   private gapClassificationLabel(row: ConsolidatedGapRow, mastery: boolean): string {

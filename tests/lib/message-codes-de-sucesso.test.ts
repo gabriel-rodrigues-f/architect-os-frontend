@@ -91,9 +91,6 @@ const CODIGOS_SEM_TRADUCAO: readonly string[] = [
 const CHAVES_SEM_EMISSOR: readonly string[] = [
   "msg.user.create.success",
   "msg.user.update.success",
-  // Onda 36 (ADR-0082 do backend): POST .../swap-requirement morreu junto com a
-  // obrigatoriedade; a tela que a chamava sai numa fatia propria de frontend.
-  "msg.career.teamRule.swapRequirement.success",
 ];
 
 const FALLBACK_GENERICO = "users.title" as MessageKey;

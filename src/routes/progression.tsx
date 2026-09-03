@@ -66,7 +66,7 @@ function TeamProgression() {
   const sel = useSelectors();
 
   const ruler = useGapSeverityRuler();
-  const { store, selected, setSelected, architects, blocking, opportunity, mastery, scopeLabel } =
+  const { store, selected, setSelected, architects, priorities, mastery, scopeLabel } =
     useGapAnalysisData();
   const [exportingPdf, setExportingPdf] = useState(false);
 
@@ -76,8 +76,7 @@ function TeamProgression() {
     architects,
     capabilities: store.capabilities,
     capabilityAveragesFor: sel.capabilityAverages,
-    blocking,
-    opportunity,
+    priorities,
     mastery,
   });
 
@@ -160,7 +159,7 @@ function TeamProgression() {
             title={t("gap.table.title")}
             description={t("gap.table.subtitle", { escopo: scopeLabel })}
           >
-            <GapTable rows={[...blocking, ...opportunity]} capabilities={store.capabilities} />
+            <GapTable rows={priorities} capabilities={store.capabilities} />
           </SectionCard>
 
           {mastery.length > 0 && (

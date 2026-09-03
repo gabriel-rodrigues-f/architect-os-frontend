@@ -34,7 +34,7 @@ export const Route = createFileRoute("/architects/$architectId/roadmap")({
       {
         name: "description",
         content:
-          "Roteiro para o próximo nível: aderência à régua do time, competências obrigatórias faltantes e trilhas que as cobrem.",
+          "Roteiro para o próximo nível: aderência à régua do time, competências abaixo do exigido e trilhas que as cobrem.",
       },
     ],
   }),
@@ -161,7 +161,7 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
               <AdherenceSummary
                 label={t("roadmap.currentLevelLabel", { nome: currentLevel.name })}
                 percentage={vm.adherencePercent(data)}
-                missingCount={data.adherence.missingRequired.length}
+                missingCount={data.adherence.missingCompetencies.length}
               />
             )
           }
@@ -179,7 +179,7 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
                 <AdherenceSummary
                   label={t("roadmap.nextLevelLabel", { nome: nextLevel.name })}
                   percentage={vm.adherencePercent(data)}
-                  missingCount={data.adherence.missingRequired.length}
+                  missingCount={data.adherence.missingCompetencies.length}
                 />
               )
             }
@@ -206,7 +206,7 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
               data.semRegua ? (
                 semRegua(nextLevel)
               ) : (
-                <MissingCompetencyList missing={vm.missingRequired(data)} />
+                <MissingCompetencyList missing={vm.missingCompetencies(data)} />
               )
             }
           </QuerySection>
@@ -225,7 +225,7 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
                 <LearningPathCoverageList
                   coverage={vm.coverageFor(
                     architectId,
-                    vm.missingRequired(data),
+                    vm.missingCompetencies(data),
                     store.learningPaths,
                   )}
                   architectId={architectId}

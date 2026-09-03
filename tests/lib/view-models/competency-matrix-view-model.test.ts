@@ -102,16 +102,16 @@ describe("CompetencyMatrixViewModel", () => {
   });
 
   describe("isCapabilityAtCapacity", () => {
-    it("máximo de 6 competências ativas por capacidade (ENT-CAR-011)", () => {
+    it("o máximo por capacidade é o da política — 4 por default (onda 36, ADR-0081)", () => {
       const { vm } = makeVm();
       expect(
         vm.isCapabilityAtCapacity(
-          capability({ curation: { ...capability().curation, activeCompetencyCount: 5 } }),
+          capability({ curation: { ...capability().curation, activeCompetencyCount: 3 } }),
         ),
       ).toBe(false);
       expect(
         vm.isCapabilityAtCapacity(
-          capability({ curation: { ...capability().curation, activeCompetencyCount: 6 } }),
+          capability({ curation: { ...capability().curation, activeCompetencyCount: 4 } }),
         ),
       ).toBe(true);
     });
@@ -170,34 +170,25 @@ describe("CompetencyMatrixViewModel", () => {
    * alimentando o teto-sinal (isCapabilityAtCapacity) e os textos da rota.
    */
   describe("política de curadoria injetada (CFG-04)", () => {
-    const policy844 = {
-      maxActiveCompetencies: 8,
-      requiredRestrictive: 4,
-      requiredNonRestrictive: 4,
-    };
-    const vm844 = new CompetencyMatrixViewModel(
+    const policyMax3 = { maxActiveCompetencies: 3 };
+    const vmMax3 = new CompetencyMatrixViewModel(
       fakeService(),
       new UiAuthorizationPolicy(),
-      policy844,
+      policyMax3,
     );
 
-    it("isCapabilityAtCapacity respeita maxActiveCompetencies=8", () => {
+    it("isCapabilityAtCapacity respeita maxActiveCompetencies=3", () => {
       const at = (n: number) =>
-        vm844.isCapabilityAtCapacity(
+        vmMax3.isCapabilityAtCapacity(
           capability({ curation: { ...capability().curation, activeCompetencyCount: n } }),
         );
-      expect(at(6)).toBe(false);
-      expect(at(7)).toBe(false);
-      expect(at(8)).toBe(true);
+      expect(at(2)).toBe(false);
+      expect(at(3)).toBe(true);
     });
 
     it("limits expõe a política injetada para os textos da rota", () => {
-      expect(vm844.limits).toEqual(policy844);
-      expect(makeVm().vm.limits).toEqual({
-        maxActiveCompetencies: 6,
-        requiredRestrictive: 3,
-        requiredNonRestrictive: 3,
-      });
+      expect(vmMax3.limits).toEqual(policyMax3);
+      expect(makeVm().vm.limits).toEqual({ maxActiveCompetencies: 4 });
     });
   });
 });

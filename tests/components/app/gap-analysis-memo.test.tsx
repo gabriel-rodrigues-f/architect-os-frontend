@@ -72,8 +72,7 @@ describe("useGapAnalysisData — memo do recorte da população (F2)", () => {
 
     expect(depois.architects).toBe(antes.architects);
     expect(depois.radar).toBe(antes.radar);
-    expect(depois.blocking).toBe(antes.blocking);
-    expect(depois.opportunity).toBe(antes.opportunity);
+    expect(depois.priorities).toBe(antes.priorities);
     expect(depois.mastery).toBe(antes.mastery);
   });
 

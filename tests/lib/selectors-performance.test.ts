@@ -34,7 +34,6 @@ function buildLargeState(): AppState {
       id: `comp-${ci}-${i}`,
       name: `Competência ${ci}.${i}`,
       capabilityId: cat.id,
-      requirementType: "NON_RESTRICTIVE",
       expected: {
         "arquiteto-de-solucoes-i": 3 as Level,
         "arquiteto-de-solucoes-ii": 4 as Level,

@@ -212,7 +212,6 @@ export const fixtureState: AppState = {
           target: 4,
           final: 3,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
         {
           competencyId: "cloud-serverless",
@@ -221,7 +220,6 @@ export const fixtureState: AppState = {
           target: 4,
           final: 3,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
         {
           competencyId: "security-iam",
@@ -230,7 +228,6 @@ export const fixtureState: AppState = {
           target: 3,
           final: 2,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
       ],
     },
@@ -252,7 +249,6 @@ export const fixtureState: AppState = {
           target: 4,
           final: 4,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
         {
           competencyId: "cloud-serverless",
@@ -261,7 +257,6 @@ export const fixtureState: AppState = {
           target: 4,
           final: 4,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
         {
           competencyId: "security-iam",
@@ -270,7 +265,6 @@ export const fixtureState: AppState = {
           target: 3,
           final: 2,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
       ],
     },
@@ -291,7 +285,6 @@ export const fixtureState: AppState = {
           target: 3,
           final: 2,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
         {
           competencyId: "cloud-serverless",
@@ -300,7 +293,6 @@ export const fixtureState: AppState = {
           target: 3,
           final: 3,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
         {
           competencyId: "security-iam",
@@ -309,7 +301,6 @@ export const fixtureState: AppState = {
           target: 2,
           final: 1,
           comments: [],
-          requirementType: "NON_RESTRICTIVE",
         },
       ],
     },

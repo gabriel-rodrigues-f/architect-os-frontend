@@ -85,8 +85,8 @@ describe("Matriz de Competências — o status de curadoria é um controle, não
     await userEvent.click(cardOf("Cloud Architecture").getByRole("button", { name: /Pronta/ }));
 
     const explanation = await screen.findByRole("dialog");
-    expect(explanation.textContent).toContain("2 de 6 competências ativas");
-    expect(explanation.textContent).toContain("dentro do teto");
+    expect(explanation.textContent).toContain("2 de 4 competências ativas");
+    expect(explanation.textContent).toContain("pronta é ter de 1 até 4");
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "PATCH")).toBe(false);
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
   });
@@ -100,8 +100,8 @@ describe("Matriz de Competências — o status de curadoria é um controle, não
     );
 
     const explanation = await screen.findByRole("dialog");
-    expect(explanation.textContent).toContain("7 de 6 competências ativas");
-    expect(explanation.textContent).toContain("1 acima do teto");
+    expect(explanation.textContent).toContain("7 de 4 competências ativas");
+    expect(explanation.textContent).toContain("3 acima do máximo");
     expect(explanation.textContent).toMatch(/arquive ou exclua/i);
   });
 });

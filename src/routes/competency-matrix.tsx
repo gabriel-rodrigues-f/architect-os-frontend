@@ -337,6 +337,7 @@ function MatrixPage() {
                   title={cat.name}
                   description={t("matrix.competencyCount", {
                     n: cat.curation.activeCompetencyCount,
+                    max: viewModel.limits.maxActiveCompetencies,
                   })}
                   actions={
                     <div className="flex flex-wrap items-center gap-2">
@@ -588,11 +589,13 @@ function CurationStatusControl({ brief }: { brief: CurationBrief }) {
         <p>
           {ready
             ? t("matrix.curation.explain.ready", { ativas: brief.active, max: brief.max })
-            : t("matrix.curation.explain.requiresCuration", {
-                ativas: brief.active,
-                max: brief.max,
-                acima: brief.over,
-              })}
+            : brief.empty
+              ? t("matrix.curation.explain.empty", { max: brief.max })
+              : t("matrix.curation.explain.requiresCuration", {
+                  ativas: brief.active,
+                  max: brief.max,
+                  acima: brief.over,
+                })}
         </p>
       </PopoverContent>
     </Popover>
@@ -924,7 +927,7 @@ function CompetencyCreateDialog({
               onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </div>
-          <p className="text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
+          <p className="text-xs text-muted-foreground">{t("matrix.levelFromRule.hint")}</p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
@@ -973,7 +976,7 @@ function CompetencyEditDialog({
               onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </div>
-          <p className="text-xs text-muted-foreground">{t("matrix.requirement.hint")}</p>
+          <p className="text-xs text-muted-foreground">{t("matrix.levelFromRule.hint")}</p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

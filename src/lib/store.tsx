@@ -323,6 +323,11 @@ export function buildApi(
     MUTATION_FALLBACK_ERROR_MESSAGE,
   );
 
+  const refreshCurationCounts = <T,>(result: T): T => {
+    void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+    return result;
+  };
+
   return {
     ...state,
     capabilities: [...state.capabilities].sort(defaultNameFormatter.byName),
@@ -480,10 +485,12 @@ export function buildApi(
       ),
 
     addCompetency: (c) =>
-      runner.command(
-        () => api.createCompetency(c),
-        (created) => (s) => ({ ...s, competencies: [...s.competencies, created] }),
-      ),
+      runner
+        .command(
+          () => api.createCompetency(c),
+          (created) => (s) => ({ ...s, competencies: [...s.competencies, created] }),
+        )
+        .then(refreshCurationCounts),
 
     updateCompetency: (id, patch) => {
       runner.optimistic(
@@ -491,53 +498,57 @@ export function buildApi(
           ...s,
           competencies: s.competencies.map((c) => (c.id === id ? { ...c, ...patch } : c)),
         }),
-        () => api.updateCompetency(id, patch),
+        () => api.updateCompetency(id, patch).then(refreshCurationCounts),
       );
     },
 
     removeCompetency: (id) =>
-      runner.guarded(
-        async () => ({ archived: (await api.deleteCompetency(id))?.archived === true }),
-        ({ archived }) =>
-          (s) => ({
-            ...s,
-            competencies: archived
-              ? s.competencies.map((c) => (c.id === id ? { ...c, active: false } : c))
-              : s.competencies.filter((c) => c.id !== id),
-          }),
-      ),
+      runner
+        .guarded(
+          async () => ({ archived: (await api.deleteCompetency(id))?.archived === true }),
+          ({ archived }) =>
+            (s) => ({
+              ...s,
+              competencies: archived
+                ? s.competencies.map((c) => (c.id === id ? { ...c, active: false } : c))
+                : s.competencies.filter((c) => c.id !== id),
+            }),
+        )
+        .then(refreshCurationCounts),
 
     removeCompetencies: (competencyIds) =>
-      runner.guarded(
-        () => api.removeCompetencies(competencyIds),
-        ({ outcomes }) =>
-          (state) => {
-            const removed = new Set(
-              outcomes
-                .filter((outcome) => outcome.outcome === "removed")
-                .map((outcome) => outcome.competencyId),
-            );
-            const archived = new Set(
-              outcomes
-                .filter((outcome) => outcome.outcome === "archived")
-                .map((outcome) => outcome.competencyId),
-            );
-            return {
-              ...state,
-              competencies: state.competencies
-                .filter((competency) => !removed.has(competency.id))
-                .map((competency) =>
-                  archived.has(competency.id) ? { ...competency, active: false } : competency,
-                ),
-              learningPaths: state.learningPaths.map((learningPath) => ({
-                ...learningPath,
-                competencyIds: learningPath.competencyIds.filter(
-                  (competencyId) => !removed.has(competencyId),
-                ),
-              })),
-            };
-          },
-      ),
+      runner
+        .guarded(
+          () => api.removeCompetencies(competencyIds),
+          ({ outcomes }) =>
+            (state) => {
+              const removed = new Set(
+                outcomes
+                  .filter((outcome) => outcome.outcome === "removed")
+                  .map((outcome) => outcome.competencyId),
+              );
+              const archived = new Set(
+                outcomes
+                  .filter((outcome) => outcome.outcome === "archived")
+                  .map((outcome) => outcome.competencyId),
+              );
+              return {
+                ...state,
+                competencies: state.competencies
+                  .filter((competency) => !removed.has(competency.id))
+                  .map((competency) =>
+                    archived.has(competency.id) ? { ...competency, active: false } : competency,
+                  ),
+                learningPaths: state.learningPaths.map((learningPath) => ({
+                  ...learningPath,
+                  competencyIds: learningPath.competencyIds.filter(
+                    (competencyId) => !removed.has(competencyId),
+                  ),
+                })),
+              };
+            },
+        )
+        .then(refreshCurationCounts),
 
     addCapability: (c) =>
       runner.command(
@@ -556,7 +567,7 @@ export function buildApi(
             .map((c) => (c.id === id ? { ...c, ...patch } : c))
             .sort(defaultNameFormatter.byName),
         }),
-        () => api.updateCapability(id, patch),
+        () => api.updateCapability(id, patch).then(refreshCurationCounts),
         (updated) => (s) => ({
           ...s,
           capabilities: s.capabilities
@@ -567,32 +578,36 @@ export function buildApi(
     },
 
     removeCapability: (id) =>
-      runner.guarded(
-        () => api.deleteCapability(id),
-        (result) => (s) => {
-          if (result.archived) {
+      runner
+        .guarded(
+          () => api.deleteCapability(id),
+          (result) => (s) => {
+            if (result.archived) {
+              return {
+                ...s,
+                capabilities: s.capabilities.map((c) =>
+                  c.id === id ? { ...c, active: false } : c,
+                ),
+                competencies: s.competencies.map((c) =>
+                  c.capabilityId === id ? { ...c, active: false } : c,
+                ),
+              };
+            }
+            const doomed = new Set(
+              s.competencies.filter((c) => c.capabilityId === id).map((c) => c.id),
+            );
             return {
               ...s,
-              capabilities: s.capabilities.map((c) => (c.id === id ? { ...c, active: false } : c)),
-              competencies: s.competencies.map((c) =>
-                c.capabilityId === id ? { ...c, active: false } : c,
-              ),
+              capabilities: s.capabilities.filter((c) => c.id !== id),
+              competencies: s.competencies.filter((c) => c.capabilityId !== id),
+              learningPaths: s.learningPaths.map((p) => ({
+                ...p,
+                competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),
+              })),
             };
-          }
-          const doomed = new Set(
-            s.competencies.filter((c) => c.capabilityId === id).map((c) => c.id),
-          );
-          return {
-            ...s,
-            capabilities: s.capabilities.filter((c) => c.id !== id),
-            competencies: s.competencies.filter((c) => c.capabilityId !== id),
-            learningPaths: s.learningPaths.map((p) => ({
-              ...p,
-              competencyIds: p.competencyIds.filter((cid) => !doomed.has(cid)),
-            })),
-          };
-        },
-      ),
+          },
+        )
+        .then(refreshCurationCounts),
 
     updateAssessmentItem: (assessmentId, competencyId, patch) => {
       const knownVersion = state.assessments

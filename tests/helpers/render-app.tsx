@@ -173,6 +173,26 @@ export function mockAppFetch(
   });
 }
 
+/**
+ * Onda 36 — toda escrita de catálogo invalida a query de `/state` (contagem e
+ * status de curadoria vêm do servidor). Nos testes, a rota de escrita marca o
+ * momento e o `/state` seguinte serve o estado PÓS-escrita: sem isto o refetch
+ * devolveria a fixture original e desfaria na tela o que a escrita fez.
+ */
+export function writeRefetchesState(write: FetchRoute, stateAfter: AppState): FetchRoute[] {
+  let written = false;
+  const writeRoute: FetchRoute = (href, init) => {
+    const response = write(href, init);
+    if (response) written = true;
+    return response;
+  };
+  const stateRoute: FetchRoute = (href, init) =>
+    written && href.endsWith(apiPath("/state")) && (init?.method ?? "GET").toUpperCase() === "GET"
+      ? jsonResponse(stateAfter)
+      : undefined;
+  return [stateRoute, writeRoute];
+}
+
 /** Rota de `GET /api/v1/auth/users` vazia — telas de Time/Usuários listam contas. */
 export const emptyAuthUsersRoute: FetchRoute = (href) =>
   href.endsWith(apiPath("/auth/users")) ? jsonResponse([]) : undefined;

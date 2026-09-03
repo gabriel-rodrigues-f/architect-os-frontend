@@ -6,8 +6,6 @@ const level = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z
 
 const roleName = z.string();
 
-const requirementType = z.enum(["RESTRICTIVE", "NON_RESTRICTIVE"]);
-
 const capabilityCuration = z.object({
   activeCompetencyCount: z.number(),
   status: z.enum(["READY", "REQUIRES_CURATION"]),
@@ -40,7 +38,6 @@ export const teamRuleResponseSchema = teamLevelRule.extend({
   competencies: z.array(
     z.object({
       competencyId: z.string(),
-      requirementType,
       requiredLevel: level,
     }),
   ),
@@ -114,7 +111,7 @@ export const architectAdherenceResponseSchema = z.object({
   careerLevelId: z.string(),
   adherence: z.object({
     percentage: z.number().min(0).max(1),
-    missingRequired: z.array(
+    missingCompetencies: z.array(
       z.object({
         competencyId: z.string(),
         currentLevel: z.number(),
@@ -251,8 +248,6 @@ export const textTemplateRecordSchema = z.object({
 
 export const curationPolicySchema = z.object({
   maxActiveCompetencies: z.number(),
-  requiredRestrictive: z.number(),
-  requiredNonRestrictive: z.number(),
 });
 
 const appSettingRecordSchema = z.object({
@@ -334,7 +329,6 @@ const assessmentItem = z.object({
   competencyName: z.string().optional(),
   capabilityId: z.string().optional(),
   capabilityName: z.string().optional(),
-  requirementType: requirementType.optional(),
   version: z.number().optional(),
 });
 

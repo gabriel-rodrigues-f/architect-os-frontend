@@ -20,8 +20,9 @@ import { apiPath } from "../src/lib/api-path";
  * que invalida é a única forma de o vínculo valer no mesmo instante.
  *
  * A régua criada cobre TODOS os níveis de carreira com TODAS as
- * competências ativas (NON_RESTRICTIVE, nível exigido crescendo com o
- * rank): sem régua, a materialização da avaliação responde "0 itens, sem
+ * competências ativas (nível exigido crescendo com o rank — a
+ * obrigatoriedade morreu na onda 36): sem régua, a materialização da
+ * avaliação responde "0 itens, sem
  * erro" (ADR-0032) e os fluxos de escrita não têm o que preencher.
  */
 export interface TeamLinkInput {
@@ -82,7 +83,6 @@ export async function linkLeadToArchitects(input: TeamLinkInput): Promise<string
           minimumQualifiedCapabilities: 3,
           competencies: competencies.map((competency) => ({
             competencyId: competency.id,
-            requirementType: "NON_RESTRICTIVE",
             requiredLevel: Math.min(level.rank + 2, LEVEL_CEILING),
           })),
         },

@@ -60,13 +60,12 @@ export function capabilityShortLabels(
   return labels;
 }
 
-export type RequirementType = "RESTRICTIVE" | "NON_RESTRICTIVE";
-
 /**
- * Fase 2 (backend ADR-0032) — a competência global é definição pura.
- * `requirementType` e `expected` morreram no catálogo: obrigatoriedade e
- * nível exigido são da régua do time (`team_rule_competencies`) e chegam à
- * UI pela FOTO do item de avaliação (`AssessmentItem.requirementType`/`target`).
+ * Fase 2 (backend ADR-0032) — a competência global é definição pura; o nível
+ * exigido é da régua do time e chega à UI pela FOTO do item de avaliação
+ * (`AssessmentItem.target`). Onda 36 (backend ADR-0082): a obrigatoriedade
+ * (RESTRITIVA/DESEJÁVEL) deixou de existir em qualquer camada — toda
+ * competência da régua pesa igual.
  */
 export interface Competency {
   id: string;
@@ -130,8 +129,6 @@ export interface AssessmentItem {
   competencyName?: string | undefined;
   capabilityId?: string | undefined;
   capabilityName?: string | undefined;
-
-  requirementType?: RequirementType | undefined;
 
   version?: number | undefined;
 }
@@ -376,7 +373,6 @@ interface ProfessionalStateSnapshotItem {
   observedLevel: Level | null;
   officialLevel: Level | null;
   expectedLevelSnapshot: Level | null;
-  requirementTypeSnapshot: RequirementType;
 }
 
 interface ProfessionalStateSnapshot {

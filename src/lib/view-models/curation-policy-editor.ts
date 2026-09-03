@@ -2,11 +2,7 @@ import type { CurationPolicy } from "../curation-policy";
 
 export type CurationPolicyField = keyof CurationPolicy;
 
-export const CURATION_POLICY_FIELDS: readonly CurationPolicyField[] = [
-  "maxActiveCompetencies",
-  "requiredRestrictive",
-  "requiredNonRestrictive",
-];
+export const CURATION_POLICY_FIELDS: readonly CurationPolicyField[] = ["maxActiveCompetencies"];
 
 export class CurationPolicyEditor {
   private constructor(readonly drafts: Readonly<Record<CurationPolicyField, string>>) {}
@@ -14,8 +10,6 @@ export class CurationPolicyEditor {
   static from(policy: CurationPolicy): CurationPolicyEditor {
     return new CurationPolicyEditor({
       maxActiveCompetencies: String(policy.maxActiveCompetencies),
-      requiredRestrictive: String(policy.requiredRestrictive),
-      requiredNonRestrictive: String(policy.requiredNonRestrictive),
     });
   }
 
@@ -24,32 +18,17 @@ export class CurationPolicyEditor {
   }
 
   private parsed(): CurationPolicy | null {
-    const values = {} as Record<CurationPolicyField, number>;
-    for (const field of CURATION_POLICY_FIELDS) {
-      const text = this.drafts[field];
-      if (text.trim().length === 0) return null;
-      const value = Number(text);
-      if (!Number.isInteger(value)) return null;
-      values[field] = value;
-    }
-    return values;
+    const text = this.drafts.maxActiveCompetencies;
+    if (text.trim().length === 0) return null;
+    const value = Number(text);
+    if (!Number.isInteger(value)) return null;
+    return { maxActiveCompetencies: value };
   }
 
-  get errorKey(): "config.curation.error.number" | "config.curation.error.sum" | null {
+  get errorKey(): "config.curation.error.number" | null {
     const values = this.parsed();
-    if (
-      values === null ||
-      values.maxActiveCompetencies <= 0 ||
-      values.requiredRestrictive < 0 ||
-      values.requiredNonRestrictive < 0
-    ) {
+    if (values === null || values.maxActiveCompetencies <= 0) {
       return "config.curation.error.number";
-    }
-    if (
-      values.requiredRestrictive + values.requiredNonRestrictive !==
-      values.maxActiveCompetencies
-    ) {
-      return "config.curation.error.sum";
     }
     return null;
   }

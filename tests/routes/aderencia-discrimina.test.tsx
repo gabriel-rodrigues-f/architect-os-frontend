@@ -47,7 +47,8 @@ import {
  *
  * O invariante desta rede é a DISCRIMINAÇÃO: razões diferentes têm de virar
  * porcentagens diferentes na tela. O segundo número do CONTRATO ("quantas
- * restritivas faltam") continua junto — nunca um só.
+ * competências estão abaixo do exigido") continua junto — nunca um só (onda 36:
+ * a obrigatoriedade morreu, toda competência da régua conta).
  */
 const fetchMock = vi.fn();
 
@@ -77,7 +78,7 @@ const anaNoNivelDois: AppState = {
  * ambas em "1%" — o número que o PO mediu.
  */
 const aderenciaRoute =
-  (porNivel: Record<string, { percentage: number; missingRequired: number }>): FetchRoute =>
+  (porNivel: Record<string, { percentage: number; missingCompetencies: number }>): FetchRoute =>
   (href) => {
     if (!href.includes(apiPath("/architects/ana/adherence"))) return undefined;
     const careerLevelId = new URL(href, "http://localhost").searchParams.get("careerLevelId") ?? "";
@@ -89,8 +90,8 @@ const aderenciaRoute =
       careerLevelId,
       adherence: {
         percentage: resposta.percentage,
-        missingRequired: Array.from({ length: resposta.missingRequired }, (_, ordem) => ({
-          competencyId: `obrigatoria-${ordem}`,
+        missingCompetencies: Array.from({ length: resposta.missingCompetencies }, (_, ordem) => ({
+          competencyId: `abaixo-${ordem}`,
           currentLevel: 1,
           requiredLevel: 4,
         })),
@@ -99,8 +100,8 @@ const aderenciaRoute =
   };
 
 const opostas = aderenciaRoute({
-  [NIVEL_ATUAL]: { percentage: 0.9348717948717951, missingRequired: 1 },
-  [PROXIMO_NIVEL]: { percentage: 0.5833333333333333, missingRequired: 7 },
+  [NIVEL_ATUAL]: { percentage: 0.9348717948717951, missingCompetencies: 1 },
+  [PROXIMO_NIVEL]: { percentage: 0.5833333333333333, missingCompetencies: 7 },
 });
 
 beforeEach(() => {
@@ -141,7 +142,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
     expect(percentualDe(atual)).not.toBe(percentualDe(proximo));
   });
 
-  it("mantém os DOIS números do CONTRATO — porcentagem e restritivas faltantes", async () => {
+  it("mantém os DOIS números do CONTRATO — porcentagem e competências abaixo do exigido", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
       state: anaNoNivelDois,
@@ -149,8 +150,8 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
     });
     renderWithApp(<RoadmapPage />);
 
-    expect(await screen.findByText("Falta 1 competência restritiva")).toBeTruthy();
-    expect(await screen.findByText("Faltam 7 competências restritivas")).toBeTruthy();
+    expect(await screen.findByText("1 competência abaixo do exigido")).toBeTruthy();
+    expect(await screen.findByText("7 competências abaixo do exigido")).toBeTruthy();
   });
 
   it("aderência plena vira 100%, não 1%", async () => {
@@ -160,8 +161,8 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
       routes: [
         careerLevelsRoute,
         aderenciaRoute({
-          [NIVEL_ATUAL]: { percentage: 1, missingRequired: 0 },
-          [PROXIMO_NIVEL]: { percentage: 0, missingRequired: 9 },
+          [NIVEL_ATUAL]: { percentage: 1, missingCompetencies: 0 },
+          [PROXIMO_NIVEL]: { percentage: 0, missingCompetencies: 9 },
         }),
       ],
     });

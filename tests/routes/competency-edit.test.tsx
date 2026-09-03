@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { type AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
-import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import {
+  careerLevelsRoute,
+  mockAppFetch,
+  renderWithApp,
+  writeRefetchesState,
+} from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -37,8 +42,18 @@ describe("Matriz de Competências — edição", () => {
     mockAppFetch(fetchMock, {
       state,
       routes: [
-        (_href, init) =>
-          init?.method === "PATCH" ? new Response(null, { status: 204 }) : undefined,
+        ...writeRefetchesState(
+          (_href, init) =>
+            init?.method === "PATCH" ? new Response(null, { status: 204 }) : undefined,
+          {
+            ...state,
+            competencies: state.competencies.map((competency) =>
+              competency.id === "cloud-k8s"
+                ? { ...competency, name: "Kubernetes e Orquestração de Containers" }
+                : competency,
+            ),
+          },
+        ),
         careerLevelsRoute,
       ],
     });
