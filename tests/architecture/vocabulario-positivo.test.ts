@@ -75,6 +75,8 @@ const NIVEL_NUMERADO_EM_PORTUGUES = /Arquiteto de Solu(?:ç|c)(?:ões|oes)\s+(?:
 const NIVEL_NUMERADO_EM_INGLES = /Solutions? Architect\s+(?:I{1,3}|IV|[1-4])\b/i;
 const PESSOA_DO_TIME_ANTIGO_EM_PORTUGUES = /\barquitet[oa]s?\b/i;
 const PESSOA_DO_TIME_ANTIGO_EM_INGLES = /\barchitects?\b/i;
+const JULGAMENTO_DA_PESSOA_EM_PORTUGUES = /\bbaixo\s+(?:desempenho|rendimento)\b/i;
+const JULGAMENTO_DA_PESSOA_EM_INGLES = /\b(?:low|poor|under)[\s-]?perform(?:er|ers|ance|ing)\b/i;
 const QUALIFICADOR_DO_TIME_ANTIGO_EM_PORTUGUES =
   /\b(?:Lideran[çc]a|Capacidades|Radar) de Arquitetura\b/i;
 const QUALIFICADOR_DO_TIME_ANTIGO_EM_INGLES =
@@ -282,5 +284,50 @@ describe("time agnóstico — 'arquiteto' não volta ao texto de usuário", () =
     expect(QUALIFICADOR_DO_TIME_ANTIGO_EM_INGLES.test("Architecture Capability Dashboard")).toBe(
       true,
     );
+  });
+});
+
+/**
+ * Quarta palavra, mesmo mecanismo — e esta é uma PROIBIÇÃO, não uma
+ * preferência. Onda 39, IA-05, pedido literal do dono: *"Linguagem: 'Requer
+ * atenção' — proibido classificar a pessoa como 'baixo desempenho'"*.
+ *
+ * O backend já recusa o texto que o PROVEDOR escreve
+ * (`StagnationAlertJudgesPersonError`), e essa é a metade que vale em
+ * produção. A metade que faltava é a nossa: nada impedia um rótulo, um
+ * `title=` ou uma frase de ajuda escrita à mão dizer aqui exatamente o que o
+ * guarda de lá recusa. Um assistente que descreve sinais e uma tela que
+ * classifica a pessoa dizem a mesma coisa para quem lê.
+ *
+ * A régua reprova a expressão como PALAVRA nos dois dicionários e em todo
+ * literal de `src/` — inclusive meta description. Em inglês ela cobre a
+ * família inteira ("low performer", "underperforming", "poor performance"),
+ * que é como a mesma classificação costuma voltar traduzida.
+ */
+describe("a pessoa não é classificada — 'baixo desempenho' é proibido pelo dono", () => {
+  it("nenhum valor do pt.json classifica a pessoa", () => {
+    const dicionario = new Dicionario("pt", pt, [
+      JULGAMENTO_DA_PESSOA_EM_PORTUGUES,
+      JULGAMENTO_DA_PESSOA_EM_INGLES,
+    ]);
+    expect(dicionario.infratoras).toEqual([]);
+  });
+
+  it("nenhum valor do en.json classifica a pessoa — a família inteira de 'low performer'", () => {
+    const dicionario = new Dicionario("en", en, [
+      JULGAMENTO_DA_PESSOA_EM_PORTUGUES,
+      JULGAMENTO_DA_PESSOA_EM_INGLES,
+    ]);
+    expect(dicionario.infratoras).toEqual([]);
+  });
+
+  it("nenhum literal de src/ classifica a pessoa — meta description inclusa", () => {
+    expect(textosDaFonte.infratoras(JULGAMENTO_DA_PESSOA_EM_PORTUGUES)).toEqual([]);
+    expect(textosDaFonte.infratoras(JULGAMENTO_DA_PESSOA_EM_INGLES)).toEqual([]);
+  });
+
+  it("a expressão que o dono ESCOLHEU existe, em pt e en", () => {
+    expect(pt["ai.stagnation.requiresAttention"]).toBe("Requer atenção");
+    expect(en["ai.stagnation.requiresAttention"]).toBe("Requires attention");
   });
 });

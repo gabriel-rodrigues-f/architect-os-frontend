@@ -20,12 +20,14 @@ const {
   learningGateway,
   mentoringGateway,
   noticesGateway,
+  personAssistantsGateway,
   reportsGateway,
   stateContextsGateway,
   teamAllocationGateway,
   teamRosterGateway,
   teamsGateway,
   teamTransitionsGateway,
+  workAssistantsGateway,
 } = defaultContainer;
 
 export const api = {
@@ -53,6 +55,8 @@ export const reportsApi = { ...reportsGateway };
 export const teamsApi = { ...teamsGateway };
 export const teamRosterApi = { ...teamRosterGateway };
 export const teamTransitionsApi = { ...teamTransitionsGateway };
+export const personAssistantsApi = { ...personAssistantsGateway };
+export const workAssistantsApi = { ...workAssistantsGateway };
 
 export { sessionPolicy };
 

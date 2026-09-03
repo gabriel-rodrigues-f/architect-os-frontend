@@ -15,6 +15,10 @@ import { HttpEvolutionGateway, type EvolutionGateway } from "./evolution.gateway
 import { HttpLearningGateway, type LearningGateway } from "./learning.gateway";
 import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway";
 import { HttpNoticesGateway, type NoticesGateway } from "./notices.gateway";
+import {
+  HttpPersonAssistantsGateway,
+  type PersonAssistantsGateway,
+} from "./person-assistants.gateway";
 import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
 import { HttpStateContextsGateway, type StateContextsGateway } from "./state-contexts.gateway";
 import { HttpTeamAllocationGateway, type TeamAllocationGateway } from "./team-allocation.gateway";
@@ -24,6 +28,7 @@ import {
   type TeamTransitionsGateway,
 } from "./team-transitions.gateway";
 import { HttpTeamsGateway, type TeamsGateway } from "./teams.gateway";
+import { HttpWorkAssistantsGateway, type WorkAssistantsGateway } from "./work-assistants.gateway";
 
 interface FrontendConfig {
   baseUrl?: string;
@@ -47,12 +52,14 @@ export class FrontendContainer {
   readonly learningGateway: LearningGateway;
   readonly mentoringGateway: MentoringGateway;
   readonly noticesGateway: NoticesGateway;
+  readonly personAssistantsGateway: PersonAssistantsGateway;
   readonly reportsGateway: ReportsGateway;
   readonly stateContextsGateway: StateContextsGateway;
   readonly teamAllocationGateway: TeamAllocationGateway;
   readonly teamRosterGateway: TeamRosterGateway;
   readonly teamsGateway: TeamsGateway;
   readonly teamTransitionsGateway: TeamTransitionsGateway;
+  readonly workAssistantsGateway: WorkAssistantsGateway;
 
   private constructor(config: FrontendConfig) {
     this.sessionPolicy = new SessionPolicy();
@@ -74,6 +81,7 @@ export class FrontendContainer {
     this.learningGateway = new HttpLearningGateway(this.apiClient);
     this.mentoringGateway = new HttpMentoringGateway(this.apiClient);
     this.noticesGateway = new HttpNoticesGateway(this.apiClient);
+    this.personAssistantsGateway = new HttpPersonAssistantsGateway(this.apiClient);
     this.reportsGateway = new HttpReportsGateway(this.apiClient);
     this.stateContextsGateway = new HttpStateContextsGateway(config.baseUrl, (error) =>
       this.sessionPolicy.reviewFailure(error),
@@ -82,6 +90,7 @@ export class FrontendContainer {
     this.teamRosterGateway = new HttpTeamRosterGateway(this.apiClient);
     this.teamsGateway = new HttpTeamsGateway(this.apiClient);
     this.teamTransitionsGateway = new HttpTeamTransitionsGateway(this.apiClient);
+    this.workAssistantsGateway = new HttpWorkAssistantsGateway(this.apiClient);
   }
 
   static create(config: FrontendConfig = {}): FrontendContainer {

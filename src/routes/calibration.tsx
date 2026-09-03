@@ -11,8 +11,10 @@ import {
   QuerySection,
   SingleSelectFilter,
   StatCard,
+  WorkAssistanceSection,
 } from "@/components/app";
-import { calibrationApi } from "@/lib/api";
+import { Label } from "@/components/ui/label";
+import { calibrationApi, workAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -56,6 +58,7 @@ function CalibrationPage() {
   const user = useCurrentUser();
   const canCalibrate = defaultUiAuthorizationPolicy.canCalibrate(user);
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  const [assistedArchitectId, setAssistedArchitectId] = useState<string | null>(null);
   const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
 
   const query = useQuery({
@@ -98,6 +101,8 @@ function CalibrationPage() {
               options={store.cycles.map((cycle) => ({ value: cycle.id, label: cycle.name }))}
             />
           </div>
+
+          <CalibrationAssistant selected={assistedArchitectId} onSelect={setAssistedArchitectId} />
 
           <QuerySection
             query={query}
@@ -155,5 +160,57 @@ function CalibrationPage() {
         </>
       )}
     </>
+  );
+}
+
+/**
+ * A ponte entre uma tela POR CICLO e uma rota POR PESSOA
+ * (`/architects/:id/calibration-assistance`).
+ *
+ * O seletor é explícito de propósito: a tela poderia escolher alguém sozinha —
+ * o primeiro do roster, o de maior divergência — e escolher a pessoa errada
+ * numa tela de calibração é pior do que não sugerir nada. Enquanto ninguém
+ * escolhe, não há botão: é a mesma recusa de sempre, a aplicação não desenha
+ * quando não sabe.
+ */
+function CalibrationAssistant({
+  selected,
+  onSelect,
+}: {
+  selected: string | null;
+  onSelect: (architectId: string | null) => void;
+}) {
+  const { t } = useI18n();
+  const store = useStore();
+  return (
+    <div className="mb-6">
+      <div className="mb-4 max-w-xs">
+        <Label htmlFor="calibration-assistance-architect">{t("ai.calibration.person")}</Label>
+        <select
+          id="calibration-assistance-architect"
+          className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
+          value={selected ?? ""}
+          onChange={(event) => {
+            onSelect(event.target.value === "" ? null : event.target.value);
+          }}
+        >
+          <option value="">{t("ai.calibration.personNone")}</option>
+          {store.architects.map((architect) => (
+            <option key={architect.id} value={architect.id}>
+              {architect.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      {selected !== null && (
+        <WorkAssistanceSection
+          title={t("ai.calibration.title")}
+          description={t("ai.calibration.subtitle")}
+          actionLabel={t("ai.calibration.action")}
+          queryKey={["assistants", "calibration-assistance", selected]}
+          ask={() => workAssistantsApi.assistAssessmentCalibration(selected)}
+        />
+      )}
+    </div>
   );
 }

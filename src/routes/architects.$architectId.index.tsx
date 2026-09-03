@@ -2,22 +2,28 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import {
+  AiGenerateButton,
+  AiRunResult,
   Bar,
   CapabilityRadar,
   DeactivatedPersonNotice,
   EvidenceDialog,
   EvidenceStatusBadge,
   GapBadge,
+  GenerationProfileField,
   Initials,
   LevelBadge,
   OutOfReachScreen,
   PageHeader,
+  PersonAdviceBody,
   ProfileTabs,
   ResubmitEvidenceDialog,
   SectionCard,
   SectionGroup,
+  StagnationAlertSection,
   StatCard,
   TreatGapInPlanAction,
+  WorkAssistanceRun,
 } from "@/components/app";
 import { useLabels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -32,7 +38,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type Evidence } from "@/lib/domain";
-import { useArchitectProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
+import {
+  useArchitectProfileViewModel,
+  useAssistantRun,
+  useSuccessToast,
+  useToastSubmit,
+} from "@/hooks";
+import { personAssistantsApi, workAssistantsApi } from "@/lib/api";
+import { GenerationProfileChoice, type GenerationProfileName } from "@/lib/assistants";
+import type {
+  DevelopmentPlanAdvice,
+  DevelopmentPlanRecommendationRequest,
+  SessionScriptAdvice,
+  SessionScriptRequest,
+} from "@/lib/gateways/person-assistants.gateway";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
@@ -130,6 +149,19 @@ function ArchitectWorkspace() {
 
   const canEditOwn = defaultUiAuthorizationPolicy.canActFor(user, architect);
   const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
+
+  /**
+   * A recomendação de PDI é a única das oito que precisa de um SEGUNDO
+   * argumento — a competência —, e a única cujo alcance no servidor inclui a
+   * própria pessoa. Um `AssistantRunState` por tela e não por linha: a
+   * sugestão aparece uma de cada vez, abaixo da lista, e o pedido em voo diz
+   * qual competência é. N estados por linha custariam N consultas vivas para
+   * mostrar uma.
+   */
+  const planAdvice = useAssistantRun<DevelopmentPlanRecommendationRequest, DevelopmentPlanAdvice>(
+    ["assistants", "development-plan-recommendation", architectId],
+    (request) => personAssistantsApi.recommendDevelopmentPlanItem(request),
+  );
 
   if (!architect) {
     return (
@@ -260,6 +292,19 @@ function ArchitectWorkspace() {
         </SectionCard>
       )}
 
+      {canReviewEvidence && <SessionScriptAssistant architectId={architect.id} />}
+
+      {canReviewEvidence && (
+        <StagnationAlertSection
+          className="mb-6"
+          title={t("ai.stagnation.title")}
+          description={t("ai.stagnation.subtitle")}
+          actionLabel={t("ai.stagnation.action")}
+          queryKey={["assistants", "stagnation-alert", architect.id]}
+          ask={() => workAssistantsApi.alertAboutStagnation(architect.id)}
+        />
+      )}
+
       <SectionGroup title={t("arch.group.diagnosis")}>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
@@ -286,6 +331,23 @@ function ArchitectWorkspace() {
                       <LevelBadge level={g.item.final} />
                       <span className="text-xs text-muted-foreground">→ {g.item.target}</span>
                       <GapBadge gap={g.gap} />
+                      {canEditOwn && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-auto px-0 text-xs"
+                          aria-label={t("ai.plan.actionFor", { nome: g.competency?.name ?? "" })}
+                          disabled={planAdvice.running}
+                          onClick={() => {
+                            planAdvice.generate({
+                              architectId: architect.id,
+                              competencyId: g.item.competencyId,
+                            });
+                          }}
+                        >
+                          {t("ai.plan.action")}
+                        </Button>
+                      )}
                       {canEditOwn && !inPlan && (
                         <TreatGapInPlanAction
                           architectId={architect.id}
@@ -301,6 +363,26 @@ function ArchitectWorkspace() {
                 <p className="text-sm text-muted-foreground">{t("arch.gaps.none")}</p>
               )}
             </ul>
+            <AiRunResult run={planAdvice}>
+              {(advice) => (
+                <PersonAdviceBody
+                  advice={advice}
+                  transcriptHeadline={`${t("ai.plan.title")} — ${advice.distance.competencyName}`}
+                  header={
+                    <p className="mt-2 text-sm font-medium">{advice.distance.competencyName}</p>
+                  }
+                  nextStep={
+                    <Link
+                      to="/development-plans"
+                      search={{ architectId: architect.id }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {t("ai.plan.next")}
+                    </Link>
+                  }
+                />
+              )}
+            </AiRunResult>
           </SectionCard>
         </div>
 
@@ -463,6 +545,84 @@ function ArchitectWorkspace() {
   );
 }
 
+/**
+ * Item 1 do pedido do dono, LITERAL: *"No perfil do profissional: ações
+ * 'Gerar roteiro de 1:1' e 'Gerar roteiro de PDI', com o seletor de perfil de
+ * geração (Empírico | Moderado | Metodológico, Moderado por padrão) ANTES de
+ * gerar. O resultado é SUGESTÃO, com o próximo passo claro (copiar, editar,
+ * ou abrir a operação que grava)."*
+ *
+ * Duas pautas, dois botões, e nunca um botão com um `<select>` de "tipo": no
+ * backend são duas operações de negócio com roteiros de forma diferente
+ * (ADR-0087), e colapsá-las aqui esconderia isso de quem usa.
+ *
+ * Quem alcança é a LIDERANÇA — a mesma régua do servidor, que responde 403 a
+ * qualquer outro. Esconder não protege nada (a autoridade é o backend); o que
+ * ele evita é a pessoa clicar num botão que só sabe recusar.
+ */
+function SessionScriptAssistant({ architectId }: { architectId: string }) {
+  const { t } = useI18n();
+  const [profile, setProfile] = useState<GenerationProfileName>(GenerationProfileChoice.DEFAULT);
+  const run = useAssistantRun<SessionScriptRequest, SessionScriptAdvice>(
+    ["assistants", "session-script", architectId],
+    (request) => personAssistantsApi.writeSessionScript(request),
+  );
+  const generating = run.running ? run.request?.agenda : undefined;
+
+  return (
+    <SectionCard
+      className="mb-6"
+      title={t("ai.scripts.title")}
+      description={t("ai.scripts.subtitle")}
+    >
+      <GenerationProfileField value={profile} onChange={setProfile} disabled={run.running} />
+      <div className="mt-3 flex flex-wrap gap-2">
+        <AiGenerateButton
+          label={t("ai.scripts.oneOnOne")}
+          running={generating === "one-on-one"}
+          disabled={run.running}
+          onGenerate={() => {
+            run.generate({ architectId, agenda: "one-on-one", profile });
+          }}
+        />
+        <AiGenerateButton
+          label={t("ai.scripts.developmentPlan")}
+          running={generating === "development-plan"}
+          disabled={run.running}
+          onGenerate={() => {
+            run.generate({ architectId, agenda: "development-plan", profile });
+          }}
+        />
+      </div>
+      <AiRunResult run={run}>
+        {(advice) => (
+          <PersonAdviceBody
+            advice={advice}
+            transcriptHeadline={t(
+              advice.agenda === "one-on-one" ? "ai.scripts.oneOnOne" : "ai.scripts.developmentPlan",
+            )}
+            nextStep={
+              advice.agenda === "one-on-one" ? (
+                <Link to="/mentoring" className="text-xs text-primary hover:underline">
+                  {t("ai.scripts.next.mentoring")}
+                </Link>
+              ) : (
+                <Link
+                  to="/development-plans"
+                  search={{ architectId }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {t("ai.scripts.next.plan")}
+                </Link>
+              )
+            }
+          />
+        )}
+      </AiRunResult>
+    </SectionCard>
+  );
+}
+
 function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const { t } = useI18n();
   const labels = useLabels();
@@ -529,6 +689,14 @@ function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
               id="ev-review-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+          <div className="border-t border-border pt-3">
+            <p className="mb-2 text-xs text-muted-foreground">{t("ai.review.subtitle")}</p>
+            <WorkAssistanceRun
+              actionLabel={t("ai.review.action")}
+              queryKey={["assistants", "review-assistance", evidence.id]}
+              ask={() => workAssistantsApi.assistEvidenceReview(evidence.id)}
             />
           </div>
         </div>

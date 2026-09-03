@@ -9,12 +9,14 @@ import {
   GapBadge,
   LearningPathCoverageList,
   LevelBadge,
+  CareerReadinessVerdictLines,
   OutOfReachScreen,
   PageHeader,
+  PersonAdviceSection,
   ProfileTabs,
   QuerySection,
 } from "@/components/app";
-import { api } from "@/lib/api";
+import { api, personAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import type { CareerLevel } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
@@ -80,11 +82,13 @@ const SECTION_SKELETON = <div className="h-24 animate-pulse rounded-md bg-second
 function RoadmapOfArchitect({ architectId }: { architectId: string }) {
   const sel = useSelectors();
   const store = useStore();
+  const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("architectRoadmap");
   const vm = useCareerRoadmapViewModel();
   const architect = sel.architectById(architectId);
 
+  const canExplainReadiness = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
   const currentLevel = vm.levelOf(architect?.careerLevelId);
   const nextLevel = currentLevel ? vm.nextLevelFor(currentLevel.id) : null;
 
@@ -194,6 +198,23 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
           />
         )}
       </div>
+
+      {canExplainReadiness && (
+        <PersonAdviceSection
+          className="mb-6"
+          title={t("ai.readiness.title")}
+          description={t("ai.readiness.subtitle")}
+          actionLabel={t("ai.readiness.action")}
+          transcriptHeadline={t("ai.readiness.title")}
+          queryKey={["assistants", "career-readiness-explanation", architectId]}
+          ask={() => personAssistantsApi.explainCareerReadiness(architectId)}
+          beforeNarration={(advice) =>
+            advice.readiness === null ? null : (
+              <CareerReadinessVerdictLines verdict={advice.readiness} />
+            )
+          }
+        />
+      )}
 
       {nextLevel && (
         <>
