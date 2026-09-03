@@ -110,6 +110,13 @@ test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo
   await expect(page.getByText(TOPIC)).toBeVisible();
 
   // Recarrega — a sessão tem que vir do servidor, não só do estado otimista da aba.
+  // Depois da onda 37 o tech lead também tem ficha de profissional, então a
+  // linha do tempo nasce em quem vem primeiro em ordem alfabética: para ver a
+  // sessão de novo é preciso escolher o mentorado, como qualquer pessoa faria.
+  // (Logo após salvar, a tela já move o filtro sozinha — é o que a asserção
+  // anterior prova; o que este trecho prova é a PERSISTÊNCIA.)
   await page.reload();
+  await page.getByRole("combobox", { name: "Filtrar mentorado" }).click();
+  await page.getByRole("option", { name: ARCHITECT_NAME }).click();
   await expect(page.getByText(TOPIC)).toBeVisible();
 });
