@@ -9,11 +9,9 @@ import {
   MultiSelectFilter,
   PageHeader,
   QuerySection,
-  RequirementTypeBadge,
   SectionCard,
   SingleSelectFilter,
 } from "@/components/app";
-import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { FilterField } from "@/components/app/FilterField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,7 +35,7 @@ export const Route = createFileRoute("/team-rules")({
       {
         name: "description",
         content:
-          "Para cada time e nível de carreira: capacidades exigidas, competências obrigatórias e nível mínimo de cada uma.",
+          "Para cada time e nível de carreira: capacidades exigidas, competências da régua e nível mínimo de cada uma.",
       },
     ],
   }),
@@ -180,7 +178,6 @@ function TeamRuleEditor({
   const { editor, setEditor } = useTeamRuleEditorViewModel(rule);
   const [drafting, setDrafting] = useState(false);
   const [conflict, setConflict] = useState(false);
-  const [swapping, setSwapping] = useState<{ from: string; to: string } | null>(null);
   const { submitting, error, run } = useAsyncSubmit(t("teamRules.save.error"));
 
   const capabilities = store.capabilities.filter((capability) => capability.active);
@@ -190,8 +187,6 @@ function TeamRuleEditor({
   const competencies = store.competencies.filter(
     (competency) => competency.active && editor.capabilityIds.includes(competency.capabilityId),
   );
-  const competencyName = (competencyId: string): string =>
-    store.competencies.find((competency) => competency.id === competencyId)?.name ?? competencyId;
 
   if (!editor.hasRule && !drafting) {
     return (
@@ -218,21 +213,6 @@ function TeamRuleEditor({
     });
     if (result.ok) {
       notifySuccess("msg.career.teamRule.define.success", { nome: level.name }, result.value);
-      onServerChanged();
-      return;
-    }
-    if (result.error instanceof ApiError && result.error.status === 409) setConflict(true);
-  };
-
-  const swapRequirement = async (from: string, to: string) => {
-    const result = await run(async () => {
-      const swapped = await api.swapTeamRuleRequirement(teamId, level.id, from, to);
-      await queryClient.invalidateQueries({ queryKey: ["team-rule", teamId, level.id] });
-      return swapped;
-    });
-    setSwapping(null);
-    if (result.ok) {
-      notifySuccess("msg.career.teamRule.swapRequirement.success", {}, result.value);
       onServerChanged();
       return;
     }
@@ -334,13 +314,10 @@ function TeamRuleEditor({
                     {t("teamRules.col.competency")}
                   </th>
                   <th scope="col" className="py-2">
-                    {t("teamRules.col.requirement")}
+                    {t("teamRules.col.inRule")}
                   </th>
                   <th scope="col" className="py-2">
                     {t("teamRules.col.level")}
-                  </th>
-                  <th scope="col" className="py-2">
-                    {t("teamRules.col.swap")}
                   </th>
                 </tr>
               </thead>
@@ -349,7 +326,6 @@ function TeamRuleEditor({
                   const inRule = editor.competencies.find(
                     (entry) => entry.competencyId === competency.id,
                   );
-                  const candidates = editor.swapCandidatesFor(competency.id);
                   return (
                     <tr
                       key={competency.id}
@@ -357,39 +333,26 @@ function TeamRuleEditor({
                     >
                       <td className="py-2 font-medium">{competency.name}</td>
                       <td className="py-2">
-                        <div className="flex items-center gap-2">
-                          <SingleSelectFilter
-                            id={`team-rule-requirement-${competency.id}`}
-                            ariaLabel={`${t("teamRules.col.requirement")} — ${competency.name}`}
-                            value={inRule?.requirementType ?? ""}
-                            onChange={(value) =>
-                              setEditor((current) => {
-                                if (value === "RESTRICTIVE") {
-                                  return current.withCompetencyRequired(
+                        <SingleSelectFilter
+                          id={`team-rule-membership-${competency.id}`}
+                          ariaLabel={`${t("teamRules.col.inRule")} — ${competency.name}`}
+                          value={inRule ? "in" : ""}
+                          onChange={(value) =>
+                            setEditor((current) =>
+                              value === "in"
+                                ? current.withCompetencyInRule(
                                     competency.id,
                                     inRule?.requiredLevel ?? 1,
-                                  );
-                                }
-                                if (value === "NON_RESTRICTIVE") {
-                                  return current.withCompetencyOptional(
-                                    competency.id,
-                                    inRule?.requiredLevel ?? 1,
-                                  );
-                                }
-                                return current.withoutCompetency(competency.id);
-                              })
-                            }
-                            options={[
-                              { value: "", label: t("teamRules.requirement.out") },
-                              { value: "RESTRICTIVE", label: t("requirement.type.required") },
-                              { value: "NON_RESTRICTIVE", label: t("requirement.type.optional") },
-                            ]}
-                            triggerClassName="min-w-40"
-                          />
-                          {inRule && (
-                            <RequirementTypeBadge requirementType={inRule.requirementType} />
-                          )}
-                        </div>
+                                  )
+                                : current.withoutCompetency(competency.id),
+                            )
+                          }
+                          options={[
+                            { value: "", label: t("teamRules.membership.out") },
+                            { value: "in", label: t("teamRules.membership.in") },
+                          ]}
+                          triggerClassName="min-w-40"
+                        />
                       </td>
                       <td className="py-2">
                         {inRule ? (
@@ -415,27 +378,6 @@ function TeamRuleEditor({
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="py-2">
-                        {inRule && candidates.length > 0 ? (
-                          <SingleSelectFilter
-                            id={`team-rule-swap-${competency.id}`}
-                            ariaLabel={`${t("teamRules.col.swap")} — ${competency.name}`}
-                            value=""
-                            disabled={editor.isDirty || submitting}
-                            onChange={(value) => setSwapping({ from: competency.id, to: value })}
-                            options={[
-                              { value: "", label: t("teamRules.swap.placeholder") },
-                              ...candidates.map((candidate) => ({
-                                value: candidate.competencyId,
-                                label: competencyName(candidate.competencyId),
-                              })),
-                            ]}
-                            triggerClassName="min-w-40"
-                          />
-                        ) : (
-                          <span className="text-muted-foreground">{t("teamRules.swap.none")}</span>
-                        )}
-                      </td>
                     </tr>
                   );
                 })}
@@ -446,10 +388,9 @@ function TeamRuleEditor({
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
           <p className="text-sm font-medium tabular-nums">
-            {t("teamRules.footer.weight", {
-              restritivas: editor.requiredCount,
-              naoRestritivas: editor.optionalCount,
-            })}
+            {editor.competencyCount === 1
+              ? t("teamRules.footer.countOne")
+              : t("teamRules.footer.count", { n: editor.competencyCount })}
           </p>
           <Button
             size="sm"
@@ -471,22 +412,6 @@ function TeamRuleEditor({
           </p>
         )}
       </SectionCard>
-
-      <ConfirmDialog
-        open={swapping !== null}
-        destructive={false}
-        title={t("teamRules.swap.title")}
-        description={
-          swapping &&
-          t("teamRules.swap.description", {
-            de: competencyName(swapping.from),
-            para: competencyName(swapping.to),
-          })
-        }
-        confirmLabel={t("teamRules.swap.confirm")}
-        onCancel={() => setSwapping(null)}
-        onConfirm={() => swapping && void swapRequirement(swapping.from, swapping.to)}
-      />
     </div>
   );
 }

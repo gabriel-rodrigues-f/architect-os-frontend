@@ -639,8 +639,6 @@ function ScoringScaleEditor({
 
 const CURATION_FIELD_LABEL_KEY: Record<CurationPolicyField, MessageKey> = {
   maxActiveCompetencies: "config.curation.field.maxActiveCompetencies",
-  requiredRestrictive: "config.curation.field.requiredRestrictive",
-  requiredNonRestrictive: "config.curation.field.requiredNonRestrictive",
 };
 
 function CurationPolicySection() {
@@ -717,7 +715,7 @@ function CurationPolicySection() {
                 <input
                   id={`curation-${field}`}
                   type="number"
-                  min={field === "maxActiveCompetencies" ? 1 : 0}
+                  min={1}
                   step={1}
                   disabled={saving}
                   className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1 text-center text-sm tabular-nums"

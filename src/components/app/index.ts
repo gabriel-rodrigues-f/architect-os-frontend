@@ -22,7 +22,6 @@ export * from "./NoticeList";
 export * from "./OutOfReachScreen";
 export * from "./PageHelp";
 export * from "./QuerySection";
-export * from "./RequirementTypeBadge";
 export * from "./RoleSelect";
 export * from "./SectionHelp";
 export * from "./SingleSelectFilter";

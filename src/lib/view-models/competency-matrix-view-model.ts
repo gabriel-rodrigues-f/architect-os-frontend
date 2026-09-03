@@ -21,13 +21,16 @@ export interface CurationBrief {
   active: number;
   max: number;
   over: number;
+  empty: boolean;
 }
 
 /**
  * Fase 2 (backend ADRs 0032-0034) — o catálogo global é definição pura:
- * criar/editar competência é só nome + capacidade + atividade. Nível exigido,
- * obrigatoriedade e o swap de requisito moram na régua do time
- * (`/teams/:teamId/rules/:careerLevelId`), fora desta tela.
+ * criar/editar competência é só nome + capacidade + atividade. O nível
+ * exigido mora na régua do time (`/teams/:teamId/rules/:careerLevelId`),
+ * fora desta tela. Onda 36 (ADRs 0081-0082): o teto de ativas vem da
+ * política de curadoria (4 por default, nunca literal aqui) e é máximo, não
+ * meta — "Pronta" é ter de 1 até o máximo.
  */
 export class CompetencyMatrixViewModel {
   constructor(
@@ -68,6 +71,7 @@ export class CompetencyMatrixViewModel {
       active,
       max,
       over: Math.max(0, active - max),
+      empty: active === 0,
     };
   }
 

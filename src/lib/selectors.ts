@@ -177,7 +177,6 @@ export interface ConsolidatedGapRow {
   competencyId: string;
   name: string;
   capabilityId: string;
-  requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
   people: number;
 
   architectNames: string[];
@@ -201,7 +200,6 @@ export class GapConsolidationSelectors {
         competencyId: string;
         name: string;
         capabilityId: string;
-        requirementType: "RESTRICTIVE" | "NON_RESTRICTIVE";
         people: number;
         architectNames: string[];
         totalGap: number;
@@ -220,7 +218,6 @@ export class GapConsolidationSelectors {
             competencyId: gap.competency.id,
             name: gap.competency.name,
             capabilityId: gap.competency.capabilityId,
-            requirementType: gap.item.requirementType ?? "NON_RESTRICTIVE",
             people: 0,
             architectNames: [],
             totalGap: 0,

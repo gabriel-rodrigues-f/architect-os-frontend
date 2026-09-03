@@ -1,9 +1,8 @@
-import type { Competency, Level, RequirementType } from "../domain";
+import type { Competency, Level } from "../domain";
 import type { TeamRuleDefinition, TeamRuleView } from "../gateways/career.gateway";
 
 export interface TeamRuleCompetencyDraft {
   competencyId: string;
-  requirementType: RequirementType;
   requiredLevel: number;
 }
 
@@ -24,11 +23,15 @@ interface TeamRuleDraft {
   competencies: readonly TeamRuleCompetencyDraft[];
 }
 
-const REQUIRED_WEIGHT = 1.5;
-const OPTIONAL_WEIGHT = 1;
 const LOWEST_LEVEL = 1;
 const HIGHEST_LEVEL = 5;
 
+/**
+ * Onda 36 (backend ADR-0082) — a obrigatoriedade morreu: a competência ESTÁ
+ * ou NÃO ESTÁ na régua, com um nível exigido, e toda competência pesa igual
+ * na aderência. O editor perdeu tipo de exigência, pesos e a troca de
+ * obrigatoriedade.
+ */
 export class TeamRuleEditorViewModel {
   private constructor(
     private readonly input: TeamRuleEditorInput,
@@ -84,12 +87,19 @@ export class TeamRuleEditorViewModel {
     });
   }
 
-  withCompetencyRequired(competencyId: string, requiredLevel: number): TeamRuleEditorViewModel {
-    return this.withCompetency(competencyId, "RESTRICTIVE", requiredLevel);
-  }
-
-  withCompetencyOptional(competencyId: string, requiredLevel: number): TeamRuleEditorViewModel {
-    return this.withCompetency(competencyId, "NON_RESTRICTIVE", requiredLevel);
+  withCompetencyInRule(competencyId: string, requiredLevel: number): TeamRuleEditorViewModel {
+    const entry: TeamRuleCompetencyDraft = { competencyId, requiredLevel };
+    const known = this.draft.competencies.some(
+      (competency) => competency.competencyId === competencyId,
+    );
+    return this.withDraft({
+      ...this.draft,
+      competencies: known
+        ? this.draft.competencies.map((competency) =>
+            competency.competencyId === competencyId ? entry : competency,
+          )
+        : [...this.draft.competencies, entry],
+    });
   }
 
   withoutCompetency(competencyId: string): TeamRuleEditorViewModel {
@@ -136,50 +146,15 @@ export class TeamRuleEditorViewModel {
     return this.serialize(this.draft) !== this.serialize(this.baseline);
   }
 
-  get requiredCount(): number {
-    return this.draft.competencies.filter(
-      (competency) => competency.requirementType === "RESTRICTIVE",
-    ).length;
-  }
-
-  get optionalCount(): number {
-    return this.draft.competencies.length - this.requiredCount;
-  }
-
-  get totalWeight(): number {
-    return this.requiredCount * REQUIRED_WEIGHT + this.optionalCount * OPTIONAL_WEIGHT;
-  }
-
-  weightPercentOf(competencyId: string): number {
-    const competency = this.draft.competencies.find(
-      (candidate) => candidate.competencyId === competencyId,
-    );
-    if (!competency || this.totalWeight === 0) return 0;
-    const weight = competency.requirementType === "RESTRICTIVE" ? REQUIRED_WEIGHT : OPTIONAL_WEIGHT;
-    return (weight / this.totalWeight) * 100;
-  }
-
-  swapCandidatesFor(competencyId: string): readonly TeamRuleCompetencyDraft[] {
-    const competency = this.draft.competencies.find(
-      (candidate) => candidate.competencyId === competencyId,
-    );
-    if (!competency) return [];
-    return this.draft.competencies.filter(
-      (candidate) => candidate.requirementType !== competency.requirementType,
-    );
+  get competencyCount(): number {
+    return this.draft.competencies.length;
   }
 
   definition(): TeamRuleDefinition | null {
     if (!this.isValid) return null;
     const competencies = this.draft.competencies.flatMap((competency) =>
       this.isLevel(competency.requiredLevel)
-        ? [
-            {
-              competencyId: competency.competencyId,
-              requirementType: competency.requirementType,
-              requiredLevel: competency.requiredLevel,
-            },
-          ]
+        ? [{ competencyId: competency.competencyId, requiredLevel: competency.requiredLevel }]
         : [],
     );
     return {
@@ -187,25 +162,6 @@ export class TeamRuleEditorViewModel {
       capabilityIds: [...this.draft.capabilityIds],
       competencies,
     };
-  }
-
-  private withCompetency(
-    competencyId: string,
-    requirementType: RequirementType,
-    requiredLevel: number,
-  ): TeamRuleEditorViewModel {
-    const entry: TeamRuleCompetencyDraft = { competencyId, requirementType, requiredLevel };
-    const known = this.draft.competencies.some(
-      (competency) => competency.competencyId === competencyId,
-    );
-    return this.withDraft({
-      ...this.draft,
-      competencies: known
-        ? this.draft.competencies.map((competency) =>
-            competency.competencyId === competencyId ? entry : competency,
-          )
-        : [...this.draft.competencies, entry],
-    });
   }
 
   private withDraft(draft: TeamRuleDraft): TeamRuleEditorViewModel {

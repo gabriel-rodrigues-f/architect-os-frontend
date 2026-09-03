@@ -40,15 +40,7 @@ export function useGapAnalysisData() {
     radar[0] ?? { covered: 0, total: 0 },
   );
 
-  const progression = useMemo(() => sel.consolidateProgressionGaps(architects), [architects, sel]);
-  const blocking = useMemo(
-    () => progression.filter((r) => r.requirementType === "RESTRICTIVE"),
-    [progression],
-  );
-  const opportunity = useMemo(
-    () => progression.filter((r) => r.requirementType === "NON_RESTRICTIVE"),
-    [progression],
-  );
+  const priorities = useMemo(() => sel.consolidateProgressionGaps(architects), [architects, sel]);
 
   const mastery = useMemo(() => sel.consolidateMasteryGaps(architects), [architects, sel]);
 
@@ -70,8 +62,7 @@ export function useGapAnalysisData() {
     architects,
     radar,
     radarCoverage,
-    blocking,
-    opportunity,
+    priorities,
     mastery,
     scopeLabel,
   };
@@ -99,11 +90,6 @@ export function GapTable({
             <th scope="col" className="sticky top-0 z-10 bg-card py-2">
               {t("col.capability")}
             </th>
-            {!mastery && (
-              <th scope="col" className="sticky top-0 z-10 bg-card py-2">
-                {t("col.type")}
-              </th>
-            )}
             <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
               {t("col.people")}
             </th>
@@ -128,15 +114,6 @@ export function GapTable({
               <td className="py-2 text-muted-foreground">
                 {capabilities.find((c) => c.id === row.capabilityId)?.name}
               </td>
-              {!mastery && (
-                <td className="py-2">
-                  <Badge variant={row.requirementType === "RESTRICTIVE" ? "outline" : "secondary"}>
-                    {row.requirementType === "RESTRICTIVE"
-                      ? t("gap.type.blocking")
-                      : t("gap.type.opportunity")}
-                  </Badge>
-                </td>
-              )}
               <td className="py-2 text-center tabular-nums" title={row.architectNames.join(", ")}>
                 {row.people}
               </td>
@@ -154,7 +131,7 @@ export function GapTable({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={mastery ? 7 : 8} className="py-3 text-sm text-muted-foreground">
+              <td colSpan={7} className="py-3 text-sm text-muted-foreground">
                 {t("gap.table.empty")}
               </td>
             </tr>

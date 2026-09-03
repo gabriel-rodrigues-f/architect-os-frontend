@@ -47,8 +47,8 @@ export class CareerRoadmapViewModel {
     return adherence.adherence.percentage * 100;
   }
 
-  missingRequired(adherence: ArchitectAdherence): MissingCompetencyView[] {
-    return adherence.adherence.missingRequired
+  missingCompetencies(adherence: ArchitectAdherence): MissingCompetencyView[] {
+    return adherence.adherence.missingCompetencies
       .map((missing) => ({
         competencyId: missing.competencyId,
         name: this.competencyById(missing.competencyId)?.name ?? missing.competencyId,

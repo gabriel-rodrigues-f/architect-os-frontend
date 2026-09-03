@@ -1,4 +1,4 @@
-import type { CareerLevel, Level, RequirementType, TeamLevelRule } from "../domain";
+import type { CareerLevel, Level, TeamLevelRule } from "../domain";
 import {
   architectAdherenceResponseSchema,
   careerLevelsResponseSchema,
@@ -8,7 +8,6 @@ import type { ApiClient } from "../api-client";
 
 interface TeamRuleCompetencyRequirement {
   competencyId: string;
-  requirementType: RequirementType;
   requiredLevel: Level;
 }
 
@@ -29,7 +28,7 @@ export interface ArchitectAdherence {
   careerLevelId: string;
   adherence: {
     percentage: number;
-    missingRequired: {
+    missingCompetencies: {
       competencyId: string;
       currentLevel: number;
       requiredLevel: number;
@@ -45,12 +44,6 @@ export interface CareerGateway {
     teamId: string,
     careerLevelId: string,
     definition: TeamRuleDefinition,
-  ): Promise<TeamRuleView>;
-  swapTeamRuleRequirement(
-    teamId: string,
-    careerLevelId: string,
-    competencyId: string,
-    withCompetencyId: string,
   ): Promise<TeamRuleView>;
   architectAdherence(
     architectId: string,
@@ -78,17 +71,6 @@ export class HttpCareerGateway implements CareerGateway {
     definition: TeamRuleDefinition,
   ): Promise<TeamRuleView> =>
     this.client.put<TeamRuleView>(`/teams/${teamId}/rules/${careerLevelId}`, definition);
-
-  swapTeamRuleRequirement = (
-    teamId: string,
-    careerLevelId: string,
-    competencyId: string,
-    withCompetencyId: string,
-  ): Promise<TeamRuleView> =>
-    this.client.post<TeamRuleView>(`/teams/${teamId}/rules/${careerLevelId}/swap-requirement`, {
-      competencyId,
-      withCompetencyId,
-    });
 
   architectAdherence = (
     architectId: string,

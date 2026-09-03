@@ -63,17 +63,8 @@ function TeamPriorities() {
   const { t } = useI18n();
   const help = usePageHelp("gapAnalysis");
   const sel = useSelectors();
-  const {
-    store,
-    selected,
-    setSelected,
-    architects,
-    radar,
-    radarCoverage,
-    blocking,
-    opportunity,
-    scopeLabel,
-  } = useGapAnalysisData();
+  const { store, selected, setSelected, architects, radar, radarCoverage, priorities, scopeLabel } =
+    useGapAnalysisData();
 
   const furthestFromTarget = useMemo(
     () => new FurthestFromTarget(architects, sel.progressionGapsFor),
@@ -125,26 +116,11 @@ function TeamPriorities() {
             description={t("gap.priorities.subtitle", { n: architects.length })}
           >
             <div className="max-h-[460px] space-y-4 overflow-y-auto pr-1">
-              <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-destructive">
-                  {t("gap.priorities.blocking.title")}
-                </h3>
-                <GapPriorityList
-                  rows={blocking}
-                  emptyLabel={t("gap.priorities.blocking.none")}
-                  furthestFromTarget={furthestFromTarget}
-                />
-              </div>
-              <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t("gap.priorities.opportunity.title")}
-                </h3>
-                <GapPriorityList
-                  rows={opportunity}
-                  emptyLabel={t("gap.priorities.opportunity.none")}
-                  furthestFromTarget={furthestFromTarget}
-                />
-              </div>
+              <GapPriorityList
+                rows={priorities}
+                emptyLabel={t("gap.priorities.none")}
+                furthestFromTarget={furthestFromTarget}
+              />
             </div>
           </SectionCard>
         </div>
