@@ -2,6 +2,7 @@ import type { SessionUser } from "../api";
 import type { Architect, RoleName } from "../domain";
 import type { TeamSummary } from "../gateways/teams.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
+import { SeniorityReading } from "../seniority";
 import type { Api } from "../store";
 
 /** Vazio enquanto nenhum nível de carreira estiver escolhido — nunca um `RoleName` inventado. */
@@ -30,6 +31,7 @@ export class TeamOrLevelChange {
   ) {}
 
   get levelChanged(): boolean {
+    if (!SeniorityReading.has(this.architect)) return false;
     return this.toRole !== "" && this.toRole !== this.architect.role;
   }
 
@@ -63,7 +65,7 @@ export class TeamViewModel {
 
   otherCareerLevels<TLevel extends { name: string }>(
     levels: readonly TLevel[],
-    currentRole: RoleName,
+    currentRole: RoleName | null,
   ): TLevel[] {
     return levels.filter((level) => level.name !== currentRole);
   }

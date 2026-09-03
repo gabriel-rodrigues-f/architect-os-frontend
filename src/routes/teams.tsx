@@ -10,6 +10,7 @@ import {
   PageHeader,
   QuerySection,
   SectionCard,
+  Seniority,
   SingleSelectFilter,
   StatusBadge,
 } from "@/components/app";
@@ -1031,7 +1032,7 @@ function TeamPeople({
             <li key={person.id} className="flex items-center justify-between gap-2">
               <span className="font-medium">{person.name}</span>
               <span className="flex items-center gap-3">
-                <span className="text-muted-foreground">{person.role}</span>
+                <Seniority role={person.role} className="text-muted-foreground" />
                 {canCompose && (
                   <Button
                     size="sm"
