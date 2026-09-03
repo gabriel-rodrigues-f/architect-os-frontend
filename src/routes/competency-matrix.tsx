@@ -332,13 +332,13 @@ function MatrixPage() {
               const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
 
               const isExpanded = expandedIds.has(cat.id) || term.length > 0;
-              const atCapacity = viewModel.isCapabilityAtCapacity(cat);
               return (
                 <SectionCard
                   key={cat.id}
                   title={cat.name}
                   description={t("matrix.competencyCount", {
                     n: cat.curation.activeCompetencyCount,
+                    min: viewModel.limits.min,
                     max: viewModel.limits.max,
                   })}
                   actions={
@@ -354,22 +354,13 @@ function MatrixPage() {
                           }
                         />
                       )}
-                      <CurationStatusControl brief={viewModel.curationBriefFor(cat)} />
+                      <CurationStatusControl
+                        brief={viewModel.curationBriefFor(cat)}
+                        onCreateCompetency={isAdmin ? () => setCreatingIn(cat) : undefined}
+                      />
                       {isAdmin && (
                         <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setCreatingIn(cat)}
-                            disabled={atCapacity}
-                            title={
-                              atCapacity
-                                ? t("matrix.atCapacity.hint", {
-                                    max: viewModel.limits.max,
-                                  })
-                                : undefined
-                            }
-                          >
+                          <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
                             {t("matrix.newCompetency")}
                           </Button>
                           <button
@@ -575,30 +566,55 @@ function MatrixPage() {
   );
 }
 
-function CurationStatusControl({ brief }: { brief: CurationBrief }) {
+function CurationStatusControl({
+  brief,
+  onCreateCompetency,
+}: {
+  brief: CurationBrief;
+  onCreateCompetency?: (() => void) | undefined;
+}) {
   const { t } = useI18n();
   const ready = brief.status === "READY";
+  const below = !ready && brief.missing > 0;
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button size="sm" variant={ready ? "secondary" : "outline"} aria-haspopup="dialog">
           {ready ? <CircleCheck aria-hidden /> : <CircleAlert aria-hidden />}
-          {ready ? t("matrix.curation.ready") : t("matrix.curation.requiresCuration")}
+          {ready
+            ? t("matrix.curation.ready")
+            : below
+              ? t("matrix.curation.belowMinimum", { min: brief.min })
+              : t("matrix.curation.requiresCuration")}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)] space-y-2 text-sm">
         <p className="font-display font-semibold">{t("matrix.curation.explain.title")}</p>
         <p>
           {ready
-            ? t("matrix.curation.explain.ready", { ativas: brief.active, max: brief.max })
-            : brief.empty
-              ? t("matrix.curation.explain.empty", { max: brief.max })
+            ? t("matrix.curation.explain.ready", {
+                ativas: brief.active,
+                min: brief.min,
+                max: brief.max,
+              })
+            : below
+              ? t("matrix.curation.explain.belowMinimum", {
+                  ativas: brief.active,
+                  faltam: brief.missing,
+                  min: brief.min,
+                  max: brief.max,
+                })
               : t("matrix.curation.explain.requiresCuration", {
                   ativas: brief.active,
                   max: brief.max,
                   acima: brief.over,
                 })}
         </p>
+        {below && onCreateCompetency && (
+          <Button size="sm" variant="secondary" onClick={onCreateCompetency}>
+            {t("matrix.newCompetency")}
+          </Button>
+        )}
       </PopoverContent>
     </Popover>
   );
