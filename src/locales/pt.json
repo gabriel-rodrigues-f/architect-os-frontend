@@ -1664,6 +1664,7 @@
   "users.form.seniority.placeholder": "Escolha a senioridade",
   "users.form.team": "Time",
   "users.form.team.placeholder": "Escolha o time",
+  "users.form.team.noneReachable": "Você não lidera nenhum time ativo — peça ao administrador para vinculá-lo a um time.",
   "users.leadershipOnly": "Cadastrar pessoas é da liderança.",
   "users.leadershipOnlyHint": "Quem cadastra é o administrador, o gestor do time ou o tech lead do time. Fale com quem lidera o seu.",
   "users.deactivate.action": "Desativar",

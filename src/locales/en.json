@@ -1664,6 +1664,7 @@
   "users.form.seniority.placeholder": "Choose the seniority",
   "users.form.team": "Team",
   "users.form.team.placeholder": "Choose the team",
+  "users.form.team.noneReachable": "You do not lead any active team — ask the administrator to bond you to one.",
   "users.leadershipOnly": "Adding people belongs to leadership.",
   "users.leadershipOnlyHint": "The administrator, the team manager or the team tech lead adds people. Talk to whoever leads your team.",
   "users.deactivate.action": "Deactivate",

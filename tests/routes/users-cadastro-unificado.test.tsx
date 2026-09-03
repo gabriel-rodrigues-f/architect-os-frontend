@@ -12,6 +12,7 @@ import {
   fixtureAssignedTechLeadUser,
   fixtureCareerLevels,
   fixtureState,
+  fixtureUnassignedTechLeadUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
 import {
@@ -218,6 +219,21 @@ describe("o time entra no cadastro", () => {
     expect(dialogo.getByRole("button", { name: "Cadastrar pessoa" }).hasAttribute("disabled")).toBe(
       true,
     );
+  });
+
+  /**
+   * O tech lead sem vínculo de time nenhum alcança a tela (o menu é da
+   * liderança) e não tem onde cadastrar. Um seletor vazio com o botão apagado
+   * é um beco sem explicação; a tela DIZ o que falta e a quem pedir.
+   */
+  it("quem não lidera time ativo nenhum recebe a explicação, não um seletor vazio", async () => {
+    const dialogo = await abrirCadastro(fixtureUnassignedTechLeadUser);
+    expect(rotulosDe(dialogo.getByLabelText("Time"))).toEqual([]);
+    expect(
+      dialogo.getByText(
+        "Você não lidera nenhum time ativo — peça ao administrador para vinculá-lo a um time.",
+      ),
+    ).toBeTruthy();
   });
 
   it("quem lidera um time só já o encontra escolhido", async () => {

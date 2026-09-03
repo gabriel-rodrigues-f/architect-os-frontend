@@ -555,6 +555,11 @@ function AdmitPersonDialog({
                 </option>
               ))}
             </select>
+            {!teamsQuery.isPending && teams.length === 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("users.form.team.noneReachable")}
+              </p>
+            )}
           </div>
           {refusal && (
             <p id={refusalId} className="text-sm text-destructive" role="alert">
