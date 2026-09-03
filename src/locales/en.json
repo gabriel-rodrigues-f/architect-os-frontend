@@ -187,7 +187,7 @@
   "help.capabilityMap.member.comesFrom": "From the cycle's completed assessments, read by whoever leads. Your numbers are shown to leadership, not to you.",
   "help.capabilityMap.member.nextStep": "Want to become a reference in a capability? Agree on the plan with whoever leads you and take it to your development plan.",
   "help.gapAnalysis.lead.title": "Development Priorities",
-  "help.gapAnalysis.lead.what": "Current-vs-expected level radar and the ranking of competencies in progress that block progression or deserve development.",
+  "help.gapAnalysis.lead.what": "Radar of current × expected level and the ranking of in-progress competencies furthest from the bar — all with the same weight.",
   "help.gapAnalysis.lead.comesFrom": "From the people selected in the filter above; only completed assessments count.",
   "help.gapAnalysis.lead.nextStep": "Use \"Add to development plan\" to turn each competency in progress into an action.",
   "help.gapAnalysis.member.title": "Development Priorities",

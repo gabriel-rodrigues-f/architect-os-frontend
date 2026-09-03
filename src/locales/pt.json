@@ -187,7 +187,7 @@
   "help.capabilityMap.member.comesFrom": "Das avaliações concluídas do ciclo, lidas por quem lidera. Os seus números aparecem para a liderança, não para você.",
   "help.capabilityMap.member.nextStep": "Quer virar referência numa capacidade? Combine o plano com quem lidera você e leve para o seu PDI.",
   "help.gapAnalysis.lead.title": "Prioridades de Desenvolvimento",
-  "help.gapAnalysis.lead.what": "Radar do nível atual × esperado e o ranking das competências em evolução que bloqueiam progressão ou merecem desenvolvimento.",
+  "help.gapAnalysis.lead.what": "Radar do nível atual × esperado e o ranking das competências em evolução mais distantes do esperado — todas com o mesmo peso.",
   "help.gapAnalysis.lead.comesFrom": "Do recorte de pessoas no filtro acima; só avaliações concluídas contam.",
   "help.gapAnalysis.lead.nextStep": "Use \"Tratar no PDI\" para transformar cada competência em evolução em ação.",
   "help.gapAnalysis.member.title": "Prioridades de Desenvolvimento",
