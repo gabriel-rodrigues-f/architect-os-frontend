@@ -1518,6 +1518,7 @@
   "msg.learningPath.item.remove.success": "Item removed from the path.",
   "msg.learningPath.progress.update.success": "Path progress updated.",
   "msg.mentoring.create.success": "Session with {nome} logged",
+  "msg.mentoring.recordFromScript.success": "Script saved as a 1:1 session",
   "msg.mentoring.scheduleFollowUp.success": "Follow-up updated",
   "msg.career.teamRule.define.success": "Team rule for {nome} updated.",
   "msg.analytics.cacheFlush.success": "Analytics cache flushed.",

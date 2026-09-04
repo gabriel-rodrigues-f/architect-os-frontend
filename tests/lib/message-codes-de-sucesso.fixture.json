@@ -63,26 +63,26 @@
     "auth.login.success": {
       "rota": "POST /auth/login",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 83,
+      "linha": 146,
       "resposta": "ok"
     },
     "auth.register.success": {
       "rota": "POST /auth/register",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 64,
+      "linha": 127,
       "resposta": "created"
     },
     "auth.user.create.success": {
       "rota": "POST /auth/users",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 134,
+      "linha": 197,
       "resposta": "created",
       "consumidorAusente": true
     },
     "auth.user.update.success": {
       "rota": "PATCH /auth/users/:id",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 170,
+      "linha": 233,
       "resposta": "ok",
       "consumidorAusente": true
     },
@@ -245,13 +245,19 @@
     "mentoring.create.success": {
       "rota": "POST /mentoring-sessions",
       "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",
-      "linha": 74,
+      "linha": 78,
+      "resposta": "created"
+    },
+    "mentoring.recordFromScript.success": {
+      "rota": "POST /mentoring-sessions/from-session-script",
+      "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",
+      "linha": 128,
       "resposta": "created"
     },
     "mentoring.scheduleFollowUp.success": {
       "rota": "PATCH /mentoring-sessions/:id",
       "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",
-      "linha": 92,
+      "linha": 146,
       "resposta": "ok"
     },
     "people.allocate.success": {

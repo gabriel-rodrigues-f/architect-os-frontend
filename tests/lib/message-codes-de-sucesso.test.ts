@@ -52,7 +52,7 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
  * só este repositório está clonado.
  */
 
-const CODIGOS_ESPERADOS = 60;
+const CODIGOS_ESPERADOS = 61;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 

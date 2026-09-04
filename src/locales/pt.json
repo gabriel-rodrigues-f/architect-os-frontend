@@ -1518,6 +1518,7 @@
   "msg.learningPath.item.remove.success": "Item removido da trilha.",
   "msg.learningPath.progress.update.success": "Progresso da trilha atualizado.",
   "msg.mentoring.create.success": "Sessão com {nome} registrada",
+  "msg.mentoring.recordFromScript.success": "Roteiro salvo como sessão de 1:1",
   "msg.mentoring.scheduleFollowUp.success": "Follow-up atualizado",
   "msg.career.teamRule.define.success": "Régua do time para {nome} atualizada.",
   "msg.analytics.cacheFlush.success": "Cache de analytics limpo.",
