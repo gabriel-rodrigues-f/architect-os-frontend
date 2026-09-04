@@ -4,7 +4,8 @@
 
 ```sh
 npm install
-npm run start        # constrói e serve em http://localhost:3000
+npm run start        # constrói e serve em http://localhost:8081
+npm run stop         # para (mata quem estiver na porta)
 ```
 
 `npm run start` roda o `prestart` (`vite build`) sozinho, então funciona em

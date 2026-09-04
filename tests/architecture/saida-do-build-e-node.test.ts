@@ -45,7 +45,13 @@ describe("a saída do build é um servidor Node (K8S-02)", () => {
     const { scripts } = JSON.parse(conteudoDe("package.json")) as {
       scripts: Record<string, string>;
     };
-    expect(scripts["start"]).toBe("node .output/server/index.mjs");
+    // O invariante é COMO o start sobe, não a string inteira: ele roda a saída
+    // do build com Node, e não o vite. Prefixo de ambiente é livre — o dono
+    // pôs `PORT=8081` em 2026-09-04 para o frontend voltar ao endereço que o
+    // dedo já conhecia, e congelar a string inteira transformava uma escolha
+    // de porta em teste vermelho.
+    expect(scripts["start"]).toMatch(/(^|\s)node \.output\/server\/index\.mjs$/);
+    expect(scripts["start"]).not.toContain("vite");
     expect(scripts["dev"]).toBe("vite dev");
   });
 

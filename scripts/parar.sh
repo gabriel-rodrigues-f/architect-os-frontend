@@ -6,7 +6,7 @@
 #   npm run stop
 set -uo pipefail
 
-PORTA=${PORT:-3000}
+PORTA=${PORT:-8081}
 PIDS=$(lsof -ti "tcp:$PORTA" 2>/dev/null)
 
 if [ -z "$PIDS" ]; then
