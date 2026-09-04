@@ -14,12 +14,17 @@ Pré-requisito: **Node ≥ 20.19** (o Vite 8 / rolldown não roda em versões an
 cd frontend
 nvm use          # lê o .nvmrc (Node 24.16)
 npm install
-npm run dev      # servidor de desenvolvimento (vite); `npm start` sobe o build SSR em node (.output)
+npm run dev      # servidor de desenvolvimento (vite) — é este que fala com a API local
 ```
 
 - App: http://localhost:8080
 - Aponta para `http://localhost:4000` por padrão; para mudar, crie um `.env` a partir de
   `.env.example` com `VITE_API_URL` (e adicione a origem em `CORS_ORIGINS` no backend).
+- **`npm start` (o build SSR em `node .output`) não serve para desenvolver contra a API local.**
+  Ele roda como produção, e a CSP de produção tira o loopback do `connect-src` (`src/start.ts`):
+  o navegador bloqueia as chamadas para `localhost:4000` e a tela fica sem dados, com o motivo
+  só no console. Para desenvolver, use `npm run dev`; para experimentar o build SSR, faça o
+  `npm run build` com `VITE_API_URL` apontando para uma API que não seja `localhost`.
 - Se a 8080 estiver ocupada, o Vite sobe em 8081/8082 e continua funcionando: o CORS do
   backend libera qualquer porta em `localhost`/`127.0.0.1`. Confira no log qual porta saiu.
 

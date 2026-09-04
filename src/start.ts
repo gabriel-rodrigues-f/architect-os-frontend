@@ -141,9 +141,17 @@ function ehDaMaquinaDeQuemAbre(origem: string): boolean {
  * `API_URL` cai no padrão `http://localhost:4000` e a política publicava, para
  * todo visitante, uma origem `http:` na máquina dele. O Dockerfile fornece a
  * chave, então em produção de verdade isso não acontece; degradação silenciosa,
- * porém, é a que ninguém vê. Num build de produção o loopback sai da política:
- * a aplicação mal configurada falha ALTO (a chamada é bloqueada) em vez de
- * publicar uma política frouxa que parece certa.
+ * porém, é a que ninguém vê. Num build de produção o loopback sai da política.
+ *
+ * E o motivo NÃO é que apontar para `localhost:4000` seja engano: em
+ * desenvolvimento é o uso deliberado, é o padrão do `.env.example` e é o que
+ * faz o `vite dev` conversar com a API local. O que não se sustenta é PUBLICAR
+ * esse endereço para um visitante — servido a ele, `localhost` é a máquina
+ * dele, e a política estaria liberando um destino que nunca foi nosso. Por
+ * isso o corte vale só no build de produção: um build que saiu sem a variável
+ * falha ALTO (a chamada é bloqueada, e alguém conserta a variável) em vez de
+ * publicar uma política frouxa que parece certa. Quem roda o build SSR contra
+ * a API local sente isso na hora — está no README, na seção de rodar.
  */
 function destinosDeDados(buildDeProducao: boolean): readonly string[] {
   const daApi = origemDe(API_URL);
