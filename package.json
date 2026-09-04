@@ -9,6 +9,7 @@
   "scripts": {
     "prestart": "vite build",
     "start": "node .output/server/index.mjs",
+    "stop": "bash scripts/parar.sh",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
