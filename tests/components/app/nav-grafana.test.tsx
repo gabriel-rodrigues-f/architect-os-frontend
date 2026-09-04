@@ -44,21 +44,36 @@ import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 const destinos = (user: SessionUser | undefined): string[] =>
   filterNavGroups(NAV_GROUPS, user).flatMap((grupo) => grupo.items.map((item) => item.to));
 
+/**
+ * O DESTINO deixou de ser um caminho fixo em 2026-09-04: com a saída do
+ * Kubernetes o Grafana passou a morar noutra origem, e o endereço virou
+ * configuração (`VITE_GRAFANA_URL`) — vazio vale o do compose, e num cluster
+ * futuro volta a ser `/grafana`. Congelar a string aqui transformaria uma
+ * decisão de topologia em teste vermelho. O que o teste guarda é o que
+ * importa: o item existe, está no lugar certo e é só do administrador.
+ */
+const destinoDoGrafana = (): string => {
+  const doAdmin = destinos(fixtureAdminUser);
+  const posicaoDeTimes = doAdmin.indexOf("/teams");
+  return doAdmin[posicaoDeTimes + 1] ?? "";
+};
+
 describe("menu — o item Grafana é do administrador, entre Times e Usuários", () => {
-  it("o administrador vê /grafana exatamente entre /teams e /users", () => {
+  it("o administrador vê o Grafana exatamente entre /teams e /users", () => {
     const caminhos = destinos(fixtureAdminUser);
-    const posicao = caminhos.indexOf("/grafana");
+    const posicao = caminhos.indexOf(destinoDoGrafana());
     expect(posicao).toBeGreaterThan(-1);
     expect(caminhos[posicao - 1]).toBe("/teams");
     expect(caminhos[posicao + 1]).toBe("/users");
   });
 
   it("gestor, tech lead (com ou sem vínculo), member e sessão nenhuma não veem", () => {
-    expect(destinos(fixtureAssignedManagerUser)).not.toContain("/grafana");
-    expect(destinos(fixtureAssignedTechLeadUser)).not.toContain("/grafana");
-    expect(destinos(fixtureUnassignedTechLeadUser)).not.toContain("/grafana");
-    expect(destinos(fixtureMemberUser)).not.toContain("/grafana");
-    expect(destinos(undefined)).not.toContain("/grafana");
+    const grafana = destinoDoGrafana();
+    expect(destinos(fixtureAssignedManagerUser)).not.toContain(grafana);
+    expect(destinos(fixtureAssignedTechLeadUser)).not.toContain(grafana);
+    expect(destinos(fixtureUnassignedTechLeadUser)).not.toContain(grafana);
+    expect(destinos(fixtureMemberUser)).not.toContain(grafana);
+    expect(destinos(undefined)).not.toContain(destinoDoGrafana());
   });
 });
 
@@ -89,10 +104,13 @@ describe("menu — Grafana abre como âncora externa, não como rota do SPA", ()
     const links = await screen.findAllByRole("link", { name: "Grafana" });
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
-      expect(link.getAttribute("href")).toBe("/grafana");
+      // O href é o endereço configurado, e não um caminho fixo — ele muda com
+      // a topologia. O que não pode mudar é o resto: abre em aba nova e sem
+      // devolver `window.opener` para o outro lado.
+      expect(link.getAttribute("href")).toBe(destinoDoGrafana());
       expect(link.getAttribute("target")).toBe("_blank");
       expect(link.getAttribute("rel")).toContain("noopener");
-      expect(link.getAttribute("title")).toMatch(/cluster/i);
+      expect(link.getAttribute("title")).toMatch(/m(é|e)tricas/i);
     }
   });
 });

@@ -1212,7 +1212,7 @@
   "chart.axis.count": "Quantidade",
   "nav.users": "Usuários",
   "nav.grafana": "Grafana",
-  "nav.grafanaHint": "Abre o Grafana servido pelo Ingress em /grafana — requer a aplicação em execução no cluster",
+  "nav.grafanaHint": "Abre o painel de métricas numa aba nova.",
   "nav.settings": "Política de Progressão",
   "users.title": "Usuários",
   "users.subtitle": "O único lugar onde uma pessoa é cadastrada: cargo, senioridade e time num ato só.",

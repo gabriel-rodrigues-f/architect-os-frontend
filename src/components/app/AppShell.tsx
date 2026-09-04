@@ -82,6 +82,35 @@ interface NavGroup {
   items: NavItem[];
 }
 
+/**
+ * Onde o Grafana mora — e por que isto é uma variável, e não um caminho.
+ *
+ * Até 2026-09-04 ele era servido pelo MESMO Ingress da aplicação, em
+ * `/grafana`: caminho relativo, mesma origem. Com a saída do Kubernetes ele
+ * virou um serviço do compose, noutra porta, e o link relativo passou a cair
+ * no 404 da própria aplicação — o menu prometia uma página que não existe.
+ *
+ * A abstração é `VITE_GRAFANA_URL`, e ela serve às DUAS topologias sem que
+ * ninguém volte aqui:
+ *
+ *   compose  →  vazia, e vale o padrão `http://localhost:3001`
+ *   k8s      →  `/grafana`, e o Ingress serve tudo na mesma origem de novo
+ *
+ * Por isso o valor não é validado como URL absoluta: caminho relativo é uma
+ * resposta legítima, e é justamente a que o cluster vai querer.
+ */
+class ObservabilityAddress {
+  /** O compose do backend publica o Grafana aqui (3001; a 3000 é interna dele). */
+  static readonly PADRAO = "http://localhost:3001";
+
+  static get grafana(): string {
+    const declarado: unknown = import.meta.env["VITE_GRAFANA_URL"];
+    return typeof declarado === "string" && declarado.trim() !== ""
+      ? declarado.trim()
+      : ObservabilityAddress.PADRAO;
+  }
+}
+
 export const NAV_GROUPS: NavGroup[] = [
   {
     items: [
@@ -176,7 +205,7 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       { to: "/teams", labelKey: "nav.teams", icon: Building2, teamCompositionReachOnly: true },
       {
-        to: "/grafana",
+        to: ObservabilityAddress.grafana,
         labelKey: "nav.grafana",
         icon: Activity,
         adminOnly: true,
