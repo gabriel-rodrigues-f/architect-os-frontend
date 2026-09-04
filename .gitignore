@@ -41,3 +41,6 @@ coverage
 
 # worktrees de fatia (disciplina de frota — ciclo de vida fechado)
 .worktrees/
+
+# worktrees dos agentes da frota
+.claude/
