@@ -132,3 +132,72 @@ describe("política de sessão — 401 + código encerra a sessão", () => {
     expect(endSession).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * ONDA 41 — a segunda recusa que a política precisa reconhecer: a marca do
+ * primeiro acesso. A sessão continua VÁLIDA (é 403, não 401) e encerrá-la
+ * mandaria de volta ao login quem só precisa trocar a senha; ignorá-la
+ * desenharia "você não tem permissão" para quem tem, e não daria à pessoa
+ * nada que ela pudesse fazer a respeito.
+ */
+describe("política de sessão — 403 PASSWORD_CHANGE_REQUIRED leva à troca, não ao login", () => {
+  let endSession: ReturnType<typeof vi.fn>;
+  let requirePasswordChange: ReturnType<typeof vi.fn>;
+  let policy: SessionPolicy;
+  let client: ApiClient;
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockReset();
+    endSession = vi.fn();
+    requirePasswordChange = vi.fn();
+    policy = new SessionPolicy();
+    client = new ApiClient("http://api.local", (error) => policy.reviewFailure(error));
+    policy.whenSessionEnded(endSession);
+    policy.whenPasswordChangeRequired(requirePasswordChange);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("403 com a marca pede a troca e NÃO encerra a sessão", async () => {
+    fetchMock.mockResolvedValue(
+      errorResponse(
+        {
+          code: SessionPolicy.PASSWORD_CHANGE_REQUIRED_CODE,
+          message: "Troque a sua senha para continuar.",
+        },
+        403,
+      ),
+    );
+
+    await client.request("/state").catch(() => undefined);
+
+    expect(requirePasswordChange).toHaveBeenCalledTimes(1);
+    expect(endSession).not.toHaveBeenCalled();
+  });
+
+  it("403 de permissão comum não pede troca nenhuma", async () => {
+    fetchMock.mockResolvedValue(errorResponse({ code: "FORBIDDEN", message: "Proibido." }, 403));
+    await client.request("/state").catch(() => undefined);
+    expect(requirePasswordChange).not.toHaveBeenCalled();
+  });
+
+  it("a marca fora do 403 não pede troca — o casamento é código E status", async () => {
+    fetchMock.mockResolvedValue(
+      errorResponse({ code: SessionPolicy.PASSWORD_CHANGE_REQUIRED_CODE }, 401),
+    );
+    await client.request("/state").catch(() => undefined);
+    expect(requirePasswordChange).not.toHaveBeenCalled();
+  });
+
+  it("desregistrar o handler para de pedir a troca", async () => {
+    policy.whenPasswordChangeRequired(null);
+    fetchMock.mockResolvedValue(
+      errorResponse({ code: SessionPolicy.PASSWORD_CHANGE_REQUIRED_CODE }, 403),
+    );
+    await client.request("/state").catch(() => undefined);
+    expect(requirePasswordChange).not.toHaveBeenCalled();
+  });
+});
