@@ -1,3 +1,14 @@
+/**
+ * O HTML de último recurso: sai deste processo quando o SSR já falhou, então
+ * não pode depender de nada que o app carregue.
+ *
+ * SEM SCRIPT EMBUTIDO, DE PROPÓSITO (SEC-APP-006). O "Tentar novamente" já foi
+ * `<button onclick="location.reload()">`. Funcionava só porque a CSP ainda
+ * aceita `script-src 'unsafe-inline'`; no dia em que o SSR assinar o script de
+ * hidratação com nonce e essa permissão sair, o botão morreria calado — nonce
+ * não autoriza manipulador embutido, isso pediria `'unsafe-hashes'`. Um link
+ * para a própria URL recarrega igual e não pede permissão nenhuma.
+ */
 export function renderErrorPage(): string {
   return `<!doctype html>
 <html lang="en">
@@ -21,7 +32,7 @@ export function renderErrorPage(): string {
       <h1>Esta página não carregou</h1>
       <p>Algo deu errado do nosso lado. Você pode atualizar a página ou voltar ao início.</p>
       <div class="actions">
-        <button class="primary" onclick="location.reload()">Tentar novamente</button>
+        <a class="primary" href="">Tentar novamente</a>
         <a class="secondary" href="/">Ir para o início</a>
       </div>
     </div>
