@@ -63,7 +63,7 @@ export { sessionPolicy };
 export const isLeadCapable = (role: UserRole): boolean =>
   role === "admin" || TeamLeadershipRoles.includes(role);
 
-export { ApiError } from "./api-errors";
+export { ApiError, UserFacingError } from "./api-errors";
 export { API_URL, type AppState } from "./api-client";
 export type { CommentInput } from "./gateways/assessment.gateway";
 export type { SessionUser, UserRole } from "./gateways/auth.gateway";

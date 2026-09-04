@@ -16,6 +16,8 @@ vi.mock("sonner", () => ({
  * sites que antes não tinham `finally`/`setSaving` (bug latente de
  * duplo-submit corrigido pela unificação).
  */
+const FALLBACK_DO_APP = "Não foi possível concluir a operação. Tente de novo em alguns instantes.";
+
 describe("useToastSubmit", () => {
   beforeEach(() => {
     vi.mocked(toast.error).mockClear();
@@ -64,12 +66,21 @@ describe("useToastSubmit", () => {
     expect(result.current.submitting).toBe(false);
   });
 
-  it("erro genérico usa a mensagem do próprio Error (contrato de authErrorMessage)", async () => {
+  /**
+   * ONDA 42 — a régua VIROU. Este teste dizia "erro genérico usa a mensagem do
+   * próprio Error" e guardava justamente o vazamento que o dono reclamou: um
+   * `TypeError`, um `ZodError` ou uma invariante de componente chegavam ao
+   * toast com o texto escrito para desenvolvedor. Só `UserFacingError` tem
+   * frase feita PARA a tela; o resto cai no fallback do app, e o erro cru vai
+   * para o console e a telemetria.
+   */
+  it("erro genérico NÃO mostra a mensagem do próprio Error — ela é de desenvolvedor", async () => {
     const { result } = renderHook(() => useToastSubmit());
     await act(async () => {
-      await result.current.run(() => Promise.reject(new Error("boom")));
+      await result.current.run(() => Promise.reject(new TypeError("Failed to fetch")));
     });
-    expect(toast.error).toHaveBeenCalledWith("boom");
+    expect(toast.error).not.toHaveBeenCalledWith("Failed to fetch");
+    expect(toast.error).toHaveBeenCalledWith(FALLBACK_DO_APP);
   });
 
   it("rejeição que não é Error cai no fallback padrão do app", async () => {
@@ -77,7 +88,7 @@ describe("useToastSubmit", () => {
     await act(async () => {
       await result.current.run(() => Promise.reject("string crua"));
     });
-    expect(toast.error).toHaveBeenCalledWith("Não foi possível concluir a operação");
+    expect(toast.error).toHaveBeenCalledWith(FALLBACK_DO_APP);
   });
 
   it("sucesso com Promise<void> ainda é { ok: true } — nunca ambíguo com falha", async () => {

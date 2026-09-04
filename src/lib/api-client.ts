@@ -11,6 +11,7 @@ import type {
   TeamLevelRule,
 } from "./domain";
 import { ApiError } from "./api-errors";
+import { ApiFailureReading } from "./api-failure-reading";
 import { apiPath, isApiUrl } from "./api-path";
 import { appStateSchema } from "./api-schemas";
 
@@ -34,12 +35,9 @@ export const API_URL = (
   typeof rawApiUrl === "string" ? rawApiUrl : "http://localhost:4000"
 ).replace(/\/$/, "");
 
-const NETWORK_UNAVAILABLE_STATUS = 0;
+const NETWORK_UNAVAILABLE_STATUS = ApiFailureReading.SEM_RESPOSTA_STATUS;
 
 export const NETWORK_UNAVAILABLE_CODE = "NETWORK_UNAVAILABLE";
-
-const NETWORK_UNAVAILABLE_MESSAGE =
-  "Não foi possível falar com o serviço. Verifique sua conexão e tente novamente.";
 
 export type ApiFailureInterceptor = (error: ApiError) => void;
 
@@ -54,7 +52,7 @@ const responseMessageCodes = new WeakMap<object, string>();
 
 export function networkUnavailableError(cause: unknown): ApiError {
   return new ApiError(
-    NETWORK_UNAVAILABLE_MESSAGE,
+    ApiFailureReading.of(NETWORK_UNAVAILABLE_STATUS).sentence,
     NETWORK_UNAVAILABLE_STATUS,
     undefined,
     NETWORK_UNAVAILABLE_CODE,
@@ -63,13 +61,15 @@ export function networkUnavailableError(cause: unknown): ApiError {
   );
 }
 
-export function apiFailureOf(
-  body: ApiErrorBody | null,
-  status: number,
-  fallbackMessage: string,
-): ApiError {
+/**
+ * Quando o serviço manda frase, a frase é dele; quando não manda, a frase vem
+ * da SITUAÇÃO (`ApiFailureReading`) — nunca de verbo, caminho e status
+ * remontados. Por isso não existe mais parâmetro `fallbackMessage`: quem
+ * chamava tinha de inventar a frase, e dez chamadas inventaram a técnica.
+ */
+export function apiFailureOf(body: ApiErrorBody | null, status: number): ApiError {
   return new ApiError(
-    body?.message ?? fallbackMessage,
+    body?.message ?? ApiFailureReading.of(status).sentence,
     status,
     body?.details,
     body?.code,
@@ -116,9 +116,9 @@ export class ApiClient {
     }
   }
 
-  private async failureOf(response: Response, fallbackMessage: string): Promise<ApiError> {
+  private async failureOf(response: Response): Promise<ApiError> {
     const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
-    return this.intercepted(apiFailureOf(body, response.status, fallbackMessage));
+    return this.intercepted(apiFailureOf(body, response.status));
   }
 
   async request<T>(resource: string, init?: RequestInit): Promise<T> {
@@ -134,12 +134,7 @@ export class ApiClient {
       credentials: "include",
     });
 
-    if (!response.ok) {
-      throw await this.failureOf(
-        response,
-        `${init?.method ?? "GET"} ${apiPath(resource)} falhou (${response.status})`,
-      );
-    }
+    if (!response.ok) throw await this.failureOf(response);
 
     if (response.status === 204) return undefined as T;
     const body: unknown = await response.json();
@@ -160,9 +155,7 @@ export class ApiClient {
       credentials: "include",
       body: JSON.stringify(body),
     });
-    if (!response.ok) {
-      throw await this.failureOf(response, `POST ${apiPath(resource)} falhou (${response.status})`);
-    }
+    if (!response.ok) throw await this.failureOf(response);
     const disposition = response.headers.get("content-disposition") ?? "";
     const match = /filename="?([^"]+)"?/.exec(disposition);
     return { blob: await response.blob(), filename: match?.[1] ?? "relatorio.pdf" };

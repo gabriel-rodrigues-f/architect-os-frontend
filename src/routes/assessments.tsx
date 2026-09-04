@@ -19,7 +19,7 @@ import {
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import type { Assessment } from "@/lib/domain";
-import { api } from "@/lib/api";
+import { api, UserFacingError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useLabels } from "@/lib/labels";
@@ -127,7 +127,7 @@ function AssessmentsPage() {
       .setAssessmentStatus(assessment.id, nextStatus)
       .catch((error: unknown) =>
         setTransitionError(
-          error instanceof Error
+          error instanceof UserFacingError
             ? error.message
             : t(
                 isReopen
@@ -305,7 +305,9 @@ function AssessmentsPage() {
                   store
                     .openAssessment(architectId, store.activeCycleId)
                     .catch((error: unknown) =>
-                      setOpenError(error instanceof Error ? error.message : t("asmt.openError")),
+                      setOpenError(
+                        error instanceof UserFacingError ? error.message : t("asmt.openError"),
+                      ),
                     )
                     .finally(() => setOpening(false));
                 }}

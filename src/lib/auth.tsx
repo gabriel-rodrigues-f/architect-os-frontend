@@ -10,7 +10,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import { ApiError, authApi, sessionPolicy, type SessionUser } from "./api";
+import { authApi, sessionPolicy, UserFacingError, type SessionUser } from "./api";
 import { SESSION_QUERY_KEY, sessionQuery } from "./session-query";
 
 interface AuthContextValue {
@@ -117,8 +117,14 @@ export function useCurrentUser(): SessionUser {
   return user;
 }
 
+/**
+ * Só `UserFacingError` tem mensagem escrita PARA a tela — `ApiError` inclusive,
+ * que herda dele e cuja frase vem do serviço ou da `ApiFailureReading`. Um
+ * `Error` qualquer (`TypeError`, `ZodError`, invariante de componente) carrega
+ * texto de desenvolvedor, e a linha `if (error instanceof Error) return
+ * error.message` entregava esse texto a quem só queria entrar no sistema.
+ */
 export const authErrorMessage = (error: unknown): string => {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return "Não foi possível concluir a operação";
+  if (error instanceof UserFacingError) return error.message;
+  return "Não foi possível concluir a operação. Tente de novo em alguns instantes.";
 };
