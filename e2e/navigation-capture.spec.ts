@@ -169,6 +169,11 @@ const VISITAS: Record<string, (ctx: VisitContext) => string | null> = {
   "/mentoring": () => "/mentoring",
   "/notices": () => "/notices",
   "/progression": () => "/progression",
+  // Rota PÚBLICA: visitada sem o token do convite de propósito, porque é o
+  // que a captura consegue montar sem um e-mail de verdade no caminho. O que
+  // ela prova aqui é que a rota abre para qualquer papel e desenha a
+  // explicação do link incompleto em vez de quebrar ou cair no login.
+  "/set-password": () => "/set-password",
   "/settings": () => "/settings",
   "/team": () => "/team",
   "/team-rules": () => "/team-rules",

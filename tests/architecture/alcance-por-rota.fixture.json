@@ -113,6 +113,9 @@
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
+    "/set-password": {
+      "alcance": "publica"
+    },
     "/settings": {
       "alcance": "lideranca",
       "guarda": "requireLeadershipReach",

@@ -36,24 +36,24 @@ export type PasswordRequirement = (typeof PASSWORD_REQUIREMENTS)[number];
 
 /** O item da lista que a pessoa lê enquanto digita — fragmento, não frase. */
 export const PASSWORD_REQUIREMENT_ITEM: Readonly<Record<PasswordRequirement, MessageKey>> = {
-  "minimum-length": "firstAccess.requirement.minimumLength",
-  "uppercase-letter": "firstAccess.requirement.uppercaseLetter",
-  "lowercase-letter": "firstAccess.requirement.lowercaseLetter",
-  digit: "firstAccess.requirement.digit",
-  symbol: "firstAccess.requirement.symbol",
-  "obvious-sequence": "firstAccess.requirement.obviousSequence",
-  "own-email": "firstAccess.requirement.ownEmail",
+  "minimum-length": "password.requirement.minimumLength",
+  "uppercase-letter": "password.requirement.uppercaseLetter",
+  "lowercase-letter": "password.requirement.lowercaseLetter",
+  digit: "password.requirement.digit",
+  symbol: "password.requirement.symbol",
+  "obvious-sequence": "password.requirement.obviousSequence",
+  "own-email": "password.requirement.ownEmail",
 };
 
 /** A frase inteira, para quando o backend recusa apontando esta exigência. */
 export const PASSWORD_REQUIREMENT_REFUSAL: Readonly<Record<PasswordRequirement, MessageKey>> = {
-  "minimum-length": "firstAccess.refused.minimumLength",
-  "uppercase-letter": "firstAccess.refused.uppercaseLetter",
-  "lowercase-letter": "firstAccess.refused.lowercaseLetter",
-  digit: "firstAccess.refused.digit",
-  symbol: "firstAccess.refused.symbol",
-  "obvious-sequence": "firstAccess.refused.obviousSequence",
-  "own-email": "firstAccess.refused.ownEmail",
+  "minimum-length": "password.refused.minimumLength",
+  "uppercase-letter": "password.refused.uppercaseLetter",
+  "lowercase-letter": "password.refused.lowercaseLetter",
+  digit: "password.refused.digit",
+  symbol: "password.refused.symbol",
+  "obvious-sequence": "password.refused.obviousSequence",
+  "own-email": "password.refused.ownEmail",
 };
 
 export class SafePassword {
@@ -68,7 +68,13 @@ export class SafePassword {
   private static readonly SYMBOL = /[^\p{L}\p{N}]/u;
   private static readonly OBVIOUS_SEQUENCE = /1234/;
 
-  private constructor(private readonly unmet: ReadonlySet<PasswordRequirement>) {}
+  /** A exigência que só o e-mail da pessoa permite medir. */
+  private static readonly MEASURED_BY_THE_EMAIL: PasswordRequirement = "own-email";
+
+  private constructor(
+    private readonly unmet: ReadonlySet<PasswordRequirement>,
+    private readonly unmeasurable: ReadonlySet<PasswordRequirement>,
+  ) {}
 
   /**
    * Senha vazia é o estado ANTES de digitar: nenhuma exigência está de pé,
@@ -77,13 +83,35 @@ export class SafePassword {
    * chegou em algum lugar sem ter dado o primeiro passo.
    */
   static of(password: string, email: string): SafePassword {
-    if (password === "") return new SafePassword(new Set(PASSWORD_REQUIREMENTS));
+    if (password === "") return new SafePassword(new Set(PASSWORD_REQUIREMENTS), new Set());
     return new SafePassword(
       new Set(
         PASSWORD_REQUIREMENTS.filter(
           (requirement) => !SafePassword.satisfies(requirement, password, email),
         ),
       ),
+      new Set(),
+    );
+  }
+
+  /**
+   * A leitura de quem chega pelo LINK do convite. Ali não há sessão e o token
+   * é opaco: o e-mail da pessoa simplesmente NÃO está naquela tela, e a única
+   * exigência que depende dele deixa de ser mensurável aqui.
+   *
+   * Dar a exigência como atendida seria mentir com um tique verde — a pessoa
+   * leria "não ter o seu e-mail dentro dela: já atendido" sobre uma senha que
+   * é o e-mail dela inteiro. Dá-la como pendente seria o outro extremo: uma
+   * linha vermelha que nunca fecha, por mais que a pessoa acerte. Então ela é
+   * declarada NÃO CONFERÍVEL AQUI, a exigência continua à vista, e quem
+   * confere é o serviço — que recusa apontando `own-email` e cai na mesma
+   * `PasswordRefusal` do primeiro acesso.
+   */
+  static withoutKnownEmail(password: string): SafePassword {
+    const measured = SafePassword.of(password, "");
+    return new SafePassword(
+      new Set(measured.pending.filter((req) => req !== SafePassword.MEASURED_BY_THE_EMAIL)),
+      new Set([SafePassword.MEASURED_BY_THE_EMAIL]),
     );
   }
 
@@ -125,7 +153,12 @@ export class SafePassword {
   }
 
   meets(requirement: PasswordRequirement): boolean {
-    return !this.unmet.has(requirement);
+    return !this.unmet.has(requirement) && !this.unmeasurable.has(requirement);
+  }
+
+  /** A exigência existe, está à vista, e esta tela não tem como medi-la. */
+  cannotMeasure(requirement: PasswordRequirement): boolean {
+    return this.unmeasurable.has(requirement);
   }
 
   /** As exigências que ainda faltam, na ordem em que a lista as mostra. */
@@ -133,8 +166,13 @@ export class SafePassword {
     return PASSWORD_REQUIREMENTS.filter((requirement) => this.unmet.has(requirement));
   }
 
+  /** As exigências que esta tela não consegue conferir, na ordem da lista. */
+  get unmeasured(): readonly PasswordRequirement[] {
+    return PASSWORD_REQUIREMENTS.filter((requirement) => this.unmeasurable.has(requirement));
+  }
+
   get safe(): boolean {
-    return this.unmet.size === 0;
+    return this.unmet.size === 0 && this.unmeasurable.size === 0;
   }
 }
 
@@ -186,9 +224,9 @@ export class PasswordRefusal {
 
   /** A chave da frase a mostrar, ou `null` quando a tela deve usar a da situação. */
   get messageKey(): MessageKey | null {
-    if (this.reason === "wrongCurrentPassword") return "firstAccess.refused.currentPassword";
+    if (this.reason === "wrongCurrentPassword") return "password.refused.currentPassword";
     if (this.requirement !== null) return PASSWORD_REQUIREMENT_REFUSAL[this.requirement];
-    if (this.reason === "weak") return "firstAccess.refused.weak";
+    if (this.reason === "weak") return "password.refused.weak";
     return null;
   }
 }
