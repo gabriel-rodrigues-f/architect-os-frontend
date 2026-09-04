@@ -144,7 +144,7 @@ describe("Avaliações — concluir com confirmação", () => {
     renderWithApp(<AssessmentsPage />);
 
     const escolhido = (await screen.findByLabelText(
-      "Nota do Tech Lead — Kubernetes",
+      "Nota do Líder — Kubernetes",
     )) as HTMLSelectElement;
     const marcadoEscolhido = escolhido.querySelector<HTMLOptionElement>(
       'option[aria-selected="true"]',
@@ -153,9 +153,7 @@ describe("Avaliações — concluir com confirmação", () => {
     expect(escolhido.querySelectorAll('option[aria-selected="true"]')).toHaveLength(1);
     expect(escolhido.dataset["chosen"]).toBe("true");
 
-    const vazio = (await screen.findByLabelText(
-      "Nota do Tech Lead — Serverless",
-    )) as HTMLSelectElement;
+    const vazio = (await screen.findByLabelText("Nota do Líder — Serverless")) as HTMLSelectElement;
     const marcadoVazio = vazio.querySelector<HTMLOptionElement>('option[aria-selected="true"]');
     expect(marcadoVazio?.value).toBe("");
     expect(marcadoVazio?.textContent?.trim()).toBe("—");

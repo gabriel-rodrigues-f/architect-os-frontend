@@ -65,7 +65,7 @@ describe("Avaliações — campos por papel e status", () => {
     ),
   };
 
-  it("member vê a autoavaliação editável (Rascunho) e a nota do Tech Lead travada", async () => {
+  it("member vê a autoavaliação editável (Rascunho) e a nota do Líder travada", async () => {
     mockSession(fixtureMemberUser, draftState);
     renderWithApp(<AssessmentsPage />);
 

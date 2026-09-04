@@ -41,11 +41,11 @@ const fetchMock = vi.fn();
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
 const COLUNAS_DO_PROFISSIONAL = ["Competência", "Autoavaliação", "Notas"];
-const COLUNAS_DA_LIDERANCA = ["Tech Lead", "Alvo", "Final", "Distância"];
+const COLUNAS_DA_LIDERANCA = ["Líder", "Alvo", "Final", "Distância"];
 const TODAS_AS_COLUNAS = [
   "Competência",
   "Autoavaliação",
-  "Tech Lead",
+  "Líder",
   "Alvo",
   "Final",
   "Distância",
@@ -98,9 +98,7 @@ describe("Avaliações — o profissional não vê seus números de avaliação"
 
     await linhaDe("Kubernetes");
     expect(screen.getByText(/ficam com a liderança/)).toBeTruthy();
-    expect(
-      screen.queryByText(/combina autoavaliação, avaliação do Tech Lead, nível alvo/),
-    ).toBeNull();
+    expect(screen.queryByText(/combina autoavaliação, avaliação do Líder, nível alvo/)).toBeNull();
   });
 
   it("profissional, no empilhado abaixo de 768px: só a Autoavaliação — sem Tech Lead, Alvo, Final nem Distância", async () => {
@@ -149,7 +147,7 @@ describe("Avaliações — o profissional não vê seus números de avaliação"
     await screen.findByText("Serverless");
     const cartoes = screen.getAllByTestId("competency-stacked-card");
     const serverless = cartoes.find((cartao) => within(cartao).queryByText("Serverless"))!;
-    for (const coluna of ["Autoavaliação", "Tech Lead", "Alvo", "Final"]) {
+    for (const coluna of ["Autoavaliação", "Líder", "Alvo", "Final"]) {
       expect(within(serverless).getByText(coluna)).toBeTruthy();
     }
     expect(serverless.textContent).toMatch(/3/);

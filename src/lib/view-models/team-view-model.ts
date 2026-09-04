@@ -1,3 +1,4 @@
+import type { MessageKey } from "../i18n/registry";
 import type { SessionUser } from "../api";
 import type { Architect, RoleName } from "../domain";
 import type { TeamSummary } from "../gateways/teams.gateway";
@@ -41,6 +42,19 @@ export class TeamOrLevelChange {
 
   get isEffective(): boolean {
     return this.levelChanged || this.teamChanged;
+  }
+
+  /**
+   * A pergunta do campo de motivo acompanha o que está mudando de verdade.
+   * Pedido do dono (2026-09-03): *"se eu estiver mudando o nível, quero ver
+   * 'Por que o nível de carreira está mudando?'; se eu estiver mudando o
+   * time, 'Por que o time está mudando?'"*. Mudando os dois — ou ainda nada —
+   * a pergunta é a das duas coisas, que é a única honesta nesse instante.
+   */
+  get reasonPlaceholderKey(): MessageKey {
+    if (this.levelChanged && !this.teamChanged) return "team.transition.reasonPlaceholder.level";
+    if (this.teamChanged && !this.levelChanged) return "team.transition.reasonPlaceholder.team";
+    return "team.transition.reasonPlaceholder";
   }
 }
 

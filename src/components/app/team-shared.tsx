@@ -320,7 +320,7 @@ export function TeamOrLevelChangeDialog({
       })}
       reasonInputId="transition-reason"
       reasonLabel={t("team.transition.reasonLabel")}
-      reasonPlaceholder={t("team.transition.reasonPlaceholder")}
+      reasonPlaceholder={t(change.reasonPlaceholderKey)}
       confirmLabel={t("team.transition.confirm")}
       submittingLabel={t("team.transition.submitting")}
       fallbackError={t("team.transition.error")}
