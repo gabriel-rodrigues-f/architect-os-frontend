@@ -165,7 +165,27 @@ function destinosDeDados(buildDeProducao: boolean): readonly string[] {
 
 export function politicaDeConteudo({
   buildDeProducao = import.meta.env.PROD,
-}: { readonly buildDeProducao?: boolean } = {}): string {
+  paginaNaMaquinaDeQuemAbre = false,
+}: {
+  readonly buildDeProducao?: boolean;
+  /**
+   * A PRÓPRIA PÁGINA está sendo servida de `localhost`?
+   *
+   * Afina a regra de cima em vez de afrouxá-la. O corte existe porque publicar
+   * `http://localhost:4000` para um visitante remoto libera um destino que
+   * nunca foi nosso — na máquina DELE. Mas quando a página também vem de
+   * `localhost`, o par é coerente: é a mesma máquina, e é exatamente a
+   * topologia que o dono escolheu em 2026-09-04 — `docker compose up` publica a
+   * API em `localhost:4000` e `npm run start` serve a página, já compilada como
+   * PRODUÇÃO, em `localhost:3000`.
+   *
+   * Sem esta distinção o build de produção rodando na máquina de quem
+   * desenvolve calculava `connect-src 'self'` e o navegador bloqueava TODA
+   * chamada à API — a tela subia e dizia "Serviço indisponível", com a API de
+   * pé do lado. Medido assim, na primeira subida da topologia nova.
+   */
+  readonly paginaNaMaquinaDeQuemAbre?: boolean;
+} = {}): string {
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -175,7 +195,7 @@ export function politicaDeConteudo({
     "script-src 'self' 'unsafe-inline'",
     `style-src 'self' 'unsafe-inline' ${FOLHA_DE_ESTILO_DE_FONTE}`,
     `font-src 'self' ${ARQUIVO_DE_FONTE}`,
-    `connect-src ${destinosDeDados(buildDeProducao).join(" ")}`,
+    `connect-src ${destinosDeDados(buildDeProducao && !paginaNaMaquinaDeQuemAbre).join(" ")}`,
   ].join("; ");
 }
 
@@ -203,7 +223,9 @@ function aRespostaViajaCifrada(request: Request): boolean {
  */
 export function cabecalhosDeSeguranca(request: Request): Readonly<Record<string, string>> {
   const cabecalhos: Record<string, string> = {
-    "Content-Security-Policy": politicaDeConteudo(),
+    "Content-Security-Policy": politicaDeConteudo({
+      paginaNaMaquinaDeQuemAbre: ehDaMaquinaDeQuemAbre(origemDe(request.url) ?? ""),
+    }),
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",

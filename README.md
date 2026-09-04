@@ -1,5 +1,28 @@
 # Synapse — Frontend
 
+## Rodar
+
+```sh
+npm install
+npm run start        # constrói e serve em http://localhost:3000
+```
+
+`npm run start` roda o `prestart` (`vite build`) sozinho, então funciona em
+árvore recém-clonada. Para desenvolver com recarga: `npm run dev`.
+
+**A API sobe separado**, no repositório do backend:
+
+```sh
+cd ../backend && docker compose up --build
+```
+
+Ela publica em `http://localhost:4000`, que é o padrão de `VITE_API_URL` — sem
+configuração nenhuma, os dois se acham. Decisão do dono (2026-09-04): o
+Kubernetes saiu de cena, e antes disso API e página vinham do mesmo Ingress.
+Uma consequência que custou um diagnóstico: o `connect-src` do CSP só libera
+`localhost:4000` quando a PÁGINA também vem de `localhost` — servida de um
+domínio de verdade, ela não publica um destino na máquina de quem abre.
+
 Interface de gestão de capacidades técnicas de um time de Arquitetos de Soluções: matriz de
 competências, assessments, gaps, PDIs, OKRs, trilhas, mentorias, evidências e 9-box.
 

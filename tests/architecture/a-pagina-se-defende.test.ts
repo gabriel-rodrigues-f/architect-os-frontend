@@ -384,6 +384,35 @@ describe("a entrada do processo assina o que o pipeline não alcança", () => {
 });
 
 describe("a política libera exatamente o que a página carrega", () => {
+  it("build de produção servido de localhost mantém a API de localhost em connect-src", () => {
+    // A topologia escolhida em 2026-09-04: `docker compose up` publica a API em
+    // localhost:4000 e `npm run start` serve a página — já compilada como
+    // PRODUÇÃO — em localhost:3000. Antes desta regra o corte olhava só para
+    // "é build de produção?" e calculava `connect-src 'self'`: a tela subia
+    // dizendo "Serviço indisponível" com a API de pé do lado, porque o
+    // navegador bloqueava toda chamada.
+    const naMaquina = politicaDeConteudo({
+      buildDeProducao: true,
+      paginaNaMaquinaDeQuemAbre: true,
+    });
+
+    expect(diretivaDe(naMaquina, "connect-src")).toContain("http://localhost:4000");
+  });
+
+  it("mas servido de um domínio de verdade, localhost NÃO entra na política", () => {
+    // Publicar `http://localhost:4000` para um visitante remoto libera um
+    // destino na máquina DELE, que nunca foi nosso. O corte continua valendo
+    // exatamente aí — é a razão de ele existir.
+    const publicada = politicaDeConteudo({
+      buildDeProducao: true,
+      paginaNaMaquinaDeQuemAbre: false,
+    });
+
+    for (const destino of diretivaDe(publicada, "connect-src")) {
+      expect(ehDaMaquinaDeQuemAbre(destino)).toBe(false);
+    }
+  });
+
   it("o miolo é fechado: tudo da própria origem, e nenhum curinga", async () => {
     const politica = await politicaServida();
 
