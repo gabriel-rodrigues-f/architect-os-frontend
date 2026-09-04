@@ -5,7 +5,12 @@ import {
   personAdviceResponseSchema,
   sessionScriptAdviceResponseSchema,
 } from "../api-schemas";
-import { AssistantCall, type GenerationProfileName, type SessionAgenda } from "../assistants";
+import {
+  AssistantCall,
+  type GenerationProfileName,
+  type SessionAgenda,
+  type WrittenByPerson,
+} from "../assistants";
 
 /**
  * ADR-0087 do backend, do lado da tela — os assistentes que falam SOBRE UMA
@@ -28,6 +33,13 @@ export interface PersonAdvice {
   suggestion: true;
   notice: string;
   facts: string[];
+  /**
+   * ADR-0093 — o que uma PESSOA escreveu, ao lado dos fatos e nunca dentro
+   * deles. `facts` é o que o sistema apurou; isto é o que alguém digitou num
+   * formulário, e a tela desenha os dois sob rótulos diferentes porque a
+   * diferença entre eles é de CONFIANÇA, não de origem.
+   */
+  written: WrittenByPerson[];
   absences: string[];
   narration: string | null;
   narrationUnavailable: string | null;

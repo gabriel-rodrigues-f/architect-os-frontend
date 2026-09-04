@@ -225,9 +225,25 @@ export class AssistantRunState<P, T> {
   }
 }
 
+/**
+ * ADR-0093 — uma linha de texto que uma PESSOA digitou, com o rótulo que diz
+ * de quem ela é.
+ *
+ * O rótulo vem do servidor, como o `notice`: quem sabe de onde o texto saiu é
+ * quem o leu do banco, e a tela que inventasse o próprio rótulo diria "tema da
+ * 1:1" para um campo que um dia passa a ser outro. O `text` já chega achatado
+ * numa linha e cortado no teto pelo backend — a tela não reformata nem
+ * reinterpreta nada disso.
+ */
+export interface WrittenByPerson {
+  readonly label: string;
+  readonly text: string;
+}
+
 export interface TranscribableAdvice {
   readonly notice: string;
   readonly facts: readonly string[];
+  readonly written?: readonly WrittenByPerson[];
   readonly narration: string | null;
   readonly outline?: readonly string[];
 }
@@ -240,15 +256,24 @@ export interface TranscribableAdvice {
  * daí a transcrição levar junto os FATOS e o aviso de que aquilo é sugestão.
  * Copiar só o parágrafo entregaria a interpretação sem a apuração que a
  * sustenta, que é o contrário do que a frente inteira defende.
+ *
+ * O texto de gente vai junto, e vai SEPARADO: `*` abre um fato apurado, `>`
+ * abre uma citação de quem escreveu, e o rótulo viaja colado ao texto. Quem
+ * cola isto numa conversa continua vendo qual metade o sistema calculou. A
+ * marca não é decoração de uma linha só por sorte: o backend já achatou o
+ * texto numa linha, então nada do que a pessoa digitou consegue abrir uma
+ * segunda linha e se passar por fato.
  */
 export class AdviceTranscript {
   static of(advice: TranscribableAdvice, headline: string): string {
     const outline = advice.outline ?? [];
+    const written = advice.written ?? [];
     return [
       headline,
       ...(outline.length > 0 ? ["", ...outline.map((step) => `- ${step}`)] : []),
       ...(advice.narration === null ? [] : ["", advice.narration]),
       ...(advice.facts.length > 0 ? ["", ...advice.facts.map((fact) => `* ${fact}`)] : []),
+      ...(written.length > 0 ? ["", ...written.map((one) => `> ${one.label}: ${one.text}`)] : []),
       "",
       advice.notice,
     ].join("\n");

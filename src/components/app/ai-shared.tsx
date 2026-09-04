@@ -13,6 +13,7 @@ import {
   type AssistantRunState,
   type CareerReadinessFigures,
   type GenerationProfileName,
+  type WrittenByPerson,
 } from "@/lib/assistants";
 import type { PersonAdvice } from "@/lib/gateways/person-assistants.gateway";
 import type { StagnationAlert, WorkAssistance } from "@/lib/gateways/work-assistants.gateway";
@@ -190,6 +191,7 @@ export function PersonAdviceBody({
         </p>
       )}
       <AdviceFactList label={t("ai.suggestion.facts")} items={advice.facts} />
+      <AdviceWrittenList items={advice.written} />
       <AdviceAbsenceList absences={advice.absences} />
       <p className="mt-3 max-w-prose text-xs text-muted-foreground">{advice.notice}</p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -210,6 +212,46 @@ export function AdviceFactList({ label, items }: { label: string; items: string[
           <li key={item}>{item}</li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * ADR-0093 na tela — o que uma PESSOA escreveu, ao lado dos fatos e nunca
+ * dentro deles.
+ *
+ * A separação é a mesma que o backend acabou de fazer no briefing, e ela não é
+ * estética: um bloco diz o que o SISTEMA apurou, o outro diz o que alguém
+ * DIGITOU. Quem lê a tela precisa saber qual é qual — uma frase escrita por
+ * gente pode dizer qualquer coisa, inclusive se parecer com um fato nosso, e
+ * misturada à lista de fatos ela pegaria emprestada a credibilidade que a
+ * lista tem. Daí o rótulo próprio, a régua à esquerda que marca a citação e o
+ * rótulo por item, que diz de quem é aquele texto.
+ *
+ * O texto entra como FILHO de JSX, e é isso que o mantém inerte: o React
+ * escapa, e uma tag digitada no formulário chega ao leitor como as letras que
+ * ela é. Nada aqui usa `dangerouslySetInnerHTML` nem passa por renderizador de
+ * markdown — o dia em que alguém achar que o texto "ficaria melhor formatado"
+ * é o dia em que o formulário vira porta de entrada de HTML. Também não há
+ * `whitespace-pre-line`: o backend já achatou tudo numa linha só, e reabrir
+ * quebras aqui devolveria à pessoa que digita a chance de forjar uma lista.
+ */
+export function AdviceWrittenList({ items }: { items: readonly WrittenByPerson[] }) {
+  const { t } = useI18n();
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-3 border-l-2 border-border pl-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {t("ai.suggestion.written")}
+      </p>
+      <dl className="mt-1 space-y-2">
+        {items.map((one) => (
+          <div key={one.label}>
+            <dt className="text-xs text-muted-foreground">{one.label}</dt>
+            <dd className="max-w-prose break-words text-sm">{one.text}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
