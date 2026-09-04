@@ -1065,7 +1065,6 @@ export function ConnectionError({
   onRetry: () => void;
   resource: string;
 }) {
-  const rawMessage = error instanceof Error ? error.message : "Erro desconhecido";
   if (import.meta.env.DEV) console.error(`[store] falha ao carregar ${resource}:`, error);
 
   return (
@@ -1079,8 +1078,9 @@ export function ConnectionError({
         </p>
         {import.meta.env.DEV && (
           <p className="mt-2 text-xs text-muted-foreground">
-            <strong>Dev:</strong> {rawMessage} — confira se o backend está no ar (
-            <code>docker compose up -d</code>) e se <code>VITE_API_URL</code> aponta para ele.
+            <strong>Dev:</strong> {error instanceof Error ? error.message : "Erro desconhecido"} —
+            confira se o backend está no ar (<code>docker compose up -d</code>) e se{" "}
+            <code>VITE_API_URL</code> aponta para ele.
           </p>
         )}
         <button
