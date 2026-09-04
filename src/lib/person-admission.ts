@@ -1,4 +1,4 @@
-import { ApiError } from "./api-errors";
+import { ApiError, UserFacingError } from "./api-errors";
 import {
   TeamLeadershipRoles,
   TEAM_MEMBER_ROLES,
@@ -93,7 +93,7 @@ export class PersonAdmission {
 
   toRequest(): PersonAdmissionRequest {
     const { name, email, cargo, teamId, careerLevelId } = this.values;
-    if (teamId === null) throw new Error("Escolha o time desta pessoa");
+    if (teamId === null) throw new UserFacingError("Escolha o time desta pessoa.");
     return {
       name: name.trim(),
       email: email.trim(),

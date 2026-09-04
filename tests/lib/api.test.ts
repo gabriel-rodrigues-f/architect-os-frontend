@@ -84,14 +84,24 @@ describe("cliente da API", () => {
     expect((error as ApiError).details).toEqual({ status: "Invalid" });
   });
 
-  it("usa mensagem padrão quando o erro não traz corpo JSON", async () => {
+  /**
+   * ONDA 42 — a régua VIROU. Este teste exigia o caminho da API DENTRO da
+   * mensagem, e era exatamente o vazamento que o dono viu na tela de login
+   * ("POST /api/v1/auth/login falhou (404)"). Sem corpo, a frase agora vem da
+   * SITUAÇÃO: 500 é "serviço fora do ar". O caminho continua acessível a quem
+   * depura — pelo `status`, pelo `code` e pelo console —, nunca na tela.
+   */
+  it("sem corpo JSON, a mensagem é a da situação — e não carrega o caminho da API", async () => {
     fetchMock.mockResolvedValue(new Response("boom", { status: 500 }));
 
     const error = (await api.getState().catch((e: unknown) => e)) as ApiError;
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(500);
-    expect(error.message).toContain(apiPath("/state"));
+    expect(error.message).not.toContain(apiPath("/state"));
+    expect(error.message).toBe(
+      "O serviço está fora do ar no momento. Tente de novo em alguns instantes.",
+    );
   });
 
   it("trata 204 sem corpo (DELETE de competência)", async () => {

@@ -179,14 +179,35 @@ function RootComponent() {
           <I18nProvider>
             <AuthProvider>
               <AuthGate>
-                <StoreProvider
-                  mode={defaultStranglerLedger.isStrangled(pathname) ? "contexts" : "blob"}
-                >
-                  <AppShell>
+                {/*
+                 * A CASCA FICA POR FORA DO STORE. Relato do dono (2026-09-03):
+                 * "sempre ao abrir a aplicação, assim que clico em qualquer um
+                 * dos menus a tela pisca; a partir de então para de piscar".
+                 *
+                 * A aplicação abre em `/`, que o strangler ledger marca como
+                 * estrangulada — modo "contexts", sem a consulta grande. No
+                 * primeiro clique para qualquer outra rota o modo vira "blob",
+                 * a `appStateQuery` monta pela primeira vez e o `StoreProvider`
+                 * devolve `<LoadingState />` no lugar de TODOS os filhos. Com o
+                 * `AppShell` dentro dele, menu, cabeçalho e ciclo sumiam junto —
+                 * o piscar. Depois o dado fica em cache e nunca mais acontece,
+                 * exatamente como ele descreveu.
+                 *
+                 * Invertida a ordem, o carregamento (e a falha de conexão, que
+                 * apagava a casca do mesmo jeito) acontece DENTRO do `<main>`:
+                 * a navegação continua na tela enquanto o conteúdo chega. O
+                 * `AppShell` não usa `useStore` — só sessão, idioma, tema e as
+                 * fatias de ciclo do `context-scope` —, então ele não precisa
+                 * do provedor para desenhar.
+                 */}
+                <AppShell>
+                  <StoreProvider
+                    mode={defaultStranglerLedger.isStrangled(pathname) ? "contexts" : "blob"}
+                  >
                     <Outlet />
-                  </AppShell>
-                  <AppToaster />
-                </StoreProvider>
+                  </StoreProvider>
+                </AppShell>
+                <AppToaster />
               </AuthGate>
             </AuthProvider>
           </I18nProvider>
