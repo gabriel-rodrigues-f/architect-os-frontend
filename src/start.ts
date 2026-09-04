@@ -53,6 +53,19 @@ const csrfMiddleware = createCsrfMiddleware({
  *     ampliada de propósito, não por engano;
  *   - a aplicação não tem iframe, `eval`, worker nem `window.open`.
  *
+ * O QUE ESTA FATIA FECHA E O QUE ELA NÃO FECHA — sem arredondar:
+ *
+ *   - clickjacking: FECHADO (`frame-ancestors 'none'` + `X-Frame-Options`);
+ *   - sniffing de tipo: FECHADO (`nosniff`);
+ *   - transporte: FECHADO sobre https (HSTS);
+ *   - travessia de janela por popup: FECHADO (`Cross-Origin-Opener-Policy`);
+ *   - XSS: PARCIAL, e é a fresta que sobra. `script-src 'unsafe-inline'`
+ *     continua aceito, então um `<script>` injetado ainda executa. O que a
+ *     política tira dele é o subrecurso (`default-src 'self'` cobre imagem,
+ *     `form-action 'self'` cobre formulário) e a moldura; o que ela NÃO tira é
+ *     a execução nem a exfiltração por navegação de topo, porque a diretiva
+ *     que fecharia isso (`navigate-to`) não existe em navegador nenhum.
+ *
  * As DUAS frestas são medidas e declaradas:
  *
  *   - `script-src 'unsafe-inline'`: o TanStack Start emite um `<script>` de
@@ -62,7 +75,11 @@ const csrfMiddleware = createCsrfMiddleware({
  *     `src/router.tsx`/`__root.tsx`, que não são desta fatia. A catraca
  *     `a-pagina-se-defende` prende a decisão nos dois sentidos: enquanto não
  *     houver nonce, `'unsafe-inline'` é obrigatório; no dia que houver, o
- *     teste exige que ele saia.
+ *     teste exige que ele saia — e, para que esse dia não mate nada calado, a
+ *     mesma catraca exige que o HTML que ESTE processo serve não dependa de
+ *     script embutido (nonce não autoriza manipulador `onclick`: isso pediria
+ *     `'unsafe-hashes'`). Foi por isso que o botão da página de erro virou
+ *     link em `src/lib/error-page.ts`.
  *   - `style-src 'unsafe-inline'`: medido no bundle — o `sonner` (o `<Toaster>`
  *     mora fora do portão de sessão) e o `react-remove-scroll` do Radix criam
  *     um elemento `<style>` em tempo de execução. Sem isto o aviso perde toda
@@ -86,6 +103,24 @@ function origemDe(configurado: unknown): string | undefined {
 }
 
 /**
+ * A origem é a máquina de QUEM ABRE a página, não um servidor nosso.
+ *
+ * `localhost` numa política servida a um visitante não aponta para o nosso
+ * servidor: aponta para o computador dele. Liberar isso é alargar a política
+ * para a máquina da vítima e ainda anunciar a topologia de desenvolvimento a
+ * qualquer um que leia o cabeçalho.
+ */
+function ehDaMaquinaDeQuemAbre(origem: string): boolean {
+  const { hostname } = new URL(origem);
+  return (
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]"
+  );
+}
+
+/**
  * Para onde o NAVEGADOR tem permissão de falar.
  *
  * A base da API vem do MESMO `API_URL` que o cliente usa para falar com ela, e
@@ -100,15 +135,29 @@ function origemDe(configurado: unknown): string | undefined {
  * origem, ver Dockerfile), a origem calculada é indefinida e sobra `'self'`:
  * o mais apertado possível. O DSN do rastreio de erro entra pela ORIGEM — a
  * chave que vive dentro dele não é escrita em lugar nenhum.
+ *
+ * O PORÉM MEDIDO NO BUILD: `import.meta.env` vira um literal congelado na hora
+ * do `vite build`, e um build sem `--build-arg VITE_API_URL` não tem a chave —
+ * `API_URL` cai no padrão `http://localhost:4000` e a política publicava, para
+ * todo visitante, uma origem `http:` na máquina dele. O Dockerfile fornece a
+ * chave, então em produção de verdade isso não acontece; degradação silenciosa,
+ * porém, é a que ninguém vê. Num build de produção o loopback sai da política:
+ * a aplicação mal configurada falha ALTO (a chamada é bloqueada) em vez de
+ * publicar uma política frouxa que parece certa.
  */
-function destinosDeDados(): readonly string[] {
+function destinosDeDados(buildDeProducao: boolean): readonly string[] {
   const daApi = origemDe(API_URL);
   const doRastreioDeErro = origemDe(import.meta.env["VITE_SENTRY_DSN"]);
-  const destinos = ["'self'", daApi, doRastreioDeErro];
-  return [...new Set(destinos.filter((destino) => destino !== undefined))];
+  const destinos = ["'self'", daApi, doRastreioDeErro].filter((destino) => destino !== undefined);
+  const publicaveis = buildDeProducao
+    ? destinos.filter((destino) => destino === "'self'" || !ehDaMaquinaDeQuemAbre(destino))
+    : destinos;
+  return [...new Set(publicaveis)];
 }
 
-export function politicaDeConteudo(): string {
+export function politicaDeConteudo({
+  buildDeProducao = import.meta.env.PROD,
+}: { readonly buildDeProducao?: boolean } = {}): string {
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -118,7 +167,7 @@ export function politicaDeConteudo(): string {
     "script-src 'self' 'unsafe-inline'",
     `style-src 'self' 'unsafe-inline' ${FOLHA_DE_ESTILO_DE_FONTE}`,
     `font-src 'self' ${ARQUIVO_DE_FONTE}`,
-    `connect-src ${destinosDeDados().join(" ")}`,
+    `connect-src ${destinosDeDados(buildDeProducao).join(" ")}`,
   ].join("; ");
 }
 
@@ -136,6 +185,14 @@ function aRespostaViajaCifrada(request: Request): boolean {
   return declaradoPeloProxy.split(",")[0]?.trim().toLowerCase() === "https";
 }
 
+/**
+ * `Cross-Origin-Opener-Policy` entra porque esta página CARREGA SESSÃO: sem
+ * ela, uma janela aberta por terceiro continua com referência à nossa (
+ * `window.opener`) e pode navegá-la ou medi-la de fora. O backend já ganha o
+ * cabeçalho pelo `@fastify/helmet`; a página não tinha. Custo medido: zero —
+ * a aplicação não abre popup (`window.open` não existe em `src/`), e os links
+ * externos já saem com `rel="noopener noreferrer"`.
+ */
 export function cabecalhosDeSeguranca(request: Request): Readonly<Record<string, string>> {
   const cabecalhos: Record<string, string> = {
     "Content-Security-Policy": politicaDeConteudo(),
@@ -143,6 +200,7 @@ export function cabecalhosDeSeguranca(request: Request): Readonly<Record<string,
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
   };
   if (aRespostaViajaCifrada(request)) {
     cabecalhos["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
@@ -151,23 +209,22 @@ export function cabecalhosDeSeguranca(request: Request): Readonly<Record<string,
 }
 
 /**
- * Assina a resposta que vier de dentro — seja a página, seja a de erro. É uma
- * função à parte, e não o corpo do middleware, para que o teste possa fazer um
- * pedido e ler a resposta sem subir a pilha do framework inteira.
+ * Assina a resposta que vier de dentro — seja a página, seja a de erro.
+ *
+ * Isto já foi uma função exportada à parte "para o teste poder ler a resposta
+ * sem subir a pilha do framework". Era o furo: a catraca media a auxiliar, e
+ * trocar o corpo deste middleware por `({ next }) => next()` deixava a suíte
+ * inteira verde com o servidor entregando ZERO cabeçalho. A auxiliar morreu e
+ * o teste passou a executar a CADEIA REGISTRADA (`startInstance.getOptions()`)
+ * — não há mais atalho que uma mutação daqui não faça vermelho.
  */
-export async function assinarRespostaComSeguranca<
-  TResultado extends { readonly response: Response },
->(request: Request, seguir: () => Promise<TResultado> | TResultado): Promise<TResultado> {
-  const resultado = await seguir();
+export const securityHeadersMiddleware = createMiddleware().server(async ({ request, next }) => {
+  const resultado = await next();
   for (const [nome, valor] of Object.entries(cabecalhosDeSeguranca(request))) {
     resultado.response.headers.set(nome, valor);
   }
   return resultado;
-}
-
-export const securityHeadersMiddleware = createMiddleware().server(({ request, next }) =>
-  assinarRespostaComSeguranca(request, next),
-);
+});
 
 /*
  * O de segurança vem PRIMEIRO de propósito: sendo o mais externo, ele assina
