@@ -174,7 +174,7 @@ describe("senioridade aparece e some com o cargo", () => {
       (href, init) =>
         href.endsWith(apiPath("/auth/users")) && init?.method === "POST"
           ? jsonResponse(
-              { user: fixtureAdminUser, architectId: "novo", temporaryPassword: "senha-temp" },
+              { user: fixtureAdminUser, architectId: "novo", invitationDelivered: true },
               201,
             )
           : undefined,
@@ -286,5 +286,69 @@ describe("a recusa do serviço fala no campo e trava o envio", () => {
     expect(dialogo.getByRole("button", { name: "Cadastrar pessoa" }).hasAttribute("disabled")).toBe(
       false,
     );
+  });
+});
+
+describe("depois de cadastrar, a tela diz o que ACONTECEU com o acesso", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  /**
+   * ONDA 44 (ADR-0094) — a admissão parou de sortear senha. Antes desta rede
+   * a tela continuou prometendo uma: dizia "Repasse a senha temporária" e
+   * "copie agora", com um espaço vazio onde a senha ficava. O dono viu a
+   * mensagem em produção — a tela mentia em silêncio porque nenhum teste
+   * olhava para ela.
+   *
+   * O que ela precisa dizer agora são DUAS coisas diferentes, e a diferença
+   * importa: quando o e-mail sai, a pessoa vai receber um link; quando NÃO
+   * sai, ela não consegue entrar e alguém precisa reenviar.
+   */
+  const admissaoQueResponde =
+    (invitationDelivered: boolean): FetchRoute =>
+    (href, init) =>
+      href.endsWith(apiPath("/auth/users")) && init?.method === "POST"
+        ? jsonResponse({ user: fixtureAdminUser, architectId: "novo", invitationDelivered }, 201)
+        : undefined;
+
+  async function cadastrar(invitationDelivered: boolean) {
+    const dialogo = await abrirCadastro(fixtureAdminUser, [
+      admissaoQueResponde(invitationDelivered),
+    ]);
+    await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "tech_lead");
+    await userEvent.type(dialogo.getByLabelText("Nome"), "Joana Prado");
+    await userEvent.type(dialogo.getByLabelText("E-mail"), "joana@empresa.com");
+    await userEvent.selectOptions(dialogo.getByLabelText("Time"), "time-dados");
+    await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar pessoa" }));
+    // O diálogo de sucesso substitui o de cadastro no MESMO papel; espera-se
+    // pelo título dele, e não por "um dialog", que já existe.
+    await screen.findByText("Pessoa cadastrada");
+    return within(screen.getByRole("dialog"));
+  }
+
+  it("com o e-mail entregue: fala do LINK, e nunca de senha para repassar", async () => {
+    const dialogo = await cadastrar(true);
+
+    expect(dialogo.getByText(/link para a pessoa criar a senha dela/i)).toBeTruthy();
+    expect(dialogo.getByText(/joana@empresa\.com/)).toBeTruthy();
+    // O texto que o dono viu, e que não pode voltar de jeito nenhum.
+    expect(dialogo.queryByText(/copie agora/i)).toBeNull();
+    expect(dialogo.queryByText(/repasse a senha/i)).toBeNull();
+    expect(dialogo.queryByText(/senha tempor/i)).toBeNull();
+  });
+
+  it("com o e-mail RECUSADO: avisa que não saiu e diz o que fazer", async () => {
+    const dialogo = await cadastrar(false);
+
+    expect(dialogo.getByText(/NÃO saiu/)).toBeTruthy();
+    expect(dialogo.getByText(/ainda não consegue entrar/i)).toBeTruthy();
+    expect(dialogo.getByText(/Devolver o acesso/)).toBeTruthy();
   });
 });

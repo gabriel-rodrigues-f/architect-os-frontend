@@ -17,5 +17,20 @@ export default defineConfig({
   // de forma silenciosa antes (frontend/REGRAS.md, regra 2); a catraca é
   // tests/architecture/saida-do-build-e-node.test.ts. Só vale no `vite build`; o `vite dev`
   // não passa pelo nitro.
-  nitro: { preset: "node-server" },
+  nitro: {
+    preset: "node-server",
+    // 2026-09-04 — MEDIDO: o build entrega 2,9 MB de JavaScript, e o servidor
+    // os mandava sem compressão nenhuma. Sob o Ingress do Kubernetes quem
+    // comprimia era o Traefik; com a saída do k8s o frontend passou a servir
+    // direto, o compressor foi embora junto, e ninguém notou — a queixa chegou
+    // como "a tela demora muito para carregar".
+    //
+    // `compressPublicAssets` gera .gz e .br no BUILD e o servidor entrega o
+    // arquivo pronto conforme o `Accept-Encoding`. Comprimir no build, e não a
+    // cada requisição, é o que torna isto de graça em tempo de resposta.
+    // O tipo do wrapper da Lovable só declara `preset`; a opção existe no
+    // nitro e funciona (o build gera 57 arquivos .br). O espalhamento é o que
+    // deixa passar sem mentir sobre o tipo do objeto inteiro.
+    ...({ compressPublicAssets: true } as Record<string, unknown>),
+  },
 });

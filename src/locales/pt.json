@@ -359,7 +359,7 @@
   "help.users.lead.title": "Usuários",
   "help.users.lead.what": "O único lugar onde uma pessoa é cadastrada: nome, e-mail, cargo (gestor, tech lead ou membro), senioridade — só para o membro — e time. A conta de acesso e o cadastro de profissional nascem juntos, num ato só.",
   "help.users.lead.comesFrom": "Quem cadastra quem é regra do serviço: o administrador cadastra gestor, tech lead e membro em qualquer time; o gestor cadastra tech lead e membro no time em que é gestor; o tech lead cadastra membro no time dele. Um time tem no máximo um gestor. O diretório de contas abaixo é do administrador.",
-  "help.users.lead.nextStep": "Cadastrou? Repasse a senha temporária por um canal fora da aplicação e abra a avaliação do ciclo em Avaliações. Trocar o cargo de quem já existe é aqui; mudar o time ou a senioridade é em Time, pela ação \"Mudar time ou nível\", sempre com motivo. Saída da organização? Desative aqui: a pessoa sai do quadro e a conta perde o acesso no mesmo ato.",
+  "help.users.lead.nextStep": "Cadastrou? A pessoa recebe por e-mail um link para criar a própria senha; abra a avaliação do ciclo em Avaliações. Trocar o cargo de quem já existe é aqui; mudar o time ou a senioridade é em Time, pela ação \"Mudar time ou nível\", sempre com motivo. Saída da organização? Desative aqui: a pessoa sai do quadro e a conta perde o acesso no mesmo ato.",
   "help.users.member.title": "Usuários",
   "help.users.member.what": "Esta tela é de quem lidera: é onde uma pessoa é cadastrada, com cargo, senioridade e time.",
   "help.users.member.comesFrom": "Do administrador, do gestor do seu time ou do tech lead do seu time — são eles que cadastram.",
@@ -1240,7 +1240,7 @@
   "users.status.active": "Ativa",
   "users.status.disabled": "Desabilitada",
   "users.mustChangePassword.badge": "1º acesso pendente",
-  "users.mustChangePassword.hint": "Ainda não trocou a senha temporária.",
+  "users.mustChangePassword.hint": "Ainda não criou a senha pelo link que recebeu.",
   "users.loading": "Carregando contas…",
   "users.error.load": "Não foi possível carregar as contas.",
   "users.admit.action": "Cadastrar pessoa",
@@ -1249,8 +1249,7 @@
   "users.admit.saving": "Cadastrando…",
   "users.admit.error": "Não foi possível cadastrar a pessoa.",
   "users.admit.successTitle": "Pessoa cadastrada",
-  "users.admit.successBody": "A conta e o cadastro de profissional nasceram juntos, já no time escolhido. Repasse a senha temporária por um canal fora da aplicação (não fica recuperável depois desta tela).",
-  "users.admit.notRecoverable": "Esta senha não aparece de novo — copie agora.",
+  "users.admit.successBody": "A conta e o cadastro de profissional nasceram juntos, já no time escolhido. Enviamos ao e-mail abaixo um link para a pessoa criar a senha dela — ninguém aqui chega a conhecê-la.",
   "users.admit.done": "Concluído",
   "asmt.noAssessment.inactive": "Esta pessoa não está mais no time ativo — não é possível abrir uma nova avaliação. As avaliações que ela já tinha continuam acessíveis pelo seletor acima.",
   "nav.capabilities": "Capacidades",
@@ -1814,5 +1813,7 @@
   "users.restoreAccess.submitting": "Enviando o link…",
   "users.restoreAccess.error": "Não foi possível devolver o acesso agora. Tente de novo em alguns instantes.",
   "msg.auth.accessRecovery.requested": "Se houver uma conta com esse e-mail, você recebe em instantes um link para criar a sua senha. Ele vale por 1 hora.",
-  "msg.auth.accessRecovery.sent": "Enviamos a {nome} o link para criar a senha. Ele vale por 1 hora."
+  "msg.auth.accessRecovery.sent": "Enviamos a {nome} o link para criar a senha. Ele vale por 1 hora.",
+  "users.admit.bodyWhenEmailFailed": "A conta e o cadastro de profissional nasceram juntos, já no time escolhido. O e-mail com o link, porém, NÃO saiu.",
+  "users.admit.emailFailedHint": "A pessoa ainda não consegue entrar. Quando o envio voltar a funcionar, use “Devolver o acesso” na linha dela para mandar o link de novo."
 }

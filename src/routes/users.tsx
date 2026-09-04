@@ -445,7 +445,7 @@ function AdmitPersonDialog({
 
   const [chosen, setChosen] = useState<PersonAdmissionValues | null>(null);
   const [refusal, setRefusal] = useState<AdmissionRefusal | null>(null);
-  const [admitted, setAdmitted] = useState<{ email: string; temporaryPassword: string } | null>(
+  const [admitted, setAdmitted] = useState<{ email: string; invitationDelivered: boolean } | null>(
     null,
   );
   const { submitting, run } = useAsyncSubmit(t("users.admit.error"));
@@ -465,7 +465,7 @@ function AdmitPersonDialog({
     if (result.ok) {
       setAdmitted({
         email: values.email.trim(),
-        temporaryPassword: result.value.temporaryPassword,
+        invitationDelivered: result.value.invitationDelivered,
       });
       return;
     }
@@ -479,15 +479,20 @@ function AdmitPersonDialog({
           <DialogHeader>
             <DialogTitle>{t("users.admit.successTitle")}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">{t("users.admit.successBody")}</p>
+          <p className="text-sm text-muted-foreground">
+            {admitted.invitationDelivered
+              ? t("users.admit.successBody")
+              : t("users.admit.bodyWhenEmailFailed")}
+          </p>
           <div className="surface-inset space-y-1 px-3 py-2 text-sm">
             <p>
               <span className="text-muted-foreground">{t("users.col.email")}: </span>
               {admitted.email}
             </p>
-            <p className="font-mono text-base">{admitted.temporaryPassword}</p>
           </div>
-          <p className="text-xs text-destructive">{t("users.admit.notRecoverable")}</p>
+          {!admitted.invitationDelivered && (
+            <p className="text-xs text-destructive">{t("users.admit.emailFailedHint")}</p>
+          )}
           <DialogFooter>
             <Button onClick={onAdmitted}>{t("users.admit.done")}</Button>
           </DialogFooter>

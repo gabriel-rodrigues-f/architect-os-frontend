@@ -112,12 +112,24 @@ function TeamRoster() {
           <DataViewToolbar
             layout="grid-3"
             resultCount={roster.enrichedSorted.length}
-            totalCount={store.architectsIncludingInactive.length}
+            totalCount={roster.filterablePeople.length}
             activeFilters={roster.activeFilterChips}
             onClearFilters={roster.clearFilters}
           >
+            {/*
+              ONDA 45 — o filtro de PESSOAS oferece só quem está ATIVO.
+              Regra do dono (2026-09-04): *"nenhum profissional desativado
+              poderia aparecer em filtros na aplicação, em nenhum filtro"*.
+
+              Antes daqui ele recebia `architectsIncludingInactive` — o nome da
+              coleção já dizia o que ela faz. O resultado era um menu que
+              oferecia alguém que a lista se recusava a desenhar: escolher essa
+              pessoa devolvia lista vazia, sem explicar por quê. O contador
+              "2 de 3" tinha o mesmo defeito, e denunciava a existência de
+              quem a tela esconde.
+            */}
             <ArchitectNameCombobox
-              architects={store.architectsIncludingInactive}
+              architects={roster.filterablePeople}
               selected={roster.nameSelection}
               onChange={roster.setNameSelection}
             />

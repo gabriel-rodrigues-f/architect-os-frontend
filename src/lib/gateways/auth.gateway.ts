@@ -101,7 +101,18 @@ export interface PersonAdmissionInput {
 export interface AdmittedPerson {
   user: SessionUser;
   architectId: string;
-  temporaryPassword: string;
+  /**
+   * Se o convite de acesso SAIU por e-mail.
+   *
+   * Substituiu `temporaryPassword` na onda 44 (ADR-0094): a admissão deixou de
+   * sortear senha, porque duas pessoas conhecerem a senha de uma terceira era
+   * exatamente o problema. Quem escolhe a senha agora é a dona dela.
+   *
+   * A admissão NÃO falha se o e-mail não sair — a conta, o profissional e o
+   * vínculo estão certos. Mas quem cadastrou precisa saber, senão fica
+   * esperando por alguém que nunca recebeu nada.
+   */
+  invitationDelivered: boolean;
 }
 
 export class HttpAuthGateway implements AuthGateway {

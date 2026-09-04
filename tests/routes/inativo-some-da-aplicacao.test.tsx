@@ -179,6 +179,23 @@ describe("profissional desativado some da aplicação", () => {
     expect(await screen.findByText(/todo o time/)).toBeTruthy();
   });
 
+  it("Time: o filtro de PESSOAS não oferece quem está desativado — o caso que o dono viu", async () => {
+    // Pedido do dono (2026-09-04), com a captura do menu aberto: *"nenhum
+    // profissional desativado poderia aparecer em filtros na aplicação, em
+    // nenhum filtro"*. O menu oferecia alguém que a lista se recusava a
+    // desenhar — escolher essa pessoa devolvia lista vazia sem dizer por quê,
+    // e o contador "2 de 3" ainda denunciava a existência de quem a tela
+    // esconde.
+    renderWithApp(<TeamPage />);
+    await screen.findByText("Ana Martins");
+
+    await userEvent.click(screen.getByLabelText("Pessoas"));
+    const menu = within(await screen.findByRole("listbox"));
+
+    expect(menu.queryByText("Raquel Marangoni")).toBeNull();
+    expect(menu.getByText("Ana Martins")).toBeTruthy();
+  });
+
   it("Time: o filtro 'Inativos' continua mostrando quem foi desativado — a exceção declarada", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");

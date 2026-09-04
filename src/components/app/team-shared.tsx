@@ -135,9 +135,35 @@ export function useTeamRoster(isAdmin: boolean) {
     () => capabilitySelection ?? capabilityOptions.map((option) => option.id),
     [capabilitySelection, capabilityOptions],
   );
+  /**
+   * ONDA 45 — QUEM O FILTRO DE NOMES PODE OFERECER.
+   *
+   * Regra do dono (2026-09-04): *"nenhum profissional desativado poderia
+   * aparecer em filtros na aplicação, em nenhum filtro"*. A leitura literal
+   * seria "nunca inativo", e ela brigaria com uma exceção que a casa já tinha
+   * declarado e testado: o filtro de STATUS desta mesma tela existe para o
+   * administrador pedir os inativos de propósito.
+   *
+   * A regra que honra as duas é uma só, e é mais forte que qualquer das duas:
+   * **o filtro oferece exatamente o que a lista pode desenhar.** No padrão
+   * (Status = Ativos) ninguém desativado aparece, que é o caso que o dono viu.
+   * Quando ele pede "Inativos", o menu passa a oferecê-los — senão a tela
+   * mostraria cartões que o filtro de nomes se recusa a nomear.
+   *
+   * Antes disto o menu recebia `architectsIncludingInactive` — o nome da
+   * coleção já dizia o que ela faz — e oferecia gente que a lista não
+   * desenhava: escolher essa pessoa devolvia lista vazia, sem dizer por quê.
+   */
+  const filterablePeople = useMemo(() => {
+    const effectiveStatus = isAdmin ? statusFilter : ["active"];
+    return store.architectsIncludingInactive.filter((pessoa) =>
+      effectiveStatus.includes(pessoa.active ? "active" : "inactive"),
+    );
+  }, [store.architectsIncludingInactive, isAdmin, statusFilter]);
+
   const nameSelection = useMemo(
-    () => nameSelectionChosen ?? store.architectsIncludingInactive.map((a) => a.id),
-    [nameSelectionChosen, store.architectsIncludingInactive],
+    () => nameSelectionChosen ?? filterablePeople.map((pessoa) => pessoa.id),
+    [nameSelectionChosen, filterablePeople],
   );
 
   const filtered = useMemo(() => {
@@ -217,7 +243,7 @@ export function useTeamRoster(isAdmin: boolean) {
   };
 
   const activeFilterChips: ActiveFilterChip[] = [];
-  if (nameSelection.length !== store.architectsIncludingInactive.length) {
+  if (nameSelection.length !== filterablePeople.length) {
     activeFilterChips.push({
       key: "name",
       label: t("team.filter.chip.name", { n: nameSelection.length }),
@@ -255,6 +281,7 @@ export function useTeamRoster(isAdmin: boolean) {
   };
 
   return {
+    filterablePeople,
     statusFilter,
     setStatusFilter,
     roleFilter,
