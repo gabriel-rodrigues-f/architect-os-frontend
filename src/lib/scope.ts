@@ -56,6 +56,29 @@ export class UiAuthorizationPolicy {
     return this.isLeadership(user);
   }
 
+  /**
+   * DEVOLVER O ACESSO de alguém — `POST /auth/users/:id/access-recovery`.
+   *
+   * O serviço pode recusar com `ACCESS_RESTORE_FORBIDDEN`, e um 403 não pode
+   * ser a primeira vez que a pessoa descobre que não podia: o botão só
+   * aparece para quem alcança. As duas condições, e por que cada uma:
+   *
+   *   **É ato de quem administra.** O diretório de contas já é administrativo
+   *   (o backend guarda `GET /auth/users` com `requireAdmin`), e devolver
+   *   acesso é da mesma família — mexer na porta de outra pessoa.
+   *
+   *   **Nunca na própria conta.** Quem está logado não precisa de convite
+   *   para entrar: já entrou. A saída de quem esqueceu a senha é o pedido da
+   *   tela de login, e a de quem quer trocá-la é a troca de senha.
+   *
+   * Conta desativada fica de fora por não ter acesso a devolver: o caminho
+   * dela é ser reativada primeiro, e prometer um link que não abriria nada
+   * seria mentir com um botão.
+   */
+  canRestoreAccessOf(user: SessionUser, account: { id: string; status: string }): boolean {
+    return this.isAdmin(user) && account.id !== user.id && account.status === "active";
+  }
+
   isLeadership(user: SessionUser): boolean {
     return user.role !== "member";
   }

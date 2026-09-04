@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiClient } from "@/lib/api-client";
 import type { MessageKey } from "@/lib/i18n";
 import { successMessageOf } from "@/lib/success-message";
+import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 
 import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
@@ -52,7 +53,7 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
  * só este repositório está clonado.
  */
 
-const CODIGOS_ESPERADOS = 61;
+const CODIGOS_ESPERADOS = 63;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
@@ -91,6 +92,18 @@ const CODIGOS_SEM_TRADUCAO: readonly string[] = [
 const CHAVES_SEM_EMISSOR: readonly string[] = [
   "msg.user.create.success",
   "msg.user.update.success",
+];
+
+/**
+ * Os códigos da RECUPERAÇÃO DE ACESSO (onda de 2026-09-04). Eles entraram na
+ * cópia junto com a fatia do backend que os emite, e estão nomeados aqui
+ * porque a chave `msg.*` de cada um é a metade que cabe a este repositório: o
+ * `202` de `POST /auth/access-recovery` responde igual exista a conta ou não,
+ * e é o texto desta chave que a tela mostra nos dois casos.
+ */
+const CODIGOS_DA_RECUPERACAO_DE_ACESSO: readonly string[] = [
+  "auth.accessRecovery.requested",
+  "auth.accessRecovery.sent",
 ];
 
 const FALLBACK_GENERICO = "users.title" as MessageKey;
@@ -217,8 +230,35 @@ describe("ARQ-18 — chaves de tradução que nenhum código emite", () => {
   });
 });
 
+describe("ARQ-18 — a recuperação de acesso fala nos dois idiomas", () => {
+  /**
+   * O teste de idioma vizinho confere pt contra en e não pegaria a ausência
+   * dos dois: uma chave que falta nos DOIS está em paridade perfeita. Aqui
+   * cada código do contrato é cobrado nome a nome, nos dois dicionários.
+   */
+  it("cada código emitido pela recuperação de acesso tem tradução em pt e em en", () => {
+    const dicionarios: ReadonlyArray<readonly [string, Record<string, unknown>]> = [
+      ["pt", pt as Record<string, unknown>],
+      ["en", en as Record<string, unknown>],
+    ];
+    const ausentes = dicionarios.flatMap(([idioma, dicionario]) =>
+      CODIGOS_DA_RECUPERACAO_DE_ACESSO.filter(
+        (code) => typeof dicionario[`${PREFIXO_DE_MENSAGEM}${code}`] !== "string",
+      ).map((code) => `${idioma}:${PREFIXO_DE_MENSAGEM}${code}`),
+    );
+
+    expect(ausentes).toEqual([]);
+  });
+
+  it("os dois códigos continuam sendo emitidos pelo backend — a cópia do fixture os conhece", () => {
+    const sumiram = CODIGOS_DA_RECUPERACAO_DE_ACESSO.filter((code) => !(code in CODIGOS_EMITIDOS));
+
+    expect(sumiram).toEqual([]);
+  });
+});
+
 describe("ARQ-18 — procedência da cópia do fixture do backend", () => {
-  it("a cópia enxerga os 58 códigos que o backend declara emitir", () => {
+  it("a cópia enxerga todos os códigos que o backend declara emitir", () => {
     expect(Object.keys(CODIGOS_EMITIDOS)).toHaveLength(CODIGOS_ESPERADOS);
   });
 

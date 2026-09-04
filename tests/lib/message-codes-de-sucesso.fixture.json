@@ -60,29 +60,41 @@
       "linha": 198,
       "resposta": "ok"
     },
+    "auth.accessRecovery.requested": {
+      "rota": "POST /auth/access-recovery",
+      "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
+      "linha": 250,
+      "resposta": "accepted"
+    },
+    "auth.accessRecovery.sent": {
+      "rota": "POST /auth/users/:id/access-recovery",
+      "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
+      "linha": 267,
+      "resposta": "accepted"
+    },
     "auth.login.success": {
       "rota": "POST /auth/login",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 146,
+      "linha": 152,
       "resposta": "ok"
     },
     "auth.register.success": {
       "rota": "POST /auth/register",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 127,
+      "linha": 133,
       "resposta": "created"
     },
     "auth.user.create.success": {
       "rota": "POST /auth/users",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 197,
+      "linha": 206,
       "resposta": "created",
       "consumidorAusente": true
     },
     "auth.user.update.success": {
       "rota": "PATCH /auth/users/:id",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 233,
+      "linha": 308,
       "resposta": "ok",
       "consumidorAusente": true
     },

@@ -313,4 +313,42 @@ describe("o profissional não vê os próprios números", () => {
       policy.canOpenCareerFileOf({ ...fixtureAssignedTechLeadUser, architectId: "ana" }, "ana"),
     ).toBe(true);
   });
+
+  /**
+   * DEVOLVER O ACESSO (onda de 2026-09-04) — o espelho da régua de
+   * `POST /auth/users/:id/access-recovery`, que pode recusar com
+   * `ACCESS_RESTORE_FORBIDDEN`. O botão só aparece para quem alcança: um 403
+   * não pode ser a primeira vez que a pessoa descobre que não podia.
+   */
+  describe("canRestoreAccessOf", () => {
+    const contaAtiva = { id: "conta-ana", status: "active" };
+
+    it("quem administra devolve o acesso de outra pessoa", () => {
+      expect(policy.canRestoreAccessOf(fixtureAdminUser, contaAtiva)).toBe(true);
+    });
+
+    it("ninguém devolve o acesso à própria conta — quem está logado já entrou", () => {
+      expect(
+        policy.canRestoreAccessOf(fixtureAdminUser, {
+          id: fixtureAdminUser.id,
+          status: "active",
+        }),
+      ).toBe(false);
+    });
+
+    it("conta desativada não tem acesso a devolver — o caminho dela é ser reativada", () => {
+      expect(
+        policy.canRestoreAccessOf(fixtureAdminUser, { id: "conta-ana", status: "disabled" }),
+      ).toBe(false);
+    });
+
+    it("quem não administra não devolve acesso de ninguém", () => {
+      expect(policy.canRestoreAccessOf(fixtureAssignedTechLeadUser, contaAtiva)).toBe(false);
+      expect(policy.canRestoreAccessOf(fixtureUnassignedTechLeadUser, contaAtiva)).toBe(false);
+      expect(policy.canRestoreAccessOf(fixtureMemberUser, contaAtiva)).toBe(false);
+      expect(policy.canRestoreAccessOf({ ...fixtureAdminUser, role: "manager" }, contaAtiva)).toBe(
+        false,
+      );
+    });
+  });
 });

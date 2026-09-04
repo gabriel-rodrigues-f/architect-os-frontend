@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { DependencyProvider } from "../lib/dependencies";
 import { I18nProvider } from "../lib/i18n";
+import { defaultPublicReach } from "../lib/public-reach";
 import { ThemeProvider, useTheme } from "../lib/theme";
 import { defaultStranglerLedger } from "../lib/state-contexts";
 import { StoreProvider } from "../lib/store";
@@ -179,36 +180,54 @@ function RootComponent() {
         <ThemeProvider>
           <I18nProvider>
             <AuthProvider>
-              <AuthGate>
-                {/*
-                 * A CASCA FICA POR FORA DO STORE. Relato do dono (2026-09-03):
-                 * "sempre ao abrir a aplicação, assim que clico em qualquer um
-                 * dos menus a tela pisca; a partir de então para de piscar".
-                 *
-                 * A aplicação abre em `/`, que o strangler ledger marca como
-                 * estrangulada — modo "contexts", sem a consulta grande. No
-                 * primeiro clique para qualquer outra rota o modo vira "blob",
-                 * a `appStateQuery` monta pela primeira vez e o `StoreProvider`
-                 * devolve `<LoadingState />` no lugar de TODOS os filhos. Com o
-                 * `AppShell` dentro dele, menu, cabeçalho e ciclo sumiam junto —
-                 * o piscar. Depois o dado fica em cache e nunca mais acontece,
-                 * exatamente como ele descreveu.
-                 *
-                 * Invertida a ordem, o carregamento (e a falha de conexão, que
-                 * apagava a casca do mesmo jeito) acontece DENTRO do `<main>`:
-                 * a navegação continua na tela enquanto o conteúdo chega. O
-                 * `AppShell` não usa `useStore` — só sessão, idioma, tema e as
-                 * fatias de ciclo do `context-scope` —, então ele não precisa
-                 * do provedor para desenhar.
-                 */}
-                <AppShell>
-                  <StoreProvider
-                    mode={defaultStranglerLedger.isStrangled(pathname) ? "contexts" : "blob"}
-                  >
-                    <Outlet />
-                  </StoreProvider>
-                </AppShell>
-              </AuthGate>
+              {/*
+               * O ALCANCE PÚBLICO PASSA POR FORA DO PORTÃO. Quem clica no link
+               * de recuperação de acesso NÃO TEM sessão — é por isso que está
+               * clicando —, e o `AuthGate` desenharia a tela de login no lugar
+               * da criação de senha, mandando a pessoa fazer justamente o que
+               * ela não consegue. A lista de quem escapa é a `PublicReach`, e
+               * a catraca `alcance-por-rota` confere que ela e a matriz de
+               * alcance dizem a mesma coisa nos dois sentidos.
+               *
+               * O `AuthProvider` continua por fora dos dois ramos de
+               * propósito: o `/auth/me` da montagem responde "ninguém" sem
+               * quebrar nada, e quem já estiver logado e abrir o link não
+               * perde a sessão por isso.
+               */}
+              {defaultPublicReach.covers(pathname) ? (
+                <Outlet />
+              ) : (
+                <AuthGate>
+                  {/*
+                   * A CASCA FICA POR FORA DO STORE. Relato do dono (2026-09-03):
+                   * "sempre ao abrir a aplicação, assim que clico em qualquer um
+                   * dos menus a tela pisca; a partir de então para de piscar".
+                   *
+                   * A aplicação abre em `/`, que o strangler ledger marca como
+                   * estrangulada — modo "contexts", sem a consulta grande. No
+                   * primeiro clique para qualquer outra rota o modo vira "blob",
+                   * a `appStateQuery` monta pela primeira vez e o `StoreProvider`
+                   * devolve `<LoadingState />` no lugar de TODOS os filhos. Com o
+                   * `AppShell` dentro dele, menu, cabeçalho e ciclo sumiam junto —
+                   * o piscar. Depois o dado fica em cache e nunca mais acontece,
+                   * exatamente como ele descreveu.
+                   *
+                   * Invertida a ordem, o carregamento (e a falha de conexão, que
+                   * apagava a casca do mesmo jeito) acontece DENTRO do `<main>`:
+                   * a navegação continua na tela enquanto o conteúdo chega. O
+                   * `AppShell` não usa `useStore` — só sessão, idioma, tema e as
+                   * fatias de ciclo do `context-scope` —, então ele não precisa
+                   * do provedor para desenhar.
+                   */}
+                  <AppShell>
+                    <StoreProvider
+                      mode={defaultStranglerLedger.isStrangled(pathname) ? "contexts" : "blob"}
+                    >
+                      <Outlet />
+                    </StoreProvider>
+                  </AppShell>
+                </AuthGate>
+              )}
               {/*
                * O AVISO FICA POR FORA DO PORTÃO. Dentro dele, todo aviso
                * nasce condenado: o `<Toaster>` desmontava junto com a

@@ -90,6 +90,7 @@ function UsersDirectory() {
   const [admitting, setAdmitting] = useState(false);
   const [editing, setEditing] = useState<SessionUser | null>(null);
   const [deactivating, setDeactivating] = useState<SessionUser | null>(null);
+  const [restoringAccessOf, setRestoringAccessOf] = useState<SessionUser | null>(null);
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: USERS_QUERY_KEY,
@@ -196,6 +197,16 @@ function UsersDirectory() {
                             >
                               {t("users.edit.action")}
                             </Button>
+                            {defaultUiAuthorizationPolicy.canRestoreAccessOf(user, account) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                aria-label={`${t("users.restoreAccess.action")} ${account.name}`}
+                                onClick={() => setRestoringAccessOf(account)}
+                              >
+                                {t("users.restoreAccess.action")}
+                              </Button>
+                            )}
                             {account.architectId !== null && account.status === "active" && (
                               <Button
                                 size="sm"
@@ -245,6 +256,17 @@ function UsersDirectory() {
           onClose={() => setDeactivating(null)}
           onDeactivated={() => {
             setDeactivating(null);
+            void refreshAccounts();
+          }}
+        />
+      )}
+
+      {restoringAccessOf && (
+        <RestoreAccessDialog
+          account={restoringAccessOf}
+          onClose={() => setRestoringAccessOf(null)}
+          onRestored={() => {
+            setRestoringAccessOf(null);
             void refreshAccounts();
           }}
         />
@@ -589,6 +611,70 @@ function AdmitPersonDialog({
  * contas não monta o `/state`, então lê o profissional para saber a versão
  * que a operação exige.
  */
+/**
+ * DEVOLVER O ACESSO — o pedido da liderança, `POST /auth/users/:id/access-recovery`.
+ *
+ * Pedido do dono (2026-09-04): *"quero poder resetar a senha do usuário"* —
+ * com a correção que ele mesmo fez em seguida: **"a senha não deve ser
+ * enviada por e-mail"**. Então o que sai daqui é um LINK, e quem escolhe a
+ * senha é a pessoa, na tela `/set-password`. Ninguém nesta tela chega a ver
+ * uma senha, e é de propósito.
+ *
+ * A confirmação vem antes porque o ato tem efeito fora da tela: um e-mail sai
+ * para a pessoa. Quem pode fazê-lo é a `UiAuthorizationPolicy` que decide
+ * (`canRestoreAccessOf`) — o botão nem aparece para quem o serviço recusaria.
+ * Uma recusa que escape mesmo assim é dita AQUI, dentro do diálogo, com a
+ * frase do serviço, e não como um erro solto depois que a tela já fechou.
+ */
+function RestoreAccessDialog({
+  account,
+  onClose,
+  onRestored,
+}: {
+  account: SessionUser;
+  onClose: () => void;
+  onRestored: () => void;
+}) {
+  const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
+  const { submitting, error, run } = useAsyncSubmit(t("users.restoreAccess.error"));
+
+  const confirm = async () => {
+    const result = await run(() => authApi.restoreAccessOf(account.id));
+    if (!result.ok) return;
+    notifySuccess("msg.auth.accessRecovery.sent", { nome: account.name });
+    onRestored();
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("users.restoreAccess.confirmTitle", { nome: account.name })}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          {t("users.restoreAccess.confirmBody", { nome: account.name })}
+        </p>
+        {error !== null && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            {t("users.edit.cancel")}
+          </Button>
+          <Button onClick={() => void confirm()} disabled={submitting}>
+            {submitting
+              ? t("users.restoreAccess.submitting")
+              : t("users.restoreAccess.confirmAction")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DeactivatePersonDialog({
   account,
   onClose,

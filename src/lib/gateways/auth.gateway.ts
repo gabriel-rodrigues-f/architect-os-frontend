@@ -78,6 +78,9 @@ export interface AuthGateway {
   ): Promise<SessionUser>;
   admitPerson(input: PersonAdmissionInput): Promise<AdmittedPerson>;
   changePassword(currentPassword: string, newPassword: string): Promise<void>;
+  requestAccessRecovery(email: string): Promise<void>;
+  restoreAccessOf(userId: string): Promise<void>;
+  setPassword(token: string, newPassword: string): Promise<void>;
 }
 
 /**
@@ -135,4 +138,29 @@ export class HttpAuthGateway implements AuthGateway {
 
   changePassword = (currentPassword: string, newPassword: string): Promise<void> =>
     this.client.post<void>("/auth/change-password", { currentPassword, newPassword });
+
+  /**
+   * A própria pessoa PEDE o acesso de volta, sem sessão. O serviço responde
+   * **sempre 202**, exista a conta ou não — de propósito, para a resposta não
+   * revelar quem tem conta aqui. Por isso não há nada a devolver: a tela
+   * mostra a mesma confirmação nos dois casos, e ela não tem como (nem por
+   * que) distinguir um do outro.
+   */
+  requestAccessRecovery = (email: string): Promise<void> =>
+    this.client.post<void>("/auth/access-recovery", { email });
+
+  /**
+   * A liderança DEVOLVE o acesso de alguém. Sem corpo: o serviço já sabe para
+   * quem, pelo id da rota. O que sai daqui é um convite por e-mail — um LINK,
+   * nunca uma senha.
+   */
+  restoreAccessOf = (userId: string): Promise<void> =>
+    this.client.post<void>(`/auth/users/${userId}/access-recovery`, {});
+
+  /**
+   * A pessoa DEFINE a própria senha a partir do convite. Público e sem
+   * sessão: quem autentica o pedido é o token do link.
+   */
+  setPassword = (token: string, newPassword: string): Promise<void> =>
+    this.client.post<void>("/auth/set-password", { token, newPassword });
 }

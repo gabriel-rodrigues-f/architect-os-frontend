@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { PublicReach } from "@/lib/public-reach";
 import { discoverRoutes } from "../../e2e/route-inventory";
 
 /**
@@ -125,6 +126,7 @@ const TAMANHO_MINIMO_DA_JUSTIFICATIVA = 60;
 const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 const DISTRIBUICAO_ESPERADA = {
+  publica: 1,
   autenticado: 6,
   admin: 1,
   "lead-com-vinculo": 2,
@@ -483,19 +485,53 @@ describe("alcance por rota — a declaração concorda com o código", () => {
   });
 
   /**
-   * O `AuthGate` do `__root` embrulha o `<Outlet />`: enquanto for assim,
-   * NENHUMA rota de arquivo é alcançável sem sessão, e declarar `publica`
-   * seria mentira. Se um dia o gate sair dali, este teste cai junto e a
-   * declaração volta a ser possível — de propósito.
+   * ATÉ A ONDA DA RECUPERAÇÃO DE ACESSO (2026-09-04) este teste dizia outra
+   * coisa: `publica` não era DIZÍVEL, porque o `AuthGate` do `__root`
+   * embrulhava o `<Outlet />` e nenhuma rota de arquivo era alcançável sem
+   * sessão. O próprio comentário previa o dia: *"se um dia o gate sair dali,
+   * este teste cai junto e a declaração volta a ser possível — de propósito"*.
+   *
+   * O dia chegou com `/set-password`. Quem clica no link do convite não tem
+   * sessão — é exatamente por isso que está clicando —, e o portão desenharia
+   * o login por cima, mandando a pessoa fazer o que ela não consegue.
+   *
+   * O que substitui a proibição NÃO é a ausência de rede: é a concordância
+   * nos dois sentidos entre a declaração e o código. A lista de quem escapa
+   * mora em `PublicReach`, o `__root` a consulta, e aqui as duas metades
+   * precisam bater. Rota declarada `publica` que não está na lista é
+   * declaração sem código; rota na lista que não se declara `publica` é
+   * código sem declaração. E o portão continua embrulhando todo o resto —
+   * abrir a segunda rota pública passa por editar este arquivo.
    */
-  it("`publica` não é dizível enquanto o AuthGate embrulhar o Outlet", () => {
-    const raiz = readFileSync(join(raizDoRepositorio, "src", "routes", "__root.tsx"), "utf8");
-    const gateEmbrulhaTudo = /<AuthGate>[\s\S]*<Outlet\b[\s\S]*<\/AuthGate>/.test(raiz);
-    const publicas = Fixture.entradas
+  it("quem declara `publica` está na lista de alcance público, e a lista não tem mais ninguém", () => {
+    const publicasDeclaradas = Fixture.entradas
       .filter(([, declaracao]) => declaracao.alcance === "publica")
-      .map(([caminho]) => caminho);
+      .map(([caminho]) => caminho)
+      .sort();
 
-    expect({ gateEmbrulhaTudo, publicas }).toEqual({ gateEmbrulhaTudo: true, publicas: [] });
+    expect(publicasDeclaradas).toEqual([...PublicReach.ROUTES].sort());
+  });
+
+  it("toda rota do alcance público existe em `src/routes/` — a lista não guarda endereço morto", () => {
+    const inexistentes = PublicReach.ROUTES.filter((rota) => !fontePorCaminho.has(rota));
+
+    expect(inexistentes).toEqual([]);
+  });
+
+  it("o `__root` consulta o alcance público, e desenha o `Outlet` dele FORA do portão", () => {
+    const raiz = readFileSync(join(raizDoRepositorio, "src", "routes", "__root.tsx"), "utf8");
+    const primeiroOutlet = raiz.indexOf("<Outlet");
+    const portao = raiz.indexOf("<AuthGate>");
+
+    expect({
+      consultaOAlcancePublico: raiz.includes("defaultPublicReach.covers("),
+      temOutletForaDoPortao: primeiroOutlet >= 0 && portao >= 0 && primeiroOutlet < portao,
+      portaoEmbrulhaOResto: /<AuthGate>[\s\S]*<Outlet\b[\s\S]*<\/AuthGate>/.test(raiz),
+    }).toEqual({
+      consultaOAlcancePublico: true,
+      temOutletForaDoPortao: true,
+      portaoEmbrulhaOResto: true,
+    });
   });
 });
 

@@ -22,6 +22,7 @@ import { Route as LearningPathsRouteImport } from './routes/learning-paths'
 import { Route as MentoringRouteImport } from './routes/mentoring'
 import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as ProgressionRouteImport } from './routes/progression'
+import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TeamRulesRouteImport } from './routes/team-rules'
@@ -99,6 +100,11 @@ const ProgressionRoute = ProgressionRouteImport.update({
   path: '/progression',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SetPasswordRoute = SetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/mentoring': typeof MentoringRoute
   '/notices': typeof NoticesRoute
   '/progression': typeof ProgressionRoute
+  '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/mentoring': typeof MentoringRoute
   '/notices': typeof NoticesRoute
   '/progression': typeof ProgressionRoute
+  '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/mentoring': typeof MentoringRoute
   '/notices': typeof NoticesRoute
   '/progression': typeof ProgressionRoute
+  '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/mentoring'
     | '/notices'
     | '/progression'
+    | '/set-password'
     | '/settings'
     | '/team'
     | '/team-rules'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/mentoring'
     | '/notices'
     | '/progression'
+    | '/set-password'
     | '/settings'
     | '/team'
     | '/team-rules'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/mentoring'
     | '/notices'
     | '/progression'
+    | '/set-password'
     | '/settings'
     | '/team'
     | '/team-rules'
@@ -331,6 +343,7 @@ export interface RootRouteChildren {
   MentoringRoute: typeof MentoringRoute
   NoticesRoute: typeof NoticesRoute
   ProgressionRoute: typeof ProgressionRoute
+  SetPasswordRoute: typeof SetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   TeamRoute: typeof TeamRoute
   TeamRulesRoute: typeof TeamRulesRoute
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/progression'
       fullPath: '/progression'
       preLoaderRoute: typeof ProgressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/set-password': {
+      id: '/set-password'
+      path: '/set-password'
+      fullPath: '/set-password'
+      preLoaderRoute: typeof SetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -546,6 +566,7 @@ const rootRouteChildren: RootRouteChildren = {
   MentoringRoute: MentoringRoute,
   NoticesRoute: NoticesRoute,
   ProgressionRoute: ProgressionRoute,
+  SetPasswordRoute: SetPasswordRoute,
   SettingsRoute: SettingsRoute,
   TeamRoute: TeamRoute,
   TeamRulesRoute: TeamRulesRoute,

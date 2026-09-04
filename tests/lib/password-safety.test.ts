@@ -84,6 +84,59 @@ describe("a senha segura sabe o que ainda falta", () => {
   });
 });
 
+/**
+ * A LEITURA DE QUEM CHEGA PELO LINK (onda da recuperação de acesso,
+ * 2026-09-04). Ali não há sessão e o token é opaco: o e-mail da pessoa
+ * simplesmente não está naquela tela.
+ *
+ * As duas saídas fáceis são as duas mentiras. Dar a exigência como atendida
+ * põe um tique verde sobre uma senha que pode ser o e-mail inteiro; dá-la
+ * como pendente desenha uma linha vermelha que nunca fecha. A terceira é a
+ * honesta: a exigência continua à vista, declarada como NÃO CONFERÍVEL AQUI,
+ * e quem confere é o serviço.
+ */
+describe("a senha escolhida sem o e-mail à mão", () => {
+  it("a exigência do próprio e-mail não é dada como atendida", () => {
+    const leitura = SafePassword.withoutKnownEmail(SENHA_BOA);
+
+    expect(leitura.meets("own-email")).toBe(false);
+    expect(leitura.cannotMeasure("own-email")).toBe(true);
+    expect(leitura.unmeasured).toEqual(["own-email"]);
+  });
+
+  it("nem é dada como pendente — ela não está na fila do que a pessoa precisa consertar", () => {
+    expect(SafePassword.withoutKnownEmail(SENHA_BOA).pending).toEqual([]);
+  });
+
+  it("as outras seis continuam medidas normalmente", () => {
+    const semSimbolo = SafePassword.withoutKnownEmail("VentoSul77");
+
+    expect(semSimbolo.pending).toEqual(["symbol"]);
+    expect(semSimbolo.meets("minimum-length")).toBe(true);
+    expect(semSimbolo.meets("digit")).toBe(true);
+  });
+
+  it("campo em branco continua sendo o estado antes de digitar", () => {
+    const leitura = SafePassword.withoutKnownEmail("");
+
+    expect(leitura.pending).toEqual(
+      PASSWORD_REQUIREMENTS.filter((exigencia) => exigencia !== "own-email"),
+    );
+    expect(leitura.cannotMeasure("own-email")).toBe(true);
+  });
+
+  /** O que esta tela não consegue medir não conta como senha de pé. */
+  it("nenhuma senha é declarada segura por aqui — a palavra final é do serviço", () => {
+    expect(SafePassword.withoutKnownEmail(SENHA_BOA).safe).toBe(false);
+  });
+
+  /** A leitura COM e-mail não ganhou buraco nenhum: ela mede as sete. */
+  it("com o e-mail à mão nada fica sem medir", () => {
+    expect(SafePassword.of(SENHA_BOA, EMAIL).unmeasured).toEqual([]);
+    expect(SafePassword.of(SENHA_BOA, EMAIL).cannotMeasure("own-email")).toBe(false);
+  });
+});
+
 describe("a recusa do backend vira a exigência exata", () => {
   const recusaFraca = (requirement: unknown) =>
     new ApiError("recusado", 400, { requirement }, PasswordRefusal.WEAK_PASSWORD_CODE);
@@ -103,11 +156,11 @@ describe("a recusa do backend vira a exigência exata", () => {
     );
     expect(leitura.reason).toBe("wrongCurrentPassword");
     expect(leitura.requirement).toBeNull();
-    expect(leitura.messageKey).toBe("firstAccess.refused.currentPassword");
+    expect(leitura.messageKey).toBe("password.refused.currentPassword");
   });
 
   it("senha fraca sem exigência nomeada ainda manda a pessoa para a lista", () => {
-    expect(PasswordRefusal.of(recusaFraca(undefined)).messageKey).toBe("firstAccess.refused.weak");
+    expect(PasswordRefusal.of(recusaFraca(undefined)).messageKey).toBe("password.refused.weak");
     expect(PasswordRefusal.of(recusaFraca("exigencia-que-nao-existe")).requirement).toBeNull();
   });
 
