@@ -87,6 +87,12 @@ class ServidorDoPrimeiroAcesso {
   /** A marca de pé: o backend a derruba quando a troca acontece. */
   marcaDePe = true;
 
+  /**
+   * Se `/auth/me` CONTA a marca. Desligar isto é o caso da rede de segurança:
+   * a sessão parece livre, mas as rotas seguem recusando por senha pendente.
+   */
+  marcaVisivelNoMe = true;
+
   /** O que a próxima troca vai responder — `null` aceita e devolve 204. */
   proximaRecusa: RecusaDaTroca | null = RecusaDaTroca.aceita();
 
@@ -139,7 +145,11 @@ class ServidorDoPrimeiroAcesso {
   };
 
   private conta(): SessionUser {
-    return { ...contaAdmitida, mustChangePassword: this.marcaDePe, memberships: [] };
+    return {
+      ...contaAdmitida,
+      mustChangePassword: this.marcaDePe && this.marcaVisivelNoMe,
+      memberships: [],
+    };
   }
 
   private responderTroca(init?: RequestInit): Promise<Response> {
@@ -388,5 +398,39 @@ describe("o primeiro acesso segura a porta até a senha ser trocada", () => {
     expect(await screen.findByRole("navigation")).toBeTruthy();
     expect(screen.queryByText("Troque a sua senha para começar")).toBeNull();
     expect(screen.queryByText("A senha nova precisa:")).toBeNull();
+  });
+
+  /**
+   * A REDE DE SEGURANÇA. Aqui `/auth/me` não conta a marca — a sessão parece
+   * livre — e a recusa por senha pendente chega de uma rota qualquer. Sem a
+   * rede, a pessoa lia "você não tem permissão para fazer isso", que ela tem,
+   * e que ela não teria como resolver de lugar nenhum.
+   */
+  it("uma rota que ainda recusa por senha pendente leva à troca, não a um erro", async () => {
+    servidor.marcaVisivelNoMe = false;
+    await subirASpa();
+    await entrar();
+
+    expect(await screen.findByText("Troque a sua senha para começar")).toBeTruthy();
+    expect(screen.queryByRole("navigation")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Você não tem permissão para fazer isso. Peça acesso a quem administra o sistema.",
+      ),
+    ).toBeNull();
+  });
+
+  it("e dali a troca funciona igual — a pessoa sai do buraco pela própria tela", async () => {
+    servidor.marcaVisivelNoMe = false;
+    await subirASpa();
+    const usuario = await entrar();
+    await screen.findByText("Troque a sua senha para começar");
+
+    servidor.proximaRecusa = RecusaDaTroca.aceita();
+    await preencherTroca(usuario, SENHA_NOVA);
+    await usuario.click(screen.getByRole("button", { name: "Trocar a senha e entrar" }));
+
+    expect(await screen.findByRole("navigation")).toBeTruthy();
+    expect(screen.queryByText("Troque a sua senha para começar")).toBeNull();
   });
 });

@@ -59,6 +59,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   /**
+   * A rede de segurança do primeiro acesso. O caminho normal é a marca chegar
+   * em `/auth/me` e o `AuthGate` desenhar a troca antes de qualquer navegação.
+   * Se ainda assim alguma rota recusar por senha pendente, levantar a marca
+   * aqui leva a pessoa para a troca — o único lugar onde ela pode resolver o
+   * que a recusa está pedindo — em vez de desenhar um erro de permissão.
+   *
+   * Devolver a MESMA conta quando a marca já está de pé é o que impede o
+   * ciclo: sem isso, cada recusa criaria um objeto novo e um render novo.
+   */
+  useEffect(() => {
+    sessionPolicy.whenPasswordChangeRequired(() => {
+      setUser((current) =>
+        current === null || current.mustChangePassword
+          ? current
+          : { ...current, mustChangePassword: true },
+      );
+    });
+    return () => sessionPolicy.whenPasswordChangeRequired(null);
+  }, []);
+
+  /**
    * `POST /auth/login` e `POST /auth/register` devolvem a conta autenticada,
    * não a SESSÃO: `memberships` só existe em `GET /auth/me` (backend
    * `auth.controller.ts`). Quem entra pela tela de login fica na mesma
