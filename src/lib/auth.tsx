@@ -20,6 +20,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (input: { name: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const Ctx = createContext<AuthContextValue | null>(null);
@@ -97,9 +98,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
   }, [queryClient]);
 
+  /**
+   * A troca do PRIMEIRO ACESSO. O serviço responde 204 e derruba a marca;
+   * quem reabre a aplicação aqui é a releitura de `/auth/me` — e é ela que
+   * cumpre a parte do pedido que diz "depois de trocar, a pessoa segue para
+   * onde iria, sem precisar entrar de novo".
+   *
+   * `/auth/me` é uma das três rotas liberadas enquanto a marca está de pé,
+   * então a releitura funciona no exato momento em que qualquer outra ainda
+   * seria recusada. Se mesmo assim ela não vier, `openSession` cai na conta
+   * que passamos com a marca já derrubada: a troca ACONTECEU (204), e
+   * segurar a pessoa na tela por causa de uma leitura que falhou seria punir
+   * quem já fez a parte dela.
+   */
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      await authApi.changePassword(currentPassword, newPassword);
+      if (user !== null) await openSession({ ...user, mustChangePassword: false });
+    },
+    [openSession, user],
+  );
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, loading, login, register, logout }),
-    [user, loading, login, register, logout],
+    () => ({ user, loading, login, register, logout, changePassword }),
+    [user, loading, login, register, logout, changePassword],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

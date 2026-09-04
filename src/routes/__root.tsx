@@ -19,6 +19,7 @@ import { ThemeProvider, useTheme } from "../lib/theme";
 import { defaultStranglerLedger } from "../lib/state-contexts";
 import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
+import { FirstAccessScreen } from "../components/app/FirstAccessScreen";
 import { LoginScreen } from "../components/app/LoginScreen";
 import { Toaster } from "../components/ui/sonner";
 
@@ -207,8 +208,16 @@ function RootComponent() {
                     <Outlet />
                   </StoreProvider>
                 </AppShell>
-                <AppToaster />
               </AuthGate>
+              {/*
+               * O AVISO FICA POR FORA DO PORTÃO. Dentro dele, todo aviso
+               * nasce condenado: o `<Toaster>` desmontava junto com a
+               * aplicação exatamente nas trocas que mais precisam avisar —
+               * a sessão que expira (some com a aplicação) e a senha trocada
+               * no primeiro acesso (o aviso é disparado pela tela que sai de
+               * cena). Aviso é casca do app inteiro, não do miolo autenticado.
+               */}
+              <AppToaster />
             </AuthProvider>
           </I18nProvider>
         </ThemeProvider>
@@ -233,5 +242,18 @@ function AuthGate({ children }: { children: ReactNode }) {
     );
   }
   if (!user) return <LoginScreen />;
+  /*
+   * A MARCA DE PÉ SEGURA A PORTA. Regra do dono (2026-09-03): "ao realizar o
+   * primeiro acesso, o usuário (regra universal) precisa ter que alterar sua
+   * senha". O backend já recusa toda rota com 403 PASSWORD_CHANGE_REQUIRED
+   * enquanto `mustChangePassword` está de pé — quem entra tem sessão válida e
+   * não vai a lugar nenhum.
+   *
+   * O bloqueio mora AQUI, e não numa rota, por duas razões: a pessoa chega à
+   * troca logo depois do login em vez de tropeçar num 403, e o resto da
+   * aplicação — menu, casca, `Outlet` — sequer é desenhado, então não existe
+   * destino para onde navegar antes de trocar.
+   */
+  if (user.mustChangePassword) return <FirstAccessScreen />;
   return <>{children}</>;
 }
