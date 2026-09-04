@@ -1586,6 +1586,7 @@
   "ai.oneOnOne.action": "Preparar a 1:1",
   "ai.suggestion.badge": "Sugestão por IA",
   "ai.suggestion.facts": "O que o sistema calculou",
+  "ai.suggestion.written": "O que uma pessoa escreveu",
   "ai.suggestion.absences": "Sem registro de:",
   "ai.action.generating": "Gerando…",
   "ai.action.copy": "Copiar",

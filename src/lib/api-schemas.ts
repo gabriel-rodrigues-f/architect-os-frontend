@@ -213,11 +213,35 @@ export const gapClosureExplanationResponseSchema = z.object({
   text: z.string(),
 });
 
+/**
+ * ADR-0093 — o texto que uma PESSOA escreveu, declarado no contrato.
+ *
+ * Ele existe porque o backend tirou o tema e as decisões da 1:1 de dentro de
+ * `facts`: fato é o que o sistema apurou, e frase digitada por gente misturada
+ * ali herda a garantia que os fatos têm. Declarar aqui é o que faz o campo
+ * CHEGAR — sem `.strict()` o zod descarta em silêncio o que não está no
+ * schema, e foi exatamente assim que o painel de 1:1 perdeu o "de onde
+ * paramos" sem quebrar nada.
+ */
+const writtenByPerson = z.object({
+  label: z.string(),
+  text: z.string(),
+});
+
 const personAdvice = z.object({
   subject: z.string(),
   suggestion: z.literal(true),
   notice: z.string(),
   facts: z.array(z.string()),
+  /**
+   * Com padrão `[]`, e não exigido: o backend publica o campo nos quatro
+   * assistentes da pessoa, mas os dois lados sobem separados. Exigir o campo
+   * faria a tela nova contra o servidor antigo recusar a resposta INTEIRA — os
+   * fatos, o veredito, o parágrafo —, trocando "sumiu o tema da 1:1" por "o
+   * assistente parou de funcionar". A ausência do texto de gente degrada; a
+   * ausência da resposta, não.
+   */
+  written: z.array(writtenByPerson).default([]),
   absences: z.array(z.string()),
   narration: z.string().nullable(),
   narrationUnavailable: z.string().nullable(),
