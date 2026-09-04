@@ -67,6 +67,15 @@ export class UiAuthorizationPolicy {
    *   (o backend guarda `GET /auth/users` com `requireAdmin`), e devolver
    *   acesso é da mesma família — mexer na porta de outra pessoa.
    *
+   *   **Liderança, e não só administrador.** O backend usa aqui a MESMA régua
+   *   da admissão (ADR-0094): quem poderia cadastrar a pessoa naquele time
+   *   pode devolver o acesso dela. A tela não conhece os vínculos de time de
+   *   cada linha, então ela mostra o botão para a liderança e deixa o recorte
+   *   fino com quem é a autoridade — o backend, que responde
+   *   `ACCESS_RESTORE_FORBIDDEN` com a frase que diz o alcance de quem tentou.
+   *   Esconder de gestor e tech lead seria mais "seguro" e simplesmente errado:
+   *   tiraria da liderança exatamente a operação que o dono pediu.
+   *
    *   **Nunca na própria conta.** Quem está logado não precisa de convite
    *   para entrar: já entrou. A saída de quem esqueceu a senha é o pedido da
    *   tela de login, e a de quem quer trocá-la é a troca de senha.
@@ -76,7 +85,7 @@ export class UiAuthorizationPolicy {
    * seria mentir com um botão.
    */
   canRestoreAccessOf(user: SessionUser, account: { id: string; status: string }): boolean {
-    return this.isAdmin(user) && account.id !== user.id && account.status === "active";
+    return this.isLeadership(user) && account.id !== user.id && account.status === "active";
   }
 
   isLeadership(user: SessionUser): boolean {

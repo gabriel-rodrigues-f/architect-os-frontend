@@ -342,13 +342,21 @@ describe("o profissional não vê os próprios números", () => {
       ).toBe(false);
     });
 
-    it("quem não administra não devolve acesso de ninguém", () => {
-      expect(policy.canRestoreAccessOf(fixtureAssignedTechLeadUser, contaAtiva)).toBe(false);
-      expect(policy.canRestoreAccessOf(fixtureUnassignedTechLeadUser, contaAtiva)).toBe(false);
-      expect(policy.canRestoreAccessOf(fixtureMemberUser, contaAtiva)).toBe(false);
+    it("a LIDERANÇA devolve acesso — é a mesma régua da admissão, no backend", () => {
+      // O backend (ADR-0094) autoriza quem poderia cadastrar a pessoa naquele
+      // time: administrador, gestor e tech lead. A tela não conhece o vínculo
+      // de time de cada linha, então mostra o botão para a liderança e deixa o
+      // recorte fino com a autoridade — esconder de gestor e tech lead tiraria
+      // deles exatamente a operação que o dono pediu.
+      expect(policy.canRestoreAccessOf(fixtureAssignedTechLeadUser, contaAtiva)).toBe(true);
+      expect(policy.canRestoreAccessOf(fixtureUnassignedTechLeadUser, contaAtiva)).toBe(true);
       expect(policy.canRestoreAccessOf({ ...fixtureAdminUser, role: "manager" }, contaAtiva)).toBe(
-        false,
+        true,
       );
+    });
+
+    it("quem não lidera ninguém não devolve acesso de ninguém", () => {
+      expect(policy.canRestoreAccessOf(fixtureMemberUser, contaAtiva)).toBe(false);
     });
   });
 });
