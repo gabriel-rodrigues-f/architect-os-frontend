@@ -12,14 +12,30 @@ const KIND_LABEL_KEY: Record<StatementEntryKind, MessageKey> = {
   mentoring: "statement.kind.mentoring",
 };
 
-const KIND_CHIP: Record<StatementEntryKind, string> = {
-  transition: "bg-primary/10 text-primary",
-  teamTransition: "bg-primary/10 text-primary",
-  competencyStep: semanticTone.success,
-  evidence: "bg-secondary text-secondary-foreground",
-  pdi: semanticTone.warning,
-  mentoring: "bg-secondary text-secondary-foreground",
-};
+/**
+ * Lido em FUNÇÃO, e não numa constante de módulo.
+ *
+ * `semanticTone` mora em `ui-bits`, e o grafo de importação da casa tem ciclo:
+ * na ordem de inicialização do pacote de SSR de produção, este módulo chegava a
+ * rodar ANTES de `ui-bits` terminar, e o mapa nascia lendo `undefined.warning`.
+ * O sintoma não aparecia em nenhum teste (jsdom importa noutra ordem) nem no
+ * `build` — só no pod, como 500 na sonda de prontidão e canário abortado.
+ *
+ * Chamar na hora de desenhar tira a dependência de ORDEM: quando o componente
+ * renderiza, todo módulo já terminou de carregar.
+ */
+class CareerEventChips {
+  static byKind(): Record<StatementEntryKind, string> {
+    return {
+      transition: "bg-primary/10 text-primary",
+      teamTransition: "bg-primary/10 text-primary",
+      competencyStep: semanticTone.success,
+      evidence: "bg-secondary text-secondary-foreground",
+      pdi: semanticTone.warning,
+      mentoring: "bg-secondary text-secondary-foreground",
+    };
+  }
+}
 
 export function EventTypeBadge({ kind }: { kind: StatementEntryKind }) {
   const { t } = useI18n();
@@ -27,7 +43,7 @@ export function EventTypeBadge({ kind }: { kind: StatementEntryKind }) {
     <span
       className={cn(
         "inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-xs font-semibold",
-        KIND_CHIP[kind],
+        CareerEventChips.byKind()[kind],
       )}
     >
       {t(KIND_LABEL_KEY[kind])}

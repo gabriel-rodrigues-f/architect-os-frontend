@@ -20,18 +20,34 @@ import { useLabels } from "@/lib/labels";
 import { useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 
-const EVIDENCE_STATUS_TONE: Record<Evidence["status"], string> = {
-  Pending: "bg-secondary text-muted-foreground",
-  Accepted: semanticTone.success,
-  "Needs Improvement": semanticTone.warning,
-  Rejected: "bg-destructive/15 text-destructive",
-};
+/**
+ * Lido em FUNÇÃO, e não numa constante de módulo.
+ *
+ * `semanticTone` mora em `ui-bits`, e o grafo de importação da casa tem ciclo:
+ * na ordem de inicialização do pacote de SSR de produção, este módulo chegava a
+ * rodar ANTES de `ui-bits` terminar, e o mapa nascia lendo `undefined.warning`.
+ * O sintoma não aparecia em nenhum teste (jsdom importa noutra ordem) nem no
+ * `build` — só no pod, como 500 na sonda de prontidão e canário abortado.
+ *
+ * Chamar na hora de desenhar tira a dependência de ORDEM: quando o componente
+ * renderiza, todo módulo já terminou de carregar.
+ */
+class EvidenceStatusChips {
+  static byStatus(): Record<Evidence["status"], string> {
+    return {
+      Pending: "bg-secondary text-muted-foreground",
+      Accepted: semanticTone.success,
+      "Needs Improvement": semanticTone.warning,
+      Rejected: "bg-destructive/15 text-destructive",
+    };
+  }
+}
 
 export function EvidenceStatusBadge({ status }: { status: Evidence["status"] }) {
   const labels = useLabels();
   return (
     <span
-      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${EVIDENCE_STATUS_TONE[status]}`}
+      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${EvidenceStatusChips.byStatus()[status]}`}
     >
       {labels.evidenceStatus[status]}
     </span>

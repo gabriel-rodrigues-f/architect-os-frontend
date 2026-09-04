@@ -28,11 +28,27 @@ const ICON_BY_KIND: Record<NoticeIcon, typeof Bell> = {
   generic: Bell,
 };
 
-const CHIP_BY_TONE: Record<NoticeTone, string> = {
-  info: "bg-secondary text-secondary-foreground",
-  warning: semanticTone.warning,
-  success: semanticTone.success,
-};
+/**
+ * Lido em FUNÇÃO, e não numa constante de módulo.
+ *
+ * `semanticTone` mora em `ui-bits`, e o grafo de importação da casa tem ciclo:
+ * na ordem de inicialização do pacote de SSR de produção, este módulo chegava a
+ * rodar ANTES de `ui-bits` terminar, e o mapa nascia lendo `undefined.warning`.
+ * O sintoma não aparecia em nenhum teste (jsdom importa noutra ordem) nem no
+ * `build` — só no pod, como 500 na sonda de prontidão e canário abortado.
+ *
+ * Chamar na hora de desenhar tira a dependência de ORDEM: quando o componente
+ * renderiza, todo módulo já terminou de carregar.
+ */
+class NoticeToneChips {
+  static byTone(): Record<NoticeTone, string> {
+    return {
+      info: "bg-secondary text-secondary-foreground",
+      warning: semanticTone.warning,
+      success: semanticTone.success,
+    };
+  }
+}
 
 export function NoticeList({
   notices,
@@ -68,7 +84,7 @@ export function NoticeItem({
 } & ComponentPropsWithoutRef<"button">) {
   const { t, locale } = useI18n();
   const Icon = ICON_BY_KIND[defaultNoticeRoutingPolicy.iconOf(notice.eventType)];
-  const chip = CHIP_BY_TONE[defaultNoticeRoutingPolicy.toneOf(notice.eventType)];
+  const chip = NoticeToneChips.byTone()[defaultNoticeRoutingPolicy.toneOf(notice.eventType)];
   return (
     <button
       type="button"
