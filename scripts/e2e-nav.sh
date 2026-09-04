@@ -20,20 +20,37 @@ if ! curl -fsS -m 3 "$API/health/ready" > /dev/null 2>&1; then
   exit 1
 fi
 
-# Defaults locais = os QUATRO perfis que o `seed:access-profiles` do backend
-# cria (ADR-0084, um cadastro por pessoa). O seed EXCLUI as contas do modelo
-# antigo de três papéis — `admin@synapse.local`, `dev@synapse.local` — e o
-# harness ficou apontando para elas: contra banco novo o login era recusado e
-# o sintoma chegava como "locator('nav') não ficou visível em 120 s". Na CI as
-# variáveis já vêm definidas pelo job e2e e estes defaults nunca são usados.
+# Os QUATRO perfis que o `seed:access-profiles` do backend cria (ADR-0084, um
+# cadastro por pessoa). O seed EXCLUI as contas do modelo antigo de três papéis
+# — `admin@synapse.local`, `dev@synapse.local` — e o harness ficou apontando
+# para elas: contra banco novo o login era recusado e o sintoma chegava como
+# "locator('nav') não ficou visível em 120 s".
+#
+# O E-MAIL tem default; a SENHA não, e nunca vai ter. Este repositório é
+# PÚBLICO, e senha literal aqui é senha publicada — ela entra no histórico e
+# não sai mais. A senha vem do ambiente, e quem a imprime é o próprio seed,
+# uma vez, no terminal de quem rodou.
 export E2E_ADMIN_EMAIL="${E2E_ADMIN_EMAIL:-admin@synapse.com.br}"
-export E2E_ADMIN_PASSWORD="${E2E_ADMIN_PASSWORD:-Synaps#1234}"
 export E2E_MANAGER_EMAIL="${E2E_MANAGER_EMAIL:-gestor@synapse.com.br}"
-export E2E_MANAGER_PASSWORD="${E2E_MANAGER_PASSWORD:-Synaps#1234}"
 export E2E_TECH_LEAD_EMAIL="${E2E_TECH_LEAD_EMAIL:-techlead@synapse.com.br}"
-export E2E_TECH_LEAD_PASSWORD="${E2E_TECH_LEAD_PASSWORD:-Synaps#1234}"
 export E2E_MEMBER_EMAIL="${E2E_MEMBER_EMAIL:-profissional@synapse.com.br}"
-export E2E_MEMBER_PASSWORD="${E2E_MEMBER_PASSWORD:-Synaps#1234}"
+# A senha do papel de MEMBRO/gestor/tech lead cai para a do admin quando não
+# vier própria: os quatro perfis do seed nascem com a mesma, e repetir a
+# exportação à mão em quatro linhas só multiplica a chance de esquecer uma.
+export E2E_MANAGER_PASSWORD="${E2E_MANAGER_PASSWORD:-${E2E_ADMIN_PASSWORD-}}"
+export E2E_TECH_LEAD_PASSWORD="${E2E_TECH_LEAD_PASSWORD:-${E2E_ADMIN_PASSWORD-}}"
+export E2E_MEMBER_PASSWORD="${E2E_MEMBER_PASSWORD:-${E2E_ADMIN_PASSWORD-}}"
+
+if [ -z "${E2E_ADMIN_PASSWORD-}" ]; then
+  echo "ERRO: exporte E2E_ADMIN_PASSWORD antes de rodar o harness." >&2
+  echo >&2
+  echo "A senha não mora neste repositório — ele é público. Ela é impressa pelo seed:" >&2
+  echo "  (no repositório do backend)  npm run seed:access-profiles" >&2
+  echo "  export E2E_ADMIN_PASSWORD=... (a senha que o seed imprimiu)" >&2
+  echo >&2
+  echo "Perfis com senha própria? Exporte também E2E_MANAGER_PASSWORD, E2E_TECH_LEAD_PASSWORD e E2E_MEMBER_PASSWORD." >&2
+  exit 1
+fi
 
 # A credencial é pré-condição como o backend é: o harness inteiro passa pelo
 # login, e uma recusa aqui custa 120 s de espera por um `nav` que não vem,
