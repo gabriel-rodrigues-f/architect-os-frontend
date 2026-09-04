@@ -1,3 +1,5 @@
+import { configure } from "@testing-library/dom";
+
 /**
  * Lacunas do jsdom que o Radix e o cmdk assumem existir no navegador. Sem elas,
  * qualquer teste que abra Popover/Command quebra no mount — não é bug do app.
@@ -42,3 +44,17 @@ if (!window.matchMedia) {
  * comportamento — o mesmo teste passaria numa máquina e falharia noutra.
  */
 window.localStorage.setItem("synapse:locale", "pt");
+
+/**
+ * O prazo do Testing Library para `findBy*`/`waitFor` é de 1 s, e 1 s é curto
+ * demais nesta casa: a suíte roda ao lado da frota de agentes, e o gate ficou
+ * vermelho quatro vezes numa noite com arquivos DIFERENTES a cada rodada —
+ * todos passando sozinhos em seguida. Não é defeito do produto nem lentidão
+ * real: é a máquina disputada.
+ *
+ * Isto NÃO afrouxa asserção nenhuma. O que cada teste afirma continua sendo
+ * comportamento — que o elemento aparece, que o payload é aquele. O prazo só
+ * diz quanto o teste espera antes de desistir, e um teste que desiste cedo
+ * demais não mede o produto: mede a carga da máquina.
+ */
+configure({ asyncUtilTimeout: 5000 });
