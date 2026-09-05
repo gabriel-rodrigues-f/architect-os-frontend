@@ -21,6 +21,8 @@ export interface ArchitectsGateway {
   ): Promise<Architect>;
 
   deactivate(id: string, reason: string, expectedVersion: number): Promise<Architect>;
+  /** A volta de `deactivate`: profissional no quadro E conta com acesso, num ato só. */
+  reactivate(id: string, expectedVersion: number): Promise<Architect>;
   careerLevelTransitions(id: string): Promise<CareerLevelTransition[]>;
 }
 
@@ -49,6 +51,9 @@ export class HttpArchitectsGateway implements ArchitectsGateway {
 
   deactivate = (id: string, reason: string, expectedVersion: number): Promise<Architect> =>
     this.client.post<Architect>(`/architects/${id}/deactivate`, { reason, expectedVersion });
+
+  reactivate = (id: string, expectedVersion: number): Promise<Architect> =>
+    this.client.post<Architect>(`/architects/${id}/reactivate`, { expectedVersion });
 
   careerLevelTransitions = (id: string): Promise<CareerLevelTransition[]> =>
     this.client.request<CareerLevelTransition[]>(`/architects/${id}/career-level-transitions`);

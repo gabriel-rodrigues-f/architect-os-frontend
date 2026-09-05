@@ -91,7 +91,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     expect(within(row).getByRole("button", { name: "Editar Outro Membro" })).toBeTruthy();
   });
 
-  it("mudança comum (status) salva direto, sem etapa extra", async () => {
+  it("mudança comum (nome) salva direto, sem etapa extra — e o status NÃO é campo do diálogo", async () => {
     mockBackend([fixtureAdminUser, OTHER_MEMBER]);
     renderWithApp(<UsersPage />);
 
@@ -99,7 +99,12 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Editar Outro Membro" }));
 
     const dialog = await screen.findByRole("dialog");
-    await userEvent.selectOptions(within(dialog).getByLabelText("Status"), "disabled");
+    // Pedido do dono (2026-09-05): o status muda por um botão próprio na
+    // linha (Ativar/Desativar), com confirmação — nunca de dentro da edição.
+    expect(within(dialog).queryByLabelText("Status")).toBeNull();
+    const nome = within(dialog).getByLabelText("Nome");
+    await userEvent.clear(nome);
+    await userEvent.type(nome, "Outro Membro Renomeado");
     await userEvent.click(within(dialog).getByRole("button", { name: "Salvar alterações" }));
 
     const isPatchCall = (call: unknown[]) => {
@@ -109,7 +114,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(isPatchCall)).toBe(true));
     const call = fetchMock.mock.calls.find(isPatchCall) as [string, RequestInit];
     const body = JSON.parse(String(call[1].body)) as Record<string, unknown>;
-    expect(body).toEqual({ status: "disabled" });
+    expect(body).toEqual({ name: "Outro Membro Renomeado" });
     expect(body["role"]).toBeUndefined();
   });
 

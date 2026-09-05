@@ -141,6 +141,9 @@ export interface Api extends AppState {
 
   deactivate: (id: string, reason: string) => Promise<Architect>;
 
+  /** Reativar é o mesmo ato de desativar, de volta: profissional e conta juntos. */
+  reactivateArchitect: (id: string, expectedVersion: number) => void;
+
   allocateArchitectToTeam: (
     architectId: string,
     teamId: string,
@@ -343,6 +346,24 @@ export function buildApi(
           architects: s.architects.map((a) => (a.id === id ? { ...a, ...patch } : a)),
         }),
         () => api.updateArchitect(id, patch),
+      );
+    },
+
+    reactivateArchitect: (id, expectedVersion) => {
+      runner.optimistic(
+        (state) => ({
+          ...state,
+          architects: state.architects.map((architect) =>
+            architect.id === id ? { ...architect, active: true } : architect,
+          ),
+        }),
+        () => api.reactivate(id, expectedVersion),
+        (updated) => (state) => ({
+          ...state,
+          architects: state.architects.map((architect) =>
+            architect.id === id ? updated : architect,
+          ),
+        }),
       );
     },
 

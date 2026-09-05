@@ -13,13 +13,13 @@ import { fixtureAdminUser, fixtureMemberUser } from "../../helpers/fixtures";
  * conhece a forma estreita da interface.
  */
 function fakeService(): TeamRosterService & {
-  updateArchitect: ReturnType<typeof vi.fn>;
+  reactivateArchitect: ReturnType<typeof vi.fn>;
   transitionCareerLevel: ReturnType<typeof vi.fn>;
   allocateArchitectToTeam: ReturnType<typeof vi.fn>;
   releaseArchitectFromTeam: ReturnType<typeof vi.fn>;
 } {
   return {
-    updateArchitect: vi.fn(),
+    reactivateArchitect: vi.fn(),
     transitionCareerLevel: vi.fn(async () => ({ id: "ana" }) as Architect),
     allocateArchitectToTeam: vi.fn(async () => ({ id: "ana" }) as Architect),
     releaseArchitectFromTeam: vi.fn(async () => ({ id: "ana" }) as Architect),
@@ -43,14 +43,14 @@ describe("TeamViewModel", () => {
    * ainda faz: mudar time ou nível, e reativar.
    */
   describe("reactivate", () => {
-    it("chama updateArchitect(id, { active: true }) — mesmo comando que o PATCH genérico usava antes do dedicado de desativação", () => {
+    it("chama reactivateArchitect(id, version) — o mesmo ato da desativação, de volta (profissional E conta), com a trava de versão", () => {
       const service = fakeService();
       const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-      const architect = { id: "bruno" } as Architect;
+      const architect = { id: "bruno", version: 3 } as Architect;
 
       vm.reactivate(architect);
 
-      expect(service.updateArchitect).toHaveBeenCalledWith("bruno", { active: true });
+      expect(service.reactivateArchitect).toHaveBeenCalledWith("bruno", 3);
     });
   });
 

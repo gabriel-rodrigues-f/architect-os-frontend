@@ -306,7 +306,7 @@
   },
   "src/routes/users.tsx": {
     "id-length": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server.ts": {

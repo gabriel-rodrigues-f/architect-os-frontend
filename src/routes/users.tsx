@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useState } from "react";
 
 import {
+  CommandDialog,
   CommandWithReasonDialog,
   OutOfReachScreen,
   PageHeader,
@@ -89,7 +90,7 @@ function UsersDirectory() {
   const queryClient = useQueryClient();
   const [admitting, setAdmitting] = useState(false);
   const [editing, setEditing] = useState<SessionUser | null>(null);
-  const [deactivating, setDeactivating] = useState<SessionUser | null>(null);
+  const [statusChange, setStatusChange] = useState<AccountStatusChange | null>(null);
   const [restoringAccessOf, setRestoringAccessOf] = useState<SessionUser | null>(null);
 
   const { data, isPending, isError, refetch } = useQuery({
@@ -103,7 +104,7 @@ function UsersDirectory() {
 
   const updatePatch = async (
     account: SessionUser,
-    patch: Partial<{ role: UserRole; status: "active" | "disabled"; name: string; email: string }>,
+    patch: Partial<{ role: UserRole; name: string; email: string }>,
   ) => {
     const updated = await authApi.updateUser(account.id, patch);
     await refreshAccounts();
@@ -189,10 +190,23 @@ function UsersDirectory() {
                         </td>
                         <td className="py-2">
                           <div className="flex gap-1">
+                            {/*
+                             * Pedido do dono (2026-09-05): conta desativada só
+                             * volta a ser editável depois de reativada — o
+                             * botão fica escuro e não clicável, e o status
+                             * muda por um botão próprio, nunca de dentro do
+                             * diálogo de edição.
+                             */}
                             <Button
                               size="sm"
                               variant="outline"
                               aria-label={`${t("users.edit.action")} ${account.name}`}
+                              disabled={account.status === "disabled"}
+                              title={
+                                account.status === "disabled"
+                                  ? t("users.edit.disabledHint")
+                                  : undefined
+                              }
                               onClick={() => setEditing(account)}
                             >
                               {t("users.edit.action")}
@@ -207,14 +221,27 @@ function UsersDirectory() {
                                 {t("users.restoreAccess.action")}
                               </Button>
                             )}
-                            {account.architectId !== null && account.status === "active" && (
+                            {account.id !== user.id && (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                aria-label={`${t("users.deactivate.action")} ${account.name}`}
-                                onClick={() => setDeactivating(account)}
+                                aria-label={`${t(
+                                  account.status === "disabled"
+                                    ? "users.activate.action"
+                                    : "users.deactivate.action",
+                                )} ${account.name}`}
+                                onClick={() =>
+                                  setStatusChange({
+                                    account,
+                                    to: account.status === "disabled" ? "active" : "disabled",
+                                  })
+                                }
                               >
-                                {t("users.deactivate.action")}
+                                {t(
+                                  account.status === "disabled"
+                                    ? "users.activate.action"
+                                    : "users.deactivate.action",
+                                )}
                               </Button>
                             )}
                           </div>
@@ -250,12 +277,12 @@ function UsersDirectory() {
         />
       )}
 
-      {deactivating && (
-        <DeactivatePersonDialog
-          account={deactivating}
-          onClose={() => setDeactivating(null)}
-          onDeactivated={() => {
-            setDeactivating(null);
+      {statusChange && (
+        <AccountStatusChangeDialog
+          change={statusChange}
+          onClose={() => setStatusChange(null)}
+          onChanged={() => {
+            setStatusChange(null);
             void refreshAccounts();
           }}
         />
@@ -294,15 +321,12 @@ function EditUserDialog({
 }: {
   user: SessionUser;
   onCancel: () => void;
-  onSave: (
-    patch: Partial<{ role: UserRole; status: "active" | "disabled"; name: string; email: string }>,
-  ) => Promise<void>;
+  onSave: (patch: Partial<{ role: UserRole; name: string; email: string }>) => Promise<void>;
 }) {
   const { t } = useI18n();
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [role, setRole] = useState<UserRole>(user.role);
-  const [status, setStatus] = useState<"active" | "disabled">(user.status);
   const [step, setStep] = useState<"edit" | "confirm-admin">("edit");
   const { submitting: saving, error, run } = useAsyncSubmit(t("users.edit.error"));
 
@@ -312,17 +336,12 @@ function EditUserDialog({
   const emailValid = trimmedEmail.length > 3;
 
   const grantsAdmin = user.role !== "admin" && role === "admin";
-  const changed =
-    role !== user.role ||
-    status !== user.status ||
-    trimmedName !== user.name ||
-    trimmedEmail !== user.email;
+  const changed = role !== user.role || trimmedName !== user.name || trimmedEmail !== user.email;
 
   const persist = async () => {
     const result = await run(() =>
       onSave({
         ...(role !== user.role ? { role } : {}),
-        ...(status !== user.status ? { status } : {}),
         ...(trimmedName !== user.name ? { name: trimmedName } : {}),
         ...(trimmedEmail !== user.email ? { email: trimmedEmail } : {}),
       }),
@@ -382,18 +401,6 @@ function EditUserDialog({
             />
           </div>
           <RoleSelect id="edit-user-role" value={role} onChange={setRole} />
-          <div>
-            <Label htmlFor="edit-user-status">{t("users.col.status")}</Label>
-            <select
-              id="edit-user-status"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as "active" | "disabled")}
-            >
-              <option value="active">{t("users.status.active")}</option>
-              <option value="disabled">{t("users.status.disabled")}</option>
-            </select>
-          </div>
           {error && (
             <p className="text-sm text-destructive" role="alert">
               {error}
@@ -642,41 +649,132 @@ function RestoreAccessDialog({
 }) {
   const { t } = useI18n();
   const notifySuccess = useSuccessToast();
-  const { submitting, error, run } = useAsyncSubmit(t("users.restoreAccess.error"));
-
-  const confirm = async () => {
-    const result = await run(() => authApi.restoreAccessOf(account.id));
-    if (!result.ok) return;
-    notifySuccess("msg.auth.accessRecovery.sent", { nome: account.name });
-    onRestored();
-  };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("users.restoreAccess.confirmTitle", { nome: account.name })}</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          {t("users.restoreAccess.confirmBody", { nome: account.name })}
-        </p>
-        {error !== null && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
-            {t("users.edit.cancel")}
-          </Button>
-          <Button onClick={() => void confirm()} disabled={submitting}>
-            {submitting
-              ? t("users.restoreAccess.submitting")
-              : t("users.restoreAccess.confirmAction")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <CommandDialog
+      title={t("users.restoreAccess.confirmTitle", { nome: account.name })}
+      body={t("users.restoreAccess.confirmBody", { nome: account.name })}
+      confirmLabel={t("users.restoreAccess.confirmAction")}
+      submittingLabel={t("users.restoreAccess.submitting")}
+      cancelLabel={t("users.edit.cancel")}
+      fallbackError={t("users.restoreAccess.error")}
+      onSubmit={async () => {
+        await authApi.restoreAccessOf(account.id);
+        notifySuccess("msg.auth.accessRecovery.sent", { nome: account.name });
+        onRestored();
+      }}
+      onClose={onClose}
+    />
+  );
+}
+
+interface AccountStatusChange {
+  account: SessionUser;
+  to: "active" | "disabled";
+}
+
+/**
+ * Um botão, dois atos, três diálogos. Conta COM profissional: desativar é
+ * um ato só (conta + profissional, com motivo — ADR-0084) e ativar é o mesmo
+ * ato de volta, pela rota de reativação. Conta SEM profissional (admin,
+ * gestor): só a conta muda de status, por confirmação.
+ */
+function AccountStatusChangeDialog({
+  change,
+  onClose,
+  onChanged,
+}: {
+  change: AccountStatusChange;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  if (change.account.architectId === null) {
+    return <AccountOnlyStatusDialog change={change} onClose={onClose} onChanged={onChanged} />;
+  }
+  if (change.to === "disabled") {
+    return (
+      <DeactivatePersonDialog
+        account={change.account}
+        onClose={onClose}
+        onDeactivated={onChanged}
+      />
+    );
+  }
+  return (
+    <ReactivatePersonDialog account={change.account} onClose={onClose} onReactivated={onChanged} />
+  );
+}
+
+function AccountOnlyStatusDialog({
+  change: { account, to },
+  onClose,
+  onChanged,
+}: {
+  change: AccountStatusChange;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
+  const activating = to === "active";
+
+  return (
+    <CommandDialog
+      title={t(activating ? "users.activate.confirmTitle" : "users.deactivate.confirmTitle", {
+        nome: account.name,
+      })}
+      body={t(
+        activating ? "users.activate.accountDescription" : "users.deactivate.accountDescription",
+      )}
+      confirmLabel={t(activating ? "users.activate.action" : "users.deactivate.action")}
+      submittingLabel={t(activating ? "users.activate.submitting" : "users.deactivate.submitting")}
+      confirmVariant={activating ? "default" : "destructive"}
+      fallbackError={t(activating ? "users.activate.error" : "users.deactivate.error")}
+      onSubmit={async () => {
+        const updated = await authApi.updateUser(account.id, { status: to });
+        notifySuccess("msg.user.update.success", { nome: updated.name }, updated);
+        onChanged();
+      }}
+      onClose={onClose}
+    />
+  );
+}
+
+function ReactivatePersonDialog({
+  account,
+  onClose,
+  onReactivated,
+}: {
+  account: SessionUser;
+  onClose: () => void;
+  onReactivated: () => void;
+}) {
+  const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
+  const architectId = account.architectId ?? "";
+
+  const professional = useQuery({
+    queryKey: ["professional", architectId],
+    queryFn: () => api.professional(architectId),
+    enabled: architectId !== "",
+  });
+
+  return (
+    <CommandDialog
+      title={t("users.activate.confirmTitle", { nome: account.name })}
+      body={t("users.activate.personDescription")}
+      confirmLabel={t("users.activate.action")}
+      submittingLabel={t("users.activate.submitting")}
+      fallbackError={t("users.activate.error")}
+      canSubmit={professional.data !== undefined}
+      onSubmit={async () => {
+        const version = professional.data?.version ?? 0;
+        const updated = await api.reactivate(architectId, version);
+        notifySuccess("msg.people.reactivate.success", { nome: account.name }, updated);
+        onReactivated();
+      }}
+      onClose={onClose}
+    />
   );
 }
 

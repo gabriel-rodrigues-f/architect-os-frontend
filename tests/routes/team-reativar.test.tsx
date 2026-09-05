@@ -61,12 +61,17 @@ describe("Time — reativar devolve a pessoa ao roster ativo", () => {
       routes: [
         emptyAuthUsersRoute,
         (href, init) => {
-          if (init?.method === "PATCH" && href.includes(apiPath("/architects/"))) {
-            const body = JSON.parse(String(init.body)) as { active: boolean };
-            return new Response(JSON.stringify({ ...ana, ...body }), {
-              status: 200,
-              headers: { "content-type": "application/json" },
-            });
+          if (
+            init?.method === "POST" &&
+            href.endsWith(apiPath(`/architects/${ana.id}/reactivate`))
+          ) {
+            return new Response(
+              JSON.stringify({ ...ana, active: true, version: ana.version + 1 }),
+              {
+                status: 200,
+                headers: { "content-type": "application/json" },
+              },
+            );
           }
           return undefined;
         },
@@ -100,9 +105,14 @@ describe("Time — reativar devolve a pessoa ao roster ativo", () => {
     await waitFor(() => expect(screen.queryByLabelText("Reativar Ana Martins")).toBeNull());
     expect(screen.getByText("Ana Martins")).toBeTruthy();
 
-    const patches = fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH");
-    expect(patches).toHaveLength(1);
-    expect(JSON.parse(String((patches[0]?.[1] as RequestInit).body))).toEqual({ active: true });
+    // Reativar é rota própria (o mesmo ato da desativação, de volta): nunca um
+    // PATCH de `active`, que devolvia o profissional e deixava a conta revogada.
+    const posts = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST");
+    expect(posts).toHaveLength(1);
+    expect(JSON.parse(String((posts[0]?.[1] as RequestInit).body))).toEqual({
+      expectedVersion: ana.version,
+    });
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "PATCH")).toBe(false);
   });
 
   it("a linha da pessoa inativa não oferece desativar de novo — o ato mora em Usuários", async () => {

@@ -10,6 +10,7 @@ export * from "./ArchitectSelectCombobox";
 export * from "./CapabilityCombobox";
 export * from "./CareerEventTimeline";
 export * from "./CapabilityHeatmap";
+export * from "./CommandDialog";
 export * from "./CommandWithReasonDialog";
 export * from "./ConfirmDialog";
 export * from "./DataOriginCallout";

@@ -12,13 +12,13 @@ export type ArchitectFormRole = RoleName | "";
 /**
  * ONDA 37 — o que /team ainda escreve. Cadastrar, editar e desativar saíram
  * daqui: a pessoa nasce, muda de cargo e é desativada em Usuários, num ato
- * só (backend ADR-0084). `updateArchitect` fica pela REATIVAÇÃO, que é o
- * único caminho de volta que a interface tem — o filtro "Inativos" só existe
- * nesta tela.
+ * só (backend ADR-0084). A REATIVAÇÃO é o mesmo ato de volta — profissional
+ * e conta —, por rota própria; até 2026-09-05 ela saía por `PATCH
+ * {active: true}` e deixava a conta revogada.
  */
 export type TeamRosterService = Pick<
   Api,
-  | "updateArchitect"
+  | "reactivateArchitect"
   | "transitionCareerLevel"
   | "allocateArchitectToTeam"
   | "releaseArchitectFromTeam"
@@ -85,7 +85,7 @@ export class TeamViewModel {
   }
 
   reactivate(architect: Architect): void {
-    this.service.updateArchitect(architect.id, { active: true });
+    this.service.reactivateArchitect(architect.id, architect.version);
   }
 
   transitionCareerLevel(architectId: string, toRole: RoleName, reason: string): Promise<Architect> {

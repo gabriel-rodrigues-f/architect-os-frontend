@@ -275,31 +275,37 @@
     "people.allocate.success": {
       "rota": "POST /architects/:id/team-allocation",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 160,
+      "linha": 178,
       "resposta": "ok"
     },
     "people.careerLevelTransition.success": {
       "rota": "POST /architects/:id/career-level-transition",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 101,
+      "linha": 103,
       "resposta": "ok"
     },
     "people.deactivate.success": {
       "rota": "POST /architects/:id/deactivate",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 131,
+      "linha": 133,
       "resposta": "ok"
+    },
+    "people.reactivate.success": {
+      "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
+      "linha": 149,
+      "resposta": "ok",
+      "rota": "POST /architects/:id/reactivate"
     },
     "people.release.success": {
       "rota": "DELETE /architects/:id/team-allocation",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 174,
+      "linha": 192,
       "resposta": "ok"
     },
     "people.update.success": {
       "rota": "PATCH /architects/:id",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 82,
+      "linha": 84,
       "resposta": "ok"
     },
     "plan.item.add.success": {

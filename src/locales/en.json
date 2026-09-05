@@ -1777,7 +1777,7 @@
   "users.leadershipOnlyHint": "The administrator, the team manager or the team tech lead adds people. Talk to whoever leads your team.",
   "users.deactivate.action": "Deactivate",
   "users.deactivate.confirmTitle": "Deactivate {nome}?",
-  "users.deactivate.confirmDescription": "A single act: the person leaves the team roster and their account loses access. Nothing is deleted — assessments, IDPs, mentoring, evidence and certifications stay in the profile. To bring them back, use the \"Inactive\" filter on the Team screen.",
+  "users.deactivate.confirmDescription": "A single act: the person leaves the team roster and their account loses access. Nothing is deleted — assessments, IDPs, mentoring, evidence and certifications stay in the profile. To bring them back, use \"Activate\" here in Users.",
   "users.deactivate.reasonLabel": "Reason for deactivation",
   "users.deactivate.reasonPlaceholder": "Why is this person being deactivated?",
   "users.deactivate.submitting": "Deactivating…",
@@ -1813,5 +1813,14 @@
   "msg.auth.accessRecovery.requested": "If an account exists for that email, you will receive a link to create your password in a moment. It is valid for 1 hour.",
   "msg.auth.accessRecovery.sent": "We sent {nome} the link to create the password. It is valid for 1 hour.",
   "users.admit.bodyWhenEmailFailed": "The account and the professional record were created together, already in the chosen team. The email with the link, however, did NOT go out.",
-  "users.admit.emailFailedHint": "The person cannot sign in yet. Once sending works again, use “Restore access” on their row to send the link again."
+  "users.admit.emailFailedHint": "The person cannot sign in yet. Once sending works again, use “Restore access” on their row to send the link again.",
+  "users.activate.action": "Activate",
+  "users.activate.confirmTitle": "Activate {nome}?",
+  "users.activate.personDescription": "The person returns to the team roster and the account regains access — the same act as deactivation, reversed. After that the record becomes editable again.",
+  "users.activate.accountDescription": "The account regains access. After that the record becomes editable again.",
+  "users.activate.submitting": "Activating…",
+  "users.activate.error": "Could not activate. Reload the page and try again.",
+  "users.deactivate.accountDescription": "The account loses access. There is no professional on the roster to remove — only the account changes status.",
+  "users.edit.disabledHint": "Reactivate the account to edit the record.",
+  "msg.people.reactivate.success": "{nome} reactivated — the account has access again"
 }

@@ -71,7 +71,9 @@ describe("Usuários — falha de gravação é anunciada (QA-04)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Editar Outro Membro" }));
 
     const dialogo = await screen.findByRole("dialog");
-    await userEvent.selectOptions(within(dialogo).getByLabelText("Status"), "disabled");
+    const nome = within(dialogo).getByLabelText("Nome");
+    await userEvent.clear(nome);
+    await userEvent.type(nome, "Outro Membro Renomeado");
     await userEvent.click(within(dialogo).getByRole("button", { name: "Salvar alterações" }));
 
     const alerta = await within(dialogo).findByRole("alert");

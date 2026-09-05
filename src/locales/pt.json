@@ -1777,7 +1777,7 @@
   "users.leadershipOnlyHint": "Quem cadastra é o administrador, o gestor do time ou o tech lead do time. Fale com quem lidera o seu.",
   "users.deactivate.action": "Desativar",
   "users.deactivate.confirmTitle": "Desativar {nome}?",
-  "users.deactivate.confirmDescription": "Um ato só: a pessoa sai do quadro do time e a conta dela perde o acesso. Nada é apagado — avaliações, PDI, mentorias, evidências e certificações continuam no perfil. Para trazê-la de volta, use o filtro \"Inativos\" na tela Time.",
+  "users.deactivate.confirmDescription": "Um ato só: a pessoa sai do quadro do time e a conta dela perde o acesso. Nada é apagado — avaliações, PDI, mentorias, evidências e certificações continuam no perfil. Para trazê-la de volta, use \"Ativar\" aqui em Usuários.",
   "users.deactivate.reasonLabel": "Motivo da desativação",
   "users.deactivate.reasonPlaceholder": "Por que esta pessoa está sendo desativada?",
   "users.deactivate.submitting": "Desativando…",
@@ -1813,5 +1813,14 @@
   "msg.auth.accessRecovery.requested": "Se houver uma conta com esse e-mail, você recebe em instantes um link para criar a sua senha. Ele vale por 1 hora.",
   "msg.auth.accessRecovery.sent": "Enviamos a {nome} o link para criar a senha. Ele vale por 1 hora.",
   "users.admit.bodyWhenEmailFailed": "A conta e o cadastro de profissional nasceram juntos, já no time escolhido. O e-mail com o link, porém, NÃO saiu.",
-  "users.admit.emailFailedHint": "A pessoa ainda não consegue entrar. Quando o envio voltar a funcionar, use “Devolver o acesso” na linha dela para mandar o link de novo."
+  "users.admit.emailFailedHint": "A pessoa ainda não consegue entrar. Quando o envio voltar a funcionar, use “Devolver o acesso” na linha dela para mandar o link de novo.",
+  "users.activate.action": "Ativar",
+  "users.activate.confirmTitle": "Ativar {nome}?",
+  "users.activate.personDescription": "A pessoa volta ao quadro do time e a conta recupera o acesso — o mesmo ato da desativação, de volta. Depois disso o cadastro volta a ser editável.",
+  "users.activate.accountDescription": "A conta recupera o acesso. Depois disso o cadastro volta a ser editável.",
+  "users.activate.submitting": "Ativando…",
+  "users.activate.error": "Não foi possível ativar. Recarregue a página e tente de novo.",
+  "users.deactivate.accountDescription": "A conta perde o acesso. Não há profissional no quadro para tirar — só a conta muda de status.",
+  "users.edit.disabledHint": "Reative a conta para editar o cadastro.",
+  "msg.people.reactivate.success": "{nome} reativado(a) — a conta voltou a ter acesso"
 }

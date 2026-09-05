@@ -55,7 +55,7 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
 
 // ONDA 45: 63 -> 62. `people.create.success` morreu com `POST /architects`, a
 // porta legada que criava profissional sem conta; a tradução foi junto.
-const CODIGOS_ESPERADOS = 62;
+const CODIGOS_ESPERADOS = 63;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
