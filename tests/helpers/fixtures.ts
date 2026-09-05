@@ -67,14 +67,14 @@ export const fixtureAssignedTechLeadUser: SessionUser = {
 };
 
 /**
- * Fase 3 (backend ADR-0047) — o gestor COM vínculo de gestor no time. Mesmo
+ * Fase 3 (backend ADR-0047) — o gerente COM vínculo de gerente no time. Mesmo
  * ALCANCE do tech lead atribuído (a união dos vínculos de liderança), poder
  * diferente: a ficha funcional é dele, a proficiência observada não.
  */
 export const fixtureAssignedManagerUser: SessionUser = {
-  id: "test-gestor-do-time",
-  email: "gestor-do-time@company.com",
-  name: "Gestor do time",
+  id: "test-gerente-do-time",
+  email: "gerente-do-time@company.com",
+  name: "Gerente do time",
   role: "manager",
   architectId: null,
   status: "active",

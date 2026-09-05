@@ -49,9 +49,9 @@ const contaDaAna: SessionUser = {
 };
 
 const gestorSemProfissional: SessionUser = {
-  id: "conta-gestor",
-  email: "gestor@company.com",
-  name: "Gestor Sem Quadro",
+  id: "conta-gerente",
+  email: "gerente@company.com",
+  name: "Gerente Sem Quadro",
   role: "manager",
   architectId: null,
   status: "active",
@@ -128,7 +128,7 @@ describe("Usuários — desativar é um ato só, e ativar é o mesmo ato de volt
     await screen.findByText("Ana Martins");
 
     expect(screen.getByRole("button", { name: "Desativar Ana Martins" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Ativar Gestor Sem Quadro" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Ativar Gerente Sem Quadro" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Desativar Admin de teste" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Ativar Admin de teste" })).toBeNull();
   });
@@ -187,8 +187,8 @@ describe("Usuários — desativar é um ato só, e ativar é o mesmo ato de volt
 
   it("conta sem profissional: desativar e ativar mudam só o status da conta, por confirmação", async () => {
     renderUsers([fixtureAdminUser, gestorSemProfissional]);
-    await screen.findByText("Gestor Sem Quadro");
-    await userEvent.click(screen.getByRole("button", { name: "Desativar Gestor Sem Quadro" }));
+    await screen.findByText("Gerente Sem Quadro");
+    await userEvent.click(screen.getByRole("button", { name: "Desativar Gerente Sem Quadro" }));
 
     const dialogo = within(await screen.findByRole("dialog"));
     expect(dialogo.queryByLabelText("Motivo da desativação")).toBeNull();

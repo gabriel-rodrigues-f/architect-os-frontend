@@ -31,7 +31,7 @@ export const Route = createFileRoute("/calibration")({
       {
         name: "description",
         content:
-          "Distribuição de notas por avaliador, lado a lado. Visível para gestores e administradores (CONTRATO PRD-03).",
+          "Distribuição de notas por avaliador, lado a lado. Visível para gerentes e administradores (CONTRATO PRD-03).",
       },
     ],
   }),

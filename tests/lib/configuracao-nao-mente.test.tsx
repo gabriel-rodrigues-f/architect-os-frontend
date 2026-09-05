@@ -12,7 +12,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * qualificadas e a política de curadoria são a RÉGUA pela qual as pessoas
  * são avaliadas. Até esta fatia, falha na rota de qualquer uma delas era
  * engolida por `withDefault*`/`?? []` e a tela desenhava com o padrão de
- * fábrica — número errado com cara de número certo, na tela em que o gestor
+ * fábrica — número errado com cara de número certo, na tela em que o gerente
  * decide promoção.
  *
  * Os três estados passam a ser distintos:

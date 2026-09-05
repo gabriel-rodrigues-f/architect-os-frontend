@@ -68,7 +68,7 @@ describe("menu — o item Grafana é do administrador, entre Times e Usuários",
     expect(caminhos[posicao + 1]).toBe("/users");
   });
 
-  it("gestor, tech lead (com ou sem vínculo), member e sessão nenhuma não veem", () => {
+  it("gerente, tech lead (com ou sem vínculo), member e sessão nenhuma não veem", () => {
     const grafana = destinoDoGrafana();
     expect(destinos(fixtureAssignedManagerUser)).not.toContain(grafana);
     expect(destinos(fixtureAssignedTechLeadUser)).not.toContain(grafana);

@@ -46,7 +46,7 @@ const times = [
 const CAMINHO = apiPath("/analytics/team-transitions");
 const DECLARACAO = /dados de demonstração/i;
 const NEGATIVA =
-  "Cadastrar times e compor o quadro é restrito ao administrador e ao gestor designado de cada time.";
+  "Cadastrar times e compor o quadro é restrito ao administrador e ao gerente designado de cada time.";
 
 const plataforma: TeamTransitionsRow = {
   teamId: fixtureTeamId,

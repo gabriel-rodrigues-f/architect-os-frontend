@@ -27,9 +27,9 @@ describe("TextTemplateEditor (CFG-03 admin UI)", () => {
 
   it("variável que a key não fornece invalida e é listada (ficaria literal para sempre)", () => {
     const editor = TextTemplateEditor.from(key, "pt", pt).withDraft(
-      "Evoluir {competencia} com apoio de {gestor} e {mentor}",
+      "Evoluir {competencia} com apoio de {gerente} e {mentor}",
     );
-    expect(editor.unknownVariables).toEqual(["gestor", "mentor"]);
+    expect(editor.unknownVariables).toEqual(["gerente", "mentor"]);
     expect(editor.isValid).toBe(false);
   });
 

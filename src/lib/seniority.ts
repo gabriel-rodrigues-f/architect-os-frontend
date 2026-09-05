@@ -4,7 +4,7 @@ import type { Architect, RoleName } from "./domain";
 import { useI18n, type MessageKey } from "./i18n";
 
 /**
- * Onda 37 (backend ADR-0084) — gestor e tech lead não têm senioridade. A
+ * Onda 37 (backend ADR-0084) — gerente e tech lead não têm senioridade. A
  * ausência tem UM símbolo nesta casa, já registrado em `DECISOES.md`: o
  * travessão, dono exclusivo de "não existe". Ele nunca é um nível a mais —
  * quem não tem senioridade fica de FORA de toda leitura por nível e continua

@@ -77,7 +77,7 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.assessableBy(techLeadAna, [ana, bia])).toEqual([bia]);
     });
 
-    it("gestor com ficha própria não se vê na lista", () => {
+    it("gerente com ficha própria não se vê na lista", () => {
       const managerAna = {
         ...fixtureAssignedTechLeadUser,
         role: "manager" as const,
@@ -176,8 +176,8 @@ describe("canConfigureRulesOf — o dono da régua do time", () => {
     expect(policy.canConfigureRulesOf(fixtureAssignedTechLeadUser, TIME)).toBe(true);
   });
 
-  it("CONCEDE para lead COM vínculo de gestor no time — gestor multi-time é N vínculos", () => {
-    const gestor = {
+  it("CONCEDE para lead COM vínculo de gerente no time — gerente multi-time é N vínculos", () => {
+    const gerente = {
       ...fixtureAssignedTechLeadUser,
       memberships: [
         { teamId: TIME, role: "manager" as const },
@@ -185,8 +185,8 @@ describe("canConfigureRulesOf — o dono da régua do time", () => {
       ],
     };
 
-    expect(policy.canConfigureRulesOf(gestor, TIME)).toBe(true);
-    expect(policy.canConfigureRulesOf(gestor, OUTRO_TIME)).toBe(true);
+    expect(policy.canConfigureRulesOf(gerente, TIME)).toBe(true);
+    expect(policy.canConfigureRulesOf(gerente, OUTRO_TIME)).toBe(true);
   });
 
   it("CONCEDE para admin, com ou sem vínculo", () => {
@@ -237,7 +237,7 @@ describe("o lead-arquiteto que lidera o próprio time", () => {
   };
 
   /**
-   * 2026-09-05 — virou: NA PRÓPRIA FICHA, NINGUÉM É LÍDER. O dono viu gestor e
+   * 2026-09-05 — virou: NA PRÓPRIA FICHA, NINGUÉM É LÍDER. O dono viu gerente e
    * tech lead na própria ficha com roteiro de 1:1 consigo mesmos e "revisar"
    * as próprias evidências. O vínculo com o time continua valendo para os
    * OUTROS do time; para si, não há liderança.
@@ -273,7 +273,7 @@ describe("o lead-arquiteto que lidera o próprio time", () => {
  * dos dois eixos do ADR:
  *
  *   ALCANCE = união dos times com vínculo de liderança, exigido papel de
- *   liderança (gestor OU tech lead);
+ *   liderança (gerente OU tech lead);
  *   PODER ESTRITO = papel global E vínculo NAQUELE time, os dois iguais.
  */
 describe("os quatro papéis — alcance é união, poder é estrito", () => {
@@ -290,16 +290,16 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
     memberships,
   });
 
-  const gestor = conta("manager", [{ teamId: TIME, role: "manager" }]);
+  const gerente = conta("manager", [{ teamId: TIME, role: "manager" }]);
   const techLead = conta("tech_lead", [{ teamId: TIME, role: "tech_lead" }]);
   const doisChapeus = conta("manager", [
     { teamId: TIME, role: "manager" },
     { teamId: OUTRO_TIME, role: "tech_lead" },
   ]);
 
-  it("o gestor alcança o roster do time onde tem vínculo", () => {
-    expect(policy.isLeadOf(gestor, anaNoTime)).toBe(true);
-    expect(policy.canActFor(gestor, anaNoTime)).toBe(true);
+  it("o gerente alcança o roster do time onde tem vínculo", () => {
+    expect(policy.isLeadOf(gerente, anaNoTime)).toBe(true);
+    expect(policy.canActFor(gerente, anaNoTime)).toBe(true);
   });
 
   it("o tech lead alcança o roster do time onde tem vínculo", () => {
@@ -308,9 +308,9 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
   });
 
   it("os dois regem a régua do time onde têm vínculo", () => {
-    expect(policy.canConfigureRulesOf(gestor, TIME)).toBe(true);
+    expect(policy.canConfigureRulesOf(gerente, TIME)).toBe(true);
     expect(policy.canConfigureRulesOf(techLead, TIME)).toBe(true);
-    expect(policy.canConfigureAnyTeamRules(gestor)).toBe(true);
+    expect(policy.canConfigureAnyTeamRules(gerente)).toBe(true);
     expect(policy.canConfigureAnyTeamRules(techLead)).toBe(true);
   });
 
@@ -328,7 +328,7 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
     expect(policy.canConfigureRulesOf(membroComVinculo, TIME)).toBe(false);
   });
 
-  it("o poder estrito de tech lead exige papel E vínculo tech_lead — o gestor NÃO passa", () => {
+  it("o poder estrito de tech lead exige papel E vínculo tech_lead — o gerente NÃO passa", () => {
     const gestorComVinculoTecnico = conta("manager", [{ teamId: TIME, role: "tech_lead" }]);
 
     expect(policy.isAssignedTechLeadOf(techLead, anaNoTime)).toBe(true);
@@ -336,7 +336,7 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
     expect(policy.isAssignedTechLeadOf(doisChapeus, anaNoTime)).toBe(false);
   });
 
-  it("gestor e tech lead são capazes de liderança para o texto de ajuda e o catálogo", () => {
+  it("gerente e tech lead são capazes de liderança para o texto de ajuda e o catálogo", () => {
     expect(isLeadCapable("manager")).toBe(true);
     expect(isLeadCapable("tech_lead")).toBe(true);
     expect(isLeadCapable("admin")).toBe(true);
@@ -354,7 +354,7 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
 describe("o profissional não vê os próprios números", () => {
   const policy = new UiAuthorizationPolicy();
 
-  it("liderança é gestor, tech lead ou admin — o member não é", () => {
+  it("liderança é gerente, tech lead ou admin — o member não é", () => {
     expect(policy.isLeadership(fixtureAdminUser)).toBe(true);
     expect(policy.isLeadership(fixtureAssignedTechLeadUser)).toBe(true);
     expect(policy.isLeadership(fixtureUnassignedTechLeadUser)).toBe(true);
@@ -408,9 +408,9 @@ describe("o profissional não vê os próprios números", () => {
 
     it("a LIDERANÇA devolve acesso — é a mesma régua da admissão, no backend", () => {
       // O backend (ADR-0094) autoriza quem poderia cadastrar a pessoa naquele
-      // time: administrador, gestor e tech lead. A tela não conhece o vínculo
+      // time: administrador, gerente e tech lead. A tela não conhece o vínculo
       // de time de cada linha, então mostra o botão para a liderança e deixa o
-      // recorte fino com a autoridade — esconder de gestor e tech lead tiraria
+      // recorte fino com a autoridade — esconder de gerente e tech lead tiraria
       // deles exatamente a operação que o dono pediu.
       expect(policy.canRestoreAccessOf(fixtureAssignedTechLeadUser, contaAtiva)).toBe(true);
       expect(policy.canRestoreAccessOf(fixtureUnassignedTechLeadUser, contaAtiva)).toBe(true);

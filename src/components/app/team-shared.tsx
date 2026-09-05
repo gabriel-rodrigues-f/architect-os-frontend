@@ -312,7 +312,7 @@ export function useTeamRoster(isAdmin: boolean) {
 }
 
 /**
- * Onda 37 — quem não tem senioridade (gestor e tech lead) muda de TIME por
+ * Onda 37 — quem não tem senioridade (gerente e tech lead) muda de TIME por
  * aqui do mesmo jeito; o que a tela não faz é oferecer-lhe uma senioridade,
  * porque o domínio recusa (`SENIORITY_NOT_APPLICABLE_TO_LEADERSHIP`). Sem
  * senioridade, o diálogo é só de time — e continua exigindo motivo.

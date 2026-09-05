@@ -67,10 +67,10 @@ const contas: SessionUser[] = [
   { ...fixtureAdminUser, id: "conta-diego", name: "Diego Ramos", role: "member" },
 ];
 
-const gestor: TeamRosterMember = {
-  userId: "conta-gestor",
-  name: "Gestor do time",
-  email: "gestor-do-time@company.com",
+const gerente: TeamRosterMember = {
+  userId: "conta-gerente",
+  name: "Gerente do time",
+  email: "gerente-do-time@company.com",
   role: "manager",
 };
 const carla: TeamRosterMember = {
@@ -173,14 +173,14 @@ afterEach(() => {
 describe("/teams — o quadro em linhas, lido pelo gateway em memória (o oráculo do contrato)", () => {
   it("uma linha por vínculo: pessoa · e-mail · papel, na ordem do contrato", async () => {
     registraGatewayEmMemoria(
-      new InMemoryTeamRosterGateway(new Map([[fixtureTeamId, [bruno, ana, carla, gestor]]])),
+      new InMemoryTeamRosterGateway(new Map([[fixtureTeamId, [bruno, ana, carla, gerente]]])),
     );
     renderAs(fixtureAdminUser);
     await abrirOQuadro();
 
     const linhas = linhasDaTabela(await tabelaDoQuadro());
     expect(linhas.map((celulas) => celulas.slice(0, 3))).toEqual([
-      ["Gestor do time", "gestor-do-time@company.com", "Gestor"],
+      ["Gerente do time", "gerente-do-time@company.com", "Gerente"],
       ["Carla Souza", "carla@company.com", "Tech Lead"],
       ["Ana Martins", "ana@company.com", "Membro"],
       ["Bruno Almeida", "bruno@company.com", "Membro"],
@@ -210,12 +210,12 @@ describe("/teams — o quadro em linhas, lido pelo gateway em memória (o orácu
 
 describe("/teams — o quadro em linhas pelo container de produção", () => {
   it("com a rota no ar, as linhas vêm do serviço e a declaração de demonstração some sozinha", async () => {
-    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gestor, carla, ana])]);
+    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gerente, carla, ana])]);
     await abrirOQuadro();
 
     const linhas = linhasDaTabela(await tabelaDoQuadro());
     expect(linhas.map((celulas) => celulas[0])).toEqual([
-      "Gestor do time",
+      "Gerente do time",
       "Carla Souza",
       "Ana Martins",
     ]);
@@ -262,7 +262,7 @@ describe("/teams — as ações de cada linha", () => {
     };
     renderAs(fixtureAdminUser, [
       desvinculo,
-      rotaDoQuadro(() => (desvinculou ? [gestor, ana] : [gestor, carla, ana])),
+      rotaDoQuadro(() => (desvinculou ? [gerente, ana] : [gerente, carla, ana])),
     ]);
     await abrirOQuadro();
     await tabelaDoQuadro();
@@ -276,7 +276,7 @@ describe("/teams — as ações de cada linha", () => {
         linhasDaTabela(screen.getByRole("table", { name: "Vínculos do time" })).map(
           (celulas) => celulas[0],
         ),
-      ).toEqual(["Gestor do time", "Ana Martins"]),
+      ).toEqual(["Gerente do time", "Ana Martins"]),
     );
   });
 
@@ -292,7 +292,7 @@ describe("/teams — as ações de cada linha", () => {
     renderAs(fixtureAdminUser, [
       troca,
       rotaDoQuadro(() =>
-        trocou ? [gestor, ana, { ...carla, role: "member" }] : [gestor, carla, ana],
+        trocou ? [gerente, ana, { ...carla, role: "member" }] : [gerente, carla, ana],
       ),
     ]);
     await abrirOQuadro();
@@ -314,19 +314,19 @@ describe("/teams — as ações de cada linha", () => {
     });
   });
 
-  it("gestor designado age sobre tech lead e pessoas, mas não sobre o vínculo de gestor — nomear gestor é do administrador", async () => {
-    renderAs(fixtureAssignedManagerUser, [rotaDoQuadro(() => [gestor, carla, ana])]);
+  it("gerente designado age sobre tech lead e pessoas, mas não sobre o vínculo de gerente — nomear gerente é do administrador", async () => {
+    renderAs(fixtureAssignedManagerUser, [rotaDoQuadro(() => [gerente, carla, ana])]);
     await abrirOQuadro();
     await tabelaDoQuadro();
 
-    expect(screen.queryByLabelText("Desvincular Gestor do time")).toBeNull();
-    expect(screen.queryByLabelText("Trocar papel de Gestor do time")).toBeNull();
+    expect(screen.queryByLabelText("Desvincular Gerente do time")).toBeNull();
+    expect(screen.queryByLabelText("Trocar papel de Gerente do time")).toBeNull();
     expect(screen.getByLabelText("Desvincular Carla Souza")).toBeTruthy();
     expect(screen.getByLabelText("Trocar papel de Ana Martins")).toBeTruthy();
   });
 
   it("o formulário de vincular não repete trocar papel nem desvincular — isso mora na linha", async () => {
-    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gestor, carla, ana])]);
+    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gerente, carla, ana])]);
     await abrirOQuadro();
     await tabelaDoQuadro();
 
@@ -338,7 +338,7 @@ describe("/teams — as ações de cada linha", () => {
 
 describe("/teams — mostrar e esconder", () => {
   it("'Times cadastrados' e o 'Quadro de {time}' se escondem e se mostram por botão próprio", async () => {
-    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gestor, carla, ana])]);
+    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gerente, carla, ana])]);
     await abrirOQuadro();
     await tabelaDoQuadro();
 
@@ -366,7 +366,7 @@ describe("/teams — mostrar e esconder", () => {
    */
   it("o quadro abre aberto mesmo se foi recolhido antes — clicar em Quadro sempre mostra o quadro", async () => {
     window.localStorage.setItem("synapse:section-open:teams.roster", "false");
-    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gestor, carla, ana])]);
+    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gerente, carla, ana])]);
     await abrirOQuadro();
     expect(await tabelaDoQuadro()).toBeTruthy();
     expect(screen.getByRole("button", { name: "Esconder Quadro de Time Plataforma" })).toBeTruthy();

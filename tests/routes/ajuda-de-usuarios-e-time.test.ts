@@ -30,13 +30,13 @@ describe("a ajuda de /users diz quem cadastra quem", () => {
     }
   });
 
-  it("diz que gestor e tech lead cadastram no time deles", () => {
+  it("diz que gerente e tech lead cadastram no time deles", () => {
     const texto = Object.entries(PT)
       .filter(([chave]) => chave.startsWith("help.users."))
       .map(([, valor]) => valor)
       .join(" ")
       .toLowerCase();
-    expect(texto).toContain("gestor");
+    expect(texto).toContain("gerente");
     expect(texto).toContain("tech lead");
   });
 

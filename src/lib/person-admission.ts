@@ -110,7 +110,7 @@ export class PersonAdmission {
  * com cara de pronto — foi por isso que o dono pediu a mensagem no campo.
  *
  * O texto é sempre o DO SERVIÇO (mesma régua da alocação de time, onda 33):
- * ele nomeia o gestor atual do time e diz o alcance de quem tentou; a tela
+ * ele nomeia o gerente atual do time e diz o alcance de quem tentou; a tela
  * não inventa outro.
  */
 export class AdmissionRefusal {

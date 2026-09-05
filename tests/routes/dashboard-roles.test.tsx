@@ -57,13 +57,13 @@ const fixtureLeadOfAna: SessionUser = {
 /**
  * ADR-0047 do backend — o `lead` morreu e virou `manager` + `tech_lead`. O
  * ternário do painel não era exaustivo: papel que não fosse `lead` nem
- * `member` caía no `AdminHome` por OMISSÃO, calado. O gestor é o caso que
- * morde na aplicação do dono (`gestor@synapse.com.br`).
+ * `member` caía no `AdminHome` por OMISSÃO, calado. O gerente é o caso que
+ * morde na aplicação do dono (`gerente@synapse.com.br`).
  */
 const fixtureGestorDeAna: SessionUser = {
-  id: "test-gestor-de-ana",
-  email: "gestor-de-ana@company.com",
-  name: "Gestor de Ana",
+  id: "test-gerente-de-ana",
+  email: "gerente-de-ana@company.com",
+  name: "Gerente de Ana",
   role: "manager",
   architectId: null,
   status: "active",
@@ -156,7 +156,7 @@ describe("Painel — Home por papel", () => {
     expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
   });
 
-  it("gestor vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
+  it("gerente vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
     renderAsLeaderOfAna(fixtureGestorDeAna);
     await screen.findByText("Pendências do Lead");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();

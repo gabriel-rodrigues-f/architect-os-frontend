@@ -69,7 +69,7 @@ describe("guardas de navegação das telas administrativas", () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/competency-matrix")).toBe("/");
   });
 
-  it("nega /calibration ao member na navegação interna (PRD-03: só gestor+admin)", async () => {
+  it("nega /calibration ao member na navegação interna (PRD-03: só gerente+admin)", async () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/calibration")).toBe("/");
   });
 
@@ -81,7 +81,7 @@ describe("guardas de navegação das telas administrativas", () => {
     expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/calibration");
   });
 
-  it("abre /calibration para o gestor", async () => {
+  it("abre /calibration para o gerente", async () => {
     expect(await navegarComoUsuario(fixtureAssignedManagerUser, "/calibration")).toBe(
       "/calibration",
     );
@@ -136,7 +136,7 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
 
   /**
    * ONDA 37 — o cadastro unificado abriu /users à liderança: é o único lugar
-   * onde uma pessoa nasce, e o dono definiu que gestor e tech lead cadastram
+   * onde uma pessoa nasce, e o dono definiu que gerente e tech lead cadastram
    * no time deles. O DIRETÓRIO de contas continua administrativo — quem nega
    * a leitura é a tela (`users-alcance.test.tsx`), não a navegação.
    */
@@ -186,15 +186,15 @@ describe("requireLeadReach — a guarda da régua do time", () => {
 });
 
 /**
- * CONTRATO PRD-03, "visível só para gestor + admin" — a 3ª guarda do arquivo.
+ * CONTRATO PRD-03, "visível só para gerente + admin" — a 3ª guarda do arquivo.
  * A calibração era `requireAdminReach` por FALTA de vocabulário: com um único
  * papel `lead`, abrir a rota teria entregado a leitura ao tech lead, que o
  * contrato exclui. Os quatro papéis (backend ADR-0047) tornam a linha
  * dizível, e esta é a metade de navegação dela.
  *
- * O alcance é o PAPEL, não o vínculo: o contrato fala de gestor, sem dizer
- * "gestor daquele time" — a calibração é uma leitura de distribuição entre
- * avaliadores, não uma ação sobre alguém. Por isso o gestor SEM vínculo
+ * O alcance é o PAPEL, não o vínculo: o contrato fala de gerente, sem dizer
+ * "gerente daquele time" — a calibração é uma leitura de distribuição entre
+ * avaliadores, não uma ação sobre alguém. Por isso o gerente SEM vínculo
  * nenhum também passa, e o caso está aqui para que essa escolha seja
  * deliberada, e não um efeito colateral da fixture.
  */
@@ -219,11 +219,11 @@ describe("requireCalibrationReach — a guarda da leitura de calibração", () =
     expect(await alcancaCalibracao(fixtureAssignedTechLeadUser)).toBe(false);
   });
 
-  it("deixa passar o gestor", async () => {
+  it("deixa passar o gerente", async () => {
     expect(await alcancaCalibracao(fixtureAssignedManagerUser)).toBe(true);
   });
 
-  it("deixa passar o gestor SEM vínculo — o alcance é o papel, não o time", async () => {
+  it("deixa passar o gerente SEM vínculo — o alcance é o papel, não o time", async () => {
     const gestorSemVinculo: SessionUser = { ...fixtureAssignedManagerUser, memberships: [] };
     expect(await alcancaCalibracao(gestorSemVinculo)).toBe(true);
   });
@@ -337,7 +337,7 @@ describe("guardas de navegação do cadastro de times", () => {
     expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/teams")).toBe("/");
   });
 
-  it("abre /teams para o gestor com vínculo", async () => {
+  it("abre /teams para o gerente com vínculo", async () => {
     expect(await navegarComoUsuario(fixtureAssignedManagerUser, "/teams")).toBe("/teams");
   });
 

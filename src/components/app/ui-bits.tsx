@@ -578,7 +578,7 @@ export function FieldLabel({
 
 /**
  * A senioridade como RÓTULO — coluna do Time, cartão, quadro do time. Quando
- * a pessoa não tem senioridade (gestor e tech lead, onda 37), sai o travessão
+ * a pessoa não tem senioridade (gerente e tech lead, onda 37), sai o travessão
  * da ausência, com o significado no `title` para quem não vê o símbolo.
  */
 export function Seniority({

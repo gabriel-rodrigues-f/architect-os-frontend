@@ -54,7 +54,7 @@ describe("AppShell — navegação recortada por papel", () => {
 
   /**
    * ONDA 37 — Usuários deixou de ser admin-only: é o ÚNICO lugar de cadastro
-   * de pessoa, e o dono definiu que gestor e tech lead cadastram no time
+   * de pessoa, e o dono definiu que gerente e tech lead cadastram no time
    * deles. O diretório de contas continua administrativo (a tela o nega),
    * mas o DESTINO é da liderança — escondê-lo deixaria as duas personas sem
    * caminho nenhum para cadastrar.
@@ -75,13 +75,13 @@ describe("AppShell — navegação recortada por papel", () => {
   });
 
   /**
-   * Tela 3 (spec §3, CONTRATO PRD-03) — a calibração é de gestor + admin. Com
+   * Tela 3 (spec §3, CONTRATO PRD-03) — a calibração é de gerente + admin. Com
    * os quatro papéis (backend ADR-0047) o contrato ficou dizível: o destino
    * aparece para quem calibra e some para quem não calibra. Enquanto só
    * existia `lead`, abrir a navegação teria entregado a leitura ao tech lead
    * junto — por isso a rota nasceu admin-only.
    */
-  it("o gestor vê o destino de Calibração — é dele a leitura que o contrato reserva", () => {
+  it("o gerente vê o destino de Calibração — é dele a leitura que o contrato reserva", () => {
     const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel("manager"));
     const paths = groups.flatMap((group) => group.items.map((item) => item.to));
     expect(paths).toContain("/calibration");

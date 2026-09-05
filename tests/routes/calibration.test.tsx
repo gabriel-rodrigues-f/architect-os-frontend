@@ -19,12 +19,12 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
 
 /**
  * Tela 3 (spec §3) — calibração entre líderes, distribuição de notas por
- * avaliador LADO A LADO. CONTRATO PRD-03: visível só para gestor + admin.
+ * avaliador LADO A LADO. CONTRATO PRD-03: visível só para gerente + admin.
  *
  * A rota era ADMIN-ONLY por FALTA de vocabulário: `lead` não distinguia
- * gestor de tech lead, e abrir para `lead` teria dado a leitura ao tech lead
+ * gerente de tech lead, e abrir para `lead` teria dado a leitura ao tech lead
  * — exatamente quem o contrato exclui. Com os quatro papéis (backend
- * ADR-0047) a distinção existe, e o contrato passa a ser dizível: o gestor
+ * ADR-0047) a distinção existe, e o contrato passa a ser dizível: o gerente
  * entra, o tech lead não.
  *
  * Os dados vêm de `GET /calibration` (onda 24 ligou o gateway HTTP no
@@ -175,7 +175,7 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
   it("member não recebe a tela: aviso de acesso restrito, zero avaliadores, zero KPIs", async () => {
     renderAs(fixtureMemberUser);
     expect(
-      await screen.findByText("Calibração é restrita a gestores e administradores."),
+      await screen.findByText("Calibração é restrita a gerentes e administradores."),
     ).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
     expect(screen.queryByText("Paula Souza")).toBeNull();
@@ -184,22 +184,22 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
 
   /**
    * O tech lead é a metade do antigo `lead` que o CONTRATO PRD-03 EXCLUI. Sem
-   * este caso, "abrir para o gestor" viraria "abrir para quem lidera" — que é
+   * este caso, "abrir para o gerente" viraria "abrir para quem lidera" — que é
    * o vazamento que a falta de vocabulário vinha impedindo por acidente.
    */
-  it("tech lead não recebe a tela — o contrato reserva a leitura a gestor + admin", async () => {
+  it("tech lead não recebe a tela — o contrato reserva a leitura a gerente + admin", async () => {
     renderAs(fixtureUnassignedTechLeadUser);
     expect(
-      await screen.findByText("Calibração é restrita a gestores e administradores."),
+      await screen.findByText("Calibração é restrita a gerentes e administradores."),
     ).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
   });
 
-  it("o gestor recebe a tela INTEIRA — é dele a leitura que o contrato reserva", async () => {
+  it("o gerente recebe a tela INTEIRA — é dele a leitura que o contrato reserva", async () => {
     renderAs(fixtureAssignedManagerUser);
     expect(await screen.findByText("Marina Lopes")).toBeTruthy();
     expect(screen.getByText("Média geral")).toBeTruthy();
-    expect(screen.queryByText("Calibração é restrita a gestores e administradores.")).toBeNull();
+    expect(screen.queryByText("Calibração é restrita a gerentes e administradores.")).toBeNull();
   });
 });
 
@@ -251,17 +251,17 @@ describe("/calibration não CONSULTA para quem não calibra — o `enabled` é p
 
   it("member: a consulta não sai — nem para o ciclo ativo, nem para nenhum outro", async () => {
     renderAs(fixtureMemberUser);
-    await screen.findByText("Calibração é restrita a gestores e administradores.");
+    await screen.findByText("Calibração é restrita a gerentes e administradores.");
     expect(calibrationSpy).not.toHaveBeenCalled();
   });
 
-  it("tech lead: a consulta não sai — CONTRATO PRD-03 reserva a calibração a gestor + admin", async () => {
+  it("tech lead: a consulta não sai — CONTRATO PRD-03 reserva a calibração a gerente + admin", async () => {
     renderAs(fixtureUnassignedTechLeadUser);
-    await screen.findByText("Calibração é restrita a gestores e administradores.");
+    await screen.findByText("Calibração é restrita a gerentes e administradores.");
     expect(calibrationSpy).not.toHaveBeenCalled();
   });
 
-  it("gestor: a consulta SAI, com o ciclo ativo — o `enabled` abre junto com a tela", async () => {
+  it("gerente: a consulta SAI, com o ciclo ativo — o `enabled` abre junto com a tela", async () => {
     renderAs(fixtureAssignedManagerUser);
     await screen.findByText("Marina Lopes");
     expect(calibrationSpy).toHaveBeenCalledWith("2026-h2");

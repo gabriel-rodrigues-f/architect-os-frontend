@@ -87,13 +87,13 @@ test("member acessando /users direto pela URL vê o aviso de restrição, não o
   // caminho que realmente testa a autorização, não só a visibilidade do menu.
   // ONDA 37 — a negativa mudou de dono junto com a tela: /users deixou de ser
   // "diretório de contas restrito a administradores" e virou o CADASTRO, que
-  // o gestor e o tech lead do time também alcançam. Quem não lidera ninguém
+  // o gerente e o tech lead do time também alcançam. Quem não lidera ninguém
   // lê de quem é o gesto, não que ele é do admin.
   await page.goto("/users");
   await expect(page.getByText("Cadastrar pessoas é da liderança.")).toBeVisible();
   await expect(
     page.getByText(
-      "Quem cadastra é o administrador, o gestor do time ou o tech lead do time. Fale com quem lidera o seu.",
+      "Quem cadastra é o administrador, o gerente do time ou o tech lead do time. Fale com quem lidera o seu.",
     ),
   ).toBeVisible();
 });
@@ -110,10 +110,10 @@ test("member acessando /calibration direto pela URL vê o aviso de restrição, 
   // QA da onda 17, achado bloqueante: no acesso direto o beforeLoad não roda
   // no cliente (SSR + hidratação) e a tela abria INTEIRA, com o dado do
   // gateway em memória. O twin de /users acima: a tela é a última barreira.
-  // PRD-03: a leitura é de gestor E administrador — o texto da negativa
+  // PRD-03: a leitura é de gerente E administrador — o texto da negativa
   // mudou junto com o alcance (`calibration.restricted`).
   await page.goto("/calibration");
-  await expect(page.getByText("Calibração é restrita a gestores e administradores.")).toBeVisible();
+  await expect(page.getByText("Calibração é restrita a gerentes e administradores.")).toBeVisible();
   await expect(page.getByText("Marina Lopes")).toHaveCount(0);
   await expect(page.getByText("Média geral")).toHaveCount(0);
 });

@@ -58,7 +58,7 @@ export const Route = createFileRoute("/teams")({
       {
         name: "description",
         content:
-          "Cadastro de times: quem é o gestor, o tech lead e as pessoas de cada um, com os vínculos que o serviço registra.",
+          "Cadastro de times: quem é o gerente, o tech lead e as pessoas de cada um, com os vínculos que o serviço registra.",
       },
     ],
   }),

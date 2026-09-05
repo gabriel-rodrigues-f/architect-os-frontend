@@ -146,7 +146,7 @@ describe("menu do profissional — o que não é dele some", () => {
   /**
    * ONDA 37 — o grupo Administração deixou de ser exclusivo do admin porque
    * Usuários virou o ÚNICO lugar de cadastro de pessoa, e o dono definiu que
-   * gestor e tech lead cadastram no time deles. Para a liderança o grupo tem
+   * gerente e tech lead cadastram no time deles. Para a liderança o grupo tem
    * UM item — Usuários; para o profissional continua sumindo inteiro, que é
    * o achado que este teste guarda.
    */

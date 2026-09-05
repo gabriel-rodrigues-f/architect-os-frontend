@@ -32,7 +32,7 @@ import {
  * O que esta rede prende, e por quê:
  *
  *   1. **as três personas veem só os cargos que podem criar.** A régua é do
- *      backend (`TeamStaffingGuard`); oferecer "Gestor" a um gestor seria
+ *      backend (`TeamStaffingGuard`); oferecer "Gerente" a um gerente seria
  *      desenhar um caminho que termina em 403.
  *   2. **senioridade aparece e some com o cargo.** O dono tirou o nível de
  *      carreira da liderança; o campo escondido também não pode viajar no
@@ -40,7 +40,7 @@ import {
  *      tela obedece.
  *   3. **o time é obrigatório**, e quem lidera um só já o encontra escolhido.
  *   4. **a recusa do serviço fala JUNTO DO CAMPO e trava o envio.** "Este
- *      time já tem um gestor" num toast some sozinho e deixa o formulário
+ *      time já tem um gerente" num toast some sozinho e deixa o formulário
  *      com cara de pronto.
  */
 
@@ -105,12 +105,12 @@ describe("Usuários é o único lugar de cadastro — os cargos que cada persona
     vi.unstubAllGlobals();
   });
 
-  it("o admin cadastra Gestor, Tech Lead e Membro — nunca outro Administrador", async () => {
+  it("o admin cadastra Gerente, Tech Lead e Membro — nunca outro Administrador", async () => {
     const dialogo = await abrirCadastro(fixtureAdminUser);
-    expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual(["Gestor", "Tech Lead", "Membro"]);
+    expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual(["Gerente", "Tech Lead", "Membro"]);
   });
 
-  it("o gestor cadastra Tech Lead e Membro", async () => {
+  it("o gerente cadastra Tech Lead e Membro", async () => {
     const dialogo = await abrirCadastro(fixtureAssignedManagerUser);
     expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual(["Tech Lead", "Membro"]);
   });
@@ -258,11 +258,11 @@ describe("a recusa do serviço fala no campo e trava o envio", () => {
   const RECUSA_DE_GESTOR = {
     code: "TEAM_ALREADY_HAS_MANAGER",
     message:
-      "Este time já tem um gestor: Marina Alves. Um time tem no máximo um gestor — troque o gestor atual antes de indicar outro.",
+      "Este time já tem um gerente: Marina Alves. Um time tem no máximo um gerente — troque o gerente atual antes de indicar outro.",
     correlationId: "corr-1",
   };
 
-  it("o segundo gestor do time é recusado com a mensagem do serviço, junto do campo Time", async () => {
+  it("o segundo gerente do time é recusado com a mensagem do serviço, junto do campo Time", async () => {
     const dialogo = await abrirCadastro(fixtureAdminUser, [
       (href, init) =>
         href.endsWith(apiPath("/auth/users")) && init?.method === "POST"

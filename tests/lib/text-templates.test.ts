@@ -28,8 +28,8 @@ describe("TextTemplate.render (espelho de TextTemplate.render do backend)", () =
 
   it("variável sem valor fornecido fica LITERAL — não explode, não vira 'undefined'", () => {
     expect(
-      TextTemplate.of("Evoluir {competencia} com {gestor}").render({ competencia: "IAM" }),
-    ).toBe("Evoluir IAM com {gestor}");
+      TextTemplate.of("Evoluir {competencia} com {gerente}").render({ competencia: "IAM" }),
+    ).toBe("Evoluir IAM com {gerente}");
   });
 
   it("placeholder fora do padrão do backend (não começa com letra) não é tocado", () => {

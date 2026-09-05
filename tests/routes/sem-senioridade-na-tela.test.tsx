@@ -45,14 +45,14 @@ import {
 } from "../helpers/render-app";
 
 /**
- * ONDA 37 (backend ADR-0084) — cargo e senioridade se separaram: gestor e
+ * ONDA 37 (backend ADR-0084) — cargo e senioridade se separaram: gerente e
  * tech lead nascem SEM senioridade e o servidor devolve `role: null` e
  * `careerLevelId: null` nesses profissionais.
  *
  * O invariante que faltava, e que teria pego o defeito: UM item sem
  * senioridade não pode derrubar a LISTA INTEIRA. O contrato do frontend
  * exigia `role: string`, então o `/state` inteiro morria com ZodError e a
- * aplicação não renderizava para admin, gestor nem tech lead.
+ * aplicação não renderizava para admin, gerente nem tech lead.
  *
  * Onde a senioridade é RÓTULO (coluna do Time, ficha), a ausência aparece
  * como travessão — o símbolo que `frontend/DECISOES.md` já reservou para

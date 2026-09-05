@@ -44,7 +44,7 @@ const techLead: NoticesViewer = {
   architectId: null,
   memberships: [{ teamId: REAL_TEAM_ID, role: "tech_lead" }],
 };
-const gestor: NoticesViewer = {
+const gerente: NoticesViewer = {
   role: "tech_lead",
   architectId: null,
   memberships: [{ teamId: REAL_TEAM_ID, role: "manager" }],
@@ -148,8 +148,8 @@ describe("InMemoryNoticesGateway — recorte por destinatário (o mock É o serv
     expect(memberPage.notices.length).toBeLessThan(leadPage.notices.length);
   });
 
-  it("gestor do time recebe o mesmo escopo de time que o tech lead", async () => {
-    const gestorPage = await gatewayFor(gestor).notices({ status: "all" });
+  it("gerente do time recebe o mesmo escopo de time que o tech lead", async () => {
+    const gestorPage = await gatewayFor(gerente).notices({ status: "all" });
     const leadPage = await gatewayFor(techLead).notices({ status: "all" });
     expect(gestorPage.notices.map((item) => item.title)).toEqual(
       leadPage.notices.map((item) => item.title),

@@ -213,7 +213,7 @@ describe("o botão só aparece para quem pode — o 403 não é a forma de desco
   });
 
   /**
-   * O gestor alcança a tela (ele admite gente), mas o DIRETÓRIO de contas é
+   * O gerente alcança a tela (ele admite gente), mas o DIRETÓRIO de contas é
    * administrativo — e devolver acesso é da mesma família.
    */
   it("quem não administra não vê o ato — nem as contas", async () => {

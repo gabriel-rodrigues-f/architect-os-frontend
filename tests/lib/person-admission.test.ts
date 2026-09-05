@@ -36,10 +36,10 @@ const admin: SessionUser = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
-const gestor: SessionUser = {
+const gerente: SessionUser = {
   ...admin,
-  id: "conta-gestor",
-  name: "Gestor",
+  id: "conta-gerente",
+  name: "Gerente",
   role: "manager",
   memberships: [{ teamId: "plataforma", role: "manager" }],
 };
@@ -72,12 +72,12 @@ const valores = (patch: Partial<PersonAdmissionValues> = {}): PersonAdmissionVal
 });
 
 describe("quem cadastra quem — os cargos que cada persona pode admitir", () => {
-  it("o admin admite gestor, tech lead e profissional", () => {
+  it("o admin admite gerente, tech lead e profissional", () => {
     expect(policy.admissibleCargos(admin)).toEqual(["manager", "tech_lead", "member"]);
   });
 
-  it("o gestor admite tech lead e profissional — nunca outro gestor", () => {
-    expect(policy.admissibleCargos(gestor)).toEqual(["tech_lead", "member"]);
+  it("o gerente admite tech lead e profissional — nunca outro gerente", () => {
+    expect(policy.admissibleCargos(gerente)).toEqual(["tech_lead", "member"]);
   });
 
   it("o tech lead admite só profissional", () => {
@@ -98,8 +98,8 @@ describe("onde cada persona cadastra", () => {
     ]);
   });
 
-  it("o gestor vê só o time em que ele é o gestor", () => {
-    expect(policy.admissibleTeams(gestor, times).map((team) => team.id)).toEqual(["plataforma"]);
+  it("o gerente vê só o time em que ele é o gerente", () => {
+    expect(policy.admissibleTeams(gerente, times).map((team) => team.id)).toEqual(["plataforma"]);
   });
 
   it("o tech lead vê só o time em que ele é o tech lead", () => {
@@ -108,19 +108,19 @@ describe("onde cada persona cadastra", () => {
 
   /**
    * O vínculo tem de falar o MESMO papel do cargo global — é a escada do
-   * backend (`teamsOf(actor.id, [actor.role])`). Uma conta de gestor com
+   * backend (`teamsOf(actor.id, [actor.role])`). Uma conta de gerente com
    * vínculo de tech lead num time não cadastra naquele time.
    */
   it("vínculo de papel diferente do cargo global não abre time nenhum", () => {
     const gestorComVinculoDeTechLead: SessionUser = {
-      ...gestor,
+      ...gerente,
       memberships: [{ teamId: "dados", role: "tech_lead" }],
     };
     expect(policy.admissibleTeams(gestorComVinculoDeTechLead, times)).toEqual([]);
   });
 
   it("time único já vem escolhido; com mais de um, ninguém escolhe pela pessoa", () => {
-    expect(policy.preselectedTeamId(gestor, times)).toBe("plataforma");
+    expect(policy.preselectedTeamId(gerente, times)).toBe("plataforma");
     expect(policy.preselectedTeamId(admin, times)).toBeNull();
   });
 });
@@ -133,7 +133,7 @@ describe("a nomeação: senioridade é do profissional, e só dele", () => {
     expect(semNivel.pending).toContain("seniority");
   });
 
-  it("gestor e tech lead não têm senioridade — o campo some e não viaja", () => {
+  it("gerente e tech lead não têm senioridade — o campo some e não viaja", () => {
     const admissao = new PersonAdmission(
       valores({ cargo: "tech_lead", careerLevelId: "arquiteto-de-solucoes-i" }),
     );
@@ -173,18 +173,18 @@ describe("a recusa do serviço aparece no campo, e trava o envio", () => {
   const recusa = (code: string, status: number, message: string) =>
     AdmissionRefusal.of(new ApiError(message, status, undefined, code), valores());
 
-  it('"o time já tem gestor" fala no campo Time', () => {
+  it('"o time já tem gerente" fala no campo Time', () => {
     const refusal = recusa(
       "TEAM_ALREADY_HAS_MANAGER",
       409,
-      "Este time já tem um gestor: Marina. Um time tem no máximo um gestor.",
+      "Este time já tem um gerente: Marina. Um time tem no máximo um gerente.",
     );
     expect(refusal?.field).toBe("team");
     expect(refusal?.message).toContain("Marina");
   });
 
   it("o 403 de quem não pode cadastrar aquele cargo fala no campo Cargo", () => {
-    expect(recusa("PERSON_ADMISSION_FORBIDDEN", 403, "Como gestor você cadastra…")?.field).toBe(
+    expect(recusa("PERSON_ADMISSION_FORBIDDEN", 403, "Como gerente você cadastra…")?.field).toBe(
       "cargo",
     );
   });

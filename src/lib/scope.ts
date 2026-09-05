@@ -20,14 +20,14 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
  *
  *   ALCANCE (`canActFor`, `isLeadOf`, `configurableTeamIds`) é a união dos
  *   times com vínculo de liderança, exigido papel de liderança — a conta de
- *   dois chapéus (gestora de um time, tech lead de outro) alcança os dois;
+ *   dois chapéus (gerente de um time, tech lead de outro) alcança os dois;
  *
  *   PODER ESTRITO (`isAssignedTechLeadOf`) exige papel global E vínculo
  *   naquele time, os dois iguais — é o que o backend guarda na proficiência
  *   observada e na reabertura de PDI.
  *
  * `canCalibrate` é de um terceiro tipo, e por isso não se apoia em nenhum dos
- * dois: o CONTRATO PRD-03 reserva a leitura de calibração a gestor + admin
+ * dois: o CONTRATO PRD-03 reserva a leitura de calibração a gerente + admin
  * SEM falar de time, porque ela compara avaliadores entre si em vez de agir
  * sobre alguém. Papel global, vínculo nenhum.
  */
@@ -40,7 +40,7 @@ export class UiAuthorizationPolicy {
   }
 
   /**
-   * NA PRÓPRIA FICHA, NINGUÉM É LÍDER (dono, 2026-09-05). Gestor e tech lead
+   * NA PRÓPRIA FICHA, NINGUÉM É LÍDER (dono, 2026-09-05). Gerente e tech lead
    * abriam a própria ficha e viam roteiro de 1:1 consigo mesmos, "sugerir
    * PDI", "revisar" as próprias evidências e a explicação de prontidão. Quem
    * lidera a pessoa é outra pessoa — e isso vale para o administrador também.
@@ -118,7 +118,7 @@ export class UiAuthorizationPolicy {
    *   cada linha, então ela mostra o botão para a liderança e deixa o recorte
    *   fino com quem é a autoridade — o backend, que responde
    *   `ACCESS_RESTORE_FORBIDDEN` com a frase que diz o alcance de quem tentou.
-   *   Esconder de gestor e tech lead seria mais "seguro" e simplesmente errado:
+   *   Esconder de gerente e tech lead seria mais "seguro" e simplesmente errado:
    *   tiraria da liderança exatamente a operação que o dono pediu.
    *
    *   **Nunca na própria conta.** Quem está logado não precisa de convite

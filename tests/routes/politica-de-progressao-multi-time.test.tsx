@@ -23,7 +23,7 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * O travessão da coluna "mínimo de capacidades qualificadas" tem de significar
  * AUSÊNCIA, nunca ABUNDÂNCIA.
  *
- * Medido na tela do dono: com dois times na organização, admin e gestor
+ * Medido na tela do dono: com dois times na organização, admin e gerente
  * recebem DUAS réguas por nível de carreira e a tela mostra "—"; tech lead e
  * membro alcançam um time só, recebem UMA régua, e veem o número. Os dois
  * perfis de maior alcance viam MENOS que os de menor alcance, na mesma tela,

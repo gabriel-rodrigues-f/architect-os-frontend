@@ -24,7 +24,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
  *       averageDaysInOriginLevel } ] } ], withoutRecordedTeam } }
  *
  * O serviço devolve os times em ordem ALFABÉTICA e escopa sozinho (admin vê
- * todos; gestor e tech lead veem os times que lideram). `withoutRecordedTeam`
+ * todos; gerente e tech lead veem os times que lideram). `withoutRecordedTeam`
  * só vem para o admin (`null` para os demais) — e ZERO é valor legítimo.
  * O in-memory é o oráculo do contrato: mesma ordem, mesmo escopo por
  * `teamIds`, mesmo carimbo de demonstração.

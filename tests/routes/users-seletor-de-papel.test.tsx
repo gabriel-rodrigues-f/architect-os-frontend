@@ -22,7 +22,7 @@ import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app
  * nenhum a mais, nenhum a menos, nos DOIS diálogos), e a passagem do texto do
  * navegador para o papel é ESTREITAMENTO de verdade, não molde.
  *
- * O rótulo é a palavra do dono, em PT-BR — ele diz "gestor", não "manager".
+ * O rótulo é a palavra do dono, em PT-BR — ele diz "gerente", não "manager".
  */
 
 const fetchMock = vi.fn();
@@ -102,8 +102,8 @@ describe("Usuários — o seletor de papel é derivado do vocabulário", () => {
     expect(papeisOferecidosEm(dialog)).toEqual(rotulados(USER_ROLES));
   });
 
-  it("o gestor está entre eles, escrito na palavra do dono", () => {
-    expect(ROTULOS_DE_NEGOCIO["users.role.manager"]).toBe("Gestor");
+  it("o gerente está entre eles, escrito na palavra do dono", () => {
+    expect(ROTULOS_DE_NEGOCIO["users.role.manager"]).toBe("Gerente");
   });
 });
 
@@ -115,7 +115,7 @@ describe("Usuários — o texto do navegador vira papel por estreitamento, não 
   it("recusa o papel morto `lead` e qualquer texto que o navegador invente", () => {
     expect(UserRoles.includes("lead")).toBe(false);
     expect(UserRoles.includes("")).toBe(false);
-    expect(UserRoles.includes("Gestor")).toBe(false);
+    expect(UserRoles.includes("Gerente")).toBe(false);
   });
 });
 
@@ -128,9 +128,9 @@ describe("Usuários — a prosa da tela conhece os quatro papéis", () => {
       .join(" ")
       .toLowerCase();
 
-  it("nomeia o gestor — a tela que ATRIBUI papel não pode descrever só três", () => {
+  it("nomeia o gerente — a tela que ATRIBUI papel não pode descrever só três", () => {
     const texto = prosa();
-    for (const palavra of ["administrador", "gestor", "tech lead", "membro"]) {
+    for (const palavra of ["administrador", "gerente", "tech lead", "membro"]) {
       expect(texto, palavra).toContain(palavra);
     }
   });

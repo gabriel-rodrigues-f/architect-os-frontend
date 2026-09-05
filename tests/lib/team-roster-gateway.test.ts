@@ -31,10 +31,10 @@ const jsonResponse = (body: unknown, status = 200): Response =>
     headers: { "content-type": "application/json" },
   });
 
-const gestor: TeamRosterMember = {
-  userId: "conta-gestor",
-  name: "Gestor do time",
-  email: "gestor-do-time@company.com",
+const gerente: TeamRosterMember = {
+  userId: "conta-gerente",
+  name: "Gerente do time",
+  email: "gerente-do-time@company.com",
   role: "manager",
 };
 const carla: TeamRosterMember = {
@@ -66,7 +66,7 @@ beforeEach(() => {
 
 describe("HttpTeamRosterGateway — a leitura do quadro", () => {
   it("lê GET /teams/:teamId/memberships e devolve as linhas na ordem em que o serviço as mandou", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ data: [gestor, carla, ana, bruno] }));
+    fetchMock.mockResolvedValue(jsonResponse({ data: [gerente, carla, ana, bruno] }));
     const roster = await gateway().rosterOf("time-plataforma");
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit | undefined];
@@ -75,7 +75,7 @@ describe("HttpTeamRosterGateway — a leitura do quadro", () => {
     expect(roster.reading).toBe("available");
     if (roster.reading !== "available") throw new Error("leitura deveria estar disponível");
     expect(roster.members.map((member) => member.userId)).toEqual([
-      "conta-gestor",
+      "conta-gerente",
       "conta-carla",
       "conta-ana",
       "conta-bruno",
@@ -120,14 +120,14 @@ describe("HttpTeamRosterGateway — a leitura do quadro", () => {
 });
 
 describe("InMemoryTeamRosterGateway — o oráculo do contrato", () => {
-  it("ordena por papel (gestor, tech lead, membro) e depois por nome, seja qual for a ordem de entrada", async () => {
+  it("ordena por papel (gerente, tech lead, membro) e depois por nome, seja qual for a ordem de entrada", async () => {
     const roster = await new InMemoryTeamRosterGateway(
-      new Map([["time-plataforma", [bruno, carla, ana, gestor]]]),
+      new Map([["time-plataforma", [bruno, carla, ana, gerente]]]),
     ).rosterOf("time-plataforma");
     expect(roster.reading).toBe("available");
     if (roster.reading !== "available") throw new Error("leitura deveria estar disponível");
     expect(roster.members.map((member) => member.name)).toEqual([
-      "Gestor do time",
+      "Gerente do time",
       "Carla Souza",
       "Ana Martins",
       "Bruno Almeida",

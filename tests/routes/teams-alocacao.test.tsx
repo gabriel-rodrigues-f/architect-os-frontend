@@ -25,7 +25,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * negócio `POST/DELETE /architects/:id/team-allocation`.
  *
  * Quem aloca e retira é quem compõe o time (`canComposeTeam`): admin sempre,
- * gestor só do time que gere — o espelho da regra do backend. O tech lead
+ * gerente só do time que gere — o espelho da regra do backend. O tech lead
  * lidera tecnicamente e não compõe.
  */
 const fetchMock = vi.fn();
@@ -140,7 +140,7 @@ afterEach(() => {
 });
 
 describe("/teams — alocar pessoa ao time, pelo gateway em memória (o oráculo do contrato)", () => {
-  it("o gestor do time vê 'Alocar pessoa', escolhe entre os ativos que não estão neste time e a pessoa entra no quadro", async () => {
+  it("o gerente do time vê 'Alocar pessoa', escolhe entre os ativos que não estão neste time e a pessoa entra no quadro", async () => {
     const gateway = new InMemoryTeamAllocationGateway([...fixtureState.architects, diego], times);
     vi.spyOn(api, "allocateArchitectToTeam").mockImplementation(gateway.allocateArchitectToTeam);
 
@@ -268,7 +268,7 @@ describe("/teams — alocar e retirar pelo container de produção (o contrato n
 describe("/teams — quem não compõe o time não aloca", () => {
   it("o tech lead não vê 'Alocar pessoa' nem 'Retirar do time'", async () => {
     renderAs(fixtureAssignedTechLeadUser);
-    await screen.findByText(/restrito ao administrador e ao gestor designado/i);
+    await screen.findByText(/restrito ao administrador e ao gerente designado/i);
 
     expect(screen.queryByRole("button", { name: "Alocar pessoa" })).toBeNull();
     expect(screen.queryByLabelText(/Retirar .* do time/)).toBeNull();

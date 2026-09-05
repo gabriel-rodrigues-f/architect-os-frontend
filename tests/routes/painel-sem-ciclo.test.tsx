@@ -73,7 +73,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
 
   it.each([
     ["admin", fixtureAdminUser],
-    ["gestor", fixtureAssignedManagerUser],
+    ["gerente", fixtureAssignedManagerUser],
     ["tech lead", fixtureAssignedTechLeadUser],
   ])("%s vê a mensagem e o botão que leva a /cycles", async (_papel, user) => {
     prepararPainel(user, estadoSemCiclo);

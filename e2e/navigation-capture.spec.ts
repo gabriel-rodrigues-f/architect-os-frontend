@@ -75,7 +75,7 @@ const PASSWORD = CREDENTIALS[ROLE]?.password;
 
 /**
  * Papel × alcance declarado. As contas de `seed:access-profiles` têm
- * vínculo (o gestor rege dois times, o tech lead um), por isso os dois
+ * vínculo (o gerente rege dois times, o tech lead um), por isso os dois
  * alcançam `lead-com-vinculo`; o profissional visita a PRÓPRIA ficha
  * (`resolveArchitectId` prefere o `architectId` da sessão), que a guarda
  * `requireCareerFileReach` nega a ele.
@@ -100,7 +100,7 @@ const PAPEIS_QUE_ALCANCAM: Record<DeclaredReach, readonly string[]> = {
 const SEM_CREDENCIAL = `Sem credencial para o papel "${ROLE}" (E2E_${ROLE.toUpperCase()}_EMAIL/_PASSWORD${
   ROLE === "admin"
     ? ""
-    : " — o seed local só cria admin e member; gestor e tech lead exigem env explícita"
+    : " — o seed local só cria admin e member; gerente e tech lead exigem env explícita"
 }).`;
 
 const SCREENSHOTS_DIR = join(dirname(fileURLToPath(import.meta.url)), "screenshots");
@@ -134,7 +134,7 @@ const NEGATIVA_NA_TELA: Readonly<Record<string, string>> = {
   "/team-rules": "teamRules.leadOnly",
   "/teams": "teams.restricted",
   "/training-needs": "cap.teamAnalysisOnly",
-  // `users.adminOnly` é outra negativa da MESMA tela: a que o gestor e o tech
+  // `users.adminOnly` é outra negativa da MESMA tela: a que o gerente e o tech
   // lead veem no lugar do diretório, porque admitem gente sem ver todas as
   // contas. Quem não alcança a rota — o profissional — recebe esta, desde que
   // `/users` passou a ser da liderança inteira (ADR-0084).

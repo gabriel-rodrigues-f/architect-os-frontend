@@ -24,7 +24,7 @@ import {
  * "não vê seus números de avaliação". Em `/assessments` ele continua
  * PREENCHENDO a autoavaliação — é participação —, mas as colunas do LÍDER,
  * do ALVO e a nota FINAL (e a Distância, que é a subtração das duas últimas)
- * deixam de ser mostradas a ele. Tech lead e gestor continuam vendo tudo.
+ * deixam de ser mostradas a ele. Tech lead e gerente continuam vendo tudo.
  *
  * A prova é no DOM, não no CSS: `querySelectorAll("th"/"td")` conta o que
  * existe na árvore — uma coluna escondida por classe continuaria contando.
@@ -127,7 +127,7 @@ describe("Avaliações — o profissional não vê seus números de avaliação"
 
   it.each([
     ["tech lead do time", fixtureAssignedTechLeadUser],
-    ["gestor do time", fixtureAssignedManagerUser],
+    ["gerente do time", fixtureAssignedManagerUser],
     ["administrador", fixtureAdminUser],
   ])("%s continua vendo as sete colunas, com a nota do líder dentro", async (_, user) => {
     mockSession(user);

@@ -604,7 +604,7 @@ export function WorkAssistanceSection({
  * palavra proibida tem rede própria em
  * `tests/architecture/vocabulario-positivo.test.ts`; o que este componente
  * garante é o outro lado — quando NÃO há o que avisar, a tela diz isso com
- * todas as letras em vez de deixar um silêncio que cada gestor interpreta
+ * todas as letras em vez de deixar um silêncio que cada gerente interpreta
  * como quiser.
  *
  * `requiresAttention` é determinístico: quando é falso o provedor sequer foi

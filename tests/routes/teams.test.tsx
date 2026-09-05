@@ -46,7 +46,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * catraca `alcance-por-rota` exige: a guarda de navegação é cega à sessão no
  * SSR, e quem barra é a própria tela — negativa desenhada, consulta desligada.
  *
- * Quem compõe o quadro é o administrador ou o GESTOR DESIGNADO do time
+ * Quem compõe o quadro é o administrador ou o GERENTE DESIGNADO do time
  * (`isAssignedManagerOfTeam` no backend). O tech lead lidera tecnicamente e
  * não compõe: aqui ele recebe a mesma negativa que o member.
  */
@@ -103,7 +103,7 @@ function renderAs(user: SessionUser, routes: FetchRoute[] = []) {
 }
 
 const NEGATIVA =
-  "Cadastrar times e compor o quadro é restrito ao administrador e ao gestor designado de cada time.";
+  "Cadastrar times e compor o quadro é restrito ao administrador e ao gerente designado de cada time.";
 
 beforeEach(() => {
   try {
@@ -133,7 +133,7 @@ describe("/teams nega DADO a quem não compõe o quadro — a tela é a última 
     expect(pediuOsTimes()).toBe(false);
   });
 
-  it("tech lead COM vínculo não compõe o quadro — a caneta é do gestor", async () => {
+  it("tech lead COM vínculo não compõe o quadro — a caneta é do gerente", async () => {
     renderAs(fixtureAssignedTechLeadUser);
     expect(await screen.findByText(NEGATIVA)).toBeTruthy();
     expect(pediuOsTimes()).toBe(false);
@@ -160,7 +160,7 @@ describe("/teams — a lista, com ativos e desativados", () => {
     expect(within(linha).getByText("2")).toBeTruthy();
   });
 
-  it("gestor com vínculo só vê os times que gere, e não cria time", async () => {
+  it("gerente com vínculo só vê os times que gere, e não cria time", async () => {
     renderAs(fixtureAssignedManagerUser);
     expect(await screen.findByText("Time Plataforma")).toBeTruthy();
     expect(screen.queryByText("Time Dados")).toBeNull();
@@ -298,7 +298,7 @@ describe("/teams — o quadro do time", () => {
         ? jsonResponse(
             {
               code: "MANAGER_MEMBERSHIP_RESERVED_TO_ADMIN",
-              message: "Definir quem é o gestor de um time é ato do administrador.",
+              message: "Definir quem é o gerente de um time é ato do administrador.",
             },
             403,
           )
@@ -310,15 +310,15 @@ describe("/teams — o quadro do time", () => {
     await userEvent.click(await screen.findByLabelText("Pessoa"));
     await userEvent.click(screen.getByRole("option", { name: "Carla Souza" }));
     await userEvent.click(screen.getByLabelText("Papel no time"));
-    await userEvent.click(screen.getByRole("option", { name: "Gestor" }));
+    await userEvent.click(screen.getByRole("option", { name: "Gerente" }));
     await userEvent.click(screen.getByRole("button", { name: "Vincular" }));
 
     expect(
-      await screen.findByText("Definir quem é o gestor de um time é ato do administrador."),
+      await screen.findByText("Definir quem é o gerente de um time é ato do administrador."),
     ).toBeTruthy();
   });
 
-  it("gestor vê as pessoas do quadro, mas o diretório de contas não sai para ele", async () => {
+  it("gerente vê as pessoas do quadro, mas o diretório de contas não sai para ele", async () => {
     renderAs(fixtureAssignedManagerUser);
     await screen.findByText("Time Plataforma");
     await userEvent.click(screen.getByLabelText("Quadro de Time Plataforma"));

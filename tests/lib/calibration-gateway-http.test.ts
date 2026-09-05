@@ -9,7 +9,7 @@ import { HttpCalibrationGateway } from "@/lib/gateways/calibration.gateway";
  * Mesma lacuna do sino, do outro lado: a Calibração passou a ler do servidor
  * na onda 24 e o `cycleId` que ela manda nunca foi afirmado. Perder esse
  * parâmetro não quebra a tela — ela desenha a distribuição de OUTRO ciclo com
- * cara de ser a do ciclo escolhido, na tela em que o gestor compara
+ * cara de ser a do ciclo escolhido, na tela em que o gerente compara
  * avaliadores. É o pior tipo de falha: silenciosa e plausível.
  */
 const fetchMock = vi.fn();

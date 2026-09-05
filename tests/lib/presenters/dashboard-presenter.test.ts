@@ -341,10 +341,10 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
     expect(queuesOf(comInativo).people.map((architect) => architect.id)).toEqual(["ana"]);
   });
 
-  it("o gestor recolhe as mesmas pendências do tech lead — alcance não distingue os dois", () => {
-    const gestor = { ...fixtureAssignedManagerUser };
+  it("o gerente recolhe as mesmas pendências do tech lead — alcance não distingue os dois", () => {
+    const gerente = { ...fixtureAssignedManagerUser };
 
-    expect(queuesOf(fixtureState, gestor).people.map((architect) => architect.id)).toEqual([
+    expect(queuesOf(fixtureState, gerente).people.map((architect) => architect.id)).toEqual([
       "ana",
       "bruno",
     ]);

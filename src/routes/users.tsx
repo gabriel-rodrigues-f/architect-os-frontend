@@ -47,7 +47,7 @@ export const Route = createFileRoute("/users")({
       {
         name: "description",
         content:
-          "Cadastro de pessoas: cargo (administrador, gestor, Tech Lead, membro), senioridade, time e status da conta.",
+          "Cadastro de pessoas: cargo (administrador, gerente, Tech Lead, membro), senioridade, time e status da conta.",
       },
       { property: "og:title", content: "Usuários — Synapse" },
       {
@@ -677,7 +677,7 @@ interface AccountStatusChange {
  * Um botão, dois atos, três diálogos. Conta COM profissional: desativar é
  * um ato só (conta + profissional, com motivo — ADR-0084) e ativar é o mesmo
  * ato de volta, pela rota de reativação. Conta SEM profissional (admin,
- * gestor): só a conta muda de status, por confirmação.
+ * gerente): só a conta muda de status, por confirmação.
  */
 function AccountStatusChangeDialog({
   change,

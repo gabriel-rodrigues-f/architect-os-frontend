@@ -48,7 +48,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  *  2. **a expressão é "Requer atenção"**, pedido literal do dono, e a
  *     alternativa que ele PROIBIU tem rede própria em
  *     `vocabulario-positivo`. Aqui se fixa o outro lado: sem sinal, a tela
- *     diz que nada requer atenção — silêncio, cada gestor interpreta como
+ *     diz que nada requer atenção — silêncio, cada gerente interpreta como
  *     quiser.
  */
 const fetchMock = vi.fn();
