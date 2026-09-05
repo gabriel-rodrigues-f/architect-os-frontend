@@ -39,9 +39,15 @@ export function LoginScreen() {
       .finally(() => setCheckedInstance(true));
   }, []);
 
+  /**
+   * O erro anterior FICA na tela enquanto a nova tentativa está em voo. Limpar
+   * ao submeter fazia o aviso sumir e voltar a cada clique — e, como a tela é
+   * centrada verticalmente, o cartão inteiro subia e descia junto (dono,
+   * 2026-09-05: "a tela toda treme"). Só o resultado da tentativa troca o
+   * aviso: sucesso o apaga, falha o substitui.
+   */
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    setError(null);
     setSubmitting(true);
     try {
       if (mode === "register") {
@@ -53,6 +59,7 @@ export function LoginScreen() {
       } else {
         await login(form.email.trim(), form.password);
       }
+      setError(null);
     } catch (err) {
       setError(authErrorMessage(err));
     } finally {

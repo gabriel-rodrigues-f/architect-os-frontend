@@ -79,3 +79,67 @@ describe("Login — credencial recusada é anunciada", () => {
     expect(alerta.textContent).toBe(CREDENCIAL_RECUSADA);
   });
 });
+
+/**
+ * Dono (2026-09-05): "quando eu clico algumas vezes no botão de Entrar a tela
+ * toda treme, como se estivesse tentando carregar. A tela inteira não deve se
+ * mover, apenas o campo vermelho de erro." A causa: o aviso era apagado no
+ * instante do clique e só voltava com a resposta — e, como o cartão é centrado
+ * verticalmente, ele subia e descia a cada tentativa. O aviso anterior fica
+ * até a resposta nova dizer outra coisa.
+ */
+describe("Login — o aviso de erro não some enquanto a nova tentativa está em voo", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("clicar de novo mantém o alerta anterior no lugar, sem tirar e devolver o cartão", async () => {
+    let soltar: (() => void) | undefined;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const href = String(url);
+      if (href.endsWith(apiPath("/auth/status"))) {
+        return Promise.resolve(jsonResponse({ data: { hasUsers: true } }));
+      }
+      if (href.endsWith(apiPath("/auth/me"))) {
+        return Promise.resolve(jsonResponse({ error: "Unauthorized" }, 401));
+      }
+      if (href.endsWith(apiPath("/auth/login")) && init?.method === "POST") {
+        if (soltar) return Promise.reject(new TypeError("Failed to fetch"));
+        return new Promise<Response>((resolve) => {
+          soltar = () =>
+            resolve(jsonResponse({ error: "Unauthorized", message: CREDENCIAL_RECUSADA }, 401));
+        });
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    render(
+      <LoginWrapper>
+        <LoginScreen />
+      </LoginWrapper>,
+    );
+    fireEvent.change(await screen.findByLabelText("E-mail"), { target: { value: "a@b.com" } });
+    fireEvent.change(screen.getByLabelText("Senha"), { target: { value: "senha-errada" } });
+
+    const botao = await screen.findByRole("button", { name: "Entrar" });
+    fireEvent.click(botao);
+    soltar?.();
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toBe(CREDENCIAL_RECUSADA);
+
+    // Segunda tentativa: enquanto ela está em voo, o alerta anterior continua lá.
+    fireEvent.click(await screen.findByRole("button", { name: "Entrar" }));
+    expect(screen.getByRole("alert").textContent).toBe(CREDENCIAL_RECUSADA);
+
+    // A resposta nova troca o texto — sem nunca ter tirado o bloco da tela.
+    expect(
+      (await screen.findByText(/Não foi possível falar com o serviço/)).getAttribute("role"),
+    ).toBe("alert");
+  });
+});
