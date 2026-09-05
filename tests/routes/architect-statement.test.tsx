@@ -228,7 +228,9 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       routes: statementRoutes(),
     });
     renderWithApp(<StatementPage />);
-    await screen.findByText("A sua ficha de carreira é lida por quem lidera você.");
+    await screen.findByText(
+      "Evolução, Extrato e Roteiro são leituras da liderança sobre a carreira de uma pessoa.",
+    );
     expect(screen.queryByText("Evidência: ADR-014")).toBeNull();
     expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
   });
