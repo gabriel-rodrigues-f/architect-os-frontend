@@ -31,6 +31,7 @@ export * from "./PageHelp";
 export * from "./QuerySection";
 export * from "./RoleSelect";
 export * from "./SectionHelp";
+export * from "./SupportAccessDialog";
 export * from "./SetPasswordScreen";
 export * from "./SingleSelectFilter";
 export * from "./TreatGapInPlanAction";

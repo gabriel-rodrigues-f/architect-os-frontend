@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -58,7 +59,7 @@ describe("configuração-régua que falha não desenha padrão de fábrica (CFG-
 
   for (const [nome, caminho] of reguas) {
     it(`${nome}: falha em ${caminho} mostra a falha de serviço, não a régua padrão`, async () => {
-      mockAppFetch(fetchMock, { routes: [rotaQueFalha(caminho)] });
+      mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [rotaQueFalha(caminho)] });
       renderWithApp(<GapBadge gap={2} />);
 
       expect(await screen.findByText(TELA_DE_FALHA)).toBeTruthy();
@@ -75,7 +76,7 @@ describe("configuração de enfeite que falha não derruba a aplicação (CFG-03
 
   for (const [nome, caminho] of enfeites) {
     it(`${nome}: falha em ${caminho} mantém a tela de pé`, async () => {
-      mockAppFetch(fetchMock, { routes: [rotaQueFalha(caminho)] });
+      mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [rotaQueFalha(caminho)] });
       renderWithApp(<GapBadge gap={2} />);
 
       expect(await screen.findByText(RECADO_DA_REGUA)).toBeTruthy();
@@ -87,6 +88,7 @@ describe("configuração de enfeite que falha não derruba a aplicação (CFG-03
 describe("configuração-régua vazia continua caindo no padrão (CFG-03)", () => {
   it("faixas carregadas e vazias mantêm o rótulo padrão, sem tela de falha", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [(href) => (href.endsWith(apiPath("/config/bands")) ? jsonResponse({}) : undefined)],
     });
     renderWithApp(<GapBadge gap={2} />);

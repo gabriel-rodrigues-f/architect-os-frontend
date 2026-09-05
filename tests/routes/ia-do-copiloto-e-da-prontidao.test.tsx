@@ -32,7 +32,7 @@ import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -134,7 +134,7 @@ afterEach(() => {
 
 describe("copiloto de 1:1 — onde a conversa acontece", () => {
   const montaMentoria = (routes: FetchRoute[]) => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, routes });
     renderWithApp(<MentoringPage />);
   };
 
@@ -179,7 +179,7 @@ describe("copiloto de 1:1 — onde a conversa acontece", () => {
 describe("explicação da prontidão — ao lado do veredito determinístico", () => {
   const montaRoteiro = (routes: FetchRoute[]) => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: anaNoNivelDois,
       routes: [careerLevelsRoute, aderenciaRoute, ...routes],
     });

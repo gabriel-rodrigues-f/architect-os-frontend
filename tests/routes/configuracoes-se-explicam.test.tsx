@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureAdminUser } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureAssignedManagerUser } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -35,11 +35,19 @@ const GRUPOS_QUE_O_DONO_NOMEOU = [
   "Vocabulários",
 ] as const;
 
+/**
+ * Revisão de papéis (dono, 2026-09-05, D1): os grupos de configuração do
+ * SISTEMA (Severidade, Risco, Catálogo, Textos, Operação, Tipos, Vocabulários)
+ * são do admin; a Política de Progressão e as referências (Escala, Ciclos)
+ * também aparecem para o gerente com vínculo — é ele quem rege a régua.
+ */
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
-  mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
 });
+
+const entrarComo = (user: typeof fixtureAdminUser) =>
+  mockAppFetch(fetchMock, { user, routes: [careerLevelsRoute] });
 
 afterEach(() => {
   cleanup();
@@ -55,16 +63,18 @@ afterEach(() => {
 const CARTOES_DO_ITEM_11 = ["Política de Progressão", "Escala de proficiência", "Ciclos"] as const;
 
 describe("a Política de Progressão e as referências se explicam", () => {
-  it.each(CARTOES_DO_ITEM_11)('"%s" tem o ? ao lado do título', async (cartao) => {
+  it.each(CARTOES_DO_ITEM_11)('"%s" tem o ? ao lado do título para o gerente', async (cartao) => {
+    entrarComo(fixtureAssignedManagerUser);
     renderWithApp(<SettingsPage />);
-    await screen.findByText("Vocabulários");
+    await screen.findByText("Júnior");
 
     expect(screen.getByRole("button", { name: `Como configurar ${cartao}` })).toBeTruthy();
   });
 
   it("o ? da Política diz que o mínimo conta grupos prontos e que elegibilidade não promove sozinha", async () => {
+    entrarComo(fixtureAssignedManagerUser);
     renderWithApp(<SettingsPage />);
-    await screen.findByText("Vocabulários");
+    await screen.findByText("Júnior");
 
     await userEvent.click(
       screen.getByRole("button", { name: "Como configurar Política de Progressão" }),
@@ -77,14 +87,19 @@ describe("a Política de Progressão e as referências se explicam", () => {
 });
 
 describe("cada grupo de configuração se explica", () => {
-  it.each(GRUPOS_QUE_O_DONO_NOMEOU)('"%s" tem o ? ao lado do título', async (grupo) => {
-    renderWithApp(<SettingsPage />);
-    await screen.findByText("Vocabulários");
+  it.each(GRUPOS_QUE_O_DONO_NOMEOU)(
+    '"%s" tem o ? ao lado do título para o admin',
+    async (grupo) => {
+      entrarComo(fixtureAdminUser);
+      renderWithApp(<SettingsPage />);
+      await screen.findByText("Vocabulários");
 
-    expect(screen.getByRole("button", { name: `Como configurar ${grupo}` })).toBeTruthy();
-  });
+      expect(screen.getByRole("button", { name: `Como configurar ${grupo}` })).toBeTruthy();
+    },
+  );
 
   it("o ? abre a finalidade e o como configurar do grupo", async () => {
+    entrarComo(fixtureAdminUser);
     renderWithApp(<SettingsPage />);
     await screen.findByText("Vocabulários");
 
@@ -94,5 +109,15 @@ describe("cada grupo de configuração se explica", () => {
     expect(dialogo.textContent).toContain("Para que serve");
     expect(dialogo.textContent).toContain("Como configurar");
     expect(dialogo.textContent).toMatch(/listas de opções/);
+  });
+
+  it("os grupos do sistema não aparecem para o gerente — ele vê só a régua e as referências (D1)", async () => {
+    entrarComo(fixtureAssignedManagerUser);
+    renderWithApp(<SettingsPage />);
+    await screen.findByText("Júnior");
+
+    for (const grupo of GRUPOS_QUE_O_DONO_NOMEOU) {
+      expect(screen.queryByRole("button", { name: `Como configurar ${grupo}` })).toBeNull();
+    }
   });
 });

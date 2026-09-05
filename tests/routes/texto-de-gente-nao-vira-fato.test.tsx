@@ -29,7 +29,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { fixtureAdminUser } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -106,7 +106,7 @@ const rotaDaPreparacao =
 
 /** Clica em "Preparar a 1:1" e espera a resposta chegar à tela. */
 async function preparaA1x1(corpo: unknown): Promise<ReturnType<typeof userEvent.setup>> {
-  mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [rotaDaPreparacao(corpo)] });
+  mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, routes: [rotaDaPreparacao(corpo)] });
   renderWithApp(<MentoringPage />);
   const usuario = userEvent.setup();
   await usuario.click(await screen.findByRole("button", { name: /Preparar a 1:1/ }));

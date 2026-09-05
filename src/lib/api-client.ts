@@ -11,6 +11,7 @@ import type {
   TeamLevelRule,
 } from "./domain";
 import { ApiError } from "./api-errors";
+import { SupportAccess } from "./support-access";
 import { ApiFailureReading } from "./api-failure-reading";
 import { apiPath, isApiUrl } from "./api-path";
 
@@ -123,6 +124,7 @@ export class ApiClient {
   async request<T>(resource: string, init?: RequestInit): Promise<T> {
     const headers: Record<string, string> = {
       ...(init?.body === undefined ? {} : { "content-type": "application/json" }),
+      ...SupportAccess.headers(),
       ...((init?.headers as Record<string, string> | undefined) ?? {}),
     };
 

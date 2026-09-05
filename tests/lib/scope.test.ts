@@ -5,6 +5,7 @@ import type { TeamMembership } from "@/lib/gateways/auth.gateway";
 import { UiAuthorizationPolicy } from "@/lib/scope";
 import {
   fixtureAdminUser,
+  fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureAssignedTechLeadUser,
   fixtureUnassignedTechLeadUser,
@@ -22,8 +23,11 @@ describe("UiAuthorizationPolicy", () => {
   const anaInLedTeam = { id: "ana", teamId: "time-plataforma" };
 
   describe("canActFor", () => {
-    it("admin pode agir sobre qualquer pessoa", () => {
-      expect(policy.canActFor(fixtureAdminUser, anaAsArchitect)).toBe(true);
+    it("admin NÃO age por ninguém — administra o sistema, não as pessoas (D1, 2026-09-05)", () => {
+      expect(policy.canActFor(fixtureAdminUser, anaAsArchitect)).toBe(false);
+      expect(policy.canActFor(fixtureAdminUser, anaInLedTeam)).toBe(false);
+      // Só LÊ, em modo de suporte — a tela pede o motivo antes de abrir a ficha.
+      expect(policy.canReadAbout(fixtureAdminUser, anaInLedTeam)).toBe(true);
     });
 
     it("a própria pessoa pode agir sobre si mesma", () => {
@@ -34,19 +38,21 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canActFor(fixtureUnassignedTechLeadUser, anaAsArchitect)).toBe(false);
     });
 
-    it("lead age sobre arquiteto com time — o recorte do servidor (ADR-0035) só lhe entrega times que ele lidera", () => {
-      expect(policy.canActFor(fixtureUnassignedTechLeadUser, anaInLedTeam)).toBe(true);
+    it("lead age sobre arquiteto com time SÓ com vínculo naquele time — o atalho 'qualquer outra pessoa' morreu (inconsistência G)", () => {
+      expect(policy.canActFor(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(true);
+      expect(policy.canActFor(fixtureUnassignedTechLeadUser, anaInLedTeam)).toBe(false);
     });
 
-    it("sem architect, ninguém além do admin pode agir", () => {
+    it("sem architect, ninguém age", () => {
       expect(policy.canActFor(fixtureMemberUser, undefined)).toBe(false);
-      expect(policy.canActFor(fixtureAdminUser, undefined)).toBe(true);
+      expect(policy.canActFor(fixtureAdminUser, undefined)).toBe(false);
     });
   });
 
   describe("isLeadOf", () => {
-    it("admin conta como lead (bypass de dono)", () => {
-      expect(policy.isLeadOf(fixtureAdminUser, anaAsArchitect)).toBe(true);
+    it("admin não é líder de ninguém (D1)", () => {
+      expect(policy.isLeadOf(fixtureAdminUser, anaAsArchitect)).toBe(false);
+      expect(policy.isLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(false);
     });
 
     it("a própria pessoa NÃO é lead de si mesma", () => {
@@ -56,9 +62,10 @@ describe("UiAuthorizationPolicy", () => {
       );
     });
 
-    it("lead responde true para arquiteto com time, false para arquiteto sem time", () => {
-      expect(policy.isLeadOf(fixtureUnassignedTechLeadUser, anaAsArchitect)).toBe(false);
-      expect(policy.isLeadOf(fixtureUnassignedTechLeadUser, anaInLedTeam)).toBe(true);
+    it("lead responde true para arquiteto do time onde tem vínculo, false sem time e sem vínculo", () => {
+      expect(policy.isLeadOf(fixtureAssignedTechLeadUser, anaAsArchitect)).toBe(false);
+      expect(policy.isLeadOf(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(true);
+      expect(policy.isLeadOf(fixtureUnassignedTechLeadUser, anaInLedTeam)).toBe(false);
     });
   });
 
@@ -72,18 +79,18 @@ describe("UiAuthorizationPolicy", () => {
     const ana = { id: "ana", teamId: "time-plataforma" };
     const bia = { id: "bia", teamId: "time-plataforma" };
 
-    it("liderança com ficha própria não se vê na lista", () => {
+    it("liderança com ficha própria se vê PRIMEIRO na lista — a avaliação dela também é dela (D2, 2026-09-05)", () => {
       const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
-      expect(policy.assessableBy(techLeadAna, [ana, bia])).toEqual([bia]);
+      expect(policy.assessableBy(techLeadAna, [bia, ana])).toEqual([ana, bia]);
     });
 
-    it("gerente com ficha própria não se vê na lista", () => {
+    it("gerente com ficha própria: a própria primeiro, depois os liderados", () => {
       const managerAna = {
         ...fixtureAssignedTechLeadUser,
         role: "manager" as const,
         architectId: "ana",
       };
-      expect(policy.assessableBy(managerAna, [ana, bia])).toEqual([bia]);
+      expect(policy.assessableBy(managerAna, [bia, ana])).toEqual([ana, bia]);
     });
 
     it("o profissional continua vendo a si mesmo — a autoavaliação é dele", () => {
@@ -189,9 +196,9 @@ describe("canConfigureRulesOf — o dono da régua do time", () => {
     expect(policy.canConfigureRulesOf(gerente, OUTRO_TIME)).toBe(true);
   });
 
-  it("CONCEDE para admin, com ou sem vínculo", () => {
-    expect(policy.canConfigureRulesOf(fixtureAdminUser, TIME)).toBe(true);
-    expect(policy.canConfigureRulesOf(fixtureAdminUser, OUTRO_TIME)).toBe(true);
+  it("NEGA para admin — a régua é regida por quem lidera o time; o admin a lê (revisão de papéis, 2026-09-05)", () => {
+    expect(policy.canConfigureRulesOf(fixtureAdminUser, TIME)).toBe(false);
+    expect(policy.canConfigureRulesOf(fixtureAdminUser, OUTRO_TIME)).toBe(false);
   });
 });
 
@@ -368,8 +375,8 @@ describe("o profissional não vê os próprios números", () => {
    * do servidor, como antes de 01/09); o que fica com a liderança são as ABAS —
    * Evolução, Extrato e Roteiro —, leituras que o servidor reserva a quem lidera.
    */
-  it("as abas da ficha são da liderança, inclusive sobre a própria ficha; o member não as abre", () => {
-    expect(policy.canOpenCareerTabsOf(fixtureMemberUser, "ana")).toBe(false);
+  it("as abas da ficha abrem para a própria pessoa (D2) e para quem lidera; o member não abre as de outra", () => {
+    expect(policy.canOpenCareerTabsOf(fixtureMemberUser, "ana")).toBe(true);
     expect(policy.canOpenCareerTabsOf(fixtureMemberUser, "bruno")).toBe(false);
     expect(policy.canOpenCareerTabsOf(fixtureAdminUser, "ana")).toBe(true);
     expect(policy.canOpenCareerTabsOf(fixtureAssignedTechLeadUser, "ana")).toBe(true);
@@ -406,16 +413,16 @@ describe("o profissional não vê os próprios números", () => {
       ).toBe(false);
     });
 
-    it("a LIDERANÇA devolve acesso — é a mesma régua da admissão, no backend", () => {
-      // O backend (ADR-0094) autoriza quem poderia cadastrar a pessoa naquele
-      // time: administrador, gerente e tech lead. A tela não conhece o vínculo
-      // de time de cada linha, então mostra o botão para a liderança e deixa o
-      // recorte fino com a autoridade — esconder de gerente e tech lead tiraria
-      // deles exatamente a operação que o dono pediu.
-      expect(policy.canRestoreAccessOf(fixtureAssignedTechLeadUser, contaAtiva)).toBe(true);
-      expect(policy.canRestoreAccessOf(fixtureUnassignedTechLeadUser, contaAtiva)).toBe(true);
+    it("quem ADMINISTRA pessoas devolve acesso: admin e gerente com vínculo — o tech lead não cadastra (D4, 2026-09-05)", () => {
+      // O backend autoriza quem poderia cadastrar a pessoa naquele time:
+      // administrador e gerente com vínculo. A tela não conhece o time de
+      // cada linha, então mostra o botão a quem administra e deixa o recorte
+      // fino com a autoridade.
+      expect(policy.canRestoreAccessOf(fixtureAssignedManagerUser, contaAtiva)).toBe(true);
+      expect(policy.canRestoreAccessOf(fixtureAssignedTechLeadUser, contaAtiva)).toBe(false);
+      expect(policy.canRestoreAccessOf(fixtureUnassignedTechLeadUser, contaAtiva)).toBe(false);
       expect(policy.canRestoreAccessOf({ ...fixtureAdminUser, role: "manager" }, contaAtiva)).toBe(
-        true,
+        false,
       );
     });
 

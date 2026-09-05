@@ -13,6 +13,7 @@ const DECORATION_BY_EVENT_TYPE: Record<string, NoticeDecoration> = {
   "evidence.awaitingReview": { tone: "info", icon: "review" },
   "assessment.completed": { tone: "success", icon: "completed" },
   "mentoring.recorded": { tone: "info", icon: "mentoring" },
+  "support.access-opened": { tone: "warning", icon: "review" },
 };
 
 const FALLBACK: NoticeDecoration = { tone: "info", icon: "generic" };

@@ -30,7 +30,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser } from "../helpers/fixtures";
+import { fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -67,7 +67,7 @@ const rotaDeIa =
     href.includes(sufixo) ? responder() : undefined;
 
 const montaPerfil = (routes: FetchRoute[]) => {
-  mockAppFetch(fetchMock, { user: fixtureAdminUser, routes });
+  mockAppFetch(fetchMock, { user: fixtureAssignedTechLeadUser, routes });
   renderWithApp(<ProfilePage />);
 };
 

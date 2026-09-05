@@ -22,7 +22,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as ProgressionRoute } from "@/routes/progression";
 import { type AppState } from "@/lib/api";
 import type { Assessment, Competency } from "@/lib/domain";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
 import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -94,7 +94,7 @@ describe("Progressão — heatmap, tabela e maestria", () => {
       const url = hrefOf(input);
       if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
+          new Response(JSON.stringify(fixtureAssignedTechLeadUser), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),

@@ -35,12 +35,12 @@ import {
   type AdmissionField,
   type PersonAdmissionValues,
 } from "@/lib/person-admission";
-import { requireLeadershipReach } from "@/lib/route-guards";
+import { requirePeopleAdministrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank } from "@/lib/store";
 
 export const Route = createFileRoute("/users")({
-  beforeLoad: requireLeadershipReach,
+  beforeLoad: requirePeopleAdministrationReach,
   head: () => ({
     meta: [
       { title: "Usuários — Synapse" },
@@ -64,9 +64,11 @@ const USERS_QUERY_KEY = ["auth-users"] as const;
 function UsersPage() {
   const { t } = useI18n();
   const help = usePageHelp("users");
-  const isLeadership = defaultUiAuthorizationPolicy.isLeadership(useCurrentUser());
+  // Revisão de papéis (2026-09-05): Usuários é do administrador e do gerente
+  // com vínculo — o tech lead não cadastra (D4).
+  const canAdministerPeople = defaultUiAuthorizationPolicy.canAdministerPeople(useCurrentUser());
 
-  if (!isLeadership) {
+  if (!canAdministerPeople) {
     return (
       <OutOfReachScreen
         title={t("users.title")}
@@ -86,6 +88,9 @@ function UsersDirectory() {
   const help = usePageHelp("users");
   const user = useCurrentUser();
   const isAdmin = defaultUiAuthorizationPolicy.isAdmin(user);
+  // Revisão de papéis (2026-09-05): o gerente vê as contas dos times dele e
+  // muda só o status; nome, e-mail e cargo continuam sendo do administrador.
+  const administersPeople = defaultUiAuthorizationPolicy.canAdministerPeople(user);
   const admits = defaultPersonAdmissionPolicy.admits(user);
   const queryClient = useQueryClient();
   const [admitting, setAdmitting] = useState(false);
@@ -97,7 +102,7 @@ function UsersDirectory() {
     queryKey: USERS_QUERY_KEY,
     queryFn: authApi.users,
     staleTime: 30_000,
-    enabled: isAdmin,
+    enabled: administersPeople,
   });
 
   const refreshAccounts = () => queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
@@ -126,7 +131,7 @@ function UsersDirectory() {
         }
       />
 
-      {!isAdmin ? (
+      {!administersPeople ? (
         <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
           <p className="text-sm text-muted-foreground">{t("users.adminOnly")}</p>
         </SectionCard>
@@ -197,20 +202,22 @@ function UsersDirectory() {
                              * muda por um botão próprio, nunca de dentro do
                              * diálogo de edição.
                              */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              aria-label={`${t("users.edit.action")} ${account.name}`}
-                              disabled={account.status === "disabled"}
-                              title={
-                                account.status === "disabled"
-                                  ? t("users.edit.disabledHint")
-                                  : undefined
-                              }
-                              onClick={() => setEditing(account)}
-                            >
-                              {t("users.edit.action")}
-                            </Button>
+                            {isAdmin && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                aria-label={`${t("users.edit.action")} ${account.name}`}
+                                disabled={account.status === "disabled"}
+                                title={
+                                  account.status === "disabled"
+                                    ? t("users.edit.disabledHint")
+                                    : undefined
+                                }
+                                onClick={() => setEditing(account)}
+                              >
+                                {t("users.edit.action")}
+                              </Button>
+                            )}
                             {defaultUiAuthorizationPolicy.canRestoreAccessOf(user, account) && (
                               <Button
                                 size="sm"

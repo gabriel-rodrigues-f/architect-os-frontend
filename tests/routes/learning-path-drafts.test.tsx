@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as LearningRoute } from "@/routes/learning-paths";
 import type { AppState } from "@/lib/api";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAssignedManagerUser } from "../helpers/fixtures";
 import {
   contextsOf,
   type FetchRoute,
@@ -73,13 +73,18 @@ function statePorChamada(...respostas: AppState[]): FetchRoute {
   };
 }
 
-/** Instala o mock e devolve o gatilho que solta a resposta do PATCH represado. */
+/**
+ * Instala o mock e devolve o gatilho que solta a resposta do PATCH represado.
+ * Quem edita a trilha é o gerente COM vínculo no time (D1, dono, 2026-09-05:
+ * Trilhas é tela de pessoa, o admin não a alcança).
+ */
 function mockComPatchRepresado(): () => void {
   let soltar = () => {};
   const patchRespondido = new Promise<void>((resolve) => {
     soltar = resolve;
   });
   mockAppFetch(fetchMock, {
+    user: fixtureAssignedManagerUser,
     routes: [
       (href, init) =>
         init?.method === "PATCH" && href.includes(apiPath("/learning-paths/"))

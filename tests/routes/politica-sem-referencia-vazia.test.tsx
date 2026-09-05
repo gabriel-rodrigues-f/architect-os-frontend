@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -62,7 +63,10 @@ describe("Política de Progressão — a referência não repete nem finge", () 
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, vocabulariesRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, vocabulariesRoute],
+    });
   });
 
   afterEach(() => {

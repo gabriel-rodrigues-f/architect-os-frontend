@@ -26,9 +26,16 @@ import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
 import { Route as LearningPathsRoute } from "@/routes/learning-paths";
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as TeamRoute } from "@/routes/team";
-import type { AppState } from "@/lib/api";
+import type { AppState, SessionUser } from "@/lib/api";
 import type { Architect } from "@/lib/domain";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAdminUser,
+  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
+  fixtureState,
+  fixtureTeamId,
+  scopedFixtureStateFor,
+} from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   emptyAuthUsersRoute,
@@ -66,6 +73,7 @@ const raquel: Architect = {
   email: "raquel@company.com",
   active: false,
   version: 1,
+  teamId: fixtureTeamId,
 };
 
 /**
@@ -103,16 +111,26 @@ const gatilhoDoFiltroDePessoas = (): HTMLElement =>
     .getAllByRole("button", { expanded: false })
     .find((el) => el.getAttribute("aria-haspopup") === "listbox")!;
 
+/**
+ * Revisão de papéis (dono, 2026-09-05): cada tela tem o SEU ator. As telas de
+ * pessoa (Avaliações, Mentoria, Trilhas, Competências em evolução) são do
+ * gerente vinculado; o Comparativo, do tech lead vinculado (D5); a composição
+ * do Time, do admin. O payload de cada um é o recorte que o servidor faria —
+ * e Raquel, inativa, vem no recorte da liderança porque está no time.
+ */
+const comoAtor = (user: SessionUser) =>
+  mockAppFetch(fetchMock, {
+    user,
+    state:
+      user.role === "admin" ? comInativa : scopedFixtureStateFor(user, comInativa, [fixtureTeamId]),
+    routes: [emptyAuthUsersRoute, careerLevelsRoute, emptyEligibilityRoute],
+  });
+
 describe("profissional desativado some da aplicação", () => {
   beforeEach(() => {
     window.history.replaceState(null, "", "/");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
-      state: comInativa,
-      routes: [emptyAuthUsersRoute, careerLevelsRoute, emptyEligibilityRoute],
-    });
   });
 
   afterEach(() => {
@@ -121,6 +139,7 @@ describe("profissional desativado some da aplicação", () => {
   });
 
   it("Avaliações: o seletor de profissional não oferece quem está desativado — o caso da captura do dono", async () => {
+    comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<AssessmentsPage />);
 
     await userEvent.click(await screen.findByRole("combobox", { name: "Profissional" }));
@@ -132,6 +151,7 @@ describe("profissional desativado some da aplicação", () => {
   });
 
   it("Mentoria: o filtro de mentorado não oferece quem está desativado", async () => {
+    comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("combobox", { name: "Filtrar mentorado" }));
@@ -143,6 +163,7 @@ describe("profissional desativado some da aplicação", () => {
   });
 
   it("Comparativo: a lista de pessoas para comparar não oferece quem está desativado", async () => {
+    comoAtor(fixtureAssignedTechLeadUser);
     renderWithApp(<ComparePage />);
 
     await screen.findByText("Comparativo de Profissionais");
@@ -154,6 +175,7 @@ describe("profissional desativado some da aplicação", () => {
   });
 
   it("Trilhas: a nova trilha não oferece quem está desativado para atribuição", async () => {
+    comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<LearningPathsPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Nova trilha" }));
@@ -164,6 +186,7 @@ describe("profissional desativado some da aplicação", () => {
   });
 
   it("Trilhas: editar uma trilha não reoferece o desativado que já estava atribuído", async () => {
+    comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<LearningPathsPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Editar" }));
@@ -174,6 +197,7 @@ describe("profissional desativado some da aplicação", () => {
   });
 
   it("Competências em evolução: com um inativo no payload, o recorte padrão continua sendo todo o time", async () => {
+    comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<GapAnalysisPage />);
 
     expect(await screen.findByText(/todo o time/)).toBeTruthy();
@@ -186,6 +210,7 @@ describe("profissional desativado some da aplicação", () => {
     // desenhar — escolher essa pessoa devolvia lista vazia sem dizer por quê,
     // e o contador "2 de 3" ainda denunciava a existência de quem a tela
     // esconde.
+    comoAtor(fixtureAdminUser);
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
@@ -197,6 +222,7 @@ describe("profissional desativado some da aplicação", () => {
   });
 
   it("Time: o filtro 'Inativos' continua mostrando quem foi desativado — a exceção declarada", async () => {
+    comoAtor(fixtureAdminUser);
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 

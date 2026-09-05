@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiPath } from "@/lib/api-path";
 import { Route as TeamRulesRoute } from "@/routes/team-rules";
 import {
-  fixtureAdminUser,
+  fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureState,
   fixtureTeamId,
@@ -73,7 +73,7 @@ const renderAs = (user: typeof fixtureMemberUser, routes: FetchRoute[] = []) => 
   vi.stubGlobal("fetch", fetchMock);
   mockAppFetch(fetchMock, {
     user,
-    state: user === fixtureAdminUser ? fixtureState : scopedFixtureStateFor(user),
+    state: user === fixtureAssignedManagerUser ? fixtureState : scopedFixtureStateFor(user),
     routes: [careerLevelsRoute, teamsRoute, ...routes],
   });
   renderWithApp(<TeamRulesPage />);
@@ -117,7 +117,7 @@ describe("/team-rules nega DADO a quem não rege régua — a tela é a última 
   });
 
   it("admin alcança a tela e a régua do time selecionado", async () => {
-    renderAs(fixtureAdminUser, [comRegua]);
+    renderAs(fixtureAssignedManagerUser, [comRegua]);
     expect(await screen.findByText("Kubernetes")).toBeTruthy();
     expect(
       screen.queryByText("Configurar a régua do time é restrito a quem lidera o time."),
@@ -131,7 +131,7 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
   });
 
   it("404 TeamRuleNotFoundError vira 'ainda não tem régua', nunca erro de tela", async () => {
-    renderAs(fixtureAdminUser, [semRegua]);
+    renderAs(fixtureAssignedManagerUser, [semRegua]);
     expect(
       await screen.findByText("Este time ainda não tem régua para Júnior.", {
         exact: false,
@@ -141,7 +141,7 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
   });
 
   it("o rodapé conta as competências da régua — não há mais peso por tipo", async () => {
-    renderAs(fixtureAdminUser, [comRegua]);
+    renderAs(fixtureAssignedManagerUser, [comRegua]);
     expect(await screen.findByText("2 competências na régua")).toBeTruthy();
   });
 
@@ -149,7 +149,7 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: {
         ...fixtureState,
         capabilities: fixtureState.capabilities.map((capability) =>
@@ -177,7 +177,7 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
 
 describe("/team-rules — o que sai do rascunho e chega ao servidor", () => {
   it("sem rascunho não há o que salvar: o botão nasce desabilitado", async () => {
-    renderAs(fixtureAdminUser, [comRegua]);
+    renderAs(fixtureAssignedManagerUser, [comRegua]);
     await screen.findByText("Kubernetes");
     expect(
       (screen.getByRole("button", { name: "Salvar régua" }) as HTMLButtonElement).disabled,
@@ -195,7 +195,7 @@ describe("/team-rules — o que sai do rascunho e chega ao servidor", () => {
       href.includes("/rules/") && (init?.method ?? "GET") === "PUT"
         ? jsonResponse({ code: "OptimisticLockError", message: "conflito" }, 409)
         : undefined;
-    renderAs(fixtureAdminUser, [conflitoRoute, comRegua]);
+    renderAs(fixtureAssignedManagerUser, [conflitoRoute, comRegua]);
     await screen.findByText("Kubernetes");
 
     await userEvent.click(screen.getByLabelText("Nível mínimo — Kubernetes"));

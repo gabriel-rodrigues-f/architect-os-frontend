@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -34,13 +35,14 @@ afterEach(() => {
 
 describe("useScoringBands via GapBadge (CFG-02)", () => {
   it("fallback: sem bands carregados, gap 2 mantém o rótulo antigo (Prioridade alta)", async () => {
-    mockAppFetch(fetchMock, { routes: [bandsRoute({})] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [bandsRoute({})] });
     renderWithApp(<GapBadge gap={2} />);
     expect(await screen.findByText("Distância 2 · Prioridade alta")).toBeTruthy();
   });
 
   it("bands do servidor mudam a régua: com critical a partir de 2, gap 2 vira Crítico", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         bandsRoute({
           GAP_SEVERITY: [

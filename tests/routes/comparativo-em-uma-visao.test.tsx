@@ -14,6 +14,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as CompareRoute } from "@/routes/compare";
 import pt from "@/locales/pt.json";
+import { fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -34,9 +35,10 @@ const ROTULO_DA_ESCALA = pt["level.scale.label"];
 
 const fetchMock = vi.fn();
 
+/** D5 (dono, 2026-09-05): o Comparativo é do tech lead vinculado ao time. */
 const renderCompare = () => {
   window.history.replaceState(null, "", "/compare?selected=ana,bruno");
-  mockAppFetch(fetchMock);
+  mockAppFetch(fetchMock, { user: fixtureAssignedTechLeadUser });
   return renderWithApp(<ComparePage />);
 };
 

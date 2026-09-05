@@ -9,7 +9,7 @@ vi.mock("@tanstack/react-router", () =>
 
 import { apiPath } from "@/lib/api-path";
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import {
   TIME_PLATAFORMA,
   celulaDoMinimo,
@@ -28,6 +28,9 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * Antes, o campo aceitava qualquer número e a tela só mostrava um texto
  * vermelho DEPOIS de salvo — a régua nascia inalcançável e ninguém era levado
  * ao lugar onde se resolve isso. A fixture tem 2 capacidades prontas.
+ *
+ * Revisão de papéis (dono, 2026-09-05, D1): quem edita a régua é o gerente
+ * COM vínculo no time (Plataforma) — o admin só lê.
  */
 
 const fetchMock = vi.fn();
@@ -84,7 +87,7 @@ afterEach(() => {
 describe("o mínimo qualificado não passa do que existe pronto", () => {
   it('o campo se chama "Mínimo de competências qualificadas"', async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: umTimeComMinimoAlcancavel(),
       routes: [niveisDeCarreiraRoute],
     });
@@ -98,7 +101,7 @@ describe("o mínimo qualificado não passa do que existe pronto", () => {
 
   it("acima do que existe pronto, Salvar apaga e a mensagem clicável leva à Matriz", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: umTimeComMinimoAlcancavel(),
       routes: [niveisDeCarreiraRoute, gravaReguaRoute],
     });
@@ -122,7 +125,7 @@ describe("o mínimo qualificado não passa do que existe pronto", () => {
 
   it("dentro do que existe pronto, nada avisa e Salvar volta a acender", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: umTimeComMinimoAlcancavel(),
       routes: [niveisDeCarreiraRoute, gravaReguaRoute],
     });
@@ -140,7 +143,7 @@ describe("o mínimo qualificado não passa do que existe pronto", () => {
 
   it("uma régua já gravada acima do pronto mostra a mesma mensagem clicável, no singular", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: umTimeComMinimoInalcancavel(),
       routes: [niveisDeCarreiraRoute],
     });

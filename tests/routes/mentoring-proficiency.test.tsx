@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "@/lib/api";
-import { fixtureAdminUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -13,9 +13,11 @@ import { apiPath } from "@/lib/api-path";
  * Rodada 10, Seção 17/38/39 — "Evolução observada" na mentoria é a única
  * forma de registrar nível OBSERVADO fora de um Assessment, e é
  * explicitamente restrita ao Tech Lead atribuído (`isAssignedTechLeadOf`,
- * sem bypass de admin — mesmo precedente do reabrir PDI). Cobre: (1) a
- * seção nem aparece pra quem não é o Tech Lead atribuído da pessoa
- * mentorada, mesmo sendo admin; (2) pra quem é, aparece, e marcar uma
+ * sem bypass de admin nem de gerente — mesmo precedente do reabrir PDI).
+ * Revisão de papéis (dono, 2026-09-05): o admin nem registra mentoria
+ * (D1), então quem prova a negativa é o GERENTE vinculado — ele mentora,
+ * mas não registra nível observado. Cobre: (1) a seção nem aparece pra
+ * quem não é o Tech Lead atribuído da pessoa mentorada; (2) pra quem é, aparece, e marcar uma
  * competência + escolher nível manda `proficiencyUpdates` no payload; (3) a
  * mentoria continua salvando normalmente com o array vazio (opcional).
  */
@@ -71,8 +73,8 @@ describe("Mentoria — Evolução observada (Rodada 10)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("não aparece pra admin — só o Tech Lead atribuído registra nível observado", async () => {
-    mockBackend(fixtureAdminUser, stateWithAnaLedBy(LEAD_USER.id));
+  it("não aparece pro gerente vinculado — só o Tech Lead atribuído registra nível observado", async () => {
+    mockBackend(fixtureAssignedManagerUser, stateWithAnaLedBy(LEAD_USER.id));
     renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));

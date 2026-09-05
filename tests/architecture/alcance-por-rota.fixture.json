@@ -50,12 +50,12 @@
       "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/compare": {
-      "alcance": "analise-de-time",
-      "guarda": "requireTeamAnalysisReach",
-      "sinal": "canAnalyzeTeam",
+      "alcance": "mapa-tecnico",
+      "guarda": "requireTechnicalMapReach",
+      "sinal": "canSeeTechnicalMap",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
+      "provaDeTela": "tests/routes/mapa-tecnico-nega-quem-nao-e-tech-lead.test.tsx"
     },
     "/competency-matrix": {
       "alcance": "admin",
@@ -105,12 +105,12 @@
       "alcance": "autenticado"
     },
     "/progression": {
-      "alcance": "analise-de-time",
-      "guarda": "requireTeamAnalysisReach",
-      "sinal": "canAnalyzeTeam",
+      "alcance": "mapa-tecnico",
+      "guarda": "requireTechnicalMapReach",
+      "sinal": "canSeeTechnicalMap",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
+      "provaDeTela": "tests/routes/mapa-tecnico-nega-quem-nao-e-tech-lead.test.tsx"
     },
     "/set-password": {
       "alcance": "publica"
@@ -146,12 +146,12 @@
       ]
     },
     "/teams": {
-      "alcance": "lead-com-vinculo",
-      "guarda": "requireLeadReach",
-      "sinal": "canCompose",
+      "alcance": "gestao-de-pessoas",
+      "guarda": "requirePeopleAdministrationReach",
+      "sinal": "canAdministerPeople",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/teams.test.tsx"
+      "provaDeTela": "tests/routes/gestao-de-pessoas-nega-quem-nao-administra.test.tsx"
     },
     "/training-needs": {
       "alcance": "analise-de-time",
@@ -162,12 +162,12 @@
       "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/users": {
-      "alcance": "lideranca",
-      "guarda": "requireLeadershipReach",
-      "sinal": "isLeadership",
+      "alcance": "gestao-de-pessoas",
+      "guarda": "requirePeopleAdministrationReach",
+      "sinal": "canAdministerPeople",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/users-alcance.test.tsx"
+      "provaDeTela": "tests/routes/gestao-de-pessoas-nega-quem-nao-administra.test.tsx"
     }
   }
 }

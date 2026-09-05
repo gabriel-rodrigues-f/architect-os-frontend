@@ -1,4 +1,4 @@
-import { cleanup, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,11 +7,12 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureAdminUser } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureAssignedManagerUser } from "../helpers/fixtures";
 import {
   TIME_INTEGRACOES,
   TIME_PLATAFORMA,
   celulaDoMinimo,
+  doisTimesRoute,
   estadoCom,
   linhaDoNivel,
   niveisDeCarreiraRoute,
@@ -31,10 +32,22 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  *
  * Sem seletor de time acionado (onda 32), o padrão "Todos os times" mantém
  * exatamente este agregado.
+ *
+ * Revisão de papéis (dono, 2026-09-05, D1): quem alcança os dois times e edita
+ * a régua é o gerente COM vínculo nos dois; o admin lê o agregado, sem Editar.
  */
 
 const fetchMock = vi.fn();
 const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+
+/** O gerente com vínculo nos DOIS times — só o vínculo dá a régua de cada um. */
+const gerenteDosDoisTimes = {
+  ...fixtureAssignedManagerUser,
+  memberships: [
+    { teamId: TIME_PLATAFORMA, role: "manager" as const },
+    { teamId: TIME_INTEGRACOES, role: "manager" as const },
+  ],
+};
 
 beforeEach(() => {
   fetchMock.mockReset();
@@ -49,7 +62,7 @@ afterEach(() => {
 describe("Política de Progressão com mais de um time no alcance", () => {
   it("mostra o valor quando as réguas dos times CONCORDAM", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: estadoCom([
         regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
         regra("regra-integracoes-i", TIME_INTEGRACOES, 3),
@@ -65,7 +78,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
 
   it("não esconde a divergência atrás de travessão: diz que varia e mostra os valores", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: estadoCom([
         regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
         regra("regra-integracoes-i", TIME_INTEGRACOES, 5),
@@ -89,7 +102,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
    */
   it("continua avisando que a régua é inalcançável, pelo maior mínimo entre os times", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: estadoCom([
         regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
         regra("regra-integracoes-i", TIME_INTEGRACOES, 5),
@@ -104,7 +117,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
 
   it("o travessão fica reservado para quando nenhum time definiu régua", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: estadoCom([]),
       routes: [niveisDeCarreiraRoute],
     });
@@ -112,28 +125,34 @@ describe("Política de Progressão com mais de um time no alcance", () => {
 
     const celula = await celulaDoMinimo();
     expect(celula.textContent).toContain("—");
-    expect(within(await linhaDoNivel()).getByText(/régua de cada time/i)).toBeTruthy();
+    expect(within(await linhaDoNivel()).queryByRole("button", { name: "Editar" })).toBeNull();
   });
 
-  it("com N réguas o admin não fica com um botão de salvar que não salva — a tela diz onde se configura", async () => {
+  /**
+   * No agregado ("Todos os times") a tela não sabe em qual time gravar; o
+   * gerente dos dois times escolhe o time no seletor (onda 32) em vez de
+   * receber um botão que não salva.
+   */
+  it("com N réguas o gerente não fica com um botão de salvar que não salva — escolhe o time no seletor", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: estadoCom([
         regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
         regra("regra-integracoes-i", TIME_INTEGRACOES, 3),
       ]),
-      routes: [niveisDeCarreiraRoute],
+      routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
     renderWithApp(<SettingsPage />);
 
     const linha = await linhaDoNivel();
     expect(within(linha).queryByRole("button", { name: "Editar" })).toBeNull();
-    expect(within(linha).getByText(/régua de cada time/i)).toBeTruthy();
+    const seletor = await screen.findByLabelText("Time", { selector: "button" });
+    expect(seletor.textContent).toContain("Todos os times");
   });
 
-  it("com UMA régua o admin continua editando pela própria tela", async () => {
+  it("com UMA régua o gerente vinculado continua editando pela própria tela", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: estadoCom([regra("regra-plataforma-i", TIME_PLATAFORMA, 3)]),
       routes: [niveisDeCarreiraRoute],
     });
@@ -141,5 +160,22 @@ describe("Política de Progressão com mais de um time no alcance", () => {
 
     const linha = await linhaDoNivel();
     expect(within(linha).getByRole("button", { name: "Editar" })).toBeTruthy();
+  });
+
+  it("o admin lê o agregado sem botão Editar (D1, dono 2026-09-05)", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state: estadoCom([
+        regra("regra-plataforma-i", TIME_PLATAFORMA, 3),
+        regra("regra-integracoes-i", TIME_INTEGRACOES, 5),
+      ]),
+      routes: [niveisDeCarreiraRoute],
+    });
+    renderWithApp(<SettingsPage />);
+
+    const celula = await celulaDoMinimo();
+    expect(celula.textContent).toContain("3");
+    expect(celula.textContent).toContain("5");
+    expect(within(await linhaDoNivel()).queryByRole("button", { name: "Editar" })).toBeNull();
   });
 });

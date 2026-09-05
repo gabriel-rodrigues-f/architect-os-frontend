@@ -200,6 +200,7 @@ function CalibrationAssistant({
 }) {
   const { t } = useI18n();
   const store = useStore();
+  const user = useCurrentUser();
   return (
     <div className="mb-6">
       <div className="mb-4 max-w-xs">
@@ -213,7 +214,7 @@ function CalibrationAssistant({
           }}
         >
           <option value="">{t("ai.calibration.personNone")}</option>
-          {store.architects.map((architect) => (
+          {defaultUiAuthorizationPolicy.mentorableBy(user, store.architects).map((architect) => (
             <option key={architect.id} value={architect.id}>
               {architect.name}
             </option>

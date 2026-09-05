@@ -7,7 +7,7 @@ import { ChevronDown, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/lib/domain";
-import { useGapSeverityRuler } from "@/lib/store";
+import { useGapSeverityRuler, useSelectors } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { useSeniorityReading } from "@/lib/seniority";
@@ -324,7 +324,12 @@ export function ProfileTabs({
 }) {
   const { t } = useI18n();
   const user = useCurrentUser();
-  const leadershipTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architectId);
+  const architect = useSelectors().architectById(architectId);
+  // Revisão de papéis (2026-09-05): Evolução e Roteiro são da própria pessoa e
+  // de quem a lidera; o Extrato carrega a ficha funcional — própria pessoa,
+  // gerente designado e admin em suporte. O tech lead não vê o Extrato.
+  const careerTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architect);
+  const statementTab = defaultUiAuthorizationPolicy.canOpenStatementOf(user, architect);
   const tabClass = (isActive: boolean) =>
     cn(
       "border-b-2 px-1 pb-2 text-sm font-medium transition-colors",
@@ -342,7 +347,7 @@ export function ProfileTabs({
       >
         {t("arch.tabs.overview")}
       </Link>
-      {leadershipTabs && (
+      {careerTabs && (
         <>
           <Link
             to="/architects/$architectId/evolution"
@@ -352,14 +357,16 @@ export function ProfileTabs({
           >
             {t("arch.tabs.evolution")}
           </Link>
-          <Link
-            to="/architects/$architectId/statement"
-            params={{ architectId }}
-            aria-current={active === "statement" ? "page" : undefined}
-            className={tabClass(active === "statement")}
-          >
-            {t("arch.tabs.statement")}
-          </Link>
+          {statementTab && (
+            <Link
+              to="/architects/$architectId/statement"
+              params={{ architectId }}
+              aria-current={active === "statement" ? "page" : undefined}
+              className={tabClass(active === "statement")}
+            >
+              {t("arch.tabs.statement")}
+            </Link>
+          )}
           <Link
             to="/architects/$architectId/roadmap"
             params={{ architectId }}

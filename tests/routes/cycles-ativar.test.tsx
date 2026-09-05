@@ -7,7 +7,7 @@ import { Route as CyclesRoute } from "@/routes/cycles";
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import { useCycleSelection } from "@/lib/context-scope";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -66,7 +66,7 @@ const ativarNoServidor: FetchRoute = (href, init) => {
 };
 
 function prepararTela(state: AppState) {
-  mockAppFetch(fetchMock, { state, routes: [ativarNoServidor] });
+  mockAppFetch(fetchMock, { user: fixtureAdminUser, state, routes: [ativarNoServidor] });
   renderWithApp(
     <>
       <CyclesPage />
@@ -143,6 +143,7 @@ describe("Ciclos — 'Ativar' ativa de verdade", () => {
 
   it("recusa do servidor devolve o cartão a 'Planejado' e avisa", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       state: semCicloAtivo,
       routes: [
         (href, init) =>

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "@/lib/api";
 import type { AssessmentComment } from "@/lib/domain";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import {
   emptyEligibilityRoute,
   jsonResponse,
@@ -25,7 +25,7 @@ const fetchMock = vi.fn();
 
 const comentarioDoAdmin: AssessmentComment = {
   id: "cmt-1",
-  authorUserId: fixtureAdminUser.id,
+  authorUserId: fixtureAssignedManagerUser.id,
   authorRole: "TECH_LEAD",
   text: "Confirmo, liderou a execução",
   createdAt: "2026-03-05T14:30:00Z",
@@ -101,7 +101,7 @@ describe("Avaliações — comentários por autor", () => {
                 comentarioDoAdmin,
                 {
                   id: "cmt-novo",
-                  authorUserId: fixtureAdminUser.id,
+                  authorUserId: fixtureAssignedManagerUser.id,
                   authorRole: "TECH_LEAD",
                   text: body.text,
                   createdAt: "2026-08-13T09:00:00Z",
@@ -145,7 +145,7 @@ describe("Avaliações — comentários por autor", () => {
   it("diferencia 'Você' de outra pessoa autora", async () => {
     await abrirNotas();
 
-    // fixtureAdminUser é quem está logado — o comentário dele aparece como "Você".
+    // fixtureAssignedManagerUser é quem está logado — o comentário dele aparece como "Você".
     expect(await screen.findByText("Você")).toBeTruthy();
     // o outro comentário (autor diferente) aparece com o rótulo do papel.
     expect(screen.getByText("Profissional")).toBeTruthy();
@@ -181,7 +181,7 @@ describe("Avaliações — comentários por autor", () => {
     await abrirNotas();
     await screen.findByText("Confirmo, liderou a execução");
 
-    // fixtureAdminUser é autor só de comentarioDoAdmin — um Editar/Excluir só.
+    // fixtureAssignedManagerUser é autor só de comentarioDoAdmin — um Editar/Excluir só.
     expect(screen.getAllByRole("button", { name: "Editar" })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "Excluir" })).toHaveLength(1);
   });

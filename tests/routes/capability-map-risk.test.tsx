@@ -20,7 +20,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "@/lib/api";
 import { type AppState } from "@/lib/api";
-import { fixtureAdminUser, fixtureState, scopedFixtureStateFor } from "../helpers/fixtures";
+import {
+  fixtureAssignedManagerUser,
+  fixtureState,
+  scopedFixtureStateFor,
+} from "../helpers/fixtures";
 import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -38,7 +42,7 @@ const fetchMock = vi.fn();
 
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 
-const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
+const renderPage = (state: AppState, user: SessionUser = fixtureAssignedManagerUser) => {
   fetchMock.mockImplementation((input: string | URL | Request) => {
     const url = hrefOf(input);
     const href = String(url);
@@ -111,6 +115,8 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
       status: "active",
       mustChangePassword: false,
       createdAt: "2026-01-01T00:00:00Z",
+      // Revisão de papéis (dono, 2026-09-05): o alcance é o VÍNCULO com o time da Ana.
+      memberships: [{ teamId: "time-de-ana", role: "tech_lead" }],
     };
     const state: AppState = {
       ...fixtureState,

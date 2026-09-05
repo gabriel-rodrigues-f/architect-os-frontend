@@ -80,8 +80,9 @@ describe("quem cadastra quem — os cargos que cada persona pode admitir", () =>
     expect(policy.admissibleCargos(gerente)).toEqual(["tech_lead", "member"]);
   });
 
-  it("o tech lead admite só profissional", () => {
-    expect(policy.admissibleCargos(techLead)).toEqual(["member"]);
+  it("o tech lead não admite ninguém — criar conta é ato de gestão (D4, dono, 2026-09-05)", () => {
+    expect(policy.admissibleCargos(techLead)).toEqual([]);
+    expect(policy.admits(techLead)).toBe(false);
   });
 
   it("quem não lidera nada não admite ninguém", () => {

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type AppState } from "@/lib/api";
 import type { Capability, Competency } from "@/lib/domain";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -56,7 +56,7 @@ describe("Matriz de Competências — o status de curadoria é um controle, não
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { state, routes: [careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state, routes: [careerLevelsRoute] });
   });
 
   afterEach(() => {

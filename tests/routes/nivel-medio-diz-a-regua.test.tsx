@@ -30,7 +30,7 @@ import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
 import type { ArchitectEvolutionResult } from "@/lib/domain";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -100,7 +100,7 @@ afterEach(() => {
  */
 describe("Nível médio — cada tela diz qual régua usa", () => {
   it("o Perfil calcula por capacidade e o rótulo anuncia capacidade", async () => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: fixtureState });
     renderWithApp(<ProfilePage />);
 
     expect(await screen.findByText(MEDIA_POR_CAPACIDADE)).toBeTruthy();
@@ -109,7 +109,7 @@ describe("Nível médio — cada tela diz qual régua usa", () => {
   });
 
   it("a ficha não promete média de competências", async () => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: fixtureState });
     const { container } = renderWithApp(<ProfilePage />);
 
     await screen.findByText(MEDIA_POR_CAPACIDADE);
@@ -125,7 +125,7 @@ describe("Nível médio — cada tela diz qual régua usa", () => {
    */
   it("a Evolução anuncia a régua do PERÍODO, não um 'atual' que disputa com o ciclo", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: fixtureState,
       routes: [
         (href) =>

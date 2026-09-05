@@ -31,7 +31,11 @@ import { InMemoryCalibrationGateway } from "@/lib/gateways/calibration.gateway";
 import { InMemoryNoticesGateway } from "@/lib/gateways/notices.gateway";
 import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as NoticesRoute } from "@/routes/notices";
-import { fixtureAdminUser, fixtureState, fixtureAssignedTechLeadUser } from "../helpers/fixtures";
+import {
+  fixtureAssignedManagerUser,
+  fixtureState,
+  fixtureAssignedTechLeadUser,
+} from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -112,7 +116,7 @@ describe("/calibration declara a origem da distribuição que está mostrando", 
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: fixtureState,
       routes: [calibrationRoute],
     });

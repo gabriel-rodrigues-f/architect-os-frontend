@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import { InMemoryCompetencyRemoval, type AffectedRecords } from "@/lib/gateways/catalog.gateway";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { fixtureMemberUser, fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -59,7 +59,7 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
   });
 
   afterEach(() => {
@@ -136,7 +136,10 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
     });
     const stateAfterRemoval: FetchRoute = (href, init) =>
       gateway.removalsMade.length > 0 ? afterRemoval(href, init) : undefined;
-    mockAppFetch(fetchMock, { routes: [stateAfterRemoval, careerLevelsRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [stateAfterRemoval, careerLevelsRoute],
+    });
 
     await renderMatrix();
     await enterSelection();
@@ -186,7 +189,7 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
             400,
           )
         : undefined;
-    mockAppFetch(fetchMock, { routes: [recusa, careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [recusa, careerLevelsRoute] });
 
     await renderMatrix();
     await enterSelection();
@@ -219,7 +222,7 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
         message: { code: "catalog.competency.bulkRemoval.success" },
       });
     };
-    mockAppFetch(fetchMock, { routes: [removal, careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [removal, careerLevelsRoute] });
 
     await renderMatrix();
     await enterSelection();

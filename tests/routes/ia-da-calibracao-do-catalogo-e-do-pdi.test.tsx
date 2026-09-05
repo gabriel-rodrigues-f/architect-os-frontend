@@ -32,7 +32,7 @@ import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureAssignedManagerUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -46,6 +46,8 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  *    de calibração é **por ciclo**. A ponte é um seletor de pessoa explícito;
  *    sem ele a tela teria de escolher alguém sozinha, e escolher a pessoa
  *    errada numa tela de calibração é pior do que não sugerir nada;
+ *  - D1 (dono, 2026-09-05): calibração e PDI são telas de pessoa — do gerente
+ *    vinculado, não do admin. O admin fica só com a curadoria do catálogo;
  *  - a curadoria é administrativa, como toda escrita de catálogo, e a Matriz
  *    é onde renomear, arquivar e excluir já acontecem. A leitura entra ao
  *    lado dessas operações — e não escreve nenhuma delas;
@@ -94,9 +96,9 @@ afterEach(() => {
 });
 
 describe("calibração — a leitura de apoio é da pessoa escolhida", () => {
-  it("o seletor de pessoa decide de quem é a leitura, e a URL prova", async () => {
+  it("o seletor de pessoa decide de quem é a leitura, e a URL prova (o ator é o gerente vinculado, D1)", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       routes: [
         calibracaoVazia,
         rotaDeIa("calibration-assistance", () =>
@@ -154,9 +156,9 @@ describe("curadoria do catálogo — leitura ao lado das operações que escreve
 });
 
 describe("PDI assistant — ao lado da distância que ele trata", () => {
-  it("sugerir a partir de uma competência em evolução leva a competência na querystring", async () => {
+  it("sugerir a partir de uma competência em evolução leva a competência na querystring (quem age é o gerente vinculado, D1)", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       routes: [
         rotaDeIa("development-plan-recommendation", () =>
           jsonResponse({

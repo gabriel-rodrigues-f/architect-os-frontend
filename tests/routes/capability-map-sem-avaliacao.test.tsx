@@ -32,7 +32,12 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { AppState } from "@/lib/api";
-import { fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAssignedManagerUser,
+  fixtureState,
+  fixtureTeamId,
+  scopedFixtureStateFor,
+} from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -54,6 +59,7 @@ const semAvaliacaoNoCicloAtivo = (id: string, name: string) => ({
   email: `${id}@company.com`,
   active: true,
   version: 1,
+  teamId: fixtureTeamId,
 });
 
 /** Ana e Bruno têm avaliação concluída em 2026-h2; Carla e Diego não têm nenhuma. */
@@ -65,6 +71,14 @@ const stateComDuasPessoasSemAvaliacao: AppState = {
     semAvaliacaoNoCicloAtivo("diego", "Diego Lima"),
   ],
 };
+
+/**
+ * D1 (dono, 2026-09-05): o Mapa de capacidades é leitura de quem LIDERA o
+ * time — o admin não o alcança. O ator é o gerente vinculado, com o recorte
+ * que o servidor faria.
+ */
+const comoGerente = (state: AppState) =>
+  scopedFixtureStateFor(fixtureAssignedManagerUser, state, [fixtureTeamId]);
 
 const hrefDe = (link: HTMLElement) => new URL(link.getAttribute("href") ?? "", "http://localhost");
 
@@ -80,7 +94,10 @@ describe("De quem o time depende — 'Sem avaliação' abre a avaliação de cad
   });
 
   it("nos cartões: o acesso revela os dois nomes e cada link aponta para /assessments com o architectId certo", async () => {
-    mockAppFetch(fetchMock, { state: stateComDuasPessoasSemAvaliacao });
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      state: comoGerente(stateComDuasPessoasSemAvaliacao),
+    });
     renderWithApp(<CapabilityPage />);
 
     const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
@@ -100,7 +117,10 @@ describe("De quem o time depende — 'Sem avaliação' abre a avaliação de cad
   });
 
   it("na tabela: o número da coluna é o acesso, com nome que diz a capacidade, e abre pelo teclado", async () => {
-    mockAppFetch(fetchMock, { state: stateComDuasPessoasSemAvaliacao });
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      state: comoGerente(stateComDuasPessoasSemAvaliacao),
+    });
     renderWithApp(<CapabilityPage />);
     await screen.findByText("Cloud Architecture");
     await userEvent.click(screen.getByRole("button", { name: "Tabela" }));
@@ -125,7 +145,10 @@ describe("De quem o time depende — 'Sem avaliação' abre a avaliação de cad
   });
 
   it("com zero pessoas sem avaliação não há acesso: a célula continua só o número 0", async () => {
-    mockAppFetch(fetchMock, { state: fixtureState });
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      state: comoGerente(fixtureState),
+    });
     renderWithApp(<CapabilityPage />);
     await screen.findByText("Cloud Architecture");
 

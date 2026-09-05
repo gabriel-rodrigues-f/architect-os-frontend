@@ -31,7 +31,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import type { AppState } from "@/lib/api";
 import type { Architect } from "@/lib/domain";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -68,7 +68,7 @@ describe("ficha de quem está desativado avisa e aponta para Time", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: comInativa,
       routes: [careerLevelsRoute],
     });
@@ -89,7 +89,7 @@ describe("ficha de quem está desativado avisa e aponta para Time", () => {
 
   it("a ficha de quem está ativo não mostra aviso nenhum", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: { ...comInativa, architects: fixtureState.architects },
       routes: [careerLevelsRoute],
     });

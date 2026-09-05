@@ -26,7 +26,8 @@ export interface PersonAdmissionRequest {
 }
 
 const CARGOS_DO_GESTOR: readonly TeamMemberRole[] = [TeamLeadershipRoles.TECH_LEAD, "member"];
-const CARGOS_DO_TECH_LEAD: readonly TeamMemberRole[] = ["member"];
+/** D4 (dono, 2026-09-05): criar conta é ato de gestão — o tech lead indica, o gerente cadastra. */
+const CARGOS_DO_TECH_LEAD: readonly TeamMemberRole[] = [];
 
 export class PersonAdmissionPolicy {
   admits(user: SessionUser): boolean {

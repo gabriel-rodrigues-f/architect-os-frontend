@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type SessionUser } from "@/lib/api";
+import { fixtureTeamId } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -14,16 +15,21 @@ import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app
 
 const fetchMock = vi.fn();
 
-/** A tela usa o usuário logado como mentor, então precisa da sessão montada. */
+/**
+ * A tela usa o usuário logado como mentor, então precisa da sessão montada.
+ * Revisão de papéis (dono, 2026-09-05): quem registra sessão é quem lidera
+ * por vínculo — o admin não mentora (D1); o ator é um tech lead vinculado.
+ */
 const usuario: SessionUser = {
   id: "u1",
   email: "gabriel@company.com",
   name: "Gabriel Rodrigues",
-  role: "admin",
+  role: "tech_lead",
   architectId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
+  memberships: [{ teamId: fixtureTeamId, role: "tech_lead" }],
 };
 
 /**

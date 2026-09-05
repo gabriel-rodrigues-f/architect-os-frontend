@@ -27,7 +27,7 @@ import {
   fixtureState,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers/render-app";
 
 /**
  * Onda 33 — achado (4) da revisão de PO (2026-09-02): a decisão do dono
@@ -55,6 +55,7 @@ function renderAs(user: SessionUser) {
   mockAppFetch(fetchMock, {
     user,
     state: user === fixtureAdminUser ? fixtureState : scopedFixtureStateFor(user),
+    routes: [operationsOverviewRoute],
   });
   return renderWithApp(<DashboardPage />);
 }
@@ -70,7 +71,13 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
     vi.unstubAllGlobals();
   });
 
-  it("o radar 'Perfil por capacidade' não é desenhado para o profissional", async () => {
+  it("D2 (dono, 2026-09-05): o profissional vê o PRÓPRIO radar e as próprias distâncias no Painel", async () => {
+    renderAs(fixtureMemberUser);
+    expect(await screen.findByText("Meu radar de capacidades")).toBeTruthy();
+    expect(screen.getByText("Minhas maiores distâncias")).toBeTruthy();
+  });
+
+  it.skip("(substituído pelo D2) o radar 'Perfil por capacidade' não é desenhado para o profissional", async () => {
     const { container } = renderAs(fixtureMemberUser);
     await screen.findByText("Minha Evolução");
     await screen.findByText("Meu PDI");
@@ -79,7 +86,7 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
     expect([...container.querySelectorAll("figure, [role='img']")]).toEqual([]);
   });
 
-  it("a lista de prioridades com nível e distância não aparece para o profissional", async () => {
+  it.skip("(substituído pelo D2) a lista de prioridades com nível e distância não aparece para o profissional", async () => {
     renderAs(fixtureMemberUser);
     await screen.findByText("Minha Evolução");
     await screen.findByText("Meu PDI");
@@ -101,10 +108,14 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
     expect(screen.queryByRole("button", { name: "Registrar" })).toBeNull();
   });
 
-  it("o Painel do admin não muda — as prioridades do time continuam lá", async () => {
+  it("D1 (dono, 2026-09-05): o Painel do admin é de operação — sem prioridades do time, sem nível, sem distância", async () => {
     renderAs(fixtureAdminUser);
-    await screen.findByText("Painel de Capacidades");
+    await screen.findByText("Painel de operação");
 
-    expect(await screen.findByText("Principais Prioridades de Desenvolvimento")).toBeTruthy();
+    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
+    expect(screen.queryByText("Principais Prioridades de Desenvolvimento")).toBeNull();
+    expect(screen.queryAllByText(NIVEL)).toEqual([]);
+    expect(screen.queryAllByText(DISTANCIA)).toEqual([]);
+    expect(await screen.findByText("Avaliações do ciclo por estado")).toBeTruthy();
   });
 });

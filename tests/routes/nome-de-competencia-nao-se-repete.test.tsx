@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
@@ -79,7 +80,10 @@ afterEach(() => {
 
 describe("Matriz — nome repetido de competência impede seguir", () => {
   it("no modal de fundação, a recusa aparece no bloco recusado e trava 'Criar'", async () => {
-    mockAppFetch(fetchMock, { routes: [refuseFoundation, careerLevelsRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [refuseFoundation, careerLevelsRoute],
+    });
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Nova capacidade" }));
@@ -101,7 +105,10 @@ describe("Matriz — nome repetido de competência impede seguir", () => {
   });
 
   it("em 'Nova competência', a recusa aparece no campo e trava 'Adicionar'", async () => {
-    mockAppFetch(fetchMock, { routes: [refuseCompetencyCreation, careerLevelsRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [refuseCompetencyCreation, careerLevelsRoute],
+    });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Cloud Architecture");
 
@@ -120,7 +127,7 @@ describe("Matriz — nome repetido de competência impede seguir", () => {
   });
 
   it("ao renomear, a recusa aparece no campo, trava 'Salvar' e o diálogo não fecha", async () => {
-    mockAppFetch(fetchMock, { routes: [refuseRename, careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [refuseRename, careerLevelsRoute] });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Cloud Architecture");
 

@@ -28,7 +28,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import type { AppState } from "@/lib/api";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -58,7 +58,10 @@ describe("card Evidências — ações lado a lado com espaçamento", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: stateComEvidenciaDevolvida });
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      state: stateComEvidenciaDevolvida,
+    });
   });
 
   afterEach(() => {

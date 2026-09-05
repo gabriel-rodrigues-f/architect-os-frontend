@@ -4,9 +4,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { type AppState } from "@/lib/api";
+import { type AppState, type SessionUser } from "@/lib/api";
 import {
-  fixtureAdminUser,
+  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
   fixtureMemberUser,
   fixtureState,
   fixtureUnassignedTechLeadUser,
@@ -31,10 +32,7 @@ const fetchMock = vi.fn();
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
-function mockSession(
-  user: typeof fixtureAdminUser | typeof fixtureMemberUser | typeof fixtureUnassignedTechLeadUser,
-  state: AppState,
-) {
+function mockSession(user: SessionUser, state: AppState) {
   mockAppFetch(fetchMock, { user, state, routes: [emptyEligibilityRoute] });
 }
 
@@ -129,9 +127,9 @@ describe("Avaliações — campos por papel e status", () => {
   });
 
   // Seção 4 — líder/final ainda não abrem enquanto a avaliação está em
-  // Rascunho, mesmo para o administrador.
-  it("admin não edita líder nem final enquanto ainda é Rascunho", async () => {
-    mockSession(fixtureAdminUser, draftState);
+  // Rascunho, mesmo para o gerente que decide a carreira.
+  it("gerente não edita líder nem final enquanto ainda é Rascunho", async () => {
+    mockSession(fixtureAssignedManagerUser, draftState);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
@@ -140,8 +138,8 @@ describe("Avaliações — campos por papel e status", () => {
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
   });
 
-  it("admin (Tech Lead) vê líder e final editáveis quando Em Revisão", async () => {
-    mockSession(fixtureAdminUser, inReviewState);
+  it("gerente vinculado vê líder e final editáveis quando Em Revisão, e é ele quem conclui (D4)", async () => {
+    mockSession(fixtureAssignedManagerUser, inReviewState);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
@@ -154,13 +152,36 @@ describe("Avaliações — campos por papel e status", () => {
   });
 
   /**
+   * D4 (dono, 2026-09-05) — o tech lead vinculado PONTUA (líder e final
+   * editáveis em revisão), mas concluir e reabrir são decisão de carreira,
+   * do gerente designado.
+   */
+  it("D4 (dono, 2026-09-05) — tech lead vinculado pontua em revisão, mas não conclui nem reabre", async () => {
+    mockSession(fixtureAssignedTechLeadUser, inReviewState);
+    const { unmount } = renderWithApp(<AssessmentsPage />);
+
+    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
+    expect(linha.querySelectorAll("select")).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
+    unmount();
+    cleanup();
+
+    // "ana-h2" é Completed na fixture original.
+    mockSession(fixtureAssignedTechLeadUser, fixtureState);
+    renderWithApp(<AssessmentsPage />);
+    await screen.findByText("Kubernetes");
+    expect(screen.queryByRole("button", { name: "Reabrir avaliação" })).toBeNull();
+  });
+
+  /**
    * UX-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md), semântica
    * pós-Fase 2 — o vínculo virou o TIME (ADR-0035): um lead de outro time
    * nem recebe a pessoa no recorte do servidor; o caso que a UI ainda decide
-   * sozinha é o arquiteto SEM time — nele, nenhuma conta lead ganha
-   * líder/final, em vez de preencher e devolver 403 tarde.
+   * sozinha é o arquiteto SEM time. Revisão de papéis (2026-09-05): o alcance
+   * é o VÍNCULO, não o papel — a pessoa sem time nem entra no seletor de
+   * Avaliações do tech lead sem vínculo, então a avaliação dela não abre.
    */
-  it("lead não vê líder/final editáveis para arquiteto sem time", async () => {
+  it("tech lead sem vínculo não alcança a avaliação de arquiteto sem time — nem líder/final, nem a tabela", async () => {
     mockSession(fixtureUnassignedTechLeadUser, {
       ...inReviewState,
       architects: inReviewState.architects.map((architect) => ({
@@ -170,14 +191,15 @@ describe("Avaliações — campos por papel e status", () => {
     });
     renderWithApp(<AssessmentsPage />);
 
-    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
-    expect(linha.querySelectorAll("select")).toHaveLength(0);
+    expect(await screen.findByText("Sem avaliação neste ciclo")).toBeTruthy();
+    expect(screen.queryByText("Kubernetes")).toBeNull();
+    expect(document.querySelectorAll("select")).toHaveLength(0);
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
   });
 
   it("avaliação concluída: nenhum campo editável para ninguém", async () => {
     // "ana-h2" já é Completed na fixture original — sem sobrescrever o status.
-    mockSession(fixtureAdminUser, fixtureState);
+    mockSession(fixtureAssignedManagerUser, fixtureState);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
@@ -185,10 +207,10 @@ describe("Avaliações — campos por papel e status", () => {
     expect(await screen.findByText(/somente leitura/)).toBeTruthy();
   });
 
-  // Correção pedida pelo usuário — depois de concluída, o Tech Lead precisa
-  // conseguir reabrir a avaliação (Completed → In Review) e concluí-la de
-  // novo, em vez de ficar travada para sempre.
-  it("admin reabre avaliação concluída e volta a concluir depois", async () => {
+  // Correção pedida pelo usuário — depois de concluída, quem decide carreira
+  // (o gerente designado, D4) precisa conseguir reabrir a avaliação
+  // (Completed → In Review) e concluí-la de novo, em vez de ficar travada.
+  it("gerente reabre avaliação concluída e volta a concluir depois", async () => {
     const completedAssessment = fixtureState.assessments.find((a) => a.id === "ana-h2")!;
 
     mockAppFetch(fetchMock, {
@@ -237,7 +259,7 @@ describe("Avaliações — campos por papel e status", () => {
    */
   it("deep-link com cycleId abre o assessment do ciclo do link, não o ciclo ativo", async () => {
     window.history.pushState({}, "", "?architectId=ana&cycleId=2026-h1");
-    mockSession(fixtureAdminUser, fixtureState);
+    mockSession(fixtureAssignedManagerUser, fixtureState);
     renderWithApp(<AssessmentsPage />);
 
     expect(await screen.findByText(/2026 H1/)).toBeTruthy();

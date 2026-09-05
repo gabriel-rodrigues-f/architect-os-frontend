@@ -8,7 +8,7 @@ import { type AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import type { Capability, Competency } from "@/lib/domain";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -78,7 +78,11 @@ afterEach(() => {
 
 describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => {
   it("o contador da capacidade mostra 'N/{max} · mín. {min}' com os dois vindos da régua", async () => {
-    mockAppFetch(fetchMock, { state, routes: [careerLevelsRoute, curationPolicyMax3] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state,
+      routes: [careerLevelsRoute, curationPolicyMax3],
+    });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Cloud Architecture");
 
@@ -87,7 +91,11 @@ describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => 
   });
 
   it("capacidade com 0 ativas requer curadoria e o controle explica que falta cadastrar", async () => {
-    mockAppFetch(fetchMock, { state, routes: [careerLevelsRoute, curationPolicyMax3] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state,
+      routes: [careerLevelsRoute, curationPolicyMax3],
+    });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Data Platforms");
 
@@ -110,6 +118,7 @@ describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => 
       curation: { activeCompetencyCount: 5, status: "REQUIRES_CURATION" },
     };
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       state: { ...state, capabilities: [...state.capabilities, over] },
       routes: [careerLevelsRoute, curationPolicyMax3],
     });
@@ -153,6 +162,7 @@ describe("Matriz — o contador cai depois de desvincular (item 2 do dono)", () 
           : undefined,
     ];
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       state,
       routes: [...removalRoutes, careerLevelsRoute, curationPolicyMax3],
     });
@@ -170,7 +180,11 @@ describe("Matriz — o contador cai depois de desvincular (item 2 do dono)", () 
 
 describe("Matriz — arquivada só se restaura, e a recusa do serviço aparece", () => {
   it("a seção de arquivadas não oferece exclusão definitiva", async () => {
-    mockAppFetch(fetchMock, { state, routes: [careerLevelsRoute, curationPolicyMax3] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state,
+      routes: [careerLevelsRoute, curationPolicyMax3],
+    });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Arquivadas");
 
@@ -190,6 +204,7 @@ describe("Matriz — arquivada só se restaura, e a recusa do serviço aparece",
           )
         : undefined;
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       state,
       routes: [refuseRestore, careerLevelsRoute, curationPolicyMax3],
     });

@@ -29,7 +29,14 @@ const fetchMock = vi.fn();
 
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 
-/** Lead sem nenhum arquiteto atribuído — `canActFor` nunca dá `true`, população vazia. */
+/**
+ * Revisão de papéis (dono, 2026-09-05): o alcance é o VÍNCULO, não o papel.
+ * Este tech lead TEM vínculo — com um time onde ainda não há ninguém — e por
+ * isso entra na tela e encontra a população vazia. O par dele, sem vínculo
+ * nenhum, nem entra (`canAnalyzeTeam` nega).
+ */
+const TIME_VAZIO = "time-vazio";
+
 const leadWithNoOne: SessionUser = {
   id: "test-lead-sem-ninguem",
   email: "lead-sem-ninguem@company.com",
@@ -39,13 +46,19 @@ const leadWithNoOne: SessionUser = {
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
+  memberships: [{ teamId: TIME_VAZIO, role: "tech_lead" }],
 };
+
+const leadWithoutBond: SessionUser = { ...leadWithNoOne, memberships: [] };
 
 describe("Mapa de Capacidades — escopo vazio vira uma mensagem, não N repetições", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: leadWithNoOne, state: scopedFixtureStateFor(leadWithNoOne) });
+    mockAppFetch(fetchMock, {
+      user: leadWithNoOne,
+      state: scopedFixtureStateFor(leadWithNoOne, undefined, [TIME_VAZIO]),
+    });
   });
 
   afterEach(() => {
@@ -58,6 +71,18 @@ describe("Mapa de Capacidades — escopo vazio vira uma mensagem, não N repeti�
 
     expect(await screen.findByText("Nenhuma pessoa no seu escopo")).toBeTruthy();
     expect(screen.queryByText(/Dados insuficientes/)).toBeNull();
+    expect(screen.queryByText("Cloud Architecture")).toBeNull();
+  });
+
+  it("liderança SEM vínculo não entra na tela — o alcance é o vínculo, não o papel (dono, 2026-09-05)", async () => {
+    mockAppFetch(fetchMock, {
+      user: leadWithoutBond,
+      state: scopedFixtureStateFor(leadWithoutBond),
+    });
+    renderWithApp(<CapabilityPage />);
+
+    expect(await screen.findByText("A análise do time é uma leitura de liderança.")).toBeTruthy();
+    expect(screen.queryByText("Nenhuma pessoa no seu escopo")).toBeNull();
     expect(screen.queryByText("Cloud Architecture")).toBeNull();
   });
 });

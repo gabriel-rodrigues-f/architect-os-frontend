@@ -17,7 +17,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import { type AppState } from "@/lib/api";
 import type { Assessment, AssessmentItem, Competency } from "@/lib/domain";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -109,7 +109,7 @@ describe("Necessidades de Treinamento — cortes declarados (R2-ESC-08)", () => 
       const href = String(url);
       if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
+          new Response(JSON.stringify(fixtureAssignedManagerUser), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),

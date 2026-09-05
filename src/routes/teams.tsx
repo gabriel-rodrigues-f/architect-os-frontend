@@ -40,7 +40,7 @@ import type {
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireLeadReach } from "@/lib/route-guards";
+import { requirePeopleAdministrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
 import {
@@ -51,7 +51,7 @@ import {
 } from "@/lib/view-models";
 
 export const Route = createFileRoute("/teams")({
-  beforeLoad: requireLeadReach,
+  beforeLoad: requirePeopleAdministrationReach,
   head: () => ({
     meta: [
       { title: "Times — Synapse" },
@@ -90,10 +90,12 @@ function TeamsPage() {
   const user = useCurrentUser();
   const registry = useTeamRegistryViewModel();
   const comparison = useTeamTransitionsViewModel();
-  const canCompose = registry.canCompose(user);
+  // Usuários e Times: administrador e gerente com vínculo (`canAdministerPeople`).
+  const canAdministerPeople =
+    defaultUiAuthorizationPolicy.canAdministerPeople(user) && registry.canCompose(user);
   const canCompare = comparison.canCompare(user);
 
-  if (!canCompose) {
+  if (!canAdministerPeople) {
     return (
       <>
         <PageHeader title={t("teams.title")} description={t("teams.subtitle")} help={help} />

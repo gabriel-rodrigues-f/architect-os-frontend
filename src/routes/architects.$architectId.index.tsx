@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import {
@@ -23,6 +24,8 @@ import {
   StatCard,
   TreatGapInPlanAction,
   WorkAssistanceRun,
+  SupportAccessDialog,
+  Callout,
 } from "@/components/app";
 import { useLabels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -58,6 +61,7 @@ import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters";
 import { useSeniorityReading } from "@/lib/seniority";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { SupportAccess } from "@/lib/support-access";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { LearningPathsViewModel } from "@/lib/view-models";
@@ -89,11 +93,56 @@ function ArchitectNotFound() {
 
 function ArchitectProfile() {
   const { architectId } = Route.useParams();
+  const user = useCurrentUser();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [, rerender] = useState(0);
+  const needsSupportAccess =
+    defaultUiAuthorizationPolicy.isAdmin(user) &&
+    user.architectId !== architectId &&
+    SupportAccess.grantedFor(architectId) === null;
+
+  if (needsSupportAccess) {
+    return (
+      <ContextScope contexts={["architects"]}>
+        <SupportAccessGate
+          architectId={architectId}
+          onGranted={() => {
+            void queryClient.invalidateQueries();
+            rerender((tick) => tick + 1);
+          }}
+          onCancel={() => void navigate({ to: "/" })}
+        />
+      </ContextScope>
+    );
+  }
 
   return (
     <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
       <ArchitectWorkspace />
     </ContextScope>
+  );
+}
+
+/** Pede o motivo com o NOME da pessoa na frente — o diretório já diz quem é. */
+function SupportAccessGate({
+  architectId,
+  onGranted,
+  onCancel,
+}: {
+  architectId: string;
+  onGranted: () => void;
+  onCancel: () => void;
+}) {
+  const sel = useSelectors();
+  const person = sel.architectById(architectId);
+  return (
+    <SupportAccessDialog
+      architectId={architectId}
+      personName={person?.name ?? architectId}
+      onGranted={onGranted}
+      onCancel={onCancel}
+    />
   );
 }
 
@@ -116,8 +165,12 @@ function ArchitectWorkspace() {
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
 
+  const supportGrant = SupportAccess.grantedFor(architectId);
   const canEditOwn = defaultUiAuthorizationPolicy.canActOnCareerFileOf(user, architect);
   const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
+  // CONTRATO IA-04: o aviso de estagnação é do tech lead designado.
+  const canWatchStagnation =
+    canReviewEvidence && defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect);
 
   /**
    * A recomendação de PDI é a única das oito que precisa de um SEGUNDO
@@ -174,6 +227,11 @@ function ArchitectWorkspace() {
 
   return (
     <>
+      {supportGrant && (
+        <Callout tone="warning" className="mb-4">
+          {t("support.banner", { nome: architect.name })}
+        </Callout>
+      )}
       <PageHeader
         title={architect.name}
         description={`${seniority.labelOf(architect.role)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
@@ -263,7 +321,7 @@ function ArchitectWorkspace() {
 
       {canReviewEvidence && <SessionScriptAssistant architectId={architect.id} />}
 
-      {canReviewEvidence && (
+      {canWatchStagnation && (
         <StagnationAlertSection
           className="mb-6"
           title={t("ai.stagnation.title")}

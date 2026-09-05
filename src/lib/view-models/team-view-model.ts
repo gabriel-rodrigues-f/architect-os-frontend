@@ -68,6 +68,15 @@ export class TeamViewModel {
     return this.policy.isAdmin(user);
   }
 
+  /** D3 (dono, 2026-09-05): nível, desativação e reativação — gerente designado, ou admin como correção. */
+  decidesCareerOf(user: SessionUser, architect: Pick<Architect, "id" | "teamId">): boolean {
+    return this.policy.decidesCareerOf(user, architect);
+  }
+
+  decidesCareerOfSomeone(user: SessionUser): boolean {
+    return this.policy.isAdmin(user) || this.policy.canComposeAnyTeam(user);
+  }
+
   allocatableTeams(teams: readonly TeamSummary[]): TeamSummary[] {
     return teams.filter((team) => team.active);
   }

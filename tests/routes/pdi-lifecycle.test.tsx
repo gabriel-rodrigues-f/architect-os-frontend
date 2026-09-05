@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as PlansRoute } from "@/routes/development-plans";
 import { type AppState, type SessionUser } from "@/lib/api";
-import { fixtureAdminUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -189,7 +189,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
                 ...i.checkins,
                 {
                   id: "checkin-novo",
-                  authorUserId: fixtureAdminUser.id,
+                  authorUserId: fixtureAssignedManagerUser.id,
                   text: "Feedback do Tech Lead: no caminho certo.",
                   createdAt: "2026-08-10T12:00:00Z",
                 },
@@ -254,7 +254,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   /**
    * ENT-PDI-001 (AUDITORIA-ENTERPRISE-SYNAPSE-SEXTA-RODADA-2026-08-19.md,
    * Seção 5) — reabrir um PDI concluído é exclusivo do Tech Lead
-   * responsável; admin (o `fixtureAdminUser` usado no resto deste arquivo)
+   * responsável; admin (o `fixtureAssignedManagerUser` usado no resto deste arquivo)
    * não vê o botão, mesmo podendo tudo o mais.
    */
   describe("reabertura de PDI concluído (ENT-PDI-001)", () => {
@@ -290,7 +290,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     }
 
     it("admin não vê o botão Reabrir PDI — só o Tech Lead responsável reabre", async () => {
-      mockFetchAs(fixtureAdminUser, completedState);
+      mockFetchAs(fixtureAssignedManagerUser, completedState);
       window.history.pushState({}, "", "?architectId=ana");
       renderWithApp(<PlansPage />);
       await screen.findByText("Evoluir IAM");

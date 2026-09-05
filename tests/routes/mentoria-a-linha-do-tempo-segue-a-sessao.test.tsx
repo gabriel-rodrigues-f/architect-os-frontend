@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { type AppState, type SessionUser } from "@/lib/api";
-import { fixtureState } from "../helpers/fixtures";
+import { type AppState } from "@/lib/api";
+import { fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -22,17 +22,11 @@ import { apiPath } from "@/lib/api-path";
  */
 const fetchMock = vi.fn();
 
-const admin: SessionUser = {
-  id: "admin-1",
-  email: "admin@company.com",
-  name: "Admin",
-  role: "admin",
-  architectId: null,
-  status: "active",
-  mustChangePassword: false,
-  createdAt: "2026-01-01T00:00:00.000Z",
-};
-
+/**
+ * Revisão de papéis (dono, 2026-09-05): quem registra mentoria é quem lidera
+ * por vínculo — o admin não mentora ninguém (D1). O ator é o tech lead do
+ * time das fixtures, que alcança as duas pessoas ativas.
+ */
 const state: AppState = { ...fixtureState, mentoringSessions: [] };
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
@@ -43,7 +37,7 @@ describe("mentoria — a linha do tempo segue a sessão recém-registrada", () =
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
       state,
-      user: admin,
+      user: fixtureAssignedTechLeadUser,
       routes: [
         (href, init) => {
           if (href.endsWith(apiPath("/mentoring-sessions")) && init?.method === "POST") {

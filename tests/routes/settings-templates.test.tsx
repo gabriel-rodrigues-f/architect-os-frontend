@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
+import { fixtureUnassignedTechLeadUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -80,7 +80,10 @@ describe("Textos (CFG-03 admin UI)", () => {
   });
 
   it("mostra as variáveis da key e o preview interpolado com valores de exemplo", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, emptyTemplatesGetRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, emptyTemplatesGetRoute],
+    });
     renderWithApp(<SettingsPage />);
 
     expect(await screen.findByText("{competencia}")).toBeTruthy();
@@ -94,7 +97,10 @@ describe("Textos (CFG-03 admin UI)", () => {
   });
 
   it("o preview reage à edição do template (mesmo interpolador, valores de exemplo)", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, emptyTemplatesGetRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, emptyTemplatesGetRoute],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await ptLocaleBlock();
@@ -110,6 +116,7 @@ describe("Textos (CFG-03 admin UI)", () => {
 
   it("salvar envia o PUT do key/locale com o texto novo e invalida a query de templates", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -157,6 +164,7 @@ describe("Textos (CFG-03 admin UI)", () => {
 
   it("400 INVALID_TEXT_TEMPLATE do backend aparece no formulário (role=alert)", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>

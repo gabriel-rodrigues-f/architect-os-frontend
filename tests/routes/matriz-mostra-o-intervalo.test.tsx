@@ -7,7 +7,7 @@ import { type AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import type { Capability } from "@/lib/domain";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -88,7 +88,11 @@ afterEach(() => {
 
 describe("Matriz — o intervalo do modelo aparece na tela", () => {
   it("o contador mostra quantas de quantas E o mínimo, os dois vindos da política", async () => {
-    mockAppFetch(fetchMock, { state, routes: [careerLevelsRoute, curationPolicyMax4] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state,
+      routes: [careerLevelsRoute, curationPolicyMax4],
+    });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Cloud Architecture");
 
@@ -97,7 +101,11 @@ describe("Matriz — o intervalo do modelo aparece na tela", () => {
   });
 
   it("abaixo do mínimo, a curadoria diz isso e oferece 'Nova competência'", async () => {
-    mockAppFetch(fetchMock, { state, routes: [careerLevelsRoute, curationPolicyMax4] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state,
+      routes: [careerLevelsRoute, curationPolicyMax4],
+    });
     renderWithApp(<MatrixPage />);
     await screen.findByText("Data Platforms");
 
@@ -115,6 +123,7 @@ describe("Matriz — o intervalo do modelo aparece na tela", () => {
 
   it("no teto, 'Nova competência' continua acessível e a recusa vem do serviço", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       state,
       routes: [refuseCompetencyCreation, careerLevelsRoute, curationPolicyMax4],
     });

@@ -9,7 +9,11 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureAdminUser, fixtureAssignedTechLeadUser } from "../helpers/fixtures";
+import {
+  fixtureAdminUser,
+  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
+} from "../helpers/fixtures";
 import {
   NIVEL_JUNIOR,
   NIVEL_PLENO,
@@ -35,6 +39,11 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * time gravar. O seletor de time resolve a ambiguidade: "Todos os times" é o
  * padrão e mantém o agregado; time escolhido mostra a régua EXATA daquele
  * time e grava nele.
+ *
+ * Revisão de papéis (dono, 2026-09-05, D1): a régua é regida por quem lidera
+ * o time COM vínculo — o gerente (e o tech lead) daquele time. O admin a LÊ
+ * no agregado, sem seletor e sem Editar. Quem escolhe entre Plataforma e
+ * Integrações e grava em cada uma é o gerente vinculado aos dois times.
  */
 
 const fetchMock = vi.fn();
@@ -50,6 +59,15 @@ const reguaDeIntegracoesJunior = {
 };
 
 const gravacoes: { url: string; body: unknown }[] = [];
+
+/** O gerente com vínculo nos DOIS times — só o vínculo dá a régua de cada um. */
+const gerenteDosDoisTimes = {
+  ...fixtureAssignedManagerUser,
+  memberships: [
+    { teamId: TIME_PLATAFORMA, role: "manager" as const },
+    { teamId: TIME_INTEGRACOES, role: "manager" as const },
+  ],
+};
 
 const reguasDeIntegracoesRoute: FetchRoute = (href, init) => {
   const metodo = (init?.method ?? "GET").toUpperCase();
@@ -104,7 +122,7 @@ afterEach(() => {
 describe("Política de Progressão leva em consideração o time selecionado", () => {
   it('"Todos os times" é o padrão e mantém o agregado da onda 27', async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
@@ -119,7 +137,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
 
   it("escolher um time mostra a régua EXATA daquele time por nível, sem 'varia'", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
@@ -135,9 +153,9 @@ describe("Política de Progressão leva em consideração o time selecionado", (
     expect(within(await linhaDoNivel()).getByText(/pelo menos 5/)).toBeTruthy();
   });
 
-  it("com o time escolhido o admin volta a editar, e o salvar grava NAQUELE time", async () => {
+  it("com o time escolhido o gerente volta a editar, e o salvar grava NAQUELE time", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute, reguasDeIntegracoesRoute],
     });
@@ -160,9 +178,9 @@ describe("Política de Progressão leva em consideração o time selecionado", (
     expect(gravacoes[0]?.body).toMatchObject({ minimumQualifiedCapabilities: 6 });
   });
 
-  it("nível sem régua no time escolhido: a tela diz de quem é a ausência e deixa o admin criar a régua", async () => {
+  it("nível sem régua no time escolhido: a tela diz de quem é a ausência e deixa o gerente criar a régua", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute, reguasDeIntegracoesRoute],
     });
@@ -188,7 +206,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
 
   it("cancelar a edição devolve o rascunho ao mínimo do time, nunca a '[object Object]'", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: gerenteDosDoisTimes,
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute, reguasDeIntegracoesRoute],
     });
@@ -206,6 +224,25 @@ describe("Política de Progressão leva em consideração o time selecionado", (
     await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
 
     expect((within(linha).getByRole("spinbutton") as HTMLInputElement).value).toBe("5");
+  });
+
+  it("o admin lê o agregado sem seletor de time e sem Editar — a régua não é dele (D1)", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state: doisTimesDivergem(),
+      routes: [niveisDeCarreiraRoute, doisTimesRoute],
+    });
+    renderWithApp(<SettingsPage />);
+
+    const celula = await celulaDoMinimo();
+    expect(celula.textContent).toContain("3");
+    expect(celula.textContent).toContain("5");
+    expect(screen.queryByLabelText("Time", { selector: "button" })).toBeNull();
+    for (const nivel of ["Júnior", "Pleno"]) {
+      expect(
+        within(await linhaDoNivel(nivel)).queryByRole("button", { name: "Editar" }),
+      ).toBeNull();
+    }
   });
 
   it("o tech lead só escolhe entre os times que alcança", async () => {

@@ -27,7 +27,7 @@ import {
   fixtureState,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers/render-app";
 
 /**
  * FASE 2 (quinta rodada) — "homes distintas Member/Lead/Admin": antes, todo
@@ -35,8 +35,13 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * dos registros (roster é dado de diretório, sem filtro; assessments/PDIs/
  * evidências, sim). Member vê "Minha Evolução" (agenda pessoal); Lead vê
  * "Pendências do Lead" (fila do que depende de uma decisão dele); Admin
- * mantém a visão executiva original. Ver AUDITORIA-QUINTA-RODADA-360-
+ * mantinha a visão executiva original. Ver AUDITORIA-QUINTA-RODADA-360-
  * SYNAPSE-2026-08-19.md, Seção 7 e 33.
+ *
+ * Revisão de papéis (dono, 2026-09-05, D1): o Painel do admin virou o Painel
+ * de OPERAÇÃO — o sistema em números, sem nome ao lado de nota. E o alcance
+ * da liderança é o VÍNCULO: sem membership, a fila fica vazia mesmo que o
+ * servidor entregue alguém.
  */
 
 const fetchMock = vi.fn();
@@ -85,7 +90,7 @@ const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 
 /** OO3-11/D-7 — setup compartilhado em `render-app.tsx`. */
 function renderAs(user: SessionUser, state: AppState = fixtureState) {
-  mockAppFetch(fetchMock, { user, state });
+  mockAppFetch(fetchMock, { user, state, routes: [operationsOverviewRoute] });
   return renderWithApp(<DashboardPage />);
 }
 
@@ -111,10 +116,15 @@ describe("Painel — Home por papel", () => {
     vi.unstubAllGlobals();
   });
 
-  it("admin vê a visão executiva de time (inalterada)", async () => {
+  it("D1 (dono, 2026-09-05): admin vê o Painel de operação — contagens, sem nome de pessoa", async () => {
     renderAs(fixtureAdminUser);
-    await screen.findByText("Painel de Capacidades");
-    expect(screen.getByText("Profissionais")).toBeTruthy();
+    await screen.findByText("Painel de operação");
+    expect(await screen.findByText("Pessoas ativas")).toBeTruthy();
+    expect(screen.getByText("Contas por cargo")).toBeTruthy();
+    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
+    expect(screen.queryByText("Pendências do Lead")).toBeNull();
+    expect(screen.queryByText("Ana Martins")).toBeNull();
+    expect(screen.queryByText(/ADR-014/)).toBeNull();
   });
 
   it("member vê 'Minha Evolução', não a visão de time", async () => {
@@ -170,10 +180,12 @@ describe("Painel — Home por papel", () => {
     expect(await screen.findByText(/ADR-014/)).toBeTruthy();
   });
 
-  it("sessão de liderança SEM vínculo se apoia no recorte do servidor e vê a fila", async () => {
+  it("sessão de liderança SEM vínculo vê o estado vazio mesmo com gente no payload — o alcance é o vínculo (dono, 2026-09-05)", async () => {
     renderAsLeaderOfAna(fixtureLeadOfAna);
     await screen.findByText("Pendências do Lead");
-    // "e1" na fixture: evidência Pending de "ana", título "ADR-014".
-    expect(await screen.findByText(/ADR-014/)).toBeTruthy();
+    // "e1" na fixture: evidência Pending de "ana", título "ADR-014" — o servidor
+    // entregou, mas sem membership a fila não é dele.
+    expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
+    expect(screen.queryByText(/ADR-014/)).toBeNull();
   });
 });

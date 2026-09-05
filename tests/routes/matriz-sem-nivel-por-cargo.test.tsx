@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
@@ -25,7 +26,7 @@ describe("Matriz de Competências — o alvo não mora aqui", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
   });
 
   afterEach(() => {

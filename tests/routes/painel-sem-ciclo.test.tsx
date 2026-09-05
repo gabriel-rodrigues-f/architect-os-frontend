@@ -26,6 +26,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as DashboardRoute } from "@/routes/index";
 import type { AppState, SessionUser } from "@/lib/api";
+import { apiPath } from "@/lib/api-path";
 import {
   fixtureAdminUser,
   fixtureAssignedManagerUser,
@@ -33,7 +34,13 @@ import {
   fixtureMemberUser,
   fixtureState,
 } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import {
+  type FetchRoute,
+  jsonResponse,
+  mockAppFetch,
+  operationsOverviewFor,
+  renderWithApp,
+} from "../helpers/render-app";
 
 /**
  * Onda 35, achado 1 do dono (literal): "Painel sem ciclo cadastrado mostra
@@ -44,6 +51,11 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * liderança, quatro filas vazias. Nenhum dos dois dizia que o motivo era não
  * existir ciclo nenhum. Só o ramo vazio muda: com ciclo cadastrado, o Painel
  * de cada persona continua o que era.
+ *
+ * Revisão de papéis (dono, 2026-09-05, D1): o Painel do admin virou o Painel
+ * de operação, e nele o ciclo é um CARTÃO ("Ciclo vigente"): sem ciclo ativo
+ * o cartão diz "Nenhum ciclo ativo" e o atalho de Ciclos leva a /cycles. A
+ * mensagem + botão "Cadastrar ciclo" segue sendo a resposta da liderança.
  */
 const fetchMock = vi.fn();
 
@@ -54,10 +66,22 @@ const estadoSemCiclo: AppState = { ...fixtureState, cycles: [], activeCycleId: "
 const MENSAGEM = "Não há ciclos cadastrados";
 const BOTAO = "Cadastrar ciclo";
 
+/** O panorama espelha o estado: sem ciclo ativo no `/state`, `cycle` é nulo. */
+const panoramaRoute =
+  (state: AppState): FetchRoute =>
+  (href) =>
+    href.endsWith(apiPath("/operations/overview"))
+      ? jsonResponse(
+          operationsOverviewFor(
+            state.activeCycleId ? { id: state.activeCycleId, name: "2026 H2" } : null,
+          ),
+        )
+      : undefined;
+
 function prepararPainel(user: SessionUser, state: AppState) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
-  mockAppFetch(fetchMock, { user, state });
+  mockAppFetch(fetchMock, { user, state, routes: [panoramaRoute(state)] });
   renderWithApp(<DashboardPage />);
 }
 
@@ -72,7 +96,6 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   });
 
   it.each([
-    ["admin", fixtureAdminUser],
     ["gerente", fixtureAssignedManagerUser],
     ["tech lead", fixtureAssignedTechLeadUser],
   ])("%s vê a mensagem e o botão que leva a /cycles", async (_papel, user) => {
@@ -83,17 +106,33 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
     expect(botao.getAttribute("href")).toBe("/cycles");
   });
 
-  it("o admin sem ciclo não vê os cartões de contagem em zero", async () => {
+  it("D1 (dono, 2026-09-05): o admin sem ciclo vê 'Nenhum ciclo ativo' no cartão de ciclo e o atalho de Ciclos leva a /cycles", async () => {
     prepararPainel(fixtureAdminUser, estadoSemCiclo);
 
-    await screen.findByText(MENSAGEM);
-    expect(screen.queryByText("PDIs ativos")).toBeNull();
+    expect(await screen.findByText("Painel de operação")).toBeTruthy();
+    expect(await screen.findByText("Nenhum ciclo ativo")).toBeTruthy();
+    const atalho = screen.getByRole("link", { name: "Ciclos de Desenvolvimento" });
+    expect(atalho.getAttribute("href")).toBe("/cycles");
+    // A mensagem + botão "Cadastrar ciclo" é a resposta da liderança, não do painel de operação.
+    expect(screen.queryByText(MENSAGEM)).toBeNull();
+    expect(screen.queryByRole("link", { name: BOTAO })).toBeNull();
   });
 
-  it("com ciclo cadastrado, o Painel do admin continua o que era — sem a mensagem", async () => {
+  it("D1 (dono, 2026-09-05): o admin sem ciclo não vê a matriz antiga nem 'PDIs ativos' — só as contagens de operação", async () => {
+    prepararPainel(fixtureAdminUser, estadoSemCiclo);
+
+    await screen.findByText("Nenhum ciclo ativo");
+    expect(screen.queryByText("PDIs ativos")).toBeNull();
+    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
+    expect(screen.getByText("PDIs por estado")).toBeTruthy();
+  });
+
+  it("com ciclo cadastrado, o Painel de operação do admin nomeia o ciclo — sem a mensagem", async () => {
     prepararPainel(fixtureAdminUser, fixtureState);
 
-    expect(await screen.findByText("Painel de Capacidades")).toBeTruthy();
+    expect(await screen.findByText("Painel de operação")).toBeTruthy();
+    expect(await screen.findByText("2026 H2")).toBeTruthy();
+    expect(screen.queryByText("Nenhum ciclo ativo")).toBeNull();
     expect(screen.queryByText(MENSAGEM)).toBeNull();
     expect(screen.queryByRole("link", { name: BOTAO })).toBeNull();
   });

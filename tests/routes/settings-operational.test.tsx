@@ -8,7 +8,11 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
+import {
+  fixtureAdminUser,
+  fixtureAssignedManagerUser,
+  fixtureUnassignedTechLeadUser,
+} from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -102,7 +106,10 @@ describe("Operação (CFG-05 admin UI)", () => {
   });
 
   it("admin vê cadência, piso e limiar efetivos e o aviso de ciclos futuros", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, settingsGetRoute("QUARTERLY", 4, 2)] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, settingsGetRoute("QUARTERLY", 4, 2)],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await operationalBlock();
@@ -120,7 +127,10 @@ describe("Operação (CFG-05 admin UI)", () => {
   });
 
   it("inteiro < 1 mostra o erro client-side e desabilita salvar", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, settingsGetRoute()] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, settingsGetRoute()],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await operationalBlock();
@@ -139,6 +149,7 @@ describe("Operação (CFG-05 admin UI)", () => {
 
   it("salvar envia UM PUT por key alterada e, com cadência nova, invalida settings E as fatias de contexto", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -190,6 +201,7 @@ describe("Operação (CFG-05 admin UI)", () => {
 
   it("400 INVALID_APP_SETTING do backend aparece no formulário (role=alert)", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -221,15 +233,18 @@ describe("Operação (CFG-05 admin UI)", () => {
     );
   });
 
+  /**
+   * Revisão de papéis (dono, 2026-09-05, D1): a régua é editada pelo gerente
+   * COM vínculo no time — o admin só a lê. O piso operacional (4) continua
+   * vindo do GET de settings, mas quem abre a linha é o gerente de Plataforma,
+   * que não vê o bloco Operação.
+   */
   it("o piso operacional NÃO rege mais o campo da régua: 1 é o piso do modelo (onda 36.1)", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, settingsGetRoute("SEMIANNUAL", 4, 3)] });
-    renderWithApp(<SettingsPage />);
-
-    // Espera o piso 4 carregar antes de abrir a edição da linha.
-    const block = await operationalBlock();
-    await waitFor(() => {
-      expect(within(block).getByText("4")).toBeTruthy();
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      routes: [careerLevelsRoute, settingsGetRoute("SEMIANNUAL", 4, 3)],
     });
+    renderWithApp(<SettingsPage />);
 
     // O h1 da página tem o mesmo texto. O card vive dentro de um `SectionGroup`,
     // cujo título é o nível 2 — o card, portanto, é o nível 3.

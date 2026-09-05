@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -40,7 +41,7 @@ const fetchMock = vi.fn();
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
-  mockAppFetch(fetchMock);
+  mockAppFetch(fetchMock, { user: fixtureAdminUser });
 });
 
 afterEach(() => {

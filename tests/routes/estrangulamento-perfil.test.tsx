@@ -28,7 +28,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -50,7 +50,7 @@ describe("estrangulamento fase 1 — perfil do arquiteto vive sem o blob /state"
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: fixtureState });
   });
 
   afterEach(() => {

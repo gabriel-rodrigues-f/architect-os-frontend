@@ -30,7 +30,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -82,7 +82,7 @@ const urlsDeRoteiro = (): URL[] =>
     .filter((url) => url.pathname.endsWith(apiPath("/architects/ana/session-script")));
 
 const montaPerfil = (routes: FetchRoute[]) => {
-  mockAppFetch(fetchMock, { user: fixtureAdminUser, routes });
+  mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, routes });
   return renderWithApp(<ProfilePage />);
 };
 

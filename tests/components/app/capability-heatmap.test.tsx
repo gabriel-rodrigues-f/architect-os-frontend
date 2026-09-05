@@ -5,7 +5,7 @@ import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import { MAX_HEATMAP_COLUMNS } from "@/components/app/gap-analysis-shared";
 import { type AppState } from "@/lib/api";
 import { createSelectors } from "@/lib/selectors";
-import { fixtureState } from "../../helpers/fixtures";
+import { fixtureState, fixtureAdminUser } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 
@@ -39,7 +39,7 @@ describe("CapabilityHeatmap", () => {
       ...fixtureState,
       assessments: fixtureState.assessments.filter((a) => a.architectId !== "bruno"),
     };
-    mockAppFetch(fetchMock, { state });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state });
     const sel = createSelectors(state);
     renderWithApp(
       <CapabilityHeatmap
@@ -66,7 +66,7 @@ describe("CapabilityHeatmap", () => {
    * quem. Como cabeçalho de linha ele volta ao anúncio da célula.
    */
   it("o nome da pessoa é cabeçalho da linha, não célula comum", async () => {
-    mockAppFetch(fetchMock, { state: fixtureState });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
     const sel = createSelectors(fixtureState);
     renderWithApp(
       <CapabilityHeatmap
@@ -83,7 +83,7 @@ describe("CapabilityHeatmap", () => {
 
   /** O segundo canal por célula: o número. Nenhuma célula avaliada pode ficar só na cor. */
   it("toda célula avaliada mostra o número do nível", async () => {
-    mockAppFetch(fetchMock, { state: fixtureState });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
     const sel = createSelectors(fixtureState);
     renderWithApp(
       <CapabilityHeatmap
@@ -107,7 +107,7 @@ describe("CapabilityHeatmap", () => {
 
   /** A legenda explica cor e padrão; sem ela o padrão de preenchimento não significa nada. */
   it("a escala de níveis tem legenda com um item por nível", async () => {
-    mockAppFetch(fetchMock, { state: fixtureState });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
     const sel = createSelectors(fixtureState);
     renderWithApp(
       <CapabilityHeatmap
@@ -138,7 +138,7 @@ describe("CapabilityHeatmap", () => {
 
   const renderComCatalogoDe = (quantas: number) => {
     const state = comCatalogoDe(quantas);
-    mockAppFetch(fetchMock, { state });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, state });
     const sel = createSelectors(state);
     renderWithApp(
       <CapabilityHeatmap

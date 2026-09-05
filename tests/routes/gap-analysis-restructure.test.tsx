@@ -23,7 +23,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as GapRoute } from "@/routes/gap-analysis";
 import { type AppState } from "@/lib/api";
 import type { Assessment, Competency } from "@/lib/domain";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -104,7 +104,7 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
       const url = hrefOf(input);
       if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
+          new Response(JSON.stringify(fixtureAssignedManagerUser), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),
@@ -180,7 +180,7 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
       const url = hrefOf(input);
       if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
+          new Response(JSON.stringify(fixtureAssignedManagerUser), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),
@@ -259,7 +259,7 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
       const url = hrefOf(input);
       if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser), {
+          new Response(JSON.stringify(fixtureAssignedManagerUser), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),

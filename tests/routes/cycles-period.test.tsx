@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
@@ -21,7 +22,7 @@ describe("Ciclos — identidade matemática (ano + semestre)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock);
+    mockAppFetch(fetchMock, { user: fixtureAdminUser });
   });
 
   afterEach(() => {

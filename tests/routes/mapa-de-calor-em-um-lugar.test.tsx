@@ -21,8 +21,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as DashboardRoute } from "@/routes/index";
 import { Route as ProgressionRoute } from "@/routes/progression";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { fixtureAdminUser, fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
+import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers/render-app";
 
 /**
  * ONDA21/mapa-unico — a matriz pessoa × capacidade era desenhada DUAS vezes,
@@ -38,6 +38,10 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  *
  * O que a Progressão herda do Painel para o admin não perder nada: o nome da
  * pessoa leva ao perfil dela.
+ *
+ * Revisão de papéis (dono, 2026-09-05): o Painel do admin virou o Painel de
+ * operação (D1, só contagens) e a Progressão passou a ser do tech lead
+ * vinculado (D5) — o mapa com nome mora onde quem pontua o lê.
  */
 
 const fetchMock = vi.fn();
@@ -49,7 +53,7 @@ describe("o mapa de calor mora em um lugar só", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
+    mockAppFetch(fetchMock, { user: fixtureAssignedTechLeadUser, state: fixtureState });
   });
 
   afterEach(() => {
@@ -58,19 +62,26 @@ describe("o mapa de calor mora em um lugar só", () => {
     window.history.replaceState(null, "", "/");
   });
 
-  it("o Painel do admin não desenha mais a matriz pessoa × capacidade", async () => {
+  it("o Painel do tech lead não desenha a matriz pessoa × capacidade — ela mora na Progressão", async () => {
     renderWithApp(<DashboardPage />);
-    await screen.findByText("Painel de Capacidades");
+    await screen.findByText("Pendências do Lead");
 
     expect(screen.queryByTestId("heatmap-scroll")).toBeNull();
     expect(screen.queryByRole("columnheader", { name: "Profissional" })).toBeNull();
   });
 
-  it("o Painel do admin mantém a cobertura da avaliação do ciclo, que não é cópia de ninguém", async () => {
+  it("D1 (dono, 2026-09-05): o Painel de operação do admin conta as avaliações do ciclo por estado — sem matriz, sem nome", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state: fixtureState,
+      routes: [operationsOverviewRoute],
+    });
     renderWithApp(<DashboardPage />);
-    await screen.findByText("Painel de Capacidades");
+    await screen.findByText("Painel de operação");
 
-    expect(screen.getByText(/Avaliação do ciclo:/)).toBeTruthy();
+    expect(await screen.findByText("Avaliações do ciclo por estado")).toBeTruthy();
+    expect(screen.queryByTestId("heatmap-scroll")).toBeNull();
+    expect(screen.queryByText("Ana Martins")).toBeNull();
   });
 
   it("/progression desenha a matriz, e uma só", async () => {

@@ -46,7 +46,7 @@ describe("AppShell — navegação recortada por papel", () => {
    */
   it("member não vê Matriz de Competências, Usuários nem Ciclos", () => {
     const groups = filterNavGroups(NAV_GROUPS, fixtureMemberUser);
-    const paths = groups.flatMap((g) => g.items.map((i) => i.to));
+    const paths = groups.flatMap((grupo) => grupo.items.map((item) => item.to));
     expect(paths).not.toContain("/competency-matrix");
     expect(paths).not.toContain("/users");
     expect(paths).not.toContain("/cycles");
@@ -59,19 +59,26 @@ describe("AppShell — navegação recortada por papel", () => {
    * mas o DESTINO é da liderança — escondê-lo deixaria as duas personas sem
    * caminho nenhum para cadastrar.
    */
-  it("lead também não vê os destinos admin-only, mas alcança Usuários para cadastrar", () => {
+  it("tech lead não vê os destinos admin-only nem Usuários — ele não cadastra (D4, 2026-09-05)", () => {
     const groups = filterNavGroups(NAV_GROUPS, fixtureUnassignedTechLeadUser);
-    const paths = groups.flatMap((g) => g.items.map((i) => i.to));
+    const paths = groups.flatMap((grupo) => grupo.items.map((item) => item.to));
     expect(paths).not.toContain("/competency-matrix");
-    expect(paths).toContain("/users");
+    expect(paths).not.toContain("/users");
+    expect(
+      filterNavGroups(NAV_GROUPS, fixtureAssignedManagerUser).flatMap((grupo) =>
+        grupo.items.map((item) => item.to),
+      ),
+    ).toContain("/users");
   });
 
-  it("admin vê tudo, incluindo os destinos admin-only", () => {
+  it("admin vê o sistema — matriz, usuários — e não a calibração, que é rito de gestão (D1)", () => {
     const groups = filterNavGroups(NAV_GROUPS, fixtureAdminUser);
-    const paths = groups.flatMap((g) => g.items.map((i) => i.to));
+    const paths = groups.flatMap((grupo) => grupo.items.map((item) => item.to));
     expect(paths).toContain("/competency-matrix");
     expect(paths).toContain("/users");
-    expect(paths).toContain("/calibration");
+    expect(paths).not.toContain("/calibration");
+    expect(paths).not.toContain("/assessments");
+    expect(paths).not.toContain("/mentoring");
   });
 
   /**
@@ -130,7 +137,7 @@ describe("AppShell — navegação recortada por papel", () => {
 
   it("nenhum grupo fica com cabeçalho e zero itens", () => {
     const groups = filterNavGroups(NAV_GROUPS, fixtureMemberUser);
-    expect(groups.every((g) => g.items.length > 0)).toBe(true);
+    expect(groups.every((grupo) => grupo.items.length > 0)).toBe(true);
   });
 
   /**
@@ -142,9 +149,9 @@ describe("AppShell — navegação recortada por papel", () => {
    * grupo próprio.
    */
   it("Painel, Time e Avaliações formam o grupo 'Operação'", () => {
-    const operationGroup = NAV_GROUPS.find((g) => g.labelKey === "nav.group.operation");
+    const operationGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.group.operation");
     expect(operationGroup).toBeTruthy();
-    expect(operationGroup?.items.map((i) => i.to)).toEqual(["/", "/team", "/assessments"]);
+    expect(operationGroup?.items.map((item) => item.to)).toEqual(["/", "/team", "/assessments"]);
   });
 
   /**
@@ -156,9 +163,9 @@ describe("AppShell — navegação recortada por papel", () => {
    * é reaproveitado como rótulo do GRUPO, sem chave i18n nova.
    */
   it("Cobertura, Prioridades, Progressão, Necessidades de Treinamento e Comparativo formam o grupo 'Capacidades'", () => {
-    const capabilitiesGroup = NAV_GROUPS.find((g) => g.labelKey === "nav.capabilities");
+    const capabilitiesGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.capabilities");
     expect(capabilitiesGroup).toBeTruthy();
-    expect(capabilitiesGroup?.items.map((i) => i.to)).toEqual([
+    expect(capabilitiesGroup?.items.map((item) => item.to)).toEqual([
       "/capability-map",
       "/gap-analysis",
       "/progression",
@@ -183,7 +190,7 @@ describe("AppShell — navegação recortada por papel", () => {
  * renderização, deveria ter pego).
  */
 describe("isNavItemHiddenByCollapse — esconde no próprio lugar, nunca reordena", () => {
-  const group = NAV_GROUPS.find((g) => g.labelKey === "nav.group.operation")!;
+  const group = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.group.operation")!;
 
   it("grupo expandido: nenhum item esconde, não importa qual rota está ativa", () => {
     for (const pathname of ["/", "/team", "/assessments", "/rota-que-nao-existe"]) {
@@ -200,9 +207,9 @@ describe("isNavItemHiddenByCollapse — esconde no próprio lugar, nunca reorden
   });
 
   it("grupo recolhido, com rota ativa dentro: só o item ativo continua visível", () => {
-    const activeItem = group.items.find((i) => i.to === "/team")!;
+    const activeItem = group.items.find((item) => item.to === "/team")!;
     expect(isNavItemHiddenByCollapse(activeItem, "/team", true)).toBe(false);
-    for (const item of group.items.filter((i) => i.to !== "/team")) {
+    for (const item of group.items.filter((item) => item.to !== "/team")) {
       expect(isNavItemHiddenByCollapse(item, "/team", true)).toBe(true);
     }
   });

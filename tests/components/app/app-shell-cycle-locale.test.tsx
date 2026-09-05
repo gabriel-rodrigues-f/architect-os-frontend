@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../../helpers/fixtures";
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
@@ -52,7 +53,7 @@ describe("AppShell — seletor de Ciclo e de idioma (R3-008)", () => {
     window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock);
+    mockAppFetch(fetchMock, { user: fixtureAdminUser });
   });
 
   afterEach(() => {

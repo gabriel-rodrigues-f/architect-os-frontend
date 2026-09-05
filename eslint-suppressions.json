@@ -276,7 +276,7 @@
   },
   "src/routes/index.tsx": {
     "id-length": {
-      "count": 5
+      "count": 2
     }
   },
   "src/routes/learning-paths.tsx": {
@@ -322,11 +322,6 @@
   "tests/components/app/gap-analysis-memo.test.tsx": {
     "id-length": {
       "count": 2
-    }
-  },
-  "tests/components/app/nav-role.test.ts": {
-    "id-length": {
-      "count": 14
     }
   },
   "tests/components/app/nav-settings-icon.test.ts": {

@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
@@ -35,7 +36,7 @@ describe("Time — truncate sempre carrega title", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { routes: [emptyAuthUsersRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [emptyAuthUsersRoute] });
   });
 
   afterEach(() => {

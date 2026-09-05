@@ -65,15 +65,19 @@ export class AssessmentViewModel {
   ): AssessmentPermissions {
     const isOwner = user.architectId === architectId;
     const isLead = !isOwner && this.policy.isLeadOf(user, selectedArchitect);
+    // D4 (dono, 2026-09-05): o tech lead pontua; quem CONCLUI e REABRE é o
+    // gerente designado (ou o admin como correção). D2: a própria pessoa vê
+    // os próprios números.
+    const decides = !isOwner && this.policy.decidesCareerOf(user, selectedArchitect);
     const status = assessment?.status;
     const isCompleted = status === "Completed";
     const canEditSelf = !isLead && isOwner && status === "Draft";
     const canEditLeaderFinal = isLead && status === "In Review";
     const canSubmit = !isLead && isOwner && status === "Draft";
-    const canComplete = isLead && status === "In Review";
+    const canComplete = decides && status === "In Review";
 
-    const canReopen = isLead && status === "Completed";
-    const seesAssessmentNumbers = this.policy.isLeadership(user);
+    const canReopen = decides && status === "Completed";
+    const seesAssessmentNumbers = this.policy.isLeadership(user) || isOwner;
 
     const incompleteSelf = assessment?.items.some((i) => i.self === null) ?? false;
     const incompleteLeaderFinal =

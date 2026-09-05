@@ -49,6 +49,7 @@ function mockBackend() {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   mockAppFetch(fetchMock, {
+    user: fixtureAdminUser,
     routes: [
       (href, init) => {
         if (href.endsWith(apiPath("/auth/users")) && (!init || init.method === undefined)) {

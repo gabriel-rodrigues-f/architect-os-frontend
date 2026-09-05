@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
+import { fixtureUnassignedTechLeadUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -80,7 +80,10 @@ describe("Catálogo (CFG-04 admin UI)", () => {
   });
 
   it("admin vê o máximo efetivo e o aviso de impacto — sem campos por tipo", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, curationPolicyGetRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, curationPolicyGetRoute],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await policyBlock();
@@ -98,7 +101,10 @@ describe("Catálogo (CFG-04 admin UI)", () => {
   });
 
   it("máximo que não é inteiro positivo mostra o erro client-side e desabilita salvar", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, curationPolicyGetRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, curationPolicyGetRoute],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await policyBlock();
@@ -117,6 +123,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
 
   it("salvar envia o PUT com a política inteira e invalida a query da política E as fatias de contexto", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -159,6 +166,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
 
   it("400 INVALID_CATALOG_CURATION_POLICY do backend aparece no formulário (role=alert)", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>

@@ -83,7 +83,8 @@ function TeamRoster() {
   const help = usePageHelp("team");
 
   const viewModel = useMemo(() => new TeamViewModel(store, defaultUiAuthorizationPolicy), [store]);
-  const isAdmin = viewModel.isAdmin(useCurrentUser());
+  const user = useCurrentUser();
+  const isAdmin = viewModel.isAdmin(user);
 
   const actions = useTeamRosterActions();
   const roster = useTeamRoster(isAdmin);
@@ -193,6 +194,7 @@ function TeamRoster() {
               pageItems={roster.pageItems}
               view={roster.view}
               isAdmin={isAdmin}
+              decidesCareerOf={(architect) => viewModel.decidesCareerOf(user, architect)}
               onTransition={actions.setTransitioning}
               onReactivate={actions.reactivate}
             />

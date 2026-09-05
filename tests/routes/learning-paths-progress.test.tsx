@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as LearningRoute } from "@/routes/learning-paths";
 import { type AppState } from "@/lib/api";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -41,7 +41,7 @@ const state: AppState = {
 
 const LearningPage = LearningRoute.options.component as () => ReactNode;
 
-function mockSession(user: typeof fixtureAdminUser | typeof fixtureMemberUser) {
+function mockSession(user: typeof fixtureAssignedManagerUser | typeof fixtureMemberUser) {
   mockAppFetch(fetchMock, { user, state });
 }
 
@@ -117,7 +117,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
   });
 
   it("admin vê as duas linhas editáveis", async () => {
-    mockSession(fixtureAdminUser);
+    mockSession(fixtureAssignedManagerUser);
     renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
@@ -133,7 +133,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
    * commita (`LearningPathItemRow`).
    */
   it("editar o título de um item só manda PATCH ao sair do campo (blur), não por tecla", async () => {
-    mockSession(fixtureAdminUser);
+    mockSession(fixtureAssignedManagerUser);
     renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
@@ -164,7 +164,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
   });
 
   it("admin vê o botão de criar trilha nova", async () => {
-    mockSession(fixtureAdminUser);
+    mockSession(fixtureAssignedManagerUser);
     renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");

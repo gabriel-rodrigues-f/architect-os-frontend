@@ -20,7 +20,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Toaster } from "@/components/ui/sonner";
 import { Route as TeamRoute } from "@/routes/team";
 import { type AppState } from "@/lib/api";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import {
   emptyAuthUsersRoute,
   jsonResponse,
@@ -63,6 +63,7 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       state: stateWithInactiveAna,
       routes: [
         emptyAuthUsersRoute,

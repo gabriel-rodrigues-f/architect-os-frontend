@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -41,20 +42,21 @@ afterEach(() => {
 
 describe("useObjectiveFromGap (CFG-03)", () => {
   it("fallback em pt: sem templates carregados, objetivo byte-idêntico ao literal antigo", async () => {
-    mockAppFetch(fetchMock, { routes: [templatesRoute({})] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [templatesRoute({})] });
     renderWithApp(<Probe />);
     expect(await screen.findByText("Evoluir Kubernetes do nível 1 para o nível 2")).toBeTruthy();
   });
 
   it("app em en: o mesmo gap gera o objetivo em inglês (locale ativo decide)", async () => {
     window.localStorage.setItem("synapse:locale", "en");
-    mockAppFetch(fetchMock, { routes: [templatesRoute({})] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [templatesRoute({})] });
     renderWithApp(<Probe />);
     expect(await screen.findByText("Evolve Kubernetes from level 1 to level 2")).toBeTruthy();
   });
 
   it("template do servidor muda o objetivo gerado: recalibração do admin sem deploy", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         templatesRoute({
           "pdi.objective.fromGap": {

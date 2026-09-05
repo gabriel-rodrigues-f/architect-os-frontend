@@ -28,7 +28,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -117,7 +117,7 @@ afterEach(() => {
 describe("Roteiro — a aderência discrimina situações opostas", () => {
   it("converte a razão do backend em porcentagem legível", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: anaNoNivelDois,
       routes: [careerLevelsRoute, opostas],
     });
@@ -129,7 +129,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
 
   it("nível atual e próximo nível NÃO exibem o mesmo número", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: anaNoNivelDois,
       routes: [careerLevelsRoute, opostas],
     });
@@ -144,7 +144,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
 
   it("mantém os DOIS números do CONTRATO — porcentagem e competências abaixo do exigido", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: anaNoNivelDois,
       routes: [careerLevelsRoute, opostas],
     });
@@ -156,7 +156,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
 
   it("aderência plena vira 100%, não 1%", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: anaNoNivelDois,
       routes: [
         careerLevelsRoute,

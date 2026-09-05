@@ -165,7 +165,7 @@ function AssessmentsScreen() {
     <>
       <PageHeader
         title={t("asmt.title")}
-        description={t(seesAssessmentNumbers ? "asmt.subtitle" : "asmt.subtitle.professional")}
+        description={t("asmt.subtitle")}
         help={help}
         actions={
           <div className="flex flex-wrap gap-2">

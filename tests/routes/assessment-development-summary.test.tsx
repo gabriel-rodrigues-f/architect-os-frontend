@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "@/lib/api";
 import type { AssessmentDevelopmentSummary } from "@/lib/domain";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
 import {
   emptyEligibilityRoute,
   jsonResponse,
@@ -56,7 +56,7 @@ function baseSummary(
 }
 
 function mockSession(
-  user: typeof fixtureAdminUser | typeof fixtureMemberUser,
+  user: typeof fixtureAssignedManagerUser | typeof fixtureMemberUser,
   state: AppState,
   summary: AssessmentDevelopmentSummary,
   onPut?: (body: unknown) => Response,
@@ -104,7 +104,7 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
   });
 
   it("Tech Lead não edita enquanto Rascunho — campos travados", async () => {
-    mockSession(fixtureAdminUser, draftState, baseSummary());
+    mockSession(fixtureAssignedManagerUser, draftState, baseSummary());
     renderWithApp(<AssessmentsPage />);
 
     const start = (await screen.findByLabelText("Começar a fazer")) as HTMLTextAreaElement;
@@ -114,7 +114,7 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
 
   it("Tech Lead edita em Revisão; dono fica travado e vê a última atualização", async () => {
     mockSession(
-      fixtureAdminUser,
+      fixtureAssignedManagerUser,
       inReviewState,
       baseSummary({
         startDoing: "Falar mais em reuniões",

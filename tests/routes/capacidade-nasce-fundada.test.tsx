@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
@@ -70,6 +71,7 @@ describe("Matriz — a capacidade nasce fundada com as suas competências", () =
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [foundationRoute, careerLevelsRoute, curationPolicyMax4],
     });
   });

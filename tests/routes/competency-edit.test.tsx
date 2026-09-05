@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { type AppState } from "@/lib/api";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   mockAppFetch,
@@ -40,6 +40,7 @@ describe("Matriz de Competências — edição", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       state,
       routes: [
         ...writeRefetchesState(

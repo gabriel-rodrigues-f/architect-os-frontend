@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { apiPath } from "@/lib/api-path";
 import { Route as TeamRulesRoute } from "@/routes/team-rules";
-import { fixtureAdminUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -61,7 +61,7 @@ const renderPage = () => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   mockAppFetch(fetchMock, {
-    user: fixtureAdminUser,
+    user: fixtureAssignedManagerUser,
     state: fixtureState,
     routes: [careerLevelsRoute, teamsRoute, comRegua],
   });

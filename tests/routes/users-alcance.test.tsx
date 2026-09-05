@@ -7,6 +7,8 @@ import type { SessionUser } from "@/lib/api";
 import { Route as UsersRoute } from "@/routes/users";
 import {
   fixtureAdminUser,
+  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
   fixtureMemberUser,
   fixtureState,
   fixtureUnassignedTechLeadUser,
@@ -55,7 +57,7 @@ function renderAs(user: SessionUser) {
   return renderWithApp(<UsersPage />);
 }
 
-describe("/users nega DADO a quem não é admin — a tela é a última barreira", () => {
+describe("/users nega DADO a quem não administra pessoas — a tela é a última barreira", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -68,32 +70,44 @@ describe("/users nega DADO a quem não é admin — a tela é a última barreira
 
   it("member recebe a negativa, e nenhuma consulta de contas sai do navegador", async () => {
     renderAs(fixtureMemberUser);
-    expect(await screen.findByText("Cadastrar pessoas é da liderança.")).toBeTruthy();
+    expect(
+      await screen.findByText("Cadastrar pessoas é do administrador e do gerente."),
+    ).toBeTruthy();
     expect(screen.queryByText("Ana Martins")).toBeNull();
     expect(pediuAsContas()).toBe(false);
   });
 
   it("quem não é liderança não recebe a ação de cadastrar", async () => {
     renderAs(fixtureMemberUser);
-    await screen.findByText("Cadastrar pessoas é da liderança.");
+    await screen.findByText("Cadastrar pessoas é do administrador e do gerente.");
     expect(screen.queryByRole("button", { name: "Cadastrar pessoa" })).toBeNull();
   });
 
   /**
-   * ONDA 37 — a rota abriu à liderança porque Usuários virou o único lugar
-   * de cadastro, mas o DIRETÓRIO de contas continua administrativo (o
-   * backend guarda `GET /auth/users` com `requireAdmin`). O lead alcança a
-   * tela, cadastra, e não vê conta nenhuma: as duas metades num teste só,
-   * senão a abertura da navegação viraria vazamento de leitura.
+   * Revisão de papéis (D4, dono, 2026-09-05) — o tech lead indica, o gerente
+   * cadastra. Com ou sem vínculo, o tech lead recebe a mesma negativa do
+   * profissional: não cadastra, não vê conta nenhuma, e a consulta de contas
+   * não sai do navegador.
    */
-  it("lead alcança a tela e cadastra, mas o diretório de contas continua fechado", async () => {
-    renderAs(fixtureUnassignedTechLeadUser);
+  it.each([
+    ["com vínculo", fixtureAssignedTechLeadUser],
+    ["sem vínculo", fixtureUnassignedTechLeadUser],
+  ])("tech lead %s recebe a negativa: não cadastra nem vê o diretório", async (_, user) => {
+    renderAs(user);
     expect(
-      await screen.findByText("Diretório de contas é restrito a administradores."),
+      await screen.findByText("Cadastrar pessoas é do administrador e do gerente."),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Cadastrar pessoa" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cadastrar pessoa" })).toBeNull();
     expect(screen.queryByText("Ana Martins")).toBeNull();
     expect(pediuAsContas()).toBe(false);
+  });
+
+  /** O gerente com vínculo administra as contas dos times dele: diretório aberto e cadastro na mão. */
+  it("gerente com vínculo alcança o diretório e recebe a ação de cadastrar", async () => {
+    renderAs(fixtureAssignedManagerUser);
+    expect(await screen.findByText("Ana Martins")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cadastrar pessoa" })).toBeTruthy();
+    expect(pediuAsContas()).toBe(true);
   });
 
   it("admin alcança o diretório, recebe a ação de cadastrar e as contas chegam à tela", async () => {

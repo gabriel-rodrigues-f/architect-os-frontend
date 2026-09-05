@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
+import { fixtureUnassignedTechLeadUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -75,6 +75,7 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
 
   it("editar um corte envia o PUT com o payload contíguo e invalida a query de bands", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -120,6 +121,7 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
 
   it("400 INVALID_SCORING_BANDS do backend aparece no formulário (role=alert)", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -143,7 +145,10 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
   });
 
   it("preview: o valor de exemplo é classificado pelo RASCUNHO (corte novo muda o chip)", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, emptyBandsGetRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, emptyBandsGetRoute],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await gapScaleBlock();

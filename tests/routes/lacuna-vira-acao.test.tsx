@@ -46,7 +46,7 @@ import { Route as PlansRoute } from "@/routes/development-plans";
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import type { AppState } from "@/lib/api";
 import type { Assessment, DevelopmentPlan } from "@/lib/domain";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -127,7 +127,7 @@ afterEach(() => {
 
 describe("Prioridades — 'Tratar no PDI' carrega pessoa e competência", () => {
   it("leva a competência da linha e a pessoa que está mais longe do alvo", async () => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoBase });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoBase });
     renderWithApp(<GapPage />);
 
     await screen.findByText("IAM");
@@ -148,7 +148,7 @@ describe("Prioridades — 'Tratar no PDI' carrega pessoa e competência", () => 
  */
 describe("Perfil — '+ PDI' carrega a competência da linha clicada", () => {
   it("cada lacuna aponta para a própria competência, não para um destino genérico", async () => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoComPlanoEmRascunho });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<ProfilePage />);
 
     const acao = await screen.findByRole("link", { name: "+ PDI" });
@@ -161,7 +161,7 @@ describe("Perfil — '+ PDI' carrega a competência da linha clicada", () => {
 describe("Plano — o destino abre a criação do item já na competência recebida", () => {
   it("abre o diálogo da competência do link, sem a pessoa ter de reencontrá-la", async () => {
     irPara("?architectId=ana&competencyId=cloud-serverless");
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoComPlanoEmRascunho });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
     const dialogo = await screen.findByRole("dialog");
@@ -179,7 +179,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
 
   it("não reabre competência que já é item do plano", async () => {
     irPara("?architectId=ana&competencyId=security-iam");
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoComPlanoEmRascunho });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
     await screen.findByText("Maiores distâncias");
@@ -193,7 +193,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
    */
   it("não abre em plano já aprovado, nem para quem pode agir pela pessoa", async () => {
     irPara("?architectId=ana&competencyId=cloud-serverless");
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoBase });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoBase });
     renderWithApp(<PlansPage />);
 
     await screen.findByText("Maiores distâncias");
@@ -202,7 +202,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
 
   it("ignora competência que não existe em vez de quebrar a tela", async () => {
     irPara("?architectId=ana&competencyId=competencia-que-nao-existe");
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: estadoComPlanoEmRascunho });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
     await screen.findByText("Maiores distâncias");

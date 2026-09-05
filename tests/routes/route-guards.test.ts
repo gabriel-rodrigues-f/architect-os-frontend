@@ -5,6 +5,8 @@ import type { SessionUser } from "@/lib/api";
 import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
 import {
+  requirePeopleAdministrationReach,
+  requireTechnicalMapReach,
   requireCalibrationReach,
   requireCareerTabsReach,
   requireLeadReach,
@@ -77,8 +79,8 @@ describe("guardas de navegação das telas administrativas", () => {
     expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, "/calibration")).toBe("/");
   });
 
-  it("mantém /calibration aberta para admin", async () => {
-    expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/calibration");
+  it("nega /calibration ao admin — calibração é rito de gestão (D1, 2026-09-05)", async () => {
+    expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/");
   });
 
   it("abre /calibration para o gerente", async () => {
@@ -140,8 +142,51 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
    * no time deles. O DIRETÓRIO de contas continua administrativo — quem nega
    * a leitura é a tela (`users-alcance.test.tsx`), não a navegação.
    */
-  it("abre /users ao lead — é onde ele cadastra a pessoa do time dele", async () => {
-    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/users")).toBe("/users");
+  it("abre /users ao gerente com vínculo e nega ao tech lead — cadastrar é ato de gestão (D4)", async () => {
+    expect(await navegarComoUsuario(fixtureAssignedManagerUser, "/users")).toBe("/users");
+    expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, "/users")).toBe("/");
+    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/users")).toBe("/");
+  });
+});
+
+/**
+ * Revisão de papéis (2026-09-05): duas guardas novas. O mapa técnico com nome
+ * (Progressão, Comparativo) é do tech lead vinculado (D5); Usuários e Times
+ * são do administrador e do gerente com vínculo.
+ */
+async function alcanca(
+  guarda: typeof requireTechnicalMapReach,
+  user: SessionUser,
+): Promise<boolean> {
+  const queryClient = createAppQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, user);
+  try {
+    await guarda({ context: { queryClient } });
+    return true;
+  } catch (erro) {
+    if (isRedirect(erro)) return false;
+    throw erro;
+  }
+}
+
+describe("requireTechnicalMapReach — o mapa pessoa × competência é do tech lead", () => {
+  it("deixa passar só o tech lead com vínculo", async () => {
+    expect(await alcanca(requireTechnicalMapReach, fixtureAssignedTechLeadUser)).toBe(true);
+    expect(await alcanca(requireTechnicalMapReach, fixtureUnassignedTechLeadUser)).toBe(false);
+    expect(await alcanca(requireTechnicalMapReach, fixtureAssignedManagerUser)).toBe(false);
+    expect(await alcanca(requireTechnicalMapReach, fixtureAdminUser)).toBe(false);
+    expect(await alcanca(requireTechnicalMapReach, fixtureMemberUser)).toBe(false);
+  });
+});
+
+describe("requirePeopleAdministrationReach — Usuários e Times", () => {
+  it("deixa passar o admin e o gerente com vínculo; nega tech lead e profissional", async () => {
+    expect(await alcanca(requirePeopleAdministrationReach, fixtureAdminUser)).toBe(true);
+    expect(await alcanca(requirePeopleAdministrationReach, fixtureAssignedManagerUser)).toBe(true);
+    expect(await alcanca(requirePeopleAdministrationReach, fixtureAssignedTechLeadUser)).toBe(
+      false,
+    );
+    expect(await alcanca(requirePeopleAdministrationReach, fixtureMemberUser)).toBe(false);
   });
 });
 
@@ -223,13 +268,13 @@ describe("requireCalibrationReach — a guarda da leitura de calibração", () =
     expect(await alcancaCalibracao(fixtureAssignedManagerUser)).toBe(true);
   });
 
-  it("deixa passar o gerente SEM vínculo — o alcance é o papel, não o time", async () => {
+  it("nega o gerente SEM vínculo — sem time não há quem calibrar", async () => {
     const gestorSemVinculo: SessionUser = { ...fixtureAssignedManagerUser, memberships: [] };
-    expect(await alcancaCalibracao(gestorSemVinculo)).toBe(true);
+    expect(await alcancaCalibracao(gestorSemVinculo)).toBe(false);
   });
 
-  it("deixa passar o admin", async () => {
-    expect(await alcancaCalibracao(fixtureAdminUser)).toBe(true);
+  it("nega o admin — a calibração é do gerente (D1)", async () => {
+    expect(await alcancaCalibracao(fixtureAdminUser)).toBe(false);
   });
 });
 
@@ -260,9 +305,19 @@ describe("o profissional não navega até os próprios números", () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/settings")).toBe("/");
   });
 
-  it.each(ABAS_DA_LIDERANCA)("nega ao member a aba %s — leitura da liderança", async (href) => {
-    expect(await navegarComoUsuario(fixtureMemberUser, href)).toBe("/");
-  });
+  it.each(ABAS_DA_LIDERANCA)(
+    "abre ao member a PRÓPRIA aba %s — D2 (dono, 2026-09-05): a pessoa vê os próprios números",
+    async (href) => {
+      expect(await navegarComoUsuario(fixtureMemberUser, href)).toBe(href);
+    },
+  );
+
+  it.each(ABAS_DA_LIDERANCA.map((href) => href.replace("/ana", "/bruno")))(
+    "nega ao member a aba %s de OUTRA pessoa",
+    async (href) => {
+      expect(await navegarComoUsuario(fixtureMemberUser, href)).toBe("/");
+    },
+  );
 
   it("mantém /team e /settings para quem lidera, com ou sem vínculo, e para o admin", async () => {
     for (const user of [
@@ -314,8 +369,8 @@ describe("requireLeadershipReach e requireCareerTabsReach — as guardas do prof
     expect(await alcancaLideranca(fixtureAdminUser)).toBe(true);
   });
 
-  it("as abas da ficha são negadas ao member, própria ou de outra pessoa", async () => {
-    expect(await alcancaFichaDe(fixtureMemberUser, "ana")).toBe(false);
+  it("as abas da PRÓPRIA ficha abrem ao member (D2); as de outra pessoa, não", async () => {
+    expect(await alcancaFichaDe(fixtureMemberUser, "ana")).toBe(true);
     expect(await alcancaFichaDe(fixtureMemberUser, "bruno")).toBe(false);
   });
 
@@ -373,15 +428,31 @@ describe("o profissional não navega até Ciclos nem até a análise do time", (
     expect(await navegarComoUsuario(fixtureMemberUser, href)).toBe("/");
   });
 
-  it("mantém /cycles e as cinco para quem lidera, com ou sem vínculo, e para o admin", async () => {
+  it("mantém /cycles para quem lidera e para o admin", async () => {
     for (const user of [
       fixtureAdminUser,
       fixtureAssignedManagerUser,
       fixtureAssignedTechLeadUser,
       fixtureUnassignedTechLeadUser,
     ]) {
-      for (const href of ["/cycles", ...ANALISE_DO_TIME]) {
-        expect(await navegarComoUsuario(user, href), `${user.role} → ${href}`).toBe(href);
+      expect(await navegarComoUsuario(user, "/cycles"), user.role).toBe("/cycles");
+    }
+  });
+
+  it("a análise do time é de quem lidera COM vínculo; Progressão e Comparativo só do tech lead (D5, 2026-09-05)", async () => {
+    const analiseSemNome = ["/gap-analysis", "/training-needs", "/capability-map"];
+    const mapaTecnico = ["/progression", "/compare"];
+    for (const href of analiseSemNome) {
+      expect(await navegarComoUsuario(fixtureAssignedManagerUser, href), href).toBe(href);
+      expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, href), href).toBe(href);
+    }
+    for (const href of mapaTecnico) {
+      expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, href), href).toBe(href);
+      expect(await navegarComoUsuario(fixtureAssignedManagerUser, href), href).toBe("/");
+    }
+    for (const user of [fixtureAdminUser, fixtureUnassignedTechLeadUser]) {
+      for (const href of ANALISE_DO_TIME) {
+        expect(await navegarComoUsuario(user, href), `${user.role} → ${href}`).toBe("/");
       }
     }
   });
@@ -400,11 +471,11 @@ async function alcancaAnaliseDoTime(user: SessionUser): Promise<boolean> {
 }
 
 describe("requireTeamAnalysisReach — a guarda da análise do time", () => {
-  it("o member não passa; quem lidera passa, com ou sem vínculo; o admin passa", async () => {
+  it("passa só quem lidera COM vínculo — member, lead sem vínculo e admin não (revisão de papéis, 2026-09-05)", async () => {
     expect(await alcancaAnaliseDoTime(fixtureMemberUser)).toBe(false);
-    expect(await alcancaAnaliseDoTime(fixtureUnassignedTechLeadUser)).toBe(true);
+    expect(await alcancaAnaliseDoTime(fixtureUnassignedTechLeadUser)).toBe(false);
     expect(await alcancaAnaliseDoTime(fixtureAssignedTechLeadUser)).toBe(true);
     expect(await alcancaAnaliseDoTime(fixtureAssignedManagerUser)).toBe(true);
-    expect(await alcancaAnaliseDoTime(fixtureAdminUser)).toBe(true);
+    expect(await alcancaAnaliseDoTime(fixtureAdminUser)).toBe(false);
   });
 });

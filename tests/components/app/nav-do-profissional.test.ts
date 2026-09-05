@@ -155,20 +155,17 @@ describe("menu do profissional — o que não é dele some", () => {
     expect(rotulosDeGrupo(fixtureAdminUser)).toContain("nav.group.admin");
   });
 
-  it("para o tech lead o grupo Administração é só Usuários — o lugar de cadastrar", () => {
+  it("para o tech lead o grupo Administração some — cadastrar é ato de gestão (D4, 2026-09-05)", () => {
     for (const lead of [fixtureUnassignedTechLeadUser, fixtureAssignedTechLeadUser]) {
-      const administracao = filterNavGroups(NAV_GROUPS, lead).find(
-        (grupo) => grupo.labelKey === "nav.group.admin",
-      );
-      expect(administracao?.items.map((item) => item.to)).toEqual(["/users"]);
+      expect(rotulosDeGrupo(lead)).not.toContain("nav.group.admin");
     }
   });
 
-  it("quem lidera e quem administra continuam com as cinco ferramentas de time", () => {
+  it("quem lidera COM vínculo continua com as ferramentas de time; admin e lead sem vínculo, não", () => {
     for (const destino of ANALISE_DO_TIME) {
-      expect(destinos(fixtureAdminUser), destino).toContain(destino);
       expect(destinos(fixtureAssignedTechLeadUser), destino).toContain(destino);
-      expect(destinos(fixtureUnassignedTechLeadUser), destino).toContain(destino);
+      expect(destinos(fixtureAdminUser), destino).not.toContain(destino);
+      expect(destinos(fixtureUnassignedTechLeadUser), destino).not.toContain(destino);
     }
   });
 });

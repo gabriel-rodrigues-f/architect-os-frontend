@@ -21,8 +21,14 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as DashboardRoute } from "@/routes/index";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import {
+  fixtureAdminUser,
+  fixtureAssignedManagerUser,
+  fixtureState,
+  fixtureTeamId,
+  scopedFixtureStateFor,
+} from "../helpers/fixtures";
+import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers/render-app";
 
 /**
  * ADR-0011, fase 1 — o estrangulamento do `/state` sai do papel: o Painel é
@@ -34,16 +40,23 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  *   2. NENHUMA requisição a `/api/v1/state` acontece.
  * Nasceu VERMELHO: antes do ContextScope o Painel em modo "contexts"
  * renderizava o estado vazio (metade 1 falhava) — o blob era a única fonte.
+ *
+ * Revisão de papéis (dono, 2026-09-05, D1): o Painel com NOME de pessoa é o
+ * da liderança vinculada (`LeadHome`), e é ele que vive dos contextos. O do
+ * admin virou o Painel de operação, alimentado por `/operations/overview` —
+ * também sem `/state`.
  */
 const fetchMock = vi.fn();
 
 const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 
+const requestedPaths = () =>
+  fetchMock.mock.calls.map((call) => (call[0] instanceof Request ? call[0].url : String(call[0])));
+
 describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
   });
 
   afterEach(() => {
@@ -51,17 +64,35 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renderiza o painel do admin pelos contextos, sem nenhuma chamada a /state", async () => {
+  it("renderiza o painel da liderança vinculada pelos contextos, sem nenhuma chamada a /state", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      state: scopedFixtureStateFor(fixtureAssignedManagerUser, fixtureState, [fixtureTeamId]),
+    });
     renderWithApp(<DashboardPage />);
 
-    expect(await screen.findByText("Painel de Capacidades")).toBeTruthy();
-    expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("Bruno Almeida")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Pendências do Lead")).toBeTruthy();
+    // "e1" na fixture: evidência Pending de "ana", título "ADR-014".
+    expect((await screen.findAllByText(/Ana Martins/)).length).toBeGreaterThan(0);
 
-    const requestedPaths = fetchMock.mock.calls.map((call) =>
-      call[0] instanceof Request ? call[0].url : String(call[0]),
+    expect(requestedPaths().some((href) => href.endsWith(apiPath("/state")))).toBe(false);
+    expect(requestedPaths().some((href) => href.endsWith(apiPath("/architects")))).toBe(true);
+  });
+
+  it("D1 (dono, 2026-09-05): o Painel de operação do admin lê /operations/overview, sem /state", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      state: fixtureState,
+      routes: [operationsOverviewRoute],
+    });
+    renderWithApp(<DashboardPage />);
+
+    expect(await screen.findByText("Painel de operação")).toBeTruthy();
+    expect(await screen.findByText("Pessoas ativas")).toBeTruthy();
+
+    expect(requestedPaths().some((href) => href.endsWith(apiPath("/state")))).toBe(false);
+    expect(requestedPaths().some((href) => href.endsWith(apiPath("/operations/overview")))).toBe(
+      true,
     );
-    expect(requestedPaths.some((href) => href.endsWith(apiPath("/state")))).toBe(false);
-    expect(requestedPaths.some((href) => href.endsWith(apiPath("/architects")))).toBe(true);
   });
 });

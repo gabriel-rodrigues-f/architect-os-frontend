@@ -193,7 +193,10 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
     );
   }
 
-  const canGenerate = user !== null && defaultUiAuthorizationPolicy.isLeadOf(user, architect);
+  // O extrato carrega a ficha funcional: a própria pessoa, o gerente designado,
+  // o admin em suporte (revisão de papéis, 2026-09-05). O tech lead não.
+  const canGenerate =
+    user !== null && defaultUiAuthorizationPolicy.canOpenStatementOf(user, architect);
 
   const exportPdf = async () => {
     const result = await runExport(() =>

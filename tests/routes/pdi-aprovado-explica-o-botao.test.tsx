@@ -39,7 +39,7 @@ import { Route as GapRoute } from "@/routes/gap-analysis";
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import type { AppState } from "@/lib/api";
 import type { Assessment, DevelopmentPlan } from "@/lib/domain";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -111,7 +111,10 @@ afterEach(() => {
 
 describe("Perfil — '+ PDI' com o plano aprovado", () => {
   it("continua visivel, desabilitado, e explica a regra do processo", async () => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: comPlanoDaAnaEm("Approved") });
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      state: comPlanoDaAnaEm("Approved"),
+    });
     renderWithApp(<ProfilePage />);
 
     const acao = await screen.findByRole("button", { name: "+ PDI" });
@@ -121,7 +124,7 @@ describe("Perfil — '+ PDI' com o plano aprovado", () => {
   });
 
   it("com o plano em rascunho volta a ser link, com pessoa e competencia", async () => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: comPlanoDaAnaEm("Draft") });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: comPlanoDaAnaEm("Draft") });
     renderWithApp(<ProfilePage />);
 
     const acao = await screen.findByRole("link", { name: "+ PDI" });
@@ -134,7 +137,7 @@ describe("Perfil — '+ PDI' com o plano aprovado", () => {
 
 describe("Prioridades — 'Tratar no PDI' com o plano aprovado", () => {
   it("nao promete uma tela vazia: fica desabilitado e diz por que", async () => {
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: comBrunoTambemAprovado });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: comBrunoTambemAprovado });
     renderWithApp(<GapPage />);
 
     await screen.findByText("IAM");

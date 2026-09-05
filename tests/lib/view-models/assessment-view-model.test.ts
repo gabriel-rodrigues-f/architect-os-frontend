@@ -9,6 +9,8 @@ import {
 } from "@/lib/view-models";
 import {
   fixtureAdminUser,
+  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
   fixtureMemberUser,
   fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
@@ -96,11 +98,11 @@ describe("AssessmentViewModel", () => {
       expect(result.canEditLeaderFinal).toBe(false);
     });
 
-    it("Tech Lead responsável em In Review: canEditLeaderFinal/canComplete", () => {
+    it("Tech Lead com vínculo em In Review: pontua (canEditLeaderFinal), mas quem CONCLUI é o gerente (D4, 2026-09-05)", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "In Review" as const };
       const result = vm.permissionsFor(
-        fixtureUnassignedTechLeadUser,
+        fixtureAssignedTechLeadUser,
         "ana",
         anaArchitect,
         assessment,
@@ -108,8 +110,17 @@ describe("AssessmentViewModel", () => {
       expect(result.isOwner).toBe(false);
       expect(result.isLead).toBe(true);
       expect(result.canEditLeaderFinal).toBe(true);
-      expect(result.canComplete).toBe(true);
+      expect(result.canComplete).toBe(false);
       expect(result.canEditSelf).toBe(false);
+
+      const doGerente = vm.permissionsFor(
+        fixtureAssignedManagerUser,
+        "ana",
+        anaArchitect,
+        assessment,
+      );
+      expect(doGerente.canEditLeaderFinal).toBe(true);
+      expect(doGerente.canComplete).toBe(true);
     });
 
     it("lead sobre arquiteto SEM TIME não ganha canEditLeaderFinal — UX-001 pós-Fase 2 (vínculo é o time; lead de outro time nem recebe a pessoa no recorte do servidor)", () => {
@@ -126,20 +137,25 @@ describe("AssessmentViewModel", () => {
       expect(result.canEditLeaderFinal).toBe(false);
     });
 
-    it("admin conta como lead (bypass do isLeadOf), mas nunca como dono de quem não é", () => {
+    it("admin não é lead nem dono: não pontua; conclui só como correção de cadastro (D1/D3)", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "In Review" as const };
       const result = vm.permissionsFor(fixtureAdminUser, "ana", anaArchitect, assessment);
       expect(result.isOwner).toBe(false);
-      expect(result.isLead).toBe(true);
-      expect(result.canEditLeaderFinal).toBe(true);
+      expect(result.isLead).toBe(false);
+      expect(result.canEditLeaderFinal).toBe(false);
+      expect(result.canComplete).toBe(true);
     });
 
-    it("os números de avaliação (líder, alvo, final) são da liderança: o profissional não os vê, mesmo sendo o dono", () => {
+    it("os números de avaliação são da liderança E da própria pessoa (D2, dono, 2026-09-05)", () => {
       const { vm } = makeVm();
       const completed = { ...baseAssessment, status: "Completed" as const };
       expect(
         vm.permissionsFor(fixtureMemberUser, "ana", anaArchitect, completed).seesAssessmentNumbers,
+      ).toBe(true);
+      expect(
+        vm.permissionsFor(fixtureMemberUser, "bruno", { ...anaArchitect, id: "bruno" }, completed)
+          .seesAssessmentNumbers,
       ).toBe(false);
       expect(
         vm.permissionsFor(fixtureUnassignedTechLeadUser, "ana", anaArchitect, completed)
@@ -154,15 +170,13 @@ describe("AssessmentViewModel", () => {
       ).toBe(true);
     });
 
-    it("Completed: canReopen só para o Tech Lead responsável", () => {
+    it("Completed: canReopen é do GERENTE designado — o tech lead não reabre (D4)", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "Completed" as const };
-      const result = vm.permissionsFor(
-        fixtureUnassignedTechLeadUser,
-        "ana",
-        anaArchitect,
-        assessment,
-      );
+      expect(
+        vm.permissionsFor(fixtureAssignedTechLeadUser, "ana", anaArchitect, assessment).canReopen,
+      ).toBe(false);
+      const result = vm.permissionsFor(fixtureAssignedManagerUser, "ana", anaArchitect, assessment);
       expect(result.isCompleted).toBe(true);
       expect(result.canReopen).toBe(true);
       expect(result.canEditSelf).toBe(false);

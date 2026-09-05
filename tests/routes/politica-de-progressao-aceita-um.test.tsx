@@ -9,6 +9,7 @@ vi.mock("@tanstack/react-router", () =>
 
 import { apiPath } from "@/lib/api-path";
 import { Route as SettingsRoute } from "@/routes/settings";
+import { fixtureAssignedManagerUser } from "../helpers/fixtures";
 import {
   NIVEL_JUNIOR,
   TIME_PLATAFORMA,
@@ -28,6 +29,9 @@ import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app
  * 3 de fábrica) sendo usado como limite inferior do editor. Ele é o mínimo
  * PADRÃO — o que vale para o time que não acertou régua nenhuma —, não o menor
  * valor que uma régua pode ter. O editor passa a usar o piso do MODELO.
+ *
+ * Revisão de papéis (dono, 2026-09-05, D1): quem edita a régua é o gerente
+ * COM vínculo no time — o admin só a lê. O ator aqui é o gerente de Plataforma.
  */
 
 const fetchMock = vi.fn();
@@ -60,6 +64,7 @@ beforeEach(() => {
   gravacoes.length = 0;
   vi.stubGlobal("fetch", fetchMock);
   mockAppFetch(fetchMock, {
+    user: fixtureAssignedManagerUser,
     state: estadoCom([regra("regra-plataforma-i", TIME_PLATAFORMA, 2)]),
     routes: [reguaRoute, niveisDeCarreiraRoute],
   });

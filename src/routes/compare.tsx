@@ -18,7 +18,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireTeamAnalysisReach } from "@/lib/route-guards";
+import { requireTechnicalMapReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/compare")({
       { property: "og:description", content: "Radar sobreposto e tabela lado a lado por pessoa." },
     ],
   }),
-  beforeLoad: requireTeamAnalysisReach,
+  beforeLoad: requireTechnicalMapReach,
   component: ComparePage,
 });
 
@@ -48,15 +48,16 @@ function ComparePage() {
   const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("compare");
-  const canAnalyzeTeam = defaultUiAuthorizationPolicy.canAnalyzeTeam(user);
+  // D5 (dono, 2026-09-05): pessoa × competência com nome é ferramenta do TECH LEAD.
+  const canSeeTechnicalMap = defaultUiAuthorizationPolicy.canSeeTechnicalMap(user);
 
-  if (!canAnalyzeTeam) {
+  if (!canSeeTechnicalMap) {
     return (
       <OutOfReachScreen
         title={t("compare.title")}
         help={help}
-        reason={t("cap.teamAnalysisOnly")}
-        hint={t("cap.teamAnalysisOnlyHint")}
+        reason={t("cap.technicalMapOnly")}
+        hint={t("cap.technicalMapOnlyHint")}
       />
     );
   }

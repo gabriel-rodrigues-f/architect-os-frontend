@@ -33,7 +33,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { ContextScope } from "@/lib/context-scope";
 import { StoreProvider } from "@/lib/store";
 import { ThemeProvider } from "@/lib/theme";
-import { fixtureAdminUser } from "../../helpers/fixtures";
+import { fixtureAssignedManagerUser } from "../../helpers/fixtures";
 import { configurationRoute, jsonResponse, mockAppFetch } from "../../helpers/render-app";
 
 /**
@@ -111,7 +111,7 @@ describe("a casca não pisca — carregar o conteúdo não apaga a navegação",
       const href = input instanceof Request ? input.url : String(input);
       if (href.endsWith(apiPath("/architects"))) return estadoQueNuncaChega();
       if (href.endsWith(apiPath("/auth/me")))
-        return Promise.resolve(jsonResponse({ data: fixtureAdminUser }));
+        return Promise.resolve(jsonResponse({ data: fixtureAssignedManagerUser }));
       return Promise.resolve(configurationRoute(href, init) ?? new Response("{}", { status: 200 }));
     });
 
@@ -140,7 +140,7 @@ describe("a casca não pisca — carregar o conteúdo não apaga a navegação",
         if (href.endsWith(apiPath("/architects")))
           return Promise.resolve(new Response(null, { status: 500 }));
         if (href.endsWith(apiPath("/auth/me")))
-          return Promise.resolve(jsonResponse({ data: fixtureAdminUser }));
+          return Promise.resolve(jsonResponse({ data: fixtureAssignedManagerUser }));
         return Promise.resolve(
           configurationRoute(href, init) ?? new Response("{}", { status: 200 }),
         );

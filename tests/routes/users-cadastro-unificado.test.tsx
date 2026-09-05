@@ -12,7 +12,6 @@ import {
   fixtureAssignedTechLeadUser,
   fixtureCareerLevels,
   fixtureState,
-  fixtureUnassignedTechLeadUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
 import {
@@ -115,9 +114,13 @@ describe("Usuários é o único lugar de cadastro — os cargos que cada persona
     expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual(["Tech Lead", "Membro"]);
   });
 
-  it("o tech lead cadastra só Membro", async () => {
-    const dialogo = await abrirCadastro(fixtureAssignedTechLeadUser);
-    expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual(["Membro"]);
+  /** D4 (dono, 2026-09-05): o tech lead indica, o gerente cadastra — a ação nem aparece. */
+  it("o tech lead não cadastra", async () => {
+    renderAs(fixtureAssignedTechLeadUser);
+    expect(
+      await screen.findByText("Cadastrar pessoas é do administrador e do gerente."),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cadastrar pessoa" })).toBeNull();
   });
 });
 
@@ -222,12 +225,17 @@ describe("o time entra no cadastro", () => {
   });
 
   /**
-   * O tech lead sem vínculo de time nenhum alcança a tela (o menu é da
-   * liderança) e não tem onde cadastrar. Um seletor vazio com o botão apagado
-   * é um beco sem explicação; a tela DIZ o que falta e a quem pedir.
+   * Quem cadastra mas não tem time ativo onde pôr a pessoa (o administrador
+   * com todos os times desativados — o gerente sem vínculo nem alcança a
+   * tela, revisão de papéis de 2026-09-05) recebe a explicação: um seletor
+   * vazio com o botão apagado é um beco sem explicação.
    */
-  it("quem não lidera time ativo nenhum recebe a explicação, não um seletor vazio", async () => {
-    const dialogo = await abrirCadastro(fixtureUnassignedTechLeadUser);
+  it("quem não tem time ativo nenhum recebe a explicação, não um seletor vazio", async () => {
+    const soTimesDesativados: FetchRoute = (href, init) =>
+      href.endsWith(apiPath("/teams")) && (init?.method ?? "GET") === "GET"
+        ? jsonResponse(TIMES.map((time) => ({ ...time, active: false })))
+        : undefined;
+    const dialogo = await abrirCadastro(fixtureAdminUser, [soTimesDesativados]);
     expect(rotulosDe(dialogo.getByLabelText("Time"))).toEqual([]);
     expect(
       dialogo.getByText(

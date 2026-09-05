@@ -22,7 +22,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { apiPath } from "@/lib/api-path";
 import { Route as GapRoute } from "@/routes/gap-analysis";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -99,7 +99,7 @@ const chamadasDeExplicacao = (): number =>
   fetchMock.mock.calls.filter(([input]) => String(input).includes(EXPLANATION_PATH)).length;
 
 const renderGap = (routes: FetchRoute[]) => {
-  mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState, routes });
+  mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: fixtureState, routes });
   renderWithApp(<GapPage />);
 };
 

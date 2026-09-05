@@ -34,6 +34,14 @@ class NavigationBarrier {
   requireTeamAnalysisReach: RouteGuard = ({ context }) =>
     this.requireReach(context, (user) => this.policy.canAnalyzeTeam(user));
 
+  /** Progressão e Comparativo: o mapa técnico com nome é do tech lead (D5). */
+  requireTechnicalMapReach: RouteGuard = ({ context }) =>
+    this.requireReach(context, (user) => this.policy.canSeeTechnicalMap(user));
+
+  /** Usuários e Times: o administrador e o gerente com vínculo. */
+  requirePeopleAdministrationReach: RouteGuard = ({ context }) =>
+    this.requireReach(context, (user) => this.policy.canAdministerPeople(user));
+
   requireCareerTabsReach: CareerFileRouteGuard = ({ context, params }) =>
     this.requireReach(context, (user) => this.policy.canOpenCareerTabsOf(user, params.architectId));
 
@@ -65,3 +73,5 @@ export const requireCalibrationReach = navigationBarrier.requireCalibrationReach
 export const requireLeadershipReach = navigationBarrier.requireLeadershipReach;
 export const requireTeamAnalysisReach = navigationBarrier.requireTeamAnalysisReach;
 export const requireCareerTabsReach = navigationBarrier.requireCareerTabsReach;
+export const requireTechnicalMapReach = navigationBarrier.requireTechnicalMapReach;
+export const requirePeopleAdministrationReach = navigationBarrier.requirePeopleAdministrationReach;

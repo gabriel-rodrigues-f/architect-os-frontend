@@ -16,7 +16,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import { type AppState, type SessionUser } from "@/lib/api";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -80,7 +80,7 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
       const href = String(url);
       if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
-          new Response(JSON.stringify(fixtureAdminUser satisfies SessionUser), {
+          new Response(JSON.stringify(fixtureAssignedManagerUser satisfies SessionUser), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),

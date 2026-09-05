@@ -11,7 +11,7 @@ import { EffectiveCurationPolicy } from "@/lib/curation-policy";
 import { I18nProvider } from "@/lib/i18n";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { StoreProvider } from "@/lib/store";
-import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
+import { fixtureCareerLevels, fixtureState, fixtureAssignedManagerUser } from "./fixtures";
 
 /**
  * OO3-11/D-7 — o setup replicado nos testes de tela (QueryClient com
@@ -148,7 +148,9 @@ export function configurationRoute(href: string, init?: RequestInit): Response |
 export function mockAppFetch(
   fetchMock: Mock,
   {
-    user = fixtureAdminUser,
+    // Revisão de papéis (2026-09-05): o ator padrão das telas de PESSOAS é o
+    // gerente com vínculo no time das fixtures — o admin não alcança pessoas.
+    user = fixtureAssignedManagerUser,
     state = fixtureState,
     routes = [],
   }: { user?: SessionUser; state?: AppState; routes?: FetchRoute[] } = {},
@@ -203,6 +205,25 @@ export const emptyAuthUsersRoute: FetchRoute = (href) =>
  */
 export const careerLevelsRoute: FetchRoute = (href) =>
   href.endsWith(apiPath("/career-levels")) ? jsonResponse(fixtureCareerLevels) : undefined;
+
+/**
+ * D1 (dono, 2026-09-05): o Painel do admin é o `OperationsHome` — só contagens,
+ * lidas de `GET /operations/overview`. `cycle` nulo espelha um `/state` sem
+ * ciclo ativo. Era replicada em cinco arquivos de teste do Painel.
+ */
+export const operationsOverviewFor = (cycle: { id: string; name: string } | null) => ({
+  people: { active: 2, deactivated: 0 },
+  teams: { active: 1, deactivated: 0 },
+  accounts: { active: 4, disabled: 0, byRole: { admin: 1, manager: 1, tech_lead: 1, member: 1 } },
+  cycle,
+  assessments: cycle ? { Completed: 2 } : {},
+  plans: { Active: 1 },
+});
+
+export const operationsOverviewRoute: FetchRoute = (href) =>
+  href.endsWith(apiPath("/operations/overview"))
+    ? jsonResponse(operationsOverviewFor({ id: "2026-h2", name: "2026 H2" }))
+    : undefined;
 
 /**
  * Rota pronta para a consulta de elegibilidade vazia (`/eligibility`, telas de

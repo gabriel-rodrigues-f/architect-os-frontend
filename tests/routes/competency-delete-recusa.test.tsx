@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
@@ -53,7 +54,10 @@ describe("Matriz de Competências — recusa ao excluir uma competência", () =>
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { routes: [recusaDoServico, careerLevelsRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [recusaDoServico, careerLevelsRoute],
+    });
   });
 
   afterEach(() => {

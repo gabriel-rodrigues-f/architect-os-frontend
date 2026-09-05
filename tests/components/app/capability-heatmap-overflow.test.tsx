@@ -11,7 +11,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import type { CapabilityAverage } from "@/lib/selectors";
-import { fixtureAdminUser, fixtureState } from "../../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 
@@ -60,7 +60,7 @@ describe("heatmap de capacidades — colunas excedentes ganham affordance de rol
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: fixtureAdminUser, state: fixtureState });
+    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: fixtureState });
   });
 
   afterEach(() => {

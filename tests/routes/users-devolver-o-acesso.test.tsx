@@ -10,7 +10,7 @@ import { apiPath } from "@/lib/api-path";
 import { Route as UsersRoute } from "@/routes/users";
 import {
   fixtureAdminUser,
-  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
   fixtureMemberUser,
   fixtureState,
   scopedFixtureStateFor,
@@ -213,14 +213,15 @@ describe("o botão só aparece para quem pode — o 403 não é a forma de desco
   });
 
   /**
-   * O gerente alcança a tela (ele admite gente), mas o DIRETÓRIO de contas é
-   * administrativo — e devolver acesso é da mesma família.
+   * Revisão de papéis (dono, 2026-09-05): o tech lead recebe a negativa — o
+   * diretório de contas é do administrador e do gerente, e devolver acesso é
+   * da mesma família.
    */
   it("quem não administra não vê o ato — nem as contas", async () => {
-    renderAs(fixtureAssignedManagerUser);
+    renderAs(fixtureAssignedTechLeadUser);
 
     expect(
-      await screen.findByText("Diretório de contas é restrito a administradores."),
+      await screen.findByText("Cadastrar pessoas é do administrador e do gerente."),
     ).toBeTruthy();
     expect(screen.queryByText("Ana Martins")).toBeNull();
     expect(screen.queryByRole("button", { name: /Devolver o acesso/ })).toBeNull();

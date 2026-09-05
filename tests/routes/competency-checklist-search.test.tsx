@@ -24,7 +24,7 @@ import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as LearningRoute } from "@/routes/learning-paths";
 import { type AppState } from "@/lib/api";
 import type { Competency } from "@/lib/domain";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAssignedManagerUser } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -53,10 +53,15 @@ const manyCompetenciesState: AppState = { ...fixtureState, competencies: MANY_CO
 
 /** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
+/**
+ * Revisão de papéis (dono, 2026-09-05, D1): Mentoria e Trilhas são telas de
+ * pessoa — o admin não as alcança. Quem abre o checklist é o gerente COM
+ * vínculo no time.
+ */
 function mockFetch(state: AppState) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
-  mockAppFetch(fetchMock, { state });
+  mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state });
 }
 
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;

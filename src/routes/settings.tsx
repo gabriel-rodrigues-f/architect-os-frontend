@@ -135,7 +135,7 @@ function SettingsScreen() {
 
       <SectionGroup title={t("ref.configSectionTitle")}>
         <div className="grid gap-6 xl:grid-cols-2">
-          <CareerPolicySection isAdmin={isAdmin} />
+          <CareerPolicySection />
           {isAdmin && <ScoringBandsSection />}
           {isAdmin && <TextTemplatesSection />}
           {isAdmin && <CurationPolicySection />}
@@ -194,7 +194,7 @@ function SettingsScreen() {
   );
 }
 
-function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
+function CareerPolicySection() {
   const store = useStore();
   const careerLevels = useCareerLevelsByRank();
   const readyCapabilities = store.capabilities.filter((c) => c.curation.status === "READY").length;
@@ -245,7 +245,7 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
               <th scope="col" className="py-2 text-center">
                 {t("policy.col.minimumQualified")}
               </th>
-              {isAdmin && <th scope="col" className="py-2" />}
+              {teams.length > 0 && <th scope="col" className="py-2" />}
             </tr>
           </thead>
           <tbody>
@@ -260,7 +260,6 @@ function CareerPolicySection({ isAdmin }: { isAdmin: boolean }) {
                 )}
                 floor={floor}
                 readyCapabilities={readyCapabilities}
-                isAdmin={isAdmin}
               />
             ))}
           </tbody>
@@ -275,17 +274,22 @@ function CareerPolicyRow({
   minimum,
   floor,
   readyCapabilities,
-  isAdmin,
 }: {
   level: CareerLevel;
   minimum: ProgressionMinimumPresenter;
   floor: number;
   readyCapabilities: number;
-  isAdmin: boolean;
 }) {
   const editableTeamId = minimum.editableTeamId;
   const store = useStore();
   const { t } = useI18n();
+  // Revisão de papéis (2026-09-05): a régua é de quem lidera o time com
+  // vínculo; o administrador a lê.
+  const user = useCurrentUser();
+  const configuresSomeTeam = defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user);
+  const canEdit =
+    typeof editableTeamId === "string" &&
+    defaultUiAuthorizationPolicy.canConfigureRulesOf(user, editableTeamId);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(minimum.agreedMinimum ?? floor));
 
@@ -343,7 +347,7 @@ function CareerPolicyRow({
           </p>
         )}
       </td>
-      {isAdmin && (
+      {configuresSomeTeam && (
         <td className="py-2 text-right">
           {editing ? (
             <div className="flex justify-end gap-1.5">
@@ -365,12 +369,12 @@ function CareerPolicyRow({
             </div>
           ) : (
             <>
-              {editableTeamId !== undefined && (
+              {canEdit && (
                 <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
                   {t("common.edit")}
                 </Button>
               )}
-              {editableTeamId === undefined && (
+              {!canEdit && (
                 <p className="text-xs text-muted-foreground">{t("policy.row.perTeamRule")}</p>
               )}
             </>

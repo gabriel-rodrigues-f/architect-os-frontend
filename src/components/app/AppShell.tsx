@@ -67,6 +67,12 @@ interface NavItem {
   teamAnalysisOnly?: boolean;
 
   leadershipOnly?: boolean;
+  /** Usuários e Times: administrador e gerente com vínculo (revisão de papéis, 2026-09-05). */
+  peopleAdministrationOnly?: boolean;
+  /** Progressão e Comparativo — o mapa técnico com nome: só o tech lead (D5). */
+  technicalMapOnly?: boolean;
+  /** Avaliações, Planos e Mentoria: quem trabalha com pessoas — o admin sem vínculo não. */
+  personWorkOnly?: boolean;
 
   ownCareerOnly?: boolean;
 
@@ -133,7 +139,12 @@ export const NAV_GROUPS: NavGroup[] = [
         activePrefixes: ["/architects"],
         leadershipOnly: true,
       },
-      { to: "/assessments", labelKey: "nav.assessments", icon: ClipboardCheck },
+      {
+        to: "/assessments",
+        labelKey: "nav.assessments",
+        icon: ClipboardCheck,
+        personWorkOnly: true,
+      },
     ],
   },
   {
@@ -150,7 +161,7 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/progression",
         labelKey: "cap.tabs.progression",
         icon: TrendingUp,
-        teamAnalysisOnly: true,
+        technicalMapOnly: true,
       },
       {
         to: "/training-needs",
@@ -162,16 +173,21 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/compare",
         labelKey: "cap.tabs.comparison",
         icon: GitCompare,
-        teamAnalysisOnly: true,
+        technicalMapOnly: true,
       },
     ],
   },
   {
     labelKey: "nav.group.development",
     items: [
-      { to: "/development-plans", labelKey: "nav.developmentPlans", icon: Target },
+      {
+        to: "/development-plans",
+        labelKey: "nav.developmentPlans",
+        icon: Target,
+        personWorkOnly: true,
+      },
       { to: "/learning-paths", labelKey: "nav.learningPaths", icon: BookOpen },
-      { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
+      { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap, personWorkOnly: true },
     ],
   },
   {
@@ -203,7 +219,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: BarChart3,
         calibrationReachOnly: true,
       },
-      { to: "/teams", labelKey: "nav.teams", icon: Building2, teamCompositionReachOnly: true },
+      { to: "/teams", labelKey: "nav.teams", icon: Building2, peopleAdministrationOnly: true },
       {
         to: ObservabilityAddress.grafana,
         labelKey: "nav.grafana",
@@ -212,7 +228,7 @@ export const NAV_GROUPS: NavGroup[] = [
         external: true,
         hintKey: "nav.grafanaHint",
       },
-      { to: "/users", labelKey: "nav.users", icon: UserCog, leadershipOnly: true },
+      { to: "/users", labelKey: "nav.users", icon: UserCog, peopleAdministrationOnly: true },
     ],
   },
 ];
@@ -245,6 +261,11 @@ class NavigationOfUser {
       return false;
     }
     if (item.teamAnalysisOnly && !(user && this.policy.canAnalyzeTeam(user))) return false;
+    if (item.technicalMapOnly && !(user && this.policy.canSeeTechnicalMap(user))) return false;
+    if (item.peopleAdministrationOnly && !(user && this.policy.canAdministerPeople(user))) {
+      return false;
+    }
+    if (item.personWorkOnly && !(user && this.policy.worksWithPeople(user))) return false;
     if (item.leadershipOnly && !(user && this.policy.isLeadership(user))) return false;
     return !item.ownCareerOnly || this.reachesOwnCareer();
   }

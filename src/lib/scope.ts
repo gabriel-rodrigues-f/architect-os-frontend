@@ -6,6 +6,23 @@ import type { Architect } from "./domain";
 type ScopedArchitect = Pick<Architect, "id" | "teamId">;
 
 /**
+ * Revisão de papéis (dono, 2026-09-05, D1–D5) — a régua da tela espelha a do
+ * servidor (`AuthorizationService`), e as duas dizem a mesma coisa:
+ *
+ *  - o ADMINISTRADOR administra o sistema, não as pessoas: catálogo, ciclos,
+ *    faixas, times, contas, importação, operação. Sobre uma pessoa ele só LÊ,
+ *    em MODO DE SUPORTE, declarando o motivo (`SupportAccess`), e nunca age
+ *    nem usa IA;
+ *  - o GERENTE decide carreira (nível, conclusão da avaliação, desativação),
+ *    compõe o time, cadastra tech lead e membro, calibra, administra as
+ *    contas dos times dele;
+ *  - o TECH LEAD pontua, revisa evidência, rege a régua com o gerente,
+ *    mentora, vê o mapa técnico do time — e não cadastra nem conclui;
+ *  - a PESSOA vê tudo o que é dela: radar, distâncias, aderência, evolução,
+ *    extrato — e age sobre o que é dela.
+ */
+
+/**
  * Fase 2 (backend ADR-0035) — `lead_user_id` morreu: o vínculo de escopo é o
  * TIME (`architects.team_id` + `team_memberships`). Desde a onda 17.1 a
  * sessão (`/auth/me`) carrega `memberships`, e são eles que respondem ONDE o
@@ -32,57 +49,59 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
  * sobre alguém. Papel global, vínculo nenhum.
  */
 export class UiAuthorizationPolicy {
-  canActFor(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (user.role === "admin") return true;
+  /** LEITURA sobre uma pessoa: ela mesma, quem a lidera por vínculo, ou o admin (em modo de suporte). */
+  canReadAbout(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (!architect) return false;
-    if (user.architectId === architect.id) return true;
+    if (this.isOwn(user, architect)) return true;
+    if (this.isAdmin(user)) return true;
     return this.leadsTeamOf(user, architect);
   }
 
-  /**
-   * NA PRÓPRIA FICHA, NINGUÉM É LÍDER (dono, 2026-09-05). Gerente e tech lead
-   * abriam a própria ficha e viam roteiro de 1:1 consigo mesmos, "sugerir
-   * PDI", "revisar" as próprias evidências e a explicação de prontidão. Quem
-   * lidera a pessoa é outra pessoa — e isso vale para o administrador também.
-   */
+  /** AÇÃO sobre uma pessoa: ela mesma ou quem a lidera por vínculo. Admin não. */
+  canActFor(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    if (!architect) return false;
+    if (this.isOwn(user, architect)) return true;
+    return this.leadsTeamOf(user, architect);
+  }
+
+  /** Liderança por VÍNCULO no time da pessoa — nunca sobre si, nunca o admin. */
   isLeadOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (this.isOwn(user, architect)) return false;
-    if (user.role === "admin") return true;
     return this.leadsTeamOf(user, architect);
   }
 
   /**
    * As AÇÕES da ficha de carreira — registrar evidência, levar distância ao
    * PDI, reenviar evidência. Na própria ficha não há ação nenhuma: a ficha é
-   * leitura; quem registra evidência faz isso em Avaliações (decisão do dono,
-   * 2026-09-05).
+   * leitura; quem registra evidência faz isso em Avaliações (dono, 2026-09-05).
    */
   canActOnCareerFileOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (this.isOwn(user, architect)) return false;
     return this.canActFor(user, architect);
   }
 
-  /**
-   * Quem aparece no seletor de Avaliações (dono, 2026-09-05: "gerente pode
-   * ver tech lead e profissionais; tech lead vê profissionais; nunca a si
-   * mesmos nessa tela"). A liderança avalia OUTRA pessoa; o profissional
-   * continua vendo a si mesmo, porque a autoavaliação é dele.
-   */
+  /** Quem aparece no seletor de Avaliações: a própria pessoa (a autoavaliação é dela) e quem ela lidera. */
   assessableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
-    if (!this.isLeadership(user)) return [...architects];
-    return this.othersThan(user, architects);
+    return this.ownFirst(user, architects, (architect) => this.leadsTeamOf(user, architect));
   }
 
-  /**
-   * Quem pode ser mentorado: só quem está abaixo na hierarquia — e ninguém
-   * mentora a si mesmo, em papel nenhum (dono, 2026-09-05).
-   */
+  /** Quem pode ser mentorado: quem está abaixo na hierarquia — ninguém mentora a si mesmo. */
   mentorableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
-    return this.othersThan(user, architects);
+    return architects.filter(
+      (architect) => !this.isOwn(user, architect) && this.leadsTeamOf(user, architect),
+    );
   }
 
-  private othersThan<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
-    return architects.filter((architect) => !this.isOwn(user, architect));
+  private ownFirst<A extends ScopedArchitect>(
+    user: SessionUser,
+    architects: readonly A[],
+    reaches: (architect: A) => boolean,
+  ): A[] {
+    const own = architects.filter((architect) => this.isOwn(user, architect));
+    const led = architects.filter(
+      (architect) => !this.isOwn(user, architect) && reaches(architect),
+    );
+    return [...own, ...led];
   }
 
   private isOwn(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
@@ -93,71 +112,89 @@ export class UiAuthorizationPolicy {
     return this.hasStrictBondWith(user, architect, TeamLeadershipRoles.TECH_LEAD);
   }
 
+  isAssignedManagerOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    return this.hasStrictBondWith(user, architect, TeamLeadershipRoles.MANAGER);
+  }
+
+  /** DECISÃO de carreira — nível, conclusão da avaliação, desativação: o gerente designado; o admin como correção. */
+  decidesCareerOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    if (this.isAdmin(user)) return true;
+    return this.isAssignedManagerOf(user, architect);
+  }
+
+  /** A FICHA FUNCIONAL e o extrato completo: a própria pessoa, o gerente designado, o admin em suporte. */
+  canReadPersonnelFileOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    if (this.isOwn(user, architect)) return true;
+    if (this.isAdmin(user)) return true;
+    return this.isAssignedManagerOf(user, architect);
+  }
+
   isAdmin(user: SessionUser): boolean {
     return user.role === "admin";
   }
 
+  /** Análise de time (cobertura, prioridades, necessidades): liderança COM vínculo. O admin lê o Painel de operação. */
   canAnalyzeTeam(user: SessionUser): boolean {
-    return this.isLeadership(user);
+    return this.isLeadership(user) && this.scopeGrantingTeamsOf(user).size > 0;
   }
 
-  /**
-   * DEVOLVER O ACESSO de alguém — `POST /auth/users/:id/access-recovery`.
-   *
-   * O serviço pode recusar com `ACCESS_RESTORE_FORBIDDEN`, e um 403 não pode
-   * ser a primeira vez que a pessoa descobre que não podia: o botão só
-   * aparece para quem alcança. As duas condições, e por que cada uma:
-   *
-   *   **É ato de quem administra.** O diretório de contas já é administrativo
-   *   (o backend guarda `GET /auth/users` com `requireAdmin`), e devolver
-   *   acesso é da mesma família — mexer na porta de outra pessoa.
-   *
-   *   **Liderança, e não só administrador.** O backend usa aqui a MESMA régua
-   *   da admissão (ADR-0094): quem poderia cadastrar a pessoa naquele time
-   *   pode devolver o acesso dela. A tela não conhece os vínculos de time de
-   *   cada linha, então ela mostra o botão para a liderança e deixa o recorte
-   *   fino com quem é a autoridade — o backend, que responde
-   *   `ACCESS_RESTORE_FORBIDDEN` com a frase que diz o alcance de quem tentou.
-   *   Esconder de gerente e tech lead seria mais "seguro" e simplesmente errado:
-   *   tiraria da liderança exatamente a operação que o dono pediu.
-   *
-   *   **Nunca na própria conta.** Quem está logado não precisa de convite
-   *   para entrar: já entrou. A saída de quem esqueceu a senha é o pedido da
-   *   tela de login, e a de quem quer trocá-la é a troca de senha.
-   *
-   * Conta desativada fica de fora por não ter acesso a devolver: o caminho
-   * dela é ser reativada primeiro, e prometer um link que não abriria nada
-   * seria mentir com um botão.
-   */
+  /** O mapa TÉCNICO com nome — pessoa × competência (Progressão, Comparativo): só o tech lead vinculado (D5). */
+  canSeeTechnicalMap(user: SessionUser): boolean {
+    return (
+      user.role === TeamLeadershipRoles.TECH_LEAD &&
+      this.teamsBoundAs(user, [TeamLeadershipRoles.TECH_LEAD]).size > 0
+    );
+  }
+
+  /** Contas (Usuários) e composição de times: o administrador e o gerente com vínculo. */
+  canAdministerPeople(user: SessionUser): boolean {
+    return this.isAdmin(user) || this.canComposeAnyTeam(user);
+  }
+
   canRestoreAccessOf(user: SessionUser, account: { id: string; status: string }): boolean {
-    return this.isLeadership(user) && account.id !== user.id && account.status === "active";
+    return this.canAdministerPeople(user) && account.id !== user.id && account.status === "active";
   }
 
   isLeadership(user: SessionUser): boolean {
     return user.role !== "member";
   }
 
-  /**
-   * As ABAS da ficha — Evolução, Extrato e Roteiro — são leituras da liderança
-   * sobre a carreira de alguém (aderência à régua, relatórios, ADR-0070); o
-   * servidor as reserva à liderança, e a tela repete a régua. A Visão geral não
-   * tem guarda: quem tem ficha abre a própria (dono, 2026-09-05: "Minha carreira"
-   * é a tela de leitura do progresso), e a de outra pessoa é negada pelo
-   * recorte do servidor, como sempre foi.
-   */
-  canOpenCareerTabsOf(user: SessionUser, _architectId: string): boolean {
-    return this.isLeadership(user);
+  /** Quem lidera alguém — com vínculo — ou tem ficha própria tem o que fazer em Avaliações e Mentoria. */
+  worksWithPeople(user: SessionUser): boolean {
+    if (this.isAdmin(user)) return this.scopeGrantingTeamsOf(user).size > 0;
+    return true;
   }
 
+  /**
+   * As ABAS da ficha — Evolução, Extrato e Roteiro — são da própria pessoa
+   * (D2), de quem a lidera por vínculo, e do admin em modo de suporte. Com só
+   * o id na mão (guarda de rota) a régua é a do papel; a tela confere o vínculo.
+   */
+  canOpenCareerTabsOf(user: SessionUser, architect: ScopedArchitect | string | undefined): boolean {
+    if (typeof architect === "string") {
+      return user.architectId === architect || this.isLeadership(user);
+    }
+    return this.canReadAbout(user, architect);
+  }
+
+  /** O Extrato carrega a ficha funcional: a própria pessoa, o gerente designado, o admin em suporte — não o tech lead. */
+  canOpenStatementOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    return this.canReadPersonnelFileOf(user, architect);
+  }
+
+  /** Calibração é rito de gestão: o gerente com vínculo (D1: o admin não calibra). */
   canCalibrate(user: SessionUser): boolean {
-    return this.isAdmin(user) || user.role === TeamLeadershipRoles.MANAGER;
+    return (
+      user.role === TeamLeadershipRoles.MANAGER &&
+      this.teamsBoundAs(user, [TeamLeadershipRoles.MANAGER]).size > 0
+    );
   }
 
   canConfigureRulesOf(user: SessionUser, teamId: string): boolean {
-    const reach = this.configurableTeamIds(user);
-    return reach === "all" || reach.has(teamId);
+    return this.scopeGrantingTeamsOf(user).has(teamId);
   }
 
+  /** A régua é regida por quem lidera o time; o admin a LÊ. */
   canConfigureAnyTeamRules(user: SessionUser): boolean {
     const reach = this.configurableTeamIds(user);
     return reach === "all" || reach.size > 0;
@@ -184,12 +221,12 @@ export class UiAuthorizationPolicy {
     return this.teamsBoundAs(user, [TeamLeadershipRoles.MANAGER]);
   }
 
+  /** Liderança do time da pessoa, por VÍNCULO — sem o atalho antigo de "qualquer outra pessoa" (inconsistência G). */
   leadsTeamOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (!architect || !TeamLeadershipRoles.includes(user.role) || architect.teamId == null) {
       return false;
     }
-    if (this.scopeGrantingTeamsOf(user).has(architect.teamId)) return true;
-    return architect.id !== user.architectId;
+    return this.scopeGrantingTeamsOf(user).has(architect.teamId);
   }
 
   private scopeGrantingTeamsOf(user: SessionUser): ReadonlySet<string> {

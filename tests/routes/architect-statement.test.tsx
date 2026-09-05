@@ -33,17 +33,23 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as StatementRoute } from "@/routes/architects.$architectId.statement";
 import { apiPath } from "@/lib/api-path";
 import type { AppState } from "@/lib/api";
-import { fixtureAdminUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
+  fixtureMemberUser,
+  fixtureState,
+} from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * Tela 4 (spec §4, CONTRATO PRD-04) — extrato de carreira: cronológico,
  * TUDO entra (5 fontes), gerado pelo LÍDER. As fontes HTTP chegam por
  * queries paralelas e uma fonte que falha vira aviso PARCIAL com retry —
- * nunca derruba o extrato inteiro (o que já chegou continua na tela). As
- * ações de gerar (imprimir / PDF de evolução) aparecem só para quem é
- * líder do arquiteto ou admin; a visibilidade da PÁGINA segue o recorte
- * do servidor, como no perfil.
+ * nunca derruba o extrato inteiro (o que já chegou continua na tela). O
+ * extrato carrega a ficha funcional: as ações de gerar (imprimir / PDF de
+ * evolução) são da própria pessoa (D2), do gerente designado e do admin em
+ * suporte — não do tech lead; a visibilidade da PÁGINA segue o recorte do
+ * servidor, como no perfil.
  */
 const fetchMock = vi.fn();
 
@@ -178,7 +184,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
 
   it("mostra as 5 fontes num feed só, agrupado por ano", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
@@ -195,7 +201,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
 
   it("fonte que falha vira aviso PARCIAL com retry — o resto do extrato continua na tela", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: stateWithMentoring,
       routes: statementRoutes({ failTransitions: true }),
     });
@@ -207,13 +213,15 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
   });
 
   /**
-   * Onda 31 — a própria pessoa deixou de ABRIR o extrato (o dono tirou do
-   * profissional os próprios números); a negativa da tela é o que ela vê, e
-   * o botão de imprimir continua fora do alcance dela.
+   * D2 (dono, 2026-09-05) — a própria pessoa voltou a ABRIR o extrato dela
+   * (na onda 31 o dono tinha tirado do profissional os próprios números; a
+   * revisão de papéis devolveu). O extrato carrega a ficha funcional, então
+   * gerar (imprimir) é dela e do gerente designado; o tech lead vinculado lê
+   * o extrato, mas não gera.
    */
-  it("as ações de gerar (imprimir) aparecem para admin/líder, nunca para a própria pessoa", async () => {
+  it("D2 (dono, 2026-09-05) — imprimir aparece para o gerente designado e para a própria pessoa; o tech lead lê sem gerar", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
@@ -227,11 +235,24 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
+    const { unmount: unmountMember } = renderWithApp(<StatementPage />);
+    expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Imprimir extrato" })).toBeTruthy();
+    expect(
+      screen.queryByText(
+        "Evolução, Extrato e Roteiro são leituras da liderança sobre a carreira de uma pessoa.",
+      ),
+    ).toBeNull();
+    unmountMember();
+    cleanup();
+
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedTechLeadUser,
+      state: stateWithMentoring,
+      routes: statementRoutes(),
+    });
     renderWithApp(<StatementPage />);
-    await screen.findByText(
-      "Evolução, Extrato e Roteiro são leituras da liderança sobre a carreira de uma pessoa.",
-    );
-    expect(screen.queryByText("Evidência: ADR-014")).toBeNull();
+    expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
   });
 
@@ -243,7 +264,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
    */
   it("a mudança de time aparece no extrato com o motivo, e o filtro lista o tipo", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
@@ -271,7 +292,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
 
   it("'Ver origem' navega para a fonte da entrada", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: stateWithMentoring,
       routes: statementRoutes(),
     });

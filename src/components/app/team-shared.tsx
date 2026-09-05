@@ -49,13 +49,16 @@ function useTeamViewModel(): TeamViewModel {
  */
 export function useTeamRosterActions() {
   const viewModel = useTeamViewModel();
-  const isAdmin = viewModel.isAdmin(useCurrentUser());
+  const user = useCurrentUser();
+  // D3 (dono, 2026-09-05): mudar time/nível, desativar e reativar é do gerente
+  // designado — e do admin como correção. Quem decide de alguém carrega os times.
+  const decidesForSomeone = viewModel.decidesCareerOfSomeone(user);
 
   const teamsQuery = useQuery({
     queryKey: ["teams"],
     queryFn: teamsApi.teams,
     staleTime: 60_000,
-    enabled: isAdmin,
+    enabled: decidesForSomeone,
   });
   const teams = viewModel.allocatableTeams(teamsQuery.data ?? []);
 
@@ -435,16 +438,20 @@ export function TeamRosterView({
   pageItems,
   view,
   isAdmin,
+  decidesCareerOf,
   onTransition,
   onReactivate,
 }: {
   pageItems: EnrichedArchitect[];
   view: "cards" | "table";
   isAdmin: boolean;
+  /** D3 (2026-09-05): quem muda nível/time e reativa é o gerente designado (ou o admin como correção). */
+  decidesCareerOf: (architect: Architect) => boolean;
   onTransition: (architect: Architect) => void;
   onReactivate: (architect: Architect) => void;
 }) {
   const { t } = useI18n();
+  const showsActions = pageItems.some(({ architect }) => decidesCareerOf(architect));
 
   return view === "cards" ? (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -465,7 +472,7 @@ export function TeamRosterView({
                 {a.email}
               </p>
             </div>
-            {isAdmin && (
+            {decidesCareerOf(a) && (
               <div className="flex shrink-0 gap-1">
                 {a.active ? (
                   <button
@@ -543,7 +550,7 @@ export function TeamRosterView({
             <th scope="col" className="px-4 py-3 text-center">
               {t("team.table.col.gaps")}
             </th>
-            {isAdmin && (
+            {showsActions && (
               <th scope="col" className="px-4 py-3">
                 {t("team.table.col.status")}
               </th>
@@ -602,10 +609,10 @@ export function TeamRosterView({
                     </span>
                   </td>
                 )}
-                {isAdmin && (
+                {showsActions && (
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
-                      {a.active ? (
+                      {decidesCareerOf(a) && a.active ? (
                         <button
                           type="button"
                           onClick={() => onTransition(a)}

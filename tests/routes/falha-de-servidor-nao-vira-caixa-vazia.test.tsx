@@ -28,7 +28,11 @@ import { NoticeBell } from "@/components/app/NoticeBell";
 import { apiPath } from "@/lib/api-path";
 import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as NoticesRoute } from "@/routes/notices";
-import { fixtureAdminUser, fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
+  fixtureState,
+} from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -146,7 +150,7 @@ describe("a Calibração declara a falha em vez de dizer que ninguém deu nota",
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: fixtureState,
       routes: [rotaQueFalha("/calibration")],
     });
@@ -177,7 +181,7 @@ describe("negativa de acesso também é falha declarada, não caixa vazia", () =
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state: fixtureState,
       routes: [rotaQueFalha("/calibration", 403)],
     });

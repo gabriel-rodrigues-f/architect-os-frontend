@@ -19,7 +19,9 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
 
 /**
  * Tela 3 (spec §3) — calibração entre líderes, distribuição de notas por
- * avaliador LADO A LADO. CONTRATO PRD-03: visível só para gerente + admin.
+ * avaliador LADO A LADO. CONTRATO PRD-03 lia "gerente + admin"; a revisão de
+ * papéis (dono, 2026-09-05, D1) tirou o admin: calibração é rito de gestão,
+ * do GERENTE COM VÍNCULO. O admin administra o sistema, não as pessoas.
  *
  * A rota era ADMIN-ONLY por FALTA de vocabulário: `lead` não distinguia
  * gerente de tech lead, e abrir para `lead` teria dado a leitura ao tech lead
@@ -88,9 +90,10 @@ describe("/calibration — distribuição de notas por avaliador", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
+    // D1 (dono, 2026-09-05): a leitura é do gerente vinculado — o admin não calibra.
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
-      state: fixtureState,
+      user: fixtureAssignedManagerUser,
+      state: scopedFixtureStateFor(fixtureAssignedManagerUser, fixtureState, ["time-plataforma"]),
       routes: [calibrationRoute],
     });
   });
@@ -174,9 +177,7 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
 
   it("member não recebe a tela: aviso de acesso restrito, zero avaliadores, zero KPIs", async () => {
     renderAs(fixtureMemberUser);
-    expect(
-      await screen.findByText("Calibração é restrita a gerentes e administradores."),
-    ).toBeTruthy();
+    expect(await screen.findByText("Calibração é do gerente do time.")).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
     expect(screen.queryByText("Paula Souza")).toBeNull();
     expect(screen.queryByText("Média geral")).toBeNull();
@@ -189,17 +190,22 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
    */
   it("tech lead não recebe a tela — o contrato reserva a leitura a gerente + admin", async () => {
     renderAs(fixtureUnassignedTechLeadUser);
-    expect(
-      await screen.findByText("Calibração é restrita a gerentes e administradores."),
-    ).toBeTruthy();
+    expect(await screen.findByText("Calibração é do gerente do time.")).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
+  });
+
+  it("D1 (dono, 2026-09-05): o admin não recebe a tela — ele administra o sistema, não calibra pessoas", async () => {
+    renderAs(fixtureAdminUser);
+    expect(await screen.findByText("Calibração é do gerente do time.")).toBeTruthy();
+    expect(screen.queryByText("Marina Lopes")).toBeNull();
+    expect(screen.queryByText("Média geral")).toBeNull();
   });
 
   it("o gerente recebe a tela INTEIRA — é dele a leitura que o contrato reserva", async () => {
     renderAs(fixtureAssignedManagerUser);
     expect(await screen.findByText("Marina Lopes")).toBeTruthy();
     expect(screen.getByText("Média geral")).toBeTruthy();
-    expect(screen.queryByText("Calibração é restrita a gerentes e administradores.")).toBeNull();
+    expect(screen.queryByText("Calibração é do gerente do time.")).toBeNull();
   });
 });
 
@@ -243,25 +249,25 @@ describe("/calibration não CONSULTA para quem não calibra — o `enabled` é p
     renderWithApp(<CalibrationPage />);
   };
 
-  it("controle: para admin a consulta SAI, com o ciclo ativo da fixture", async () => {
+  it("D1 (dono, 2026-09-05): admin: a consulta não sai — o admin não calibra", async () => {
     renderAs(fixtureAdminUser);
-    await screen.findByText("Marina Lopes");
-    expect(calibrationSpy).toHaveBeenCalledWith("2026-h2");
+    await screen.findByText("Calibração é do gerente do time.");
+    expect(calibrationSpy).not.toHaveBeenCalled();
   });
 
   it("member: a consulta não sai — nem para o ciclo ativo, nem para nenhum outro", async () => {
     renderAs(fixtureMemberUser);
-    await screen.findByText("Calibração é restrita a gerentes e administradores.");
+    await screen.findByText("Calibração é do gerente do time.");
     expect(calibrationSpy).not.toHaveBeenCalled();
   });
 
   it("tech lead: a consulta não sai — CONTRATO PRD-03 reserva a calibração a gerente + admin", async () => {
     renderAs(fixtureUnassignedTechLeadUser);
-    await screen.findByText("Calibração é restrita a gerentes e administradores.");
+    await screen.findByText("Calibração é do gerente do time.");
     expect(calibrationSpy).not.toHaveBeenCalled();
   });
 
-  it("gerente: a consulta SAI, com o ciclo ativo — o `enabled` abre junto com a tela", async () => {
+  it("controle: para o gerente vinculado a consulta SAI, com o ciclo ativo — o `enabled` abre junto com a tela", async () => {
     renderAs(fixtureAssignedManagerUser);
     await screen.findByText("Marina Lopes");
     expect(calibrationSpy).toHaveBeenCalledWith("2026-h2");

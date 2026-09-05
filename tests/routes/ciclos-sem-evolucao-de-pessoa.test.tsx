@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -47,7 +48,7 @@ describe("Ciclos de Desenvolvimento — a tela administra períodos", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
   });
 
   afterEach(() => {

@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  Activity,
-  BookOpen,
+  Building2,
+  CalendarRange,
   ClipboardCheck,
   FileCheck,
-  GraduationCap,
   Target,
-  TriangleAlert,
+  UserCog,
   Users,
 } from "lucide-react";
 
@@ -14,17 +13,18 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 
 import {
-  AssessmentCoverageChart,
+  CapabilityRadar,
   DashboardCardHelp,
   GapBadge,
-  GapSeverityChart,
   PageHeader,
+  QuerySection,
   SectionCard,
   StatCard,
   StatTones,
 } from "@/components/app";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import type { UserRole } from "@/lib/api";
+import { operationsApi, type UserRole } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import {
@@ -44,12 +44,14 @@ export const Route = createFileRoute("/")({
       { title: "Painel — Synapse" },
       {
         name: "description",
-        content: "Visão executiva das capacidades técnicas do time: gaps, PDIs, metas e evolução.",
+        content:
+          "Painel por papel: a operação do sistema, o time que você lidera ou a sua própria carreira.",
       },
       { property: "og:title", content: "Painel — Synapse" },
       {
         property: "og:description",
-        content: "Visão executiva das capacidades técnicas do time: gaps, PDIs, metas e evolução.",
+        content:
+          "Painel por papel: a operação do sistema, o time que você lidera ou a sua própria carreira.",
       },
     ],
   }),
@@ -70,7 +72,7 @@ const PAINEL_CONTEXTS: readonly ContextScopeRequest[] = [
 ];
 
 const HOME_BY_ROLE = {
-  admin: AdminHome,
+  admin: OperationsHome,
   manager: LeadHome,
   tech_lead: LeadHome,
   member: MemberHome,
@@ -131,163 +133,133 @@ function NoCycleRegistered({
   );
 }
 
-function AdminHome() {
-  const store = useStore();
-  const sel = useSelectors();
+/**
+ * O Painel do ADMINISTRADOR é um painel de OPERAÇÃO (revisão de papéis,
+ * 2026-09-05, D1): o sistema em números — pessoas, times, contas, ciclo,
+ * avaliações e PDIs por estado — sem nome ao lado de nota. O desempenho das
+ * pessoas é leitura de quem as lidera; o admin que também lidera um time
+ * entra pelo vínculo, como qualquer gerente.
+ */
+function OperationsHome() {
   const { t } = useI18n();
   const help = usePageHelp("dash");
-  const presenter = useDashboardPresenter();
-  const severity = useGapSeverityRuler();
-  if (presenter.noCycleRegistered) return <NoCycleRegistered title={t("dash.title")} help={help} />;
-
-  const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
-
-  const architects = sel.activeArchitects;
-
-  const criticalGaps = presenter.criticalGapCount(architects);
-  const topGaps = presenter.topGaps(architects);
-  const assessmentCoverage = presenter.assessmentCoverage(architects);
-  const gapsBySeverity = presenter.gapsBySeverity(architects, severity);
+  const labels = useLabels();
+  const overview = useQuery({
+    queryKey: ["operations", "overview"],
+    queryFn: operationsApi.overview,
+    staleTime: 30_000,
+  });
 
   return (
     <>
-      <PageHeader
-        title={t("dash.title")}
-        description={t("dash.subtitle", { ciclo: cycle?.name ?? "—" })}
-        help={help}
-      />
+      <PageHeader title={t("dash.ops.title")} description={t("dash.ops.subtitle")} help={help} />
+      <QuerySection
+        query={overview}
+        errorMessage={t("dash.ops.error")}
+        skeleton={<div className="h-24 animate-pulse rounded-md bg-secondary" />}
+      >
+        {(data) => (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard
+                label={t("dash.ops.people")}
+                value={data.people.active}
+                hint={t("dash.ops.peopleHint", { n: data.people.deactivated })}
+                icon={<Users className="h-4 w-4" />}
+              />
+              <StatCard
+                label={t("dash.ops.teams")}
+                value={data.teams.active}
+                icon={<Building2 className="h-4 w-4" />}
+              />
+              <StatCard
+                label={t("dash.ops.accounts")}
+                value={data.accounts.active}
+                hint={t("dash.ops.accountsHint", { n: data.accounts.disabled })}
+                icon={<UserCog className="h-4 w-4" />}
+              />
+              <StatCard
+                label={t("dash.ops.cycle")}
+                value={data.cycle?.name ?? t("dash.ops.noCycle")}
+                icon={<CalendarRange className="h-4 w-4" />}
+                tone={data.cycle ? "neutral" : "attention"}
+              />
+            </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t("dash.stat.architects")}
-          help={<DashboardCardHelp card="architects" />}
-          value={architects.length}
-          icon={<Users className="h-4 w-4" />}
-        />
-        <StatCard
-          label={t("dash.stat.activePlans")}
-          help={<DashboardCardHelp card="activePlans" />}
-          value={presenter.activePlans().length}
-          icon={<Target className="h-4 w-4" />}
-        />
-        <StatCard
-          label={t("dash.stat.criticalGaps")}
-          help={<DashboardCardHelp card="criticalGaps" />}
-          value={criticalGaps}
-          hint={t("dash.stat.criticalGapsHint")}
-          icon={<TriangleAlert className="h-4 w-4" />}
-          tone={StatTones.bySeverity(criticalGaps)}
-        />
-        <StatCard
-          label={t("dash.stat.goalsInProgress")}
-          help={<DashboardCardHelp card="goalsInProgress" />}
-          value={presenter.goalsInProgress}
-          icon={<Activity className="h-4 w-4" />}
-        />
-        <StatCard
-          label={t("dash.stat.goalsDone")}
-          help={<DashboardCardHelp card="goalsDone" />}
-          value={presenter.goalsDone}
-          icon={<Target className="h-4 w-4" />}
-        />
-        <StatCard
-          label={t("dash.stat.mentoring")}
-          help={<DashboardCardHelp card="mentoring" />}
-          value={store.mentoringSessions.length}
-          icon={<GraduationCap className="h-4 w-4" />}
-        />
-        <StatCard
-          label={t("dash.stat.paths")}
-          help={<DashboardCardHelp card="paths" />}
-          value={presenter.pathsInProgress}
-          icon={<BookOpen className="h-4 w-4" />}
-        />
-      </div>
+            <div className="mt-6 grid gap-6 xl:grid-cols-3">
+              <SectionCard title={t("dash.ops.assessments.title")}>
+                <CountList
+                  entries={Object.entries(data.assessments).map(([status, count]) => [
+                    labels.assessmentStatus[status as keyof typeof labels.assessmentStatus] ??
+                      status,
+                    count,
+                  ])}
+                  emptyLabel={t("dash.ops.none")}
+                />
+              </SectionCard>
+              <SectionCard title={t("dash.ops.plans.title")}>
+                <CountList
+                  entries={Object.entries(data.plans).map(([status, count]) => [
+                    labels.planStatus[status as keyof typeof labels.planStatus] ?? status,
+                    count,
+                  ])}
+                  emptyLabel={t("dash.ops.none")}
+                />
+              </SectionCard>
+              <SectionCard title={t("dash.ops.accountsByRole.title")}>
+                <CountList
+                  entries={Object.entries(data.accounts.byRole).map(([role, count]) => [
+                    t(`users.role.${role}` as Parameters<typeof t>[0]),
+                    count,
+                  ])}
+                  emptyLabel={t("dash.ops.none")}
+                />
+              </SectionCard>
+            </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <SectionCard
-          title={t("dash.priorities.title")}
-          description={t("dash.priorities.subtitle")}
-          help={<DashboardCardHelp card="priorities" />}
-        >
-          <ul className="space-y-3">
-            {topGaps.map((g, i) => (
-              <li
-                key={`${g.architect.id}-${g.item.competencyId}-${i}`}
-                className="flex items-start justify-between gap-3"
-              >
-                <div>
-                  <p className="text-sm font-medium">{g.competency?.name}</p>
-                  <p className="text-xs text-muted-foreground">{g.architect.name}</p>
-                </div>
-                <GapBadge gap={g.gap} />
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-
-        <SectionCard
-          title={t("dash.cycleAssessment.title")}
-          description={t("dash.cycleAssessment.subtitle")}
-          help={<DashboardCardHelp card="cycleAssessment" />}
-        >
-          <AssessmentCoverageChart
-            data={[
-              {
-                status: t("dash.coverage.completed"),
-                count: assessmentCoverage.completed,
-                color: "var(--gap-ok-fg)",
-              },
-              {
-                status: t("dash.coverage.inReview"),
-                count: assessmentCoverage.inReview,
-                color: "var(--chart-2)",
-              },
-              {
-                status: t("dash.coverage.draft"),
-                count: assessmentCoverage.draft,
-                color: "var(--gap-low-fg)",
-              },
-              {
-                status: t("dash.coverage.notStarted"),
-                count: assessmentCoverage.notStarted,
-                color: "var(--chart-reference)",
-              },
-            ]}
-          />
-          <p className="mt-2 text-sm text-muted-foreground">
-            {t("dash.coverage", {
-              completed: assessmentCoverage.completed,
-              total: architects.length,
-              inReview: assessmentCoverage.inReview,
-              draft: assessmentCoverage.draft,
-              notStarted: assessmentCoverage.notStarted,
-            })}
-          </p>
-          <Link to="/progression" className="mt-3 inline-block text-sm text-primary underline">
-            {t("dash.heatmap.whereItLives")}
-          </Link>
-        </SectionCard>
-
-        <SectionCard
-          title={t("dash.severity.title")}
-          description={t("dash.severity.subtitle")}
-          help={<DashboardCardHelp card="severity" />}
-        >
-          <GapSeverityChart
-            data={[
-              { tone: "critical" as const, color: "var(--gap-critical-fg)" },
-              { tone: "high" as const, color: "var(--gap-high-fg)" },
-              { tone: "low" as const, color: "var(--gap-low-fg)" },
-            ].map(({ tone, color }) => ({
-              severity: t(severity.messageKey[tone]),
-              count: gapsBySeverity[tone],
-              color,
-            }))}
-          />
-        </SectionCard>
-      </div>
+            <SectionCard className="mt-6" title={t("dash.ops.shortcuts")}>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/users">{t("nav.users")}</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/teams">{t("nav.teams")}</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/cycles">{t("nav.cycles")}</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/competency-matrix">{t("nav.competencyMatrix")}</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/settings">{t("nav.settings")}</Link>
+                </Button>
+              </div>
+            </SectionCard>
+          </>
+        )}
+      </QuerySection>
     </>
+  );
+}
+
+function CountList({
+  entries,
+  emptyLabel,
+}: {
+  entries: Array<[string, number]>;
+  emptyLabel: string;
+}) {
+  if (entries.length === 0) return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
+  return (
+    <dl className="space-y-2 text-sm">
+      {entries.map(([label, count]) => (
+        <div key={label} className="flex items-center justify-between gap-3">
+          <dt className="text-muted-foreground">{label}</dt>
+          <dd className="font-display text-lg font-semibold tabular-nums">{count}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -328,6 +300,13 @@ function MemberHome() {
   const itemsByStatus = personal.planItemCounts(architectId);
   const paths = personal.assignedPaths(architectId);
   const evidencePending = personal.pendingEvidenceCount(architectId);
+  // D2 (dono, 2026-09-05): a pessoa vê os PRÓPRIOS números — radar, distâncias, aderência.
+  const ownRadar = sel.capabilityAverages(architectId).map((point) => ({
+    capability: point.capability.name,
+    atual: point.avg ?? 0,
+    alvo: point.target ?? 0,
+  }));
+  const ownGaps = personal.openGaps(architectId).slice(0, 6);
 
   return (
     <>
@@ -354,6 +333,44 @@ function MemberHome() {
           icon={<FileCheck className="h-4 w-4" />}
           tone={StatTones.byPending(evidencePending)}
         />
+      </div>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <SectionCard
+          title={t("dash.member.radar.title")}
+          description={t("dash.member.radar.subtitle")}
+        >
+          <CapabilityRadar data={ownRadar} />
+        </SectionCard>
+        <SectionCard
+          title={t("dash.member.priorities.title")}
+          description={t("dash.member.priorities.subtitle")}
+        >
+          {ownGaps.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("dash.member.priorities.none")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {ownGaps.map((gap) => (
+                <li
+                  key={gap.item.competencyId}
+                  className="flex items-center justify-between gap-3 surface-inset p-2.5"
+                >
+                  <span className="truncate text-sm">
+                    {sel.competencyById(gap.item.competencyId)?.name ?? gap.item.competencyId}
+                  </span>
+                  <GapBadge gap={gap.gap} />
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link
+            to="/architects/$architectId/roadmap"
+            params={{ architectId }}
+            className="mt-3 inline-block text-sm text-primary underline"
+          >
+            {t("dash.member.roadmap")}
+          </Link>
+        </SectionCard>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

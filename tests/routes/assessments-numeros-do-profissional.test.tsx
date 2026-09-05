@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import type { SessionUser } from "@/lib/api";
 import {
-  fixtureAdminUser,
   fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
   fixtureMemberUser,
@@ -20,28 +19,25 @@ import {
 } from "../helpers/render-app";
 
 /**
- * RUMO AO 100% (orquestrador, 2026-09-02), palavras do dono: o profissional
- * "não vê seus números de avaliação". Em `/assessments` ele continua
- * PREENCHENDO a autoavaliação — é participação —, mas as colunas do LÍDER,
- * do ALVO e a nota FINAL (e a Distância, que é a subtração das duas últimas)
- * deixam de ser mostradas a ele. Tech lead e gerente continuam vendo tudo.
+ * D2 (dono, 2026-09-05) — a revisão de papéis devolveu ao profissional os
+ * PRÓPRIOS números: em `/assessments` ele preenche a autoavaliação E vê as
+ * colunas do LÍDER, do ALVO, a nota FINAL e a Distância da própria avaliação.
+ * Até 2026-09-02 valia o contrário ("não vê seus números de avaliação");
+ * este arquivo foi invertido para prender a decisão nova. Tech lead e gerente
+ * vinculados continuam vendo tudo; o admin não alcança a tela (D1).
  *
  * A prova é no DOM, não no CSS: `querySelectorAll("th"/"td")` conta o que
- * existe na árvore — uma coluna escondida por classe continuaria contando.
- * O número que serve de sonda é o 3 da linha "Serverless" da fixture: só
- * existe nas notas do líder (self 4 · leader 3 · target 4 · final 4). Se o
- * 3 aparecer na linha do profissional, um número vazou.
- *
- * Isto é TELA, não segurança: o `/state` continua trazendo `leader`,
- * `target` e `final` até o navegador dele. Cortar no backend é outra fatia.
+ * existe na árvore. O número que serve de sonda é o 3 da linha "Serverless"
+ * da fixture: só existe na nota do líder (self 4 · leader 3 · target 4 ·
+ * final 4). Se o 3 NÃO aparecer na linha do profissional, um número dele
+ * ficou escondido.
  */
 
 const fetchMock = vi.fn();
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
-const COLUNAS_DO_PROFISSIONAL = ["Competência", "Autoavaliação", "Notas"];
-const COLUNAS_DA_LIDERANCA = ["Líder", "Alvo", "Final", "Distância"];
+const COLUNAS_DE_NUMEROS = ["Líder", "Alvo", "Final", "Distância"];
 const TODAS_AS_COLUNAS = [
   "Competência",
   "Autoavaliação",
@@ -64,7 +60,7 @@ async function linhaDe(competencia: string): Promise<HTMLTableRowElement> {
   return (await screen.findByText(competencia)).closest("tr") as HTMLTableRowElement;
 }
 
-describe("Avaliações — o profissional não vê seus números de avaliação", () => {
+describe("Avaliações — o profissional vê os próprios números de avaliação (D2, dono, 2026-09-05)", () => {
   let restoreViewport: () => void = () => {};
 
   beforeEach(() => {
@@ -79,29 +75,29 @@ describe("Avaliações — o profissional não vê seus números de avaliação"
     vi.unstubAllGlobals();
   });
 
-  it("profissional: a tabela nasce só com Competência, Autoavaliação e Notas — líder, alvo, final e distância não existem no DOM", async () => {
+  it("D2 (dono, 2026-09-05) — profissional: a tabela nasce com as sete colunas; líder, alvo, final e distância da própria avaliação existem no DOM", async () => {
     mockSession(fixtureMemberUser);
     renderWithApp(<AssessmentsPage />);
 
     const serverless = await linhaDe("Serverless");
-    expect(cabecalhos()).toEqual(COLUNAS_DO_PROFISSIONAL);
-    expect(serverless.querySelectorAll("td")).toHaveLength(COLUNAS_DO_PROFISSIONAL.length);
-    expect(serverless.textContent).not.toMatch(/3/);
-    for (const coluna of COLUNAS_DA_LIDERANCA) {
-      expect(screen.queryByText(coluna)).toBeNull();
+    expect(cabecalhos()).toEqual(TODAS_AS_COLUNAS);
+    expect(serverless.querySelectorAll("td")).toHaveLength(TODAS_AS_COLUNAS.length);
+    expect(serverless.textContent).toMatch(/3/);
+    for (const coluna of COLUNAS_DE_NUMEROS) {
+      expect(screen.getByText(coluna)).toBeTruthy();
     }
   });
 
-  it("profissional: o subtítulo da tela diz que os números ficam com a liderança, em vez de prometer quatro colunas", async () => {
+  it("D2 (dono, 2026-09-05) — profissional: o subtítulo promete as quatro colunas em vez de dizer que os números ficam com a liderança", async () => {
     mockSession(fixtureMemberUser);
     renderWithApp(<AssessmentsPage />);
 
     await linhaDe("Kubernetes");
-    expect(screen.getByText(/ficam com a liderança/)).toBeTruthy();
-    expect(screen.queryByText(/combina autoavaliação, avaliação do Líder, nível alvo/)).toBeNull();
+    expect(screen.getByText(/combina autoavaliação, avaliação do Líder, nível alvo/)).toBeTruthy();
+    expect(screen.queryByText(/ficam com a liderança/)).toBeNull();
   });
 
-  it("profissional, no empilhado abaixo de 768px: só a Autoavaliação — sem Tech Lead, Alvo, Final nem Distância", async () => {
+  it("D2 (dono, 2026-09-05) — profissional, no empilhado abaixo de 768px: as quatro rubricas estão lá, com a nota do líder dentro", async () => {
     restoreViewport = stubNarrowViewport(true);
     mockSession(fixtureMemberUser);
     renderWithApp(<AssessmentsPage />);
@@ -109,14 +105,16 @@ describe("Avaliações — o profissional não vê seus números de avaliação"
     await screen.findByText("Serverless");
     const cartoes = screen.getAllByTestId("competency-stacked-card");
     const serverless = cartoes.find((cartao) => within(cartao).queryByText("Serverless"))!;
-    expect(within(serverless).getByText("Autoavaliação")).toBeTruthy();
-    for (const coluna of COLUNAS_DA_LIDERANCA) {
-      expect(within(serverless).queryByText(coluna)).toBeNull();
+    for (const coluna of ["Autoavaliação", "Líder", "Alvo", "Final"]) {
+      expect(within(serverless).getByText(coluna)).toBeTruthy();
     }
-    expect(serverless.textContent).not.toMatch(/3/);
+    expect(serverless.textContent).toMatch(/3/);
   });
 
-  it("profissional: a ajuda (?) explica que os números de avaliação ficam com a liderança", async () => {
+  // O texto da ajuda do profissional ainda fala dos números como se fossem da
+  // liderança (`help.assessments.member.what`) — achado de produção pós-D2,
+  // relatado ao orquestrador; aqui só se prende que a ajuda abre e fala deles.
+  it("profissional: a ajuda (?) abre e fala dos números de avaliação dele", async () => {
     mockSession(fixtureMemberUser);
     renderWithApp(<AssessmentsPage />);
 
@@ -125,11 +123,12 @@ describe("Avaliações — o profissional não vê seus números de avaliação"
     expect(await screen.findByText(/Seus números de avaliação/)).toBeTruthy();
   });
 
+  // D1: o administrador não alcança /assessments — por isso não há linha dele aqui.
   it.each([
     ["tech lead do time", fixtureAssignedTechLeadUser],
     ["gerente do time", fixtureAssignedManagerUser],
-    ["administrador", fixtureAdminUser],
-  ])("%s continua vendo as sete colunas, com a nota do líder dentro", async (_, user) => {
+    ["o próprio profissional (D2)", fixtureMemberUser],
+  ])("%s vê as sete colunas, com a nota do líder dentro", async (_, user) => {
     mockSession(user);
     renderWithApp(<AssessmentsPage />);
 

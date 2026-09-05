@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { fixtureMemberUser } from "../helpers/fixtures";
+import { fixtureMemberUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -76,7 +76,7 @@ describe("Importar catálogo (CFG-07)", () => {
   });
 
   it("JSON inválido mostra o erro client-side e mantém o envio desabilitado", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
@@ -89,7 +89,7 @@ describe("Importar catálogo (CFG-07)", () => {
   });
 
   it("payload válido mostra o preview do diff por nome ANTES de enviar", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
@@ -110,6 +110,7 @@ describe("Importar catálogo (CFG-07)", () => {
 
   it("enviar faz o POST, mostra o resumo REAL no toast e invalida as fatias de contexto; 400 vai para role=alert", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -150,6 +151,7 @@ describe("Importar catálogo (CFG-07)", () => {
 
   it("400 do backend aparece em role=alert e o diálogo continua aberto", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -172,7 +174,7 @@ describe("Importar catálogo (CFG-07)", () => {
 
 describe("Importar catálogo — o formato é mostrado e a amostra pode ser baixada", () => {
   it("o diálogo não tem mais campo de colar; tem a área de arquivo, o exemplo completo e 'Baixar amostra'", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
@@ -184,7 +186,7 @@ describe("Importar catálogo — o formato é mostrado e a amostra pode ser baix
   });
 
   it("arrastar e soltar o arquivo lê o conteúdo e mostra a prévia", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));

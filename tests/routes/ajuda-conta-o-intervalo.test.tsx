@@ -9,7 +9,7 @@ vi.mock("@tanstack/react-router", () =>
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureAdminUser } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureAssignedManagerUser } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -27,11 +27,18 @@ const fetchMock = vi.fn();
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 const SettingsPage = SettingsRoute.options.component as () => ReactNode;
 
+/**
+ * Revisão de papéis (dono, 2026-09-05, D1): a Matriz e o Catálogo são do
+ * sistema — quem os abre é o admin; a Política de Progressão é regida pelo
+ * gerente com vínculo, e o ? dela precisa contar a regra a ele.
+ */
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
-  mockAppFetch(fetchMock, { user: fixtureAdminUser, routes: [careerLevelsRoute] });
 });
+
+const entrarComo = (user: typeof fixtureAdminUser) =>
+  mockAppFetch(fetchMock, { user, routes: [careerLevelsRoute] });
 
 afterEach(() => {
   cleanup();
@@ -40,6 +47,7 @@ afterEach(() => {
 
 describe("o ? da Matriz conta como a capacidade nasce e o que a deixa pronta", () => {
   it("fala da fundação, do intervalo e da unicidade do nome", async () => {
+    entrarComo(fixtureAdminUser);
     renderWithApp(<MatrixPage />);
     await screen.findByText("Cloud Architecture");
 
@@ -54,7 +62,8 @@ describe("o ? da Matriz conta como a capacidade nasce e o que a deixa pronta", (
 });
 
 describe("o ? das Configurações conta o intervalo e o piso da régua", () => {
-  it("o Catálogo explica que pronta é do mínimo ao máximo", async () => {
+  it("o Catálogo explica que pronta é do mínimo ao máximo (para o admin)", async () => {
+    entrarComo(fixtureAdminUser);
     renderWithApp(<SettingsPage />);
     await screen.findByText("Vocabulários");
 
@@ -65,9 +74,10 @@ describe("o ? das Configurações conta o intervalo e o piso da régua", () => {
     expect(ajuda.textContent).not.toMatch(/de 1 até esse máximo/i);
   });
 
-  it("a Política de Progressão explica que o mínimo da régua pode ser 1", async () => {
+  it("a Política de Progressão explica ao gerente que o mínimo da régua pode ser 1", async () => {
+    entrarComo(fixtureAssignedManagerUser);
     renderWithApp(<SettingsPage />);
-    await screen.findByText("Vocabulários");
+    await screen.findByText("Júnior");
 
     await userEvent.click(
       screen.getByRole("button", { name: "Como configurar Política de Progressão" }),

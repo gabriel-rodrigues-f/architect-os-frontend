@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
-import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import {
   emptyEligibilityRoute,
   jsonResponse,
@@ -65,7 +65,7 @@ describe("Avaliações — concluir com confirmação", () => {
   function mockLead(state: AppState) {
     const current = state.assessments.find((assessment) => assessment.id === "ana-h2")!;
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureAssignedManagerUser,
       state,
       routes: [
         (href, init) => {

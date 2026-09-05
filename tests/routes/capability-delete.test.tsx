@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { type AppState } from "@/lib/api";
-import { fixtureState } from "../helpers/fixtures";
+import { fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -39,6 +39,7 @@ const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 
 const renderPage = (state: AppState) => {
   mockAppFetch(fetchMock, {
+    user: fixtureAdminUser,
     state,
     routes: [
       ...writeRefetchesState(

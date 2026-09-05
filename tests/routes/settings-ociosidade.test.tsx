@@ -1,3 +1,4 @@
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
@@ -89,7 +90,10 @@ afterEach(() => {
 
 describe("Operação — tempo máximo sem atividade (onda 31)", () => {
   it("o administrador vê o tempo servido, com o rótulo do dono", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, settingsGetRoute(7)] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, settingsGetRoute(7)],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await operationalBlock();
@@ -100,7 +104,10 @@ describe("Operação — tempo máximo sem atividade (onda 31)", () => {
   });
 
   it("o campo ecoa o piso do backend: min=5, e 4 mostra o erro do piso e trava o salvar", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, settingsGetRoute(10)] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, settingsGetRoute(10)],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await operationalBlock();
@@ -122,7 +129,10 @@ describe("Operação — tempo máximo sem atividade (onda 31)", () => {
   });
 
   it("salvar envia UM PUT em session.idleTimeoutMinutes — e só nele", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, putRoute, settingsGetRoute(10)] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, putRoute, settingsGetRoute(10)],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await operationalBlock();

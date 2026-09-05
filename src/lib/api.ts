@@ -1,3 +1,4 @@
+import { ApiOperationsGateway } from "./gateways/operations.gateway";
 import { TeamLeadershipRoles } from "./gateways/auth.gateway";
 import type { UserRole } from "./gateways/auth.gateway";
 import { defaultContainer } from "./gateways/container";
@@ -55,6 +56,7 @@ export const teamRosterApi = { ...teamRosterGateway };
 export const teamTransitionsApi = { ...teamTransitionsGateway };
 export const personAssistantsApi = { ...personAssistantsGateway };
 export const workAssistantsApi = { ...workAssistantsGateway };
+export const operationsApi = new ApiOperationsGateway(defaultContainer.apiClient);
 
 export { sessionPolicy };
 

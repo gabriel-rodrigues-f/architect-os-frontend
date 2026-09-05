@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as SettingsRoute } from "@/routes/settings";
-import { fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
+import { fixtureUnassignedTechLeadUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -79,7 +79,10 @@ afterEach(() => {
  */
 describe("Vocabulários falam a língua de quem configura", () => {
   it("nenhum bloco mostra o nome técnico do vocabulário como cabeçalho", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, vocabulariesGetRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, vocabulariesGetRoute],
+    });
     renderWithApp(<SettingsPage />);
 
     await vocabularySection();
@@ -91,7 +94,10 @@ describe("Vocabulários falam a língua de quem configura", () => {
   });
 
   it("a linha mostra o rótulo; o código vem discreto e a chave de rótulo só no tooltip", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, vocabulariesGetRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, vocabulariesGetRoute],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await vocabularySection();
@@ -122,7 +128,10 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
   });
 
   it("admin vê os itens servidos, com o desativado marcado e SEM botão de excluir", async () => {
-    mockAppFetch(fetchMock, { routes: [careerLevelsRoute, vocabulariesGetRoute] });
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, vocabulariesGetRoute],
+    });
     renderWithApp(<SettingsPage />);
 
     const block = await vocabularySection();
@@ -136,6 +145,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
 
   it("toggle de active faz PATCH {active} e invalida a query de vocabulários", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>
@@ -172,6 +182,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
 
   it("cadastrar code novo faz POST {labelKey} e mostra o 409 do backend em role=alert", async () => {
     mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
       routes: [
         careerLevelsRoute,
         (href, init) =>

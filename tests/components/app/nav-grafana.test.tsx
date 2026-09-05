@@ -86,7 +86,7 @@ describe("menu — Grafana abre como âncora externa, não como rota do SPA", ()
     window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock);
+    mockAppFetch(fetchMock, { user: fixtureAdminUser });
   });
 
   afterEach(() => {

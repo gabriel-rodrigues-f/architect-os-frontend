@@ -34,7 +34,12 @@ import { apiPath } from "@/lib/api-path";
 import type { Architect } from "@/lib/domain";
 import { Route as ArchitectRoute } from "@/routes/architects.$architectId.index";
 import { Route as TeamRoute } from "@/routes/team";
-import { fixtureAdminUser, fixtureState, fixtureTeamId } from "../helpers/fixtures";
+import {
+  fixtureAdminUser,
+  fixtureAssignedManagerUser,
+  fixtureState,
+  fixtureTeamId,
+} from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   emptyAuthUsersRoute,
@@ -116,9 +121,14 @@ const rotaDeEscrita: FetchRoute = (href, init) => {
   return undefined;
 };
 
-const montarTime = (): void => {
+/**
+ * O Time é tela de sistema e o admin a lê (D1); a FICHA da pessoa é tela de
+ * pessoa, e quem a abre é quem lidera o time dela — o gerente com vínculo
+ * (dono, 2026-09-05).
+ */
+const montarTime = (user = fixtureAdminUser): void => {
   mockAppFetch(fetchMock, {
-    user: fixtureAdminUser,
+    user,
     state: stateComLideranca,
     routes: [careerLevelsRoute, emptyAuthUsersRoute, rotaDeTimes, rotaDeEscrita],
   });
@@ -167,7 +177,7 @@ describe("ONDA 37 — quem não tem senioridade não derruba a tela", () => {
   });
 
   it("na ficha da pessoa a senioridade ausente é o travessão, nunca 'null'", async () => {
-    montarTime();
+    montarTime(fixtureAssignedManagerUser);
     renderWithApp(<ArchitectPage />);
 
     const cabecalho = await screen.findByText(/9 anos/);

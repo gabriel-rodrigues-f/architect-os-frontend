@@ -21,12 +21,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import type { SessionUser } from "@/lib/api";
 import { Route as CapabilityMapRoute } from "@/routes/capability-map";
-import { Route as CompareRoute } from "@/routes/compare";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
-import { Route as ProgressionRoute } from "@/routes/progression";
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import {
   fixtureAdminUser,
+  fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureState,
   fixtureUnassignedTechLeadUser,
@@ -59,11 +58,6 @@ const ANALISE_LEITURA_DE_LIDERANCA = "A análise do time é uma leitura de lider
 
 const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode }> = [
   {
-    rota: "/progression",
-    titulo: "Progressão do Time",
-    Page: ProgressionRoute.options.component as () => ReactNode,
-  },
-  {
     rota: "/gap-analysis",
     titulo: "Prioridades de Desenvolvimento",
     Page: GapAnalysisRoute.options.component as () => ReactNode,
@@ -78,11 +72,6 @@ const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode
     titulo: "De quem o time depende",
     Page: CapabilityMapRoute.options.component as () => ReactNode,
   },
-  {
-    rota: "/compare",
-    titulo: "Comparativo de Profissionais",
-    Page: CompareRoute.options.component as () => ReactNode,
-  },
 ];
 
 function renderAs(user: SessionUser, page: ReactNode) {
@@ -93,7 +82,7 @@ function renderAs(user: SessionUser, page: ReactNode) {
   return renderWithApp(page);
 }
 
-describe("as cinco telas de análise do time negam o profissional — a tela é a última barreira", () => {
+describe("as três telas de análise do time negam o profissional — a tela é a última barreira", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -122,9 +111,9 @@ describe("as cinco telas de análise do time negam o profissional — a tela é 
   });
 
   it.each(TELAS)(
-    "$rota: o tech lead sem vínculo continua alcançando — o alcance é o papel",
+    "$rota: o gerente com vínculo alcança — a análise do time é de quem o lidera",
     async ({ Page, titulo }) => {
-      renderAs(fixtureUnassignedTechLeadUser, <Page />);
+      renderAs(fixtureAssignedManagerUser, <Page />);
 
       expect(await screen.findByRole("heading", { level: 1, name: titulo })).toBeTruthy();
       expect(screen.queryByText(ANALISE_LEITURA_DE_LIDERANCA)).toBeNull();
@@ -132,12 +121,13 @@ describe("as cinco telas de análise do time negam o profissional — a tela é 
   );
 
   it.each(TELAS)(
-    "$rota: o admin alcança — para os outros papéis nada muda",
-    async ({ Page, titulo }) => {
-      renderAs(fixtureAdminUser, <Page />);
-
-      expect(await screen.findByRole("heading", { level: 1, name: titulo })).toBeTruthy();
-      expect(screen.queryByText(ANALISE_LEITURA_DE_LIDERANCA)).toBeNull();
+    "$rota: tech lead sem vínculo e admin recebem a negativa — o alcance é o VÍNCULO (revisão de papéis, 2026-09-05)",
+    async ({ Page }) => {
+      for (const user of [fixtureUnassignedTechLeadUser, fixtureAdminUser]) {
+        renderAs(user, <Page />);
+        expect(await screen.findByText(ANALISE_LEITURA_DE_LIDERANCA)).toBeTruthy();
+        cleanup();
+      }
     },
   );
 });
