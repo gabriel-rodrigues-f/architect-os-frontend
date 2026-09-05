@@ -134,7 +134,7 @@ function ArchitectWorkspace() {
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
 
-  const canEditOwn = defaultUiAuthorizationPolicy.canActFor(user, architect);
+  const canEditOwn = defaultUiAuthorizationPolicy.canActOnCareerFileOf(user, architect);
   const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
 
   /**

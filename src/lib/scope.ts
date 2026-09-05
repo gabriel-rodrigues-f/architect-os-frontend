@@ -39,9 +39,31 @@ export class UiAuthorizationPolicy {
     return this.leadsTeamOf(user, architect);
   }
 
+  /**
+   * NA PRÓPRIA FICHA, NINGUÉM É LÍDER (dono, 2026-09-05). Gestor e tech lead
+   * abriam a própria ficha e viam roteiro de 1:1 consigo mesmos, "sugerir
+   * PDI", "revisar" as próprias evidências e a explicação de prontidão. Quem
+   * lidera a pessoa é outra pessoa — e isso vale para o administrador também.
+   */
   isLeadOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    if (this.isOwn(user, architect)) return false;
     if (user.role === "admin") return true;
     return this.leadsTeamOf(user, architect);
+  }
+
+  /**
+   * As AÇÕES da ficha de carreira — registrar evidência, levar distância ao
+   * PDI, reenviar evidência. Na própria ficha não há ação nenhuma: a ficha é
+   * leitura; quem registra evidência faz isso em Avaliações (decisão do dono,
+   * 2026-09-05).
+   */
+  canActOnCareerFileOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    if (this.isOwn(user, architect)) return false;
+    return this.canActFor(user, architect);
+  }
+
+  private isOwn(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    return architect !== undefined && user.architectId === architect.id;
   }
 
   isAssignedTechLeadOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {

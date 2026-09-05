@@ -192,8 +192,28 @@ describe("o lead-arquiteto que lidera o próprio time", () => {
     memberships: [{ teamId: "time-plataforma", role: "tech_lead" as const }],
   };
 
-  it("é lead de si mesmo quando o vínculo diz que ele lidera aquele time", () => {
-    expect(policy.isLeadOf(leadArquiteto, eleMesmo)).toBe(true);
+  /**
+   * 2026-09-05 — virou: NA PRÓPRIA FICHA, NINGUÉM É LÍDER. O dono viu gestor e
+   * tech lead na própria ficha com roteiro de 1:1 consigo mesmos e "revisar"
+   * as próprias evidências. O vínculo com o time continua valendo para os
+   * OUTROS do time; para si, não há liderança.
+   */
+  it("NÃO é lead de si mesmo, mesmo liderando o próprio time", () => {
+    expect(policy.isLeadOf(leadArquiteto, eleMesmo)).toBe(false);
+  });
+
+  it("a própria ficha não tem ação: nem para o líder, nem para o admin com arquiteto", () => {
+    expect(policy.canActOnCareerFileOf(leadArquiteto, eleMesmo)).toBe(false);
+    expect(policy.canActOnCareerFileOf({ ...fixtureAdminUser, architectId: "ana" }, eleMesmo)).toBe(
+      false,
+    );
+    expect(policy.isLeadOf({ ...fixtureAdminUser, architectId: "ana" }, eleMesmo)).toBe(false);
+  });
+
+  it("na ficha de um liderado, o líder continua agindo e liderando", () => {
+    const liderado = { id: "bruno", teamId: "time-plataforma" };
+    expect(policy.isLeadOf(leadArquiteto, liderado)).toBe(true);
+    expect(policy.canActOnCareerFileOf(leadArquiteto, liderado)).toBe(true);
   });
 
   it("sem vínculo, nada muda: continua não sendo lead de si mesmo", () => {
