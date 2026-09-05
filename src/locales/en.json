@@ -1469,7 +1469,6 @@
   "msg.auth.login.success": "Signed in.",
   "msg.user.create.success": "{nome}'s account created",
   "msg.user.update.success": "{nome}'s account updated",
-  "msg.people.create.success": "Professional added to the team",
   "msg.people.update.success": "{nome}'s data updated",
   "msg.people.careerLevelTransition.success": "{nome}'s career level updated.",
   "msg.people.deactivate.success": "{nome} deactivated — history preserved",

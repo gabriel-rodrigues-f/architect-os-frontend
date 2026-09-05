@@ -9,7 +9,6 @@ export interface ArchitectsGateway {
    * própria conta traz.
    */
   professional(id: string): Promise<Architect>;
-  createArchitect(architect: Omit<Architect, "id" | "version">): Promise<Architect>;
   updateArchitect(
     id: string,
     patch_: Partial<Omit<Architect, "id" | "role" | "version">>,
@@ -30,9 +29,6 @@ export class HttpArchitectsGateway implements ArchitectsGateway {
 
   professional = (id: string): Promise<Architect> =>
     this.client.request<Architect>(`/architects/${id}`);
-
-  createArchitect = (architect: Omit<Architect, "id" | "version">): Promise<Architect> =>
-    this.client.post<Architect>("/architects", architect);
 
   updateArchitect = (
     id: string,

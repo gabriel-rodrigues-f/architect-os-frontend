@@ -137,7 +137,6 @@ export function useObjectiveFromGap(): RenderObjectiveFromGap {
 export interface Api extends AppState {
   architectsIncludingInactive: Architect[];
 
-  addArchitect: (a: Omit<Architect, "id" | "version">) => Promise<Architect>;
   updateArchitect: (id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>) => void;
 
   transitionCareerLevel: (id: string, toRole: RoleName, reason: string) => Promise<Architect>;
@@ -336,11 +335,10 @@ export function buildApi(
     architects: ArchitectRoster.active(state.architects),
     architectsIncludingInactive: state.architects,
 
-    addArchitect: (a) =>
-      runner.command(
-        () => api.createArchitect(a),
-        (created) => (s) => ({ ...s, architects: [...s.architects, created] }),
-      ),
+    // ONDA 45 — `addArchitect` morreu com `POST /architects`, a porta legada
+    // que criava PROFISSIONAL sem conta. Nenhuma tela a chamava; ela existia
+    // como um caminho aberto para produzir alguém que aparece em Time e nunca
+    // em Usuários. Quem cadastra pessoa é a admissão, em Usuários.
 
     updateArchitect: (id, patch) => {
       runner.optimistic(

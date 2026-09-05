@@ -45,16 +45,30 @@ test.beforeAll(async ({ playwright }) => {
   });
   if (!logged.ok()) throw new Error(`login admin falhou: ${logged.status()}`);
 
-  // ONDA 37 (ADR-0084) — `POST /architects` é a porta LEGADA do profissional
-  // sozinho, e é o bastante aqui: esta régua só precisa de UMA linha em
-  // /team para os filtros existirem, não de uma conta. Tempo de experiência
-  // e especialização saíram do corpo — mandá-los seria escrever no vazio.
-  const created = await api.post(apiPath("/architects"), {
-    data: { name: "E2E Régua de Filtros", role: "Pleno", email: ARCHITECT_EMAIL },
+  // ONDA 45 — `POST /architects` MORREU: era a porta legada que criava
+  // profissional sem conta, e ela contrariava o ADR-0084. A massa passa a ser
+  // plantada pela admissão, que é o caminho de verdade — e que exige time e
+  // senioridade, lidos aqui das próprias rotas do produto.
+  const times = await json<{ id: string }[]>(await api.get(apiPath("/teams")));
+  const niveis = await json<{ id: string; name: string }[]>(
+    await api.get(apiPath("/career-levels")),
+  );
+  const teamId = times[0]?.id;
+  const careerLevelId = niveis.find((nivel) => nivel.name === "Pleno")?.id ?? niveis[0]?.id;
+  if (!teamId || !careerLevelId) throw new Error("base sem time ou sem régua de carreira");
+
+  const created = await api.post(apiPath("/auth/users"), {
+    data: {
+      name: "E2E Régua de Filtros",
+      email: ARCHITECT_EMAIL,
+      role: "member",
+      teamId,
+      careerLevelId,
+    },
   });
-  if (!created.ok()) throw new Error(`criação de arquiteto falhou: ${created.status()}`);
-  const body = (await created.json()) as { data?: { id: string } } & { id?: string };
-  architectId = body.data?.id ?? body.id ?? "";
+  if (!created.ok()) throw new Error(`admissão falhou: ${created.status()}`);
+  const body = (await created.json()) as { data?: { architectId: string } };
+  architectId = body.data?.architectId ?? "";
   await api.dispose();
 });
 

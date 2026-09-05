@@ -49,18 +49,30 @@ test.beforeAll(async ({ playwright }) => {
       data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
     }),
   );
-  // ONDA 37 (ADR-0084) — tempo de experiência e especialização saíram do
-  // corpo de `POST /architects`: mandá-los seria escrever no vazio.
-  const architect = await json<{ id: string }>(
-    await api.post(apiPath("/architects"), {
+  // ONDA 45 — `POST /architects` MORREU: era a porta legada que criava
+  // profissional sem conta, e ela contrariava o ADR-0084. A massa passa a ser
+  // plantada pela admissão, que é o caminho de verdade — e que exige time e
+  // senioridade, lidos aqui das próprias rotas do produto.
+  const times = await json<{ id: string }[]>(await api.get(apiPath("/teams")));
+  const niveis = await json<{ id: string; name: string }[]>(
+    await api.get(apiPath("/career-levels")),
+  );
+  const teamId = times[0]?.id;
+  const careerLevelId = niveis.find((nivel) => nivel.name === "Pleno")?.id ?? niveis[0]?.id;
+  if (!teamId || !careerLevelId) throw new Error("base sem time ou sem régua de carreira");
+
+  const admitida = await json<{ architectId: string }>(
+    await api.post(apiPath("/auth/users"), {
       data: {
         name: "E2E Evolução Rota",
-        role: "Pleno",
         email: `${ARCHITECT_SEED}@architect-os.local`,
+        role: "member",
+        teamId,
+        careerLevelId,
       },
     }),
   );
-  architectId = architect.id;
+  architectId = admitida.architectId;
   await api.dispose();
 });
 

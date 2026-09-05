@@ -1469,7 +1469,6 @@
   "msg.auth.login.success": "Login realizado.",
   "msg.user.create.success": "Conta de {nome} criada",
   "msg.user.update.success": "Conta de {nome} atualizada",
-  "msg.people.create.success": "Profissional adicionado(a) ao time",
   "msg.people.update.success": "Dados de {nome} atualizados",
   "msg.people.careerLevelTransition.success": "Nível de carreira de {nome} atualizado.",
   "msg.people.deactivate.success": "{nome} desativado(a) — histórico preservado",
