@@ -256,7 +256,7 @@
   },
   "src/routes/competency-matrix.tsx": {
     "id-length": {
-      "count": 21
+      "count": 19
     }
   },
   "src/routes/cycles.tsx": {
@@ -282,11 +282,6 @@
   "src/routes/learning-paths.tsx": {
     "id-length": {
       "count": 25
-    }
-  },
-  "src/routes/mentoring.tsx": {
-    "id-length": {
-      "count": 1
     }
   },
   "src/routes/settings.tsx": {
@@ -570,11 +565,6 @@
     }
   },
   "tests/routes/gap-analysis-restructure.test.tsx": {
-    "id-length": {
-      "count": 1
-    }
-  },
-  "tests/routes/mentoring-followup.test.tsx": {
     "id-length": {
       "count": 1
     }

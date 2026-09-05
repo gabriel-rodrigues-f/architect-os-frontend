@@ -4,7 +4,10 @@ import { useState, type ReactNode } from "react";
 import { SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { useAssistantRun } from "@/hooks/use-assistant-run";
+import { useElapsedMs } from "@/hooks/use-elapsed-ms";
+import { AdviceSemiotics, AiProgressEstimate } from "@/lib/advice-semiotics";
 import {
   AdviceAbsences,
   AdviceTranscript,
@@ -18,6 +21,7 @@ import {
 import type { PersonAdvice } from "@/lib/gateways/person-assistants.gateway";
 import type { StagnationAlert, WorkAssistance } from "@/lib/gateways/work-assistants.gateway";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 /**
  * A casa de vidro dos oito assistentes: o que TODA sugestão de IA desenha,
@@ -111,14 +115,7 @@ export function AiRunResult<P, T>({
   const { t } = useI18n();
   if (!run.started) return null;
 
-  if (run.running) {
-    return (
-      <div aria-busy="true" aria-live="polite" className="mt-4">
-        <span className="sr-only">{t("ai.action.generating")}</span>
-        <div className="h-20 animate-pulse rounded-md bg-secondary" />
-      </div>
-    );
-  }
+  if (run.running) return <AiProgress />;
 
   const failure = run.failure;
   if (failure) {
@@ -154,6 +151,29 @@ export function AiRunResult<P, T>({
  * de propósito (o texto entra como filho de JSX, inerte), então o formato
  * que ela entende é este, e só este.
  */
+/**
+ * O que a pessoa vê enquanto o provedor escreve (dono, 2026-09-05): uma frase
+ * agradável que muda com o tempo e uma barra de 0 a 100. O servidor não manda
+ * progresso, então a barra é a estimativa de `AiProgressEstimate` — e o
+ * `aria-live` diz o mesmo a quem ouve a tela. Todo assistente passa por aqui,
+ * porque todos passam por `AiRunResult`.
+ */
+export function AiProgress() {
+  const { t } = useI18n();
+  const elapsed = useElapsedMs(true);
+  const percent = AiProgressEstimate.percentAt(elapsed);
+  const stage = AiProgressEstimate.stageAt(elapsed);
+  return (
+    <div aria-busy="true" aria-live="polite" className="mt-4 space-y-2" data-testid="ai-progress">
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <p className="text-muted-foreground">{t(`ai.progress.${stage}`)}</p>
+        <p className="tabular-nums text-muted-foreground">{percent}%</p>
+      </div>
+      <Progress value={percent} aria-label={t("ai.progress.label")} />
+    </div>
+  );
+}
+
 export class AdviceLine {
   private static readonly HEADING_LIMIT = 80;
 
@@ -180,26 +200,67 @@ export class AdviceLine {
   }
 }
 
+/**
+ * Linhas agrupadas para desenhar: tópicos consecutivos viram UMA lista, para
+ * o marcador ser o do navegador e alinhar com as outras listas da sugestão.
+ */
+type AdviceBlock =
+  { kind: "heading" | "paragraph"; text: string } | { kind: "list"; items: string[] };
+
+export class AdviceBlocks {
+  static of(text: string): AdviceBlock[] {
+    const blocks: AdviceBlock[] = [];
+    for (const line of AdviceLine.allOf(text)) {
+      const last = blocks[blocks.length - 1];
+      if (line.kind === "item") {
+        if (last && last.kind === "list") last.items.push(line.text);
+        else blocks.push({ kind: "list", items: [line.text] });
+      } else {
+        blocks.push({ kind: line.kind, text: line.text });
+      }
+    }
+    return blocks;
+  }
+}
+
+/**
+ * O texto da IA ocupa a linha inteira e é justificado (dono, 2026-09-05);
+ * cada título ganha o sinal da `AdviceSemiotics` quando há um que caiba.
+ */
 export function AdviceText({ text, className }: { text: string; className?: string }) {
-  const lines = AdviceLine.allOf(text);
+  const blocks = AdviceBlocks.of(text);
   return (
-    <div className={className ?? "mt-2 max-w-prose text-sm"}>
-      {lines.map((line, index) =>
-        line.kind === "heading" ? (
-          <p key={index} className="mt-3 font-medium first:mt-0">
-            {line.text}
-          </p>
-        ) : line.kind === "item" ? (
-          <p key={index} className="mt-1 pl-4 before:mr-2 before:content-['–']">
-            {line.text}
-          </p>
+    <div className={cn("mt-2 text-justify text-sm", className)}>
+      {blocks.map((block, index) =>
+        block.kind === "heading" ? (
+          <AdviceHeading key={index} text={block.text} />
+        ) : block.kind === "list" ? (
+          <ul key={index} className="mt-1 list-disc space-y-1 pl-5">
+            {block.items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         ) : (
           <p key={index} className="mt-2 first:mt-0">
-            {line.text}
+            {block.text}
           </p>
         ),
       )}
     </div>
+  );
+}
+
+function AdviceHeading({ text }: { text: string }) {
+  const emoji = AdviceSemiotics.emojiFor(text);
+  return (
+    <p className="mt-3 text-left font-medium first:mt-0">
+      {emoji !== null && (
+        <span aria-hidden="true" className="mr-1.5">
+          {emoji}
+        </span>
+      )}
+      {text}
+    </p>
   );
 }
 
@@ -241,14 +302,14 @@ export function PersonAdviceBody({
       )}
       {advice.narration !== null && <AdviceText text={advice.narration} />}
       {advice.narrationUnavailable !== null && (
-        <p role="status" className="mt-2 max-w-prose text-sm text-muted-foreground">
+        <p role="status" className="mt-2 text-sm text-muted-foreground">
           {advice.narrationUnavailable}
         </p>
       )}
       <AdviceFactList label={t("ai.suggestion.facts")} items={advice.facts} />
       <AdviceWrittenList items={advice.written} />
       <AdviceAbsenceList absences={advice.absences} />
-      <p className="mt-3 max-w-prose text-xs text-muted-foreground">{advice.notice}</p>
+      <p className="mt-3 text-xs text-muted-foreground">{advice.notice}</p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <CopyAdviceButton text={AdviceTranscript.of(advice, transcriptHeadline)} />
         {nextStep}
@@ -257,12 +318,30 @@ export function PersonAdviceBody({
   );
 }
 
-export function AdviceFactList({ label, items }: { label: string; items: string[] }) {
+/**
+ * O que o sistema calculou, em lista COM marcadores (dono, 2026-09-05) e com o
+ * sinal de "apurado por consulta" — para o leitor distinguir de relance o
+ * fato da leitura que a IA fez dele.
+ */
+export function AdviceFactList({
+  label,
+  items,
+  emoji = "🧮",
+}: {
+  label: string;
+  items: string[];
+  emoji?: string;
+}) {
   if (items.length === 0) return null;
   return (
     <div className="mt-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <ul className="mt-1 space-y-1 text-sm">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span aria-hidden="true" className="mr-1.5">
+          {emoji}
+        </span>
+        {label}
+      </p>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -303,7 +382,7 @@ export function AdviceWrittenList({ items }: { items: readonly WrittenByPerson[]
         {items.map((one) => (
           <div key={one.label}>
             <dt className="text-xs text-muted-foreground">{one.label}</dt>
-            <dd className="max-w-prose break-words text-sm">{one.text}</dd>
+            <dd className="break-words text-sm">{one.text}</dd>
           </div>
         ))}
       </dl>
@@ -319,7 +398,7 @@ export function AdviceAbsenceList({ absences }: { absences: string[] }) {
     .map((key) => t(key));
   if (nomeadas.length === 0) return null;
   return (
-    <p className="mt-2 max-w-prose text-xs text-muted-foreground">
+    <p className="mt-2 text-xs text-muted-foreground">
       {t("ai.suggestion.absences")} {nomeadas.join(" · ")}
     </p>
   );
@@ -456,9 +535,13 @@ export function WorkAssistanceBody({ assistance }: { assistance: WorkAssistance 
   const { t } = useI18n();
   return (
     <AiSuggestionFrame>
-      <AdviceFactList label={t("ai.work.observations")} items={assistance.observations} />
-      <AdviceText text={assistance.reading} className="mt-3 max-w-prose text-sm" />
-      <p className="mt-3 max-w-prose text-xs text-muted-foreground">{t("ai.work.disclosure")}</p>
+      <AdviceFactList
+        label={t("ai.work.observations")}
+        items={assistance.observations}
+        emoji="🔎"
+      />
+      <AdviceText text={assistance.reading} className="mt-3" />
+      <p className="mt-3 text-xs text-muted-foreground">{t("ai.work.disclosure")}</p>
     </AiSuggestionFrame>
   );
 }
@@ -567,15 +650,16 @@ export function StagnationAlertSection({
                   : "mt-2 text-sm font-medium"
               }
             >
+              <span aria-hidden="true" className="mr-1.5">
+                {alert.requiresAttention ? "⚠️" : "✅"}
+              </span>
               {alert.requiresAttention
                 ? t("ai.stagnation.requiresAttention")
                 : t("ai.stagnation.clear")}
             </p>
             {alert.alert !== null && <AdviceText text={alert.alert} />}
-            <AdviceFactList label={t("ai.stagnation.signals")} items={alert.signals} />
-            <p className="mt-3 max-w-prose text-xs text-muted-foreground">
-              {t("ai.stagnation.disclosure")}
-            </p>
+            <AdviceFactList label={t("ai.stagnation.signals")} items={alert.signals} emoji="🔎" />
+            <p className="mt-3 text-xs text-muted-foreground">{t("ai.stagnation.disclosure")}</p>
           </AiSuggestionFrame>
         )}
       </AiRunResult>

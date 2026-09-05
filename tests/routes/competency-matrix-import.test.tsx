@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,7 +16,7 @@ import { apiPath } from "@/lib/api-path";
 
 /**
  * CFG-07 (SPEC-OO3-13, §3.2) — "Importar catálogo" na matriz: admin-only,
- * colagem de JSON validada client-side (zod espelhando o backend), PREVIEW
+ * arquivo JSON validado client-side (zod espelhando o backend), PREVIEW
  * do diff por nome ANTES do POST, 400 do backend em role="alert", sucesso →
  * toast + invalidação de /api/v1/state.
  */
@@ -38,6 +38,15 @@ const payload = JSON.stringify({
     },
   ],
 });
+
+/**
+ * Dono, 2026-09-05: sem colar JSON — o catálogo entra por ARQUIVO (escolhido
+ * ou arrastado). O `input type=file` continua sendo o controle rotulado.
+ */
+async function enviarArquivo(conteudo: string, nome = "catalogo.json") {
+  const arquivo = new File([conteudo], nome, { type: "application/json" });
+  await userEvent.upload(screen.getByLabelText("Arquivo JSON"), arquivo);
+}
 
 const countGets = (suffix: string) =>
   fetchMock.mock.calls.filter((call) => {
@@ -71,7 +80,7 @@ describe("Importar catálogo (CFG-07)", () => {
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
-    await userEvent.type(screen.getByLabelText("Ou cole o JSON"), "{{oops");
+    await enviarArquivo("{oops");
 
     expect((await screen.findByRole("alert")).textContent).toBe("O texto não é um JSON válido.");
     expect((screen.getByRole("button", { name: "Importar" }) as HTMLButtonElement).disabled).toBe(
@@ -84,9 +93,7 @@ describe("Importar catálogo (CFG-07)", () => {
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
-    const textarea = screen.getByLabelText("Ou cole o JSON");
-    await userEvent.click(textarea);
-    await userEvent.paste(payload);
+    await enviarArquivo(payload);
 
     // Kubernetes já existe em Cloud → atualizar; FinOps e Pipelines → criar;
     // Data Engineering → capacidade nova.
@@ -124,9 +131,7 @@ describe("Importar catálogo (CFG-07)", () => {
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
-    const textarea = screen.getByLabelText("Ou cole o JSON");
-    await userEvent.click(textarea);
-    await userEvent.paste(payload);
+    await enviarArquivo(payload);
     const stateGetsBefore = countGets(apiPath("/competencies"));
     await userEvent.click(screen.getByRole("button", { name: "Importar" }));
 
@@ -156,13 +161,42 @@ describe("Importar catálogo (CFG-07)", () => {
     renderWithApp(<MatrixPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
-    const textarea = screen.getByLabelText("Ou cole o JSON");
-    await userEvent.click(textarea);
-    await userEvent.paste(payload);
+    await enviarArquivo(payload);
     await userEvent.click(screen.getByRole("button", { name: "Importar" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("Capacidade sem sigla utilizável");
     expect(screen.getByRole("button", { name: "Importar" })).toBeTruthy();
+  });
+});
+
+describe("Importar catálogo — o formato é mostrado e a amostra pode ser baixada", () => {
+  it("o diálogo não tem mais campo de colar; tem a área de arquivo, o exemplo completo e 'Baixar amostra'", async () => {
+    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    renderWithApp(<MatrixPage />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByLabelText("Arquivo JSON")).toBeTruthy();
+    expect(screen.getByText("Arraste o arquivo JSON para cá")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Baixar amostra" })).toBeTruthy();
+    expect(document.querySelector("pre")?.textContent).toContain('"competencies"');
+  });
+
+  it("arrastar e soltar o arquivo lê o conteúdo e mostra a prévia", async () => {
+    mockAppFetch(fetchMock, { routes: [careerLevelsRoute] });
+    renderWithApp(<MatrixPage />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Importar catálogo" }));
+    const arquivo = new File([payload], "catalogo.json", { type: "application/json" });
+    const zona = screen.getByText("Arraste o arquivo JSON para cá").parentElement as HTMLElement;
+    fireEvent.drop(zona, { dataTransfer: { files: [arquivo] } });
+
+    expect(
+      await screen.findByText(
+        "Capacidades: 1 a criar, 1 a atualizar · Competências: 2 a criar, 1 a atualizar.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Arquivo: catalogo.json")).toBeTruthy();
   });
 });

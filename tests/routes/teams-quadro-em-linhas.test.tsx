@@ -359,6 +359,19 @@ describe("/teams — mostrar e esconder", () => {
     expect(await tabelaDoQuadro()).toBeTruthy();
   });
 
+  /**
+   * Dono, 2026-09-05: "o botão Quadro não faz nada". Fazia — abria um quadro
+   * RECOLHIDO, porque o recolhimento era lembrado entre visitas. Quem clica em
+   * "Quadro" quer ver o quadro; a memória de recolhimento fica só na lista.
+   */
+  it("o quadro abre aberto mesmo se foi recolhido antes — clicar em Quadro sempre mostra o quadro", async () => {
+    window.localStorage.setItem("synapse:section-open:teams.roster", "false");
+    renderAs(fixtureAdminUser, [rotaDoQuadro(() => [gestor, carla, ana])]);
+    await abrirOQuadro();
+    expect(await tabelaDoQuadro()).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Esconder Quadro de Time Plataforma" })).toBeTruthy();
+  });
+
   it("o estado é lembrado por quem vê: reabrir a tela encontra a lista como foi deixada", async () => {
     const primeira = renderAs(fixtureAdminUser, [rotaDoQuadro(() => [])]);
     await screen.findByText("Time Plataforma");

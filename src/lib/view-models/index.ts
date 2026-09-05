@@ -22,3 +22,4 @@ export * from "./team-view-model";
 export * from "./text-template-editor";
 export * from "./vocabulary-editor";
 export * from "./team-transitions-view-model";
+export * from "./coverage-table-order";

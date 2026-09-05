@@ -219,12 +219,15 @@ export function StatCard({
   hint,
   icon,
   tone = "neutral",
+  help,
 }: {
   label: string;
   value: ReactNode;
   hint?: string;
   icon?: ReactNode;
   tone?: StatTone;
+  /** O "?" do próprio card — fica dentro dele, ao lado do ícone. */
+  help?: ReactNode;
 }) {
   const styles = statTone[tone];
   return (
@@ -240,7 +243,12 @@ export function StatCard({
             {value}
           </p>
         </div>
-        {icon && <span className={cn("rounded-lg p-2", styles.icon)}>{icon}</span>}
+        {(icon || help) && (
+          <div className="flex shrink-0 items-center gap-1">
+            {help}
+            {icon && <span className={cn("rounded-lg p-2", styles.icon)}>{icon}</span>}
+          </div>
+        )}
       </div>
       {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
     </div>

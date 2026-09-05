@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, CircleAlert, CircleCheck, Pencil, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  CircleAlert,
+  CircleCheck,
+  Download,
+  Pencil,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -29,7 +38,9 @@ import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { workAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { CatalogImportSample } from "@/lib/catalog-import-sample";
 import { CompetencyNameConflict } from "@/lib/competency-name-conflict";
+import { FileText } from "@/lib/file-text";
 import type { AffectedRecords, CompetencyRemovalOutcome } from "@/lib/gateways/catalog.gateway";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
@@ -37,6 +48,7 @@ import { usePageHelp } from "@/lib/page-help";
 import { requireAdminReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCurationPolicy, useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 import {
   CapabilityFoundationEditor,
   CatalogImportEditor,
@@ -712,8 +724,11 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
 
   const preview = editor.preview();
 
+  const [fileName, setFileName] = useState<string | null>(null);
+
   const readFile = async (file: File) => {
-    const text = await file.text();
+    const text = await FileText.of(file);
+    setFileName(file.name);
     setEditor(editor.withText(text));
     clearError();
   };
@@ -745,36 +760,31 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
           <DialogTitle>{t("matrix.import.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">{t("matrix.import.hint")}</p>
-          <div>
-            <Label htmlFor="catalog-import-file">{t("matrix.import.file")}</Label>
-            <Input
-              id="catalog-import-file"
-              type="file"
-              accept="application/json,.json"
-              disabled={importingNow}
-              className="mt-1"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void readFile(file);
-              }}
-            />
-          </div>
-          <div>
-            <Label htmlFor="catalog-import-text">{t("matrix.import.paste")}</Label>
-            <textarea
-              id="catalog-import-text"
-              rows={8}
-              disabled={importingNow}
-              className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1.5 font-mono text-xs"
-              placeholder='{"capabilities": [...]}'
-              value={editor.text}
-              onChange={(e) => {
-                setEditor(editor.withText(e.target.value));
-                clearError();
-              }}
-            />
-          </div>
+          <p className="text-sm text-muted-foreground">{t("matrix.import.hint")}</p>
+
+          <CatalogFileDropZone
+            disabled={importingNow}
+            fileName={fileName}
+            onFile={(file) => void readFile(file)}
+          />
+
+          <details className="surface-inset p-3 text-sm">
+            <summary className="cursor-pointer font-medium">{t("matrix.import.example")}</summary>
+            <p className="mt-2 text-xs text-muted-foreground">{t("matrix.import.exampleHint")}</p>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-card p-3 font-mono text-xs">
+              {CatalogImportSample.text()}
+            </pre>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="mt-2"
+              onClick={() => CatalogImportSample.download()}
+            >
+              <Download aria-hidden="true" />
+              {t("matrix.import.sample")}
+            </Button>
+          </details>
 
           {editor.errorKey && (
             <p className="text-xs text-destructive" role="alert">
@@ -1144,5 +1154,78 @@ function CompetencyEditDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * A área de soltar o arquivo (dono, 2026-09-05: "upload ou arrastar e soltar",
+ * sem colar JSON). É um botão de verdade por baixo — quem não arrasta clica e
+ * escolhe; o `input` fica escondido mas continua sendo o controle rotulado.
+ */
+function CatalogFileDropZone({
+  disabled,
+  fileName,
+  onFile,
+}: {
+  disabled: boolean;
+  fileName: string | null;
+  onFile: (file: File) => void;
+}) {
+  const { t } = useI18n();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const take = (list: FileList | null | undefined) => {
+    const file = list?.[0];
+    if (file) onFile(file);
+  };
+  return (
+    <div>
+      <Label htmlFor="catalog-import-file">{t("matrix.import.file")}</Label>
+      <div
+        role="presentation"
+        onDragOver={(event) => {
+          event.preventDefault();
+          if (!disabled) setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(event) => {
+          event.preventDefault();
+          setOver(false);
+          if (!disabled) take(event.dataTransfer.files);
+        }}
+        className={cn(
+          "mt-1 flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-input p-6 text-center text-sm transition-colors",
+          over && "border-primary bg-primary/5",
+          disabled && "opacity-60",
+        )}
+      >
+        <Upload aria-hidden="true" className="size-5 text-muted-foreground" />
+        <p className="text-muted-foreground">{t("matrix.import.drop")}</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={disabled}
+          onClick={() => inputRef.current?.click()}
+        >
+          {t("matrix.import.choose")}
+        </Button>
+        {fileName !== null && (
+          <p className="text-xs font-medium">{t("matrix.import.chosen", { nome: fileName })}</p>
+        )}
+        <Input
+          ref={inputRef}
+          id="catalog-import-file"
+          type="file"
+          accept="application/json,.json"
+          disabled={disabled}
+          className="sr-only"
+          onChange={(event) => {
+            take(event.target.files);
+            event.target.value = "";
+          }}
+        />
+      </div>
+    </div>
   );
 }

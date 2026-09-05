@@ -54,7 +54,12 @@ function MentoringScreen() {
   const help = usePageHelp("mentoring");
   const user = useCurrentUser();
 
-  const menteeOptions = store.architects;
+  /**
+   * A linha do tempo é de LEITURA e mostra todo o alcance — quem foi mentorado
+   * vê as próprias sessões. Registrar sessão e preparar a 1:1 são de quem
+   * mentora, e ninguém mentora a si mesmo (dono, 2026-09-05).
+   */
+  const menteeOptions = defaultUiAuthorizationPolicy.mentorableBy(user, store.architects);
   const { filter, setFilter, sessions } = useMentoringTimeline();
   const mentee = store.architects.find((architect) => architect.id === filter);
   const canPrepare = mentee !== undefined && defaultUiAuthorizationPolicy.isLeadOf(user, mentee);
@@ -72,7 +77,9 @@ function MentoringScreen() {
               selected={filter}
               onChange={setFilter}
             />
-            <NewMentoringSessionDialog menteeOptions={menteeOptions} onRegistered={setFilter} />
+            {menteeOptions.length > 0 && (
+              <NewMentoringSessionDialog menteeOptions={menteeOptions} onRegistered={setFilter} />
+            )}
           </div>
         }
       />
@@ -93,7 +100,7 @@ function MentoringScreen() {
         title={t("mentor.timeline.title")}
         description={t("mentor.timeline.forPerson", {
           n: sessions.length,
-          nome: store.architects.find((a) => a.id === filter)?.name ?? "",
+          nome: mentee?.name ?? "",
         })}
       >
         <MentoringTimeline sessions={sessions} />

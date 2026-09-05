@@ -62,6 +62,29 @@ export class UiAuthorizationPolicy {
     return this.canActFor(user, architect);
   }
 
+  /**
+   * Quem aparece no seletor de Avaliações (dono, 2026-09-05: "gerente pode
+   * ver tech lead e profissionais; tech lead vê profissionais; nunca a si
+   * mesmos nessa tela"). A liderança avalia OUTRA pessoa; o profissional
+   * continua vendo a si mesmo, porque a autoavaliação é dele.
+   */
+  assessableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
+    if (!this.isLeadership(user)) return [...architects];
+    return this.othersThan(user, architects);
+  }
+
+  /**
+   * Quem pode ser mentorado: só quem está abaixo na hierarquia — e ninguém
+   * mentora a si mesmo, em papel nenhum (dono, 2026-09-05).
+   */
+  mentorableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
+    return this.othersThan(user, architects);
+  }
+
+  private othersThan<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
+    return architects.filter((architect) => !this.isOwn(user, architect));
+  }
+
   private isOwn(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     return architect !== undefined && user.architectId === architect.id;
   }

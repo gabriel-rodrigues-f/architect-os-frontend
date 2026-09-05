@@ -26,6 +26,7 @@ export * from "./NoticeBell";
 export * from "./NoticeList";
 export * from "./OutOfReachScreen";
 export * from "./PasswordChoiceFields";
+export * from "./CardHelp";
 export * from "./PageHelp";
 export * from "./QuerySection";
 export * from "./RoleSelect";

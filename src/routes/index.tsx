@@ -5,7 +5,6 @@ import {
   ClipboardCheck,
   FileCheck,
   GraduationCap,
-  Layers,
   Target,
   TriangleAlert,
   Users,
@@ -16,6 +15,7 @@ import type { ReactNode } from "react";
 
 import {
   AssessmentCoverageChart,
+  DashboardCardHelp,
   GapBadge,
   GapSeverityChart,
   PageHeader,
@@ -160,21 +160,19 @@ function AdminHome() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={t("dash.stat.architects")}
+          help={<DashboardCardHelp card="architects" />}
           value={architects.length}
           icon={<Users className="h-4 w-4" />}
         />
         <StatCard
           label={t("dash.stat.activePlans")}
+          help={<DashboardCardHelp card="activePlans" />}
           value={presenter.activePlans().length}
           icon={<Target className="h-4 w-4" />}
         />
         <StatCard
-          label={t("dash.stat.competencies")}
-          value={store.competencies.length}
-          icon={<Layers className="h-4 w-4" />}
-        />
-        <StatCard
           label={t("dash.stat.criticalGaps")}
+          help={<DashboardCardHelp card="criticalGaps" />}
           value={criticalGaps}
           hint={t("dash.stat.criticalGapsHint")}
           icon={<TriangleAlert className="h-4 w-4" />}
@@ -182,28 +180,36 @@ function AdminHome() {
         />
         <StatCard
           label={t("dash.stat.goalsInProgress")}
+          help={<DashboardCardHelp card="goalsInProgress" />}
           value={presenter.goalsInProgress}
           icon={<Activity className="h-4 w-4" />}
         />
         <StatCard
           label={t("dash.stat.goalsDone")}
+          help={<DashboardCardHelp card="goalsDone" />}
           value={presenter.goalsDone}
           icon={<Target className="h-4 w-4" />}
         />
         <StatCard
           label={t("dash.stat.mentoring")}
+          help={<DashboardCardHelp card="mentoring" />}
           value={store.mentoringSessions.length}
           icon={<GraduationCap className="h-4 w-4" />}
         />
         <StatCard
           label={t("dash.stat.paths")}
+          help={<DashboardCardHelp card="paths" />}
           value={presenter.pathsInProgress}
           icon={<BookOpen className="h-4 w-4" />}
         />
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <SectionCard title={t("dash.priorities.title")} description={t("dash.priorities.subtitle")}>
+        <SectionCard
+          title={t("dash.priorities.title")}
+          description={t("dash.priorities.subtitle")}
+          help={<DashboardCardHelp card="priorities" />}
+        >
           <ul className="space-y-3">
             {topGaps.map((g, i) => (
               <li
@@ -223,6 +229,7 @@ function AdminHome() {
         <SectionCard
           title={t("dash.cycleAssessment.title")}
           description={t("dash.cycleAssessment.subtitle")}
+          help={<DashboardCardHelp card="cycleAssessment" />}
         >
           <AssessmentCoverageChart
             data={[
@@ -262,7 +269,11 @@ function AdminHome() {
           </Link>
         </SectionCard>
 
-        <SectionCard title={t("dash.severity.title")} description={t("dash.severity.subtitle")}>
+        <SectionCard
+          title={t("dash.severity.title")}
+          description={t("dash.severity.subtitle")}
+          help={<DashboardCardHelp card="severity" />}
+        >
           <GapSeverityChart
             data={[
               { tone: "critical" as const, color: "var(--gap-critical-fg)" },
@@ -329,6 +340,7 @@ function MemberHome() {
       <div className="grid gap-4 sm:grid-cols-2">
         <StatCard
           label={t("dash.member.assessmentStatus")}
+          help={<DashboardCardHelp card="memberAssessment" />}
           value={
             assessment ? labels.assessmentStatus[assessment.status] : t("dash.member.noAssessment")
           }
@@ -337,6 +349,7 @@ function MemberHome() {
         />
         <StatCard
           label={t("dash.member.pendingEvidence")}
+          help={<DashboardCardHelp card="memberEvidence" />}
           value={evidencePending}
           icon={<FileCheck className="h-4 w-4" />}
           tone={StatTones.byPending(evidencePending)}
@@ -440,23 +453,27 @@ function LeadHome() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={t("dash.lead.myPeople")}
+          help={<DashboardCardHelp card="leadPeople" />}
           value={myPeople.length}
           icon={<Users className="h-4 w-4" />}
         />
         <StatCard
           label={t("dash.lead.awaitingCalibration")}
+          help={<DashboardCardHelp card="leadCalibration" />}
           value={awaitingCalibration.length}
           icon={<ClipboardCheck className="h-4 w-4" />}
           tone={StatTones.byPending(awaitingCalibration.length)}
         />
         <StatCard
           label={t("dash.lead.pendingEvidence")}
+          help={<DashboardCardHelp card="leadEvidence" />}
           value={pendingEvidence.length}
           icon={<FileCheck className="h-4 w-4" />}
           tone={StatTones.byPending(pendingEvidence.length)}
         />
         <StatCard
           label={t("dash.lead.awaitingApproval")}
+          help={<DashboardCardHelp card="leadApproval" />}
           value={awaitingApproval.length}
           icon={<Target className="h-4 w-4" />}
           tone={StatTones.byPending(awaitingApproval.length)}

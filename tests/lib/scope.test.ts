@@ -62,6 +62,50 @@ describe("UiAuthorizationPolicy", () => {
     });
   });
 
+  /**
+   * Dono, 2026-09-05: "gerente pode ver tech lead e profissionais; tech lead vê
+   * profissionais; nunca a si mesmos nessa tela". Quem lidera avalia e mentora
+   * OUTRA pessoa; o profissional continua vendo a si mesmo em Avaliações,
+   * porque a autoavaliação é dele.
+   */
+  describe("assessableBy — quem aparece no seletor de Avaliações", () => {
+    const ana = { id: "ana", teamId: "time-plataforma" };
+    const bia = { id: "bia", teamId: "time-plataforma" };
+
+    it("liderança com ficha própria não se vê na lista", () => {
+      const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+      expect(policy.assessableBy(techLeadAna, [ana, bia])).toEqual([bia]);
+    });
+
+    it("gestor com ficha própria não se vê na lista", () => {
+      const managerAna = {
+        ...fixtureAssignedTechLeadUser,
+        role: "manager" as const,
+        architectId: "ana",
+      };
+      expect(policy.assessableBy(managerAna, [ana, bia])).toEqual([bia]);
+    });
+
+    it("o profissional continua vendo a si mesmo — a autoavaliação é dele", () => {
+      expect(policy.assessableBy(fixtureMemberUser, [ana])).toEqual([ana]);
+    });
+
+    it("liderança sem ficha vê todo o alcance", () => {
+      expect(policy.assessableBy(fixtureAssignedTechLeadUser, [ana, bia])).toEqual([ana, bia]);
+    });
+  });
+
+  describe("mentorableBy — quem pode ser mentorado", () => {
+    const ana = { id: "ana", teamId: "time-plataforma" };
+    const bia = { id: "bia", teamId: "time-plataforma" };
+
+    it("ninguém mentora a si mesmo, nem o profissional", () => {
+      const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+      expect(policy.mentorableBy(techLeadAna, [ana, bia])).toEqual([bia]);
+      expect(policy.mentorableBy(fixtureMemberUser, [ana])).toEqual([]);
+    });
+  });
+
   describe("isAssignedTechLeadOf", () => {
     it("NÃO tem bypass de admin — reabertura de PDI é só do Tech Lead responsável", () => {
       expect(policy.isAssignedTechLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(false);

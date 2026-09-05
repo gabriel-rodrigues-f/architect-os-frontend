@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import {
@@ -14,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { Architect, Capability } from "@/lib/domain";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
+import { CoverageTableOrder } from "@/lib/view-models";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
@@ -22,6 +24,7 @@ import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useScoringBands, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
@@ -86,7 +89,8 @@ function TeamCapabilityCoverage() {
     () => new CapabilityCoveragePresenter(store.capabilities, sel.capabilityAverages, scoringBands),
     [store.capabilities, sel, scoringBands],
   );
-  const withRisk = presenter.areas(population);
+  const [order, setOrder] = useState(() => CoverageTableOrder.catalog());
+  const withRisk = order.apply(presenter.areas(population));
   const exposed = withRisk.filter(
     (area) => area.risk === "concentrationRisk" || area.risk === "noReference",
   );
@@ -115,20 +119,35 @@ function TeamCapabilityCoverage() {
                 <table className="w-full min-w-[720px] text-sm">
                   <thead>
                     <tr className="sticky top-0 z-10 border-b border-border bg-card text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th scope="col" className="px-4 py-3">
-                        {t("col.capability")}
-                      </th>
+                      <SortableHeader
+                        column="capability"
+                        label={t("col.capability")}
+                        order={order}
+                        onToggle={(column) => setOrder(order.toggled(column))}
+                      />
                       {presenter.bands.map((band) => (
-                        <th key={band.key} scope="col" className="px-4 py-3 text-center">
-                          {t(band.labelKey)}
-                        </th>
+                        <SortableHeader
+                          key={band.key}
+                          column={band.key}
+                          label={t(band.labelKey)}
+                          order={order}
+                          onToggle={(column) => setOrder(order.toggled(column))}
+                          align="center"
+                        />
                       ))}
-                      <th scope="col" className="px-4 py-3 text-center">
-                        {t("cap.table.col.notAssessed")}
-                      </th>
-                      <th scope="col" className="px-4 py-3">
-                        {t("cap.table.col.risk")}
-                      </th>
+                      <SortableHeader
+                        column="notAssessed"
+                        label={t("cap.table.col.notAssessed")}
+                        order={order}
+                        onToggle={(column) => setOrder(order.toggled(column))}
+                        align="center"
+                      />
+                      <SortableHeader
+                        column="risk"
+                        label={t("cap.table.col.risk")}
+                        order={order}
+                        onToggle={(column) => setOrder(order.toggled(column))}
+                      />
                     </tr>
                   </thead>
                   <tbody>
@@ -346,5 +365,47 @@ function NextStepCallout({ exposedCount }: { exposedCount: number }) {
         </Link>
       </span>
     </Callout>
+  );
+}
+
+/**
+ * Cabeçalho que ordena a coluna: a seta ao lado do rótulo diz a direção
+ * (dono, 2026-09-05), e `aria-sort` diz o mesmo a quem lê por leitor de tela.
+ */
+function SortableHeader({
+  column,
+  label,
+  order,
+  onToggle,
+  align = "left",
+}: {
+  column: string;
+  label: string;
+  order: CoverageTableOrder;
+  onToggle: (column: string) => void;
+  align?: "left" | "center";
+}) {
+  const { t } = useI18n();
+  const direction = order.directionOf(column);
+  const Arrow = direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : ArrowUpDown;
+  return (
+    <th
+      scope="col"
+      aria-sort={direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none"}
+      className={cn("px-4 py-3", align === "center" && "text-center")}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(column)}
+        aria-label={t("table.sort.by", { coluna: label })}
+        className={cn(
+          "inline-flex items-center gap-1 uppercase tracking-wide hover:text-foreground",
+          direction !== null && "text-foreground",
+        )}
+      >
+        {label}
+        <Arrow aria-hidden="true" className={cn("size-3.5", direction === null && "opacity-50")} />
+      </button>
+    </th>
   );
 }

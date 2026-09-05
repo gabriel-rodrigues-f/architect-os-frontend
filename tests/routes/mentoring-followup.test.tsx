@@ -154,14 +154,13 @@ describe("Mentoria — agendar follow-up", () => {
    * servidor mandou, sem refiltrar no cliente
    * (`outsider` só tem relação com "bruno", ele mesmo — nunca com "ana").
    */
-  it("formulário de nova sessão só oferece mentorados sob o escopo real de quem registra", async () => {
+  it("quem só tem a si mesmo no alcance não registra sessão — ninguém mentora a si mesmo (dono, 2026-09-05)", async () => {
     mockAppFetch(fetchMock, { user: outsider, state: scopedFixtureStateFor(outsider, state) });
     renderWithApp(<MentoringPage />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
-    // R2-ESC-04 — o campo virou combobox pesquisável (ArchitectSelectCombobox), não mais `<select>`.
-    await userEvent.click(screen.getByLabelText("Mentorado"));
-    const options = screen.getAllByRole("option").map((o) => o.textContent);
-    expect(options).toEqual(["Bruno Almeida"]);
+    // A linha do tempo continua dele: só há ele no alcance, e a sessão em que
+    // foi mentorado aparece sem escolher ninguém.
+    await screen.findByText("Sessão para follow-up");
+    expect(screen.queryByRole("button", { name: "Registrar sessão" })).toBeNull();
   });
 });

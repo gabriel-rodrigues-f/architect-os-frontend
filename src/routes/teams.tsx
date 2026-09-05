@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Callout,
@@ -582,37 +582,49 @@ function TeamRoster({
   const reloadRoster = () =>
     queryClient.invalidateQueries({ queryKey: registry.rosterQueryKey(team.id) });
 
+  /**
+   * O quadro abre ABAIXO da lista de times — e a lista pode ser longa. Quem
+   * clica em "Quadro" precisa ver o quadro: a tela rola até ele, e ele abre
+   * ABERTO — o recolhimento não é lembrado entre visitas, porque uma vez
+   * recolhido o botão passava a "não fazer nada" (dono, 2026-09-05).
+   */
+  const rosterRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    rosterRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [team.id]);
+
   return (
-    <SectionCard
-      title={t("teams.roster.title", { nome: team.name })}
-      description={t("teams.roster.subtitle")}
-      collapsible
-      storageKey="teams.roster"
-    >
-      <div className="space-y-4">
-        <TeamRosterRows team={team} user={user} registry={registry} onChanged={reloadRoster} />
+    <div ref={rosterRef} className="scroll-mt-4">
+      <SectionCard
+        title={t("teams.roster.title", { nome: team.name })}
+        description={t("teams.roster.subtitle")}
+        collapsible
+      >
+        <div className="space-y-4">
+          <TeamRosterRows team={team} user={user} registry={registry} onChanged={reloadRoster} />
 
-        <TeamPeople
-          team={team}
-          teams={teams}
-          registry={registry}
-          canCompose={registry.canComposeTeam(user, team.id)}
-        />
-      </div>
+          <TeamPeople
+            team={team}
+            teams={teams}
+            registry={registry}
+            canCompose={registry.canComposeTeam(user, team.id)}
+          />
+        </div>
 
-      {canReadDirectory ? (
-        <MembershipForm
-          team={team}
-          accounts={accounts}
-          roles={registry.membershipRolesOfferedTo(user)}
-          onChanged={reloadRoster}
-        />
-      ) : (
-        <Callout tone="warning" className="mt-4">
-          {t("teams.membership.directoryOnlyAdmin")}
-        </Callout>
-      )}
-    </SectionCard>
+        {canReadDirectory ? (
+          <MembershipForm
+            team={team}
+            accounts={accounts}
+            roles={registry.membershipRolesOfferedTo(user)}
+            onChanged={reloadRoster}
+          />
+        ) : (
+          <Callout tone="warning" className="mt-4">
+            {t("teams.membership.directoryOnlyAdmin")}
+          </Callout>
+        )}
+      </SectionCard>
+    </div>
   );
 }
 

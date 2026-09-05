@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import type { Assessment } from "@/lib/domain";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { api, UserFacingError } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useLabels } from "@/lib/labels";
@@ -70,9 +72,11 @@ function AssessmentsPage() {
 function AssessmentsScreen() {
   const store = useStore();
   const sel = useSelectors();
+  const user = useCurrentUser();
+  const assessable = defaultUiAuthorizationPolicy.assessableBy(user, store.architects);
   const [architectId, setArchitectId] = useSearchParamString(
     "architectId",
-    () => store.architects[0]?.id ?? "",
+    () => assessable[0]?.id ?? "",
   );
 
   const [cycleId] = useSearchParamString("cycleId", () => store.activeCycleId);
@@ -166,7 +170,7 @@ function AssessmentsScreen() {
         actions={
           <div className="flex flex-wrap gap-2">
             <ArchitectSelectCombobox
-              architects={store.architects}
+              architects={assessable}
               selectedId={architectId}
               onChange={setArchitectId}
               label={t("asmt.architect")}
