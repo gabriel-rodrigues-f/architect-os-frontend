@@ -40,7 +40,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useReducedMotion } from "@/hooks";
 import { cn } from "@/lib/utils";
-import type { SessionUser } from "@/lib/api";
+import { API_URL, type SessionUser } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -92,29 +92,28 @@ interface NavGroup {
 /**
  * Onde o Grafana mora — e por que isto é uma variável, e não um caminho.
  *
- * Até 2026-09-04 ele era servido pelo MESMO Ingress da aplicação, em
- * `/grafana`: caminho relativo, mesma origem. Com a saída do Kubernetes ele
- * virou um serviço do compose, noutra porta, e o link relativo passou a cair
- * no 404 da própria aplicação — o menu prometia uma página que não existe.
+ * Desde 2026-09-05 a porta de entrada é a PRÓPRIA API: `/grafana` nela
+ * confere a sessão do administrador e injeta o passe em cada requisição
+ * (`GrafanaDoor`, no backend) — sem senha do Grafana. O link leva o idioma da
+ * aplicação (`?idioma=pt|en`), e a porta grava a preferência da pessoa no
+ * Grafana antes de servir a página.
  *
- * A abstração é `VITE_GRAFANA_URL`, e ela serve às DUAS topologias sem que
- * ninguém volte aqui:
- *
- *   compose  →  vazia, e vale o padrão `http://localhost:3001`
- *   k8s      →  `/grafana`, e o Ingress serve tudo na mesma origem de novo
- *
- * Por isso o valor não é validado como URL absoluta: caminho relativo é uma
- * resposta legítima, e é justamente a que o cluster vai querer.
+ * `VITE_GRAFANA_URL` continua existindo para uma topologia em que a porta
+ * mora noutro endereço (um Ingress servindo `/grafana` na mesma origem);
+ * vazia, vale a porta da API que o frontend já conhece.
  */
 class ObservabilityAddress {
-  /** O compose do backend publica o Grafana aqui (3001; a 3000 é interna dele). */
-  static readonly PADRAO = "http://localhost:3001";
-
   static get grafana(): string {
     const declarado: unknown = import.meta.env["VITE_GRAFANA_URL"];
     return typeof declarado === "string" && declarado.trim() !== ""
       ? declarado.trim()
-      : ObservabilityAddress.PADRAO;
+      : `${API_URL}/grafana/`;
+  }
+
+  /** O endereço com o idioma da aplicação, para o Grafana abrir no mesmo idioma. */
+  static grafanaIn(locale: string): string {
+    const separador = ObservabilityAddress.grafana.includes("?") ? "&" : "?";
+    return `${ObservabilityAddress.grafana}${separador}idioma=${encodeURIComponent(locale)}`;
   }
 }
 
@@ -358,7 +357,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   const idlePhase = useIdleSession({
     active: user !== null,
@@ -501,7 +500,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
     const link = item.external ? (
       <a
-        href={item.to}
+        href={
+          item.to === ObservabilityAddress.grafana
+            ? ObservabilityAddress.grafanaIn(locale)
+            : item.to
+        }
         target="_blank"
         rel="noopener noreferrer"
         aria-label={label}
