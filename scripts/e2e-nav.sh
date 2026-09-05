@@ -31,10 +31,10 @@ fi
 # não sai mais. A senha vem do ambiente, e quem a imprime é o próprio seed,
 # uma vez, no terminal de quem rodou.
 export E2E_ADMIN_EMAIL="${E2E_ADMIN_EMAIL:-admin@synapse.com.br}"
-export E2E_MANAGER_EMAIL="${E2E_MANAGER_EMAIL:-gestor@synapse.com.br}"
+export E2E_MANAGER_EMAIL="${E2E_MANAGER_EMAIL:-gerente@synapse.com.br}"
 export E2E_TECH_LEAD_EMAIL="${E2E_TECH_LEAD_EMAIL:-techlead@synapse.com.br}"
 export E2E_MEMBER_EMAIL="${E2E_MEMBER_EMAIL:-profissional@synapse.com.br}"
-# A senha do papel de MEMBRO/gestor/tech lead cai para a do admin quando não
+# A senha do papel de MEMBRO/gerente/tech lead cai para a do admin quando não
 # vier própria: os quatro perfis do seed nascem com a mesma, e repetir a
 # exportação à mão em quatro linhas só multiplica a chance de esquecer uma.
 export E2E_MANAGER_PASSWORD="${E2E_MANAGER_PASSWORD:-${E2E_ADMIN_PASSWORD-}}"
