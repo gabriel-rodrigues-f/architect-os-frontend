@@ -113,9 +113,7 @@ describe("menu — Grafana abre como âncora externa, não como rota do SPA", ()
       // O href é o endereço configurado, e não um caminho fixo — ele muda com
       // a topologia. O que não pode mudar é o resto: abre em aba nova e sem
       // devolver `window.opener` para o outro lado.
-      // …e leva o idioma da aplicação, para o Grafana abrir no mesmo idioma
-      // (a porta da API grava a preferência da pessoa antes de servir a página).
-      expect(link.getAttribute("href")).toBe(`${destinoDoGrafana()}?idioma=pt`);
+      expect(link.getAttribute("href")).toBe(destinoDoGrafana());
       expect(link.getAttribute("target")).toBe("_blank");
       expect(link.getAttribute("rel")).toContain("noopener");
       expect(link.getAttribute("title")).toMatch(/m(é|e)tricas/i);

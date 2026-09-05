@@ -94,9 +94,8 @@ interface NavGroup {
  *
  * Desde 2026-09-05 a porta de entrada é a PRÓPRIA API: `/grafana` nela
  * confere a sessão do administrador e injeta o passe em cada requisição
- * (`GrafanaDoor`, no backend) — sem senha do Grafana. O link leva o idioma da
- * aplicação (`?idioma=pt|en`), e a porta grava a preferência da pessoa no
- * Grafana antes de servir a página.
+ * (`GrafanaDoor`, no backend) — sem senha do Grafana. O Grafana fica em
+ * inglês, o padrão dele: só administradores o veem (dono, 2026-09-05).
  *
  * `VITE_GRAFANA_URL` continua existindo para uma topologia em que a porta
  * mora noutro endereço (um Ingress servindo `/grafana` na mesma origem);
@@ -108,12 +107,6 @@ class ObservabilityAddress {
     return typeof declarado === "string" && declarado.trim() !== ""
       ? declarado.trim()
       : `${API_URL}/grafana/`;
-  }
-
-  /** O endereço com o idioma da aplicação, para o Grafana abrir no mesmo idioma. */
-  static grafanaIn(locale: string): string {
-    const separador = ObservabilityAddress.grafana.includes("?") ? "&" : "?";
-    return `${ObservabilityAddress.grafana}${separador}idioma=${encodeURIComponent(locale)}`;
   }
 }
 
@@ -357,7 +350,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
 
   const idlePhase = useIdleSession({
     active: user !== null,
@@ -500,11 +493,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
     const link = item.external ? (
       <a
-        href={
-          item.to === ObservabilityAddress.grafana
-            ? ObservabilityAddress.grafanaIn(locale)
-            : item.to
-        }
+        href={item.to}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={label}
