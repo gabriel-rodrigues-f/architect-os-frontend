@@ -37,7 +37,10 @@ const destinos = (user: SessionUser | undefined): string[] =>
 const rotulosDeGrupo = (user: SessionUser | undefined): (string | undefined)[] =>
   filterNavGroups(NAV_GROUPS, user).map((grupo) => grupo.labelKey);
 
-/** Quem lidera E é arquiteto: o único caso em que "Minha carreira" ainda aparece. */
+/**
+ * Quem lidera E é arquiteto. Até 2026-09-05 era o único caso com "Minha
+ * carreira"; o dono devolveu o item ao profissional, em leitura.
+ */
 const liderComArquiteto: SessionUser = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
 
 /** As cinco ferramentas de diagnóstico do TIME, medidas sobre a base inteira. */
@@ -57,16 +60,20 @@ const ANALISE_DO_TIME = [
  */
 const MENUS_DA_LIDERANCA = ["/team", "/settings", "/cycles"];
 
-describe("menu do profissional — os números dele não aparecem para ele", () => {
-  it("o profissional não recebe 'Minha carreira' — nem endereçado, nem cru", () => {
-    expect(destinos(fixtureMemberUser).some((destino) => destino.includes("/architects/"))).toBe(
-      false,
-    );
+describe("menu do profissional — a carreira dele em leitura, e nada do time", () => {
+  /**
+   * 2026-09-05 — o dono devolveu "Minha carreira" ao profissional: a Visão
+   * geral da própria ficha, em leitura, sem ação e sem IA. As abas de
+   * liderança (Evolução, Extrato, Roteiro) continuam fora do alcance dele.
+   */
+  it("o profissional recebe 'Minha carreira' endereçada à própria Visão geral", () => {
+    expect(destinos(fixtureMemberUser)).toContain("/architects/ana");
+    expect(destinos(fixtureMemberUser).some((destino) => destino.includes("/roadmap"))).toBe(false);
   });
 
-  it("o menu do profissional não começa com grupo de carreira", () => {
+  it("o menu do profissional começa pela carreira dele", () => {
     const primeiro = filterNavGroups(NAV_GROUPS, fixtureMemberUser)[0];
-    expect(primeiro?.labelKey).toBe("nav.group.operation");
+    expect(primeiro?.items.map((item) => item.to)).toEqual(["/architects/ana"]);
   });
 
   it("'Time' e 'Política de Progressão' somem do menu do profissional", () => {
@@ -89,13 +96,13 @@ describe("menu do profissional — os números dele não aparecem para ele", () 
 });
 
 describe("menu de carreira — para os outros papéis nada muda", () => {
-  it("quem lidera e tem arquiteto vinculado recebe o Roteiro endereçado ao próprio arquiteto", () => {
-    expect(destinos(liderComArquiteto)).toContain("/architects/ana/roadmap");
+  it("quem lidera e tem arquiteto vinculado recebe a Visão geral endereçada ao próprio arquiteto", () => {
+    expect(destinos(liderComArquiteto)).toContain("/architects/ana");
   });
 
   it("o item de carreira de quem lidera nasce no topo do menu, antes de qualquer grupo", () => {
     const primeiro = filterNavGroups(NAV_GROUPS, liderComArquiteto)[0];
-    expect(primeiro?.items.map((item) => item.to)).toEqual(["/architects/ana/roadmap"]);
+    expect(primeiro?.items.map((item) => item.to)).toEqual(["/architects/ana"]);
   });
 
   /**
@@ -116,14 +123,16 @@ describe("menu de carreira — para os outros papéis nada muda", () => {
   });
 
   it("quem não tem arquiteto vinculado não recebe o item — não há carreira a mostrar", () => {
-    expect(destinos(fixtureAdminUser).some((destino) => destino.includes("/roadmap"))).toBe(false);
+    expect(destinos(fixtureAdminUser).some((destino) => destino.includes("/architects/"))).toBe(
+      false,
+    );
     expect(
-      destinos(fixtureUnassignedTechLeadUser).some((destino) => destino.includes("/roadmap")),
+      destinos(fixtureUnassignedTechLeadUser).some((destino) => destino.includes("/architects/")),
     ).toBe(false);
   });
 
   it("sem sessão o menu não inventa carreira de ninguém", () => {
-    expect(destinos(undefined).some((destino) => destino.includes("/roadmap"))).toBe(false);
+    expect(destinos(undefined).some((destino) => destino.includes("/architects/"))).toBe(false);
   });
 });
 
@@ -178,7 +187,7 @@ describe("menu do profissional — nada que ele usa é levado junto", () => {
     }
   });
 
-  it("o menu dele tem cinco itens, e nenhum deles é de gestão de time nem de números dele", () => {
-    expect(destinos(fixtureMemberUser)).toHaveLength(5);
+  it("o menu dele tem seis itens — a carreira dele e o que é dele para agir; nada de gestão de time", () => {
+    expect(destinos(fixtureMemberUser)).toHaveLength(6);
   });
 });

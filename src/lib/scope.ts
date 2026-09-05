@@ -114,9 +114,16 @@ export class UiAuthorizationPolicy {
     return user.role !== "member";
   }
 
-  canOpenCareerFileOf(user: SessionUser, architectId: string): boolean {
-    if (this.isLeadership(user)) return true;
-    return user.architectId !== architectId;
+  /**
+   * As ABAS da ficha — Evolução, Extrato e Roteiro — são leituras da liderança
+   * sobre a carreira de alguém (aderência à régua, relatórios, ADR-0070); o
+   * servidor as reserva à liderança, e a tela repete a régua. A Visão geral não
+   * tem guarda: quem tem ficha abre a própria (dono, 2026-09-05: "Minha carreira"
+   * é a tela de leitura do progresso), e a de outra pessoa é negada pelo
+   * recorte do servidor, como sempre foi.
+   */
+  canOpenCareerTabsOf(user: SessionUser, _architectId: string): boolean {
+    return this.isLeadership(user);
   }
 
   canCalibrate(user: SessionUser): boolean {

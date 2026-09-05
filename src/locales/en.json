@@ -1048,8 +1048,6 @@
   "arch.deactivated.notice": "This professional is deactivated: they no longer appear in any list, selector or count across the application. This file stays open for the history.",
   "arch.deactivated.action": "See in Team",
   "arch.careerFile.title": "Career file",
-  "arch.careerFile.ownOutOfReach": "Your career file is read by whoever leads you.",
-  "arch.careerFile.ownOutOfReachHint": "Your assessment numbers guide the career conversation with your leadership; what is yours to act on lives in Assessments, PDI and Learning Paths.",
   "arch.tabs.overview": "Overview",
   "arch.tabs.evolution": "Evolution",
   "arch.tabs.roadmap": "Roadmap",
@@ -1835,5 +1833,7 @@
   "dash.coverage.notStarted": "Not started",
   "dash.severity.title": "Distances by severity",
   "dash.severity.subtitle": "How many team competencies sit below the expected level, and how far.",
-  "ev.field.linkRequiredForHigh": "High complexity asks for a proof link — the ADR, the review, the repository."
+  "ev.field.linkRequiredForHigh": "High complexity asks for a proof link — the ADR, the review, the repository.",
+  "arch.careerFile.tabsOutOfReach": "Evolution, Statement and Roadmap are leadership readings about a person's career.",
+  "arch.careerFile.tabsOutOfReachHint": "Your Overview lives in My career; what is yours to act on lives in Assessments, PDI and Learning Paths."
 }

@@ -113,7 +113,7 @@ const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
   calibracao: "requireCalibrationReach",
   lideranca: "requireLeadershipReach",
   "analise-de-time": "requireTeamAnalysisReach",
-  "ficha-de-carreira": "requireCareerFileReach",
+  "ficha-de-carreira": "requireCareerTabsReach",
 };
 
 /** Contas que NÃO alcançam uma rota restrita — o gêmeo de tela usa uma delas. */
@@ -127,13 +127,13 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
-  autenticado: 6,
+  autenticado: 7,
   admin: 1,
   "lead-com-vinculo": 2,
   calibracao: 1,
   lideranca: 4,
   "analise-de-time": 5,
-  "ficha-de-carreira": 4,
+  "ficha-de-carreira": 3,
 };
 
 interface CatalogoGlobal {

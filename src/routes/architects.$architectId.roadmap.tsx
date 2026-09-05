@@ -22,7 +22,7 @@ import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import type { CareerLevel } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireCareerFileReach } from "@/lib/route-guards";
+import { requireCareerTabsReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import {
@@ -42,7 +42,7 @@ export const Route = createFileRoute("/architects/$architectId/roadmap")({
       },
     ],
   }),
-  beforeLoad: requireCareerFileReach,
+  beforeLoad: requireCareerTabsReach,
   component: ArchitectRoadmap,
 });
 
@@ -51,15 +51,15 @@ function ArchitectRoadmap() {
   const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("architectRoadmap");
-  const canOpenCareerFile = defaultUiAuthorizationPolicy.canOpenCareerFileOf(user, architectId);
+  const canOpenCareerTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architectId);
 
-  if (!canOpenCareerFile) {
+  if (!canOpenCareerTabs) {
     return (
       <OutOfReachScreen
         title={t("arch.tabs.roadmap")}
         help={help}
-        reason={t("arch.careerFile.ownOutOfReach")}
-        hint={t("arch.careerFile.ownOutOfReachHint")}
+        reason={t("arch.careerFile.tabsOutOfReach")}
+        hint={t("arch.careerFile.tabsOutOfReachHint")}
       />
     );
   }

@@ -122,7 +122,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     items: [
       {
-        to: `/architects/${OWN_ARCHITECT_PARAM}/roadmap`,
+        to: `/architects/${OWN_ARCHITECT_PARAM}`,
         labelKey: "nav.myCareer",
         icon: Compass,
         activePrefixes: [`/architects/${OWN_ARCHITECT_PARAM}`],
@@ -257,10 +257,9 @@ class NavigationOfUser {
     return !item.ownCareerOnly || this.reachesOwnCareer();
   }
 
+  /** Quem tem ficha tem "Minha carreira" (dono, 2026-09-05) — a Visão geral, em leitura. */
   private reachesOwnCareer(): boolean {
-    const architectId = this.ownArchitectId;
-    if (!this.user || architectId === null) return false;
-    return this.policy.canOpenCareerFileOf(this.user, architectId);
+    return this.user !== undefined && this.ownArchitectId !== null;
   }
 
   addressed(item: NavItem): NavItem {

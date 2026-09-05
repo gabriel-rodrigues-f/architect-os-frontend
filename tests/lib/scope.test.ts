@@ -318,19 +318,19 @@ describe("o profissional não vê os próprios números", () => {
     expect(policy.isLeadership(fixtureMemberUser)).toBe(false);
   });
 
-  it("o member NÃO abre a própria ficha de carreira", () => {
-    expect(policy.canOpenCareerFileOf(fixtureMemberUser, "ana")).toBe(false);
-  });
-
-  it("a ficha de OUTRA pessoa continua com o member — quem a nega é o recorte do servidor", () => {
-    expect(policy.canOpenCareerFileOf(fixtureMemberUser, "bruno")).toBe(true);
-  });
-
-  it("quem lidera abre qualquer ficha, inclusive a própria quando tem arquiteto vinculado", () => {
-    expect(policy.canOpenCareerFileOf(fixtureAdminUser, "ana")).toBe(true);
-    expect(policy.canOpenCareerFileOf(fixtureAssignedTechLeadUser, "ana")).toBe(true);
+  /**
+   * 2026-09-05 — o dono devolveu "Minha carreira" ao profissional, em leitura.
+   * A Visão geral deixou de ter guarda (a de outra pessoa é negada pelo recorte
+   * do servidor, como antes de 01/09); o que fica com a liderança são as ABAS —
+   * Evolução, Extrato e Roteiro —, leituras que o servidor reserva a quem lidera.
+   */
+  it("as abas da ficha são da liderança, inclusive sobre a própria ficha; o member não as abre", () => {
+    expect(policy.canOpenCareerTabsOf(fixtureMemberUser, "ana")).toBe(false);
+    expect(policy.canOpenCareerTabsOf(fixtureMemberUser, "bruno")).toBe(false);
+    expect(policy.canOpenCareerTabsOf(fixtureAdminUser, "ana")).toBe(true);
+    expect(policy.canOpenCareerTabsOf(fixtureAssignedTechLeadUser, "ana")).toBe(true);
     expect(
-      policy.canOpenCareerFileOf({ ...fixtureAssignedTechLeadUser, architectId: "ana" }, "ana"),
+      policy.canOpenCareerTabsOf({ ...fixtureAssignedTechLeadUser, architectId: "ana" }, "ana"),
     ).toBe(true);
   });
 

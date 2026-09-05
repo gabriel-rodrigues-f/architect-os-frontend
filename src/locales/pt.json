@@ -1048,8 +1048,6 @@
   "arch.deactivated.notice": "Este profissional está desativado: ele não aparece em nenhuma lista, seletor ou contagem da aplicação. Esta ficha continua aberta pelo histórico.",
   "arch.deactivated.action": "Ver em Time",
   "arch.careerFile.title": "Ficha de carreira",
-  "arch.careerFile.ownOutOfReach": "A sua ficha de carreira é lida por quem lidera você.",
-  "arch.careerFile.ownOutOfReachHint": "Os seus números de avaliação orientam a conversa de carreira com a liderança; o que é seu para agir está em Avaliações, PDI e Trilhas.",
   "arch.tabs.overview": "Visão geral",
   "arch.tabs.evolution": "Evolução",
   "arch.tabs.roadmap": "Roteiro",
@@ -1835,5 +1833,7 @@
   "dash.coverage.notStarted": "Não iniciadas",
   "dash.severity.title": "Distâncias por severidade",
   "dash.severity.subtitle": "Quantas competências do time estão abaixo do esperado, e quão longe.",
-  "ev.field.linkRequiredForHigh": "Complexidade alta pede um link de comprovação — o ADR, a revisão, o repositório."
+  "ev.field.linkRequiredForHigh": "Complexidade alta pede um link de comprovação — o ADR, a revisão, o repositório.",
+  "arch.careerFile.tabsOutOfReach": "Evolução, Extrato e Roteiro são leituras da liderança sobre a carreira de uma pessoa.",
+  "arch.careerFile.tabsOutOfReachHint": "A sua Visão geral está em Minha carreira; o que é seu para agir está em Avaliações, PDI e Trilhas."
 }

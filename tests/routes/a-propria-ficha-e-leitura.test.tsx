@@ -29,7 +29,12 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import type { SessionUser } from "@/lib/api";
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
-import { fixtureAdminUser, fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAdminUser,
+  fixtureAssignedTechLeadUser,
+  fixtureMemberUser,
+  fixtureState,
+} from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -75,6 +80,7 @@ describe("a própria ficha é leitura — sem ação e sem IA, para qualquer pap
   it.each([
     ["tech lead", techLeadQueEAna],
     ["admin", adminQueEAna],
+    ["profissional", fixtureMemberUser],
   ])("%s que é a Ana abre a própria ficha e não encontra ação nem IA", async (_papel, user) => {
     renderAs(user, ProfilePage);
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);

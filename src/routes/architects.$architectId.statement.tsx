@@ -22,7 +22,7 @@ import { downloadBlob } from "@/lib/download";
 import type { EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireCareerFileReach } from "@/lib/route-guards";
+import { requireCareerTabsReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/architects/$architectId/statement")({
       },
     ],
   }),
-  beforeLoad: requireCareerFileReach,
+  beforeLoad: requireCareerTabsReach,
   component: ArchitectStatement,
 });
 
@@ -53,16 +53,16 @@ function ArchitectStatement() {
   const { user } = useAuth();
   const { t } = useI18n();
   const help = usePageHelp("architectStatement");
-  const canOpenCareerFile =
-    user !== null && defaultUiAuthorizationPolicy.canOpenCareerFileOf(user, architectId);
+  const canOpenCareerTabs =
+    user !== null && defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architectId);
 
-  if (!canOpenCareerFile) {
+  if (!canOpenCareerTabs) {
     return (
       <OutOfReachScreen
         title={t("arch.tabs.statement")}
         help={help}
-        reason={t("arch.careerFile.ownOutOfReach")}
-        hint={t("arch.careerFile.ownOutOfReachHint")}
+        reason={t("arch.careerFile.tabsOutOfReach")}
+        hint={t("arch.careerFile.tabsOutOfReachHint")}
       />
     );
   }

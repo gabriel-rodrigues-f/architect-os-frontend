@@ -6,7 +6,7 @@ import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
 import {
   requireCalibrationReach,
-  requireCareerFileReach,
+  requireCareerTabsReach,
   requireLeadReach,
   requireLeadershipReach,
   requireTeamAnalysisReach,
@@ -110,12 +110,11 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
   });
 
   /**
-   * Onda 31 — invertido pelo dono (2026-09-01): "eu não quero que o
-   * profissional veja seus números de avaliação". A própria ficha é o lugar
-   * onde esses números moram; o member é devolvido ao painel.
+   * 2026-09-05 — o dono devolveu "Minha carreira" ao profissional, em leitura:
+   * a Visão geral da própria ficha abre sem guarda. (Era negada desde 01/09.)
    */
-  it("nega ao member o PRÓPRIO perfil — os números dele são lidos por quem o lidera", async () => {
-    expect(await navegarComoUsuario(fixtureMemberUser, "/architects/ana")).toBe("/");
+  it("o member abre a PRÓPRIA Visão geral — é a tela de leitura do progresso dele", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/architects/ana")).toBe("/architects/ana");
   });
 
   it("mantém qualquer perfil aberto para admin", async () => {
@@ -249,6 +248,9 @@ const FICHA_DE_ANA = [
   "/architects/ana/statement",
 ];
 
+/** As três abas que o servidor reserva à liderança (ADR-0070); a Visão geral é da pessoa. */
+const ABAS_DA_LIDERANCA = FICHA_DE_ANA.slice(1);
+
 describe("o profissional não navega até os próprios números", () => {
   it("nega /team ao member", async () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/team")).toBe("/");
@@ -258,7 +260,7 @@ describe("o profissional não navega até os próprios números", () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/settings")).toBe("/");
   });
 
-  it.each(FICHA_DE_ANA)("nega ao member a própria ficha em %s", async (href) => {
+  it.each(ABAS_DA_LIDERANCA)("nega ao member a aba %s — leitura da liderança", async (href) => {
     expect(await navegarComoUsuario(fixtureMemberUser, href)).toBe("/");
   });
 
@@ -296,7 +298,7 @@ async function alcancaFichaDe(user: SessionUser, architectId: string): Promise<b
   const queryClient = createAppQueryClient();
   queryClient.setQueryData(SESSION_QUERY_KEY, user);
   try {
-    await requireCareerFileReach({ context: { queryClient }, params: { architectId } });
+    await requireCareerTabsReach({ context: { queryClient }, params: { architectId } });
     return true;
   } catch (erro) {
     if (isRedirect(erro)) return false;
@@ -304,7 +306,7 @@ async function alcancaFichaDe(user: SessionUser, architectId: string): Promise<b
   }
 }
 
-describe("requireLeadershipReach e requireCareerFileReach — as guardas do profissional", () => {
+describe("requireLeadershipReach e requireCareerTabsReach — as guardas do profissional", () => {
   it("a liderança passa; o member não", async () => {
     expect(await alcancaLideranca(fixtureMemberUser)).toBe(false);
     expect(await alcancaLideranca(fixtureUnassignedTechLeadUser)).toBe(true);
@@ -312,12 +314,12 @@ describe("requireLeadershipReach e requireCareerFileReach — as guardas do prof
     expect(await alcancaLideranca(fixtureAdminUser)).toBe(true);
   });
 
-  it("a ficha PRÓPRIA é negada ao member; a de outra pessoa passa pela guarda e cai no recorte do servidor", async () => {
+  it("as abas da ficha são negadas ao member, própria ou de outra pessoa", async () => {
     expect(await alcancaFichaDe(fixtureMemberUser, "ana")).toBe(false);
-    expect(await alcancaFichaDe(fixtureMemberUser, "bruno")).toBe(true);
+    expect(await alcancaFichaDe(fixtureMemberUser, "bruno")).toBe(false);
   });
 
-  it("quem lidera abre qualquer ficha, inclusive a própria quando tem arquiteto vinculado", async () => {
+  it("quem lidera abre as abas de qualquer ficha, inclusive da própria quando tem arquiteto vinculado", async () => {
     expect(await alcancaFichaDe(fixtureAssignedTechLeadUser, "ana")).toBe(true);
     expect(
       await alcancaFichaDe({ ...fixtureAssignedTechLeadUser, architectId: "ana" }, "ana"),

@@ -1,5 +1,8 @@
 import { createContext, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+
+import { useCurrentUser } from "@/lib/auth";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { ChevronDown, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -312,6 +315,8 @@ export function ProfileTabs({
   active: "overview" | "evolution" | "statement" | "roadmap";
 }) {
   const { t } = useI18n();
+  const user = useCurrentUser();
+  const leadershipTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architectId);
   const tabClass = (isActive: boolean) =>
     cn(
       "border-b-2 px-1 pb-2 text-sm font-medium transition-colors",
@@ -329,30 +334,34 @@ export function ProfileTabs({
       >
         {t("arch.tabs.overview")}
       </Link>
-      <Link
-        to="/architects/$architectId/evolution"
-        params={{ architectId }}
-        aria-current={active === "evolution" ? "page" : undefined}
-        className={tabClass(active === "evolution")}
-      >
-        {t("arch.tabs.evolution")}
-      </Link>
-      <Link
-        to="/architects/$architectId/statement"
-        params={{ architectId }}
-        aria-current={active === "statement" ? "page" : undefined}
-        className={tabClass(active === "statement")}
-      >
-        {t("arch.tabs.statement")}
-      </Link>
-      <Link
-        to="/architects/$architectId/roadmap"
-        params={{ architectId }}
-        aria-current={active === "roadmap" ? "page" : undefined}
-        className={tabClass(active === "roadmap")}
-      >
-        {t("arch.tabs.roadmap")}
-      </Link>
+      {leadershipTabs && (
+        <>
+          <Link
+            to="/architects/$architectId/evolution"
+            params={{ architectId }}
+            aria-current={active === "evolution" ? "page" : undefined}
+            className={tabClass(active === "evolution")}
+          >
+            {t("arch.tabs.evolution")}
+          </Link>
+          <Link
+            to="/architects/$architectId/statement"
+            params={{ architectId }}
+            aria-current={active === "statement" ? "page" : undefined}
+            className={tabClass(active === "statement")}
+          >
+            {t("arch.tabs.statement")}
+          </Link>
+          <Link
+            to="/architects/$architectId/roadmap"
+            params={{ architectId }}
+            aria-current={active === "roadmap" ? "page" : undefined}
+            className={tabClass(active === "roadmap")}
+          >
+            {t("arch.tabs.roadmap")}
+          </Link>
+        </>
+      )}
     </nav>
   );
 }

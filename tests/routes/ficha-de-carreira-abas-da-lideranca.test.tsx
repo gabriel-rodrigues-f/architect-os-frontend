@@ -46,29 +46,30 @@ import {
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
- * O gêmeo de tela da ficha de carreira — as quatro rotas
- * `/architects/$architectId/*` — para o caso que o dono fechou (2026-09-01):
- * "eu não quero que o profissional veja seus números de avaliação. isso pode
- * influenciá-lo negativamente".
+ * O gêmeo de tela das ABAS da ficha de carreira — `/architects/$architectId/
+ * evolution|roadmap|statement`: Evolução, Extrato e Roteiro são leituras da
+ * liderança sobre a carreira de alguém (aderência à régua, relatórios —
+ * ADR-0070), e o servidor as reserva a quem lidera.
  *
- * A guarda de navegação devolve o member ao painel, mas ela é CEGA À SESSÃO
- * no SSR. A barreira que sobra é a tela: ela nega, e nenhuma consulta sobre
- * "ana" sai do navegador — nem aderência, nem evolução, nem transições.
+ * Até 2026-09-05 a Visão geral também era negada ao profissional ("eu não
+ * quero que o profissional veja seus números de avaliação", 01/09). O dono
+ * devolveu "Minha carreira" a ele, em leitura: a Visão geral abre sem
+ * guarda, sem ação e sem IA (`a-propria-ficha-e-leitura.test.tsx`); as
+ * abas continuam da liderança, e é isso que este arquivo prende.
  *
- * A ficha de OUTRA pessoa não é assunto desta guarda: o recorte do servidor
- * já a nega como "não encontrado" (`architect-profile-fora-do-escopo`), e o
- * último caso abaixo fixa que a porta continua sendo essa.
+ * A guarda de navegação é CEGA À SESSÃO no SSR. A barreira que sobra é a
+ * tela: ela nega, e nenhuma consulta de aba sobre "ana" sai do navegador.
  */
 const fetchMock = vi.fn();
 
-const TELAS: ReadonlyArray<readonly [string, () => ReactNode]> = [
-  ["perfil", ProfileRoute.options.component as () => ReactNode],
+const ABAS: ReadonlyArray<readonly [string, () => ReactNode]> = [
   ["evolução", EvolutionRoute.options.component as () => ReactNode],
   ["roteiro", RoadmapRoute.options.component as () => ReactNode],
   ["extrato", StatementRoute.options.component as () => ReactNode],
 ];
 
-const FICHA_LIDA_PELA_LIDERANCA = "A sua ficha de carreira é lida por quem lidera você.";
+const ABAS_DA_LIDERANCA =
+  "Evolução, Extrato e Roteiro são leituras da liderança sobre a carreira de uma pessoa.";
 
 function pediuAlgoSobre(architectId: string): boolean {
   return fetchMock.mock.calls.some(([entrada]) =>
@@ -87,7 +88,7 @@ function renderAs(user: SessionUser, Page: () => ReactNode) {
   return renderWithApp(<Page />);
 }
 
-describe("a ficha de carreira nega o próprio profissional — a tela é a última barreira", () => {
+describe("as abas da ficha são da liderança — a tela é a última barreira", () => {
   beforeEach(() => {
     window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();
@@ -99,35 +100,34 @@ describe("a ficha de carreira nega o próprio profissional — a tela é a últi
     vi.unstubAllGlobals();
   });
 
-  it.each(TELAS)(
+  it.each(ABAS)(
     "%s: member recebe a negativa e nada sobre ele sai do navegador",
     async (_nome, Page) => {
       renderAs(fixtureMemberUser, Page);
-      expect(await screen.findByText(FICHA_LIDA_PELA_LIDERANCA)).toBeTruthy();
-      expect(screen.queryByText("Nível médio")).toBeNull();
+      expect(await screen.findByText(ABAS_DA_LIDERANCA)).toBeTruthy();
       expect(pediuAlgoSobre("ana")).toBe(false);
     },
   );
 
-  it.each(TELAS)("%s: a tela negada continua se explicando — o ? está lá", async (_nome, Page) => {
+  it.each(ABAS)("%s: a tela negada continua se explicando — o ? está lá", async (_nome, Page) => {
     renderAs(fixtureMemberUser, Page);
-    await screen.findByText(FICHA_LIDA_PELA_LIDERANCA);
+    await screen.findByText(ABAS_DA_LIDERANCA);
     expect(screen.getByRole("button", { name: /como usar/i })).toBeTruthy();
   });
 
-  it("admin abre a ficha de Ana, com os números que o profissional não vê", async () => {
-    renderAs(fixtureAdminUser, ProfileRoute.options.component as () => ReactNode);
+  it("a Visão geral da própria ficha abre para o member, sem as abas da liderança", async () => {
+    renderAs(fixtureMemberUser, ProfileRoute.options.component as () => ReactNode);
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Nível médio")).toBeTruthy();
-    expect(screen.queryByText(FICHA_LIDA_PELA_LIDERANCA)).toBeNull();
+    expect(screen.queryByText(ABAS_DA_LIDERANCA)).toBeNull();
+    // O `Link` está mockado sem href, então as abas não têm papel de link: o texto basta.
+    expect(screen.queryByText("Extrato")).toBeNull();
+    expect(screen.queryByText("Evolução")).toBeNull();
   });
 
-  it("member em ficha de OUTRA pessoa passa pela guarda e cai no 'não encontrado' do recorte", async () => {
-    renderAs(
-      { ...fixtureMemberUser, architectId: "bruno" },
-      ProfileRoute.options.component as () => ReactNode,
-    );
-    expect(await screen.findByText("Profissional não encontrado.")).toBeTruthy();
-    expect(screen.queryByText(FICHA_LIDA_PELA_LIDERANCA)).toBeNull();
+  it("admin abre a ficha de Ana com as quatro abas", async () => {
+    renderAs(fixtureAdminUser, ProfileRoute.options.component as () => ReactNode);
+    expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Extrato")).toBeTruthy();
+    expect(screen.getByText("Evolução")).toBeTruthy();
   });
 });

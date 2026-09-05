@@ -4,36 +4,31 @@
       "alcance": "autenticado"
     },
     "/architects/$architectId": {
-      "alcance": "ficha-de-carreira",
-      "guarda": "requireCareerFileReach",
-      "sinal": "canOpenCareerFile",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/ficha-de-carreira-nega-o-proprio.test.tsx"
+      "alcance": "autenticado"
     },
     "/architects/$architectId/evolution": {
       "alcance": "ficha-de-carreira",
-      "guarda": "requireCareerFileReach",
-      "sinal": "canOpenCareerFile",
+      "guarda": "requireCareerTabsReach",
+      "sinal": "canOpenCareerTabs",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/ficha-de-carreira-nega-o-proprio.test.tsx"
+      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
     },
     "/architects/$architectId/roadmap": {
       "alcance": "ficha-de-carreira",
-      "guarda": "requireCareerFileReach",
-      "sinal": "canOpenCareerFile",
+      "guarda": "requireCareerTabsReach",
+      "sinal": "canOpenCareerTabs",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/ficha-de-carreira-nega-o-proprio.test.tsx"
+      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
     },
     "/architects/$architectId/statement": {
       "alcance": "ficha-de-carreira",
-      "guarda": "requireCareerFileReach",
-      "sinal": "canOpenCareerFile",
+      "guarda": "requireCareerTabsReach",
+      "sinal": "canOpenCareerTabs",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/ficha-de-carreira-nega-o-proprio.test.tsx"
+      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
     },
     "/assessments": {
       "alcance": "autenticado"
