@@ -13,8 +13,13 @@ WORKDIR /app
 # Mesmo idioma do backend/Dockerfile: `npm ci` exige o lockfile e instala
 # exatamente o que ele descreve — build reproduzível. As devDependencies
 # entram aqui porque o `vite build` É devDependency (vite, nitro, tailwind).
+# `--ignore-scripts` (item 9 de seguranca-2026-09-03.md): nenhum script de
+# instalação de dependência roda no estágio de build — um pacote comprometido
+# não ganha execução aqui. Medido em 2026-09-05: os únicos scripts eram os do
+# esbuild (validação do binário, que já vem no pacote opcional da plataforma),
+# core-js (banner) e fsevents (só macOS); o `vite build` passa sem eles.
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund --ignore-scripts
 
 COPY tsconfig.json vite.config.ts ./
 COPY public ./public
