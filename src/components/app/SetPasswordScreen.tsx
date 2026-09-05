@@ -1,5 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { AccessRecoveryRequestPanel } from "@/components/app/AccessRecoveryRequestPanel";
@@ -38,17 +39,29 @@ import { useI18n } from "@/lib/i18n";
  *     diz já vir escrita para a pessoa. Corrigir a senha não resolveria nada,
  *     então o formulário sai da tela e entra o pedido de um link novo.
  *
- *  3. **O e-mail da pessoa não está aqui.** O token é opaco e não há sessão,
- *     então a exigência "não ter o seu e-mail dentro dela" aparece como
- *     "confere ao salvar" em vez de ganhar um tique verde falso
- *     (`SafePassword.withoutKnownEmail`). Quem confere é o serviço, e a
- *     recusa dele volta apontada na mesma lista.
+ *  3. **A tela pergunta A QUEM é o convite** (`GET /auth/invitations/:token`,
+ *     2026-09-05): com o e-mail na mão, a exigência "não ter o seu e-mail
+ *     dentro dela" é conferida aqui, ao vivo — o dono viu a linha ficar
+ *     indefinida e o formulário sair mesmo assim. Enquanto a resposta não
+ *     chega, a exigência fica "confere ao salvar" (`withoutKnownEmail`); link
+ *     recusado na chegada leva direto à tela de pedir outro, sem formulário.
+ *     O serviço continua sendo a autoridade ao salvar.
  */
 export function SetPasswordScreen({ token }: { token: string | undefined }) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const choice = usePasswordChoice(null);
   const [refusal, setRefusal] = useState<SetPasswordRefusal | null>(null);
+  const holder = useQuery({
+    queryKey: ["access-invitation", token],
+    queryFn: () => authApi.invitationHolder(token ?? ""),
+    enabled: AccessInvitation.of(token) !== null,
+    retry: false,
+    staleTime: Infinity,
+  });
+  const choice = usePasswordChoice(holder.data?.email ?? null);
+  useEffect(() => {
+    if (holder.error) setRefusal(SetPasswordRefusal.of(holder.error));
+  }, [holder.error]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [askingForANewLink, setAskingForANewLink] = useState(false);
@@ -120,7 +133,11 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
   return (
     <AuthScreenShell>
       <h1 className="font-display text-lg font-semibold">{t("setPassword.title")}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{t("setPassword.lead")}</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {holder.data?.firstName
+          ? t("setPassword.leadFor", { nome: holder.data.firstName })
+          : t("setPassword.lead")}
+      </p>
 
       <form className="mt-5 space-y-3" onSubmit={submit}>
         <PasswordChoiceFields choice={choice} />

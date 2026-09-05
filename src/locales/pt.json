@@ -1787,11 +1787,11 @@
   "accessRecovery.request.back": "Voltar para entrar",
   "accessRecovery.request.doneTitle": "Pedido registrado",
   "accessRecovery.request.error": "Não foi possível registrar o pedido agora. Tente de novo em alguns instantes.",
-  "setPassword.title": "Crie a sua senha",
-  "setPassword.lead": "Este link é só seu e vale uma vez. Escolha a senha com que você vai entrar.",
-  "setPassword.submit": "Salvar a senha",
-  "setPassword.submitting": "Salvando…",
-  "setPassword.done": "Senha criada. Entre com ela para começar.",
+  "setPassword.title": "Defina sua senha",
+  "setPassword.lead": "Crie uma senha para concluir a ativação da sua conta no Synapse.",
+  "setPassword.submit": "Definir senha",
+  "setPassword.submitting": "Definindo…",
+  "setPassword.done": "Senha definida. Entre com ela para começar.",
   "setPassword.backToLogin": "Voltar para entrar",
   "setPassword.askForANewLink": "Pedir um link novo",
   "setPassword.missingLink.title": "Este link está incompleto",
@@ -1895,5 +1895,8 @@
   "matrix.import.chosen": "Arquivo: {nome}",
   "matrix.import.example": "Ver o formato completo",
   "matrix.import.exampleHint": "Uma lista de capacidades; cada capacidade tem nome, sigla curta e a lista das suas competências. Baixe a amostra, edite com os seus nomes e envie.",
-  "matrix.import.sample": "Baixar amostra"
+  "matrix.import.sample": "Baixar amostra",
+  "setPassword.leadFor": "Olá, {nome}. Crie uma senha para concluir a ativação da sua conta no Synapse.",
+  "team.transition.title.teamOnly": "Mudar de time — {nome}",
+  "team.transition.body.teamOnly": "Time atual: {time}. Registra o motivo e fica no histórico da pessoa — o sistema nunca muda isso sozinho."
 }

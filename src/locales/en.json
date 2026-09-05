@@ -1787,11 +1787,11 @@
   "accessRecovery.request.back": "Back to sign in",
   "accessRecovery.request.doneTitle": "Request registered",
   "accessRecovery.request.error": "We could not register the request right now. Try again in a few moments.",
-  "setPassword.title": "Create your password",
-  "setPassword.lead": "This link is yours alone and works once. Choose the password you will sign in with.",
-  "setPassword.submit": "Save the password",
-  "setPassword.submitting": "Saving…",
-  "setPassword.done": "Password created. Sign in with it to start.",
+  "setPassword.title": "Set your password",
+  "setPassword.lead": "Create a password to finish activating your Synapse account.",
+  "setPassword.submit": "Set password",
+  "setPassword.submitting": "Setting…",
+  "setPassword.done": "Password set. Sign in with it to start.",
   "setPassword.backToLogin": "Back to sign in",
   "setPassword.askForANewLink": "Ask for a new link",
   "setPassword.missingLink.title": "This link is incomplete",
@@ -1895,5 +1895,8 @@
   "matrix.import.chosen": "File: {nome}",
   "matrix.import.example": "See the full format",
   "matrix.import.exampleHint": "A list of capabilities; each capability has a name, a short label and the list of its competencies. Download the sample, edit it with your names and upload it.",
-  "matrix.import.sample": "Download sample"
+  "matrix.import.sample": "Download sample",
+  "setPassword.leadFor": "Hello, {nome}. Create a password to finish activating your Synapse account.",
+  "team.transition.title.teamOnly": "Change team — {nome}",
+  "team.transition.body.teamOnly": "Current team: {time}. The reason is recorded and stays in the person's history — the system never changes this on its own."
 }

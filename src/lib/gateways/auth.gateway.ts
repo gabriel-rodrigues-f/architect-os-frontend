@@ -81,6 +81,13 @@ export interface AuthGateway {
   requestAccessRecovery(email: string): Promise<void>;
   restoreAccessOf(userId: string): Promise<void>;
   setPassword(token: string, newPassword: string): Promise<void>;
+  /** A quem é o convite do link — e-mail e primeiro nome — para a tela de criar a senha. */
+  invitationHolder(token: string): Promise<AccessInvitationHolder>;
+}
+
+export interface AccessInvitationHolder {
+  readonly email: string;
+  readonly firstName: string | null;
 }
 
 /**
@@ -174,4 +181,12 @@ export class HttpAuthGateway implements AuthGateway {
    */
   setPassword = (token: string, newPassword: string): Promise<void> =>
     this.client.post<void>("/auth/set-password", { token, newPassword });
+
+  /**
+   * Público e sem sessão, como o `setPassword`: quem apresenta o link é quem
+   * abriu o e-mail. É o que permite saudar a pessoa, recusar link vencido
+   * antes de qualquer digitação e conferir "não ter o seu e-mail" na tela.
+   */
+  invitationHolder = (token: string): Promise<AccessInvitationHolder> =>
+    this.client.request<AccessInvitationHolder>(`/auth/invitations/${encodeURIComponent(token)}`);
 }

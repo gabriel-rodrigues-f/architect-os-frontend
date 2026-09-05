@@ -80,6 +80,13 @@ class ServidorDoConvite {
 
   senhasCriadas: Array<{ token: string; newPassword: string }> = [];
 
+  /** O que `GET /auth/invitations/:token` responde ao abrir a tela — `null` diz a quem é. */
+  recusaAoAbrir: RecusaDoServico | null = null;
+
+  emailDoConvite = "rafael.lima@empresa.com";
+
+  convitesConsultados = 0;
+
   pedidosDeLink: Array<{ email: string }> = [];
 
   responder = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
@@ -95,6 +102,15 @@ class ServidorDoConvite {
       const recusa = this.proximaRecusa;
       if (recusa !== null) return Promise.resolve(jsonResponse(recusa.corpo, recusa.status));
       return Promise.resolve(new Response(null, { status: 204 }));
+    }
+
+    if (href.includes(apiPath("/auth/invitations/")) && metodo === "GET") {
+      this.convitesConsultados += 1;
+      const recusa = this.recusaAoAbrir;
+      if (recusa !== null) return Promise.resolve(jsonResponse(recusa.corpo, recusa.status));
+      return Promise.resolve(
+        jsonResponse({ data: { email: this.emailDoConvite, firstName: "Rafael" } }),
+      );
     }
 
     if (href.endsWith(apiPath("/auth/access-recovery")) && metodo === "POST") {
@@ -142,7 +158,7 @@ async function preencher(
 }
 
 const salvar = (usuario: ReturnType<typeof userEvent.setup>) =>
-  usuario.click(screen.getByRole("button", { name: "Salvar a senha" }));
+  usuario.click(screen.getByRole("button", { name: "Definir senha" }));
 
 beforeEach(() => {
   servidor = new ServidorDoConvite();
@@ -167,7 +183,7 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
   it("quem chega pelo link vê a criação da senha, e NÃO a tela de entrar", async () => {
     await abrirOLink(`?token=${TOKEN}`);
 
-    expect(await screen.findByText("Crie a sua senha")).toBeTruthy();
+    expect(await screen.findByText("Defina sua senha")).toBeTruthy();
     expect(screen.queryByLabelText("Senha")).toBeNull();
     expect(screen.queryByRole("button", { name: "Entrar" })).toBeNull();
     expect(screen.queryByRole("navigation")).toBeNull();
@@ -175,7 +191,7 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
 
   it("as exigências estão na tela ANTES de a pessoa errar", async () => {
     await abrirOLink(`?token=${TOKEN}`);
-    await screen.findByText("Crie a sua senha");
+    await screen.findByText("Defina sua senha");
 
     expect(screen.getByText("A senha nova precisa:")).toBeTruthy();
     for (const item of [
@@ -196,21 +212,41 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
    * Marcar a exigência como atendida seria pôr um tique verde sobre uma senha
    * que pode ser o e-mail dela inteiro.
    */
-  it("a exigência do próprio e-mail NÃO ganha tique verde — ela confere ao salvar", async () => {
+  it("a tela pergunta a quem é o convite, saúda pelo primeiro nome e confere o e-mail na hora (bug do dono, 2026-09-05)", async () => {
     const usuario = await abrirOLink(`?token=${TOKEN}`);
-    await screen.findByText("Crie a sua senha");
+    await screen.findByText("Defina sua senha");
+    expect(
+      await screen.findByText(
+        "Olá, Rafael. Crie uma senha para concluir a ativação da sua conta no Synapse.",
+      ),
+    ).toBeTruthy();
+    expect(servidor.convitesConsultados).toBe(1);
 
     await preencher(usuario, ESCOLHIDA);
+    await waitFor(() =>
+      expect(screen.getAllByText("já atendido").length).toBe(PASSWORD_REQUIREMENTS.length),
+    );
+    expect(screen.queryByText("confere ao salvar")).toBeNull();
 
-    await waitFor(() => expect(screen.getByText("confere ao salvar")).toBeTruthy());
-    expect(screen.getAllByText("já atendido").length).toBe(PASSWORD_REQUIREMENTS.length - 1);
-    expect(screen.queryByText("ainda falta")).toBeNull();
+    // A senha com o e-mail dentro fica APONTADA antes de qualquer envio.
+    await preencher(usuario, ["Rafael.lima", "#", "2026"].join(""));
+    await waitFor(() => expect(screen.getByText("ainda falta")).toBeTruthy());
     expect(servidor.senhasCriadas).toEqual([]);
+  });
+
+  it("link recusado na chegada: sem formulário, direto para pedir outro", async () => {
+    servidor.recusaAoAbrir = RecusaDoServico.linkRecusado("Este link de acesso venceu.");
+    await abrirOLink(`?token=${TOKEN}`);
+
+    expect(await screen.findByText("Este link não serve mais")).toBeTruthy();
+    expect(screen.getByText("Este link de acesso venceu.")).toBeTruthy();
+    expect(screen.queryByLabelText("Senha nova")).toBeNull();
+    expect(screen.getByRole("button", { name: "Pedir um link novo" })).toBeTruthy();
   });
 
   it("a senha criada leva ao login com o aviso — e NÃO entra sozinha", async () => {
     const usuario = await abrirOLink(`?token=${TOKEN}`);
-    await screen.findByText("Crie a sua senha");
+    await screen.findByText("Defina sua senha");
 
     await preencher(usuario, ESCOLHIDA);
     await salvar(usuario);
@@ -218,13 +254,13 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
     expect(await screen.findByLabelText("E-mail")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Entrar|Enviando/ })).toBeTruthy();
     expect(screen.queryByRole("navigation")).toBeNull();
-    expect(await screen.findByText("Senha criada. Entre com ela para começar.")).toBeTruthy();
+    expect(await screen.findByText("Senha definida. Entre com ela para começar.")).toBeTruthy();
     expect(servidor.senhasCriadas).toEqual([{ token: TOKEN, newPassword: ESCOLHIDA }]);
   });
 
   it("as duas senhas diferentes não chegam nem a sair da tela", async () => {
     const usuario = await abrirOLink(`?token=${TOKEN}`);
-    await screen.findByText("Crie a sua senha");
+    await screen.findByText("Defina sua senha");
 
     await preencher(usuario, ESCOLHIDA, OUTRA);
     await salvar(usuario);
@@ -237,7 +273,7 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
 
   it("senha fraca volta apontada na lista, com a frase daquela exigência", async () => {
     const usuario = await abrirOLink(`?token=${TOKEN}`);
-    await screen.findByText("Crie a sua senha");
+    await screen.findByText("Defina sua senha");
     servidor.proximaRecusa = RecusaDoServico.senhaFraca("symbol");
 
     await preencher(usuario, ESCOLHIDA);
@@ -275,7 +311,7 @@ describe("o link que não serve mais tem uma saída, e não é o formulário", (
    */
   it("link recusado mostra a frase do serviço e tira o formulário da frente", async () => {
     const usuario = await abrirOLink(`?token=${TOKEN}`);
-    await screen.findByText("Crie a sua senha");
+    await screen.findByText("Defina sua senha");
     servidor.proximaRecusa = RecusaDoServico.linkRecusado("Este convite já foi usado.");
 
     await preencher(usuario, ESCOLHIDA);
@@ -289,7 +325,7 @@ describe("o link que não serve mais tem uma saída, e não é o formulário", (
 
   it("nenhuma dessas telas mostra detalhe técnico", async () => {
     const usuario = await abrirOLink(`?token=${TOKEN}`);
-    await screen.findByText("Crie a sua senha");
+    await screen.findByText("Defina sua senha");
     servidor.proximaRecusa = RecusaDoServico.linkRecusado("Este convite venceu.");
 
     await preencher(usuario, ESCOLHIDA);

@@ -340,11 +340,19 @@ export function TeamOrLevelChangeDialog({
 
   return (
     <CommandWithReasonDialog
-      title={t("team.transition.title", { nome: architect.name })}
-      body={t("team.transition.body", {
-        atual: seniority.labelOf(architect.role),
-        time: currentTeam,
-      })}
+      title={
+        offersSeniority
+          ? t("team.transition.title", { nome: architect.name })
+          : t("team.transition.title.teamOnly", { nome: architect.name })
+      }
+      body={
+        offersSeniority
+          ? t("team.transition.body", {
+              atual: seniority.labelOf(architect.role),
+              time: currentTeam,
+            })
+          : t("team.transition.body.teamOnly", { time: currentTeam })
+      }
       reasonInputId="transition-reason"
       reasonLabel={t("team.transition.reasonLabel")}
       reasonPlaceholder={t(change.reasonPlaceholderKey)}
