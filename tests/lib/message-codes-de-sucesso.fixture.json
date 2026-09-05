@@ -3,381 +3,318 @@
     "analytics.cacheFlush.success": {
       "rota": "POST /cache/flush",
       "arquivo": "src/modules/analytics/infrastructure/controllers/analytics.controller.ts",
-      "linha": 77,
       "resposta": "ok"
     },
     "assessment.capability.confirm.success": {
       "rota": "POST /assessments/:id/capabilities/:capabilityId/confirm",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 298,
       "resposta": "ok"
     },
     "assessment.capability.propose.success": {
       "rota": "POST /assessments/:id/capabilities",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 270,
       "resposta": "created"
     },
     "assessment.comment.create.success": {
       "rota": "POST /assessments/:id/items/:competencyId/comments",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 380,
       "resposta": "created"
     },
     "assessment.comment.delete.success": {
       "rota": "DELETE /assessments/:id/items/:competencyId/comments/:commentId",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 410,
       "resposta": "ok"
     },
     "assessment.comment.update.success": {
       "rota": "PATCH /assessments/:id/items/:competencyId/comments/:commentId",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 397,
       "resposta": "ok"
     },
     "assessment.developmentSummary.update.success": {
       "rota": "PUT /assessments/:id/development-summary",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 360,
       "resposta": "ok"
     },
     "assessment.item.update.success": {
       "rota": "PATCH /assessments/:id/items/:competencyId",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 246,
       "resposta": "ok"
     },
     "assessment.open.success": {
       "rota": "POST /assessments",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 180,
       "resposta": "created"
     },
     "assessment.status.update.success": {
       "rota": "PATCH /assessments/:id/status",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "linha": 198,
       "resposta": "ok"
     },
     "auth.accessRecovery.requested": {
       "rota": "POST /auth/access-recovery",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 250,
       "resposta": "accepted"
     },
     "auth.accessRecovery.sent": {
       "rota": "POST /auth/users/:id/access-recovery",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 267,
       "resposta": "accepted"
     },
     "auth.login.success": {
       "rota": "POST /auth/login",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 152,
       "resposta": "ok"
     },
     "auth.register.success": {
       "rota": "POST /auth/register",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 133,
       "resposta": "created"
     },
     "auth.user.create.success": {
       "rota": "POST /auth/users",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 206,
       "resposta": "created",
       "consumidorAusente": true
     },
     "auth.user.update.success": {
       "rota": "PATCH /auth/users/:id",
       "arquivo": "src/modules/auth/infrastructure/controllers/auth.controller.ts",
-      "linha": 308,
       "resposta": "ok",
       "consumidorAusente": true
     },
     "career.teamRule.define.success": {
       "rota": "PUT /teams/:teamId/rules/:careerLevelId",
       "arquivo": "src/modules/career/infrastructure/controllers/career.controller.ts",
-      "linha": 71,
       "resposta": "ok"
     },
     "catalog.capability.create.success": {
       "rota": "POST /capabilities",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 46,
       "resposta": "created"
     },
     "catalog.capability.delete.success": {
       "rota": "DELETE /capabilities/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 76,
       "resposta": "ok"
     },
     "catalog.capability.update.success": {
       "rota": "PATCH /capabilities/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 62,
       "resposta": "ok"
     },
     "catalog.competency.bulkRemoval.success": {
       "rota": "POST /competencies/bulk-removal",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 149,
       "resposta": "ok"
     },
     "catalog.competency.create.success": {
       "rota": "POST /competencies",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 95,
       "resposta": "created"
     },
     "catalog.competency.delete.success": {
       "rota": "DELETE /competencies/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 136,
       "resposta": "ok"
     },
     "catalog.competency.update.success": {
       "rota": "PATCH /competencies/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 111,
       "resposta": "ok"
     },
     "catalog.import.success": {
       "rota": "POST /catalog/import",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "linha": 124,
       "resposta": "ok"
     },
     "config.bands.update.success": {
       "rota": "PUT /config/bands/:scale",
       "arquivo": "src/modules/config/infrastructure/controllers/config.controller.ts",
-      "linha": 55,
       "resposta": "ok"
     },
     "config.curationPolicy.update.success": {
       "rota": "PUT /config/curation-policy",
       "arquivo": "src/modules/config/infrastructure/controllers/config.controller.ts",
-      "linha": 94,
       "resposta": "ok"
     },
     "config.setting.update.success": {
       "rota": "PUT /config/settings/:key",
       "arquivo": "src/modules/config/infrastructure/controllers/config.controller.ts",
-      "linha": 115,
       "resposta": "ok"
     },
     "config.template.update.success": {
       "rota": "PUT /config/templates/:key/:locale",
       "arquivo": "src/modules/config/infrastructure/controllers/config.controller.ts",
-      "linha": 77,
       "resposta": "ok"
     },
     "config.vocabulary.create.success": {
       "rota": "POST /config/vocabularies/:vocabulary/:code",
       "arquivo": "src/modules/config/infrastructure/controllers/config.controller.ts",
-      "linha": 139,
       "resposta": "created"
     },
     "config.vocabulary.update.success": {
       "rota": "PATCH /config/vocabularies/:vocabulary/:code",
       "arquivo": "src/modules/config/infrastructure/controllers/config.controller.ts",
-      "linha": 160,
       "resposta": "ok"
     },
     "cycle.create.success": {
       "rota": "POST /cycles",
       "arquivo": "src/modules/cycles/infrastructure/controllers/cycles.controller.ts",
-      "linha": 35,
       "resposta": "created"
     },
     "cycle.setActive.success": {
       "rota": "PUT /settings/active-cycle",
       "arquivo": "src/modules/cycles/infrastructure/controllers/cycles.controller.ts",
-      "linha": 74,
       "resposta": "ok"
     },
     "cycle.update.success": {
       "rota": "PATCH /cycles/:id",
       "arquivo": "src/modules/cycles/infrastructure/controllers/cycles.controller.ts",
-      "linha": 47,
       "resposta": "ok"
     },
     "evidence.create.success": {
       "rota": "POST /evidences",
       "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "linha": 124,
       "resposta": "created"
     },
     "evidence.resubmit.success": {
       "rota": "POST /evidences/:id/resubmit",
       "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "linha": 162,
       "resposta": "ok"
     },
     "evidence.review.success": {
       "rota": "PATCH /evidences/:id/review",
       "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "linha": 145,
       "resposta": "ok"
     },
     "learningPath.create.success": {
       "rota": "POST /learning-paths",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
-      "linha": 96,
       "resposta": "created"
     },
     "learningPath.item.add.success": {
       "rota": "POST /learning-paths/:id/items",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
-      "linha": 132,
       "resposta": "created"
     },
     "learningPath.item.remove.success": {
       "rota": "DELETE /learning-paths/:pathId/items/:itemId",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
-      "linha": 148,
       "resposta": "ok"
     },
     "learningPath.progress.update.success": {
       "rota": "PATCH /learning-paths/:pathId/progress/:architectId/:itemId",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
-      "linha": 170,
       "resposta": "ok"
     },
     "learningPath.update.success": {
       "rota": "PATCH /learning-paths/:id",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
-      "linha": 109,
       "resposta": "ok"
     },
     "mentoring.create.success": {
       "rota": "POST /mentoring-sessions",
       "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",
-      "linha": 78,
       "resposta": "created"
     },
     "mentoring.recordFromScript.success": {
       "rota": "POST /mentoring-sessions/from-session-script",
       "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",
-      "linha": 128,
       "resposta": "created"
     },
     "mentoring.scheduleFollowUp.success": {
       "rota": "PATCH /mentoring-sessions/:id",
       "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",
-      "linha": 146,
       "resposta": "ok"
     },
     "people.allocate.success": {
       "rota": "POST /architects/:id/team-allocation",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 178,
       "resposta": "ok"
     },
     "people.careerLevelTransition.success": {
       "rota": "POST /architects/:id/career-level-transition",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 103,
       "resposta": "ok"
     },
     "people.deactivate.success": {
       "rota": "POST /architects/:id/deactivate",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 133,
       "resposta": "ok"
     },
     "people.reactivate.success": {
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 149,
       "resposta": "ok",
       "rota": "POST /architects/:id/reactivate"
     },
     "people.release.success": {
       "rota": "DELETE /architects/:id/team-allocation",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 192,
       "resposta": "ok"
     },
     "people.update.success": {
       "rota": "PATCH /architects/:id",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
-      "linha": 84,
       "resposta": "ok"
     },
     "plan.item.add.success": {
       "rota": "POST /plans/:architectId/items",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 143,
       "resposta": "created"
     },
     "plan.item.addFromGap.success": {
       "rota": "POST /plans/:architectId/items/from-gap",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 163,
       "resposta": "created"
     },
     "plan.item.checkin.success": {
       "rota": "POST /plans/:planId/items/:itemId/checkins",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 237,
       "resposta": "created"
     },
     "plan.item.reschedule.success": {
       "rota": "POST /plans/:planId/items/:itemId/reschedule",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 210,
       "resposta": "ok"
     },
     "plan.item.update.success": {
       "rota": "PATCH /plans/:planId/items/:itemId",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 186,
       "resposta": "ok"
     },
     "plan.reopen.success": {
       "rota": "POST /plans/:planId/reopen",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 297,
       "resposta": "ok"
     },
     "plan.status.update.success": {
       "rota": "PATCH /plans/:planId/status",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "linha": 274,
       "resposta": "ok"
     },
     "team.deactivate.success": {
       "rota": "POST /teams/:teamId/deactivate",
       "arquivo": "src/modules/people/infrastructure/controllers/teams.controller.ts",
-      "linha": 82,
       "resposta": "ok"
     },
     "team.membership.assign.success": {
       "rota": "POST /teams/:teamId/memberships",
       "arquivo": "src/modules/auth/infrastructure/controllers/team-membership.controller.ts",
-      "linha": 90,
       "resposta": "created"
     },
     "team.membership.reassign.success": {
       "rota": "PATCH /teams/:teamId/memberships/:userId/:role",
       "arquivo": "src/modules/auth/infrastructure/controllers/team-membership.controller.ts",
-      "linha": 114,
       "resposta": "ok"
     },
     "team.register.success": {
       "rota": "POST /teams",
       "arquivo": "src/modules/people/infrastructure/controllers/teams.controller.ts",
-      "linha": 54,
       "resposta": "created"
     },
     "team.rename.success": {
       "rota": "PATCH /teams/:teamId",
       "arquivo": "src/modules/people/infrastructure/controllers/teams.controller.ts",
-      "linha": 69,
       "resposta": "ok"
     }
   }

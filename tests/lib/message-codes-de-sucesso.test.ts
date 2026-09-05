@@ -113,7 +113,6 @@ const FALLBACK_GENERICO = "users.title" as MessageKey;
 interface EntradaDoBackend {
   readonly rota: string;
   readonly arquivo: string;
-  readonly linha: number;
   readonly resposta: string;
   readonly consumidorAusente?: boolean;
 }
@@ -121,17 +120,14 @@ interface EntradaDoBackend {
 const CODIGOS_EMITIDOS: Readonly<Record<string, EntradaDoBackend>> = inventarioDoBackend.codigos;
 
 /**
- * O número da linha é artefato de edição, não contrato: qualquer mexida no
- * backend o move e quebraria o build do frontend por ruído. O que precisa
- * casar é o conjunto de códigos e, para cada um, a rota, o arquivo e a forma
- * da resposta — isso sim é o que o frontend consome.
+ * O que precisa casar é o conjunto de códigos e, para cada um, a rota, o
+ * arquivo e a forma da resposta — isso sim é o que o frontend consome. (O
+ * número da linha, que este helper descartava, saiu do inventário do backend
+ * em 2026-09-05 pelo mesmo motivo: artefato de edição, não contrato.)
  */
 function semLinhas(codigos: Readonly<Record<string, EntradaDoBackend>>): unknown {
   return Object.fromEntries(
-    Object.entries(codigos).map(([code, entrada]) => {
-      const { linha: _linha, ...contrato } = entrada;
-      return [code, contrato];
-    }),
+    Object.entries(codigos).map(([code, entrada]) => [code, { ...entrada }]),
   );
 }
 
@@ -188,7 +184,7 @@ describe("ARQ-18 — todo messageCode que o backend emite tem tradução aqui", 
 
       const resolvida = successMessageOf(await respostaComCodigo(code), FALLBACK_GENERICO);
       if (resolvida !== `${PREFIXO_DE_MENSAGEM}${code}`) {
-        degradaram.push(`${code} (${entrada.rota}, ${entrada.arquivo}:${String(entrada.linha)})`);
+        degradaram.push(`${code} (${entrada.rota}, ${entrada.arquivo})`);
       }
     }
 
@@ -264,11 +260,10 @@ describe("ARQ-18 — procedência da cópia do fixture do backend", () => {
     expect(Object.keys(CODIGOS_EMITIDOS)).toHaveLength(CODIGOS_ESPERADOS);
   });
 
-  it("todo código do fixture nomeia a rota, o arquivo e a linha que o emitem", () => {
+  it("todo código do fixture nomeia a rota e o arquivo que o emitem", () => {
     for (const [code, entrada] of Object.entries(CODIGOS_EMITIDOS)) {
       expect(entrada.rota, code).toMatch(/^(GET|POST|PUT|PATCH|DELETE) \//);
       expect(entrada.arquivo, code).toMatch(/\.controller\.ts$/);
-      expect(entrada.linha, code).toBeGreaterThan(0);
     }
   });
 
