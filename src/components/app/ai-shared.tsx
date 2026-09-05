@@ -146,6 +146,63 @@ export function AiRunResult<P, T>({
   return <div className="mt-4">{children(advice)}</div>;
 }
 
+/**
+ * O texto da IA chega em linhas: um título de bloco termina em dois-pontos,
+ * um tópico começa com travessão, o resto é parágrafo. Foi o combinado com
+ * o narrador (`FORMAT` em `anthropic-ai-narrator.ts`) no dia em que o dono
+ * viu cerquilha e asterisco crus na tela — a tela não interpreta markdown
+ * de propósito (o texto entra como filho de JSX, inerte), então o formato
+ * que ela entende é este, e só este.
+ */
+export class AdviceLine {
+  private static readonly HEADING_LIMIT = 80;
+
+  private constructor(
+    readonly kind: "heading" | "item" | "paragraph",
+    readonly text: string,
+  ) {}
+
+  static of(raw: string): AdviceLine {
+    const line = raw.trim();
+    if (/^[–—-]\s+/u.test(line)) return new AdviceLine("item", line.replace(/^[–—-]\s+/u, ""));
+    if (line.endsWith(":") && line.length <= AdviceLine.HEADING_LIMIT) {
+      return new AdviceLine("heading", line.slice(0, -1));
+    }
+    return new AdviceLine("paragraph", line);
+  }
+
+  static allOf(text: string): AdviceLine[] {
+    return text
+      .split("\n")
+      .map((raw) => raw.trim())
+      .filter((raw) => raw !== "")
+      .map((raw) => AdviceLine.of(raw));
+  }
+}
+
+export function AdviceText({ text, className }: { text: string; className?: string }) {
+  const lines = AdviceLine.allOf(text);
+  return (
+    <div className={className ?? "mt-2 max-w-prose text-sm"}>
+      {lines.map((line, index) =>
+        line.kind === "heading" ? (
+          <p key={index} className="mt-3 font-medium first:mt-0">
+            {line.text}
+          </p>
+        ) : line.kind === "item" ? (
+          <p key={index} className="mt-1 pl-4 before:mr-2 before:content-['–']">
+            {line.text}
+          </p>
+        ) : (
+          <p key={index} className="mt-2 first:mt-0">
+            {line.text}
+          </p>
+        ),
+      )}
+    </div>
+  );
+}
+
 export function AiSuggestionFrame({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   return (
@@ -182,9 +239,7 @@ export function PersonAdviceBody({
           ))}
         </ol>
       )}
-      {advice.narration !== null && (
-        <p className="mt-2 max-w-prose whitespace-pre-line text-sm">{advice.narration}</p>
-      )}
+      {advice.narration !== null && <AdviceText text={advice.narration} />}
       {advice.narrationUnavailable !== null && (
         <p role="status" className="mt-2 max-w-prose text-sm text-muted-foreground">
           {advice.narrationUnavailable}
@@ -402,7 +457,7 @@ export function WorkAssistanceBody({ assistance }: { assistance: WorkAssistance 
   return (
     <AiSuggestionFrame>
       <AdviceFactList label={t("ai.work.observations")} items={assistance.observations} />
-      <p className="mt-3 max-w-prose whitespace-pre-line text-sm">{assistance.reading}</p>
+      <AdviceText text={assistance.reading} className="mt-3 max-w-prose text-sm" />
       <p className="mt-3 max-w-prose text-xs text-muted-foreground">{t("ai.work.disclosure")}</p>
     </AiSuggestionFrame>
   );
@@ -516,9 +571,7 @@ export function StagnationAlertSection({
                 ? t("ai.stagnation.requiresAttention")
                 : t("ai.stagnation.clear")}
             </p>
-            {alert.alert !== null && (
-              <p className="mt-2 max-w-prose whitespace-pre-line text-sm">{alert.alert}</p>
-            )}
+            {alert.alert !== null && <AdviceText text={alert.alert} />}
             <AdviceFactList label={t("ai.stagnation.signals")} items={alert.signals} />
             <p className="mt-3 max-w-prose text-xs text-muted-foreground">
               {t("ai.stagnation.disclosure")}
