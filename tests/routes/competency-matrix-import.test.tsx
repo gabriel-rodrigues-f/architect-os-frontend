@@ -10,6 +10,7 @@ import {
   jsonResponse,
   mockAppFetch,
   renderWithApp,
+  hrefOf,
 } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -41,7 +42,10 @@ const payload = JSON.stringify({
 const countGets = (suffix: string) =>
   fetchMock.mock.calls.filter((call) => {
     const [url, init] = call as [string, RequestInit | undefined];
-    return String(url).endsWith(suffix) && ((init as RequestInit)?.method ?? "GET") === "GET";
+    return (
+      hrefOf(url as string | URL | Request).endsWith(suffix) &&
+      ((init as RequestInit)?.method ?? "GET") === "GET"
+    );
   }).length;
 
 beforeEach(() => {
@@ -97,7 +101,7 @@ describe("Importar catálogo (CFG-07)", () => {
     ).toBe(false);
   });
 
-  it("enviar faz o POST, mostra o resumo REAL no toast e invalida /api/v1/state; 400 vai para role=alert", async () => {
+  it("enviar faz o POST, mostra o resumo REAL no toast e invalida as fatias de contexto; 400 vai para role=alert", async () => {
     mockAppFetch(fetchMock, {
       routes: [
         careerLevelsRoute,
@@ -123,7 +127,7 @@ describe("Importar catálogo (CFG-07)", () => {
     const textarea = screen.getByLabelText("Ou cole o JSON");
     await userEvent.click(textarea);
     await userEvent.paste(payload);
-    const stateGetsBefore = countGets(apiPath("/state"));
+    const stateGetsBefore = countGets(apiPath("/competencies"));
     await userEvent.click(screen.getByRole("button", { name: "Importar" }));
 
     await waitFor(() => {
@@ -135,7 +139,7 @@ describe("Importar catálogo (CFG-07)", () => {
       expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual(JSON.parse(payload));
     });
     await waitFor(() => {
-      expect(countGets(apiPath("/state"))).toBeGreaterThan(stateGetsBefore);
+      expect(countGets(apiPath("/competencies"))).toBeGreaterThan(stateGetsBefore);
     });
   });
 

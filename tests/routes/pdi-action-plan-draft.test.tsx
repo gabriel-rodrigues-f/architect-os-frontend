@@ -5,7 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as PlansRoute } from "@/routes/development-plans";
 import type { AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
-import { type FetchRoute, jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import {
+  contextsOf,
+  type FetchRoute,
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+} from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -60,13 +66,15 @@ function estadoRevalidado(): AppState {
   };
 }
 
+/** A N-ésima leitura de CADA fatia recebe o N-ésimo estado — o refetch depois da escrita vê o estado seguinte. */
 function statePorChamada(...respostas: AppState[]): FetchRoute {
-  let chamadas = 0;
-  return (href) => {
-    if (!href.endsWith(apiPath("/state"))) return undefined;
-    const resposta = respostas[Math.min(chamadas, respostas.length - 1)]!;
-    chamadas += 1;
-    return jsonResponse(resposta);
+  const chamadas = new Map<string, number>();
+  return (href, init) => {
+    const caminho = new URL(href, "http://localhost").pathname;
+    const vez = chamadas.get(caminho) ?? 0;
+    const resposta = contextsOf(respostas[Math.min(vez, respostas.length - 1)]!)(href, init);
+    if (resposta) chamadas.set(caminho, vez + 1);
+    return resposta;
   };
 }
 

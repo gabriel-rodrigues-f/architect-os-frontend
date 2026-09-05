@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useStore } from "@/lib/store";
 import { fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -69,7 +70,7 @@ describe("store.updatePlanItem — reconcilia version no sucesso (evita 409 esp�
   });
 
   it("a segunda edição manda o expectedVersion reconciliado da primeira, não o palpite otimista original", async () => {
-    renderWithApp(<UpdatePlanItemProbe />);
+    renderWithApp(<UpdatePlanItemProbe />, { contexts: SELECTOR_CONTEXTS });
     const button = await screen.findByRole("button", { name: "Atualizar item" });
 
     await userEvent.click(button);

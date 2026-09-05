@@ -52,7 +52,7 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
   });
 
   it("renderiza o painel do admin pelos contextos, sem nenhuma chamada a /state", async () => {
-    renderWithApp(<DashboardPage />, { storeMode: "contexts" });
+    renderWithApp(<DashboardPage />);
 
     expect(await screen.findByText("Painel de Capacidades")).toBeTruthy();
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);

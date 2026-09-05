@@ -14,6 +14,7 @@ import {
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
@@ -40,6 +41,8 @@ export const Route = createFileRoute("/progression")({
   component: ProgressionPage,
 });
 
+const PROGRESSION_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS];
+
 function ProgressionPage() {
   const user = useCurrentUser();
   const { t } = useI18n();
@@ -57,7 +60,11 @@ function ProgressionPage() {
     );
   }
 
-  return <TeamProgression />;
+  return (
+    <ContextScope contexts={PROGRESSION_CONTEXTS}>
+      <TeamProgression />
+    </ContextScope>
+  );
 }
 
 function TeamProgression() {

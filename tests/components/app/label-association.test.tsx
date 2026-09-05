@@ -26,6 +26,13 @@ import { NewMentoringSessionDialog } from "@/components/app/mentoring-shared";
 import { ThemeProvider } from "@/lib/theme";
 import { fixtureMemberUser, fixtureState } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
+import { type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+
+/** As fatias que a rota /mentoring pede — os diálogos de mentoria leem seletores e sessões. */
+const MENTORING_CONTEXTS: readonly ContextScopeRequest[] = [
+  ...SELECTOR_CONTEXTS,
+  "mentoringSessions",
+];
 
 /**
  * QA-04 (onda 5) — `<label for="x">` só rotula elemento ROTULÁVEL (button,
@@ -84,6 +91,7 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
           <div>conteúdo</div>
         </AppShell>
       </ThemeProvider>,
+      { contexts: MENTORING_CONTEXTS },
     );
 
     await screen.findByText("conteúdo");
@@ -98,6 +106,7 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
           <div>conteúdo</div>
         </AppShell>
       </ThemeProvider>,
+      { contexts: MENTORING_CONTEXTS },
     );
 
     await screen.findByText("conteúdo");
@@ -109,7 +118,9 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
   it("mentoria: as listas de competências do formulário não deixam rótulo órfão", async () => {
     mockAppFetch(fetchMock);
     const user = userEvent.setup();
-    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.architects]} />);
+    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.architects]} />, {
+      contexts: MENTORING_CONTEXTS,
+    });
 
     await user.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     await screen.findByRole("dialog");
@@ -120,7 +131,9 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
   it("mentoria: a lista de competências discutidas tem nome acessível de grupo", async () => {
     mockAppFetch(fetchMock);
     const user = userEvent.setup();
-    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.architects]} />);
+    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.architects]} />, {
+      contexts: MENTORING_CONTEXTS,
+    });
 
     await user.click(await screen.findByRole("button", { name: "Registrar sessão" }));
     await screen.findByRole("dialog");

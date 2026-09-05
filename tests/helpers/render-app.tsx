@@ -9,7 +9,8 @@ import { apiPath, isApiUrl } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { EffectiveCurationPolicy } from "@/lib/curation-policy";
 import { I18nProvider } from "@/lib/i18n";
-import { StoreProvider, type StoreProviderMode } from "@/lib/store";
+import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
+import { StoreProvider } from "@/lib/store";
 import { fixtureAdminUser, fixtureCareerLevels, fixtureState } from "./fixtures";
 
 /**
@@ -95,6 +96,7 @@ function stateContextResponse(
   if (path.endsWith(apiPath("/capabilities"))) return jsonResponse(state.capabilities);
   if (path.endsWith(apiPath("/competencies"))) return jsonResponse(state.competencies);
   if (path.endsWith(apiPath("/cycles"))) return jsonResponse(state.cycles);
+  if (path.endsWith(apiPath("/team-rules"))) return jsonResponse(state.teamLevelRules);
   if (path.endsWith(apiPath("/settings/active-cycle")))
     return jsonResponse({ cycleId: state.activeCycleId });
   if (path.endsWith(apiPath("/plans"))) return jsonResponse(byArchitect(state.plans));
@@ -164,7 +166,6 @@ export function mockAppFetch(
       if (response) return respond(response);
     }
     if (href.endsWith(apiPath("/auth/me"))) return respond(jsonResponse(user));
-    if (href.endsWith(apiPath("/state"))) return respond(jsonResponse(state));
     const configuration = configurationRoute(href, effectiveInit);
     if (configuration) return respond(configuration);
     const contextResponse = stateContextResponse(state, href, effectiveInit);
@@ -174,10 +175,10 @@ export function mockAppFetch(
 }
 
 /**
- * Onda 36 — toda escrita de catálogo invalida a query de `/state` (contagem e
- * status de curadoria vêm do servidor). Nos testes, a rota de escrita marca o
- * momento e o `/state` seguinte serve o estado PÓS-escrita: sem isto o refetch
- * devolveria a fixture original e desfaria na tela o que a escrita fez.
+ * Onda 36 — toda escrita de catálogo invalida as fatias de contexto (contagem
+ * e status de curadoria vêm do servidor). Nos testes, a rota de escrita marca
+ * o momento e as leituras seguintes servem o estado PÓS-escrita: sem isto o
+ * refetch devolveria a fixture original e desfaria na tela o que a escrita fez.
  */
 export function writeRefetchesState(write: FetchRoute, stateAfter: AppState): FetchRoute[] {
   let written = false;
@@ -186,10 +187,8 @@ export function writeRefetchesState(write: FetchRoute, stateAfter: AppState): Fe
     if (response) written = true;
     return response;
   };
-  const stateRoute: FetchRoute = (href, init) =>
-    written && href.endsWith(apiPath("/state")) && (init?.method ?? "GET").toUpperCase() === "GET"
-      ? jsonResponse(stateAfter)
-      : undefined;
+  const after = contextsOf(stateAfter);
+  const stateRoute: FetchRoute = (href, init) => (written ? after(href, init) : undefined);
   return [stateRoute, writeRoute];
 }
 
@@ -220,20 +219,14 @@ function AuthReady({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function AppWrapper({
-  children,
-  storeMode,
-}: {
-  children: ReactNode;
-  storeMode: StoreProviderMode;
-}) {
+function AppWrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <AuthProvider>
           <AuthReady>
-            <StoreProvider mode={storeMode}>{children}</StoreProvider>
+            <StoreProvider>{children}</StoreProvider>
           </AuthReady>
         </AuthProvider>
       </I18nProvider>
@@ -241,13 +234,34 @@ function AppWrapper({
   );
 }
 
-/** `render` já embrulhado nos providers do app — combine com `mockAppFetch` no `beforeEach`. */
+/**
+ * `render` já embrulhado nos providers do app — combine com `mockAppFetch` no
+ * `beforeEach`. Uma ROTA monta o próprio `<ContextScope>`; um componente ou
+ * hook solto que lê o store pede as fatias em `contexts`, como a rota faria.
+ */
 export function renderWithApp(
   ui: ReactNode,
-  { storeMode = "blob" }: { storeMode?: StoreProviderMode } = {},
+  { contexts }: { contexts?: readonly ContextScopeRequest[] } = {},
 ): ReturnType<typeof render> {
-  return render(<AppWrapper storeMode={storeMode}>{ui}</AppWrapper>);
+  return render(
+    <AppWrapper>
+      {contexts ? <ContextScope contexts={contexts}>{ui}</ContextScope> : ui}
+    </AppWrapper>,
+  );
 }
+
+/** O gateway de contextos manda um `Request`; o cliente antigo mandava a URL em string. */
+export const hrefOf = (input: string | URL | Request): string =>
+  input instanceof Request ? input.url : String(input);
+
+/**
+ * Serve as fatias de contexto a partir de UM estado — para o teste que
+ * precisa de massa própria, ou de um estado diferente depois de uma escrita.
+ */
+export const contextsOf =
+  (state: AppState): FetchRoute =>
+  (href, init) =>
+    stateContextResponse(state, href, init);
 
 /**
  * Faz `useNarrowViewport(768)` reportar estreito (ou largo) — jsdom não mede

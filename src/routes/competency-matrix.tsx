@@ -28,6 +28,7 @@ import { LEVELS, type Competency, type Capability } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { workAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { CompetencyNameConflict } from "@/lib/competency-name-conflict";
 import type { AffectedRecords, CompetencyRemovalOutcome } from "@/lib/gateways/catalog.gateway";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -73,7 +74,17 @@ export const Route = createFileRoute("/competency-matrix")({
   component: MatrixPage,
 });
 
+const MATRIX_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS, "learningPaths"];
+
 function MatrixPage() {
+  return (
+    <ContextScope contexts={MATRIX_CONTEXTS}>
+      <MatrixScreen />
+    </ContextScope>
+  );
+}
+
+function MatrixScreen() {
   const store = useStore();
   const viewModel = useCompetencyMatrixViewModel();
 

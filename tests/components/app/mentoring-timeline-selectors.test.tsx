@@ -7,6 +7,13 @@ import type { MentoringSession } from "@/lib/domain";
 import { useSelectors } from "@/lib/store";
 import { fixtureState } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
+import { type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+
+/** As mesmas fatias que a rota /mentoring pede — a linha do tempo lê seletores e sessões. */
+const MENTORING_CONTEXTS: readonly ContextScopeRequest[] = [
+  ...SELECTOR_CONTEXTS,
+  "mentoringSessions",
+];
 
 /**
  * F2 (caminhos quentes) — cada item da linha do tempo chamava `useSelectors()`
@@ -59,7 +66,7 @@ describe("linha do tempo de mentoria — um índice de selectors por lista (F2)"
   it("mostra tema, mentorado, mentor, data e duração de cada sessão", async () => {
     const sessions = [sessionAt(0), sessionAt(1), sessionAt(2)];
     mockAppFetch(fetchMock, { state: stateWith(sessions) });
-    renderWithApp(<MentoringTimeline sessions={sessions} />);
+    renderWithApp(<MentoringTimeline sessions={sessions} />, { contexts: MENTORING_CONTEXTS });
 
     for (const [index, session] of sessions.entries()) {
       expect(await screen.findByText(session.topic)).toBeTruthy();
@@ -83,7 +90,7 @@ describe("linha do tempo de mentoria — um índice de selectors por lista (F2)"
     const uma = [sessionAt(0)];
     mockAppFetch(fetchMock, { state: stateWith(uma) });
     vi.mocked(useSelectors).mockClear();
-    renderWithApp(<MentoringTimeline sessions={uma} />);
+    renderWithApp(<MentoringTimeline sessions={uma} />, { contexts: MENTORING_CONTEXTS });
     await screen.findByText("Tema 0");
     const comUmaSessao = vi.mocked(useSelectors).mock.calls.length;
 
@@ -92,7 +99,7 @@ describe("linha do tempo de mentoria — um índice de selectors por lista (F2)"
     const quatro = [sessionAt(0), sessionAt(1), sessionAt(2), sessionAt(3)];
     mockAppFetch(fetchMock, { state: stateWith(quatro) });
     vi.mocked(useSelectors).mockClear();
-    renderWithApp(<MentoringTimeline sessions={quatro} />);
+    renderWithApp(<MentoringTimeline sessions={quatro} />, { contexts: MENTORING_CONTEXTS });
     await screen.findByText("Tema 3");
     const comQuatroSessoes = vi.mocked(useSelectors).mock.calls.length;
 

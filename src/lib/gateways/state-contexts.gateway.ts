@@ -21,6 +21,7 @@ import {
   learningPathsResponseSchema,
   mentoringSessionsResponseSchema,
   plansResponseSchema,
+  teamLevelRulesResponseSchema,
 } from "../api-schemas";
 import type {
   Architect,
@@ -32,6 +33,7 @@ import type {
   Evidence,
   LearningPath,
   MentoringSession,
+  TeamLevelRule,
 } from "../domain";
 
 export interface ArchitectScopedFilter {
@@ -44,6 +46,7 @@ export interface StateContextsGateway {
   listCapabilities(): Promise<Capability[]>;
   listCompetencies(): Promise<Competency[]>;
   listCycles(): Promise<DevelopmentCycle[]>;
+  listTeamLevelRules(): Promise<TeamLevelRule[]>;
   activeCycle(): Promise<{ cycleId: string }>;
   listPlans(filter?: ArchitectScopedFilter): Promise<DevelopmentPlan[]>;
   listLearningPaths(filter?: ArchitectScopedFilter): Promise<LearningPath[]>;
@@ -120,6 +123,9 @@ export class HttpStateContextsGateway implements StateContextsGateway {
 
   listCycles = (): Promise<DevelopmentCycle[]> =>
     this.reading(() => this.contract.GET("/api/v1/cycles"), cyclesResponseSchema);
+
+  listTeamLevelRules = (): Promise<TeamLevelRule[]> =>
+    this.reading(() => this.contract.GET("/api/v1/team-rules"), teamLevelRulesResponseSchema);
 
   activeCycle = (): Promise<{ cycleId: string }> =>
     this.reading(

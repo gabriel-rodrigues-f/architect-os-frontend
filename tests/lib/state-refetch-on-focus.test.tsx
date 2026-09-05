@@ -3,18 +3,19 @@ import { cleanup, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type AppState } from "@/lib/api";
+import { ContextScope } from "@/lib/context-scope";
 import { useStore } from "@/lib/store";
 import { fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
- * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `/api/v1/state` é o BFF
- * agregador de todo o app (ADR-0011); o default do React Query
- * (`refetchOnWindowFocus: true`) refazia essa busca INTEIRA toda vez que a
- * janela recuperava o foco depois de `staleTime` vencido, um padrão de uso
- * comum (alternar abas). `refetchOnWindowFocus: false` (`store.tsx`) evita
- * isso — mutations já invalidam a query explicitamente quando precisam.
+ * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o default do React Query
+ * (`refetchOnWindowFocus: true`) refazia a leitura do estado INTEIRA toda vez
+ * que a janela recuperava o foco depois de `staleTime` vencido, um padrão de
+ * uso comum (alternar abas). Valia para o blob `/state`; vale igual para cada
+ * fatia de contexto (`state-contexts.ts`) — mutations invalidam
+ * explicitamente quando precisam.
  */
 
 const fetchMock = vi.fn();
@@ -27,9 +28,11 @@ function StoreProbe() {
 }
 
 const countStateFetches = () =>
-  fetchMock.mock.calls.filter(([url]) => String(url).endsWith(apiPath("/state"))).length;
+  fetchMock.mock.calls.filter(([url]) =>
+    (url instanceof Request ? url.url : String(url)).endsWith(apiPath("/architects")),
+  ).length;
 
-describe("estado global — não refaz /api/v1/state ao recuperar o foco da janela (R2-TEC-19)", () => {
+describe("fatia de contexto — não refaz a leitura ao recuperar o foco da janela (R2-TEC-19)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -45,8 +48,12 @@ describe("estado global — não refaz /api/v1/state ao recuperar o foco da jane
     focusManager.setFocused(undefined);
   });
 
-  it("recuperar o foco da janela depois do staleTime não dispara um novo fetch de /api/v1/state", async () => {
-    renderWithApp(<StoreProbe />);
+  it("recuperar o foco da janela depois do staleTime não dispara um novo fetch da fatia", async () => {
+    renderWithApp(
+      <ContextScope contexts={["architects"]}>
+        <StoreProbe />
+      </ContextScope>,
+    );
 
     await waitFor(() => expect(countStateFetches()).toBe(1));
     await screen.findByText(`arquitetos:${(fixtureState as AppState).architects.length}`);

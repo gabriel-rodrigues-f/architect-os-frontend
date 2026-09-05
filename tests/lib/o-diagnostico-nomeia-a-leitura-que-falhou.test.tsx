@@ -11,8 +11,9 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * único consumidor dele é o diagnóstico de desenvolvimento, e nenhum teste o
  * olhava. Pior que não pinado: ele MENTIA. O `ContextScope` renderizava a
  * tela de falha sem dizer o que falhou, e o padrão do componente era
- * `/api/v1/state` — a rota que o estrangulamento tirou justamente dessas
- * telas. Quem depurava uma falha em `plans` era mandado investigar `/state`.
+ * `/api/v1/state` — a rota do blob que o estrangulamento tirou dessas telas
+ * (e que hoje não existe mais). Quem depurava uma falha em `plans` era
+ * mandado investigar `/state`.
  *
  * Duas mudanças prendem isso:
  *   - `resource` deixou de ter padrão. Quem mostra a falha é obrigado a
@@ -56,7 +57,6 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
       <ContextScope contexts={["plans"]}>
         <p>conteúdo</p>
       </ContextScope>,
-      { storeMode: "contexts" },
     );
     await screen.findByText(TELA_DE_FALHA, undefined, { timeout: 5000 });
     const diagnosticos = linhasDeDiagnostico().filter((linha) =>
@@ -72,7 +72,6 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
       <ContextScope contexts={["evidences"]}>
         <p>conteúdo</p>
       </ContextScope>,
-      { storeMode: "contexts" },
     );
     await screen.findByText(TELA_DE_FALHA, undefined, { timeout: 5000 });
     const diagnosticos = linhasDeDiagnostico().filter((linha) =>
@@ -88,7 +87,6 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
       <ContextScope contexts={["architects", "plans", "evidences"]}>
         <p>conteúdo</p>
       </ContextScope>,
-      { storeMode: "contexts" },
     );
     await screen.findByText(TELA_DE_FALHA, undefined, { timeout: 5000 });
     const diagnosticos = linhasDeDiagnostico().filter((linha) =>
@@ -96,19 +94,5 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
     );
     expect(diagnosticos.some((linha) => linha.includes("evidences"))).toBe(true);
     expect(diagnosticos.some((linha) => linha.includes("architects"))).toBe(false);
-  });
-
-  it("a leitura do blob continua se nomeando /state — a rede não vale por vacuidade", async () => {
-    mockAppFetch(fetchMock, { state: fixtureState, routes: [rotaQueFalha("/state")] });
-    renderWithApp(
-      <ContextScope contexts={["plans"]}>
-        <p>conteúdo</p>
-      </ContextScope>,
-    );
-    await screen.findByText(TELA_DE_FALHA, undefined, { timeout: 5000 });
-    const diagnosticos = linhasDeDiagnostico().filter((linha) =>
-      linha.includes("falha ao carregar"),
-    );
-    expect(diagnosticos.some((linha) => linha.includes(apiPath("/state")))).toBe(true);
   });
 });

@@ -17,7 +17,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import { type AppState, type SessionUser } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { configurationRoute, renderWithApp } from "../helpers/render-app";
+import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -75,7 +75,8 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
 
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    fetchMock.mockImplementation((input: string | URL | Request, init?: RequestInit) => {
+      const url = hrefOf(input);
       const href = String(url);
       if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
@@ -85,14 +86,8 @@ describe("Necessidades de Treinamento — criar intervenção coletiva", () => {
           }),
         );
       }
-      if (href.endsWith(apiPath("/state"))) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
+      const fatia = contextsOf(state)(href, init);
+      if (fatia) return Promise.resolve(fatia);
       if (init?.method === "POST" && href.endsWith(apiPath("/learning-paths"))) {
         // O servidor gera o id de verdade e devolve o recurso completo — a
         // store não insere mais o objeto local otimista (ver AUDITORIA-

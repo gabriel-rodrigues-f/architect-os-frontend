@@ -15,6 +15,7 @@ import {
   mockAppFetch,
   renderWithApp,
   type FetchRoute,
+  contextsOf,
 } from "../helpers/render-app";
 
 /**
@@ -123,21 +124,18 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
       new Map([["security-iam", { ...nothing, assessments: 2, teamRuleRequirements: 1 }]]),
     );
     vi.spyOn(api, "removeCompetencies").mockImplementation(gateway.removeCompetencies);
-    // Onda 36: a remoção invalida a query de /state — o refetch serve o estado
-    // pós-remoção, como o servidor faria (contagens de curadoria recalculadas).
+    // Onda 36: a remoção invalida as fatias de contexto — o refetch serve o
+    // estado pós-remoção, como o servidor faria (contagens de curadoria recalculadas).
+    const afterRemoval = contextsOf({
+      ...fixtureState,
+      competencies: fixtureState.competencies
+        .filter((competency) => competency.id !== "cloud-k8s")
+        .map((competency) =>
+          competency.id === "security-iam" ? { ...competency, active: false } : competency,
+        ),
+    });
     const stateAfterRemoval: FetchRoute = (href, init) =>
-      gateway.removalsMade.length > 0 &&
-      href.endsWith(apiPath("/state")) &&
-      (init?.method ?? "GET") === "GET"
-        ? jsonResponse({
-            ...fixtureState,
-            competencies: fixtureState.competencies
-              .filter((competency) => competency.id !== "cloud-k8s")
-              .map((competency) =>
-                competency.id === "security-iam" ? { ...competency, active: false } : competency,
-              ),
-          })
-        : undefined;
+      gateway.removalsMade.length > 0 ? afterRemoval(href, init) : undefined;
     mockAppFetch(fetchMock, { routes: [stateAfterRemoval, careerLevelsRoute] });
 
     await renderMatrix();

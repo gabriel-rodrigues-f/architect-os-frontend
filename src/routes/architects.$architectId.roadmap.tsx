@@ -18,6 +18,7 @@ import {
 } from "@/components/app";
 import { api, personAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import type { CareerLevel } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -63,7 +64,11 @@ function ArchitectRoadmap() {
     );
   }
 
-  return <RoadmapOfArchitect architectId={architectId} />;
+  return (
+    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
+      <RoadmapOfArchitect architectId={architectId} />
+    </ContextScope>
+  );
 }
 
 function useCareerRoadmapViewModel(): CareerRoadmapViewModel {

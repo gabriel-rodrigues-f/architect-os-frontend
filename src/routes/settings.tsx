@@ -18,6 +18,7 @@ import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { teamsApi } from "@/lib/api";
 import { LEVELS, type CareerLevel } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useLabels } from "@/lib/labels";
 import {
   ProgressionMinimumPresenter,
@@ -90,13 +91,16 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
+const SETTINGS_CONTEXTS: readonly ContextScopeRequest[] = [
+  "capabilities",
+  "cycles",
+  "teamLevelRules",
+];
+
 function SettingsPage() {
-  const store = useStore();
-  const labels = useLabels();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const help = usePageHelp("settings");
   const user = useCurrentUser();
-  const isAdmin = user.role === "admin";
   const isLeadership = defaultUiAuthorizationPolicy.isLeadership(user);
 
   if (!isLeadership) {
@@ -109,6 +113,21 @@ function SettingsPage() {
       />
     );
   }
+
+  return (
+    <ContextScope contexts={SETTINGS_CONTEXTS}>
+      <SettingsScreen />
+    </ContextScope>
+  );
+}
+
+function SettingsScreen() {
+  const store = useStore();
+  const labels = useLabels();
+  const { t, locale } = useI18n();
+  const help = usePageHelp("settings");
+  const user = useCurrentUser();
+  const isAdmin = user.role === "admin";
 
   return (
     <>

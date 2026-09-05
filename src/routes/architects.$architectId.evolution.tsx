@@ -18,6 +18,7 @@ import { useToastSubmit } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { evolutionApi, reportsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import type { CompetencyEvolutionComparison, EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -56,7 +57,11 @@ function ArchitectEvolution() {
     );
   }
 
-  return <EvolutionOfArchitect architectId={architectId} />;
+  return (
+    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
+      <EvolutionOfArchitect architectId={architectId} />
+    </ContextScope>
+  );
 }
 
 type PeriodPreset = "30" | "60" | "90" | "180" | "365" | "all" | "custom";

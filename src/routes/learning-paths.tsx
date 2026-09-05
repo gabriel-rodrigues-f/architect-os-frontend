@@ -18,6 +18,7 @@ import { isLeadCapable } from "@/lib/api";
 import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 import { useServerDraft, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
@@ -51,7 +52,17 @@ export const Route = createFileRoute("/learning-paths")({
   component: LearningPage,
 });
 
+const LEARNING_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS, "learningPaths"];
+
 function LearningPage() {
+  return (
+    <ContextScope contexts={LEARNING_CONTEXTS}>
+      <LearningScreen />
+    </ContextScope>
+  );
+}
+
+function LearningScreen() {
   const store = useStore();
   const sel = useSelectors();
   const user = useCurrentUser();

@@ -79,11 +79,11 @@ interface StateAssessmentItem {
 }
 
 async function assessmentItems(api: APIRequestContext): Promise<StateAssessmentItem[]> {
-  const state = await json<{
-    assessments: Array<{ id: string; items: StateAssessmentItem[] }>;
-  }>(await api.get(apiPath("/state")));
-  const found = state.assessments.find((assessment) => assessment.id === assessmentId);
-  if (!found) throw new Error(`avaliação ${assessmentId} não veio no /state`);
+  const assessments = await json<Array<{ id: string; items: StateAssessmentItem[] }>>(
+    await api.get(apiPath("/assessments")),
+  );
+  const found = assessments.find((assessment) => assessment.id === assessmentId);
+  if (!found) throw new Error(`avaliação ${assessmentId} não veio em /assessments`);
   return found.items;
 }
 
@@ -146,10 +146,10 @@ test.beforeAll(async ({ playwright }) => {
   // a linha pela UI não acrescenta cobertura: o teste 1 muda UMA nota pela
   // UI (o gesto real) e o resto nasce preenchido via API.
   const member = await sessionOf(playwright, MEMBER_EMAIL, PASSWORD);
-  const state = await json<{ capabilities: Array<{ id: string }> }>(
-    await member.get(apiPath("/state")),
+  const capabilities = await json<Array<{ id: string }>>(
+    await member.get(apiPath("/capabilities")),
   );
-  capabilityIds = state.capabilities.slice(0, 3).map((capability) => capability.id);
+  capabilityIds = capabilities.slice(0, 3).map((capability) => capability.id);
   for (const capabilityId of capabilityIds) {
     await json(
       await member.post(apiPath(`/assessments/${assessmentId}/capabilities`), {

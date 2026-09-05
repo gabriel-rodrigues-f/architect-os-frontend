@@ -16,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { calibrationApi, workAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireCalibrationReach } from "@/lib/route-guards";
@@ -50,22 +51,17 @@ const CARDS_SKELETON = (
   </div>
 );
 
+const CALIBRATION_CONTEXTS: readonly ContextScopeRequest[] = [
+  "architects",
+  "cycles",
+  "activeCycle",
+];
+
 function CalibrationPage() {
   const { t } = useI18n();
   const help = usePageHelp("calibration");
-  const vm = useCalibrationViewModel();
-  const store = useStore();
   const user = useCurrentUser();
   const canCalibrate = defaultUiAuthorizationPolicy.canCalibrate(user);
-  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
-  const [assistedArchitectId, setAssistedArchitectId] = useState<string | null>(null);
-  const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
-
-  const query = useQuery({
-    queryKey: ["calibration", cycleId],
-    queryFn: () => calibrationApi.calibration(cycleId ?? ""),
-    enabled: canCalibrate && cycleId !== null,
-  });
 
   if (!canCalibrate) {
     return (
@@ -79,6 +75,28 @@ function CalibrationPage() {
       </>
     );
   }
+
+  return (
+    <ContextScope contexts={CALIBRATION_CONTEXTS}>
+      <CalibrationBoard />
+    </ContextScope>
+  );
+}
+
+function CalibrationBoard() {
+  const { t } = useI18n();
+  const help = usePageHelp("calibration");
+  const vm = useCalibrationViewModel();
+  const store = useStore();
+  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  const [assistedArchitectId, setAssistedArchitectId] = useState<string | null>(null);
+  const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
+
+  const query = useQuery({
+    queryKey: ["calibration", cycleId],
+    queryFn: () => calibrationApi.calibration(cycleId ?? ""),
+    enabled: cycleId !== null,
+  });
 
   return (
     <>

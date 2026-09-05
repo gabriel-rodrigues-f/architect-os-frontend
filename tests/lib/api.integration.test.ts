@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { api, API_URL, authApi, type AppState } from "@/lib/api";
+import { API_URL, authApi, stateContextsApi, type AppState } from "@/lib/api";
 import { createSelectors } from "@/lib/selectors";
 
 /**
@@ -31,6 +31,48 @@ globalThis.fetch = async (input, init) => {
   return response;
 };
 
+/** O blob morreu (ADR-0011 encerrado): o snapshot é a soma das fatias, como cada tela monta. */
+async function snapshotPelasFatias(): Promise<AppState> {
+  const [
+    capabilities,
+    competencies,
+    teamLevelRules,
+    architects,
+    assessments,
+    cycles,
+    plans,
+    learningPaths,
+    mentoringSessions,
+    evidences,
+    active,
+  ] = await Promise.all([
+    stateContextsApi.listCapabilities(),
+    stateContextsApi.listCompetencies(),
+    stateContextsApi.listTeamLevelRules(),
+    stateContextsApi.listArchitects(),
+    stateContextsApi.listAssessments(),
+    stateContextsApi.listCycles(),
+    stateContextsApi.listPlans(),
+    stateContextsApi.listLearningPaths(),
+    stateContextsApi.listMentoringSessions(),
+    stateContextsApi.listEvidences(),
+    stateContextsApi.activeCycle(),
+  ]);
+  return {
+    capabilities,
+    competencies,
+    teamLevelRules,
+    architects,
+    assessments,
+    cycles,
+    plans,
+    learningPaths,
+    mentoringSessions,
+    evidences,
+    activeCycleId: active.cycleId,
+  };
+}
+
 describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
   let state: AppState;
 
@@ -42,14 +84,14 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
       email,
       password: "senha-de-teste-123",
     });
-    state = await api.getState();
+    state = await snapshotPelasFatias();
   }, 30_000);
 
   it("sem cookie de sessão, a API recusa o snapshot", async () => {
     const savedCookie = storedCookie;
     storedCookie = undefined;
     try {
-      await expect(api.getState()).rejects.toMatchObject({ status: 401 });
+      await expect(stateContextsApi.listArchitects()).rejects.toMatchObject({ status: 401 });
     } finally {
       storedCookie = savedCookie;
     }

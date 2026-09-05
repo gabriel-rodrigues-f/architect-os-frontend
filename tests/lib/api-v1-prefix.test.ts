@@ -23,7 +23,6 @@ const evolutionFilters: EvolutionFilters = {
 };
 
 const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string }[] = [
-  { nome: "snapshot do estado", enviar: () => api.getState(), caminho: "/api/v1/state" },
   { nome: "sessão corrente", enviar: () => authApi.me(), caminho: "/api/v1/auth/me" },
   { nome: "status de auth", enviar: () => authApi.status(), caminho: "/api/v1/auth/status" },
   {

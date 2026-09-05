@@ -48,7 +48,7 @@ describe("estrangulamento fase 1 — /team vive sem o blob /state", () => {
   });
 
   it("renderiza o roster pelos contextos, sem nenhuma chamada a /state", async () => {
-    renderWithApp(<TeamPage />, { storeMode: "contexts" });
+    renderWithApp(<TeamPage />);
 
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect((await screen.findAllByText("Bruno Almeida")).length).toBeGreaterThan(0);

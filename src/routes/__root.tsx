@@ -17,7 +17,6 @@ import { DependencyProvider } from "../lib/dependencies";
 import { I18nProvider } from "../lib/i18n";
 import { defaultPublicReach } from "../lib/public-reach";
 import { ThemeProvider, useTheme } from "../lib/theme";
-import { defaultStranglerLedger } from "../lib/state-contexts";
 import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
 import { FirstAccessScreen } from "../components/app/FirstAccessScreen";
@@ -203,26 +202,17 @@ function RootComponent() {
                    * "sempre ao abrir a aplicação, assim que clico em qualquer um
                    * dos menus a tela pisca; a partir de então para de piscar".
                    *
-                   * A aplicação abre em `/`, que o strangler ledger marca como
-                   * estrangulada — modo "contexts", sem a consulta grande. No
-                   * primeiro clique para qualquer outra rota o modo vira "blob",
-                   * a `appStateQuery` monta pela primeira vez e o `StoreProvider`
-                   * devolve `<LoadingState />` no lugar de TODOS os filhos. Com o
-                   * `AppShell` dentro dele, menu, cabeçalho e ciclo sumiam junto —
-                   * o piscar. Depois o dado fica em cache e nunca mais acontece,
-                   * exatamente como ele descreveu.
-                   *
-                   * Invertida a ordem, o carregamento (e a falha de conexão, que
-                   * apagava a casca do mesmo jeito) acontece DENTRO do `<main>`:
-                   * a navegação continua na tela enquanto o conteúdo chega. O
-                   * `AppShell` não usa `useStore` — só sessão, idioma, tema e as
-                   * fatias de ciclo do `context-scope` —, então ele não precisa
-                   * do provedor para desenhar.
+                   * Na época, a aplicação abria em `/` estrangulada e o primeiro
+                   * clique para outra rota montava o blob `/state` pela primeira
+                   * vez: o `StoreProvider` devolvia `<LoadingState />` no lugar de
+                   * TODOS os filhos, `AppShell` incluído — o piscar. O blob morreu
+                   * (ADR-0011 encerrado): cada rota monta seu `<ContextScope>`, e o
+                   * provedor só espera a régua da organização. A ordem continua
+                   * valendo pelo mesmo motivo: carregamento e falha de conexão
+                   * acontecem DENTRO do `<main>`, e a navegação fica na tela.
                    */}
                   <AppShell>
-                    <StoreProvider
-                      mode={defaultStranglerLedger.isStrangled(pathname) ? "contexts" : "blob"}
-                    >
+                    <StoreProvider>
                       <Outlet />
                     </StoreProvider>
                   </AppShell>

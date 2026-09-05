@@ -32,6 +32,7 @@ import {
   type SmartGoal,
 } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -81,7 +82,21 @@ export const Route = createFileRoute("/development-plans")({
 
 const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Completed"];
 
+const PLANS_CONTEXTS: readonly ContextScopeRequest[] = [
+  ...SELECTOR_CONTEXTS,
+  "cycles",
+  "evidences",
+];
+
 function PlansPage() {
+  return (
+    <ContextScope contexts={PLANS_CONTEXTS}>
+      <PlansScreen />
+    </ContextScope>
+  );
+}
+
+function PlansScreen() {
   const sel = useSelectors();
 
   const actionTypes = useVocabulary("ACTION_TYPE");

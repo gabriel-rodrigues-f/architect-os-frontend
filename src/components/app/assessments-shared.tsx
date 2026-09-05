@@ -25,7 +25,8 @@ import { useCurrentUser } from "@/lib/auth";
 import { useAsyncSubmit, useNarrowViewport } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { STATE_QUERY_KEY, useOperationalSettings, useStore, useVocabulary } from "@/lib/store";
+import { stateContextCatalog } from "@/lib/state-contexts";
+import { useOperationalSettings, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { AssessmentViewModel, type AssessmentCompletionBrief } from "@/lib/view-models";
@@ -283,7 +284,7 @@ export function CareerPortfolioSection({
   const invalidateAll = () => {
     void queryClient.invalidateQueries({ queryKey });
 
-    void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+    void stateContextCatalog.invalidateAll(queryClient);
   };
 
   const canPropose = isOwner && assessment.status === "Draft";

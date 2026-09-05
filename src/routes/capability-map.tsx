@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Architect, Capability } from "@/lib/domain";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
@@ -43,6 +44,8 @@ export const Route = createFileRoute("/capability-map")({
   component: CapabilityMapPage,
 });
 
+const CAPABILITY_MAP_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS];
+
 function CapabilityMapPage() {
   const user = useCurrentUser();
   const { t } = useI18n();
@@ -60,7 +63,11 @@ function CapabilityMapPage() {
     );
   }
 
-  return <TeamCapabilityCoverage />;
+  return (
+    <ContextScope contexts={CAPABILITY_MAP_CONTEXTS}>
+      <TeamCapabilityCoverage />
+    </ContextScope>
+  );
 }
 
 function TeamCapabilityCoverage() {

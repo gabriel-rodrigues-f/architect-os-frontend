@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiPath } from "@/lib/api-path";
 import { useStore } from "@/lib/store";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 
 /**
  * ENG-04 — o `expectedVersion` do trava otimista era calculado com
@@ -72,7 +73,7 @@ describe("store — expectedVersion ausente é erro, não o palpite 1", () => {
   });
 
   it("não manda PATCH de item de avaliação quando o item não tem version conhecida", async () => {
-    renderWithApp(<UpdateAssessmentItemProbe />);
+    renderWithApp(<UpdateAssessmentItemProbe />, { contexts: SELECTOR_CONTEXTS });
     const button = await screen.findByRole("button", { name: "Editar item da avaliação" });
 
     await userEvent.click(button);
@@ -86,7 +87,7 @@ describe("store — expectedVersion ausente é erro, não o palpite 1", () => {
 
   it("rejeita a transição de status de um plano que não está no cache local", async () => {
     const settled = vi.fn();
-    renderWithApp(<UpdatePlanStatusProbe onSettled={settled} />);
+    renderWithApp(<UpdatePlanStatusProbe onSettled={settled} />, { contexts: SELECTOR_CONTEXTS });
     const button = await screen.findByRole("button", { name: "Aprovar plano" });
 
     await userEvent.click(button);

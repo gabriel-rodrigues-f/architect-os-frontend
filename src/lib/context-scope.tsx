@@ -18,14 +18,51 @@ import {
   ConnectionError,
   LoadingState,
   MUTATION_FALLBACK_ERROR_MESSAGE,
-  STATE_QUERY_KEY,
   StoreApiContext,
 } from "./store";
 
 export type ContextScopeRequest = StateContextName | StateContextRequest;
 
-const normalizeRequest = (request: ContextScopeRequest): StateContextRequest =>
-  typeof request === "string" ? { name: request } : request;
+/**
+ * As fatias que `useSelectors` INDEXA no construtor (`Selectors` em
+ * `selectors.ts`): toda tela que usa seletores pede pelo menos estas — pedir
+ * menos é ler fatia não pedida (a catraca de `state-contexts.ts` lança).
+ */
+export const SELECTOR_CONTEXTS: readonly ContextScopeRequest[] = [
+  "architects",
+  "assessments",
+  "capabilities",
+  "competencies",
+  "plans",
+  "activeCycle",
+];
+
+/**
+ * A ficha de carreira (perfil, evolução, roadmap, declaração) lê a pessoa
+ * inteira e os catálogos; o que é POR PESSOA vem recortado pelo servidor.
+ * Estava copiada no perfil; virou uma só quando as outras três abas foram
+ * estranguladas.
+ */
+export class ContextScopes {
+  static careerFileOf(architectId: string): readonly ContextScopeRequest[] {
+    return [
+      "architects",
+      "capabilities",
+      "competencies",
+      "cycles",
+      "activeCycle",
+      { name: "assessments", architectId },
+      { name: "plans", architectId },
+      { name: "evidences", architectId },
+      { name: "mentoringSessions", architectId },
+      { name: "learningPaths", architectId },
+    ];
+  }
+
+  static normalize(request: ContextScopeRequest): StateContextRequest {
+    return typeof request === "string" ? { name: request } : request;
+  }
+}
 
 class ContextScopeCache implements MutationCache<AppState> {
   constructor(
@@ -34,9 +71,6 @@ class ContextScopeCache implements MutationCache<AppState> {
   ) {}
 
   update(mutate: (state: AppState) => AppState): void {
-    this.queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) =>
-      prev ? mutate(prev) : prev,
-    );
     const slices = this.requests.map((request) =>
       this.queryClient.getQueryData(stateContextCatalog.queryKeyOf(request)),
     );
@@ -54,12 +88,7 @@ class ContextScopeCache implements MutationCache<AppState> {
   }
 
   invalidate(): void {
-    void this.queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
-    for (const request of this.requests) {
-      void this.queryClient.invalidateQueries({
-        queryKey: stateContextCatalog.queryKeyOf(request),
-      });
-    }
+    void stateContextCatalog.invalidateAll(this.queryClient);
   }
 }
 
@@ -71,7 +100,7 @@ export function ContextScope({
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
-  const requests = contexts.map(normalizeRequest);
+  const requests = contexts.map(ContextScopes.normalize);
   const results = useQueries({
     queries: requests.map((request) => stateContextCatalog.queryOptionsOf(request)),
   });
@@ -129,11 +158,6 @@ class CycleSelectionCache implements MutationCache<CycleSelectionState> {
   constructor(private readonly queryClient: QueryClient) {}
 
   update(mutate: (state: CycleSelectionState) => CycleSelectionState): void {
-    this.queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) =>
-      prev
-        ? { ...prev, ...mutate({ cycles: prev.cycles, activeCycleId: prev.activeCycleId }) }
-        : prev,
-    );
     const cycles = this.queryClient.getQueryData<DevelopmentCycle[]>(this.cyclesKey);
     const active = this.queryClient.getQueryData<{ cycleId: string }>(this.activeCycleKey);
     if (cycles === undefined || active === undefined) {
@@ -146,7 +170,6 @@ class CycleSelectionCache implements MutationCache<CycleSelectionState> {
   }
 
   invalidate(): void {
-    void this.queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
     this.invalidateSlices();
   }
 

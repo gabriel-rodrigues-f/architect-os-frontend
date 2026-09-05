@@ -59,7 +59,7 @@ describe("estrangulamento fase 1 — perfil do arquiteto vive sem o blob /state"
   });
 
   it("renderiza o perfil pelos contextos escopados, sem nenhuma chamada a /state", async () => {
-    renderWithApp(<ProfilePage />, { storeMode: "contexts" });
+    renderWithApp(<ProfilePage />);
 
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect(await screen.findByText("ADR-014")).toBeTruthy();

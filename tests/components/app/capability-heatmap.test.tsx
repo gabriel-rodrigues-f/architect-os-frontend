@@ -7,6 +7,7 @@ import { type AppState } from "@/lib/api";
 import { createSelectors } from "@/lib/selectors";
 import { fixtureState } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
+import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 
 /**
  * OO3-11/D-1 — o heatmap pessoas × capacidades unificado entre o Painel e
@@ -46,6 +47,7 @@ describe("CapabilityHeatmap", () => {
         capabilities={state.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
+      { contexts: SELECTOR_CONTEXTS },
     );
 
     const linhaBruno = (await screen.findByRole("rowheader", { name: "Bruno Almeida" })).closest(
@@ -72,6 +74,7 @@ describe("CapabilityHeatmap", () => {
         capabilities={fixtureState.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
+      { contexts: SELECTOR_CONTEXTS },
     );
 
     expect(await screen.findByRole("rowheader", { name: "Ana Martins" })).toBeTruthy();
@@ -88,6 +91,7 @@ describe("CapabilityHeatmap", () => {
         capabilities={fixtureState.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
+      { contexts: SELECTOR_CONTEXTS },
     );
 
     const linhaAna = (await screen.findByRole("rowheader", { name: "Ana Martins" })).closest("tr")!;
@@ -111,6 +115,7 @@ describe("CapabilityHeatmap", () => {
         capabilities={fixtureState.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
+      { contexts: SELECTOR_CONTEXTS },
     );
 
     const legenda = await screen.findByRole("list", { name: "Escala de níveis" });
@@ -141,6 +146,7 @@ describe("CapabilityHeatmap", () => {
         capabilities={state.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
+      { contexts: SELECTOR_CONTEXTS },
     );
   };
 

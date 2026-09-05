@@ -53,7 +53,7 @@ import type {
   SessionScriptRequest,
 } from "@/lib/gateways/person-assistants.gateway";
 import { useCurrentUser } from "@/lib/auth";
-import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
+import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters";
@@ -90,19 +90,6 @@ function ArchitectNotFound() {
   return <p className="text-sm text-muted-foreground">{t("arch.notFound")}</p>;
 }
 
-const profileContextsFor = (architectId: string): readonly ContextScopeRequest[] => [
-  "architects",
-  "capabilities",
-  "competencies",
-  "cycles",
-  "activeCycle",
-  { name: "assessments", architectId },
-  { name: "plans", architectId },
-  { name: "evidences", architectId },
-  { name: "mentoringSessions", architectId },
-  { name: "learningPaths", architectId },
-];
-
 function ArchitectProfile() {
   const { architectId } = Route.useParams();
   const user = useCurrentUser();
@@ -122,7 +109,7 @@ function ArchitectProfile() {
   }
 
   return (
-    <ContextScope contexts={profileContextsFor(architectId)}>
+    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
       <ArchitectWorkspace />
     </ContextScope>
   );

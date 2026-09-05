@@ -13,7 +13,6 @@ import type {
 import { ApiError } from "./api-errors";
 import { ApiFailureReading } from "./api-failure-reading";
 import { apiPath, isApiUrl } from "./api-path";
-import { appStateSchema } from "./api-schemas";
 
 export interface AppState {
   capabilities: Capability[];
@@ -172,9 +171,5 @@ export class ApiClient {
   }
   del<T>(resource: string): Promise<T> {
     return this.request<T>(resource, { method: "DELETE" });
-  }
-
-  getState(): Promise<AppState> {
-    return this.request<AppState>("/state").then((data) => appStateSchema.parse(data) as AppState);
   }
 }

@@ -15,7 +15,7 @@ import { PASSWORD_REQUIREMENTS, type PasswordRequirement } from "@/lib/password-
 import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
 import { fixtureCareerLevels, fixtureState, fixtureTeamId } from "../helpers/fixtures";
-import { configurationRoute, jsonResponse } from "../helpers/render-app";
+import { configurationRoute, contextsOf, jsonResponse } from "../helpers/render-app";
 
 /**
  * O primeiro acesso, do login até a aplicação abrir.
@@ -136,7 +136,8 @@ class ServidorDoPrimeiroAcesso {
       );
     if (href.endsWith(apiPath("/career-levels")))
       return this.envelope(jsonResponse(fixtureCareerLevels));
-    if (href.endsWith(apiPath("/state"))) return this.envelope(jsonResponse(fixtureState));
+    const fatia = contextsOf(fixtureState)(href, { method: metodo });
+    if (fatia) return this.envelope(fatia);
 
     const configuracao = configurationRoute(href, { method: metodo });
     if (configuracao) return this.envelope(configuracao);

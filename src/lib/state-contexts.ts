@@ -1,3 +1,5 @@
+import type { QueryClient } from "@tanstack/react-query";
+
 import { stateContextsApi, type AppState } from "./api";
 
 const STATE_CONTEXT_NAMES = [
@@ -6,6 +8,7 @@ const STATE_CONTEXT_NAMES = [
   "capabilities",
   "competencies",
   "cycles",
+  "teamLevelRules",
   "activeCycle",
   "plans",
   "learningPaths",
@@ -54,6 +57,14 @@ const definitions: Record<StateContextName, StateContextDefinition> = {
     mergeInto: (state, slice) => ({ ...state, cycles: slice as AppState["cycles"] }),
     sliceOf: (state) => state.cycles,
   },
+  teamLevelRules: {
+    fetchSlice: () => stateContextsApi.listTeamLevelRules(),
+    mergeInto: (state, slice) => ({
+      ...state,
+      teamLevelRules: slice as AppState["teamLevelRules"],
+    }),
+    sliceOf: (state) => state.teamLevelRules,
+  },
   activeCycle: {
     fetchSlice: () => stateContextsApi.activeCycle(),
     mergeInto: (state, slice) => ({
@@ -87,6 +98,43 @@ const definitions: Record<StateContextName, StateContextDefinition> = {
   },
 };
 
+/**
+ * ADR-0011, fase final — a fatia que a tela NÃO pediu não se lê. Enquanto o
+ * blob `/state` existia, uma tela que esquecesse uma fatia caía no vazio em
+ * silêncio ("Nenhum arquiteto cadastrado" com o banco cheio). Agora, em
+ * desenvolvimento e em teste, ler uma fatia não pedida lança — com o nome da
+ * fatia e a instrução. Em produção o vazio continua sendo vazio: uma tela
+ * incompleta é defeito, não indisponibilidade.
+ */
+export class UnrequestedStateContextError extends Error {
+  constructor(readonly context: StateContextName) {
+    super(
+      `A tela leu a fatia "${context}" sem pedi-la — inclua "${context}" no ContextScope da rota.`,
+    );
+    this.name = "UnrequestedStateContextError";
+  }
+}
+
+export class UnrequestedSlice {
+  private static readonly marks = new WeakSet<object>();
+
+  static readonly strict = import.meta.env.DEV || import.meta.env.MODE === "test";
+
+  static of(context: StateContextName): unknown[] {
+    if (!UnrequestedSlice.strict) return [];
+    const trap = () => {
+      throw new UnrequestedStateContextError(context);
+    };
+    const slice = new Proxy<unknown[]>([], { get: trap, has: trap, ownKeys: trap });
+    UnrequestedSlice.marks.add(slice);
+    return slice;
+  }
+
+  static is(value: unknown): boolean {
+    return typeof value === "object" && value !== null && UnrequestedSlice.marks.has(value);
+  }
+}
+
 class StateContextCatalog {
   queryKeyOf(request: StateContextRequest): readonly unknown[] {
     return request.architectId
@@ -102,7 +150,19 @@ class StateContextCatalog {
       staleTime: CONTEXT_STALE_TIME,
       retry: 1,
       enabled: typeof window !== "undefined",
+      // R2-TEC-19 — recuperar o foco da janela não refaz a leitura; quem
+      // precisa de dado novo invalida explicitamente (`invalidateAll`).
+      refetchOnWindowFocus: false,
     };
+  }
+
+  /**
+   * Toda escrita que muda contagem, status ou vínculo no servidor invalida
+   * TODAS as fatias montadas — é o que a invalidação do blob fazia com uma
+   * chave só. A chave-prefixo cobre as fatias recortadas por pessoa também.
+   */
+  invalidateAll(queryClient: QueryClient): Promise<void> {
+    return queryClient.invalidateQueries({ queryKey: ["state-context"] });
   }
 
   sliceOf(name: StateContextName, state: AppState): unknown {
@@ -114,33 +174,15 @@ class StateContextCatalog {
     requests: readonly StateContextRequest[],
     slices: readonly unknown[],
   ): AppState {
+    const requested = new Set(requests.map((request) => request.name));
+    const guarded = STATE_CONTEXT_NAMES.filter(
+      (name) => name !== "activeCycle" && !requested.has(name),
+    ).reduce((state, name) => definitions[name].mergeInto(state, UnrequestedSlice.of(name)), base);
     return requests.reduce(
       (state, request, index) => definitions[request.name].mergeInto(state, slices[index]),
-      base,
+      guarded,
     );
   }
 }
 
 export const stateContextCatalog = new StateContextCatalog();
-
-class StranglerLedger {
-  private readonly exactPaths: ReadonlySet<string>;
-  private readonly patterns: readonly RegExp[];
-
-  constructor(exactPaths: readonly string[], patterns: readonly RegExp[]) {
-    this.exactPaths = new Set(exactPaths);
-    this.patterns = patterns;
-  }
-
-  isStrangled(pathname: string): boolean {
-    const normalized =
-      pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-    if (this.exactPaths.has(normalized)) return true;
-    return this.patterns.some((pattern) => pattern.test(normalized));
-  }
-}
-
-export const defaultStranglerLedger = new StranglerLedger(
-  ["/", "/team"],
-  [/^\/architects\/[^/]+$/],
-);

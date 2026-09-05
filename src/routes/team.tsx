@@ -20,7 +20,7 @@ import { EmptyState } from "@/components/app/DataView";
 import { EmptyState as EmptyStateCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/auth";
-import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadershipReach } from "@/lib/route-guards";
@@ -48,12 +48,8 @@ export const Route = createFileRoute("/team")({
 });
 
 const TEAM_CONTEXTS: readonly ContextScopeRequest[] = [
-  "architects",
-  "assessments",
-  "capabilities",
-  "competencies",
+  ...SELECTOR_CONTEXTS,
   "cycles",
-  "activeCycle",
   "mentoringSessions",
 ];
 

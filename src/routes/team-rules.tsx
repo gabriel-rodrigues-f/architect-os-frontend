@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { useAsyncSubmit, useSuccessToast, useTeamRuleEditorViewModel } from "@/hooks";
 import { ApiError, api, teamsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import type { CareerLevel } from "@/lib/domain";
 import type { TeamRuleView } from "@/lib/gateways/career.gateway";
 import { useI18n } from "@/lib/i18n";
@@ -44,22 +45,13 @@ export const Route = createFileRoute("/team-rules")({
 
 const LEVEL_OPTIONS = [1, 2, 3, 4, 5];
 
+const TEAM_RULES_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS];
+
 function TeamRulesPage() {
   const { t } = useI18n();
   const help = usePageHelp("teamRules");
   const user = useCurrentUser();
   const canConfigure = defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user);
-
-  const careerLevels = useCareerLevelsByRank();
-  const teamsQuery = useQuery({
-    queryKey: ["teams"],
-    queryFn: teamsApi.teams,
-    staleTime: 60_000,
-    enabled: canConfigure,
-  });
-
-  const [chosenTeamId, setChosenTeamId] = useState<string | null>(null);
-  const [chosenLevelId, setChosenLevelId] = useState<string | null>(null);
 
   if (!canConfigure) {
     return (
@@ -73,6 +65,28 @@ function TeamRulesPage() {
       </>
     );
   }
+
+  return (
+    <ContextScope contexts={TEAM_RULES_CONTEXTS}>
+      <TeamRulesScreen />
+    </ContextScope>
+  );
+}
+
+function TeamRulesScreen() {
+  const { t } = useI18n();
+  const help = usePageHelp("teamRules");
+  const user = useCurrentUser();
+
+  const careerLevels = useCareerLevelsByRank();
+  const teamsQuery = useQuery({
+    queryKey: ["teams"],
+    queryFn: teamsApi.teams,
+    staleTime: 60_000,
+  });
+
+  const [chosenTeamId, setChosenTeamId] = useState<string | null>(null);
+  const [chosenLevelId, setChosenLevelId] = useState<string | null>(null);
 
   const teams = (teamsQuery.data ?? []).filter(
     (team) => team.active && defaultUiAuthorizationPolicy.canConfigureRulesOf(user, team.id),

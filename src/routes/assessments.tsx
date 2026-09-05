@@ -19,6 +19,7 @@ import {
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import type { Assessment } from "@/lib/domain";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { api, UserFacingError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -51,7 +52,21 @@ export const Route = createFileRoute("/assessments")({
   component: AssessmentsPage,
 });
 
+const ASSESSMENTS_CONTEXTS: readonly ContextScopeRequest[] = [
+  ...SELECTOR_CONTEXTS,
+  "cycles",
+  "evidences",
+];
+
 function AssessmentsPage() {
+  return (
+    <ContextScope contexts={ASSESSMENTS_CONTEXTS}>
+      <AssessmentsScreen />
+    </ContextScope>
+  );
+}
+
+function AssessmentsScreen() {
   const store = useStore();
   const sel = useSelectors();
   const [architectId, setArchitectId] = useSearchParamString(

@@ -3,7 +3,6 @@ import type { UserRole } from "./gateways/auth.gateway";
 import { defaultContainer } from "./gateways/container";
 
 const {
-  apiClient: defaultApiClient,
   sessionPolicy,
   analyticsGateway,
   architectsGateway,
@@ -31,7 +30,6 @@ const {
 } = defaultContainer;
 
 export const api = {
-  getState: () => defaultApiClient.getState(),
   ...cyclesGateway,
   ...architectsGateway,
   ...careerGateway,

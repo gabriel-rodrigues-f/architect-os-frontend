@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useGapAnalysisData } from "@/components/app/gap-analysis-shared";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
+import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 
 /**
  * F2 (caminhos quentes) — `useGapAnalysisData` recortava a população
@@ -54,7 +55,7 @@ describe("useGapAnalysisData — memo do recorte da população (F2)", () => {
   });
 
   it("um render sem mudança de estado não recalcula radar, lacunas nem maestria", async () => {
-    renderWithApp(<Host />);
+    renderWithApp(<Host />, { contexts: SELECTOR_CONTEXTS });
     await screen.findByText("passo:0");
 
     const rendersAntes = snapshots.length;
@@ -77,7 +78,7 @@ describe("useGapAnalysisData — memo do recorte da população (F2)", () => {
   });
 
   it("o recorte continua sendo a população selecionada, na ordem do catálogo", async () => {
-    renderWithApp(<Host />);
+    renderWithApp(<Host />, { contexts: SELECTOR_CONTEXTS });
     await screen.findByText("passo:0");
 
     const atual = snapshots[snapshots.length - 1]!;

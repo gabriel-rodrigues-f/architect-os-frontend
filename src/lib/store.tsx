@@ -1,4 +1,4 @@
-import { useQueries, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, type QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -31,7 +31,7 @@ import type {
 } from "./domain";
 import { EffectiveCurationPolicy, type CurationPolicy } from "./curation-policy";
 import { configurationCatalog, RulerConfiguration } from "./configuration-queries";
-import { appStateQuery, STATE_QUERY_KEY } from "./session-query";
+import { stateContextCatalog, UnrequestedSlice } from "./state-contexts";
 import {
   EffectiveOperationalSettings,
   type AppSettingValue,
@@ -47,7 +47,7 @@ import {
   type ScoringBands,
   type ScoringScale,
 } from "./scoring-bands";
-import { ArchitectRoster, createSelectors, emptyState } from "./selectors";
+import { ArchitectRoster, createSelectors } from "./selectors";
 import type { VocabularyItemInput, VocabularyItemPatch } from "./gateways/config.gateway";
 import type { CatalogImportPayload, CatalogImportSummary } from "./catalog-import";
 import {
@@ -62,8 +62,6 @@ import {
   type RenderObjectiveFromGap,
   type TextTemplates,
 } from "./text-templates";
-
-export { STATE_QUERY_KEY };
 
 export function useCareerLevelsByRank(): CareerLevel[] {
   const { data } = useQuery(configurationCatalog.careerLevels.options);
@@ -304,18 +302,10 @@ export { Ctx as StoreApiContext };
 export const MUTATION_FALLBACK_ERROR_MESSAGE =
   "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.";
 
-function blobMutationCache(queryClient: QueryClient): MutationCache<AppState> {
-  return {
-    update: (fn) =>
-      queryClient.setQueryData<AppState>(STATE_QUERY_KEY, (prev) => (prev ? fn(prev) : prev)),
-    invalidate: () => void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }),
-  };
-}
-
 export function buildApi(
   state: AppState,
   queryClient: QueryClient,
-  cache: MutationCache<AppState> = blobMutationCache(queryClient),
+  cache: MutationCache<AppState>,
 ): Api {
   const runner = new MutationRunner<AppState>(
     cache,
@@ -324,15 +314,21 @@ export function buildApi(
   );
 
   const refreshCurationCounts = <T,>(result: T): T => {
-    void queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+    void stateContextCatalog.invalidateAll(queryClient);
     return result;
   };
 
   return {
     ...state,
-    capabilities: [...state.capabilities].sort(defaultNameFormatter.byName),
+    // A fatia que a tela não pediu passa intocada: ordenar ou filtrar já seria
+    // ler (ver `UnrequestedSlice`) — quem lê é a tela, e aí a catraca fala.
+    capabilities: UnrequestedSlice.is(state.capabilities)
+      ? state.capabilities
+      : [...state.capabilities].sort(defaultNameFormatter.byName),
 
-    architects: ArchitectRoster.active(state.architects),
+    architects: UnrequestedSlice.is(state.architects)
+      ? state.architects
+      : ArchitectRoster.active(state.architects),
     architectsIncludingInactive: state.architects,
 
     // ONDA 45 — `addArchitect` morreu com `POST /architects`, a porta legada
@@ -368,7 +364,7 @@ export function buildApi(
       const updated = await api.updateCurationPolicy(policy);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: configurationCatalog.curationPolicy.queryKey }),
-        queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }),
+        stateContextCatalog.invalidateAll(queryClient),
       ]);
       return updated;
     },
@@ -381,7 +377,7 @@ export function buildApi(
         }),
       ];
       if (key === "cycle.cadence")
-        invalidations.push(queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY }));
+        invalidations.push(stateContextCatalog.invalidateAll(queryClient));
       await Promise.all(invalidations);
       return updated;
     },
@@ -400,7 +396,7 @@ export function buildApi(
 
     importCatalog: async (payload) => {
       const summary = await api.importCatalog(payload);
-      await queryClient.invalidateQueries({ queryKey: STATE_QUERY_KEY });
+      await stateContextCatalog.invalidateAll(queryClient);
       return summary;
     },
 
@@ -994,40 +990,14 @@ export function useRulerConfiguration(): RulerConfiguration {
   return new RulerConfiguration(loads);
 }
 
-export type StoreProviderMode = "blob" | "contexts";
-
-export function StoreProvider({
-  children,
-  mode = "blob",
-}: {
-  children: ReactNode;
-  mode?: StoreProviderMode;
-}) {
-  const queryClient = useQueryClient();
-
-  const { data, isPending, isError, error, refetch } = useQuery({
-    ...appStateQuery,
-
-    enabled: typeof window !== "undefined" && mode === "blob",
-
-    refetchOnWindowFocus: false,
-  });
-
-  const state = data ?? emptyState;
-  const value = useMemo(() => buildApi(state, queryClient), [state, queryClient]);
+/**
+ * ADR-0011, encerrado — o blob `/state` morreu. O provedor não carrega mais
+ * estado nenhum: cada rota monta o `<ContextScope>` com as fatias que lê, e é
+ * ele quem provê a API do store. O que sobrou aqui é a régua da organização
+ * (`/config/*`), que toda tela precisa antes de desenhar.
+ */
+export function StoreProvider({ children }: { children: ReactNode }) {
   const ruler = useRulerConfiguration();
-
-  if (mode === "blob") {
-    if (isError)
-      return (
-        <ConnectionError
-          error={error}
-          onRetry={() => void refetch()}
-          resource={apiPath("/state")}
-        />
-      );
-    if (isPending || !data) return <LoadingState />;
-  }
 
   const unavailableRuler = ruler.unavailable;
   if (unavailableRuler)
@@ -1040,7 +1010,7 @@ export function StoreProvider({
     );
   if (ruler.stillLoading) return <LoadingState />;
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <>{children}</>;
 }
 
 export function LoadingState() {
@@ -1094,7 +1064,7 @@ export function ConnectionError({
 
 export function useStore() {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error("useStore must be used within StoreProvider");
+  if (!ctx) throw new Error("useStore must be used within ContextScope");
   return ctx;
 }
 

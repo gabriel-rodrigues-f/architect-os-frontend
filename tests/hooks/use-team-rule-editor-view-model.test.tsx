@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTeamRuleEditorViewModel } from "@/hooks";
 import type { TeamRuleView } from "@/lib/gateways/career.gateway";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 
 /**
  * O adaptador é FINO de propósito: a lógica toda mora em
@@ -50,20 +51,20 @@ afterEach(() => {
 
 describe("useTeamRuleEditorViewModel", () => {
   it("nasce com a régua que o servidor entregou, e limpo", async () => {
-    renderWithApp(<ProvaDaRegua rule={RULE} />);
+    renderWithApp(<ProvaDaRegua rule={RULE} />, { contexts: SELECTOR_CONTEXTS });
 
     expect(await screen.findByText("piso 4")).toBeTruthy();
     expect(screen.getByText("limpo")).toBeTruthy();
   });
 
   it("sem régua, nasce no piso mínimo da organização", async () => {
-    renderWithApp(<ProvaDaRegua rule={null} />);
+    renderWithApp(<ProvaDaRegua rule={null} />, { contexts: SELECTOR_CONTEXTS });
 
     expect(await screen.findByText("piso 3")).toBeTruthy();
   });
 
   it("guarda a edição do líder em vez de voltar ao valor do servidor", async () => {
-    renderWithApp(<ProvaDaRegua rule={RULE} />);
+    renderWithApp(<ProvaDaRegua rule={RULE} />, { contexts: SELECTOR_CONTEXTS });
     fireEvent.click(await screen.findByRole("button", { name: "subir piso" }));
 
     expect(screen.getByText("piso 9")).toBeTruthy();

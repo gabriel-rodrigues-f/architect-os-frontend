@@ -168,11 +168,6 @@ export function LoginScreen() {
           {firstAccess ? "Já tenho conta" : "Criar uma nova conta"}
         </button>
       )}
-      {checkedInstance && hasUsers && (
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          {t("login.closedRegistration")}
-        </p>
-      )}
     </AuthScreenShell>
   );
 }

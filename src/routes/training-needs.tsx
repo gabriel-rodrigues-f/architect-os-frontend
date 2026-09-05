@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
@@ -39,6 +40,11 @@ export const Route = createFileRoute("/training-needs")({
   component: TrainingNeedsPage,
 });
 
+const TRAINING_NEEDS_CONTEXTS: readonly ContextScopeRequest[] = [
+  ...SELECTOR_CONTEXTS,
+  "learningPaths",
+];
+
 function TrainingNeedsPage() {
   const user = useCurrentUser();
   const { t } = useI18n();
@@ -56,7 +62,11 @@ function TrainingNeedsPage() {
     );
   }
 
-  return <TeamTrainingNeeds />;
+  return (
+    <ContextScope contexts={TRAINING_NEEDS_CONTEXTS}>
+      <TeamTrainingNeeds />
+    </ContextScope>
+  );
 }
 
 function TeamTrainingNeeds() {

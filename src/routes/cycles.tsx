@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import type { DevelopmentCycle } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useCycleSelection } from "@/lib/context-scope";
 import { CycleCadenceScheme } from "@/lib/cycle-cadence";
 import { useLabels } from "@/lib/labels";
@@ -53,6 +54,8 @@ export const Route = createFileRoute("/cycles")({
   component: CyclesPage,
 });
 
+const CYCLES_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS, "cycles"];
+
 function CyclesPage() {
   const user = useCurrentUser();
   const { t } = useI18n();
@@ -70,7 +73,11 @@ function CyclesPage() {
     );
   }
 
-  return <CycleAdministration />;
+  return (
+    <ContextScope contexts={CYCLES_CONTEXTS}>
+      <CycleAdministration />
+    </ContextScope>
+  );
 }
 
 function CycleAdministration() {

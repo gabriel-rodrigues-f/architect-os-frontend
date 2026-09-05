@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, ApiError, API_URL } from "@/lib/api";
-import { emptyState } from "@/lib/selectors";
 import { apiPath } from "@/lib/api-path";
 
 const jsonResponse = (body: unknown, status = 200) =>
@@ -17,44 +16,6 @@ describe("cliente da API", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-  });
-
-  it("busca o snapshot no endpoint /api/v1/state", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(emptyState));
-
-    await api.getState();
-
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe(`${API_URL}${apiPath("/state")}`);
-    expect(init?.method ?? "GET").toBe("GET");
-  });
-
-  /**
-   * B-11 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1-10) — o
-   * problema que a validação existe para resolver: um campo removido ou
-   * renomeado no servidor não pode virar `undefined` se propagando pela UI
-   * em silêncio. `getState()` agora falha alto (o `ZodError` chega até
-   * `useQuery`, que `store.tsx` já trata como qualquer erro de rede).
-   */
-  it("getState rejeita um payload que não bate com o contrato (campo ausente)", async () => {
-    const { activeCycleId: _activeCycleId, ...semActiveCycleId } = emptyState;
-    fetchMock.mockResolvedValue(jsonResponse(semActiveCycleId));
-
-    await expect(api.getState()).rejects.toThrow();
-  });
-
-  it("getState rejeita um item de array com formato divergente", async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse({ ...emptyState, architects: [{ id: "ana", nome: "Ana Martins" }] }),
-    );
-
-    await expect(api.getState()).rejects.toThrow();
-  });
-
-  it("getState aceita o payload completo sem lançar", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(emptyState));
-
-    await expect(api.getState()).resolves.toEqual(emptyState);
   });
 
   it("monta a rota aninhada de item de PDI", async () => {
@@ -94,11 +55,11 @@ describe("cliente da API", () => {
   it("sem corpo JSON, a mensagem é a da situação — e não carrega o caminho da API", async () => {
     fetchMock.mockResolvedValue(new Response("boom", { status: 500 }));
 
-    const error = (await api.getState().catch((e: unknown) => e)) as ApiError;
+    const error = (await api.professional("ana").catch((e: unknown) => e)) as ApiError;
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(500);
-    expect(error.message).not.toContain(apiPath("/state"));
+    expect(error.message).not.toContain(apiPath("/architects/ana"));
     expect(error.message).toBe(
       "O serviço está fora do ar no momento. Tente de novo em alguns instantes.",
     );

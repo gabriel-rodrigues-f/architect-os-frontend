@@ -58,7 +58,7 @@ function prepararPainel(user: SessionUser, state: AppState) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   mockAppFetch(fetchMock, { user, state });
-  renderWithApp(<DashboardPage />, { storeMode: "contexts" });
+  renderWithApp(<DashboardPage />);
 }
 
 describe("Painel sem nenhum ciclo cadastrado", () => {

@@ -1013,7 +1013,6 @@
   "login.password": "Senha",
   "login.offline": "Serviço indisponível no momento. Tente novamente em instantes.",
   "login.offline.dev": "Backend indisponível. Suba a API com `docker compose up -d` e confira o VITE_API_URL.",
-  "login.closedRegistration": "Cadastro fechado — peça a um administrador para criar sua conta.",
   "firstAccess.title": "Troque a sua senha para começar",
   "firstAccess.lead": "Você entrou com uma senha temporária. Escolha uma senha sua agora — é o único passo que falta para o sistema abrir.",
   "firstAccess.currentPassword": "Senha temporária",

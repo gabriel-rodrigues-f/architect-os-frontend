@@ -69,7 +69,7 @@ function renderAs(user: SessionUser, page: ReactNode) {
     state: user === fixtureAdminUser ? fixtureState : scopedFixtureStateFor(user),
     routes: [careerLevelsRoute],
   });
-  return renderWithApp(page, { storeMode: "contexts" });
+  return renderWithApp(page);
 }
 
 describe("/team nega o profissional — a tela é a última barreira", () => {

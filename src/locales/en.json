@@ -1013,7 +1013,6 @@
   "login.password": "Password",
   "login.offline": "Service unavailable right now. Please try again shortly.",
   "login.offline.dev": "Backend unavailable. Start the API with `docker compose up -d` and check VITE_API_URL.",
-  "login.closedRegistration": "Registration is closed — ask an administrator to create your account.",
   "firstAccess.title": "Change your password to get started",
   "firstAccess.lead": "You signed in with a temporary password. Pick one of your own now — it is the only step left before the system opens.",
   "firstAccess.currentPassword": "Temporary password",

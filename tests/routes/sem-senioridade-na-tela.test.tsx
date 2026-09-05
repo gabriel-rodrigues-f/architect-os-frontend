@@ -148,7 +148,7 @@ describe("ONDA 37 — quem não tem senioridade não derruba a tela", () => {
 
   it("o mesmo vale para as telas que vivem de contexto, sem o blob /state", async () => {
     montarTime();
-    renderWithApp(<TeamPage />, { storeMode: "contexts" });
+    renderWithApp(<TeamPage />);
 
     expect(await screen.findByText("Carla Ribeiro")).toBeTruthy();
   });

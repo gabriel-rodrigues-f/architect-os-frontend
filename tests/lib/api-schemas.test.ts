@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { appStateSchema, careerLevelsResponseSchema } from "@/lib/api-schemas";
+import {
+  architectsResponseSchema,
+  assessmentsResponseSchema,
+  capabilitiesResponseSchema,
+  careerLevelsResponseSchema,
+  competenciesResponseSchema,
+  teamLevelRulesResponseSchema,
+} from "@/lib/api-schemas";
 import { fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
 
 /**
  * R2-TEC-19 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `careerLevels` perdeu a
- * validação em runtime quando saiu de `appStateSchema` (B-24, ADR-0011):
+ * validação em runtime quando saiu do schema do blob (B-24, ADR-0011):
  * `api.careerLevels()` ficou só com um cast de tipo. `careerLevelsResponseSchema`
  * fecha essa lacuna; estes testes confirmam que ele de fato valida (não só
  * existe).
@@ -29,26 +36,30 @@ describe("careerLevelsResponseSchema", () => {
 /**
  * R2-TEC-19 — documenta e prova o comportamento de "strip" do zod: um
  * campo REMOVIDO/RENOMEADO no servidor quebra a validação (o caso que
- * `appStateSchema` existe pra pegar); um campo ADICIONADO desaparece
+ * o schema de cada fatia existe pra pegar); um campo ADICIONADO desaparece
  * silenciosamente até o schema ser atualizado — aceito de propósito, não
  * um bug (comentário em `api-schemas.ts`).
  */
-describe("appStateSchema — comportamento de strip de campo desconhecido", () => {
-  it("valida a fixture real de estado", () => {
-    expect(() => appStateSchema.parse(fixtureState)).not.toThrow();
+describe("schema de fatia — comportamento de strip de campo desconhecido", () => {
+  it("valida a fixture real de arquitetos", () => {
+    expect(() => architectsResponseSchema.parse(fixtureState.architects)).not.toThrow();
   });
 
-  it("um campo REMOVIDO do payload (ex.: coleção obrigatória ausente) quebra a validação", () => {
-    const { architects: _architects, ...withoutArchitects } = fixtureState;
-    expect(() => appStateSchema.parse(withoutArchitects)).toThrow();
+  it("um campo REMOVIDO do payload (ex.: campo obrigatório ausente) quebra a validação", () => {
+    const [first, ...rest] = fixtureState.architects;
+    const { name: _name, ...withoutName } = first!;
+    expect(() => architectsResponseSchema.parse([withoutName, ...rest])).toThrow();
   });
 
   it("um campo NOVO e desconhecido no payload é descartado em silêncio, não rejeitado", () => {
-    const withExtraField = { ...fixtureState, campoNovoDoServidor: "valor qualquer" };
-    const parsed = appStateSchema.parse(withExtraField);
-    expect(parsed).not.toHaveProperty("campoNovoDoServidor");
+    const withExtraField = fixtureState.architects.map((architect) => ({
+      ...architect,
+      campoNovoDoServidor: "valor qualquer",
+    }));
+    const parsed = architectsResponseSchema.parse(withExtraField);
+    expect(parsed[0]).not.toHaveProperty("campoNovoDoServidor");
     // O resto do payload continua íntegro — só a chave desconhecida some.
-    expect(parsed.architects).toEqual(fixtureState.architects);
+    expect(parsed).toEqual(fixtureState.architects);
   });
 });
 
@@ -62,10 +73,10 @@ describe("appStateSchema — comportamento de strip de campo desconhecido", () =
  * payload REAL do backend novo — era exatamente aqui que o frontend
  * quebrava (o zod rejeitava o parse inteiro e derrubava o app).
  */
-describe("appStateSchema — contrato da Fase 2 (régua por time)", () => {
+describe("schemas de fatia — contrato da Fase 2 (régua por time)", () => {
   it("aceita competência global SEM requirementType/expected (payload real do f1926f7)", () => {
-    const parsed = appStateSchema.parse(fixtureState);
-    expect(parsed.competencies[0]).toEqual({
+    const parsed = competenciesResponseSchema.parse(fixtureState.competencies);
+    expect(parsed[0]).toEqual({
       id: "cloud-k8s",
       name: "Kubernetes",
       capabilityId: "cloud",
@@ -74,28 +85,29 @@ describe("appStateSchema — contrato da Fase 2 (régua por time)", () => {
   });
 
   it("carrega teamLevelRules (piso por time×nível) no lugar de careerLevelPolicies", () => {
-    const parsed = appStateSchema.parse(fixtureState);
-    expect(parsed.teamLevelRules).toHaveLength(3);
-    expect(parsed.teamLevelRules[0]).toMatchObject({
+    const parsed = teamLevelRulesResponseSchema.parse(fixtureState.teamLevelRules);
+    expect(parsed).toHaveLength(3);
+    expect(parsed[0]).toMatchObject({
       teamId: "time-plataforma",
       careerLevelId: "arquiteto-de-solucoes-i",
       minimumQualifiedCapabilities: 3,
     });
-    expect(parsed).not.toHaveProperty("careerLevelPolicies");
+    expect(fixtureState).not.toHaveProperty("careerLevelPolicies");
   });
 
   it("aceita curadoria sem contagem por tipo e arquiteto com teamId", () => {
-    const parsed = appStateSchema.parse(fixtureState);
-    expect(parsed.capabilities[0]?.curation).toEqual({
+    const capabilities = capabilitiesResponseSchema.parse(fixtureState.capabilities);
+    expect(capabilities[0]?.curation).toEqual({
       activeCompetencyCount: 2,
       status: "READY",
     });
-    expect(parsed.architects[0]?.teamId).toBe("time-plataforma");
+    const architects = architectsResponseSchema.parse(fixtureState.architects);
+    expect(architects[0]?.teamId).toBe("time-plataforma");
   });
 
   it("a FOTO do item de avaliação não carrega mais requirementType (onda 36, ADR-0082)", () => {
-    const parsed = appStateSchema.parse(fixtureState);
-    expect(parsed.assessments[0]?.items[0]).not.toHaveProperty("requirementType");
+    const parsed = assessmentsResponseSchema.parse(fixtureState.assessments);
+    expect(parsed[0]?.items[0]).not.toHaveProperty("requirementType");
   });
 });
 
@@ -109,21 +121,18 @@ describe("appStateSchema — contrato da Fase 2 (régua por time)", () => {
  * mais a validação (o comportamento antigo era exatamente o oposto:
  * `.toThrow()`, não `.not.toThrow()`).
  */
-describe("appStateSchema — role de arquiteto aceita nomes além dos 3 conhecidos (R2-TEC-20)", () => {
+describe("schema de arquitetos — role aceita nomes além dos 3 conhecidos (R2-TEC-20)", () => {
   it("um arquiteto com role de um 4º nível de carreira (desconhecido) não quebra a validação", () => {
-    const withFourthLevelRole = {
-      ...fixtureState,
-      architects: [
-        { ...fixtureState.architects[0], role: "Especialista" },
-        ...fixtureState.architects.slice(1),
-      ],
-    };
-    expect(() => appStateSchema.parse(withFourthLevelRole)).not.toThrow();
-    const parsed = appStateSchema.parse(withFourthLevelRole);
-    expect(parsed.architects[0]?.role).toBe("Especialista");
+    const withFourthLevelRole = [
+      { ...fixtureState.architects[0], role: "Especialista" },
+      ...fixtureState.architects.slice(1),
+    ];
+    expect(() => architectsResponseSchema.parse(withFourthLevelRole)).not.toThrow();
+    const parsed = architectsResponseSchema.parse(withFourthLevelRole);
+    expect(parsed[0]?.role).toBe("Especialista");
   });
 
   it("os 3 nomes conhecidos continuam validando normalmente", () => {
-    expect(() => appStateSchema.parse(fixtureState)).not.toThrow();
+    expect(() => architectsResponseSchema.parse(fixtureState.architects)).not.toThrow();
   });
 });

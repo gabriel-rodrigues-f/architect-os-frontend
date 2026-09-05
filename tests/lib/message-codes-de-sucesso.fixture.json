@@ -101,7 +101,7 @@
     "career.teamRule.define.success": {
       "rota": "PUT /teams/:teamId/rules/:careerLevelId",
       "arquivo": "src/modules/career/infrastructure/controllers/career.controller.ts",
-      "linha": 64,
+      "linha": 71,
       "resposta": "ok"
     },
     "catalog.capability.create.success": {

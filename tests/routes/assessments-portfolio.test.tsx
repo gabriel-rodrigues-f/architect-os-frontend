@@ -7,7 +7,7 @@ import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "@/lib/api";
 import type { Assessment, AssessmentEligibility } from "@/lib/domain";
 import { fixtureMemberUser, fixtureState } from "../helpers/fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { jsonResponse, mockAppFetch, renderWithApp, hrefOf } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -198,7 +198,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     )) as HTMLSelectElement;
 
     const stateCallsBefore = fetchMock.mock.calls.filter(([u]) =>
-      String(u).endsWith(apiPath("/state")),
+      hrefOf(u as string | URL | Request).endsWith(apiPath("/assessments")),
     ).length;
 
     await userEvent.selectOptions(select, "cloud");
@@ -218,7 +218,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     // do app (Problema 2), não só a query de elegibilidade.
     await waitFor(() => {
       const stateCallsAfter = fetchMock.mock.calls.filter(([u]) =>
-        String(u).endsWith(apiPath("/state")),
+        hrefOf(u as string | URL | Request).endsWith(apiPath("/assessments")),
       ).length;
       expect(stateCallsAfter).toBeGreaterThan(stateCallsBefore);
     });

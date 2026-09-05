@@ -18,7 +18,7 @@ import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import { type AppState } from "@/lib/api";
 import type { Assessment, AssessmentItem, Competency } from "@/lib/domain";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { configurationRoute, renderWithApp } from "../helpers/render-app";
+import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -104,7 +104,8 @@ describe("Necessidades de Treinamento — cortes declarados (R2-ESC-08)", () => 
   const renderPage = () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockImplementation((url: string) => {
+    fetchMock.mockImplementation((input: string | URL | Request) => {
+      const url = hrefOf(input);
       const href = String(url);
       if (href.endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
@@ -114,14 +115,8 @@ describe("Necessidades de Treinamento — cortes declarados (R2-ESC-08)", () => 
           }),
         );
       }
-      if (href.endsWith(apiPath("/state"))) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
+      const fatia = contextsOf(state)(href);
+      if (fatia) return Promise.resolve(fatia);
       const configuration = configurationRoute(href);
       if (configuration) return Promise.resolve(configuration);
       return Promise.resolve(new Response("{}", { status: 200 }));

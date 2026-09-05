@@ -82,12 +82,13 @@ O token é guardado no `localStorage` e a sessão é revalidada a cada carga.
 
 ## Como conversa com a API
 
-O front hidrata a store com uma chamada a `GET /api/v1/state` e, nas mutações, atualiza o cache
-do React Query na hora e envia a alteração à API; em erro, revalida o snapshot.
+Cada rota declara as fatias de estado que lê (`<ContextScope contexts={…}>`) e o front as
+busca nos endpoints por contexto (`/architects`, `/assessments`, `/cycles`, …); nas mutações,
+atualiza o cache do React Query na hora e envia a alteração à API; em erro, revalida as fatias.
 
 O prefixo `/api/v1` mora num lugar só: `src/lib/api-path.ts`. O `ApiClient` compõe
 `base + prefixo + recurso`, então os call sites dos gateways passam apenas o recurso
-(`/state`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
+(`/architects`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
 
 ### Tipos gerados do contrato OpenAPI (ADR-0011, fase 1)
 
@@ -100,24 +101,26 @@ estar por perto.
 declara response schemas (todo 200 sai como `content?: never`) e nem toda rota declara o
 querystring (ex.: `GET /api/v1/assessments` aceita `architectId`/`cycleId` que não estão no
 documento). Por isso os tipos gerados valem para **paths, params e bodies**; as **respostas**
-continuam validadas em runtime pelos schemas zod de `src/lib/api-schemas.ts`, exatamente os
-mesmos que já validavam o `/state`. Quando o backend publicar response schemas, a derivação
-por zod pode ser aposentada rota a rota.
+continuam validadas em runtime pelos schemas zod de `src/lib/api-schemas.ts`, um por fatia.
+Quando o backend publicar response schemas, a derivação por zod pode ser aposentada rota a rota.
 
-### Estrangulamento do `/state` (ADR-0011, fase 1)
+### O blob `/state` morreu (ADR-0011, encerrado em 2026-09-05)
 
-O blob `GET /api/v1/state` (~2 MB) está sendo estrangulado. As rotas listadas no
-livro-razão (`defaultStranglerLedger`, em `src/lib/state-contexts.ts`) — hoje o Painel `/`,
-`/team` e o índice `/architects/$architectId` — **não carregam o blob**: cada uma declara os
-contextos de que precisa e o `ContextScope` (`src/lib/context-scope.tsx`) monta o mesmo
-`AppState` parcial a partir dos endpoints por contexto (`/architects`, `/assessments`,
-`/cycles`, …), servindo-o pelo MESMO `useStore()`/`useSelectors()` de sempre — telas,
-view-models e presenters não sabem a diferença. Mutações dentro de um escopo estrangulado
-escrevem de volta nas queries de contexto (e no cache do blob, quando existir), então a
-invalidação é cirúrgica: só os contextos daquela tela.
+O blob `GET /api/v1/state` (~2 MB) foi estrangulado até o fim: o backend não tem mais a rota
+e o front não a conhece (catraca em `tests/architecture/o-blob-morreu.test.ts`). Toda rota
+declara os contextos de que precisa e o `ContextScope` (`src/lib/context-scope.tsx`) monta o
+`AppState` parcial a partir dos endpoints por contexto, servindo-o pelo MESMO
+`useStore()`/`useSelectors()` de sempre — telas, view-models e presenters não sabem a
+diferença. Quem usa seletores pede pelo menos `SELECTOR_CONTEXTS` (as fatias que o
+construtor indexa); a ficha de carreira usa `ContextScopes.careerFileOf(architectId)`, com
+recorte por pessoa feito pelo servidor.
 
-As demais rotas continuam no blob (modo `"blob"` do `StoreProvider`, decidido pelo
-`__root` consultando o livro-razão). Fase 2 amplia a lista até o blob morrer.
+**A fatia que a tela não pediu não se lê.** Em desenvolvimento e em teste, ler uma fatia
+fora do escopo lança `UnrequestedStateContextError` com o nome da fatia — é o que impede
+uma tela incompleta de cair no vazio em silêncio. Em produção o vazio continua vazio.
+
+Mutações escrevem de volta nas queries de contexto; escritas que mudam contagem, status ou
+vínculo invalidam todas as fatias montadas (`stateContextCatalog.invalidateAll`).
 
 `src/lib/api-client.ts` é o único lugar que fala `fetch` e o único que constrói `ApiError` —
 inclusive para falha de rede, que vira `status: 0` e `code: "NETWORK_UNAVAILABLE"` em vez de
@@ -130,10 +133,10 @@ Nenhuma tela escreve `try/catch` por conta própria; erro é assunto de quatro a
 | Ler dados para pintar a tela (`useQuery`)             | `QuerySection`   |
 | Escrever, com erro ao lado do campo                   | `useAsyncSubmit` |
 | Escrever, com erro em toast (ação fora de formulário) | `useToastSubmit` |
-| Escrever mexendo no cache do `/state`                 | `MutationRunner` |
+| Escrever mexendo no cache das fatias de contexto      | `MutationRunner` |
 
 `MutationRunner` deliberadamente não revalida no caminho feliz — é o que evita refazer o fetch
-e o parse de um `/api/v1/state` de ~2 MB a cada edição.
+e o parse das fatias a cada edição.
 
 A política de sessão não mora no transporte: é um interceptor explícito
 (`src/lib/session-policy.ts`) que derruba a sessão só quando o código

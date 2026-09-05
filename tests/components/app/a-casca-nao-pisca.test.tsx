@@ -30,6 +30,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { apiPath } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { I18nProvider } from "@/lib/i18n";
+import { ContextScope } from "@/lib/context-scope";
 import { StoreProvider } from "@/lib/store";
 import { ThemeProvider } from "@/lib/theme";
 import { fixtureAdminUser } from "../../helpers/fixtures";
@@ -44,12 +45,12 @@ import { configurationRoute, jsonResponse, mockAppFetch } from "../../helpers/re
  * "Carregando dados do time…" e a árvore INTEIRA é trocada — nav e cabeçalho
  * somem junto. Não é recarga de página: é o React trocando tudo.
  *
- * A mecânica: a aplicação abre em `/`, que o strangler ledger marca como
- * estrangulada (modo "contexts", sem a consulta grande). No primeiro clique
- * para qualquer outra rota o modo vira "blob", a `appStateQuery` monta pela
- * primeira vez, `isPending` fica true e o `StoreProvider` devolve
- * `<LoadingState />` NO LUGAR DE TODOS OS FILHOS — com o `AppShell` entre
- * eles. Depois o dado fica em cache e nunca mais acontece.
+ * A mecânica da época: a aplicação abria em `/` estrangulada e o primeiro
+ * clique para outra rota montava o blob `/state` pela primeira vez;
+ * `isPending` ficava true e o `StoreProvider` devolvia `<LoadingState />` NO
+ * LUGAR DE TODOS OS FILHOS — com o `AppShell` entre eles. O blob morreu, e o
+ * carregamento hoje é o do `<ContextScope>` de cada rota — a mesma tela de
+ * espera, no mesmo lugar, e o invariante é o mesmo.
  *
  * O invariante que este teste prende é o da casca, não o da rota: **enquanto
  * o conteúdo carrega — ou falha —, a navegação continua desenhada**. Vale para
@@ -63,7 +64,7 @@ const CARREGANDO = "Carregando dados do time…";
 const ITEM_DO_MENU = "Painel";
 const FALHA_DE_CONEXAO = "Não foi possível acessar o serviço";
 
-/** `/state` que nunca responde: o `StoreProvider` fica pendente para sempre. */
+/** A fatia de contexto que nunca responde: o `<ContextScope>` da rota fica pendente para sempre. */
 const estadoQueNuncaChega = () =>
   new Promise<Response>(() => {
     // sem resolve: é o estado "carregando" que o dono viu piscar.
@@ -83,7 +84,9 @@ function App({ children }: { children: ReactNode }) {
         <I18nProvider>
           <AuthProvider>
             <Casca>
-              <StoreProvider mode="blob">{children}</StoreProvider>
+              <StoreProvider>
+                <ContextScope contexts={["architects"]}>{children}</ContextScope>
+              </StoreProvider>
             </Casca>
           </AuthProvider>
         </I18nProvider>
@@ -106,7 +109,7 @@ describe("a casca não pisca — carregar o conteúdo não apaga a navegação",
   it("com a consulta do store PENDENTE, o menu continua no documento", async () => {
     fetchMock.mockImplementation((input: string | URL | Request, init?: RequestInit) => {
       const href = input instanceof Request ? input.url : String(input);
-      if (href.endsWith(apiPath("/state"))) return estadoQueNuncaChega();
+      if (href.endsWith(apiPath("/architects"))) return estadoQueNuncaChega();
       if (href.endsWith(apiPath("/auth/me")))
         return Promise.resolve(jsonResponse({ data: fixtureAdminUser }));
       return Promise.resolve(configurationRoute(href, init) ?? new Response("{}", { status: 200 }));
@@ -126,15 +129,15 @@ describe("a casca não pisca — carregar o conteúdo não apaga a navegação",
     expect(screen.queryByText("conteúdo da rota")).toBeNull();
   });
 
-  // `appStateQuery` tem `retry: 1`: o estado de erro só assenta depois da
-  // segunda tentativa, ~1s adiante.
+  // A consulta de contexto tem `retry: 1`: o estado de erro só assenta depois
+  // da segunda tentativa, ~1s adiante.
   it(
     "com a consulta do store FALHANDO, o menu também continua no documento",
     { timeout: 15_000 },
     async () => {
       fetchMock.mockImplementation((input: string | URL | Request, init?: RequestInit) => {
         const href = input instanceof Request ? input.url : String(input);
-        if (href.endsWith(apiPath("/state")))
+        if (href.endsWith(apiPath("/architects")))
           return Promise.resolve(new Response(null, { status: 500 }));
         if (href.endsWith(apiPath("/auth/me")))
           return Promise.resolve(jsonResponse({ data: fixtureAdminUser }));

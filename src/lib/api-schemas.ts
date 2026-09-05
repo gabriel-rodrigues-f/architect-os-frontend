@@ -545,25 +545,12 @@ const evidence = z.object({
   reviewedAt: z.string().nullish(),
 });
 
-export const appStateSchema = z.object({
-  capabilities: z.array(capability),
-  competencies: z.array(competency),
-  teamLevelRules: z.array(teamLevelRule),
-  architects: z.array(architect),
-  assessments: z.array(assessment),
-  cycles: z.array(developmentCycle),
-  plans: z.array(developmentPlan),
-  learningPaths: z.array(learningPath),
-  mentoringSessions: z.array(mentoringSession),
-  evidences: z.array(evidence),
-  activeCycleId: z.string(),
-});
-
 export const architectsResponseSchema = z.array(architect);
 export const assessmentsResponseSchema = z.array(assessment);
 export const capabilitiesResponseSchema = z.array(capability);
 export const competenciesResponseSchema = z.array(competency);
 export const cyclesResponseSchema = z.array(developmentCycle);
+export const teamLevelRulesResponseSchema = z.array(teamLevelRule);
 export const plansResponseSchema = z.array(developmentPlan);
 export const learningPathsResponseSchema = z.array(learningPath);
 export const mentoringSessionsResponseSchema = z.array(mentoringSession);

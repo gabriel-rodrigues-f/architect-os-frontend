@@ -11,6 +11,7 @@ import {
 } from "@/components/app";
 import { personAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { usePageHelp } from "@/lib/page-help";
@@ -34,7 +35,20 @@ export const Route = createFileRoute("/mentoring")({
   component: MentoringPage,
 });
 
+const MENTORING_CONTEXTS: readonly ContextScopeRequest[] = [
+  ...SELECTOR_CONTEXTS,
+  "mentoringSessions",
+];
+
 function MentoringPage() {
+  return (
+    <ContextScope contexts={MENTORING_CONTEXTS}>
+      <MentoringScreen />
+    </ContextScope>
+  );
+}
+
+function MentoringScreen() {
   const store = useStore();
   const { t } = useI18n();
   const help = usePageHelp("mentoring");

@@ -15,6 +15,7 @@ import {
   mockAppFetch,
   renderWithApp,
   type FetchRoute,
+  hrefOf,
 } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -58,14 +59,15 @@ const countGets = (suffix: string) =>
   fetchMock.mock.calls.filter((call) => {
     const [url, init] = call as [string, RequestInit | undefined];
     return (
-      String(url).endsWith(suffix) && ((init as RequestInit | undefined)?.method ?? "GET") === "GET"
+      hrefOf(url as string | URL | Request).endsWith(suffix) &&
+      ((init as RequestInit | undefined)?.method ?? "GET") === "GET"
     );
   }).length;
 
 const findPut = (suffix: string) =>
   fetchMock.mock.calls.find((call) => {
     const [url, init] = call as [string, RequestInit | undefined];
-    return String(url).endsWith(suffix) && init?.method === "PUT";
+    return hrefOf(url as string | URL | Request).endsWith(suffix) && init?.method === "PUT";
   });
 
 /** O bloco das políticas dentro da seção "Operação". */
@@ -135,7 +137,7 @@ describe("Operação (CFG-05 admin UI)", () => {
     ).toBe(true);
   });
 
-  it("salvar envia UM PUT por key alterada e, com cadência nova, invalida settings E /api/v1/state", async () => {
+  it("salvar envia UM PUT por key alterada e, com cadência nova, invalida settings E as fatias de contexto", async () => {
     mockAppFetch(fetchMock, {
       routes: [
         careerLevelsRoute,
@@ -153,7 +155,7 @@ describe("Operação (CFG-05 admin UI)", () => {
 
     const block = await operationalBlock();
     const settingsGetsBefore = countGets(apiPath("/config/settings"));
-    const stateGetsBefore = countGets(apiPath("/state"));
+    const stateGetsBefore = countGets(apiPath("/cycles"));
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
 
     await userEvent.selectOptions(within(block).getByLabelText("Cadência dos ciclos"), "QUARTERLY");
@@ -178,11 +180,11 @@ describe("Operação (CFG-05 admin UI)", () => {
     expect(findPut(apiPath("/config/settings/career.minimumQualifiedFloor"))).toBeUndefined();
 
     // Invalidação encadeada ao sucesso: a query das settings refaz o GET e,
-    // porque a cadência mudou, o snapshot de /api/v1/state também (a tela de
-    // ciclos lê os ciclos vigentes de lá).
+    // porque a cadência mudou, as fatias de contexto também (a tela de
+    // ciclos lê os ciclos vigentes da fatia `cycles`).
     await waitFor(() => {
       expect(countGets(apiPath("/config/settings"))).toBeGreaterThan(settingsGetsBefore);
-      expect(countGets(apiPath("/state"))).toBeGreaterThan(stateGetsBefore);
+      expect(countGets(apiPath("/cycles"))).toBeGreaterThan(stateGetsBefore);
     });
   });
 

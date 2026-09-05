@@ -23,7 +23,7 @@ import { Route as ProgressionRoute } from "@/routes/progression";
 import { type AppState } from "@/lib/api";
 import type { Assessment, Competency } from "@/lib/domain";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
-import { configurationRoute, renderWithApp } from "../helpers/render-app";
+import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -90,7 +90,8 @@ describe("Progressão — heatmap, tabela e maestria", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
 
-    fetchMock.mockImplementation((url: string) => {
+    fetchMock.mockImplementation((input: string | URL | Request) => {
+      const url = hrefOf(input);
       if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
           new Response(JSON.stringify(fixtureAdminUser), {
@@ -99,14 +100,8 @@ describe("Progressão — heatmap, tabela e maestria", () => {
           }),
         );
       }
-      if (String(url).endsWith(apiPath("/state"))) {
-        return Promise.resolve(
-          new Response(JSON.stringify(state), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-        );
-      }
+      const fatia = contextsOf(state)(String(url));
+      if (fatia) return Promise.resolve(fatia);
       const configuration = configurationRoute(String(url));
       if (configuration) return Promise.resolve(configuration);
       return Promise.resolve(new Response("{}", { status: 200 }));

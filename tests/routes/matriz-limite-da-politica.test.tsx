@@ -15,6 +15,7 @@ import {
   mockAppFetch,
   renderWithApp,
   type FetchRoute,
+  contextsOf,
 } from "../helpers/render-app";
 
 /**
@@ -134,8 +135,8 @@ describe("Matriz — o contador cai depois de desvincular (item 2 do dono)", () 
           ? ((removed = true), jsonResponse({ archived: false }))
           : undefined,
       (href, init) =>
-        href.endsWith(apiPath("/state")) && (init?.method ?? "GET") === "GET" && removed
-          ? jsonResponse({
+        removed
+          ? contextsOf({
               ...state,
               capabilities: state.capabilities.map((capability) =>
                 capability.id === "cloud"
@@ -148,7 +149,7 @@ describe("Matriz — o contador cai depois de desvincular (item 2 do dono)", () 
               competencies: state.competencies.filter(
                 (competency) => competency.id !== "cloud-k8s",
               ),
-            })
+            })(href, init)
           : undefined,
     ];
     mockAppFetch(fetchMock, {

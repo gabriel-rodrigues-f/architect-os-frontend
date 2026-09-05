@@ -16,6 +16,7 @@ import {
 } from "@/components/app";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
@@ -39,6 +40,8 @@ export const Route = createFileRoute("/gap-analysis")({
   component: GapPage,
 });
 
+const GAP_ANALYSIS_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS];
+
 function GapPage() {
   const user = useCurrentUser();
   const { t } = useI18n();
@@ -56,7 +59,11 @@ function GapPage() {
     );
   }
 
-  return <TeamPriorities />;
+  return (
+    <ContextScope contexts={GAP_ANALYSIS_CONTEXTS}>
+      <TeamPriorities />
+    </ContextScope>
+  );
 }
 
 function TeamPriorities() {

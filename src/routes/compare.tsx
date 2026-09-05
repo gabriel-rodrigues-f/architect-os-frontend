@@ -15,6 +15,7 @@ import {
   ViewToggle,
 } from "@/components/app";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
@@ -41,6 +42,8 @@ export const Route = createFileRoute("/compare")({
 
 type ComparisonView = "radar" | "table";
 
+const COMPARE_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS];
+
 function ComparePage() {
   const user = useCurrentUser();
   const { t } = useI18n();
@@ -58,7 +61,11 @@ function ComparePage() {
     );
   }
 
-  return <ProfessionalsComparison />;
+  return (
+    <ContextScope contexts={COMPARE_CONTEXTS}>
+      <ProfessionalsComparison />
+    </ContextScope>
+  );
 }
 
 function ProfessionalsComparison() {

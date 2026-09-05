@@ -15,6 +15,7 @@ import {
   mockAppFetch,
   renderWithApp,
   type FetchRoute,
+  hrefOf,
 } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -42,7 +43,8 @@ const countGets = (suffix: string) =>
   fetchMock.mock.calls.filter((call) => {
     const [url, init] = call as [string, RequestInit | undefined];
     return (
-      String(url).endsWith(suffix) && ((init as RequestInit | undefined)?.method ?? "GET") === "GET"
+      hrefOf(url as string | URL | Request).endsWith(suffix) &&
+      ((init as RequestInit | undefined)?.method ?? "GET") === "GET"
     );
   }).length;
 
@@ -113,7 +115,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     ).toBe(true);
   });
 
-  it("salvar envia o PUT com a política inteira e invalida a query da política E o /api/v1/state", async () => {
+  it("salvar envia o PUT com a política inteira e invalida a query da política E as fatias de contexto", async () => {
     mockAppFetch(fetchMock, {
       routes: [
         careerLevelsRoute,
@@ -128,7 +130,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
 
     const block = await policyBlock();
     const policyGetsBefore = countGets(apiPath("/config/curation-policy"));
-    const stateGetsBefore = countGets(apiPath("/state"));
+    const stateGetsBefore = countGets(apiPath("/capabilities"));
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
 
     const input = within(block).getByLabelText("Máximo de competências ativas");
@@ -147,11 +149,11 @@ describe("Catálogo (CFG-04 admin UI)", () => {
       });
     });
 
-    // Invalidação encadeada ao sucesso: a query da política refaz o GET e o
-    // snapshot de /api/v1/state também (é dele que vem `curation.status`).
+    // Invalidação encadeada ao sucesso: a query da política refaz o GET e as
+    // fatias de contexto também (é da fatia `capabilities` que vem `curation.status`).
     await waitFor(() => {
       expect(countGets(apiPath("/config/curation-policy"))).toBeGreaterThan(policyGetsBefore);
-      expect(countGets(apiPath("/state"))).toBeGreaterThan(stateGetsBefore);
+      expect(countGets(apiPath("/capabilities"))).toBeGreaterThan(stateGetsBefore);
     });
   });
 

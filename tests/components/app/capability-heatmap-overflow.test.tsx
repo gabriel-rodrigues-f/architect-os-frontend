@@ -13,6 +13,7 @@ import { CapabilityHeatmap } from "@/components/app/CapabilityHeatmap";
 import type { CapabilityAverage } from "@/lib/selectors";
 import { fixtureAdminUser, fixtureState } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
+import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 
 /**
  * QA-UX gate 1 (2026-08-29), achado 3 — no Painel o heatmap corta as últimas
@@ -74,6 +75,7 @@ describe("heatmap de capacidades — colunas excedentes ganham affordance de rol
         capabilities={fixtureState.capabilities}
         capabilityAveragesFor={() => averages}
       />,
+      { contexts: SELECTOR_CONTEXTS },
     );
 
     const scroller = await screen.findByTestId("heatmap-scroll");

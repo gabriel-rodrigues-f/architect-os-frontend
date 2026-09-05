@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useToastSubmit } from "@/hooks";
 import { api, evolutionApi, reportsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import { downloadBlob } from "@/lib/download";
 import type { EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -66,7 +67,11 @@ function ArchitectStatement() {
     );
   }
 
-  return <StatementOfArchitect architectId={architectId} />;
+  return (
+    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
+      <StatementOfArchitect architectId={architectId} />
+    </ContextScope>
+  );
 }
 
 const STATEMENT_KINDS: readonly StatementEntryKind[] = [

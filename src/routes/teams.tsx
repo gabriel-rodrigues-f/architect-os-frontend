@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { authApi, teamRosterApi, teamsApi, teamTransitionsApi, type SessionUser } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import type { Architect } from "@/lib/domain";
 import { TeamMemberRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
 import type { TeamRosterMember } from "@/lib/gateways/team-roster.gateway";
@@ -81,6 +82,8 @@ function useTeamTransitionsViewModel(): TeamTransitionsViewModel {
   return useMemo(() => new TeamTransitionsViewModel(defaultUiAuthorizationPolicy), []);
 }
 
+const TEAMS_CONTEXTS: readonly ContextScopeRequest[] = ["architects"];
+
 function TeamsPage() {
   const { t } = useI18n();
   const help = usePageHelp("teams");
@@ -88,6 +91,35 @@ function TeamsPage() {
   const registry = useTeamRegistryViewModel();
   const comparison = useTeamTransitionsViewModel();
   const canCompose = registry.canCompose(user);
+  const canCompare = comparison.canCompare(user);
+
+  if (!canCompose) {
+    return (
+      <>
+        <PageHeader title={t("teams.title")} description={t("teams.subtitle")} help={help} />
+        <EmptyState title={t("teams.restricted")} hint={t("teams.restrictedHint")} />
+        {canCompare && (
+          <div className="mt-6">
+            <TeamTransitionsSection comparison={comparison} />
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <ContextScope contexts={TEAMS_CONTEXTS}>
+      <TeamsScreen />
+    </ContextScope>
+  );
+}
+
+function TeamsScreen() {
+  const { t } = useI18n();
+  const help = usePageHelp("teams");
+  const user = useCurrentUser();
+  const registry = useTeamRegistryViewModel();
+  const comparison = useTeamTransitionsViewModel();
   const canCompare = comparison.canCompare(user);
   const canAdminister = registry.canAdminister(user);
   const queryClient = useQueryClient();
@@ -108,22 +140,7 @@ function TeamsPage() {
     queryKey: TEAMS_QUERY_KEY,
     queryFn: teamsApi.teams,
     staleTime: 60_000,
-    enabled: canCompose,
   });
-
-  if (!canCompose) {
-    return (
-      <>
-        <PageHeader title={t("teams.title")} description={t("teams.subtitle")} help={help} />
-        <EmptyState title={t("teams.restricted")} hint={t("teams.restrictedHint")} />
-        {canCompare && (
-          <div className="mt-6">
-            <TeamTransitionsSection comparison={comparison} />
-          </div>
-        )}
-      </>
-    );
-  }
 
   const reloadTeams = () => queryClient.invalidateQueries({ queryKey: TEAMS_QUERY_KEY });
 

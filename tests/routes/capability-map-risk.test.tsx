@@ -21,7 +21,7 @@ import { Route as CapabilityRoute } from "@/routes/capability-map";
 import type { SessionUser } from "@/lib/api";
 import { type AppState } from "@/lib/api";
 import { fixtureAdminUser, fixtureState, scopedFixtureStateFor } from "../helpers/fixtures";
-import { configurationRoute, renderWithApp } from "../helpers/render-app";
+import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -39,7 +39,8 @@ const fetchMock = vi.fn();
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 
 const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
-  fetchMock.mockImplementation((url: string) => {
+  fetchMock.mockImplementation((input: string | URL | Request) => {
+    const url = hrefOf(input);
     const href = String(url);
     if (href.endsWith(apiPath("/auth/me"))) {
       return Promise.resolve(
@@ -49,14 +50,8 @@ const renderPage = (state: AppState, user: SessionUser = fixtureAdminUser) => {
         }),
       );
     }
-    if (href.endsWith(apiPath("/state"))) {
-      return Promise.resolve(
-        new Response(JSON.stringify(state), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
-    }
+    const fatia = contextsOf(state)(href);
+    if (fatia) return Promise.resolve(fatia);
     const configuration = configurationRoute(href);
     if (configuration) return Promise.resolve(configuration);
     return Promise.resolve(new Response("{}", { status: 200 }));
