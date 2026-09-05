@@ -1540,7 +1540,7 @@
   "ref.taxonomies.actionTypes": "Action types",
   "ref.taxonomies.evidenceTypes": "Evidence types",
   "nav.myCareer": "My career",
-  "nav.group.ruler": "The Rule",
+  "nav.group.ruler": "Setup",
   "pdi.newAction.blocked.approved": "Development plan approved — request changes to add a new action",
   "pdi.newAction.blocked.completed": "Development plan completed — this cycle takes no new action",
   "pdi.newAction.blocked.notYours": "You cannot add an action to this person's development plan",
@@ -1834,5 +1834,6 @@
   "dash.coverage.draft": "Draft",
   "dash.coverage.notStarted": "Not started",
   "dash.severity.title": "Distances by severity",
-  "dash.severity.subtitle": "How many team competencies sit below the expected level, and how far."
+  "dash.severity.subtitle": "How many team competencies sit below the expected level, and how far.",
+  "ev.field.linkRequiredForHigh": "High complexity asks for a proof link — the ADR, the review, the repository."
 }

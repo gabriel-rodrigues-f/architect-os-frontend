@@ -197,7 +197,13 @@ export function EvidenceDialog({
               value={url}
               onChange={(event) => setUrl(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && salvar()}
+              aria-describedby={complexity === "High" ? "ev-url-hint" : undefined}
             />
+            {complexity === "High" && (
+              <p id="ev-url-hint" className="mt-1 text-xs text-muted-foreground">
+                {t("ev.field.linkRequiredForHigh")}
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="ev-description">{t("ev.field.description")}</Label>
@@ -230,7 +236,10 @@ export function EvidenceDialog({
           <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
             {t("ev.resubmit.cancel")}
           </Button>
-          <Button disabled={!title.trim() || saving} onClick={() => void salvar()}>
+          <Button
+            disabled={!title.trim() || (complexity === "High" && !url.trim()) || saving}
+            onClick={() => void salvar()}
+          >
             {saving ? t("ev.saving") : t("ev.save")}
           </Button>
         </DialogFooter>

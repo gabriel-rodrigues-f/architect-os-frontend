@@ -1540,7 +1540,7 @@
   "ref.taxonomies.actionTypes": "Tipos de ação",
   "ref.taxonomies.evidenceTypes": "Tipos de evidência",
   "nav.myCareer": "Minha carreira",
-  "nav.group.ruler": "A Régua",
+  "nav.group.ruler": "Configuração",
   "pdi.newAction.blocked.approved": "PDI aprovado — peça ajustes para incluir nova ação",
   "pdi.newAction.blocked.completed": "PDI concluído — este ciclo não recebe ação nova",
   "pdi.newAction.blocked.notYours": "Você não pode incluir ação no PDI desta pessoa",
@@ -1834,5 +1834,6 @@
   "dash.coverage.draft": "Em rascunho",
   "dash.coverage.notStarted": "Não iniciadas",
   "dash.severity.title": "Distâncias por severidade",
-  "dash.severity.subtitle": "Quantas competências do time estão abaixo do esperado, e quão longe."
+  "dash.severity.subtitle": "Quantas competências do time estão abaixo do esperado, e quão longe.",
+  "ev.field.linkRequiredForHigh": "Complexidade alta pede um link de comprovação — o ADR, a revisão, o repositório."
 }

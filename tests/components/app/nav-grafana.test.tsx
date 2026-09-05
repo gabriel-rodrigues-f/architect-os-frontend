@@ -1,5 +1,6 @@
 import { cleanup, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@tanstack/react-router", async (importOriginal) => {
@@ -101,6 +102,11 @@ describe("menu — Grafana abre como âncora externa, não como rota do SPA", ()
         </AppShell>
       </ThemeProvider>,
     );
+    // "Administração" nasce recolhida (2026-09-05): o item existe, mas fora do
+    // alcance até alguém abrir o grupo — o teste abre, como a pessoa abriria.
+    for (const cabecalho of await screen.findAllByRole("button", { name: /Administração/ })) {
+      await userEvent.click(cabecalho);
+    }
     const links = await screen.findAllByRole("link", { name: "Grafana" });
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {

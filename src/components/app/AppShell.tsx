@@ -80,6 +80,13 @@ const OWN_ARCHITECT_PARAM = "$architectId";
 interface NavGroup {
   labelKey?: MessageKey;
   items: NavItem[];
+  /**
+   * Nasce recolhido para quem nunca mexeu nele. Pedido do dono (2026-09-05):
+   * o menu do líder tinha 16 itens em 5 grupos, e régua, ciclos e
+   * configuração competiam com o dia a dia. A preferência salva continua
+   * mandando — isto é só o começo.
+   */
+  defaultCollapsed?: boolean;
 }
 
 /**
@@ -173,12 +180,12 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/development-plans", labelKey: "nav.developmentPlans", icon: Target },
       { to: "/learning-paths", labelKey: "nav.learningPaths", icon: BookOpen },
       { to: "/mentoring", labelKey: "nav.mentoring", icon: GraduationCap },
-      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange, leadershipOnly: true },
     ],
   },
   {
     labelKey: "nav.group.ruler",
     items: [
+      { to: "/cycles", labelKey: "nav.cycles", icon: CalendarRange, leadershipOnly: true },
       {
         to: "/team-rules",
         labelKey: "nav.teamRules",
@@ -190,6 +197,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     labelKey: "nav.group.admin",
+    defaultCollapsed: true,
     items: [
       {
         to: "/competency-matrix",
@@ -216,6 +224,17 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+class NavGroupsAtRest {
+  /** Sem preferência salva, os grupos que declaram nascer recolhidos. */
+  static collapsedByDefault(groups: readonly NavGroup[]): Set<string> {
+    return new Set(
+      groups
+        .filter((group) => group.defaultCollapsed && group.labelKey !== undefined)
+        .map((group) => group.labelKey as string),
+    );
+  }
+}
 
 class NavigationOfUser {
   constructor(
@@ -363,7 +382,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(NAV_COLLAPSED_GROUPS_KEY);
-      if (raw) setCollapsedGroups(new Set(JSON.parse(raw) as string[]));
+      setCollapsedGroups(
+        raw ? new Set(JSON.parse(raw) as string[]) : NavGroupsAtRest.collapsedByDefault(NAV_GROUPS),
+      );
     } catch {
       return;
     }
