@@ -12,6 +12,7 @@ import {
   CareerPortfolioSection,
   ConfirmDialog,
   DevelopmentSummarySection,
+  EvidenceLedgerSection,
   PageHeader,
   SectionCard,
   StatusBadge,
@@ -292,6 +293,19 @@ function AssessmentsScreen() {
 
       {assessment && (
         <DevelopmentSummarySection assessment={assessment} isOwner={isOwner} isLead={isLead} />
+      )}
+
+      {/* A PRÓPRIA pessoa registra evidência aqui (dono, 2026-09-05); quem lidera registra e revisa pela ficha. */}
+      {selectedArchitect && isOwner && (
+        <EvidenceLedgerSection
+          className="mb-6"
+          architectId={selectedArchitect.id}
+          plan={sel.planFor(selectedArchitect.id)}
+          evidences={store.evidences.filter(
+            (evidence) => evidence.architectId === selectedArchitect.id,
+          )}
+          canRegister
+        />
       )}
 
       {!assessment ? (

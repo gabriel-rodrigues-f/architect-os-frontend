@@ -89,7 +89,7 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
     expect(screen.queryAllByText(DISTANCIA)).toEqual([]);
   });
 
-  it("o que é dele para agir continua no Painel", async () => {
+  it("o Painel é de números: situação, pendências, PDI e trilhas — evidência se registra em Avaliações", async () => {
     renderAs(fixtureMemberUser);
     await screen.findByText("Minha Evolução");
 
@@ -97,7 +97,8 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
     expect(screen.getByText("Evidências pendentes")).toBeTruthy();
     expect(screen.getByText("Meu PDI")).toBeTruthy();
     expect(screen.getByText("Minhas Trilhas")).toBeTruthy();
-    expect(screen.getByText("Minhas evidências")).toBeTruthy();
+    expect(screen.queryByText("Minhas evidências")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Registrar" })).toBeNull();
   });
 
   it("o Painel do admin não muda — as prioridades do time continuam lá", async () => {

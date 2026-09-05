@@ -16,12 +16,9 @@ import type { ReactNode } from "react";
 
 import {
   AssessmentCoverageChart,
-  EvidenceDialog,
-  EvidenceStatusBadge,
   GapBadge,
   GapSeverityChart,
   PageHeader,
-  ResubmitEvidenceDialog,
   SectionCard,
   StatCard,
   StatTones,
@@ -39,8 +36,7 @@ import { useI18n } from "@/lib/i18n";
 import type { DevelopmentPlan } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
-import { useGapSeverityRuler, useSelectors, useStore, useVocabulary } from "@/lib/store";
-import { defaultDateFormatter } from "@/lib/text";
+import { useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -299,11 +295,9 @@ function MemberHome() {
   const sel = useSelectors();
   const user = useCurrentUser();
   const labels = useLabels();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const help = usePageHelp("dash");
   const personal = usePersonalDashboardPresenter();
-  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
-
   const architectId = user.architectId;
   const architect = architectId ? sel.architectById(architectId) : undefined;
 
@@ -323,7 +317,6 @@ function MemberHome() {
   const itemsByStatus = personal.planItemCounts(architectId);
   const paths = personal.assignedPaths(architectId);
   const evidencePending = personal.pendingEvidenceCount(architectId);
-  const evidences = personal.evidencesOf(architectId);
 
   return (
     <>
@@ -418,39 +411,6 @@ function MemberHome() {
           </ul>
         </SectionCard>
       </div>
-
-      <SectionCard
-        className="mt-6"
-        title={t("dash.member.evidence.title")}
-        description={t("dash.member.evidence.subtitle")}
-        actions={<EvidenceDialog architectId={architectId} plan={plan} />}
-      >
-        <ul className="space-y-2">
-          {evidences.map((evidence) => (
-            <li key={evidence.id} className="surface-inset p-2.5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium">{evidence.title}</p>
-                <EvidenceStatusBadge status={evidence.status} />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {evidenceTypes.label(evidence.type)} ·{" "}
-                {defaultDateFormatter.formatDate(evidence.date, locale)}
-              </p>
-              {evidence.leaderComment && (
-                <p className="mt-1 text-xs text-muted-foreground">"{evidence.leaderComment}"</p>
-              )}
-              {evidence.status === "Needs Improvement" && (
-                <div className="mt-1 flex flex-wrap items-center gap-3">
-                  <ResubmitEvidenceDialog evidence={evidence} />
-                </div>
-              )}
-            </li>
-          ))}
-          {!evidences.length && (
-            <p className="text-sm text-muted-foreground">{t("arch.evidence.none")}</p>
-          )}
-        </ul>
-      </SectionCard>
     </>
   );
 }

@@ -131,8 +131,6 @@
   "dash.member.paths.title": "Minhas Trilhas",
   "dash.member.paths.subtitle": "Trilhas de aprendizagem atribuídas a você.",
   "dash.member.paths.none": "Nenhuma trilha atribuída ainda.",
-  "dash.member.evidence.title": "Minhas evidências",
-  "dash.member.evidence.subtitle": "Provas concretas do que você aplicou na prática — registre aqui e acompanhe a revisão do seu líder.",
   "dash.noCycle.title": "Não há ciclos cadastrados",
   "dash.noCycle.body": "O Painel lê o ciclo ativo: avaliações, PDIs e metas só existem dentro de um ciclo. Cadastre o primeiro em Ciclos e ative-o.",
   "dash.noCycle.cta": "Cadastrar ciclo",
@@ -1835,5 +1833,7 @@
   "dash.severity.subtitle": "Quantas competências do time estão abaixo do esperado, e quão longe.",
   "ev.field.linkRequiredForHigh": "Complexidade alta pede um link de comprovação — o ADR, a revisão, o repositório.",
   "arch.careerFile.tabsOutOfReach": "Evolução, Extrato e Roteiro são leituras da liderança sobre a carreira de uma pessoa.",
-  "arch.careerFile.tabsOutOfReachHint": "A sua Visão geral está em Minha carreira; o que é seu para agir está em Avaliações, PDI e Trilhas."
+  "arch.careerFile.tabsOutOfReachHint": "A sua Visão geral está em Minha carreira; o que é seu para agir está em Avaliações, PDI e Trilhas.",
+  "asmt.evidenceLedger.title": "Evidências",
+  "asmt.evidenceLedger.subtitle": "Provas concretas do que foi aplicado na prática — registre aqui e acompanhe a revisão da liderança."
 }

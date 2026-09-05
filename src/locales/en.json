@@ -131,8 +131,6 @@
   "dash.member.paths.title": "My Learning Paths",
   "dash.member.paths.subtitle": "Learning paths assigned to you.",
   "dash.member.paths.none": "No path assigned yet.",
-  "dash.member.evidence.title": "My evidence",
-  "dash.member.evidence.subtitle": "Concrete proof of what you applied in practice — register it here and follow your leader's review.",
   "dash.noCycle.title": "No cycles registered",
   "dash.noCycle.body": "The dashboard reads the active cycle: assessments, development plans, and goals only exist within a cycle. Register the first one in Cycles and activate it.",
   "dash.noCycle.cta": "Register cycle",
@@ -1835,5 +1833,7 @@
   "dash.severity.subtitle": "How many team competencies sit below the expected level, and how far.",
   "ev.field.linkRequiredForHigh": "High complexity asks for a proof link — the ADR, the review, the repository.",
   "arch.careerFile.tabsOutOfReach": "Evolution, Statement and Roadmap are leadership readings about a person's career.",
-  "arch.careerFile.tabsOutOfReachHint": "Your Overview lives in My career; what is yours to act on lives in Assessments, PDI and Learning Paths."
+  "arch.careerFile.tabsOutOfReachHint": "Your Overview lives in My career; what is yours to act on lives in Assessments, PDI and Learning Paths.",
+  "asmt.evidenceLedger.title": "Evidence",
+  "asmt.evidenceLedger.subtitle": "Concrete proof of what was applied in practice — register it here and follow the leadership review."
 }

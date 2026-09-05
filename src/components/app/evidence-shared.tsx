@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { semanticTone } from "@/components/app/ui-bits";
+import { SectionCard, semanticTone } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -318,5 +318,62 @@ export function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * A lista de evidências de uma pessoa com o registro e o reenvio — o que a
+ * PRÓPRIA pessoa faz. Morava no Painel do profissional; o dono decidiu
+ * (2026-09-05) que o Painel é só de gráficos e números, e que evidência se
+ * registra em Avaliações. A revisão (ato da liderança) continua na ficha.
+ */
+export function EvidenceLedgerSection({
+  architectId,
+  plan,
+  evidences,
+  canRegister,
+  className,
+}: {
+  architectId: string;
+  plan: DevelopmentPlan | undefined;
+  evidences: readonly Evidence[];
+  canRegister: boolean;
+  className?: string;
+}) {
+  const { t, locale } = useI18n();
+  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
+  return (
+    <SectionCard
+      {...(className ? { className } : {})}
+      title={t("asmt.evidenceLedger.title")}
+      description={t("asmt.evidenceLedger.subtitle")}
+      actions={canRegister ? <EvidenceDialog architectId={architectId} plan={plan} /> : undefined}
+    >
+      <ul className="space-y-2">
+        {evidences.map((evidence) => (
+          <li key={evidence.id} className="surface-inset p-2.5">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium">{evidence.title}</p>
+              <EvidenceStatusBadge status={evidence.status} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {evidenceTypes.label(evidence.type)} ·{" "}
+              {defaultDateFormatter.formatDate(evidence.date, locale)}
+            </p>
+            {evidence.leaderComment && (
+              <p className="mt-1 text-xs text-muted-foreground">"{evidence.leaderComment}"</p>
+            )}
+            {canRegister && evidence.status === "Needs Improvement" && (
+              <div className="mt-1 flex flex-wrap items-center gap-3">
+                <ResubmitEvidenceDialog evidence={evidence} />
+              </div>
+            )}
+          </li>
+        ))}
+        {!evidences.length && (
+          <p className="text-sm text-muted-foreground">{t("arch.evidence.none")}</p>
+        )}
+      </ul>
+    </SectionCard>
   );
 }

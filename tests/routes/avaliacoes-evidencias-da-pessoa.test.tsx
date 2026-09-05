@@ -19,26 +19,17 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { Route as DashboardRoute } from "@/routes/index";
+import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState, type SessionUser } from "@/lib/api";
 import { fixtureMemberUser, fixtureState, scopedFixtureStateFor } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
- * RUMO AO 100% — achado da fatia `e2e-de-entrega` (2026-09-02), literal: "o
- * profissional perdeu o ÚNICO ponto de registro de evidência — EvidenceDialog
- * só vive em architects.$architectId.index.tsx atrás de canActFor, e a onda
- * 31 nega a ele a própria ficha".
- *
- * A onda 31 decidiu que o profissional não vê os próprios números nem a
- * própria ficha. Tirar dele o registro de evidência foi EFEITO COLATERAL,
- * não decisão: registrar evidência da própria competência é, por definição,
- * o que ele tem a fazer. O Painel do profissional ganha a seção "Minhas
- * evidências" — lista (título, tipo, data, situação) e o MESMO diálogo de
- * registro da ficha — sem reabrir a ficha e sem número de avaliação.
- *
- * A liderança NÃO ganha a seção: ela registra pela ficha do liderado, como
- * antes. Nasceu VERMELHO: o Painel do member não tinha a seção nem o botão.
+ * Decisão do dono (2026-09-05): "Mude para a tela de avaliações. O Painel
+ * deve ser apenas de gráficos e números para avaliação analítica." A seção de
+ * evidências da pessoa — lista, registro e reenvio — sai do Painel do
+ * profissional e mora em Avaliações, ao lado da avaliação do ciclo. A
+ * revisão (ato da liderança) continua na ficha.
  */
 const fetchMock = vi.fn();
 
@@ -56,7 +47,7 @@ const fixtureTechLeadDeAna: SessionUser = {
   memberships: [{ teamId: TIME_DE_ANA, role: "tech_lead" }],
 };
 
-const DashboardPage = DashboardRoute.options.component as () => ReactNode;
+const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
 const stateComEvidenciaDevolvida: AppState = {
   ...fixtureState,
@@ -75,11 +66,15 @@ const stateComEvidenciaDevolvida: AppState = {
 };
 
 function renderAs(user: SessionUser, state: AppState = fixtureState) {
-  mockAppFetch(fetchMock, { user, state: scopedFixtureStateFor(user, state) });
-  return renderWithApp(<DashboardPage />);
+  mockAppFetch(fetchMock, {
+    user,
+    state: scopedFixtureStateFor(user, state),
+    routes: [emptyEligibilityRoute],
+  });
+  return renderWithApp(<AssessmentsPage />);
 }
 
-describe("Painel do profissional — Minhas evidências", () => {
+describe("Avaliações — as evidências da pessoa", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -92,9 +87,9 @@ describe("Painel do profissional — Minhas evidências", () => {
 
   it("member vê a seção com as próprias evidências: título, tipo, data e situação", async () => {
     renderAs(fixtureMemberUser, stateComEvidenciaDevolvida);
-    await screen.findByText("Minha Evolução");
+    await screen.findByText("Evidências");
 
-    expect(await screen.findByText("Minhas evidências")).toBeTruthy();
+    expect(await screen.findByText("Evidências")).toBeTruthy();
     expect(await screen.findByText("ADR-014")).toBeTruthy();
     expect(screen.getByText("Workshop de observabilidade")).toBeTruthy();
     expect(screen.getByText("Pendente")).toBeTruthy();
@@ -103,9 +98,9 @@ describe("Painel do profissional — Minhas evidências", () => {
     expect(screen.getByText(/20\/08\/2026/)).toBeTruthy();
   });
 
-  it("member abre o MESMO diálogo de registro da ficha a partir do Painel", async () => {
+  it("member abre o MESMO diálogo de registro da ficha a partir de Avaliações", async () => {
     renderAs(fixtureMemberUser);
-    await screen.findByText("Minhas evidências");
+    await screen.findByText("Evidências");
 
     fireEvent.click(screen.getByRole("button", { name: "Registrar" }));
 
@@ -113,9 +108,9 @@ describe("Painel do profissional — Minhas evidências", () => {
     expect(screen.getByLabelText("Título")).toBeTruthy();
   });
 
-  it("member corrige e reenvia a evidência devolvida sem sair do Painel", async () => {
+  it("member corrige e reenvia a evidência devolvida sem sair de Avaliações", async () => {
     renderAs(fixtureMemberUser, stateComEvidenciaDevolvida);
-    await screen.findByText("Minhas evidências");
+    await screen.findByText("Evidências");
 
     expect(screen.getByRole("button", { name: "Corrigir e reenviar" })).toBeTruthy();
     expect(screen.getByText(/Falta o material apresentado/)).toBeTruthy();
@@ -123,7 +118,7 @@ describe("Painel do profissional — Minhas evidências", () => {
 
   it("member sem evidência vê o estado vazio da seção, com o botão de registrar", async () => {
     renderAs(fixtureMemberUser, { ...fixtureState, evidences: [] });
-    await screen.findByText("Minhas evidências");
+    await screen.findByText("Evidências");
 
     expect(await screen.findByText("Nenhuma evidência registrada.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Registrar" })).toBeTruthy();
@@ -131,13 +126,13 @@ describe("Painel do profissional — Minhas evidências", () => {
 
   it("a seção não mostra número de avaliação", async () => {
     renderAs(fixtureMemberUser);
-    await screen.findByText("Minhas evidências");
+    await screen.findByText("Evidências");
 
     expect(screen.queryByText("Nível médio")).toBeNull();
     expect(screen.queryByText("Competências em evolução")).toBeNull();
   });
 
-  it("tech lead NÃO ganha a seção no Painel: ele registra pela ficha do liderado", async () => {
+  it("tech lead do time NÃO ganha a seção na avaliação da liderada: ele registra e revisa pela ficha", async () => {
     const state: AppState = {
       ...fixtureState,
       architects: fixtureState.architects.map((architect) =>
@@ -147,12 +142,11 @@ describe("Painel do profissional — Minhas evidências", () => {
     mockAppFetch(fetchMock, {
       user: fixtureTechLeadDeAna,
       state: scopedFixtureStateFor(fixtureTechLeadDeAna, state, [TIME_DE_ANA]),
+      routes: [emptyEligibilityRoute],
     });
-    renderWithApp(<DashboardPage />);
-    await screen.findByText("Pendências do Lead");
+    renderWithApp(<AssessmentsPage />);
 
-    expect(await screen.findByText(/ADR-014/)).toBeTruthy();
-    expect(screen.queryByText("Minhas evidências")).toBeNull();
+    expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Registrar" })).toBeNull();
   });
 });
