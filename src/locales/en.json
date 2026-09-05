@@ -1822,5 +1822,17 @@
   "users.activate.error": "Could not activate. Reload the page and try again.",
   "users.deactivate.accountDescription": "The account loses access. There is no professional on the roster to remove — only the account changes status.",
   "users.edit.disabledHint": "Reactivate the account to edit the record.",
-  "msg.people.reactivate.success": "{nome} reactivated — the account has access again"
+  "msg.people.reactivate.success": "{nome} reactivated — the account has access again",
+  "chart.coverage.label": "Cycle assessment coverage, by status.",
+  "chart.empty.coverage": "Nobody to assess in this cycle.",
+  "chart.axis.status": "Status",
+  "chart.severity.label": "Team distances to the expected level, by severity.",
+  "chart.empty.severity": "No open distance in the team.",
+  "chart.axis.severity": "Severity",
+  "dash.coverage.completed": "Completed",
+  "dash.coverage.inReview": "In review",
+  "dash.coverage.draft": "Draft",
+  "dash.coverage.notStarted": "Not started",
+  "dash.severity.title": "Distances by severity",
+  "dash.severity.subtitle": "How many team competencies sit below the expected level, and how far."
 }

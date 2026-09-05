@@ -25,6 +25,14 @@ const LevelDistributionFigure = lazy(() =>
   import("./charts-recharts").then((charts) => ({ default: charts.LevelDistributionFigure })),
 );
 
+const AssessmentCoverageFigure = lazy(() =>
+  import("./charts-recharts").then((charts) => ({ default: charts.AssessmentCoverageFigure })),
+);
+
+const GapSeverityFigure = lazy(() =>
+  import("./charts-recharts").then((charts) => ({ default: charts.GapSeverityFigure })),
+);
+
 function ChartPlaceholder() {
   return <div aria-hidden="true" className="h-full w-full rounded-md bg-muted/40" />;
 }
@@ -369,6 +377,74 @@ export function LevelDistribution({
       }
     >
       <LevelDistributionFigure data={rows} label={label} />
+    </ChartFrame>
+  );
+}
+
+export interface CoverageSlice {
+  status: string;
+  count: number;
+  color: string;
+}
+
+/**
+ * A cobertura da avaliação do ciclo como rosca — o painel do admin dizia
+ * "3 de 5 concluídas · 1 em revisão" numa frase; a rosca diz o mesmo de
+ * relance, com a cor de cada situação.
+ */
+export function AssessmentCoverageChart({
+  data,
+  height = 220,
+}: {
+  data: CoverageSlice[];
+  height?: number;
+}) {
+  const { t } = useI18n();
+  const label = t("chart.coverage.label");
+  return (
+    <ChartFrame
+      label={label}
+      height={height}
+      isEmpty={data.every((slice) => slice.count === 0)}
+      emptyMessage={t("chart.empty.coverage")}
+      dataTable={
+        <DataTable
+          caption={label}
+          columns={[t("chart.axis.status"), t("chart.axis.count")]}
+          rows={data.map((slice) => [slice.status, slice.count])}
+        />
+      }
+    >
+      <AssessmentCoverageFigure data={data} />
+    </ChartFrame>
+  );
+}
+
+export interface SeverityBar {
+  severity: string;
+  count: number;
+  color: string;
+}
+
+/** As distâncias do time por severidade, na cor da severidade. */
+export function GapSeverityChart({ data, height = 220 }: { data: SeverityBar[]; height?: number }) {
+  const { t } = useI18n();
+  const label = t("chart.severity.label");
+  return (
+    <ChartFrame
+      label={label}
+      height={height}
+      isEmpty={data.every((bar) => bar.count === 0)}
+      emptyMessage={t("chart.empty.severity")}
+      dataTable={
+        <DataTable
+          caption={label}
+          columns={[t("chart.axis.severity"), t("chart.axis.count")]}
+          rows={data.map((bar) => [bar.severity, bar.count])}
+        />
+      }
+    >
+      <GapSeverityFigure data={data} label={t("chart.axis.count")} />
     </ChartFrame>
   );
 }

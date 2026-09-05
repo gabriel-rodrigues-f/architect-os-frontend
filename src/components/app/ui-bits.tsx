@@ -165,27 +165,79 @@ export function Callout({
   );
 }
 
+/**
+ * O TOM de um big number diz, antes do número, se ele pede ação. Pedido do
+ * dono (2026-09-05): "Gráficos e big number precisam ter cor, precisamos
+ * começar a retocar isso para sermos mais claros." Oito cartões iguais no
+ * painel do admin faziam "Distâncias críticas: 7" pesar o mesmo que
+ * "Profissionais: 5".
+ *
+ *   neutral    contagem que não pede nada (pessoas, competências)
+ *   attention  fila que espera alguém (evidências a revisar, PDIs a aprovar)
+ *   critical   o que já passou do limite (distâncias críticas)
+ *   good       zero pendência, ou meta batida
+ */
+export type StatTone = "neutral" | "attention" | "critical" | "good";
+
+export class StatTones {
+  /** Fila: vazia é bom; cheia pede atenção. */
+  static byPending(count: number): StatTone {
+    return count > 0 ? "attention" : "good";
+  }
+
+  /** Severidade: qualquer ocorrência já é crítica. */
+  static bySeverity(count: number): StatTone {
+    return count > 0 ? "critical" : "good";
+  }
+}
+
+const statTone: Record<StatTone, { card: string; value: string; icon: string }> = {
+  neutral: { card: "", value: "", icon: "bg-secondary text-primary" },
+  attention: {
+    card: "border-l-4 border-l-[var(--warning-fg)]",
+    value: "text-[var(--warning-fg)]",
+    icon: "bg-warning text-warning-fg",
+  },
+  critical: {
+    card: "border-l-4 border-l-destructive",
+    value: "text-destructive",
+    icon: "bg-destructive/15 text-destructive",
+  },
+  good: {
+    card: "border-l-4 border-l-[var(--success-fg)]",
+    value: "text-[var(--success-fg)]",
+    icon: "bg-success text-success-fg",
+  },
+};
+
 export function StatCard({
   label,
   value,
   hint,
   icon,
+  tone = "neutral",
 }: {
   label: string;
   value: ReactNode;
   hint?: string;
   icon?: ReactNode;
+  tone?: StatTone;
 }) {
+  const styles = statTone[tone];
   return (
-    <div className="surface-card p-4">
+    <div className={cn("surface-card p-4", styles.card)} data-tone={tone}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {label}
           </p>
-          <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums">{value}</p>
+          <p
+            className={cn("mt-1.5 font-display text-2xl font-semibold tabular-nums", styles.value)}
+          >
+            {value}
+          </p>
         </div>
-        {icon && <span className="rounded-lg bg-secondary p-2 text-primary">{icon}</span>}
+        {icon && <span className={cn("rounded-lg p-2", styles.icon)}>{icon}</span>}
       </div>
       {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
     </div>

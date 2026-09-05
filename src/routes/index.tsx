@@ -15,13 +15,16 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 
 import {
+  AssessmentCoverageChart,
   EvidenceDialog,
   EvidenceStatusBadge,
   GapBadge,
+  GapSeverityChart,
   PageHeader,
   ResubmitEvidenceDialog,
   SectionCard,
   StatCard,
+  StatTones,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import type { UserRole } from "@/lib/api";
@@ -138,6 +141,7 @@ function AdminHome() {
   const { t } = useI18n();
   const help = usePageHelp("dash");
   const presenter = useDashboardPresenter();
+  const severity = useGapSeverityRuler();
   if (presenter.noCycleRegistered) return <NoCycleRegistered title={t("dash.title")} help={help} />;
 
   const cycle = store.cycles.find((c) => c.id === store.activeCycleId);
@@ -147,6 +151,7 @@ function AdminHome() {
   const criticalGaps = presenter.criticalGapCount(architects);
   const topGaps = presenter.topGaps(architects);
   const assessmentCoverage = presenter.assessmentCoverage(architects);
+  const gapsBySeverity = presenter.gapsBySeverity(architects, severity);
 
   return (
     <>
@@ -177,6 +182,7 @@ function AdminHome() {
           value={criticalGaps}
           hint={t("dash.stat.criticalGapsHint")}
           icon={<TriangleAlert className="h-4 w-4" />}
+          tone={StatTones.bySeverity(criticalGaps)}
         />
         <StatCard
           label={t("dash.stat.goalsInProgress")}
@@ -222,7 +228,31 @@ function AdminHome() {
           title={t("dash.cycleAssessment.title")}
           description={t("dash.cycleAssessment.subtitle")}
         >
-          <p className="text-sm text-muted-foreground">
+          <AssessmentCoverageChart
+            data={[
+              {
+                status: t("dash.coverage.completed"),
+                count: assessmentCoverage.completed,
+                color: "var(--gap-ok-fg)",
+              },
+              {
+                status: t("dash.coverage.inReview"),
+                count: assessmentCoverage.inReview,
+                color: "var(--chart-2)",
+              },
+              {
+                status: t("dash.coverage.draft"),
+                count: assessmentCoverage.draft,
+                color: "var(--gap-low-fg)",
+              },
+              {
+                status: t("dash.coverage.notStarted"),
+                count: assessmentCoverage.notStarted,
+                color: "var(--chart-reference)",
+              },
+            ]}
+          />
+          <p className="mt-2 text-sm text-muted-foreground">
             {t("dash.coverage", {
               completed: assessmentCoverage.completed,
               total: architects.length,
@@ -234,6 +264,20 @@ function AdminHome() {
           <Link to="/progression" className="mt-3 inline-block text-sm text-primary underline">
             {t("dash.heatmap.whereItLives")}
           </Link>
+        </SectionCard>
+
+        <SectionCard title={t("dash.severity.title")} description={t("dash.severity.subtitle")}>
+          <GapSeverityChart
+            data={[
+              { tone: "critical" as const, color: "var(--gap-critical-fg)" },
+              { tone: "high" as const, color: "var(--gap-high-fg)" },
+              { tone: "low" as const, color: "var(--gap-low-fg)" },
+            ].map(({ tone, color }) => ({
+              severity: t(severity.messageKey[tone]),
+              count: gapsBySeverity[tone],
+              color,
+            }))}
+          />
         </SectionCard>
       </div>
     </>
@@ -296,11 +340,13 @@ function MemberHome() {
             assessment ? labels.assessmentStatus[assessment.status] : t("dash.member.noAssessment")
           }
           icon={<ClipboardCheck className="h-4 w-4" />}
+          tone={assessment?.status === "Completed" ? "good" : "attention"}
         />
         <StatCard
           label={t("dash.member.pendingEvidence")}
           value={evidencePending}
           icon={<FileCheck className="h-4 w-4" />}
+          tone={StatTones.byPending(evidencePending)}
         />
       </div>
 
@@ -441,16 +487,19 @@ function LeadHome() {
           label={t("dash.lead.awaitingCalibration")}
           value={awaitingCalibration.length}
           icon={<ClipboardCheck className="h-4 w-4" />}
+          tone={StatTones.byPending(awaitingCalibration.length)}
         />
         <StatCard
           label={t("dash.lead.pendingEvidence")}
           value={pendingEvidence.length}
           icon={<FileCheck className="h-4 w-4" />}
+          tone={StatTones.byPending(pendingEvidence.length)}
         />
         <StatCard
           label={t("dash.lead.awaitingApproval")}
           value={awaitingApproval.length}
           icon={<Target className="h-4 w-4" />}
+          tone={StatTones.byPending(awaitingApproval.length)}
         />
       </div>
 

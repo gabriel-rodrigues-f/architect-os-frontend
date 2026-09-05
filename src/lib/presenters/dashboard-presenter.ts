@@ -1,7 +1,7 @@
 import type { AppState, SessionUser } from "../api";
 import type { Architect, Assessment, DevelopmentPlan, Evidence, LearningPath } from "../domain";
 import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "../scope";
-import { defaultGapSeverityRuler } from "../scoring-bands";
+import { defaultGapSeverityRuler, type BandTone, type GapSeverityRuler } from "../scoring-bands";
 import type { Gap, Selectors } from "../selectors";
 
 interface AssessmentCoverage {
@@ -93,6 +93,16 @@ export class DashboardPresenter {
 
     this.gapsCache.set(population, gaps);
     return gaps;
+  }
+
+  /** Quantas distâncias do time caem em cada faixa de severidade da régua. */
+  gapsBySeverity(
+    population: readonly Architect[],
+    ruler: GapSeverityRuler,
+  ): Record<BandTone, number> {
+    const counts: Record<BandTone, number> = { ok: 0, low: 0, high: 0, critical: 0 };
+    for (const gap of this.gapsOf(population)) counts[ruler.severityOf(gap.gap)] += 1;
+    return counts;
   }
 
   criticalGapCount(population: readonly Architect[]): number {

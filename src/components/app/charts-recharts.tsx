@@ -2,9 +2,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
@@ -73,6 +76,45 @@ function RadarAxisTick(props: {
   );
 }
 
+/**
+ * No radar da pessoa, o ponto de cada capacidade diz de que lado do esperado
+ * ela está: verde no esperado ou acima, âmbar a até um nível abaixo,
+ * vermelho mais longe. A linha continua uma só — é a forma que se lê; a cor
+ * do ponto é o julgamento, e ele é por capacidade.
+ */
+class RadarPointInk {
+  static of(payload: { atual?: number; alvo?: number } | undefined): string {
+    if (!payload || payload.alvo === undefined || payload.atual === undefined) {
+      return "var(--chart-1)";
+    }
+    const distance = payload.alvo - payload.atual;
+    if (distance <= 0) return "var(--gap-ok-fg)";
+    if (distance <= 1) return "var(--gap-low-fg)";
+    return "var(--gap-critical-fg)";
+  }
+
+  static dot(props: {
+    cx?: number;
+    cy?: number;
+    key?: string;
+    payload?: { atual?: number; alvo?: number };
+  }) {
+    if (props.cx === undefined || props.cy === undefined) return <g key={props.key} />;
+    return (
+      <Symbols
+        key={props.key}
+        cx={props.cx}
+        cy={props.cy}
+        type="circle"
+        size={64}
+        fill={RadarPointInk.of(props.payload)}
+        stroke={CHART_INK.surface}
+        strokeWidth={1}
+      />
+    );
+  }
+}
+
 function seriesDot(estilo: SeriesStyle) {
   return (props: { cx?: number; cy?: number; key?: string }) => {
     if (props.cx === undefined || props.cy === undefined) return <g key={props.key} />;
@@ -128,7 +170,7 @@ export function CapabilityRadarFigure({
           strokeWidth={increasedContrast ? 3 : 2}
           fill="var(--chart-1)"
           fillOpacity={increasedContrast ? 0.16 : 0.28}
-          dot={seriesDot(FALLBACK_STYLE)}
+          dot={RadarPointInk.dot}
           isAnimationActive={!reducedMotion}
         />
         <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
@@ -273,6 +315,73 @@ export function ProficiencyTimelineFigure({
           isAnimationActive={!reducedMotion}
         />
       </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Cobertura da avaliação do ciclo: uma rosca, uma cor por situação. */
+export function AssessmentCoverageFigure({
+  data,
+}: {
+  data: { status: string; count: number; color: string }[];
+}) {
+  const { reducedMotion } = useDisplayPreferences();
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="count"
+          nameKey="status"
+          innerRadius="55%"
+          outerRadius="85%"
+          paddingAngle={2}
+          stroke={CHART_INK.surface}
+          isAnimationActive={!reducedMotion}
+        >
+          {data.map((slice) => (
+            <Cell key={slice.status} fill={slice.color} />
+          ))}
+        </Pie>
+        <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />
+        <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: CHART_INK.surfaceText }} />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Distâncias do time por severidade: uma barra por faixa, na cor da faixa. */
+export function GapSeverityFigure({
+  data,
+  label,
+}: {
+  data: { severity: string; count: number; color: string }[];
+  label: string;
+}) {
+  const { reducedMotion, increasedContrast } = useDisplayPreferences();
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ left: -24, right: 8, top: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_INK.grid} vertical={false} />
+        <XAxis dataKey="severity" tick={axisTick} stroke={CHART_INK.grid} />
+        <YAxis allowDecimals={false} tick={axisTick} stroke={CHART_INK.grid} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          itemStyle={{ color: CHART_INK.surfaceText }}
+          cursor={{ fill: CHART_INK.grid, fillOpacity: 0.4 }}
+        />
+        <Bar
+          dataKey="count"
+          name={label}
+          radius={[3, 3, 0, 0]}
+          {...(increasedContrast ? { stroke: CHART_INK.surfaceText, strokeWidth: 1 } : {})}
+          isAnimationActive={!reducedMotion}
+        >
+          {data.map((bar) => (
+            <Cell key={bar.severity} fill={bar.color} />
+          ))}
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   );
 }

@@ -1822,5 +1822,17 @@
   "users.activate.error": "Não foi possível ativar. Recarregue a página e tente de novo.",
   "users.deactivate.accountDescription": "A conta perde o acesso. Não há profissional no quadro para tirar — só a conta muda de status.",
   "users.edit.disabledHint": "Reative a conta para editar o cadastro.",
-  "msg.people.reactivate.success": "{nome} reativado(a) — a conta voltou a ter acesso"
+  "msg.people.reactivate.success": "{nome} reativado(a) — a conta voltou a ter acesso",
+  "chart.coverage.label": "Cobertura da avaliação do ciclo, por situação.",
+  "chart.empty.coverage": "Ninguém para avaliar neste ciclo.",
+  "chart.axis.status": "Situação",
+  "chart.severity.label": "Distâncias do time por severidade.",
+  "chart.empty.severity": "Nenhuma distância aberta no time.",
+  "chart.axis.severity": "Severidade",
+  "dash.coverage.completed": "Concluídas",
+  "dash.coverage.inReview": "Em revisão",
+  "dash.coverage.draft": "Em rascunho",
+  "dash.coverage.notStarted": "Não iniciadas",
+  "dash.severity.title": "Distâncias por severidade",
+  "dash.severity.subtitle": "Quantas competências do time estão abaixo do esperado, e quão longe."
 }
