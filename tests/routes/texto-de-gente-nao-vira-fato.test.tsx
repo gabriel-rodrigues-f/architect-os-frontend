@@ -156,7 +156,8 @@ describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro dele
     expect(
       within(fatos)
         .getAllByRole("listitem")
-        .map((item) => item.textContent),
+        // Cada fato leva um sinal (aria-hidden) à frente; o texto é o que vem depois.
+        .map((item) => item.querySelector("span:last-child")?.textContent),
     ).toEqual([FATO]);
     expect(within(fatos).queryByText(TEMA_FORJADO)).toBeNull();
     expect(within(fatos).queryByText(DECISOES)).toBeNull();

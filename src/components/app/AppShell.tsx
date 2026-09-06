@@ -41,6 +41,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useReducedMotion } from "@/hooks";
 import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 import { CollapsedNavGroups } from "@/lib/collapsed-nav-groups";
+import { DailyGreetingToast } from "@/components/app/DailyGreetingToast";
 import { cn } from "@/lib/utils";
 import { API_URL, type SessionUser } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -768,6 +769,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             </div>
           </header>
+
+          <DailyGreetingToast />
 
           <main className={cn(PAGE_CONTAINER, "flex-1 px-5 py-6 lg:px-8 lg:py-8")}>{children}</main>
         </div>

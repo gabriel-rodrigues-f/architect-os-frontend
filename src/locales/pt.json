@@ -1,5 +1,11 @@
 {
   "$label": "Português",
+  "greeting.close": "Fechar",
+  "greeting.hello": "Olá, {nome}!",
+  "greeting.manager": "Que bom ter você por aqui. Acompanhe o desenvolvimento do seu time, identifique oportunidades de evolução e apoie decisões de carreira com mais clareza.",
+  "greeting.techLead": "Que bom ter você por aqui. Explore as competências do time, acompanhe a evolução técnica e contribua para jornadas de desenvolvimento mais consistentes.",
+  "greeting.member": "Que bom ter você por aqui. Conheça suas competências, reconheça seus pontos fortes e construa os próximos passos do seu desenvolvimento profissional.",
+  "greeting.admin": "Que bom ter você por aqui. Mantenha o sistema em ordem: contas, times, catálogo e ciclos prontos para quem desenvolve pessoas.",
   "nav.dashboard": "Painel",
   "nav.team": "Time",
   "nav.competencyMatrix": "Matriz de Competências",

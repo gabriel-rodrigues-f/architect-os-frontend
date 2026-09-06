@@ -341,9 +341,14 @@ export function AdviceFactList({
         </span>
         {label}
       </p>
-      <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
+      <ul className="mt-1 space-y-1 text-sm">
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item} className="flex gap-2">
+            <span aria-hidden="true" className="w-5 shrink-0 text-center">
+              {AdviceSemiotics.emojiForFact(item)}
+            </span>
+            <span>{item}</span>
+          </li>
         ))}
       </ul>
     </div>

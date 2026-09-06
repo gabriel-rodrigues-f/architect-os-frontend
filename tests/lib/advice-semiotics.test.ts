@@ -35,3 +35,26 @@ describe("AiProgressEstimate — a barra enquanto o provedor escreve", () => {
     expect(AiProgressEstimate.stageAt(20_000)).toBe("finishing");
   });
 });
+
+describe("AdviceSemiotics.emojiForFact — cada fato calculado leva o seu sinal (dono, 2026-09-06)", () => {
+  it("lê a frase inteira e escolhe pelo assunto; sem assunto conhecido, o sinal de calculado", () => {
+    expect(AdviceSemiotics.emojiForFact("Não há avaliação registrada para esta pessoa.")).toBe(
+      "📝",
+    );
+    expect(AdviceSemiotics.emojiForFact("Não há 1:1 registrada com esta pessoa.")).toBe("🤝");
+    expect(AdviceSemiotics.emojiForFact("Não há PDI registrado para esta pessoa.")).toBe("🗺️");
+    expect(AdviceSemiotics.emojiForFact("Não há evidência registrada para esta pessoa.")).toBe(
+      "📎",
+    );
+    expect(AdviceSemiotics.emojiForFact("A régua do time exige 0 competências.")).toBe("📏");
+    expect(
+      AdviceSemiotics.emojiForFact("Nenhuma competência da régua está abaixo do nível exigido."),
+    ).toBe("📉");
+    expect(
+      AdviceSemiotics.emojiForFact(
+        "Não há degrau de competência registrado no histórico desta pessoa.",
+      ),
+    ).toBe("📈");
+    expect(AdviceSemiotics.emojiForFact("Qualquer outra coisa.")).toBe("🧮");
+  });
+});

@@ -38,7 +38,21 @@ export class AdviceSemiotics {
     { emoji: "🪜", words: ["prontidao", "elegiv", "nivel", "senioridade", "transicao"] },
     { emoji: "🧹", words: ["repetid", "vago", "duplic", "fora de lugar", "catalogo"] },
     { emoji: "🧭", words: ["contexto", "situacao", "onde esta", "cenario", "resumo", "leitura"] },
+    // Os FATOS calculados (dono, 2026-09-06: "ainda não vejo os ícones no gerador de 1:1").
+    { emoji: "📝", words: ["avalia", "autoavalia"] },
+    { emoji: "📏", words: ["regua", "exige"] },
+    { emoji: "📈", words: ["historico", "degrau"] },
+    { emoji: "🧑‍💻", words: ["a pessoa e", "arquitet", "profissional"] },
   ];
+
+  /**
+   * O sinal de um FATO calculado — a frase inteira, não só o título: a
+   * primeira palavra-chave que aparecer decide, e um fato que não casa com
+   * nada leva o sinal neutro de "calculado".
+   */
+  static emojiForFact(fact: string): string {
+    return AdviceSemiotics.emojiFor(fact) ?? "🧮";
+  }
 
   static emojiFor(heading: string): string | null {
     const plain = AdviceSemiotics.plain(heading);

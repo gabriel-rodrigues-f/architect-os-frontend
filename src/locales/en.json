@@ -1,5 +1,11 @@
 {
   "$label": "English",
+  "greeting.close": "Close",
+  "greeting.hello": "Hello, {nome}!",
+  "greeting.manager": "Good to have you here. Follow your team's development, spot opportunities to grow and support career decisions with more clarity.",
+  "greeting.techLead": "Good to have you here. Explore the team's competencies, follow technical growth and help build more consistent development journeys.",
+  "greeting.member": "Good to have you here. Know your competencies, recognize your strengths and build the next steps of your professional development.",
+  "greeting.admin": "Good to have you here. Keep the system in order: accounts, teams, catalog and cycles ready for those who develop people.",
   "nav.dashboard": "Dashboard",
   "nav.team": "Team",
   "nav.competencyMatrix": "Competency Matrix",
