@@ -2,10 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ArchitectFilter } from "@/components/app/ArchitectFilter";
 import { MultiSelectFilter } from "@/components/app/MultiSelectFilter";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
-import type { Architect } from "@/lib/domain";
 import { I18nProvider } from "@/lib/i18n";
 
 /**
@@ -30,37 +28,11 @@ import { I18nProvider } from "@/lib/i18n";
  * custou 6 dias foi consertar um e quebrar o outro em silêncio.
  */
 
-const architects: Architect[] = [
-  {
-    id: "ana",
-    name: "Ana Martins",
-    role: "Pleno",
-    yearsAsArchitect: 4,
-    specialization: "",
-    email: "a@a.com",
-    active: true,
-    version: 1,
-  },
-  {
-    id: "bruno",
-    name: "Bruno Almeida",
-    role: "Júnior",
-    yearsAsArchitect: 2,
-    specialization: "",
-    email: "b@b.com",
-    active: true,
-    version: 1,
-  },
-];
-
-const renderTeamFilter = () => {
-  render(
-    <I18nProvider>
-      <ArchitectFilter architects={architects} selected={["ana"]} onChange={vi.fn()} />
-    </I18nProvider>,
-  );
-  return screen.getByRole("button", { expanded: false });
-};
+/**
+ * A combobox de pessoa (Time, Prioridades, Progressão, Comparativo) saiu daqui
+ * em 2026-09-06: virou `PersonCombobox`, com busca (cmdk) — o gesto de mouse e
+ * o teclado dela moram em `person-combobox.test.tsx`.
+ */
 
 const renderPrioritiesFilter = () => {
   render(
@@ -109,13 +81,6 @@ const renderProgressionFilter = () => {
  * é o que a lista precisa oferecer a quem chega pelo teclado.
  */
 const filters = [
-  {
-    name: "Time (ArchitectFilter)",
-    renderFilter: renderTeamFilter,
-    firstOption: "Todo o time",
-    lastOption: "Bruno Almeida",
-    entryOption: "Todo o time",
-  },
   {
     name: "Prioridades (MultiSelectFilter)",
     renderFilter: renderPrioritiesFilter,

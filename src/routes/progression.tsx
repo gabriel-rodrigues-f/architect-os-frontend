@@ -3,17 +3,18 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import {
-  ArchitectFilter,
   CapabilityHeatmap,
   EmptyState,
   GapTable,
   OutOfReachScreen,
   PageHeader,
+  PersonCombobox,
   SectionCard,
   useGapAnalysisData,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/auth";
+import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -116,11 +117,15 @@ function TeamProgression() {
         help={help}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <ArchitectFilter
-              architects={store.architects}
-              selected={selected}
-              onChange={setSelected}
-            />
+            {/* Dono (2026-09-06): sem ninguém no alcance, só a mensagem do corpo. */}
+            {store.architects.length > 0 && (
+              <PersonCombobox
+                picker={PersonPicker.many(store.architects, selected)}
+                onChange={setSelected}
+                label={t("person.label")}
+                className="w-64"
+              />
+            )}
             <Button
               size="sm"
               variant="secondary"
@@ -143,7 +148,7 @@ function TeamProgression() {
 
       {architects.length === 0 ? (
         <EmptyState
-          title={t("gap.empty")}
+          title={store.architects.length === 0 ? t("person.none") : t("gap.empty")}
           hint={
             store.architects.length === 0 ? t("gap.empty.noArchitects") : t("gap.empty.filterHint")
           }

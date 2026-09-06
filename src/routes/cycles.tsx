@@ -3,11 +3,11 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import {
-  ArchitectSelectCombobox,
   ConfirmDialog,
   LevelBadge,
   OutOfReachScreen,
   PageHeader,
+  PersonCombobox,
   SectionCard,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { useLabels } from "@/lib/labels";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import type { CycleCadence } from "@/lib/operational-settings";
 import { usePageHelp } from "@/lib/page-help";
+import { PersonPicker } from "@/lib/person-selection";
 import { requireLeadershipReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useOperationalSettings, useSelectors, useStore } from "@/lib/store";
@@ -125,10 +126,9 @@ function CycleAdministration() {
         help={help}
         actions={
           <div className="flex flex-wrap gap-2">
-            <ArchitectSelectCombobox
-              architects={store.architects}
-              selectedId={architectId}
-              onChange={setArchitectId}
+            <PersonCombobox
+              picker={PersonPicker.one(store.architects, architectId)}
+              onChange={([id]) => setArchitectId(id ?? "")}
               label={t("cycle.architect")}
               className="w-48"
             />

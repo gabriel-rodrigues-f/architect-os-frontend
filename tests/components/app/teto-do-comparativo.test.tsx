@@ -2,9 +2,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ArchitectFilter } from "@/components/app/ArchitectFilter";
+import { PersonCombobox } from "@/components/app/PersonCombobox";
 import type { Architect } from "@/lib/domain";
 import { I18nProvider } from "@/lib/i18n";
+import { PersonPicker } from "@/lib/person-selection";
 
 /**
  * O dono, olhando a tela: "Em 'Comparativo de Profissionais' não deve haver o
@@ -13,18 +14,10 @@ import { I18nProvider } from "@/lib/i18n";
  *
  * As duas metades são a mesma decisão: marcar o time inteiro contradiz um
  * teto de dois. Por isso a opção SOME quando o teto existe, em vez de ficar
- * lá recusando o clique — e o teto é do componente, não da tela, para a
- * próxima comparação que precisar de um não reescrever nada.
- *
- * HONESTIDADE SOBRE O QUE ESTA SUÍTE COBRE, medida por mutação:
- * matar o `disabled` derruba um teste; devolver "Todo o time" derruba outro.
- * Mas apagar a guarda do `toggle` NÃO derruba nada — o `disabled` impede o
- * clique de chegar ao handler, então a asserção passa pelo motivo errado.
- *
- * A guarda continua no código de propósito: `disabled` é apresentação e a
- * guarda é a regra. Quem mexer no estilo amanhã não pode reabrir o teto sem
- * perceber. Mas ela é defesa em profundidade que ESTA suíte não exercita, e
- * dizer isso vale mais do que uma asserção que finge cobri-la.
+ * lá recusando o clique — e o teto é da forma `PersonPicker.upTo` (Strategy,
+ * 2026-09-06), não da tela, para a próxima comparação que precisar de um não
+ * reescrever nada. A guarda de regra (`pick` recusa acima do teto) é coberta
+ * em `tests/lib/person-selection.test.ts`; aqui fica a apresentação.
  */
 const pessoa = (id: string, name: string): Architect => ({
   id,
@@ -45,20 +38,20 @@ const architects: Architect[] = [
 
 function montar(selected: string[], max?: number) {
   const onChange = vi.fn();
+  const picker =
+    max === undefined
+      ? PersonPicker.many(architects, selected)
+      : PersonPicker.upTo(max, architects, selected);
   render(
     <I18nProvider>
-      <ArchitectFilter
-        architects={architects}
-        selected={selected}
-        onChange={onChange}
-        {...(max === undefined ? {} : { max })}
-      />
+      <PersonCombobox picker={picker} onChange={onChange} label="Pessoas para comparar" />
     </I18nProvider>,
   );
   return onChange;
 }
 
-const abrir = () => userEvent.click(screen.getByRole("button", { expanded: false }));
+const abrir = () =>
+  userEvent.click(screen.getByRole("combobox", { name: "Pessoas para comparar" }));
 
 describe("o teto do Comparativo", () => {
   afterEach(() => cleanup());
@@ -67,7 +60,7 @@ describe("o teto do Comparativo", () => {
     montar([], 2);
     await abrir();
 
-    expect(screen.queryByRole("button", { name: "Todo o time" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "Todo o time" })).toBeNull();
     expect(screen.getByRole("option", { name: /Ana Martins/ })).toBeTruthy();
   });
 
@@ -75,7 +68,7 @@ describe("o teto do Comparativo", () => {
     montar([]);
     await abrir();
 
-    expect(screen.getByRole("button", { name: "Todo o time" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Todo o time" })).toBeTruthy();
   });
 
   it("batido o teto, quem não está escolhido fica desabilitado — e desabilitado barra o clique", async () => {
@@ -83,7 +76,7 @@ describe("o teto do Comparativo", () => {
     await abrir();
 
     const terceira = screen.getByRole("option", { name: /Carla Souza/ });
-    expect(terceira.hasAttribute("disabled")).toBe(true);
+    expect(terceira.getAttribute("aria-disabled")).toBe("true");
 
     await userEvent.click(terceira);
     expect(onChange).not.toHaveBeenCalled();

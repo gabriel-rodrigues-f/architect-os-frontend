@@ -9,21 +9,6 @@
       "count": 6
     }
   },
-  "src/components/app/ArchitectFilter.tsx": {
-    "id-length": {
-      "count": 5
-    }
-  },
-  "src/components/app/ArchitectNameCombobox.tsx": {
-    "id-length": {
-      "count": 4
-    }
-  },
-  "src/components/app/ArchitectSelectCombobox.tsx": {
-    "id-length": {
-      "count": 2
-    }
-  },
   "src/components/app/CapabilityCombobox.tsx": {
     "id-length": {
       "count": 3

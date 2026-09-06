@@ -36,16 +36,9 @@ import { apiPath } from "@/lib/api-path";
 
 const fetchMock = vi.fn();
 
-/**
- * R2-UX-01 — o botão de ajuda contextual (`PageHelp`) também é um trigger
- * `aria-expanded`, então `getByRole("button", { expanded: false })` sozinho
- * passou a achar dois: ele e o chip de recorte do `ArchitectFilter`. Este é
- * o único `aria-haspopup="listbox"` da tela — o de ajuda é `"dialog"`.
- */
+/** O recorte de pessoas é a `PersonCombobox` "Pessoas" (2026-09-06). */
 const getArchitectFilterTrigger = (): HTMLElement =>
-  screen
-    .getAllByRole("button", { expanded: false })
-    .find((el) => el.getAttribute("aria-haspopup") === "listbox")!;
+  screen.getByRole("combobox", { name: "Pessoas" });
 
 /**
  * Competência nova, com gap RESTRITIVO para Ana em 2026-h2 — sem isto, a

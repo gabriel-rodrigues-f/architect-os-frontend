@@ -109,10 +109,10 @@ describe("calibração — a leitura de apoio é da pessoa escolhida", () => {
     renderWithApp(<CalibrationPage />);
     const usuario = userEvent.setup();
 
-    await usuario.selectOptions(
-      await screen.findByLabelText(/Pessoa para a leitura de apoio/),
-      "bruno",
+    await usuario.click(
+      await screen.findByRole("combobox", { name: /Pessoa para a leitura de apoio/ }),
     );
+    await usuario.click(await screen.findByRole("option", { name: /Bruno Almeida/ }));
     await usuario.click(screen.getByRole("button", { name: /Ler apoio à calibração/ }));
 
     await waitFor(() =>

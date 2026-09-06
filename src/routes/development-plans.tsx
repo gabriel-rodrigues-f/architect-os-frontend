@@ -5,11 +5,11 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import {
-  ArchitectSelectCombobox,
   CommandWithReasonDialog,
   GapBadge,
   LevelBadge,
   PageHeader,
+  PersonCombobox,
   QuerySection,
   SectionCard,
 } from "@/components/app";
@@ -36,6 +36,7 @@ import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib
 import { useLabels } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { PersonPicker } from "@/lib/person-selection";
 import type { PlanWorkflowPolicy } from "@/lib/plan-workflow-policy";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { initialSearchParam, replaceSearchParam } from "@/lib/search-params";
@@ -146,10 +147,9 @@ function PlansScreen() {
         description={t("pdi.subtitle")}
         help={help}
         actions={
-          <ArchitectSelectCombobox
-            architects={sel.activeArchitects}
-            selectedId={architectId}
-            onChange={setArchitectId}
+          <PersonCombobox
+            picker={PersonPicker.one(sel.activeArchitects, architectId)}
+            onChange={([id]) => setArchitectId(id ?? "")}
             label={t("pdi.architect")}
             className="w-48"
           />

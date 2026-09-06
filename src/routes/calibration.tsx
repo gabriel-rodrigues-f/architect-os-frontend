@@ -8,6 +8,7 @@ import {
   EmptyState,
   EvaluatorDistributionCard,
   PageHeader,
+  PersonCombobox,
   QuerySection,
   SingleSelectFilter,
   StatCard,
@@ -19,6 +20,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { PersonPicker } from "@/lib/person-selection";
 import { requireCalibrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
@@ -205,21 +207,17 @@ function CalibrationAssistant({
     <div className="mb-6">
       <div className="mb-4 max-w-xs">
         <Label htmlFor="calibration-assistance-architect">{t("ai.calibration.person")}</Label>
-        <select
+        <PersonCombobox
           id="calibration-assistance-architect"
-          className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-          value={selected ?? ""}
-          onChange={(event) => {
-            onSelect(event.target.value === "" ? null : event.target.value);
-          }}
-        >
-          <option value="">{t("ai.calibration.personNone")}</option>
-          {defaultUiAuthorizationPolicy.mentorableBy(user, store.architects).map((architect) => (
-            <option key={architect.id} value={architect.id}>
-              {architect.name}
-            </option>
-          ))}
-        </select>
+          picker={PersonPicker.one(
+            defaultUiAuthorizationPolicy.mentorableBy(user, store.architects),
+            selected,
+          )}
+          onChange={([id]) => onSelect(id ?? null)}
+          label={t("ai.calibration.person")}
+          placeholder={t("ai.calibration.personNone")}
+          className="mt-1"
+        />
       </div>
       {selected !== null && (
         <WorkAssistanceSection

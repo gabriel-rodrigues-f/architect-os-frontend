@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applyArchitectFilter } from "@/components/app/ArchitectFilter";
+import { PersonPicker } from "@/lib/person-selection";
 import { createSelectors } from "@/lib/selectors";
 import { fixtureState } from "../helpers/fixtures";
 
@@ -13,28 +13,28 @@ describe("recorte por arquitetos selecionados", () => {
   const sel = createSelectors(fixtureState);
 
   /**
-   * `selected` é sempre explícito (ver doc de `ArchitectFilter.tsx`): vazio
+   * `selected` é sempre explícito (ver doc de `person-selection.ts`): vazio
    * significa ninguém selecionado, não "todo o time". Quem chama decide o
    * valor inicial (normalmente todo mundo já marcado) para a tela nunca
    * nascer mostrando ninguém por engano — mas isso é responsabilidade de
    * quem inicializa o `useState`, não desta função.
    */
   it("filtro vazio significa ninguém selecionado", () => {
-    expect(applyArchitectFilter(fixtureState.architects, [])).toHaveLength(0);
+    expect(PersonPicker.peopleIn(fixtureState.architects, [])).toHaveLength(0);
   });
 
   it("mantém apenas os arquitetos escolhidos, na ordem da lista", () => {
-    const filtered = applyArchitectFilter(fixtureState.architects, ["bruno"]);
+    const filtered = PersonPicker.peopleIn(fixtureState.architects, ["bruno"]);
     expect(filtered.map((a) => a.id)).toEqual(["bruno"]);
   });
 
   it("ignora ids desconhecidos em vez de quebrar", () => {
-    expect(applyArchitectFilter(fixtureState.architects, ["ninguem"])).toEqual([]);
+    expect(PersonPicker.peopleIn(fixtureState.architects, ["ninguem"])).toEqual([]);
   });
 
   /** OO3-11k — chama `sel.teamAverageFor` (a regra do radar), em vez de reimplementá-la aqui. */
   const radarFor = (ids: string[]) => {
-    const architects = applyArchitectFilter(fixtureState.architects, ids);
+    const architects = PersonPicker.peopleIn(fixtureState.architects, ids);
     return fixtureState.capabilities.map((cat) => {
       const { atual, alvo } = sel.teamAverageFor(cat.id, architects);
       return {
@@ -86,7 +86,7 @@ describe("recorte por arquitetos selecionados", () => {
   });
 
   const consolidate = (ids: string[]) => {
-    const architects = applyArchitectFilter(fixtureState.architects, ids);
+    const architects = PersonPicker.peopleIn(fixtureState.architects, ids);
     const map = new Map<string, { people: number; totalGap: number; maxGap: number }>();
     for (const architect of architects) {
       for (const gap of sel.gapsFor(architect.id)) {

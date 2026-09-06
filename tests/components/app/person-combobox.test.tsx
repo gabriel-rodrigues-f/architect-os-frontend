@@ -1,0 +1,255 @@
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { useState } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { PersonCombobox } from "@/components/app/PersonCombobox";
+import type { Architect } from "@/lib/domain";
+import { I18nProvider } from "@/lib/i18n";
+import { PersonPicker } from "@/lib/person-selection";
+
+/**
+ * A combobox de pessoa única da aplicação (dono, 2026-09-06). Esta suíte
+ * herda o que `architect-filter-select-all.test.tsx` garantia para o filtro
+ * de várias pessoas — "Todo o time" como alternador de verdade, seleção
+ * sempre explícita, roster que encolhe — e acrescenta o que motivou a troca:
+ * com alcance vazio, "Todo o time" não existe e a única coisa na tela é
+ * "Não há pessoas cadastradas."; a busca que não acha ninguém diz
+ * "Nenhuma pessoa encontrada." — as mesmas duas frases em todas as telas.
+ */
+const pessoa = (id: string, name: string): Architect => ({
+  id,
+  name,
+  role: "Pleno",
+  yearsAsArchitect: 3,
+  specialization: "",
+  email: `${id}@a.com`,
+  active: true,
+  version: 1,
+});
+
+const architects: Architect[] = [pessoa("ana", "Ana Martins"), pessoa("bruno", "Bruno Almeida")];
+const threeArchitects: Architect[] = [...architects, pessoa("carla", "Carla Souza")];
+
+const renderMany = (selected: string[], reach: Architect[] = architects) => {
+  const onChange = vi.fn();
+  render(
+    <I18nProvider>
+      <PersonCombobox
+        picker={PersonPicker.many(reach, selected)}
+        onChange={onChange}
+        label="Pessoas"
+      />
+    </I18nProvider>,
+  );
+  return onChange;
+};
+
+const trigger = () => screen.getByRole("combobox", { name: "Pessoas" });
+const abrir = () => userEvent.click(trigger());
+const checkboxDe = (name: string) =>
+  screen.getByRole("option", { name }).querySelector('[role="checkbox"]');
+
+describe("PersonCombobox — alcance vazio (dono, 2026-09-06)", () => {
+  afterEach(() => cleanup());
+
+  it.each([
+    ["uma pessoa", PersonPicker.one([], null)],
+    ["várias com 'Todo o time'", PersonPicker.many([], [])],
+    ["várias com teto", PersonPicker.upTo(2, [], [])],
+  ])(
+    "na forma %s a tela mostra só 'Não há pessoas cadastradas.' e nada abre",
+    async (_f, picker) => {
+      render(
+        <I18nProvider>
+          <PersonCombobox picker={picker} onChange={vi.fn()} label="Pessoas" />
+        </I18nProvider>,
+      );
+
+      expect(trigger().textContent).toContain("Não há pessoas cadastradas.");
+      expect(trigger().hasAttribute("disabled")).toBe(true);
+      expect(screen.queryByText("Todo o time")).toBeNull();
+
+      await userEvent.click(trigger());
+      expect(screen.queryByRole("listbox")).toBeNull();
+      expect(screen.queryByText("Todo o time")).toBeNull();
+    },
+  );
+});
+
+describe("PersonCombobox — busca", () => {
+  afterEach(() => cleanup());
+
+  it("quando a busca não acha ninguém, diz 'Nenhuma pessoa encontrada.'", async () => {
+    renderMany([]);
+    await abrir();
+    await userEvent.type(screen.getByPlaceholderText("Buscar pessoa…"), "zzz");
+
+    expect(await screen.findByText("Nenhuma pessoa encontrada.")).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Ana Martins" })).toBeNull();
+  });
+});
+
+describe("PersonCombobox — 'Todo o time' como alternador de verdade", () => {
+  afterEach(() => cleanup());
+
+  it("com todo mundo explicitamente selecionado, o mestre e cada pessoa aparecem marcados", async () => {
+    renderMany(["ana", "bruno"]);
+    await abrir();
+
+    expect(checkboxDe("Todo o time")?.getAttribute("aria-checked")).toBe("true");
+    for (const name of ["Ana Martins", "Bruno Almeida"]) {
+      expect(checkboxDe(name)?.getAttribute("aria-checked")).toBe("true");
+    }
+    expect(trigger().textContent).toContain("Todo o time (2)");
+  });
+
+  it("com seleção vazia, o mestre e cada pessoa aparecem desmarcados", async () => {
+    renderMany([]);
+    await abrir();
+
+    expect(checkboxDe("Todo o time")?.getAttribute("aria-checked")).toBe("false");
+    for (const name of ["Ana Martins", "Bruno Almeida"]) {
+      expect(checkboxDe(name)?.getAttribute("aria-checked")).toBe("false");
+    }
+    expect(trigger().textContent).toContain("Nenhuma pessoa selecionada");
+  });
+
+  it("clicar em 'Todo o time' já marcado desmarca tudo; com seleção parcial marca todo mundo", async () => {
+    const onChange = renderMany(["ana", "bruno"]);
+    await abrir();
+    await userEvent.click(screen.getByRole("option", { name: "Todo o time" }));
+    expect(onChange).toHaveBeenCalledWith([]);
+    cleanup();
+
+    const onChange2 = renderMany(["ana"]);
+    await abrir();
+    await userEvent.click(screen.getByRole("option", { name: "Todo o time" }));
+    expect(onChange2).toHaveBeenCalledWith(["ana", "bruno"]);
+  });
+
+  it("clicar numa pessoa específica alterna só ela, e a lista continua aberta", async () => {
+    const onChange = renderMany([]);
+    await abrir();
+    await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
+
+    expect(onChange).toHaveBeenCalledWith(["bruno"]);
+    expect(screen.getByRole("listbox")).toBeTruthy();
+  });
+
+  it("com uma pessoa já selecionada, o mestre fica indeterminado e marcar outra amplia", async () => {
+    const onChange = renderMany(["ana"], threeArchitects);
+    await abrir();
+
+    expect(checkboxDe("Todo o time")?.getAttribute("data-state")).toBe("indeterminate");
+    await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
+    expect(onChange).toHaveBeenCalledWith(["ana", "bruno"]);
+  });
+
+  it("com um id de seleção que não está mais no alcance, o mestre não aparece marcado por engano", async () => {
+    renderMany(["ana", "ninguem-mais"]);
+    await abrir();
+
+    expect(checkboxDe("Todo o time")?.getAttribute("aria-checked")).toBe("mixed");
+    expect(trigger().textContent).toContain("Ana Martins");
+  });
+
+  it("quando o alcance encolhe e deixa a seleção com um id órfão, o resumo se recalcula sozinho", async () => {
+    function Harness() {
+      const [reach, setReach] = useState(threeArchitects);
+      const [selected, setSelected] = useState(["ana", "bruno", "carla"]);
+      return (
+        <div>
+          <button type="button" onClick={() => setReach(architects)}>
+            Remover Carla do alcance
+          </button>
+          <PersonCombobox
+            picker={PersonPicker.many(reach, selected)}
+            onChange={setSelected}
+            label="Pessoas"
+          />
+        </div>
+      );
+    }
+    render(
+      <I18nProvider>
+        <Harness />
+      </I18nProvider>,
+    );
+
+    expect(trigger().textContent).toContain("Todo o time (3)");
+    await userEvent.click(screen.getByRole("button", { name: "Remover Carla do alcance" }));
+    expect(trigger().textContent).toContain("Todo o time (2)");
+  });
+});
+
+describe("PersonCombobox — uma pessoa", () => {
+  afterEach(() => cleanup());
+
+  it("escolher fecha a lista e entrega só o id escolhido; sem ninguém, mostra o convite", async () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider>
+        <PersonCombobox
+          picker={PersonPicker.one(architects, null)}
+          onChange={onChange}
+          label="Pessoas"
+        />
+      </I18nProvider>,
+    );
+    expect(trigger().textContent).toContain("Selecionar pessoa…");
+
+    await abrir();
+    expect(screen.queryByRole("option", { name: "Todo o time" })).toBeNull();
+    await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
+
+    expect(onChange).toHaveBeenCalledWith(["bruno"]);
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+});
+
+describe("PersonCombobox — mouse e teclado (herdado de filter-popover-toggle)", () => {
+  afterEach(() => cleanup());
+
+  it("clicar no gatilho abre, clicar de novo fecha, clicar de novo abre", async () => {
+    renderMany(["ana"]);
+
+    await userEvent.click(trigger());
+    expect(screen.queryByRole("listbox"), "1º clique deveria abrir").not.toBeNull();
+    expect(trigger().getAttribute("aria-expanded")).toBe("true");
+
+    await userEvent.click(trigger());
+    expect(screen.queryByRole("listbox"), "2º clique deveria fechar").toBeNull();
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
+
+    await userEvent.click(trigger());
+    expect(screen.queryByRole("listbox"), "3º clique deveria abrir").not.toBeNull();
+  });
+
+  it("abrir destaca 'Todo o time'; seta navega; Enter marca a destacada", async () => {
+    const onChange = renderMany([]);
+    await abrir();
+
+    expect(screen.getByRole("option", { name: "Todo o time" }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}");
+    expect(
+      screen.getByRole("option", { name: "Bruno Almeida" }).getAttribute("aria-selected"),
+    ).toBe("true");
+
+    await userEvent.keyboard("{Enter}");
+    expect(onChange).toHaveBeenCalledWith(["bruno"]);
+  });
+
+  it("Escape fecha e devolve o foco para o gatilho", async () => {
+    renderMany(["ana"]);
+    await abrir();
+    expect(screen.queryByRole("listbox")).not.toBeNull();
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(document.activeElement).toBe(trigger());
+  });
+});

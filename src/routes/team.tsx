@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import {
-  ArchitectNameCombobox,
   DataViewToolbar,
   MultiSelectFilter,
   OutOfReachScreen,
@@ -17,11 +16,14 @@ import {
   ViewToggle,
 } from "@/components/app";
 import { EmptyState } from "@/components/app/DataView";
+import { FilterField } from "@/components/app/FilterField";
+import { PersonCombobox } from "@/components/app/PersonCombobox";
 import { EmptyState as EmptyStateCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
+import { PersonPicker } from "@/lib/person-selection";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadershipReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -125,11 +127,14 @@ function TeamRoster() {
               "2 de 3" tinha o mesmo defeito, e denunciava a existência de
               quem a tela esconde.
             */}
-            <ArchitectNameCombobox
-              architects={roster.filterablePeople}
-              selected={roster.nameSelection}
-              onChange={roster.setNameSelection}
-            />
+            <FilterField label={t("person.label")} htmlFor="team-people-combobox">
+              <PersonCombobox
+                id="team-people-combobox"
+                picker={PersonPicker.many(roster.filterablePeople, roster.nameSelection)}
+                onChange={roster.setNameSelection}
+                label={t("person.label")}
+              />
+            </FilterField>
             {isAdmin && (
               <MultiSelectFilter
                 id="team-filter-status"

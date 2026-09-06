@@ -414,7 +414,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
                   </label>
                 ))}
                 {store.architects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("filter.noArchitects")}</p>
+                  <p className="text-sm text-muted-foreground">{t("person.none")}</p>
                 )}
               </div>
             </div>
@@ -654,7 +654,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                   </label>
                 ))}
                 {store.architects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("filter.noArchitects")}</p>
+                  <p className="text-sm text-muted-foreground">{t("person.none")}</p>
                 )}
               </div>
             </div>

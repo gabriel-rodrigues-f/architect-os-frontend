@@ -1,7 +1,7 @@
 import { AlertCircle, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { ArchitectSelectCombobox } from "@/components/app/ArchitectSelectCombobox";
+import { PersonCombobox } from "@/components/app/PersonCombobox";
 import { FieldLabel, Initials } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { useCurrentUser } from "@/lib/auth";
 
 import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
+import { PersonPicker } from "@/lib/person-selection";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Selectors } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -206,10 +207,9 @@ export function MenteeFilterCombobox({
 }) {
   const { t } = useI18n();
   return (
-    <ArchitectSelectCombobox
-      architects={architects}
-      selectedId={selected}
-      onChange={onChange}
+    <PersonCombobox
+      picker={PersonPicker.one(architects, selected)}
+      onChange={([id]) => onChange(id ?? "")}
       label={t("mentor.filter.label")}
       className="w-64"
     />
@@ -426,11 +426,10 @@ export function NewMentoringSessionDialog({
             <div>
               <Label htmlFor="mentee">{t("mentor.form.mentee")}</Label>
               <div className="mt-1">
-                <ArchitectSelectCombobox
+                <PersonCombobox
                   id="mentee"
-                  architects={menteeOptions}
-                  selectedId={sessionForm.form.menteeId}
-                  onChange={(id) => sessionForm.setField("menteeId", id)}
+                  picker={PersonPicker.one(menteeOptions, sessionForm.form.menteeId)}
+                  onChange={([id]) => sessionForm.setField("menteeId", id ?? "")}
                   label={t("mentor.form.mentee")}
                   invalid={sessionForm.isMissing("menteeId")}
                 />

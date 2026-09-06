@@ -27,10 +27,12 @@ import { emptyAuthUsersRoute, mockAppFetch, renderWithApp } from "../helpers/ren
  * de composição por caixinha (Status/Papel/Especialização/Capacidade).
  *
  * R2-UX-06 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md, Anexo B) — a busca livre
- * virou `ArchitectNameCombobox`, seleção múltipla pesquisável: "Todos os
- * registros" (tri-state) desmarca/marca tudo de uma vez, e cada pessoa tem
- * seu próprio checkbox — mesmo padrão de composição por caixinha das
- * outras facetas, nunca texto livre filtrando a tabela direto.
+ * virou seleção múltipla pesquisável: "Todo o time" (tri-state) desmarca/marca
+ * tudo de uma vez, e cada pessoa tem seu próprio checkbox — mesmo padrão de
+ * composição por caixinha das outras facetas, nunca texto livre filtrando a
+ * tabela direto. Desde 2026-09-06 é a mesma `PersonCombobox` das outras telas
+ * (dono: "corrigir isso orientado a objeto e GoF ... para o formato da
+ * combobox apresentado").
  */
 const fetchMock = vi.fn();
 
@@ -38,7 +40,7 @@ const fetchMock = vi.fn();
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
-describe("Time — seleção de pessoas (ArchitectNameCombobox)", () => {
+describe("Time — seleção de pessoas (PersonCombobox)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -50,13 +52,13 @@ describe("Time — seleção de pessoas (ArchitectNameCombobox)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("desmarcar 'Todos os registros' e marcar uma pessoa isola a lista; o chip 'Pessoas' limpa a seleção", async () => {
+  it("desmarcar 'Todo o time' e marcar uma pessoa isola a lista; o chip 'Pessoas' limpa a seleção", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
     expect(screen.getByText("Bruno Almeida")).toBeTruthy();
 
     await userEvent.click(screen.getByRole("combobox", { name: "Pessoas" }));
-    await userEvent.click(await screen.findByText("Todos os registros"));
+    await userEvent.click(await screen.findByText("Todo o time"));
     await userEvent.click(await screen.findByText("Ana Martins"));
     await userEvent.keyboard("{Escape}");
 

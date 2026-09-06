@@ -97,19 +97,13 @@ const LearningPathsPage = LearningPathsRoute.options.component as () => ReactNod
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
-/** Nomes das opções abertas, seja `cmdk` (Command) ou o `listbox` do ArchitectFilter. */
+/** Nomes das opções abertas da `PersonCombobox` (cmdk). */
 const nomesDasOpcoes = (): string[] =>
   screen.getAllByRole("option").map((opcao) => opcao.textContent?.trim() ?? "");
 
-/**
- * O `?` do PageHelp também é um trigger com `aria-expanded`; o filtro de
- * pessoas é o único `aria-haspopup="listbox"` da tela (mesma sonda de
- * `gap-analysis-restructure.test.tsx`).
- */
+/** O filtro de pessoas do Comparativo é a `PersonCombobox` "Pessoas para comparar". */
 const gatilhoDoFiltroDePessoas = (): HTMLElement =>
-  screen
-    .getAllByRole("button", { expanded: false })
-    .find((el) => el.getAttribute("aria-haspopup") === "listbox")!;
+  screen.getByRole("combobox", { name: "Pessoas para comparar" });
 
 /**
  * Revisão de papéis (dono, 2026-09-05): cada tela tem o SEU ator. As telas de
@@ -166,7 +160,7 @@ describe("profissional desativado some da aplicação", () => {
     comoAtor(fixtureAssignedTechLeadUser);
     renderWithApp(<ComparePage />);
 
-    await screen.findByText("Comparativo de Profissionais");
+    await screen.findByText("Perfis lado a lado");
     await userEvent.click(gatilhoDoFiltroDePessoas());
 
     const nomes = nomesDasOpcoes();

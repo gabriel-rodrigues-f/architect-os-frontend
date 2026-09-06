@@ -96,11 +96,14 @@ function ArchitectProfile() {
   const user = useCurrentUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [, rerender] = useState(0);
+  // Dono (2026-09-06): o motivo é pedido a CADA abertura da ficha — não
+  // fica lembrado na aba. O que a pessoa concedeu vale para as abas desta
+  // visita (Evolução, Extrato, Roteiro), que reaproveitam o mesmo passe.
+  const [grantedThisVisit, setGrantedThisVisit] = useState(false);
   const needsSupportAccess =
     defaultUiAuthorizationPolicy.isAdmin(user) &&
     user.architectId !== architectId &&
-    SupportAccess.grantedFor(architectId) === null;
+    !grantedThisVisit;
 
   if (needsSupportAccess) {
     return (
@@ -109,7 +112,7 @@ function ArchitectProfile() {
           architectId={architectId}
           onGranted={() => {
             void queryClient.invalidateQueries();
-            rerender((tick) => tick + 1);
+            setGrantedThisVisit(true);
           }}
           onCancel={() => void navigate({ to: "/" })}
         />

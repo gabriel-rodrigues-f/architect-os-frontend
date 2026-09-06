@@ -81,7 +81,7 @@ const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode
   },
   {
     rota: "/compare",
-    titulo: "Comparativo de Profissionais",
+    titulo: "Perfis lado a lado",
     Page: CompareRoute.options.component as () => ReactNode,
   },
 ];

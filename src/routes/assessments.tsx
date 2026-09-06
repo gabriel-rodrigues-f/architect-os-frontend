@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 
 import {
-  ArchitectSelectCombobox,
   assessmentStatusTone,
   Callout,
   CapabilityAssessmentCard,
   CapabilityCombobox,
+  PersonCombobox,
   CareerPortfolioSection,
   ConfirmDialog,
   DevelopmentSummarySection,
@@ -23,6 +23,7 @@ import type { Assessment } from "@/lib/domain";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { api, UserFacingError } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { PersonPicker } from "@/lib/person-selection";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -169,10 +170,9 @@ function AssessmentsScreen() {
         help={help}
         actions={
           <div className="flex flex-wrap gap-2">
-            <ArchitectSelectCombobox
-              architects={assessable}
-              selectedId={architectId}
-              onChange={setArchitectId}
+            <PersonCombobox
+              picker={PersonPicker.one(assessable, architectId)}
+              onChange={([id]) => setArchitectId(id ?? "")}
               label={t("asmt.architect")}
               className="w-56"
             />

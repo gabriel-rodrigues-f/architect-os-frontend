@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 
 import {
-  ArchitectFilter,
   CapabilityRadar,
   EmptyState,
   GapBadge,
@@ -10,12 +9,14 @@ import {
   NameList,
   OutOfReachScreen,
   PageHeader,
+  PersonCombobox,
   SectionCard,
   TreatGapInPlanAction,
   useGapAnalysisData,
 } from "@/components/app";
 import type { ConsolidatedGapRow } from "@/lib/selectors";
 import { useCurrentUser } from "@/lib/auth";
+import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -85,17 +86,21 @@ function TeamPriorities() {
         description={t("gap.subtitle")}
         help={help}
         actions={
-          <ArchitectFilter
-            architects={store.architects}
-            selected={selected}
-            onChange={setSelected}
-          />
+          // Dono (2026-09-06): sem ninguém no alcance, só a mensagem do corpo.
+          store.architects.length > 0 ? (
+            <PersonCombobox
+              picker={PersonPicker.many(store.architects, selected)}
+              onChange={setSelected}
+              label={t("person.label")}
+              className="w-64"
+            />
+          ) : undefined
         }
       />
 
       {architects.length === 0 ? (
         <EmptyState
-          title={t("gap.empty")}
+          title={store.architects.length === 0 ? t("person.none") : t("gap.empty")}
           hint={
             store.architects.length === 0 ? t("gap.empty.noArchitects") : t("gap.empty.filterHint")
           }

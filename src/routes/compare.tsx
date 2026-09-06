@@ -3,7 +3,6 @@ import { Radar, Table2 } from "lucide-react";
 import { useState } from "react";
 
 import {
-  ArchitectFilter,
   ComparisonRadar,
   EmptyState,
   type EvolutionSeries,
@@ -11,10 +10,12 @@ import {
   LevelScaleKey,
   OutOfReachScreen,
   PageHeader,
+  PersonCombobox,
   SectionCard,
   ViewToggle,
 } from "@/components/app";
 import { useCurrentUser } from "@/lib/auth";
+import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -27,12 +28,12 @@ import { useSearchParamList } from "@/hooks";
 export const Route = createFileRoute("/compare")({
   head: () => ({
     meta: [
-      { title: "Comparativo de Profissionais — Synapse" },
+      { title: "Perfis lado a lado — Synapse" },
       {
         name: "description",
         content: "Comparação lado a lado do nível de capacidades entre profissionais específicos.",
       },
-      { property: "og:title", content: "Comparativo de Profissionais — Synapse" },
+      { property: "og:title", content: "Perfis lado a lado — Synapse" },
       { property: "og:description", content: "Radar sobreposto e tabela lado a lado por pessoa." },
     ],
   }),
@@ -110,12 +111,11 @@ function ProfessionalsComparison() {
         description={t("compare.subtitle")}
         help={help}
         actions={
-          <ArchitectFilter
-            architects={store.architects}
-            selected={selected}
+          <PersonCombobox
+            picker={PersonPicker.upTo(2, store.architects, selected)}
             onChange={setSelected}
             label={t("compare.selector.label")}
-            max={2}
+            className="w-64"
           />
         }
       />
