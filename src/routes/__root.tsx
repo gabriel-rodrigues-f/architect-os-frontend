@@ -19,6 +19,7 @@ import { defaultPublicReach } from "../lib/public-reach";
 import { ThemeProvider, useTheme } from "../lib/theme";
 import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
+import { CareerRunCanvas } from "../components/app/CareerRunCanvas";
 import { FirstAccessScreen } from "../components/app/FirstAccessScreen";
 import { LoginScreen } from "../components/app/LoginScreen";
 import { Toaster } from "../components/ui/sonner";
@@ -76,13 +77,17 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
+      <div className="w-full max-w-2xl text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           Esta página não carregou
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Algo deu errado do nosso lado. Você pode atualizar a página ou voltar ao início.
         </p>
+        {/* O "dinossauro" do Synapse (dono, 2026-09-06): a espera vira uma corrida de carreira. */}
+        <div className="mt-6">
+          <CareerRunCanvas />
+        </div>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {

@@ -101,7 +101,7 @@ describe("Time perde o cadastro, a edição e a desativação de profissional", 
     renderTeam({ ...fixtureState, architects: [] });
     expect(await screen.findByText("Nenhuma pessoa cadastrada")).toBeTruthy();
     const atalho = await screen.findByRole("link", {
-      name: "Cadastre a primeira pessoa em Usuários",
+      name: "Cadastrar Profissional",
     });
     expect(atalho.getAttribute("href")).toBe("/users");
   });

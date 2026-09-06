@@ -317,7 +317,7 @@ describe("o primeiro acesso segura a porta até a senha ser trocada", () => {
 
     for (const exigencia of PASSWORD_REQUIREMENTS) {
       servidor.proximaRecusa = RecusaDaTroca.senhaFraca(exigencia);
-      await usuario.click(screen.getByRole("button", { name: "Trocar a senha e entrar" }));
+      await usuario.click(screen.getByRole("button", { name: "Trocar a senha" }));
 
       await waitFor(() =>
         expect(screen.getByRole("alert").textContent, exigencia).toBe(FRASES[exigencia]),
@@ -333,7 +333,7 @@ describe("o primeiro acesso segura a porta até a senha ser trocada", () => {
 
     servidor.proximaRecusa = RecusaDaTroca.senhaAtualErrada();
     await preencherTroca(usuario, SENHA_NOVA, "chute-errado");
-    await usuario.click(screen.getByRole("button", { name: "Trocar a senha e entrar" }));
+    await usuario.click(screen.getByRole("button", { name: "Trocar a senha" }));
 
     const aviso = await screen.findByRole("alert");
     await waitFor(() =>
@@ -350,7 +350,7 @@ describe("o primeiro acesso segura a porta até a senha ser trocada", () => {
     await usuario.type(screen.getByLabelText("Senha temporária"), SENHA_TEMPORARIA);
     await usuario.type(screen.getByLabelText("Senha nova"), SENHA_NOVA);
     await usuario.type(screen.getByLabelText("Repita a senha nova"), "Outra#Coisa9");
-    await usuario.click(screen.getByRole("button", { name: "Trocar a senha e entrar" }));
+    await usuario.click(screen.getByRole("button", { name: "Trocar a senha" }));
 
     expect((await screen.findByRole("alert")).textContent).toBe(
       "As duas senhas novas estão diferentes. Digite a mesma nos dois campos.",
@@ -358,18 +358,18 @@ describe("o primeiro acesso segura a porta até a senha ser trocada", () => {
     expect(servidor.trocasPedidas).toEqual([]);
   });
 
-  it("depois de trocar, a marca some e a aplicação abre — sem entrar de novo", async () => {
+  it("depois de trocar, a sessão termina e a pessoa volta pela tela de login (dono, 2026-09-06)", async () => {
     await subirASpa();
     const usuario = await entrar();
     await screen.findByText("Troque a sua senha para começar");
 
     servidor.proximaRecusa = RecusaDaTroca.aceita();
     await preencherTroca(usuario, SENHA_NOVA);
-    await usuario.click(screen.getByRole("button", { name: "Trocar a senha e entrar" }));
+    await usuario.click(screen.getByRole("button", { name: "Trocar a senha" }));
 
-    expect(await screen.findByRole("navigation")).toBeTruthy();
+    expect(await screen.findByLabelText("E-mail")).toBeTruthy();
+    expect(screen.queryByRole("navigation")).toBeNull();
     expect(screen.queryByText("Troque a sua senha para começar")).toBeNull();
-    expect(screen.queryByLabelText("E-mail")).toBeNull();
     expect(servidor.trocasPedidas).toEqual([
       { currentPassword: SENHA_TEMPORARIA, newPassword: SENHA_NOVA },
     ]);
@@ -429,9 +429,9 @@ describe("o primeiro acesso segura a porta até a senha ser trocada", () => {
 
     servidor.proximaRecusa = RecusaDaTroca.aceita();
     await preencherTroca(usuario, SENHA_NOVA);
-    await usuario.click(screen.getByRole("button", { name: "Trocar a senha e entrar" }));
+    await usuario.click(screen.getByRole("button", { name: "Trocar a senha" }));
 
-    expect(await screen.findByRole("navigation")).toBeTruthy();
+    expect(await screen.findByLabelText("E-mail")).toBeTruthy();
     expect(screen.queryByText("Troque a sua senha para começar")).toBeNull();
   });
 });

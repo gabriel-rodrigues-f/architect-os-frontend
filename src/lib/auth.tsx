@@ -138,9 +138,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const changePassword = useCallback(
     async (currentPassword: string, newPassword: string) => {
       await authApi.changePassword(currentPassword, newPassword);
-      if (user !== null) await openSession({ ...user, mustChangePassword: false });
+      // Dono (2026-09-06): senha nova, sessão nova — a pessoa volta pela tela
+      // de login, nunca entra direto. O backend já fechou o cookie.
+      queryClient.setQueryData(SESSION_QUERY_KEY, null);
+      await queryClient.invalidateQueries();
+      setUser(null);
     },
-    [openSession, user],
+    [queryClient],
   );
 
   const value = useMemo<AuthContextValue>(

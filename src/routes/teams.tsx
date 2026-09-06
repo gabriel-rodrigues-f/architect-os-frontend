@@ -466,19 +466,19 @@ function TeamTransitionsTable({
                 <th scope="col" className="py-2">
                   {t("teams.transitions.col.team")}
                 </th>
-                <th scope="col" className="py-2">
+                <th scope="col" className="py-2 text-center">
                   {t("teams.transitions.col.transitions")}
                 </th>
-                <th scope="col" className="py-2">
+                <th scope="col" className="py-2 text-center">
                   {t("teams.transitions.col.pairs")}
                 </th>
-                <th scope="col" className="py-2">
+                <th scope="col" className="py-2 text-center">
                   {t("teams.transitions.col.averageDays")}
                 </th>
-                <th scope="col" className="py-2">
+                <th scope="col" className="py-2 text-center">
                   {t("teams.transitions.col.activePeople")}
                 </th>
-                <th scope="col" className="py-2">
+                <th scope="col" className="py-2 text-center">
                   {t("teams.transitions.col.rate")}
                 </th>
               </tr>
@@ -521,9 +521,10 @@ function TeamTransitionsRowView({
 
   return (
     <tr className="border-b border-border/60 last:border-0 align-top">
-      <td className="py-2 font-medium">{row.teamName}</td>
-      <td className="py-2 tabular-nums">{row.transitions}</td>
-      <td className="py-2">
+      {/* Dono (2026-09-06): só o Time à esquerda; o resto centralizado — "Arquitetura 0" não é um nome. */}
+      <td className="py-2 pr-4 font-medium">{row.teamName}</td>
+      <td className="py-2 text-center tabular-nums">{row.transitions}</td>
+      <td className="py-2 text-center">
         {pairs.length === 0 ? (
           "—"
         ) : (
@@ -540,7 +541,7 @@ function TeamTransitionsRowView({
           </ul>
         )}
       </td>
-      <td className="py-2 tabular-nums">
+      <td className="py-2 text-center tabular-nums">
         {averageDays === null ? (
           "—"
         ) : (
@@ -553,8 +554,8 @@ function TeamTransitionsRowView({
           </>
         )}
       </td>
-      <td className="py-2 tabular-nums">{row.activeArchitects}</td>
-      <td className="py-2 tabular-nums">{rate ?? "—"}</td>
+      <td className="py-2 text-center tabular-nums">{row.activeArchitects}</td>
+      <td className="py-2 text-center tabular-nums">{rate ?? "—"}</td>
     </tr>
   );
 }

@@ -231,7 +231,8 @@ function UsersDirectory() {
                             {defaultUiAuthorizationPolicy.administersAccount(user, account) && (
                               <Button
                                 size="sm"
-                                variant="outline"
+                                // Dono (2026-09-06): desativar é ato destrutivo — vermelho.
+                                variant={account.status === "disabled" ? "outline" : "destructive"}
                                 aria-label={`${t(
                                   account.status === "disabled"
                                     ? "users.activate.action"
@@ -452,6 +453,7 @@ function AdmitPersonDialog({
 
   const teamsQuery = useQuery({ queryKey: ["teams"], queryFn: teamsApi.teams, staleTime: 60_000 });
   const teams = defaultPersonAdmissionPolicy.admissibleTeams(user, teamsQuery.data ?? []);
+  const teamLocked = !defaultUiAuthorizationPolicy.isAdmin(user) && teams.length === 1;
   const preselectedTeamId = defaultPersonAdmissionPolicy.preselectedTeamId(
     user,
     teamsQuery.data ?? [],
@@ -580,22 +582,36 @@ function AdmitPersonDialog({
           )}
           <div>
             <Label htmlFor="admit-team">{t("users.form.team")}</Label>
-            <select
-              id="admit-team"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={values.teamId ?? ""}
-              {...describedBy("team")}
-              onChange={(event) =>
-                change({ teamId: event.target.value === "" ? null : event.target.value })
-              }
-            >
-              <option value="">{t("users.form.team.placeholder")}</option>
-              {teams.map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.name}
-                </option>
-              ))}
-            </select>
+            {/*
+             * Dono (2026-09-06): quem lidera UM time cadastra só nele — o campo
+             * nasce travado no time, sem clique, e o passar do mouse explica.
+             */}
+            <div title={teamLocked ? t("users.form.team.locked") : undefined}>
+              <select
+                id="admit-team"
+                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-70"
+                value={values.teamId ?? ""}
+                disabled={teamLocked}
+                {...(teamLocked
+                  ? { "aria-describedby": "admit-team-locked" }
+                  : describedBy("team"))}
+                onChange={(event) =>
+                  change({ teamId: event.target.value === "" ? null : event.target.value })
+                }
+              >
+                <option value="">{t("users.form.team.placeholder")}</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {teamLocked && (
+              <p id="admit-team-locked" className="mt-1 text-xs text-muted-foreground">
+                {t("users.form.team.locked")}
+              </p>
+            )}
             {!teamsQuery.isPending && teams.length === 0 && (
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("users.form.team.noneReachable")}

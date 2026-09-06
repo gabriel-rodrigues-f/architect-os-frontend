@@ -412,6 +412,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (Number.isFinite(salva) && salva > 0) setWidth(clampWidth(salva));
   }, []);
 
+  // Dono (2026-09-06): o menu acompanha a rota — ao ir para Usuários por um
+  // atalho da tela, a barra rola até o item marcado, mesmo lá embaixo.
+  useEffect(() => {
+    const ativo = navRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (ativo && typeof ativo.scrollIntoView === "function") {
+      ativo.scrollIntoView({ block: "nearest" });
+    }
+  }, [pathname]);
+
   useEffect(() => {
     if (collapsed || window.localStorage.getItem(SIDEBAR_WIDTH_KEY)) return;
     const nav = navRef.current;
@@ -513,7 +522,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         {conteudo}
       </a>
     ) : (
-      <Link to={item.to} aria-label={label} {...outOfReachProps(hidden)} className={className}>
+      <Link
+        to={item.to}
+        aria-label={label}
+        aria-current={active ? "page" : undefined}
+        {...outOfReachProps(hidden)}
+        className={className}
+      >
         {conteudo}
       </Link>
     );

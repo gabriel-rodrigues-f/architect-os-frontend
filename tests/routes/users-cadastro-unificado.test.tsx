@@ -244,11 +244,22 @@ describe("o time entra no cadastro", () => {
     ).toBeTruthy();
   });
 
-  it("quem lidera um time só já o encontra escolhido", async () => {
+  it("quem lidera um time só já o encontra escolhido — e TRAVADO, com a explicação ao passar o mouse (dono, 2026-09-06)", async () => {
     const dialogo = await abrirCadastro(fixtureAssignedManagerUser);
     const time = dialogo.getByLabelText("Time") as HTMLSelectElement;
     expect(rotulosDe(time)).toEqual(["Plataforma"]);
     expect(time.value).toBe("time-plataforma");
+    expect(time.disabled).toBe(true);
+    expect(time.parentElement?.getAttribute("title")).toBe(
+      "Cadastro restrito a pessoas do seu time.",
+    );
+    expect(dialogo.getByText("Cadastro restrito a pessoas do seu time.")).toBeTruthy();
+  });
+
+  it("o administrador escolhe o time livremente — nada travado", async () => {
+    const dialogo = await abrirCadastro(fixtureAdminUser);
+    const time = dialogo.getByLabelText("Time") as HTMLSelectElement;
+    expect(time.disabled).toBe(false);
   });
 });
 
