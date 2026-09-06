@@ -48,6 +48,8 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
  * SEM falar de time, porque ela compara avaliadores entre si em vez de agir
  * sobre alguém. Papel global, vínculo nenhum.
  */
+type AccountLike = { id: string; status: string; role: string };
+
 export class UiAuthorizationPolicy {
   /** LEITURA sobre uma pessoa: ela mesma, quem a lidera por vínculo, ou o admin (em modo de suporte). */
   canReadAbout(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
@@ -57,11 +59,20 @@ export class UiAuthorizationPolicy {
     return this.leadsTeamOf(user, architect);
   }
 
-  /** AÇÃO sobre uma pessoa: ela mesma ou quem a lidera por vínculo. Admin não. */
+  /**
+   * AÇÃO sobre uma pessoa: o PROFISSIONAL sobre si mesmo, ou quem a lidera
+   * por vínculo. Admin não. Tech lead e gerente nunca agem sobre si (dono,
+   * 2026-09-06): não se avaliam, não abrem PDI nem roteiro próprio.
+   */
   canActFor(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (!architect) return false;
-    if (this.isOwn(user, architect)) return true;
+    if (this.isOwn(user, architect)) return this.actsOnSelf(user, architect.id);
     return this.leadsTeamOf(user, architect);
+  }
+
+  /** A pessoa agindo sobre a própria carreira: só o profissional (`member`). */
+  actsOnSelf(user: SessionUser, architectId: string | undefined): boolean {
+    return architectId !== undefined && user.architectId === architectId && user.role === "member";
   }
 
   /** Liderança por VÍNCULO no time da pessoa — nunca sobre si, nunca o admin. */
@@ -80,7 +91,7 @@ export class UiAuthorizationPolicy {
     return this.canActFor(user, architect);
   }
 
-  /** Quem aparece no seletor de Avaliações: a própria pessoa (a autoavaliação é dela) e quem ela lidera. */
+  /** Quem aparece no seletor de Avaliações: o profissional (a autoavaliação é dele) e quem o usuário lidera — o tech lead não se avalia. */
   assessableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
     return this.ownFirst(user, architects, (architect) => this.leadsTeamOf(user, architect));
   }
@@ -97,7 +108,7 @@ export class UiAuthorizationPolicy {
     architects: readonly A[],
     reaches: (architect: A) => boolean,
   ): A[] {
-    const own = architects.filter((architect) => this.isOwn(user, architect));
+    const own = architects.filter((architect) => this.actsOnSelf(user, architect.id));
     const led = architects.filter(
       (architect) => !this.isOwn(user, architect) && reaches(architect),
     );
@@ -109,10 +120,12 @@ export class UiAuthorizationPolicy {
   }
 
   isAssignedTechLeadOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    if (this.isOwn(user, architect)) return false;
     return this.hasStrictBondWith(user, architect, TeamLeadershipRoles.TECH_LEAD);
   }
 
   isAssignedManagerOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    if (this.isOwn(user, architect)) return false;
     return this.hasStrictBondWith(user, architect, TeamLeadershipRoles.MANAGER);
   }
 
@@ -143,8 +156,24 @@ export class UiAuthorizationPolicy {
     return this.isAdmin(user) || this.canComposeAnyTeam(user);
   }
 
-  canRestoreAccessOf(user: SessionUser, account: { id: string; status: string }): boolean {
-    return this.canAdministerPeople(user) && account.id !== user.id && account.status === "active";
+  canRestoreAccessOf(user: SessionUser, account: AccountLike): boolean {
+    return this.administersAccount(user, account) && account.status === "active";
+  }
+
+  /**
+   * Quem muda o STATUS de uma conta (desativar, reativar, devolver acesso):
+   * o admin, de qualquer conta que não a própria; o gerente com vínculo, só
+   * de tech lead e profissional — cadastrar e alterar GERENTES é do
+   * administrador (dono, 2026-09-06).
+   */
+  administersAccount(user: SessionUser, account: AccountLike): boolean {
+    if (account.id === user.id) return false;
+    if (this.isAdmin(user)) return true;
+    return (
+      this.canAdministerPeople(user) &&
+      account.role !== "admin" &&
+      account.role !== TeamLeadershipRoles.MANAGER
+    );
   }
 
   isLeadership(user: SessionUser): boolean {

@@ -332,7 +332,10 @@ export function buildApi(
     architects: UnrequestedSlice.is(state.architects)
       ? state.architects
       : ArchitectRoster.active(state.architects),
-    architectsIncludingInactive: state.architects,
+    // O gerente nunca é SUJEITO em tela nenhuma — nem no Time (dono, 2026-09-06).
+    architectsIncludingInactive: UnrequestedSlice.is(state.architects)
+      ? state.architects
+      : ArchitectRoster.professionals(state.architects),
 
     // ONDA 45 — `addArchitect` morreu com `POST /architects`, a porta legada
     // que criava PROFISSIONAL sem conta. Nenhuma tela a chamava; ela existia

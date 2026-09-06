@@ -228,7 +228,7 @@ function UsersDirectory() {
                                 {t("users.restoreAccess.action")}
                               </Button>
                             )}
-                            {account.id !== user.id && (
+                            {defaultUiAuthorizationPolicy.administersAccount(user, account) && (
                               <Button
                                 size="sm"
                                 variant="outline"

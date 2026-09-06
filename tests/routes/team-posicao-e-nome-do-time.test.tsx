@@ -96,10 +96,11 @@ describe("Time — Posição e nome do time", () => {
     expect(linha.queryByText(fixtureTeamId)).toBeNull();
   });
 
-  it("profissional: time + senioridade em romano; tech lead e gerente pela posição", async () => {
+  it("profissional: time + senioridade em romano; tech lead pela posição; o gerente NÃO é listado", async () => {
     await abrirTabela();
     expect((await linhaDe("Ana Martins")).getByText("Integração II")).toBeTruthy();
     expect((await linhaDe("Bruno Almeida")).getByText("Tech Lead")).toBeTruthy();
-    expect((await linhaDe("Gabriela Gerente")).getByText("Gerente")).toBeTruthy();
+    // Dono (2026-09-06): "Manager não deveria poder se ver em Time" — o gerente nunca é sujeito.
+    expect(screen.queryByText("Gabriela Gerente")).toBeNull();
   });
 });

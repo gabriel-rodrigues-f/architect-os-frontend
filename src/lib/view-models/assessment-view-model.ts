@@ -63,7 +63,8 @@ export class AssessmentViewModel {
     selectedArchitect: Architect | undefined,
     assessment: Assessment | undefined,
   ): AssessmentPermissions {
-    const isOwner = user.architectId === architectId;
+    // Só o profissional é dono da própria avaliação; o tech lead não se avalia (dono, 2026-09-06).
+    const isOwner = this.policy.actsOnSelf(user, architectId);
     const isLead = !isOwner && this.policy.isLeadOf(user, selectedArchitect);
     // D4 (dono, 2026-09-05): o tech lead pontua; quem CONCLUI e REABRE é o
     // gerente designado (ou o admin como correção). D2: a própria pessoa vê

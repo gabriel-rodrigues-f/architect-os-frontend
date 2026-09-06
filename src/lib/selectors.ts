@@ -94,9 +94,12 @@ export class ArchitectRoster {
    * completo, com o filtro de status.
    */
   static active(architects: readonly Architect[]): Architect[] {
-    return architects.filter(
-      (architect) => architect.active && PositionReading.isProfessional(architect),
-    );
+    return ArchitectRoster.professionals(architects).filter((architect) => architect.active);
+  }
+
+  /** Todo mundo menos o gerente — ativos e desativados. É o que o Time lista. */
+  static professionals(architects: readonly Architect[]): Architect[] {
+    return architects.filter((architect) => PositionReading.isProfessional(architect));
   }
 }
 

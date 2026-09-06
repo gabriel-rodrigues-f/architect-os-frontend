@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ArchitectRoster,
   ArchitectSelectors,
   AssessmentSelectors,
   CapabilitySelectors,
@@ -34,6 +35,20 @@ describe("ArchitectRoster.active — o gerente não é um profissional com capac
     const ids = sel.activeArchitects.map((architect) => architect.id);
     expect(ids).not.toContain("gerente");
     expect(ids).toContain("tl");
+    expect(ids).toContain("ana");
+  });
+
+  it("nem o roster completo (o do Time) lista o gerente — ele nunca é sujeito", () => {
+    const gerente = {
+      ...fixtureState.architects[0]!,
+      id: "gerente",
+      name: "Gerente",
+      cargo: "manager" as const,
+    };
+    const ids = ArchitectRoster.professionals([...fixtureState.architects, gerente]).map(
+      (architect) => architect.id,
+    );
+    expect(ids).not.toContain("gerente");
     expect(ids).toContain("ana");
   });
 });

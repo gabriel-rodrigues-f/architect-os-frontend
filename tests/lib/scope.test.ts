@@ -30,8 +30,17 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canReadAbout(fixtureAdminUser, anaInLedTeam)).toBe(true);
     });
 
-    it("a própria pessoa pode agir sobre si mesma", () => {
+    it("o profissional pode agir sobre si mesmo", () => {
       expect(policy.canActFor(fixtureMemberUser, anaAsArchitect)).toBe(true);
+    });
+
+    it("o tech lead NUNCA age sobre si (dono, 2026-09-06): não se avalia, não abre PDI nem roteiro próprio; só lê", () => {
+      const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+      expect(policy.canActFor(techLeadAna, anaInLedTeam)).toBe(false);
+      expect(policy.isLeadOf(techLeadAna, anaInLedTeam)).toBe(false);
+      expect(policy.isAssignedTechLeadOf(techLeadAna, anaInLedTeam)).toBe(false);
+      expect(policy.assessableBy(techLeadAna, [anaInLedTeam])).toEqual([]);
+      expect(policy.canReadAbout(techLeadAna, anaInLedTeam)).toBe(true);
     });
 
     it("lead não age sobre arquiteto SEM TIME — a Fase 2 trocou o vínculo: sem time, sem dono", () => {
@@ -79,18 +88,18 @@ describe("UiAuthorizationPolicy", () => {
     const ana = { id: "ana", teamId: "time-plataforma" };
     const bia = { id: "bia", teamId: "time-plataforma" };
 
-    it("liderança com ficha própria se vê PRIMEIRO na lista — a avaliação dela também é dela (D2, 2026-09-05)", () => {
+    it("tech lead com ficha própria NÃO se vê na lista — ele não se avalia (dono, 2026-09-06)", () => {
       const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
-      expect(policy.assessableBy(techLeadAna, [bia, ana])).toEqual([ana, bia]);
+      expect(policy.assessableBy(techLeadAna, [bia, ana])).toEqual([bia]);
     });
 
-    it("gerente com ficha própria: a própria primeiro, depois os liderados", () => {
+    it("gerente com ficha própria também não se vê — só os liderados", () => {
       const managerAna = {
         ...fixtureAssignedTechLeadUser,
         role: "manager" as const,
         architectId: "ana",
       };
-      expect(policy.assessableBy(managerAna, [bia, ana])).toEqual([ana, bia]);
+      expect(policy.assessableBy(managerAna, [bia, ana])).toEqual([bia]);
     });
 
     it("o profissional continua vendo a si mesmo — a autoavaliação é dele", () => {
@@ -392,7 +401,7 @@ describe("o profissional não vê os próprios números", () => {
    * não pode ser a primeira vez que a pessoa descobre que não podia.
    */
   describe("canRestoreAccessOf", () => {
-    const contaAtiva = { id: "conta-ana", status: "active" };
+    const contaAtiva = { id: "conta-ana", status: "active", role: "member" };
 
     it("quem administra devolve o acesso de outra pessoa", () => {
       expect(policy.canRestoreAccessOf(fixtureAdminUser, contaAtiva)).toBe(true);
@@ -403,13 +412,18 @@ describe("o profissional não vê os próprios números", () => {
         policy.canRestoreAccessOf(fixtureAdminUser, {
           id: fixtureAdminUser.id,
           status: "active",
+          role: "admin",
         }),
       ).toBe(false);
     });
 
     it("conta desativada não tem acesso a devolver — o caminho dela é ser reativada", () => {
       expect(
-        policy.canRestoreAccessOf(fixtureAdminUser, { id: "conta-ana", status: "disabled" }),
+        policy.canRestoreAccessOf(fixtureAdminUser, {
+          id: "conta-ana",
+          status: "disabled",
+          role: "member",
+        }),
       ).toBe(false);
     });
 
@@ -424,6 +438,18 @@ describe("o profissional não vê os próprios números", () => {
       expect(policy.canRestoreAccessOf({ ...fixtureAdminUser, role: "manager" }, contaAtiva)).toBe(
         false,
       );
+    });
+
+    it("o gerente não mexe em conta de GERENTE — cadastrar e alterar gerentes é do administrador (dono, 2026-09-06)", () => {
+      const outroGerente = { id: "conta-g2", status: "active", role: "manager" };
+      const techLead = { id: "conta-tl", status: "active", role: "tech_lead" };
+      expect(policy.administersAccount(fixtureAssignedManagerUser, outroGerente)).toBe(false);
+      expect(policy.administersAccount(fixtureAssignedManagerUser, techLead)).toBe(true);
+      expect(policy.administersAccount(fixtureAdminUser, outroGerente)).toBe(true);
+      expect(
+        policy.administersAccount(fixtureAdminUser, { ...outroGerente, id: fixtureAdminUser.id }),
+      ).toBe(false);
+      expect(policy.canRestoreAccessOf(fixtureAssignedManagerUser, outroGerente)).toBe(false);
     });
 
     it("quem não lidera ninguém não devolve acesso de ninguém", () => {

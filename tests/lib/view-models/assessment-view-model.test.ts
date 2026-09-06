@@ -87,14 +87,24 @@ function makeVm(item = fakeItemService(), portfolio = fakePortfolioService()) {
 
 describe("AssessmentViewModel", () => {
   describe("permissionsFor", () => {
-    it("dono em Draft: canEditSelf/canSubmit, nunca isLead mesmo se a conta também lidera", () => {
+    it("dono em Draft (profissional): canEditSelf/canSubmit, nunca isLead", () => {
       const { vm } = makeVm();
-      const ownerAsLeadToo = { ...fixtureMemberUser, role: "tech_lead" as const };
-      const result = vm.permissionsFor(ownerAsLeadToo, "ana", anaArchitect, baseAssessment);
+      const result = vm.permissionsFor(fixtureMemberUser, "ana", anaArchitect, baseAssessment);
       expect(result.isOwner).toBe(true);
       expect(result.isLead).toBe(false);
       expect(result.canEditSelf).toBe(true);
       expect(result.canSubmit).toBe(true);
+      expect(result.canEditLeaderFinal).toBe(false);
+    });
+
+    it("tech lead com ficha própria NÃO é dono da própria avaliação nem líder de si — nada a fazer (dono, 2026-09-06)", () => {
+      const { vm } = makeVm();
+      const techLeadAna = { ...fixtureMemberUser, role: "tech_lead" as const };
+      const result = vm.permissionsFor(techLeadAna, "ana", anaArchitect, baseAssessment);
+      expect(result.isOwner).toBe(false);
+      expect(result.isLead).toBe(false);
+      expect(result.canEditSelf).toBe(false);
+      expect(result.canSubmit).toBe(false);
       expect(result.canEditLeaderFinal).toBe(false);
     });
 
