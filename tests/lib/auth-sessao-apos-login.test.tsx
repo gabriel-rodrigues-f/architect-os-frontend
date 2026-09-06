@@ -134,6 +134,18 @@ describe("auth — a sessão de quem acabou de logar carrega os vínculos do tim
     expect(screen.getByText(/^DESTINOS:/).textContent).toContain("/team-rules");
   });
 
+  it("o login esquece os grupos do menu recolhidos — a primeira abertura nasce toda expandida (dono, 2026-09-06)", async () => {
+    window.localStorage.setItem(
+      "synapse:nav-collapsed-groups",
+      JSON.stringify(["nav.group.admin"]),
+    );
+    await entrarPelaTelaDeLogin();
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem("synapse:nav-collapsed-groups")).toBeNull();
+    });
+  });
+
   it("a guarda de rota não expulsa de /team-rules o lead que acabou de logar", async () => {
     await entrarPelaTelaDeLogin();
 

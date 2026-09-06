@@ -1,3 +1,4 @@
+import { CollapsedNavGroups } from "@/lib/collapsed-nav-groups";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const result = await authApi.login(email, password);
+      CollapsedNavGroups.forget();
       await openSession(result.user);
     },
     [openSession],
@@ -108,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (input: { name: string; email: string; password: string }) => {
       const result = await authApi.register(input);
+      CollapsedNavGroups.forget();
       await openSession(result.user);
     },
     [openSession],

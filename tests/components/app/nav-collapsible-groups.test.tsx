@@ -179,6 +179,20 @@ describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
     expect(labels).toEqual(["Painel", "Time", "Avaliações"]);
   });
 
+  it("sem preferência salva, TODOS os grupos nascem abertos — inclusive Administração (dono, 2026-09-06)", async () => {
+    renderShell();
+
+    const header = await screen.findByRole("button", { name: "Administração" });
+    expect(header.getAttribute("aria-expanded")).toBe("true");
+    const recolhidos = screen
+      .getAllByRole("button", { expanded: false })
+      .map((botao) => botao.textContent ?? "")
+      .filter((texto) =>
+        /Operação|Desenvolvimento|Configuração|Administração|Capacidades/.test(texto),
+      );
+    expect(recolhidos).toEqual([]);
+  });
+
   it("nasce com a preferência salva: grupo previamente colapsado carrega já fechado", async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(["nav.group.admin"]));
     renderShell();

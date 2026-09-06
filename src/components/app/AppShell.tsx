@@ -39,6 +39,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useReducedMotion } from "@/hooks";
+import { CollapsedNavGroups } from "@/lib/collapsed-nav-groups";
 import { cn } from "@/lib/utils";
 import { API_URL, type SessionUser } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -84,13 +85,6 @@ const OWN_ARCHITECT_PARAM = "$architectId";
 interface NavGroup {
   labelKey?: MessageKey;
   items: NavItem[];
-  /**
-   * Nasce recolhido para quem nunca mexeu nele. Pedido do dono (2026-09-05):
-   * o menu do líder tinha 16 itens em 5 grupos, e régua, ciclos e
-   * configuração competiam com o dia a dia. A preferência salva continua
-   * mandando — isto é só o começo.
-   */
-  defaultCollapsed?: boolean;
 }
 
 /**
@@ -203,7 +197,6 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     labelKey: "nav.group.admin",
-    defaultCollapsed: true,
     items: [
       {
         to: "/competency-matrix",
@@ -230,17 +223,6 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
-
-class NavGroupsAtRest {
-  /** Sem preferência salva, os grupos que declaram nascer recolhidos. */
-  static collapsedByDefault(groups: readonly NavGroup[]): Set<string> {
-    return new Set(
-      groups
-        .filter((group) => group.defaultCollapsed && group.labelKey !== undefined)
-        .map((group) => group.labelKey as string),
-    );
-  }
-}
 
 class NavigationOfUser {
   constructor(
@@ -345,7 +327,7 @@ const SIDEBAR_STORAGE_KEY = "synapse:sidebar-collapsed";
 const LEGACY_SIDEBAR_STORAGE_KEY = "architect-os:sidebar-collapsed";
 const SIDEBAR_WIDTH_KEY = "synapse:sidebar-width";
 const LEGACY_SIDEBAR_WIDTH_KEY = "architect-os:sidebar-width";
-const NAV_COLLAPSED_GROUPS_KEY = "synapse:nav-collapsed-groups";
+const NAV_COLLAPSED_GROUPS_KEY = CollapsedNavGroups.STORAGE_KEY;
 
 const PAGE_CONTAINER = "mx-auto w-full max-w-page";
 
@@ -390,10 +372,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
+      // Dono (2026-09-06): na primeira abertura após o login, todos os grupos
+      // nascem abertos — o login esquece a preferência (`CollapsedNavGroups.forget`).
       const raw = window.localStorage.getItem(NAV_COLLAPSED_GROUPS_KEY);
-      setCollapsedGroups(
-        raw ? new Set(JSON.parse(raw) as string[]) : NavGroupsAtRest.collapsedByDefault(NAV_GROUPS),
-      );
+      setCollapsedGroups(raw ? new Set(JSON.parse(raw) as string[]) : new Set());
     } catch {
       return;
     }
