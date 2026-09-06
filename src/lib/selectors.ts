@@ -9,6 +9,7 @@ import type {
   Level,
 } from "./domain";
 import { capabilityShortLabels } from "./domain";
+import { PositionReading } from "./position";
 
 export const emptyState: AppState = {
   capabilities: [],
@@ -86,8 +87,16 @@ export class SelectorIndex {
 }
 
 export class ArchitectRoster {
+  /**
+   * Quem entra em toda leitura de capacidade: ativo E profissional. O gerente
+   * (cargo `manager`) fica de fora de Avaliações, Prioridades, Progressão,
+   * Comparativo, PDI e afins (dono, 2026-09-06); o Time o lista pelo roster
+   * completo, com o filtro de status.
+   */
   static active(architects: readonly Architect[]): Architect[] {
-    return architects.filter((architect) => architect.active);
+    return architects.filter(
+      (architect) => architect.active && PositionReading.isProfessional(architect),
+    );
   }
 }
 

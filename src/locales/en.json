@@ -421,7 +421,7 @@
   "team.view.cards": "Cards",
   "team.view.table": "Table",
   "team.table.col.name": "Name",
-  "team.table.col.role": "Seniority",
+  "team.table.col.role": "Position",
   "team.table.col.lead": "Team",
   "team.table.col.level": "Average level",
   "team.table.col.gaps": "In progress",

@@ -13,6 +13,31 @@ import {
 import type { AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
 
+describe("ArchitectRoster.active — o gerente não é um profissional com capacidades (dono, 2026-09-06)", () => {
+  it("o gerente (cargo manager) sai de toda leitura de capacidade; tech lead e membro ficam", () => {
+    const gerente = {
+      ...fixtureState.architects[0]!,
+      id: "gerente",
+      name: "Gerente",
+      cargo: "manager" as const,
+    };
+    const techLead = {
+      ...fixtureState.architects[0]!,
+      id: "tl",
+      name: "TL",
+      cargo: "tech_lead" as const,
+    };
+    const sel = createSelectors({
+      ...fixtureState,
+      architects: [...fixtureState.architects, gerente, techLead],
+    });
+    const ids = sel.activeArchitects.map((architect) => architect.id);
+    expect(ids).not.toContain("gerente");
+    expect(ids).toContain("tl");
+    expect(ids).toContain("ana");
+  });
+});
+
 describe("coverageFor / teamAverageFor (OO3-11k — média com cobertura, nunca ausência como 0)", () => {
   // "diego" não tem assessment — contribui na cobertura, nunca na média.
   const state: AppState = {

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
-import { GapBadge, Initials, LevelBadge, Seniority } from "@/components/app/ui-bits";
+import { GapBadge, Initials, LevelBadge } from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,8 @@ import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { SeniorityReading, useSeniorityReading } from "@/lib/seniority";
+import { usePositionReading } from "@/lib/position";
+import { AUSENCIA, SeniorityReading, useSeniorityReading } from "@/lib/seniority";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -54,13 +55,15 @@ export function useTeamRosterActions() {
   // designado — e do admin como correção. Quem decide de alguém carrega os times.
   const decidesForSomeone = viewModel.decidesCareerOfSomeone(user);
 
+  // Os times são lidos sempre: a coluna Posição ("Integração I") e a coluna
+  // Time (nome, não id) precisam do nome de cada time (dono, 2026-09-06).
   const teamsQuery = useQuery({
     queryKey: ["teams"],
     queryFn: teamsApi.teams,
     staleTime: 60_000,
-    enabled: decidesForSomeone,
   });
-  const teams = viewModel.allocatableTeams(teamsQuery.data ?? []);
+  const allTeams = teamsQuery.data ?? [];
+  const teams = decidesForSomeone ? viewModel.allocatableTeams(allTeams) : [];
 
   const [transitioning, setTransitioning] = useState<Architect | null>(null);
   const notifySuccess = useSuccessToast();
@@ -70,7 +73,7 @@ export function useTeamRosterActions() {
     notifySuccess("team.reactivate.toast", { nome: architect.name });
   };
 
-  return { teams, transitioning, setTransitioning, reactivate };
+  return { teams, allTeams, transitioning, setTransitioning, reactivate };
 }
 
 export function useTeamRoster(isAdmin: boolean) {
@@ -438,6 +441,7 @@ export function TeamRosterView({
   pageItems,
   view,
   isAdmin,
+  teams,
   decidesCareerOf,
   onTransition,
   onReactivate,
@@ -445,6 +449,8 @@ export function TeamRosterView({
   pageItems: EnrichedArchitect[];
   view: "cards" | "table";
   isAdmin: boolean;
+  /** Todos os times conhecidos — para a Posição e para o nome do time. */
+  teams: readonly TeamSummary[];
   /** D3 (2026-09-05): quem muda nível/time e reativa é o gerente designado (ou o admin como correção). */
   decidesCareerOf: (architect: Architect) => boolean;
   onTransition: (architect: Architect) => void;
@@ -452,6 +458,9 @@ export function TeamRosterView({
 }) {
   const { t } = useI18n();
   const showsActions = pageItems.some(({ architect }) => decidesCareerOf(architect));
+  const position = usePositionReading(teams, useCareerLevelsByRank());
+  const teamNameOf = (teamId: string | null | undefined) =>
+    teams.find((team) => team.id === teamId)?.name ?? AUSENCIA;
 
   return view === "cards" ? (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -467,7 +476,9 @@ export function TeamRosterView({
               >
                 {a.name}
               </Link>
-              <Seniority role={a.role} className="block truncate text-xs text-muted-foreground" />
+              <span className="block truncate text-xs text-muted-foreground">
+                {position.labelOf(a)}
+              </span>
               <p className="truncate text-xs text-muted-foreground" title={a.email}>
                 {a.email}
               </p>
@@ -579,13 +590,16 @@ export function TeamRosterView({
                     {a.email}
                   </p>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                  <Seniority role={a.role} />
+                <td
+                  className="whitespace-nowrap px-4 py-3 text-muted-foreground"
+                  title={position.labelOf(a)}
+                >
+                  {position.labelOf(a)}
                 </td>
                 {isAdmin && (
                   <td className="max-w-[160px] px-4 py-3 text-muted-foreground">
-                    <span className="block truncate" title={a.teamId ?? "—"}>
-                      {a.teamId ?? "—"}
+                    <span className="block truncate" title={teamNameOf(a.teamId)}>
+                      {teamNameOf(a.teamId)}
                     </span>
                   </td>
                 )}

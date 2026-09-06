@@ -95,8 +95,17 @@ export interface Architect {
 
   teamId?: string | null | undefined;
 
+  /**
+   * O cargo da conta ligada à pessoa (`users.role`): `manager`, `tech_lead`
+   * ou `member`; `null` sem conta. Dono (2026-09-06): o gerente não é um
+   * profissional com capacidades — ver `ArchitectRoster.professionals`.
+   */
+  cargo?: ArchitectCargo | null | undefined;
+
   version: number;
 }
+
+export type ArchitectCargo = "manager" | "tech_lead" | "member";
 
 export interface CareerLevelTransition {
   id: string;

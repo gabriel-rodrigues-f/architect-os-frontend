@@ -39,6 +39,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useReducedMotion } from "@/hooks";
+import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 import { CollapsedNavGroups } from "@/lib/collapsed-nav-groups";
 import { cn } from "@/lib/utils";
 import { API_URL, type SessionUser } from "@/lib/api";
@@ -249,9 +250,17 @@ class NavigationOfUser {
     return !item.ownCareerOnly || this.reachesOwnCareer();
   }
 
-  /** Quem tem ficha tem "Minha carreira" (dono, 2026-09-05) — a Visão geral, em leitura. */
+  /**
+   * Quem tem ficha tem "Minha carreira" (dono, 2026-09-05) — a Visão geral, em
+   * leitura. O gerente não: ele não é um profissional com capacidades (dono,
+   * 2026-09-06).
+   */
   private reachesOwnCareer(): boolean {
-    return this.user !== undefined && this.ownArchitectId !== null;
+    return (
+      this.user !== undefined &&
+      this.ownArchitectId !== null &&
+      this.user.role !== TeamLeadershipRoles.MANAGER
+    );
   }
 
   addressed(item: NavItem): NavItem {

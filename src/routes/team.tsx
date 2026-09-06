@@ -194,6 +194,7 @@ function TeamRoster() {
               pageItems={roster.pageItems}
               view={roster.view}
               isAdmin={isAdmin}
+              teams={actions.allTeams}
               decidesCareerOf={(architect) => viewModel.decidesCareerOf(user, architect)}
               onTransition={actions.setTransitioning}
               onReactivate={actions.reactivate}

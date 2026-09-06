@@ -82,6 +82,7 @@ const carla: Architect = {
   email: "carla@company.com",
   active: true,
   teamId: fixtureTeamId,
+  cargo: "tech_lead",
   version: 1,
 };
 
@@ -163,7 +164,7 @@ describe("ONDA 37 — quem não tem senioridade não derruba a tela", () => {
     expect(await screen.findByText("Carla Ribeiro")).toBeTruthy();
   });
 
-  it("na tabela do Time a senioridade ausente é o travessão, e a ausência tem nome acessível", async () => {
+  it("na tabela do Time quem não tem senioridade mostra a POSIÇÃO — 'Tech Lead' — nunca 'null' (dono, 2026-09-06)", async () => {
     montarTime();
     renderWithApp(<TeamPage />);
     await screen.findByText("Carla Ribeiro");
@@ -172,8 +173,9 @@ describe("ONDA 37 — quem não tem senioridade não derruba a tela", () => {
 
     const linha = screen.getByText("Carla Ribeiro").closest("tr");
     if (!linha) throw new Error("linha de Carla não encontrada");
-    const celula = within(linha).getByTitle("Sem senioridade");
-    expect(celula.textContent).toBe("—");
+    const celula = within(linha).getByTitle("Tech Lead");
+    expect(celula.textContent).toBe("Tech Lead");
+    expect(linha.textContent).not.toContain("null");
   });
 
   it("na ficha da pessoa a senioridade ausente é o travessão, nunca 'null'", async () => {

@@ -5,6 +5,7 @@ import type { SessionUser } from "@/lib/api";
 import {
   fixtureAdminUser,
   fixtureMemberUser,
+  fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
   fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
@@ -92,6 +93,15 @@ describe("menu do profissional — a carreira dele em leitura, e nada do time", 
         expect(destinos(user), `${user.role} → ${destino}`).toContain(destino);
       }
     }
+  });
+});
+
+describe("menu de carreira — o gerente não tem 'Minha carreira' (dono, 2026-09-06)", () => {
+  it("gerente com ficha vinculada NÃO recebe 'Minha carreira' — ele não é um profissional com capacidades", () => {
+    const gerenteComFicha: SessionUser = { ...fixtureAssignedManagerUser, architectId: "ana" };
+    expect(destinos(gerenteComFicha).some((destino) => destino.startsWith("/architects/"))).toBe(
+      false,
+    );
   });
 });
 

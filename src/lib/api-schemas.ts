@@ -383,6 +383,8 @@ const architect = z.object({
   email: z.string(),
   active: z.boolean(),
   teamId: z.string().nullish(),
+  /** O cargo da conta ligada (`users.role`) — "Gerente" no Time e fora dos seletores (dono, 2026-09-06). */
+  cargo: z.enum(["manager", "tech_lead", "member"]).nullish(),
   version: z.number(),
 });
 
