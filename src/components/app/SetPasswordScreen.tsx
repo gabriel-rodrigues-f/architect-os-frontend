@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { usePasswordChoice } from "@/hooks";
 import { AccessInvitation, SetPasswordRefusal } from "@/lib/access-recovery";
 import { authApi } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth";
+import { SESSION_QUERY_KEY } from "@/lib/session-query";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -67,7 +68,15 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
   const [askingForANewLink, setAskingForANewLink] = useState(false);
 
   const invitation = AccessInvitation.of(token);
+  const queryClient = useQueryClient();
   const goToLogin = () => void navigate({ to: "/" });
+  // Dono (2026-09-06): a senha nova encerra a sessão que o navegador tinha
+  // (o backend já fechou o cookie); a casca relê /auth/me e mostra o login.
+  const goToLoginAsNewSession = async () => {
+    queryClient.setQueryData(SESSION_QUERY_KEY, null);
+    await queryClient.invalidateQueries();
+    goToLogin();
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -85,7 +94,7 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
     try {
       await authApi.setPassword(invitation.token, choice.newPassword);
       toast.success(t("setPassword.done"));
-      goToLogin();
+      await goToLoginAsNewSession();
     } catch (refused) {
       const reading = SetPasswordRefusal.of(refused);
       setRefusal(reading);
