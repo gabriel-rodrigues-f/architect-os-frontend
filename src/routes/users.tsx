@@ -98,7 +98,7 @@ function UsersDirectory() {
   const [statusChange, setStatusChange] = useState<AccountStatusChange | null>(null);
   const [restoringAccessOf, setRestoringAccessOf] = useState<SessionUser | null>(null);
 
-  const { data, isPending, isError, refetch } = useQuery({
+  const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: USERS_QUERY_KEY,
     queryFn: authApi.users,
     staleTime: 30_000,
@@ -137,7 +137,7 @@ function UsersDirectory() {
         </SectionCard>
       ) : (
         <QuerySection
-          query={{ data, isPending, isError, refetch }}
+          query={{ data, isPending, isError, error, refetch }}
           title={t("users.list.title")}
           description={t("users.list.subtitle")}
           errorMessage={t("users.error.load")}
@@ -232,7 +232,9 @@ function UsersDirectory() {
                               <Button
                                 size="sm"
                                 // Dono (2026-09-06): desativar é ato destrutivo — vermelho.
-                                variant={account.status === "disabled" ? "outline" : "destructive"}
+                                variant={
+                                  account.status === "disabled" ? "outline" : "destructive-soft"
+                                }
                                 aria-label={`${t(
                                   account.status === "disabled"
                                     ? "users.activate.action"

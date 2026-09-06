@@ -102,7 +102,12 @@ function PasswordRequirementItem({
         pointed && "font-medium text-destructive",
       )}
     >
-      <state.Mark className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+      {/* Dono (2026-09-06): a bolinha nasce vermelha e fica verde quando a exigência é atendida. */}
+      <state.Mark
+        className={cn("mt-px size-3.5 shrink-0", state.tone)}
+        aria-hidden="true"
+        data-requirement-state={state.name}
+      />
       <span>{label}</span>
       <span className="sr-only">{t(state.reading)}</span>
     </li>
@@ -119,12 +124,41 @@ class PasswordRequirementState {
   private constructor(
     readonly Mark: typeof Check,
     readonly reading: MessageKey,
+    /** A cor da marca: vermelha enquanto falta, verde quando atendida, neutra quando esta tela não mede. */
+    readonly tone: string,
+    readonly name: "pending" | "unmeasured" | "met",
   ) {}
 
   static of(met: boolean, unmeasured: boolean, pointed: boolean): PasswordRequirementState {
-    if (pointed) return new PasswordRequirementState(Circle, "password.requirement.pending");
-    if (unmeasured) return new PasswordRequirementState(Minus, "password.requirement.unmeasured");
-    if (met) return new PasswordRequirementState(Check, "password.requirement.met");
-    return new PasswordRequirementState(Circle, "password.requirement.pending");
+    if (pointed) {
+      return new PasswordRequirementState(
+        Circle,
+        "password.requirement.pending",
+        "text-destructive",
+        "pending",
+      );
+    }
+    if (unmeasured) {
+      return new PasswordRequirementState(
+        Minus,
+        "password.requirement.unmeasured",
+        "text-muted-foreground",
+        "unmeasured",
+      );
+    }
+    if (met) {
+      return new PasswordRequirementState(
+        Check,
+        "password.requirement.met",
+        "text-emerald-500",
+        "met",
+      );
+    }
+    return new PasswordRequirementState(
+      Circle,
+      "password.requirement.pending",
+      "text-destructive/80",
+      "pending",
+    );
   }
 }

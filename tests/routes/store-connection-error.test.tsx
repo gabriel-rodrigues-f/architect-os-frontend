@@ -64,5 +64,7 @@ describe("Tela de conexão indisponível — sem instrução de desenvolvedor em
     expect(screen.queryByText(/docker compose/i)).toBeNull();
     expect(screen.queryByText(/VITE_API_URL/)).toBeNull();
     expect(screen.getByRole("button", { name: "Recarregar" })).toBeTruthy();
+    // Dono (2026-09-06): no lugar do aviso tradicional, a corrida de carreira.
+    expect(screen.getByRole("img", { name: /Corrida de carreira|Career run/ })).toBeTruthy();
   });
 });

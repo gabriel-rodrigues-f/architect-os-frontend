@@ -2,6 +2,8 @@ export interface QueryState<T> {
   data: T | undefined;
   isPending: boolean;
   isError: boolean;
+  /** O erro, quando houver — é o que separa "o serviço caiu" de "esta leitura falhou". */
+  error?: unknown;
   refetch: () => unknown;
 }
 

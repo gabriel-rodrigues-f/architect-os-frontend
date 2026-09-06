@@ -32,6 +32,7 @@ import type {
 import { EffectiveCurationPolicy, type CurationPolicy } from "./curation-policy";
 import { configurationCatalog, RulerConfiguration } from "./configuration-queries";
 import { stateContextCatalog, UnrequestedSlice } from "./state-contexts";
+import { ServiceOutageScreen } from "../components/app/ServiceOutageScreen";
 import {
   EffectiveOperationalSettings,
   type AppSettingValue,
@@ -1059,30 +1060,20 @@ export function ConnectionError({
 }) {
   if (import.meta.env.DEV) console.error(`[store] falha ao carregar ${resource}:`, error);
 
+  // Dono (2026-09-06): a tela de indisponibilidade é UMA, com a corrida de carreira.
   return (
-    <div className="flex min-h-[60vh] items-center justify-center px-4">
-      <div className="max-w-md text-center">
-        <h2 className="text-lg font-semibold text-foreground">
-          Não foi possível acessar o serviço
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tente novamente em instantes. Se o problema continuar, contate o suporte.
-        </p>
-        {import.meta.env.DEV && (
+    <ServiceOutageScreen
+      onRetry={onRetry}
+      diagnostics={
+        import.meta.env.DEV ? (
           <p className="mt-2 text-xs text-muted-foreground">
             <strong>Dev:</strong> {error instanceof Error ? error.message : "Erro desconhecido"} —
             confira se o backend está no ar (<code>docker compose up -d</code>) e se{" "}
             <code>VITE_API_URL</code> aponta para ele.
           </p>
-        )}
-        <button
-          onClick={onRetry}
-          className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          Recarregar
-        </button>
-      </div>
-    </div>
+        ) : undefined
+      }
+    />
   );
 }
 

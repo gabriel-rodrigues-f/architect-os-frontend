@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
+import { ServiceOutageScreen } from "@/components/app/ServiceOutageScreen";
 import { SectionCard } from "@/components/app/ui-bits";
+import { ServiceOutage } from "@/lib/service-outage";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import type { QueryState } from "@/lib/observed-query";
@@ -51,6 +53,11 @@ export function QuerySection<T>({
         {skeleton}
       </div>,
     );
+  }
+
+  // Dono (2026-09-06): serviço fora do ar é a MESMA tela em toda parte — não um aviso discreto.
+  if (query.isError && ServiceOutage.isOutage(query.error)) {
+    return <ServiceOutageScreen onRetry={() => void query.refetch()} />;
   }
 
   const data = query.data;

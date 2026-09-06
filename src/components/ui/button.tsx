@@ -11,6 +11,9 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        // Dono (2026-09-06): "o vermelho ficou muito forte" — o ato destrutivo na LISTA, translúcido.
+        "destructive-soft":
+          "bg-destructive/55 text-destructive-foreground shadow-sm hover:bg-destructive/70",
         outline:
           "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
