@@ -69,8 +69,6 @@ interface NavItem {
   leadershipOnly?: boolean;
   /** Usuários e Times: administrador e gerente com vínculo (revisão de papéis, 2026-09-05). */
   peopleAdministrationOnly?: boolean;
-  /** Progressão e Comparativo — o mapa técnico com nome: só o tech lead (D5). */
-  technicalMapOnly?: boolean;
   /** Avaliações, Planos e Mentoria: quem trabalha com pessoas — o admin sem vínculo não. */
   personWorkOnly?: boolean;
 
@@ -161,7 +159,7 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/progression",
         labelKey: "cap.tabs.progression",
         icon: TrendingUp,
-        technicalMapOnly: true,
+        teamAnalysisOnly: true,
       },
       {
         to: "/training-needs",
@@ -173,7 +171,7 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/compare",
         labelKey: "cap.tabs.comparison",
         icon: GitCompare,
-        technicalMapOnly: true,
+        teamAnalysisOnly: true,
       },
     ],
   },
@@ -261,7 +259,6 @@ class NavigationOfUser {
       return false;
     }
     if (item.teamAnalysisOnly && !(user && this.policy.canAnalyzeTeam(user))) return false;
-    if (item.technicalMapOnly && !(user && this.policy.canSeeTechnicalMap(user))) return false;
     if (item.peopleAdministrationOnly && !(user && this.policy.canAdministerPeople(user))) {
       return false;
     }

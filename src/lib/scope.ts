@@ -138,14 +138,6 @@ export class UiAuthorizationPolicy {
     return this.isLeadership(user) && this.scopeGrantingTeamsOf(user).size > 0;
   }
 
-  /** O mapa TÉCNICO com nome — pessoa × competência (Progressão, Comparativo): só o tech lead vinculado (D5). */
-  canSeeTechnicalMap(user: SessionUser): boolean {
-    return (
-      user.role === TeamLeadershipRoles.TECH_LEAD &&
-      this.teamsBoundAs(user, [TeamLeadershipRoles.TECH_LEAD]).size > 0
-    );
-  }
-
   /** Contas (Usuários) e composição de times: o administrador e o gerente com vínculo. */
   canAdministerPeople(user: SessionUser): boolean {
     return this.isAdmin(user) || this.canComposeAnyTeam(user);
@@ -177,9 +169,9 @@ export class UiAuthorizationPolicy {
     return this.canReadAbout(user, architect);
   }
 
-  /** O Extrato carrega a ficha funcional: a própria pessoa, o gerente designado, o admin em suporte — não o tech lead. */
+  /** O Extrato é de quem lê a ficha: a própria pessoa, quem a lidera por vínculo, o admin em suporte (dono, 2026-09-06). */
   canOpenStatementOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    return this.canReadPersonnelFileOf(user, architect);
+    return this.canReadAbout(user, architect);
   }
 
   /** Calibração é rito de gestão: o gerente com vínculo (D1: o admin não calibra). */

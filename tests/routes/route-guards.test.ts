@@ -6,7 +6,6 @@ import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
 import {
   requirePeopleAdministrationReach,
-  requireTechnicalMapReach,
   requireCalibrationReach,
   requireCareerTabsReach,
   requireLeadReach,
@@ -155,7 +154,7 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
  * são do administrador e do gerente com vínculo.
  */
 async function alcanca(
-  guarda: typeof requireTechnicalMapReach,
+  guarda: typeof requirePeopleAdministrationReach,
   user: SessionUser,
 ): Promise<boolean> {
   const queryClient = createAppQueryClient();
@@ -168,16 +167,6 @@ async function alcanca(
     throw erro;
   }
 }
-
-describe("requireTechnicalMapReach — o mapa pessoa × competência é do tech lead", () => {
-  it("deixa passar só o tech lead com vínculo", async () => {
-    expect(await alcanca(requireTechnicalMapReach, fixtureAssignedTechLeadUser)).toBe(true);
-    expect(await alcanca(requireTechnicalMapReach, fixtureUnassignedTechLeadUser)).toBe(false);
-    expect(await alcanca(requireTechnicalMapReach, fixtureAssignedManagerUser)).toBe(false);
-    expect(await alcanca(requireTechnicalMapReach, fixtureAdminUser)).toBe(false);
-    expect(await alcanca(requireTechnicalMapReach, fixtureMemberUser)).toBe(false);
-  });
-});
 
 describe("requirePeopleAdministrationReach — Usuários e Times", () => {
   it("deixa passar o admin e o gerente com vínculo; nega tech lead e profissional", async () => {
@@ -439,16 +428,10 @@ describe("o profissional não navega até Ciclos nem até a análise do time", (
     }
   });
 
-  it("a análise do time é de quem lidera COM vínculo; Progressão e Comparativo só do tech lead (D5, 2026-09-05)", async () => {
-    const analiseSemNome = ["/gap-analysis", "/training-needs", "/capability-map"];
-    const mapaTecnico = ["/progression", "/compare"];
-    for (const href of analiseSemNome) {
+  it("a análise do time — as cinco — é de quem lidera COM vínculo: gerente e tech lead (dono, 2026-09-06)", async () => {
+    for (const href of ANALISE_DO_TIME) {
       expect(await navegarComoUsuario(fixtureAssignedManagerUser, href), href).toBe(href);
       expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, href), href).toBe(href);
-    }
-    for (const href of mapaTecnico) {
-      expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, href), href).toBe(href);
-      expect(await navegarComoUsuario(fixtureAssignedManagerUser, href), href).toBe("/");
     }
     for (const user of [fixtureAdminUser, fixtureUnassignedTechLeadUser]) {
       for (const href of ANALISE_DO_TIME) {

@@ -21,6 +21,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import type { SessionUser } from "@/lib/api";
 import { Route as CapabilityMapRoute } from "@/routes/capability-map";
+import { Route as CompareRoute } from "@/routes/compare";
+import { Route as ProgressionRoute } from "@/routes/progression";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import {
@@ -72,6 +74,16 @@ const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode
     titulo: "De quem o time depende",
     Page: CapabilityMapRoute.options.component as () => ReactNode,
   },
+  {
+    rota: "/progression",
+    titulo: "Progressão do Time",
+    Page: ProgressionRoute.options.component as () => ReactNode,
+  },
+  {
+    rota: "/compare",
+    titulo: "Comparativo de Profissionais",
+    Page: CompareRoute.options.component as () => ReactNode,
+  },
 ];
 
 function renderAs(user: SessionUser, page: ReactNode) {
@@ -82,7 +94,7 @@ function renderAs(user: SessionUser, page: ReactNode) {
   return renderWithApp(page);
 }
 
-describe("as três telas de análise do time negam o profissional — a tela é a última barreira", () => {
+describe("as cinco telas de análise do time negam o profissional — a tela é a última barreira", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);

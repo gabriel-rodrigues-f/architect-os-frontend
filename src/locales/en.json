@@ -1898,8 +1898,6 @@
   "setPassword.leadFor": "Hello, {nome}. Create a password to finish activating your Synapse account.",
   "team.transition.title.teamOnly": "Change team — {nome}",
   "team.transition.body.teamOnly": "Current team: {time}. The reason is recorded and stays in the person's history — the system never changes this on its own.",
-  "cap.technicalMapOnly": "The person × competency map belongs to the team's tech lead.",
-  "cap.technicalMapOnlyHint": "Progression and Comparison show scores next to names — a tool for whoever distributes work and mentoring. Managers follow the team in Who the team depends on, Priorities and Training needs.",
   "support.dialog.title": "Open the file in support mode",
   "support.dialog.lead": "As an administrator you do not follow people: opening {nome}'s file is a support act. State the reason — it goes to the audit log and the team is notified.",
   "support.dialog.reason": "Reason for access",

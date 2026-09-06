@@ -50,12 +50,12 @@
       "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/compare": {
-      "alcance": "mapa-tecnico",
-      "guarda": "requireTechnicalMapReach",
-      "sinal": "canSeeTechnicalMap",
+      "alcance": "analise-de-time",
+      "guarda": "requireTeamAnalysisReach",
+      "sinal": "canAnalyzeTeam",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/mapa-tecnico-nega-quem-nao-e-tech-lead.test.tsx"
+      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/competency-matrix": {
       "alcance": "admin",
@@ -105,12 +105,12 @@
       "alcance": "autenticado"
     },
     "/progression": {
-      "alcance": "mapa-tecnico",
-      "guarda": "requireTechnicalMapReach",
-      "sinal": "canSeeTechnicalMap",
+      "alcance": "analise-de-time",
+      "guarda": "requireTeamAnalysisReach",
+      "sinal": "canAnalyzeTeam",
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/mapa-tecnico-nega-quem-nao-e-tech-lead.test.tsx"
+      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/set-password": {
       "alcance": "publica"

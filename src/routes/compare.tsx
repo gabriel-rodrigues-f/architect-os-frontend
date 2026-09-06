@@ -18,7 +18,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireTechnicalMapReach } from "@/lib/route-guards";
+import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/compare")({
       { property: "og:description", content: "Radar sobreposto e tabela lado a lado por pessoa." },
     ],
   }),
-  beforeLoad: requireTechnicalMapReach,
+  beforeLoad: requireTeamAnalysisReach,
   component: ComparePage,
 });
 
@@ -48,16 +48,16 @@ function ComparePage() {
   const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("compare");
-  // D5 (dono, 2026-09-05): pessoa × competência com nome é ferramenta do TECH LEAD.
-  const canSeeTechnicalMap = defaultUiAuthorizationPolicy.canSeeTechnicalMap(user);
+  // Análise do time: quem lidera com vínculo — gerente e tech lead (dono, 2026-09-06: "o gerente vê o que o tech lead vê").
+  const canAnalyzeTeam = defaultUiAuthorizationPolicy.canAnalyzeTeam(user);
 
-  if (!canSeeTechnicalMap) {
+  if (!canAnalyzeTeam) {
     return (
       <OutOfReachScreen
         title={t("compare.title")}
         help={help}
-        reason={t("cap.technicalMapOnly")}
-        hint={t("cap.technicalMapOnlyHint")}
+        reason={t("cap.teamAnalysisOnly")}
+        hint={t("cap.teamAnalysisOnlyHint")}
       />
     );
   }

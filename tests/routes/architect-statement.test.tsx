@@ -219,7 +219,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
    * gerar (imprimir) é dela e do gerente designado; o tech lead vinculado lê
    * o extrato, mas não gera.
    */
-  it("D2 (dono, 2026-09-05) — imprimir aparece para o gerente designado e para a própria pessoa; o tech lead lê sem gerar", async () => {
+  it("D2 (dono, 2026-09-05) — imprimir aparece para o gerente designado e para a própria pessoa; o tech lead vinculado também gera (dono, 2026-09-06)", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
       state: stateWithMentoring,
@@ -253,7 +253,8 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
     });
     renderWithApp(<StatementPage />);
     expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
+    // Dono (2026-09-06): "não precisamos esconder do tech lead" — ele também gera.
+    expect(screen.getByRole("button", { name: "Imprimir extrato" })).toBeTruthy();
   });
 
   /**

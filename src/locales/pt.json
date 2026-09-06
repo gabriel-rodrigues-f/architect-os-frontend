@@ -1898,8 +1898,6 @@
   "setPassword.leadFor": "Olá, {nome}. Crie uma senha para concluir a ativação da sua conta no Synapse.",
   "team.transition.title.teamOnly": "Mudar de time — {nome}",
   "team.transition.body.teamOnly": "Time atual: {time}. Registra o motivo e fica no histórico da pessoa — o sistema nunca muda isso sozinho.",
-  "cap.technicalMapOnly": "O mapa pessoa × competência é do tech lead do time.",
-  "cap.technicalMapOnlyHint": "Progressão e Comparativo mostram nota ao lado de nome — ferramenta de quem distribui trabalho e mentoria. O gerente acompanha o time em De quem o time depende, Prioridades e Necessidades de Treinamento.",
   "support.dialog.title": "Abrir a ficha em modo de suporte",
   "support.dialog.lead": "Como administrador você não acompanha pessoas: abrir a ficha de {nome} é um ato de suporte. Declare o motivo — ele fica na auditoria e o time é avisado.",
   "support.dialog.reason": "Motivo do acesso",

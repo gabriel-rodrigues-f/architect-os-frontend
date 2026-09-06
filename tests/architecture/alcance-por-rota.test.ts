@@ -93,7 +93,6 @@ type Alcance =
   | "lideranca"
   | "analise-de-time"
   | "ficha-de-carreira"
-  | "mapa-tecnico"
   | "gestao-de-pessoas";
 type Negativa = "tela-nega" | "somente-leitura";
 
@@ -106,7 +105,6 @@ const ALCANCES: readonly Alcance[] = [
   "lideranca",
   "analise-de-time",
   "ficha-de-carreira",
-  "mapa-tecnico",
   "gestao-de-pessoas",
 ];
 
@@ -118,7 +116,6 @@ const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
   lideranca: "requireLeadershipReach",
   "analise-de-time": "requireTeamAnalysisReach",
   "ficha-de-carreira": "requireCareerTabsReach",
-  "mapa-tecnico": "requireTechnicalMapReach",
   "gestao-de-pessoas": "requirePeopleAdministrationReach",
 };
 
@@ -138,9 +135,8 @@ const DISTRIBUICAO_ESPERADA = {
   "lead-com-vinculo": 1,
   calibracao: 1,
   lideranca: 3,
-  "analise-de-time": 3,
+  "analise-de-time": 5,
   "ficha-de-carreira": 3,
-  "mapa-tecnico": 2,
   "gestao-de-pessoas": 2,
 };
 
