@@ -242,6 +242,19 @@ function AppToaster() {
 
 function AuthGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const router = useRouter();
+
+  /*
+   * As guardas de rota (`beforeLoad`) rodam antes de a sessão existir: no
+   * servidor (SSR) não há janela, e quem entra pela tela de login já está
+   * na URL que pediu. Medido pelo dono (2026-09-06): o administrador abriu
+   * /training-needs por URL e a tela desenhou a negativa em vez de voltar ao
+   * Painel. Com a sessão conhecida, as guardas são reavaliadas — e quem não
+   * alcança a rota é redirecionado, como se tivesse navegado até ela.
+   */
+  useEffect(() => {
+    if (user) void router.invalidate();
+  }, [router, user]);
 
   if (loading) {
     return (
