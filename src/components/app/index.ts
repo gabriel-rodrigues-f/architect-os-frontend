@@ -32,6 +32,8 @@ export * from "./SectionHelp";
 export * from "./SupportAccessDialog";
 export * from "./SetPasswordScreen";
 export * from "./SingleSelectFilter";
+export * from "./SortableHeader";
+export * from "./TeamChoiceField";
 export * from "./TreatGapInPlanAction";
 export * from "./TruncationNotice";
 export * from "./ViewToggle";

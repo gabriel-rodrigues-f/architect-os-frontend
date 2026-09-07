@@ -1,6 +1,5 @@
 import type { RiskState } from "../presenters/capability-coverage-presenter";
-
-export type SortDirection = "asc" | "desc";
+import { TableOrder, type SortDirection } from "./table-order";
 
 /**
  * O que a tabela de cobertura precisa saber de uma linha para ordená-la. É um
@@ -16,9 +15,8 @@ export interface OrderableCoverageRow {
 
 /**
  * A ordenação da tabela "De quem o time depende" (dono, 2026-09-05: "cada
- * coluna com uma seta ao lado, ascendente ou descendente"). Uma coluna por
- * vez; clicar na mesma coluna inverte a direção, clicar noutra começa em
- * ascendente. Sem coluna escolhida, vale a ordem do catálogo.
+ * coluna com uma seta ao lado, ascendente ou descendente"). A regra do clique
+ * é a de `TableOrder`; o que é DESTA tabela é como cada coluna compara.
  *
  * O risco ordena pelo quanto pede ação: sem dados < sem referência <
  * concentração < distribuída — em ascendente, o pior vem primeiro.
@@ -31,31 +29,32 @@ export class CoverageTableOrder {
     distributedCoverage: 3,
   };
 
-  private constructor(
-    readonly column: string | null,
-    readonly direction: SortDirection,
-  ) {}
+  private constructor(private readonly order: TableOrder) {}
 
   static catalog(): CoverageTableOrder {
-    return new CoverageTableOrder(null, "asc");
+    return new CoverageTableOrder(TableOrder.none());
+  }
+
+  get column(): string | null {
+    return this.order.column;
+  }
+
+  get direction(): SortDirection {
+    return this.order.direction;
   }
 
   toggled(column: string): CoverageTableOrder {
-    if (this.column === column) {
-      return new CoverageTableOrder(column, this.direction === "asc" ? "desc" : "asc");
-    }
-    return new CoverageTableOrder(column, "asc");
+    return new CoverageTableOrder(this.order.toggled(column));
   }
 
   directionOf(column: string): SortDirection | null {
-    return this.column === column ? this.direction : null;
+    return this.order.directionOf(column);
   }
 
   apply<R extends OrderableCoverageRow>(rows: readonly R[]): R[] {
-    const column = this.column;
-    if (column === null) return [...rows];
-    const sign = this.direction === "asc" ? 1 : -1;
-    return [...rows].sort((left, right) => sign * CoverageTableOrder.compare(left, right, column));
+    return this.order.apply(rows, (left, right, column) =>
+      CoverageTableOrder.compare(left, right, column),
+    );
   }
 
   private static compare(

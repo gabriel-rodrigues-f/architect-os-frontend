@@ -92,7 +92,8 @@ describe("Usuários — falha de gravação é anunciada (QA-04)", () => {
     await userEvent.type(within(dialogo).getByLabelText("Nome"), "Nova Pessoa");
     await userEvent.type(within(dialogo).getByLabelText("E-mail"), "nova@empresa.com");
     await userEvent.selectOptions(within(dialogo).getByLabelText("Cargo"), "tech_lead");
-    await userEvent.selectOptions(within(dialogo).getByLabelText("Time"), "time-plataforma");
+    await userEvent.click(within(dialogo).getByLabelText("Time", { selector: "button" }));
+    await userEvent.click(screen.getByRole("option", { name: "Plataforma" }));
     await userEvent.click(within(dialogo).getByRole("button", { name: "Cadastrar pessoa" }));
 
     const alerta = await within(dialogo).findByRole("alert");

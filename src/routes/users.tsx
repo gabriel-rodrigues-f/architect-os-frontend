@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import {
   CommandDialog,
@@ -10,7 +10,10 @@ import {
   QuerySection,
   RoleSelect,
   SectionCard,
+  SingleSelectFilter,
+  SortableHeader,
   StatusBadge,
+  TeamChoiceField,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +41,8 @@ import {
 import { requirePeopleAdministrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank } from "@/lib/store";
+import { TeamChoice } from "@/lib/team-choice";
+import { AccountsDirectory, TableOrder, type AccountsColumn } from "@/lib/view-models";
 
 export const Route = createFileRoute("/users")({
   beforeLoad: requirePeopleAdministrationReach,
@@ -105,6 +110,44 @@ function UsersDirectory() {
     enabled: administersPeople,
   });
 
+  // Dono (2026-09-06): filtrar por time e ordenar por cada título. O time da
+  // conta é o do vínculo; o filtro oferece ao gerente só os times dele.
+  const teamsQuery = useQuery({
+    queryKey: ["teams"],
+    queryFn: teamsApi.teams,
+    staleTime: 60_000,
+    enabled: administersPeople,
+  });
+  const allTeams = teamsQuery.data ?? [];
+  const reachableTeams = allTeams.filter((team) =>
+    defaultUiAuthorizationPolicy.canComposeTeam(user, team.id),
+  );
+  const [teamFilter, setTeamFilter] = useState(AccountsDirectory.ALL_TEAMS);
+  const [order, setOrder] = useState(() => TableOrder.by<AccountsColumn>("name"));
+  const directory = useMemo(
+    () =>
+      new AccountsDirectory(data ?? [], allTeams, {
+        roleLabel: (role) => t(`users.role.${role}`),
+        statusLabel: (status) => t(`users.status.${status}`),
+        noTeam: t("users.filter.team.none"),
+        allTeams: t("users.filter.team.all"),
+      }),
+    [data, allTeams, t],
+  );
+  const teamFilterOptions = directory.teamFilterOptions(reachableTeams);
+  const effectiveTeamFilter = teamFilterOptions.some((option) => option.value === teamFilter)
+    ? teamFilter
+    : AccountsDirectory.ALL_TEAMS;
+  const sortableHeader = (column: AccountsColumn, label: string) => (
+    <SortableHeader
+      column={column}
+      label={label}
+      direction={order.directionOf(column)}
+      onToggle={(chosen) => setOrder(order.toggled(chosen))}
+      className="py-2 pr-3"
+    />
+  );
+
   const refreshAccounts = () => queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
 
   const updatePatch = async (
@@ -143,31 +186,33 @@ function UsersDirectory() {
           errorMessage={t("users.error.load")}
           skeleton={<p className="text-sm text-muted-foreground">{t("users.loading")}</p>}
         >
-          {(accounts) => (
+          {() => (
             <SectionCard title={t("users.list.title")} description={t("users.list.subtitle")}>
+              <div className="mb-4 max-w-xs">
+                <SingleSelectFilter
+                  id="users-team-filter"
+                  label={t("users.filter.team")}
+                  options={teamFilterOptions}
+                  value={effectiveTeamFilter}
+                  onChange={setTeamFilter}
+                />
+              </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-sm">
+                <table className="w-full min-w-[840px] text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th scope="col" className="py-2">
-                        {t("users.col.name")}
-                      </th>
-                      <th scope="col" className="py-2">
-                        {t("users.col.email")}
-                      </th>
-                      <th scope="col" className="py-2">
-                        {t("users.col.role")}
-                      </th>
-                      <th scope="col" className="py-2">
-                        {t("users.col.status")}
-                      </th>
+                      {sortableHeader("name", t("users.col.name"))}
+                      {sortableHeader("email", t("users.col.email"))}
+                      {sortableHeader("role", t("users.col.role"))}
+                      {sortableHeader("team", t("users.col.team"))}
+                      {sortableHeader("status", t("users.col.status"))}
                       <th scope="col" className="py-2">
                         {t("users.col.actions")}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {accounts.map((account) => (
+                    {directory.list(effectiveTeamFilter, order).map((account) => (
                       <tr key={account.id} className="border-b border-border/60 last:border-0">
                         <td className="py-2 font-medium">
                           {account.name}
@@ -186,6 +231,9 @@ function UsersDirectory() {
                             tone={roleTone[account.role]}
                             label={t(`users.role.${account.role}`)}
                           />
+                        </td>
+                        <td className="py-2 text-muted-foreground">
+                          {directory.teamNameOf(account)}
                         </td>
                         <td className="py-2">
                           <AccountStatusBadge
@@ -455,7 +503,7 @@ function AdmitPersonDialog({
 
   const teamsQuery = useQuery({ queryKey: ["teams"], queryFn: teamsApi.teams, staleTime: 60_000 });
   const teams = defaultPersonAdmissionPolicy.admissibleTeams(user, teamsQuery.data ?? []);
-  const teamLocked = !defaultUiAuthorizationPolicy.isAdmin(user) && teams.length === 1;
+  const teamChoice = TeamChoice.for(user, teams);
   const preselectedTeamId = defaultPersonAdmissionPolicy.preselectedTeamId(
     user,
     teamsQuery.data ?? [],
@@ -583,37 +631,21 @@ function AdmitPersonDialog({
             </div>
           )}
           <div>
-            <Label htmlFor="admit-team">{t("users.form.team")}</Label>
             {/*
              * Dono (2026-09-06): quem lidera UM time cadastra só nele — o campo
              * nasce travado no time, sem clique, e o passar do mouse explica.
+             * Quem decide é o `TeamChoice`, o mesmo da Régua e da Política.
              */}
-            <div title={teamLocked ? t("users.form.team.locked") : undefined}>
-              <select
-                id="admit-team"
-                className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-70"
-                value={values.teamId ?? ""}
-                disabled={teamLocked}
-                {...(teamLocked
-                  ? { "aria-describedby": "admit-team-locked" }
-                  : describedBy("team"))}
-                onChange={(event) =>
-                  change({ teamId: event.target.value === "" ? null : event.target.value })
-                }
-              >
-                <option value="">{t("users.form.team.placeholder")}</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {teamLocked && (
-              <p id="admit-team-locked" className="mt-1 text-xs text-muted-foreground">
-                {t("users.form.team.locked")}
-              </p>
-            )}
+            <TeamChoiceField
+              id="admit-team"
+              label={t("users.form.team")}
+              choice={teamChoice}
+              value={values.teamId ?? ""}
+              onChange={(teamId) => change({ teamId: teamId === "" ? null : teamId })}
+              emptyOption={{ value: "", label: t("users.form.team.placeholder") }}
+              lockedExplanation={t("users.form.team.locked")}
+              describedBy={blocked && refusal?.field === "team" ? refusalId : undefined}
+            />
             {!teamsQuery.isPending && teams.length === 0 && (
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("users.form.team.noneReachable")}

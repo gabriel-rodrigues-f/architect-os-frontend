@@ -245,19 +245,25 @@ describe("Política de Progressão leva em consideração o time selecionado", (
     }
   });
 
-  it("o tech lead só escolhe entre os times que alcança", async () => {
+  /** Dono (2026-09-06): quem lidera UM time o encontra FIXADO — nem "Todos os times" se oferece. */
+  it("o tech lead de um time só fica fixado nele, sem escolha", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedTechLeadUser,
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
     renderWithApp(<SettingsPage />);
-    await celulaDoMinimo();
 
-    await userEvent.click(await seletorDeTime());
+    const seletor = await seletorDeTime();
+    expect(seletor.textContent).toContain("Plataforma");
+    expect(seletor.hasAttribute("disabled")).toBe(true);
+    await userEvent.click(seletor);
 
-    expect(screen.getByRole("option", { name: "Todos os times" })).toBeTruthy();
-    expect(screen.getByRole("option", { name: "Plataforma" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Todos os times" })).toBeNull();
     expect(screen.queryByRole("option", { name: "Integrações" })).toBeNull();
+    // Fixado no time, a política mostrada é a EXATA dele — não o agregado.
+    const celula = await celulaDoMinimo();
+    expect(celula.textContent).toContain("3");
+    expect(celula.textContent).not.toContain("5");
   });
 });

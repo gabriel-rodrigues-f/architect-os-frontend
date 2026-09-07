@@ -106,14 +106,17 @@ describe("/team-rules nega DADO a quem não rege régua — a tela é a última 
     expect(pediuRegua()).toBe(false);
   });
 
-  it("lead com vínculo só enxerga os times que rege — nunca a lista inteira", async () => {
+  /** Dono (2026-09-06): quem lidera UM time o encontra FIXADO — sem menu, sem clique. */
+  it("lead com vínculo só enxerga o time que rege, fixado — nunca a lista inteira", async () => {
     renderAs(fixtureAssignedTechLeadUser, [comRegua]);
-    expect(await screen.findByText("Time Plataforma")).toBeTruthy();
+    const seletor = await screen.findByLabelText("Time", { selector: "button" });
+    expect(seletor.textContent).toContain("Time Plataforma");
+    expect(seletor.hasAttribute("disabled")).toBe(true);
 
-    await userEvent.click(screen.getByLabelText("Time"));
+    await userEvent.click(seletor);
 
-    expect(screen.getByRole("option", { name: "Time Plataforma" })).toBeTruthy();
     expect(screen.queryByRole("option", { name: "Time Dados" })).toBeNull();
+    expect(screen.queryByText("Time Dados")).toBeNull();
   });
 
   it("admin alcança a tela e a régua do time selecionado", async () => {

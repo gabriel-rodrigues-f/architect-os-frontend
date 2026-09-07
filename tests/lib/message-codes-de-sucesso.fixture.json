@@ -316,6 +316,26 @@
       "rota": "PATCH /teams/:teamId",
       "arquivo": "src/modules/people/infrastructure/controllers/teams.controller.ts",
       "resposta": "ok"
+    },
+    "transfers.approve.success": {
+      "rota": "POST /team-transfer-requests/:id/approve",
+      "arquivo": "src/modules/transfers/infrastructure/controllers/team-transfer.controller.ts",
+      "resposta": "ok"
+    },
+    "transfers.cancel.success": {
+      "rota": "POST /team-transfer-requests/:id/cancel",
+      "arquivo": "src/modules/transfers/infrastructure/controllers/team-transfer.controller.ts",
+      "resposta": "ok"
+    },
+    "transfers.refuse.success": {
+      "rota": "POST /team-transfer-requests/:id/refuse",
+      "arquivo": "src/modules/transfers/infrastructure/controllers/team-transfer.controller.ts",
+      "resposta": "ok"
+    },
+    "transfers.request.success": {
+      "rota": "POST /architects/:id/team-transfer-requests",
+      "arquivo": "src/modules/transfers/infrastructure/controllers/team-transfer.controller.ts",
+      "resposta": "created"
     }
   }
 }

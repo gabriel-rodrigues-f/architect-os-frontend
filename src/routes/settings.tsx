@@ -11,11 +11,12 @@ import {
   SectionCard,
   SectionGroup,
   SectionHelp,
-  SingleSelectFilter,
+  TeamChoiceField,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { teamsApi } from "@/lib/api";
+import { TeamChoice } from "@/lib/team-choice";
 import { LEVELS, type CareerLevel } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
@@ -209,11 +210,18 @@ function CareerPolicySection() {
     staleTime: 60_000,
     enabled: canChooseTeam,
   });
-  const [teamChoice, setTeamChoice] = useState(ProgressionPolicyScope.ALL_TEAMS_CHOICE);
+  const [chosenTeam, setChosenTeam] = useState(ProgressionPolicyScope.ALL_TEAMS_CHOICE);
   const teams = ProgressionPolicyScope.choosable(teamsQuery.data ?? [], (teamId) =>
     defaultUiAuthorizationPolicy.canConfigureRulesOf(user, teamId),
   );
-  const scope = ProgressionPolicyScope.fromChoice(teamChoice, teams);
+  // Dono (2026-09-06): quem lidera UM time não escolhe — a política mostrada é
+  // a dele, e o seletor fica fixado nele, sem "Todos os times".
+  const teamChoice = TeamChoice.for(user, teams);
+  const scope = ProgressionPolicyScope.fromChoice(
+    teamChoice.resolve(chosenTeam, ProgressionPolicyScope.ALL_TEAMS_CHOICE) ??
+      ProgressionPolicyScope.ALL_TEAMS_CHOICE,
+    teams,
+  );
 
   return (
     <SectionCard
@@ -223,15 +231,17 @@ function CareerPolicySection() {
     >
       {teams.length > 0 && (
         <div className="mb-4 max-w-xs">
-          <SingleSelectFilter
+          <TeamChoiceField
             id="policy-team"
             label={t("policy.team")}
+            choice={teamChoice}
             value={scope.choice}
-            onChange={setTeamChoice}
-            options={[
-              { value: ProgressionPolicyScope.ALL_TEAMS_CHOICE, label: t("policy.team.all") },
-              ...teams.map((team) => ({ value: team.id, label: team.name })),
-            ]}
+            onChange={setChosenTeam}
+            emptyOption={{
+              value: ProgressionPolicyScope.ALL_TEAMS_CHOICE,
+              label: t("policy.team.all"),
+            }}
+            lockedExplanation={t("policy.team.locked")}
           />
         </div>
       )}

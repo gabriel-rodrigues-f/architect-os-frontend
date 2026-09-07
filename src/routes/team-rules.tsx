@@ -11,6 +11,7 @@ import {
   QuerySection,
   SectionCard,
   SingleSelectFilter,
+  TeamChoiceField,
 } from "@/components/app";
 import { FilterField } from "@/components/app/FilterField";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAsyncSubmit, useSuccessToast, useTeamRuleEditorViewModel } from "@/hooks";
 import { ApiError, api, teamsApi } from "@/lib/api";
+import { TeamChoice } from "@/lib/team-choice";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import type { CareerLevel } from "@/lib/domain";
@@ -91,9 +93,9 @@ function TeamRulesScreen() {
   const teams = (teamsQuery.data ?? []).filter(
     (team) => team.active && defaultUiAuthorizationPolicy.canConfigureRulesOf(user, team.id),
   );
-  const teamId = teams.some((team) => team.id === chosenTeamId)
-    ? chosenTeamId
-    : (teams[0]?.id ?? null);
+  // Dono (2026-09-06): quem lidera UM time não escolhe — o time fica fixado.
+  const teamChoice = TeamChoice.for(user, teams);
+  const teamId = teamChoice.resolve(chosenTeamId);
   const careerLevel =
     careerLevels.find((level) => level.id === chosenLevelId) ?? careerLevels[0] ?? null;
 
@@ -110,12 +112,13 @@ function TeamRulesScreen() {
       ) : (
         <>
           <div className="mb-6 grid max-w-xl gap-4 sm:grid-cols-2">
-            <SingleSelectFilter
+            <TeamChoiceField
               id="team-rule-team"
               label={t("teamRules.filter.team")}
+              choice={teamChoice}
               value={teamId}
               onChange={setChosenTeamId}
-              options={teams.map((team) => ({ value: team.id, label: team.name }))}
+              lockedExplanation={t("teamRules.filter.team.locked")}
             />
             <SingleSelectFilter
               id="team-rule-career-level"

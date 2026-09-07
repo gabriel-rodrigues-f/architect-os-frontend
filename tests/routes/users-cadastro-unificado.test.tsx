@@ -91,7 +91,29 @@ async function abrirCadastro(user: SessionUser, extras: FetchRoute[] = []) {
 const rotulosDe = (select: HTMLElement) =>
   [...select.querySelectorAll("option")]
     .map((option) => option.textContent)
-    .filter((texto) => texto !== "Escolha o time" && texto !== "Escolha a senioridade");
+    .filter((texto) => texto !== "Escolha a senioridade");
+
+/**
+ * O campo Time é o seletor da casa (`TeamChoiceField`, dono 2026-09-06): um
+ * botão que abre a lista. Escolher é abrir e clicar no nome do time.
+ */
+const seletorDeTime = (dialogo: ReturnType<typeof within>) =>
+  dialogo.getByLabelText("Time", { selector: "button" });
+
+async function escolherTime(dialogo: ReturnType<typeof within>, nome: string) {
+  await userEvent.click(seletorDeTime(dialogo));
+  await userEvent.click(screen.getByRole("option", { name: nome }));
+}
+
+const timesOferecidos = async (dialogo: ReturnType<typeof within>) => {
+  await userEvent.click(seletorDeTime(dialogo));
+  const nomes = within(screen.getByRole("listbox"))
+    .queryAllByRole("option")
+    .map((option) => option.textContent)
+    .filter((texto) => texto !== "Escolha o time");
+  await userEvent.keyboard("{Escape}");
+  return nomes;
+};
 
 describe("Usuários é o único lugar de cadastro — os cargos que cada persona vê", () => {
   beforeEach(() => {
@@ -190,7 +212,7 @@ describe("senioridade aparece e some com o cargo", () => {
     await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "tech_lead");
     await userEvent.type(dialogo.getByLabelText("Nome"), "Joana Prado");
     await userEvent.type(dialogo.getByLabelText("E-mail"), "joana@empresa.com");
-    await userEvent.selectOptions(dialogo.getByLabelText("Time"), "time-dados");
+    await escolherTime(dialogo, "Dados");
     await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar pessoa" }));
 
     expect(corpoDaAdmissao()).toEqual({
@@ -236,7 +258,7 @@ describe("o time entra no cadastro", () => {
         ? jsonResponse(TIMES.map((time) => ({ ...time, active: false })))
         : undefined;
     const dialogo = await abrirCadastro(fixtureAdminUser, [soTimesDesativados]);
-    expect(rotulosDe(dialogo.getByLabelText("Time"))).toEqual([]);
+    expect(await timesOferecidos(dialogo)).toEqual([]);
     expect(
       dialogo.getByText(
         "Você não lidera nenhum time ativo — peça ao administrador para vinculá-lo a um time.",
@@ -246,20 +268,19 @@ describe("o time entra no cadastro", () => {
 
   it("quem lidera um time só já o encontra escolhido — e TRAVADO, com a explicação ao passar o mouse (dono, 2026-09-06)", async () => {
     const dialogo = await abrirCadastro(fixtureAssignedManagerUser);
-    const time = dialogo.getByLabelText("Time") as HTMLSelectElement;
-    expect(rotulosDe(time)).toEqual(["Plataforma"]);
-    expect(time.value).toBe("time-plataforma");
-    expect(time.disabled).toBe(true);
-    expect(time.parentElement?.getAttribute("title")).toBe(
-      "Cadastro restrito a pessoas do seu time.",
-    );
+    const time = seletorDeTime(dialogo);
+    expect(time.textContent).toContain("Plataforma");
+    expect(time.hasAttribute("disabled")).toBe(true);
+    expect(time.getAttribute("title")).toBe("Cadastro restrito a pessoas do seu time.");
     expect(dialogo.getByText("Cadastro restrito a pessoas do seu time.")).toBeTruthy();
+    await userEvent.click(time);
+    expect(screen.queryByRole("option", { name: "Dados" })).toBeNull();
   });
 
   it("o administrador escolhe o time livremente — nada travado", async () => {
     const dialogo = await abrirCadastro(fixtureAdminUser);
-    const time = dialogo.getByLabelText("Time") as HTMLSelectElement;
-    expect(time.disabled).toBe(false);
+    expect(seletorDeTime(dialogo).hasAttribute("disabled")).toBe(false);
+    expect(await timesOferecidos(dialogo)).toEqual(["Plataforma", "Dados"]);
   });
 });
 
@@ -291,17 +312,17 @@ describe("a recusa do serviço fala no campo e trava o envio", () => {
     await userEvent.type(dialogo.getByLabelText("Nome"), "Joana Prado");
     await userEvent.type(dialogo.getByLabelText("E-mail"), "joana@empresa.com");
     await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "manager");
-    await userEvent.selectOptions(dialogo.getByLabelText("Time"), "time-plataforma");
+    await escolherTime(dialogo, "Plataforma");
     await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar pessoa" }));
 
     const recusa = await dialogo.findByRole("alert");
     expect(recusa.textContent).toContain("Marina Alves");
-    expect(dialogo.getByLabelText("Time").getAttribute("aria-describedby")).toBe(recusa.id);
+    expect(seletorDeTime(dialogo).getAttribute("aria-describedby")).toBe(recusa.id);
     expect(dialogo.getByRole("button", { name: "Cadastrar pessoa" }).hasAttribute("disabled")).toBe(
       true,
     );
 
-    await userEvent.selectOptions(dialogo.getByLabelText("Time"), "time-dados");
+    await escolherTime(dialogo, "Dados");
     expect(dialogo.getByRole("button", { name: "Cadastrar pessoa" }).hasAttribute("disabled")).toBe(
       false,
     );
@@ -344,7 +365,7 @@ describe("depois de cadastrar, a tela diz o que ACONTECEU com o acesso", () => {
     await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "tech_lead");
     await userEvent.type(dialogo.getByLabelText("Nome"), "Joana Prado");
     await userEvent.type(dialogo.getByLabelText("E-mail"), "joana@empresa.com");
-    await userEvent.selectOptions(dialogo.getByLabelText("Time"), "time-dados");
+    await escolherTime(dialogo, "Dados");
     await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar pessoa" }));
     // O diálogo de sucesso substitui o de cadastro no MESMO papel; espera-se
     // pelo título dele, e não por "um dialog", que já existe.

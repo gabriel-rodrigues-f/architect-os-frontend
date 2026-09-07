@@ -20,6 +20,8 @@ export function SingleSelectFilter({
   value,
   onChange,
   disabled,
+  title,
+  describedBy,
   triggerClassName,
 }: {
   id: string;
@@ -31,6 +33,9 @@ export function SingleSelectFilter({
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  /** O que o passar do mouse diz; sem isto, o rótulo da opção escolhida. */
+  title?: string | undefined;
+  describedBy?: string | undefined;
 
   triggerClassName?: string;
 }) {
@@ -62,7 +67,8 @@ export function SingleSelectFilter({
             onKeyDown={onTriggerKeyDown}
             aria-haspopup="listbox"
             aria-label={label ? undefined : ariaLabel}
-            title={selectedLabel}
+            aria-describedby={describedBy}
+            title={title ?? selectedLabel}
             className={triggerClassName}
           >
             <span className="min-w-0 flex-1 truncate text-left">{selectedLabel}</span>

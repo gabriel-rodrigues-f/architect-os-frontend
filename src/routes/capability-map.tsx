@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import {
@@ -9,6 +8,7 @@ import {
   OutOfReachScreen,
   PageHeader,
   SectionCard,
+  SortableHeader,
   useCardsAndTableViews,
   ViewToggle,
 } from "@/components/app";
@@ -24,7 +24,6 @@ import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useScoringBands, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
@@ -122,7 +121,7 @@ function TeamCapabilityCoverage() {
                       <SortableHeader
                         column="capability"
                         label={t("col.capability")}
-                        order={order}
+                        direction={order.directionOf("capability")}
                         onToggle={(column) => setOrder(order.toggled(column))}
                       />
                       {presenter.bands.map((band) => (
@@ -130,7 +129,7 @@ function TeamCapabilityCoverage() {
                           key={band.key}
                           column={band.key}
                           label={t(band.labelKey)}
-                          order={order}
+                          direction={order.directionOf(band.key)}
                           onToggle={(column) => setOrder(order.toggled(column))}
                           align="center"
                         />
@@ -138,14 +137,14 @@ function TeamCapabilityCoverage() {
                       <SortableHeader
                         column="notAssessed"
                         label={t("cap.table.col.notAssessed")}
-                        order={order}
+                        direction={order.directionOf("notAssessed")}
                         onToggle={(column) => setOrder(order.toggled(column))}
                         align="center"
                       />
                       <SortableHeader
                         column="risk"
                         label={t("cap.table.col.risk")}
-                        order={order}
+                        direction={order.directionOf("risk")}
                         onToggle={(column) => setOrder(order.toggled(column))}
                       />
                     </tr>
@@ -365,47 +364,5 @@ function NextStepCallout({ exposedCount }: { exposedCount: number }) {
         </Link>
       </span>
     </Callout>
-  );
-}
-
-/**
- * Cabeçalho que ordena a coluna: a seta ao lado do rótulo diz a direção
- * (dono, 2026-09-05), e `aria-sort` diz o mesmo a quem lê por leitor de tela.
- */
-function SortableHeader({
-  column,
-  label,
-  order,
-  onToggle,
-  align = "left",
-}: {
-  column: string;
-  label: string;
-  order: CoverageTableOrder;
-  onToggle: (column: string) => void;
-  align?: "left" | "center";
-}) {
-  const { t } = useI18n();
-  const direction = order.directionOf(column);
-  const Arrow = direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : ArrowUpDown;
-  return (
-    <th
-      scope="col"
-      aria-sort={direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none"}
-      className={cn("px-4 py-3", align === "center" && "text-center")}
-    >
-      <button
-        type="button"
-        onClick={() => onToggle(column)}
-        aria-label={t("table.sort.by", { coluna: label })}
-        className={cn(
-          "inline-flex items-center gap-1 uppercase tracking-wide hover:text-foreground",
-          direction !== null && "text-foreground",
-        )}
-      >
-        {label}
-        <Arrow aria-hidden="true" className={cn("size-3.5", direction === null && "opacity-50")} />
-      </button>
-    </th>
   );
 }
