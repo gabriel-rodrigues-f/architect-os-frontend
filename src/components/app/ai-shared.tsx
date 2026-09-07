@@ -277,16 +277,25 @@ export function AiSuggestionFrame({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * `narration` é o desenho da narração quando o assistente tem um próprio — a
+ * preparação do 1:1 a desenha por seção (liturgia → resumo → SWOT). Sem ele,
+ * o texto de IA é desenhado como em todo assistente. O resto do corpo (fatos,
+ * texto de gente, ausências, aviso, copiar) é o mesmo para todos, e é por
+ * isso que a variação é um parâmetro e não um segundo corpo.
+ */
 export function PersonAdviceBody({
   advice,
   transcriptHeadline,
   header,
   nextStep,
+  narration,
 }: {
   advice: PersonAdvice & { outline?: string[] };
   transcriptHeadline: string;
   header?: ReactNode;
   nextStep?: ReactNode;
+  narration?: (text: string) => ReactNode;
 }) {
   const { t } = useI18n();
   const outline = advice.outline ?? [];
@@ -300,7 +309,12 @@ export function PersonAdviceBody({
           ))}
         </ol>
       )}
-      {advice.narration !== null && <AdviceText text={advice.narration} />}
+      {advice.narration !== null &&
+        (narration === undefined ? (
+          <AdviceText text={advice.narration} />
+        ) : (
+          narration(advice.narration)
+        ))}
       {advice.narrationUnavailable !== null && (
         <p role="status" className="mt-2 text-sm text-muted-foreground">
           {advice.narrationUnavailable}
@@ -520,6 +534,64 @@ export function PersonAdviceSection<T extends PersonAdvice & { outline?: string[
             transcriptHeadline={transcriptHeadline}
             {...(beforeNarration === undefined ? {} : { header: beforeNarration(advice) })}
             {...(nextStep === undefined ? {} : { nextStep: nextStep(advice) })}
+          />
+        )}
+      </AiRunResult>
+    </SectionCard>
+  );
+}
+
+/**
+ * O assistente de uma pessoa COM PERFIL DE GERAÇÃO (item 16 do dono): o
+ * seletor Empírico | Moderado | Metodológico vem ANTES de gerar, Moderado por
+ * padrão, e o perfil escolhido viaja no pedido só quando alguém clica. Duas
+ * telas precisam exatamente disto — a preparação do 1:1 (Mentoria) e o
+ * roteiro de PDI (PDI) —, e é a regra de reuso que o tira de dentro de cada
+ * uma. `narration` é a única coisa que muda entre elas além do que se pede.
+ */
+export function ProfiledAdviceSection<T extends PersonAdvice & { outline?: string[] }>({
+  title,
+  description,
+  actionLabel,
+  transcriptHeadline,
+  queryKey,
+  ask,
+  className,
+  narration,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  transcriptHeadline: string;
+  queryKey: readonly unknown[];
+  ask: (profile: GenerationProfileName) => Promise<T>;
+  className?: string;
+  narration?: (text: string) => ReactNode;
+}) {
+  const [profile, setProfile] = useState<GenerationProfileName>(GenerationProfileChoice.DEFAULT);
+  const run = useAssistantRun<GenerationProfileName, T>(queryKey, (chosen) => ask(chosen));
+  return (
+    <SectionCard
+      title={title}
+      description={description}
+      {...(className === undefined ? {} : { className })}
+    >
+      <GenerationProfileField value={profile} onChange={setProfile} disabled={run.running} />
+      <div className="mt-3">
+        <AiGenerateButton
+          label={actionLabel}
+          running={run.running}
+          onGenerate={() => {
+            run.generate(profile);
+          }}
+        />
+      </div>
+      <AiRunResult run={run}>
+        {(advice) => (
+          <PersonAdviceBody
+            advice={advice}
+            transcriptHeadline={transcriptHeadline}
+            {...(narration === undefined ? {} : { narration })}
           />
         )}
       </AiRunResult>

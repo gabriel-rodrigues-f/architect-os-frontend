@@ -5,8 +5,6 @@ export const GENERATION_PROFILE_NAMES = ["empirical", "moderate", "methodical"] 
 
 export type GenerationProfileName = (typeof GENERATION_PROFILE_NAMES)[number];
 
-export type SessionAgenda = "one-on-one" | "development-plan";
-
 export const PERSON_DOSSIER_ABSENCES = [
   "seniority",
   "team",

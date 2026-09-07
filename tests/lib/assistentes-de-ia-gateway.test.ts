@@ -67,21 +67,30 @@ afterEach(() => {
 });
 
 describe("assistentes da pessoa — a URL de cada operação de negócio", () => {
-  it("preparar a 1:1 lê a rota da pessoa, sem querystring", async () => {
-    await pessoas().prepareOneOnOne("ana");
+  /**
+   * Dono, 2026-09-07: o roteiro de 1:1 se consolidou na preparação, e o
+   * perfil de geração e o selo de procedência passaram a viajar com ela.
+   */
+  it("preparar o 1:1 lê a rota da pessoa com o perfil de geração escolhido", async () => {
+    await preparaO1x1("methodical");
     expect(urlDaChamada().pathname).toBe("/api/v1/architects/ana/one-on-one-preparation");
-    expect(urlDaChamada().search).toBe("");
+    expect(urlDaChamada().searchParams.get("profile")).toBe("methodical");
+    expect(urlDaChamada().searchParams.has("agenda")).toBe(false);
   });
 
-  it("o roteiro leva a pauta e o perfil de geração escolhido", async () => {
+  it("a preparação chega com o perfil e o selo que permite salvar como sessão", async () => {
+    const lida = await preparaO1x1("moderate");
+    expect(lida.profile).toBe("moderate");
+    expect(lida.scriptProvenance).toBe("selo-opaco");
+  });
+
+  it("o roteiro de PDI leva só o perfil de geração — a pauta morreu com o roteiro de 1:1", async () => {
     fetchMock.mockResolvedValue(
-      jsonResponse({
-        data: { ...conselho, agenda: "development-plan", profile: "methodical", outline: ["A"] },
-      }),
+      jsonResponse({ data: { ...conselho, profile: "methodical", outline: ["A"] } }),
     );
-    await geraRoteiro("development-plan", "methodical");
+    await geraRoteiro("methodical");
     expect(urlDaChamada().pathname).toBe("/api/v1/architects/ana/session-script");
-    expect(urlDaChamada().searchParams.get("agenda")).toBe("development-plan");
+    expect(urlDaChamada().searchParams.has("agenda")).toBe(false);
     expect(urlDaChamada().searchParams.get("profile")).toBe("methodical");
   });
 
@@ -89,11 +98,9 @@ describe("assistentes da pessoa — a URL de cada operação de negócio", () =>
     expect(GenerationProfileChoice.DEFAULT).toBe("moderate");
     expect(GenerationProfileChoice.NAMES).toEqual(["empirical", "moderate", "methodical"]);
     fetchMock.mockResolvedValue(
-      jsonResponse({
-        data: { ...conselho, agenda: "one-on-one", profile: "moderate", outline: ["A"] },
-      }),
+      jsonResponse({ data: { ...conselho, profile: "moderate", outline: ["A"] } }),
     );
-    await geraRoteiro("one-on-one", GenerationProfileChoice.DEFAULT);
+    await geraRoteiro(GenerationProfileChoice.DEFAULT);
     expect(urlDaChamada().searchParams.get("profile")).toBe("moderate");
   });
 
@@ -214,7 +221,7 @@ describe("tempo-limite — a única rota da casa que pode demorar minutos", () =
         }),
     );
     const falha = await pessoas(5)
-      .prepareOneOnOne("ana")
+      .prepareOneOnOne({ architectId: "ana", profile: "moderate" })
       .catch((erro: unknown) => erro);
     expect(falha).toBeInstanceOf(AssistantTimedOutError);
   });
@@ -235,14 +242,21 @@ describe("tempo-limite — a única rota da casa que pode demorar minutos", () =
   });
 
   it("a resposta que chega a tempo não é confundida com tempo esgotado", async () => {
-    const lido = await pessoas(5_000).prepareOneOnOne("ana");
+    const lido = await preparaO1x1("moderate", 5_000);
     expect(lido.notice).toBe("Isto é uma sugestão.");
   });
 });
 
-async function geraRoteiro(
-  agenda: "one-on-one" | "development-plan",
+async function geraRoteiro(profile: "empirical" | "moderate" | "methodical"): Promise<void> {
+  await pessoas().writeSessionScript({ architectId: "ana", profile });
+}
+
+async function preparaO1x1(
   profile: "empirical" | "moderate" | "methodical",
-): Promise<void> {
-  await pessoas().writeSessionScript({ architectId: "ana", agenda, profile });
+  timeoutMs?: number,
+): ReturnType<HttpPersonAssistantsGateway["prepareOneOnOne"]> {
+  fetchMock.mockResolvedValue(
+    jsonResponse({ data: { ...conselho, profile, scriptProvenance: "selo-opaco" } }),
+  );
+  return pessoas(timeoutMs).prepareOneOnOne({ architectId: "ana", profile });
 }

@@ -111,7 +111,12 @@ const prontidao = {
   },
 };
 
-const preparacao = { ...conselhoBase, narration: "Comece pelo item de PDI mais antigo." };
+const preparacao = {
+  ...conselhoBase,
+  narration: "Comece pelo item de PDI mais antigo.",
+  profile: "moderate",
+  scriptProvenance: "selo-opaco",
+};
 
 const rotaDeIa =
   (sufixo: string, responder: () => Response): FetchRoute =>
@@ -142,7 +147,7 @@ describe("copiloto de 1:1 — onde a conversa acontece", () => {
     montaMentoria([rotaDeIa("one-on-one-preparation", () => jsonResponse(preparacao))]);
     const usuario = userEvent.setup();
 
-    await usuario.click(await screen.findByRole("button", { name: /Preparar a 1:1/ }));
+    await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
 
     await waitFor(() => expect(chamadasA("one-on-one-preparation")).toBe(1));
     const url = new URL(
@@ -168,7 +173,7 @@ describe("copiloto de 1:1 — onde a conversa acontece", () => {
     ]);
     const usuario = userEvent.setup();
 
-    await usuario.click(await screen.findByRole("button", { name: /Preparar a 1:1/ }));
+    await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
 
     expect(await screen.findByText("Leitura indisponível")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Tentar novamente/ })).toBeTruthy();

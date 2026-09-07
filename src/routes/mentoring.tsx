@@ -4,10 +4,10 @@ import {
   MenteeFilterCombobox,
   MentoringTimeline,
   NewMentoringSessionDialog,
+  OneOnOnePreparationNarration,
   PageHeader,
-  PersonAdviceSection,
+  ProfiledAdviceSection,
   SectionCard,
-  SessionScriptAssistant,
   useMentoringTimeline,
 } from "@/components/app";
 import { personAssistantsApi } from "@/lib/api";
@@ -85,24 +85,23 @@ function MentoringScreen() {
         }
       />
 
+      {/*
+        Um cartão só de IA (dono, 2026-09-07): o roteiro de 1:1 se consolidou
+        na preparação, que responde na ordem liturgia → resumo do perfil →
+        SWOT, com o perfil de geração que o roteiro tinha.
+      */}
       {canPrepare && (
-        <PersonAdviceSection
+        <ProfiledAdviceSection
           className="mb-6"
           title={t("ai.oneOnOne.title")}
           description={t("ai.oneOnOne.subtitle", { nome: mentee.name })}
           actionLabel={t("ai.oneOnOne.action")}
           transcriptHeadline={t("ai.oneOnOne.title")}
           queryKey={["assistants", "one-on-one-preparation", mentee.id]}
-          ask={() => personAssistantsApi.prepareOneOnOne(mentee.id)}
-        />
-      )}
-
-      {canPrepare && (
-        <SessionScriptAssistant
-          className="mb-6"
-          agenda="one-on-one"
-          architectId={mentee.id}
-          personName={mentee.name}
+          ask={(profile) =>
+            personAssistantsApi.prepareOneOnOne({ architectId: mentee.id, profile })
+          }
+          narration={(text) => <OneOnOnePreparationNarration text={text} />}
         />
       )}
 

@@ -247,11 +247,25 @@ const personAdvice = z.object({
   narrationUnavailable: z.string().nullable(),
 });
 
-export const personAdviceResponseSchema = personAdvice;
+const generationProfile = z.union([
+  z.literal("empirical"),
+  z.literal("moderate"),
+  z.literal("methodical"),
+]);
 
+/**
+ * Dono, 2026-09-07: o roteiro de 1:1 se consolidou na preparação do 1:1, e o
+ * que ele tinha — o perfil com que foi gerado e o selo de procedência que
+ * permite salvar como sessão — passou a vir daqui.
+ */
+export const oneOnOnePreparationResponseSchema = personAdvice.extend({
+  profile: generationProfile,
+  scriptProvenance: z.string(),
+});
+
+/** Só o roteiro de PDI sobrou: sem pauta, sem selo. */
 export const sessionScriptAdviceResponseSchema = personAdvice.extend({
-  agenda: z.union([z.literal("one-on-one"), z.literal("development-plan")]),
-  profile: z.union([z.literal("empirical"), z.literal("moderate"), z.literal("methodical")]),
+  profile: generationProfile,
   outline: z.array(z.string()),
 });
 

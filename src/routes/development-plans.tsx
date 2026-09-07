@@ -213,11 +213,7 @@ function PlansScreen() {
           </SectionCard>
 
           {isLeadOfArchitect && architect && (
-            <SessionScriptAssistant
-              agenda="development-plan"
-              architectId={architect.id}
-              personName={architect.name}
-            />
+            <SessionScriptAssistant architectId={architect.id} personName={architect.name} />
           )}
 
           <SectionCard

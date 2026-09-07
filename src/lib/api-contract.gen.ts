@@ -4416,7 +4416,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    profile?: "empirical" | "moderate" | "methodical";
+                };
                 header?: never;
                 path: {
                     architectId: string;
@@ -4523,8 +4525,7 @@ export interface paths {
         };
         get: {
             parameters: {
-                query: {
-                    agenda: "one-on-one" | "development-plan";
+                query?: {
                     profile?: "empirical" | "moderate" | "methodical";
                 };
                 header?: never;

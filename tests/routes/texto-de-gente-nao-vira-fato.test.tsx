@@ -85,7 +85,7 @@ const ROTULO_DAS_DECISOES = "Decisões da última 1:1, escritas por quem conduzi
  * determinístico — os fatos apurados e o texto de quem conduziu a conversa.
  */
 const preparacao = {
-  subject: "preparação da conversa de 1:1 com esta pessoa",
+  subject: "preparação do 1:1 com Ana Martins",
   suggestion: true,
   notice:
     "Isto é uma sugestão gerada por inteligência artificial a partir do que o sistema calculou. Nada foi gravado: quem decide é você.",
@@ -97,6 +97,8 @@ const preparacao = {
   absences: [],
   narration: null as string | null,
   narrationUnavailable: "A sugestão em linguagem natural está indisponível no momento.",
+  profile: "moderate",
+  scriptProvenance: "selo-opaco",
 };
 
 const rotaDaPreparacao =
@@ -104,12 +106,12 @@ const rotaDaPreparacao =
   (href) =>
     href.includes("one-on-one-preparation") ? jsonResponse(corpo) : undefined;
 
-/** Clica em "Preparar a 1:1" e espera a resposta chegar à tela. */
+/** Clica em "Preparar o 1:1" e espera a resposta chegar à tela. */
 async function preparaA1x1(corpo: unknown): Promise<ReturnType<typeof userEvent.setup>> {
   mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, routes: [rotaDaPreparacao(corpo)] });
   renderWithApp(<MentoringPage />);
   const usuario = userEvent.setup();
-  await usuario.click(await screen.findByRole("button", { name: /Preparar a 1:1/ }));
+  await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
   await screen.findByText(FATO);
   return usuario;
 }
