@@ -547,7 +547,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <span
           data-nav-label
           className={cn(
-            "overflow-hidden whitespace-nowrap transition-all duration-300",
+            "overflow-hidden whitespace-nowrap transition-slow",
             collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
           )}
         >
@@ -598,7 +598,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           className={cn(
             "sticky top-0 hidden h-screen shrink-0 flex-col bg-sidebar text-sidebar-foreground lg:flex",
 
-            resizing ? "" : "transition-[width] duration-300 ease-in-out",
+            resizing ? "" : "transition-[width] duration-(--motion-slow) ease-standard",
           )}
         >
           {!collapsed && (
@@ -628,7 +628,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className={cn("relative shrink-0 overflow-hidden", BRAND_HEADER_HEIGHT)}>
             <div
               className={cn(
-                "flex justify-end pt-5 transition-[padding] duration-300",
+                "flex justify-end pt-5 transition-[padding] duration-(--motion-slow) ease-standard",
                 reducedMotion && "transition-none",
                 collapsed ? "px-[18px]" : "px-3.5",
               )}
@@ -654,7 +654,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p
               className={cn(
                 "absolute whitespace-nowrap font-display font-semibold leading-none",
-                "transition-all duration-300 ease-in-out",
+                "transition-slow",
                 reducedMotion && "transition-none",
                 collapsed
                   ? "left-1/2 top-[52px] -translate-x-1/2 text-[10px]"
@@ -666,7 +666,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p
               className={cn(
                 "absolute left-5 top-[42px] whitespace-nowrap text-[length:var(--text-meta)] text-sidebar-foreground/60",
-                "transition-opacity duration-300",
+                "transition-opacity duration-(--motion-slow) ease-standard",
                 reducedMotion && "transition-none",
                 collapsed ? "pointer-events-none opacity-0" : "opacity-100",
               )}
@@ -857,7 +857,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       title={item.hintKey ? t(item.hintKey) : undefined}
                       onClick={() => setMobileNavOpen(false)}
                       {...outOfReachProps(hidden)}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-base hover:bg-secondary/60 hover:text-foreground"
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
                       {t(item.labelKey)}
@@ -869,7 +869,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       onClick={() => setMobileNavOpen(false)}
                       {...outOfReachProps(hidden)}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                        "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-base",
                         isNavItemActive(item, pathname, navItems)
                           ? "bg-secondary font-medium text-foreground"
                           : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
@@ -953,7 +953,7 @@ function NavGroupSection({
         <span>{groupLabel}</span>
         <ChevronDown
           className={cn(
-            "h-3 w-3 shrink-0 transition-transform duration-200",
+            "h-3 w-3 shrink-0 transition-transform duration-(--motion-base) ease-standard",
             reducedMotion && "transition-none",
             !isGroupCollapsed && "rotate-180",
           )}
@@ -966,7 +966,7 @@ function NavGroupSection({
             <div
               key={item.to}
               className={cn(
-                "grid transition-[grid-template-rows] duration-200 ease-out",
+                "grid transition-[grid-template-rows] duration-(--motion-base) ease-standard",
                 reducedMotion && "transition-none",
               )}
               style={{ gridTemplateRows: hidden ? "0fr" : "1fr" }}

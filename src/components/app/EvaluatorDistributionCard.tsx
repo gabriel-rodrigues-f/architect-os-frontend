@@ -1,4 +1,5 @@
 import { LevelDistribution } from "@/components/app/charts";
+import { SectionHeading } from "@/components/app/SectionHeading";
 import { Callout, Initials, NameList } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import type { EvaluatorCalibrationView, ScoreLevelRow } from "@/lib/view-models";
@@ -24,9 +25,9 @@ export function EvaluatorDistributionCard({
           </div>
         </div>
         <div className="text-right">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <SectionHeading as="p" muted>
             {t("calibration.card.average")}
-          </p>
+          </SectionHeading>
           <p className="font-display text-xl font-semibold tabular-nums">
             {view.average === null ? "—" : view.average.toFixed(2)}
           </p>

@@ -5,6 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { isLeadCapable } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { SectionHeading } from "@/components/app/SectionHeading";
+import { SentenceBlock } from "@/components/app/SentenceBlock";
 
 export interface PageHelpContent {
   title: string;
@@ -22,7 +24,7 @@ export function HelpTrigger({
       type="button"
       aria-label={label}
       aria-haspopup="dialog"
-      className="grid h-6 w-6 shrink-0 place-content-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      className="grid h-6 w-6 shrink-0 place-content-center rounded-full text-muted-foreground transition-base hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       {...rest}
     >
       <HelpCircle className="h-4 w-4" />
@@ -33,8 +35,12 @@ export function HelpTrigger({
 export function HelpField({ label, text }: { label: string; text: string }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-0.5">{text}</p>
+      <SectionHeading as="p" muted>
+        {label}
+      </SectionHeading>
+      <p className="mt-0.5">
+        <SentenceBlock text={text} />
+      </p>
     </div>
   );
 }

@@ -430,7 +430,7 @@ function MemberHome() {
           <ul className="space-y-2">
             {paths.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3">
-                <Link to="/learning-paths" className="truncate text-sm hover:text-primary">
+                <Link to="/learning-paths" className="truncate text-sm hover:underline">
                   {p.name}
                 </Link>
               </li>
@@ -510,11 +510,11 @@ function LeadHome() {
           <SectionCard title={t("dash.lead.awaitingCalibration")}>
             <ul className="space-y-2">
               {awaitingCalibration.map(({ architect }) => (
-                <li key={architect.id}>
+                <li key={architect.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
                   <Link
                     to="/assessments"
                     search={{ architectId: architect.id }}
-                    className="text-sm hover:text-primary hover:underline"
+                    className="text-sm hover:underline"
                   >
                     {architect.name}
                   </Link>
@@ -529,11 +529,11 @@ function LeadHome() {
           <SectionCard title={t("dash.lead.pendingEvidence")}>
             <ul className="space-y-2">
               {pendingEvidence.map((e) => (
-                <li key={e.id}>
+                <li key={e.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
                   <Link
                     to="/architects/$architectId"
                     params={{ architectId: e.architectId }}
-                    className="text-sm hover:text-primary hover:underline"
+                    className="text-sm hover:underline"
                   >
                     {sel.architectById(e.architectId)?.name} — {e.title}
                   </Link>
@@ -551,11 +551,11 @@ function LeadHome() {
           <SectionCard title={t("dash.lead.awaitingApproval")}>
             <ul className="space-y-2">
               {awaitingApproval.map(({ architect }) => (
-                <li key={architect.id}>
+                <li key={architect.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
                   <Link
                     to="/development-plans"
                     search={{ architectId: architect.id }}
-                    className="text-sm hover:text-primary hover:underline"
+                    className="text-sm hover:underline"
                   >
                     {architect.name}
                   </Link>

@@ -87,6 +87,24 @@
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
+
+  /*
+    Movimento (referência FIAP 2026-09-06, §2 item 6): três durações e uma
+    curva para todo controle. Quem anima lê o token; ninguém escreve número.
+    Com `prefers-reduced-motion`, as três vão a zero — a preferência é
+    respeitada por quem respeita o token, sem `if` em componente.
+  */
+  --motion-fast: 150ms;
+  --motion-base: 250ms;
+  --motion-slow: 350ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /*
+    Hover em superfície com ação (§2 item 10): um nível de brilho e uma
+    elevação discreta. Dois tokens, uma utility (`surface-interactive`).
+  */
+  --surface-hover: color-mix(in oklch, var(--card) 94%, var(--foreground));
+  --elevation-hover: 0 4px 12px -6px oklch(0 0 0 / 22%);
   --background: oklch(0.985 0.004 240);
   --foreground: oklch(0.22 0.03 250);
   --card: oklch(1 0 0);
@@ -234,6 +252,8 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --surface-hover: color-mix(in oklch, var(--card) 92%, var(--foreground));
+  --elevation-hover: 0 4px 14px -6px oklch(0 0 0 / 55%);
 
   /*
     Vocabulário visual do produto — escala de proficiência e severidade de
@@ -283,6 +303,25 @@
   --quadrant-3: oklch(0.165 0.032 110);
   --quadrant-4: oklch(0.165 0.041 165);
   --quadrant-5: oklch(0.165 0.05 195);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
+
+/*
+  O `transition-colors` solto do Tailwind passa a durar `--motion-fast` com a
+  curva da casa: as 40+ ocorrências existentes viram coerentes sem tocar em
+  cada uma. `ease-standard` fica disponível para quem compõe transição própria.
+*/
+@theme inline {
+  --default-transition-duration: var(--motion-fast);
+  --default-transition-timing-function: var(--motion-ease);
+  --ease-standard: var(--motion-ease);
 }
 
 @layer base {
@@ -373,6 +412,50 @@
   border-radius: var(--radius-lg);
 }
 
+/*
+  Transição de controle. `base` é a de botão, item de menu, chip, aba e linha
+  com ação; `fast` é a de cor em texto e ícone; `slow` é a de painel que abre
+  ou muda de largura. Propriedades fixas de propósito: `all` anima layout.
+*/
+@utility transition-fast {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--motion-ease);
+}
+
+@utility transition-base {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--motion-ease);
+}
+
+@utility transition-slow {
+  transition-property:
+    color, background-color, border-color, opacity, box-shadow, transform, width, padding,
+    grid-template-rows;
+  transition-duration: var(--motion-slow);
+  transition-timing-function: var(--motion-ease);
+}
+
+/*
+  Superfície com ação — cartão do Painel e do Time, linha de tabela que abre
+  algo. No ponteiro: um nível de brilho e uma elevação discreta. A linha de
+  tabela só recebe o brilho (sombra e transform não valem em `table-row`), e
+  é assim mesmo: o mesmo sinal, na intensidade que a superfície aguenta.
+*/
+@utility surface-interactive {
+  transition-property: background-color, box-shadow, transform;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--motion-ease);
+  &:hover {
+    background-color: var(--surface-hover);
+    box-shadow: var(--elevation-hover);
+  }
+  &:focus-within {
+    background-color: var(--surface-hover);
+  }
+}
+
 @utility page-title {
   font-family: var(--font-display);
   font-size: var(--text-page);
@@ -402,6 +485,22 @@
   font-size: var(--text-section);
   font-weight: var(--weight-semibold);
   letter-spacing: -0.01em;
+}
+
+/*
+  Título de cartão e de seção (referência FIAP 2026-09-06, §2 item 5): caixa
+  alta com tracking, peso médio, sem negrito pesado. A hierarquia vem da caixa
+  e do espaçamento — o `section-title` (18px, semibold) fica para o título de
+  grupo de página, um degrau acima. Componente: `SectionHeading`.
+*/
+@utility section-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-table);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  color: var(--color-foreground);
 }
 
 /* Rótulo de KPI e de grupo: pequeno, espaçado, discreto. */
@@ -454,8 +553,8 @@
 
 @utility auth-field {
   transition:
-    border-color 150ms ease,
-    box-shadow 150ms ease;
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
   &:hover:not(:disabled) {
     border-color: color-mix(in oklch, var(--color-foreground) 35%, transparent);
   }
@@ -470,9 +569,9 @@
 
 @utility auth-cta {
   transition:
-    background-color 150ms ease,
-    transform 100ms ease,
-    box-shadow 150ms ease;
+    background-color var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
   &:hover:not(:disabled) {
     box-shadow: 0 8px 24px -12px var(--color-primary);
   }
@@ -521,7 +620,7 @@
 
 @utility auth-rise {
   @media (prefers-reduced-motion: no-preference) {
-    animation: auth-rise 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    animation-delay: var(--auth-delay, 0ms);
+    animation: auth-rise var(--motion-slow) cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--auth-delay, 0s);
   }
 }

@@ -205,7 +205,7 @@ export function SynapseBackground({
       aria-hidden="true"
       data-testid="synapse-network"
       data-motion={motion}
-      className="pointer-events-none absolute inset-0 h-full w-full motion-safe:animate-[auth-fade_600ms_ease-out_both]"
+      className="pointer-events-none absolute inset-0 h-full w-full motion-safe:animate-[auth-fade_var(--motion-slow)_ease-out_both]"
     />
   );
 }

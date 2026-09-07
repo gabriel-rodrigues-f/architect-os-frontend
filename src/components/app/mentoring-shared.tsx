@@ -2,7 +2,7 @@ import { AlertCircle, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PersonCombobox } from "@/components/app/PersonCombobox";
-import { FieldLabel, Initials } from "@/components/app/ui-bits";
+import { FieldLabel, Initials, SectionHeading } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -282,7 +282,9 @@ function FollowUpScheduler({ session }: { session: MentoringSession }) {
 function Block({ title, text }: { title: string; text: string }) {
   return (
     <div className="surface-inset p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      <SectionHeading as="p" muted>
+        {title}
+      </SectionHeading>
       <p className="mt-1 text-sm">{text || "—"}</p>
     </div>
   );

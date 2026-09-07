@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AiExplanation } from "@/components/app/AiExplanation";
 import { DataOriginCallout } from "@/components/app/DataOriginCallout";
 import { QuerySection } from "@/components/app/QuerySection";
-import { EmptyState, SectionCard, StatCard } from "@/components/app/ui-bits";
+import { EmptyState, SectionCard, SectionHeading, StatCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { analyticsApi } from "@/lib/api";
 import type {
@@ -127,7 +127,9 @@ function GapCycleTotalCard({ label, total }: { label: string; total: GapCycleTot
   const { t } = useI18n();
   return (
     <div className="rounded-lg border border-border p-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <SectionHeading as="p" muted>
+        {label}
+      </SectionHeading>
       <p className="mt-1 font-display text-base font-semibold">{total.cycleName}</p>
       <p className="mt-1 text-sm text-muted-foreground">
         {t("gapClosure.cycle.total", { steps: total.totalGap, pairs: total.pairCount })}

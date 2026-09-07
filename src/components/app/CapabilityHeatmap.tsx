@@ -117,7 +117,7 @@ export function CapabilityHeatmap({
                       <Link
                         to="/architects/$architectId"
                         params={{ architectId: a.id }}
-                        className="hover:text-primary"
+                        className="hover:underline"
                       >
                         {a.name}
                       </Link>

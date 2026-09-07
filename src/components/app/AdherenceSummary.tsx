@@ -1,3 +1,4 @@
+import { SectionHeading } from "@/components/app/SectionHeading";
 import { Bar } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,9 @@ export function AdherenceSummary({
         : t("adherence.missing.many", { n: missingCount });
   return (
     <div className={cn("surface-card p-4", className)}>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <SectionHeading as="p" muted>
+        {label}
+      </SectionHeading>
       <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums">
         {Math.round(percentage)}%
       </p>

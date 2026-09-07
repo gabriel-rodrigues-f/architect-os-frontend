@@ -5,7 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
-import { GapBadge, Initials, LevelBadge, StatusBadge } from "@/components/app/ui-bits";
+import {
+  GapBadge,
+  Initials,
+  LevelBadge,
+  SectionHeading,
+  StatusBadge,
+} from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -516,14 +522,14 @@ export function TeamRosterView({
   return view === "cards" ? (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => (
-        <div key={a.id} className="surface-card p-5">
+        <div key={a.id} className="surface-card surface-interactive p-5">
           <div className="flex items-start gap-3">
             <Initials name={a.name} />
             <div className="min-w-0 flex-1">
               <Link
                 to="/architects/$architectId"
                 params={{ architectId: a.id }}
-                className="font-display text-base font-semibold hover:text-primary"
+                className="font-display text-base font-semibold hover:underline"
               >
                 {a.name}
               </Link>
@@ -568,9 +574,9 @@ export function TeamRosterView({
           </div>
 
           <div className="mt-4 space-y-1.5">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <SectionHeading as="p" muted>
               {t("team.card.topGaps")}
-            </p>
+            </SectionHeading>
             {top.map((g) => (
               <div
                 key={g.item.competencyId}
@@ -628,12 +634,15 @@ export function TeamRosterView({
         <tbody>
           {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => {
             return (
-              <tr key={a.id} className="border-b border-border/60 last:border-0">
+              <tr
+                key={a.id}
+                className="surface-interactive border-b border-border/60 last:border-0"
+              >
                 <td className="max-w-[220px] px-4 py-3">
                   <Link
                     to="/architects/$architectId"
                     params={{ architectId: a.id }}
-                    className="block truncate font-medium hover:text-primary"
+                    className="block truncate font-medium hover:underline"
                     title={a.name}
                   >
                     {a.name}
@@ -668,7 +677,7 @@ export function TeamRosterView({
                       className={cn(
                         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
                         a.active
-                          ? "bg-primary/10 text-primary"
+                          ? "bg-success text-success-fg"
                           : "bg-secondary text-muted-foreground",
                       )}
                     >

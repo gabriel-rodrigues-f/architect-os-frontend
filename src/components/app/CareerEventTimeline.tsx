@@ -27,8 +27,8 @@ const KIND_LABEL_KEY: Record<StatementEntryKind, MessageKey> = {
 class CareerEventChips {
   static byKind(): Record<StatementEntryKind, string> {
     return {
-      transition: "bg-primary/10 text-primary",
-      teamTransition: "bg-primary/10 text-primary",
+      transition: "bg-status-done text-[var(--status-done-fg)]",
+      teamTransition: "bg-status-done text-[var(--status-done-fg)]",
       competencyStep: semanticTone.success,
       evidence: "bg-secondary text-secondary-foreground",
       pdi: semanticTone.warning,

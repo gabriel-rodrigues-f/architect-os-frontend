@@ -13,10 +13,14 @@ import { useLabels } from "@/lib/labels";
 import { useSeniorityReading } from "@/lib/seniority";
 import { defaultSectionVisibilityMemory } from "@/lib/section-visibility";
 import { defaultNameFormatter } from "@/lib/text";
+import { SectionHeading } from "@/components/app/SectionHeading";
+import { SentenceBlock } from "@/components/app/SentenceBlock";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+export { SectionHeading };
 
 const levelBg: Record<number, string> = {
   0: "bg-level-0 text-muted-foreground",
@@ -195,7 +199,7 @@ export class StatTones {
 }
 
 const statTone: Record<StatTone, { card: string; value: string; icon: string }> = {
-  neutral: { card: "", value: "", icon: "bg-secondary text-primary" },
+  neutral: { card: "", value: "", icon: "bg-secondary text-muted-foreground" },
   attention: {
     card: "border-l-4 border-l-[var(--warning-fg)]",
     value: "text-[var(--warning-fg)]",
@@ -234,9 +238,9 @@ export function StatCard({
     <div className={cn("surface-card p-4", styles.card)} data-tone={tone}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <SectionHeading as="p" muted>
             {label}
-          </p>
+          </SectionHeading>
           <p
             className={cn("mt-1.5 font-display text-2xl font-semibold tabular-nums", styles.value)}
           >
@@ -259,7 +263,7 @@ export function Bar({ value, className }: { value: number; className?: string })
   return (
     <div className={cn("h-2 w-full overflow-hidden rounded-full bg-secondary", className)}>
       <div
-        className="h-full rounded-full bg-primary transition-all"
+        className="h-full rounded-full bg-primary transition-[width] duration-(--motion-base) ease-standard"
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       />
     </div>
@@ -360,7 +364,7 @@ export function ProfileTabs({
   const statementTab = defaultUiAuthorizationPolicy.canOpenStatementOf(user, architect);
   const tabClass = (isActive: boolean) =>
     cn(
-      "border-b-2 px-1 pb-2 text-sm font-medium transition-colors",
+      "border-b-2 px-1 pb-2 text-sm font-medium transition-base",
       isActive
         ? "border-primary text-foreground"
         : "border-transparent text-muted-foreground hover:text-foreground",
@@ -520,9 +524,9 @@ export function SectionCard({
   const { open, toggle } = useSectionVisibility(storageKey, defaultOpen);
   const shown = !collapsible || open;
   const heading = (
-    <Heading id={titleId} className="font-display text-base font-semibold">
+    <SectionHeading as={Heading} id={titleId}>
       {title}
-    </Heading>
+    </SectionHeading>
   );
   return (
     <section id={id} aria-labelledby={titleId} className={cn("surface-card p-5", className)}>
@@ -567,7 +571,9 @@ export function EmptyState({
     <div className="surface-card p-8 text-center">
       {title !== undefined && <p className="text-sm font-medium">{title}</p>}
       {hint !== undefined && (
-        <p className={cn("text-sm text-muted-foreground", title !== undefined && "mt-1")}>{hint}</p>
+        <p className={cn("text-sm text-muted-foreground", title !== undefined && "mt-1")}>
+          {typeof hint === "string" ? <SentenceBlock text={hint} /> : hint}
+        </p>
       )}
       {action}
     </div>
@@ -596,7 +602,7 @@ export function FieldLabel({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-fast hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t("field.hint", { campo: String(children) })}
             >
               <Info className="h-3.5 w-3.5" />

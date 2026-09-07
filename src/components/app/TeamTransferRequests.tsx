@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
 import { NOTICES_QUERY_KEY } from "@/components/app/NoticeBell";
-import { SectionCard } from "@/components/app/ui-bits";
+import { SectionCard, SectionHeading } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { usePendingTeamTransfers, useSuccessToast, useToastSubmit } from "@/hooks";
 import { teamTransfersApi } from "@/lib/api";
@@ -136,9 +136,9 @@ function TeamTransferRequestList({
   const { t, locale } = useI18n();
   return (
     <div>
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <SectionHeading as="p" muted className="mb-2">
         {heading}
-      </p>
+      </SectionHeading>
       <ul aria-label={heading} className="divide-y divide-border rounded-md border border-border">
         {requests.map((request) => (
           <li key={request.id} className="flex flex-wrap items-start justify-between gap-3 p-3">

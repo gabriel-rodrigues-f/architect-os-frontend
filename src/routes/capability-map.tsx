@@ -8,6 +8,7 @@ import {
   OutOfReachScreen,
   PageHeader,
   SectionCard,
+  SectionHeading,
   SortableHeader,
   useCardsAndTableViews,
   ViewToggle,
@@ -170,7 +171,7 @@ function TeamCapabilityCoverage() {
                             <UnassessedDisclosure
                               capability={area.cat}
                               people={area.unassessed}
-                              className="font-medium underline decoration-dotted underline-offset-2 hover:text-primary"
+                              className="font-medium underline decoration-dotted underline-offset-2 hover:text-foreground"
                             >
                               {area.notAssessed}
                             </UnassessedDisclosure>
@@ -211,7 +212,7 @@ function TeamCapabilityCoverage() {
                         <UnassessedDisclosure
                           capability={area.cat}
                           people={area.unassessed}
-                          className="text-left underline decoration-dotted underline-offset-2 hover:text-primary"
+                          className="text-left underline decoration-dotted underline-offset-2 hover:text-foreground"
                         >
                           {t("cap.notAssessed", { n: area.notAssessed })}
                         </UnassessedDisclosure>
@@ -255,9 +256,9 @@ function Group({
   return (
     <div className="surface-inset p-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <SectionHeading as="p" muted>
           {label}
-        </p>
+        </SectionHeading>
         <span className={`rounded-md px-1.5 text-xs font-semibold tabular-nums ${tone}`}>
           {people.length}
         </span>
@@ -304,7 +305,7 @@ function UnassessedDisclosure({
                 to="/assessments"
                 search={{ architectId: architect.id }}
                 title={t("cap.notAssessed.openAssessment", { nome: architect.name })}
-                className="text-foreground underline-offset-2 hover:text-primary hover:underline"
+                className="text-foreground underline-offset-2 hover:underline"
               >
                 {architect.name}
               </Link>
@@ -339,7 +340,7 @@ function ProfileLinkList({
           <Link
             to="/architects/$architectId"
             params={{ architectId: architect.id }}
-            className="underline-offset-2 hover:text-primary hover:underline"
+            className="underline-offset-2 hover:underline"
           >
             {architect.name}
           </Link>
