@@ -87,10 +87,10 @@ describe("Login — a composição: container central e grid de duas colunas", (
     expect(rede.parentElement?.contains(palco)).toBe(true);
   });
 
-  it("o container tem max-width 1320, margem automática e respiro lateral por clamp", () => {
+  it("o container tem max-width 1188 (10% mais ao centro, dono 2026-09-07), margem automática e respiro lateral por clamp", () => {
     const bloco = Bloco.de("@utility auth-stage");
     expect(bloco.existe).toBe(true);
-    expect(bloco.declara("max-width", "1320px")).toBe(true);
+    expect(bloco.declara("max-width", "1188px")).toBe(true);
     expect(bloco.declara("margin-inline", "auto")).toBe(true);
     expect(bloco.declara("width", "calc(100% - clamp(64px, 10vw, 96px))")).toBe(true);
   });
@@ -104,7 +104,7 @@ describe("Login — a composição: container central e grid de duas colunas", (
     expect(bloco.declara("grid-template-columns", "minmax(0, 1.1fr) minmax(400px, 0.9fr)")).toBe(
       true,
     );
-    expect(bloco.declara("gap", "clamp(64px, 7vw, 120px)")).toBe(true);
+    expect(bloco.declara("gap", "clamp(58px, 6.3vw, 108px)")).toBe(true);
     expect(bloco.declara("align-items", "center")).toBe(true);
     expect(bloco.contem("space-between")).toBe(false);
   });
