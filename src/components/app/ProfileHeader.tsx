@@ -18,13 +18,18 @@ import { ProfileTabs } from "./ui-bits";
  * `StablePageFrame` — a regra "mudança de menu nunca desloca a tela" vale
  * também para o que fica fixo. As margens negativas cobrem o respiro do
  * frame para que o conteúdo não apareça por trás ao rolar.
+ *
+ * Em MODO DE SUPORTE (PR 6) as abas não existem — o passe abre só a ficha
+ * funcional — e o bloco vem sem elas (`tabs={false}`), sem ler o store.
  */
 export function ProfileHeader({
   architect,
   active,
+  tabs = true,
 }: {
   architect: Pick<Architect, "id" | "active">;
   active: Parameters<typeof ProfileTabs>[0]["active"];
+  tabs?: boolean;
 }) {
   const mountHeading = useHeadingSlotMount();
   return (
@@ -37,7 +42,7 @@ export function ProfileHeader({
     >
       <div ref={mountHeading} data-heading-slot />
       <DeactivatedPersonNotice active={architect.active} />
-      <ProfileTabs architectId={architect.id} active={active} />
+      {tabs && <ProfileTabs architectId={architect.id} active={active} />}
     </div>
   );
 }

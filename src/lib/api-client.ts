@@ -11,7 +11,6 @@ import type {
   TeamLevelRule,
 } from "./domain";
 import { ApiError } from "./api-errors";
-import { SupportAccess } from "./support-access";
 import { ApiFailureReading } from "./api-failure-reading";
 import { apiPath, isApiUrl } from "./api-path";
 
@@ -40,6 +39,13 @@ const NETWORK_UNAVAILABLE_STATUS = ApiFailureReading.SEM_RESPOSTA_STATUS;
 export const NETWORK_UNAVAILABLE_CODE = "NETWORK_UNAVAILABLE";
 
 export type ApiFailureInterceptor = (error: ApiError) => void;
+
+/**
+ * Os cabeçalhos que UMA requisição leva além dos seus — decididos pelo
+ * recurso, requisição a requisição ([FA-07]: o passe de suporte só vai nas
+ * requisições sobre a pessoa do passe, nunca em toda requisição da aba).
+ */
+export type HeaderProvider = (resource: string) => Record<string, string>;
 
 export interface ApiErrorBody {
   message?: string;
@@ -97,6 +103,7 @@ export class ApiClient {
   constructor(
     private readonly baseUrl: string = API_URL,
     private readonly interceptFailure: ApiFailureInterceptor = () => {},
+    private readonly headersFor: HeaderProvider = () => ({}),
   ) {}
 
   urlOf(resource: string): string {
@@ -124,7 +131,7 @@ export class ApiClient {
   async request<T>(resource: string, init?: RequestInit): Promise<T> {
     const headers: Record<string, string> = {
       ...(init?.body === undefined ? {} : { "content-type": "application/json" }),
-      ...SupportAccess.headers(),
+      ...this.headersFor(resource),
       ...((init?.headers as Record<string, string> | undefined) ?? {}),
     };
 

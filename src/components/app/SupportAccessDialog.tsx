@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useContainer } from "@/lib/dependencies";
 import { useI18n } from "@/lib/i18n";
 import { SupportAccess } from "@/lib/support-access";
 
@@ -10,6 +11,7 @@ import { SupportAccess } from "@/lib/support-access";
  * O MODO DE SUPORTE (revisão de papéis, 2026-09-05, D1): o administrador não
  * abre a ficha de alguém sem dizer por quê. O motivo vai em cada requisição,
  * fica no audit_log e o time é avisado — é o preço declarado do passe.
+ * PR 6: o passe vale 15 minutos e vive na instância do container ([FA-07]).
  */
 export function SupportAccessDialog({
   architectId,
@@ -23,6 +25,7 @@ export function SupportAccessDialog({
   onCancel: () => void;
 }) {
   const { t } = useI18n();
+  const { supportAccess } = useContainer();
   const [reason, setReason] = useState("");
   const longEnough = reason.trim().length >= SupportAccess.MIN_REASON_LENGTH;
 
@@ -42,7 +45,7 @@ export function SupportAccessDialog({
         className="mt-4 space-y-3"
         onSubmit={(event) => {
           event.preventDefault();
-          if (SupportAccess.grant(architectId, reason)) onGranted();
+          if (supportAccess.grant(architectId, reason)) onGranted();
         }}
       >
         <div>

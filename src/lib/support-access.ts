@@ -1,43 +1,114 @@
+import { ApiError } from "./api-errors";
+
 /**
- * O MODO DE SUPORTE do administrador (revisão de papéis, 2026-09-05, D1): o
- * admin não lê sobre pessoas por rotina; quando abre a ficha de alguém,
- * declara o motivo, e a API grava cada requisição no audit_log e avisa o time.
- * O motivo vive só nesta sessão do navegador e vai em dois cabeçalhos.
+ * O MODO DE SUPORTE (revisão de papéis, 2026-09-05, D1): o suporte não lê
+ * sobre pessoas por rotina; quando abre a ficha de alguém, declara o motivo,
+ * e a API grava cada requisição no audit_log e avisa o time.
+ *
+ * PR 6 (revisão mestre 2026-09-08, RBAC-03 e [FA-07]): o passe tem VALIDADE
+ * — 15 minutos a partir do motivo declarado, espelho do `SupportPass` do
+ * backend — e só viaja nas requisições SOBRE A PESSOA do passe. Antes era
+ * estado estático de módulo, ia em toda requisição (Painel, Usuários,
+ * Configurações) e sobrevivia ao logout. Agora é uma instância do
+ * `FrontendContainer`: quem fecha a sessão apaga o passe.
  */
-export interface SupportAccessGrant {
-  readonly architectId: string;
-  readonly reason: string;
+export class SupportPass {
+  static readonly VALIDITY_MINUTES = 15;
+
+  private static readonly VALIDITY_MS = SupportPass.VALIDITY_MINUTES * 60 * 1000;
+
+  constructor(
+    readonly architectId: string,
+    readonly reason: string,
+    readonly issuedAt: Date,
+  ) {}
+
+  get expiresAt(): Date {
+    return new Date(this.issuedAt.getTime() + SupportPass.VALIDITY_MS);
+  }
+
+  isExpiredAt(now: Date): boolean {
+    return now.getTime() > this.expiresAt.getTime();
+  }
+
+  /**
+   * A requisição é SOBRE a pessoa quando o id dela é um segmento do caminho
+   * (`/architects/ana`, `/architects/ana/deactivate`) ou o valor de um
+   * parâmetro de consulta (`?architectId=ana`, `&menteeId=ana`). Parte de
+   * outro id (`/architects/anabela`) não conta.
+   */
+  isAbout(resource: string): boolean {
+    return resource
+      .split(/[/?&=]/)
+      .some((segment) => decodeURIComponent(segment) === this.architectId);
+  }
+
+  headers(): Record<string, string> {
+    return {
+      [SupportAccess.ARCHITECT_HEADER]: this.architectId,
+      [SupportAccess.REASON_HEADER]: this.reason,
+      [SupportAccess.ISSUED_AT_HEADER]: this.issuedAt.toISOString(),
+    };
+  }
 }
 
 export class SupportAccess {
   static readonly ARCHITECT_HEADER = "x-support-architect";
   static readonly REASON_HEADER = "x-support-reason";
+  static readonly ISSUED_AT_HEADER = "x-support-issued-at";
   static readonly MIN_REASON_LENGTH = 12;
+  /** A recusa (403) do serviço quando o passe venceu — a tela renova pelo diálogo. */
+  static readonly EXPIRED_CODE = "SUPPORT_PASS_EXPIRED";
 
-  private static current: SupportAccessGrant | null = null;
+  private current: SupportPass | null = null;
 
-  static grant(architectId: string, reason: string): SupportAccessGrant | null {
+  private expiredHandler: (() => void) | null = null;
+
+  constructor(private readonly clock: () => Date = () => new Date()) {}
+
+  grant(architectId: string, reason: string): SupportPass | null {
     const trimmed = reason.trim();
     if (trimmed.length < SupportAccess.MIN_REASON_LENGTH) return null;
-    SupportAccess.current = { architectId, reason: trimmed };
-    return SupportAccess.current;
+    this.current = new SupportPass(architectId, trimmed, this.clock());
+    return this.current;
   }
 
-  static grantedFor(architectId: string): SupportAccessGrant | null {
-    return SupportAccess.current?.architectId === architectId ? SupportAccess.current : null;
+  /** O passe desta pessoa, enquanto vale para a tela — vencido, é como se não existisse. */
+  grantedFor(architectId: string): SupportPass | null {
+    const pass = this.current;
+    if (!pass || pass.architectId !== architectId) return null;
+    return pass.isExpiredAt(this.clock()) ? null : pass;
   }
 
-  static clear(): void {
-    SupportAccess.current = null;
+  clear(): void {
+    this.current = null;
   }
 
-  /** Os cabeçalhos que toda requisição leva enquanto o modo está ativo. */
-  static headers(): Record<string, string> {
-    const grant = SupportAccess.current;
-    if (!grant) return {};
-    return {
-      [SupportAccess.ARCHITECT_HEADER]: grant.architectId,
-      [SupportAccess.REASON_HEADER]: grant.reason,
-    };
+  /**
+   * Os cabeçalhos da requisição `resource` — só quando ela é sobre a pessoa
+   * do passe. Passe vencido ainda viaja: é o SERVIDOR quem o julga, e a
+   * recusa dele (`SUPPORT_PASS_EXPIRED`) é o que reabre o diálogo.
+   */
+  headersFor(resource: string): Record<string, string> {
+    const pass = this.current;
+    if (!pass || !pass.isAbout(resource)) return {};
+    return pass.headers();
+  }
+
+  /** Quem reabre o diálogo quando o serviço diz que o passe venceu. */
+  whenExpired(handler: (() => void) | null): void {
+    this.expiredHandler = handler;
+  }
+
+  reviewFailure(error: unknown): void {
+    if (!SupportAccess.isExpiredRefusal(error)) return;
+    this.clear();
+    this.expiredHandler?.();
+  }
+
+  private static isExpiredRefusal(error: unknown): boolean {
+    return (
+      error instanceof ApiError && error.status === 403 && error.code === SupportAccess.EXPIRED_CODE
+    );
   }
 }

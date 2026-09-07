@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useMemo, useState } from "react";
 
 import {
+  Callout,
   CommandDialog,
   CommandWithReasonDialog,
   OutOfReachScreen,
@@ -465,12 +466,11 @@ function EditUserDialog({
             value={role}
             offered={defaultUiAuthorizationPolicy.assignableRoles(editor)}
             onChange={setRole}
+            // PR 6 (RBAC-09): ninguém muda o próprio papel — a tela trava e diz por quê.
+            disabledReason={user.id === editor.id ? t("users.edit.ownAccountHint") : undefined}
           />
-          {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          )}
+          {/* A frase da recusa é do serviço (ADMIN_ROLE_RESERVED_TO_ADMIN, OWN_ACCOUNT_AMENDMENT_FORBIDDEN…): a tela a mostra crua. */}
+          {error && <Callout tone="danger">{error}</Callout>}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={saving}>

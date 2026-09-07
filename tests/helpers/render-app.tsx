@@ -8,6 +8,7 @@ import { type AppState, type SessionUser } from "@/lib/api";
 import { apiPath, isApiUrl } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { EffectiveCurationPolicy } from "@/lib/curation-policy";
+import { DependencyProvider } from "@/lib/dependencies";
 import { I18nProvider } from "@/lib/i18n";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { StoreProvider } from "@/lib/store";
@@ -243,15 +244,17 @@ function AuthReady({ children }: { children: ReactNode }) {
 function AppWrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <AuthReady>
-            <StoreProvider>{children}</StoreProvider>
-          </AuthReady>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
+    <DependencyProvider>
+      <QueryClientProvider client={queryClient}>
+        <I18nProvider>
+          <AuthProvider>
+            <AuthReady>
+              <StoreProvider>{children}</StoreProvider>
+            </AuthReady>
+          </AuthProvider>
+        </I18nProvider>
+      </QueryClientProvider>
+    </DependencyProvider>
   );
 }
 

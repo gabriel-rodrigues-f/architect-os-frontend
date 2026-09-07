@@ -12,7 +12,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import { authApi, sessionPolicy, UserFacingError, type SessionUser } from "./api";
+import { authApi, sessionPolicy, supportAccess, UserFacingError, type SessionUser } from "./api";
 import { SessionBootstrap, SessionBootstrapReader } from "./session-bootstrap";
 import { SESSION_QUERY_KEY, sessionQuery } from "./session-query";
 
@@ -73,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser((current) => {
         if (!current) return current;
         queryClient.clear();
+        supportAccess.clear();
         toast.error("Sua sessão expirou. Faça login novamente.");
         return null;
       });
@@ -144,6 +145,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.logout().catch(() => undefined);
     setUser(null);
     queryClient.clear();
+    // [FA-07]: o passe de suporte é desta sessão — morre com ela.
+    supportAccess.clear();
   }, [queryClient, setUser]);
 
   /**

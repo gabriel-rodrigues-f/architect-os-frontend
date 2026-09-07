@@ -1,5 +1,6 @@
 import { ApiClient } from "../api-client";
 import { SessionPolicy } from "../session-policy";
+import { SupportAccess } from "../support-access";
 import { HttpAnalyticsGateway, type AnalyticsGateway } from "./analytics.gateway";
 import { HttpArchitectsGateway, type ArchitectsGateway } from "./architects.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
@@ -37,6 +38,8 @@ interface FrontendConfig {
 
 export class FrontendContainer {
   readonly sessionPolicy: SessionPolicy;
+  /** O passe de suporte desta sessão do navegador ([FA-07]) — apagado ao fechar a sessão. */
+  readonly supportAccess: SupportAccess;
   readonly apiClient: ApiClient;
   readonly analyticsGateway: AnalyticsGateway;
   readonly architectsGateway: ArchitectsGateway;
@@ -65,8 +68,14 @@ export class FrontendContainer {
 
   private constructor(config: FrontendConfig) {
     this.sessionPolicy = new SessionPolicy();
-    this.apiClient = new ApiClient(config.baseUrl, (error) =>
-      this.sessionPolicy.reviewFailure(error),
+    this.supportAccess = new SupportAccess();
+    this.apiClient = new ApiClient(
+      config.baseUrl,
+      (error) => {
+        this.sessionPolicy.reviewFailure(error);
+        this.supportAccess.reviewFailure(error);
+      },
+      (resource) => this.supportAccess.headersFor(resource),
     );
     this.analyticsGateway = new HttpAnalyticsGateway(this.apiClient);
     this.architectsGateway = new HttpArchitectsGateway(this.apiClient);

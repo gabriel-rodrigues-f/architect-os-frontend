@@ -3,6 +3,7 @@ import { defaultContainer } from "./gateways/container";
 
 const {
   sessionPolicy,
+  supportAccess,
   analyticsGateway,
   architectsGateway,
   assessmentGateway,
@@ -58,7 +59,7 @@ export const personAssistantsApi = { ...personAssistantsGateway };
 export const workAssistantsApi = { ...workAssistantsGateway };
 export const operationsApi = new ApiOperationsGateway(defaultContainer.apiClient);
 
-export { sessionPolicy };
+export { sessionPolicy, supportAccess };
 
 export { ApiError, UserFacingError } from "./api-errors";
 export { API_URL, type AppState } from "./api-client";
