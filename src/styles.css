@@ -227,9 +227,18 @@
   --text-kpi: var(--text-kpi);
   --container-page: 1600px;
   --container-prose: 65ch;
+  /*
+    A seleção de texto é um MARCA-TEXTO (dono, 2026-09-08, referência FIAP):
+    só quando a pessoa seleciona com o mouse, nunca no hover. No claro, azul-
+    marinho; no escuro, o azul do botão do login. O texto fica branco por cima.
+  */
+  --selection: oklch(0.32 0.1 250);
+  --selection-foreground: oklch(0.99 0.005 240);
 }
 
 .dark {
+  --selection: oklch(0.55 0.15 235);
+  --selection-foreground: oklch(0.99 0.005 240);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -308,6 +317,11 @@
   --quadrant-3: oklch(0.165 0.032 110);
   --quadrant-4: oklch(0.165 0.041 165);
   --quadrant-5: oklch(0.165 0.05 195);
+}
+
+::selection {
+  background-color: var(--selection);
+  color: var(--selection-foreground);
 }
 
 @media (prefers-reduced-motion: reduce) {

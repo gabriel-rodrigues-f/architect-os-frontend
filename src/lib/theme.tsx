@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { readMigratedItem } from "./storage";
 
@@ -12,6 +20,13 @@ interface ThemeApi {
 
   resolved: "light" | "dark";
   setTheme: (theme: Theme) => void;
+  /**
+   * Segura o documento no escuro enquanto quem chamou estiver montado.
+   * Devolve a função que solta. Dono (2026-09-08): "a tela inicial do
+   * Synapse é sempre escura… o tema só é aplicado depois de realizado o
+   * login" — a preferência continua salva e volta a valer quando o palco sai.
+   */
+  holdDark: () => () => void;
 }
 
 const Ctx = createContext<ThemeApi | null>(null);
@@ -22,12 +37,33 @@ const prefersDark = () =>
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system");
   const [resolved, setResolved] = useState<"light" | "dark">("light");
+  const [darkHolds, setDarkHolds] = useState(0);
+  const holds = useRef(0);
 
   const apply = useCallback((next: Theme) => {
-    const efetivo = next === "system" ? (prefersDark() ? "dark" : "light") : next;
+    const preferido = next === "system" ? (prefersDark() ? "dark" : "light") : next;
+    const efetivo = holds.current > 0 ? "dark" : preferido;
     document.documentElement.classList.toggle("dark", efetivo === "dark");
     setResolved(efetivo);
   }, []);
+
+  const holdDark = useCallback(() => {
+    holds.current += 1;
+    setDarkHolds(holds.current);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      holds.current -= 1;
+      setDarkHolds(holds.current);
+    };
+  }, []);
+
+  // Cada entrada ou saída de palco reaplica o tema — com a preferência de
+  // sempre, que nunca deixou de estar salva.
+  useEffect(() => {
+    apply(theme);
+  }, [darkHolds, theme, apply]);
 
   useEffect(() => {
     const salvo = readMigratedItem(STORAGE_KEY, LEGACY_STORAGE_KEY) as Theme | null;
@@ -53,7 +89,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [apply],
   );
 
-  return <Ctx.Provider value={{ theme, resolved, setTheme }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ theme, resolved, setTheme, holdDark }}>{children}</Ctx.Provider>;
+}
+
+/** O tema, se houver provedor — para quem só ajusta o palco e não pode exigir um. */
+export function useThemeIfAny(): ThemeApi | null {
+  return useContext(Ctx);
 }
 
 export function useTheme(): ThemeApi {

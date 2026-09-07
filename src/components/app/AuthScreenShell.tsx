@@ -1,6 +1,7 @@
 import { useRef, useState, type CSSProperties, type FocusEvent, type ReactNode } from "react";
 
 import { BrandLockup } from "@/components/app/BrandLockup";
+import { DarkStage } from "@/components/app/DarkStage";
 import { SynapseBackground } from "@/components/app/SynapseBackground";
 import { useI18n } from "@/lib/i18n";
 import { SynapseSignals } from "@/lib/synapse-network";
@@ -63,35 +64,39 @@ export function AuthScreenShell({
     if (!cardRef.current?.contains(event.relatedTarget)) network.emphasize(false);
   };
 
+  // A cena inteira é palco escuro — inclusive o convite de senha, que vive
+  // fora do `AuthGate` (dono, 2026-09-08: "nossa tela de login é sempre a escura").
   return (
-    <div className="dark relative min-h-screen overflow-hidden bg-background text-foreground">
-      <SynapseBackground signals={network} focalRef={cardRef} brandRef={brandRef} />
+    <DarkStage>
+      <div className="dark relative min-h-screen overflow-hidden bg-background text-foreground">
+        <SynapseBackground signals={network} focalRef={cardRef} brandRef={brandRef} />
 
-      <div data-testid="auth-stage" className="auth-stage">
-        <div data-testid="auth-grid" className="auth-grid">
-          <section
-            aria-label="Synapse"
-            className="auth-rise flex flex-col justify-center"
-            style={{ "--auth-delay": "120ms" } as CSSProperties}
-          >
-            {/* A medida da marca é o bloco de texto (w-fit), não a coluna inteira: o vão real começa onde o texto acaba. */}
-            <div ref={brandRef} className="w-fit">
-              <BrandLockup signals={network} descriptor={t("login.subtitle")} />
+        <div data-testid="auth-stage" className="auth-stage">
+          <div data-testid="auth-grid" className="auth-grid">
+            <section
+              aria-label="Synapse"
+              className="auth-rise flex flex-col justify-center"
+              style={{ "--auth-delay": "120ms" } as CSSProperties}
+            >
+              {/* A medida da marca é o bloco de texto (w-fit), não a coluna inteira: o vão real começa onde o texto acaba. */}
+              <div ref={brandRef} className="w-fit">
+                <BrandLockup signals={network} descriptor={t("login.subtitle")} />
+              </div>
+            </section>
+
+            <div
+              ref={cardRef}
+              onFocus={onCardFocus}
+              onBlur={onCardBlur}
+              data-testid="auth-card"
+              className="auth-rise auth-card justify-self-center md:justify-self-start"
+              style={{ "--auth-delay": "220ms" } as CSSProperties}
+            >
+              {children}
             </div>
-          </section>
-
-          <div
-            ref={cardRef}
-            onFocus={onCardFocus}
-            onBlur={onCardBlur}
-            data-testid="auth-card"
-            className="auth-rise auth-card justify-self-center md:justify-self-start"
-            style={{ "--auth-delay": "220ms" } as CSSProperties}
-          >
-            {children}
           </div>
         </div>
       </div>
-    </div>
+    </DarkStage>
   );
 }

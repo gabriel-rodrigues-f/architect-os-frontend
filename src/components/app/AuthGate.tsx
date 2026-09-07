@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { DarkStage } from "@/components/app/DarkStage";
 import { FirstAccessScreen } from "@/components/app/FirstAccessScreen";
 import { LoginScreen } from "@/components/app/LoginScreen";
 import { ServiceOutageScreen } from "@/components/app/ServiceOutageScreen";
@@ -22,11 +23,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (user) void router.invalidate();
   }, [router, user]);
 
+  // Tudo o que vem antes da sessão aberta é palco escuro (dono, 2026-09-08).
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-      </div>
+      <DarkStage>
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+        </div>
+      </DarkStage>
     );
   }
   /*
@@ -37,8 +41,20 @@ export function AuthGate({ children }: { children: ReactNode }) {
    * decide: desenha a mesma tela de queda de toda a aplicação e o leitor
    * insiste até o serviço responder 200 (abre) ou 401 (login).
    */
-  if (bootstrap.isServiceDown) return <ServiceOutageScreen onRetry={retrySession} />;
-  if (!user) return <LoginScreen />;
+  if (bootstrap.isServiceDown) {
+    return (
+      <DarkStage>
+        <ServiceOutageScreen onRetry={retrySession} />
+      </DarkStage>
+    );
+  }
+  if (!user) {
+    return (
+      <DarkStage>
+        <LoginScreen />
+      </DarkStage>
+    );
+  }
   /*
    * A MARCA DE PÉ SEGURA A PORTA. Regra do dono (2026-09-03): "ao realizar o
    * primeiro acesso, o usuário (regra universal) precisa ter que alterar sua
@@ -51,6 +67,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
    * aplicação — menu, casca, `Outlet` — sequer é desenhado, então não existe
    * destino para onde navegar antes de trocar.
    */
-  if (user.mustChangePassword) return <FirstAccessScreen />;
+  if (user.mustChangePassword) {
+    return (
+      <DarkStage>
+        <FirstAccessScreen />
+      </DarkStage>
+    );
+  }
   return <>{children}</>;
 }

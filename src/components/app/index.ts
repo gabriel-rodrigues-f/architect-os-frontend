@@ -57,3 +57,4 @@ export * from "./team-shared";
 export * from "./ui-bits";
 
 export { DataViewToolbar, Pagination } from "./DataView";
+export { DarkStage } from "./DarkStage";
