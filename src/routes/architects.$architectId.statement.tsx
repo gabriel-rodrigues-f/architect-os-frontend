@@ -10,6 +10,7 @@ import {
   MultiSelectFilter,
   OutOfReachScreen,
   PageHeader,
+  ProfileBackLink,
   ProfileTabs,
   SingleSelectFilter,
 } from "@/components/app";
@@ -223,7 +224,7 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
 
   return (
     <>
-      <div className="print:hidden">
+      <div>
         <PageHeader
           help={help}
           title={t("statement.title", { nome: architect.name })}
@@ -231,27 +232,16 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
           actions={
             <div className="flex flex-wrap items-center gap-2">
               {canGenerate && (
-                <>
-                  <Button size="sm" variant="secondary" onClick={() => window.print()}>
-                    {t("statement.print")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={exporting}
-                    onClick={() => void exportPdf()}
-                  >
-                    {exporting ? t("evolution.export.generating") : t("evolution.export.button")}
-                  </Button>
-                </>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={exporting}
+                  onClick={() => void exportPdf()}
+                >
+                  {exporting ? t("evolution.export.generating") : t("evolution.export.button")}
+                </Button>
               )}
-              <Link
-                to="/architects/$architectId"
-                params={{ architectId }}
-                className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent"
-              >
-                {t("arch.back")}
-              </Link>
+              <ProfileBackLink architectId={architect.id} to="overview" />
             </div>
           }
         />

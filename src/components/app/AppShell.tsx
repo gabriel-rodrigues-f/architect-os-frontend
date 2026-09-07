@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   Compass,
+  FileText,
   GitCompare,
   GraduationCap,
   Grid3x3,
@@ -17,6 +18,7 @@ import {
   LogOut,
   Map,
   Menu,
+  Milestone,
   Monitor,
   Moon,
   PanelLeftClose,
@@ -33,6 +35,7 @@ import {
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { NoticeBell } from "@/components/app/NoticeBell";
+import { PageFrame, StablePageFrame } from "@/components/app/PageFrame";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { semanticTone } from "@/components/app/ui-bits";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -110,14 +113,39 @@ class ObservabilityAddress {
   }
 }
 
+/**
+ * "Minha carreira" é um GRUPO, não um item (dono, 2026-09-06): Visão geral,
+ * Evolução, Extrato e Roteiro são quatro entradas do menu para quem tem
+ * ficha — e por isso o botão "Voltar" da própria ficha morreu.
+ */
+export const MY_CAREER_GROUP_KEY: MessageKey = "nav.group.myCareer";
+
 export const NAV_GROUPS: NavGroup[] = [
   {
+    labelKey: MY_CAREER_GROUP_KEY,
     items: [
       {
         to: `/architects/${OWN_ARCHITECT_PARAM}`,
-        labelKey: "nav.myCareer",
+        labelKey: "arch.tabs.overview",
         icon: Compass,
-        activePrefixes: [`/architects/${OWN_ARCHITECT_PARAM}`],
+        ownCareerOnly: true,
+      },
+      {
+        to: `/architects/${OWN_ARCHITECT_PARAM}/evolution`,
+        labelKey: "arch.tabs.evolution",
+        icon: TrendingUp,
+        ownCareerOnly: true,
+      },
+      {
+        to: `/architects/${OWN_ARCHITECT_PARAM}/statement`,
+        labelKey: "arch.tabs.statement",
+        icon: FileText,
+        ownCareerOnly: true,
+      },
+      {
+        to: `/architects/${OWN_ARCHITECT_PARAM}/roadmap`,
+        labelKey: "arch.tabs.roadmap",
+        icon: Milestone,
         ownCareerOnly: true,
       },
     ],
@@ -346,7 +374,7 @@ const SIDEBAR_MIN = 208;
 const SIDEBAR_MAX = 420;
 const SIDEBAR_RAIL = 64;
 
-const BRAND_HEADER_HEIGHT = "h-[74px]";
+const BRAND_HEADER_HEIGHT = `h-[${StablePageFrame.HEADER_HEIGHT_PX}px]`;
 
 const clampWidth = (value: number) => Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, value));
 
@@ -772,7 +800,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <DailyGreetingToast />
 
-          <main className={cn(PAGE_CONTAINER, "flex-1 px-5 py-6 lg:px-8 lg:py-8")}>{children}</main>
+          <PageFrame
+            pathname={pathname}
+            className={cn(PAGE_CONTAINER, "flex-1 px-5 py-6 lg:px-8 lg:py-8")}
+          >
+            {children}
+          </PageFrame>
         </div>
       </div>
 

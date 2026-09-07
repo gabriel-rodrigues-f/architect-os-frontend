@@ -315,6 +315,34 @@ export function NameList({
   );
 }
 
+/**
+ * O "Voltar" da ficha (dono, 2026-09-06): na PRÓPRIA ficha não existe — o
+ * grupo "Minha carreira" do menu já leva a cada aba, e não há para onde
+ * voltar. Quem lidera, olhando a ficha de outra pessoa, continua com ele:
+ * para o Time (na Visão geral) ou para a Visão geral (nas abas).
+ */
+export function ProfileBackLink({
+  architectId,
+  to,
+}: {
+  architectId: string;
+  to: "team" | "overview";
+}) {
+  const { t } = useI18n();
+  const user = useCurrentUser();
+  if (defaultUiAuthorizationPolicy.readsOwn(user, architectId)) return null;
+  const className = "rounded-md border border-input px-3 py-2 text-sm hover:bg-accent";
+  return to === "team" ? (
+    <Link to="/team" className={className}>
+      {t("arch.back")}
+    </Link>
+  ) : (
+    <Link to="/architects/$architectId" params={{ architectId }} className={className}>
+      {t("arch.back")}
+    </Link>
+  );
+}
+
 export function ProfileTabs({
   architectId,
   active,

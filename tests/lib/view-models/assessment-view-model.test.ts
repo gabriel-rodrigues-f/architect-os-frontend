@@ -87,11 +87,27 @@ function makeVm(item = fakeItemService(), portfolio = fakePortfolioService()) {
 
 describe("AssessmentViewModel", () => {
   describe("permissionsFor", () => {
-    it("dono em Draft (profissional): canEditSelf/canSubmit, nunca isLead", () => {
+    it("o profissional em Draft é SUJEITO, não agente (dono, 2026-09-06): lê, e nem registra a autoavaliação nem envia para revisão", () => {
       const { vm } = makeVm();
       const result = vm.permissionsFor(fixtureMemberUser, "ana", anaArchitect, baseAssessment);
-      expect(result.isOwner).toBe(true);
+      expect(result.isSubject).toBe(true);
       expect(result.isLead).toBe(false);
+      expect(result.canEditSelf).toBe(false);
+      expect(result.canSubmit).toBe(false);
+      expect(result.canEditLeaderFinal).toBe(false);
+      expect(result.seesAssessmentNumbers).toBe(true);
+    });
+
+    it("quem lidera registra a autoavaliação em Draft e envia para revisão (dono, 2026-09-06)", () => {
+      const { vm } = makeVm();
+      const result = vm.permissionsFor(
+        fixtureAssignedTechLeadUser,
+        "ana",
+        anaArchitect,
+        baseAssessment,
+      );
+      expect(result.isSubject).toBe(false);
+      expect(result.isLead).toBe(true);
       expect(result.canEditSelf).toBe(true);
       expect(result.canSubmit).toBe(true);
       expect(result.canEditLeaderFinal).toBe(false);
@@ -101,7 +117,7 @@ describe("AssessmentViewModel", () => {
       const { vm } = makeVm();
       const techLeadAna = { ...fixtureMemberUser, role: "tech_lead" as const };
       const result = vm.permissionsFor(techLeadAna, "ana", anaArchitect, baseAssessment);
-      expect(result.isOwner).toBe(false);
+      expect(result.isSubject).toBe(true);
       expect(result.isLead).toBe(false);
       expect(result.canEditSelf).toBe(false);
       expect(result.canSubmit).toBe(false);
@@ -117,7 +133,7 @@ describe("AssessmentViewModel", () => {
         anaArchitect,
         assessment,
       );
-      expect(result.isOwner).toBe(false);
+      expect(result.isSubject).toBe(false);
       expect(result.isLead).toBe(true);
       expect(result.canEditLeaderFinal).toBe(true);
       expect(result.canComplete).toBe(false);
@@ -151,7 +167,7 @@ describe("AssessmentViewModel", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "In Review" as const };
       const result = vm.permissionsFor(fixtureAdminUser, "ana", anaArchitect, assessment);
-      expect(result.isOwner).toBe(false);
+      expect(result.isSubject).toBe(false);
       expect(result.isLead).toBe(false);
       expect(result.canEditLeaderFinal).toBe(false);
       expect(result.canComplete).toBe(true);

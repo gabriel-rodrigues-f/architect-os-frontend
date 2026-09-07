@@ -63,13 +63,31 @@ describe("Avaliações — campos por papel e status", () => {
     ),
   };
 
-  it("member vê a autoavaliação editável (Rascunho) e a nota do Líder travada", async () => {
+  /**
+   * Dono, 2026-09-06: "Autoavaliação é um processo de PDI e 1:1, não um menu
+   * para o membro. Para o membro é sempre view-only." O profissional LÊ a
+   * própria autoavaliação em Rascunho — nenhum campo editável, nenhum botão.
+   */
+  it("o profissional LÊ a autoavaliação em Rascunho: nenhum campo editável, nenhuma ação (dono, 2026-09-06)", async () => {
     mockSession(fixtureMemberUser, draftState);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
+    expect(linha.querySelectorAll("select")).toHaveLength(0);
+    // O número dele continua visível — em texto.
+    expect(linha.textContent).toContain("4");
+
+    expect(screen.queryByRole("button", { name: "Enviar para revisão" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
+  });
+
+  it("quem lidera registra a autoavaliação em Rascunho e envia para revisão; líder e final seguem travados (dono, 2026-09-06)", async () => {
+    mockSession(fixtureAssignedTechLeadUser, draftState);
+    renderWithApp(<AssessmentsPage />);
+
+    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     const selects = linha.querySelectorAll("select");
-    // Só a coluna de autoavaliação continua <select>; alvo, líder e final viram texto.
+    // Só a coluna de autoavaliação é <select>; alvo, líder e final viram texto.
     expect(selects).toHaveLength(1);
     expect(selects[0]?.value).toBe("4"); // self de "cloud-k8s" em ana-h2, na fixture
 
@@ -97,7 +115,7 @@ describe("Avaliações — campos por papel e status", () => {
           : a,
       ),
     };
-    mockSession(fixtureMemberUser, incompleteDraft);
+    mockSession(fixtureAssignedTechLeadUser, incompleteDraft);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Serverless")).closest("tr")!;
@@ -128,12 +146,12 @@ describe("Avaliações — campos por papel e status", () => {
 
   // Seção 4 — líder/final ainda não abrem enquanto a avaliação está em
   // Rascunho, mesmo para o gerente que decide a carreira.
-  it("gerente não edita líder nem final enquanto ainda é Rascunho", async () => {
+  it("gerente não edita líder nem final enquanto ainda é Rascunho — só a autoavaliação que registra na 1:1", async () => {
     mockSession(fixtureAssignedManagerUser, draftState);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
-    expect(linha.querySelectorAll("select")).toHaveLength(0);
+    expect(linha.querySelectorAll("select")).toHaveLength(1);
     // Seção 3 — nem administrador pode concluir direto do Rascunho.
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
   });

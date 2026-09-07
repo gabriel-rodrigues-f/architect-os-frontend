@@ -185,8 +185,12 @@ function useMentoringSessionForm(
 
 export function useMentoringTimeline() {
   const store = useStore();
+  const user = useCurrentUser();
   const orderedArchitects = [...store.architects].sort(defaultNameFormatter.byName);
-  const defaultMenteeId = orderedArchitects[0]?.id ?? "";
+  // O profissional não escolhe pessoa (dono, 2026-09-06): a linha do tempo é a dele.
+  const defaultMenteeId = defaultUiAuthorizationPolicy.picksPeople(user)
+    ? (orderedArchitects[0]?.id ?? "")
+    : (user.architectId ?? "");
   const [filter, setFilter] = useState<string>(defaultMenteeId);
 
   const sessions = [...store.mentoringSessions]
@@ -206,9 +210,10 @@ export function MenteeFilterCombobox({
   onChange: (value: string) => void;
 }) {
   const { t } = useI18n();
+  const user = useCurrentUser();
   return (
     <PersonCombobox
-      picker={PersonPicker.one(architects, selected)}
+      picker={PersonPicker.oneFor(user, architects, selected)}
       onChange={([id]) => onChange(id ?? "")}
       label={t("mentor.filter.label")}
       className="w-64"

@@ -30,8 +30,25 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canReadAbout(fixtureAdminUser, anaInLedTeam)).toBe(true);
     });
 
-    it("o profissional pode agir sobre si mesmo", () => {
-      expect(policy.canActFor(fixtureMemberUser, anaAsArchitect)).toBe(true);
+    it("ninguém age sobre si — nem o profissional (dono, 2026-09-06): a autoavaliação, a evidência e o PDI dele são registrados por quem o lidera", () => {
+      expect(policy.canActFor(fixtureMemberUser, anaAsArchitect)).toBe(false);
+      expect(policy.actsOnSelf(fixtureMemberUser, "ana")).toBe(false);
+      // Ele continua LENDO tudo o que é dele.
+      expect(policy.readsOwn(fixtureMemberUser, "ana")).toBe(true);
+      expect(policy.canReadAbout(fixtureMemberUser, anaAsArchitect)).toBe(true);
+    });
+
+    it("exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha é do profissional — e de quem o lidera", () => {
+      expect(policy.recordsTrailProgressOf(fixtureMemberUser, anaAsArchitect)).toBe(true);
+      expect(policy.recordsTrailProgressOf(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(true);
+      const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+      expect(policy.recordsTrailProgressOf(techLeadAna, anaInLedTeam)).toBe(false);
+    });
+
+    it("quem ESCOLHE pessoa é quem lidera; o profissional não busca outros membros em parte nenhuma (dono, 2026-09-06)", () => {
+      expect(policy.picksPeople(fixtureMemberUser)).toBe(false);
+      expect(policy.picksPeople(fixtureAssignedTechLeadUser)).toBe(true);
+      expect(policy.picksPeople(fixtureAssignedManagerUser)).toBe(true);
     });
 
     it("o tech lead NUNCA age sobre si (dono, 2026-09-06): não se avalia, não abre PDI nem roteiro próprio; só lê", () => {
@@ -102,8 +119,9 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.assessableBy(managerAna, [bia, ana])).toEqual([bia]);
     });
 
-    it("o profissional continua vendo a si mesmo — a autoavaliação é dele", () => {
+    it("o profissional vê só a si mesmo — em leitura (dono, 2026-09-06)", () => {
       expect(policy.assessableBy(fixtureMemberUser, [ana])).toEqual([ana]);
+      expect(policy.assessableBy(fixtureMemberUser, [ana, bia])).toEqual([ana]);
     });
 
     it("liderança sem ficha vê todo o alcance", () => {

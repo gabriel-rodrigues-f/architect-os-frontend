@@ -219,14 +219,15 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
    * gerar (imprimir) é dela e do gerente designado; o tech lead vinculado lê
    * o extrato, mas não gera.
    */
-  it("D2 (dono, 2026-09-05) — imprimir aparece para o gerente designado e para a própria pessoa; o tech lead vinculado também gera (dono, 2026-09-06)", async () => {
+  it("D2 (dono, 2026-09-05) — gerar o PDF aparece para o gerente designado e para a própria pessoa; o tech lead vinculado também gera; 'Imprimir extrato' morreu (dono, 2026-09-06)", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
     const { unmount } = renderWithApp(<StatementPage />);
-    expect(await screen.findByRole("button", { name: "Imprimir extrato" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Exportar PDF" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
     unmount();
     cleanup();
 
@@ -237,7 +238,10 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
     });
     const { unmount: unmountMember } = renderWithApp(<StatementPage />);
     expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Imprimir extrato" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
+    // Na PRÓPRIA ficha não há "Voltar" (dono, 2026-09-06): o menu já leva a cada aba.
+    expect(screen.queryByText("Voltar")).toBeNull();
     expect(
       screen.queryByText(
         "Evolução, Extrato e Roteiro são leituras da liderança sobre a carreira de uma pessoa.",
@@ -254,7 +258,10 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
     renderWithApp(<StatementPage />);
     expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
     // Dono (2026-09-06): "não precisamos esconder do tech lead" — ele também gera.
-    expect(screen.getByRole("button", { name: "Imprimir extrato" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
+    // Olhando a ficha de OUTRA pessoa, quem lidera mantém o "Voltar".
+    expect(screen.getByText("Voltar")).toBeTruthy();
   });
 
   /**

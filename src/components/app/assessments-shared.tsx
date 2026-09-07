@@ -246,11 +246,9 @@ export const assessmentStatusTone: Record<Assessment["status"], "neutral" | "pro
 
 export function CareerPortfolioSection({
   assessment,
-  isOwner,
   isLead,
 }: {
   assessment: Assessment;
-  isOwner: boolean;
   isLead: boolean;
 }) {
   const store = useStore();
@@ -287,7 +285,8 @@ export function CareerPortfolioSection({
     void stateContextCatalog.invalidateAll(queryClient);
   };
 
-  const canPropose = isOwner && assessment.status === "Draft";
+  // Quem lidera propõe o portfólio em Rascunho e confirma Em Revisão (dono, 2026-09-06).
+  const canPropose = isLead && assessment.status === "Draft";
   const canConfirm = isLead && assessment.status === "In Review";
 
   const addCapability = () => {
@@ -493,16 +492,15 @@ export function CareerPortfolioSection({
 
 export function DevelopmentSummarySection({
   assessment,
-  isOwner,
   isLead,
 }: {
   assessment: Assessment;
-  isOwner: boolean;
   isLead: boolean;
 }) {
   const { t } = useI18n();
   const status = assessment.status;
-  const canEdit = status === "Draft" ? isOwner && !isLead : status === "In Review" ? isLead : false;
+  // Começar/Parar/Continuar: quem lidera escreve em Rascunho e Em Revisão (dono, 2026-09-06).
+  const canEdit = isLead && status !== "Completed";
 
   const queryKey: QueryKey = ["assessment-development-summary", assessment.id];
   const { data, isPending, isError, refetch } = useQuery({

@@ -36,7 +36,8 @@ export interface AssessmentCompletionBrief {
 }
 
 interface AssessmentPermissions {
-  isOwner: boolean;
+  /** A pessoa É o sujeito desta avaliação — lê tudo o que é dela, não age (dono, 2026-09-06). */
+  isSubject: boolean;
   isLead: boolean;
   status: Assessment["status"] | undefined;
   isCompleted: boolean;
@@ -63,29 +64,30 @@ export class AssessmentViewModel {
     selectedArchitect: Architect | undefined,
     assessment: Assessment | undefined,
   ): AssessmentPermissions {
-    // Só o profissional é dono da própria avaliação; o tech lead não se avalia (dono, 2026-09-06).
-    const isOwner = this.policy.actsOnSelf(user, architectId);
-    const isLead = !isOwner && this.policy.isLeadOf(user, selectedArchitect);
+    // Ninguém age sobre si (dono, 2026-09-06): a autoavaliação é registrada
+    // por quem lidera, na 1:1. O sujeito LÊ — veredito, respostas, números.
+    const isSubject = this.policy.readsOwn(user, architectId);
+    const isLead = this.policy.isLeadOf(user, selectedArchitect);
     // D4 (dono, 2026-09-05): o tech lead pontua; quem CONCLUI e REABRE é o
     // gerente designado (ou o admin como correção). D2: a própria pessoa vê
     // os próprios números.
-    const decides = !isOwner && this.policy.decidesCareerOf(user, selectedArchitect);
+    const decides = this.policy.decidesCareerOf(user, selectedArchitect);
     const status = assessment?.status;
     const isCompleted = status === "Completed";
-    const canEditSelf = !isLead && isOwner && status === "Draft";
+    const canEditSelf = isLead && status === "Draft";
     const canEditLeaderFinal = isLead && status === "In Review";
-    const canSubmit = !isLead && isOwner && status === "Draft";
+    const canSubmit = isLead && status === "Draft";
     const canComplete = decides && status === "In Review";
 
     const canReopen = decides && status === "Completed";
-    const seesAssessmentNumbers = this.policy.isLeadership(user) || isOwner;
+    const seesAssessmentNumbers = this.policy.isLeadership(user) || isSubject;
 
     const incompleteSelf = assessment?.items.some((i) => i.self === null) ?? false;
     const incompleteLeaderFinal =
       assessment?.items.some((i) => i.leader === null || i.final === null) ?? false;
 
     return {
-      isOwner,
+      isSubject,
       isLead,
       status,
       isCompleted,

@@ -27,9 +27,12 @@ import { emptyEligibilityRoute, mockAppFetch, renderWithApp } from "../helpers/r
 /**
  * Decisão do dono (2026-09-05): "Mude para a tela de avaliações. O Painel
  * deve ser apenas de gráficos e números para avaliação analítica." A seção de
- * evidências da pessoa — lista, registro e reenvio — sai do Painel do
- * profissional e mora em Avaliações, ao lado da avaliação do ciclo. A
- * revisão (ato da liderança) continua na ficha.
+ * evidências da pessoa mora em Avaliações, ao lado da avaliação do ciclo.
+ *
+ * Dono, 2026-09-06 — ninguém age sobre si: o profissional LÊ as próprias
+ * evidências (título, tipo, data, situação, comentário do líder) e não
+ * registra nem reenvia; quem lidera registra e reenvia por ele, aqui e pela
+ * ficha. A revisão continua na ficha.
  */
 const fetchMock = vi.fn();
 
@@ -98,30 +101,27 @@ describe("Avaliações — as evidências da pessoa", () => {
     expect(screen.getByText(/20\/08\/2026/)).toBeTruthy();
   });
 
-  it("member abre o MESMO diálogo de registro da ficha a partir de Avaliações", async () => {
+  it("member NÃO registra evidência — a seção dele é leitura (dono, 2026-09-06)", async () => {
     renderAs(fixtureMemberUser);
     await screen.findByText("Evidências");
 
-    fireEvent.click(screen.getByRole("button", { name: "Registrar" }));
-
-    expect(await screen.findByRole("dialog", { name: "Nova evidência" })).toBeTruthy();
-    expect(screen.getByLabelText("Título")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Registrar" })).toBeNull();
   });
 
-  it("member corrige e reenvia a evidência devolvida sem sair de Avaliações", async () => {
+  it("member lê a devolução com o comentário do líder, mas não corrige nem reenvia — quem lidera reenvia (dono, 2026-09-06)", async () => {
     renderAs(fixtureMemberUser, stateComEvidenciaDevolvida);
     await screen.findByText("Evidências");
 
-    expect(screen.getByRole("button", { name: "Corrigir e reenviar" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Corrigir e reenviar" })).toBeNull();
     expect(screen.getByText(/Falta o material apresentado/)).toBeTruthy();
   });
 
-  it("member sem evidência vê o estado vazio da seção, com o botão de registrar", async () => {
+  it("member sem evidência vê o estado vazio da seção, sem botão de registrar", async () => {
     renderAs(fixtureMemberUser, { ...fixtureState, evidences: [] });
     await screen.findByText("Evidências");
 
     expect(await screen.findByText("Nenhuma evidência registrada.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Registrar" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Registrar" })).toBeNull();
   });
 
   it("a seção não mostra número de avaliação", async () => {
@@ -132,7 +132,7 @@ describe("Avaliações — as evidências da pessoa", () => {
     expect(screen.queryByText("Competências em evolução")).toBeNull();
   });
 
-  it("tech lead do time NÃO ganha a seção na avaliação da liderada: ele registra e revisa pela ficha", async () => {
+  it("tech lead do time ganha a seção na avaliação da liderada e abre o MESMO diálogo de registro da ficha (dono, 2026-09-06)", async () => {
     const state: AppState = {
       ...fixtureState,
       architects: fixtureState.architects.map((architect) =>
@@ -147,6 +147,10 @@ describe("Avaliações — as evidências da pessoa", () => {
     renderWithApp(<AssessmentsPage />);
 
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
-    expect(screen.queryByRole("button", { name: "Registrar" })).toBeNull();
+    await screen.findByText("Evidências");
+    fireEvent.click(screen.getByRole("button", { name: "Registrar" }));
+
+    expect(await screen.findByRole("dialog", { name: "Nova evidência" })).toBeTruthy();
+    expect(screen.getByLabelText("Título")).toBeTruthy();
   });
 });

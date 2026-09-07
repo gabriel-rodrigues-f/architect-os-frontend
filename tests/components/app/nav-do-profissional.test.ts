@@ -44,6 +44,14 @@ const rotulosDeGrupo = (user: SessionUser | undefined): (string | undefined)[] =
  */
 const liderComArquiteto: SessionUser = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
 
+/** As quatro entradas do grupo "Minha carreira" (dono, 2026-09-06), na ordem do menu. */
+const MINHA_CARREIRA_DE_ANA = [
+  "/architects/ana",
+  "/architects/ana/evolution",
+  "/architects/ana/statement",
+  "/architects/ana/roadmap",
+];
+
 /** As cinco ferramentas de diagnóstico do TIME, medidas sobre a base inteira. */
 const ANALISE_DO_TIME = [
   "/capability-map",
@@ -67,14 +75,25 @@ describe("menu do profissional — a carreira dele em leitura, e nada do time", 
    * geral da própria ficha, em leitura, sem ação e sem IA. As abas de
    * liderança (Evolução, Extrato, Roteiro) continuam fora do alcance dele.
    */
-  it("o profissional recebe 'Minha carreira' endereçada à própria Visão geral", () => {
-    expect(destinos(fixtureMemberUser)).toContain("/architects/ana");
-    expect(destinos(fixtureMemberUser).some((destino) => destino.includes("/roadmap"))).toBe(false);
+  /**
+   * Dono, 2026-09-06: "Na visão do Membro, Minha Carreira não seja um Menu,
+   * mas um grupo. Deve agrupar Visão Geral, Evolução, Extrato e Roteiro.
+   * Assim morre o botão 'Voltar' do canto superior direito."
+   */
+  it("'Minha carreira' é um GRUPO com Visão geral, Evolução, Extrato e Roteiro, endereçados à própria ficha (dono, 2026-09-06)", () => {
+    const primeiro = filterNavGroups(NAV_GROUPS, fixtureMemberUser)[0];
+    expect(primeiro?.labelKey).toBe("nav.group.myCareer");
+    expect(primeiro?.items.map((item) => item.to)).toEqual(MINHA_CARREIRA_DE_ANA);
+    expect(primeiro?.items.map((item) => item.labelKey)).toEqual([
+      "arch.tabs.overview",
+      "arch.tabs.evolution",
+      "arch.tabs.statement",
+      "arch.tabs.roadmap",
+    ]);
   });
 
   it("o menu do profissional começa pela carreira dele", () => {
-    const primeiro = filterNavGroups(NAV_GROUPS, fixtureMemberUser)[0];
-    expect(primeiro?.items.map((item) => item.to)).toEqual(["/architects/ana"]);
+    expect(rotulosDeGrupo(fixtureMemberUser)[0]).toBe("nav.group.myCareer");
   });
 
   it("'Time' e 'Política de Progressão' somem do menu do profissional", () => {
@@ -106,13 +125,16 @@ describe("menu de carreira — o gerente não tem 'Minha carreira' (dono, 2026-0
 });
 
 describe("menu de carreira — para os outros papéis nada muda", () => {
-  it("quem lidera e tem arquiteto vinculado recebe a Visão geral endereçada ao próprio arquiteto", () => {
-    expect(destinos(liderComArquiteto)).toContain("/architects/ana");
+  it("quem lidera e tem arquiteto vinculado recebe o mesmo grupo Minha carreira, endereçado ao próprio arquiteto", () => {
+    for (const destino of MINHA_CARREIRA_DE_ANA) {
+      expect(destinos(liderComArquiteto), destino).toContain(destino);
+    }
   });
 
-  it("o item de carreira de quem lidera nasce no topo do menu, antes de qualquer grupo", () => {
+  it("o grupo de carreira de quem lidera nasce no topo do menu", () => {
     const primeiro = filterNavGroups(NAV_GROUPS, liderComArquiteto)[0];
-    expect(primeiro?.items.map((item) => item.to)).toEqual(["/architects/ana"]);
+    expect(primeiro?.labelKey).toBe("nav.group.myCareer");
+    expect(primeiro?.items.map((item) => item.to)).toEqual(MINHA_CARREIRA_DE_ANA);
   });
 
   /**
@@ -194,7 +216,7 @@ describe("menu do profissional — nada que ele usa é levado junto", () => {
     }
   });
 
-  it("o menu dele tem seis itens — a carreira dele e o que é dele para agir; nada de gestão de time", () => {
-    expect(destinos(fixtureMemberUser)).toHaveLength(6);
+  it("o menu dele tem nove itens — as quatro entradas da carreira dele e as cinco telas que ele lê; nada de gestão de time", () => {
+    expect(destinos(fixtureMemberUser)).toHaveLength(9);
   });
 });

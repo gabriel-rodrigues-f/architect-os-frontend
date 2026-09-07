@@ -16,6 +16,7 @@ import {
   LevelBadge,
   PageHeader,
   PersonAdviceBody,
+  ProfileBackLink,
   ProfileTabs,
   ResubmitEvidenceDialog,
   SectionCard,
@@ -239,14 +240,7 @@ function ArchitectWorkspace() {
         title={architect.name}
         description={`${seniority.labelOf(architect.role)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
         help={help}
-        actions={
-          <Link
-            to="/team"
-            className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent"
-          >
-            {t("arch.back")}
-          </Link>
-        }
+        actions={<ProfileBackLink architectId={architect.id} to="team" />}
       />
 
       <DeactivatedPersonNotice active={architect.active} />

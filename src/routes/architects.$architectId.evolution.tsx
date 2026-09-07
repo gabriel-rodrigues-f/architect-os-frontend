@@ -8,6 +8,7 @@ import {
   OutOfReachScreen,
   PageHeader,
   ProficiencyTimeline,
+  ProfileBackLink,
   ProfileTabs,
   QuerySection,
   SectionCard,
@@ -252,13 +253,7 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
             >
               {exporting ? t("evolution.export.generating") : t("evolution.export.button")}
             </Button>
-            <Link
-              to="/architects/$architectId"
-              params={{ architectId }}
-              className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent"
-            >
-              {t("arch.back")}
-            </Link>
+            <ProfileBackLink architectId={architect.id} to="overview" />
           </div>
         }
       />

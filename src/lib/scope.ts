@@ -19,7 +19,9 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
  *  - o TECH LEAD pontua, revisa evidência, rege a régua com o gerente,
  *    mentora, vê o mapa técnico do time — e não cadastra nem conclui;
  *  - a PESSOA vê tudo o que é dela: radar, distâncias, aderência, evolução,
- *    extrato — e age sobre o que é dela.
+ *    extrato — e NÃO age sobre nada (dono, 2026-09-06): a autoavaliação, a
+ *    evidência e o PDI dela são registrados por quem a lidera, na 1:1. A
+ *    única exceção é o progresso na própria trilha.
  */
 
 /**
@@ -60,9 +62,11 @@ export class UiAuthorizationPolicy {
   }
 
   /**
-   * AÇÃO sobre uma pessoa: o PROFISSIONAL sobre si mesmo, ou quem a lidera
-   * por vínculo. Admin não. Tech lead e gerente nunca agem sobre si (dono,
-   * 2026-09-06): não se avaliam, não abrem PDI nem roteiro próprio.
+   * AÇÃO sobre uma pessoa: SÓ quem a lidera por vínculo. Admin não, e
+   * NINGUÉM age sobre si (dono, 2026-09-06): "autoavaliação é um processo de
+   * PDI e 1:1 — o líder faz perguntas e anota a opinião do membro". Quem
+   * lidera registra a autoavaliação, a evidência e o PDI; a pessoa LÊ tudo o
+   * que é dela (`canReadAbout`, `readsOwn`).
    */
   canActFor(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (!architect) return false;
@@ -70,9 +74,37 @@ export class UiAuthorizationPolicy {
     return this.leadsTeamOf(user, architect);
   }
 
-  /** A pessoa agindo sobre a própria carreira: só o profissional (`member`). */
-  actsOnSelf(user: SessionUser, architectId: string | undefined): boolean {
-    return architectId !== undefined && user.architectId === architectId && user.role === "member";
+  /**
+   * A pessoa agindo sobre a própria carreira: ninguém (dono, 2026-09-06).
+   * Continua existindo como a resposta NOMEADA à pergunta — quem ler a régua
+   * encontra aqui a decisão, e não um `false` perdido dentro de `canActFor`.
+   */
+  actsOnSelf(_user: SessionUser, _architectId: string | undefined): boolean {
+    return false;
+  }
+
+  /** A pessoa LENDO o que é dela — números, veredito, respostas, radar, Evolução, Extrato, Roteiro. */
+  readsOwn(user: SessionUser, architectId: string | undefined): boolean {
+    return architectId !== undefined && user.architectId === architectId;
+  }
+
+  /**
+   * A única exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha
+   * de aprendizagem continua sendo do profissional — e de quem o lidera.
+   */
+  recordsTrailProgressOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
+    if (!architect) return false;
+    if (this.isOwn(user, architect)) return this.isSubjectOnly(user);
+    return this.leadsTeamOf(user, architect);
+  }
+
+  /**
+   * Quem ESCOLHE pessoa num seletor: quem lidera. O profissional não busca
+   * outros membros em parte nenhuma da aplicação (dono, 2026-09-06) — o
+   * seletor dele é a forma "só eu", sem gatilho e sem lista.
+   */
+  picksPeople(user: SessionUser): boolean {
+    return this.isLeadership(user);
   }
 
   /** Liderança por VÍNCULO no time da pessoa — nunca sobre si, nunca o admin. */
@@ -91,7 +123,10 @@ export class UiAuthorizationPolicy {
     return this.canActFor(user, architect);
   }
 
-  /** Quem aparece no seletor de Avaliações: o profissional (a autoavaliação é dele) e quem o usuário lidera — o tech lead não se avalia. */
+  /**
+   * Quem aparece em Avaliações: para o profissional, SÓ ele (em leitura); para
+   * quem lidera, os liderados — nunca ele mesmo (dono, 2026-09-06).
+   */
   assessableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
     return this.ownFirst(user, architects, (architect) => this.leadsTeamOf(user, architect));
   }
@@ -108,7 +143,9 @@ export class UiAuthorizationPolicy {
     architects: readonly A[],
     reaches: (architect: A) => boolean,
   ): A[] {
-    const own = architects.filter((architect) => this.actsOnSelf(user, architect.id));
+    const own = this.isSubjectOnly(user)
+      ? architects.filter((architect) => this.isOwn(user, architect))
+      : [];
     const led = architects.filter(
       (architect) => !this.isOwn(user, architect) && reaches(architect),
     );
@@ -117,6 +154,11 @@ export class UiAuthorizationPolicy {
 
   private isOwn(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     return architect !== undefined && user.architectId === architect.id;
+  }
+
+  /** O profissional: sujeito da própria carreira e de mais ninguém. */
+  private isSubjectOnly(user: SessionUser): boolean {
+    return user.role === "member";
   }
 
   isAssignedTechLeadOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
@@ -180,7 +222,11 @@ export class UiAuthorizationPolicy {
     return user.role !== "member";
   }
 
-  /** Quem lidera alguém — com vínculo — ou tem ficha própria tem o que fazer em Avaliações e Mentoria. */
+  /**
+   * Quem lidera alguém — com vínculo — tem o que FAZER em Avaliações, PDI e
+   * Mentoria; quem tem ficha própria tem o que LER ali (dono, 2026-09-06: os
+   * três menus continuam no menu do profissional, em leitura).
+   */
   worksWithPeople(user: SessionUser): boolean {
     if (this.isAdmin(user)) return this.scopeGrantingTeamsOf(user).size > 0;
     return true;

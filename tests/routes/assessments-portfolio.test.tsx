@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "@/lib/api";
 import type { Assessment, AssessmentEligibility } from "@/lib/domain";
-import { fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import { fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, hrefOf } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
@@ -79,13 +79,17 @@ const addCapabilityRoute = (href: string, init?: RequestInit) =>
       )
     : undefined;
 
+/**
+ * Dono, 2026-09-06 — ninguém age sobre si: quem PROPÕE o portfólio em
+ * Rascunho é quem lidera a pessoa (na 1:1), não o profissional.
+ */
 describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
 
     mockAppFetch(fetchMock, {
-      user: fixtureMemberUser,
+      user: fixtureAssignedTechLeadUser,
       state,
       routes: [
         (href) => (href.includes("/eligibility") ? jsonResponse(eligibilityBase) : undefined),
@@ -136,7 +140,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     fetchMock.mockImplementationOnce((url: string) => {
       if (String(url).endsWith(apiPath("/auth/me"))) {
         return Promise.resolve(
-          new Response(JSON.stringify(fixtureMemberUser), {
+          new Response(JSON.stringify(fixtureAssignedTechLeadUser), {
             status: 200,
             headers: { "content-type": "application/json" },
           }),
@@ -147,7 +151,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     // Reaplica o mock genérico para as chamadas seguintes, mas força a
     // primeira consulta de elegibilidade a falhar.
     mockAppFetch(fetchMock, {
-      user: fixtureMemberUser,
+      user: fixtureAssignedTechLeadUser,
       state,
       routes: [
         (href) => (href.includes("/eligibility") ? new Response("{}", { status: 500 }) : undefined),
@@ -184,7 +188,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
       ),
     };
     mockAppFetch(fetchMock, {
-      user: fixtureMemberUser,
+      user: fixtureAssignedTechLeadUser,
       state: readyState,
       routes: [
         (href) => (href.includes("/eligibility") ? jsonResponse(eligibilityBase) : undefined),

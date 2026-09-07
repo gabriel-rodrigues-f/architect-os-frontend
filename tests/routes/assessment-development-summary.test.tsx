@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "@/lib/api";
 import type { AssessmentDevelopmentSummary } from "@/lib/domain";
-import { fixtureAssignedManagerUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
+import {
+  fixtureAssignedManagerUser,
+  fixtureAssignedTechLeadUser,
+  fixtureMemberUser,
+  fixtureState,
+} from "../helpers/fixtures";
 import {
   emptyEligibilityRoute,
   jsonResponse,
@@ -93,8 +98,8 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
     vi.unstubAllGlobals();
   });
 
-  it("dono edita em Rascunho; campos nascem vazios e Salvar desabilitado até haver mudança", async () => {
-    mockSession(fixtureMemberUser, draftState, baseSummary());
+  it("quem lidera edita em Rascunho (dono, 2026-09-06); campos nascem vazios e Salvar desabilitado até haver mudança", async () => {
+    mockSession(fixtureAssignedTechLeadUser, draftState, baseSummary());
     renderWithApp(<AssessmentsPage />);
 
     const start = (await screen.findByLabelText("Começar a fazer")) as HTMLTextAreaElement;
@@ -103,8 +108,8 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
     expect(screen.getByRole("button", { name: "Salvar" })).toHaveProperty("disabled", true);
   });
 
-  it("Tech Lead não edita enquanto Rascunho — campos travados", async () => {
-    mockSession(fixtureAssignedManagerUser, draftState, baseSummary());
+  it("o profissional não edita nem em Rascunho — Começar/Parar/Continuar é view-only para ele (dono, 2026-09-06)", async () => {
+    mockSession(fixtureMemberUser, draftState, baseSummary());
     renderWithApp(<AssessmentsPage />);
 
     const start = (await screen.findByLabelText("Começar a fazer")) as HTMLTextAreaElement;
@@ -130,7 +135,7 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
   });
 
   it("salvar envia PUT com expectedVersion e mostra 'Salvo' depois do sucesso", async () => {
-    mockSession(fixtureMemberUser, draftState, baseSummary(), (body) => {
+    mockSession(fixtureAssignedTechLeadUser, draftState, baseSummary(), (body) => {
       const patch = body as { expectedVersion: number };
       expect(patch.expectedVersion).toBe(0);
       return new Response(
@@ -163,7 +168,7 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
   it("conflito de versão mantém o texto digitado até recarregar de propósito", async () => {
     let getCount = 0;
     mockAppFetch(fetchMock, {
-      user: fixtureMemberUser,
+      user: fixtureAssignedTechLeadUser,
       state: draftState,
       routes: [
         (href, init) => {

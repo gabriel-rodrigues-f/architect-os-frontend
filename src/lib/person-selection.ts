@@ -1,4 +1,6 @@
+import type { SessionUser } from "@/lib/api";
 import type { Architect } from "@/lib/domain";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { defaultNameFormatter } from "@/lib/text";
 
@@ -31,6 +33,8 @@ export type WholeTeamMark = "checked" | "unchecked" | "indeterminate";
 export interface PersonPickShape {
   /** Marca várias pessoas (caixinhas) ou uma só (marca de escolhido)? */
   readonly many: boolean;
+  /** A escolha é FIXA — "só eu": sem gatilho, sem lista, sem busca (dono, 2026-09-06). */
+  readonly fixed: boolean;
   /** Teto de pessoas; `undefined` quando não há. */
   readonly max: number | undefined;
   /** A forma oferece "Todo o time"? Nunca com alcance vazio. */
@@ -43,6 +47,7 @@ export interface PersonPickShape {
 
 class OnePerson implements PersonPickShape {
   readonly many = false;
+  readonly fixed: boolean = false;
   readonly max = 1;
 
   offersWholeTeam(): boolean {
@@ -58,8 +63,27 @@ class OnePerson implements PersonPickShape {
   }
 }
 
+/**
+ * "Só eu" (dono, 2026-09-06): "os botões de busca por outros membros, em
+ * nenhuma parte da aplicação, devem ser mostrados para um membro. Um membro
+ * pode ver apenas informações sobre si." A escolha já está feita — é a
+ * própria pessoa — e a tela desenha o nome, não uma combobox.
+ */
+class OnlyMe extends OnePerson {
+  override readonly fixed = true;
+
+  override pick(selected: readonly string[], _id: string): string[] {
+    return [...selected];
+  }
+
+  override canPick(): boolean {
+    return false;
+  }
+}
+
 class ManyPeople implements PersonPickShape {
   readonly many = true;
+  readonly fixed = false;
   readonly max: number | undefined = undefined;
 
   offersWholeTeam(reach: readonly Architect[]): boolean {
@@ -114,6 +138,26 @@ export class PersonPicker {
     return new PersonPicker(new OnePerson(), reach, selectedId ? [selectedId] : []);
   }
 
+  /** A forma "só eu": o alcance é a própria pessoa e a escolha é ela, fixa. */
+  static onlyMe(me: Architect | undefined): PersonPicker {
+    return new PersonPicker(new OnlyMe(), me ? [me] : [], me ? [me.id] : []);
+  }
+
+  /**
+   * Uma pessoa, na forma que o papel de quem escolhe pede: quem lidera escolhe
+   * entre o alcance; o profissional só vê a si (dono, 2026-09-06). Um só lugar
+   * decide isso para Avaliações, PDI e Mentoria.
+   */
+  static oneFor(
+    user: SessionUser,
+    reach: readonly Architect[],
+    selectedId: string | null | undefined,
+    policy = defaultUiAuthorizationPolicy,
+  ): PersonPicker {
+    if (policy.picksPeople(user)) return PersonPicker.one(reach, selectedId);
+    return PersonPicker.onlyMe(reach.find((person) => policy.readsOwn(user, person.id)));
+  }
+
   static many(reach: readonly Architect[], selected: readonly string[]): PersonPicker {
     return new PersonPicker(new ManyPeople(), reach, selected);
   }
@@ -129,6 +173,11 @@ export class PersonPicker {
 
   get many(): boolean {
     return this.shape.many;
+  }
+
+  /** "Só eu": a tela desenha o nome e nenhum gatilho. */
+  get fixed(): boolean {
+    return this.shape.fixed;
   }
 
   get max(): number | undefined {

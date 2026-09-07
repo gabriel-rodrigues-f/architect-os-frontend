@@ -120,9 +120,13 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
     expect(itensAtivos()).toEqual(["Time"]);
   });
 
-  it("quem lidera e tem a própria ficha: na própria, só Minha carreira; na de outra pessoa, só Time", async () => {
+  it("quem lidera e tem a própria ficha: na própria, só a aba do grupo Minha carreira (dono, 2026-09-06); na de outra pessoa, só Time", async () => {
     await renderEm("/architects/ana/roadmap", liderComArquiteto);
-    expect(itensAtivos()).toEqual(["Minha carreira"]);
+    expect(itensAtivos()).toEqual(["Roteiro"]);
+    cleanup();
+
+    await renderEm("/architects/ana", liderComArquiteto);
+    expect(itensAtivos()).toEqual(["Visão geral"]);
     cleanup();
 
     await renderEm("/architects/bruno", liderComArquiteto);

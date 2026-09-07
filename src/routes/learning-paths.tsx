@@ -91,8 +91,9 @@ function LearningScreen() {
     return TeamLeadershipRoles.includes(user.role);
   };
 
+  // A exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha é do profissional.
   const canEditProgress = (architectId: string) =>
-    defaultUiAuthorizationPolicy.canActFor(user, sel.architectById(architectId));
+    defaultUiAuthorizationPolicy.recordsTrailProgressOf(user, sel.architectById(architectId));
 
   return (
     <>

@@ -74,9 +74,13 @@ describe("Avaliações — evidência aceita aparece como contexto", () => {
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     await userEvent.click(within(linha).getByRole("button"));
 
-    expect(await screen.findByText("Evidências aceitas")).toBeTruthy();
-    expect(screen.getByText("ADR-014 — Estratégia de retry")).toBeTruthy();
-    expect(screen.queryByText("Curso de Kubernetes avançado")).toBeNull();
+    const contexto = (await screen.findByText("Evidências aceitas")).closest<HTMLElement>(
+      "section, div",
+    )!;
+    // A mesma evidência também está na seção "Evidências" da pessoa, que
+    // quem lidera vê em Avaliações (dono, 2026-09-06) — por isso o recorte.
+    expect(within(contexto).getByText("ADR-014 — Estratégia de retry")).toBeTruthy();
+    expect(within(contexto).queryByText("Curso de Kubernetes avançado")).toBeNull();
   });
 
   it("competência sem evidência aceita não mostra selo nem a seção", async () => {

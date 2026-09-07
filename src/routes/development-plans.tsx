@@ -148,7 +148,7 @@ function PlansScreen() {
         help={help}
         actions={
           <PersonCombobox
-            picker={PersonPicker.one(sel.activeArchitects, architectId)}
+            picker={PersonPicker.oneFor(user, sel.activeArchitects, architectId)}
             onChange={([id]) => setArchitectId(id ?? "")}
             label={t("pdi.architect")}
             className="w-48"

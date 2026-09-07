@@ -25,6 +25,9 @@ import { cn } from "@/lib/utils";
  * Com alcance vazio não há lista: o gatilho vira a própria mensagem
  * "Não há pessoas cadastradas." e não abre — não existe "Todo o time" de
  * ninguém. A busca que não acha ninguém diz "Nenhuma pessoa encontrada.".
+ *
+ * Na forma "só eu" (dono, 2026-09-06) não há combobox: o profissional não
+ * busca outros membros em parte nenhuma — a tela mostra o nome dele, e só.
  */
 export function PersonCombobox({
   picker,
@@ -64,6 +67,22 @@ export function PersonCombobox({
   };
   const summary = summaryText();
   const muted = picker.summary.kind !== "one" && picker.summary.kind !== "wholeTeam";
+
+  if (picker.fixed) {
+    return (
+      <span
+        id={id}
+        aria-label={label}
+        title={summary}
+        className={cn(
+          "inline-flex h-9 items-center truncate rounded-md border border-transparent px-3 text-sm font-medium",
+          className,
+        )}
+      >
+        {summary}
+      </span>
+    );
+  }
 
   if (picker.isEmpty) {
     return (

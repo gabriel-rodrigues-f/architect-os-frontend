@@ -100,7 +100,7 @@ function AssessmentsScreen() {
   const selectedArchitect = sel.architectById(architectId);
 
   const {
-    isOwner,
+    isSubject,
     isLead,
     status,
     isCompleted,
@@ -171,7 +171,7 @@ function AssessmentsScreen() {
         actions={
           <div className="flex flex-wrap gap-2">
             <PersonCombobox
-              picker={PersonPicker.one(assessable, architectId)}
+              picker={PersonPicker.oneFor(user, assessable, architectId)}
               onChange={([id]) => setArchitectId(id ?? "")}
               label={t("asmt.architect")}
               className="w-56"
@@ -291,16 +291,12 @@ function AssessmentsScreen() {
         />
       )}
 
-      {assessment && (
-        <CareerPortfolioSection assessment={assessment} isOwner={isOwner} isLead={isLead} />
-      )}
+      {assessment && <CareerPortfolioSection assessment={assessment} isLead={isLead} />}
 
-      {assessment && (
-        <DevelopmentSummarySection assessment={assessment} isOwner={isOwner} isLead={isLead} />
-      )}
+      {assessment && <DevelopmentSummarySection assessment={assessment} isLead={isLead} />}
 
-      {/* A PRÓPRIA pessoa registra evidência aqui (dono, 2026-09-05); quem lidera registra e revisa pela ficha. */}
-      {selectedArchitect && isOwner && (
+      {/* Ninguém age sobre si (dono, 2026-09-06): a pessoa LÊ as próprias evidências; quem lidera registra e reenvia. */}
+      {selectedArchitect && (isSubject || isLead) && (
         <EvidenceLedgerSection
           className="mb-6"
           architectId={selectedArchitect.id}
@@ -308,7 +304,7 @@ function AssessmentsScreen() {
           evidences={store.evidences.filter(
             (evidence) => evidence.architectId === selectedArchitect.id,
           )}
-          canRegister
+          canRegister={isLead}
         />
       )}
 

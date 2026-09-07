@@ -110,12 +110,13 @@ describe("Mentoria — agendar follow-up", () => {
     expect(screen.getByRole("button", { name: "Agendar follow-up" })).toBeTruthy();
   });
 
-  it("outra pessoa não vê a ação numa sessão que não é dela", async () => {
+  it("o mentorado vê a própria sessão sem escolher ninguém e não vê a ação — Mentoria é leitura para ele (dono, 2026-09-06)", async () => {
     mockSession(outsider);
     renderWithApp(<MentoringPage />);
 
-    await selectMentee("Bruno Almeida");
+    // A linha do tempo já nasce nele: o profissional não busca outros membros.
     await screen.findByText("Sessão para follow-up");
+    expect(screen.queryByRole("combobox", { name: "Filtrar mentorado" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Agendar follow-up" })).toBeNull();
   });
 

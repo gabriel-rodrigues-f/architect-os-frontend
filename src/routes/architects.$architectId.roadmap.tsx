@@ -13,6 +13,7 @@ import {
   OutOfReachScreen,
   PageHeader,
   PersonAdviceSection,
+  ProfileBackLink,
   ProfileTabs,
   QuerySection,
 } from "@/components/app";
@@ -125,15 +126,7 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
         help={help}
         title={t("roadmap.title", { nome: architect.name })}
         description={t("roadmap.description")}
-        actions={
-          <Link
-            to="/architects/$architectId"
-            params={{ architectId }}
-            className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent"
-          >
-            {t("arch.back")}
-          </Link>
-        }
+        actions={<ProfileBackLink architectId={architect.id} to="overview" />}
       />
       <DeactivatedPersonNotice active={architect.active} />
 
