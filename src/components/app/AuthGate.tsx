@@ -71,7 +71,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <DarkStage>
-        <LoginScreen />
+        <LoginScreen sessionEnd={bootstrap.endReason} />
       </DarkStage>
     );
   }

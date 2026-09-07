@@ -1,5 +1,6 @@
 import type { SessionUser } from "./api";
 import { ApiError } from "./api-errors";
+import type { SessionEndReason } from "./session-end-reason";
 import { ServiceHeartbeat } from "../components/app/ServiceOutageScreen";
 
 export type SessionBootstrapKind = "reading" | "open" | "absent" | "serviceDown";
@@ -21,6 +22,8 @@ export class SessionBootstrap {
   private constructor(
     readonly kind: SessionBootstrapKind,
     readonly user: SessionUser | null,
+    /** Por que a sessão desta aba acabou — só existe em `absent` nascido de um encerramento (PR 9). */
+    readonly endReason: SessionEndReason | null = null,
   ) {}
 
   static reading(): SessionBootstrap {
@@ -31,8 +34,8 @@ export class SessionBootstrap {
     return new SessionBootstrap("open", user);
   }
 
-  static absent(): SessionBootstrap {
-    return new SessionBootstrap("absent", null);
+  static absent(reason: SessionEndReason | null = null): SessionBootstrap {
+    return new SessionBootstrap("absent", null, reason);
   }
 
   static serviceDown(): SessionBootstrap {

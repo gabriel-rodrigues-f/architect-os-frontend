@@ -7,13 +7,14 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { toast } from "sonner";
 
 import { authApi, sessionPolicy, supportAccess, UserFacingError, type SessionUser } from "./api";
 import { SessionBootstrap, SessionBootstrapReader } from "./session-bootstrap";
+import { SessionEndReason, sessionEndMemory } from "./session-end-reason";
 import { SESSION_QUERY_KEY, sessionQuery } from "./session-query";
 
 interface AuthContextValue {
@@ -30,7 +31,13 @@ interface AuthContextValue {
     input: { name: string; email: string; password: string },
     onAccepted?: () => void,
   ) => Promise<void>;
-  logout: () => Promise<void>;
+  /** Revoga no serviço e fecha a sessão desta aba; a razão chega ao login (PR 9). */
+  logout: (reason?: SessionEndReason) => Promise<void>;
+  /**
+   * Fecha a sessão desta aba SEM chamar o serviço — para quando o cookie já
+   * morreu do outro lado (senha nova, 401). É o único lugar que zera o cache.
+   */
+  closeSession: (reason: SessionEndReason) => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
@@ -72,18 +79,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const retrySession = useCallback(() => reader?.retryNow(), [reader]);
 
+  /**
+   * O ÚNICO ENCERRAMENTO DA SESSÃO DESTA ABA (PR 9, [FA-02]/[FA-06]): "Sair",
+   * inatividade, 401 e senha nova passam todos por aqui. A razão vai para o
+   * estado (o `AuthGate` a entrega ao login) e para a memória da aba (o F5
+   * ainda encontra a frase). Cache, passe de suporte e sessão morrem juntos.
+   */
+  const closeSession = useCallback(
+    (reason: SessionEndReason) => {
+      sessionEndMemory.remember(reason);
+      queryClient.clear();
+      // [FA-07]: o passe de suporte é desta sessão — morre com ela.
+      supportAccess.clear();
+      setBootstrap(SessionBootstrap.absent(reason));
+    },
+    [queryClient],
+  );
+
+  /**
+   * O 401 de sessão chega pela política, fora do React. Antes ele fechava a
+   * sessão DENTRO de um updater de `setState` — impuro, e o StrictMode o
+   * reexecuta. A guarda "só se há sessão" agora lê a sessão corrente por
+   * referência: o 401 do `/auth/me` da montagem continua sem efeito.
+   */
+  const currentUser = useRef<SessionUser | null>(null);
+  useEffect(() => {
+    currentUser.current = user;
+  }, [user]);
+
   useEffect(() => {
     sessionPolicy.whenSessionEnded(() => {
-      setUser((current) => {
-        if (!current) return current;
-        queryClient.clear();
-        supportAccess.clear();
-        toast.error("Sua sessão expirou. Faça login novamente.");
-        return null;
-      });
+      if (currentUser.current === null) return;
+      currentUser.current = null;
+      closeSession(SessionEndReason.expired);
     });
     return () => sessionPolicy.whenSessionEnded(null);
-  }, [queryClient, setUser]);
+  }, [closeSession]);
+
+  // Sessão aberta — por login ou pela leitura da montagem — esquece a razão da anterior.
+  useEffect(() => {
+    if (user !== null) sessionEndMemory.clear();
+  }, [user]);
 
   /**
    * A rede de segurança do primeiro acesso. O caminho normal é a marca chegar
@@ -147,13 +183,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [openSession],
   );
 
-  const logout = useCallback(async () => {
-    await authApi.logout().catch(() => undefined);
-    setUser(null);
-    queryClient.clear();
-    // [FA-07]: o passe de suporte é desta sessão — morre com ela.
-    supportAccess.clear();
-  }, [queryClient, setUser]);
+  const logout = useCallback(
+    async (reason: SessionEndReason = SessionEndReason.manual) => {
+      await authApi.logout().catch(() => undefined);
+      closeSession(reason);
+    },
+    [closeSession],
+  );
 
   /**
    * A troca do PRIMEIRO ACESSO. O serviço responde 204 e derruba a marca;
@@ -172,12 +208,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (currentPassword: string, newPassword: string) => {
       await authApi.changePassword(currentPassword, newPassword);
       // Dono (2026-09-06): senha nova, sessão nova — a pessoa volta pela tela
-      // de login, nunca entra direto. O backend já fechou o cookie.
-      queryClient.setQueryData(SESSION_QUERY_KEY, null);
-      await queryClient.invalidateQueries();
-      setUser(null);
+      // de login, nunca entra direto. O backend já fechou o cookie; é ato da
+      // pessoa, então o login não explica nada.
+      closeSession(SessionEndReason.manual);
     },
-    [queryClient, setUser],
+    [closeSession],
   );
 
   const value = useMemo<AuthContextValue>(
@@ -189,9 +224,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      closeSession,
       changePassword,
     }),
-    [user, bootstrap, retrySession, login, register, logout, changePassword],
+    [user, bootstrap, retrySession, login, register, logout, closeSession, changePassword],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

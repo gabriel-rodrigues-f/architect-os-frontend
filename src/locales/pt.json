@@ -1041,6 +1041,8 @@
   "login.password": "Senha",
   "login.offline": "Serviço indisponível no momento. Tente novamente em instantes.",
   "login.offline.dev": "Backend indisponível. Suba a API com `docker compose up -d` e confira o VITE_API_URL.",
+  "login.sessionEnded.idle": "Sua sessão expirou por inatividade. Entre novamente para continuar.",
+  "login.sessionEnded.expired": "Sua sessão expirou. Entre novamente para continuar.",
   "firstAccess.title": "Troque a sua senha para começar",
   "firstAccess.lead": "Você entrou com uma senha temporária. Escolha uma senha sua agora — é o único passo que falta para o sistema abrir.",
   "firstAccess.currentPassword": "Senha temporária",

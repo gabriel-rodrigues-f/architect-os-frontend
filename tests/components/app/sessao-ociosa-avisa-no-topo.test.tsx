@@ -12,6 +12,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   return {
     ...actual,
     useRouterState: () => "/",
+    // O portão reavalia guardas e navega ao abrir a sessão; aqui não há roteador.
+    useRouter: () => ({ invalidate: () => Promise.resolve(), navigate: () => Promise.resolve() }),
     Link: ({
       children,
       to: _to,
@@ -25,9 +27,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { AppShell } from "@/components/app/AppShell";
+import { AuthGate } from "@/components/app/AuthGate";
 import { apiPath } from "@/lib/api-path";
+import { SessionEndMemory } from "@/lib/session-end-reason";
 import { ThemeProvider } from "@/lib/theme";
-import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
+import { jsonResponse, mockAppFetch, renderWithApp } from "../../helpers/render-app";
 
 /**
  * ONDA 29, fatia `sessao-ociosa` — pedido literal do dono:
@@ -62,10 +66,20 @@ describe("sessão ociosa — o aviso no topo da tela (onda 29)", () => {
     vi.stubGlobal("requestAnimationFrame", vi.fn().mockReturnValue(1));
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
     window.localStorage.clear();
+    window.sessionStorage.clear();
     window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock);
+    mockAppFetch(fetchMock, {
+      routes: [
+        (href) =>
+          href.endsWith(apiPath("/auth/status"))
+            ? jsonResponse({ hasUsers: true })
+            : href.endsWith(apiPath("/auth/logout"))
+              ? new Response(null, { status: 204 })
+              : undefined,
+      ],
+    });
   });
 
   afterEach(() => {
@@ -73,6 +87,7 @@ describe("sessão ociosa — o aviso no topo da tela (onda 29)", () => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
     window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
   const renderShell = () =>
@@ -174,5 +189,34 @@ describe("sessão ociosa — o aviso no topo da tela (onda 29)", () => {
     await avancar(UM_MINUTO);
 
     expect(pediuLogout()).toBe(true);
+  });
+
+  /**
+   * PR 9 ([FA-01]) — quem volta depois do encerramento não encontra o login
+   * mudo: a tela diz que foi por inatividade (relatório do dono, item 47).
+   * Aqui a casca é montada ATRÁS do portão, como na aplicação de verdade.
+   */
+  it("aos 10 minutos, o login explica que a sessão expirou por inatividade", async () => {
+    renderWithApp(
+      <ThemeProvider>
+        <AuthGate>
+          <AppShell>
+            <div>conteúdo</div>
+          </AppShell>
+        </AuthGate>
+      </ThemeProvider>,
+    );
+    await screen.findByText("conteúdo");
+
+    await avancar(NOVE_MINUTOS + UM_MINUTO);
+
+    expect(pediuLogout()).toBe(true);
+    expect(
+      await screen.findByText(
+        "Sua sessão expirou por inatividade. Entre novamente para continuar.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText("conteúdo")).toBeNull();
+    expect(window.sessionStorage.getItem(SessionEndMemory.STORAGE_KEY)).toBe("idle");
   });
 });

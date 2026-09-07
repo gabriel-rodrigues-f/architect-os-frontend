@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 
 import { CareerRunCanvas } from "@/components/app/CareerRunCanvas";
 import { Button } from "@/components/ui/button";
-import { authApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { INSTANCE_STATUS_QUERY_KEY, instanceStatusQuery } from "@/lib/session-query";
 
 /** O pulso do serviço: pergunta de tempos em tempos se ele voltou. */
 export class ServiceHeartbeat {
   static readonly INTERVAL_MS = 5000;
-  static readonly QUERY_KEY = ["service-heartbeat"] as const;
+  static readonly QUERY_KEY = INSTANCE_STATUS_QUERY_KEY;
 }
 
 /**
@@ -26,9 +26,7 @@ export function ServiceOutageScreen({
 }) {
   const { t } = useI18n();
   const heartbeat = useQuery({
-    queryKey: ServiceHeartbeat.QUERY_KEY,
-    queryFn: authApi.status,
-    retry: false,
+    ...instanceStatusQuery,
     refetchInterval: (query) =>
       query.state.status === "success" ? false : ServiceHeartbeat.INTERVAL_MS,
     refetchOnWindowFocus: true,

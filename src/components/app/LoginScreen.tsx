@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -5,13 +6,15 @@ import { AccessRecoveryRequestPanel } from "@/components/app/AccessRecoveryReque
 import { AuthScreenShell } from "@/components/app/AuthScreenShell";
 import { PasswordInput } from "@/components/app/PasswordInput";
 import { AuthAlert } from "@/components/app/AuthAlert";
+import { Callout } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { authErrorMessage, useAuth } from "@/lib/auth";
 import { FormKeyboard } from "@/lib/form-keyboard";
+import { SessionEndReason, sessionEndMemory } from "@/lib/session-end-reason";
+import { instanceStatusQuery } from "@/lib/session-query";
 import { SynapseSignals } from "@/lib/synapse-network";
 import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
 
@@ -35,15 +38,38 @@ import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
  * resposta: aceita → azul (`onAccepted`, antes de a sessão abrir, para a rede
  * ainda estar na tela); recusada → vermelho; serviço fora → nada, porque não
  * é culpa do que foi digitado (`SynapseOutcomeRule.toneOfDoorResult`).
+ *
+ * A PORTA EXPLICA POR QUE VOCÊ SAIU (PR 9, [FA-01]/[FA-02]): inatividade e
+ * expiração chegam como `SessionEndReason` — pelo portão, na mesma aba, ou
+ * pela memória da aba depois de um F5 — e viram um aviso INFORMATIVO dentro
+ * do cartão, acima dos campos. Não é erro da pessoa, então não é vermelho.
+ * Some ao começar a digitar ou ao entrar; "Sair" nunca o mostra.
  */
-export function LoginScreen({ signals: givenSignals }: { signals?: SynapseSignals } = {}) {
+export function LoginScreen({
+  signals: givenSignals,
+  sessionEnd = null,
+}: { signals?: SynapseSignals; sessionEnd?: SessionEndReason | null } = {}) {
   const { login, register } = useAuth();
   const { t } = useI18n();
   const [ownSignals] = useState(() => new SynapseSignals());
   const signals = givenSignals ?? ownSignals;
   const [mode, setMode] = useState<"login" | "register" | "recovery">("login");
-  const [hasUsers, setHasUsers] = useState(true);
-  const [checkedInstance, setCheckedInstance] = useState(false);
+  const [endReason, setEndReason] = useState<SessionEndReason | null>(
+    () => sessionEnd ?? sessionEndMemory.recall(),
+  );
+  const forgetEndReason = () => {
+    if (endReason === null) return;
+    setEndReason(null);
+    sessionEndMemory.clear();
+  };
+  const fieldChange = (field: "name" | "email" | "password") => (value: string) => {
+    forgetEndReason();
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+  // [FA-11]: a instância é server-state — a mesma leitura da tela de queda.
+  const instance = useQuery({ ...instanceStatusQuery, refetchOnWindowFocus: false });
+  const hasUsers = instance.data?.hasUsers ?? true;
+  const checkedInstance = !instance.isPending;
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -51,15 +77,12 @@ export function LoginScreen({ signals: givenSignals }: { signals?: SynapseSignal
   const [rejected, setRejected] = useState(false);
 
   useEffect(() => {
-    authApi
-      .status()
-      .then(({ hasUsers: instanceHasUsers }) => {
-        setHasUsers(instanceHasUsers);
-        setMode(instanceHasUsers ? "login" : "register");
-      })
-      .catch(() => setError(import.meta.env.DEV ? t("login.offline.dev") : t("login.offline")))
-      .finally(() => setCheckedInstance(true));
-  }, []);
+    if (instance.data) setMode(instance.data.hasUsers ? "login" : "register");
+  }, [instance.data]);
+  useEffect(() => {
+    if (instance.isError)
+      setError(import.meta.env.DEV ? t("login.offline.dev") : t("login.offline"));
+  }, [instance.isError, t]);
 
   /**
    * O erro anterior FICA na tela enquanto a nova tentativa está em voo. Limpar
@@ -97,6 +120,7 @@ export function LoginScreen({ signals: givenSignals }: { signals?: SynapseSignal
   };
 
   const firstAccess = mode === "register";
+  const sessionEndNotice = !firstAccess && endReason?.messageKey ? t(endReason.messageKey) : null;
 
   if (mode === "recovery") {
     return (
@@ -124,8 +148,18 @@ export function LoginScreen({ signals: givenSignals }: { signals?: SynapseSignal
         {firstAccess ? t("login.firstAccess.lead") : t("login.lead")}
       </p>
 
+      {sessionEndNotice && (
+        <Callout tone="info" role="status" compact className="mt-6">
+          {sessionEndNotice}
+        </Callout>
+      )}
+
       {/* Ritmo do cartão (2026-09-07): apoio → 28 → campos a 20 entre si → 16 → botão → 16 → Esqueci. */}
-      <form className="mt-7" onSubmit={submit} onKeyDown={FormKeyboard.submitsOnEnter}>
+      <form
+        className={sessionEndNotice ? "mt-4" : "mt-7"}
+        onSubmit={submit}
+        onKeyDown={FormKeyboard.submitsOnEnter}
+      >
         <div data-testid="auth-fields" className="space-y-5">
           {firstAccess && (
             <div className="space-y-1.5">
@@ -136,7 +170,7 @@ export function LoginScreen({ signals: givenSignals }: { signals?: SynapseSignal
                 required
                 className="auth-field"
                 value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                onChange={(event) => fieldChange("name")(event.target.value)}
               />
             </div>
           )}
@@ -151,7 +185,7 @@ export function LoginScreen({ signals: givenSignals }: { signals?: SynapseSignal
               aria-invalid={invalid || undefined}
               className="auth-field"
               value={form.email}
-              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              onChange={(event) => fieldChange("email")(event.target.value)}
             />
           </div>
 
@@ -165,7 +199,7 @@ export function LoginScreen({ signals: givenSignals }: { signals?: SynapseSignal
               aria-invalid={invalid || undefined}
               className="auth-field"
               value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              onChange={(event) => fieldChange("password")(event.target.value)}
             />
             {firstAccess && (
               <p className="text-xs text-muted-foreground">{t("login.firstAccess.minLength")}</p>

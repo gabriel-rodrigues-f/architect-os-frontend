@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { usePasswordChoice } from "@/hooks";
 import { AccessInvitation, SetPasswordRefusal } from "@/lib/access-recovery";
 import { authApi } from "@/lib/api";
-import { authErrorMessage } from "@/lib/auth";
-import { SESSION_QUERY_KEY } from "@/lib/session-query";
+import { authErrorMessage, useAuth } from "@/lib/auth";
+import { SessionEndReason } from "@/lib/session-end-reason";
 import { useI18n } from "@/lib/i18n";
 import { SynapseSignals } from "@/lib/synapse-network";
 import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
@@ -73,13 +73,13 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
   const [signals] = useState(() => new SynapseSignals());
 
   const invitation = AccessInvitation.of(token);
-  const queryClient = useQueryClient();
+  const { closeSession } = useAuth();
   const goToLogin = () => void navigate({ to: "/" });
   // Dono (2026-09-06): a senha nova encerra a sessão que o navegador tinha
-  // (o backend já fechou o cookie); a casca relê /auth/me e mostra o login.
-  const goToLoginAsNewSession = async () => {
-    queryClient.setQueryData(SESSION_QUERY_KEY, null);
-    await queryClient.invalidateQueries();
+  // (o backend já fechou o cookie). Quem fecha é o `AuthProvider` ([FA-06]):
+  // esta tela não escreve no cache da sessão. Ato da pessoa: sem aviso no login.
+  const goToLoginAsNewSession = () => {
+    closeSession(SessionEndReason.manual);
     goToLogin();
   };
 
@@ -101,7 +101,7 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
       await authApi.setPassword(invitation.token, choice.newPassword);
       signals.pulseWith("primary");
       toast.success(t("setPassword.done"));
-      await goToLoginAsNewSession();
+      goToLoginAsNewSession();
     } catch (refused) {
       const reading = SetPasswordRefusal.of(refused);
       setRefusal(reading);

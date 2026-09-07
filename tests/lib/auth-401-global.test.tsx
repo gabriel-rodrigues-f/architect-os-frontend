@@ -1,13 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactNode } from "react";
+import { StrictMode, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { toast } from "sonner";
 
-import { Toaster } from "@/components/ui/sonner";
 import { api, authApi } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { SessionEndMemory } from "@/lib/session-end-reason";
 import { fixtureAdminUser } from "../helpers/fixtures";
 import { apiPath } from "@/lib/api-path";
 
@@ -25,23 +24,32 @@ import { apiPath } from "@/lib/api-path";
 
 const fetchMock = vi.fn();
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+/**
+ * PR 9 ([FA-02]): o encerramento por 401 saiu de dentro de um updater de
+ * `setState` — que o StrictMode reexecuta — e o aviso deixou de ser um toast
+ * em português fixo: a razão vai para a tela de login pelo `SessionEndReason`.
+ * O `QueryClient` é injetável para o teste contar quantas vezes a sessão foi
+ * fechada.
+ */
+function Wrapper({
+  children,
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } }),
+}: {
+  children: ReactNode;
+  queryClient?: QueryClient;
+}) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {children}
-        <Toaster theme="light" position="bottom-right" duration={3000} />
-      </AuthProvider>
+      <AuthProvider>{children}</AuthProvider>
     </QueryClientProvider>
   );
 }
 
 function SessionProbe() {
-  const { user } = useAuth();
+  const { user, bootstrap } = useAuth();
   return (
     <>
-      <p>{user ? `LOGADO:${user.email}` : "DESLOGADO"}</p>
+      <p>{user ? `LOGADO:${user.email}` : `DESLOGADO:${bootstrap.endReason?.kind ?? "-"}`}</p>
       <button type="button" onClick={() => void api.setActiveCycle("2026-h2").catch(() => {})}>
         Disparar chamada autenticada
       </button>
@@ -84,13 +92,10 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    // sonner guarda os toasts num store global fora da árvore React —
-    // `cleanup()` desmonta o `<Toaster>`, mas não esvazia a fila; sem isto,
-    // um toast do teste anterior reaparece no `<Toaster>` novo do próximo.
-    toast.dismiss();
+    window.sessionStorage.clear();
   });
 
-  it("um 401 numa chamada autenticada zera user e mostra aviso de sessão expirada", async () => {
+  it("um 401 numa chamada autenticada zera user com a razão 'expirada' e a guarda na aba", async () => {
     render(
       <Wrapper>
         <SessionProbe />
@@ -101,8 +106,30 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Disparar chamada autenticada" }));
 
-    await waitFor(() => expect(screen.getByText("DESLOGADO")).toBeTruthy());
-    expect(await screen.findByText("Sua sessão expirou. Faça login novamente.")).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("DESLOGADO:expired")).toBeTruthy());
+    expect(window.sessionStorage.getItem(SessionEndMemory.STORAGE_KEY)).toBe("expired");
+  });
+
+  it("o encerramento roda UMA vez, fora do updater de estado — mesmo sob StrictMode", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
+    const clear = vi.spyOn(queryClient, "clear");
+    render(
+      <StrictMode>
+        <Wrapper queryClient={queryClient}>
+          <SessionProbe />
+        </Wrapper>
+      </StrictMode>,
+    );
+
+    expect(await screen.findByText(`LOGADO:${fixtureAdminUser.email}`)).toBeTruthy();
+    clear.mockClear();
+
+    await userEvent.click(screen.getByRole("button", { name: "Disparar chamada autenticada" }));
+
+    await waitFor(() => expect(screen.getByText("DESLOGADO:expired")).toBeTruthy());
+    expect(clear).toHaveBeenCalledTimes(1);
   });
 
   it("o 401 do /api/v1/auth/me inicial (sem sessão nenhuma) não dispara o aviso de sessão expirada", async () => {
@@ -125,8 +152,8 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
       </Wrapper>,
     );
 
-    await screen.findByText("DESLOGADO");
-    expect(screen.queryByText("Sua sessão expirou. Faça login novamente.")).toBeNull();
+    await screen.findByText("DESLOGADO:-");
+    expect(window.sessionStorage.getItem(SessionEndMemory.STORAGE_KEY)).toBeNull();
   });
 
   /**
@@ -169,6 +196,6 @@ describe("auth — 401 fora do login/me zera a sessão e avisa (B-33)", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(screen.getByText(`LOGADO:${fixtureAdminUser.email}`)).toBeTruthy();
-    expect(screen.queryByText("Sua sessão expirou. Faça login novamente.")).toBeNull();
+    expect(window.sessionStorage.getItem(SessionEndMemory.STORAGE_KEY)).toBeNull();
   });
 });

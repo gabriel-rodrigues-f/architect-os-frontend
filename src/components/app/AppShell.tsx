@@ -27,6 +27,7 @@ import {
 } from "@/lib/navigation-catalog";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { SidebarPreferences, defaultSidebarPreferences } from "@/lib/sidebar-preferences";
+import { SessionEndReason } from "@/lib/session-end-reason";
 import { useIdleSession } from "@/lib/use-idle-session";
 import { cn } from "@/lib/utils";
 
@@ -69,10 +70,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const { t } = useI18n();
 
+  // PR 9 ([FA-01]): o encerramento por inatividade leva a razão — o login explica.
   const idlePhase = useIdleSession({
     active: user !== null,
     onEnd: () => {
-      void logout();
+      void logout(SessionEndReason.idle);
     },
   });
 
@@ -354,7 +356,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={logout}
+                    onClick={() => void logout()}
                     aria-label={t("shell.logout")}
                     className="flex w-full justify-center rounded-md p-1.5 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   >
@@ -371,7 +373,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <p className="truncate">{user?.email}</p>
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={() => void logout()}
                   className="mt-2 flex items-center gap-1.5 text-sidebar-foreground/70 transition-colors hover:text-sidebar-accent-foreground"
                 >
                   <LogOut className="size-3.5" />
@@ -490,7 +492,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p className="truncate">{user?.email}</p>
             <button
               type="button"
-              onClick={logout}
+              onClick={() => void logout()}
               className="mt-2 flex items-center gap-1.5 transition-colors hover:text-sidebar-accent-foreground"
             >
               <LogOut className="size-3.5" />
