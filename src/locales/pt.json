@@ -78,6 +78,7 @@
   "common.none": "nenhum",
   "common.andMoreCount": "e mais {n}",
   "common.understood": "Entendi",
+  "dialog.close": "Fechar janela",
   "section.show": "Mostrar",
   "section.hide": "Esconder",
   "section.showNamed": "Mostrar {nome}",

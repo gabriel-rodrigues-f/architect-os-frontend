@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CommandVariant, type CommandVariantName } from "@/components/app/CommandVariant";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Callout } from "@/components/app/ui-bits";
 import { useAsyncSubmit } from "@/hooks";
 import { useI18n } from "@/lib/i18n";
 
@@ -23,7 +25,7 @@ export function CommandDialog({
   confirmLabel,
   submittingLabel,
   cancelLabel,
-  confirmVariant = "default",
+  confirmVariant = "primary",
   fallbackError,
   canSubmit = true,
   onSubmit,
@@ -34,7 +36,7 @@ export function CommandDialog({
   confirmLabel: string;
   submittingLabel: string;
   cancelLabel?: string;
-  confirmVariant?: "default" | "destructive";
+  confirmVariant?: CommandVariantName;
   fallbackError: string;
   canSubmit?: boolean;
   onSubmit: () => Promise<unknown>;
@@ -54,18 +56,18 @@ export function CommandDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        {body !== undefined && <p className="text-sm text-muted-foreground">{body}</p>}
+        {body !== undefined && <p className="text-body text-muted-foreground">{body}</p>}
         {error !== null && (
-          <p role="alert" className="text-sm text-destructive">
+          <Callout tone="danger" compact>
             {error}
-          </p>
+          </Callout>
         )}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
+          <Button variant="secondary" onClick={onClose} disabled={submitting}>
             {cancelLabel ?? t("common.cancel")}
           </Button>
           <Button
-            variant={confirmVariant}
+            variant={CommandVariant.of(confirmVariant)}
             disabled={!canSubmit || submitting}
             onClick={() => void submit()}
           >

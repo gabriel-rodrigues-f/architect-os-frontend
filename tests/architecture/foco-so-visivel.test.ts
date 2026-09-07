@@ -28,11 +28,17 @@ describe("foco só por focus-visible", () => {
     expect(Bloco.de(":root {").valorDe("--focus-ring-width")).toBe("3px");
   });
 
+  /**
+   * PR 2 (pista A): `Input`, `Select` e `Textarea` vestem a moldura de
+   * `FieldControl` (`field-control.ts`) — o anel mora lá, uma vez; o `Sheet`
+   * compõe o `OverlayCloseButton` do `dialog.tsx`. A régua olha quem
+   * ESCREVE a utility, não quem a herda.
+   */
   it("as primitivas de components/ui aplicam a utility por focus-visible", () => {
     const primitivas = new Varredura().contagem(
       (arquivo) => arquivo.ocorrencias(/focus-visible:focus-ring/g),
       (arquivo) =>
-        /src\/components\/ui\/(button|input|textarea|checkbox|badge|dialog|sheet)\.tsx$/.test(
+        /src\/components\/ui\/(button|input|select|textarea|field-control|checkbox|badge|dialog|sheet)\.tsx?$/.test(
           arquivo.chave,
         ),
     );
@@ -41,9 +47,7 @@ describe("foco só por focus-visible", () => {
       "src/components/ui/button.tsx",
       "src/components/ui/checkbox.tsx",
       "src/components/ui/dialog.tsx",
-      "src/components/ui/input.tsx",
-      "src/components/ui/sheet.tsx",
-      "src/components/ui/textarea.tsx",
+      "src/components/ui/field-control.ts",
     ]);
   });
 });

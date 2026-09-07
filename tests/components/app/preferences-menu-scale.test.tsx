@@ -86,7 +86,8 @@ describe("Preferências — Tema e Idioma seguem a escala das demais telas", () 
     expect(opcoesDeTema).toHaveLength(3);
 
     const gatilhoDeIdioma = screen.getByRole("button", { name: "Idioma" });
-    expect(gatilhoDeIdioma.className).toContain("text-sm");
+    // PR 2: o gatilho veste a moldura de `FieldControl` e já escreve `text-body` — o mesmo degrau que `text-sm` resolve.
+    expect(gatilhoDeIdioma.className).toMatch(/\btext-(?:sm|body)\b/);
 
     for (const opcao of opcoesDeTema) {
       expect(opcao.className).not.toContain("text-meta");

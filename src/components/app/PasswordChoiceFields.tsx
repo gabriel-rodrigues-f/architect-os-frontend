@@ -48,8 +48,8 @@ export function PasswordChoiceFields({ choice }: { choice: PasswordChoice }) {
         />
       </div>
 
-      <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
-        <p id="password-requirements" className="text-xs font-medium text-foreground">
+      <div className="surface-inset px-3 py-2">
+        <p id="password-requirements" className="text-label font-medium text-foreground">
           {t("password.requirements")}
         </p>
         <ul className="mt-1.5 space-y-1">
@@ -97,7 +97,7 @@ function PasswordRequirementItem({
   return (
     <li
       className={cn(
-        "flex items-start gap-2 text-xs",
+        "flex items-start gap-2 text-label",
         met ? "text-foreground" : "text-muted-foreground",
         pointed && "font-medium text-destructive",
       )}
@@ -157,7 +157,7 @@ class PasswordRequirementState {
     return new PasswordRequirementState(
       Circle,
       "password.requirement.pending",
-      "text-destructive/80",
+      "text-destructive",
       "pending",
     );
   }

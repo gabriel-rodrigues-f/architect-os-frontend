@@ -32,10 +32,10 @@ export function SupportAccessDialog({
       role="dialog"
       aria-labelledby="support-title"
     >
-      <h1 id="support-title" className="font-display text-lg font-semibold">
+      <h1 id="support-title" className="font-display text-section font-semibold">
         {t("support.dialog.title")}
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-body text-muted-foreground">
         {t("support.dialog.lead", { nome: personName })}
       </p>
       <form
@@ -54,10 +54,10 @@ export function SupportAccessDialog({
             value={reason}
             onChange={(event) => setReason(event.target.value)}
           />
-          <p className="mt-1 text-xs text-muted-foreground">{t("support.dialog.reasonHint")}</p>
+          <p className="mt-1 text-label text-muted-foreground">{t("support.dialog.reasonHint")}</p>
         </div>
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="secondary" onClick={onCancel}>
             {t("support.dialog.cancel")}
           </Button>
           <Button type="submit" disabled={!longEnough}>

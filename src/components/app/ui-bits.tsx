@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 
 import { useCurrentUser } from "@/lib/auth";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { ChevronDown, Info } from "lucide-react";
+import { ChevronDown, CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/lib/domain";
@@ -17,8 +17,6 @@ import { SectionHeading } from "@/components/app/SectionHeading";
 import { SentenceBlock } from "@/components/app/SentenceBlock";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export { SectionHeading };
 
@@ -158,17 +156,70 @@ export const semanticTone: Record<SemanticTone, string> = {
   success: "bg-success text-success-fg",
 };
 
+export type CalloutTone = "info" | SemanticTone | "danger";
+
+/**
+ * O que cada tom do `Callout` carrega ([D-02]): o par faixa+tinta dos
+ * tokens, o ícone lucide e o papel ARIA que o tom sugere — só `danger`
+ * interrompe (`alert`); os outros são caixa estática na página, e virar
+ * live region em 20 avisos de rota seria ruído para o leitor de tela. Quem
+ * chama pede `role="status"` quando o aviso NASCE de uma ação.
+ */
+class CalloutToneStyle {
+  private static readonly POR_TOM: Record<CalloutTone, CalloutToneStyle> = {
+    info: new CalloutToneStyle("bg-info text-info-fg", Info, undefined),
+    success: new CalloutToneStyle(semanticTone.success, CircleCheck, undefined),
+    warning: new CalloutToneStyle(semanticTone.warning, TriangleAlert, undefined),
+    danger: new CalloutToneStyle("bg-danger-subtle text-destructive", CircleAlert, "alert"),
+  };
+
+  private constructor(
+    readonly className: string,
+    readonly Icon: typeof Info,
+    readonly role: "alert" | "status" | undefined,
+  ) {}
+
+  static of(tone: CalloutTone): CalloutToneStyle {
+    return CalloutToneStyle.POR_TOM[tone];
+  }
+}
+
+/**
+ * O aviso em caixa da casa, em quatro tons. Ícone à esquerda, escondido do
+ * leitor de tela (o texto já diz). Texto simples é filho DIRETO do bloco —
+ * quem procura a frase encontra o próprio alerta (o leitor de tela e o
+ * teste); conteúdo composto (parágrafo + lista, texto + botão) vai num
+ * bloco próprio para correr ao lado do ícone. `compact` é a versão das
+ * telas de porta (`AuthAlert`): menos respiro.
+ */
 export function Callout({
   tone,
+  role,
+  compact = false,
   children,
   className,
 }: {
-  tone: SemanticTone;
+  tone: CalloutTone;
+  role?: "alert" | "status" | undefined;
+  compact?: boolean;
   children: ReactNode;
   className?: string;
 }) {
+  const estilo = CalloutToneStyle.of(tone);
+  const papel = role ?? estilo.role;
   return (
-    <div className={cn("rounded-md p-3 text-sm", semanticTone[tone], className)}>{children}</div>
+    <div
+      {...(papel ? { role: papel } : {})}
+      className={cn(
+        "flex items-start gap-2 rounded-md text-body",
+        compact ? "px-3 py-2" : "p-3",
+        estilo.className,
+        className,
+      )}
+    >
+      <estilo.Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      {typeof children === "string" ? children : <div className="min-w-0 flex-1">{children}</div>}
+    </div>
   );
 }
 
@@ -584,42 +635,7 @@ export function EmptyState({
   );
 }
 
-export function FieldLabel({
-  htmlFor,
-  labelId,
-  children,
-  hint,
-}: {
-  htmlFor?: string;
-  labelId?: string;
-  children: ReactNode;
-  hint: string;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="flex items-center gap-1.5">
-      <Label {...(htmlFor ? { htmlFor } : {})} {...(labelId ? { id: labelId } : {})}>
-        {children}
-      </Label>
-      <TooltipProvider delayDuration={150}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-fast hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={t("field.hint", { campo: String(children) })}
-            >
-              <Info className="h-3.5 w-3.5" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-64 text-center">
-            {hint}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-  );
-}
+export { FieldLabel } from "@/components/app/FieldLabel";
 
 /**
  * A senioridade como RÓTULO — coluna do Time, cartão, quadro do time. Quando

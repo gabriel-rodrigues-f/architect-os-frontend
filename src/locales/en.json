@@ -78,6 +78,7 @@
   "common.none": "none",
   "common.andMoreCount": "and {n} more",
   "common.understood": "Got it",
+  "dialog.close": "Close dialog",
   "section.show": "Show",
   "section.hide": "Hide",
   "section.showNamed": "Show {nome}",

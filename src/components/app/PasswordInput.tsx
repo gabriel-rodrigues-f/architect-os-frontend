@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * ser um botão de verdade. Serve ao login e à senha temporária do primeiro
  * acesso — duas telas, um campo (regra de reuso).
  */
-export function PasswordInput({ className, ...props }: Omit<ComponentProps<"input">, "type">) {
+export function PasswordInput({ className, ...props }: Omit<ComponentProps<typeof Input>, "type">) {
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
 
@@ -23,7 +23,7 @@ export function PasswordInput({ className, ...props }: Omit<ComponentProps<"inpu
         aria-label={visible ? t("password.hide") : t("password.show")}
         aria-pressed={visible}
         onClick={() => setVisible((current) => !current)}
-        className="absolute inset-y-0 right-0 flex min-h-8 w-10 cursor-pointer items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+        className="absolute inset-y-0 right-0 flex min-h-8 w-10 cursor-pointer items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground focus-visible:focus-ring"
       >
         {visible ? (
           <EyeOff className="size-4" aria-hidden="true" />

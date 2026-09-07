@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CommandVariant, type CommandVariantName } from "@/components/app/CommandVariant";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Callout } from "@/components/app/ui-bits";
 import { useAsyncSubmit } from "@/hooks";
 import { useI18n } from "@/lib/i18n";
 
@@ -22,7 +24,7 @@ export function CommandWithReasonDialog({
   confirmLabel,
   submittingLabel,
   cancelLabel,
-  confirmVariant = "default",
+  confirmVariant = "primary",
   fallbackError,
   canSubmit = true,
   dismissibleWhileSubmitting = true,
@@ -41,7 +43,7 @@ export function CommandWithReasonDialog({
   submittingLabel: string;
 
   cancelLabel?: string;
-  confirmVariant?: "default" | "destructive";
+  confirmVariant?: CommandVariantName;
   fallbackError: string;
   canSubmit?: boolean;
 
@@ -74,7 +76,7 @@ export function CommandWithReasonDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        {body !== undefined && <p className="text-sm text-muted-foreground">{body}</p>}
+        {body !== undefined && <p className="text-body text-muted-foreground">{body}</p>}
         {extraFields?.({ submitting })}
         <div>
           <Label htmlFor={reasonInputId}>{reasonLabel}</Label>
@@ -88,16 +90,16 @@ export function CommandWithReasonDialog({
           />
         </div>
         {error && (
-          <p className="text-xs text-destructive" role={errorRole}>
+          <Callout tone="danger" compact role={errorRole}>
             {error}
-          </p>
+          </Callout>
         )}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
+          <Button variant="secondary" onClick={onClose} disabled={submitting}>
             {cancelLabel ?? t("common.cancel")}
           </Button>
           <Button
-            variant={confirmVariant}
+            variant={CommandVariant.of(confirmVariant)}
             disabled={!reason.trim() || !canSubmit || submitting}
             onClick={() => void submit()}
           >

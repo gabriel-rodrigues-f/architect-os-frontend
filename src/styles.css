@@ -955,3 +955,27 @@
     animation-delay: var(--reveal-delay, 0s);
   }
 }
+
+/*
+  Altura de controle ([F-01]): UMA para o app (Input, Select, Button,
+  FilterTriggerButton) e UMA para as telas de porta, onde o dono pediu campos
+  de 44–48. Quem monta campo lê `h-(--control-h)`; ninguém escreve `h-9`.
+  Vive num `:root` próprio, depois da paleta gerada, porque não é cor nem
+  escala — é medida de componente.
+*/
+:root {
+  --control-h: 36px;
+  --control-h-lg: 44px;
+}
+
+/*
+  A pele das portas sobre o `Callout` de tom `danger` ([D-02]): o `AuthAlert`
+  é o mesmo componente, e o tom pinta `bg-danger-subtle text-destructive` na
+  camada de utilities. O refino do login (2026-09-07: destrutivo dessaturado,
+  fundo quase transparente) precisa VENCER esse tom — regra sem camada, o
+  mesmo mecanismo do `.auth-field:focus-visible` acima.
+*/
+.auth-alert {
+  background-color: color-mix(in oklch, var(--color-destructive) 6%, transparent);
+  color: color-mix(in oklch, var(--color-destructive) 70%, var(--color-foreground));
+}

@@ -38,6 +38,7 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
       <DialogContent
+        size="sm"
         onOpenAutoFocus={(e) => {
           e.preventDefault();
           confirmRef.current?.focus();
@@ -48,14 +49,10 @@ export function ConfirmDialog({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel}>
             {resolvedCancelLabel}
           </Button>
-          <Button
-            ref={confirmRef}
-            variant={destructive ? "destructive" : "default"}
-            onClick={onConfirm}
-          >
+          <Button ref={confirmRef} variant={destructive ? "danger" : "primary"} onClick={onConfirm}>
             {resolvedConfirmLabel}
           </Button>
         </DialogFooter>

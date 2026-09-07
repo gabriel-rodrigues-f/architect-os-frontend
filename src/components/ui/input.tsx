@@ -1,14 +1,21 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { FieldControl, type ControlSize } from "./field-control";
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+interface InputProps extends Omit<React.ComponentProps<"input">, "size"> {
+  /** `md` (36, o app) ou `lg` (44, as telas de porta). */
+  size?: ControlSize | undefined;
+}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, size = "md", ...props }, ref) => {
     return (
       <input
         type={type}
         className={cn(
-          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          FieldControl.campo(size),
+          "py-1 file:border-0 file:bg-transparent file:text-body file:font-medium file:text-foreground",
           className,
         )}
         ref={ref}
@@ -19,4 +26,20 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
 );
 Input.displayName = "Input";
 
-export { Input };
+/**
+ * A caixa de leitura com a moldura do campo ([F-01]): o valor que a tela
+ * mostra ao lado de campos editáveis sem ser editável — as 20 `<div>` que
+ * copiavam a classe do `Input` à mão.
+ */
+const ReadOnlyField = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(FieldControl.campo(), "items-center bg-muted text-muted-foreground", className)}
+      {...props}
+    />
+  ),
+);
+ReadOnlyField.displayName = "ReadOnlyField";
+
+export { Input, ReadOnlyField };

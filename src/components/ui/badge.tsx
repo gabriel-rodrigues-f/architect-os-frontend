@@ -3,16 +3,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * O badge não é botão: não tem hover ([P-02] — os `hover:bg-…/80` eram
+ * opacidade sobre token num elemento que ninguém clica). O foco por
+ * `focus-visible` fica para o caso raro de badge focável.
+ */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-base focus-visible:focus-ring",
+  "inline-flex items-center rounded-md border px-2 py-0.5 text-label font-semibold transition-base focus-visible:focus-ring",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        default: "border-transparent bg-primary text-primary-foreground",
+        secondary: "border-transparent bg-secondary text-secondary-foreground",
+        destructive: "border-transparent bg-destructive text-destructive-foreground",
         outline: "text-foreground",
       },
     },
