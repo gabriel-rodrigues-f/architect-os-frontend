@@ -208,7 +208,7 @@ async function login(page: Page): Promise<void> {
   await page.goto("/");
   await page.locator("#email").fill(EMAIL!);
   await page.locator("#password").fill(PASSWORD!);
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
   await expect(page.locator("#email")).toHaveCount(0);
   await expect(page.locator("nav").first()).toBeVisible();
 }

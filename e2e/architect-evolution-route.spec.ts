@@ -92,7 +92,7 @@ test("aba Evolução renderiza tanto por deep-link quanto por clique, sem cair n
   await page.goto("/");
   await page.locator("#email").fill(ADMIN_EMAIL!);
   await page.locator("#password").fill(ADMIN_PASSWORD!);
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
   // Este é o PRIMEIRO spec da rodada (ordem alfabética): o painel do admin
   // chega depois do fan-out inteiro do estado, com todo cache do backend
   // frio — medido em três rodadas de entrega (2026-09-02), sempre entre 5 e

@@ -106,7 +106,7 @@ async function login(page: import("@playwright/test").Page, email: string, passw
   await page.goto("/");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
 }
 
 test("Admin — painel executivo, navegação restrita e diretório de usuários", async ({ page }) => {

@@ -87,7 +87,7 @@ async function login(page: Page): Promise<void> {
   await page.goto("/");
   await page.locator("#email").fill(ADMIN_EMAIL!);
   await page.locator("#password").fill(ADMIN_PASSWORD!);
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
   await expect(page.getByText("Painel de Capacidades")).toBeVisible();
 }
 

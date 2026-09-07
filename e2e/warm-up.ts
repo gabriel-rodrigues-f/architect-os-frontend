@@ -25,7 +25,7 @@ export default async function warmUp(config: FullConfig): Promise<void> {
     if (!email || !password) return;
     await page.locator("#email").fill(email);
     await page.locator("#password").fill(password);
-    await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+    await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
     await page.locator("nav").first().waitFor({ state: "visible", timeout: 120_000 });
     await page
       .getByText("Painel de Capacidades")

@@ -66,11 +66,11 @@ test("login com senha errada mostra erro e não entra no painel", async ({ page 
   await page.goto("/");
   await page.locator("#email").fill(MEMBER_EMAIL);
   await page.locator("#password").fill("senha-completamente-errada");
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
 
   // Continua na tela de login — nunca renderiza o painel com credencial errada.
   await expect(page.locator("#email")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Entrar|Enviando/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Entrar|Entrando|Enviando/ })).toBeVisible();
   await expect(page.getByText("Minha Evolução")).toHaveCount(0);
 });
 
@@ -80,7 +80,7 @@ test("member acessando /users direto pela URL vê o aviso de restrição, não o
   await page.goto("/");
   await page.locator("#email").fill(MEMBER_EMAIL);
   await page.locator("#password").fill(PASSWORD);
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
   await expect(page.getByText("Minha Evolução")).toBeVisible();
 
   // Nav não mostra o link (QW-01/QW-02), mas digitar a URL direto é o
@@ -104,7 +104,7 @@ test("member acessando /calibration direto pela URL vê o aviso de restrição, 
   await page.goto("/");
   await page.locator("#email").fill(MEMBER_EMAIL);
   await page.locator("#password").fill(PASSWORD);
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
   await expect(page.getByText("Minha Evolução")).toBeVisible();
 
   // QA da onda 17, achado bloqueante: no acesso direto o beforeLoad não roda
@@ -124,7 +124,7 @@ test("perfil de um arquiteto inexistente mostra 'não encontrado', não uma tela
   await page.goto("/");
   await page.locator("#email").fill(ADMIN_EMAIL!);
   await page.locator("#password").fill(ADMIN_PASSWORD!);
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
   // Espera o login terminar antes de navegar — sem isto, `goto` corre
   // contra o POST de login ainda em voo e aterrissa deslogado.
   await expect(page.getByText("Painel de Capacidades")).toBeVisible();

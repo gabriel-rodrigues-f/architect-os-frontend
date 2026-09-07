@@ -2,23 +2,22 @@ import { useEffect, useRef, useState } from "react";
 
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { BestScore, CareerRun, CareerRunWords, RUNNER_X, TRACK_WIDTH } from "@/lib/career-run";
+import { LiveCanvasLoop, ThemeTokens } from "@/lib/live-canvas";
 
 const TRACK_HEIGHT = 150;
 const GROUND_Y = TRACK_HEIGHT - 24;
 
 /** O pincel: lê as cores dos tokens da própria aplicação e desenha um quadro do motor. */
 class CareerRunPainter {
-  static tokens(): { fg: string; muted: string; levels: string[] } {
-    const style = getComputedStyle(document.documentElement);
-    const read = (name: string, fallback: string) =>
-      style.getPropertyValue(name).trim() || fallback;
+  static tokens(canvas: HTMLCanvasElement | null): { fg: string; muted: string; levels: string[] } {
+    const tokens = ThemeTokens.of(canvas ?? document.documentElement);
     return {
-      fg: read("--foreground", "#e5e7eb"),
-      muted: read("--muted-foreground", "#9ca3af"),
+      fg: tokens.read("--foreground", "#e5e7eb"),
+      muted: tokens.read("--muted-foreground", "#9ca3af"),
       levels: [
-        read("--level-2", "#f4d35e"),
-        read("--level-3", "#8ecf9f"),
-        read("--level-5", "#7cb8ff"),
+        tokens.read("--level-2", "#f4d35e"),
+        tokens.read("--level-3", "#8ecf9f"),
+        tokens.read("--level-5", "#7cb8ff"),
       ],
     };
   }
@@ -73,7 +72,8 @@ class CareerRunPainter {
 
 /**
  * O "dinossauro" do Synapse, desenhado. O motor é o `CareerRun`; este
- * componente só liga o relógio do navegador, o teclado, o toque e o pincel.
+ * componente só liga o relógio do navegador (`LiveCanvasLoop`, o mesmo da
+ * rede de sinapses do login), o teclado, o toque e o pincel.
  * Com `prefers-reduced-motion`, não anima: mostra a figura parada e a frase.
  */
 export function CareerRunCanvas() {
@@ -98,13 +98,10 @@ export function CareerRunCanvas() {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d") ?? null;
     const run = runRef.current;
-    const colors = CareerRunPainter.tokens();
-    let frame = 0;
-    let last = performance.now();
+    const colors = CareerRunPainter.tokens(canvas);
     let lastPhase = run.snapshot.phase;
-    const loop = (now: number) => {
-      run.tick(now - last);
-      last = now;
+    const loop = new LiveCanvasLoop((deltaMs) => {
+      run.tick(deltaMs);
       if (context) CareerRunPainter.draw(context, run, colors);
       const { phase, score, level, evidences } = run.snapshot;
       if (phase !== lastPhase || phase === "running") {
@@ -112,9 +109,8 @@ export function CareerRunCanvas() {
         if (phase === "crashed" && lastPhase !== "crashed") setBest(BestScore.keep(score));
         lastPhase = phase;
       }
-      frame = window.requestAnimationFrame(loop);
-    };
-    frame = window.requestAnimationFrame(loop);
+    });
+    loop.start();
     const onKey = (event: KeyboardEvent) => {
       if (event.code === "Space" || event.code === "ArrowUp") {
         event.preventDefault();
@@ -123,7 +119,7 @@ export function CareerRunCanvas() {
     };
     window.addEventListener("keydown", onKey);
     return () => {
-      window.cancelAnimationFrame(frame);
+      loop.stop();
       window.removeEventListener("keydown", onKey);
     };
   }, [reducedMotion]);

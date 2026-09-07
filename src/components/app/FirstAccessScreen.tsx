@@ -3,8 +3,8 @@ import { toast } from "sonner";
 
 import { AuthScreenShell } from "@/components/app/AuthScreenShell";
 import { PasswordChoiceFields } from "@/components/app/PasswordChoiceFields";
+import { PasswordInput } from "@/components/app/PasswordInput";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePasswordChoice } from "@/hooks";
 import { authErrorMessage, useAuth } from "@/lib/auth";
@@ -86,9 +86,8 @@ export function FirstAccessScreen() {
       <form className="mt-5 space-y-3" onSubmit={submit}>
         <div>
           <Label htmlFor="current-password">{t("firstAccess.currentPassword")}</Label>
-          <Input
+          <PasswordInput
             id="current-password"
-            type="password"
             autoComplete="current-password"
             required
             value={currentPassword}

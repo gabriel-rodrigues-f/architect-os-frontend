@@ -67,7 +67,7 @@ async function login(page: Page, email: string, password: string, marker: RegExp
   await page.goto("/");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
-  await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
+  await page.getByRole("button", { name: /Entrar|Entrando|Enviando/ }).click();
   await expect(page.getByText(marker).first()).toBeVisible();
 }
 
