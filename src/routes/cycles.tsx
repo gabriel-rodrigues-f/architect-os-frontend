@@ -87,7 +87,7 @@ function CycleAdministration() {
   const labels = useLabels();
   const { setActiveCycle: activateCycle } = useCycleSelection();
 
-  const isAdmin = useCurrentUser().role === "admin";
+  const isAdmin = defaultUiAuthorizationPolicy.operatesTheSystem(useCurrentUser());
   const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
   const { t, locale } = useI18n();
   const help = usePageHelp("cycles");

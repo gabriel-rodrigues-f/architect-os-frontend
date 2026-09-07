@@ -63,7 +63,10 @@ interface NavItem {
 
   activePrefixes?: string[];
 
-  adminOnly?: boolean;
+  /** Catálogo: de quem opera o sistema — SUPPORT (o antigo admin) e ADMIN. */
+  systemOperationOnly?: boolean;
+  /** Métricas da Plataforma: todos menos o member (adendo do dono, 2026-09-08, item 5). */
+  platformMetricsOnly?: boolean;
 
   teamRuleReachOnly?: boolean;
 
@@ -237,7 +240,7 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/competency-matrix",
         labelKey: "nav.competencyMatrix",
         icon: Grid3x3,
-        adminOnly: true,
+        systemOperationOnly: true,
       },
       {
         to: "/calibration",
@@ -250,7 +253,7 @@ export const NAV_GROUPS: NavGroup[] = [
         to: ObservabilityAddress.grafana,
         labelKey: "nav.grafana",
         icon: Activity,
-        adminOnly: true,
+        platformMetricsOnly: true,
         external: true,
         hintKey: "nav.grafanaHint",
       },
@@ -267,7 +270,8 @@ class NavigationOfUser {
 
   reaches(item: NavItem): boolean {
     const user = this.user;
-    if (item.adminOnly && !(user && this.policy.isAdmin(user))) return false;
+    if (item.systemOperationOnly && !(user && this.policy.operatesTheSystem(user))) return false;
+    if (item.platformMetricsOnly && !(user && this.policy.readsPlatformMetrics(user))) return false;
     if (item.teamRuleReachOnly && !(user && this.policy.canConfigureAnyTeamRules(user))) {
       return false;
     }
@@ -796,7 +800,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {user?.role === "admin" ? (
+                {user && defaultUiAuthorizationPolicy.operatesTheSystem(user) ? (
                   <>
                     <label className="text-xs text-muted-foreground" htmlFor="cycle">
                       {t("shell.cycle")}

@@ -10,6 +10,7 @@ import {
   requireCareerTabsReach,
   requireLeadReach,
   requireLeadershipReach,
+  requireSystemOperatorReach,
   requireTeamAnalysisReach,
 } from "@/lib/route-guards";
 import { SESSION_QUERY_KEY } from "@/lib/session-query";
@@ -18,6 +19,7 @@ import {
   fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureAssignedTechLeadUser,
+  fixtureSupportUser,
   fixtureUnassignedTechLeadUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
@@ -59,6 +61,44 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   fetchMock.mockReset();
+});
+
+/**
+ * PR 5 (adendo do dono, 2026-09-08) — cinco papéis. SUPPORT tem o alcance do
+ * antigo admin (opera o sistema); ADMIN tem o alcance de ORGANIZAÇÃO: todas
+ * as rotas de leitura mais a administração. Nenhum dos dois calibra — é rito
+ * do gerente com vínculo.
+ */
+describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organização", () => {
+  it.each(["/competency-matrix", "/users", "/teams", "/cycles", "/settings", "/team-rules"])(
+    "SUPPORT alcança %s como o antigo admin",
+    async (href) => {
+      expect(await navegarComoUsuario(fixtureSupportUser, href)).toBe(href);
+    },
+  );
+
+  it("SUPPORT sem vínculo não alcança a análise de time nem a calibração", async () => {
+    expect(await navegarComoUsuario(fixtureSupportUser, "/capability-map")).toBe("/");
+    expect(await navegarComoUsuario(fixtureSupportUser, "/calibration")).toBe("/");
+  });
+
+  it.each([
+    "/competency-matrix",
+    "/users",
+    "/teams",
+    "/cycles",
+    "/settings",
+    "/team-rules",
+    "/capability-map",
+    "/progression",
+    "/architects/ana/evolution",
+  ])("ADMIN alcança %s — leitura da organização inteira e administração", async (href) => {
+    expect(await navegarComoUsuario(fixtureAdminUser, href)).toBe(href);
+  });
+
+  it("ADMIN não calibra — calibração é rito do gerente com vínculo (D1)", async () => {
+    expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/");
+  });
 });
 
 describe("guardas de navegação das telas administrativas", () => {
@@ -433,7 +473,7 @@ describe("o profissional não navega até Ciclos nem até a análise do time", (
       expect(await navegarComoUsuario(fixtureAssignedManagerUser, href), href).toBe(href);
       expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, href), href).toBe(href);
     }
-    for (const user of [fixtureAdminUser, fixtureUnassignedTechLeadUser]) {
+    for (const user of [fixtureSupportUser, fixtureUnassignedTechLeadUser]) {
       for (const href of ANALISE_DO_TIME) {
         expect(await navegarComoUsuario(user, href), `${user.role} → ${href}`).toBe("/");
       }
@@ -454,11 +494,34 @@ async function alcancaAnaliseDoTime(user: SessionUser): Promise<boolean> {
 }
 
 describe("requireTeamAnalysisReach — a guarda da análise do time", () => {
-  it("passa só quem lidera COM vínculo — member, lead sem vínculo e admin não (revisão de papéis, 2026-09-05)", async () => {
+  it("passa quem lidera COM vínculo e a diretoria — member, lead sem vínculo e suporte não (revisão de papéis, 2026-09-05; adendo 2026-09-08)", async () => {
     expect(await alcancaAnaliseDoTime(fixtureMemberUser)).toBe(false);
     expect(await alcancaAnaliseDoTime(fixtureUnassignedTechLeadUser)).toBe(false);
     expect(await alcancaAnaliseDoTime(fixtureAssignedTechLeadUser)).toBe(true);
     expect(await alcancaAnaliseDoTime(fixtureAssignedManagerUser)).toBe(true);
-    expect(await alcancaAnaliseDoTime(fixtureAdminUser)).toBe(false);
+    expect(await alcancaAnaliseDoTime(fixtureSupportUser)).toBe(false);
+    expect(await alcancaAnaliseDoTime(fixtureAdminUser)).toBe(true);
+  });
+});
+
+describe("requireSystemOperatorReach — a guarda do catálogo", () => {
+  const alcancaOCatalogo = async (user: SessionUser): Promise<boolean> => {
+    mockAppFetch(fetchMock, { user, state: scopedFixtureStateFor(user) });
+    const queryClient = createAppQueryClient();
+    try {
+      await requireSystemOperatorReach({ context: { queryClient } });
+      return true;
+    } catch (error) {
+      if (isRedirect(error)) return false;
+      throw error;
+    }
+  };
+
+  it("passa quem opera o sistema — SUPPORT e ADMIN; gerente, tech lead e member não", async () => {
+    expect(await alcancaOCatalogo(fixtureSupportUser)).toBe(true);
+    expect(await alcancaOCatalogo(fixtureAdminUser)).toBe(true);
+    expect(await alcancaOCatalogo(fixtureAssignedManagerUser)).toBe(false);
+    expect(await alcancaOCatalogo(fixtureAssignedTechLeadUser)).toBe(false);
+    expect(await alcancaOCatalogo(fixtureMemberUser)).toBe(false);
   });
 });

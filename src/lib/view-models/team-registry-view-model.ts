@@ -1,7 +1,7 @@
 import { ApiError, UserFacingError } from "../api-errors";
 import type { Architect } from "../domain";
 import type { SessionUser, TeamMemberRole } from "../gateways/auth.gateway";
-import { TeamMemberRoles } from "../gateways/auth.gateway";
+import { TeamMemberRoles, UserRoles } from "../gateways/auth.gateway";
 import type { TeamSummary } from "../gateways/teams.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
 import { defaultNameFormatter } from "../text";
@@ -34,7 +34,7 @@ export class TeamRegistryViewModel {
   constructor(private readonly policy: UiAuthorizationPolicy) {}
 
   canAdminister(user: SessionUser): boolean {
-    return this.policy.isAdmin(user);
+    return this.policy.operatesTheSystem(user);
   }
 
   canCompose(user: SessionUser): boolean {
@@ -46,12 +46,12 @@ export class TeamRegistryViewModel {
   }
 
   canReadAccountDirectory(user: SessionUser): boolean {
-    return this.policy.isAdmin(user);
+    return this.policy.operatesTheSystem(user);
   }
 
   membershipRolesOfferedTo(user: SessionUser): TeamMemberRole[] {
     return TeamMemberRoles.ALL.filter(
-      (role) => role !== TeamMemberRoles.MANAGER || this.policy.isAdmin(user),
+      (role) => role !== TeamMemberRoles.MANAGER || this.policy.operatesTheSystem(user),
     );
   }
 
@@ -101,7 +101,9 @@ export class TeamRegistryViewModel {
   }
 
   linkableAccounts(accounts: readonly SessionUser[]): SessionUser[] {
-    return accounts.filter((account) => account.role !== "admin" && account.status === "active");
+    return accounts.filter(
+      (account) => !UserRoles.isOrganizationRole(account.role) && account.status === "active",
+    );
   }
 
   deactivationRefusalOf(error: unknown): TeamDeactivationRefusal | null {

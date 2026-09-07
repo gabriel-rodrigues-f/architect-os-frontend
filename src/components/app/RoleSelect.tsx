@@ -3,13 +3,19 @@ import type { UserRole } from "@/lib/api";
 import { UserRoles } from "@/lib/gateways/auth.gateway";
 import { useI18n } from "@/lib/i18n";
 
+/**
+ * O seletor oferece só os papéis que quem está logado pode ATRIBUIR
+ * (`UiAuthorizationPolicy.assignableRoles`): o suporte não vê `admin`.
+ */
 export function RoleSelect({
   id,
   value,
+  offered,
   onChange,
 }: {
   id: string;
   value: UserRole;
+  offered: readonly UserRole[];
   onChange: (role: UserRole) => void;
 }) {
   const { t } = useI18n();
@@ -27,7 +33,7 @@ export function RoleSelect({
         value={value}
         onChange={(event) => choose(event.target.value)}
       >
-        {UserRoles.ALL.map((role) => (
+        {offered.map((role) => (
           <option key={role} value={role}>
             {t(`users.role.${role}`)}
           </option>

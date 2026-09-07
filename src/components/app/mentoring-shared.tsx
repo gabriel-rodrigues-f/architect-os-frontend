@@ -365,16 +365,17 @@ function MentoringTimelineItem({
           ))}
         </div>
       )}
-      {(session.mentorUserId === user.id || user.role === "admin") && (
+      {defaultUiAuthorizationPolicy.schedulesMentoringFollowUpOf(user, session) && (
         <FollowUpScheduler session={session} />
       )}
-      {session.nextSession && session.mentorUserId !== user.id && user.role !== "admin" && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          {t("mentor.followUp.scheduled", {
-            data: defaultDateFormatter.formatDate(session.nextSession, locale) ?? "",
-          })}
-        </p>
-      )}
+      {session.nextSession &&
+        !defaultUiAuthorizationPolicy.schedulesMentoringFollowUpOf(user, session) && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("mentor.followUp.scheduled", {
+              data: defaultDateFormatter.formatDate(session.nextSession, locale) ?? "",
+            })}
+          </p>
+        )}
     </li>
   );
 }

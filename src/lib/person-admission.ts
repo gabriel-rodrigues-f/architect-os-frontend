@@ -2,6 +2,7 @@ import { ApiError, UserFacingError } from "./api-errors";
 import {
   TeamLeadershipRoles,
   TEAM_MEMBER_ROLES,
+  UserRoles,
   type SessionUser,
   type TeamMemberRole,
 } from "./gateways/auth.gateway";
@@ -35,7 +36,7 @@ export class PersonAdmissionPolicy {
   }
 
   admissibleCargos(user: SessionUser): readonly TeamMemberRole[] {
-    if (user.role === "admin") return TEAM_MEMBER_ROLES;
+    if (UserRoles.operatesTheSystem(user.role)) return TEAM_MEMBER_ROLES;
     if (user.role === TeamLeadershipRoles.MANAGER) return CARGOS_DO_GESTOR;
     if (user.role === TeamLeadershipRoles.TECH_LEAD) return CARGOS_DO_TECH_LEAD;
     return [];
@@ -43,7 +44,7 @@ export class PersonAdmissionPolicy {
 
   admissibleTeams(user: SessionUser, teams: readonly TeamSummary[]): TeamSummary[] {
     const active = teams.filter((team) => team.active);
-    if (user.role === "admin") return active;
+    if (UserRoles.operatesTheSystem(user.role)) return active;
     if (!TeamLeadershipRoles.includes(user.role)) return [];
     const bound = this.teamsBoundAsOwnRole(user);
     return active.filter((team) => bound.has(team.id));

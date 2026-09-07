@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { filterNavGroups, isNavItemHiddenByCollapse, NAV_GROUPS } from "@/components/app/AppShell";
-import type { UserRole } from "@/lib/api";
+import type { SessionUser, UserRole } from "@/lib/api";
 import {
   fixtureAdminUser,
   fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureAssignedTechLeadUser,
+  fixtureSupportUser,
   fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
 
@@ -22,7 +23,14 @@ const usuarioDoPapel = (role: UserRole) =>
     tech_lead: fixtureUnassignedTechLeadUser,
     manager: fixtureAssignedManagerUser,
     admin: fixtureAdminUser,
+    support: fixtureSupportUser,
   })[role];
+
+const destinosDe = (user: SessionUser): string[] =>
+  filterNavGroups(NAV_GROUPS, user).flatMap((group) => group.items.map((item) => item.to));
+
+const rotulosDe = (user: SessionUser): string[] =>
+  filterNavGroups(NAV_GROUPS, user).flatMap((group) => group.items.map((item) => item.labelKey));
 
 /**
  * QW-01/QW-02 (Seção 32, Quick Wins, AUDITORIA-QUINTA-RODADA-360-SYNAPSE-
@@ -71,14 +79,44 @@ describe("AppShell — navegação recortada por papel", () => {
     ).toContain("/users");
   });
 
-  it("admin vê o sistema — matriz, usuários — e não a calibração, que é rito de gestão (D1)", () => {
-    const groups = filterNavGroups(NAV_GROUPS, fixtureAdminUser);
-    const paths = groups.flatMap((grupo) => grupo.items.map((item) => item.to));
+  /**
+   * PR 5 (adendo do dono, 2026-09-08, item 2) — o antigo admin virou SUPPORT
+   * e conserva o menu de quem opera o sistema: matriz, usuários, times, e
+   * nada de pessoas (Avaliações, Mentoria) nem de calibração.
+   */
+  it("SUPPORT vê o sistema — matriz, usuários, times — e não pessoas nem calibração (D1)", () => {
+    const paths = destinosDe(fixtureSupportUser);
     expect(paths).toContain("/competency-matrix");
     expect(paths).toContain("/users");
+    expect(paths).toContain("/teams");
     expect(paths).not.toContain("/calibration");
     expect(paths).not.toContain("/assessments");
     expect(paths).not.toContain("/mentoring");
+    expect(paths).not.toContain("/capability-map");
+  });
+
+  it("ADMIN (diretoria) vê o que o gerente vê — Gestão, Inteligência de Talentos, Crescimento, Modelo de Carreira — MAIS a Administração, e não a calibração", () => {
+    const paths = destinosDe(fixtureAdminUser);
+    const doGerente = destinosDe(fixtureAssignedManagerUser).filter(
+      (path) => path !== "/calibration",
+    );
+    for (const path of doGerente) expect(paths, path).toContain(path);
+    expect(paths).toContain("/competency-matrix");
+    expect(paths).toContain("/users");
+    expect(paths).toContain("/teams");
+    expect(paths).not.toContain("/calibration");
+  });
+
+  it("Métricas da Plataforma aparece para admin, support, gerente e tech lead — só o member não vê (adendo 5)", () => {
+    for (const user of [
+      fixtureAdminUser,
+      fixtureSupportUser,
+      fixtureAssignedManagerUser,
+      fixtureUnassignedTechLeadUser,
+    ]) {
+      expect(rotulosDe(user), user.role).toContain("nav.grafana");
+    }
+    expect(rotulosDe(fixtureMemberUser)).not.toContain("nav.grafana");
   });
 
   /**
@@ -113,7 +151,7 @@ describe("AppShell — navegação recortada por papel", () => {
       filterNavGroups(NAV_GROUPS, usuarioDoPapel(role)).flatMap((group) =>
         group.items.map((item) => item.to),
       );
-    for (const role of ["tech_lead", "manager", "admin"] as const) {
+    for (const role of ["tech_lead", "manager", "admin", "support"] as const) {
       expect(destinosDe(role), role).toContain("/settings");
     }
     expect(destinosDe("member")).not.toContain("/settings");

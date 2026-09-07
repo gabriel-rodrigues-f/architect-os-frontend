@@ -81,7 +81,7 @@ function ArchitectProfile() {
   // visita (Evolução, Extrato, Roteiro), que reaproveitam o mesmo passe.
   const [grantedThisVisit, setGrantedThisVisit] = useState(false);
   const needsSupportAccess =
-    defaultUiAuthorizationPolicy.isAdmin(user) &&
+    defaultUiAuthorizationPolicy.readsPeopleOnlyInSupportMode(user) &&
     user.architectId !== architectId &&
     !grantedThisVisit;
 
@@ -117,8 +117,9 @@ function SupportAccessGate({
   onGranted: () => void;
   onCancel: () => void;
 }) {
-  const sel = useSelectors();
-  const person = sel.architectById(architectId);
+  // Só o nome da pessoa: o portão pede a fatia `architects` e nada mais —
+  // `useSelectors()` indexaria o estado inteiro antes de o motivo existir.
+  const person = useStore().architects.find((architect) => architect.id === architectId);
   return (
     <SupportAccessDialog
       architectId={architectId}

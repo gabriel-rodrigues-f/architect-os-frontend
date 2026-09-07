@@ -4,6 +4,7 @@ import { filterNavGroups, NAV_GROUPS } from "@/components/app/AppShell";
 import type { SessionUser } from "@/lib/api";
 import {
   fixtureAdminUser,
+  fixtureSupportUser,
   fixtureMemberUser,
   fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
@@ -187,16 +188,24 @@ describe("menu do profissional — o que não é dele some", () => {
     expect(rotulosDeGrupo(fixtureAdminUser)).toContain("nav.group.admin");
   });
 
-  it("para o tech lead o grupo Administração some — cadastrar é ato de gestão (D4, 2026-09-05)", () => {
+  /**
+   * Adendo do dono (2026-09-08, item 5) — Métricas da Plataforma abriu para
+   * gerente e tech lead. O grupo Administração do tech lead tem SÓ esse
+   * item: cadastrar continua sendo ato de gestão (D4, 2026-09-05).
+   */
+  it("para o tech lead o grupo Administração tem só as Métricas da Plataforma — cadastrar é ato de gestão (D4, 2026-09-05)", () => {
     for (const lead of [fixtureUnassignedTechLeadUser, fixtureAssignedTechLeadUser]) {
-      expect(rotulosDeGrupo(lead)).not.toContain("nav.group.admin");
+      const administracao = filterNavGroups(NAV_GROUPS, lead).find(
+        (group) => group.labelKey === "nav.group.admin",
+      );
+      expect(administracao?.items.map((item) => item.labelKey)).toEqual(["nav.grafana"]);
     }
   });
 
-  it("quem lidera COM vínculo continua com as ferramentas de time; admin e lead sem vínculo, não", () => {
+  it("quem lidera COM vínculo continua com as ferramentas de time; suporte e lead sem vínculo, não", () => {
     for (const destino of ANALISE_DO_TIME) {
       expect(destinos(fixtureAssignedTechLeadUser), destino).toContain(destino);
-      expect(destinos(fixtureAdminUser), destino).not.toContain(destino);
+      expect(destinos(fixtureSupportUser), destino).not.toContain(destino);
       expect(destinos(fixtureUnassignedTechLeadUser), destino).not.toContain(destino);
     }
   });

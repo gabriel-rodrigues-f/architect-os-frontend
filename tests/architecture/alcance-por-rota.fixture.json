@@ -58,8 +58,8 @@
       "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/competency-matrix": {
-      "alcance": "admin",
-      "guarda": "requireAdminReach",
+      "alcance": "opera-o-sistema",
+      "guarda": "requireSystemOperatorReach",
       "sinal": "isAdmin",
       "negativa": "somente-leitura",
       "justificativa": "O catálogo é global e chega pelas fatias de contexto (`<ContextScope>`), que o servidor já recorta; o não-admin LÊ a matriz e não age sobre ela. A tela não abre consulta com recorte de time ou de pessoa — só o catálogo global declarado abaixo, que o hook de store.tsx dispara sem aceitar `enabled` —, então não há o que pinar: a negativa é a ausência de toda ação de escrita, provada em competency-matrix-import.test.tsx.",

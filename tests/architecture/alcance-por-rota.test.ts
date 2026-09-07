@@ -87,7 +87,7 @@ const MODULOS_DE_CONSULTA_VARRIDOS = [
 type Alcance =
   | "publica"
   | "autenticado"
-  | "admin"
+  | "opera-o-sistema"
   | "lead-com-vinculo"
   | "calibracao"
   | "lideranca"
@@ -99,7 +99,7 @@ type Negativa = "tela-nega" | "somente-leitura";
 const ALCANCES: readonly Alcance[] = [
   "publica",
   "autenticado",
-  "admin",
+  "opera-o-sistema",
   "lead-com-vinculo",
   "calibracao",
   "lideranca",
@@ -110,7 +110,7 @@ const ALCANCES: readonly Alcance[] = [
 
 /** Qual guarda de navegação cada alcance restrito obriga. */
 const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
-  admin: "requireAdminReach",
+  "opera-o-sistema": "requireSystemOperatorReach",
   "lead-com-vinculo": "requireLeadReach",
   calibracao: "requireCalibrationReach",
   lideranca: "requireLeadershipReach",
@@ -131,7 +131,7 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
   autenticado: 7,
-  admin: 1,
+  "opera-o-sistema": 1,
   "lead-com-vinculo": 1,
   calibracao: 1,
   lideranca: 3,

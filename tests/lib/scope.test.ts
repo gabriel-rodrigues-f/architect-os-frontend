@@ -8,6 +8,7 @@ import {
   fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureAssignedTechLeadUser,
+  fixtureSupportUser,
   fixtureUnassignedTechLeadUser,
 } from "../helpers/fixtures";
 
@@ -112,8 +113,7 @@ describe("UiAuthorizationPolicy", () => {
 
     it("gerente com ficha própria também não se vê — só os liderados", () => {
       const managerAna = {
-        ...fixtureAssignedTechLeadUser,
-        role: "manager" as const,
+        ...fixtureAssignedManagerUser,
         architectId: "ana",
       };
       expect(policy.assessableBy(managerAna, [bia, ana])).toEqual([bia]);
@@ -158,11 +158,95 @@ describe("UiAuthorizationPolicy", () => {
     });
   });
 
-  describe("isAdmin", () => {
-    it("só a conta admin responde true", () => {
-      expect(policy.isAdmin(fixtureAdminUser)).toBe(true);
-      expect(policy.isAdmin(fixtureMemberUser)).toBe(false);
-      expect(policy.isAdmin(fixtureUnassignedTechLeadUser)).toBe(false);
+  /**
+   * PR 5 (adendo do dono, 2026-09-08, item 2) — `isAdmin` morreu porque fazia
+   * duas perguntas com um nome só. `operatesTheSystem` é o que o antigo admin
+   * fazia (contas, times, catálogo, ciclos, configurações) e vale para ADMIN
+   * e SUPPORT; `readsTheOrganization` é só da diretoria.
+   */
+  describe("operatesTheSystem / readsTheOrganization", () => {
+    it("ADMIN e SUPPORT operam o sistema; os papéis de time não", () => {
+      expect(policy.operatesTheSystem(fixtureAdminUser)).toBe(true);
+      expect(policy.operatesTheSystem(fixtureSupportUser)).toBe(true);
+      expect(policy.operatesTheSystem(fixtureAssignedManagerUser)).toBe(false);
+      expect(policy.operatesTheSystem(fixtureMemberUser)).toBe(false);
+      expect(policy.operatesTheSystem(fixtureUnassignedTechLeadUser)).toBe(false);
+    });
+
+    it("só ADMIN lê a organização inteira", () => {
+      expect(policy.readsTheOrganization(fixtureAdminUser)).toBe(true);
+      expect(policy.readsTheOrganization(fixtureSupportUser)).toBe(false);
+      expect(policy.readsTheOrganization(fixtureAssignedManagerUser)).toBe(false);
+    });
+
+    it("SUPPORT lê sobre pessoas SÓ em modo de suporte, por ticket; ADMIN lê sem ticket", () => {
+      expect(policy.readsPeopleOnlyInSupportMode(fixtureSupportUser)).toBe(true);
+      expect(policy.readsPeopleOnlyInSupportMode(fixtureAdminUser)).toBe(false);
+      expect(policy.readsPeopleOnlyInSupportMode(fixtureAssignedManagerUser)).toBe(false);
+      expect(policy.canReadAbout(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.canReadAbout(fixtureSupportUser, anaInLedTeam)).toBe(true);
+      expect(policy.canReadPersonnelFileOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.canReadPersonnelFileOf(fixtureSupportUser, anaInLedTeam)).toBe(true);
+    });
+
+    it("nenhum dos dois age sobre pessoas nem lidera alguém", () => {
+      for (const conta of [fixtureAdminUser, fixtureSupportUser]) {
+        expect(policy.canActFor(conta, anaInLedTeam), conta.role).toBe(false);
+        expect(policy.isLeadOf(conta, anaInLedTeam), conta.role).toBe(false);
+        expect(policy.canCalibrate(conta), conta.role).toBe(false);
+      }
+    });
+
+    it("ADMIN lê a organização: análise de time, Avaliações, PDI e Mentoria sem vínculo; SUPPORT sem vínculo não", () => {
+      expect(policy.canAnalyzeTeam(fixtureAdminUser)).toBe(true);
+      expect(policy.worksWithPeople(fixtureAdminUser)).toBe(true);
+      expect(policy.canAnalyzeTeam(fixtureSupportUser)).toBe(false);
+      expect(policy.worksWithPeople(fixtureSupportUser)).toBe(false);
+    });
+
+    it("os dois administram contas e times, alcançam todos os times e admitem qualquer cargo", () => {
+      for (const conta of [fixtureAdminUser, fixtureSupportUser]) {
+        expect(policy.canAdministerPeople(conta), conta.role).toBe(true);
+        expect(policy.configurableTeamIds(conta), conta.role).toBe("all");
+        expect(policy.composableTeamIds(conta), conta.role).toBe("all");
+        expect(policy.decidesCareerOf(conta, anaInLedTeam), conta.role).toBe(true);
+      }
+    });
+
+    it("Métricas da Plataforma: todos menos o member (adendo 5, 2026-09-08)", () => {
+      expect(policy.readsPlatformMetrics(fixtureAdminUser)).toBe(true);
+      expect(policy.readsPlatformMetrics(fixtureSupportUser)).toBe(true);
+      expect(policy.readsPlatformMetrics(fixtureAssignedManagerUser)).toBe(true);
+      expect(policy.readsPlatformMetrics(fixtureUnassignedTechLeadUser)).toBe(true);
+      expect(policy.readsPlatformMetrics(fixtureMemberUser)).toBe(false);
+    });
+
+    it("o seletor de papel: SUPPORT não atribui ADMIN; ADMIN atribui todos; o gerente não atribui papel", () => {
+      expect(policy.assignableRoles(fixtureAdminUser)).toEqual([
+        "admin",
+        "support",
+        "manager",
+        "tech_lead",
+        "member",
+      ]);
+      expect(policy.assignableRoles(fixtureSupportUser)).toEqual([
+        "support",
+        "manager",
+        "tech_lead",
+        "member",
+      ]);
+      expect(policy.assignableRoles(fixtureAssignedManagerUser)).toEqual([]);
+    });
+
+    it("SUPPORT não muda o status de uma conta de ADMIN; ADMIN muda a de qualquer outra pessoa", () => {
+      const contaDaDiretoria = { id: "diretor", status: "active", role: "admin" };
+      const contaDoSuporte = { id: "outro-suporte", status: "active", role: "support" };
+      expect(policy.administersAccount(fixtureSupportUser, contaDaDiretoria)).toBe(false);
+      expect(policy.administersAccount(fixtureSupportUser, contaDoSuporte)).toBe(true);
+      expect(policy.administersAccount(fixtureAdminUser, contaDaDiretoria)).toBe(true);
+      expect(policy.administersAccount(fixtureAdminUser, contaDoSuporte)).toBe(true);
+      // O gerente não altera conta de organização nem de gerente.
+      expect(policy.administersAccount(fixtureAssignedManagerUser, contaDoSuporte)).toBe(false);
     });
   });
 });
@@ -212,7 +296,7 @@ describe("canConfigureRulesOf — o dono da régua do time", () => {
 
   it("CONCEDE para lead COM vínculo de gerente no time — gerente multi-time é N vínculos", () => {
     const gerente = {
-      ...fixtureAssignedTechLeadUser,
+      ...fixtureAssignedManagerUser,
       memberships: [
         { teamId: TIME, role: "manager" as const },
         { teamId: OUTRO_TIME, role: "manager" as const },
@@ -348,11 +432,17 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
     expect(policy.canConfigureAnyTeamRules(techLead)).toBe(true);
   });
 
-  it("a conta de dois chapéus alcança os DOIS times — alcance é a união dos vínculos", () => {
-    expect([...(policy.configurableTeamIds(doisChapeus) as ReadonlySet<string>)].sort()).toEqual([
-      OUTRO_TIME,
-      TIME,
-    ]);
+  /**
+   * PR 5 (adendo do dono, 2026-09-08, itens 3 e 4) — "um tech lead nunca
+   * está em mais de um time" e um gerente lidera N times COMO gerente. A
+   * conta de dois chapéus morreu: o vínculo que concede alcance é o do
+   * PRÓPRIO papel. Um gerente com vínculo de tech lead noutro time não
+   * alcança aquele time por esse vínculo.
+   */
+  it("não há conta de dois chapéus — o alcance vem só dos vínculos do próprio papel", () => {
+    expect([...(policy.configurableTeamIds(doisChapeus) as ReadonlySet<string>)]).toEqual([TIME]);
+    expect(policy.canConfigureRulesOf(doisChapeus, OUTRO_TIME)).toBe(false);
+    expect(policy.isLeadOf(doisChapeus, { id: "bia", teamId: OUTRO_TIME })).toBe(false);
   });
 
   it("member com vínculo de liderança continua sem alcance — papel E vínculo, juntos", () => {
@@ -374,6 +464,7 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
     expect(isLeadCapable("manager")).toBe(true);
     expect(isLeadCapable("tech_lead")).toBe(true);
     expect(isLeadCapable("admin")).toBe(true);
+    expect(isLeadCapable("support")).toBe(true);
     expect(isLeadCapable("member")).toBe(false);
   });
 });

@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DailyGreeting } from "@/lib/greeting/daily-greeting";
 import { DailyGreetingToast } from "@/components/app/DailyGreetingToast";
 import {
+  fixtureAdminUser,
   fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
   fixtureMemberUser,
+  fixtureSupportUser,
 } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 
@@ -56,6 +58,26 @@ describe("saudação do primeiro acesso do dia", () => {
     renderWithApp(<DailyGreetingToast />);
     expect((await screen.findByTestId("daily-greeting")).textContent).toContain(
       "Conheça suas competências",
+    );
+  });
+
+  /**
+   * PR 5 (adendo do dono, 2026-09-08, item 2) — a saudação de quem mantém o
+   * sistema em ordem é a do SUPPORT (o antigo admin); a diretoria, que lê a
+   * organização, recebe a dela.
+   */
+  it("o suporte recebe a saudação de quem mantém o sistema; a diretoria, a de quem lê a organização", async () => {
+    mockAppFetch(fetchMock, { user: fixtureSupportUser });
+    renderWithApp(<DailyGreetingToast />);
+    expect((await screen.findByTestId("daily-greeting")).textContent).toContain(
+      "Mantenha o sistema em ordem",
+    );
+    cleanup();
+    window.localStorage.removeItem(DailyGreeting.STORAGE_KEY);
+    mockAppFetch(fetchMock, { user: fixtureAdminUser });
+    renderWithApp(<DailyGreetingToast />);
+    expect((await screen.findByTestId("daily-greeting")).textContent).toContain(
+      "visão inteira da organização",
     );
   });
 

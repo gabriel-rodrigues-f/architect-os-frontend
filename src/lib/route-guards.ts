@@ -19,8 +19,9 @@ type CareerFileRouteGuard = (args: {
 class NavigationBarrier {
   constructor(private readonly policy: UiAuthorizationPolicy) {}
 
-  requireAdminReach: RouteGuard = ({ context }) =>
-    this.requireReach(context, (user) => this.policy.isAdmin(user));
+  /** Catálogo e o que mais é do sistema: SUPPORT (o antigo admin) e ADMIN. */
+  requireSystemOperatorReach: RouteGuard = ({ context }) =>
+    this.requireReach(context, (user) => this.policy.operatesTheSystem(user));
 
   requireLeadReach: RouteGuard = ({ context }) =>
     this.requireReach(context, (user) => this.policy.canConfigureAnyTeamRules(user));
@@ -63,7 +64,7 @@ class NavigationBarrier {
 
 const navigationBarrier = new NavigationBarrier(defaultUiAuthorizationPolicy);
 
-export const requireAdminReach = navigationBarrier.requireAdminReach;
+export const requireSystemOperatorReach = navigationBarrier.requireSystemOperatorReach;
 export const requireLeadReach = navigationBarrier.requireLeadReach;
 export const requireCalibrationReach = navigationBarrier.requireCalibrationReach;
 export const requireLeadershipReach = navigationBarrier.requireLeadershipReach;

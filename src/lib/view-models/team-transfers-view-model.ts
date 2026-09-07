@@ -26,24 +26,24 @@ export class TeamTransfersViewModel {
     user: SessionUser,
     architect: Pick<Architect, "id" | "teamId">,
   ): TeamChangeMode | null {
-    if (this.policy.isAdmin(user)) return "immediate";
+    if (this.policy.operatesTheSystem(user)) return "immediate";
     if (this.policy.isAssignedManagerOf(user, architect)) return "request";
     return null;
   }
 
   /** Só admin e gerente com vínculo podem ter pendência — só eles consultam a caixa. */
   mayHavePending(user: SessionUser): boolean {
-    return this.policy.isAdmin(user) || this.policy.canComposeAnyTeam(user);
+    return this.policy.operatesTheSystem(user) || this.policy.canComposeAnyTeam(user);
   }
 
   decides(user: SessionUser, request: TeamTransferRequestView): boolean {
     if (request.status !== "pending") return false;
-    return this.policy.isAdmin(user) || this.managesDestinationOf(user, request);
+    return this.policy.operatesTheSystem(user) || this.managesDestinationOf(user, request);
   }
 
   mayCancel(user: SessionUser, request: TeamTransferRequestView): boolean {
     if (request.status !== "pending") return false;
-    return this.policy.isAdmin(user) || request.requestedByUserId === user.id;
+    return this.policy.operatesTheSystem(user) || request.requestedByUserId === user.id;
   }
 
   inbox(user: SessionUser, requests: readonly TeamTransferRequestView[]): TeamTransfersInbox {

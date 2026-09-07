@@ -1,4 +1,4 @@
-import type { SessionUser } from "../gateways/auth.gateway";
+import { UserRoles, type SessionUser } from "../gateways/auth.gateway";
 
 /**
  * A saudação do PRIMEIRO acesso do dia (dono, 2026-09-06): aparece uma vez
@@ -41,10 +41,17 @@ export class DailyGreeting {
   /** A chave da mensagem por perfil — os textos são do dono, em `greeting.*`. */
   static messageKeyFor(
     role: SessionUser["role"],
-  ): "greeting.manager" | "greeting.techLead" | "greeting.member" | "greeting.admin" {
-    if (role === "manager") return "greeting.manager";
-    if (role === "tech_lead") return "greeting.techLead";
-    if (role === "admin") return "greeting.admin";
+  ):
+    | "greeting.manager"
+    | "greeting.techLead"
+    | "greeting.member"
+    | "greeting.admin"
+    | "greeting.director" {
+    if (role === UserRoles.MANAGER) return "greeting.manager";
+    if (role === UserRoles.TECH_LEAD) return "greeting.techLead";
+    // A saudação de quem mantém o sistema é do suporte (o antigo admin); a diretoria tem a dela.
+    if (UserRoles.readsTheOrganization(role)) return "greeting.director";
+    if (UserRoles.operatesTheSystem(role)) return "greeting.admin";
     return "greeting.member";
   }
 }

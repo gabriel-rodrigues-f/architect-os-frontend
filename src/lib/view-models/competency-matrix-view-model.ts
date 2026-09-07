@@ -58,7 +58,7 @@ export class CompetencyMatrixViewModel {
   }
 
   isAdmin(user: SessionUser): boolean {
-    return this.policy.isAdmin(user);
+    return this.policy.operatesTheSystem(user);
   }
 
   foundCapability(foundation: CapabilityFoundationPayload): Promise<Capability> {

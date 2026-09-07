@@ -2,17 +2,84 @@ import type { ApiClient } from "../api-client";
 
 export const TEAM_LEADERSHIP_ROLES = ["manager", "tech_lead"] as const;
 export type TeamLeadershipRole = (typeof TEAM_LEADERSHIP_ROLES)[number];
-export const USER_ROLES = ["admin", ...TEAM_LEADERSHIP_ROLES, "member"] as const;
-export type UserRole = (typeof USER_ROLES)[number];
-export type UserStatus = "active" | "disabled";
 export const TEAM_MEMBER_ROLES = [...TEAM_LEADERSHIP_ROLES, "member"] as const;
 export type TeamMemberRole = (typeof TEAM_MEMBER_ROLES)[number];
 
+/**
+ * PR 5 (adendo do dono, 2026-09-08, item 2) — os papéis de ORGANIZAÇÃO, que
+ * não são papéis de time, espelhando `backend/.../entities/user.ts`: `admin`
+ * é a diretoria e os sócios ("estão acima dos gerentes e precisam ver tudo
+ * sobre todos"); `support` é o antigo admin ("a pessoa que entraria para
+ * realizar tarefas de suporte, de fato").
+ */
+export const ORGANIZATION_ROLES = ["admin", "support"] as const;
+export type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
+
+export const USER_ROLES = [...ORGANIZATION_ROLES, ...TEAM_MEMBER_ROLES] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+export type UserStatus = "active" | "disabled";
+
+/**
+ * O vocabulário INTEIRO dos papéis de acesso numa classe, e as perguntas que
+ * a tela faz sobre ele. O literal `"admin"` solto significava "quem opera o
+ * sistema" num lugar e "quem lê a organização" noutro; a catraca
+ * `o-papel-e-vocabulario` proíbe o literal fora daqui, e cada uso diz QUAL
+ * pergunta faz.
+ *
+ *  - `operatesTheSystem`: ADMIN e SUPPORT — contas, times, catálogo, ciclos,
+ *    configurações, Métricas da Plataforma. É o que o antigo `admin` fazia,
+ *    e ADMIN pode tudo que SUPPORT pode;
+ *  - `readsTheOrganization`: só ADMIN — a diretoria lê tudo de todos, sem
+ *    passe de suporte. Ler, não agir: quem age sobre pessoa é quem a lidera
+ *    por vínculo.
+ */
 export class UserRoles {
   static readonly ALL = USER_ROLES;
 
+  static readonly ADMIN = ORGANIZATION_ROLES[0];
+
+  static readonly SUPPORT = ORGANIZATION_ROLES[1];
+
+  static readonly MANAGER = TEAM_LEADERSHIP_ROLES[0];
+
+  static readonly TECH_LEAD = TEAM_LEADERSHIP_ROLES[1];
+
+  static readonly MEMBER = TEAM_MEMBER_ROLES[2];
+
   static includes(role: string): role is UserRole {
     return (USER_ROLES as readonly string[]).includes(role);
+  }
+
+  static isOrganizationRole(role: string): role is OrganizationRole {
+    return (ORGANIZATION_ROLES as readonly string[]).includes(role);
+  }
+
+  /** ADMIN e SUPPORT: quem opera o sistema (o que o antigo `admin` significava). */
+  static operatesTheSystem(role: string): boolean {
+    return UserRoles.isOrganizationRole(role);
+  }
+
+  /** Só ADMIN: a diretoria lê a organização inteira — e não age sobre pessoas. */
+  static readsTheOrganization(role: string): boolean {
+    return role === UserRoles.ADMIN;
+  }
+
+  /**
+   * Quais papéis quem opera o sistema pode ATRIBUIR a uma conta: "é o único
+   * [ADMIN] que atribui ADMIN"; o suporte "não cria nem promove ADMIN"
+   * (adendo, item 2). Quem não opera o sistema não atribui papel nenhum.
+   */
+  static assignableBy(actorRole: string): readonly UserRole[] {
+    if (UserRoles.readsTheOrganization(actorRole)) return USER_ROLES;
+    if (UserRoles.operatesTheSystem(actorRole)) {
+      return USER_ROLES.filter((role) => !UserRoles.readsTheOrganization(role));
+    }
+    return [];
+  }
+
+  /** Trocar o papel de uma conta para ADMIN é conceder a leitura da organização — pede confirmação. */
+  static promotesToAdmin(from: string, to: string): boolean {
+    return !UserRoles.readsTheOrganization(from) && UserRoles.readsTheOrganization(to);
   }
 }
 

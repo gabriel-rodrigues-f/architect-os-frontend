@@ -1,18 +1,23 @@
 import type { SessionUser } from "./api";
-import { TeamLeadershipRoles } from "./gateways/auth.gateway";
-import type { TeamLeadershipRole } from "./gateways/auth.gateway";
+import { TeamLeadershipRoles, UserRoles } from "./gateways/auth.gateway";
+import type { TeamLeadershipRole, UserRole } from "./gateways/auth.gateway";
 import type { Architect } from "./domain";
 
 type ScopedArchitect = Pick<Architect, "id" | "teamId">;
 
 /**
- * Revisão de papéis (dono, 2026-09-05, D1–D5) — a régua da tela espelha a do
- * servidor (`AuthorizationService`), e as duas dizem a mesma coisa:
+ * Revisão de papéis (dono, 2026-09-05, D1–D5; adendo 2026-09-08, item 2) — a
+ * régua da tela espelha a do servidor (`AuthorizationService`), e as duas
+ * dizem a mesma coisa:
  *
- *  - o ADMINISTRADOR administra o sistema, não as pessoas: catálogo, ciclos,
- *    faixas, times, contas, importação, operação. Sobre uma pessoa ele só LÊ,
- *    em MODO DE SUPORTE, declarando o motivo (`SupportAccess`), e nunca age
- *    nem usa IA;
+ *  - o SUPORTE (o antigo admin) opera o sistema, não as pessoas: catálogo,
+ *    ciclos, faixas, times, contas, importação, operação. Sobre uma pessoa
+ *    ele só LÊ, em MODO DE SUPORTE, declarando o motivo (`SupportAccess`), e
+ *    nunca age nem usa IA;
+ *  - a DIRETORIA (ADMIN) opera o sistema como o suporte E lê a organização
+ *    inteira — times, pessoas, avaliações, PDI, mentoria — sem passe de
+ *    suporte. Também não age sobre pessoas: quem age é quem lidera por
+ *    vínculo;
  *  - o GERENTE decide carreira (nível, conclusão da avaliação, desativação),
  *    compõe o time, cadastra tech lead e membro, calibra, administra as
  *    contas dos times dele;
@@ -37,27 +42,28 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
  * os dois eixos passaram a falar o MESMO vocabulário (`TeamLeadershipRoles`).
  * A distinção entre os dois papéis NÃO está no alcance e sim no poder:
  *
- *   ALCANCE (`canActFor`, `isLeadOf`, `configurableTeamIds`) é a união dos
- *   times com vínculo de liderança, exigido papel de liderança — a conta de
- *   dois chapéus (gerente de um time, tech lead de outro) alcança os dois;
+ *   ALCANCE (`canActFor`, `isLeadOf`, `configurableTeamIds`) são os times
+ *   com vínculo DO PRÓPRIO papel — o gerente alcança os N times em que é
+ *   gerente; o tech lead, o único time em que é tech lead (adendo do dono,
+ *   2026-09-08, itens 3 e 4: a conta de dois chapéus morreu);
  *
  *   PODER ESTRITO (`isAssignedTechLeadOf`) exige papel global E vínculo
  *   naquele time, os dois iguais — é o que o backend guarda na proficiência
  *   observada e na reabertura de PDI.
  *
  * `canCalibrate` é de um terceiro tipo, e por isso não se apoia em nenhum dos
- * dois: o CONTRATO PRD-03 reserva a leitura de calibração a gerente + admin
- * SEM falar de time, porque ela compara avaliadores entre si em vez de agir
+ * dois: o CONTRATO PRD-03 reserva a leitura de calibração ao gerente SEM
+ * falar de time, porque ela compara avaliadores entre si em vez de agir
  * sobre alguém. Papel global, vínculo nenhum.
  */
 type AccountLike = { id: string; status: string; role: string };
 
 export class UiAuthorizationPolicy {
-  /** LEITURA sobre uma pessoa: ela mesma, quem a lidera por vínculo, ou o admin (em modo de suporte). */
+  /** LEITURA sobre uma pessoa: ela mesma, quem a lidera por vínculo, a diretoria, ou o suporte (em modo de suporte). */
   canReadAbout(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (!architect) return false;
     if (this.isOwn(user, architect)) return true;
-    if (this.isAdmin(user)) return true;
+    if (this.readsEveryone(user)) return true;
     return this.leadsTeamOf(user, architect);
   }
 
@@ -171,31 +177,57 @@ export class UiAuthorizationPolicy {
     return this.hasStrictBondWith(user, architect, TeamLeadershipRoles.MANAGER);
   }
 
-  /** DECISÃO de carreira — nível, conclusão da avaliação, desativação: o gerente designado; o admin como correção. */
+  /** DECISÃO de carreira — nível, conclusão da avaliação, desativação: o gerente designado; quem opera o sistema, como correção. */
   decidesCareerOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (this.isAdmin(user)) return true;
+    if (this.operatesTheSystem(user)) return true;
     return this.isAssignedManagerOf(user, architect);
   }
 
-  /** A FICHA FUNCIONAL e o extrato completo: a própria pessoa, o gerente designado, o admin em suporte. */
+  /** A FICHA FUNCIONAL e o extrato completo: a própria pessoa, o gerente designado, a diretoria, o suporte em suporte. */
   canReadPersonnelFileOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (this.isOwn(user, architect)) return true;
-    if (this.isAdmin(user)) return true;
+    if (this.readsEveryone(user)) return true;
     return this.isAssignedManagerOf(user, architect);
   }
 
-  isAdmin(user: SessionUser): boolean {
-    return user.role === "admin";
+  /** ADMIN e SUPPORT: contas, times, catálogo, ciclos, configurações — o que o antigo admin fazia. */
+  operatesTheSystem(user: SessionUser): boolean {
+    return UserRoles.operatesTheSystem(user.role);
   }
 
-  /** Análise de time (cobertura, prioridades, necessidades): liderança COM vínculo. O admin lê o Painel de operação. */
+  /** Só ADMIN: a diretoria lê tudo de todos, sem passe de suporte. */
+  readsTheOrganization(user: SessionUser): boolean {
+    return UserRoles.readsTheOrganization(user.role);
+  }
+
+  /**
+   * O SUPORTE lê sobre pessoas só em MODO DE SUPORTE, por ticket
+   * (`SupportAccess`); a diretoria lê sem ticket. A ficha pergunta isto antes
+   * de pedir o motivo.
+   */
+  readsPeopleOnlyInSupportMode(user: SessionUser): boolean {
+    return this.operatesTheSystem(user) && !this.readsTheOrganization(user);
+  }
+
+  /** Métricas da Plataforma (Grafana): todos menos o member (adendo 5, 2026-09-08). */
+  readsPlatformMetrics(user: SessionUser): boolean {
+    return this.isLeadership(user);
+  }
+
+  /** Os papéis que quem está logado pode atribuir no seletor de Usuários. */
+  assignableRoles(user: SessionUser): readonly UserRole[] {
+    return UserRoles.assignableBy(user.role);
+  }
+
+  /** Análise de time (cobertura, prioridades, necessidades): liderança COM vínculo, e a diretoria sobre a organização. */
   canAnalyzeTeam(user: SessionUser): boolean {
+    if (this.readsTheOrganization(user)) return true;
     return this.isLeadership(user) && this.scopeGrantingTeamsOf(user).size > 0;
   }
 
-  /** Contas (Usuários) e composição de times: o administrador e o gerente com vínculo. */
+  /** Contas (Usuários) e composição de times: quem opera o sistema e o gerente com vínculo. */
   canAdministerPeople(user: SessionUser): boolean {
-    return this.isAdmin(user) || this.canComposeAnyTeam(user);
+    return this.operatesTheSystem(user) || this.canComposeAnyTeam(user);
   }
 
   canRestoreAccessOf(user: SessionUser, account: AccountLike): boolean {
@@ -204,16 +236,18 @@ export class UiAuthorizationPolicy {
 
   /**
    * Quem muda o STATUS de uma conta (desativar, reativar, devolver acesso):
-   * o admin, de qualquer conta que não a própria; o gerente com vínculo, só
-   * de tech lead e profissional — cadastrar e alterar GERENTES é do
-   * administrador (dono, 2026-09-06).
+   * quem opera o sistema, de qualquer conta que não a própria — mas a conta
+   * de ADMIN é reservada ao ADMIN (o suporte não a toca); o gerente com
+   * vínculo, só de tech lead e profissional — cadastrar e alterar GERENTES
+   * é de quem opera o sistema (dono, 2026-09-06).
    */
   administersAccount(user: SessionUser, account: AccountLike): boolean {
     if (account.id === user.id) return false;
-    if (this.isAdmin(user)) return true;
+    if (UserRoles.readsTheOrganization(account.role)) return this.readsTheOrganization(user);
+    if (this.operatesTheSystem(user)) return true;
     return (
       this.canAdministerPeople(user) &&
-      account.role !== "admin" &&
+      !UserRoles.isOrganizationRole(account.role) &&
       account.role !== TeamLeadershipRoles.MANAGER
     );
   }
@@ -225,11 +259,24 @@ export class UiAuthorizationPolicy {
   /**
    * Quem lidera alguém — com vínculo — tem o que FAZER em Avaliações, PDI e
    * Mentoria; quem tem ficha própria tem o que LER ali (dono, 2026-09-06: os
-   * três menus continuam no menu do profissional, em leitura).
+   * três menus continuam no menu do profissional, em leitura); a diretoria
+   * LÊ os três sobre a organização inteira. O suporte sem vínculo, não.
    */
   worksWithPeople(user: SessionUser): boolean {
-    if (this.isAdmin(user)) return this.scopeGrantingTeamsOf(user).size > 0;
+    if (this.readsTheOrganization(user)) return true;
+    if (this.operatesTheSystem(user)) return this.scopeGrantingTeamsOf(user).size > 0;
     return true;
+  }
+
+  /**
+   * Quem agenda o follow-up de uma sessão de mentoria: quem a registrou, ou
+   * quem opera o sistema, como correção.
+   */
+  schedulesMentoringFollowUpOf(
+    user: SessionUser,
+    session: { mentorUserId?: string | null | undefined },
+  ): boolean {
+    return session.mentorUserId === user.id || this.operatesTheSystem(user);
   }
 
   /**
@@ -244,7 +291,7 @@ export class UiAuthorizationPolicy {
     return this.canReadAbout(user, architect);
   }
 
-  /** O Extrato é de quem lê a ficha: a própria pessoa, quem a lidera por vínculo, o admin em suporte (dono, 2026-09-06). */
+  /** O Extrato é de quem lê a ficha: a própria pessoa, quem a lidera por vínculo, a diretoria, o suporte em suporte (dono, 2026-09-06). */
   canOpenStatementOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     return this.canReadAbout(user, architect);
   }
@@ -261,14 +308,14 @@ export class UiAuthorizationPolicy {
     return this.scopeGrantingTeamsOf(user).has(teamId);
   }
 
-  /** A régua é regida por quem lidera o time; o admin a LÊ. */
+  /** A régua é regida por quem lidera o time; quem opera o sistema a LÊ. */
   canConfigureAnyTeamRules(user: SessionUser): boolean {
     const reach = this.configurableTeamIds(user);
     return reach === "all" || reach.size > 0;
   }
 
   configurableTeamIds(user: SessionUser): "all" | ReadonlySet<string> {
-    if (this.isAdmin(user)) return "all";
+    if (this.operatesTheSystem(user)) return "all";
     return this.scopeGrantingTeamsOf(user);
   }
 
@@ -283,7 +330,7 @@ export class UiAuthorizationPolicy {
   }
 
   composableTeamIds(user: SessionUser): "all" | ReadonlySet<string> {
-    if (this.isAdmin(user)) return "all";
+    if (this.operatesTheSystem(user)) return "all";
     if (user.role !== TeamLeadershipRoles.MANAGER) return new Set();
     return this.teamsBoundAs(user, [TeamLeadershipRoles.MANAGER]);
   }
@@ -296,9 +343,20 @@ export class UiAuthorizationPolicy {
     return this.scopeGrantingTeamsOf(user).has(architect.teamId);
   }
 
+  /** Diretoria e suporte leem sobre qualquer pessoa — a diretoria sem ticket, o suporte em modo de suporte. */
+  private readsEveryone(user: SessionUser): boolean {
+    return this.operatesTheSystem(user) || this.readsTheOrganization(user);
+  }
+
+  /**
+   * PR 5 (adendo do dono, 2026-09-08, itens 3 e 4) — o alcance vem dos
+   * vínculos do PRÓPRIO papel: o gerente alcança os times em que é gerente,
+   * o tech lead o time (um só) em que é tech lead. A conta de dois chapéus
+   * morreu.
+   */
   private scopeGrantingTeamsOf(user: SessionUser): ReadonlySet<string> {
     if (!TeamLeadershipRoles.includes(user.role)) return new Set();
-    return this.teamsBoundAs(user, TeamLeadershipRoles.ALL);
+    return this.teamsBoundAs(user, [user.role]);
   }
 
   private hasStrictBondWith(

@@ -86,7 +86,7 @@ function LearningScreen() {
   const canCreatePath = isLeadCapable(user.role);
 
   const canEdit = (path: LearningPath) => {
-    if (user.role === "admin") return true;
+    if (defaultUiAuthorizationPolicy.operatesTheSystem(user)) return true;
     if (path.createdByUserId) return path.createdByUserId === user.id;
     return TeamLeadershipRoles.includes(user.role);
   };

@@ -32,7 +32,7 @@ export class TeamChoice {
     policy: UiAuthorizationPolicy = defaultUiAuthorizationPolicy,
   ): TeamChoice {
     const [only, ...rest] = teams;
-    const locked = !policy.isAdmin(user) && only !== undefined && rest.length === 0;
+    const locked = !policy.operatesTheSystem(user) && only !== undefined && rest.length === 0;
     return new TeamChoice(teams, locked && only ? only : null);
   }
 

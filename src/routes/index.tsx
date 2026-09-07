@@ -71,8 +71,14 @@ const PAINEL_CONTEXTS: readonly ContextScopeRequest[] = [
   "evidences",
 ];
 
+/**
+ * PR 5 (adendo do dono, 2026-09-08) — o Painel de operação é de quem opera o
+ * sistema: o suporte (o antigo admin) e a diretoria. A leitura de
+ * organização inteira sobre carreira é produto novo (D-I) e nasce depois.
+ */
 const HOME_BY_ROLE = {
   admin: OperationsHome,
+  support: OperationsHome,
   manager: LeadHome,
   tech_lead: LeadHome,
   member: MemberHome,

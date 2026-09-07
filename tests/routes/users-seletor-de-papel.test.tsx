@@ -8,7 +8,7 @@ import type { SessionUser } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import pt from "@/locales/pt.json";
 import { Route as UsersRoute } from "@/routes/users";
-import { fixtureAdminUser } from "../helpers/fixtures";
+import { fixtureAdminUser, fixtureSupportUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -45,15 +45,15 @@ const ROTULOS_DE_NEGOCIO = pt as Record<string, string>;
 const rotulados = (papeis: readonly string[]) =>
   papeis.map((papel) => [papel, ROTULOS_DE_NEGOCIO[`users.role.${papel}`]]);
 
-function mockBackend() {
+function mockBackend(user: SessionUser = fixtureAdminUser) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   mockAppFetch(fetchMock, {
-    user: fixtureAdminUser,
+    user,
     routes: [
       (href, init) => {
         if (href.endsWith(apiPath("/auth/users")) && (!init || init.method === undefined)) {
-          return jsonResponse([fixtureAdminUser, OTHER_MEMBER]);
+          return jsonResponse([user, OTHER_MEMBER]);
         }
         return undefined;
       },
@@ -92,7 +92,7 @@ describe("Usuários — o seletor de papel é derivado do vocabulário", () => {
     expect(papeisOferecidosEm(dialog)).toEqual(rotulados(TEAM_MEMBER_ROLES));
   });
 
-  it("o diálogo de edição oferece os quatro papéis — trocar o cargo de quem já existe inclui `admin`", async () => {
+  it("para o ADMIN, o diálogo de edição oferece os cinco papéis — inclusive `admin`", async () => {
     mockBackend();
     renderWithApp(<UsersPage />);
 
@@ -103,13 +103,31 @@ describe("Usuários — o seletor de papel é derivado do vocabulário", () => {
     expect(papeisOferecidosEm(dialog)).toEqual(rotulados(USER_ROLES));
   });
 
+  /**
+   * PR 5 (adendo do dono, 2026-09-08, item 2) — "é o único [ADMIN] que
+   * atribui ADMIN"; o suporte "não cria nem promove ADMIN". O seletor do
+   * suporte nem mostra a opção.
+   */
+  it("para o SUPPORT, o diálogo de edição não oferece `admin` — o suporte não nomeia a diretoria", async () => {
+    mockBackend(fixtureSupportUser);
+    renderWithApp(<UsersPage />);
+
+    await screen.findByText("Outro Membro");
+    await userEvent.click(screen.getByRole("button", { name: "Editar Outro Membro" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(papeisOferecidosEm(dialog)).toEqual(
+      rotulados(USER_ROLES.filter((papel) => papel !== "admin")),
+    );
+  });
+
   it("o gerente está entre eles, escrito na palavra do dono", () => {
     expect(ROTULOS_DE_NEGOCIO["users.role.manager"]).toBe("Gerente");
   });
 });
 
 describe("Usuários — o texto do navegador vira papel por estreitamento, não por molde", () => {
-  it("reconhece os quatro papéis do vocabulário", () => {
+  it("reconhece os cinco papéis do vocabulário", () => {
     for (const papel of USER_ROLES) expect(UserRoles.includes(papel), papel).toBe(true);
   });
 
@@ -120,7 +138,7 @@ describe("Usuários — o texto do navegador vira papel por estreitamento, não 
   });
 });
 
-describe("Usuários — a prosa da tela conhece os quatro papéis", () => {
+describe("Usuários — a prosa da tela conhece os cinco papéis", () => {
   const head = UsersRoute.options.head as undefined | (() => { meta?: Record<string, string>[] });
 
   const prosa = (): string =>
@@ -131,12 +149,13 @@ describe("Usuários — a prosa da tela conhece os quatro papéis", () => {
 
   it("nomeia o gerente — a tela que ATRIBUI papel não pode descrever só três", () => {
     const texto = prosa();
-    for (const palavra of ["administrador", "gerente", "tech lead", "membro"]) {
+    for (const palavra of ["diretoria", "suporte", "gerente", "tech lead", "membro"]) {
       expect(texto, palavra).toContain(palavra);
     }
   });
 
-  it("não descreve mais o papel morto", () => {
+  it("não descreve mais o papel morto nem o administrador de antes do quinto papel", () => {
     expect(prosa()).not.toContain("(administrador, tech lead, membro)");
+    expect(prosa()).not.toContain("administrador");
   });
 });

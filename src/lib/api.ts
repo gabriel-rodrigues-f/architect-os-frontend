@@ -1,5 +1,5 @@
 import { ApiOperationsGateway } from "./gateways/operations.gateway";
-import { TeamLeadershipRoles } from "./gateways/auth.gateway";
+import { TeamLeadershipRoles, UserRoles } from "./gateways/auth.gateway";
 import type { UserRole } from "./gateways/auth.gateway";
 import { defaultContainer } from "./gateways/container";
 
@@ -63,7 +63,7 @@ export const operationsApi = new ApiOperationsGateway(defaultContainer.apiClient
 export { sessionPolicy };
 
 export const isLeadCapable = (role: UserRole): boolean =>
-  role === "admin" || TeamLeadershipRoles.includes(role);
+  UserRoles.operatesTheSystem(role) || TeamLeadershipRoles.includes(role);
 
 export { ApiError, UserFacingError } from "./api-errors";
 export { API_URL, type AppState } from "./api-client";

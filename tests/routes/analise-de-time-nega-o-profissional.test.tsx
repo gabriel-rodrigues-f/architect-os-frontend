@@ -26,7 +26,7 @@ import { Route as ProgressionRoute } from "@/routes/progression";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
 import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import {
-  fixtureAdminUser,
+  fixtureSupportUser,
   fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureState,
@@ -89,7 +89,7 @@ const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode
 function renderAs(user: SessionUser, page: ReactNode) {
   mockAppFetch(fetchMock, {
     user,
-    state: user === fixtureAdminUser ? fixtureState : scopedFixtureStateFor(user),
+    state: user === fixtureSupportUser ? fixtureState : scopedFixtureStateFor(user),
   });
   return renderWithApp(page);
 }
@@ -133,9 +133,9 @@ describe("as cinco telas de análise do time negam o profissional — a tela é 
   );
 
   it.each(TELAS)(
-    "$rota: tech lead sem vínculo e admin recebem a negativa — o alcance é o VÍNCULO (revisão de papéis, 2026-09-05)",
+    "$rota: tech lead sem vínculo e suporte recebem a negativa — o alcance é o VÍNCULO (revisão de papéis, 2026-09-05; a diretoria lê a organização, adendo 2026-09-08)",
     async ({ Page }) => {
-      for (const user of [fixtureUnassignedTechLeadUser, fixtureAdminUser]) {
+      for (const user of [fixtureUnassignedTechLeadUser, fixtureSupportUser]) {
         renderAs(user, <Page />);
         expect(await screen.findByText(ANALISE_LEITURA_DE_LIDERANCA)).toBeTruthy();
         cleanup();

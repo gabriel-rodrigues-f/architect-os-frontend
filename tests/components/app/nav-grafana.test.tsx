@@ -27,6 +27,7 @@ import {
   fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
   fixtureMemberUser,
+  fixtureSupportUser,
   fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
@@ -58,7 +59,7 @@ const destinoDoGrafana = (): string => {
   return doAdmin[posicaoDeTimes + 1] ?? "";
 };
 
-describe("menu — o item Grafana é do administrador, entre Times e Usuários", () => {
+describe("menu — o item Grafana fica entre Times e Usuários, para todos menos o member", () => {
   it("o administrador vê o Grafana exatamente entre /teams e /users", () => {
     const caminhos = destinos(fixtureAdminUser);
     const posicao = caminhos.indexOf(destinoDoGrafana());
@@ -67,11 +68,17 @@ describe("menu — o item Grafana é do administrador, entre Times e Usuários",
     expect(caminhos[posicao + 1]).toBe("/users");
   });
 
-  it("gerente, tech lead (com ou sem vínculo), member e sessão nenhuma não veem", () => {
+  /**
+   * Adendo do dono (2026-09-08, item 5): "vamos disponibilizar as métricas
+   * para os perfis de gerente e tech lead também. O único que não enxerga
+   * as métricas passa a ser o membro."
+   */
+  it("suporte, gerente e tech lead (com ou sem vínculo) também veem; member e sessão nenhuma não", () => {
     const grafana = destinoDoGrafana();
-    expect(destinos(fixtureAssignedManagerUser)).not.toContain(grafana);
-    expect(destinos(fixtureAssignedTechLeadUser)).not.toContain(grafana);
-    expect(destinos(fixtureUnassignedTechLeadUser)).not.toContain(grafana);
+    expect(destinos(fixtureSupportUser)).toContain(grafana);
+    expect(destinos(fixtureAssignedManagerUser)).toContain(grafana);
+    expect(destinos(fixtureAssignedTechLeadUser)).toContain(grafana);
+    expect(destinos(fixtureUnassignedTechLeadUser)).toContain(grafana);
     expect(destinos(fixtureMemberUser)).not.toContain(grafana);
     expect(destinos(undefined)).not.toContain(destinoDoGrafana());
   });

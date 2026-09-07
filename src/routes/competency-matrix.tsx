@@ -45,7 +45,7 @@ import type { AffectedRecords, CompetencyRemovalOutcome } from "@/lib/gateways/c
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
-import { requireAdminReach } from "@/lib/route-guards";
+import { requireSystemOperatorReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCurationPolicy, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -68,7 +68,7 @@ function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
 }
 
 export const Route = createFileRoute("/competency-matrix")({
-  beforeLoad: requireAdminReach,
+  beforeLoad: requireSystemOperatorReach,
   head: () => ({
     meta: [
       { title: "Catálogo de Competências — Synapse" },

@@ -2,16 +2,33 @@ import type { AppState, SessionUser } from "@/lib/api";
 import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 
 /**
- * Sessão de admin — o Tech Lead surrogate do modelo de contas atual (ver
- * `assessments.ts` no backend). Usada nos testes que exercitam telas atrás
- * de `useCurrentUser()`: dá acesso total, sem prender o teste a ser dono de
- * um arquiteto específico.
+ * Sessão de ADMIN — desde o PR 5 (adendo do dono, 2026-09-08, item 2) é a
+ * DIRETORIA: opera o sistema como o suporte E lê a organização inteira sem
+ * passe de suporte. Continua sem agir sobre pessoas. Usada nos testes que
+ * exercitam telas atrás de `useCurrentUser()`: dá acesso total, sem prender
+ * o teste a ser dono de um arquiteto específico.
  */
 export const fixtureAdminUser: SessionUser = {
   id: "test-admin",
   email: "admin@teste.local",
   name: "Admin de teste",
   role: "admin",
+  architectId: null,
+  status: "active",
+  mustChangePassword: false,
+  createdAt: "2026-01-01T00:00:00Z",
+};
+
+/**
+ * Sessão de SUPPORT — o ANTIGO admin (PR 4 do backend migrou `admin → support`):
+ * opera o sistema (contas, times, catálogo, ciclos, configurações, Grafana) e
+ * sobre pessoas só lê em modo de suporte, por ticket. É a conta do dono hoje.
+ */
+export const fixtureSupportUser: SessionUser = {
+  id: "test-support",
+  email: "suporte@teste.local",
+  name: "Suporte de teste",
+  role: "support",
   architectId: null,
   status: "active",
   mustChangePassword: false,

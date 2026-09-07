@@ -128,7 +128,7 @@ function SettingsScreen() {
   const { t, locale } = useI18n();
   const help = usePageHelp("settings");
   const user = useCurrentUser();
-  const isAdmin = user.role === "admin";
+  const isAdmin = defaultUiAuthorizationPolicy.operatesTheSystem(user);
 
   return (
     <>

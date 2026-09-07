@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, authApi, teamsApi, type SessionUser, type UserRole } from "@/lib/api";
-import type { TeamMemberRole } from "@/lib/gateways/auth.gateway";
+import { UserRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/users")({
       {
         name: "description",
         content:
-          "Cadastro de pessoas: cargo (administrador, gerente, Tech Lead, membro), senioridade, time e status da conta.",
+          "Cadastro de pessoas: cargo (diretoria, suporte, gerente, Tech Lead, membro), senioridade, time e status da conta.",
       },
       { property: "og:title", content: "Contas e Acessos — Synapse" },
       {
@@ -92,7 +92,7 @@ function UsersDirectory() {
   const notifySuccess = useSuccessToast();
   const help = usePageHelp("users");
   const user = useCurrentUser();
-  const isAdmin = defaultUiAuthorizationPolicy.isAdmin(user);
+  const isAdmin = defaultUiAuthorizationPolicy.operatesTheSystem(user);
   // Revisão de papéis (2026-09-05): o gerente vê as contas dos times dele e
   // muda só o status; nome, e-mail e cargo continuam sendo do administrador.
   const administersPeople = defaultUiAuthorizationPolicy.canAdministerPeople(user);
@@ -362,6 +362,7 @@ function UsersDirectory() {
 
 const roleTone: Record<UserRole, "neutral" | "progress" | "done"> = {
   admin: "done",
+  support: "done",
   manager: "progress",
   tech_lead: "progress",
   member: "neutral",
@@ -382,6 +383,7 @@ function EditUserDialog({
   onSave: (patch: Partial<{ role: UserRole; name: string; email: string }>) => Promise<void>;
 }) {
   const { t } = useI18n();
+  const editor = useCurrentUser();
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [role, setRole] = useState<UserRole>(user.role);
@@ -393,7 +395,7 @@ function EditUserDialog({
   const nameValid = trimmedName.length > 1;
   const emailValid = trimmedEmail.length > 3;
 
-  const grantsAdmin = user.role !== "admin" && role === "admin";
+  const grantsAdmin = UserRoles.promotesToAdmin(user.role, role);
   const changed = role !== user.role || trimmedName !== user.name || trimmedEmail !== user.email;
 
   const persist = async () => {
@@ -458,7 +460,12 @@ function EditUserDialog({
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <RoleSelect id="edit-user-role" value={role} onChange={setRole} />
+          <RoleSelect
+            id="edit-user-role"
+            value={role}
+            offered={defaultUiAuthorizationPolicy.assignableRoles(editor)}
+            onChange={setRole}
+          />
           {error && (
             <p className="text-sm text-destructive" role="alert">
               {error}
