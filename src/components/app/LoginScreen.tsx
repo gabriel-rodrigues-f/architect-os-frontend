@@ -13,6 +13,7 @@ import { useI18n } from "@/lib/i18n";
 import { authErrorMessage, useAuth } from "@/lib/auth";
 import { FormKeyboard } from "@/lib/form-keyboard";
 import { SynapseSignals } from "@/lib/synapse-network";
+import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
 
 /**
  * ONDA DA RECUPERAÇÃO DE ACESSO (2026-09-04) — quem não consegue entrar sai
@@ -25,13 +26,21 @@ import { SynapseSignals } from "@/lib/synapse-network";
  *
  * LOGIN "SYNAPSE NETWORK" (direção 2026-09-06): a casca (`AuthScreenShell`)
  * põe a rede de sinapses ao fundo e a marca ao lado; esta tela só fala com a
- * rede por `SynapseSignals` — clicar em Entrar dispara um pulso EM PARALELO
- * à autenticação, que nunca espera pela animação.
+ * rede por `SynapseSignals`, e a autenticação nunca espera pela animação.
+ *
+ * A COR DO PULSO ACOMPANHA O RESULTADO (dono, 2026-09-08): "se o login for
+ * rejeitado, a sinapse deve ser vermelha, no mesmo tom do vermelho de erro do
+ * contorno dos campos; só pode ser azul quando o usuário conseguir se logar
+ * com sucesso". Por isso o pulso NÃO dispara no envio — dispara com a
+ * resposta: aceita → azul (`onAccepted`, antes de a sessão abrir, para a rede
+ * ainda estar na tela); recusada → vermelho; serviço fora → nada, porque não
+ * é culpa do que foi digitado (`SynapseOutcomeRule.toneOfDoorResult`).
  */
-export function LoginScreen() {
+export function LoginScreen({ signals: givenSignals }: { signals?: SynapseSignals } = {}) {
   const { login, register } = useAuth();
   const { t } = useI18n();
-  const [signals] = useState(() => new SynapseSignals());
+  const [ownSignals] = useState(() => new SynapseSignals());
+  const signals = givenSignals ?? ownSignals;
   const [mode, setMode] = useState<"login" | "register" | "recovery">("login");
   const [hasUsers, setHasUsers] = useState(true);
   const [checkedInstance, setCheckedInstance] = useState(false);
@@ -65,22 +74,23 @@ export function LoginScreen() {
     event.preventDefault();
     if (submitting) return;
     setSubmitting(true);
-    signals.pulse();
+    const accepted = () => signals.pulseWith("primary");
     try {
       if (mode === "register") {
-        await register({
-          name: form.name.trim(),
-          email: form.email.trim(),
-          password: form.password,
-        });
+        await register(
+          { name: form.name.trim(), email: form.email.trim(), password: form.password },
+          accepted,
+        );
       } else {
-        await login(form.email.trim(), form.password);
+        await login(form.email.trim(), form.password, accepted);
       }
       setError(null);
       setRejected(false);
     } catch (err) {
       setError(authErrorMessage(err));
       setRejected(true);
+      const tone = SynapseOutcomeRule.toneOfDoorResult(err);
+      if (tone) signals.pulseWith(tone);
     } finally {
       setSubmitting(false);
     }
@@ -92,6 +102,7 @@ export function LoginScreen() {
     return (
       <AuthScreenShell signals={signals}>
         <AccessRecoveryRequestPanel
+          signals={signals}
           onBack={() => {
             setMode("login");
             setError(null);

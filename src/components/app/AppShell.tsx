@@ -9,12 +9,14 @@ import { NoticeBell } from "@/components/app/NoticeBell";
 import { PageFrame } from "@/components/app/PageFrame";
 import { PreferencesMenu } from "@/components/app/PreferencesMenu";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
+import { SynapseBackground } from "@/components/app/SynapseBackground";
 import { semanticTone } from "@/components/app/ui-bits";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePendingTeamTransfers, useReducedMotion } from "@/hooks";
 import { useAuth } from "@/lib/auth";
 import { useCycleSelection } from "@/lib/context-scope";
+import { useSynapseSignals } from "@/lib/dependencies";
 import { ShellHeader } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -49,9 +51,20 @@ const clampWidth = SidebarPreferences.clampWidth;
  * página. O que ela desenha vem do catálogo (`lib/navigation-catalog`); o que
  * ela lembra vem das `SidebarPreferences`; cada item é um `NavLinkItem`, na
  * coluna e na gaveta móvel.
+ *
+ * A REDE DE SINAPSES NO FUNDO (dono, 2026-09-08: "o mesmo efeito da tela de
+ * login, quero no fundo da aplicação como um todo"). Ela mora aqui, fora do
+ * `StoreProvider`, pela mesma razão do `AppToaster`: não desmonta quando o
+ * miolo carrega. É a composição INTERIOR — contida, e com o `<main>` como
+ * zona de exclusão, para nunca passar atrás de tabelas e cartões. Quem fala
+ * com ela é o `ApiClient`, pelos `synapseSignals` do container: escrita
+ * aceita → azul; recusa com mensagem vermelha → vermelho.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  // Sem container por perto (uma casca montada sozinha num teste), não há rede — e nada quebra.
+  const synapseSignals = useSynapseSignals();
+  const contentRef = useRef<HTMLElement>(null);
   const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
   const { t } = useI18n();
@@ -209,7 +222,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         {t("shell.skipToContent")}
       </a>
-      <div className="flex min-h-screen w-full bg-background">
+      {/* O canvas é fixo ao viewport e fica atrás de tudo; o `body` pinta o fundo. */}
+      {synapseSignals && <SynapseBackground signals={synapseSignals} exclusionRef={contentRef} />}
+      <div className="relative z-10 flex min-h-screen w-full">
         <aside
           style={{ width: collapsed ? SidebarPreferences.RAIL_WIDTH : width }}
           className={cn(
@@ -433,6 +448,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <PageFrame
             id={MAIN_CONTENT_ID}
+            ref={contentRef}
             pathname={pathname}
             className={cn(PAGE_CONTAINER, "flex-1 px-5 py-6 lg:px-8 lg:py-8")}
           >

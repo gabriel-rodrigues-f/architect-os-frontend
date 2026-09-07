@@ -665,8 +665,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
           <Button
             variant="destructive"
             onClick={() => {
-              vm.removePath(path.id);
-              notifySuccess("path.delete.toast", { nome: path.name });
+              vm.removePath(path.id, () => notifySuccess("path.delete.toast", { nome: path.name }));
               onClose();
             }}
           >

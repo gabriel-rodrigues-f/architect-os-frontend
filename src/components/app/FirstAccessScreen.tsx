@@ -11,6 +11,8 @@ import { usePasswordChoice } from "@/hooks";
 import { authErrorMessage, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { PasswordRefusal } from "@/lib/password-safety";
+import { SynapseSignals } from "@/lib/synapse-network";
+import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
 
 /**
  * A troca de senha do primeiro acesso — a tela que segura a porta.
@@ -44,6 +46,10 @@ import { PasswordRefusal } from "@/lib/password-safety";
  *  2. **Sair funciona.** `POST /auth/logout` é uma das três rotas liberadas
  *     enquanto a marca está de pé. Quem não quiser trocar agora precisa
  *     conseguir sair — senão a tela deixaria de ser porta e viraria armadilha.
+ *
+ * A rede ao fundo (dono, 2026-09-08) pulsa com o resultado, nunca com o
+ * envio: senha que não confere (recusa local) e recusa do serviço → vermelho;
+ * senha trocada → azul; serviço fora → nada.
  */
 export function FirstAccessScreen() {
   const { user, logout, changePassword } = useAuth();
@@ -53,6 +59,7 @@ export function FirstAccessScreen() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [signals] = useState(() => new SynapseSignals());
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -61,25 +68,29 @@ export function FirstAccessScreen() {
 
     if (!choice.matches) {
       setError(t("password.mismatch"));
+      signals.pulseWith("danger");
       return;
     }
 
     setSubmitting(true);
     try {
       await changePassword(currentPassword, choice.newPassword);
+      signals.pulseWith("primary");
       toast.success(t("firstAccess.done"));
     } catch (refused) {
       const refusal = PasswordRefusal.of(refused);
       const key = refusal.messageKey;
       choice.point(refusal.requirement);
       setError(key === null ? authErrorMessage(refused) : t(key));
+      const tone = SynapseOutcomeRule.toneOfDoorResult(refused);
+      if (tone) signals.pulseWith(tone);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <AuthScreenShell>
+    <AuthScreenShell signals={signals}>
       <h1 className="font-display text-lg font-semibold">{t("firstAccess.title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("firstAccess.lead")}</p>
       {email !== "" && <p className="mt-1 text-xs font-medium text-foreground">{email}</p>}

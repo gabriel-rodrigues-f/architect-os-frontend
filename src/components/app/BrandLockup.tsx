@@ -2,7 +2,11 @@ import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 
 
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { LetterCascade, LockupFit } from "@/lib/brand-lockup";
-import { COLLECTIVE_PULSE_DURATION_MS, type SynapseSignals } from "@/lib/synapse-network";
+import {
+  COLLECTIVE_PULSE_DURATION_MS,
+  type PulseTone,
+  type SynapseSignals,
+} from "@/lib/synapse-network";
 
 const WORDMARK = "Synapse";
 
@@ -23,6 +27,10 @@ const WORDMARK = "Synapse";
  * uma com o seu passo. Só o pulso COLETIVO da rede liga `data-pulsing`, pela
  * duração do pulso; com movimento reduzido a marca não se inscreve e fica
  * estática. Aba oculta: a rede pausa, logo nada chega aqui.
+ *
+ * A piscada ganha a cor do tom (dono, 2026-09-08): `data-pulse-tone` leva o
+ * tom do pulso coletivo à folha de estilo — a recusa pisca no vermelho dos
+ * campos, o sucesso no azul da casa.
  */
 export function BrandLockup({
   signals,
@@ -40,6 +48,7 @@ export function BrandLockup({
     <div
       data-testid="brand-lockup"
       data-pulsing={pulse.active ? "true" : undefined}
+      data-pulse-tone={pulse.active ? pulse.tone : undefined}
       className="flex flex-col items-start"
     >
       <PulsingLine
@@ -163,23 +172,27 @@ class LockupGauge {
   }
 }
 
-/** A inscrição no pulso coletivo: `active` pela duração do pulso; nada com movimento reduzido. */
-function useCollectivePulse(signals: SynapseSignals | undefined): {
+interface BrandPulse {
   active: boolean;
   durationMs: number;
-} {
+  tone: PulseTone;
+}
+
+/** A inscrição no pulso coletivo: `active` pela duração do pulso, com o tom dele; nada com movimento reduzido. */
+function useCollectivePulse(signals: SynapseSignals | undefined): BrandPulse {
   const reducedMotion = useReducedMotion();
-  const [pulse, setPulse] = useState<{ active: boolean; durationMs: number }>({
+  const [pulse, setPulse] = useState<BrandPulse>({
     active: false,
     durationMs: COLLECTIVE_PULSE_DURATION_MS,
+    tone: "primary",
   });
 
   useEffect(() => {
     if (!signals || reducedMotion) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const unsubscribe = signals.onCollectivePulse(({ durationMs }) => {
+    const unsubscribe = signals.onCollectivePulse(({ durationMs, tone }) => {
       if (timer) clearTimeout(timer);
-      setPulse({ active: true, durationMs });
+      setPulse({ active: true, durationMs, tone });
       timer = setTimeout(() => {
         timer = null;
         setPulse((current) => ({ ...current, active: false }));

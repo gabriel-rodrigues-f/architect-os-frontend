@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useAsyncSubmit } from "@/hooks";
 import { authApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import type { SynapseSignals } from "@/lib/synapse-network";
+import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
 
 /**
  * PEDIR O ACESSO DE VOLTA — o "esqueci minha senha".
@@ -27,13 +29,19 @@ import { useI18n } from "@/lib/i18n";
  * conta, o LINK chega, e ele vale por uma hora. Nunca que uma senha foi
  * enviada — o dono corrigiu o próprio pedido nesse ponto (2026-09-04), e
  * senha não viaja por e-mail nesta aplicação.
+ *
+ * A rede ao fundo (dono, 2026-09-08) recebe o resultado do pedido pelos
+ * `signals` da porta que abriu este painel: aceito → azul; recusado → vermelho;
+ * serviço fora → nada.
  */
 export function AccessRecoveryRequestPanel({
   onBack,
   backLabel,
+  signals,
 }: {
   onBack: () => void;
   backLabel: string;
+  signals?: SynapseSignals;
 }) {
   const { t } = useI18n();
   const [email, setEmail] = useState("");
@@ -43,6 +51,8 @@ export function AccessRecoveryRequestPanel({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const result = await run(() => authApi.requestAccessRecovery(email.trim()));
+    const tone = SynapseOutcomeRule.toneOfDoorResult(result.ok ? null : result.error);
+    if (tone) signals?.pulseWith(tone);
     if (result.ok) setRequested(true);
   };
 

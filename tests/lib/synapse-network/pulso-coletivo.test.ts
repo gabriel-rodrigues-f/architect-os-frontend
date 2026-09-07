@@ -143,10 +143,10 @@ describe("SynapseSignals — o coletivo chega à tela como evento", () => {
     const signals = new SynapseSignals();
     const recebidos: CollectivePulse[] = [];
     const parar = signals.onCollectivePulse((pulse) => recebidos.push(pulse));
-    signals.announceCollectivePulse({ startedAt: 1000, durationMs: 1200 });
-    expect(recebidos).toEqual([{ startedAt: 1000, durationMs: 1200 }]);
+    signals.announceCollectivePulse({ startedAt: 1000, durationMs: 1200, tone: "primary" });
+    expect(recebidos).toEqual([{ startedAt: 1000, durationMs: 1200, tone: "primary" }]);
     parar();
-    signals.announceCollectivePulse({ startedAt: 2000, durationMs: 1200 });
+    signals.announceCollectivePulse({ startedAt: 2000, durationMs: 1200, tone: "primary" });
     expect(recebidos).toHaveLength(1);
   });
 });

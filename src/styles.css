@@ -952,6 +952,17 @@
   }
 }
 
+/*
+  A piscada da recusa (dono, 2026-09-08): quando a rede pulsa em `danger`, a
+  marca pisca no MESMO vermelho do contorno dos campos — o token
+  `--color-destructive`, nunca um tom novo. O `BrandLockup` põe o tom em
+  `data-pulse-tone`; o azul continua sendo o das linhas.
+*/
+[data-pulse-tone="danger"] .auth-letter {
+  --letter-lit: color-mix(in oklch, var(--color-foreground) 55%, var(--color-destructive));
+  --letter-glow: color-mix(in oklch, var(--color-destructive) 65%, transparent);
+}
+
 @keyframes auth-fade {
   from {
     opacity: 0;

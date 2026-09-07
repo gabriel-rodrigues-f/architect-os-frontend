@@ -125,8 +125,9 @@ export class LearningPathsViewModel {
     this.service.removeLearningPathItem(pathId, itemId);
   }
 
-  removePath(pathId: string): void {
-    this.service.removeLearningPath(pathId);
+  /** Otimista: `onConfirmed` roda quando o serviço confirma — o aviso de sucesso vai lá, não no clique. */
+  removePath(pathId: string, onConfirmed?: () => void): void {
+    this.service.removeLearningPath(pathId, onConfirmed);
   }
 
   recordProgress(pathId: string, architectId: string, itemId: string, progress: number): void {

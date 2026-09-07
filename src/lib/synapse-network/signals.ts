@@ -1,4 +1,4 @@
-import type { CollectivePulse, CollectivePulseListener } from "./synapse-network";
+import type { CollectivePulse, CollectivePulseListener, PulseTone } from "./synapse-network";
 
 /**
  * O QUE A TELA DIZ À REDE — e o que a rede diz de volta — sem a tela conhecer
@@ -13,14 +13,23 @@ import type { CollectivePulse, CollectivePulseListener } from "./synapse-network
  * Da rede: quando a rede pulsa em COLETIVO (todos os nós juntos), o palco
  * anuncia o evento aqui e a marca (`BrandLockup`) pisca junto, pela mesma
  * duração. O pulso local não passa por este canal.
+ *
+ * O tom (dono, 2026-09-08): `pulseWith("danger")` é a recusa, `pulseWith("primary")`
+ * o sucesso. A fila guarda UM pedido por tom — dois pedidos do mesmo tom antes
+ * do quadro seguinte são um pulso só; é a primeira camada da coalescência.
  */
 export class SynapseSignals {
-  private pendingPulses = 0;
+  private readonly pendingTones = new Set<PulseTone>();
   private emphasized = false;
   private readonly collectiveListeners = new Set<CollectivePulseListener>();
 
+  /** O pulso primário — o de sempre. */
   pulse(): void {
-    this.pendingPulses += 1;
+    this.pulseWith("primary");
+  }
+
+  pulseWith(tone: PulseTone): void {
+    this.pendingTones.add(tone);
   }
 
   emphasize(on: boolean): void {
@@ -31,11 +40,11 @@ export class SynapseSignals {
     return this.emphasized;
   }
 
-  /** O palco lê os pulsos pendentes e zera a fila. */
-  drainPulses(): number {
-    const pulses = this.pendingPulses;
-    this.pendingPulses = 0;
-    return pulses;
+  /** O palco lê os tons pendentes e zera a fila. */
+  drainPulses(): readonly PulseTone[] {
+    const tones = [...this.pendingTones];
+    this.pendingTones.clear();
+    return tones;
   }
 
   /** Quem quer piscar com a rede. Devolve o cancelamento. */

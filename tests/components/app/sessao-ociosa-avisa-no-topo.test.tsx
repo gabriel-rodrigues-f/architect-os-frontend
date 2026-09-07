@@ -56,6 +56,11 @@ const UM_MINUTO = 60_000;
 describe("sessão ociosa — o aviso no topo da tela (onda 29)", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    // A rede de sinapses da casca (2026-09-08) pede um quadro por `requestAnimationFrame`;
+    // com o relógio falso, avançar 9 minutos executaria ~34 mil quadros. O relógio parado
+    // deixa o teste medir só a sessão ociosa, que é o que ele afirma.
+    vi.stubGlobal("requestAnimationFrame", vi.fn().mockReturnValue(1));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
     window.localStorage.clear();
     window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();

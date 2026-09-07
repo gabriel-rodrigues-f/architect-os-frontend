@@ -143,7 +143,8 @@ export interface Api extends AppState {
   deactivate: (id: string, reason: string) => Promise<Architect>;
 
   /** Reativar é o mesmo ato de desativar, de volta: profissional e conta juntos. */
-  reactivateArchitect: (id: string, expectedVersion: number) => void;
+  /** `onConfirmed` roda na resposta 2xx — o aviso de sucesso da mutação otimista mora lá (inventário 2026-09-08, §5.7). */
+  reactivateArchitect: (id: string, expectedVersion: number, onConfirmed?: () => void) => void;
 
   allocateArchitectToTeam: (
     architectId: string,
@@ -209,7 +210,7 @@ export interface Api extends AppState {
       Pick<LearningPath, "name" | "description" | "competencyIds" | "assignedTo" | "items">
     >,
   ) => void;
-  removeLearningPath: (id: string) => void;
+  removeLearningPath: (id: string, onConfirmed?: () => void) => void;
   addLearningPathItem: (pathId: string, item: LearningPathItem) => void;
   removeLearningPathItem: (pathId: string, itemId: string) => void;
   addAssessmentComment: (
@@ -257,7 +258,7 @@ export interface Api extends AppState {
   ) => Promise<DevelopmentPlan>;
   updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
 
-  removePlanItem: (planId: string, itemId: string) => void;
+  removePlanItem: (planId: string, itemId: string, onConfirmed?: () => void) => void;
 
   reschedulePlanItem: (
     planId: string,
@@ -353,7 +354,7 @@ export function buildApi(
       );
     },
 
-    reactivateArchitect: (id, expectedVersion) => {
+    reactivateArchitect: (id, expectedVersion, onConfirmed) => {
       runner.optimistic(
         (state) => ({
           ...state,
@@ -368,6 +369,7 @@ export function buildApi(
             architect.id === id ? updated : architect,
           ),
         }),
+        onConfirmed,
       );
     },
 
@@ -773,7 +775,7 @@ export function buildApi(
       );
     },
 
-    removePlanItem: (planId, itemId) => {
+    removePlanItem: (planId, itemId, onConfirmed) => {
       runner.optimistic(
         (s) => ({
           ...s,
@@ -782,6 +784,8 @@ export function buildApi(
           ),
         }),
         () => api.removePlanItem(planId, itemId),
+        undefined,
+        onConfirmed,
       );
     },
 
@@ -975,10 +979,12 @@ export function buildApi(
       );
     },
 
-    removeLearningPath: (id) => {
+    removeLearningPath: (id, onConfirmed) => {
       runner.optimistic(
         (s) => ({ ...s, learningPaths: s.learningPaths.filter((p) => p.id !== id) }),
         () => api.deleteLearningPath(id),
+        undefined,
+        onConfirmed,
       );
     },
 

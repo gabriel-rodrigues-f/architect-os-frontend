@@ -95,7 +95,7 @@ describe("BrandLockup — a piscada acompanha o pulso coletivo", () => {
     vi.useFakeTimers();
     comMovimento(false);
     const signals = abrir();
-    act(() => signals.announceCollectivePulse({ startedAt: 0, durationMs: 1200 }));
+    act(() => signals.announceCollectivePulse({ startedAt: 0, durationMs: 1200, tone: "primary" }));
     const lockup = screen.getByTestId("brand-lockup");
     expect(lockup.getAttribute("data-pulsing")).toBe("true");
     act(() => {
@@ -113,7 +113,9 @@ describe("BrandLockup — a piscada acompanha o pulso coletivo", () => {
     comMovimento(false);
     const signals = abrir();
     const duracao = 1200;
-    act(() => signals.announceCollectivePulse({ startedAt: 0, durationMs: duracao }));
+    act(() =>
+      signals.announceCollectivePulse({ startedAt: 0, durationMs: duracao, tone: "primary" }),
+    );
     const wordmark = letrasDe(screen.getByTestId("brand-wordmark"));
     const descriptor = letrasDe(screen.getByTestId("brand-descriptor"));
     const curta = new LetterCascade(duracao, wordmark.length);
@@ -138,11 +140,35 @@ describe("BrandLockup — a piscada acompanha o pulso coletivo", () => {
     );
   });
 
+  it('a piscada ganha a cor do tom: a recusa marca `data-pulse-tone="danger"`, o sucesso `primary`', () => {
+    vi.useFakeTimers();
+    comMovimento(false);
+    const signals = abrir();
+    act(() => signals.announceCollectivePulse({ startedAt: 0, durationMs: 1200, tone: "danger" }));
+    const lockup = screen.getByTestId("brand-lockup");
+    expect(lockup.getAttribute("data-pulse-tone")).toBe("danger");
+    act(() => {
+      vi.advanceTimersByTime(1300);
+    });
+    expect(lockup.hasAttribute("data-pulse-tone")).toBe(false);
+    act(() => signals.announceCollectivePulse({ startedAt: 0, durationMs: 1200, tone: "primary" }));
+    expect(lockup.getAttribute("data-pulse-tone")).toBe("primary");
+  });
+
+  it("o vermelho da piscada é o mesmo token do contorno dos campos (`--color-destructive`), nunca cor nova", () => {
+    const perigo = Bloco.de('[data-pulse-tone="danger"]');
+    expect(perigo.existe).toBe(true);
+    expect(perigo.contem("--letter-lit")).toBe(true);
+    expect(perigo.contem("--letter-glow")).toBe(true);
+    expect(perigo.contem("var(--color-destructive)")).toBe(true);
+    expect(perigo.contem("#")).toBe(false);
+  });
+
   it("com movimento reduzido, o evento coletivo não liga nada", () => {
     vi.useFakeTimers();
     comMovimento(true);
     const signals = abrir();
-    act(() => signals.announceCollectivePulse({ startedAt: 0, durationMs: 1200 }));
+    act(() => signals.announceCollectivePulse({ startedAt: 0, durationMs: 1200, tone: "primary" }));
     expect(screen.getByTestId("brand-lockup").hasAttribute("data-pulsing")).toBe(false);
   });
 
@@ -151,7 +177,9 @@ describe("BrandLockup — a piscada acompanha o pulso coletivo", () => {
     const signals = new SynapseSignals();
     const { unmount } = render(<BrandLockup signals={signals} descriptor={DESCRIPTOR} />);
     unmount();
-    expect(() => signals.announceCollectivePulse({ startedAt: 0, durationMs: 1200 })).not.toThrow();
+    expect(() =>
+      signals.announceCollectivePulse({ startedAt: 0, durationMs: 1200, tone: "primary" }),
+    ).not.toThrow();
   });
 
   it("a piscada é um ganho de luz com brilho do primário, só sob `no-preference` — nunca cor nova", () => {

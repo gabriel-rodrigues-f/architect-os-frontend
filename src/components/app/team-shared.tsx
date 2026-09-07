@@ -74,9 +74,11 @@ export function useTeamRosterActions() {
   const [transitioning, setTransitioning] = useState<Architect | null>(null);
   const notifySuccess = useSuccessToast();
 
+  // O aviso sai com a resposta, não com o clique: toast verde e recusa vermelha nunca no mesmo instante.
   const reactivate = (architect: Architect) => {
-    viewModel.reactivate(architect);
-    notifySuccess("team.reactivate.toast", { nome: architect.name });
+    viewModel.reactivate(architect, () =>
+      notifySuccess("team.reactivate.toast", { nome: architect.name }),
+    );
   };
 
   return { teams, allTeams, transitioning, setTransitioning, reactivate };

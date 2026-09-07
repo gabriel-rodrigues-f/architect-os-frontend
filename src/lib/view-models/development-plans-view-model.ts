@@ -91,8 +91,9 @@ export class DevelopmentPlansViewModel {
     this.service.updatePlanItem(planId, itemId, { smart });
   }
 
-  removeItem(planId: string, itemId: string): void {
-    this.service.removePlanItem(planId, itemId);
+  /** Otimista: `onConfirmed` roda quando o serviço confirma — o aviso de sucesso vai lá, não no clique. */
+  removeItem(planId: string, itemId: string, onConfirmed?: () => void): void {
+    this.service.removePlanItem(planId, itemId, onConfirmed);
   }
 
   reschedule(

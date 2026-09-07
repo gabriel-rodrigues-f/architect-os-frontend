@@ -14,6 +14,8 @@ import { authApi } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth";
 import { SESSION_QUERY_KEY } from "@/lib/session-query";
 import { useI18n } from "@/lib/i18n";
+import { SynapseSignals } from "@/lib/synapse-network";
+import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
 
 /**
  * A PESSOA CRIA A PRÓPRIA SENHA, a partir do link do convite.
@@ -67,6 +69,8 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [askingForANewLink, setAskingForANewLink] = useState(false);
+  // A rede ao fundo pulsa com o resultado (dono, 2026-09-08): recusa local ou do serviço → vermelho; senha criada → azul.
+  const [signals] = useState(() => new SynapseSignals());
 
   const invitation = AccessInvitation.of(token);
   const queryClient = useQueryClient();
@@ -88,12 +92,14 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
 
     if (!choice.matches) {
       setError(t("password.mismatch"));
+      signals.pulseWith("danger");
       return;
     }
 
     setSubmitting(true);
     try {
       await authApi.setPassword(invitation.token, choice.newPassword);
+      signals.pulseWith("primary");
       toast.success(t("setPassword.done"));
       await goToLoginAsNewSession();
     } catch (refused) {
@@ -104,6 +110,8 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
         reading.serviceSentence ??
           (reading.messageKey === null ? authErrorMessage(refused) : t(reading.messageKey)),
       );
+      const tone = SynapseOutcomeRule.toneOfDoorResult(refused);
+      if (tone) signals.pulseWith(tone);
     } finally {
       setSubmitting(false);
     }
@@ -111,8 +119,12 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
 
   if (askingForANewLink) {
     return (
-      <AuthScreenShell>
-        <AccessRecoveryRequestPanel onBack={goToLogin} backLabel={t("setPassword.backToLogin")} />
+      <AuthScreenShell signals={signals}>
+        <AccessRecoveryRequestPanel
+          signals={signals}
+          onBack={goToLogin}
+          backLabel={t("setPassword.backToLogin")}
+        />
       </AuthScreenShell>
     );
   }
@@ -141,7 +153,7 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
   }
 
   return (
-    <AuthScreenShell>
+    <AuthScreenShell signals={signals}>
       <h1 className="font-display text-lg font-semibold">{t("setPassword.title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {holder.data?.firstName

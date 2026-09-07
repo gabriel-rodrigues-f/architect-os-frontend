@@ -24,8 +24,12 @@ interface AuthContextValue {
   bootstrap: SessionBootstrap;
   /** A pessoa pediu para tentar de novo enquanto o serviço está fora. */
   retrySession: () => void;
-  login: (email: string, password: string) => Promise<void>;
-  register: (input: { name: string; email: string; password: string }) => Promise<void>;
+  /** `onAccepted` roda assim que o serviço ACEITA a credencial, antes de a sessão abrir — é o instante do pulso azul do login. */
+  login: (email: string, password: string, onAccepted?: () => void) => Promise<void>;
+  register: (
+    input: { name: string; email: string; password: string },
+    onAccepted?: () => void,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
@@ -121,8 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, onAccepted?: () => void) => {
       const result = await authApi.login(email, password);
+      onAccepted?.();
       defaultSidebarPreferences.forgetCollapsedGroups();
       // A primeira abertura do Painel depois do login ganha a entrada orquestrada.
       DashboardEntrance.arm(result.user);
@@ -132,8 +137,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (input: { name: string; email: string; password: string }) => {
+    async (input: { name: string; email: string; password: string }, onAccepted?: () => void) => {
       const result = await authApi.register(input);
+      onAccepted?.();
       defaultSidebarPreferences.forgetCollapsedGroups();
       DashboardEntrance.arm(result.user);
       await openSession(result.user);

@@ -200,7 +200,7 @@ describe("LearningPathsViewModel", () => {
     it("removePath delega 1:1 para o serviço", () => {
       const { vm, service } = makeVm();
       vm.removePath("trilha-1");
-      expect(service.removeLearningPath).toHaveBeenCalledWith("trilha-1");
+      expect(service.removeLearningPath).toHaveBeenCalledWith("trilha-1", undefined);
     });
   });
 

@@ -22,14 +22,24 @@ export class MutationRunner<S> {
     return error instanceof UserFacingError ? error.message : this.fallbackErrorMessage;
   }
 
+  /**
+   * `onConfirmed` roda quando a resposta chega bem — é onde mora o aviso de
+   * sucesso de uma mutação otimista (inventário 2026-09-08, §5.7): disparado
+   * no clique, o toast verde convivia com o `toast.error` da recusa que vinha
+   * em seguida; a rede pulsa azul na resposta 2xx, e o aviso acompanha.
+   */
   optimistic<T>(
     applyLocal: (s: S) => S,
     call: () => Promise<T>,
     reconcile?: (result: T) => (s: S) => S,
+    onConfirmed?: () => void,
   ): void {
     this.cache.update(applyLocal);
     void call().then(
-      reconcile ? (result) => this.cache.update(reconcile(result)) : undefined,
+      (result) => {
+        if (reconcile) this.cache.update(reconcile(result));
+        onConfirmed?.();
+      },
       (error: unknown) => {
         this.log(error);
         this.notifyError(this.messageOf(error));

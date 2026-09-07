@@ -202,7 +202,7 @@ describe("DevelopmentPlansViewModel", () => {
     it("delega para removePlanItem(planId, itemId)", () => {
       const service = fakeService();
       new DevelopmentPlansViewModel(service).removeItem("plano-1", "item-1");
-      expect(service.removePlanItem).toHaveBeenCalledWith("plano-1", "item-1");
+      expect(service.removePlanItem).toHaveBeenCalledWith("plano-1", "item-1", undefined);
     });
   });
 

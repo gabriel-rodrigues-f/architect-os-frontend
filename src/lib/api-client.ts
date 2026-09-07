@@ -41,6 +41,20 @@ export const NETWORK_UNAVAILABLE_CODE = "NETWORK_UNAVAILABLE";
 export type ApiFailureInterceptor = (error: ApiError) => void;
 
 /**
+ * O RESULTADO de uma requisição, como o cliente o viu: método, recurso e
+ * status (0 quando o `fetch` rejeitou). É o que a rede de sinapses recebe para
+ * decidir o tom do pulso (`SynapseOutcomeRule`) — o cliente é o funil de TODAS
+ * as escritas, então é o único ponto de anúncio.
+ */
+export interface ApiOutcome {
+  readonly method: string;
+  readonly resource: string;
+  readonly status: number;
+}
+
+export type ApiOutcomeInterceptor = (outcome: ApiOutcome) => void;
+
+/**
  * Os cabeçalhos que UMA requisição leva além dos seus — decididos pelo
  * recurso, requisição a requisição ([FA-07]: o passe de suporte só vai nas
  * requisições sobre a pessoa do passe, nunca em toda requisição da aba).
@@ -104,6 +118,7 @@ export class ApiClient {
     private readonly baseUrl: string = API_URL,
     private readonly interceptFailure: ApiFailureInterceptor = () => {},
     private readonly headersFor: HeaderProvider = () => ({}),
+    private readonly observeOutcome: ApiOutcomeInterceptor = () => {},
   ) {}
 
   urlOf(resource: string): string {
@@ -115,10 +130,14 @@ export class ApiClient {
     return error;
   }
 
-  private async send(url: string, init: RequestInit): Promise<Response> {
+  private async send(resource: string, init: RequestInit): Promise<Response> {
+    const method = (init.method ?? "GET").toUpperCase();
     try {
-      return await fetch(url, init);
+      const response = await fetch(this.urlOf(resource), init);
+      this.observeOutcome({ method, resource, status: response.status });
+      return response;
     } catch (cause) {
+      this.observeOutcome({ method, resource, status: NETWORK_UNAVAILABLE_STATUS });
       throw this.intercepted(networkUnavailableError(cause));
     }
   }
@@ -136,7 +155,7 @@ export class ApiClient {
     };
 
     const url = this.urlOf(resource);
-    const response = await this.send(url, {
+    const response = await this.send(resource, {
       ...init,
       headers,
       credentials: "include",
@@ -157,7 +176,7 @@ export class ApiClient {
   }
 
   async requestBlob(resource: string, body: unknown): Promise<{ blob: Blob; filename: string }> {
-    const response = await this.send(this.urlOf(resource), {
+    const response = await this.send(resource, {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "include",

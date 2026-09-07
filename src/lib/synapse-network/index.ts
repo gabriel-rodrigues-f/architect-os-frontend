@@ -17,6 +17,7 @@ export type {
   Point,
   Pulse,
   PulseKind,
+  PulseTone,
   SynapseNetworkSnapshot,
   Zone,
 } from "./synapse-network";

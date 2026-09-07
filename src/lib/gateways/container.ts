@@ -1,6 +1,8 @@
 import { ApiClient } from "../api-client";
 import { SessionPolicy } from "../session-policy";
 import { SupportAccess } from "../support-access";
+import { SynapseSignals } from "../synapse-network";
+import { SynapseOutcomeAnnouncer } from "../synapse-outcome";
 import { HttpAnalyticsGateway, type AnalyticsGateway } from "./analytics.gateway";
 import { HttpArchitectsGateway, type ArchitectsGateway } from "./architects.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
@@ -40,6 +42,13 @@ export class FrontendContainer {
   readonly sessionPolicy: SessionPolicy;
   /** O passe de suporte desta sessão do navegador ([FA-07]) — apagado ao fechar a sessão. */
   readonly supportAccess: SupportAccess;
+  /**
+   * O ÚNICO canal da aplicação para a rede de sinapses do fundo (dono,
+   * 2026-09-08). O `ApiClient` anuncia aqui o resultado de toda escrita, pela
+   * régua do `SynapseOutcomeAnnouncer`; a casca (`AppShell`) desenha a rede
+   * que o lê. Um por container, nunca por tela.
+   */
+  readonly synapseSignals: SynapseSignals;
   readonly apiClient: ApiClient;
   readonly analyticsGateway: AnalyticsGateway;
   readonly architectsGateway: ArchitectsGateway;
@@ -69,6 +78,8 @@ export class FrontendContainer {
   private constructor(config: FrontendConfig) {
     this.sessionPolicy = new SessionPolicy();
     this.supportAccess = new SupportAccess();
+    this.synapseSignals = new SynapseSignals();
+    const synapseAnnouncer = new SynapseOutcomeAnnouncer(this.synapseSignals);
     this.apiClient = new ApiClient(
       config.baseUrl,
       (error) => {
@@ -76,6 +87,7 @@ export class FrontendContainer {
         this.supportAccess.reviewFailure(error);
       },
       (resource) => this.supportAccess.headersFor(resource),
+      (outcome) => synapseAnnouncer.observe(outcome),
     );
     this.analyticsGateway = new HttpAnalyticsGateway(this.apiClient);
     this.architectsGateway = new HttpArchitectsGateway(this.apiClient);

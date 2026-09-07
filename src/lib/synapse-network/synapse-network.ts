@@ -13,6 +13,12 @@
  * rede INTEIRA — "os neurônios piscando todos juntos" — e é o único que vira
  * evento (`onCollectivePulse`), com início e duração, para a marca piscar
  * junto. O clique em Entrar é coletivo.
+ *
+ * O TOM (dono, 2026-09-08): "se o login for rejeitado, a sinapse deve ser
+ * vermelha [...]; só pode ser azul quando o usuário conseguir se logar com
+ * sucesso". O pulso carrega o tom, o nó aceso herda o tom do pulso que o
+ * acendeu, e o evento coletivo leva o tom à marca. O motor não conhece cor:
+ * `primary` e `danger` são nomes de token, e quem os lê é o pincel.
  */
 export type Plane = 0 | 1 | 2;
 
@@ -32,6 +38,8 @@ export interface NetworkNode {
   readonly phase: number;
   /** Intensidade extra (0..1): pulso passando ou zona enfatizada. */
   glow: number;
+  /** O tom do que acendeu o nó por último — o pincel pinta o brilho com ele. */
+  tone: PulseTone;
   /** Multiplicador de opacidade (0..1]: 1 fora das zonas de exclusão, baixo no halo da marca e atrás do cartão. */
   visibility: number;
 }
@@ -57,6 +65,9 @@ export interface Zone {
 
 export type PulseKind = "local" | "collective";
 
+/** O tom do pulso, em nome de token: `primary` é o azul da casa, `danger` o vermelho de erro dos campos. */
+export type PulseTone = "primary" | "danger";
+
 export interface Pulse {
   readonly x: number;
   readonly y: number;
@@ -64,12 +75,14 @@ export interface Pulse {
   readonly duration: number;
   readonly radius: number;
   readonly kind: PulseKind;
+  readonly tone: PulseTone;
 }
 
-/** O pulso coletivo como evento: quando começou (relógio da rede, ms) e quanto dura. */
+/** O pulso coletivo como evento: quando começou (relógio da rede, ms), quanto dura e de que tom é. */
 export interface CollectivePulse {
   readonly startedAt: number;
   readonly durationMs: number;
+  readonly tone: PulseTone;
 }
 
 export type CollectivePulseListener = (pulse: CollectivePulse) => void;
@@ -122,7 +135,7 @@ const COLLECTIVE_PULSE_MIN_MS = 12000;
 const COLLECTIVE_PULSE_SPREAD_MS = 8000;
 /** O halo em volta da marca onde a rede quase some, em px. */
 const BRAND_HALO = 40;
-const VISIBILITY = { brand: 0.3, behindCard: 0.15, elsewhere: 1 } as const;
+const VISIBILITY = { brand: 0.3, behindCard: 0.15, behindContent: 0, elsewhere: 1 } as const;
 const CLUSTERED_SHARE = 0.7;
 const EDGE_MARGIN = 24;
 
@@ -156,10 +169,35 @@ export type DeviceClass = "mobile" | "tablet" | "desktop";
  * ao alto do cartão, passando pelo centro do vão entre os dois.
  */
 export class CompositionZone {
+  /**
+   * @param brand A marca — só nas telas de porta. `null` é a composição do
+   *   INTERIOR: sem diagonal, sem halo; só o conteúdo a excluir.
+   * @param card O bloco protegido: o cartão do login ou o `<main>` do interior.
+   */
   constructor(
-    readonly brand: Zone,
+    readonly brand: Zone | null,
     readonly card: Zone,
   ) {}
+
+  /**
+   * A composição do INTERIOR (dono, 2026-09-08: "o mesmo efeito da tela de
+   * login, quero no fundo da aplicação como um todo"): o conteúdo — o `<main>`
+   * — é zona de exclusão total, e a rede vive nas margens: cabeçalho, bordas,
+   * o vão da coluna. Nunca atrás de tabelas e cartões, porque eles moram lá.
+   */
+  static aroundContent(canvas: Zone, content: Zone): CompositionZone | null {
+    if (CompositionZone.empty(canvas) || CompositionZone.empty(content)) return null;
+    return new CompositionZone(null, {
+      x: content.x - canvas.x,
+      y: content.y - canvas.y,
+      width: content.width,
+      height: content.height,
+    });
+  }
+
+  private get behindCard(): number {
+    return this.brand ? VISIBILITY.behindCard : VISIBILITY.behindContent;
+  }
 
   /** A partir do que a tela mediu (`getBoundingClientRect`), relativo ao canvas; `null` se algo ainda não tem tamanho. */
   static measured(canvas: Zone, brand: Zone, card: Zone): CompositionZone | null {
@@ -185,14 +223,16 @@ export class CompositionZone {
 
   /** O multiplicador de opacidade num ponto: ~0.3 no halo da marca, ~0.15 atrás do cartão, 1 no resto. */
   visibilityAt(point: Point): number {
-    if (CompositionZone.contains(this.brand, point, BRAND_HALO)) return VISIBILITY.brand;
-    if (CompositionZone.contains(this.card, point)) return VISIBILITY.behindCard;
+    if (this.brand && CompositionZone.contains(this.brand, point, BRAND_HALO)) {
+      return VISIBILITY.brand;
+    }
+    if (CompositionZone.contains(this.card, point)) return this.behindCard;
     return VISIBILITY.elsewhere;
   }
 
   /** Se o segmento entre dois pontos passa pelas letras da marca. */
   crossesBrand(from: Point, to: Point): boolean {
-    return CompositionZone.segmentMeets(this.brand, from, to);
+    return this.brand !== null && CompositionZone.segmentMeets(this.brand, from, to);
   }
 
   /** Liang–Barsky: o segmento toca o retângulo se sobra algum `t` em [0, 1] depois dos quatro cortes. */
@@ -235,9 +275,14 @@ export class CompositionZone {
    * esquerda). Sobe da esquerda para a direita, cruzando o vão pelo meio.
    */
   along(t: number): Point {
+    if (!this.brand) return this.contentCentre();
     const from = { x: this.brand.x, y: this.brand.y + this.brand.height };
     const to = { x: this.card.x + this.card.width * 0.25, y: this.card.y };
     return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+  }
+
+  private contentCentre(): Point {
+    return { x: this.card.x + this.card.width / 2, y: this.card.y + this.card.height / 2 };
   }
 
   /** O peso (0..1] de um ponto receber um nó — a densidade por região. */
@@ -245,6 +290,8 @@ export class CompositionZone {
     const toEdge = Math.min(point.x, width - point.x, point.y, height - point.y);
     if (toEdge < Math.min(width, height) * EXTREME_SHARE) return WEIGHT.extreme;
     if (CompositionZone.contains(this.card, point, EDGE_MARGIN)) return WEIGHT.behindCard;
+    // No interior não há "perto do conteúdo": as margens são estreitas e são tudo o que a rede tem.
+    if (!this.brand) return WEIGHT.center;
     if (CompositionZone.contains(this.card, point, NEAR_CARD)) return WEIGHT.nearCard;
     if (CompositionZone.contains(this.brand, point)) return WEIGHT.brand;
     const brandRight = this.brand.x + this.brand.width;
@@ -291,6 +338,19 @@ export class NetworkComposition {
     readonly device: DeviceClass,
     readonly zone: CompositionZone | null = null,
   ) {}
+
+  /** O interior é bem mais discreto que o login: menos da metade dos nós para a mesma largura. */
+  static readonly INTERIOR_DENSITY = 0.45;
+
+  /** A composição do interior: a densidade contida, em volta do conteúdo. */
+  static interior(width: number, zone: CompositionZone | null): NetworkComposition {
+    const door = NetworkComposition.for(width, zone);
+    return new NetworkComposition(
+      Math.max(1, Math.round(door.nodes * NetworkComposition.INTERIOR_DENSITY)),
+      door.device,
+      zone,
+    );
+  }
 
   static for(width: number, zone: CompositionZone | null = null): NetworkComposition {
     const band =
@@ -345,11 +405,16 @@ export class SynapseNetwork {
   /**
    * Um pulso a partir de um ponto. Por padrão COLETIVO — o clique em Entrar
    * atravessa a rede inteira e avisa quem ouve; `"local"` é o pulso curto de
-   * um nó, que ninguém anuncia.
+   * um nó, que ninguém anuncia. O tom padrão é o primário.
+   *
+   * Vermelho e azul nunca se sobrepõem: o vermelho é sinal, não decoração
+   * (inventário 2026-09-08, §1.3-5). Um `danger` em curso descarta o
+   * primário que chegar; um `danger` que chega apaga o primário em curso.
    */
   pulse(
     origin: Point = { x: this.width / 2, y: this.height / 2 },
     kind: PulseKind = "collective",
+    tone: PulseTone = "primary",
   ): void {
     if (kind === "local") {
       this.pulses.push({
@@ -359,9 +424,12 @@ export class SynapseNetwork {
         duration: LOCAL_PULSE_DURATION_MS,
         radius: LOCAL_PULSE_RADIUS,
         kind,
+        tone,
       });
       return;
     }
+    if (tone === "primary" && this.hasCollective("danger")) return;
+    if (tone === "danger") this.pulses = this.pulses.filter((pulse) => pulse.kind !== "collective");
     this.pulses.push({
       x: origin.x,
       y: origin.y,
@@ -369,12 +437,18 @@ export class SynapseNetwork {
       duration: COLLECTIVE_PULSE_DURATION_MS,
       radius: this.collectiveRadius(origin),
       kind,
+      tone,
     });
     const event: CollectivePulse = {
       startedAt: this.clock,
       durationMs: COLLECTIVE_PULSE_DURATION_MS,
+      tone,
     };
     for (const listener of this.collectiveListeners) listener(event);
+  }
+
+  private hasCollective(tone: PulseTone): boolean {
+    return this.pulses.some((pulse) => pulse.kind === "collective" && pulse.tone === tone);
   }
 
   /** Quem quer saber do pulso coletivo (a marca pisca junto). Devolve o cancelamento. */
@@ -412,7 +486,7 @@ export class SynapseNetwork {
 
   private seed(composition: NetworkComposition): void {
     const { zone } = composition;
-    const clusters = zone ? this.clustersAlong(zone) : this.clusterCenters();
+    const clusters = zone?.brand ? this.clustersAlong(zone, zone.brand) : this.clusterCenters();
     const spread = Math.min(this.width, this.height) * 0.12;
     let id = 0;
     for (const plane of [0, 1, 2] as const) {
@@ -431,6 +505,7 @@ export class SynapseNetwork {
           size: style.size * (0.8 + this.random() * 0.5),
           phase: this.random() * Math.PI * 2,
           glow: 0,
+          tone: "primary",
           visibility: zone ? zone.visibilityAt(home) : VISIBILITY.elsewhere,
         });
         id += 1;
@@ -457,13 +532,13 @@ export class SynapseNetwork {
     return this.random() < CLUSTERED_SHARE ? this.nearACluster(clusters, spread) : this.anywhere();
   }
 
-  /** Os clusters da composição: três ao longo da diagonal marca → centro → login, um no canto inferior esquerdo. */
-  private clustersAlong(zone: CompositionZone): Point[] {
+  /** Os clusters da composição da porta: três ao longo da diagonal marca → centro → login, um no canto inferior esquerdo. */
+  private clustersAlong(zone: CompositionZone, brand: Zone): Point[] {
     const jitter = Math.min(this.width, this.height) * 0.06;
     const centers = [0.4, 0.55, 0.7].map((t) => zone.along(t));
-    const brandBottom = zone.brand.y + zone.brand.height;
+    const brandBottom = brand.y + brand.height;
     centers.push({
-      x: zone.brand.x + zone.brand.width * 0.35,
+      x: brand.x + brand.width * 0.35,
       y: brandBottom + (this.height - brandBottom) * 0.45,
     });
     return centers.map((center) =>
@@ -540,10 +615,16 @@ export class SynapseNetwork {
 
   private light(node: NetworkNode, step: number): void {
     let target = this.inEmphasis(node) ? EMPHASIS_GLOW : 0;
+    let tone: PulseTone = "primary";
     for (const pulse of this.pulses) {
       const distance = Math.hypot(node.x - pulse.x, node.y - pulse.y);
-      target = Math.max(target, SynapseNetwork.wave(pulse, distance));
+      const wave = SynapseNetwork.wave(pulse, distance);
+      if (wave <= target) continue;
+      target = wave;
+      tone = pulse.tone;
     }
+    // O tom troca quando um pulso acende o nó; enquanto ele só apaga, guarda o tom de quem o acendeu.
+    if (target > node.glow) node.tone = tone;
     const ease = 1 - Math.exp(-step / GLOW_EASE_MS);
     node.glow += (target - node.glow) * (target > node.glow ? Math.max(ease, 0.6) : ease);
   }

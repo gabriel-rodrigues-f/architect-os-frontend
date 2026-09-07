@@ -50,7 +50,7 @@ describe("TeamViewModel", () => {
 
       vm.reactivate(architect);
 
-      expect(service.reactivateArchitect).toHaveBeenCalledWith("bruno", 3);
+      expect(service.reactivateArchitect).toHaveBeenCalledWith("bruno", 3, undefined);
     });
   });
 

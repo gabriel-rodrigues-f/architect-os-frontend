@@ -32,6 +32,34 @@ function makeRunner() {
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("MutationRunner.optimistic", () => {
+  it("`onConfirmed` roda só depois da resposta 2xx — o toast otimista sai daqui, não do clique (inventário 2026-09-08, §5.7)", async () => {
+    const { runner } = makeRunner();
+    const onConfirmed = vi.fn();
+    runner.optimistic(
+      (state) => ({ items: [...state.items, "a"] }),
+      () => Promise.resolve("ok"),
+      undefined,
+      onConfirmed,
+    );
+    expect(onConfirmed).not.toHaveBeenCalled();
+    await flush();
+    expect(onConfirmed).toHaveBeenCalledTimes(1);
+  });
+
+  it("`onConfirmed` não roda quando o serviço recusa", async () => {
+    const { runner, notifyError } = makeRunner();
+    const onConfirmed = vi.fn();
+    runner.optimistic(
+      (state) => ({ items: [...state.items, "a"] }),
+      () => Promise.reject(new ApiError("recusado", 409)),
+      undefined,
+      onConfirmed,
+    );
+    await flush();
+    expect(onConfirmed).not.toHaveBeenCalled();
+    expect(notifyError).toHaveBeenCalled();
+  });
+
   it("aplica a mudança local ANTES de criar a chamada remota (mesma ordem do par local/remote)", () => {
     const { runner, getState } = makeRunner();
     let itemsAtCallTime: string[] = [];

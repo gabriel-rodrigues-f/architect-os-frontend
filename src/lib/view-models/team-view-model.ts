@@ -104,8 +104,9 @@ export class TeamViewModel {
     return levels.filter((level) => level.name !== currentRole);
   }
 
-  reactivate(architect: Architect): void {
-    this.service.reactivateArchitect(architect.id, architect.version);
+  /** Otimista: `onConfirmed` roda quando o serviço confirma — o aviso de sucesso vai lá, não no clique. */
+  reactivate(architect: Architect, onConfirmed?: () => void): void {
+    this.service.reactivateArchitect(architect.id, architect.version, onConfirmed);
   }
 
   transitionCareerLevel(architectId: string, toRole: RoleName, reason: string): Promise<Architect> {

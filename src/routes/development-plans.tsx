@@ -518,10 +518,11 @@ function PlanItemCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                viewModel.removeItem(planId, item.id);
-                notifySuccess("pdi.gap.removed.toast", { nome: competencyName });
-              }}
+              onClick={() =>
+                viewModel.removeItem(planId, item.id, () =>
+                  notifySuccess("pdi.gap.removed.toast", { nome: competencyName }),
+                )
+              }
             >
               <Trash2 className="h-3.5 w-3.5" />
               {t("pdi.gap.remove")}
