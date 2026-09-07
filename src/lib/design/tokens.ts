@@ -214,11 +214,35 @@ const PRIMARY_DARK = "oklch(0.55 0.15 235)";
 const RING_LIGHT = "oklch(0.55 0.11 235)";
 const RING_DARK = "oklch(0.62 0.13 235)";
 
+/**
+ * O fundo e o destrutivo têm nome porque uma terceira cor NASCE DELES: o
+ * vermelho da rede de sinapses (`--synapse-danger`) é o destrutivo misturado
+ * com o fundo, por tema. Repetir os literais ali deixaria a derivada solta do
+ * original no dia em que um dos dois mudasse.
+ */
+const BACKGROUND_LIGHT = "oklch(0.985 0.004 240)";
+const BACKGROUND_DARK = "oklch(0.129 0.042 264.695)";
+const DESTRUCTIVE_LIGHT = "oklch(0.577 0.245 27.325)";
+const DESTRUCTIVE_DARK = "oklch(0.64 0.2 25)";
+
+/**
+ * O VERMELHO DA REDE (dono, 2026-09-08): "o vermelho da sinapse de erro está
+ * muito forte, precisa ser mais suave". A resposta não é baixar a opacidade
+ * do pincel — isso apagaria o pulso inteiro, e não só a cor: é um TOM
+ * próprio, o destrutivo recuado na direção do fundo de cada tema. O escuro
+ * guarda mais do vermelho porque o fundo o engole mais depressa.
+ *
+ * Os campos, os Callouts e todo o resto continuam no `--destructive` cheio:
+ * o que ficou mais suave foi a decoração, nunca o aviso.
+ */
+const SYNAPSE_DANGER_SHARE_LIGHT = 0.55;
+const SYNAPSE_DANGER_SHARE_DARK = 0.6;
+
 export const tokenRegistry = new TokenRegistry();
 
 tokenRegistry.register(
   "theme",
-  pair("background", "surface", "oklch(0.985 0.004 240)", "oklch(0.129 0.042 264.695)", {
+  pair("background", "surface", BACKGROUND_LIGHT, BACKGROUND_DARK, {
     against: "foreground",
   }),
   pair("foreground", "content", "oklch(0.22 0.03 250)", "oklch(0.984 0.003 247.858)"),
@@ -278,10 +302,25 @@ tokenRegistry.register(
     fica em 3.6 — contraste de texto grande — e o mesmo vermelho como TEXTO
     sobre o card passa AA nos dois temas (teste próprio abaixo).
   */
-  pair("destructive", "fill", "oklch(0.577 0.245 27.325)", "oklch(0.64 0.2 25)", {
+  pair("destructive", "fill", DESTRUCTIVE_LIGHT, DESTRUCTIVE_DARK, {
     against: "destructive-foreground",
     min: CONTRAST.large,
   }),
+  /* O vermelho da rede de sinapses — o destrutivo recuado até o fundo (ver acima). */
+  {
+    name: "synapse-danger",
+    role: "fill",
+    light: parseOklch(DESTRUCTIVE_LIGHT).mixedOver(
+      parseOklch(BACKGROUND_LIGHT),
+      SYNAPSE_DANGER_SHARE_LIGHT,
+    ),
+    darkOverride: parseOklch(DESTRUCTIVE_DARK).mixedOver(
+      parseOklch(BACKGROUND_DARK),
+      SYNAPSE_DANGER_SHARE_DARK,
+    ),
+    contrastAgainst: "background",
+    minContrast: CONTRAST.decorative,
+  },
   pair(
     "destructive-foreground",
     "content",

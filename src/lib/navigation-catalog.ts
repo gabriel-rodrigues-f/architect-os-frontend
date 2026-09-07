@@ -23,7 +23,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { API_URL, type SessionUser } from "./api";
+import type { SessionUser } from "./api";
 import type { MessageKey } from "./i18n";
 import { defaultUiAuthorizationPolicy } from "./scope";
 
@@ -61,7 +61,12 @@ export interface NavItem {
 
   ownCareerOnly?: boolean;
 
-  external?: boolean;
+  /**
+   * O destino abre numa ABA NOVA, reservada já no CLIQUE do menu (dono,
+   * 2026-09-08). O navegador só deixa abrir aba durante o gesto: a rota é
+   * interna e desenha a transição, mas a aba precisa nascer aqui.
+   */
+  opensInNewTab?: boolean;
 
   hintKey?: MessageKey;
 
@@ -74,26 +79,6 @@ const OWN_ARCHITECT_PARAM = "$architectId";
 export interface NavGroup {
   labelKey?: MessageKey;
   items: NavItem[];
-}
-
-/**
- * Onde o Grafana mora — e por que isto é uma variável, e não um caminho.
- *
- * Desde 2026-09-05 a porta de entrada é a PRÓPRIA API: `/grafana` nela
- * confere a sessão e injeta o passe em cada requisição (`GrafanaDoor`, no
- * backend) — sem senha do Grafana. O Grafana fica em inglês, o padrão dele.
- *
- * `VITE_GRAFANA_URL` continua existindo para uma topologia em que a porta
- * mora noutro endereço (um Ingress servindo `/grafana` na mesma origem);
- * vazia, vale a porta da API que o frontend já conhece.
- */
-export class ObservabilityAddress {
-  static get grafana(): string {
-    const declarado: unknown = import.meta.env["VITE_GRAFANA_URL"];
-    return typeof declarado === "string" && declarado.trim() !== ""
-      ? declarado.trim()
-      : `${API_URL}/grafana/`;
-  }
 }
 
 /**
@@ -226,12 +211,12 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       { to: "/teams", labelKey: "nav.teams", icon: Building2, peopleAdministrationOnly: true },
       {
-        to: ObservabilityAddress.grafana,
-        labelKey: "nav.grafana",
+        to: "/platform-metrics",
+        labelKey: "nav.platformMetrics",
         icon: Activity,
         platformMetricsOnly: true,
-        external: true,
-        hintKey: "nav.grafanaHint",
+        opensInNewTab: true,
+        hintKey: "nav.platformMetricsHint",
       },
       { to: "/users", labelKey: "nav.users", icon: UserCog, peopleAdministrationOnly: true },
     ],

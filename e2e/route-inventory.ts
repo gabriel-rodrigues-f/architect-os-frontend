@@ -79,7 +79,9 @@ export type DeclaredReach =
   | "calibracao"
   | "lideranca"
   | "analise-de-time"
-  | "ficha-de-carreira";
+  | "ficha-de-carreira"
+  | "gestao-de-pessoas"
+  | "metricas-da-plataforma";
 
 const FIXTURE_DE_ALCANCE = join(
   RAIZ_DO_REPOSITORIO,

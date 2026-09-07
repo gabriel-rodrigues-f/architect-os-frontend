@@ -93,7 +93,8 @@ type Alcance =
   | "lideranca"
   | "analise-de-time"
   | "ficha-de-carreira"
-  | "gestao-de-pessoas";
+  | "gestao-de-pessoas"
+  | "metricas-da-plataforma";
 type Negativa = "tela-nega" | "somente-leitura";
 
 const ALCANCES: readonly Alcance[] = [
@@ -106,6 +107,7 @@ const ALCANCES: readonly Alcance[] = [
   "analise-de-time",
   "ficha-de-carreira",
   "gestao-de-pessoas",
+  "metricas-da-plataforma",
 ];
 
 /** Qual guarda de navegação cada alcance restrito obriga. */
@@ -117,6 +119,7 @@ const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
   "analise-de-time": "requireTeamAnalysisReach",
   "ficha-de-carreira": "requireCareerTabsReach",
   "gestao-de-pessoas": "requirePeopleAdministrationReach",
+  "metricas-da-plataforma": "requirePlatformMetricsReach",
 };
 
 /** Contas que NÃO alcançam uma rota restrita — o gêmeo de tela usa uma delas. */
@@ -138,6 +141,7 @@ const DISTRIBUICAO_ESPERADA = {
   "analise-de-time": 5,
   "ficha-de-carreira": 3,
   "gestao-de-pessoas": 2,
+  "metricas-da-plataforma": 1,
 };
 
 interface CatalogoGlobal {

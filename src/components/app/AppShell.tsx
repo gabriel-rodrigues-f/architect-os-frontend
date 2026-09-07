@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { usePendingTeamTransfers, useReducedMotion } from "@/hooks";
 import { useAuth } from "@/lib/auth";
 import { useCycleSelection } from "@/lib/context-scope";
-import { useSynapseSignals } from "@/lib/dependencies";
+import { usePlatformMetricsTab, useSynapseSignals } from "@/lib/dependencies";
 import { ShellHeader } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -65,6 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   // Sem container por perto (uma casca montada sozinha num teste), não há rede — e nada quebra.
   const synapseSignals = useSynapseSignals();
+  const platformMetricsTab = usePlatformMetricsTab();
   const contentRef = useRef<HTMLElement>(null);
   const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
@@ -198,6 +199,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * O que o clique no item faz ALÉM de navegar: fechar a gaveta móvel e, no
+   * item que abre em aba nova, RESERVAR a aba (dono, 2026-09-08). A reserva
+   * mora no clique porque o navegador só deixa abrir aba durante o gesto —
+   * pedida depois da resposta da porta, ela viraria pop-up bloqueado.
+   */
+  const onNavigateFrom = (item: NavItem, variant: "sidebar" | "sheet") => () => {
+    if (item.opensInNewTab) platformMetricsTab?.reserve();
+    if (variant === "sheet") setMobileNavOpen(false);
+  };
+
   const renderNavItem =
     (variant: "sidebar" | "sheet") =>
     (item: NavItem, hidden = false) => (
@@ -205,12 +217,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         key={item.to}
         item={item}
         label={t(item.labelKey)}
-        active={!item.external && isNavItemActive(item, pathname, navItems)}
+        active={isNavItemActive(item, pathname, navItems)}
         hidden={hidden}
         collapsed={variant === "sidebar" && collapsed}
         hint={item.hintKey ? t(item.hintKey) : undefined}
         badge={pendingBadgeOf(item)}
-        onNavigate={variant === "sheet" ? () => setMobileNavOpen(false) : undefined}
+        onNavigate={onNavigateFrom(item, variant)}
       />
     );
   const renderDesktopNavItem = renderNavItem("sidebar");

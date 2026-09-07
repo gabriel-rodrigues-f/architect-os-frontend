@@ -104,6 +104,14 @@
     "/notices": {
       "alcance": "autenticado"
     },
+    "/platform-metrics": {
+      "alcance": "metricas-da-plataforma",
+      "guarda": "requirePlatformMetricsReach",
+      "sinal": "readsPlatformMetrics",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/platform-metrics.test.tsx"
+    },
     "/progression": {
       "alcance": "analise-de-time",
       "guarda": "requireTeamAnalysisReach",

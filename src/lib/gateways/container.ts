@@ -1,4 +1,5 @@
 import { ApiClient } from "../api-client";
+import { MetricsTab } from "../platform-metrics";
 import { SessionPolicy } from "../session-policy";
 import { SupportAccess } from "../support-access";
 import { SynapseSignals } from "../synapse-network";
@@ -49,6 +50,12 @@ export class FrontendContainer {
    * que o lê. Um por container, nunca por tela.
    */
   readonly synapseSignals: SynapseSignals;
+  /**
+   * A ABA DAS MÉTRICAS DA PLATAFORMA (dono, 2026-09-08). Mora aqui pela mesma
+   * razão dos sinais: quem RESERVA a aba é o clique no menu e quem a NAVEGA é
+   * a tela de transição — duas telas, um punho só. Uma por container.
+   */
+  readonly platformMetricsTab: MetricsTab;
   readonly apiClient: ApiClient;
   readonly analyticsGateway: AnalyticsGateway;
   readonly architectsGateway: ArchitectsGateway;
@@ -79,6 +86,7 @@ export class FrontendContainer {
     this.sessionPolicy = new SessionPolicy();
     this.supportAccess = new SupportAccess();
     this.synapseSignals = new SynapseSignals();
+    this.platformMetricsTab = new MetricsTab();
     const synapseAnnouncer = new SynapseOutcomeAnnouncer(this.synapseSignals);
     this.apiClient = new ApiClient(
       config.baseUrl,

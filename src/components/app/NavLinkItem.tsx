@@ -16,6 +16,13 @@ import { cn } from "@/lib/utils";
  *
  * Quem está fora de alcance por teclado (item de grupo recolhido) recebe
  * `tabIndex=-1` e `aria-hidden` — os dois menus continuam iguais nisso.
+ *
+ * TODO item é ROTA (dono, 2026-09-08). A âncora externa `target="_blank"`
+ * morreu com o item das Métricas da Plataforma: ela não mudava a rota, e por
+ * isso o menu ficava com dois itens acesos — o da tela onde a pessoa estava e
+ * o das Métricas. Com uma forma só, `aria-current` e o item aceso voltam a
+ * ser a mesma verdade; quem precisa de aba nova a reserva no clique
+ * (`opensInNewTab`) e desenha a transição numa tela de verdade.
  */
 export class NavLinkStyle {
   static readonly base =
@@ -73,25 +80,12 @@ export function NavLinkItem({
       {!collapsed && badge}
     </>
   );
-  const link = item.external ? (
-    <a
-      href={item.to}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={label}
-      title={hint}
-      data-active={active}
-      onClick={onNavigate}
-      {...outOfReachProps(hidden)}
-      className={className}
-    >
-      {conteudo}
-    </a>
-  ) : (
+  const link = (
     <Link
       to={item.to}
       aria-label={label}
       aria-current={active ? "page" : undefined}
+      title={hint}
       data-active={active}
       onClick={onNavigate}
       {...outOfReachProps(hidden)}

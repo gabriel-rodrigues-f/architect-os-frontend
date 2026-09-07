@@ -134,6 +134,22 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
     expect(itensAtivos()).toEqual(["Talentos do Time"]);
   });
 
+  /**
+   * Dono (2026-09-08), literal: "quando estou em Estrutura de Times e clico em
+   * Métricas, a seleção continua em Estrutura de Times e vejo os dois
+   * selecionados; o menu selecionado deve passar a ser ele". A causa não era
+   * a régua de item ativo: era o item das Métricas ser uma âncora externa,
+   * que não muda a rota. Virou rota — e o menu volta a dizer a verdade.
+   */
+  it("ao sair de Estrutura de Times para as Métricas da Plataforma, só as Métricas acendem", async () => {
+    await renderEm("/teams");
+    expect(itensAtivos()).toEqual(["Estrutura de Times"]);
+    cleanup();
+
+    await renderEm("/platform-metrics");
+    expect(itensAtivos()).toEqual(["Métricas da Plataforma"]);
+  });
+
   it("nenhuma rota do menu acende mais de um item, para nenhum papel", () => {
     const perfis = [
       fixtureAdminUser,

@@ -111,9 +111,9 @@ describe("AppShell — navegação recortada por papel", () => {
       fixtureAssignedManagerUser,
       fixtureUnassignedTechLeadUser,
     ]) {
-      expect(rotulosDe(user), user.role).toContain("nav.grafana");
+      expect(rotulosDe(user), user.role).toContain("nav.platformMetrics");
     }
-    expect(rotulosDe(fixtureMemberUser)).not.toContain("nav.grafana");
+    expect(rotulosDe(fixtureMemberUser)).not.toContain("nav.platformMetrics");
   });
 
   /**

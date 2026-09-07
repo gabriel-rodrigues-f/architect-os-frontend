@@ -1,57 +1,32 @@
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useState, useRef, type CSSProperties, type RefObject } from "react";
 
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { LetterCascade, LockupFit } from "@/lib/brand-lockup";
-import {
-  COLLECTIVE_PULSE_DURATION_MS,
-  type PulseTone,
-  type SynapseSignals,
-} from "@/lib/synapse-network";
+import { LockupFit } from "@/lib/brand-lockup";
 
 const WORDMARK = "Synapse";
 
 /**
  * A MARCA DAS TELAS DE PORTA — "Synapse" e o descriptor como um lockup
- * (terceira avaliação de UX, 2026-09-07), e a marca piscando com a rede
- * (pedido do dono, mesmo dia).
+ * (terceira avaliação de UX, 2026-09-07): as extremidades das duas linhas
+ * coincidem. O descriptor tem o seu tracking; o wordmark recebe o tracking
+ * que o `LockupFit` calcula a partir das larguras medidas na tela
+ * (`ResizeObserver`), refeito a cada largura — nunca congelado, nunca
+ * `scaleX`. Sem medida (jsdom, fonte ainda por carregar), vale o `clamp()`
+ * da folha de estilo.
  *
- * O lockup: as extremidades das duas linhas coincidem. O descriptor tem o seu
- * tracking; o wordmark recebe o tracking que o `LockupFit` calcula a partir
- * das larguras medidas na tela (`ResizeObserver`), refeito a cada largura —
- * nunca congelado, nunca `scaleX`. Sem medida (jsdom, fonte ainda por
- * carregar), vale o `clamp()` da folha de estilo.
- *
- * A piscada: cada linha é dividida em letras (`aria-hidden`; o texto inteiro
- * fica num `sr-only`), cada letra com atraso proporcional ao índice e a mesma
- * duração (`LetterCascade`) — as duas linhas começam e terminam juntas, cada
- * uma com o seu passo. Só o pulso COLETIVO da rede liga `data-pulsing`, pela
- * duração do pulso; com movimento reduzido a marca não se inscreve e fica
- * estática. Aba oculta: a rede pausa, logo nada chega aqui.
- *
- * A piscada ganha a cor do tom (dono, 2026-09-08): `data-pulse-tone` leva o
- * tom do pulso coletivo à folha de estilo — a recusa pisca no vermelho dos
- * campos, o sucesso no azul da casa.
+ * A MARCA NÃO PISCA (dono, 2026-09-08: "na tela de login, vamos remover a
+ * animação das letras; mantenha apenas na rede de sinapses"). Por isso ela
+ * não assina o pulso coletivo da rede e não recebe `SynapseSignals`: cada
+ * linha é UM texto, sem caixa por letra, sem `data-pulsing` e sem tom. Quem
+ * pulsa com a cor do resultado é a rede, atrás dela.
  */
-export function BrandLockup({
-  signals,
-  descriptor,
-}: {
-  signals?: SynapseSignals;
-  descriptor: string;
-}) {
+export function BrandLockup({ descriptor }: { descriptor: string }) {
   const wordmarkInk = useRef<HTMLSpanElement>(null);
   const descriptorInk = useRef<HTMLSpanElement>(null);
   const fit = useLockupFit(wordmarkInk, descriptorInk, WORDMARK.length);
-  const pulse = useCollectivePulse(signals);
 
   return (
-    <div
-      data-testid="brand-lockup"
-      data-pulsing={pulse.active ? "true" : undefined}
-      data-pulse-tone={pulse.active ? pulse.tone : undefined}
-      className="flex flex-col items-start"
-    >
-      <PulsingLine
+    <div data-testid="brand-lockup" className="flex flex-col items-start">
+      <LockupLine
         text={WORDMARK}
         testId="brand-wordmark"
         className="auth-wordmark font-display font-semibold uppercase text-foreground"
@@ -64,52 +39,35 @@ export function BrandLockup({
             : undefined
         }
         inkRef={wordmarkInk}
-        cascade={new LetterCascade(pulse.durationMs, WORDMARK.length)}
       />
-      <PulsingLine
+      <LockupLine
         text={descriptor}
         testId="brand-descriptor"
         className="auth-descriptor mt-2 uppercase"
         inkRef={descriptorInk}
-        cascade={new LetterCascade(pulse.durationMs, descriptor.length)}
       />
     </div>
   );
 }
 
-/** Uma linha do lockup: o texto inteiro para o leitor de tela, as letras soltas para a piscada. */
-function PulsingLine({
+/** Uma linha do lockup: o texto inteiro, numa caixa que a régua consegue medir. */
+function LockupLine({
   text,
   testId,
   className,
   style,
   inkRef,
-  cascade,
 }: {
   text: string;
   testId: string;
   className: string;
   style?: CSSProperties | undefined;
   inkRef: RefObject<HTMLSpanElement | null>;
-  cascade: LetterCascade;
 }) {
   return (
     <p data-testid={testId} className={className} style={style}>
-      <span className="sr-only">{text}</span>
-      <span aria-hidden="true" ref={inkRef} className="inline-block whitespace-nowrap">
-        {[...text].map((letter, index) => (
-          <span
-            key={index}
-            data-letter=""
-            className="auth-letter"
-            style={{
-              animationDelay: `${cascade.delayOf(index)}ms`,
-              animationDuration: `${cascade.letterMs}ms`,
-            }}
-          >
-            {letter === " " ? " " : letter}
-          </span>
-        ))}
+      <span ref={inkRef} className="inline-block whitespace-nowrap">
+        {text}
       </span>
     </p>
   );
@@ -170,39 +128,4 @@ class LockupGauge {
       LockupFit.for({ wordmarkWidth, wordmarkTracking, glyphs: this.glyphs, descriptorWidth }),
     );
   }
-}
-
-interface BrandPulse {
-  active: boolean;
-  durationMs: number;
-  tone: PulseTone;
-}
-
-/** A inscrição no pulso coletivo: `active` pela duração do pulso, com o tom dele; nada com movimento reduzido. */
-function useCollectivePulse(signals: SynapseSignals | undefined): BrandPulse {
-  const reducedMotion = useReducedMotion();
-  const [pulse, setPulse] = useState<BrandPulse>({
-    active: false,
-    durationMs: COLLECTIVE_PULSE_DURATION_MS,
-    tone: "primary",
-  });
-
-  useEffect(() => {
-    if (!signals || reducedMotion) return;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const unsubscribe = signals.onCollectivePulse(({ durationMs, tone }) => {
-      if (timer) clearTimeout(timer);
-      setPulse({ active: true, durationMs, tone });
-      timer = setTimeout(() => {
-        timer = null;
-        setPulse((current) => ({ ...current, active: false }));
-      }, durationMs);
-    });
-    return () => {
-      unsubscribe();
-      if (timer) clearTimeout(timer);
-    };
-  }, [signals, reducedMotion]);
-
-  return pulse;
 }

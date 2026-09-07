@@ -102,11 +102,50 @@ class InteriorScene implements SynapseScene {
   }
 }
 
+/** De onde a rede tira a sua cor: um token por leitor de token. */
+export interface TokenReader {
+  read(name: string, fallback: string): string;
+}
+
+/**
+ * A TINTA DA REDE — um token por tom, e o token do perigo é o da REDE, não o
+ * dos campos.
+ *
+ * Até 2026-09-08 o tom `danger` lia `--destructive`, o mesmo vermelho cheio
+ * do contorno de campo inválido, e o dono mediu o resultado na tela: "o
+ * vermelho da sinapse de erro está muito forte, precisa ser mais suave". A
+ * resposta é um token próprio (`--synapse-danger`, o destrutivo recuado até o
+ * fundo do tema) e não uma opacidade menor no pincel — opacidade apagaria o
+ * pulso inteiro, e o que precisava ceder era a cor.
+ */
+export class SynapseInk {
+  /** O token de cada tom. É o que o teste lê para provar QUAL vermelho a rede pinta. */
+  static readonly TOKEN: Readonly<Record<PulseTone, string>> = {
+    primary: "--primary",
+    danger: "--synapse-danger",
+  };
+
+  private constructor(private readonly byTone: Readonly<Record<PulseTone, string>>) {}
+
+  /** Sem token na folha (jsdom, tema ainda por aplicar), todo tom cai no azul. */
+  static read(tokens: TokenReader, fallbackPrimary: string): SynapseInk {
+    const primary = tokens.read(SynapseInk.TOKEN.primary, fallbackPrimary);
+    return new SynapseInk({
+      primary,
+      danger: tokens.read(SynapseInk.TOKEN.danger, primary),
+    });
+  }
+
+  of(tone: PulseTone): string {
+    return this.byTone[tone];
+  }
+}
+
 /** O pincel: lê as cores dos tokens e desenha um quadro da rede. */
 class SynapsePainter {
   private constructor(
     private readonly context: CanvasRenderingContext2D,
-    private readonly ink: Readonly<Record<PulseTone, string>>,
+    private readonly ink: SynapseInk,
     private readonly front: string,
     private readonly back: string,
     private readonly intensity: number,
@@ -116,11 +155,9 @@ class SynapsePainter {
     const context = canvas.getContext("2d");
     if (!context) return null;
     const tokens = ThemeTokens.of(canvas);
-    const primary = tokens.read("--primary", "#7cb8ff");
     return new SynapsePainter(
       context,
-      // O vermelho da recusa é o MESMO token do contorno dos campos (`aria-invalid`); sem ele, o azul.
-      { primary, danger: tokens.read("--destructive", primary) },
+      SynapseInk.read(tokens, "#7cb8ff"),
       tokens.read("--foreground", "#e5e7eb"),
       tokens.read("--muted-foreground", "#9ca3af"),
       intensity,
@@ -141,7 +178,7 @@ class SynapsePainter {
       const visibility = Math.min(from.visibility, to.visibility);
       context.globalAlpha =
         (LINK_ALPHA[plane] * link.strength * intensity + brighter.glow * 0.35) * visibility;
-      context.strokeStyle = this.ink[brighter.tone];
+      context.strokeStyle = this.ink.of(brighter.tone);
       context.beginPath();
       context.moveTo(from.x, from.y);
       context.lineTo(to.x, to.y);
@@ -149,7 +186,7 @@ class SynapsePainter {
     }
     for (const node of snapshot.nodes) {
       const radius = node.size * (1 + node.glow * 0.8);
-      const lit = this.ink[node.tone];
+      const lit = this.ink.of(node.tone);
       if (node.glow > 0.05) {
         context.globalAlpha = node.glow * 0.25 * node.visibility;
         context.fillStyle = lit;

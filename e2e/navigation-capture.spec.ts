@@ -91,6 +91,8 @@ const PAPEIS_QUE_ALCANCAM: Record<DeclaredReach, readonly string[]> = {
   lideranca: LIDERANCA,
   "analise-de-time": LIDERANCA,
   "ficha-de-carreira": LIDERANCA,
+  "gestao-de-pessoas": ["admin", "manager"],
+  "metricas-da-plataforma": LIDERANCA,
 };
 
 // A falta de credencial pula SÓ a navegação (mais abaixo, dentro do teste):

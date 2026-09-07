@@ -127,8 +127,12 @@ const LOCAL_PULSE_DURATION_MS = 420;
 const LOCAL_PULSE_RADIUS = 200;
 const LOCAL_PULSE_MIN_MS = 4000;
 const LOCAL_PULSE_SPREAD_MS = 5000;
-/** O coletivo: a frente atravessa a tela inteira em pouco mais de um segundo. */
-export const COLLECTIVE_PULSE_DURATION_MS = 1200;
+/**
+ * O coletivo: a frente atravessa a tela inteira em pouco mais de um segundo.
+ * Deixou de ser exportado em 2026-09-08: quem o lia de fora era a marca, para
+ * piscar junto — e a piscada morreu a pedido do dono.
+ */
+const COLLECTIVE_PULSE_DURATION_MS = 1200;
 /** A fração da duração em que a frente coletiva cruza a tela; o resto é o apagar. */
 const COLLECTIVE_TRAVEL_SHARE = 0.7;
 const COLLECTIVE_PULSE_MIN_MS = 12000;

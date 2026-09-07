@@ -198,7 +198,7 @@ describe("menu do profissional — o que não é dele some", () => {
       const administracao = filterNavGroups(NAV_GROUPS, lead).find(
         (group) => group.labelKey === "nav.group.admin",
       );
-      expect(administracao?.items.map((item) => item.labelKey)).toEqual(["nav.grafana"]);
+      expect(administracao?.items.map((item) => item.labelKey)).toEqual(["nav.platformMetrics"]);
     }
   });
 

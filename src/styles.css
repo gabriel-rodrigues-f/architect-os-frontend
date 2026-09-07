@@ -38,6 +38,8 @@
     surface-elevated`; bordas `subtle / border / strong`; texto `foreground /
     text-secondary / muted-foreground`; ação `primary / -hover / -active /
     -subtle`; estado `destructive / danger-subtle / warning / success / info`.
+    `synapse-danger` é a tinta da REDE do fundo: o destrutivo recuado até o
+    fundo do tema, porque o aviso é forte de propósito e a decoração não.
   */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -59,6 +61,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-synapse-danger: var(--synapse-danger);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-danger-subtle: var(--danger-subtle);
   --color-info: var(--info);
@@ -171,6 +174,7 @@
   --accent: oklch(0.94 0.012 240);
   --accent-foreground: oklch(0.28 0.03 250);
   --destructive: oklch(0.577 0.245 27.325);
+  --synapse-danger: oklch(0.761 0.137 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --danger-subtle: oklch(0.95 0.03 25);
   --info: oklch(0.93 0.04 235);
@@ -348,6 +352,7 @@
   --accent: oklch(0.279 0.041 260.031);
   --accent-foreground: oklch(0.984 0.003 247.858);
   --destructive: oklch(0.64 0.2 25);
+  --synapse-danger: oklch(0.436 0.137 25);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --danger-subtle: oklch(0.24 0.05 25);
   --info: oklch(0.28 0.06 235);
@@ -903,14 +908,14 @@
   maior que antes (30/36/48 → 33/40/53 por clamp) e com o tracking que o
   `BrandLockup` mede na tela (`--lockup-tracking`, em px) — sem medida, o
   fallback em em. O descriptor a 65% de luz, peso médio, tracking próprio.
-  As letras são caixas inline para a piscada animar cada uma.
+  Cada linha é UM texto: a piscada por letra morreu em 2026-09-08, a pedido
+  do dono, e com ela a caixa por glifo, os quadros da animação e as variáveis
+  de luz do tom. O que pulsa é a rede de sinapses, atrás da marca.
 */
 @utility auth-wordmark {
   font-size: clamp(2.0625rem, 1.45rem + 1.7vw, 3.3rem);
   line-height: 1.05;
   letter-spacing: var(--lockup-tracking, 0.28em);
-  --letter-lit: color-mix(in oklch, var(--color-foreground) 78%, var(--color-primary));
-  --letter-glow: color-mix(in oklch, var(--color-primary) 60%, transparent);
 }
 
 @utility auth-descriptor {
@@ -918,49 +923,6 @@
   font-weight: 500;
   letter-spacing: 0.14em;
   color: color-mix(in oklch, var(--color-foreground) 65%, var(--color-background));
-  --letter-lit: var(--color-foreground);
-  --letter-glow: color-mix(in oklch, var(--color-primary) 45%, transparent);
-}
-
-@utility auth-letter {
-  display: inline-block;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  animation-fill-mode: both;
-}
-
-/*
-  A piscada (dono, 2026-09-07): ganho de luz e um leve brilho no primário,
-  sobe e desce com easing suave. Só sob `no-preference` e só enquanto a rede
-  pulsa em coletivo (`data-pulsing`); o atraso e a duração de cada letra vêm
-  do `LetterCascade`, inline. Nunca cor nova: só os tokens da cena.
-*/
-@keyframes auth-letter-pulse {
-  0%,
-  100% {
-    color: inherit;
-    text-shadow: none;
-  }
-  50% {
-    color: var(--letter-lit);
-    text-shadow: 0 0 14px var(--letter-glow);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  [data-pulsing="true"] .auth-letter {
-    animation-name: auth-letter-pulse;
-  }
-}
-
-/*
-  A piscada da recusa (dono, 2026-09-08): quando a rede pulsa em `danger`, a
-  marca pisca no MESMO vermelho do contorno dos campos — o token
-  `--color-destructive`, nunca um tom novo. O `BrandLockup` põe o tom em
-  `data-pulse-tone`; o azul continua sendo o das linhas.
-*/
-[data-pulse-tone="danger"] .auth-letter {
-  --letter-lit: color-mix(in oklch, var(--color-foreground) 55%, var(--color-destructive));
-  --letter-glow: color-mix(in oklch, var(--color-destructive) 65%, transparent);
 }
 
 @keyframes auth-fade {

@@ -6,10 +6,10 @@
  * e recalculado a cada largura. Aqui mora a conta, sem DOM, para o teste
  * provar com medidas simuladas; quem mede e aplica é o `BrandLockup`.
  *
- * `LetterCascade` é o ritmo da piscada (dono, 2026-09-07): cada letra atrasa
- * proporcionalmente ao índice, com a MESMA duração por letra, de modo que as
- * duas linhas — 7 e 30 letras — comecem e terminem no mesmo instante, cada
- * uma com o seu passo.
+ * A PISCADA DAS LETRAS morreu em 2026-09-08, a pedido do dono ("na tela de
+ * login, vamos remover a animação das letras; mantenha apenas na rede de
+ * sinapses"): o ritmo por letra (`LetterCascade`) saiu daqui junto com as
+ * caixas por glifo do `BrandLockup`. O que pulsa é a rede, e só ela.
  */
 export interface LockupMeasure {
   /** A caixa do wordmark como está na tela — inclui o tracking depois de CADA glifo, o último também. */
@@ -57,25 +57,5 @@ export class LockupFit {
       letterSpacing: `${this.trackingPx}px`,
       marginInlineEnd: `${-this.trackingPx}px`,
     };
-  }
-}
-
-export class LetterCascade {
-  /** A piscada de UMA letra dura esta fração do pulso. */
-  static readonly LETTER_SHARE = 0.35;
-
-  constructor(
-    readonly pulseMs: number,
-    readonly letters: number,
-  ) {}
-
-  get letterMs(): number {
-    return this.pulseMs * LetterCascade.LETTER_SHARE;
-  }
-
-  /** `índice / (n − 1) × (D − d)`: a última letra termina exatamente em D. */
-  delayOf(index: number): number {
-    if (this.letters <= 1) return 0;
-    return (index / (this.letters - 1)) * (this.pulseMs - this.letterMs);
   }
 }

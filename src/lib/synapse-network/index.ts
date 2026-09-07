@@ -1,6 +1,5 @@
 export { SynapseSignals } from "./signals";
 export {
-  COLLECTIVE_PULSE_DURATION_MS,
   CompositionZone,
   NetworkComposition,
   PLANE_STYLE,

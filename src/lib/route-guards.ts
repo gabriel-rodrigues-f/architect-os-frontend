@@ -39,6 +39,10 @@ class NavigationBarrier {
   requirePeopleAdministrationReach: RouteGuard = ({ context }) =>
     this.requireReach(context, (user) => this.policy.canAdministerPeople(user));
 
+  /** Métricas da Plataforma: todos menos o member (adendo do dono, 2026-09-08, item 5). */
+  requirePlatformMetricsReach: RouteGuard = ({ context }) =>
+    this.requireReach(context, (user) => this.policy.readsPlatformMetrics(user));
+
   requireCareerTabsReach: CareerFileRouteGuard = ({ context, params }) =>
     this.requireReach(context, (user) => this.policy.canOpenCareerTabsOf(user, params.architectId));
 
@@ -71,3 +75,4 @@ export const requireLeadershipReach = navigationBarrier.requireLeadershipReach;
 export const requireTeamAnalysisReach = navigationBarrier.requireTeamAnalysisReach;
 export const requireCareerTabsReach = navigationBarrier.requireCareerTabsReach;
 export const requirePeopleAdministrationReach = navigationBarrier.requirePeopleAdministrationReach;
+export const requirePlatformMetricsReach = navigationBarrier.requirePlatformMetricsReach;

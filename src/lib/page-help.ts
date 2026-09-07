@@ -51,6 +51,7 @@ type PageHelpRouteKey =
   | "teams"
   | "calibration"
   | "notices"
+  | "platformMetrics"
   | "architectRoadmap"
   | "architectStatement";
 

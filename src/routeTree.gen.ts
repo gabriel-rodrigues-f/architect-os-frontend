@@ -21,6 +21,7 @@ import { Route as GapAnalysisRouteImport } from './routes/gap-analysis'
 import { Route as LearningPathsRouteImport } from './routes/learning-paths'
 import { Route as MentoringRouteImport } from './routes/mentoring'
 import { Route as NoticesRouteImport } from './routes/notices'
+import { Route as PlatformMetricsRouteImport } from './routes/platform-metrics'
 import { Route as ProgressionRouteImport } from './routes/progression'
 import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -93,6 +94,11 @@ const MentoringRoute = MentoringRouteImport.update({
 const NoticesRoute = NoticesRouteImport.update({
   id: '/notices',
   path: '/notices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformMetricsRoute = PlatformMetricsRouteImport.update({
+  id: '/platform-metrics',
+  path: '/platform-metrics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgressionRoute = ProgressionRouteImport.update({
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
   '/notices': typeof NoticesRoute
+  '/platform-metrics': typeof PlatformMetricsRoute
   '/progression': typeof ProgressionRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
   '/notices': typeof NoticesRoute
+  '/platform-metrics': typeof PlatformMetricsRoute
   '/progression': typeof ProgressionRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
   '/notices': typeof NoticesRoute
+  '/platform-metrics': typeof PlatformMetricsRoute
   '/progression': typeof ProgressionRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/learning-paths'
     | '/mentoring'
     | '/notices'
+    | '/platform-metrics'
     | '/progression'
     | '/set-password'
     | '/settings'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/learning-paths'
     | '/mentoring'
     | '/notices'
+    | '/platform-metrics'
     | '/progression'
     | '/set-password'
     | '/settings'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/learning-paths'
     | '/mentoring'
     | '/notices'
+    | '/platform-metrics'
     | '/progression'
     | '/set-password'
     | '/settings'
@@ -342,6 +354,7 @@ export interface RootRouteChildren {
   LearningPathsRoute: typeof LearningPathsRoute
   MentoringRoute: typeof MentoringRoute
   NoticesRoute: typeof NoticesRoute
+  PlatformMetricsRoute: typeof PlatformMetricsRoute
   ProgressionRoute: typeof ProgressionRoute
   SetPasswordRoute: typeof SetPasswordRoute
   SettingsRoute: typeof SettingsRoute
@@ -437,6 +450,13 @@ declare module '@tanstack/react-router' {
       path: '/notices'
       fullPath: '/notices'
       preLoaderRoute: typeof NoticesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform-metrics': {
+      id: '/platform-metrics'
+      path: '/platform-metrics'
+      fullPath: '/platform-metrics'
+      preLoaderRoute: typeof PlatformMetricsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/progression': {
@@ -565,6 +585,7 @@ const rootRouteChildren: RootRouteChildren = {
   LearningPathsRoute: LearningPathsRoute,
   MentoringRoute: MentoringRoute,
   NoticesRoute: NoticesRoute,
+  PlatformMetricsRoute: PlatformMetricsRoute,
   ProgressionRoute: ProgressionRoute,
   SetPasswordRoute: SetPasswordRoute,
   SettingsRoute: SettingsRoute,

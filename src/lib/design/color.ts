@@ -40,6 +40,22 @@ export class Oklch {
     return this.with({ c: Math.max(0, this.c * (1 - factor)) });
   }
 
+  /**
+   * A cor a `share` de si sobre uma superfície — o que `color-mix()` faria,
+   * COM O MATIZ DESTA cor preservado. O matiz é intencional e não um detalhe
+   * de implementação: o OKLCH interpola matiz pelo arco mais curto, e
+   * misturar o vermelho da recusa (27°) com o fundo azulado da casa (240°)
+   * pelo arco daria ROXO — uma cor que ninguém pediu. Aqui a mistura é a que
+   * o olho espera: o mesmo vermelho, mais perto do fundo.
+   */
+  mixedOver(surface: Oklch, share: number): Oklch {
+    const rest = 1 - share;
+    return this.with({
+      l: this.l * share + surface.l * rest,
+      c: this.c * share + surface.c * rest,
+    });
+  }
+
   toCss(): string {
     const base = `oklch(${round(this.l)} ${round(this.c)} ${round(this.h)}`;
     return this.alpha >= 1 ? `${base})` : `${base} / ${round(this.alpha)})`;
@@ -88,4 +104,14 @@ export const CONTRAST = {
   text: 4.5,
 
   large: 3,
+
+  /**
+   * TINTA DECORATIVA sobre a própria superfície — a rede de sinapses do fundo
+   * (`aria-hidden`, canvas). O WCAG 1.4.11 pede 3:1 de objeto gráfico
+   * NECESSÁRIO para entender o conteúdo; este não é: a recusa sempre chega
+   * escrita (Callout, contorno do campo), e a rede é o eco dela. O que se
+   * cobra da tinta é ser visível sobre o fundo — sem isso o pulso não existe
+   * —, e é esse piso que este degrau mede. Nenhum texto usa este mínimo.
+   */
+  decorative: 2,
 } as const;

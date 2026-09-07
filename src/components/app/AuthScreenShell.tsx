@@ -41,10 +41,10 @@ import { SynapseSignals } from "@/lib/synapse-network";
  * sessão — escapa do `AuthGate` do `__root` —, então a casca não pode
  * depender de nada que só exista do lado autenticado.
  *
- * Os `signals` são o canal da tela para a rede (foco no cartão acende os nós
- * próximos; Entrar dispara um pulso) e da rede para a marca (o pulso
- * coletivo faz o lockup piscar — `BrandLockup`). Quem não os passa recebe
- * uns próprios.
+ * Os `signals` são o canal da tela para a rede: foco no cartão acende os nós
+ * próximos, e a resposta do Entrar dispara o pulso com a cor do resultado.
+ * Quem não os passa recebe uns próprios. A MARCA não entra nesse canal
+ * (dono, 2026-09-08): o `BrandLockup` deixou de piscar, e só a rede pulsa.
  */
 export function AuthScreenShell({
   children,
@@ -80,7 +80,7 @@ export function AuthScreenShell({
             >
               {/* A medida da marca é o bloco de texto (w-fit), não a coluna inteira: o vão real começa onde o texto acaba. */}
               <div ref={brandRef} className="w-fit">
-                <BrandLockup signals={network} descriptor={t("login.subtitle")} />
+                <BrandLockup descriptor={t("login.subtitle")} />
               </div>
             </section>
 

@@ -10,6 +10,7 @@ import {
   requireCareerTabsReach,
   requireLeadReach,
   requireLeadershipReach,
+  requirePlatformMetricsReach,
   requireSystemOperatorReach,
   requireTeamAnalysisReach,
 } from "@/lib/route-guards";
@@ -525,5 +526,48 @@ describe("requireSystemOperatorReach — a guarda do catálogo", () => {
     expect(await alcancaOCatalogo(fixtureAssignedManagerUser)).toBe(false);
     expect(await alcancaOCatalogo(fixtureAssignedTechLeadUser)).toBe(false);
     expect(await alcancaOCatalogo(fixtureMemberUser)).toBe(false);
+  });
+});
+
+/**
+ * Onda 45 — as Métricas da Plataforma deixaram de ser âncora externa e
+ * viraram rota (dono, 2026-09-08), e rota tem guarda. O alcance é o do adendo
+ * 5 do mesmo dia: "o único que não enxerga as métricas passa a ser o membro"
+ * — inclusive o lead SEM vínculo, porque as métricas são do serviço e não de
+ * um time. Tirar do menu não fecha a URL: é a lição da onda 17, e é esta
+ * metade que a fecha.
+ */
+async function alcancaAsMetricas(user: SessionUser): Promise<boolean> {
+  const queryClient = createAppQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, user);
+  try {
+    await requirePlatformMetricsReach({ context: { queryClient } });
+    return true;
+  } catch (erro) {
+    if (isRedirect(erro)) return false;
+    throw erro;
+  }
+}
+
+describe("requirePlatformMetricsReach — a guarda das Métricas da Plataforma", () => {
+  it("passa todo mundo que não é member — inclusive o lead sem vínculo e o suporte", async () => {
+    expect(await alcancaAsMetricas(fixtureAdminUser)).toBe(true);
+    expect(await alcancaAsMetricas(fixtureSupportUser)).toBe(true);
+    expect(await alcancaAsMetricas(fixtureAssignedManagerUser)).toBe(true);
+    expect(await alcancaAsMetricas(fixtureAssignedTechLeadUser)).toBe(true);
+    expect(await alcancaAsMetricas(fixtureUnassignedTechLeadUser)).toBe(true);
+  });
+
+  it("nega ao member", async () => {
+    expect(await alcancaAsMetricas(fixtureMemberUser)).toBe(false);
+  });
+
+  it("na navegação de verdade, o member é devolvido à home e quem lidera abre a tela", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/platform-metrics")).toBe("/");
+    for (const user of [fixtureAdminUser, fixtureSupportUser, fixtureUnassignedTechLeadUser]) {
+      expect(await navegarComoUsuario(user, "/platform-metrics"), user.role).toBe(
+        "/platform-metrics",
+      );
+    }
   });
 });

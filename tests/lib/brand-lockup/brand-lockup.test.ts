@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { LetterCascade, LockupFit } from "@/lib/brand-lockup";
+import { LockupFit } from "@/lib/brand-lockup";
 
 /**
  * O lockup da marca (terceira avaliação de UX, 2026-09-07): "Synapse" e
  * "Desenvolvimento de Capacidades" numa unidade cujas extremidades esquerda e
  * direita coincidem opticamente (1–3 px). Sem `scaleX`, sem espaços manuais:
  * o wordmark ganha o `letter-spacing` que o descriptor pede, medido no
- * cliente e recalculado a cada largura. O `LockupFit` é a conta; o
- * `LetterCascade` é o ritmo da piscada — cada linha com o seu passo, as duas
- * começando e terminando no mesmo instante.
+ * cliente e recalculado a cada largura. O `LockupFit` é a conta.
+ *
+ * O `LetterCascade` — o ritmo da piscada por letra — morreu em 2026-09-08,
+ * com a piscada: o dono pediu a animação só na rede de sinapses.
  */
 describe("LockupFit — o wordmark termina onde o descriptor termina", () => {
   it("calcula o tracking que leva a última letra do wordmark à borda direita do descriptor", () => {
@@ -80,29 +81,5 @@ describe("LockupFit — o wordmark termina onde o descriptor termina", () => {
     expect(fit.style.letterSpacing).toBe(`${fit.trackingPx}px`);
     expect(fit.style.marginInlineEnd).toBe(`${-fit.trackingPx}px`);
     expect(JSON.stringify(fit.style)).not.toContain("scale");
-  });
-});
-
-describe("LetterCascade — as duas linhas começam e terminam juntas", () => {
-  it("o atraso é proporcional ao índice e a última letra termina exatamente no fim do pulso", () => {
-    const cascata = new LetterCascade(1200, 7);
-    expect(cascata.letterMs).toBeCloseTo(1200 * 0.35, 5);
-    expect(cascata.delayOf(0)).toBe(0);
-    expect(cascata.delayOf(3)).toBeCloseTo((3 / 6) * (1200 - cascata.letterMs), 5);
-    expect(cascata.delayOf(6) + cascata.letterMs).toBeCloseTo(1200, 5);
-  });
-
-  it("'Synapse' (7) e 'Desenvolvimento de Capacidades' (30) têm passos diferentes, mas o mesmo início e o mesmo fim", () => {
-    const curta = new LetterCascade(1200, 7);
-    const longa = new LetterCascade(1200, 30);
-    expect(curta.delayOf(0)).toBe(longa.delayOf(0));
-    expect(curta.delayOf(6) + curta.letterMs).toBeCloseTo(longa.delayOf(29) + longa.letterMs, 5);
-    expect(curta.delayOf(1)).toBeGreaterThan(longa.delayOf(1));
-  });
-
-  it("uma linha de uma letra só pisca no início, sem dividir por zero", () => {
-    const uma = new LetterCascade(1000, 1);
-    expect(uma.delayOf(0)).toBe(0);
-    expect(Number.isFinite(uma.delayOf(0))).toBe(true);
   });
 });
