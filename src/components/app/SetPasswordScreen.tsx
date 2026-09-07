@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AccessRecoveryRequestPanel } from "@/components/app/AccessRecoveryRequestPanel";
 import { AuthScreenShell } from "@/components/app/AuthScreenShell";
 import { PasswordChoiceFields } from "@/components/app/PasswordChoiceFields";
+import { AuthAlert } from "@/components/app/AuthAlert";
 import { Button } from "@/components/ui/button";
 import { usePasswordChoice } from "@/hooks";
 import { AccessInvitation, SetPasswordRefusal } from "@/lib/access-recovery";
@@ -151,14 +152,7 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
       <form className="mt-5 space-y-3" onSubmit={submit}>
         <PasswordChoiceFields choice={choice} />
 
-        {error !== null && (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        )}
+        {error !== null && <AuthAlert>{error}</AuthAlert>}
 
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? t("setPassword.submitting") : t("setPassword.submit")}

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { LiveCanvasLoop, ThemeTokens } from "@/lib/live-canvas";
 import {
+  CompositionZone,
   NetworkComposition,
   SynapseNetwork,
   SynapseSignals,
@@ -86,12 +87,18 @@ class SynapseStage {
     private readonly canvas: HTMLCanvasElement,
     private readonly signals: SynapseSignals,
     private readonly focal: RefObject<HTMLElement | null>,
+    private readonly brand: RefObject<HTMLElement | null>,
   ) {
     this.network = new SynapseNetwork(1, 1, new NetworkComposition(0, "mobile"));
     this.fit();
   }
 
-  /** Mede o canvas de novo, com o DPR limitado a 2, e recompõe a rede para a largura nova. */
+  /**
+   * Mede o canvas de novo, com o DPR limitado a 2, e recompõe a rede para a
+   * largura nova — com a zona de composição (marca e cartão) medida na mesma
+   * passada, para a rede costurar os lados. Sem medida (jsdom, ou um bloco
+   * ainda sem tamanho), a rede nasce sem zona, como antes.
+   */
   fit(): void {
     const rect = this.canvas.getBoundingClientRect();
     this.width = Math.max(1, Math.round(rect.width || window.innerWidth));
@@ -99,8 +106,20 @@ class SynapseStage {
     this.scale = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
     this.canvas.width = Math.round(this.width * this.scale);
     this.canvas.height = Math.round(this.height * this.scale);
-    this.network = new SynapseNetwork(this.width, this.height);
+    const zone = this.composition(rect);
+    this.network = new SynapseNetwork(
+      this.width,
+      this.height,
+      NetworkComposition.for(this.width, zone),
+    );
     this.painter = SynapsePainter.for(this.canvas);
+  }
+
+  private composition(canvas: DOMRect): CompositionZone | null {
+    const brand = this.brand.current?.getBoundingClientRect();
+    const card = this.focal.current?.getBoundingClientRect();
+    if (!brand || !card) return null;
+    return CompositionZone.measured(canvas, brand, card);
   }
 
   /** Um quadro só, parado — o que `prefers-reduced-motion` recebe. */
@@ -148,7 +167,8 @@ class SynapseStage {
 
 /**
  * A rede de sinapses atrás do login. O motor é o `SynapseNetwork`; este
- * componente só liga o canvas (DPR ≤ 2, resize), o ponteiro (mouse e toque
+ * componente só liga o canvas (DPR ≤ 2, resize), a zona de composição (marca
+ * e cartão, medidos a cada ajuste), o ponteiro (mouse e toque
  * leve), os sinais da tela e o relógio — que pausa com a aba escondida e é
  * cancelado no unmount. Com `prefers-reduced-motion`, desenha um quadro
  * parado e não anima.
@@ -156,9 +176,13 @@ class SynapseStage {
 export function SynapseBackground({
   signals,
   focalRef,
+  brandRef,
 }: {
   signals: SynapseSignals;
+  /** O cartão: zona de ênfase, origem do pulso e um dos dois blocos da composição. */
   focalRef: RefObject<HTMLElement | null>;
+  /** A marca: o outro bloco da composição — a rede se adensa entre os dois. */
+  brandRef?: RefObject<HTMLElement | null>;
 }) {
   const reducedMotion = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -168,7 +192,7 @@ export function SynapseBackground({
     setMotion(reducedMotion ? "still" : "live");
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const stage = new SynapseStage(canvas, signals, focalRef);
+    const stage = new SynapseStage(canvas, signals, focalRef, brandRef ?? { current: null });
     if (reducedMotion) {
       stage.still();
       const onResizeStill = () => {
@@ -197,7 +221,7 @@ export function SynapseBackground({
       window.removeEventListener("pointercancel", onLeave);
       document.removeEventListener("pointerleave", onLeave);
     };
-  }, [reducedMotion, signals, focalRef]);
+  }, [reducedMotion, signals, focalRef, brandRef]);
 
   return (
     <canvas

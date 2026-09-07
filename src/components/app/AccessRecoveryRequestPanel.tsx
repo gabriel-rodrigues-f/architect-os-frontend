@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 
+import { AuthAlert } from "@/components/app/AuthAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,14 +80,7 @@ export function AccessRecoveryRequestPanel({
           />
         </div>
 
-        {error !== null && (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        )}
+        {error !== null && <AuthAlert>{error}</AuthAlert>}
 
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? t("accessRecovery.request.submitting") : t("accessRecovery.request.submit")}

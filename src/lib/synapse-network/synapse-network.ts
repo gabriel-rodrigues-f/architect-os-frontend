@@ -99,9 +99,115 @@ const SPONTANEOUS_PULSE_RADIUS = 200;
 const CLUSTERED_SHARE = 0.7;
 const EDGE_MARGIN = 24;
 
+const SEED_ATTEMPTS = 24;
+/** A faixa de "extremo": quem nasce a menos de 8% da borda quase nunca fica. */
+const EXTREME_SHARE = 0.08;
+/** Até onde "perto do login" vai, em px a partir da borda do cartão. */
+const NEAR_CARD = 120;
+const WEIGHT = {
+  center: 1,
+  bottomLeft: 0.6,
+  brand: 0.45,
+  elsewhere: 0.45,
+  nearCard: 0.3,
+  extreme: 0.08,
+  /** Atrás do cartão o nó não aparece — é nó jogado fora. */
+  behindCard: 0.05,
+} as const;
+
 export type DeviceClass = "mobile" | "tablet" | "desktop";
 
-/** Quantos nós cabem numa largura — e como eles se repartem pelos planos. */
+/**
+ * A ZONA DE COMPOSIÇÃO — os retângulos da marca e do cartão em coordenadas
+ * do canvas (refino do login, 2026-09-07). Com ela a rede deixa de ser um
+ * fundo indiferente e passa a costurar os lados: o centro entre os dois
+ * blocos é onde mais nasce nó; o canto inferior esquerdo fica em densidade
+ * média; perto do login é baixa (o cartão precisa de silêncio); os extremos
+ * da viewport ficam quase vazios. E há uma direção — a diagonal que vai da
+ * marca ao login —, ao longo da qual os clusters se alinham: do pé da marca
+ * ao alto do cartão, passando pelo centro do vão entre os dois.
+ */
+export class CompositionZone {
+  constructor(
+    readonly brand: Zone,
+    readonly card: Zone,
+  ) {}
+
+  /** A partir do que a tela mediu (`getBoundingClientRect`), relativo ao canvas; `null` se algo ainda não tem tamanho. */
+  static measured(canvas: Zone, brand: Zone, card: Zone): CompositionZone | null {
+    if (
+      CompositionZone.empty(canvas) ||
+      CompositionZone.empty(brand) ||
+      CompositionZone.empty(card)
+    ) {
+      return null;
+    }
+    const relative = (zone: Zone): Zone => ({
+      x: zone.x - canvas.x,
+      y: zone.y - canvas.y,
+      width: zone.width,
+      height: zone.height,
+    });
+    return new CompositionZone(relative(brand), relative(card));
+  }
+
+  private static empty(zone: Zone): boolean {
+    return zone.width <= 0 || zone.height <= 0;
+  }
+
+  private static contains(zone: Zone, point: Point, margin = 0): boolean {
+    return (
+      point.x >= zone.x - margin &&
+      point.x <= zone.x + zone.width + margin &&
+      point.y >= zone.y - margin &&
+      point.y <= zone.y + zone.height + margin
+    );
+  }
+
+  /**
+   * Um ponto na diagonal marca → centro → login: `t` = 0 no pé da marca (canto
+   * inferior esquerdo dela), 1 no alto do cartão (a um quarto da borda
+   * esquerda). Sobe da esquerda para a direita, cruzando o vão pelo meio.
+   */
+  along(t: number): Point {
+    const from = { x: this.brand.x, y: this.brand.y + this.brand.height };
+    const to = { x: this.card.x + this.card.width * 0.25, y: this.card.y };
+    return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+  }
+
+  /** O peso (0..1] de um ponto receber um nó — a densidade por região. */
+  weightAt(point: Point, width: number, height: number): number {
+    const toEdge = Math.min(point.x, width - point.x, point.y, height - point.y);
+    if (toEdge < Math.min(width, height) * EXTREME_SHARE) return WEIGHT.extreme;
+    if (CompositionZone.contains(this.card, point, EDGE_MARGIN)) return WEIGHT.behindCard;
+    if (CompositionZone.contains(this.card, point, NEAR_CARD)) return WEIGHT.nearCard;
+    if (CompositionZone.contains(this.brand, point)) return WEIGHT.brand;
+    const brandRight = this.brand.x + this.brand.width;
+    const brandBottom = this.brand.y + this.brand.height;
+    if (point.x > brandRight && point.x < this.card.x) {
+      const spread = height * 0.3;
+      const near = Math.exp(-((this.distanceToDiagonal(point) / spread) ** 2));
+      return WEIGHT.elsewhere + (WEIGHT.center - WEIGHT.elsewhere) * near;
+    }
+    if (point.x <= brandRight && point.y > brandBottom) return WEIGHT.bottomLeft;
+    return WEIGHT.elsewhere;
+  }
+
+  private distanceToDiagonal(point: Point): number {
+    const from = this.along(0);
+    const to = this.along(1);
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = dx * dx + dy * dy;
+    const t =
+      length === 0
+        ? 0
+        : Math.max(0, Math.min(1, ((point.x - from.x) * dx + (point.y - from.y) * dy) / length));
+    return Math.hypot(point.x - (from.x + dx * t), point.y - (from.y + dy * t));
+  }
+}
+
+/** Quantos nós cabem numa largura, como eles se repartem pelos planos — e, se houver, a zona que os distribui. */
 export class NetworkComposition {
   private static readonly BANDS: readonly {
     device: DeviceClass;
@@ -118,15 +224,16 @@ export class NetworkComposition {
   constructor(
     readonly nodes: number,
     readonly device: DeviceClass,
+    readonly zone: CompositionZone | null = null,
   ) {}
 
-  static for(width: number): NetworkComposition {
+  static for(width: number, zone: CompositionZone | null = null): NetworkComposition {
     const band =
       NetworkComposition.BANDS.find((candidate) => width < candidate.to) ??
       NetworkComposition.BANDS[NetworkComposition.BANDS.length - 1]!;
     const position = Math.min(1, Math.max(0, (width - band.from) / (band.to - band.from)));
     const nodes = Math.round(band.min + (band.max - band.min) * position);
-    return new NetworkComposition(nodes, band.device);
+    return new NetworkComposition(nodes, band.device, zone);
   }
 
   /** A cota de cada plano; o resto da divisão fica com o fundo. */
@@ -195,14 +302,14 @@ export class SynapseNetwork {
   }
 
   private seed(composition: NetworkComposition): void {
-    const clusters = this.clusterCenters();
+    const { zone } = composition;
+    const clusters = zone ? this.clustersAlong(zone) : this.clusterCenters();
     const spread = Math.min(this.width, this.height) * 0.12;
     let id = 0;
     for (const plane of [0, 1, 2] as const) {
       const style = PLANE_STYLE[plane];
       for (let count = composition.countFor(plane); count > 0; count -= 1) {
-        const home =
-          this.random() < CLUSTERED_SHARE ? this.nearACluster(clusters, spread) : this.anywhere();
+        const home = this.home(zone, clusters, spread);
         this.nodes.push({
           id,
           plane,
@@ -219,6 +326,42 @@ export class SynapseNetwork {
         id += 1;
       }
     }
+  }
+
+  /**
+   * A casa de um nó. Sem zona, o sorteio de sempre; com zona, o mesmo sorteio
+   * passa pelo peso da região — quem cai onde a composição quer pouco nó
+   * tenta de novo, até um limite, e o total de nós não muda.
+   */
+  private home(zone: CompositionZone | null, clusters: readonly Point[], spread: number): Point {
+    let candidate = this.candidate(clusters, spread);
+    if (!zone) return candidate;
+    for (let attempt = 0; attempt < SEED_ATTEMPTS; attempt += 1) {
+      if (this.random() < zone.weightAt(candidate, this.width, this.height)) return candidate;
+      candidate = this.candidate(clusters, spread);
+    }
+    return candidate;
+  }
+
+  private candidate(clusters: readonly Point[], spread: number): Point {
+    return this.random() < CLUSTERED_SHARE ? this.nearACluster(clusters, spread) : this.anywhere();
+  }
+
+  /** Os clusters da composição: três ao longo da diagonal marca → centro → login, um no canto inferior esquerdo. */
+  private clustersAlong(zone: CompositionZone): Point[] {
+    const jitter = Math.min(this.width, this.height) * 0.06;
+    const centers = [0.4, 0.55, 0.7].map((t) => zone.along(t));
+    const brandBottom = zone.brand.y + zone.brand.height;
+    centers.push({
+      x: zone.brand.x + zone.brand.width * 0.35,
+      y: brandBottom + (this.height - brandBottom) * 0.45,
+    });
+    return centers.map((center) =>
+      this.clamp({
+        x: center.x + (this.random() - 0.5) * jitter,
+        y: center.y + (this.random() - 0.5) * jitter,
+      }),
+    );
   }
 
   private clusterCenters(): Point[] {

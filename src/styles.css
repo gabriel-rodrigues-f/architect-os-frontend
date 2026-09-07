@@ -554,31 +554,87 @@
 
 /*
   Telas de porta (login, primeiro acesso, senha nova) — a composição "Synapse
-  Network" (direção 2026-09-06). O cartão é superfície escura própria: borda
-  fina, sombra suave e blur leve — nada de glassmorphism. Os campos ganham
-  hover, anel do primário no foco e borda do destrutivo no erro. A entrada da
-  página (fundo → rede → marca → cartão) fecha em menos de 700 ms e é só
-  opacidade/transformação: nunca bloqueia a digitação; com movimento reduzido
-  não há animação nenhuma.
+  Network" (direção 2026-09-06), refinada em 2026-09-07. O dono: "a distância
+  entre branding e forms e o fato de estarem nas extremidades me incomoda".
+  Correção estrutural, sem hack: um container central (`auth-stage`) com
+  respiro lateral por clamp e largura máxima, e dentro dele um grid
+  (`auth-grid`) de duas colunas com gap limitado — em 1920 e 2560 os blocos
+  não vão para os cantos e a distância entre eles para de crescer. A rede fica
+  FORA do container, na viewport inteira. O centro visual fica um pouco acima
+  do meio: o respiro de baixo é maior que o de cima.
+
+  Dentro do container o primário volta a ser o azul da identidade — o tema
+  escuro tem primário quase branco, e o CTA "Entrar" precisa ser azul. A rede
+  (irmã do container) continua lendo o primário do escuro.
+
+  O cartão é superfície escura própria: borda fina, sombra suave e blur leve —
+  nada de glassmorphism. Os campos ganham hover, anel do primário no foco e
+  borda do destrutivo no erro. A entrada da página (fundo → rede → marca →
+  cartão) fecha em menos de 700 ms e é só opacidade/transformação: nunca
+  bloqueia a digitação; com movimento reduzido não há animação nenhuma.
 */
+@utility auth-stage {
+  position: relative;
+  z-index: 10;
+  width: calc(100% - clamp(64px, 10vw, 96px));
+  max-width: 1320px;
+  margin-inline: auto;
+  --primary: oklch(0.55 0.15 235);
+  --primary-foreground: oklch(0.99 0.005 240);
+  --ring: oklch(0.62 0.13 235);
+  @media (width >= 1024px) and (width < 1440px) {
+    width: calc(100% - 64px);
+  }
+}
+
+/*
+  Uma coluna abaixo de 768 (marca, frase, login); de 768 a 1023 duas colunas
+  se couber, com a marca compacta; de 1024 em diante a proporção 1.1/0.9 com
+  o cartão nunca abaixo de 400; de 1440 em diante o gap acompanha a largura
+  até 120 px — e para ali.
+*/
+@utility auth-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  align-content: center;
+  min-height: 100svh;
+  padding-block-start: clamp(40px, 8svh, 88px);
+  padding-block-end: clamp(64px, 14svh, 160px);
+  @media (width >= 768px) {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+    gap: 40px;
+  }
+  @media (width >= 1024px) {
+    grid-template-columns: minmax(0, 1.1fr) minmax(400px, 0.9fr);
+    gap: 64px;
+  }
+  @media (width >= 1440px) {
+    gap: clamp(64px, 7vw, 120px);
+  }
+}
+
 @utility auth-card {
+  width: min(460px, 100%);
+  padding: 2rem;
   background-color: color-mix(in oklch, var(--color-card) 88%, transparent);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: 0 24px 60px -24px oklch(0 0 0 / 55%);
   backdrop-filter: blur(6px);
+  @media (width >= 640px) {
+    padding: 2.25rem;
+  }
 }
 
 @utility auth-field {
+  height: 2.75rem;
   transition:
     border-color var(--motion-fast) var(--motion-ease),
     box-shadow var(--motion-fast) var(--motion-ease);
   &:hover:not(:disabled) {
     border-color: color-mix(in oklch, var(--color-foreground) 35%, transparent);
-  }
-  &:focus-visible {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-primary) 45%, transparent);
   }
   &[aria-invalid="true"] {
     border-color: var(--color-destructive);
@@ -590,9 +646,6 @@
     background-color var(--motion-fast) var(--motion-ease),
     transform var(--motion-fast) var(--motion-ease),
     box-shadow var(--motion-fast) var(--motion-ease);
-  &:hover:not(:disabled) {
-    box-shadow: 0 8px 24px -12px var(--color-primary);
-  }
   &:active:not(:disabled) {
     transform: translateY(1px);
   }
@@ -601,6 +654,50 @@
       0 0 0 2px var(--color-background),
       0 0 0 4px var(--color-primary);
   }
+}
+
+/*
+  Os estados que precisam VENCER as variantes das primitivas ficam fora das
+  camadas de propósito: `Input` traz `focus-visible:ring-1` e `Button` traz
+  `hover:bg-primary/90`, ambos emitidos depois das utilities da casa na
+  mesma camada e com a mesma especificidade — o anel de 2 px da versão
+  anterior nunca chegou à tela por isso. Regra sem camada vence qualquer
+  camada; é o mecanismo do CSS, não um `!important`.
+*/
+.auth-field:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 8%, transparent);
+}
+
+.auth-cta:hover:not(:disabled) {
+  background-color: color-mix(in oklch, var(--color-primary) 88%, var(--color-foreground));
+  box-shadow: 0 8px 24px -12px var(--color-primary);
+}
+
+/*
+  O aviso de erro das telas de porta (`AuthAlert`): destrutivo dessaturado no
+  texto, fundo quase transparente, borda fina, ícone discreto — e nunca um
+  terceiro foco.
+*/
+@utility auth-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in oklch, var(--color-destructive) 30%, transparent);
+  background-color: color-mix(in oklch, var(--color-destructive) 6%, transparent);
+  color: color-mix(in oklch, var(--color-destructive) 70%, var(--color-foreground));
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+}
+
+@utility auth-alert-icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.125rem;
+  opacity: 0.8;
 }
 
 @utility auth-link {

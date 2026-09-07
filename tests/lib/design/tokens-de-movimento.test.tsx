@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Bloco, folhaDeEstilo as css } from "../../helpers/folha-de-estilo";
 
 /**
  * Referência FIAP 2026-09-06, §2 item 6: "transições de 200–300 ms em todo
@@ -14,32 +15,6 @@ import { Button } from "@/components/ui/button";
  * `transition-base`, não um número. Com `prefers-reduced-motion`, as durações
  * vão a zero no CSS — quem respeita o token respeita a preferência de graça.
  */
-
-const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
-
-class Bloco {
-  constructor(private readonly corpo: string) {}
-
-  static de(seletor: string): Bloco {
-    const inicio = css.indexOf(seletor);
-    if (inicio === -1) return new Bloco("");
-    let profundidade = 0;
-    for (let cursor = css.indexOf("{", inicio); cursor < css.length; cursor += 1) {
-      if (css[cursor] === "{") profundidade += 1;
-      if (css[cursor] === "}") profundidade -= 1;
-      if (profundidade === 0) return new Bloco(css.slice(inicio, cursor + 1));
-    }
-    return new Bloco(css.slice(inicio));
-  }
-
-  declara(propriedade: string, valor: string): boolean {
-    return new RegExp(`${propriedade}:\\s*${valor.replace(/[()]/g, "\\$&")}`).test(this.corpo);
-  }
-
-  get existe(): boolean {
-    return this.corpo.length > 0;
-  }
-}
 
 afterEach(cleanup);
 

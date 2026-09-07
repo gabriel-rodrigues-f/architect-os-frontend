@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AuthScreenShell } from "@/components/app/AuthScreenShell";
 import { PasswordChoiceFields } from "@/components/app/PasswordChoiceFields";
 import { PasswordInput } from "@/components/app/PasswordInput";
+import { AuthAlert } from "@/components/app/AuthAlert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { usePasswordChoice } from "@/hooks";
@@ -97,14 +98,7 @@ export function FirstAccessScreen() {
 
         <PasswordChoiceFields choice={choice} />
 
-        {error !== null && (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        )}
+        {error !== null && <AuthAlert>{error}</AuthAlert>}
 
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? t("firstAccess.submitting") : t("firstAccess.submit")}

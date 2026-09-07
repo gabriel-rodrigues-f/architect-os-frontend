@@ -3,6 +3,7 @@ export * from "./ai-shared";
 export * from "./AiExplanation";
 export * from "./AccessRecoveryRequestPanel";
 export * from "./AppShell";
+export * from "./AuthAlert";
 export * from "./AuthScreenShell";
 export * from "./SynapseBackground";
 export * from "./PersonCombobox";

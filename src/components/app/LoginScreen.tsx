@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AccessRecoveryRequestPanel } from "@/components/app/AccessRecoveryRequestPanel";
 import { AuthScreenShell } from "@/components/app/AuthScreenShell";
 import { PasswordInput } from "@/components/app/PasswordInput";
+import { AuthAlert } from "@/components/app/AuthAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -157,14 +158,7 @@ export function LoginScreen() {
           )}
         </div>
 
-        {error && (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        )}
+        {error && <AuthAlert>{error}</AuthAlert>}
 
         <Button
           type="submit"
@@ -190,7 +184,7 @@ export function LoginScreen() {
             setMode("recovery");
             setError(null);
           }}
-          className="auth-link mt-5 w-full text-center text-xs text-muted-foreground"
+          className="auth-link mt-3 w-full text-center text-xs text-muted-foreground"
         >
           {t("accessRecovery.request.link")}
         </button>

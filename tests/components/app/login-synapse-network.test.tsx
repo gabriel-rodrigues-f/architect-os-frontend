@@ -79,9 +79,9 @@ describe("LoginScreen — a composição Synapse Network", () => {
     const marca = screen.getByRole("region", { name: "Synapse" });
     expect(marca.textContent).toContain("Synapse");
     expect(marca.textContent).toContain("Desenvolvimento de Capacidades");
-    expect(marca.textContent).toContain(
-      "Conecte conhecimento. Desenvolva capacidades. Evolua pessoas.",
-    );
+    for (const linha of ["Conecte conhecimento.", "Desenvolva capacidades.", "Evolua pessoas."]) {
+      expect(marca.textContent).toContain(linha);
+    }
   });
 
   it("o cartão traz a headline e o convite com as credenciais corporativas", async () => {

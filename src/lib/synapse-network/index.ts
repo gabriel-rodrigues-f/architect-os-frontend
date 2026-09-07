@@ -1,5 +1,10 @@
 export { SynapseSignals } from "./signals";
-export { NetworkComposition, PLANE_STYLE, SynapseNetwork } from "./synapse-network";
+export {
+  CompositionZone,
+  NetworkComposition,
+  PLANE_STYLE,
+  SynapseNetwork,
+} from "./synapse-network";
 export type {
   DeviceClass,
   NetworkLink,

@@ -4,6 +4,8 @@ import { SynapseBackground } from "@/components/app/SynapseBackground";
 import { useI18n } from "@/lib/i18n";
 import { SynapseSignals } from "@/lib/synapse-network";
 
+const BRAND_LINES = ["login.brand.line1", "login.brand.line2", "login.brand.line3"] as const;
+
 /**
  * A CASCA DAS TELAS DE PORTA — a rede de sinapses ao fundo, a marca em
  * hierarquia e o cartão em volta do formulário.
@@ -11,12 +13,29 @@ import { SynapseSignals } from "@/lib/synapse-network";
  * Ela já existia três vezes copiada: `LoginScreen`, `FirstAccessScreen` e
  * `SetPasswordScreen`. Regra da casa: o que serve a 2 lugares vira componente.
  * Com o login "Synapse Network" (direção 2026-09-06) ela virou a composição
- * inteira: desktop ~55/45 com a marca à esquerda e o cartão à direita; mobile
- * empilhado, com o cartão logo abaixo da marca compacta.
+ * inteira; com o refino de 2026-09-07 ela ganhou estrutura. O dono: "a
+ * distância entre branding e forms e o fato de estarem nas extremidades me
+ * incomoda". A resposta é composição, não redesenho:
+ *
+ *   - a rede continua na viewport inteira (é irmã do container, não filha);
+ *   - o conteúdo vive num container central (`auth-stage`: largura com
+ *     respiro lateral por clamp, máximo de 1320 px, margem automática);
+ *   - dentro dele, um grid (`auth-grid`) de duas colunas com gap limitado —
+ *     em 1920 e 2560 os blocos não vão para os cantos, e a distância entre
+ *     eles para de crescer; abaixo de 768 é uma coluna: marca, frase, login;
+ *   - o centro visual fica um pouco acima do meio (o respiro de baixo é
+ *     maior do que o de cima). Nada de `justify-content: space-between` na
+ *     viewport, nada de posição absoluta, translate ou margem negativa.
+ *
+ * A rede recebe a zona de composição — os retângulos da marca (`brandRef`) e
+ * do cartão (`cardRef`) — e concentra os nós entre os dois blocos, costurando
+ * os lados (`CompositionZone`).
  *
  * A composição é sempre escura (`dark`), qualquer que seja o tema do resto
  * da aplicação: o fundo azul-escuro é a assinatura, e a rede lê as cores dos
- * tokens do próprio elemento — por isso recebe as do escuro.
+ * tokens do próprio elemento — por isso recebe as do escuro. Dentro do
+ * container, porém, o primário volta a ser o azul da identidade (o escuro
+ * tem primário quase branco): o CTA é azul, e a rede fica com o branco.
  *
  * Ela não sabe de sessão de propósito. `SetPasswordScreen` é alcançada SEM
  * sessão — escapa do `AuthGate` do `__root` —, então a casca não pode
@@ -36,6 +55,7 @@ export function AuthScreenShell({
   const [ownSignals] = useState(() => new SynapseSignals());
   const network = signals ?? ownSignals;
   const cardRef = useRef<HTMLDivElement>(null);
+  const brandRef = useRef<HTMLDivElement>(null);
 
   const onCardFocus = () => network.emphasize(true);
   const onCardBlur = (event: FocusEvent<HTMLDivElement>) => {
@@ -44,32 +64,39 @@ export function AuthScreenShell({
 
   return (
     <div className="dark relative min-h-screen overflow-hidden bg-background text-foreground">
-      <SynapseBackground signals={network} focalRef={cardRef} />
+      <SynapseBackground signals={network} focalRef={cardRef} brandRef={brandRef} />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] flex-col gap-8 px-6 py-10 sm:px-10 lg:flex-row lg:items-center lg:gap-12 lg:px-16">
-        <section
-          aria-label="Synapse"
-          className="auth-rise flex flex-col justify-center lg:basis-[55%]"
-          style={{ "--auth-delay": "120ms" } as CSSProperties}
-        >
-          <p className="font-display text-3xl font-semibold uppercase tracking-[0.28em] text-foreground sm:text-4xl lg:text-5xl">
-            Synapse
-          </p>
-          <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground sm:text-base sm:tracking-[0.16em]">
-            {t("login.subtitle")}
-          </p>
-          <p className="mt-6 hidden max-w-md text-balance text-lg leading-relaxed text-foreground/80 sm:block lg:text-xl">
-            {t("login.brand.phrase")}
-          </p>
-        </section>
+      <div data-testid="auth-stage" className="auth-stage">
+        <div data-testid="auth-grid" className="auth-grid">
+          <section
+            aria-label="Synapse"
+            className="auth-rise flex flex-col justify-center"
+            style={{ "--auth-delay": "120ms" } as CSSProperties}
+          >
+            {/* A medida da marca é o bloco de texto (w-fit), não a coluna inteira: o vão real começa onde o texto acaba. */}
+            <div ref={brandRef} className="w-fit">
+              <p className="font-display text-3xl font-semibold uppercase tracking-[0.28em] text-foreground sm:text-4xl lg:text-5xl">
+                Synapse
+              </p>
+              <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground sm:text-base sm:tracking-[0.16em]">
+                {t("login.subtitle")}
+              </p>
+              <p className="mt-6 hidden max-w-md text-lg leading-relaxed text-foreground/80 sm:block lg:text-xl">
+                {BRAND_LINES.map((line) => (
+                  <span key={line} data-testid="auth-brand-line" className="block">
+                    {t(line)}
+                  </span>
+                ))}
+              </p>
+            </div>
+          </section>
 
-        <div className="flex justify-center lg:basis-[45%] lg:justify-end">
           <div
             ref={cardRef}
             onFocus={onCardFocus}
             onBlur={onCardBlur}
             data-testid="auth-card"
-            className="auth-rise auth-card w-full max-w-[440px] p-8 sm:p-10"
+            className="auth-rise auth-card justify-self-center md:justify-self-start"
             style={{ "--auth-delay": "220ms" } as CSSProperties}
           >
             {children}
