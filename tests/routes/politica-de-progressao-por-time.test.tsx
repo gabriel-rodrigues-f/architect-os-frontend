@@ -13,6 +13,7 @@ import {
   fixtureAdminUser,
   fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
+  fixtureSupportUser,
 } from "../helpers/fixtures";
 import {
   NIVEL_JUNIOR,
@@ -226,9 +227,27 @@ describe("Política de Progressão leva em consideração o time selecionado", (
     expect((within(linha).getByRole("spinbutton") as HTMLInputElement).value).toBe("5");
   });
 
-  it("o admin lê o agregado sem seletor de time e sem Editar — a régua não é dele (D1)", async () => {
+  it("a diretoria escolhe qualquer time e edita a régua dele — ela faz tudo (regra 6, 2026-09-08)", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
+      state: doisTimesDivergem(),
+      routes: [niveisDeCarreiraRoute, doisTimesRoute, reguasDeIntegracoesRoute],
+    });
+    renderWithApp(<SettingsPage />);
+
+    const celula = await celulaDoMinimo();
+    expect(celula.textContent).toContain("3");
+    expect(celula.textContent).toContain("5");
+    expect(within(await linhaDoNivel()).queryByRole("button", { name: "Editar" })).toBeNull();
+
+    await escolherTime("Integrações");
+
+    expect(within(await linhaDoNivel()).getByRole("button", { name: "Editar" })).toBeTruthy();
+  });
+
+  it("o suporte lê o agregado sem seletor de time e sem Editar — a régua não é dele (D1)", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureSupportUser,
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });

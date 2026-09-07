@@ -96,8 +96,9 @@ describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organi
     expect(await navegarComoUsuario(fixtureAdminUser, href)).toBe(href);
   });
 
-  it("ADMIN não calibra — calibração é rito do gerente com vínculo (D1)", async () => {
-    expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/");
+  it("ADMIN calibra — a diretoria faz tudo (regra 6, 2026-09-08); o suporte não", async () => {
+    expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/calibration");
+    expect(await navegarComoUsuario(fixtureSupportUser, "/calibration")).toBe("/");
   });
 });
 
@@ -118,8 +119,8 @@ describe("guardas de navegação das telas administrativas", () => {
     expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, "/calibration")).toBe("/");
   });
 
-  it("nega /calibration ao admin — calibração é rito de gestão (D1, 2026-09-05)", async () => {
-    expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/");
+  it("nega /calibration ao suporte — calibração é rito de gestão, e o suporte opera o sistema", async () => {
+    expect(await navegarComoUsuario(fixtureSupportUser, "/calibration")).toBe("/");
   });
 
   it("abre /calibration para o gerente", async () => {
@@ -302,8 +303,9 @@ describe("requireCalibrationReach — a guarda da leitura de calibração", () =
     expect(await alcancaCalibracao(gestorSemVinculo)).toBe(false);
   });
 
-  it("nega o admin — a calibração é do gerente (D1)", async () => {
-    expect(await alcancaCalibracao(fixtureAdminUser)).toBe(false);
+  it("deixa passar a diretoria (regra 6) e nega o suporte", async () => {
+    expect(await alcancaCalibracao(fixtureAdminUser)).toBe(true);
+    expect(await alcancaCalibracao(fixtureSupportUser)).toBe(false);
   });
 });
 

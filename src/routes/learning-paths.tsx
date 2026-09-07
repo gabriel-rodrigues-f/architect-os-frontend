@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 import { useServerDraft, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
@@ -82,13 +81,11 @@ function LearningScreen() {
       return next;
     });
 
-  const canCreatePath = defaultUiAuthorizationPolicy.isLeadership(user);
+  // Regra 6 (dono, 2026-09-08): quem lidera cria e edita a sua; a diretoria, qualquer uma; o suporte, nenhuma.
+  const canCreatePath = defaultUiAuthorizationPolicy.createsLearningPath(user);
 
-  const canEdit = (path: LearningPath) => {
-    if (defaultUiAuthorizationPolicy.operatesTheSystem(user)) return true;
-    if (path.createdByUserId) return path.createdByUserId === user.id;
-    return TeamLeadershipRoles.includes(user.role);
-  };
+  const canEdit = (path: LearningPath) =>
+    defaultUiAuthorizationPolicy.editsLearningPath(user, path);
 
   // A exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha é do profissional.
   const canEditProgress = (architectId: string) =>

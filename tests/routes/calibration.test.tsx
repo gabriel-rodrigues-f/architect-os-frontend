@@ -10,6 +10,7 @@ import {
   fixtureAdminUser,
   fixtureAssignedManagerUser,
   fixtureMemberUser,
+  fixtureSupportUser,
   fixtureUnassignedTechLeadUser,
   fixtureState,
   scopedFixtureStateFor,
@@ -194,8 +195,15 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
     expect(screen.queryByText("Marina Lopes")).toBeNull();
   });
 
-  it("D1 (dono, 2026-09-05): o admin não recebe a tela — ele administra o sistema, não calibra pessoas", async () => {
+  it("regra 6 (dono, 2026-09-08): a diretoria recebe a tela inteira — ela faz tudo", async () => {
     renderAs(fixtureAdminUser);
+    expect(await screen.findByText("Marina Lopes")).toBeTruthy();
+    expect(screen.getByText("Média geral")).toBeTruthy();
+    expect(screen.queryByText("Calibração é do gerente do time.")).toBeNull();
+  });
+
+  it("D1 (dono, 2026-09-05): o suporte não recebe a tela — ele opera o sistema, não calibra pessoas", async () => {
+    renderAs(fixtureSupportUser);
     expect(await screen.findByText("Calibração é do gerente do time.")).toBeTruthy();
     expect(screen.queryByText("Marina Lopes")).toBeNull();
     expect(screen.queryByText("Média geral")).toBeNull();
@@ -249,10 +257,16 @@ describe("/calibration não CONSULTA para quem não calibra — o `enabled` é p
     renderWithApp(<CalibrationPage />);
   };
 
-  it("D1 (dono, 2026-09-05): admin: a consulta não sai — o admin não calibra", async () => {
-    renderAs(fixtureAdminUser);
+  it("D1 (dono, 2026-09-05): suporte: a consulta não sai — o suporte não calibra", async () => {
+    renderAs(fixtureSupportUser);
     await screen.findByText("Calibração é do gerente do time.");
     expect(calibrationSpy).not.toHaveBeenCalled();
+  });
+
+  it("regra 6: para a diretoria a consulta SAI, com o ciclo ativo", async () => {
+    renderAs(fixtureAdminUser);
+    await screen.findByText("Marina Lopes");
+    expect(calibrationSpy).toHaveBeenCalledWith("2026-h2");
   });
 
   it("member: a consulta não sai — nem para o ciclo ativo, nem para nenhum outro", async () => {

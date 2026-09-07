@@ -133,6 +133,28 @@ describe("Usuários — desativar é um ato só, e ativar é o mesmo ato de volt
     expect(screen.queryByRole("button", { name: "Ativar Admin de teste" })).toBeNull();
   });
 
+  /** Regra 6 (dono, 2026-09-08): "o administrador precisa poder desativar normalmente qualquer outro usuário". */
+  it("a diretoria desativa qualquer outra conta — outro ADMIN e o suporte inclusive; só não a própria", async () => {
+    const outraDiretora: SessionUser = {
+      ...fixtureAdminUser,
+      id: "conta-outra-diretora",
+      name: "Outra Diretora",
+    };
+    const suporte: SessionUser = {
+      ...fixtureAdminUser,
+      id: "conta-suporte",
+      name: "Suporte da Casa",
+      role: "support",
+    };
+    renderUsers([fixtureAdminUser, outraDiretora, suporte, contaDaAna]);
+    await screen.findByText("Ana Martins");
+
+    expect(screen.getByRole("button", { name: "Desativar Outra Diretora" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Desativar Suporte da Casa" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Desativar Ana Martins" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Desativar Admin de teste" })).toBeNull();
+  });
+
   it("conta desabilitada: Editar fica desabilitado até ser reativada", async () => {
     renderUsers([fixtureAdminUser, { ...contaDaAna, status: "disabled" }], {
       ...ana,

@@ -24,11 +24,27 @@ describe("UiAuthorizationPolicy", () => {
   const anaInLedTeam = { id: "ana", teamId: "time-plataforma" };
 
   describe("canActFor", () => {
-    it("admin NÃO age por ninguém — administra o sistema, não as pessoas (D1, 2026-09-05)", () => {
-      expect(policy.canActFor(fixtureAdminUser, anaAsArchitect)).toBe(false);
-      expect(policy.canActFor(fixtureAdminUser, anaInLedTeam)).toBe(false);
-      // Só LÊ, em modo de suporte — a tela pede o motivo antes de abrir a ficha.
+    it("a diretoria (ADMIN) age por qualquer pessoa, com ou sem time — ela faz tudo (dono, 2026-09-08, regra 6)", () => {
+      expect(policy.canActFor(fixtureAdminUser, anaAsArchitect)).toBe(true);
+      expect(policy.canActFor(fixtureAdminUser, anaInLedTeam)).toBe(true);
       expect(policy.canReadAbout(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.actsForTheOrganization(fixtureAdminUser)).toBe(true);
+    });
+
+    it("o suporte NÃO age por ninguém — opera o sistema, não as pessoas (D1, 2026-09-05)", () => {
+      expect(policy.canActFor(fixtureSupportUser, anaAsArchitect)).toBe(false);
+      expect(policy.canActFor(fixtureSupportUser, anaInLedTeam)).toBe(false);
+      expect(policy.actsForTheOrganization(fixtureSupportUser)).toBe(false);
+      // Só LÊ, em modo de suporte — a tela pede o motivo antes de abrir a ficha.
+      expect(policy.canReadAbout(fixtureSupportUser, anaInLedTeam)).toBe(true);
+    });
+
+    it("o limite de todos vale para a diretoria: não age sobre si", () => {
+      const diretoraComFicha = { ...fixtureAdminUser, architectId: "ana" };
+      expect(policy.canActFor(diretoraComFicha, anaInLedTeam)).toBe(false);
+      expect(policy.isLeadOf(diretoraComFicha, anaInLedTeam)).toBe(false);
+      expect(policy.decidesCareerOf(diretoraComFicha, anaInLedTeam)).toBe(false);
+      expect(policy.canActFor(diretoraComFicha, { id: "bruno", teamId: null })).toBe(true);
     });
 
     it("ninguém age sobre si — nem o profissional (dono, 2026-09-06): a autoavaliação, a evidência e o PDI dele são registrados por quem o lidera", () => {
@@ -77,9 +93,11 @@ describe("UiAuthorizationPolicy", () => {
   });
 
   describe("isLeadOf", () => {
-    it("admin não é líder de ninguém (D1)", () => {
-      expect(policy.isLeadOf(fixtureAdminUser, anaAsArchitect)).toBe(false);
-      expect(policy.isLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(false);
+    it("a diretoria lidera qualquer pessoa (regra 6); o suporte, ninguém (D1)", () => {
+      expect(policy.isLeadOf(fixtureAdminUser, anaAsArchitect)).toBe(true);
+      expect(policy.isLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.isLeadOf(fixtureSupportUser, anaAsArchitect)).toBe(false);
+      expect(policy.isLeadOf(fixtureSupportUser, anaInLedTeam)).toBe(false);
     });
 
     it("a própria pessoa NÃO é lead de si mesma", () => {
@@ -141,8 +159,11 @@ describe("UiAuthorizationPolicy", () => {
   });
 
   describe("isAssignedTechLeadOf", () => {
-    it("NÃO tem bypass de admin — reabertura de PDI é só do Tech Lead responsável", () => {
-      expect(policy.isAssignedTechLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(false);
+    it("a diretoria dispensa o vínculo estrito (regra 6); o suporte não tem bypass — reabertura de PDI é do Tech Lead responsável", () => {
+      expect(policy.isAssignedTechLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.isAssignedManagerOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.isAssignedTechLeadOf(fixtureSupportUser, anaInLedTeam)).toBe(false);
+      expect(policy.isAssignedManagerOf(fixtureSupportUser, anaInLedTeam)).toBe(false);
     });
 
     it("o Tech Lead COM vínculo naquele time responde true", () => {
@@ -189,12 +210,35 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canReadPersonnelFileOf(fixtureSupportUser, anaInLedTeam)).toBe(true);
     });
 
-    it("nenhum dos dois age sobre pessoas nem lidera alguém", () => {
-      for (const conta of [fixtureAdminUser, fixtureSupportUser]) {
-        expect(policy.canActFor(conta, anaInLedTeam), conta.role).toBe(false);
-        expect(policy.isLeadOf(conta, anaInLedTeam), conta.role).toBe(false);
-        expect(policy.canCalibrate(conta), conta.role).toBe(false);
-      }
+    it("ADMIN age, lidera, calibra, decide, agenda follow-up e edita trilha; SUPPORT nada disso (regra 6)", () => {
+      expect(policy.canActFor(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.isLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.canCalibrate(fixtureAdminUser)).toBe(true);
+      expect(policy.decidesCareerOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.managesTeam(fixtureAdminUser, "time-plataforma")).toBe(true);
+      expect(policy.schedulesMentoringFollowUpOf(fixtureAdminUser, { mentorUserId: "x" })).toBe(
+        true,
+      );
+      expect(policy.createsLearningPath(fixtureAdminUser)).toBe(true);
+      expect(policy.editsLearningPath(fixtureAdminUser, { createdByUserId: "x" })).toBe(true);
+      expect(policy.mentorableBy(fixtureAdminUser, [anaInLedTeam, anaAsArchitect])).toEqual([
+        anaInLedTeam,
+        anaAsArchitect,
+      ]);
+      expect(policy.assessableBy(fixtureAdminUser, [anaInLedTeam])).toEqual([anaInLedTeam]);
+
+      expect(policy.canActFor(fixtureSupportUser, anaInLedTeam)).toBe(false);
+      expect(policy.isLeadOf(fixtureSupportUser, anaInLedTeam)).toBe(false);
+      expect(policy.canCalibrate(fixtureSupportUser)).toBe(false);
+      expect(policy.decidesCareerOf(fixtureSupportUser, anaInLedTeam)).toBe(false);
+      expect(policy.managesTeam(fixtureSupportUser, "time-plataforma")).toBe(false);
+      expect(policy.schedulesMentoringFollowUpOf(fixtureSupportUser, { mentorUserId: "x" })).toBe(
+        false,
+      );
+      expect(policy.createsLearningPath(fixtureSupportUser)).toBe(false);
+      expect(policy.editsLearningPath(fixtureSupportUser, { createdByUserId: null })).toBe(false);
+      expect(policy.mentorableBy(fixtureSupportUser, [anaInLedTeam])).toEqual([]);
+      expect(policy.assessableBy(fixtureSupportUser, [anaInLedTeam])).toEqual([]);
     });
 
     it("ADMIN lê a organização: análise de time, Avaliações, PDI e Mentoria sem vínculo; SUPPORT sem vínculo não", () => {
@@ -204,13 +248,14 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.worksWithPeople(fixtureSupportUser)).toBe(false);
     });
 
-    it("os dois administram contas e times, alcançam todos os times e admitem qualquer cargo", () => {
+    it("os dois administram contas e times e alcançam todos os times; só a diretoria decide carreira", () => {
       for (const conta of [fixtureAdminUser, fixtureSupportUser]) {
         expect(policy.canAdministerPeople(conta), conta.role).toBe(true);
         expect(policy.configurableTeamIds(conta), conta.role).toBe("all");
         expect(policy.composableTeamIds(conta), conta.role).toBe("all");
-        expect(policy.decidesCareerOf(conta, anaInLedTeam), conta.role).toBe(true);
       }
+      expect(policy.decidesCareerOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.decidesCareerOf(fixtureSupportUser, anaInLedTeam)).toBe(false);
     });
 
     it("Métricas da Plataforma: todos menos o member (adendo 5, 2026-09-08)", () => {
@@ -307,9 +352,11 @@ describe("canConfigureRulesOf — o dono da régua do time", () => {
     expect(policy.canConfigureRulesOf(gerente, OUTRO_TIME)).toBe(true);
   });
 
-  it("NEGA para admin — a régua é regida por quem lidera o time; o admin a lê (revisão de papéis, 2026-09-05)", () => {
-    expect(policy.canConfigureRulesOf(fixtureAdminUser, TIME)).toBe(false);
-    expect(policy.canConfigureRulesOf(fixtureAdminUser, OUTRO_TIME)).toBe(false);
+  it("CONCEDE para a diretoria em qualquer time (regra 6); NEGA para o suporte, que só lê", () => {
+    expect(policy.canConfigureRulesOf(fixtureAdminUser, TIME)).toBe(true);
+    expect(policy.canConfigureRulesOf(fixtureAdminUser, OUTRO_TIME)).toBe(true);
+    expect(policy.canConfigureRulesOf(fixtureSupportUser, TIME)).toBe(false);
+    expect(policy.canConfigureRulesOf(fixtureSupportUser, OUTRO_TIME)).toBe(false);
   });
 });
 

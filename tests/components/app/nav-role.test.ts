@@ -95,16 +95,13 @@ describe("AppShell — navegação recortada por papel", () => {
     expect(paths).not.toContain("/capability-map");
   });
 
-  it("ADMIN (diretoria) vê o que o gerente vê — Gestão, Inteligência de Talentos, Crescimento, Modelo de Carreira — MAIS a Administração, e não a calibração", () => {
+  it("ADMIN (diretoria) vê TUDO o que o gerente vê — calibração inclusa (regra 6) — MAIS a Administração", () => {
     const paths = destinosDe(fixtureAdminUser);
-    const doGerente = destinosDe(fixtureAssignedManagerUser).filter(
-      (path) => path !== "/calibration",
-    );
-    for (const path of doGerente) expect(paths, path).toContain(path);
+    for (const path of destinosDe(fixtureAssignedManagerUser)) expect(paths, path).toContain(path);
     expect(paths).toContain("/competency-matrix");
     expect(paths).toContain("/users");
     expect(paths).toContain("/teams");
-    expect(paths).not.toContain("/calibration");
+    expect(paths).toContain("/calibration");
   });
 
   it("Métricas da Plataforma aparece para admin, support, gerente e tech lead — só o member não vê (adendo 5)", () => {

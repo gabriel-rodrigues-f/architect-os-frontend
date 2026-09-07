@@ -12,6 +12,7 @@ import {
   fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
   fixtureMemberUser,
+  fixtureSupportUser,
   fixtureUnassignedTechLeadUser,
 } from "../../helpers/fixtures";
 
@@ -163,14 +164,24 @@ describe("AssessmentViewModel", () => {
       expect(result.canEditLeaderFinal).toBe(false);
     });
 
-    it("admin não é lead nem dono: não pontua; conclui só como correção de cadastro (D1/D3)", () => {
+    it("a diretoria (ADMIN) lidera qualquer pessoa: pontua e conclui (regra 6, 2026-09-08)", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "In Review" as const };
       const result = vm.permissionsFor(fixtureAdminUser, "ana", anaArchitect, assessment);
       expect(result.isSubject).toBe(false);
+      expect(result.isLead).toBe(true);
+      expect(result.canEditLeaderFinal).toBe(true);
+      expect(result.canComplete).toBe(true);
+    });
+
+    it("o suporte não é lead nem dono: não pontua nem conclui (D1/D3)", () => {
+      const { vm } = makeVm();
+      const assessment = { ...baseAssessment, status: "In Review" as const };
+      const result = vm.permissionsFor(fixtureSupportUser, "ana", anaArchitect, assessment);
+      expect(result.isSubject).toBe(false);
       expect(result.isLead).toBe(false);
       expect(result.canEditLeaderFinal).toBe(false);
-      expect(result.canComplete).toBe(true);
+      expect(result.canComplete).toBe(false);
     });
 
     it("os números de avaliação são da liderança E da própria pessoa (D2, dono, 2026-09-05)", () => {
