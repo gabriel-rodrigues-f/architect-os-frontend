@@ -26,12 +26,12 @@ import { exportTeamReportCsv } from "@/lib/team-report-csv";
 export const Route = createFileRoute("/progression")({
   head: () => ({
     meta: [
-      { title: "Progressão — Synapse" },
+      { title: "Prontidão para Progressão — Synapse" },
       {
         name: "description",
         content: "Mapa de calor de níveis e tabela de competências em evolução do time.",
       },
-      { property: "og:title", content: "Progressão — Synapse" },
+      { property: "og:title", content: "Prontidão para Progressão — Synapse" },
       {
         property: "og:description",
         content: "Mapa de calor e tabela de competências em evolução do time.",

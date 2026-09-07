@@ -64,7 +64,7 @@ describe("o mapa de calor mora em um lugar só", () => {
 
   it("o Painel do tech lead não desenha a matriz pessoa × capacidade — ela mora na Progressão", async () => {
     renderWithApp(<DashboardPage />);
-    await screen.findByText("Pendências do Lead");
+    await screen.findByText("Ações da Liderança");
 
     expect(screen.queryByTestId("heatmap-scroll")).toBeNull();
     expect(screen.queryByRole("columnheader", { name: "Profissional" })).toBeNull();
@@ -77,7 +77,7 @@ describe("o mapa de calor mora em um lugar só", () => {
       routes: [operationsOverviewRoute],
     });
     renderWithApp(<DashboardPage />);
-    await screen.findByText("Painel de operação");
+    await screen.findByText("Visão do Sistema");
 
     expect(await screen.findByText("Avaliações do ciclo por estado")).toBeTruthy();
     expect(screen.queryByTestId("heatmap-scroll")).toBeNull();

@@ -102,7 +102,7 @@ describe("menu — Grafana abre como âncora externa, não como rota do SPA", ()
       </ThemeProvider>,
     );
     // Todos os grupos nascem abertos (dono, 2026-09-06): o link já está ao alcance.
-    const links = await screen.findAllByRole("link", { name: "Grafana" });
+    const links = await screen.findAllByRole("link", { name: "Métricas da Plataforma" });
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
       // O href é o endereço configurado, e não um caminho fixo — ele muda com

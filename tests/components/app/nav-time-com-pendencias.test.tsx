@@ -113,14 +113,14 @@ describe("menu — badge de transferências a aprovar no item Time", () => {
 
   it("sem nada a aprovar, o badge não existe", async () => {
     montar(fixtureAssignedManagerUser, pendentes(0, 2));
-    await screen.findAllByText("Time");
+    await screen.findAllByText("Talentos do Time");
     await waitFor(() => expect(consultasDaCaixa().length).toBeGreaterThan(0));
     expect(screen.queryByLabelText(/a aprovar/)).toBeNull();
   });
 
   it("o tech lead nem consulta a caixa de transferências", async () => {
     montar(fixtureAssignedTechLeadUser, pendentes(3, 0));
-    await screen.findAllByText("Time");
+    await screen.findAllByText("Talentos do Time");
     expect(consultasDaCaixa()).toEqual([]);
     expect(screen.queryByLabelText(/a aprovar/)).toBeNull();
   });

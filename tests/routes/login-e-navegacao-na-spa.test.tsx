@@ -196,6 +196,8 @@ describe("login e navegação DENTRO da SPA — sem reload, que é como o usuár
     await usuario.click(screen.getByRole("button", { name: "Entrar" }));
 
     await waitFor(() => expect(screen.queryByLabelText("E-mail")).toBeNull());
-    expect(await screen.findByRole("link", { name: "Régua do Time" })).toBeTruthy();
+    expect(
+      await screen.findByRole("link", { name: "Perfil de Competências do Time" }),
+    ).toBeTruthy();
   });
 });

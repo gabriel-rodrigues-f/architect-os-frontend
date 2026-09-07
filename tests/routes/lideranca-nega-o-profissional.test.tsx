@@ -53,9 +53,9 @@ const TeamPage = TeamRoute.options.component as () => ReactNode;
 const SettingsPage = SettingsRoute.options.component as () => ReactNode;
 const CyclesPage = CyclesRoute.options.component as () => ReactNode;
 
-const TIME_VISAO_DE_LIDERANCA = "O Time é uma visão de liderança.";
-const POLITICA_LEITURA_DE_LIDERANCA = "A Política de Progressão é uma leitura de liderança.";
-const CICLOS_LEITURA_DE_LIDERANCA = "Os Ciclos de Desenvolvimento são uma leitura de liderança.";
+const TIME_VISAO_DE_LIDERANCA = "Talentos do Time é uma visão de liderança.";
+const POLITICA_LEITURA_DE_LIDERANCA = "Os Critérios de Progressão são uma leitura de liderança.";
+const CICLOS_LEITURA_DE_LIDERANCA = "Os Ciclos de Avaliação são uma leitura de liderança.";
 
 function pediu(caminho: string): boolean {
   return fetchMock.mock.calls.some(([entrada]) =>
@@ -129,7 +129,7 @@ describe("/settings nega o profissional — a tela é a última barreira", () =>
   it("o tech lead alcança a política — para os outros papéis nada muda", async () => {
     renderAs(fixtureAssignedTechLeadUser, <SettingsPage />);
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Política de Progressão" }),
+      await screen.findByRole("heading", { level: 1, name: "Critérios de Progressão" }),
     ).toBeTruthy();
     expect(screen.queryByText(POLITICA_LEITURA_DE_LIDERANCA)).toBeNull();
   });

@@ -80,7 +80,7 @@ test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo
   await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
   // Espera o login terminar antes de navegar — sem isto, `goto` corre
   // contra o POST de login ainda em voo e aterrissa deslogado.
-  await expect(page.getByText("Pendências do Lead")).toBeVisible();
+  await expect(page.getByText("Ações da Liderança")).toBeVisible();
 
   await page.goto("/mentoring");
   await page.getByRole("button", { name: "Registrar sessão" }).click();

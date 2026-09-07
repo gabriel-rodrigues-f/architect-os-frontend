@@ -236,7 +236,7 @@ test("Tech Lead pontua pela UI e conclui a avaliação", async ({ page, playwrig
   await scoreItems(lead, { leader: 2, final: 1 });
   await lead.dispose();
 
-  await login(page, LEAD_EMAIL, PASSWORD, "Pendências do Lead");
+  await login(page, LEAD_EMAIL, PASSWORD, "Ações da Liderança");
 
   await page.goto(`/assessments?architectId=${architectId}`);
   await expect(statusBar(page)).toContainText("Em revisão");
@@ -299,7 +299,7 @@ test("Member cria uma ação de PDI a partir do maior gap", async ({ page }) => 
 // liderado. A lacuna do profissional está relatada na fatia; o spec cobre o
 // caminho que a aplicação oferece hoje.
 test("Tech Lead registra uma evidência na ficha do liderado", async ({ page }) => {
-  await login(page, LEAD_EMAIL, PASSWORD, "Pendências do Lead");
+  await login(page, LEAD_EMAIL, PASSWORD, "Ações da Liderança");
 
   await page.goto(`/architects/${architectId}`);
   await expect(page.getByText("Evidências", { exact: true }).first()).toBeVisible();

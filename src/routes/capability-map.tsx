@@ -28,13 +28,13 @@ import { defaultNameFormatter } from "@/lib/text";
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
     meta: [
-      { title: "De quem o time depende — Synapse" },
+      { title: "Risco de Concentração — Synapse" },
       {
         name: "description",
         content:
           "Mapa das capacidades técnicas disponíveis no time, com risco de concentração e competências em evolução.",
       },
-      { property: "og:title", content: "De quem o time depende — Synapse" },
+      { property: "og:title", content: "Risco de Concentração — Synapse" },
       {
         property: "og:description",
         content:

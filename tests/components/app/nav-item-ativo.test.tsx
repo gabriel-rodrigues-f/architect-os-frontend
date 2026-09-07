@@ -85,19 +85,19 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
         </AppShell>
       </ThemeProvider>,
     );
-    await screen.findByRole("link", { name: "Painel" });
+    await screen.findByRole("link", { name: "Painel Executivo" });
   };
 
-  it("em /team-rules só a Régua do Time acende — 'Time' não é prefixo de caminho dela", async () => {
+  it("em /team-rules só o Perfil de Competências do Time acende — 'Talentos do Time' não é prefixo de caminho dele", async () => {
     await renderEm("/team-rules");
 
-    expect(itensAtivos()).toEqual(["Régua do Time"]);
+    expect(itensAtivos()).toEqual(["Perfil de Competências do Time"]);
   });
 
   it("em /team só o Time acende", async () => {
     await renderEm("/team");
 
-    expect(itensAtivos()).toEqual(["Time"]);
+    expect(itensAtivos()).toEqual(["Talentos do Time"]);
   });
 
   /**
@@ -111,16 +111,16 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
   it("na ficha de uma pessoa (/architects/ana) o Time acende", async () => {
     await renderEm("/architects/ana");
 
-    expect(itensAtivos()).toEqual(["Time"]);
+    expect(itensAtivos()).toEqual(["Talentos do Time"]);
   });
 
   it("nas abas da ficha (/architects/ana/evolution) o Time continua aceso", async () => {
     await renderEm("/architects/ana/evolution");
 
-    expect(itensAtivos()).toEqual(["Time"]);
+    expect(itensAtivos()).toEqual(["Talentos do Time"]);
   });
 
-  it("quem lidera e tem a própria ficha: na própria, só a aba do grupo Minha carreira (dono, 2026-09-06); na de outra pessoa, só Time", async () => {
+  it("quem lidera e tem a própria ficha: na própria, só a aba do grupo Minha carreira (dono, 2026-09-06); na de outra pessoa, só Talentos do Time", async () => {
     await renderEm("/architects/ana/roadmap", liderComArquiteto);
     expect(itensAtivos()).toEqual(["Roteiro"]);
     cleanup();
@@ -130,7 +130,7 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
     cleanup();
 
     await renderEm("/architects/bruno", liderComArquiteto);
-    expect(itensAtivos()).toEqual(["Time"]);
+    expect(itensAtivos()).toEqual(["Talentos do Time"]);
   });
 
   it("nenhuma rota do menu acende mais de um item, para nenhum papel", () => {

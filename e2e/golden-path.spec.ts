@@ -114,10 +114,10 @@ test("Admin — painel executivo, navegação restrita e diretório de usuários
 
   await expect(page.getByText("Painel de Capacidades")).toBeVisible();
 
-  await page.getByRole("link", { name: "Matriz de Competências" }).click();
+  await page.getByRole("link", { name: "Catálogo de Competências" }).click();
   await expect(page).toHaveURL(/\/competency-matrix/);
 
-  await page.getByRole("link", { name: "Usuários" }).click();
+  await page.getByRole("link", { name: "Contas e Acessos" }).click();
   await expect(page).toHaveURL(/\/users/);
   await expect(page.getByText(MEMBER_NAME, { exact: true })).toBeVisible();
   await expect(page.getByText(LEAD_NAME, { exact: true })).toBeVisible();
@@ -130,8 +130,8 @@ test("Member — Minha Evolução, navegação restrita e a própria ficha negad
   await expect(page.getByText(MEMBER_NAME).first()).toBeVisible();
 
   // Nav admin-only não aparece pra quem não é admin (QW-01/QW-02).
-  await expect(page.getByRole("link", { name: "Matriz de Competências" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Usuários" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Catálogo de Competências" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Contas e Acessos" })).toHaveCount(0);
 
   // Onda 31 (pedido do dono: o profissional não vê os próprios números): a
   // ficha de carreira dele é lida por quem o lidera. No acesso direto por
@@ -147,7 +147,7 @@ test("Member — Minha Evolução, navegação restrita e a própria ficha negad
 test("Lead — Pendências do Lead escopadas à própria liderança", async ({ page }) => {
   await login(page, LEAD_EMAIL, PASSWORD);
 
-  await expect(page.getByText("Pendências do Lead")).toBeVisible();
+  await expect(page.getByText("Ações da Liderança")).toBeVisible();
 
   // DUAS pessoas, não uma: pelo cadastro unificado (ADR-0084) o próprio Tech
   // Lead nasce com profissional no time que lidera — a liderança aparece no

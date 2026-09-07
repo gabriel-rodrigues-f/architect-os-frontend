@@ -64,13 +64,13 @@ export const Route = createFileRoute("/development-plans")({
   validateSearch: developmentPlansSearchSchema,
   head: () => ({
     meta: [
-      { title: "Planos de Desenvolvimento — Synapse" },
+      { title: "Plano Individual de Desenvolvimento (PDI) — Synapse" },
       {
         name: "description",
         content:
           "Plano de desenvolvimento individual: maiores gaps como ponto de partida, SMART goal e plano de ação escritos pela pessoa e pelo Tech Lead.",
       },
-      { property: "og:title", content: "Planos de Desenvolvimento — Synapse" },
+      { property: "og:title", content: "Plano Individual de Desenvolvimento (PDI) — Synapse" },
       {
         property: "og:description",
         content:

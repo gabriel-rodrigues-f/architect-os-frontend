@@ -66,17 +66,17 @@ const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode
   },
   {
     rota: "/training-needs",
-    titulo: "Necessidades de Treinamento do Time",
+    titulo: "Plano de Capacitação",
     Page: TrainingNeedsRoute.options.component as () => ReactNode,
   },
   {
     rota: "/capability-map",
-    titulo: "De quem o time depende",
+    titulo: "Risco de Concentração",
     Page: CapabilityMapRoute.options.component as () => ReactNode,
   },
   {
     rota: "/progression",
-    titulo: "Progressão do Time",
+    titulo: "Prontidão para Progressão",
     Page: ProgressionRoute.options.component as () => ReactNode,
   },
   {

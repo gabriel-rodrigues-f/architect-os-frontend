@@ -91,7 +91,7 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
     await screen.findByText("Minha Evolução");
     await screen.findByText("Meu PDI");
 
-    expect(screen.queryByText("Principais Prioridades de Desenvolvimento")).toBeNull();
+    expect(screen.queryByText("Prioridades de Desenvolvimento")).toBeNull();
     expect(screen.queryAllByText(NIVEL)).toEqual([]);
     expect(screen.queryAllByText(DISTANCIA)).toEqual([]);
   });
@@ -110,10 +110,10 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
 
   it("D1 (dono, 2026-09-05): o Painel do admin é de operação — sem prioridades do time, sem nível, sem distância", async () => {
     renderAs(fixtureAdminUser);
-    await screen.findByText("Painel de operação");
+    await screen.findByText("Visão do Sistema");
 
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect(screen.queryByText("Principais Prioridades de Desenvolvimento")).toBeNull();
+    expect(screen.queryByText("Prioridades de Desenvolvimento")).toBeNull();
     expect(screen.queryAllByText(NIVEL)).toEqual([]);
     expect(screen.queryAllByText(DISTANCIA)).toEqual([]);
     expect(await screen.findByText("Avaliações do ciclo por estado")).toBeTruthy();

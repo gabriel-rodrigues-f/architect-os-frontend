@@ -118,11 +118,11 @@ describe("Painel — Home por papel", () => {
 
   it("D1 (dono, 2026-09-05): admin vê o Painel de operação — contagens, sem nome de pessoa", async () => {
     renderAs(fixtureAdminUser);
-    await screen.findByText("Painel de operação");
+    await screen.findByText("Visão do Sistema");
     expect(await screen.findByText("Pessoas ativas")).toBeTruthy();
     expect(screen.getByText("Contas por cargo")).toBeTruthy();
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect(screen.queryByText("Pendências do Lead")).toBeNull();
+    expect(screen.queryByText("Ações da Liderança")).toBeNull();
     expect(screen.queryByText("Ana Martins")).toBeNull();
     expect(screen.queryByText(/ADR-014/)).toBeNull();
   });
@@ -161,28 +161,28 @@ describe("Painel — Home por papel", () => {
 
   it("lead sem pessoa atribuída vê o estado vazio, não a visão de time", async () => {
     renderAs(fixtureLeadOfAna, scopedFixtureStateFor(fixtureLeadOfAna));
-    await screen.findByText("Pendências do Lead");
+    await screen.findByText("Ações da Liderança");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
     expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
   });
 
   it("gerente vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
     renderAsLeaderOfAna(fixtureGestorDeAna);
-    await screen.findByText("Pendências do Lead");
+    await screen.findByText("Ações da Liderança");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
     expect(await screen.findByText(/ADR-014/)).toBeTruthy();
   });
 
   it("tech lead vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
     renderAsLeaderOfAna(fixtureTechLeadDeAna);
-    await screen.findByText("Pendências do Lead");
+    await screen.findByText("Ações da Liderança");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
     expect(await screen.findByText(/ADR-014/)).toBeTruthy();
   });
 
   it("sessão de liderança SEM vínculo vê o estado vazio mesmo com gente no payload — o alcance é o vínculo (dono, 2026-09-05)", async () => {
     renderAsLeaderOfAna(fixtureLeadOfAna);
-    await screen.findByText("Pendências do Lead");
+    await screen.findByText("Ações da Liderança");
     // "e1" na fixture: evidência Pending de "ana", título "ADR-014" — o servidor
     // entregou, mas sem membership a fila não é dele.
     expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();

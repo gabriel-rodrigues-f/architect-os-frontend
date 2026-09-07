@@ -95,14 +95,14 @@ describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
       </ThemeProvider>,
     );
 
-  it("clicar no cabeçalho de 'Desenvolvimento' colapsa o grupo e persiste no localStorage", async () => {
+  it("clicar no cabeçalho de 'Crescimento' colapsa o grupo e persiste no localStorage", async () => {
     renderShell();
     const user = userEvent.setup();
 
-    const header = await screen.findByRole("button", { name: "Desenvolvimento" });
+    const header = await screen.findByRole("button", { name: "Crescimento" });
     expect(header.getAttribute("aria-expanded")).toBe("true");
     // `<Link>` mockado não define `href`, então não ganha role="link" implícito — verifica pelo texto.
-    expect(screen.getByText("Mentoria")).toBeTruthy();
+    expect(screen.getByText("Mentoria e 1:1")).toBeTruthy();
 
     await user.click(header);
 
@@ -118,11 +118,11 @@ describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
    * o `style.gridTemplateRows` do wrapper de CADA item (0fr = recolhido,
    * 1fr = aberto), o mesmo mecanismo que a animação usa em produção.
    */
-  it("colapsar o grupo da rota ativa ('Operação') some com os irmãos e mantém só 'Painel' visível, sem reordenar", async () => {
+  it("colapsar o grupo da rota ativa ('Gestão') some com os irmãos e mantém só 'Painel Executivo' visível, sem reordenar", async () => {
     renderShell();
     const user = userEvent.setup();
 
-    const header = await screen.findByRole("button", { name: "Operação" });
+    const header = await screen.findByRole("button", { name: "Gestão" });
     expect(header.getAttribute("aria-expanded")).toBe("true");
 
     const panelId = header.getAttribute("aria-controls");
@@ -131,22 +131,22 @@ describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
     const wrapperOf = (label: string) =>
       [...panel.children].find((el) => el.textContent?.includes(label)) as HTMLElement | undefined;
 
-    expect(wrapperOf("Painel")?.style.gridTemplateRows).toBe("1fr");
-    expect(wrapperOf("Time")?.style.gridTemplateRows).toBe("1fr");
+    expect(wrapperOf("Painel Executivo")?.style.gridTemplateRows).toBe("1fr");
+    expect(wrapperOf("Talentos do Time")?.style.gridTemplateRows).toBe("1fr");
 
     await user.click(header);
 
     expect(header.getAttribute("aria-expanded")).toBe("false");
     // Painel (rota ativa) continua no próprio lugar, nunca some.
-    expect(wrapperOf("Painel")?.style.gridTemplateRows).toBe("1fr");
+    expect(wrapperOf("Painel Executivo")?.style.gridTemplateRows).toBe("1fr");
     // "Time"/"Avaliações" recolhem cada um no próprio wrapper — mesmos nós
     // DOM continuam montados (garante a animação suave), só a altura muda.
-    expect(wrapperOf("Time")?.style.gridTemplateRows).toBe("0fr");
+    expect(wrapperOf("Talentos do Time")?.style.gridTemplateRows).toBe("0fr");
     // Ordem no DOM não muda: Painel continua antes de Time, como declarado
     // em NAV_GROUPS — nada foi extraído pra um slot separado.
     const order = [...panel.children].map((el) => el.textContent);
-    expect(order.indexOf(wrapperOf("Painel")!.textContent!)).toBeLessThan(
-      order.indexOf(wrapperOf("Time")!.textContent!),
+    expect(order.indexOf(wrapperOf("Painel Executivo")!.textContent!)).toBeLessThan(
+      order.indexOf(wrapperOf("Talentos do Time")!.textContent!),
     );
   });
 
@@ -164,19 +164,19 @@ describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
     routerState.pathname = "/team";
     renderShell();
 
-    const header = await screen.findByRole("button", { name: "Operação" });
+    const header = await screen.findByRole("button", { name: "Gestão" });
     expect(header.getAttribute("aria-expanded")).toBe("true");
 
     const panelId = header.getAttribute("aria-controls");
     const panel = document.getElementById(panelId!)!;
     const labels = [...panel.children].map((el) => {
-      if (el.textContent?.includes("Painel")) return "Painel";
-      if (el.textContent?.includes("Avaliações")) return "Avaliações";
-      if (el.textContent?.includes("Time")) return "Time";
+      if (el.textContent?.includes("Painel Executivo")) return "Painel Executivo";
+      if (el.textContent?.includes("Avaliação de Desempenho")) return "Avaliação de Desempenho";
+      if (el.textContent?.includes("Talentos do Time")) return "Talentos do Time";
       return el.textContent;
     });
 
-    expect(labels).toEqual(["Painel", "Time", "Avaliações"]);
+    expect(labels).toEqual(["Painel Executivo", "Talentos do Time", "Avaliação de Desempenho"]);
   });
 
   it("sem preferência salva, TODOS os grupos nascem abertos — inclusive Administração (dono, 2026-09-06)", async () => {
@@ -188,7 +188,7 @@ describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
       .getAllByRole("button", { expanded: false })
       .map((botao) => botao.textContent ?? "")
       .filter((texto) =>
-        /Operação|Desenvolvimento|Configuração|Administração|Capacidades/.test(texto),
+        /Gestão|Crescimento|Modelo de Carreira|Administração|Inteligência de Talentos/.test(texto),
       );
     expect(recolhidos).toEqual([]);
   });
@@ -207,7 +207,7 @@ describe("AppShell — seções colapsáveis do menu (R2-UX-14)", () => {
 
     await user.click(await screen.findByRole("button", { name: "Abrir menu de navegação" }));
     const drawer = await screen.findByRole("dialog");
-    const header = within(drawer).getByRole("button", { name: "Desenvolvimento" });
+    const header = within(drawer).getByRole("button", { name: "Crescimento" });
     expect(header.getAttribute("aria-expanded")).toBe("true");
 
     await user.click(header);

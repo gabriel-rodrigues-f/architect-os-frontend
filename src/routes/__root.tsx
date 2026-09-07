@@ -115,20 +115,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Painel — Synapse" },
+      { title: "Painel Executivo — Synapse" },
       {
         name: "description",
         content: "Visão executiva das capacidades técnicas do time: gaps, PDIs, metas e evolução.",
       },
 
-      { property: "og:title", content: "Painel — Synapse" },
+      { property: "og:title", content: "Painel Executivo — Synapse" },
       {
         property: "og:description",
         content: "Visão executiva das capacidades técnicas do time: gaps, PDIs, metas e evolução.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Painel — Synapse" },
+      { name: "twitter:title", content: "Painel Executivo — Synapse" },
       {
         name: "twitter:description",
         content: "Visão executiva das capacidades técnicas do time: gaps, PDIs, metas e evolução.",

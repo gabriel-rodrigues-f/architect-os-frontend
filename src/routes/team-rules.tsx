@@ -34,7 +34,7 @@ export const Route = createFileRoute("/team-rules")({
   beforeLoad: requireLeadReach,
   head: () => ({
     meta: [
-      { title: "Régua do time — Synapse" },
+      { title: "Perfil de Competências do Time — Synapse" },
       {
         name: "description",
         content:

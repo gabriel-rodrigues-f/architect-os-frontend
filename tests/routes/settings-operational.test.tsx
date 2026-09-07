@@ -249,7 +249,7 @@ describe("Operação (CFG-05 admin UI)", () => {
     // O h1 da página tem o mesmo texto. O card vive dentro de um `SectionGroup`,
     // cujo título é o nível 2 — o card, portanto, é o nível 3.
     const policyTitle = await screen.findByRole("heading", {
-      name: "Política de Progressão",
+      name: "Critérios de Progressão",
       level: 3,
     });
     const section = policyTitle.closest("section") as HTMLElement;

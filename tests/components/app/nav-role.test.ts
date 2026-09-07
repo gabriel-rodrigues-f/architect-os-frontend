@@ -148,7 +148,7 @@ describe("AppShell — navegação recortada por papel", () => {
    * abaixo) — feedback ao vivo do product owner (Bloco 7) promoveu-a a
    * grupo próprio.
    */
-  it("Painel, Time e Avaliações formam o grupo 'Operação'", () => {
+  it("Painel Executivo, Talentos do Time e Avaliação de Desempenho formam o grupo 'Gestão'", () => {
     const operationGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.group.operation");
     expect(operationGroup).toBeTruthy();
     expect(operationGroup?.items.map((item) => item.to)).toEqual(["/", "/team", "/assessments"]);
@@ -162,7 +162,7 @@ describe("AppShell — navegação recortada por papel", () => {
    * próprio item de menu. `nav.capabilities` (rótulo do item único antigo)
    * é reaproveitado como rótulo do GRUPO, sem chave i18n nova.
    */
-  it("Cobertura, Prioridades, Progressão, Necessidades de Treinamento e Comparativo formam o grupo 'Capacidades'", () => {
+  it("Risco de Concentração, Prioridades, Prontidão, Plano de Capacitação e Comparativo formam o grupo 'Inteligência de Talentos'", () => {
     const capabilitiesGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.capabilities");
     expect(capabilitiesGroup).toBeTruthy();
     expect(capabilitiesGroup?.items.map((item) => item.to)).toEqual([

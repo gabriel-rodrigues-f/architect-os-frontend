@@ -48,13 +48,13 @@ export const Route = createFileRoute("/users")({
   beforeLoad: requirePeopleAdministrationReach,
   head: () => ({
     meta: [
-      { title: "Usuários — Synapse" },
+      { title: "Contas e Acessos — Synapse" },
       {
         name: "description",
         content:
           "Cadastro de pessoas: cargo (administrador, gerente, Tech Lead, membro), senioridade, time e status da conta.",
       },
-      { property: "og:title", content: "Usuários — Synapse" },
+      { property: "og:title", content: "Contas e Acessos — Synapse" },
       {
         property: "og:description",
         content: "O único lugar onde uma pessoa é cadastrada: conta e profissional num ato só.",

@@ -71,7 +71,7 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
     });
     renderWithApp(<DashboardPage />);
 
-    expect(await screen.findByText("Pendências do Lead")).toBeTruthy();
+    expect(await screen.findByText("Ações da Liderança")).toBeTruthy();
     // "e1" na fixture: evidência Pending de "ana", título "ADR-014".
     expect((await screen.findAllByText(/Ana Martins/)).length).toBeGreaterThan(0);
 
@@ -87,7 +87,7 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
     });
     renderWithApp(<DashboardPage />);
 
-    expect(await screen.findByText("Painel de operação")).toBeTruthy();
+    expect(await screen.findByText("Visão do Sistema")).toBeTruthy();
     expect(await screen.findByText("Pessoas ativas")).toBeTruthy();
 
     expect(requestedPaths().some((href) => href.endsWith(apiPath("/state")))).toBe(false);

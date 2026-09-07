@@ -90,7 +90,7 @@ describe("AppShell — item de grupo recolhido sai da ordem de tabulação (QA-0
     renderShell();
     const user = userEvent.setup();
 
-    const operacao = await screen.findByRole("button", { name: "Operação" });
+    const operacao = await screen.findByRole("button", { name: "Gestão" });
     /**
      * Referências capturadas ANTES de recolher: recolher não desmonta os nós
      * (a animação de altura depende de eles continuarem montados), então os
@@ -98,45 +98,47 @@ describe("AppShell — item de grupo recolhido sai da ordem de tabulação (QA-0
      * neles. Guardar o nó permite afirmar sobre ele sem depender de uma
      * consulta por papel, que a própria correção passa a não encontrar.
      */
-    const time = navLink("Time");
-    const avaliacoes = navLink("Avaliações");
+    const time = navLink("Talentos do Time");
+    const avaliacoes = navLink("Avaliação de Desempenho");
 
     await user.click(operacao);
     expect(operacao.getAttribute("aria-expanded")).toBe("false");
 
     // "Painel" é a rota ativa: continua visível mesmo com o grupo recolhido.
-    navLink("Painel").focus();
+    navLink("Painel Executivo").focus();
     await user.tab();
 
     expect(document.activeElement).not.toBe(time);
     expect(document.activeElement).not.toBe(avaliacoes);
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Capacidades" }));
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Inteligência de Talentos" }),
+    );
   });
 
   it("expandir o grupo de volta devolve os itens à ordem de tabulação", async () => {
     renderShell();
     const user = userEvent.setup();
 
-    const operacao = await screen.findByRole("button", { name: "Operação" });
+    const operacao = await screen.findByRole("button", { name: "Gestão" });
     await user.click(operacao);
     await user.click(operacao);
     expect(operacao.getAttribute("aria-expanded")).toBe("true");
 
-    navLink("Painel").focus();
+    navLink("Painel Executivo").focus();
     await user.tab();
 
-    expect(document.activeElement).toBe(navLink("Time"));
+    expect(document.activeElement).toBe(navLink("Talentos do Time"));
   });
 
   it("mouse continua funcionando: item visível de grupo recolhido segue clicável", async () => {
     renderShell();
     const user = userEvent.setup();
 
-    const operacao = await screen.findByRole("button", { name: "Operação" });
+    const operacao = await screen.findByRole("button", { name: "Gestão" });
     await user.click(operacao);
 
     const cliques: string[] = [];
-    const painel = navLink("Painel");
+    const painel = navLink("Painel Executivo");
     painel.addEventListener("click", (evento) => {
       evento.preventDefault();
       cliques.push("painel");
@@ -150,12 +152,12 @@ describe("AppShell — item de grupo recolhido sai da ordem de tabulação (QA-0
     renderShell();
     const user = userEvent.setup();
 
-    const operacao = await screen.findByRole("button", { name: "Operação" });
+    const operacao = await screen.findByRole("button", { name: "Gestão" });
     await user.click(operacao);
     await user.click(operacao);
 
     const cliques: string[] = [];
-    const time = navLink("Time");
+    const time = navLink("Talentos do Time");
     time.addEventListener("click", (evento) => {
       evento.preventDefault();
       cliques.push("time");

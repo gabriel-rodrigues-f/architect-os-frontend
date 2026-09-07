@@ -60,7 +60,7 @@ afterEach(() => {
  * mesmo que utilizamos nos títulos da aplicação." — os três cartões que o
  * item 13 não cobria: a Política de Progressão e as duas referências.
  */
-const CARTOES_DO_ITEM_11 = ["Política de Progressão", "Escala de proficiência", "Ciclos"] as const;
+const CARTOES_DO_ITEM_11 = ["Critérios de Progressão", "Escala de proficiência", "Ciclos"] as const;
 
 describe("a Política de Progressão e as referências se explicam", () => {
   it.each(CARTOES_DO_ITEM_11)('"%s" tem o ? ao lado do título para o gerente', async (cartao) => {
@@ -77,7 +77,7 @@ describe("a Política de Progressão e as referências se explicam", () => {
     await screen.findByText("Júnior");
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Como configurar Política de Progressão" }),
+      screen.getByRole("button", { name: "Como configurar Critérios de Progressão" }),
     );
 
     const dialogo = await screen.findByRole("dialog");

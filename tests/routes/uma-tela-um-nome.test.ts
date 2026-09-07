@@ -50,7 +50,7 @@ const NOMES_DE_TELA: {
     route: CompareRoute,
   },
   {
-    tela: "Cobertura",
+    tela: "Risco de Concentração",
     chaves: [
       "cap.title",
       "cap.tabs.coverage",
@@ -80,7 +80,7 @@ describe("uma tela, um nome", () => {
   }
 
   it("a Cobertura se chama pela pergunta que responde, não pelo formato", () => {
-    expect((pt as Catalogo)["cap.title"]).toBe("De quem o time depende");
-    expect((en as Catalogo)["cap.title"]).toBe("Who the team depends on");
+    expect((pt as Catalogo)["cap.title"]).toBe("Risco de Concentração");
+    expect((en as Catalogo)["cap.title"]).toBe("Concentration Risk");
   });
 });

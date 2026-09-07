@@ -67,8 +67,8 @@ describe("Matriz de Competências — o alvo não mora aqui", () => {
 describe("a ajuda das telas não manda buscar o alvo na Matriz", () => {
   const idiomas = { pt, en } as Record<string, Record<string, string>>;
 
-  const NOME_DA_MATRIZ = { pt: "Matriz de Competências", en: "Competency Matrix" };
-  const NOME_DA_REGUA = { pt: "Régua do Time", en: "Team Rule" };
+  const NOME_DA_MATRIZ = { pt: "Catálogo de Competências", en: "Competency Catalog" };
+  const NOME_DA_REGUA = { pt: "Perfil de Competências do Time", en: "Team Competency Profile" };
 
   for (const idioma of ["pt", "en"] as const) {
     for (const persona of ["lead", "member"] as const) {

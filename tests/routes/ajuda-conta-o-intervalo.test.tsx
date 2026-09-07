@@ -51,7 +51,9 @@ describe("o ? da Matriz conta como a capacidade nasce e o que a deixa pronta", (
     renderWithApp(<MatrixPage />);
     await screen.findByText("Cloud Architecture");
 
-    await userEvent.click(screen.getByRole("button", { name: "Como usar Matriz de Competências" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Como usar Catálogo de Competências" }),
+    );
 
     const ajuda = await screen.findByRole("dialog");
     expect(ajuda.textContent).toMatch(/nasce com as competências/i);
@@ -80,7 +82,7 @@ describe("o ? das Configurações conta o intervalo e o piso da régua", () => {
     await screen.findByText("Júnior");
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Como configurar Política de Progressão" }),
+      screen.getByRole("button", { name: "Como configurar Critérios de Progressão" }),
     );
 
     const ajuda = await screen.findByRole("dialog");

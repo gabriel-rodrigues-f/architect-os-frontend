@@ -54,12 +54,12 @@ describe("a ajuda de /users diz quem cadastra quem", () => {
 });
 
 describe("a ajuda de /team diz onde cada coisa muda", () => {
-  it("aponta Usuários como o lugar do cadastro, e o diálogo como o lugar do time e do nível", () => {
+  it("aponta Contas e Acessos como o lugar do cadastro, e o diálogo como o lugar do time e do nível", () => {
     const texto = Object.entries(PT)
       .filter(([chave]) => chave.startsWith("help.team."))
       .map(([, valor]) => valor)
       .join(" ");
-    expect(texto).toContain("Usuários");
+    expect(texto).toContain("Contas e Acessos");
     expect(texto).toContain("Mudar time ou nível");
   });
 

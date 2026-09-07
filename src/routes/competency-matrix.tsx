@@ -71,12 +71,12 @@ export const Route = createFileRoute("/competency-matrix")({
   beforeLoad: requireAdminReach,
   head: () => ({
     meta: [
-      { title: "Matriz de Competências — Synapse" },
+      { title: "Catálogo de Competências — Synapse" },
       {
         name: "description",
         content: "Catálogo de competências agrupadas por capacidade técnica e de negócio.",
       },
-      { property: "og:title", content: "Matriz de Competências — Synapse" },
+      { property: "og:title", content: "Catálogo de Competências — Synapse" },
       {
         property: "og:description",
         content: "Crie, edite e organize as competências esperadas de um profissional.",

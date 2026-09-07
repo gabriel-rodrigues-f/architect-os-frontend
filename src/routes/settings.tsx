@@ -75,13 +75,13 @@ import { CYCLE_CADENCES, type CycleCadence } from "@/lib/operational-settings";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Política de Progressão — Synapse" },
+      { title: "Critérios de Progressão — Synapse" },
       {
         name: "description",
         content:
           "A régua da progressão: mínimo de capacidades qualificadas, faixas, textos, catálogo e vocabulários.",
       },
-      { property: "og:title", content: "Política de Progressão — Synapse" },
+      { property: "og:title", content: "Critérios de Progressão — Synapse" },
       {
         property: "og:description",
         content: "Configuração e glossário do modelo de desenvolvimento técnico.",

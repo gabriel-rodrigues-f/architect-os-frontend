@@ -23,13 +23,13 @@ import { useOperationalSettings, useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/training-needs")({
   head: () => ({
     meta: [
-      { title: "Necessidades de Treinamento — Synapse" },
+      { title: "Plano de Capacitação — Synapse" },
       {
         name: "description",
         content:
           "Análise agregada de necessidades de treinamento do time (LNT) a partir dos gaps individuais.",
       },
-      { property: "og:title", content: "Necessidades de Treinamento — Synapse" },
+      { property: "og:title", content: "Plano de Capacitação — Synapse" },
       {
         property: "og:description",
         content: "Treinamentos recomendados que atendem várias pessoas simultaneamente.",

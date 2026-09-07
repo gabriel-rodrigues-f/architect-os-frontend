@@ -96,13 +96,13 @@ describe("menu do profissional — a carreira dele em leitura, e nada do time", 
     expect(rotulosDeGrupo(fixtureMemberUser)[0]).toBe("nav.group.myCareer");
   });
 
-  it("'Time' e 'Política de Progressão' somem do menu do profissional", () => {
+  it("'Talentos do Time' e 'Critérios de Progressão' somem do menu do profissional", () => {
     for (const destino of MENUS_DA_LIDERANCA) {
       expect(destinos(fixtureMemberUser), destino).not.toContain(destino);
     }
   });
 
-  it("'Time' e 'Política de Progressão' continuam para quem lidera e para quem administra", () => {
+  it("'Talentos do Time' e 'Critérios de Progressão' continuam para quem lidera e para quem administra", () => {
     for (const user of [
       fixtureAdminUser,
       fixtureAssignedTechLeadUser,

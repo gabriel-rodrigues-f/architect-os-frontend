@@ -113,7 +113,7 @@ test("Tech Lead registra check-in e avança o status de um item de PDI", async (
   await page.getByRole("button", { name: /Entrar|Enviando/ }).click();
   // Espera o login terminar antes de navegar — sem isto, `goto` corre
   // contra o POST de login ainda em voo e aterrissa deslogado.
-  await expect(page.getByText("Pendências do Lead")).toBeVisible();
+  await expect(page.getByText("Ações da Liderança")).toBeVisible();
 
   await page.goto(`/development-plans?architectId=${architectId}`);
   await expect(page.getByText("E2E — fechar o gap de referência")).toBeVisible();

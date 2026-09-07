@@ -35,12 +35,12 @@ import { TeamViewModel } from "@/lib/view-models";
 export const Route = createFileRoute("/team")({
   head: () => ({
     meta: [
-      { title: "Time — Synapse" },
+      { title: "Talentos do Time — Synapse" },
       {
         name: "description",
         content: "Time, níveis médios, gaps e progresso de desenvolvimento.",
       },
-      { property: "og:title", content: "Time — Synapse" },
+      { property: "og:title", content: "Talentos do Time — Synapse" },
       {
         property: "og:description",
         content: "Gestão do time: perfis, níveis e desenvolvimento.",

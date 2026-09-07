@@ -101,7 +101,7 @@ describe("marca na coluna recolhida — transição, nunca aparecer/sumir", () =
   it("com a coluna recolhida o nome continua visível — nada no caminho dele zera largura ou opacidade", async () => {
     window.localStorage.setItem(COLUNA_RECOLHIDA, "true");
     renderShell();
-    await screen.findByRole("link", { name: "Painel" });
+    await screen.findByRole("link", { name: "Painel Executivo" });
 
     const caminho = classesAteAColuna(nomeDaMarca());
 
@@ -112,13 +112,13 @@ describe("marca na coluna recolhida — transição, nunca aparecer/sumir", () =
 
   it("o nome muda de tamanho entre os dois estados, e a mudança é transicionada nos dois", async () => {
     renderShell();
-    await screen.findByRole("link", { name: "Painel" });
+    await screen.findByRole("link", { name: "Painel Executivo" });
     const aberta = nomeDaMarca().className;
 
     cleanup();
     window.localStorage.setItem(COLUNA_RECOLHIDA, "true");
     renderShell();
-    await screen.findByRole("link", { name: "Painel" });
+    await screen.findByRole("link", { name: "Painel Executivo" });
     const recolhida = nomeDaMarca().className;
 
     expect(aberta).toContain("transition");

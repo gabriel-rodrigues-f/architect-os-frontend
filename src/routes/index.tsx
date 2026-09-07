@@ -41,13 +41,13 @@ import { useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel — Synapse" },
+      { title: "Painel Executivo — Synapse" },
       {
         name: "description",
         content:
           "Painel por papel: a operação do sistema, o time que você lidera ou a sua própria carreira.",
       },
-      { property: "og:title", content: "Painel — Synapse" },
+      { property: "og:title", content: "Painel Executivo — Synapse" },
       {
         property: "og:description",
         content:

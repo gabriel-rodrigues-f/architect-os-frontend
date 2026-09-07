@@ -54,7 +54,7 @@ export const Route = createFileRoute("/teams")({
   beforeLoad: requirePeopleAdministrationReach,
   head: () => ({
     meta: [
-      { title: "Times — Synapse" },
+      { title: "Estrutura de Times — Synapse" },
       {
         name: "description",
         content:

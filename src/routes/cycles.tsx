@@ -38,13 +38,13 @@ import { defaultDateFormatter } from "@/lib/text";
 export const Route = createFileRoute("/cycles")({
   head: () => ({
     meta: [
-      { title: "Ciclos de Desenvolvimento — Synapse" },
+      { title: "Ciclos de Avaliação — Synapse" },
       {
         name: "description",
         content:
           "Ciclos semestrais de desenvolvimento com avaliação, PDI, metas, trilhas e evidências.",
       },
-      { property: "og:title", content: "Ciclos de Desenvolvimento — Synapse" },
+      { property: "og:title", content: "Ciclos de Avaliação — Synapse" },
       {
         property: "og:description",
         content: "Compare a evolução de competências entre ciclos de desenvolvimento.",

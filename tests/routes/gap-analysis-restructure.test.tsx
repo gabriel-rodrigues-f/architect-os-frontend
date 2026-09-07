@@ -119,14 +119,15 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
 
   it("as prioridades saem numa lista única — sem bloqueante × oportunidade (onda 36)", async () => {
     renderGap();
-    await screen.findByText("Principais Prioridades de Desenvolvimento");
+    await screen.findAllByText("Prioridades de Desenvolvimento");
 
     expect(screen.queryByText("Bloqueantes de progressão")).toBeNull();
     expect(screen.queryByText("Oportunidades de desenvolvimento")).toBeNull();
 
     const prioritiesCard = screen
-      .getByText("Principais Prioridades de Desenvolvimento")
-      .closest(".surface-card") as HTMLElement;
+      .getAllByText("Prioridades de Desenvolvimento")
+      .map((el) => el.closest(".surface-card"))
+      .find((card) => card !== null) as HTMLElement;
     expect(prioritiesCard.textContent).toContain("Infra as Code");
     expect(prioritiesCard.textContent).toContain("IAM");
   });
@@ -187,11 +188,12 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
     });
 
     renderGap();
-    await screen.findByText("Principais Prioridades de Desenvolvimento");
+    await screen.findAllByText("Prioridades de Desenvolvimento");
 
     const prioritiesCard = screen
-      .getByText("Principais Prioridades de Desenvolvimento")
-      .closest(".surface-card") as HTMLElement;
+      .getAllByText("Prioridades de Desenvolvimento")
+      .map((el) => el.closest(".surface-card"))
+      .find((card) => card !== null) as HTMLElement;
     // IAM tem gap para Ana e Carla (2 pessoas) — os dois nomes aparecem, não só o primeiro.
     const iamItem = within(prioritiesCard).getByText("IAM").closest("li") as HTMLElement;
     expect(within(iamItem).getByText(/Ana Martins, Carla Souza/)).toBeTruthy();

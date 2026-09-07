@@ -109,9 +109,9 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   it("D1 (dono, 2026-09-05): o admin sem ciclo vê 'Nenhum ciclo ativo' no cartão de ciclo e o atalho de Ciclos leva a /cycles", async () => {
     prepararPainel(fixtureAdminUser, estadoSemCiclo);
 
-    expect(await screen.findByText("Painel de operação")).toBeTruthy();
+    expect(await screen.findByText("Visão do Sistema")).toBeTruthy();
     expect(await screen.findByText("Nenhum ciclo ativo")).toBeTruthy();
-    const atalho = screen.getByRole("link", { name: "Ciclos de Desenvolvimento" });
+    const atalho = screen.getByRole("link", { name: "Ciclos de Avaliação" });
     expect(atalho.getAttribute("href")).toBe("/cycles");
     // A mensagem + botão "Cadastrar ciclo" é a resposta da liderança, não do painel de operação.
     expect(screen.queryByText(MENSAGEM)).toBeNull();
@@ -130,7 +130,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   it("com ciclo cadastrado, o Painel de operação do admin nomeia o ciclo — sem a mensagem", async () => {
     prepararPainel(fixtureAdminUser, fixtureState);
 
-    expect(await screen.findByText("Painel de operação")).toBeTruthy();
+    expect(await screen.findByText("Visão do Sistema")).toBeTruthy();
     expect(await screen.findByText("2026 H2")).toBeTruthy();
     expect(screen.queryByText("Nenhum ciclo ativo")).toBeNull();
     expect(screen.queryByText(MENSAGEM)).toBeNull();
@@ -140,7 +140,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   it("com ciclo cadastrado, a liderança continua vendo as pendências — sem a mensagem", async () => {
     prepararPainel(fixtureAssignedManagerUser, fixtureState);
 
-    expect(await screen.findByText("Pendências do Lead")).toBeTruthy();
+    expect(await screen.findByText("Ações da Liderança")).toBeTruthy();
     expect(screen.queryByText(MENSAGEM)).toBeNull();
   });
 

@@ -20,12 +20,12 @@ import { useStore } from "@/lib/store";
 export const Route = createFileRoute("/mentoring")({
   head: () => ({
     meta: [
-      { title: "Mentoria — Synapse" },
+      { title: "Mentoria e 1:1 — Synapse" },
       {
         name: "description",
         content: "Registro e timeline das sessões de mentoria técnica entre profissionais.",
       },
-      { property: "og:title", content: "Mentoria — Synapse" },
+      { property: "og:title", content: "Mentoria e 1:1 — Synapse" },
       {
         property: "og:description",
         content: "Temas, decisões, ações e próximos passos de cada sessão de mentoria.",

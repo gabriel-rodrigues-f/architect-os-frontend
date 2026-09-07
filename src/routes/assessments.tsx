@@ -40,12 +40,12 @@ export const Route = createFileRoute("/assessments")({
   validateSearch: assessmentsSearchSchema,
   head: () => ({
     meta: [
-      { title: "Avaliações — Synapse" },
+      { title: "Avaliação de Desempenho — Synapse" },
       {
         name: "description",
         content: "Autoavaliação, avaliação do Tech Lead, nível alvo e nível final por competência.",
       },
-      { property: "og:title", content: "Avaliações — Synapse" },
+      { property: "og:title", content: "Avaliação de Desempenho — Synapse" },
       {
         property: "og:description",
         content:

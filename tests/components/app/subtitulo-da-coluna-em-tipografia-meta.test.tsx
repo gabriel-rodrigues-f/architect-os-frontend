@@ -117,14 +117,14 @@ describe("subtítulo da coluna lateral — tipografia meta, e a cor junto", () =
 
   it("com a coluna aberta o subtítulo declara um tamanho só, o meta da escala", async () => {
     renderShell();
-    await screen.findByRole("link", { name: "Painel" });
+    await screen.findByRole("link", { name: "Painel Executivo" });
 
     expect(tamanhosDeclarados(subtituloDaColuna())).toEqual([fontSize.get("meta")]);
   });
 
   it("o tamanho não é conquistado à custa da cor — as duas classes sobrevivem juntas", async () => {
     renderShell();
-    await screen.findByRole("link", { name: "Painel" });
+    await screen.findByRole("link", { name: "Painel Executivo" });
 
     const classes = subtituloDaColuna().className.split(/\s+/);
 
@@ -135,7 +135,7 @@ describe("subtítulo da coluna lateral — tipografia meta, e a cor junto", () =
   it("recolher a coluna não muda o tamanho do subtítulo, só a opacidade", async () => {
     window.localStorage.setItem(COLUNA_RECOLHIDA, "true");
     renderShell();
-    await screen.findByRole("link", { name: "Painel" });
+    await screen.findByRole("link", { name: "Painel Executivo" });
 
     const subtitulo = subtituloDaColuna();
 

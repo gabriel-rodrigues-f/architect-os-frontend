@@ -10,7 +10,7 @@ import { NAV_GROUPS } from "@/components/app/AppShell";
  * o mesmo símbolo. O menu passa a usar `Scale`; `Settings` fica reservado
  * para configuração de verdade (preferências).
  */
-describe("ícone do item de menu 'Política de Progressão'", () => {
+describe("ícone do item de menu 'Critérios de Progressão'", () => {
   it("usa Scale, não o Settings genérico de preferências", () => {
     const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.to === "/settings");
     expect(item?.icon).toBe(Scale);
