@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import {
   GapBadge,
+  KeyFigureCard,
   OutOfReachScreen,
   PageHeader,
   SectionCard,
@@ -78,6 +79,9 @@ function TeamTrainingNeeds() {
 
   const population = sel.activeArchitects;
   const needs = sel.teamTrainingNeeds(population);
+  // Números como afirmação (referência FIAP 2026-09-06, §2 item 2): quantas
+  // pessoas distintas aparecem em alguma competência em evolução.
+  const peopleToBuild = new Set(needs.flatMap((need) => need.architectIds)).size;
 
   const [showAllTop, setShowAllTop] = useState(false);
   const top = showAllTop ? needs : needs.slice(0, 15);
@@ -123,6 +127,13 @@ function TeamTrainingNeeds() {
   return (
     <>
       <PageHeader title={t("needs.title")} description={t("needs.subtitle")} help={help} />
+
+      <KeyFigureCard
+        className="mb-6"
+        label={t("needs.figure.people")}
+        value={peopleToBuild}
+        caption={t("needs.figure.caption", { n: needs.length })}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <SectionCard

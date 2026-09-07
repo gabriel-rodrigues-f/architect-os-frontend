@@ -3,13 +3,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  DeactivatedPersonNotice,
   EvolutionLine,
   OutOfReachScreen,
-  PageHeader,
   ProficiencyTimeline,
   ProfileBackLink,
-  ProfileTabs,
+  ProfileHeader,
   QuerySection,
   SectionCard,
   SingleSelectFilter,
@@ -235,7 +233,8 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
 
   return (
     <>
-      <PageHeader
+      <ProfileHeader
+        architect={architect}
         title={t("evolution.title", { nome: architect.name })}
         description={`${seniority.labelOf(architect.role)}${
           data?.architect.careerLevelName && data.architect.careerLevelName !== architect.role
@@ -256,11 +255,8 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
             <ProfileBackLink architectId={architect.id} to="overview" />
           </div>
         }
+        active="evolution"
       />
-
-      <DeactivatedPersonNotice active={architect.active} />
-
-      <ProfileTabs architectId={architect.id} active="evolution" />
 
       <SectionCard title={t("evolution.filters.title")} className="mb-6">
         <div className="flex flex-wrap items-end gap-4">

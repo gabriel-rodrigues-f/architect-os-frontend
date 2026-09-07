@@ -22,6 +22,13 @@ export class StablePageFrame {
     return `min-h-[calc(100dvh-${StablePageFrame.HEADER_HEIGHT_PX}px)]`;
   }
 
+  /**
+   * Um bloco fixo dentro da página (cabeçalho da ficha, cabeçalho de colunas)
+   * se prende logo ABAIXO do cabeçalho do shell — a mesma constante, nunca um
+   * número solto na tela. O `z-10` fica abaixo do `z-20` do shell.
+   */
+  static readonly pinnedUnderHeaderClass = "sticky top-[74px] z-10";
+
   /** Ao trocar de rota, a tela volta ao topo — sem animação, para não "andar". */
   static resetScroll(view: Pick<Window, "scrollTo"> = window): void {
     view.scrollTo({ top: 0, left: 0, behavior: "instant" });

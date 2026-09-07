@@ -84,6 +84,11 @@
   --text-section: 18px;
   --text-page: 28px;
   --text-kpi: 32px;
+  /*
+    Número-síntese (referência FIAP 2026-09-06, §2 itens 1 e 2): o valor de
+    um `KeyFigure`, 40–48 px — o C-Level lê o número antes do texto.
+  */
+  --text-key-figure: 44px;
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
@@ -456,6 +461,19 @@
   }
 }
 
+/*
+  O valor de um `KeyFigure`: grande, em display, tabular. Quem quer um
+  número-síntese usa o componente — a utility é dele.
+*/
+@utility key-figure-value {
+  font-family: var(--font-display);
+  font-size: var(--text-key-figure);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
 @utility page-title {
   font-family: var(--font-display);
   font-size: var(--text-page);
@@ -607,10 +625,14 @@
   }
 }
 
+/*
+  A subida com fade nasceu no login "Synapse Network"; a distância é um
+  token para que a mesma animação sirva ao Painel com 8 px (`reveal`).
+*/
 @keyframes auth-rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(var(--rise-distance, 10px));
   }
   to {
     opacity: 1;
@@ -622,5 +644,24 @@
   @media (prefers-reduced-motion: no-preference) {
     animation: auth-rise var(--motion-slow) cubic-bezier(0.2, 0.7, 0.2, 1) both;
     animation-delay: var(--auth-delay, 0s);
+  }
+}
+
+/*
+  Revelação por rolagem (referência FIAP 2026-09-06, §2 itens 4 e 8): um bloco
+  do Painel entra com fade + 8 px, na duração base, quando aparece na tela —
+  só na primeira abertura depois do login (`RevealBlock`). Tudo dentro da
+  guarda de `no-preference`: com movimento reduzido, nenhuma destas regras
+  existe e o bloco nasce pronto.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal="pending"] {
+    opacity: 0;
+  }
+
+  [data-reveal="shown"] {
+    --rise-distance: 8px;
+    animation: auth-rise var(--motion-base) cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--reveal-delay, 0s);
   }
 }

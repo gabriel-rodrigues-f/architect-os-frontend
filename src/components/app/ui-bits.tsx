@@ -198,7 +198,8 @@ export class StatTones {
   }
 }
 
-const statTone: Record<StatTone, { card: string; value: string; icon: string }> = {
+/** Os estilos de cada tom — o `StatCard` e o `KeyFigure` lêem o mesmo mapa. */
+export const statToneStyles: Record<StatTone, { card: string; value: string; icon: string }> = {
   neutral: { card: "", value: "", icon: "bg-secondary text-muted-foreground" },
   attention: {
     card: "border-l-4 border-l-[var(--warning-fg)]",
@@ -233,7 +234,7 @@ export function StatCard({
   /** O "?" do próprio card — fica dentro dele, ao lado do ícone. */
   help?: ReactNode;
 }) {
-  const styles = statTone[tone];
+  const styles = statToneStyles[tone];
   return (
     <div className={cn("surface-card p-4", styles.card)} data-tone={tone}>
       <div className="flex items-start justify-between gap-3">
@@ -277,10 +278,10 @@ export function PageHeader({
   help,
 }: {
   title: string;
-  description?: string;
+  description?: string | undefined;
   actions?: ReactNode;
 
-  help?: { lead: PageHelpContent; member: PageHelpContent };
+  help?: { lead: PageHelpContent; member: PageHelpContent } | undefined;
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">

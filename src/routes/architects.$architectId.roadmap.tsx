@@ -4,17 +4,15 @@ import { useMemo } from "react";
 
 import {
   AdherenceSummary,
-  DeactivatedPersonNotice,
   EmptyState,
   GapBadge,
   LearningPathCoverageList,
   LevelBadge,
   CareerReadinessVerdictLines,
   OutOfReachScreen,
-  PageHeader,
   PersonAdviceSection,
   ProfileBackLink,
-  ProfileTabs,
+  ProfileHeader,
   QuerySection,
 } from "@/components/app";
 import { api, personAssistantsApi } from "@/lib/api";
@@ -122,15 +120,14 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
 
   const header = (
     <>
-      <PageHeader
+      <ProfileHeader
+        architect={architect}
         help={help}
         title={t("roadmap.title", { nome: architect.name })}
         description={t("roadmap.description")}
         actions={<ProfileBackLink architectId={architect.id} to="overview" />}
+        active="roadmap"
       />
-      <DeactivatedPersonNotice active={architect.active} />
-
-      <ProfileTabs architectId={architect.id} active="roadmap" />
     </>
   );
 

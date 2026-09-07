@@ -7,17 +7,15 @@ import {
   AiRunResult,
   Bar,
   CapabilityRadar,
-  DeactivatedPersonNotice,
   EvidenceDialog,
   EvidenceStatusBadge,
   GapBadge,
   GenerationProfileField,
   Initials,
   LevelBadge,
-  PageHeader,
   PersonAdviceBody,
   ProfileBackLink,
-  ProfileTabs,
+  ProfileHeader,
   ResubmitEvidenceDialog,
   SectionCard,
   SectionGroup,
@@ -236,16 +234,14 @@ function ArchitectWorkspace() {
           {t("support.banner", { nome: architect.name })}
         </Callout>
       )}
-      <PageHeader
+      <ProfileHeader
+        architect={architect}
         title={architect.name}
         description={`${seniority.labelOf(architect.role)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
         help={help}
         actions={<ProfileBackLink architectId={architect.id} to="team" />}
+        active="overview"
       />
-
-      <DeactivatedPersonNotice active={architect.active} />
-
-      <ProfileTabs architectId={architect.id} active="overview" />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <StatCard

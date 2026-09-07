@@ -1,24 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Building2,
-  CalendarRange,
-  ClipboardCheck,
-  FileCheck,
-  Target,
-  UserCog,
-  Users,
-} from "lucide-react";
+import { ClipboardCheck, FileCheck } from "lucide-react";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import {
+  AssessmentCoverageChart,
   CapabilityRadar,
   DashboardCardHelp,
   GapBadge,
+  GapSeverityChart,
+  KeyFigureCard,
   PageHeader,
   QuerySection,
+  RevealBlock,
+  RevealSequence,
   SectionCard,
+  SectionHeading,
   StatCard,
   StatTones,
 } from "@/components/app";
@@ -27,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { operationsApi, type UserRole } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
+import { DashboardEntrance } from "@/lib/dashboard-entrance";
+import { KeyFigureFormatter } from "@/lib/key-figure-format";
 import {
   DashboardPresenter,
   type LeadPendingQueues,
@@ -81,9 +81,14 @@ const HOME_BY_ROLE = {
 function Dashboard() {
   const user = useCurrentUser();
   const Home = HOME_BY_ROLE[user.role];
+  // A entrada orquestrada é da PRIMEIRA abertura depois do login: a marca é
+  // consumida uma vez, na montagem — recarregar ou voltar pelo menu não repete.
+  const [entrance] = useState(() => DashboardEntrance.consume(user));
   return (
     <ContextScope contexts={PAINEL_CONTEXTS}>
-      <Home />
+      <RevealSequence enabled={entrance}>
+        <Home />
+      </RevealSequence>
     </ContextScope>
   );
 }
@@ -134,11 +139,14 @@ function NoCycleRegistered({
 }
 
 /**
- * O Painel do ADMINISTRADOR é um painel de OPERAÇÃO (revisão de papéis,
+ * O Painel do ADMINISTRADOR é uma VISÃO DO SISTEMA (revisão de papéis,
  * 2026-09-05, D1): o sistema em números — pessoas, times, contas, ciclo,
  * avaliações e PDIs por estado — sem nome ao lado de nota. O desempenho das
  * pessoas é leitura de quem as lidera; o admin que também lidera um time
  * entra pelo vínculo, como qualquer gerente.
+ *
+ * Referência FIAP 2026-09-06 (§2 itens 1 e 2): cada bloco é uma ideia com o
+ * seu número-síntese; o detalhe (a contagem por estado) vem abaixo, mais leve.
  */
 function OperationsHome() {
   const { t } = useI18n();
@@ -149,6 +157,9 @@ function OperationsHome() {
     queryFn: operationsApi.overview,
     staleTime: 30_000,
   });
+
+  const sumOf = (counts: Record<string, number>) =>
+    Object.values(counts).reduce((total, count) => total + count, 0);
 
   return (
     <>
@@ -161,81 +172,102 @@ function OperationsHome() {
         {(data) => (
           <>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                label={t("dash.ops.people")}
-                value={data.people.active}
-                hint={t("dash.ops.peopleHint", { n: data.people.deactivated })}
-                icon={<Users className="h-4 w-4" />}
-              />
-              <StatCard
-                label={t("dash.ops.teams")}
-                value={data.teams.active}
-                icon={<Building2 className="h-4 w-4" />}
-              />
-              <StatCard
-                label={t("dash.ops.accounts")}
-                value={data.accounts.active}
-                hint={t("dash.ops.accountsHint", { n: data.accounts.disabled })}
-                icon={<UserCog className="h-4 w-4" />}
-              />
-              <StatCard
-                label={t("dash.ops.cycle")}
-                value={data.cycle?.name ?? t("dash.ops.noCycle")}
-                icon={<CalendarRange className="h-4 w-4" />}
-                tone={data.cycle ? "neutral" : "attention"}
-              />
+              <RevealBlock order={0}>
+                <KeyFigureCard
+                  label={t("dash.ops.people")}
+                  value={data.people.active}
+                  caption={t("dash.ops.peopleHint", { n: data.people.deactivated })}
+                />
+              </RevealBlock>
+              <RevealBlock order={1}>
+                <KeyFigureCard label={t("dash.ops.teams")} value={data.teams.active} />
+              </RevealBlock>
+              <RevealBlock order={2}>
+                <KeyFigureCard
+                  label={t("dash.ops.accounts")}
+                  value={data.accounts.active}
+                  caption={t("dash.ops.accountsHint", { n: data.accounts.disabled })}
+                />
+              </RevealBlock>
+              <RevealBlock order={3}>
+                <KeyFigureCard
+                  label={t("dash.ops.cycle")}
+                  value={data.cycle?.name ?? t("dash.ops.noCycle")}
+                  tone={data.cycle ? "neutral" : "attention"}
+                />
+              </RevealBlock>
             </div>
 
             <div className="mt-6 grid gap-6 xl:grid-cols-3">
-              <SectionCard title={t("dash.ops.assessments.title")}>
-                <CountList
-                  entries={Object.entries(data.assessments).map(([status, count]) => [
-                    labels.assessmentStatus[status as keyof typeof labels.assessmentStatus] ??
-                      status,
-                    count,
-                  ])}
-                  emptyLabel={t("dash.ops.none")}
-                />
-              </SectionCard>
-              <SectionCard title={t("dash.ops.plans.title")}>
-                <CountList
-                  entries={Object.entries(data.plans).map(([status, count]) => [
-                    labels.planStatus[status as keyof typeof labels.planStatus] ?? status,
-                    count,
-                  ])}
-                  emptyLabel={t("dash.ops.none")}
-                />
-              </SectionCard>
-              <SectionCard title={t("dash.ops.accountsByRole.title")}>
-                <CountList
-                  entries={Object.entries(data.accounts.byRole).map(([role, count]) => [
-                    t(`users.role.${role}` as Parameters<typeof t>[0]),
-                    count,
-                  ])}
-                  emptyLabel={t("dash.ops.none")}
-                />
-              </SectionCard>
+              <RevealBlock order={4}>
+                <KeyFigureCard
+                  label={t("dash.ops.assessments.title")}
+                  value={sumOf(data.assessments)}
+                  caption={t("dash.ops.assessments.caption")}
+                >
+                  <CountList
+                    entries={Object.entries(data.assessments).map(([status, count]) => [
+                      labels.assessmentStatus[status as keyof typeof labels.assessmentStatus] ??
+                        status,
+                      count,
+                    ])}
+                    emptyLabel={t("dash.ops.none")}
+                  />
+                </KeyFigureCard>
+              </RevealBlock>
+              <RevealBlock order={4}>
+                <KeyFigureCard
+                  label={t("dash.ops.plans.title")}
+                  value={sumOf(data.plans)}
+                  caption={t("dash.ops.plans.caption")}
+                >
+                  <CountList
+                    entries={Object.entries(data.plans).map(([status, count]) => [
+                      labels.planStatus[status as keyof typeof labels.planStatus] ?? status,
+                      count,
+                    ])}
+                    emptyLabel={t("dash.ops.none")}
+                  />
+                </KeyFigureCard>
+              </RevealBlock>
+              <RevealBlock order={4}>
+                <KeyFigureCard
+                  label={t("dash.ops.accountsByRole.title")}
+                  value={sumOf(data.accounts.byRole)}
+                  caption={t("dash.ops.accountsByRole.caption")}
+                >
+                  <CountList
+                    entries={Object.entries(data.accounts.byRole).map(([role, count]) => [
+                      t(`users.role.${role}` as Parameters<typeof t>[0]),
+                      count,
+                    ])}
+                    emptyLabel={t("dash.ops.none")}
+                  />
+                </KeyFigureCard>
+              </RevealBlock>
             </div>
 
-            <SectionCard className="mt-6" title={t("dash.ops.shortcuts")}>
-              <div className="flex flex-wrap gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/users">{t("nav.users")}</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/teams">{t("nav.teams")}</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/cycles">{t("nav.cycles")}</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/competency-matrix">{t("nav.competencyMatrix")}</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/settings">{t("nav.settings")}</Link>
-                </Button>
-              </div>
-            </SectionCard>
+            <RevealBlock order={4} className="mt-6">
+              <SectionCard title={t("dash.ops.shortcuts")}>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/users">{t("nav.users")}</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/teams">{t("nav.teams")}</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/cycles">{t("nav.cycles")}</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/competency-matrix">{t("nav.competencyMatrix")}</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/settings">{t("nav.settings")}</Link>
+                  </Button>
+                </div>
+              </SectionCard>
+            </RevealBlock>
           </>
         )}
       </QuerySection>
@@ -445,129 +477,247 @@ function MemberHome() {
   );
 }
 
+/**
+ * O PAINEL EXECUTIVO da liderança (gerente e tech lead): o time que a pessoa
+ * lidera pelo vínculo, em quatro blocos — "uma dobra, uma ideia" (referência
+ * FIAP 2026-09-06, §2 item 1). Cada bloco afirma UM número: a cobertura da
+ * avaliação do ciclo, as distâncias críticas, os PDIs em curso e as ações
+ * que dependem de uma decisão da liderança. O detalhe fica abaixo, mais leve.
+ */
 function LeadHome() {
-  const sel = useSelectors();
-  const labels = useLabels();
   const { t } = useI18n();
   const help = usePageHelp("dashLead");
   const presenter = useDashboardPresenter();
+  const severity = useGapSeverityRuler();
+  const queues = useLeadPendingQueues();
 
-  const {
-    people: myPeople,
-    awaitingCalibration,
-    pendingEvidence,
-    awaitingApproval,
-    totalPending,
-  } = useLeadPendingQueues();
+  if (presenter.noCycleRegistered) return <NoCycleRegistered title={t("dash.title")} help={help} />;
 
-  if (presenter.noCycleRegistered)
-    return <NoCycleRegistered title={t("dash.lead.title")} help={help} />;
+  const header = (
+    <PageHeader title={t("dash.title")} description={t("dash.lead.subtitle")} help={help} />
+  );
+
+  if (queues.people.length === 0) {
+    return (
+      <>
+        {header}
+        <SectionCard title={t("dash.lead.title")}>
+          <p className="text-sm font-medium">{t("dash.lead.empty.title")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("dash.lead.empty.body")}</p>
+        </SectionCard>
+      </>
+    );
+  }
+
+  const people = queues.people;
+  const coverage = presenter.assessmentCoverage(people);
+  const gapsBySeverity = presenter.gapsBySeverity(people, severity);
+  const openGaps = gapsBySeverity.low + gapsBySeverity.high + gapsBySeverity.critical;
+  const criticalGaps = presenter.criticalGapCount(people);
+  const approvedPlans = presenter.activePlans().filter((plan) => plan.status === "Approved");
 
   return (
     <>
-      <PageHeader title={t("dash.lead.title")} description={t("dash.lead.subtitle")} help={help} />
+      {header}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t("dash.lead.myPeople")}
-          help={<DashboardCardHelp card="leadPeople" />}
-          value={myPeople.length}
-          icon={<Users className="h-4 w-4" />}
-        />
-        <StatCard
-          label={t("dash.lead.awaitingCalibration")}
-          help={<DashboardCardHelp card="leadCalibration" />}
-          value={awaitingCalibration.length}
-          icon={<ClipboardCheck className="h-4 w-4" />}
-          tone={StatTones.byPending(awaitingCalibration.length)}
-        />
-        <StatCard
-          label={t("dash.lead.pendingEvidence")}
-          help={<DashboardCardHelp card="leadEvidence" />}
-          value={pendingEvidence.length}
-          icon={<FileCheck className="h-4 w-4" />}
-          tone={StatTones.byPending(pendingEvidence.length)}
-        />
-        <StatCard
-          label={t("dash.lead.awaitingApproval")}
-          help={<DashboardCardHelp card="leadApproval" />}
-          value={awaitingApproval.length}
-          icon={<Target className="h-4 w-4" />}
-          tone={StatTones.byPending(awaitingApproval.length)}
-        />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <RevealBlock order={0}>
+          <KeyFigureCard
+            label={t("dash.cycleAssessment.title")}
+            value={KeyFigureFormatter.ratio(coverage.completed, people.length)}
+            format="percent"
+            caption={t("dash.coverage.figureCaption", {
+              completed: coverage.completed,
+              total: people.length,
+            })}
+            help={<DashboardCardHelp card="cycleAssessment" />}
+          >
+            <AssessmentCoverageChart
+              data={[
+                {
+                  status: t("dash.coverage.completed"),
+                  count: coverage.completed,
+                  color: "var(--gap-ok-fg)",
+                },
+                {
+                  status: t("dash.coverage.inReview"),
+                  count: coverage.inReview,
+                  color: "var(--chart-2)",
+                },
+                {
+                  status: t("dash.coverage.draft"),
+                  count: coverage.draft,
+                  color: "var(--gap-low-fg)",
+                },
+                {
+                  status: t("dash.coverage.notStarted"),
+                  count: coverage.notStarted,
+                  color: "var(--chart-reference)",
+                },
+              ]}
+            />
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("dash.coverage.rest", {
+                inReview: coverage.inReview,
+                draft: coverage.draft,
+                notStarted: coverage.notStarted,
+              })}
+            </p>
+            <Link to="/progression" className="mt-3 inline-block text-sm text-primary underline">
+              {t("dash.heatmap.whereItLives")}
+            </Link>
+          </KeyFigureCard>
+        </RevealBlock>
+
+        <RevealBlock order={1}>
+          <KeyFigureCard
+            label={t("dash.severity.title")}
+            value={criticalGaps}
+            tone={StatTones.bySeverity(criticalGaps)}
+            caption={t("dash.severity.caption", { critical: criticalGaps, open: openGaps })}
+            help={<DashboardCardHelp card="severity" />}
+          >
+            <GapSeverityChart
+              data={[
+                { tone: "critical" as const, color: "var(--gap-critical-fg)" },
+                { tone: "high" as const, color: "var(--gap-high-fg)" },
+                { tone: "low" as const, color: "var(--gap-low-fg)" },
+              ].map(({ tone, color }) => ({
+                severity: t(severity.messageKey[tone]),
+                count: gapsBySeverity[tone],
+                color,
+              }))}
+            />
+            <Link to="/gap-analysis" className="mt-3 inline-block text-sm text-primary underline">
+              {t("dash.severity.whereItLives")}
+            </Link>
+          </KeyFigureCard>
+        </RevealBlock>
+
+        <RevealBlock order={2}>
+          <KeyFigureCard
+            label={t("dash.plans.title")}
+            value={approvedPlans.length}
+            caption={t("dash.plans.caption", { n: approvedPlans.length, total: people.length })}
+            help={<DashboardCardHelp card="activePlans" />}
+          >
+            <dl className="grid grid-cols-3 gap-3 text-sm">
+              <CountItem label={t("dash.stat.goalsInProgress")} count={presenter.goalsInProgress} />
+              <CountItem label={t("dash.stat.goalsDone")} count={presenter.goalsDone} />
+              <CountItem
+                label={t("dash.lead.awaitingApproval")}
+                count={queues.awaitingApproval.length}
+              />
+            </dl>
+            <Link
+              to="/development-plans"
+              className="mt-3 inline-block text-sm text-primary underline"
+            >
+              {t("dash.plans.whereItLives")}
+            </Link>
+          </KeyFigureCard>
+        </RevealBlock>
+
+        <RevealBlock order={3}>
+          <KeyFigureCard
+            label={t("dash.lead.title")}
+            value={queues.totalPending}
+            tone={StatTones.byPending(queues.totalPending)}
+            caption={t("dash.lead.caption", { n: people.length })}
+          >
+            {queues.totalPending === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("dash.lead.allClear.body")}</p>
+            ) : (
+              <LeadQueues queues={queues} />
+            )}
+          </KeyFigureCard>
+        </RevealBlock>
+      </div>
+    </>
+  );
+}
+
+function CountItem({ label, count }: { label: string; count: number }) {
+  return (
+    <div>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-display text-lg font-semibold tabular-nums">{count}</dd>
+    </div>
+  );
+}
+
+/** As três filas que dependem de uma decisão da liderança — o detalhe do bloco "Ações da Liderança". */
+function LeadQueues({ queues }: { queues: LeadPendingQueues }) {
+  const sel = useSelectors();
+  const labels = useLabels();
+  const { t } = useI18n();
+  const { awaitingCalibration, pendingEvidence, awaitingApproval } = queues;
+  const queueEmpty = <p className="text-sm text-muted-foreground">{t("dash.lead.queueEmpty")}</p>;
+
+  return (
+    <div className="grid gap-5 sm:grid-cols-3">
+      <div>
+        <SectionHeading as="p" muted>
+          {t("dash.lead.awaitingCalibration")}
+        </SectionHeading>
+        <ul className="mt-2 space-y-2">
+          {awaitingCalibration.map(({ architect }) => (
+            <li key={architect.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
+              <Link
+                to="/assessments"
+                search={{ architectId: architect.id }}
+                className="text-sm hover:underline"
+              >
+                {architect.name}
+              </Link>
+            </li>
+          ))}
+          {awaitingCalibration.length === 0 && queueEmpty}
+        </ul>
       </div>
 
-      {myPeople.length === 0 ? (
-        <SectionCard className="mt-6" title={t("dash.lead.empty.title")}>
-          <p className="text-sm text-muted-foreground">{t("dash.lead.empty.body")}</p>
-        </SectionCard>
-      ) : totalPending === 0 ? (
-        <SectionCard className="mt-6" title={t("dash.lead.allClear.title")}>
-          <p className="text-sm text-muted-foreground">{t("dash.lead.allClear.body")}</p>
-        </SectionCard>
-      ) : (
-        <div className="mt-6 grid gap-6 xl:grid-cols-3">
-          <SectionCard title={t("dash.lead.awaitingCalibration")}>
-            <ul className="space-y-2">
-              {awaitingCalibration.map(({ architect }) => (
-                <li key={architect.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
-                  <Link
-                    to="/assessments"
-                    search={{ architectId: architect.id }}
-                    className="text-sm hover:underline"
-                  >
-                    {architect.name}
-                  </Link>
-                </li>
-              ))}
-              {awaitingCalibration.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t("dash.lead.queueEmpty")}</p>
-              )}
-            </ul>
-          </SectionCard>
+      <div>
+        <SectionHeading as="p" muted>
+          {t("dash.lead.pendingEvidence")}
+        </SectionHeading>
+        <ul className="mt-2 space-y-2">
+          {pendingEvidence.map((evidence) => (
+            <li key={evidence.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
+              <Link
+                to="/architects/$architectId"
+                params={{ architectId: evidence.architectId }}
+                className="text-sm hover:underline"
+              >
+                {sel.architectById(evidence.architectId)?.name} — {evidence.title}
+              </Link>
+              <span className="ml-2 text-xs text-muted-foreground">
+                {labels.evidenceStatus[evidence.status]}
+              </span>
+            </li>
+          ))}
+          {pendingEvidence.length === 0 && queueEmpty}
+        </ul>
+      </div>
 
-          <SectionCard title={t("dash.lead.pendingEvidence")}>
-            <ul className="space-y-2">
-              {pendingEvidence.map((e) => (
-                <li key={e.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
-                  <Link
-                    to="/architects/$architectId"
-                    params={{ architectId: e.architectId }}
-                    className="text-sm hover:underline"
-                  >
-                    {sel.architectById(e.architectId)?.name} — {e.title}
-                  </Link>
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {labels.evidenceStatus[e.status]}
-                  </span>
-                </li>
-              ))}
-              {pendingEvidence.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t("dash.lead.queueEmpty")}</p>
-              )}
-            </ul>
-          </SectionCard>
-
-          <SectionCard title={t("dash.lead.awaitingApproval")}>
-            <ul className="space-y-2">
-              {awaitingApproval.map(({ architect }) => (
-                <li key={architect.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
-                  <Link
-                    to="/development-plans"
-                    search={{ architectId: architect.id }}
-                    className="text-sm hover:underline"
-                  >
-                    {architect.name}
-                  </Link>
-                </li>
-              ))}
-              {awaitingApproval.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t("dash.lead.queueEmpty")}</p>
-              )}
-            </ul>
-          </SectionCard>
-        </div>
-      )}
-    </>
+      <div>
+        <SectionHeading as="p" muted>
+          {t("dash.lead.awaitingApproval")}
+        </SectionHeading>
+        <ul className="mt-2 space-y-2">
+          {awaitingApproval.map(({ architect }) => (
+            <li key={architect.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
+              <Link
+                to="/development-plans"
+                search={{ architectId: architect.id }}
+                className="text-sm hover:underline"
+              >
+                {architect.name}
+              </Link>
+            </li>
+          ))}
+          {awaitingApproval.length === 0 && queueEmpty}
+        </ul>
+      </div>
+    </div>
   );
 }

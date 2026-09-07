@@ -16,7 +16,7 @@ export function SectionHeading({
   children,
 }: {
   as?: "h2" | "h3" | "p";
-  id?: string;
+  id?: string | undefined;
   muted?: boolean;
   className?: string;
   children: ReactNode;

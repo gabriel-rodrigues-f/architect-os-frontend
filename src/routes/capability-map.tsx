@@ -5,11 +5,13 @@ import {
   Callout,
   type CardsOrTable,
   EmptyState,
+  KeyFigureCard,
   OutOfReachScreen,
   PageHeader,
   SectionCard,
   SectionHeading,
   SortableHeader,
+  StatTones,
   useCardsAndTableViews,
   ViewToggle,
 } from "@/components/app";
@@ -94,6 +96,9 @@ function TeamCapabilityCoverage() {
   const exposed = withRisk.filter(
     (area) => area.risk === "concentrationRisk" || area.risk === "noReference",
   );
+  // Números como afirmação (referência FIAP 2026-09-06, §2 item 2): a pergunta
+  // do C-Level é "quantas capacidades dependem de uma pessoa só?".
+  const concentrated = withRisk.filter((area) => area.risk === "concentrationRisk").length;
 
   const view: CardsOrTable = viewOverride ?? (withRisk.length > 8 ? "table" : "cards");
 
@@ -107,6 +112,14 @@ function TeamCapabilityCoverage() {
         <EmptyState title={t("cap.empty.noScope.title")} hint={t("cap.empty.noScope.hint")} />
       ) : (
         <>
+          <KeyFigureCard
+            className="mb-6"
+            label={t("cap.figure.concentration")}
+            value={concentrated}
+            tone={StatTones.bySeverity(concentrated)}
+            caption={t("cap.figure.caption", { n: withRisk.length })}
+          />
+
           {exposed.length > 0 && <NextStepCallout exposedCount={exposed.length} />}
 
           <div className="mb-3 flex justify-end">

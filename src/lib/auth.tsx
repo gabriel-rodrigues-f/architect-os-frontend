@@ -1,4 +1,5 @@
 import { CollapsedNavGroups } from "@/lib/collapsed-nav-groups";
+import { DashboardEntrance } from "@/lib/dashboard-entrance";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -102,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       const result = await authApi.login(email, password);
       CollapsedNavGroups.forget();
+      // A primeira abertura do Painel depois do login ganha a entrada orquestrada.
+      DashboardEntrance.arm(result.user);
       await openSession(result.user);
     },
     [openSession],
@@ -111,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (input: { name: string; email: string; password: string }) => {
       const result = await authApi.register(input);
       CollapsedNavGroups.forget();
+      DashboardEntrance.arm(result.user);
       await openSession(result.user);
     },
     [openSession],

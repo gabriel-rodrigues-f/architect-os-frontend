@@ -5,13 +5,11 @@ import { useMemo, useState } from "react";
 import {
   Callout,
   CareerEventTimeline,
-  DeactivatedPersonNotice,
   EmptyState,
   MultiSelectFilter,
   OutOfReachScreen,
-  PageHeader,
   ProfileBackLink,
-  ProfileTabs,
+  ProfileHeader,
   SingleSelectFilter,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
@@ -225,7 +223,8 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
   return (
     <>
       <div>
-        <PageHeader
+        <ProfileHeader
+          architect={architect}
           help={help}
           title={t("statement.title", { nome: architect.name })}
           description={t("statement.description")}
@@ -244,10 +243,8 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
               <ProfileBackLink architectId={architect.id} to="overview" />
             </div>
           }
+          active="statement"
         />
-        <DeactivatedPersonNotice active={architect.active} />
-
-        <ProfileTabs architectId={architect.id} active="statement" />
 
         <div className="mb-6 flex flex-wrap items-end gap-4">
           <SingleSelectFilter

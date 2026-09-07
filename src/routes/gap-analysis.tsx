@@ -6,6 +6,7 @@ import {
   EmptyState,
   GapBadge,
   GapClosureSection,
+  KeyFigureCard,
   NameList,
   OutOfReachScreen,
   PageHeader,
@@ -22,6 +23,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { KeyFigureFormatter } from "@/lib/key-figure-format";
 import { useSelectors } from "@/lib/store";
 import { FurthestFromTarget } from "@/lib/view-models";
 
@@ -78,6 +80,12 @@ function TeamPriorities() {
     () => new FurthestFromTarget(architects, sel.progressionGapsFor),
     [architects, sel],
   );
+  // Números como afirmação (referência FIAP 2026-09-06, §2 item 2): a distância
+  // média por pessoa × competência em evolução, no recorte escolhido.
+  const averageGap = KeyFigureFormatter.ratio(
+    priorities.reduce((sum, row) => sum + row.totalGap, 0),
+    priorities.reduce((sum, row) => sum + row.people, 0),
+  );
 
   return (
     <>
@@ -106,36 +114,48 @@ function TeamPriorities() {
           }
         />
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <SectionCard
-            title={t("gap.radar.title")}
-            description={t("gap.radar.subtitle", { escopo: scopeLabel })}
-          >
-            <CapabilityRadar data={radar} />
-            {radarCoverage.total > 0 && radarCoverage.covered < radarCoverage.total && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                {t("gap.radar.coverage", {
-                  covered: radarCoverage.covered,
-                  total: radarCoverage.total,
-                })}
-              </p>
-            )}
-          </SectionCard>
+        <>
+          <KeyFigureCard
+            className="mb-6"
+            label={t("gap.figure.avgGap")}
+            value={averageGap}
+            format="decimal"
+            caption={t("gap.figure.caption", {
+              competencies: priorities.length,
+              people: architects.length,
+            })}
+          />
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <SectionCard
+              title={t("gap.radar.title")}
+              description={t("gap.radar.subtitle", { escopo: scopeLabel })}
+            >
+              <CapabilityRadar data={radar} />
+              {radarCoverage.total > 0 && radarCoverage.covered < radarCoverage.total && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t("gap.radar.coverage", {
+                    covered: radarCoverage.covered,
+                    total: radarCoverage.total,
+                  })}
+                </p>
+              )}
+            </SectionCard>
 
-          <SectionCard
-            className="flex flex-col"
-            title={t("gap.priorities.title")}
-            description={t("gap.priorities.subtitle", { n: architects.length })}
-          >
-            <div className="max-h-[460px] space-y-4 overflow-y-auto pr-1">
-              <GapPriorityList
-                rows={priorities}
-                emptyLabel={t("gap.priorities.none")}
-                furthestFromTarget={furthestFromTarget}
-              />
-            </div>
-          </SectionCard>
-        </div>
+            <SectionCard
+              className="flex flex-col"
+              title={t("gap.priorities.title")}
+              description={t("gap.priorities.subtitle", { n: architects.length })}
+            >
+              <div className="max-h-[460px] space-y-4 overflow-y-auto pr-1">
+                <GapPriorityList
+                  rows={priorities}
+                  emptyLabel={t("gap.priorities.none")}
+                  furthestFromTarget={furthestFromTarget}
+                />
+              </div>
+            </SectionCard>
+          </div>
+        </>
       )}
 
       <div className="mt-6">

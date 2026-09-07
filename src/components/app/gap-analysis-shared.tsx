@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import { type ConsolidatedGapRow } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamList } from "@/hooks";
+import { cn } from "@/lib/utils";
 
 export function useGapAnalysisData() {
   const store = useStore();
@@ -68,6 +69,23 @@ export function useGapAnalysisData() {
   };
 }
 
+/**
+ * O cabeçalho de colunas fica fixo enquanto as linhas rolam (referência FIAP
+ * 2026-09-06, §2 item 7): a tabela rola dentro do próprio contêiner, então o
+ * ponto de fixação é o topo dele.
+ */
+const PINNED_COLUMN_HEADER = "sticky top-0 z-10 bg-card py-2";
+
+const COLUMNS = [
+  { key: "col.competency", centered: false },
+  { key: "col.capability", centered: false },
+  { key: "col.people", centered: true },
+  { key: "col.currentAvg", centered: true },
+  { key: "col.targetAvg", centered: true },
+  { key: "col.avgGap", centered: true },
+  { key: "col.classification", centered: false },
+] as const;
+
 export function GapTable({
   rows,
   capabilities,
@@ -84,27 +102,16 @@ export function GapTable({
       <table className="w-full min-w-[820px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
-              {t("col.competency")}
-            </th>
-            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
-              {t("col.capability")}
-            </th>
-            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
-              {t("col.people")}
-            </th>
-            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
-              {t("col.currentAvg")}
-            </th>
-            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
-              {t("col.targetAvg")}
-            </th>
-            <th scope="col" className="sticky top-0 z-10 bg-card py-2 text-center">
-              {t("col.avgGap")}
-            </th>
-            <th scope="col" className="sticky top-0 z-10 bg-card py-2">
-              {t("col.classification")}
-            </th>
+            {COLUMNS.map((column) => (
+              <th
+                key={column.key}
+                scope="col"
+                data-pinned
+                className={cn(PINNED_COLUMN_HEADER, column.centered && "text-center")}
+              >
+                {t(column.key)}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
