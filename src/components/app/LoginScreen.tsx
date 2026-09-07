@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { authApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { authErrorMessage, useAuth } from "@/lib/auth";
+import { FormKeyboard } from "@/lib/form-keyboard";
 import { SynapseSignals } from "@/lib/synapse-network";
 
 /**
@@ -113,7 +114,7 @@ export function LoginScreen() {
       </p>
 
       {/* Ritmo do cartão (2026-09-07): apoio → 28 → campos a 20 entre si → 16 → botão → 16 → Esqueci. */}
-      <form className="mt-7" onSubmit={submit}>
+      <form className="mt-7" onSubmit={submit} onKeyDown={FormKeyboard.submitsOnEnter}>
         <div data-testid="auth-fields" className="space-y-5">
           {firstAccess && (
             <div className="space-y-1.5">

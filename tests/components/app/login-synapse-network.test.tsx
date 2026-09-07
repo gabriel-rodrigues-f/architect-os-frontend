@@ -175,7 +175,34 @@ describe("Enter envia o formulário (dono, 2026-09-07)", () => {
     });
     const senha = screen.getByLabelText("Senha");
     fireEvent.change(senha, { target: { value: "Senha-forte-123!" } });
-    fireEvent.submit(senha.closest("form") as HTMLFormElement);
+    // A TECLA, e não o evento `submit`: o jsdom não faz submissão implícita,
+    // e o navegador do dono também não fez (2026-09-08). O Enter tem que
+    // chegar ao login pelo caminho explícito do formulário.
+    fireEvent.keyDown(senha, { key: "Enter", code: "Enter" });
     await waitFor(() => expect(tentativas).toBe(1));
+  });
+
+  it("Enter no botão de mostrar senha só alterna a visibilidade — não envia", async () => {
+    let tentativas = 0;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const href = String(url);
+      if (href.endsWith(apiPath("/auth/login")) && init?.method === "POST") tentativas += 1;
+      return Promise.resolve(jsonResponse({ error: "Unauthorized" }, 401));
+    });
+    render(
+      <LoginWrapper>
+        <LoginScreen />
+      </LoginWrapper>,
+    );
+    fireEvent.change(await screen.findByLabelText("E-mail"), {
+      target: { value: "ana@company.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Senha"), { target: { value: "Senha-forte-123!" } });
+    fireEvent.keyDown(screen.getByRole("button", { name: /mostrar senha/i }), {
+      key: "Enter",
+      code: "Enter",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(tentativas).toBe(0);
   });
 });
