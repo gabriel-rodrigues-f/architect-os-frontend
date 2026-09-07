@@ -12,16 +12,15 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { AuthProvider, useAuth } from "../lib/auth";
+import { AuthProvider } from "../lib/auth";
 import { DependencyProvider } from "../lib/dependencies";
 import { I18nProvider } from "../lib/i18n";
 import { defaultPublicReach } from "../lib/public-reach";
 import { ThemeProvider, useTheme } from "../lib/theme";
 import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
+import { AuthGate } from "../components/app/AuthGate";
 import { CareerRunCanvas } from "../components/app/CareerRunCanvas";
-import { FirstAccessScreen } from "../components/app/FirstAccessScreen";
-import { LoginScreen } from "../components/app/LoginScreen";
 import { Toaster } from "../components/ui/sonner";
 
 const errorTrackingDsn = import.meta.env["VITE_SENTRY_DSN"];
@@ -243,44 +242,4 @@ function RootComponent() {
 function AppToaster() {
   const { resolved } = useTheme();
   return <Toaster theme={resolved} position="bottom-right" duration={3000} richColors={false} />;
-}
-
-function AuthGate({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  /*
-   * As guardas de rota (`beforeLoad`) rodam antes de a sessão existir: no
-   * servidor (SSR) não há janela, e quem entra pela tela de login já está
-   * na URL que pediu. Medido pelo dono (2026-09-06): o administrador abriu
-   * /training-needs por URL e a tela desenhou a negativa em vez de voltar ao
-   * Painel. Com a sessão conhecida, as guardas são reavaliadas — e quem não
-   * alcança a rota é redirecionado, como se tivesse navegado até ela.
-   */
-  useEffect(() => {
-    if (user) void router.invalidate();
-  }, [router, user]);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-      </div>
-    );
-  }
-  if (!user) return <LoginScreen />;
-  /*
-   * A MARCA DE PÉ SEGURA A PORTA. Regra do dono (2026-09-03): "ao realizar o
-   * primeiro acesso, o usuário (regra universal) precisa ter que alterar sua
-   * senha". O backend já recusa toda rota com 403 PASSWORD_CHANGE_REQUIRED
-   * enquanto `mustChangePassword` está de pé — quem entra tem sessão válida e
-   * não vai a lugar nenhum.
-   *
-   * O bloqueio mora AQUI, e não numa rota, por duas razões: a pessoa chega à
-   * troca logo depois do login em vez de tropeçar num 403, e o resto da
-   * aplicação — menu, casca, `Outlet` — sequer é desenhado, então não existe
-   * destino para onde navegar antes de trocar.
-   */
-  if (user.mustChangePassword) return <FirstAccessScreen />;
-  return <>{children}</>;
 }

@@ -13,12 +13,17 @@ import {
 import { toast } from "sonner";
 
 import { authApi, sessionPolicy, UserFacingError, type SessionUser } from "./api";
+import { SessionBootstrap, SessionBootstrapReader } from "./session-bootstrap";
 import { SESSION_QUERY_KEY, sessionQuery } from "./session-query";
 
 interface AuthContextValue {
   user: SessionUser | null;
 
   loading: boolean;
+  /** O que a aplicação sabe da sessão: lendo, aberta, ausente ou serviço fora. */
+  bootstrap: SessionBootstrap;
+  /** A pessoa pediu para tentar de novo enquanto o serviço está fora. */
+  retrySession: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (input: { name: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -29,24 +34,39 @@ const Ctx = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  /**
+   * A SESSÃO É UM ESTADO EXPLÍCITO, não `user` nulo + `loading` (dono,
+   * 2026-09-07: "derrubei o backend… quando atualizei a tela fui deslogado.
+   * isso não pode ocorrer, somente se o token do frontend expirar"). Com dois
+   * booleanos, toda falha da leitura virava "ninguém logado" e o portão
+   * desenhava o login por cima de uma sessão que ainda vale. Só o 401 diz
+   * isso; o resto é o serviço fora, e o leitor insiste até ele responder.
+   */
+  const [bootstrap, setBootstrap] = useState<SessionBootstrap>(SessionBootstrap.reading);
+  const [reader, setReader] = useState<SessionBootstrapReader | null>(null);
+  const user = bootstrap.user;
+  const setUser = useCallback(
+    (next: SessionUser | null | ((current: SessionUser | null) => SessionUser | null)) => {
+      setBootstrap((current) => {
+        const nextUser = typeof next === "function" ? next(current.user) : next;
+        // A mesma conta é o mesmo estado — `serviceDown` e `reading` não viram `absent` por tabela.
+        return nextUser === current.user ? current : SessionBootstrap.of(nextUser);
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
-    let active = true;
-    queryClient
-      .ensureQueryData(sessionQuery)
-      .then((me) => {
-        if (active) setUser(me);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+    const sessionReader = new SessionBootstrapReader(
+      () => queryClient.ensureQueryData(sessionQuery),
+      setBootstrap,
+    );
+    setReader(sessionReader);
+    sessionReader.start();
+    return () => sessionReader.stop();
   }, [queryClient]);
+
+  const retrySession = useCallback(() => reader?.retryNow(), [reader]);
 
   useEffect(() => {
     sessionPolicy.whenSessionEnded(() => {
@@ -58,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     });
     return () => sessionPolicy.whenSessionEnded(null);
-  }, [queryClient]);
+  }, [queryClient, setUser]);
 
   /**
    * A rede de segurança do primeiro acesso. O caminho normal é a marca chegar
@@ -79,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
     });
     return () => sessionPolicy.whenPasswordChangeRequired(null);
-  }, []);
+  }, [setUser]);
 
   /**
    * `POST /auth/login` e `POST /auth/register` devolvem a conta autenticada,
@@ -96,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(SESSION_QUERY_KEY, session);
       setUser(session);
     },
-    [queryClient],
+    [queryClient, setUser],
   );
 
   const login = useCallback(
@@ -124,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.logout().catch(() => undefined);
     setUser(null);
     queryClient.clear();
-  }, [queryClient]);
+  }, [queryClient, setUser]);
 
   /**
    * A troca do PRIMEIRO ACESSO. O serviço responde 204 e derruba a marca;
@@ -148,12 +168,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await queryClient.invalidateQueries();
       setUser(null);
     },
-    [queryClient],
+    [queryClient, setUser],
   );
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, loading, login, register, logout, changePassword }),
-    [user, loading, login, register, logout, changePassword],
+    () => ({
+      user,
+      loading: bootstrap.loading,
+      bootstrap,
+      retrySession,
+      login,
+      register,
+      logout,
+      changePassword,
+    }),
+    [user, bootstrap, retrySession, login, register, logout, changePassword],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
