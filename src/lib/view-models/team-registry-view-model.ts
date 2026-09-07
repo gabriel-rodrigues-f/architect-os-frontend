@@ -51,7 +51,7 @@ export class TeamRegistryViewModel {
 
   membershipRolesOfferedTo(user: SessionUser): TeamMemberRole[] {
     return TeamMemberRoles.ALL.filter(
-      (role) => role !== TeamMemberRoles.MANAGER || this.policy.operatesTheSystem(user),
+      (role) => !TeamMemberRoles.isManager(role) || this.policy.operatesTheSystem(user),
     );
   }
 

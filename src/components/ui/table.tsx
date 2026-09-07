@@ -27,7 +27,7 @@ export function Table({
 }: ComponentPropsWithoutRef<"table"> & { density?: TableDensity }) {
   return (
     <DensityContext.Provider value={density}>
-      <div className="w-full overflow-x-auto">
+      <div className="scroll-visible w-full overflow-x-auto">
         <table
           data-density={density}
           className={cn("w-full border-collapse text-table", className)}

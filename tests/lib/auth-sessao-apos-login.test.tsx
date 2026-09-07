@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { filterNavGroups, NAV_GROUPS } from "@/components/app/AppShell";
+import { NAV_GROUPS, filterNavGroups } from "@/lib/navigation-catalog";
 import { apiPath } from "@/lib/api-path";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { createAppQueryClient } from "@/lib/query-client";

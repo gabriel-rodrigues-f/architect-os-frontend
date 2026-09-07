@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "src/components/app/AppShell.tsx": {
-    "id-length": {
-      "count": 6
-    }
-  },
   "src/components/app/CapabilityCombobox.tsx": {
     "id-length": {
       "count": 3

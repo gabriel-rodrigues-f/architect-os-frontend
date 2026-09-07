@@ -1,6 +1,6 @@
 import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -10,33 +10,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * `Route.useParams()`, que só existe dentro de uma árvore de rotas montada
  * de verdade.
  */
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    useRouterState: () => "/architects/ana/evolution",
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
 import type { ArchitectEvolutionResult } from "@/lib/domain";
-import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { jsonResponse, mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 import { apiPath } from "@/lib/api-path";
 
 /**
@@ -77,7 +58,7 @@ const emptyEvolutionResult: ArchitectEvolutionResult = {
 
 const EvolutionPage = EvolutionRoute.options.component as () => ReactNode;
 
-const renderEvolution = () => renderWithApp(<EvolutionPage />);
+const renderEvolution = () => renderCareerFile(<EvolutionPage />, { tab: "evolution" });
 
 describe("Evolução do arquiteto — filtros de Período e Fonte (R3-008)", () => {
   beforeEach(() => {

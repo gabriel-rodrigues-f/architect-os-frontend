@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isLeadCapable, type SessionUser, type UserRole } from "@/lib/api";
+import type { SessionUser, UserRole } from "@/lib/api";
 import type { TeamMembership } from "@/lib/gateways/auth.gateway";
 import { UiAuthorizationPolicy } from "@/lib/scope";
 import {
@@ -460,12 +460,13 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
     expect(policy.isAssignedTechLeadOf(doisChapeus, anaNoTime)).toBe(false);
   });
 
-  it("gerente e tech lead são capazes de liderança para o texto de ajuda e o catálogo", () => {
-    expect(isLeadCapable("manager")).toBe(true);
-    expect(isLeadCapable("tech_lead")).toBe(true);
-    expect(isLeadCapable("admin")).toBe(true);
-    expect(isLeadCapable("support")).toBe(true);
-    expect(isLeadCapable("member")).toBe(false);
+  it("gerente, tech lead, suporte e diretoria são liderança para o texto de ajuda e o catálogo", () => {
+    const as = (role: UserRole): SessionUser => ({ ...fixtureMemberUser, role });
+    expect(policy.isLeadership(as("manager"))).toBe(true);
+    expect(policy.isLeadership(as("tech_lead"))).toBe(true);
+    expect(policy.isLeadership(as("admin"))).toBe(true);
+    expect(policy.isLeadership(as("support"))).toBe(true);
+    expect(policy.isLeadership(as("member"))).toBe(false);
   });
 });
 

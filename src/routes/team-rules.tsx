@@ -323,7 +323,7 @@ function TeamRuleEditor({
         {competencies.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("teamRules.competencies.empty")}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="scroll-visible overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">

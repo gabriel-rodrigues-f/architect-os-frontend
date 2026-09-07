@@ -82,7 +82,7 @@ export function CapabilityHeatmap({
         <div
           ref={scrollRef}
           data-testid="heatmap-scroll"
-          className="overflow-auto"
+          className="scroll-visible overflow-auto"
           style={{ maxHeight: JanelaDoMapa.alturaPara(JanelaDoMapa.PESSOAS_VISIVEIS) }}
         >
           <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">

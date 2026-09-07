@@ -1,38 +1,18 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** Mesma razão de `estrangulamento-perfil.test.tsx`: `Route.useParams()` exige árvore montada. */
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a href={to} {...rest}>
-        {children}
-      </a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "raquel" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import type { AppState } from "@/lib/api";
 import type { Architect } from "@/lib/domain";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
-import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { careerLevelsRoute, mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * FATIA `inativo-some` — a contrapartida da regra "inativo some": nenhum
@@ -80,7 +60,7 @@ describe("ficha de quem está desativado avisa e aponta para Time", () => {
   });
 
   it("mostra o aviso de desativado, com o caminho para Time", async () => {
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />, { architectId: "raquel" });
 
     const aviso = await screen.findByRole("status");
     expect(aviso.textContent).toMatch(/desativad/);
@@ -93,7 +73,7 @@ describe("ficha de quem está desativado avisa e aponta para Time", () => {
       state: { ...comInativa, architects: fixtureState.architects },
       routes: [careerLevelsRoute],
     });
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />, { architectId: "raquel" });
 
     await screen.findByText(/não encontrado|Ana Martins|Bruno Almeida/);
     expect(screen.queryByRole("status")).toBeNull();

@@ -1,39 +1,10 @@
 import { cleanup, screen, within } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to,
-      params: _params,
-      search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => {
-      const entries = Object.entries((search ?? {}) as Record<string, unknown>).filter(
-        ([, value]) => value !== undefined && value !== null,
-      );
-      const query = new URLSearchParams(
-        entries.map(([nome, valor]) => [nome, String(valor)]),
-      ).toString();
-      return (
-        <a href={`${to ?? ""}${query ? `?${query}` : ""}`} {...rest}>
-          {children}
-        </a>
-      );
-    },
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as GapRoute } from "@/routes/gap-analysis";
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
@@ -41,6 +12,7 @@ import type { AppState } from "@/lib/api";
 import type { Assessment, DevelopmentPlan } from "@/lib/domain";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * Decisao do dono (opcao B): dos 16 "Tratar no PDI", 8 nao faziam nada — nao
@@ -115,7 +87,7 @@ describe("Perfil — '+ PDI' com o plano aprovado", () => {
       user: fixtureAssignedManagerUser,
       state: comPlanoDaAnaEm("Approved"),
     });
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />);
 
     const acao = await screen.findByRole("button", { name: "+ PDI" });
     expect(acao.hasAttribute("disabled")).toBe(true);
@@ -125,7 +97,7 @@ describe("Perfil — '+ PDI' com o plano aprovado", () => {
 
   it("com o plano em rascunho volta a ser link, com pessoa e competencia", async () => {
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: comPlanoDaAnaEm("Draft") });
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />);
 
     const acao = await screen.findByRole("link", { name: "+ PDI" });
     const href = acao.getAttribute("href") ?? "";

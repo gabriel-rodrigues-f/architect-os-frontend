@@ -9,15 +9,13 @@ import {
   LearningPathCoverageList,
   LevelBadge,
   CareerReadinessVerdictLines,
-  OutOfReachScreen,
   PersonAdviceSection,
   ProfileBackLink,
-  ProfileHeader,
+  ProfileHeading,
   QuerySection,
 } from "@/components/app";
 import { api, personAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import type { CareerLevel } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -42,33 +40,8 @@ export const Route = createFileRoute("/architects/$architectId/roadmap")({
     ],
   }),
   beforeLoad: requireCareerTabsReach,
-  component: ArchitectRoadmap,
+  component: RoadmapOfArchitect,
 });
-
-function ArchitectRoadmap() {
-  const { architectId } = Route.useParams();
-  const user = useCurrentUser();
-  const { t } = useI18n();
-  const help = usePageHelp("architectRoadmap");
-  const canOpenCareerTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architectId);
-
-  if (!canOpenCareerTabs) {
-    return (
-      <OutOfReachScreen
-        title={t("arch.tabs.roadmap")}
-        help={help}
-        reason={t("arch.careerFile.tabsOutOfReach")}
-        hint={t("arch.careerFile.tabsOutOfReachHint")}
-      />
-    );
-  }
-
-  return (
-    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
-      <RoadmapOfArchitect architectId={architectId} />
-    </ContextScope>
-  );
-}
 
 function useCareerRoadmapViewModel(): CareerRoadmapViewModel {
   const sel = useSelectors();
@@ -83,7 +56,8 @@ function useCareerRoadmapViewModel(): CareerRoadmapViewModel {
 const SUMMARY_SKELETON = <div className="h-28 animate-pulse rounded-md bg-secondary" />;
 const SECTION_SKELETON = <div className="h-24 animate-pulse rounded-md bg-secondary" />;
 
-function RoadmapOfArchitect({ architectId }: { architectId: string }) {
+function RoadmapOfArchitect() {
+  const { architectId } = Route.useParams();
   const sel = useSelectors();
   const store = useStore();
   const user = useCurrentUser();
@@ -120,13 +94,11 @@ function RoadmapOfArchitect({ architectId }: { architectId: string }) {
 
   const header = (
     <>
-      <ProfileHeader
-        architect={architect}
+      <ProfileHeading
         help={help}
         title={t("roadmap.title", { nome: architect.name })}
         description={t("roadmap.description")}
         actions={<ProfileBackLink architectId={architect.id} to="overview" />}
-        active="roadmap"
       />
     </>
   );

@@ -1,33 +1,12 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** `Route.useParams()` da ficha exige árvore montada — mesmo mock de `estrangulamento-perfil`. */
-const parametrosDaRota = vi.hoisted(() => ({ architectId: "carla" }));
-
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => parametrosDaRota,
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
@@ -48,6 +27,7 @@ import {
   renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * ONDA 37 (backend ADR-0084) — cargo e senioridade se separaram: gerente e
@@ -180,7 +160,7 @@ describe("ONDA 37 — quem não tem senioridade não derruba a tela", () => {
 
   it("na ficha da pessoa a senioridade ausente é o travessão, nunca 'null'", async () => {
     montarTime(fixtureAssignedManagerUser);
-    renderWithApp(<ArchitectPage />);
+    renderCareerFile(<ArchitectPage />, { architectId: "carla" });
 
     const cabecalho = await screen.findByText(/9 anos/);
     expect(cabecalho.textContent).toContain("—");

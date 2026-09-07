@@ -7,16 +7,14 @@ import {
   CareerEventTimeline,
   EmptyState,
   MultiSelectFilter,
-  OutOfReachScreen,
   ProfileBackLink,
-  ProfileHeader,
+  ProfileHeading,
   SingleSelectFilter,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { useToastSubmit } from "@/hooks";
 import { api, evolutionApi, reportsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import { downloadBlob } from "@/lib/download";
 import type { EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -44,34 +42,8 @@ export const Route = createFileRoute("/architects/$architectId/statement")({
     ],
   }),
   beforeLoad: requireCareerTabsReach,
-  component: ArchitectStatement,
+  component: StatementOfArchitect,
 });
-
-function ArchitectStatement() {
-  const { architectId } = Route.useParams();
-  const { user } = useAuth();
-  const { t } = useI18n();
-  const help = usePageHelp("architectStatement");
-  const canOpenCareerTabs =
-    user !== null && defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architectId);
-
-  if (!canOpenCareerTabs) {
-    return (
-      <OutOfReachScreen
-        title={t("arch.tabs.statement")}
-        help={help}
-        reason={t("arch.careerFile.tabsOutOfReach")}
-        hint={t("arch.careerFile.tabsOutOfReachHint")}
-      />
-    );
-  }
-
-  return (
-    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
-      <StatementOfArchitect architectId={architectId} />
-    </ContextScope>
-  );
-}
 
 const STATEMENT_KINDS: readonly StatementEntryKind[] = [
   "transition",
@@ -109,7 +81,8 @@ function useCareerStatementViewModel(): CareerStatementViewModel {
   );
 }
 
-function StatementOfArchitect({ architectId }: { architectId: string }) {
+function StatementOfArchitect() {
+  const { architectId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
   const { t, locale } = useI18n();
@@ -223,8 +196,7 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
   return (
     <>
       <div>
-        <ProfileHeader
-          architect={architect}
+        <ProfileHeading
           help={help}
           title={t("statement.title", { nome: architect.name })}
           description={t("statement.description")}
@@ -243,7 +215,6 @@ function StatementOfArchitect({ architectId }: { architectId: string }) {
               <ProfileBackLink architectId={architect.id} to="overview" />
             </div>
           }
-          active="statement"
         />
 
         <div className="mb-6 flex flex-wrap items-end gap-4">

@@ -24,11 +24,18 @@ const HEADING_BLOCK = "page-heading";
 
 const styles = () => readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
 
+/** O corpo da utility, com as chaves aninhadas (a `@media` de dentro) incluídas. */
 function utilityBody(nome: string): string {
   const css = styles();
   const inicio = css.indexOf(`@utility ${nome} {`);
   if (inicio === -1) return "";
-  return css.slice(inicio, css.indexOf("}", inicio));
+  let profundidade = 0;
+  for (let cursor = css.indexOf("{", inicio); cursor < css.length; cursor += 1) {
+    if (css[cursor] === "{") profundidade += 1;
+    if (css[cursor] === "}") profundidade -= 1;
+    if (profundidade === 0) return css.slice(inicio, cursor + 1);
+  }
+  return css.slice(inicio);
 }
 
 function tituloBloco(container: HTMLElement): Element {
@@ -73,23 +80,39 @@ describe("PageHeader — o bloco de título tem altura determinística", () => {
 });
 
 describe("a reserva de altura vem do sistema de tokens, não de um valor solto", () => {
-  it("a utility declara min-height a partir da escala de espaçamento", () => {
-    expect(utilityBody(HEADING_BLOCK)).toContain("min-height: var(--space-16)");
+  /**
+   * [H-01] A reserva cobre DUAS linhas de descrição no desktop (três em telas
+   * < 768 px): nada abaixo do cabeçalho se move quando a descrição quebra. A
+   * conta é feita com os tokens de linha, não com um degrau solto da escala.
+   */
+  it("a utility reserva título + respiro + duas linhas de corpo no desktop, três no estreito", () => {
+    const corpo = utilityBody(HEADING_BLOCK)
+      .replace(/\s+/g, " ")
+      .replace(/\( /g, "(")
+      .replace(/ \)/g, ")");
+    expect(corpo).toContain(
+      "min-height: calc(var(--text-page--line-height) + var(--space-1) + 3 * var(--text-body--line-height))",
+    );
+    expect(corpo).toContain("@media (min-width: 768px)");
+    expect(corpo).toContain(
+      "min-height: calc(var(--text-page--line-height) + var(--space-1) + 2 * var(--text-body--line-height))",
+    );
   });
 
-  /**
-   * A reserva só resolve o desalinhamento se couber o caso mais alto: título
-   * numa linha, respiro do `mt-1` e descrição numa linha. Se um degrau da
-   * escala mudar e a conta estourar, o bloco volta a crescer com a descrição.
-   */
-  it("a medida reservada cobre título, respiro e descrição", () => {
+  it("a descrição é cortada em duas linhas no desktop e três no estreito — nunca cresce além da reserva", () => {
+    const { container } = render(<PageHeader title="Meu painel" description="Visão do ciclo." />);
+    const descricao = container.querySelector("p");
+    expect(descricao?.className).toContain("line-clamp-3");
+    expect(descricao?.className).toContain("md:line-clamp-2");
+  });
+
+  it("a medida reservada cobre título, respiro e duas linhas de descrição", () => {
     // [T-03]: a altura de linha do título é o token `--text-page--line-height`, lido da escala.
     expect(utilityBody("page-title")).toContain("line-height: var(--text-page--line-height)");
     const alturaLinhaTitulo = fontSize.lineHeight("page");
     expect(alturaLinhaTitulo).toBeGreaterThan(fontSize.get("page"));
 
-    const maisAlto = alturaLinhaTitulo + spacing.get("1") + fontSize.lineHeight("body");
-
-    expect(spacing.get("16")).toBeGreaterThanOrEqual(maisAlto);
+    const maisAlto = alturaLinhaTitulo + spacing.get("1") + 2 * fontSize.lineHeight("body");
+    expect(maisAlto).toBe(32 + 4 + 2 * 20);
   });
 });

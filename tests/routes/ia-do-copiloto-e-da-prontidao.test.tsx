@@ -1,32 +1,11 @@
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a href={to} {...rest}>
-        {children}
-      </a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
@@ -40,6 +19,7 @@ import {
   renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * Onda 39, item 2 do pedido do dono: *"cada assistente onde o trabalho
@@ -188,7 +168,7 @@ describe("explicação da prontidão — ao lado do veredito determinístico", (
       state: anaNoNivelDois,
       routes: [careerLevelsRoute, aderenciaRoute, ...routes],
     });
-    renderWithApp(<RoadmapPage />);
+    renderCareerFile(<RoadmapPage />, { tab: "roadmap" });
   };
 
   it("explica o resultado e publica o veredito que o motor determinístico calculou", async () => {

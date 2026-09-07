@@ -1,6 +1,5 @@
 import type { SessionUser } from "../api";
 import type { Architect, TeamTransferRequestView } from "../domain";
-import { TeamLeadershipRoles } from "../gateways/auth.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
 
 /**
@@ -71,10 +70,6 @@ export class TeamTransfersViewModel {
   }
 
   private managesDestinationOf(user: SessionUser, request: TeamTransferRequestView): boolean {
-    if (user.role !== TeamLeadershipRoles.MANAGER) return false;
-    return (user.memberships ?? []).some(
-      (membership) =>
-        membership.role === TeamLeadershipRoles.MANAGER && membership.teamId === request.toTeamId,
-    );
+    return this.policy.managesTeam(user, request.toTeamId);
   }
 }

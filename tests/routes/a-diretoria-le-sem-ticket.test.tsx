@@ -1,5 +1,5 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -10,35 +10,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 const fetchMock = vi.fn();
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    useNavigate: () => vi.fn(),
-    useRouter: () => ({ history: { push: vi.fn() } }),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import type { SessionUser } from "@/lib/api";
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { fixtureAdminUser, fixtureState, fixtureSupportUser } from "../helpers/fixtures";
-import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { careerLevelsRoute, mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 
@@ -46,7 +26,7 @@ const ACOES_DA_LIDERANCA = [/^Revisar$/, /^\+ PDI$/, /^Registrar$/];
 
 function renderAs(user: SessionUser) {
   mockAppFetch(fetchMock, { user, state: fixtureState, routes: [careerLevelsRoute] });
-  return renderWithApp(<ProfilePage />);
+  return renderCareerFile(<ProfilePage />);
 }
 
 describe("a diretoria lê a ficha sem ticket; o suporte declara o motivo", () => {

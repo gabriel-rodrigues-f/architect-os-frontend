@@ -1,29 +1,10 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
 import type { AppState } from "@/lib/api";
@@ -33,9 +14,9 @@ import {
   careerLevelsRoute,
   jsonResponse,
   mockAppFetch,
-  renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * O backend devolve `adherence.percentage` como RAZÃO 0–1
@@ -121,7 +102,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
       state: anaNoNivelDois,
       routes: [careerLevelsRoute, opostas],
     });
-    renderWithApp(<RoadmapPage />);
+    renderCareerFile(<RoadmapPage />, { tab: "roadmap" });
 
     expect(await screen.findByText("93%")).toBeTruthy();
     expect(await screen.findByText("58%")).toBeTruthy();
@@ -133,7 +114,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
       state: anaNoNivelDois,
       routes: [careerLevelsRoute, opostas],
     });
-    renderWithApp(<RoadmapPage />);
+    renderCareerFile(<RoadmapPage />, { tab: "roadmap" });
 
     const atual = (await screen.findByText(`Nível atual · ${NOME_ATUAL}`)).closest("div")!;
     const proximo = (await screen.findByText(`Próximo nível · ${NOME_PROXIMO}`)).closest("div")!;
@@ -148,7 +129,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
       state: anaNoNivelDois,
       routes: [careerLevelsRoute, opostas],
     });
-    renderWithApp(<RoadmapPage />);
+    renderCareerFile(<RoadmapPage />, { tab: "roadmap" });
 
     expect(await screen.findByText("1 competência abaixo do exigido")).toBeTruthy();
     expect(await screen.findByText("7 competências abaixo do exigido")).toBeTruthy();
@@ -166,7 +147,7 @@ describe("Roteiro — a aderência discrimina situações opostas", () => {
         }),
       ],
     });
-    renderWithApp(<RoadmapPage />);
+    renderCareerFile(<RoadmapPage />, { tab: "roadmap" });
 
     expect(await screen.findByText("100%")).toBeTruthy();
     expect(await screen.findByText("0%")).toBeTruthy();

@@ -98,7 +98,7 @@ export function GapTable({
   const { t } = useI18n();
 
   return (
-    <div className="max-h-[480px] overflow-auto">
+    <div className="scroll-visible max-h-[480px] overflow-auto">
       <table className="w-full min-w-[820px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">

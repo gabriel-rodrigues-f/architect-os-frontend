@@ -23,7 +23,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { AppShell, filterNavGroups, isNavItemActive, NAV_GROUPS } from "@/components/app/AppShell";
+import { AppShell } from "@/components/app/AppShell";
+import { NAV_GROUPS, filterNavGroups, isNavItemActive } from "@/lib/navigation-catalog";
 import type { SessionUser } from "@/lib/api";
 import { ThemeProvider } from "@/lib/theme";
 import {

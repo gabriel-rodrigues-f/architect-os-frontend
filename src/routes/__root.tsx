@@ -17,6 +17,7 @@ import { DependencyProvider } from "../lib/dependencies";
 import { I18nProvider } from "../lib/i18n";
 import { defaultPublicReach } from "../lib/public-reach";
 import { ThemeProvider, useTheme } from "../lib/theme";
+import { ThemeChoice } from "../lib/theme-choice";
 import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
 import { AuthGate } from "../components/app/AuthGate";
@@ -148,6 +149,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
+    /*
+     * [FA-09] O tema antes do primeiro paint: o `<html>` saía do servidor sem
+     * classe e a página pintava clara até o `ThemeProvider` hidratar. O
+     * script lê a preferência salva (e força o escuro na porta) no `<head>`.
+     */
+    scripts: [{ children: ThemeChoice.preambleScript() }],
   }),
   shellComponent: RootShell,
   component: RootComponent,

@@ -2,9 +2,9 @@ import { HelpCircle } from "lucide-react";
 import type { ComponentProps } from "react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { isLeadCapable } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { SectionHeading } from "@/components/app/SectionHeading";
 import { SentenceBlock } from "@/components/app/SentenceBlock";
 
@@ -52,7 +52,7 @@ export function PageHelp({
 }) {
   const user = useCurrentUser();
   const { t } = useI18n();
-  const persona = isLeadCapable(user.role) ? content.lead : content.member;
+  const persona = defaultUiAuthorizationPolicy.isLeadership(user) ? content.lead : content.member;
 
   return (
     <Popover>

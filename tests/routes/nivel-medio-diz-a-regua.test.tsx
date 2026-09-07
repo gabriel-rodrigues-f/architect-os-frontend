@@ -1,37 +1,18 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    useRouterState: () => "/architects/ana/evolution",
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
 import type { ArchitectEvolutionResult } from "@/lib/domain";
 import { apiPath } from "@/lib/api-path";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { jsonResponse, mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * O PO relatou "nível médio 4,36 × 3,38 na mesma pessoa em abas vizinhas".
@@ -101,7 +82,7 @@ afterEach(() => {
 describe("Nível médio — cada tela diz qual régua usa", () => {
   it("o Perfil calcula por capacidade e o rótulo anuncia capacidade", async () => {
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: fixtureState });
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />);
 
     expect(await screen.findByText(MEDIA_POR_CAPACIDADE)).toBeTruthy();
     expect(screen.queryByText(MEDIA_POR_COMPETENCIA)).toBeNull();
@@ -110,7 +91,7 @@ describe("Nível médio — cada tela diz qual régua usa", () => {
 
   it("a ficha não promete média de competências", async () => {
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: fixtureState });
-    const { container } = renderWithApp(<ProfilePage />);
+    const { container } = renderCareerFile(<ProfilePage />);
 
     await screen.findByText(MEDIA_POR_CAPACIDADE);
     expect(container.textContent).not.toContain("Média das competências avaliadas");
@@ -132,7 +113,7 @@ describe("Nível médio — cada tela diz qual régua usa", () => {
           href.endsWith(apiPath("/evolution/architect")) ? jsonResponse(evolucaoDaAna) : undefined,
       ],
     });
-    const { container } = renderWithApp(<EvolutionPage />);
+    const { container } = renderCareerFile(<EvolutionPage />, { tab: "evolution" });
 
     expect(await screen.findByText("3.38")).toBeTruthy();
     expect(await screen.findByText("Nível médio no fim do período")).toBeTruthy();

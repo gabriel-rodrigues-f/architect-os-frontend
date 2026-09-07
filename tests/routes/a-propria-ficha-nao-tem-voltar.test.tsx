@@ -1,29 +1,10 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import {
@@ -32,7 +13,8 @@ import {
   fixtureTeamId,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * Dono, 2026-09-06: com "Minha carreira" virando um GRUPO do menu (Visão
@@ -61,7 +43,7 @@ describe("a própria ficha não tem 'Voltar' (dono, 2026-09-06)", () => {
       user: fixtureMemberUser,
       state: scopedFixtureStateFor(fixtureMemberUser),
     });
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />);
 
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect(screen.queryByText("Voltar")).toBeNull();
@@ -72,7 +54,7 @@ describe("a própria ficha não tem 'Voltar' (dono, 2026-09-06)", () => {
       user: fixtureAssignedTechLeadUser,
       state: scopedFixtureStateFor(fixtureAssignedTechLeadUser, undefined, [fixtureTeamId]),
     });
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />);
 
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect(screen.getByText("Voltar")).toBeTruthy();

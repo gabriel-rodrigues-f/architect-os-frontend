@@ -257,6 +257,27 @@ export class UiAuthorizationPolicy {
   }
 
   /**
+   * "Minha Carreira" no menu: quem tem ficha (dono, 2026-09-05) — o gerente
+   * não, porque não é um profissional com capacidades (dono, 2026-09-06).
+   */
+  hasOwnCareerFile(user: SessionUser): boolean {
+    return user.architectId !== null && user.role !== TeamLeadershipRoles.MANAGER;
+  }
+
+  /** O gerente de UM time, por vínculo — quem decide sobre o destino de uma transferência. */
+  managesTeam(user: SessionUser, teamId: string): boolean {
+    return (
+      user.role === TeamLeadershipRoles.MANAGER &&
+      this.teamsBoundAs(user, [TeamLeadershipRoles.MANAGER]).has(teamId)
+    );
+  }
+
+  /** Os times em que a pessoa exerce o PRÓPRIO papel — o alcance de quem lidera. */
+  teamsBoundAsOwnRole(user: SessionUser): ReadonlySet<string> {
+    return this.scopeGrantingTeamsOf(user);
+  }
+
+  /**
    * Quem lidera alguém — com vínculo — tem o que FAZER em Avaliações, PDI e
    * Mentoria; quem tem ficha própria tem o que LER ali (dono, 2026-09-06: os
    * três menus continuam no menu do profissional, em leitura); a diretoria

@@ -1,35 +1,16 @@
 import { cleanup, screen, within } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    useRouterState: () => "/architects/ana/evolution",
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { apiPath } from "@/lib/api-path";
 import type { ArchitectEvolutionResult } from "@/lib/domain";
 import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
-import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { jsonResponse, mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * Onda 21 / apagar-o-vazio — a aba Evolução do perfil abria QUATRO subvisões
@@ -151,7 +132,7 @@ describe("Evolução do arquiteto — nenhuma subvisão repete a vizinha", () =>
    * estado deste teste.
    */
   it("não oferece a subvisão 'Linha do tempo' — a história mora no Extrato de carreira", async () => {
-    const { container } = renderWithApp(<EvolutionPage />);
+    const { container } = renderCareerFile(<EvolutionPage />, { tab: "evolution" });
     await screen.findByRole("tab", { name: "Resumo" });
 
     expect(screen.queryByRole("tab", { name: "Linha do tempo" })).toBeNull();
@@ -162,14 +143,14 @@ describe("Evolução do arquiteto — nenhuma subvisão repete a vizinha", () =>
   });
 
   it("não oferece a subvisão 'Capacidades' como seletor separado", async () => {
-    renderWithApp(<EvolutionPage />);
+    renderCareerFile(<EvolutionPage />, { tab: "evolution" });
     await screen.findByRole("tab", { name: "Resumo" });
 
     expect(screen.queryByRole("tab", { name: "Capacidades" })).toBeNull();
   });
 
   it("o gráfico 'Evolução por capacidade' é montado uma única vez no documento", async () => {
-    const { container } = renderWithApp(<EvolutionPage />);
+    const { container } = renderCareerFile(<EvolutionPage />, { tab: "evolution" });
     await screen.findByRole("tab", { name: "Resumo" });
 
     expect(
@@ -179,7 +160,7 @@ describe("Evolução do arquiteto — nenhuma subvisão repete a vizinha", () =>
   });
 
   it("o foco por capacidade sobrevive à fusão, dentro da subvisão visível", async () => {
-    const { container } = renderWithApp(<EvolutionPage />);
+    const { container } = renderCareerFile(<EvolutionPage />, { tab: "evolution" });
     await screen.findByRole("tab", { name: "Resumo" });
 
     const visivel = container.querySelector<HTMLElement>('[role="tabpanel"]:not([hidden])');
@@ -197,7 +178,7 @@ describe("Evolução do arquiteto — nenhuma subvisão repete a vizinha", () =>
   });
 
   it("as subvisões que restam são só Resumo e Competências", async () => {
-    renderWithApp(<EvolutionPage />);
+    renderCareerFile(<EvolutionPage />, { tab: "evolution" });
     await screen.findByRole("tab", { name: "Resumo" });
 
     expect(screen.getAllByRole("tab").map((aba) => aba.textContent)).toEqual([

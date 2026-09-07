@@ -1,34 +1,12 @@
 import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const pushMock = vi.fn();
-
 /** Mesma razão de progression.test.tsx: `<Link>`/`useRouter` exigem RouterProvider real. */
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    useRouter: () => ({ history: { push: pushMock } }),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as StatementRoute } from "@/routes/architects.$architectId.statement";
 import { apiPath } from "@/lib/api-path";
@@ -39,7 +17,8 @@ import {
   fixtureMemberUser,
   fixtureState,
 } from "../helpers/fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { jsonResponse, mockAppFetch } from "../helpers/render-app";
+import { careerFileRouter, renderCareerFile } from "../helpers/ficha";
 
 /**
  * Tela 4 (spec §4, CONTRATO PRD-04) — extrato de carreira: cronológico,
@@ -171,7 +150,7 @@ const statementRoutes = ({ failTransitions = false } = {}) => [
 describe("/architects/$architectId/statement — extrato de carreira", () => {
   beforeEach(() => {
     fetchMock.mockReset();
-    pushMock.mockReset();
+    careerFileRouter.push.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     window.history.replaceState(null, "", "/architects/ana/statement");
   });
@@ -188,7 +167,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
-    renderWithApp(<StatementPage />);
+    renderCareerFile(<StatementPage />, { tab: "statement" });
 
     expect(await screen.findByText("Transição de nível: Júnior → Pleno")).toBeTruthy();
     expect(screen.getByText("Evidência: ADR-014")).toBeTruthy();
@@ -205,7 +184,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       state: stateWithMentoring,
       routes: statementRoutes({ failTransitions: true }),
     });
-    renderWithApp(<StatementPage />);
+    renderCareerFile(<StatementPage />, { tab: "statement" });
 
     expect(await screen.findByText("Transições de nível não carregou.")).toBeTruthy();
     expect(screen.getByText("Evidência: ADR-014")).toBeTruthy();
@@ -225,7 +204,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
-    const { unmount } = renderWithApp(<StatementPage />);
+    const { unmount } = renderCareerFile(<StatementPage />, { tab: "statement" });
     expect(await screen.findByRole("button", { name: "Exportar PDF" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
     unmount();
@@ -236,7 +215,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
-    const { unmount: unmountMember } = renderWithApp(<StatementPage />);
+    const { unmount: unmountMember } = renderCareerFile(<StatementPage />, { tab: "statement" });
     expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
@@ -255,7 +234,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
-    renderWithApp(<StatementPage />);
+    renderCareerFile(<StatementPage />, { tab: "statement" });
     expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
     // Dono (2026-09-06): "não precisamos esconder do tech lead" — ele também gera.
     expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeTruthy();
@@ -276,7 +255,7 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
-    renderWithApp(<StatementPage />);
+    renderCareerFile(<StatementPage />, { tab: "statement" });
 
     expect(await screen.findByText("Mudou do time Plataforma para Dados")).toBeTruthy();
     expect(screen.getByText("Reforço do time de dados")).toBeTruthy();
@@ -304,10 +283,10 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
       state: stateWithMentoring,
       routes: statementRoutes(),
     });
-    renderWithApp(<StatementPage />);
+    renderCareerFile(<StatementPage />, { tab: "statement" });
     await screen.findByText("Evidência: ADR-014");
     const openButtons = screen.getAllByRole("button", { name: "Ver origem" });
     openButtons[0]?.click();
-    expect(pushMock).toHaveBeenCalled();
+    expect(careerFileRouter.push).toHaveBeenCalled();
   });
 });

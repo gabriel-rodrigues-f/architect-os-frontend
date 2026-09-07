@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { filterNavGroups, NAV_GROUPS } from "@/components/app/AppShell";
+import { NAV_GROUPS, filterNavGroups } from "@/lib/navigation-catalog";
 import type { SessionUser } from "@/lib/api";
 import {
   fixtureAdminUser,

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
-import { readMigratedItem } from "../storage";
+import { browserMemory } from "../browser-memory";
 import {
   availableLocales,
   BASE_LOCALE,
@@ -34,7 +34,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const salvo = readMigratedItem(STORAGE_KEY, LEGACY_STORAGE_KEY);
+    const salvo = browserMemory.read(STORAGE_KEY, LEGACY_STORAGE_KEY);
     const inicial =
       salvo && isKnownLocale(salvo)
         ? salvo
@@ -67,7 +67,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((code: string) => {
     if (!isKnownLocale(code)) return;
-    window.localStorage.setItem(STORAGE_KEY, code);
+    browserMemory.write(STORAGE_KEY, code);
     setLocaleState(code);
   }, []);
 

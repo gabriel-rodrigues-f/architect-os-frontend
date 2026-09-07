@@ -1,4 +1,4 @@
-import { CollapsedNavGroups } from "@/lib/collapsed-nav-groups";
+import { defaultSidebarPreferences } from "@/lib/sidebar-preferences";
 import { DashboardEntrance } from "@/lib/dashboard-entrance";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const result = await authApi.login(email, password);
-      CollapsedNavGroups.forget();
+      defaultSidebarPreferences.forgetCollapsedGroups();
       // A primeira abertura do Painel depois do login ganha a entrada orquestrada.
       DashboardEntrance.arm(result.user);
       await openSession(result.user);
@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (input: { name: string; email: string; password: string }) => {
       const result = await authApi.register(input);
-      CollapsedNavGroups.forget();
+      defaultSidebarPreferences.forgetCollapsedGroups();
       DashboardEntrance.arm(result.user);
       await openSession(result.user);
     },

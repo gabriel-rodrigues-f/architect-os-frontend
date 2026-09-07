@@ -14,17 +14,24 @@ import { vi } from "vitest";
  *     import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
  *   );
  *
- * A âncora preserva o `to` como `href` para o teste afirmar o destino.
+ * A âncora preserva o `to` (e o `search`, como querystring) no `href` para
+ * o teste afirmar o destino.
  */
 export function PlainLink({
   children,
   to,
   params: _params,
-  search: _search,
+  search,
   ...rest
 }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) {
+  const entries = Object.entries((search ?? {}) as Record<string, unknown>).filter(
+    ([, value]) => value !== undefined && value !== null,
+  );
+  const query = new URLSearchParams(
+    entries.map(([nome, valor]) => [nome, String(valor)]),
+  ).toString();
   return (
-    <a href={to} {...rest}>
+    <a href={to === undefined ? undefined : `${to}${query ? `?${query}` : ""}`} {...rest}>
       {children}
     </a>
   );

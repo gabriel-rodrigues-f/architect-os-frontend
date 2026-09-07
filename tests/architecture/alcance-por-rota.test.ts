@@ -385,8 +385,28 @@ class Prova {
 }
 
 const rotasDoCodigo = discoverRoutes();
+
+/**
+ * [FA-08] A rota-pai é LAYOUT: o que ela decide (guarda, negativa, passe de
+ * suporte) vale para as filhas que ela envolve. A fonte de uma rota é, por
+ * isso, a soma dos layouts acima dela com o arquivo dela — os layouts antes,
+ * porque o React os avalia antes de montar a filha. O `index` de um caminho
+ * não é layout e fica de fora.
+ */
+function layoutsAcimaDe(caminho: string): string[] {
+  const segmentos = caminho.split("/").filter(Boolean);
+  return segmentos.slice(0, -1).flatMap((_segmento, indice) => {
+    const pai = `/${segmentos.slice(0, indice + 1).join("/")}`;
+    const rota = rotasDoCodigo.find((candidata) => candidata.path === pai);
+    return (rota?.files ?? []).filter((arquivo) => !arquivo.endsWith(".index.tsx"));
+  });
+}
+
 const fontePorCaminho = new Map(
-  rotasDoCodigo.map((rota) => [rota.path, new FonteDaRota(rota.path, rota.files)]),
+  rotasDoCodigo.map((rota) => [
+    rota.path,
+    new FonteDaRota(rota.path, [...layoutsAcimaDe(rota.path), ...rota.files]),
+  ]),
 );
 
 /** O nome do módulo da rota, como um teste de tela o importa: `@/routes/users`. */

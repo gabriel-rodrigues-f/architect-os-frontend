@@ -4,9 +4,11 @@ import {
   TEAM_MEMBER_ROLES,
   UserRoles,
   type SessionUser,
+  type TeamLeadershipRole,
   type TeamMemberRole,
 } from "./gateways/auth.gateway";
 import type { TeamSummary } from "./gateways/teams.gateway";
+import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "./scope";
 
 export type AdmissionField = "name" | "email" | "cargo" | "seniority" | "team" | "form";
 
@@ -29,24 +31,29 @@ export interface PersonAdmissionRequest {
 const CARGOS_DO_GESTOR: readonly TeamMemberRole[] = [TeamLeadershipRoles.TECH_LEAD, "member"];
 /** D4 (dono, 2026-09-05): criar conta é ato de gestão — o tech lead indica, o gerente cadastra. */
 const CARGOS_DO_TECH_LEAD: readonly TeamMemberRole[] = [];
+/** O que cada papel de liderança cadastra — uma tabela, não um papel comparado à mão. */
+const CARGOS_POR_PAPEL: Record<TeamLeadershipRole, readonly TeamMemberRole[]> = {
+  [TeamLeadershipRoles.MANAGER]: CARGOS_DO_GESTOR,
+  [TeamLeadershipRoles.TECH_LEAD]: CARGOS_DO_TECH_LEAD,
+};
 
 export class PersonAdmissionPolicy {
+  constructor(private readonly policy: UiAuthorizationPolicy = defaultUiAuthorizationPolicy) {}
+
   admits(user: SessionUser): boolean {
     return this.admissibleCargos(user).length > 0;
   }
 
   admissibleCargos(user: SessionUser): readonly TeamMemberRole[] {
     if (UserRoles.operatesTheSystem(user.role)) return TEAM_MEMBER_ROLES;
-    if (user.role === TeamLeadershipRoles.MANAGER) return CARGOS_DO_GESTOR;
-    if (user.role === TeamLeadershipRoles.TECH_LEAD) return CARGOS_DO_TECH_LEAD;
-    return [];
+    return TeamLeadershipRoles.includes(user.role) ? CARGOS_POR_PAPEL[user.role] : [];
   }
 
   admissibleTeams(user: SessionUser, teams: readonly TeamSummary[]): TeamSummary[] {
     const active = teams.filter((team) => team.active);
     if (UserRoles.operatesTheSystem(user.role)) return active;
     if (!TeamLeadershipRoles.includes(user.role)) return [];
-    const bound = this.teamsBoundAsOwnRole(user);
+    const bound = this.policy.teamsBoundAsOwnRole(user);
     return active.filter((team) => bound.has(team.id));
   }
 
@@ -54,14 +61,6 @@ export class PersonAdmissionPolicy {
     const reachable = this.admissibleTeams(user, teams);
     const [only, ...rest] = reachable;
     return only !== undefined && rest.length === 0 ? only.id : null;
-  }
-
-  private teamsBoundAsOwnRole(user: SessionUser): ReadonlySet<string> {
-    return new Set(
-      (user.memberships ?? [])
-        .filter((membership) => membership.role === user.role)
-        .map((membership) => membership.teamId),
-    );
   }
 }
 

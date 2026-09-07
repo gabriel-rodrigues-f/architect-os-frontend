@@ -1,32 +1,11 @@
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a href={to} {...rest}>
-        {children}
-      </a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { Route as MentoringRoute } from "@/routes/mentoring";
@@ -39,6 +18,7 @@ import {
   fixtureMemberUser,
 } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * Pedido do dono (2026-09-07), literal: *"Em Talentos do Time > Gerar roteiro
@@ -111,6 +91,11 @@ const urlsDe = (recurso: string): URL[] =>
     .map((chamada) => new URL(String(chamada[0]), "http://localhost"))
     .filter((url) => url.pathname.endsWith(apiPath(`/architects/ana/${recurso}`)));
 
+const montaFicha = (user: SessionUser, routes: FetchRoute[] = []) => {
+  mockAppFetch(fetchMock, { user, routes });
+  return renderCareerFile(<ProfilePage />);
+};
+
 const monta = (Page: () => ReactNode, user: SessionUser, routes: FetchRoute[] = []) => {
   mockAppFetch(fetchMock, { user, routes });
   return renderWithApp(<Page />);
@@ -134,7 +119,7 @@ describe("a ficha de Talentos do Time não gera nada com IA", () => {
     ["gerente", fixtureAssignedManagerUser],
     ["tech lead", fixtureAssignedTechLeadUser],
   ])("%s abre a ficha da Ana e não encontra botão de IA", async (_papel, user) => {
-    monta(ProfilePage, user);
+    montaFicha(user);
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect(screen.getByText("Perfil por capacidade")).toBeTruthy();
     for (const botao of BOTOES_DE_IA) {
@@ -143,7 +128,7 @@ describe("a ficha de Talentos do Time não gera nada com IA", () => {
   });
 
   it("o diálogo de revisar evidência também ficou sem apoio de IA", async () => {
-    monta(ProfilePage, fixtureAssignedTechLeadUser);
+    montaFicha(fixtureAssignedTechLeadUser);
     const usuario = userEvent.setup();
     await usuario.click(await screen.findByRole("button", { name: /^Revisar$/ }));
 

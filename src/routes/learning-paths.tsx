@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { isLeadCapable } from "@/lib/api";
 import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 import { useServerDraft, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
@@ -83,7 +82,7 @@ function LearningScreen() {
       return next;
     });
 
-  const canCreatePath = isLeadCapable(user.role);
+  const canCreatePath = defaultUiAuthorizationPolicy.isLeadership(user);
 
   const canEdit = (path: LearningPath) => {
     if (defaultUiAuthorizationPolicy.operatesTheSystem(user)) return true;

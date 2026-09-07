@@ -316,6 +316,22 @@ tokenRegistry.register(
   ),
   pair("sidebar-border", "stroke", "oklch(0.33 0.03 250)", "oklch(1 0 0 / 0.1)"),
   pair("sidebar-ring", "stroke", RING_LIGHT, RING_DARK),
+  /*
+    O azul do menu (dono, 2026-09-08, referência FIAP): ícone sempre nele,
+    texto nele no hover e no item ativo. A coluna é navy nos DOIS temas, então
+    o `--primary` do conteúdo (0.45 no claro) não serve ali: este é o mesmo
+    matiz 235, claro o bastante para ler sobre a coluna.
+  */
+  pair("sidebar-emphasis", "content", "oklch(0.72 0.12 235)", "oklch(0.72 0.12 235)", {
+    against: "sidebar",
+  }),
+  /* O fundo sutil do hover e do item ativo — o azul do menu a baixa opacidade. */
+  pair(
+    "sidebar-emphasis-subtle",
+    "surface",
+    "oklch(0.72 0.12 235 / 0.14)",
+    "oklch(0.72 0.12 235 / 0.14)",
+  ),
   pair("warning", "fill", "oklch(0.9 0.08 80)", "oklch(0.278 0.056 80)", { against: "warning-fg" }),
   pair("success", "fill", "oklch(0.89 0.07 152)", "oklch(0.282 0.049 152)", {
     against: "success-fg",

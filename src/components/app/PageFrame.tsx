@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { ShellHeader } from "@/lib/design";
 import { cn } from "@/lib/utils";
@@ -36,23 +36,51 @@ export class StablePageFrame {
   static resetScroll(view: Pick<Window, "scrollTo"> = window): void {
     view.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }
+
+  /**
+   * [A-02] Depois de navegar, o foco vai para o `main` (sem rolar — a tela já
+   * voltou ao topo): quem lê por leitor de tela ouve a nova página, e o Tab
+   * seguinte começa no conteúdo, não no fim do menu. `tabIndex=-1` deixa o
+   * `main` focável por script sem entrar na ordem do Tab.
+   */
+  static focusContent(main: Pick<HTMLElement, "focus"> | null): void {
+    main?.focus({ preventScroll: true });
+  }
 }
 
 export function PageFrame({
+  id,
   pathname,
   className = undefined,
   children,
 }: {
+  id?: string | undefined;
   pathname: string;
   className?: string | undefined;
   children: ReactNode;
 }) {
+  const mainRef = useRef<HTMLElement>(null);
+  const primeiraRota = useRef(true);
+
   useEffect(() => {
     StablePageFrame.resetScroll();
+    // Na primeira pintura o foco fica onde o navegador o pôs; só a TROCA de
+    // rota move o foco para o conteúdo.
+    if (primeiraRota.current) {
+      primeiraRota.current = false;
+      return;
+    }
+    StablePageFrame.focusContent(mainRef.current);
   }, [pathname]);
 
   return (
-    <main data-page-frame className={cn(StablePageFrame.minHeightClass, className)}>
+    <main
+      ref={mainRef}
+      id={id}
+      tabIndex={-1}
+      data-page-frame
+      className={cn(StablePageFrame.minHeightClass, "outline-none", className)}
+    >
       {children}
     </main>
   );

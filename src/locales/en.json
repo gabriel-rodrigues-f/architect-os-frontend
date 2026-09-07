@@ -28,6 +28,7 @@
   "shell.showMenu": "Show sidebar",
   "shell.openMenu": "Open navigation menu",
   "shell.idleWarning": "Are you still there?",
+  "shell.skipToContent": "Skip to content",
   "prefs.title": "Preferences",
   "prefs.theme": "Theme",
   "prefs.theme.light": "Light",

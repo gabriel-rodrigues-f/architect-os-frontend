@@ -19,6 +19,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
+import { CareerFileHeadingSlot, ProfileHeading } from "@/components/app/CareerFileHeading";
 import { GapTable } from "@/components/app/gap-analysis-shared";
 import { StablePageFrame } from "@/components/app/PageFrame";
 import { ProfileHeader } from "@/components/app/ProfileHeader";
@@ -58,13 +59,12 @@ describe("cabeçalho fixo — a mesma régua do StablePageFrame", () => {
 
   it("a ficha da pessoa: nome, posição/nível e abas num único bloco fixo", async () => {
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: fixtureState });
+    // Como a rota-pai monta ([FA-08]): o bloco fixo abre o encaixe, a aba publica o título nele.
     renderWithApp(
-      <ProfileHeader
-        architect={fixtureState.architects[0]!}
-        title="Ana Martins"
-        description="Arquiteta · Nível II"
-        active="overview"
-      />,
+      <CareerFileHeadingSlot>
+        <ProfileHeader architect={fixtureState.architects[0]!} active="overview" />
+        <ProfileHeading title="Ana Martins" description="Arquiteta · Nível II" />
+      </CareerFileHeadingSlot>,
       { contexts: SELECTOR_CONTEXTS },
     );
 

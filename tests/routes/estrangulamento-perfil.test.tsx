@@ -1,35 +1,17 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** Mesma razão de `architect-profile-fora-do-escopo.test.tsx`: `Route.useParams()` exige árvore montada. */
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { apiPath } from "@/lib/api-path";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * ADR-0011, fase 1 — terceira tela: o perfil do arquiteto consome os
@@ -59,7 +41,7 @@ describe("estrangulamento fase 1 — perfil do arquiteto vive sem o blob /state"
   });
 
   it("renderiza o perfil pelos contextos escopados, sem nenhuma chamada a /state", async () => {
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />);
 
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect(await screen.findByText("ADR-014")).toBeTruthy();

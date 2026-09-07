@@ -103,6 +103,11 @@ export class TeamMemberRoles {
   static includes(role: string): role is TeamMemberRole {
     return (TEAM_MEMBER_ROLES as readonly string[]).includes(role);
   }
+
+  /** O vínculo de gerente — cadastrar e alterar gerentes é de quem opera o sistema. */
+  static isManager(role: string): boolean {
+    return role === TeamMemberRoles.MANAGER;
+  }
 }
 
 export interface TeamMembership {

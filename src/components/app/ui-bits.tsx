@@ -269,7 +269,9 @@ export function PageHeader({
           {help && <PageHelp content={help} />}
         </div>
         {description && (
-          <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p>
+          <p className="mt-1 line-clamp-3 max-w-prose text-sm text-muted-foreground md:line-clamp-2">
+            {description}
+          </p>
         )}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -352,7 +354,7 @@ export function ProfileTabs({
         : "border-transparent text-muted-foreground hover:text-foreground",
     );
   return (
-    <nav className="mb-6 flex gap-6 border-b border-border">
+    <nav className="scroll-visible -mx-5 mb-6 flex gap-6 overflow-x-auto border-b border-border px-5 lg:-mx-8 lg:px-8">
       <Link
         to="/architects/$architectId"
         params={{ architectId }}

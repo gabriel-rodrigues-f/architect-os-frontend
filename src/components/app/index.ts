@@ -31,6 +31,7 @@ export * from "./NoticeList";
 export * from "./OutOfReachScreen";
 export * from "./PasswordChoiceFields";
 export * from "./CardHelp";
+export * from "./CareerFileHeading";
 export * from "./PageHelp";
 export * from "./ProfileHeader";
 export * from "./QuerySection";

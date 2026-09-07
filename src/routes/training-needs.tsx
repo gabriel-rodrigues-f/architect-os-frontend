@@ -153,7 +153,7 @@ function TeamTrainingNeeds() {
               showTopOnly: "needs.showTopOnly",
             }}
           />
-          <div className="overflow-x-auto">
+          <div className="scroll-visible overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">

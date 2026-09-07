@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   EvolutionLine,
-  OutOfReachScreen,
   ProficiencyTimeline,
   ProfileBackLink,
-  ProfileHeader,
+  ProfileHeading,
   QuerySection,
   SectionCard,
   SingleSelectFilter,
@@ -16,13 +15,10 @@ import {
 import { useToastSubmit } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { evolutionApi, reportsApi } from "@/lib/api";
-import { useCurrentUser } from "@/lib/auth";
-import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import type { CompetencyEvolutionComparison, EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireCareerTabsReach } from "@/lib/route-guards";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSeniorityReading } from "@/lib/seniority";
 import { useSelectors, useStore } from "@/lib/store";
@@ -35,33 +31,8 @@ export const Route = createFileRoute("/architects/$architectId/evolution")({
     meta: [{ title: "Evolução — Synapse" }],
   }),
   beforeLoad: requireCareerTabsReach,
-  component: ArchitectEvolution,
+  component: EvolutionOfArchitect,
 });
-
-function ArchitectEvolution() {
-  const { architectId } = Route.useParams();
-  const user = useCurrentUser();
-  const { t } = useI18n();
-  const help = usePageHelp("architectEvolution");
-  const canOpenCareerTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architectId);
-
-  if (!canOpenCareerTabs) {
-    return (
-      <OutOfReachScreen
-        title={t("arch.tabs.evolution")}
-        help={help}
-        reason={t("arch.careerFile.tabsOutOfReach")}
-        hint={t("arch.careerFile.tabsOutOfReachHint")}
-      />
-    );
-  }
-
-  return (
-    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
-      <EvolutionOfArchitect architectId={architectId} />
-    </ContextScope>
-  );
-}
 
 type PeriodPreset = "30" | "60" | "90" | "180" | "365" | "all" | "custom";
 
@@ -95,7 +66,8 @@ const VIEWS: { id: EvolutionView; labelKey: MessageKey }[] = [
 
 const MAX_DEFAULT_SERIES = 6;
 
-function EvolutionOfArchitect({ architectId }: { architectId: string }) {
+function EvolutionOfArchitect() {
+  const { architectId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
   const { t } = useI18n();
@@ -233,8 +205,7 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
 
   return (
     <>
-      <ProfileHeader
-        architect={architect}
+      <ProfileHeading
         title={t("evolution.title", { nome: architect.name })}
         description={`${seniority.labelOf(architect.role)}${
           data?.architect.careerLevelName && data.architect.careerLevelName !== architect.role
@@ -255,7 +226,6 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
             <ProfileBackLink architectId={architect.id} to="overview" />
           </div>
         }
-        active="evolution"
       />
 
       <SectionCard title={t("evolution.filters.title")} className="mb-6">
@@ -506,7 +476,7 @@ function EvolutionOfArchitect({ architectId }: { architectId: string }) {
                     total: sortedComparisons.length,
                   })}
                 </p>
-                <div className="max-h-[60vh] overflow-auto">
+                <div className="scroll-visible max-h-[60vh] overflow-auto">
                   <table className="w-full min-w-[640px] text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">

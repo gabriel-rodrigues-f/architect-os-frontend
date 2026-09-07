@@ -133,7 +133,7 @@ function ProfessionalsComparison() {
           ) : (
             <>
               <LevelScaleKey />
-              <div className="overflow-x-auto">
+              <div className="scroll-visible overflow-x-auto">
                 <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
                   <thead>
                     <tr>

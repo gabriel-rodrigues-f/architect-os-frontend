@@ -1,7 +1,7 @@
 import { Scale, Settings } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
-import { NAV_GROUPS } from "@/components/app/AppShell";
+import { NAV_GROUPS } from "@/lib/navigation-catalog";
 
 /**
  * R2-VIS-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o item de menu "Política

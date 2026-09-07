@@ -86,12 +86,10 @@ describe("as primitivas usam a classe, não um número", () => {
     }
   });
 
-  it("os itens do menu lateral e as abas da ficha usam transition-base", () => {
-    const shell = readFileSync(resolve(process.cwd(), "src/components/app/AppShell.tsx"), "utf8");
+  it("os itens do menu (coluna e gaveta, um renderizador só) e as abas da ficha usam transition-base", () => {
+    const item = readFileSync(resolve(process.cwd(), "src/components/app/NavLinkItem.tsx"), "utf8");
     const bits = readFileSync(resolve(process.cwd(), "src/components/app/ui-bits.tsx"), "utf8");
-    expect(
-      shell.match(/rounded-lg px-3 py-2\.5 text-sm[^"]*transition-base/g)?.length ?? 0,
-    ).toBeGreaterThanOrEqual(2);
+    expect(item).toMatch(/rounded-md py-2 text-sm transition-base/);
     expect(bits).toMatch(/border-b-2 px-1 pb-2 text-sm font-medium transition-base/);
   });
 });

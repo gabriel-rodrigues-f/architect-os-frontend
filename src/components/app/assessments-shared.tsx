@@ -803,7 +803,7 @@ export function CapabilityAssessmentCard({
           })}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="scroll-visible overflow-x-auto">
           <table
             className={cn(
               "w-full text-sm",

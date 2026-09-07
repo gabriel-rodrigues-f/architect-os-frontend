@@ -1,5 +1,5 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -8,32 +8,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * Aqui o parâmetro é fixado em "bruno" — o arquiteto que o payload recortado
  * de um member NÃO contém.
  */
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "bruno" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { fixtureMemberUser, scopedFixtureStateFor } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * Onda 10, T7 — desde o roster fechado (backend `d1edba4`) o perfil fora do
@@ -64,7 +46,7 @@ describe("perfil fora do escopo cai no estado 'não encontrado' da própria tela
   });
 
   it("member em /architects/bruno vê 'Arquiteto não encontrado.' com caminho de volta", async () => {
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />, { architectId: "bruno" });
 
     expect(await screen.findByText(/Profissional não encontrado\./)).toBeTruthy();
     expect(screen.getByText(/Voltar/)).toBeTruthy();
@@ -72,7 +54,7 @@ describe("perfil fora do escopo cai no estado 'não encontrado' da própria tela
 
   it("o texto do estado 'não encontrado' segue o idioma da interface", async () => {
     window.localStorage.setItem("synapse:locale", "en");
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />, { architectId: "bruno" });
 
     expect(await screen.findByText(/Professional not found\./)).toBeTruthy();
     expect(screen.queryByText(/Profissional não encontrado\./)).toBeNull();

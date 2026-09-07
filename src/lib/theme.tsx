@@ -8,12 +8,13 @@ import {
   type ReactNode,
 } from "react";
 
-import { readMigratedItem } from "./storage";
+import { browserMemory } from "./browser-memory";
+import { ThemeChoice, type Theme } from "./theme-choice";
 
-export type Theme = "light" | "dark" | "system";
+export type { Theme } from "./theme-choice";
 
-const STORAGE_KEY = "synapse:theme";
-const LEGACY_STORAGE_KEY = "architect-os:theme";
+const STORAGE_KEY = ThemeChoice.STORAGE_KEY;
+const LEGACY_STORAGE_KEY = ThemeChoice.LEGACY_STORAGE_KEY;
 
 interface ThemeApi {
   theme: Theme;
@@ -41,9 +42,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const holds = useRef(0);
 
   const apply = useCallback((next: Theme) => {
-    const preferido = next === "system" ? (prefersDark() ? "dark" : "light") : next;
+    const preferido = ThemeChoice.resolve(next, prefersDark());
     const efetivo = holds.current > 0 ? "dark" : preferido;
-    document.documentElement.classList.toggle("dark", efetivo === "dark");
+    document.documentElement.classList.toggle(ThemeChoice.DARK_CLASS, efetivo === "dark");
     setResolved(efetivo);
   }, []);
 
@@ -66,8 +67,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [darkHolds, theme, apply]);
 
   useEffect(() => {
-    const salvo = readMigratedItem(STORAGE_KEY, LEGACY_STORAGE_KEY) as Theme | null;
-    const inicial: Theme = salvo === "light" || salvo === "dark" ? salvo : "system";
+    const inicial = ThemeChoice.parse(browserMemory.read(STORAGE_KEY, LEGACY_STORAGE_KEY));
     setThemeState(inicial);
     apply(inicial);
   }, [apply]);
@@ -83,7 +83,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = useCallback(
     (next: Theme) => {
       setThemeState(next);
-      window.localStorage.setItem(STORAGE_KEY, next);
+      browserMemory.write(STORAGE_KEY, next);
       apply(next);
     },
     [apply],

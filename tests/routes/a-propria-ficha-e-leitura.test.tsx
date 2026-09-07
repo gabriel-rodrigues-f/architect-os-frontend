@@ -1,32 +1,13 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    useRouter: () => ({ history: { push: vi.fn() } }),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import type { SessionUser } from "@/lib/api";
+import type { CareerFileTab } from "@/lib/career-file";
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
 import {
@@ -35,7 +16,8 @@ import {
   fixtureMemberUser,
   fixtureState,
 } from "../helpers/fixtures";
-import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { careerLevelsRoute, mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * Pedido do dono (2026-09-05), literal: *"O gerente, tech lead e o
@@ -62,9 +44,9 @@ const ACOES_DA_FICHA = [/^\+ PDI$/, /^Registrar$/];
 const techLeadQueEAna: SessionUser = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
 const adminQueEAna: SessionUser = { ...fixtureAdminUser, architectId: "ana" };
 
-function renderAs(user: SessionUser, Page: () => ReactNode) {
+function renderAs(user: SessionUser, Page: () => ReactNode, tab: CareerFileTab = "overview") {
   mockAppFetch(fetchMock, { user, state: fixtureState, routes: [careerLevelsRoute] });
-  return renderWithApp(<Page />);
+  return renderCareerFile(<Page />, { tab });
 }
 
 describe("a própria ficha é leitura — sem ação e sem IA, para qualquer papel", () => {
@@ -93,7 +75,7 @@ describe("a própria ficha é leitura — sem ação e sem IA, para qualquer pap
   });
 
   it("na própria ficha, o roteiro não oferece 'Explicar a prontidão'", async () => {
-    renderAs(techLeadQueEAna, RoadmapPage);
+    renderAs(techLeadQueEAna, RoadmapPage, "roadmap");
     expect((await screen.findAllByText(/Roteiro/)).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /Explicar a prontidão/ })).toBeNull();
   });

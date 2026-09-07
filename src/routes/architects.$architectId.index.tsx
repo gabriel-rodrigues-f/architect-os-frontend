@@ -1,5 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import {
@@ -11,14 +10,12 @@ import {
   Initials,
   LevelBadge,
   ProfileBackLink,
-  ProfileHeader,
+  ProfileHeading,
   ResubmitEvidenceDialog,
   SectionCard,
   SectionGroup,
   StatCard,
   TreatGapInPlanAction,
-  SupportAccessDialog,
-  Callout,
 } from "@/components/app";
 import { useLabels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -35,13 +32,11 @@ import {
 import { type Evidence } from "@/lib/domain";
 import { useArchitectProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
-import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonalDashboardPresenter } from "@/lib/presenters";
 import { useSeniorityReading } from "@/lib/seniority";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { SupportAccess } from "@/lib/support-access";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { LearningPathsViewModel } from "@/lib/view-models";
@@ -62,72 +57,13 @@ export const Route = createFileRoute("/architects/$architectId/")({
       },
     ],
   }),
-  component: ArchitectProfile,
+  component: ArchitectWorkspace,
   notFoundComponent: ArchitectNotFound,
 });
 
 function ArchitectNotFound() {
   const { t } = useI18n();
   return <p className="text-sm text-muted-foreground">{t("arch.notFound")}</p>;
-}
-
-function ArchitectProfile() {
-  const { architectId } = Route.useParams();
-  const user = useCurrentUser();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  // Dono (2026-09-06): o motivo é pedido a CADA abertura da ficha — não
-  // fica lembrado na aba. O que a pessoa concedeu vale para as abas desta
-  // visita (Evolução, Extrato, Roteiro), que reaproveitam o mesmo passe.
-  const [grantedThisVisit, setGrantedThisVisit] = useState(false);
-  const needsSupportAccess =
-    defaultUiAuthorizationPolicy.readsPeopleOnlyInSupportMode(user) &&
-    user.architectId !== architectId &&
-    !grantedThisVisit;
-
-  if (needsSupportAccess) {
-    return (
-      <ContextScope contexts={["architects"]}>
-        <SupportAccessGate
-          architectId={architectId}
-          onGranted={() => {
-            void queryClient.invalidateQueries();
-            setGrantedThisVisit(true);
-          }}
-          onCancel={() => void navigate({ to: "/" })}
-        />
-      </ContextScope>
-    );
-  }
-
-  return (
-    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
-      <ArchitectWorkspace />
-    </ContextScope>
-  );
-}
-
-/** Pede o motivo com o NOME da pessoa na frente — o diretório já diz quem é. */
-function SupportAccessGate({
-  architectId,
-  onGranted,
-  onCancel,
-}: {
-  architectId: string;
-  onGranted: () => void;
-  onCancel: () => void;
-}) {
-  // Só o nome da pessoa: o portão pede a fatia `architects` e nada mais —
-  // `useSelectors()` indexaria o estado inteiro antes de o motivo existir.
-  const person = useStore().architects.find((architect) => architect.id === architectId);
-  return (
-    <SupportAccessDialog
-      architectId={architectId}
-      personName={person?.name ?? architectId}
-      onGranted={onGranted}
-      onCancel={onCancel}
-    />
-  );
 }
 
 function ArchitectWorkspace() {
@@ -149,7 +85,6 @@ function ArchitectWorkspace() {
   const user = useCurrentUser();
   const architect = sel.architectById(architectId);
 
-  const supportGrant = SupportAccess.grantedFor(architectId);
   const canEditOwn = defaultUiAuthorizationPolicy.canActOnCareerFileOf(user, architect);
   const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
 
@@ -195,18 +130,11 @@ function ArchitectWorkspace() {
 
   return (
     <>
-      {supportGrant && (
-        <Callout tone="warning" className="mb-4">
-          {t("support.banner", { nome: architect.name })}
-        </Callout>
-      )}
-      <ProfileHeader
-        architect={architect}
+      <ProfileHeading
         title={architect.name}
         description={`${seniority.labelOf(architect.role)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
         help={help}
         actions={<ProfileBackLink architectId={architect.id} to="team" />}
-        active="overview"
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">

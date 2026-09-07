@@ -438,7 +438,7 @@ function MatrixScreen() {
                   }
                 >
                   {isExpanded && (
-                    <div className="overflow-x-auto">
+                    <div className="scroll-visible overflow-x-auto">
                       <table className="w-full min-w-[640px] text-sm">
                         <thead>
                           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -771,7 +771,7 @@ function CatalogImportDialog({ onClose }: { onClose: () => void }) {
           <details className="surface-inset p-3 text-sm">
             <summary className="cursor-pointer font-medium">{t("matrix.import.example")}</summary>
             <p className="mt-2 text-xs text-muted-foreground">{t("matrix.import.exampleHint")}</p>
-            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-card p-3 font-mono text-xs">
+            <pre className="scroll-visible mt-2 max-h-64 overflow-auto rounded-md bg-card p-3 font-mono text-xs">
               {CatalogImportSample.text()}
             </pre>
             <Button

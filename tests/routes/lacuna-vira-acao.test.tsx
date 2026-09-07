@@ -1,5 +1,5 @@
 import { cleanup, screen, within } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -8,38 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * arquivo prende, então descartá-lo (como fazem os mocks das outras telas)
  * apagaria o invariante sob teste.
  */
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to,
-      params: _params,
-      search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => {
-      const entries = Object.entries((search ?? {}) as Record<string, unknown>).filter(
-        ([, value]) => value !== undefined && value !== null,
-      );
-      const query = new URLSearchParams(
-        entries.map(([nome, valor]) => [nome, String(valor)]),
-      ).toString();
-      return (
-        <a href={`${to ?? ""}${query ? `?${query}` : ""}`} {...rest}>
-          {children}
-        </a>
-      );
-    },
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as GapRoute } from "@/routes/gap-analysis";
 import { Route as PlansRoute } from "@/routes/development-plans";
@@ -48,6 +19,7 @@ import type { AppState } from "@/lib/api";
 import type { Assessment, DevelopmentPlan } from "@/lib/domain";
 import { fixtureAssignedManagerUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * "Tratar no PDI" (Prioridades) e "+ PDI" (perfil) são o único caminho do
@@ -149,7 +121,7 @@ describe("Prioridades — 'Tratar no PDI' carrega pessoa e competência", () => 
 describe("Perfil — '+ PDI' carrega a competência da linha clicada", () => {
   it("cada lacuna aponta para a própria competência, não para um destino genérico", async () => {
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoComPlanoEmRascunho });
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />);
 
     const acao = await screen.findByRole("link", { name: "+ PDI" });
     const href = hrefDe(acao);

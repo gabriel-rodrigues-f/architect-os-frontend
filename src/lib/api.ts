@@ -1,6 +1,4 @@
 import { ApiOperationsGateway } from "./gateways/operations.gateway";
-import { TeamLeadershipRoles, UserRoles } from "./gateways/auth.gateway";
-import type { UserRole } from "./gateways/auth.gateway";
 import { defaultContainer } from "./gateways/container";
 
 const {
@@ -61,9 +59,6 @@ export const workAssistantsApi = { ...workAssistantsGateway };
 export const operationsApi = new ApiOperationsGateway(defaultContainer.apiClient);
 
 export { sessionPolicy };
-
-export const isLeadCapable = (role: UserRole): boolean =>
-  UserRoles.operatesTheSystem(role) || TeamLeadershipRoles.includes(role);
 
 export { ApiError, UserFacingError } from "./api-errors";
 export { API_URL, type AppState } from "./api-client";

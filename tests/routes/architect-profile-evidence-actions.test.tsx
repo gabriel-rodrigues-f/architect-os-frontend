@@ -1,35 +1,17 @@
 import { cleanup, screen } from "@testing-library/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** Mesma razão de `architect-profile-fora-do-escopo.test.tsx`: `Route.useParams()` exige árvore montada. */
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
-  return {
-    ...actual,
-    Link: ({
-      children,
-      to: _to,
-      params: _params,
-      search: _search,
-      ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
-    ),
-    createFileRoute:
-      (..._args: unknown[]) =>
-      (options: Record<string, unknown>) => ({
-        ...options,
-        options,
-        useParams: () => ({ architectId: "ana" }),
-      }),
-  };
-});
+vi.mock("@tanstack/react-router", () =>
+  import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
+);
 
 import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
 import type { AppState } from "@/lib/api";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
-import { mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { mockAppFetch } from "../helpers/render-app";
+import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * QA-UX gate 1 (2026-08-29), achado 2 — no card Evidências, quando a mesma
@@ -70,7 +52,7 @@ describe("card Evidências — ações lado a lado com espaçamento", () => {
   });
 
   it("'Revisar' e 'Corrigir e reenviar' dividem um contêiner flex com gap", async () => {
-    renderWithApp(<ProfilePage />);
+    renderCareerFile(<ProfilePage />);
 
     const revisar = await screen.findByRole("button", { name: "Revisar" });
     const corrigir = await screen.findByRole("button", { name: "Corrigir e reenviar" });

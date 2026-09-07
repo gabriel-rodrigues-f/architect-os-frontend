@@ -245,7 +245,7 @@ function CareerPolicySection() {
           />
         </div>
       )}
-      <div className="overflow-x-auto">
+      <div className="scroll-visible overflow-x-auto">
         <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -590,7 +590,7 @@ function ScoringScaleEditor({
         )}
       </div>
 
-      <div className="mt-2 overflow-x-auto">
+      <div className="scroll-visible mt-2 overflow-x-auto">
         <table className="w-full min-w-[360px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">

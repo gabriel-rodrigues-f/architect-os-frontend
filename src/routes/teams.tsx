@@ -308,7 +308,7 @@ function TeamTable({
       {teams.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("teams.list.empty")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="scroll-visible overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm" aria-label={t("teams.list.title")}>
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -459,7 +459,7 @@ function TeamTransitionsTable({
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("teams.transitions.empty")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="scroll-visible overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm" aria-label={t("teams.transitions.title")}>
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -696,7 +696,7 @@ function TeamRosterRows({
         ) : roster.members.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("teams.roster.rows.empty")}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="scroll-visible overflow-x-auto">
             <table
               className="w-full min-w-[640px] text-sm"
               aria-label={t("teams.roster.rows.title")}

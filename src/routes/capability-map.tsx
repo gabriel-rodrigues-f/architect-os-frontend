@@ -128,7 +128,7 @@ function TeamCapabilityCoverage() {
 
           <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
             {view === "table" ? (
-              <div className="surface-card overflow-x-auto">
+              <div className="scroll-visible surface-card overflow-x-auto">
                 <table className="w-full min-w-[720px] text-sm">
                   <thead>
                     <tr className="sticky top-0 z-10 border-b border-border bg-card text-left text-xs uppercase tracking-wide text-muted-foreground">

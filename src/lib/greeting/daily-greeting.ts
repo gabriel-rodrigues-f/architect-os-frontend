@@ -1,10 +1,26 @@
-import { UserRoles, type SessionUser } from "../gateways/auth.gateway";
+import { UserRoles, type SessionUser, type UserRole } from "../gateways/auth.gateway";
 
 /**
  * A saudação do PRIMEIRO acesso do dia (dono, 2026-09-06): aparece uma vez
  * por dia, por pessoa, neste navegador. O que decide "já apareceu hoje" é
  * uma marca com a data local e o id da conta — nada vai ao servidor.
  */
+type GreetingKey =
+  | "greeting.manager"
+  | "greeting.techLead"
+  | "greeting.member"
+  | "greeting.admin"
+  | "greeting.director";
+
+/** Uma saudação por papel — a de quem mantém o sistema é do suporte (o antigo admin); a diretoria tem a dela. */
+const GREETING_BY_ROLE: Record<UserRole, GreetingKey> = {
+  [UserRoles.ADMIN]: "greeting.director",
+  [UserRoles.SUPPORT]: "greeting.admin",
+  [UserRoles.MANAGER]: "greeting.manager",
+  [UserRoles.TECH_LEAD]: "greeting.techLead",
+  [UserRoles.MEMBER]: "greeting.member",
+};
+
 export class DailyGreeting {
   static readonly STORAGE_KEY = "synapse:daily-greeting";
   static readonly VISIBLE_MS = 3000;
@@ -39,19 +55,7 @@ export class DailyGreeting {
   }
 
   /** A chave da mensagem por perfil — os textos são do dono, em `greeting.*`. */
-  static messageKeyFor(
-    role: SessionUser["role"],
-  ):
-    | "greeting.manager"
-    | "greeting.techLead"
-    | "greeting.member"
-    | "greeting.admin"
-    | "greeting.director" {
-    if (role === UserRoles.MANAGER) return "greeting.manager";
-    if (role === UserRoles.TECH_LEAD) return "greeting.techLead";
-    // A saudação de quem mantém o sistema é do suporte (o antigo admin); a diretoria tem a dela.
-    if (UserRoles.readsTheOrganization(role)) return "greeting.director";
-    if (UserRoles.operatesTheSystem(role)) return "greeting.admin";
-    return "greeting.member";
+  static messageKeyFor(role: SessionUser["role"]): GreetingKey {
+    return GREETING_BY_ROLE[role];
   }
 }

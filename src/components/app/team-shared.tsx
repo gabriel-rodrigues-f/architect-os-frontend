@@ -598,7 +598,7 @@ export function TeamRosterView({
       ))}
     </div>
   ) : (
-    <div className="surface-card overflow-x-auto">
+    <div className="scroll-visible surface-card overflow-x-auto">
       <table className="w-full min-w-[760px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
