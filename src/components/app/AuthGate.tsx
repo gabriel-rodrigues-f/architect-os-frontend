@@ -1,5 +1,5 @@
 import { useRouter } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { DarkStage } from "@/components/app/DarkStage";
 import { FirstAccessScreen } from "@/components/app/FirstAccessScreen";
@@ -22,6 +22,26 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) void router.invalidate();
   }, [router, user]);
+
+  /*
+   * DEPOIS DO LOGIN, O PAINEL. Dono (2026-09-08): "quando abro a aplicação
+   * pela primeira vez como administrador, ele abre direto o forms de
+   * preenchimento de motivo". A URL sobrevive ao logout: quem saiu numa ficha
+   * e entra de novo caía na mesma ficha — que, para quem opera o sistema,
+   * começa pelo passe de suporte. Só a sessão que nasce DA TELA DE LOGIN vai
+   * ao Painel; recarregar com sessão viva não é login e a URL fica.
+   */
+  const cameFromLogin = useRef(false);
+  useEffect(() => {
+    if (!user) {
+      if (!loading && !bootstrap.isServiceDown) cameFromLogin.current = true;
+      return;
+    }
+    if (cameFromLogin.current) {
+      cameFromLogin.current = false;
+      void router.navigate({ to: "/" });
+    }
+  }, [router, user, loading, bootstrap.isServiceDown]);
 
   // Tudo o que vem antes da sessão aberta é palco escuro (dono, 2026-09-08).
   if (loading) {
