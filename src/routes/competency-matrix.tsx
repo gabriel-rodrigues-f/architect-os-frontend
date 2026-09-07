@@ -16,7 +16,10 @@ import {
   ConfirmDialog,
   EmptyState,
   LevelBadge,
+  PageAction,
+  PageActions,
   PageHeader,
+  SectionAction,
   SectionCard,
   SingleSelectFilter,
   WorkAssistanceSection,
@@ -223,14 +226,17 @@ function MatrixScreen() {
         help={help}
         actions={
           isAdmin ? (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setImporting(true)}>
-                {t("matrix.import.button")}
-              </Button>
-              <Button onClick={() => setCreatingCapability(true)}>
-                {t("matrix.newCapability")}
-              </Button>
-            </div>
+            <PageActions>
+              <PageAction
+                icon={Upload}
+                label={t("matrix.import.button")}
+                onClick={() => setImporting(true)}
+              />
+              <PageAction
+                label={t("matrix.newCapability")}
+                onClick={() => setCreatingCapability(true)}
+              />
+            </PageActions>
           ) : undefined
         }
       />
@@ -396,9 +402,10 @@ function MatrixScreen() {
                       />
                       {isAdmin && (
                         <div className="flex items-center gap-1">
-                          <Button size="sm" variant="secondary" onClick={() => setCreatingIn(cat)}>
-                            {t("matrix.newCompetency")}
-                          </Button>
+                          <SectionAction
+                            label={t("matrix.newCompetency")}
+                            onClick={() => setCreatingIn(cat)}
+                          />
                           <button
                             type="button"
                             onClick={() => startEditingCapability(cat)}
@@ -647,9 +654,7 @@ function CurationStatusControl({
                 })}
         </p>
         {below && onCreateCompetency && (
-          <Button size="sm" variant="secondary" onClick={onCreateCompetency}>
-            {t("matrix.newCompetency")}
-          </Button>
+          <SectionAction label={t("matrix.newCompetency")} onClick={onCreateCompetency} />
         )}
       </PopoverContent>
     </Popover>

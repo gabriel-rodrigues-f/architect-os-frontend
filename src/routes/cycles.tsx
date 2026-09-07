@@ -6,6 +6,8 @@ import {
   ConfirmDialog,
   LevelBadge,
   OutOfReachScreen,
+  PageAction,
+  PageActions,
   PageHeader,
   PersonCombobox,
   SectionCard,
@@ -125,7 +127,7 @@ function CycleAdministration() {
         description={t("cycle.subtitle")}
         help={help}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <PageActions>
             <PersonCombobox
               picker={PersonPicker.one(store.architects, architectId)}
               onChange={([id]) => setArchitectId(id ?? "")}
@@ -133,11 +135,12 @@ function CycleAdministration() {
               className="w-48"
             />
             {isAdmin && (
-              <Button onClick={() => setEditing(emptyCycle(store.cycles, scheme))}>
-                {t("cycle.new")}
-              </Button>
+              <PageAction
+                label={t("cycle.new")}
+                onClick={() => setEditing(emptyCycle(store.cycles, scheme))}
+              />
             )}
-          </div>
+          </PageActions>
         }
       />
 
@@ -203,9 +206,11 @@ function CycleAdministration() {
             <p className="text-sm font-medium">{t("cycle.empty")}</p>
             <p className="mt-1 text-sm text-muted-foreground">{t("cycle.empty.hint")}</p>
             {isAdmin && (
-              <Button className="mt-4" onClick={() => setEditing(emptyCycle(store.cycles, scheme))}>
-                {t("cycle.new")}
-              </Button>
+              <PageAction
+                className="mt-4"
+                label={t("cycle.new")}
+                onClick={() => setEditing(emptyCycle(store.cycles, scheme))}
+              />
             )}
           </div>
         )}

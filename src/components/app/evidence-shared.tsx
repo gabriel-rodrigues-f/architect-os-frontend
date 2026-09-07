@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Chip } from "@/components/app/Chip";
+import { SectionAction } from "@/components/app/PageAction";
 import { SectionCard, semanticTone } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,9 +113,7 @@ export function EvidenceDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="secondary">
-          {t("arch.register")}
-        </Button>
+        <SectionAction label={t("arch.register")} />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

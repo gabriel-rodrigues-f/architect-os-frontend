@@ -2,7 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Bar, EmptyState, PageHeader, SectionCard } from "@/components/app";
+import {
+  Bar,
+  EmptyState,
+  PageAction,
+  PageHeader,
+  SectionAction,
+  SectionCard,
+} from "@/components/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,7 +106,7 @@ function LearningScreen() {
         help={help}
         actions={
           canCreatePath ? (
-            <Button onClick={() => setCreatingPath(true)}>{t("path.new.placeholder")}</Button>
+            <PageAction label={t("path.new.placeholder")} onClick={() => setCreatingPath(true)} />
           ) : undefined
         }
       />
@@ -176,10 +183,11 @@ function LearningScreen() {
                         <Bar value={total} />
                       </div>
                       {editable ? (
-                        <Button variant="outline" size="sm" onClick={() => setEditingPath(path)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                          {t("common.edit")}
-                        </Button>
+                        <SectionAction
+                          icon={Pencil}
+                          label={t("common.edit")}
+                          onClick={() => setEditingPath(path)}
+                        />
                       ) : (
                         <span
                           className="flex items-center gap-1.5 text-xs text-muted-foreground"

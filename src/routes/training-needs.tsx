@@ -6,10 +6,10 @@ import {
   KeyFigureCard,
   OutOfReachScreen,
   PageHeader,
+  SectionAction,
   SectionCard,
   TruncationNotice,
 } from "@/components/app";
-import { Button } from "@/components/ui/button";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
@@ -220,14 +220,11 @@ function TeamTrainingNeeds() {
                       {t("needs.intervention.view")}
                     </Link>
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="secondary"
+                    <SectionAction
+                      label={t("needs.intervention.create")}
                       disabled={submitting}
                       onClick={() => createIntervention(n)}
-                    >
-                      {t("needs.intervention.create")}
-                    </Button>
+                    />
                   )}
                 </div>
               </li>

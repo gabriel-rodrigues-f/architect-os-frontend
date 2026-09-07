@@ -7,8 +7,10 @@ import {
   ConfirmDialog,
   DataOriginCallout,
   EmptyState,
+  PageAction,
   PageHeader,
   QuerySection,
+  SectionAction,
   SectionCard,
   Seniority,
   SingleSelectFilter,
@@ -170,9 +172,7 @@ function TeamsScreen() {
         help={help}
         actions={
           canAdminister && (
-            <Button size="sm" onClick={() => setCreating(true)}>
-              {t("teams.create.action")}
-            </Button>
+            <PageAction label={t("teams.create.action")} onClick={() => setCreating(true)} />
           )
         }
       />
@@ -1050,9 +1050,7 @@ function TeamPeople({
       description={t("teams.roster.people.subtitle")}
       actions={
         canCompose && (
-          <Button size="sm" onClick={() => setAllocating(true)}>
-            {t("teams.people.allocate")}
-          </Button>
+          <SectionAction label={t("teams.people.allocate")} onClick={() => setAllocating(true)} />
         )
       }
     >

@@ -7,6 +7,7 @@ import {
   CommandDialog,
   CommandWithReasonDialog,
   OutOfReachScreen,
+  PageAction,
   PageHeader,
   QuerySection,
   RoleSelect,
@@ -168,9 +169,7 @@ function UsersDirectory() {
         help={help}
         actions={
           admits && (
-            <Button size="sm" onClick={() => setAdmitting(true)}>
-              {t("users.admit.action")}
-            </Button>
+            <PageAction label={t("users.admit.action")} onClick={() => setAdmitting(true)} />
           )
         }
       />

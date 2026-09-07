@@ -1,6 +1,7 @@
 import { AlertCircle, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { PageAction } from "@/components/app/PageAction";
 import { PersonCombobox } from "@/components/app/PersonCombobox";
 import { FieldLabel, Initials, SectionHeading } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -425,7 +426,7 @@ export function NewMentoringSessionDialog({
   return (
     <Dialog open={sessionForm.open} onOpenChange={sessionForm.setOpen}>
       <DialogTrigger asChild>
-        <Button>{t("mentor.new")}</Button>
+        <PageAction label={t("mentor.new")} />
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
