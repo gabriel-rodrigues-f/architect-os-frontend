@@ -54,8 +54,10 @@ const fetchMock = vi.fn();
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 const RoadmapPage = RoadmapRoute.options.component as () => ReactNode;
 
-const ACOES_DA_LIDERANCA = [/Gerar roteiro de 1:1/, /Gerar roteiro de PDI/, /Verificar sinais/];
-const ACOES_DA_FICHA = [/Sugerir item de PDI/, /^\+ PDI$/, /^Revisar$/, /^Registrar$/];
+// Desde 2026-09-07 a ficha não gera nada com IA (os roteiros moram em Mentoria
+// e no PDI); o que resta de liderança na ficha é revisar evidência.
+const ACOES_DA_LIDERANCA = [/^Revisar$/];
+const ACOES_DA_FICHA = [/^\+ PDI$/, /^Registrar$/];
 
 const techLeadQueEAna: SessionUser = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
 const adminQueEAna: SessionUser = { ...fixtureAdminUser, architectId: "ana" };

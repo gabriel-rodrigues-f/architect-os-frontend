@@ -7,6 +7,7 @@ import {
   PageHeader,
   PersonAdviceSection,
   SectionCard,
+  SessionScriptAssistant,
   useMentoringTimeline,
 } from "@/components/app";
 import { personAssistantsApi } from "@/lib/api";
@@ -93,6 +94,15 @@ function MentoringScreen() {
           transcriptHeadline={t("ai.oneOnOne.title")}
           queryKey={["assistants", "one-on-one-preparation", mentee.id]}
           ask={() => personAssistantsApi.prepareOneOnOne(mentee.id)}
+        />
+      )}
+
+      {canPrepare && (
+        <SessionScriptAssistant
+          className="mb-6"
+          agenda="one-on-one"
+          architectId={mentee.id}
+          personName={mentee.name}
         />
       )}
 

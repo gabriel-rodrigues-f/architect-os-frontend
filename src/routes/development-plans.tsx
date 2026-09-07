@@ -12,6 +12,7 @@ import {
   PersonCombobox,
   QuerySection,
   SectionCard,
+  SessionScriptAssistant,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import {
@@ -124,13 +125,15 @@ function PlansScreen() {
   const architect = sel.architectById(architectId);
 
   const actsForArchitect = defaultUiAuthorizationPolicy.canActFor(user, architect);
+  // O roteiro de PDI é de quem lidera a pessoa (dono, 2026-09-07) — nunca dela mesma.
+  const isLeadOfArchitect = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
   const plan = sel.planFor(architectId);
 
   const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
 
   const workflow = viewModel.workflowFor(plan, {
     actsForArchitect,
-    isLeadOfArchitect: defaultUiAuthorizationPolicy.isLeadOf(user, architect),
+    isLeadOfArchitect,
     isAssignedTechLead: defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect),
   });
 
@@ -208,6 +211,14 @@ function PlansScreen() {
               )}
             </ul>
           </SectionCard>
+
+          {isLeadOfArchitect && architect && (
+            <SessionScriptAssistant
+              agenda="development-plan"
+              architectId={architect.id}
+              personName={architect.name}
+            />
+          )}
 
           <SectionCard
             title={t("pdi.actionModel.title")}
