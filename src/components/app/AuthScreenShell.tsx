@@ -4,8 +4,6 @@ import { SynapseBackground } from "@/components/app/SynapseBackground";
 import { useI18n } from "@/lib/i18n";
 import { SynapseSignals } from "@/lib/synapse-network";
 
-const BRAND_LINES = ["login.brand.line1", "login.brand.line2", "login.brand.line3"] as const;
-
 /**
  * A CASCA DAS TELAS DE PORTA — a rede de sinapses ao fundo, a marca em
  * hierarquia e o cartão em volta do formulário.
@@ -80,13 +78,6 @@ export function AuthScreenShell({
               </p>
               <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground sm:text-base sm:tracking-[0.16em]">
                 {t("login.subtitle")}
-              </p>
-              <p className="mt-6 hidden max-w-md text-lg leading-relaxed text-foreground/80 sm:block lg:text-xl">
-                {BRAND_LINES.map((line) => (
-                  <span key={line} data-testid="auth-brand-line" className="block">
-                    {t(line)}
-                  </span>
-                ))}
               </p>
             </div>
           </section>

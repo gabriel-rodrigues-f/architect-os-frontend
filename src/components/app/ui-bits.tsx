@@ -361,6 +361,9 @@ export function ProfileTabs({
   // Revisão de papéis (2026-09-05): Evolução e Roteiro são da própria pessoa e
   // de quem a lidera; o Extrato carrega a ficha funcional — própria pessoa,
   // gerente designado e admin em suporte. O tech lead não vê o Extrato.
+  // Dono (2026-09-07): na PRÓPRIA ficha a navegação é só pelo grupo "Minha
+  // Carreira" da coluna — as abas horizontais eram redundantes e fora do padrão.
+  if (user.architectId === architectId) return null;
   const careerTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architect);
   const statementTab = defaultUiAuthorizationPolicy.canOpenStatementOf(user, architect);
   const tabClass = (isActive: boolean) =>

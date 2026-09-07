@@ -87,23 +87,24 @@ describe("o profissional só vê a si — e só lê (dono, 2026-09-06)", () => {
     }
   };
 
-  it("Avaliações: o nome dele no lugar do seletor, os números dele em texto, nenhuma ação", async () => {
+  it("Avaliações: nada no lugar do seletor (nem o nome — dono, 2026-09-07), os números dele em texto, nenhuma ação", async () => {
     renderWithApp(<AssessmentsPage />);
 
-    expect((await screen.findByLabelText("Profissional")).textContent).toBe("Ana Martins");
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
+    expect(screen.queryByLabelText("Profissional")).toBeNull();
     expect(linha.querySelectorAll("select")).toHaveLength(0);
     expect(linha.querySelectorAll("textarea")).toHaveLength(0);
-    // Começar/Parar/Continuar: lê, não escreve.
-    const comecar = (await screen.findByLabelText("Começar a fazer")) as HTMLTextAreaElement;
-    expect(comecar.disabled).toBe(true);
+    // Começar/Parar/Continuar: lê como texto, não escreve.
+    expect(await screen.findByTestId("dev-summary-start-reading")).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Começar a fazer" })).toBeNull();
     semSeletorNemAcao("Profissional");
   });
 
-  it("Plano de Desenvolvimento: o nome dele no lugar do seletor e nenhuma ação", async () => {
+  it("Plano de Desenvolvimento: nada no lugar do seletor e nenhuma ação", async () => {
     renderWithApp(<PlansPage />);
 
-    expect((await screen.findByLabelText("Profissional")).textContent).toBe("Ana Martins");
+    expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
+    expect(screen.queryByLabelText("Profissional")).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
     semSeletorNemAcao("Profissional");
   });
@@ -111,7 +112,8 @@ describe("o profissional só vê a si — e só lê (dono, 2026-09-06)", () => {
   it("Mentoria: a linha do tempo dele, sem filtro de mentorado e sem registrar sessão", async () => {
     renderWithApp(<MentoringPage />);
 
-    expect((await screen.findByLabelText("Filtrar mentorado")).textContent).toBe("Ana Martins");
+    expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
+    expect(screen.queryByLabelText("Filtrar mentorado")).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
     semSeletorNemAcao("Filtrar mentorado");
   });

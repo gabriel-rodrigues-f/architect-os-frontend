@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -73,15 +73,14 @@ afterEach(() => {
 });
 
 describe("LoginScreen — a composição Synapse Network", () => {
-  it("mostra a marca em hierarquia: wordmark, subtítulo e a frase da casa", async () => {
+  it("mostra a marca em hierarquia: só o wordmark e o subtítulo (dono, 2026-09-07: sem a frase)", async () => {
     servicoQueSegura();
     await preencher();
     const marca = screen.getByRole("region", { name: "Synapse" });
     expect(marca.textContent).toContain("Synapse");
     expect(marca.textContent).toContain("Desenvolvimento de Capacidades");
-    for (const linha of ["Conecte conhecimento.", "Desenvolva capacidades.", "Evolua pessoas."]) {
-      expect(marca.textContent).toContain(linha);
-    }
+    expect(marca.textContent).not.toContain("Conecte conhecimento.");
+    expect(marca.querySelector("[data-testid='auth-brand-line']")).toBeNull();
   });
 
   it("o cartão traz a headline e o convite com as credenciais corporativas", async () => {
@@ -148,5 +147,35 @@ describe("LoginScreen — a composição Synapse Network", () => {
     expect(document.activeElement).toBe(esqueci);
     fireEvent.click(esqueci);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Recuperar o seu acesso");
+  });
+});
+
+describe("Enter envia o formulário (dono, 2026-09-07)", () => {
+  it("com e-mail e senha preenchidos, Enter no campo de senha dispara o login — mesmo antes da consulta da instância responder", async () => {
+    let tentativas = 0;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const href = String(url);
+      // A consulta da instância nunca responde: é o backend fora do ar.
+      if (href.endsWith(apiPath("/auth/status"))) return new Promise<Response>(() => undefined);
+      if (href.endsWith(apiPath("/auth/login")) && init?.method === "POST") {
+        tentativas += 1;
+        return Promise.resolve(
+          jsonResponse({ error: "Unauthorized", message: "E-mail ou senha inválidos." }, 401),
+        );
+      }
+      return Promise.resolve(jsonResponse({ error: "Unauthorized" }, 401));
+    });
+    render(
+      <LoginWrapper>
+        <LoginScreen />
+      </LoginWrapper>,
+    );
+    fireEvent.change(await screen.findByLabelText("E-mail"), {
+      target: { value: "ana@company.com" },
+    });
+    const senha = screen.getByLabelText("Senha");
+    fireEvent.change(senha, { target: { value: "Senha-forte-123!" } });
+    fireEvent.submit(senha.closest("form") as HTMLFormElement);
+    await waitFor(() => expect(tentativas).toBe(1));
   });
 });

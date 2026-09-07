@@ -176,13 +176,12 @@ describe("as abas da própria ficha são do profissional (D2, dono, 2026-09-05)"
     expect(screen.queryByText(ABAS_DA_LIDERANCA)).toBeNull();
   });
 
-  it("D2 (dono, 2026-09-05) — a Visão geral da própria ficha abre para o member com as abas Evolução e Extrato", async () => {
+  it("dono, 2026-09-07 — a Visão geral da própria ficha abre para o member SEM abas horizontais (a navegação é pelo grupo Minha Carreira)", async () => {
     renderAs(fixtureMemberUser, ProfileRoute.options.component as () => ReactNode);
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect(screen.queryByText(ABAS_DA_LIDERANCA)).toBeNull();
-    // O `Link` está mockado sem href, então as abas não têm papel de link: o texto basta.
-    expect(screen.getByText("Extrato")).toBeTruthy();
-    expect(screen.getByText("Evolução")).toBeTruthy();
+    expect(screen.queryByText("Extrato")).toBeNull();
+    expect(screen.queryByText("Evolução")).toBeNull();
   });
 
   it("gerente vinculado abre a ficha de Ana com as quatro abas", async () => {

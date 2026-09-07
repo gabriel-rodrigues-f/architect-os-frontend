@@ -112,8 +112,9 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
     mockSession(fixtureMemberUser, draftState, baseSummary());
     renderWithApp(<AssessmentsPage />);
 
-    const start = (await screen.findByLabelText("Começar a fazer")) as HTMLTextAreaElement;
-    expect(start.disabled).toBe(true);
+    // Dono (2026-09-07): quem só lê vê texto, não uma caixa desabilitada.
+    expect(await screen.findByTestId("dev-summary-start-reading")).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Começar a fazer" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Salvar" })).toBeNull();
   });
 
@@ -224,8 +225,10 @@ describe("Avaliações — Começar/Parar/Continuar", () => {
     mockSession(fixtureMemberUser, completedState, baseSummary({ startDoing: "Já concluído" }));
     renderWithApp(<AssessmentsPage />);
 
-    const start = (await screen.findByLabelText("Começar a fazer")) as HTMLTextAreaElement;
-    expect(start.disabled).toBe(true);
+    expect((await screen.findByTestId("dev-summary-start-reading")).textContent).toBe(
+      "Já concluído",
+    );
+    expect(screen.queryByRole("textbox", { name: "Começar a fazer" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Salvar" })).toBeNull();
   });
 });

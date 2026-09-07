@@ -35,7 +35,7 @@ import {
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { NoticeBell } from "@/components/app/NoticeBell";
-import { PageFrame, StablePageFrame } from "@/components/app/PageFrame";
+import { PageFrame } from "@/components/app/PageFrame";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { semanticTone } from "@/components/app/ui-bits";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -378,7 +378,14 @@ const SIDEBAR_MIN = 208;
 const SIDEBAR_MAX = 420;
 const SIDEBAR_RAIL = 64;
 
-const BRAND_HEADER_HEIGHT = `h-[${StablePageFrame.HEADER_HEIGHT_PX}px]`;
+/**
+ * Literal de propósito: o Tailwind só compila classes que enxerga no fonte —
+ * `h-[${n}px]` montado em tempo de execução não vira CSS, e o bloco da marca
+ * perdia a altura (dono, 2026-09-07: "Desenvolvimento de Capacidades está
+ * comprimido"). O teste `marca-na-coluna` cobra que o número acompanhe
+ * `StablePageFrame.HEADER_HEIGHT_PX`.
+ */
+export const BRAND_HEADER_HEIGHT = "h-[74px]";
 
 const clampWidth = (value: number) => Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, value));
 

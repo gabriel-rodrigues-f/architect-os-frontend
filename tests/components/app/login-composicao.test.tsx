@@ -186,12 +186,13 @@ describe("Login — CTA, erro e a frase da casa", () => {
     expect(texto!.l).toBeGreaterThan(0.95);
   });
 
-  it("o hover do CTA é mais luminoso, sem cor fora dos tokens", () => {
+  it("o hover do CTA é o mesmo azul um degrau mais luminoso, com o texto claro — nunca clareia até o branco (dono, 2026-09-07)", () => {
     // Mesmo motivo do anel: `Button` traz `hover:bg-primary/90`; o hover vive sem camada.
     const hover = Bloco.de(".auth-cta:hover:not(:disabled)");
     expect(hover.existe).toBe(true);
-    expect(hover.contem("color-mix(in oklch, var(--color-primary)")).toBe(true);
-    expect(hover.contem("var(--color-foreground)")).toBe(true);
+    expect(hover.contem("var(--primary) 86%, white")).toBe(true);
+    expect(hover.declara("color", "var(--primary-foreground)")).toBe(true);
+    expect(hover.contem("var(--color-foreground)")).toBe(false);
   });
 
   it("o erro é suave: classe própria, ícone discreto, e não recebe foco", async () => {
@@ -211,17 +212,5 @@ describe("Login — CTA, erro e a frase da casa", () => {
     expect(bloco.contem("var(--color-destructive)")).toBe(true);
     expect(bloco.contem("border")).toBe(true);
     expect(bloco.contem("bg-destructive/10")).toBe(false);
-  });
-
-  it("a frase da casa vem em três linhas, uma por linha", async () => {
-    servico();
-    await abrir();
-    const marca = screen.getByRole("region", { name: "Synapse" });
-    const linhas = marca.querySelectorAll("[data-testid='auth-brand-line']");
-    expect([...linhas].map((linha) => linha.textContent)).toEqual([
-      "Conecte conhecimento.",
-      "Desenvolva capacidades.",
-      "Evolua pessoas.",
-    ]);
   });
 });

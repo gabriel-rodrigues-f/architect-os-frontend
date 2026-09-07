@@ -30,12 +30,12 @@ const bruno = pessoa("bruno", "Bruno Almeida");
 
 const renderPicker = (picker: PersonPicker) => {
   const onChange = vi.fn();
-  render(
+  const rendered = render(
     <I18nProvider>
       <PersonCombobox picker={picker} onChange={onChange} label="Profissional" />
     </I18nProvider>,
   );
-  return onChange;
+  return { ...rendered, onChange };
 };
 
 describe("PersonPicker — a forma 'só eu' (dono, 2026-09-06)", () => {
@@ -66,9 +66,10 @@ describe("PersonPicker — a forma 'só eu' (dono, 2026-09-06)", () => {
     expect(picker.visibleSelected).toEqual(["bruno"]);
   });
 
-  it("na tela, 'só eu' é o nome da pessoa — sem combobox, sem busca, sem lista", () => {
-    renderPicker(PersonPicker.onlyMe(ana));
-    expect(screen.getByLabelText("Profissional").textContent).toBe("Ana Martins");
+  it("na tela, 'só eu' não desenha nada — nem o nome (dono, 2026-09-07)", () => {
+    const { container } = renderPicker(PersonPicker.onlyMe(ana));
+    expect(container.textContent).toBe("");
+    expect(screen.queryByLabelText("Profissional")).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.queryByPlaceholderText("Buscar pessoa…")).toBeNull();

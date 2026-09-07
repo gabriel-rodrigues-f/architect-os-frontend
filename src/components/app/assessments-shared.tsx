@@ -618,48 +618,39 @@ function DevelopmentSummaryForm({
       )}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <div>
-          <Label htmlFor="dev-summary-start">{t("asmt.devSummary.start")}</Label>
-          <Textarea
-            id="dev-summary-start"
-            className="mt-1"
-            value={startDoing}
-            disabled={!canEdit}
-            onChange={(e) => {
-              setStartDoing(e.target.value);
-              markDirty();
-            }}
-            placeholder={t("asmt.devSummary.start.placeholder")}
-          />
-        </div>
-        <div>
-          <Label htmlFor="dev-summary-stop">{t("asmt.devSummary.stop")}</Label>
-          <Textarea
-            id="dev-summary-stop"
-            className="mt-1"
-            value={stopDoing}
-            disabled={!canEdit}
-            onChange={(e) => {
-              setStopDoing(e.target.value);
-              markDirty();
-            }}
-            placeholder={t("asmt.devSummary.stop.placeholder")}
-          />
-        </div>
-        <div>
-          <Label htmlFor="dev-summary-continue">{t("asmt.devSummary.continue")}</Label>
-          <Textarea
-            id="dev-summary-continue"
-            className="mt-1"
-            value={continueDoing}
-            disabled={!canEdit}
-            onChange={(e) => {
-              setContinueDoing(e.target.value);
-              markDirty();
-            }}
-            placeholder={t("asmt.devSummary.continue.placeholder")}
-          />
-        </div>
+        <ReflectionField
+          id="dev-summary-start"
+          label={t("asmt.devSummary.start")}
+          placeholder={t("asmt.devSummary.start.placeholder")}
+          value={startDoing}
+          canEdit={canEdit}
+          onChange={(value) => {
+            setStartDoing(value);
+            markDirty();
+          }}
+        />
+        <ReflectionField
+          id="dev-summary-stop"
+          label={t("asmt.devSummary.stop")}
+          placeholder={t("asmt.devSummary.stop.placeholder")}
+          value={stopDoing}
+          canEdit={canEdit}
+          onChange={(value) => {
+            setStopDoing(value);
+            markDirty();
+          }}
+        />
+        <ReflectionField
+          id="dev-summary-continue"
+          label={t("asmt.devSummary.continue")}
+          placeholder={t("asmt.devSummary.continue.placeholder")}
+          value={continueDoing}
+          canEdit={canEdit}
+          onChange={(value) => {
+            setContinueDoing(value);
+            markDirty();
+          }}
+        />
       </div>
 
       {canEdit && (
@@ -1154,6 +1145,49 @@ function CompetencyStackedCard({
             }
           />
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Um campo do Começar / Parar / Continuar. Quem lidera escreve; quem só lê
+ * (o profissional, dono 2026-09-07) vê o texto como texto — sem caixa de
+ * formulário desabilitada fingindo ser editável.
+ */
+function ReflectionField({
+  id,
+  label,
+  placeholder,
+  value,
+  canEdit,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string | undefined;
+  canEdit: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <Label htmlFor={canEdit ? id : undefined}>{label}</Label>
+      {canEdit ? (
+        <Textarea
+          id={id}
+          className="mt-1"
+          value={value ?? ""}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+        />
+      ) : (
+        <p
+          className="mt-1 whitespace-pre-line text-sm text-foreground"
+          data-testid={`${id}-reading`}
+        >
+          {(value ?? "").trim() === "" ? "—" : value}
+        </p>
       )}
     </div>
   );

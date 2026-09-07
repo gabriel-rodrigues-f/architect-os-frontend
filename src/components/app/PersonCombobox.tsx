@@ -68,21 +68,9 @@ export function PersonCombobox({
   const summary = summaryText();
   const muted = picker.summary.kind !== "one" && picker.summary.kind !== "wholeTeam";
 
-  if (picker.fixed) {
-    return (
-      <span
-        id={id}
-        aria-label={label}
-        title={summary}
-        className={cn(
-          "inline-flex h-9 items-center truncate rounded-md border border-transparent px-3 text-sm font-medium",
-          className,
-        )}
-      >
-        {summary}
-      </span>
-    );
-  }
+  // Dono (2026-09-07): na forma "só eu" não há NADA — nem o nome. O
+  // profissional só vê a si; a tela não precisa dizer isso.
+  if (picker.fixed) return null;
 
   if (picker.isEmpty) {
     return (

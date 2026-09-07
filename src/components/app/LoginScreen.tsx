@@ -163,7 +163,9 @@ export function LoginScreen() {
         <Button
           type="submit"
           className="auth-cta w-full"
-          disabled={submitting || !checkedInstance}
+          // Dono (2026-09-07): Enter envia o formulário — o botão só espera a
+          // consulta da instância quando a tela ainda pode virar "primeiro acesso".
+          disabled={submitting || (!checkedInstance && mode === "register")}
           aria-busy={submitting || undefined}
         >
           {submitting && <Loader2 className="animate-spin" aria-hidden="true" />}
