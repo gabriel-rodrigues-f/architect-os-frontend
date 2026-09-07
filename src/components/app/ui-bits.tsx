@@ -16,9 +16,12 @@ import { defaultNameFormatter } from "@/lib/text";
 import { SectionHeading } from "@/components/app/SectionHeading";
 import { SentenceBlock } from "@/components/app/SentenceBlock";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
+import { Chip } from "@/components/app/Chip";
+import { KeyFigureCard, type StatTone } from "@/components/app/KeyFigure";
 import { Button } from "@/components/ui/button";
 
 export { SectionHeading };
+export { StatTones, statToneStyles, type StatTone } from "@/components/app/KeyFigure";
 
 const levelBg: Record<number, string> = {
   0: "bg-level-0 text-muted-foreground",
@@ -29,6 +32,11 @@ const levelBg: Record<number, string> = {
   5: "bg-level-5 text-[var(--level-5-fg)]",
 };
 
+/**
+ * O nível como chip ([F-03]); o nome do nível vai no `Tooltip` acessível e,
+ * quando não está visível (`showName`), numa cópia só para leitor de tela —
+ * o `title=` nativo era a única forma de lê-lo ([F-02]).
+ */
 export function LevelBadge({
   level,
   showName = false,
@@ -40,29 +48,20 @@ export function LevelBadge({
   const labels = useLabels();
   if (level === undefined) {
     return (
-      <span
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums",
-          levelBg[0],
-        )}
-        title={t("level.cellTooltip.none")}
-      >
+      <Chip className={cn("tabular-nums", levelBg[0])} tooltip={t("level.cellTooltip.none")}>
         —
-      </span>
+      </Chip>
     );
   }
   const nome = labels.levelName[level as keyof typeof labels.levelName] ?? "—";
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums",
-        levelBg[level] ?? levelBg[0],
-      )}
-      title={t("level.tooltip", { n: level, nome })}
+    <Chip
+      className={cn("tabular-nums", levelBg[level] ?? levelBg[0])}
+      tooltip={t("level.tooltip", { n: level, nome })}
     >
       L{level}
-      {showName && <span className="font-medium opacity-80">{nome}</span>}
-    </span>
+      {showName && <span className="font-normal opacity-80">{nome}</span>}
+    </Chip>
   );
 }
 
@@ -101,26 +100,16 @@ export function GapBadge({ gap }: { gap: number | undefined }) {
   const ruler = useGapSeverityRuler();
   if (gap === undefined) {
     return (
-      <span
-        className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground"
-        title={t("level.cellTooltip.none")}
-      >
+      <Chip tone="neutral" tooltip={t("level.cellTooltip.none")}>
         —
-      </span>
+      </Chip>
     );
   }
 
   const tone = ruler.severityOf(gap);
   const label = t(ruler.messageKey[tone]);
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium",
-        gapTone[tone],
-      )}
-    >
-      {t("gap.badge", { n: Math.max(0, gap), rotulo: label })}
-    </span>
+    <Chip className={gapTone[tone]}>{t("gap.badge", { n: Math.max(0, gap), rotulo: label })}</Chip>
   );
 }
 
@@ -137,16 +126,7 @@ export function StatusBadge({
   tone: "neutral" | "progress" | "done";
   label: string;
 }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
-        statusTone[tone],
-      )}
-    >
-      {label}
-    </span>
-  );
+  return <Chip className={statusTone[tone]}>{label}</Chip>;
 }
 
 export type SemanticTone = "warning" | "success";
@@ -224,51 +204,11 @@ export function Callout({
 }
 
 /**
- * O TOM de um big number diz, antes do número, se ele pede ação. Pedido do
- * dono (2026-09-05): "Gráficos e big number precisam ter cor, precisamos
- * começar a retocar isso para sermos mais claros." Oito cartões iguais no
- * painel do admin faziam "Distâncias críticas: 7" pesar o mesmo que
- * "Profissionais: 5".
- *
- *   neutral    contagem que não pede nada (pessoas, competências)
- *   attention  fila que espera alguém (evidências a revisar, PDIs a aprovar)
- *   critical   o que já passou do limite (distâncias críticas)
- *   good       zero pendência, ou meta batida
+ * O cartão de contagem: um apelido de `KeyFigureCard size="sm"` ([D-01] — um
+ * só cartão de KPI). Fica até os 17 usos nas rotas migrarem (PR 10); quem
+ * escreve tela nova usa `KeyFigureCard` direto.
+ * @deprecated use `KeyFigureCard size="sm"`.
  */
-export type StatTone = "neutral" | "attention" | "critical" | "good";
-
-export class StatTones {
-  /** Fila: vazia é bom; cheia pede atenção. */
-  static byPending(count: number): StatTone {
-    return count > 0 ? "attention" : "good";
-  }
-
-  /** Severidade: qualquer ocorrência já é crítica. */
-  static bySeverity(count: number): StatTone {
-    return count > 0 ? "critical" : "good";
-  }
-}
-
-/** Os estilos de cada tom — o `StatCard` e o `KeyFigure` lêem o mesmo mapa. */
-export const statToneStyles: Record<StatTone, { card: string; value: string; icon: string }> = {
-  neutral: { card: "", value: "", icon: "bg-secondary text-muted-foreground" },
-  attention: {
-    card: "border-l-4 border-l-[var(--warning-fg)]",
-    value: "text-[var(--warning-fg)]",
-    icon: "bg-warning text-warning-fg",
-  },
-  critical: {
-    card: "border-l-4 border-l-destructive",
-    value: "text-destructive",
-    icon: "bg-destructive/15 text-destructive",
-  },
-  good: {
-    card: "border-l-4 border-l-[var(--success-fg)]",
-    value: "text-[var(--success-fg)]",
-    icon: "bg-success text-success-fg",
-  },
-};
-
 export function StatCard({
   label,
   value,
@@ -279,35 +219,22 @@ export function StatCard({
 }: {
   label: string;
   value: ReactNode;
-  hint?: string;
+  hint?: ReactNode;
   icon?: ReactNode;
   tone?: StatTone;
-  /** O "?" do próprio card — fica dentro dele, ao lado do ícone. */
+  /** O "?" do próprio card — fica dentro dele, ao lado do rótulo. */
   help?: ReactNode;
 }) {
-  const styles = statToneStyles[tone];
   return (
-    <div className={cn("surface-card p-4", styles.card)} data-tone={tone}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <SectionHeading as="p" muted>
-            {label}
-          </SectionHeading>
-          <p
-            className={cn("mt-1.5 font-display text-2xl font-semibold tabular-nums", styles.value)}
-          >
-            {value}
-          </p>
-        </div>
-        {(icon || help) && (
-          <div className="flex shrink-0 items-center gap-1">
-            {help}
-            {icon && <span className={cn("rounded-lg p-2", styles.icon)}>{icon}</span>}
-          </div>
-        )}
-      </div>
-      {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
-    </div>
+    <KeyFigureCard
+      size="sm"
+      label={label}
+      value={value}
+      caption={hint}
+      icon={icon}
+      tone={tone}
+      help={help}
+    />
   );
 }
 

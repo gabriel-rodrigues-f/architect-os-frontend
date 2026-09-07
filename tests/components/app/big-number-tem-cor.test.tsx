@@ -2,6 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { StatCard, StatTones } from "@/components/app/ui-bits";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * Pedido do dono (2026-09-05): "Gráficos e big number precisam ter cor,
@@ -25,10 +26,10 @@ describe("StatCard — o big number carrega um tom", () => {
 
   it("o cartão publica o tom, e o neutro continua sendo o padrão", () => {
     render(
-      <>
+      <I18nProvider>
         <StatCard label="Profissionais" value={5} />
         <StatCard label="Distâncias críticas" value={7} tone="critical" />
-      </>,
+      </I18nProvider>,
     );
     expect(
       screen.getByText("Profissionais").closest("[data-tone]")?.getAttribute("data-tone"),

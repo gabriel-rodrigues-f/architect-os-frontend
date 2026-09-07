@@ -1,7 +1,31 @@
+import {
+  Award,
+  Calculator,
+  ChevronsUp,
+  ClipboardList,
+  Compass,
+  Eraser,
+  Handshake,
+  type LucideIcon,
+  Map,
+  MessageCircle,
+  Paperclip,
+  Ruler,
+  Scale,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  TriangleAlert,
+  UserRound,
+} from "lucide-react";
+
 /**
- * Pedagogia semiótica na sugestão da IA (dono, 2026-09-05): um sinal colorido
- * ao lado do título diz, antes da leitura, se o bloco pede AÇÃO, avisa de
- * RISCO ou só situa. O emoji nunca substitui o texto — acompanha.
+ * Pedagogia semiótica na sugestão da IA (dono, 2026-09-05): um sinal ao lado
+ * do título diz, antes da leitura, se o bloco pede AÇÃO, avisa de RISCO ou só
+ * situa. O sinal nunca substitui o texto — acompanha. Era emoji; virou ícone
+ * lucide (decisão do dono 2026-09-08, UX-b / [I-01]): o emoji renderizava
+ * com a fonte do sistema, ignorava tema e `currentColor`, e o leitor de tela
+ * anunciava "chart increasing".
  *
  * A escolha é por palavra-chave do título, sem acento e sem caixa, e a
  * primeira regra que casa vence: "Riscos e próximos passos" é aviso antes de
@@ -9,10 +33,10 @@
  * que sinal errado.
  */
 export class AdviceSemiotics {
-  private static readonly RULES: readonly { emoji: string; words: readonly string[] }[] = [
-    { emoji: "⚠️", words: ["risco", "alerta", "atencao", "cuidado", "sinal", "estagna"] },
+  private static readonly RULES: readonly { icon: LucideIcon; words: readonly string[] }[] = [
+    { icon: TriangleAlert, words: ["risco", "alerta", "atencao", "cuidado", "sinal", "estagna"] },
     {
-      emoji: "🎯",
+      icon: Target,
       words: [
         "proximo passo",
         "proximos passos",
@@ -26,23 +50,26 @@ export class AdviceSemiotics {
       ],
     },
     {
-      emoji: "💪",
+      icon: Award,
       words: ["forca", "forte", "destaque", "conquista", "avanco", "evolu", "progresso"],
     },
-    { emoji: "💬", words: ["pergunta", "conversa", "abertura", "como abrir", "fala", "roteiro"] },
-    { emoji: "📉", words: ["distancia", "falta", "abaixo", "o que falta"] },
-    { emoji: "📎", words: ["evidencia", "comprova"] },
-    { emoji: "🗺️", words: ["plano", "pdi", "meta", "trilha", "prazo", "dedicacao"] },
-    { emoji: "🤝", words: ["mentoria", "1:1", "acompanhamento"] },
-    { emoji: "⚖️", words: ["calibra", "diverg", "notas"] },
-    { emoji: "🪜", words: ["prontidao", "elegiv", "nivel", "senioridade", "transicao"] },
-    { emoji: "🧹", words: ["repetid", "vago", "duplic", "fora de lugar", "catalogo"] },
-    { emoji: "🧭", words: ["contexto", "situacao", "onde esta", "cenario", "resumo", "leitura"] },
+    {
+      icon: MessageCircle,
+      words: ["pergunta", "conversa", "abertura", "como abrir", "fala", "roteiro"],
+    },
+    { icon: TrendingDown, words: ["distancia", "falta", "abaixo", "o que falta"] },
+    { icon: Paperclip, words: ["evidencia", "comprova"] },
+    { icon: Map, words: ["plano", "pdi", "meta", "trilha", "prazo", "dedicacao"] },
+    { icon: Handshake, words: ["mentoria", "1:1", "acompanhamento"] },
+    { icon: Scale, words: ["calibra", "diverg", "notas"] },
+    { icon: ChevronsUp, words: ["prontidao", "elegiv", "nivel", "senioridade", "transicao"] },
+    { icon: Eraser, words: ["repetid", "vago", "duplic", "fora de lugar", "catalogo"] },
+    { icon: Compass, words: ["contexto", "situacao", "onde esta", "cenario", "resumo", "leitura"] },
     // Os FATOS calculados (dono, 2026-09-06: "ainda não vejo os ícones no gerador de 1:1").
-    { emoji: "📝", words: ["avalia", "autoavalia"] },
-    { emoji: "📏", words: ["regua", "exige"] },
-    { emoji: "📈", words: ["historico", "degrau"] },
-    { emoji: "🧑‍💻", words: ["a pessoa e", "arquitet", "profissional"] },
+    { icon: ClipboardList, words: ["avalia", "autoavalia"] },
+    { icon: Ruler, words: ["regua", "exige"] },
+    { icon: TrendingUp, words: ["historico", "degrau"] },
+    { icon: UserRound, words: ["a pessoa e", "arquitet", "profissional"] },
   ];
 
   /**
@@ -50,14 +77,14 @@ export class AdviceSemiotics {
    * primeira palavra-chave que aparecer decide, e um fato que não casa com
    * nada leva o sinal neutro de "calculado".
    */
-  static emojiForFact(fact: string): string {
-    return AdviceSemiotics.emojiFor(fact) ?? "🧮";
+  static iconForFact(fact: string): LucideIcon {
+    return AdviceSemiotics.iconFor(fact) ?? Calculator;
   }
 
-  static emojiFor(heading: string): string | null {
+  static iconFor(heading: string): LucideIcon | null {
     const plain = AdviceSemiotics.plain(heading);
     for (const rule of AdviceSemiotics.RULES) {
-      if (rule.words.some((word) => AdviceSemiotics.startsAWord(plain, word))) return rule.emoji;
+      if (rule.words.some((word) => AdviceSemiotics.startsAWord(plain, word))) return rule.icon;
     }
     return null;
   }

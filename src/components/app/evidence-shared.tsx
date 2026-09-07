@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Chip } from "@/components/app/Chip";
 import { SectionCard, semanticTone } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 /**
  * Lido em FUNÇÃO, e não numa constante de módulo.
@@ -38,7 +40,7 @@ class EvidenceStatusChips {
       Pending: "bg-secondary text-muted-foreground",
       Accepted: semanticTone.success,
       "Needs Improvement": semanticTone.warning,
-      Rejected: "bg-destructive/15 text-destructive",
+      Rejected: "bg-danger-subtle text-destructive",
     };
   }
 }
@@ -46,11 +48,9 @@ class EvidenceStatusChips {
 export function EvidenceStatusBadge({ status }: { status: Evidence["status"] }) {
   const labels = useLabels();
   return (
-    <span
-      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${EvidenceStatusChips.byStatus()[status]}`}
-    >
+    <Chip className={cn("shrink-0", EvidenceStatusChips.byStatus()[status])}>
       {labels.evidenceStatus[status]}
-    </span>
+    </Chip>
   );
 }
 

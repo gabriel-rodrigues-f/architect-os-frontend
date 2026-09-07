@@ -1,3 +1,4 @@
+import { Chip } from "@/components/app/Chip";
 import { SectionGroup, semanticTone } from "@/components/app/ui-bits";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -40,14 +41,9 @@ class CareerEventChips {
 export function EventTypeBadge({ kind }: { kind: StatementEntryKind }) {
   const { t } = useI18n();
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-xs font-semibold",
-        CareerEventChips.byKind()[kind],
-      )}
-    >
+    <Chip className={cn("shrink-0", CareerEventChips.byKind()[kind])}>
       {t(KIND_LABEL_KEY[kind])}
-    </span>
+    </Chip>
   );
 }
 

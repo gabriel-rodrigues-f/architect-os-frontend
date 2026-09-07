@@ -58,10 +58,10 @@ describe("AdviceText — marcadores, largura e sinal", () => {
     expect(root.className).not.toContain("max-w-prose");
   });
 
-  it("o título ganha o sinal da semiótica, escondido do leitor de tela", () => {
-    render(<AdviceText text={"Riscos:\n– Um."} />);
-    const sign = screen.getByText("⚠️");
-    expect(sign.getAttribute("aria-hidden")).toBe("true");
+  it("o título ganha o sinal da semiótica — um ícone lucide, escondido do leitor de tela", () => {
+    const { container } = render(<AdviceText text={"Riscos:\n– Um."} />);
+    const sign = container.querySelector("svg.lucide-triangle-alert");
+    expect(sign?.getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByText("Riscos")).toBeTruthy();
   });
 });

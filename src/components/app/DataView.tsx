@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { Chip } from "@/components/app/Chip";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -31,6 +32,25 @@ interface DataViewToolbarProps {
   layout?: "flex" | "grid-3";
 }
 
+/**
+ * O filtro ativo como chip removível ([F-03], [B-01]): o `Chip` primário
+ * veste um `<button>`; o "×" diz o que o clique faz.
+ */
+function ActiveFilterChips({ filters }: { filters: ActiveFilterChip[] }) {
+  return filters.map((filter) => (
+    <Chip key={filter.key} asChild tone="primary">
+      <button
+        type="button"
+        onClick={filter.onRemove}
+        className="transition-fast hover:text-primary-hover focus-visible:focus-ring"
+      >
+        {filter.label}
+        <X className="size-3" aria-hidden="true" />
+      </button>
+    </Chip>
+  ));
+}
+
 export function DataViewToolbar({
   searchValue,
   onSearchChange,
@@ -55,17 +75,7 @@ export function DataViewToolbar({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            {activeFilters?.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={f.onRemove}
-                className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20"
-              >
-                {f.label}
-                <X className="h-3 w-3" />
-              </button>
-            ))}
+            <ActiveFilterChips filters={activeFilters ?? []} />
             {onClearFilters && activeFilters && activeFilters.length > 0 && (
               <button
                 type="button"
@@ -113,17 +123,7 @@ export function DataViewToolbar({
 
       {activeFilters && activeFilters.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          {activeFilters.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={f.onRemove}
-              className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20"
-            >
-              {f.label}
-              <X className="h-3 w-3" />
-            </button>
-          ))}
+          <ActiveFilterChips filters={activeFilters} />
           {onClearFilters && (
             <button
               type="button"

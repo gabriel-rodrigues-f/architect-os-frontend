@@ -1,4 +1,11 @@
-import { Sparkles } from "lucide-react";
+import {
+  Calculator,
+  CircleCheck,
+  type LucideIcon,
+  Search,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { SectionCard } from "@/components/app/ui-bits";
@@ -235,7 +242,7 @@ export function AdviceText({ text, className }: { text: string; className?: stri
         block.kind === "heading" ? (
           <AdviceHeading key={index} text={block.text} />
         ) : block.kind === "list" ? (
-          <ul key={index} className="mt-1 list-disc space-y-1 pl-5">
+          <ul key={index} className="mt-1 list-disc space-y-1 pl-6">
             {block.items.map((item) => (
               <li key={item}>{item}</li>
             ))}
@@ -251,13 +258,11 @@ export function AdviceText({ text, className }: { text: string; className?: stri
 }
 
 function AdviceHeading({ text }: { text: string }) {
-  const emoji = AdviceSemiotics.emojiFor(text);
+  const Icon = AdviceSemiotics.iconFor(text);
   return (
-    <p className="mt-3 text-left font-medium first:mt-0">
-      {emoji !== null && (
-        <span aria-hidden="true" className="mr-1.5">
-          {emoji}
-        </span>
+    <p className="mt-3 flex items-center gap-1.5 text-left font-medium first:mt-0">
+      {Icon !== null && (
+        <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
       )}
       {text}
     </p>
@@ -303,7 +308,7 @@ export function PersonAdviceBody({
     <AiSuggestionFrame>
       {header}
       {outline.length > 0 && (
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm">
+        <ol className="mt-2 list-decimal space-y-1 pl-6 text-sm">
           {outline.map((step) => (
             <li key={step}>{step}</li>
           ))}
@@ -340,32 +345,35 @@ export function PersonAdviceBody({
 export function AdviceFactList({
   label,
   items,
-  emoji = "🧮",
+  icon: Icon = Calculator,
 }: {
   label: string;
   items: string[];
-  emoji?: string;
+  icon?: LucideIcon;
 }) {
   if (items.length === 0) return null;
   return (
     <div className="mt-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <span aria-hidden="true" className="mr-1.5">
-          {emoji}
-        </span>
+      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <Icon aria-hidden="true" className="size-4 shrink-0" />
         {label}
       </p>
       <ul className="mt-1 space-y-1 text-sm">
         {items.map((item) => (
-          <li key={item} className="flex gap-2">
-            <span aria-hidden="true" className="w-5 shrink-0 text-center">
-              {AdviceSemiotics.emojiForFact(item)}
-            </span>
-            <span>{item}</span>
-          </li>
+          <AdviceFact key={item} text={item} />
         ))}
       </ul>
     </div>
+  );
+}
+
+function AdviceFact({ text }: { text: string }) {
+  const Icon = AdviceSemiotics.iconForFact(text);
+  return (
+    <li className="flex gap-2">
+      <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <span>{text}</span>
+    </li>
   );
 }
 
@@ -615,7 +623,7 @@ export function WorkAssistanceBody({ assistance }: { assistance: WorkAssistance 
       <AdviceFactList
         label={t("ai.work.observations")}
         items={assistance.observations}
-        emoji="🔎"
+        icon={Search}
       />
       <AdviceText text={assistance.reading} className="mt-3" />
       <p className="mt-3 text-xs text-muted-foreground">{t("ai.work.disclosure")}</p>
@@ -727,15 +735,21 @@ export function StagnationAlertSection({
                   : "mt-2 text-sm font-medium"
               }
             >
-              <span aria-hidden="true" className="mr-1.5">
-                {alert.requiresAttention ? "⚠️" : "✅"}
-              </span>
+              {alert.requiresAttention ? (
+                <TriangleAlert aria-hidden="true" className="mr-1.5 inline size-4" />
+              ) : (
+                <CircleCheck aria-hidden="true" className="mr-1.5 inline size-4" />
+              )}
               {alert.requiresAttention
                 ? t("ai.stagnation.requiresAttention")
                 : t("ai.stagnation.clear")}
             </p>
             {alert.alert !== null && <AdviceText text={alert.alert} />}
-            <AdviceFactList label={t("ai.stagnation.signals")} items={alert.signals} emoji="🔎" />
+            <AdviceFactList
+              label={t("ai.stagnation.signals")}
+              items={alert.signals}
+              icon={Search}
+            />
             <p className="mt-3 text-xs text-muted-foreground">{t("ai.stagnation.disclosure")}</p>
           </AiSuggestionFrame>
         )}

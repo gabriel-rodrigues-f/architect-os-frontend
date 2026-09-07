@@ -10,6 +10,7 @@ export * from "./SynapseBackground";
 export * from "./PersonCombobox";
 export * from "./CapabilityCombobox";
 export * from "./CareerEventTimeline";
+export * from "./Chip";
 export * from "./CapabilityHeatmap";
 export * from "./CommandDialog";
 export * from "./CommandWithReasonDialog";

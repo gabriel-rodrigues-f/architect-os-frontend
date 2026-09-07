@@ -31,7 +31,7 @@
   },
   "src/components/app/DataView.tsx": {
     "id-length": {
-      "count": 5
+      "count": 3
     }
   },
   "src/components/app/MultiSelectFilter.tsx": {

@@ -1,21 +1,35 @@
+import {
+  Award,
+  Calculator,
+  ClipboardList,
+  Compass,
+  Handshake,
+  Map,
+  Paperclip,
+  Ruler,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  TriangleAlert,
+} from "lucide-react";
 import { describe, expect, it } from "vitest";
 
 import { AdviceSemiotics, AiProgressEstimate } from "@/lib/advice-semiotics";
 
-describe("AdviceSemiotics — o sinal ao lado do título", () => {
+describe("AdviceSemiotics — o sinal (ícone lucide) ao lado do título", () => {
   it("aviso vence ação, ação vence contexto", () => {
-    expect(AdviceSemiotics.emojiFor("Riscos e próximos passos")).toBe("⚠️");
-    expect(AdviceSemiotics.emojiFor("Próximos passos")).toBe("🎯");
-    expect(AdviceSemiotics.emojiFor("Onde está a pessoa")).toBe("🧭");
+    expect(AdviceSemiotics.iconFor("Riscos e próximos passos")).toBe(TriangleAlert);
+    expect(AdviceSemiotics.iconFor("Próximos passos")).toBe(Target);
+    expect(AdviceSemiotics.iconFor("Onde está a pessoa")).toBe(Compass);
   });
 
   it("ignora acento e caixa", () => {
-    expect(AdviceSemiotics.emojiFor("EVOLUÇÃO PERCEBIDA")).toBe("💪");
-    expect(AdviceSemiotics.emojiFor("Evidências que sustentam")).toBe("📎");
+    expect(AdviceSemiotics.iconFor("EVOLUÇÃO PERCEBIDA")).toBe(Award);
+    expect(AdviceSemiotics.iconFor("Evidências que sustentam")).toBe(Paperclip);
   });
 
   it("título sem palavra conhecida fica sem sinal", () => {
-    expect(AdviceSemiotics.emojiFor("Considerações")).toBeNull();
+    expect(AdviceSemiotics.iconFor("Considerações")).toBeNull();
   });
 });
 
@@ -36,25 +50,25 @@ describe("AiProgressEstimate — a barra enquanto o provedor escreve", () => {
   });
 });
 
-describe("AdviceSemiotics.emojiForFact — cada fato calculado leva o seu sinal (dono, 2026-09-06)", () => {
+describe("AdviceSemiotics.iconForFact — cada fato calculado leva o seu sinal (dono, 2026-09-06)", () => {
   it("lê a frase inteira e escolhe pelo assunto; sem assunto conhecido, o sinal de calculado", () => {
-    expect(AdviceSemiotics.emojiForFact("Não há avaliação registrada para esta pessoa.")).toBe(
-      "📝",
+    expect(AdviceSemiotics.iconForFact("Não há avaliação registrada para esta pessoa.")).toBe(
+      ClipboardList,
     );
-    expect(AdviceSemiotics.emojiForFact("Não há 1:1 registrada com esta pessoa.")).toBe("🤝");
-    expect(AdviceSemiotics.emojiForFact("Não há PDI registrado para esta pessoa.")).toBe("🗺️");
-    expect(AdviceSemiotics.emojiForFact("Não há evidência registrada para esta pessoa.")).toBe(
-      "📎",
+    expect(AdviceSemiotics.iconForFact("Não há 1:1 registrada com esta pessoa.")).toBe(Handshake);
+    expect(AdviceSemiotics.iconForFact("Não há PDI registrado para esta pessoa.")).toBe(Map);
+    expect(AdviceSemiotics.iconForFact("Não há evidência registrada para esta pessoa.")).toBe(
+      Paperclip,
     );
-    expect(AdviceSemiotics.emojiForFact("A régua do time exige 0 competências.")).toBe("📏");
+    expect(AdviceSemiotics.iconForFact("A régua do time exige 0 competências.")).toBe(Ruler);
     expect(
-      AdviceSemiotics.emojiForFact("Nenhuma competência da régua está abaixo do nível exigido."),
-    ).toBe("📉");
+      AdviceSemiotics.iconForFact("Nenhuma competência da régua está abaixo do nível exigido."),
+    ).toBe(TrendingDown);
     expect(
-      AdviceSemiotics.emojiForFact(
+      AdviceSemiotics.iconForFact(
         "Não há degrau de competência registrado no histórico desta pessoa.",
       ),
-    ).toBe("📈");
-    expect(AdviceSemiotics.emojiForFact("Qualquer outra coisa.")).toBe("🧮");
+    ).toBe(TrendingUp);
+    expect(AdviceSemiotics.iconForFact("Qualquer outra coisa.")).toBe(Calculator);
   });
 });
