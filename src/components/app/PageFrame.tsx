@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 
+import { ShellHeader } from "@/lib/design";
 import { cn } from "@/lib/utils";
 
 /**
@@ -14,20 +15,22 @@ import { cn } from "@/lib/utils";
  * Nenhuma tela precisa saber disso; nenhuma tela pode desfazer.
  */
 export class StablePageFrame {
-  /** Altura do cabeçalho fixo do shell — a mesma constante do `AppShell`. */
-  static readonly HEADER_HEIGHT_PX = 74;
+  /** Altura do cabeçalho fixo do shell — o token `--shell-header-h`, lido do `ShellHeader`. */
+  static get HEADER_HEIGHT_PX(): number {
+    return ShellHeader.HEIGHT_PX;
+  }
 
   /** A altura mínima da área de conteúdo: o viewport útil, sempre. */
   static get minHeightClass(): string {
-    return `min-h-[calc(100dvh-${StablePageFrame.HEADER_HEIGHT_PX}px)]`;
+    return ShellHeader.minContentHeightClass;
   }
 
   /**
    * Um bloco fixo dentro da página (cabeçalho da ficha, cabeçalho de colunas)
-   * se prende logo ABAIXO do cabeçalho do shell — a mesma constante, nunca um
+   * se prende logo ABAIXO do cabeçalho do shell — o mesmo token, nunca um
    * número solto na tela. O `z-10` fica abaixo do `z-20` do shell.
    */
-  static readonly pinnedUnderHeaderClass = "sticky top-[74px] z-10";
+  static readonly pinnedUnderHeaderClass = `sticky ${ShellHeader.stickyBelowClass} z-10`;
 
   /** Ao trocar de rota, a tela volta ao topo — sem animação, para não "andar". */
   static resetScroll(view: Pick<Window, "scrollTo"> = window): void {

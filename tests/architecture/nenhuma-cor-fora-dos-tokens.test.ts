@@ -1,8 +1,9 @@
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
+import { join, sep } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { Catraca, raizDoFrontend } from "../helpers/catraca";
 
 /**
  * Disciplina de cor (referência FIAP 2026-09-06, §2 item 3): "o primário só em
@@ -16,100 +17,60 @@ import { describe, expect, it } from "vitest";
  * escreve a paleta — é a fonte, não um consumidor). Tudo o mais lê um token:
  * `var(--x)`, `bg-primary`, `text-level-3-fg`.
  *
+ * Desde a revisão mestre de 2026-09-08 ([P-03]) a régua enxerga também a
+ * CLASSE de paleta do Tailwind (`text-emerald-600`, `bg-red-500`…): "um acento
+ * só" era violável por classe sem escrever literal nenhum. Prova do vermelho no
+ * dia: `development-plans.tsx` e `PasswordChoiceFields.tsx` com `text-emerald-*`
+ * (2 ocorrências), ambas trocadas por `text-success-fg` na mesma fatia.
+ *
  * A baseline gravada na fixture nomeia as exceções que existiam quando a
  * catraca nasceu (fallback de canvas quando o CSS ainda não carregou, página
- * de erro sem stylesheet, sombra de tooltip) e SÓ DESCE. Para regravar após
- * remover literais:
+ * de erro sem stylesheet) e SÓ DESCE. Para regravar após remover literais:
  * `ATUALIZAR_BASELINE_CORES=1 npx vitest run tests/architecture/nenhuma-cor-fora-dos-tokens.test.ts`
  */
 
-const raiz = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const FIXTURE = join(raiz, "tests", "architecture", "nenhuma-cor-fora-dos-tokens.fixture.json");
 const PALETA = join("src", "styles.css");
 const GERADOR = `${join("src", "lib", "design")}${sep}`;
 
 const LITERAL_DE_COR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\boklch\(/g;
 
-class ArquivoFonte {
-  constructor(
-    readonly caminho: string,
-    private readonly conteudo: string,
-  ) {}
+/** As 22 famílias de paleta do Tailwind — nenhuma é token da casa. */
+const FAMILIAS_DE_PALETA =
+  "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
 
-  get literais(): number {
-    return (this.conteudo.match(LITERAL_DE_COR) ?? []).length;
-  }
+const CLASSE_DE_PALETA = new RegExp(
+  `\\b(?:[a-z-]+:)*(?:bg|text|border|ring|fill|stroke|from|via|to|outline|decoration|shadow|divide|placeholder|accent|caret)-(?:${FAMILIAS_DE_PALETA})-\\d{2,3}\\b`,
+  "g",
+);
 
-  get eConsumidorDaPaleta(): boolean {
-    return (
-      this.caminho !== PALETA &&
-      !this.caminho.startsWith(GERADOR) &&
-      !this.caminho.endsWith(".gen.ts") &&
-      /\.(ts|tsx|css)$/.test(this.caminho)
-    );
-  }
-}
-
-class Varredura {
-  private readonly arquivos: ArquivoFonte[] = [];
-
-  constructor(private readonly base: string) {
-    this.percorre(join(base, "src"));
-  }
-
-  private percorre(pasta: string): void {
-    for (const nome of readdirSync(pasta)) {
-      const caminho = join(pasta, nome);
-      if (statSync(caminho).isDirectory()) {
-        this.percorre(caminho);
-        continue;
-      }
-      this.arquivos.push(
-        new ArquivoFonte(relative(this.base, caminho), readFileSync(caminho, "utf8")),
-      );
-    }
-  }
-
-  get contagem(): Record<string, number> {
-    const resultado: Record<string, number> = {};
-    for (const arquivo of this.arquivos) {
-      if (!arquivo.eConsumidorDaPaleta || arquivo.literais === 0) continue;
-      resultado[arquivo.caminho.split(sep).join("/")] = arquivo.literais;
-    }
-    return Object.fromEntries(
-      Object.entries(resultado).sort(([esquerda], [direita]) => esquerda.localeCompare(direita)),
-    );
-  }
-}
-
-const atual = new Varredura(raiz).contagem;
-const baseline = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, number>;
+const catraca = new Catraca({
+  fixture: join(
+    raizDoFrontend,
+    "tests",
+    "architecture",
+    "nenhuma-cor-fora-dos-tokens.fixture.json",
+  ),
+  variavelDeRegravacao: "ATUALIZAR_BASELINE_CORES",
+  conta: (arquivo) => arquivo.ocorrencias(LITERAL_DE_COR) + arquivo.ocorrencias(CLASSE_DE_PALETA),
+  consome: (arquivo) =>
+    arquivo.eFonteDeTela && arquivo.caminho !== PALETA && !arquivo.caminho.startsWith(GERADOR),
+});
 
 describe("nenhuma cor literal fora dos tokens", () => {
-  if (process.env["ATUALIZAR_BASELINE_CORES"] === "1") {
-    it("regrava a baseline — só para baixo", () => {
-      const soma = (mapa: Record<string, number>) =>
-        Object.values(mapa).reduce((total, parcela) => total + parcela, 0);
-      if (Object.keys(baseline).length > 0) expect(soma(atual)).toBeLessThanOrEqual(soma(baseline));
-      writeFileSync(FIXTURE, `${JSON.stringify(atual, null, 2)}\n`);
-    });
-    return;
-  }
-
-  it("nenhum arquivo de src/ ganhou literal de cor além da baseline", () => {
-    const pioraram = Object.entries(atual)
-      .filter(([arquivo, literais]) => literais > (baseline[arquivo] ?? 0))
-      .map(([arquivo, literais]) => `${arquivo}: ${literais} (baseline ${baseline[arquivo] ?? 0})`);
-    expect(pioraram).toEqual([]);
-  });
-
-  it("a baseline não guarda entrada morta — arquivo limpo sai da fixture", () => {
-    const mortas = Object.keys(baseline).filter((arquivo) => (atual[arquivo] ?? 0) === 0);
-    expect(mortas).toEqual([]);
-  });
+  catraca.registrarTestes();
+  if (catraca.regravando) return;
 
   it("a paleta continua sendo a única fonte de oklch fora do gerador", () => {
-    const css = readFileSync(join(raiz, PALETA), "utf8");
+    const css = readFileSync(join(raizDoFrontend, PALETA), "utf8");
     expect(css.match(/oklch\(/g)?.length ?? 0).toBeGreaterThan(50);
+  });
+
+  it("a régua enxerga classe de paleta do Tailwind, com ou sem variante", () => {
+    expect("text-emerald-600 hover:bg-red-500 dark:text-sky-300".match(CLASSE_DE_PALETA)).toEqual([
+      "text-emerald-600",
+      "hover:bg-red-500",
+      "dark:text-sky-300",
+    ]);
+    expect("text-success-fg bg-level-3 border-border".match(CLASSE_DE_PALETA)).toBeNull();
   });
 });

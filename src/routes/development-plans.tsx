@@ -571,7 +571,7 @@ function ActionPlanField({
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {t("pdi.field.actionPlan")}
         </p>
-        {saved && <span className="text-xs text-emerald-600">{t("pdi.saved")}</span>}
+        {saved && <span className="text-xs text-success-fg">{t("pdi.saved")}</span>}
       </div>
       <Textarea
         value={draft}

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { CONTRAST, DarkTheme, LightTheme, Oklch, renderTheme, tokenRegistry } from "@/lib/design";
+import { Bloco } from "../../helpers/folha-de-estilo";
 
 /**
  * A auditoria de contraste roda como teste: uma cor que deixa de passar no
@@ -86,10 +87,146 @@ describe("temas", () => {
     const forcado = {
       name: "teste",
       role: "fill" as const,
+      group: "theme" as const,
       light: Oklch.parse("oklch(0.9 0.1 25)"),
       darkOverride: Oklch.parse("oklch(0.42 0.05 25)"),
     };
     expect(dark.resolve(forcado).toCss()).toBe("oklch(0.42 0.05 25)");
+  });
+});
+
+/**
+ * [P-01] O tema escuro não compartilhava o primário do login: `.dark` era a
+ * paleta shadcn de fábrica (primário quase branco) e o login só era azul
+ * porque `auth-stage` sobrescrevia `--primary`/`--ring` localmente. Agora o
+ * azul da cena É o `--primary` do escuro, gerado daqui, e a cena não redefine
+ * token nenhum. Prova do vermelho: matiz 255 e c 0.013 no `.dark` anterior.
+ */
+describe("o primário é o azul da identidade nos dois temas", () => {
+  /** O azul que `auth-stage` definia em 2026-09-07 — a referência que o `.dark` precisa herdar. */
+  const AZUL_DO_LOGIN = Oklch.parse("oklch(0.55 0.15 235)");
+  const primary = () => tokenRegistry.get("primary")!;
+
+  it("o matiz do --primary do .dark é o do antigo auth-stage (±10°), saturado e não branco", () => {
+    const escuro = dark.resolve(primary());
+    expect(Math.abs(escuro.h - AZUL_DO_LOGIN.h)).toBeLessThanOrEqual(10);
+    expect(escuro.c).toBeGreaterThan(0.08);
+    expect(escuro.l).toBeLessThan(0.75);
+    expect(Math.abs(light.resolve(primary()).h - escuro.h)).toBeLessThanOrEqual(10);
+  });
+
+  it("primário e texto do primário passam AA no escuro", () => {
+    const texto = tokenRegistry.get("primary-foreground")!;
+    expect(dark.resolve(primary()).contrastWith(dark.resolve(texto))).toBeGreaterThanOrEqual(
+      CONTRAST.text,
+    );
+  });
+
+  it("o anel do .dark é o azul do foco do login, e styles.css diz o mesmo", () => {
+    const anel = dark.resolve(tokenRegistry.get("ring")!);
+    expect(Math.abs(anel.h - 235)).toBeLessThanOrEqual(10);
+    const bloco = Bloco.de("\n.dark {");
+    expect(bloco.valorDe("--primary")).toBe(dark.resolve(primary()).toCss());
+    expect(bloco.valorDe("--ring")).toBe(anel.toCss());
+  });
+
+  it("auth-stage não redefine primário, anel nem os --color-* do tema", () => {
+    const cena = Bloco.de("@utility auth-stage");
+    expect(cena.existe).toBe(true);
+    for (const token of ["--primary", "--primary-foreground", "--ring", "--color-primary"]) {
+      expect(cena.contem(`${token}:`), token).toBe(false);
+    }
+  });
+});
+
+/**
+ * [P-04] Um matiz de ação (235), neutros e as cores de estado (25 perigo,
+ * 80 aviso, 152 sucesso) — nada mais na identidade. O hover de `outline`/
+ * `ghost` era ciano 195 no claro e `sidebar-primary` (0 usos) também; o
+ * ciano fica só como `chart-3`. A escala de proficiência, a distância e o
+ * status (grupo `vocabulary`) têm o próprio matiz por definição e ficam fora.
+ */
+describe("matiz único de ação", () => {
+  const MATIZES = [235, 25, 80, 152];
+  const NEUTRO = 0.045;
+  const distancia = (matiz: number, alvo: number) =>
+    Math.min(Math.abs(matiz - alvo), 360 - Math.abs(matiz - alvo));
+
+  it("todo token da identidade é neutro ou cai num dos quatro matizes (±15°)", () => {
+    const fora: string[] = [];
+    for (const token of tokenRegistry.byGroup("theme")) {
+      for (const tema of [light, dark]) {
+        const cor = tema.resolve(token);
+        if (cor.c <= NEUTRO) continue;
+        if (MATIZES.some((alvo) => distancia(cor.h, alvo) <= 15)) continue;
+        fora.push(`${token.name} (${tema.id}): ${cor.toCss()}`);
+      }
+    }
+    expect(fora).toEqual([]);
+  });
+
+  it("o ciano não existe como token da identidade — nem accent, nem sidebar-primary", () => {
+    expect(tokenRegistry.get("sidebar-primary")).toBeUndefined();
+    expect(distancia(light.resolve(tokenRegistry.get("accent")!).h, 195)).toBeGreaterThan(15);
+    const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+    expect(css).not.toContain("sidebar-primary");
+  });
+});
+
+/**
+ * [P-02] Os 17 tokens semânticos de camada do alvo, nos dois temas, cada um
+ * registrado aqui e emitido em `styles.css` com o `--color-*` que vira
+ * utility. Antes o código compensava com `border-border/60`, `bg-primary/10`.
+ */
+describe("tokens semânticos de camada", () => {
+  const ALVO = [
+    "background",
+    "card",
+    "surface-elevated",
+    "border-subtle",
+    "border",
+    "border-strong",
+    "foreground",
+    "text-secondary",
+    "muted-foreground",
+    "primary",
+    "primary-hover",
+    "primary-active",
+    "primary-subtle",
+    "destructive",
+    "danger-subtle",
+    "info",
+    "focus-ring",
+  ];
+
+  it("os 17 tokens do alvo estão no registro, no grupo da identidade", () => {
+    for (const nome of ALVO) {
+      expect(tokenRegistry.get(nome)?.group, nome).toBe("theme");
+    }
+    expect(ALVO).toHaveLength(17);
+  });
+
+  it("cada um tem --color-* registrado e valor nos dois temas do styles.css", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+    const claro = Bloco.de(":root {");
+    const escuro = Bloco.de("\n.dark {");
+    for (const nome of [...ALVO, "info-fg", "warning-fg", "success-fg"]) {
+      expect(css, nome).toContain(`--color-${nome}: var(--${nome});`);
+      expect(claro.valorDe(`--${nome}`), `${nome} no claro`).not.toBeNull();
+      expect(escuro.valorDe(`--${nome}`), `${nome} no escuro`).not.toBeNull();
+    }
+  });
+
+  it("hover e active são o mesmo matiz do primário, um degrau para cada lado", () => {
+    for (const tema of [light, dark]) {
+      const base = tema.resolve(tokenRegistry.get("primary")!);
+      const hover = tema.resolve(tokenRegistry.get("primary-hover")!);
+      const active = tema.resolve(tokenRegistry.get("primary-active")!);
+      expect(hover.h, tema.id).toBeCloseTo(base.h);
+      expect(active.h, tema.id).toBeCloseTo(base.h);
+      expect(hover.l, tema.id).toBeGreaterThan(base.l);
+      expect(active.l, tema.id).toBeLessThan(base.l);
+    }
   });
 });
 
@@ -122,7 +259,7 @@ describe("contraste — auditoria WCAG", () => {
    * esse uso: é contra a superfície do card que eles precisam ser legíveis, e
    * era exatamente aí que o âmbar cru falhava no tema escuro.
    */
-  it("aviso e sucesso são legíveis como texto sobre o card, nos dois temas", () => {
+  it("aviso, sucesso, info, destrutivo e texto secundário são legíveis sobre o card, nos dois temas", () => {
     const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
     const cardDoBloco = (seletor: string) => {
       const bloco = new RegExp(`${seletor}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
@@ -133,7 +270,7 @@ describe("contraste — auditoria WCAG", () => {
 
     const superficie = { light: cardDoBloco(":root"), dark: cardDoBloco("\\.dark") };
 
-    for (const nome of ["warning-fg", "success-fg"]) {
+    for (const nome of ["warning-fg", "success-fg", "info-fg", "destructive", "text-secondary"]) {
       const token = tokenRegistry.get(nome)!;
       expect(
         light.resolve(token).contrastWith(superficie.light),

@@ -1284,7 +1284,7 @@ function VocabularyBlock({ name, items }: { name: VocabularyName; items: Vocabul
                     {t("config.vocab.code", { code: item.code })}
                   </span>
                   {!item.active && (
-                    <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] uppercase">
+                    <span className="rounded-md bg-secondary px-1.5 py-0.5 text-meta uppercase">
                       {t("config.vocab.inactive")}
                     </span>
                   )}

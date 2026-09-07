@@ -22,9 +22,9 @@
   /*
     Escala de raio gerada por `src/lib/design/scale.ts`. Discreta de propósito:
     a base anterior era 10px, com cards em 14px, e o arredondamento alto em
-    tudo é o que dava à interface cara de template.
+    tudo é o que dava à interface cara de template. Sem `xs` ([R-01]): nunca
+    teve uso.
   */
-  --radius-xs: 3px;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -32,40 +32,56 @@
   --radius-2xl: 12px;
   --radius-3xl: 12px;
   --radius-4xl: 12px;
+  /*
+    Os tokens de cor da identidade — gerados por `src/lib/design/tokens.ts`
+    (grupo `theme`), um `--color-*` por token. Camadas `background / card /
+    surface-elevated`; bordas `subtle / border / strong`; texto `foreground /
+    text-secondary / muted-foreground`; ação `primary / -hover / -active /
+    -subtle`; estado `destructive / danger-subtle / warning / success / info`.
+  */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-surface-elevated: var(--surface-elevated);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-subtle: var(--primary-subtle);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-text-secondary: var(--text-secondary);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-info: var(--info);
+  --color-info-fg: var(--info-fg);
+  --color-border-subtle: var(--border-subtle);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
+  --color-focus-ring: var(--focus-ring);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-ring-offset-background: var(--background);
 }
 
 :root {
   --radius: 8px;
 
-  /* Espaçamento — gerado por `src/lib/design/scale.ts`. */
+  /* Espaçamento, tipografia (tamanho + altura de linha) e peso — gerados por `src/lib/design/scale.ts`. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -74,24 +90,32 @@
   --space-8: 32px;
   --space-12: 48px;
   --space-16: 64px;
-
-  /* Tipografia por papel, não por medida. */
   --text-meta: 11px;
+  --text-meta--line-height: 16px;
   --text-label: 12px;
+  --text-label--line-height: 16px;
   --text-table: 13px;
+  --text-table--line-height: 20px;
   --text-body: 14px;
-  --text-subtitle: 15px;
-  --text-section: 18px;
-  --text-page: 28px;
+  --text-body--line-height: 20px;
+  --text-subtitle: 16px;
+  --text-subtitle--line-height: 24px;
+  --text-section: 20px;
+  --text-section--line-height: 28px;
+  --text-page: 24px;
+  --text-page--line-height: 32px;
   --text-kpi: 32px;
+  --text-kpi--line-height: 40px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  /* Altura do cabeçalho do shell ([N-02]) — `ShellHeader` em `src/lib/design/shell.ts`. */
+  --shell-header-h: 74px;
   /*
     Número-síntese (referência FIAP 2026-09-06, §2 itens 1 e 2): o valor de
     um `KeyFigure`, 40–48 px — o C-Level lê o número antes do texto.
   */
   --text-key-figure: 44px;
-  --weight-regular: 400;
-  --weight-medium: 500;
-  --weight-semibold: 600;
 
   /*
     Movimento (referência FIAP 2026-09-06, §2 item 6): três durações e uma
@@ -110,35 +134,61 @@
   */
   --surface-hover: color-mix(in oklch, var(--card) 94%, var(--foreground));
   --elevation-hover: 0 4px 12px -6px oklch(0 0 0 / 22%);
+  /*
+    Sombra só no que flutua ([E-01]): `raised` para popover, menu e tooltip;
+    `overlay` para diálogo, sheet e toast. Primitiva de formulário não tem
+    sombra — a profundidade dela é a borda.
+  */
+  --elevation-raised: 0 4px 12px -4px oklch(0 0 0 / 14%);
+  --elevation-overlay: 0 16px 40px -12px oklch(0 0 0 / 28%);
+  /* O anel de foco da casa ([A-01]): borda no primário e um halo desta largura a 8%. */
+  --focus-ring-width: 3px;
+
+  /*
+    Paleta do tema claro — gerada por `src/lib/design/tokens.ts` e presa por
+    `design-tokens.test.ts` (contraste AA por par, matiz único de ação). Para
+    alterar, mude a definição lá e regenere.
+  */
   --background: oklch(0.985 0.004 240);
   --foreground: oklch(0.22 0.03 250);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.03 250);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.03 250);
+  --surface-elevated: oklch(1 0 0);
   --primary: oklch(0.45 0.13 235);
   --primary-foreground: oklch(0.99 0.005 240);
+  --primary-hover: oklch(0.5 0.13 235);
+  --primary-active: oklch(0.41 0.13 235);
+  --primary-subtle: oklch(0.94 0.03 235);
   --secondary: oklch(0.955 0.008 240);
   --secondary-foreground: oklch(0.3 0.03 250);
   --muted: oklch(0.962 0.006 240);
   --muted-foreground: oklch(0.52 0.025 250);
-  --accent: oklch(0.93 0.05 195);
-  --accent-foreground: oklch(0.28 0.05 230);
+  --text-secondary: oklch(0.4 0.03 250);
+  --accent: oklch(0.94 0.012 240);
+  --accent-foreground: oklch(0.28 0.03 250);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
+  --danger-subtle: oklch(0.95 0.03 25);
+  --info: oklch(0.93 0.04 235);
+  --info-fg: oklch(0.38 0.12 235);
+  --border-subtle: oklch(0.95 0.006 245);
   --border: oklch(0.918 0.008 245);
+  --border-strong: oklch(0.84 0.014 245);
   --input: oklch(0.918 0.008 245);
   --ring: oklch(0.55 0.11 235);
+  --focus-ring: oklch(0.55 0.11 235);
   --sidebar: oklch(0.24 0.035 250);
   --sidebar-foreground: oklch(0.9 0.015 240);
-  --sidebar-primary: oklch(0.68 0.13 195);
-  --sidebar-primary-foreground: oklch(0.18 0.03 250);
   --sidebar-accent: oklch(0.31 0.04 250);
   --sidebar-accent-foreground: oklch(0.97 0.01 240);
   --sidebar-border: oklch(0.33 0.03 250);
-  --sidebar-ring: oklch(0.6 0.11 200);
-
-  /* proficiency scale */
+  --sidebar-ring: oklch(0.55 0.11 235);
+  --warning: oklch(0.9 0.08 80);
+  --success: oklch(0.89 0.07 152);
+  --warning-fg: oklch(0.4 0.13 70);
+  --success-fg: oklch(0.39 0.12 152);
   --level-0: oklch(0.965 0.004 245);
   --level-1: oklch(0.955 0.02 25);
   --level-2: oklch(0.92 0.075 95);
@@ -150,24 +200,20 @@
   --level-3-fg: oklch(0.31 0.075 155);
   --level-4-fg: oklch(0.295 0.05 195);
   --level-5-fg: oklch(0.275 0.055 235);
+  --gap-ok: oklch(0.9 0.06 155);
+  --gap-low: oklch(0.91 0.06 95);
+  --gap-high: oklch(0.9 0.07 55);
+  --gap-critical: oklch(0.89 0.07 25);
+  --gap-ok-fg: oklch(0.38 0.12 155);
+  --gap-low-fg: oklch(0.4 0.11 95);
+  --gap-high-fg: oklch(0.4 0.14 55);
+  --gap-critical-fg: oklch(0.4 0.16 25);
   --status-neutral: oklch(0.93 0.01 250);
   --status-progress: oklch(0.88 0.09 85);
   --status-done: oklch(0.87 0.09 300);
   --status-neutral-fg: oklch(0.42 0.03 250);
   --status-progress-fg: oklch(0.4 0.12 85);
   --status-done-fg: oklch(0.38 0.13 300);
-  --warning: oklch(0.9 0.08 80);
-  --success: oklch(0.89 0.07 152);
-  --warning-fg: oklch(0.4 0.13 70);
-  --success-fg: oklch(0.39 0.12 152);
-  --gap-ok: oklch(0.9 0.06 155);
-  --gap-low: oklch(0.91 0.06 95);
-  --gap-high: oklch(0.9 0.07 55);
-  --gap-ok-fg: oklch(0.38 0.12 155);
-  --gap-low-fg: oklch(0.4 0.11 95);
-  --gap-high-fg: oklch(0.4 0.14 55);
-  --gap-critical-fg: oklch(0.4 0.16 25);
-  --gap-critical: oklch(0.89 0.07 25);
   --chart-surface: oklch(1 0 0);
   --chart-1: oklch(0.52 0.15 245);
   --chart-2: oklch(0.58 0.14 65);
@@ -218,13 +264,39 @@
   --spacing-12: var(--space-12);
   --spacing-16: var(--space-16);
   --text-meta: var(--text-meta);
+  --text-meta--line-height: var(--text-meta--line-height);
   --text-label: var(--text-label);
+  --text-label--line-height: var(--text-label--line-height);
   --text-table: var(--text-table);
+  --text-table--line-height: var(--text-table--line-height);
   --text-body: var(--text-body);
+  --text-body--line-height: var(--text-body--line-height);
   --text-subtitle: var(--text-subtitle);
+  --text-subtitle--line-height: var(--text-subtitle--line-height);
   --text-section: var(--text-section);
+  --text-section--line-height: var(--text-section--line-height);
   --text-page: var(--text-page);
+  --text-page--line-height: var(--text-page--line-height);
   --text-kpi: var(--text-kpi);
+  --text-kpi--line-height: var(--text-kpi--line-height);
+  /*
+    Aliases temporários ([T-01]): as classes do Tailwind resolvem para a
+    escala da casa — `text-sm` É `text-body` — até a troca por papel, arquivo
+    a arquivo (PR 10, catraca `tipografia-por-papel`). `lg` cai em `section`
+    (20) porque 18 não existe na escala.
+  */
+  --text-xs: var(--text-label);
+  --text-xs--line-height: var(--text-label--line-height);
+  --text-sm: var(--text-body);
+  --text-sm--line-height: var(--text-body--line-height);
+  --text-base: var(--text-subtitle);
+  --text-base--line-height: var(--text-subtitle--line-height);
+  --text-lg: var(--text-section);
+  --text-lg--line-height: var(--text-section--line-height);
+  --text-xl: var(--text-section);
+  --text-xl--line-height: var(--text-section--line-height);
+  --text-2xl: var(--text-page);
+  --text-2xl--line-height: var(--text-page--line-height);
   --container-page: 1600px;
   --container-prose: 65ch;
   /*
@@ -237,44 +309,61 @@
 }
 
 .dark {
+  /* A seleção é o azul do botão do login — o `--primary` do escuro. */
   --selection: oklch(0.55 0.15 235);
   --selection-foreground: oklch(0.99 0.005 240);
+  --surface-hover: color-mix(in oklch, var(--card) 92%, var(--foreground));
+  --elevation-hover: 0 4px 14px -6px oklch(0 0 0 / 55%);
+  --elevation-raised: 0 4px 14px -4px oklch(0 0 0 / 45%);
+  --elevation-overlay: 0 16px 48px -12px oklch(0 0 0 / 65%);
+
+  /*
+    Paleta do tema escuro — gerada por `src/lib/design/tokens.ts`, o bloco
+    shadcn/sidebar inclusive ([P-01]): o primário é o azul da identidade, não
+    o branco de fábrica. A escala de proficiência e a severidade de distância
+    são derivadas por regra e auditadas em `design-tokens.test.ts`. Para
+    alterar, mude a definição lá e regenere.
+  */
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
+  --surface-elevated: oklch(0.25 0.04 265);
+  --primary: oklch(0.55 0.15 235);
+  --primary-foreground: oklch(1 0 0);
+  --primary-hover: oklch(0.61 0.15 235);
+  --primary-active: oklch(0.5 0.15 235);
+  --primary-subtle: oklch(0.24 0.05 235);
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
   --muted: oklch(0.279 0.041 260.031);
   --muted-foreground: oklch(0.704 0.04 256.788);
+  --text-secondary: oklch(0.8 0.02 250);
   --accent: oklch(0.279 0.041 260.031);
   --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: oklch(0.64 0.2 25);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
+  --danger-subtle: oklch(0.24 0.05 25);
+  --info: oklch(0.28 0.06 235);
+  --info-fg: oklch(0.85 0.08 235);
+  --border-subtle: oklch(1 0 0 / 0.06);
+  --border: oklch(1 0 0 / 0.1);
+  --border-strong: oklch(1 0 0 / 0.2);
+  --input: oklch(1 0 0 / 0.15);
+  --ring: oklch(0.62 0.13 235);
+  --focus-ring: oklch(0.62 0.13 235);
   --sidebar: oklch(0.208 0.042 265.755);
   --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
   --sidebar-accent: oklch(0.279 0.041 260.031);
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-  --surface-hover: color-mix(in oklch, var(--card) 92%, var(--foreground));
-  --elevation-hover: 0 4px 14px -6px oklch(0 0 0 / 55%);
-
-  /*
-    Vocabulário visual do produto — escala de proficiência e severidade de
-    distância. Gerado por `src/lib/design/tokens.ts`: a variante escura é
-    derivada por regra e auditada em `design-tokens.test.ts`, não escrita à
-    mão. Para alterar, mude a definição lá e regenere.
-  */
+  --sidebar-border: oklch(1 0 0 / 0.1);
+  --sidebar-ring: oklch(0.62 0.13 235);
+  --warning: oklch(0.278 0.056 80);
+  --success: oklch(0.282 0.049 152);
+  --warning-fg: oklch(0.88 0.072 70);
+  --success-fg: oklch(0.88 0.066 152);
   --level-0: oklch(0.19 0.004 245);
   --level-1: oklch(0.25 0.01 25);
   --level-2: oklch(0.29 0.055 95);
@@ -286,16 +375,6 @@
   --level-3-fg: oklch(0.855 0.06 155);
   --level-4-fg: oklch(0.925 0.06 195);
   --level-5-fg: oklch(0.975 0.01 235);
-  --status-neutral: oklch(0.267 0.007 250);
-  --status-progress: oklch(0.286 0.063 85);
-  --status-done: oklch(0.289 0.063 300);
-  --status-neutral-fg: oklch(0.88 0.017 250);
-  --status-progress-fg: oklch(0.88 0.066 85);
-  --status-done-fg: oklch(0.88 0.072 300);
-  --warning: oklch(0.278 0.056 80);
-  --success: oklch(0.282 0.049 152);
-  --warning-fg: oklch(0.88 0.072 70);
-  --success-fg: oklch(0.88 0.066 152);
   --gap-ok: oklch(0.278 0.042 155);
   --gap-low: oklch(0.274 0.042 95);
   --gap-high: oklch(0.278 0.049 55);
@@ -304,6 +383,12 @@
   --gap-low-fg: oklch(0.88 0.061 95);
   --gap-high-fg: oklch(0.88 0.077 55);
   --gap-critical-fg: oklch(0.88 0.088 25);
+  --status-neutral: oklch(0.267 0.007 250);
+  --status-progress: oklch(0.286 0.063 85);
+  --status-done: oklch(0.289 0.063 300);
+  --status-neutral-fg: oklch(0.88 0.017 250);
+  --status-progress-fg: oklch(0.88 0.066 85);
+  --status-done-fg: oklch(0.88 0.072 300);
   --chart-surface: oklch(0.208 0.042 265.755);
   --chart-1: oklch(0.72 0.132 245);
   --chart-2: oklch(0.78 0.123 65);
@@ -400,6 +485,18 @@
 }
 
 /*
+  O anel de foco da casa ([A-01]) — o foco do login em toda primitiva: borda
+  no primário e um halo de `--focus-ring-width` a 8% do `--focus-ring`. Sempre
+  por `focus-visible:` (teclado), nunca por `focus:` (o clique do mouse não
+  ganha anel). Substitui o `ring-1`/`ring-2` de cada componente.
+*/
+@utility focus-ring {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 var(--focus-ring-width) color-mix(in oklch, var(--focus-ring) 8%, transparent);
+}
+
+/*
   Superfície sem sombra e sem borda.
 
   Antes cada card acumulava fundo + borda + sombra + raio alto — quatro sinais
@@ -493,7 +590,7 @@
   font-size: var(--text-page);
   font-weight: var(--weight-semibold);
   letter-spacing: -0.015em;
-  line-height: 1.2;
+  line-height: var(--text-page--line-height);
 }
 
 /*
@@ -517,6 +614,7 @@
   font-size: var(--text-section);
   font-weight: var(--weight-semibold);
   letter-spacing: -0.01em;
+  line-height: var(--text-section--line-height);
 }
 
 /*
@@ -577,9 +675,9 @@
   FORA do container, na viewport inteira. O centro visual fica um pouco acima
   do meio: o respiro de baixo é maior que o de cima.
 
-  Dentro do container o primário volta a ser o azul da identidade — o tema
-  escuro tem primário quase branco, e o CTA "Entrar" precisa ser azul. A rede
-  (irmã do container) continua lendo o primário do escuro.
+  O CTA "Entrar" é azul porque o `--primary` do tema escuro É o azul da
+  identidade ([P-01], 2026-09-08) — a cena não redefine token nenhum; a rede
+  (irmã do container) lê o mesmo primário.
 
   O cartão é superfície escura própria: borda fina, sombra suave e blur leve —
   nada de glassmorphism. Os campos ganham hover, anel do primário no foco e
@@ -594,13 +692,6 @@
   /* Dono (2026-09-07): "centralize um pouco mais, 10%" — 1320 → 1188. */
   max-width: 1188px;
   margin-inline: auto;
-  --primary: oklch(0.55 0.15 235);
-  --primary-foreground: oklch(0.99 0.005 240);
-  /* Religa o token do tema ao primário desta cena: sem isto, `bg-primary` e o
-     hover do CTA resolviam o `--color-primary` da raiz (quase branco). */
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --ring: oklch(0.62 0.13 235);
   @media (width >= 1024px) and (width < 1440px) {
     width: calc(100% - 64px);
   }
@@ -690,7 +781,8 @@
 */
 .auth-field:focus-visible {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 8%, transparent);
+  box-shadow: 0 0 0 var(--focus-ring-width)
+    color-mix(in oklch, var(--color-primary) 8%, transparent);
 }
 
 /*

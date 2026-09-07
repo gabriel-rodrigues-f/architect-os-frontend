@@ -18,12 +18,10 @@ const trechoEntre = (abertura: string, proxima: string): string => {
   const fim = css.indexOf(proxima, inicio + abertura.length);
   return css.slice(inicio, fim < 0 ? undefined : fim);
 };
-const blocoDe = (seletor: ":root" | ".dark" | ".auth-stage"): string =>
+const blocoDe = (seletor: ":root" | ".dark"): string =>
   seletor === ":root"
-    ? trechoEntre(":root {", ".dark {")
-    : seletor === ".dark"
-      ? trechoEntre(".dark {", "::selection")
-      : trechoEntre("auth-stage {", "\n}");
+    ? trechoEntre(":root {", "\n.dark {")
+    : trechoEntre("\n.dark {", "::selection");
 
 describe("a seleção de texto é um marca-texto com tokens por tema", () => {
   it("declara --selection e --selection-foreground no tema claro e no escuro, com valores distintos", () => {
@@ -38,11 +36,11 @@ describe("a seleção de texto é um marca-texto com tokens por tema", () => {
     expect(valor(escuro, "selection-foreground")).toBeTruthy();
   });
 
-  it("no escuro, a seleção é o azul do botão do login (o --primary da cena de autenticação)", () => {
+  it("no escuro, a seleção é o azul do botão do login — que desde [P-01] é o --primary do próprio tema escuro", () => {
     const escuro = blocoDe(".dark");
-    const auth = blocoDe(".auth-stage");
-    const primarioDoLogin = auth.match(/--primary:\s*([^;]+);/)?.[1]?.trim();
-    expect(escuro).toContain(`--selection: ${primarioDoLogin};`);
+    const primarioDoEscuro = escuro.match(/--primary:\s*([^;]+);/)?.[1]?.trim();
+    expect(primarioDoEscuro).toBeTruthy();
+    expect(escuro).toContain(`--selection: ${primarioDoEscuro};`);
   });
 
   it("::selection usa os tokens e não existe hover pintando texto de forma global", () => {

@@ -27,7 +27,7 @@ describe("PageFrame — a tela não se desloca ao trocar de menu (dono, 2026-09-
   const frame = () => document.querySelector<HTMLElement>("main[data-page-frame]")!;
 
   it("a altura mínima é o viewport útil — o que sobra abaixo do cabeçalho do shell", () => {
-    expect(StablePageFrame.minHeightClass).toBe("min-h-[calc(100dvh-74px)]");
+    expect(StablePageFrame.minHeightClass).toBe("min-h-[calc(100dvh-var(--shell-header-h))]");
   });
 
   it("a troca de rota não muda a altura do frame — uma página curta ocupa o mesmo que uma longa", () => {

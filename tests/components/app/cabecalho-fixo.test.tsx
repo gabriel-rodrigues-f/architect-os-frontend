@@ -53,7 +53,7 @@ describe("cabeçalho fixo — a mesma régua do StablePageFrame", () => {
   it("o bloco fixo se prende abaixo do cabeçalho do shell, pela constante do frame", () => {
     const classe = StablePageFrame.pinnedUnderHeaderClass;
     expect(classe).toContain("sticky");
-    expect(classe).toContain(`top-[${StablePageFrame.HEADER_HEIGHT_PX}px]`);
+    expect(classe).toContain("top-(--shell-header-h)");
   });
 
   it("a ficha da pessoa: nome, posição/nível e abas num único bloco fixo", async () => {

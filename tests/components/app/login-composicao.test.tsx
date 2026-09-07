@@ -155,9 +155,11 @@ describe("Login — o cartão e os campos", () => {
     // emitido depois na mesma camada — dentro do @utility o anel nunca chegaria à tela.
     const foco = Bloco.de(".auth-field:focus-visible");
     expect(foco.existe).toBe(true);
-    expect(foco.contem("0 0 0 3px color-mix(in oklch, var(--color-primary) 8%, transparent)")).toBe(
-      true,
+    // A largura do halo é o token `--focus-ring-width` (3px) — o mesmo da utility `focus-ring` ([A-01]).
+    expect(foco.valorDe("box-shadow")?.replace(/\s+/g, " ")).toBe(
+      "0 0 0 var(--focus-ring-width) color-mix(in oklch, var(--color-primary) 8%, transparent)",
     );
+    expect(Bloco.de(":root {").valorDe("--focus-ring-width")).toBe("3px");
   });
 
   it("o 'Esqueci minha senha' fica logo abaixo do botão, sem sobra vertical (16 px, ritmo de 2026-09-07)", async () => {
@@ -170,12 +172,14 @@ describe("Login — o cartão e os campos", () => {
 });
 
 describe("Login — CTA, erro e a frase da casa", () => {
-  it("o CTA Entrar é o primário — e, na porta, o primário é o azul da identidade, não o branco do escuro", async () => {
+  it("o CTA Entrar é o primário — e o primário do tema escuro é o azul da identidade, sem a cena redefinir nada", async () => {
     servico();
     const botao = await abrir();
     expect(botao.classList.contains("bg-primary")).toBe(true);
     expect(botao.classList.contains("auth-cta")).toBe(true);
-    const palco = Bloco.de("@utility auth-stage");
+    // [P-01]: o azul vem do `.dark`; `auth-stage` não sobrescreve token de cor.
+    expect(Bloco.de("@utility auth-stage").contem("--primary")).toBe(false);
+    const palco = Bloco.de("\n.dark {");
     const primario = oklch(palco.valorDe("--primary"));
     expect(primario).not.toBeNull();
     expect(primario!.c).toBeGreaterThan(0.08);

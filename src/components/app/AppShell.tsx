@@ -45,6 +45,7 @@ import { usePendingTeamTransfers, useReducedMotion } from "@/hooks";
 import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 import { CollapsedNavGroups } from "@/lib/collapsed-nav-groups";
 import { DailyGreetingToast } from "@/components/app/DailyGreetingToast";
+import { ShellHeader } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { API_URL, type SessionUser } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -382,10 +383,10 @@ const SIDEBAR_RAIL = 64;
  * Literal de propósito: o Tailwind só compila classes que enxerga no fonte —
  * `h-[${n}px]` montado em tempo de execução não vira CSS, e o bloco da marca
  * perdia a altura (dono, 2026-09-07: "Desenvolvimento de Capacidades está
- * comprimido"). O teste `marca-na-coluna` cobra que o número acompanhe
- * `StablePageFrame.HEADER_HEIGHT_PX`.
+ * comprimido"). A altura é o token `--shell-header-h` ([N-02]); o teste
+ * `marca-na-coluna` cobra que a classe seja a do `ShellHeader`.
  */
-export const BRAND_HEADER_HEIGHT = "h-[74px]";
+export const BRAND_HEADER_HEIGHT = ShellHeader.heightClass;
 
 const clampWidth = (value: number) => Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, value));
 
@@ -419,7 +420,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <span
         aria-label={t("team.transfers.nav.badge", { n: pendingToDecide })}
         title={t("team.transfers.nav.badge", { n: pendingToDecide })}
-        className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold tabular-nums text-primary-foreground"
+        className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-meta font-semibold tabular-nums text-primary-foreground"
       >
         {pendingToDecide > 99 ? "99+" : pendingToDecide}
       </span>
@@ -664,7 +665,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 "transition-slow",
                 reducedMotion && "transition-none",
                 collapsed
-                  ? "left-1/2 top-[52px] -translate-x-1/2 text-[10px]"
+                  ? "left-1/2 top-[52px] -translate-x-1/2 text-meta"
                   : "left-5 top-[22px] text-sm",
               )}
             >
@@ -714,7 +715,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onToggleGroup={toggleGroup}
                   reducedMotion={reducedMotion}
                   groupLabel={t(group.labelKey)}
-                  headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground/80"
+                  headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-meta font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground/80"
                   renderItem={renderDesktopNavItem}
                   siblings={navItems}
                 />
@@ -853,7 +854,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 groupLabel={group.labelKey ? t(group.labelKey) : ""}
                 idPrefix="mobile-"
                 siblings={navItems}
-                headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground/80"
+                headerClassName="flex w-full items-center justify-between gap-2 rounded-md px-3 pb-1 pt-2 text-meta font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground/80"
                 renderItem={(item, hidden) =>
                   item.external ? (
                     <a

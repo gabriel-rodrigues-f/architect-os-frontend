@@ -150,7 +150,7 @@ class PasswordRequirementState {
       return new PasswordRequirementState(
         Check,
         "password.requirement.met",
-        "text-emerald-500",
+        "text-success-fg",
         "met",
       );
     }

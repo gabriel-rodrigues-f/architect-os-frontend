@@ -83,13 +83,12 @@ describe("a reserva de altura vem do sistema de tokens, não de um valor solto",
    * escala mudar e a conta estourar, o bloco volta a crescer com a descrição.
    */
   it("a medida reservada cobre título, respiro e descrição", () => {
-    const alturaLinhaTitulo = Number(
-      /line-height:\s*([\d.]+)/.exec(utilityBody("page-title"))?.[1] ?? "0",
-    );
-    expect(alturaLinhaTitulo).toBeGreaterThan(0);
+    // [T-03]: a altura de linha do título é o token `--text-page--line-height`, lido da escala.
+    expect(utilityBody("page-title")).toContain("line-height: var(--text-page--line-height)");
+    const alturaLinhaTitulo = fontSize.lineHeight("page");
+    expect(alturaLinhaTitulo).toBeGreaterThan(fontSize.get("page"));
 
-    const LINHA_TEXT_SM = 20;
-    const maisAlto = fontSize.get("page") * alturaLinhaTitulo + spacing.get("1") + LINHA_TEXT_SM;
+    const maisAlto = alturaLinhaTitulo + spacing.get("1") + fontSize.lineHeight("body");
 
     expect(spacing.get("16")).toBeGreaterThanOrEqual(maisAlto);
   });

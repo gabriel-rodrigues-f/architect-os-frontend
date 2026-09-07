@@ -98,7 +98,7 @@ export function CapabilityHeatmap({
                   <th
                     key={c.id}
                     scope="col"
-                    className="sticky top-0 z-10 max-w-[64px] truncate bg-card text-center text-[11px] text-muted-foreground"
+                    className="sticky top-0 z-10 max-w-[64px] truncate bg-card text-center text-meta text-muted-foreground"
                     title={c.name}
                   >
                     {sel.capabilityShortLabel(c)}

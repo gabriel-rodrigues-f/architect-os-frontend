@@ -67,7 +67,7 @@ export const tooltipStyle = {
   color: CHART_INK.surfaceText,
   border: `1px solid ${CHART_INK.grid}`,
   borderRadius: "var(--radius-md)",
-  boxShadow: "0 4px 12px oklch(0 0 0 / 0.12)",
+  boxShadow: "var(--elevation-overlay)",
   fontSize: "var(--text-label)",
   padding: "var(--space-2) var(--space-3)",
 } as const;
