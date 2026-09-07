@@ -1,5 +1,6 @@
 import { useRef, useState, type CSSProperties, type FocusEvent, type ReactNode } from "react";
 
+import { BrandLockup } from "@/components/app/BrandLockup";
 import { SynapseBackground } from "@/components/app/SynapseBackground";
 import { useI18n } from "@/lib/i18n";
 import { SynapseSignals } from "@/lib/synapse-network";
@@ -40,7 +41,9 @@ import { SynapseSignals } from "@/lib/synapse-network";
  * depender de nada que só exista do lado autenticado.
  *
  * Os `signals` são o canal da tela para a rede (foco no cartão acende os nós
- * próximos; Entrar dispara um pulso). Quem não os passa recebe uns próprios.
+ * próximos; Entrar dispara um pulso) e da rede para a marca (o pulso
+ * coletivo faz o lockup piscar — `BrandLockup`). Quem não os passa recebe
+ * uns próprios.
  */
 export function AuthScreenShell({
   children,
@@ -73,12 +76,7 @@ export function AuthScreenShell({
           >
             {/* A medida da marca é o bloco de texto (w-fit), não a coluna inteira: o vão real começa onde o texto acaba. */}
             <div ref={brandRef} className="w-fit">
-              <p className="font-display text-3xl font-semibold uppercase tracking-[0.28em] text-foreground sm:text-4xl lg:text-5xl">
-                Synapse
-              </p>
-              <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground sm:text-base sm:tracking-[0.16em]">
-                {t("login.subtitle")}
-              </p>
+              <BrandLockup signals={network} descriptor={t("login.subtitle")} />
             </div>
           </section>
 

@@ -620,17 +620,20 @@
   }
 }
 
+/*
+  Ritmo do cartão (terceira avaliação de UX, 2026-09-07): 32 no topo e nas
+  laterais, 28 na base — a altura cai só por padding e gaps. A borda 15% menos
+  visível; a sombra mais ampla, difusa e baixa, sem glow.
+*/
 @utility auth-card {
   width: min(460px, 100%);
   padding: 2rem;
+  padding-block-end: 1.75rem;
   background-color: color-mix(in oklch, var(--color-card) 88%, transparent);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in oklch, var(--color-border) 85%, transparent);
   border-radius: var(--radius-xl);
-  box-shadow: 0 24px 60px -24px oklch(0 0 0 / 55%);
+  box-shadow: 0 28px 80px -32px oklch(0 0 0 / 50%);
   backdrop-filter: blur(6px);
-  @media (width >= 640px) {
-    padding: 2.25rem;
-  }
 }
 
 @utility auth-field {
@@ -676,12 +679,32 @@
   box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 8%, transparent);
 }
 
-/* Dono (2026-09-07): no hover o botão clareava até o branco e o "Entrar" sumia.
-   O hover é o MESMO azul, um degrau mais luminoso, e o texto continua branco. */
+/*
+  Os três estados do CTA (terceira avaliação de UX, 2026-09-07). Default: o
+  primário um degrau menos saturado — misturado a um cinza da MESMA luz, para
+  perder croma sem escurecer. Hover (dono, 2026-09-07: "no hover o botão
+  clareava até o branco e o Entrar sumia"): o MESMO azul, +8% de luz, texto
+  branco. Active: −5%. A ordem importa: active depois de hover, porque os
+  dois valem enquanto o botão está pressionado.
+*/
+.auth-cta:not(:disabled) {
+  background-color: color-mix(in oklch, var(--primary) 90%, oklch(0.55 0 0));
+}
+
 .auth-cta:hover:not(:disabled) {
   background-color: color-mix(in oklch, var(--primary) 86%, white);
   color: var(--primary-foreground);
   box-shadow: 0 8px 24px -12px var(--primary);
+}
+
+.auth-cta:active:not(:disabled) {
+  background-color: color-mix(in oklch, var(--primary) 95%, black);
+  box-shadow: none;
+}
+
+/* "Esqueci minha senha" com +7% de contraste (2026-09-07); vive sem camada para vencer `text-muted-foreground`. */
+.auth-link {
+  color: color-mix(in oklch, var(--color-muted-foreground) 80%, var(--color-foreground));
 }
 
 /*
@@ -720,6 +743,60 @@
   &:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--color-primary);
+  }
+}
+
+/*
+  O lockup da marca (terceira avaliação de UX, 2026-09-07). O wordmark 10%
+  maior que antes (30/36/48 → 33/40/53 por clamp) e com o tracking que o
+  `BrandLockup` mede na tela (`--lockup-tracking`, em px) — sem medida, o
+  fallback em em. O descriptor a 65% de luz, peso médio, tracking próprio.
+  As letras são caixas inline para a piscada animar cada uma.
+*/
+@utility auth-wordmark {
+  font-size: clamp(2.0625rem, 1.45rem + 1.7vw, 3.3rem);
+  line-height: 1.05;
+  letter-spacing: var(--lockup-tracking, 0.28em);
+  --letter-lit: color-mix(in oklch, var(--color-foreground) 78%, var(--color-primary));
+  --letter-glow: color-mix(in oklch, var(--color-primary) 60%, transparent);
+}
+
+@utility auth-descriptor {
+  font-size: clamp(0.75rem, 0.62rem + 0.4vw, 1rem);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: color-mix(in oklch, var(--color-foreground) 65%, var(--color-background));
+  --letter-lit: var(--color-foreground);
+  --letter-glow: color-mix(in oklch, var(--color-primary) 45%, transparent);
+}
+
+@utility auth-letter {
+  display: inline-block;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+/*
+  A piscada (dono, 2026-09-07): ganho de luz e um leve brilho no primário,
+  sobe e desce com easing suave. Só sob `no-preference` e só enquanto a rede
+  pulsa em coletivo (`data-pulsing`); o atraso e a duração de cada letra vêm
+  do `LetterCascade`, inline. Nunca cor nova: só os tokens da cena.
+*/
+@keyframes auth-letter-pulse {
+  0%,
+  100% {
+    color: inherit;
+    text-shadow: none;
+  }
+  50% {
+    color: var(--letter-lit);
+    text-shadow: 0 0 14px var(--letter-glow);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-pulsing="true"] .auth-letter {
+    animation-name: auth-letter-pulse;
   }
 }
 

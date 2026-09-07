@@ -46,7 +46,9 @@ class SynapsePainter {
       const to = snapshot.nodes[link.to]!;
       const plane = Math.min(from.plane, to.plane) as 0 | 1 | 2;
       const glow = Math.max(from.glow, to.glow);
-      context.globalAlpha = LINK_ALPHA[plane] * link.strength + glow * 0.35;
+      // A zona de exclusão: a aresta é tão visível quanto a ponta mais escondida.
+      const visibility = Math.min(from.visibility, to.visibility);
+      context.globalAlpha = (LINK_ALPHA[plane] * link.strength + glow * 0.35) * visibility;
       context.strokeStyle = this.accent;
       context.beginPath();
       context.moveTo(from.x, from.y);
@@ -56,13 +58,14 @@ class SynapsePainter {
     for (const node of snapshot.nodes) {
       const radius = node.size * (1 + node.glow * 0.8);
       if (node.glow > 0.05) {
-        context.globalAlpha = node.glow * 0.25;
+        context.globalAlpha = node.glow * 0.25 * node.visibility;
         context.fillStyle = this.accent;
         context.beginPath();
         context.arc(node.x, node.y, radius * 3.2, 0, Math.PI * 2);
         context.fill();
       }
-      context.globalAlpha = Math.min(1, PLANE_ALPHA[node.plane] + node.glow * 0.4);
+      context.globalAlpha =
+        Math.min(1, PLANE_ALPHA[node.plane] + node.glow * 0.4) * node.visibility;
       context.fillStyle = node.plane === 0 ? this.back : node.glow > 0.3 ? this.accent : this.front;
       context.beginPath();
       context.arc(node.x, node.y, radius, 0, Math.PI * 2);
@@ -81,6 +84,7 @@ class SynapseStage {
   private height = 0;
   private scale = 1;
   private emphasized = false;
+  private unsubscribeCollective: (() => void) | null = null;
   private readonly loop = new LiveCanvasLoop((delta) => this.frame(delta));
 
   constructor(
@@ -112,7 +116,16 @@ class SynapseStage {
       this.height,
       NetworkComposition.for(this.width, zone),
     );
+    this.listenToCollective();
     this.painter = SynapsePainter.for(this.canvas);
+  }
+
+  /** A rede pulsou em coletivo → a tela fica sabendo (a marca pisca junto). Refeito a cada rede nova. */
+  private listenToCollective(): void {
+    this.unsubscribeCollective?.();
+    this.unsubscribeCollective = this.network.onCollectivePulse((pulse) =>
+      this.signals.announceCollectivePulse(pulse),
+    );
   }
 
   private composition(canvas: DOMRect): CompositionZone | null {
@@ -134,6 +147,8 @@ class SynapseStage {
 
   stop(): void {
     this.loop.stop();
+    this.unsubscribeCollective?.();
+    this.unsubscribeCollective = null;
   }
 
   point(at: Point | null): void {

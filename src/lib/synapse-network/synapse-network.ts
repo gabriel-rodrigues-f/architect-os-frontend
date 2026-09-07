@@ -7,6 +7,12 @@
  * distância permite, atração leve ao ponteiro com inércia e retorno suave, e
  * pulsos que correm pela rede. Tudo em pixels de tela e milissegundos, para o
  * teste medir sem desenhar nada. O desenho é do `SynapseBackground`.
+ *
+ * Dois pulsos (dono, 2026-09-07): o LOCAL nasce num nó e corre um raio curto,
+ * a cada poucos segundos; o COLETIVO é raro, parte de um ponto e atravessa a
+ * rede INTEIRA — "os neurônios piscando todos juntos" — e é o único que vira
+ * evento (`onCollectivePulse`), com início e duração, para a marca piscar
+ * junto. O clique em Entrar é coletivo.
  */
 export type Plane = 0 | 1 | 2;
 
@@ -26,6 +32,8 @@ export interface NetworkNode {
   readonly phase: number;
   /** Intensidade extra (0..1): pulso passando ou zona enfatizada. */
   glow: number;
+  /** Multiplicador de opacidade (0..1]: 1 fora das zonas de exclusão, baixo no halo da marca e atrás do cartão. */
+  visibility: number;
 }
 
 export interface NetworkLink {
@@ -47,13 +55,24 @@ export interface Zone {
   readonly height: number;
 }
 
+export type PulseKind = "local" | "collective";
+
 export interface Pulse {
   readonly x: number;
   readonly y: number;
   age: number;
   readonly duration: number;
   readonly radius: number;
+  readonly kind: PulseKind;
 }
+
+/** O pulso coletivo como evento: quando começou (relógio da rede, ms) e quanto dura. */
+export interface CollectivePulse {
+  readonly startedAt: number;
+  readonly durationMs: number;
+}
+
+export type CollectivePulseListener = (pulse: CollectivePulse) => void;
 
 export interface PlaneStyle {
   /** Raio de atração ao ponteiro, em px. */
@@ -90,12 +109,20 @@ const DRIFT_RATE = 0.00035; // rad/ms
 const GLOW_EASE_MS = 150;
 const EMPHASIS_GLOW = 0.6;
 const EMPHASIS_MARGIN = 80;
-const PULSE_DURATION_MS = 420;
-const PULSE_RADIUS = 480;
 const PULSE_BAND = 70;
-const SPONTANEOUS_PULSE_MIN_MS = 4000;
-const SPONTANEOUS_PULSE_SPREAD_MS = 5000;
-const SPONTANEOUS_PULSE_RADIUS = 200;
+const LOCAL_PULSE_DURATION_MS = 420;
+const LOCAL_PULSE_RADIUS = 200;
+const LOCAL_PULSE_MIN_MS = 4000;
+const LOCAL_PULSE_SPREAD_MS = 5000;
+/** O coletivo: a frente atravessa a tela inteira em pouco mais de um segundo. */
+export const COLLECTIVE_PULSE_DURATION_MS = 1200;
+/** A fração da duração em que a frente coletiva cruza a tela; o resto é o apagar. */
+const COLLECTIVE_TRAVEL_SHARE = 0.7;
+const COLLECTIVE_PULSE_MIN_MS = 12000;
+const COLLECTIVE_PULSE_SPREAD_MS = 8000;
+/** O halo em volta da marca onde a rede quase some, em px. */
+const BRAND_HALO = 40;
+const VISIBILITY = { brand: 0.3, behindCard: 0.15, elsewhere: 1 } as const;
 const CLUSTERED_SHARE = 0.7;
 const EDGE_MARGIN = 24;
 
@@ -106,7 +133,8 @@ const EXTREME_SHARE = 0.08;
 const NEAR_CARD = 120;
 const WEIGHT = {
   center: 1,
-  bottomLeft: 0.6,
+  /** Era 0.6; −25% (terceira avaliação de UX): o que sai do canto vai para o vão central. */
+  bottomLeft: 0.45,
   brand: 0.45,
   elsewhere: 0.45,
   nearCard: 0.3,
@@ -153,6 +181,43 @@ export class CompositionZone {
 
   private static empty(zone: Zone): boolean {
     return zone.width <= 0 || zone.height <= 0;
+  }
+
+  /** O multiplicador de opacidade num ponto: ~0.3 no halo da marca, ~0.15 atrás do cartão, 1 no resto. */
+  visibilityAt(point: Point): number {
+    if (CompositionZone.contains(this.brand, point, BRAND_HALO)) return VISIBILITY.brand;
+    if (CompositionZone.contains(this.card, point)) return VISIBILITY.behindCard;
+    return VISIBILITY.elsewhere;
+  }
+
+  /** Se o segmento entre dois pontos passa pelas letras da marca. */
+  crossesBrand(from: Point, to: Point): boolean {
+    return CompositionZone.segmentMeets(this.brand, from, to);
+  }
+
+  /** Liang–Barsky: o segmento toca o retângulo se sobra algum `t` em [0, 1] depois dos quatro cortes. */
+  private static segmentMeets(zone: Zone, from: Point, to: Point): boolean {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const cuts: readonly [number, number][] = [
+      [-dx, from.x - zone.x],
+      [dx, zone.x + zone.width - from.x],
+      [-dy, from.y - zone.y],
+      [dy, zone.y + zone.height - from.y],
+    ];
+    let enter = 0;
+    let exit = 1;
+    for (const [slope, room] of cuts) {
+      if (slope === 0) {
+        if (room < 0) return false;
+        continue;
+      }
+      const at = room / slope;
+      if (slope < 0) enter = Math.max(enter, at);
+      else exit = Math.min(exit, at);
+      if (enter > exit) return false;
+    }
+    return true;
   }
 
   private static contains(zone: Zone, point: Point, margin = 0): boolean {
@@ -252,7 +317,10 @@ export class SynapseNetwork {
   private pulses: Pulse[] = [];
   private emphasis: Zone | null = null;
   private clock = 0;
-  private untilSpontaneousPulse: number;
+  private untilLocalPulse: number;
+  private untilCollectivePulse: number;
+  private readonly zone: CompositionZone | null;
+  private readonly collectiveListeners = new Set<CollectivePulseListener>();
 
   constructor(
     readonly width: number,
@@ -260,8 +328,10 @@ export class SynapseNetwork {
     composition: NetworkComposition = NetworkComposition.for(width),
     private readonly random: () => number = Math.random,
   ) {
+    this.zone = composition.zone;
     this.seed(composition);
-    this.untilSpontaneousPulse = this.nextSpontaneousDelay();
+    this.untilLocalPulse = this.nextLocalDelay();
+    this.untilCollectivePulse = this.nextCollectiveDelay();
   }
 
   get snapshot(): SynapseNetworkSnapshot {
@@ -272,15 +342,54 @@ export class SynapseNetwork {
     };
   }
 
-  /** Um pulso que corre pela rede a partir de um ponto — o clique em Entrar. */
-  pulse(origin: Point = { x: this.width / 2, y: this.height / 2 }): void {
+  /**
+   * Um pulso a partir de um ponto. Por padrão COLETIVO — o clique em Entrar
+   * atravessa a rede inteira e avisa quem ouve; `"local"` é o pulso curto de
+   * um nó, que ninguém anuncia.
+   */
+  pulse(
+    origin: Point = { x: this.width / 2, y: this.height / 2 },
+    kind: PulseKind = "collective",
+  ): void {
+    if (kind === "local") {
+      this.pulses.push({
+        x: origin.x,
+        y: origin.y,
+        age: 0,
+        duration: LOCAL_PULSE_DURATION_MS,
+        radius: LOCAL_PULSE_RADIUS,
+        kind,
+      });
+      return;
+    }
     this.pulses.push({
       x: origin.x,
       y: origin.y,
       age: 0,
-      duration: PULSE_DURATION_MS,
-      radius: PULSE_RADIUS,
+      duration: COLLECTIVE_PULSE_DURATION_MS,
+      radius: this.collectiveRadius(origin),
+      kind,
     });
+    const event: CollectivePulse = {
+      startedAt: this.clock,
+      durationMs: COLLECTIVE_PULSE_DURATION_MS,
+    };
+    for (const listener of this.collectiveListeners) listener(event);
+  }
+
+  /** Quem quer saber do pulso coletivo (a marca pisca junto). Devolve o cancelamento. */
+  onCollectivePulse(listener: CollectivePulseListener): () => void {
+    this.collectiveListeners.add(listener);
+    return () => {
+      this.collectiveListeners.delete(listener);
+    };
+  }
+
+  /** Do ponto de origem até o canto mais distante — a frente alcança todo nó. */
+  private collectiveRadius(origin: Point): number {
+    const farX = Math.max(origin.x, this.width - origin.x);
+    const farY = Math.max(origin.y, this.height - origin.y);
+    return Math.hypot(farX, farY) + PULSE_BAND;
   }
 
   /** A zona que ganha intensidade — o cartão, quando um campo tem foco. `null` apaga. */
@@ -322,6 +431,7 @@ export class SynapseNetwork {
           size: style.size * (0.8 + this.random() * 0.5),
           phase: this.random() * Math.PI * 2,
           glow: 0,
+          visibility: zone ? zone.visibilityAt(home) : VISIBILITY.elsewhere,
         });
         id += 1;
       }
@@ -425,18 +535,38 @@ export class SynapseNetwork {
     }
     node.x += node.vx * step;
     node.y += node.vy * step;
+    if (this.zone) node.visibility = this.zone.visibilityAt(node);
   }
 
   private light(node: NetworkNode, step: number): void {
     let target = this.inEmphasis(node) ? EMPHASIS_GLOW : 0;
     for (const pulse of this.pulses) {
-      const front = (pulse.age / pulse.duration) * pulse.radius;
       const distance = Math.hypot(node.x - pulse.x, node.y - pulse.y);
-      const band = Math.exp(-(((distance - front) / PULSE_BAND) ** 2));
-      target = Math.max(target, band * (1 - pulse.age / pulse.duration));
+      target = Math.max(target, SynapseNetwork.wave(pulse, distance));
     }
     const ease = 1 - Math.exp(-step / GLOW_EASE_MS);
     node.glow += (target - node.glow) * (target > node.glow ? Math.max(ease, 0.6) : ease);
+  }
+
+  /**
+   * A frente de onda de um pulso num nó a `distance` da origem. O local corre
+   * e apaga no mesmo movimento (frente ∝ idade, envelope 1 − idade). O
+   * coletivo precisa acender TODO nó com força: a frente, mais larga, cruza a
+   * tela nos primeiros 70% da duração com o envelope cheio, e só depois apaga.
+   */
+  private static wave(pulse: Pulse, distance: number): number {
+    const progress = pulse.age / pulse.duration;
+    if (pulse.kind === "local") {
+      const band = Math.exp(-(((distance - progress * pulse.radius) / PULSE_BAND) ** 2));
+      return band * (1 - progress);
+    }
+    const front = Math.min(1, progress / COLLECTIVE_TRAVEL_SHARE) * pulse.radius;
+    const band = Math.exp(-(((distance - front) / (PULSE_BAND * 2)) ** 2));
+    const envelope =
+      progress < COLLECTIVE_TRAVEL_SHARE
+        ? 1
+        : 1 - (progress - COLLECTIVE_TRAVEL_SHARE) / (1 - COLLECTIVE_TRAVEL_SHARE);
+    return band * envelope;
   }
 
   private inEmphasis(node: NetworkNode): boolean {
@@ -450,27 +580,43 @@ export class SynapseNetwork {
     );
   }
 
+  /**
+   * Os pulsos espontâneos. O local sai de um nó sorteado a cada 4–9 s; o
+   * coletivo, de um nó sorteado a cada 12–20 s — e, quando o coletivo passa,
+   * o próximo local é adiado para não nascer dentro dele.
+   */
   private advancePulses(step: number): void {
     for (const pulse of this.pulses) pulse.age += step;
     this.pulses = this.pulses.filter((pulse) => pulse.age <= pulse.duration);
-    this.untilSpontaneousPulse -= step;
-    if (this.untilSpontaneousPulse > 0 || this.nodes.length === 0) return;
-    const origin = this.nodes[Math.floor(this.random() * this.nodes.length)]!;
-    this.pulses.push({
-      x: origin.x,
-      y: origin.y,
-      age: 0,
-      duration: PULSE_DURATION_MS,
-      radius: SPONTANEOUS_PULSE_RADIUS,
-    });
-    this.untilSpontaneousPulse = this.nextSpontaneousDelay();
+    if (this.nodes.length === 0) return;
+    this.untilCollectivePulse -= step;
+    this.untilLocalPulse -= step;
+    if (this.untilCollectivePulse <= 0) {
+      this.pulse(this.randomNode(), "collective");
+      this.untilCollectivePulse = this.nextCollectiveDelay();
+      this.untilLocalPulse = Math.max(this.untilLocalPulse, COLLECTIVE_PULSE_DURATION_MS);
+      return;
+    }
+    if (this.untilLocalPulse <= 0) {
+      this.pulse(this.randomNode(), "local");
+      this.untilLocalPulse = this.nextLocalDelay();
+    }
   }
 
-  private nextSpontaneousDelay(): number {
-    return SPONTANEOUS_PULSE_MIN_MS + this.random() * SPONTANEOUS_PULSE_SPREAD_MS;
+  private randomNode(): Point {
+    const node = this.nodes[Math.floor(this.random() * this.nodes.length)]!;
+    return { x: node.x, y: node.y };
   }
 
-  /** Pares próximos, do mais perto ao mais longe, até cada nó esgotar a sua cota. */
+  private nextLocalDelay(): number {
+    return LOCAL_PULSE_MIN_MS + this.random() * LOCAL_PULSE_SPREAD_MS;
+  }
+
+  private nextCollectiveDelay(): number {
+    return COLLECTIVE_PULSE_MIN_MS + this.random() * COLLECTIVE_PULSE_SPREAD_MS;
+  }
+
+  /** Pares próximos, do mais perto ao mais longe, até cada nó esgotar a sua cota — e nunca por cima da marca. */
   private connect(): NetworkLink[] {
     const candidates: { from: number; to: number; distance: number; limit: number }[] = [];
     for (let first = 0; first < this.nodes.length; first += 1) {
@@ -480,7 +626,10 @@ export class SynapseNetwork {
         const limit =
           (PLANE_STYLE[nodeA.plane].linkDistance + PLANE_STYLE[nodeB.plane].linkDistance) / 2;
         const distance = Math.hypot(nodeA.x - nodeB.x, nodeA.y - nodeB.y);
-        if (distance < limit) candidates.push({ from: first, to: second, distance, limit });
+        if (distance >= limit) continue;
+        // Nenhuma aresta cruza as letras da marca (zona de exclusão).
+        if (this.zone?.crossesBrand(nodeA, nodeB)) continue;
+        candidates.push({ from: first, to: second, distance, limit });
       }
     }
     candidates.sort((left, right) => left.distance - right.distance);

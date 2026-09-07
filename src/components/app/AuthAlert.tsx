@@ -1,6 +1,8 @@
 import { CircleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { cn } from "@/lib/utils";
+
 /**
  * O aviso de erro das telas de porta — login, primeiro acesso, senha nova e
  * pedido de acesso. Era o mesmo `<p role="alert">` copiado quatro vezes;
@@ -13,9 +15,9 @@ import type { ReactNode } from "react";
  * filho direto do `<p>` (sem `<span>`): quem procura a frase encontra o
  * próprio alerta.
  */
-export function AuthAlert({ children }: { children: ReactNode }) {
+export function AuthAlert({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p role="alert" className="auth-alert">
+    <p role="alert" className={cn("auth-alert", className)}>
       <CircleAlert className="auth-alert-icon" aria-hidden="true" />
       {children}
     </p>

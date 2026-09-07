@@ -160,11 +160,11 @@ describe("Login — o cartão e os campos", () => {
     );
   });
 
-  it("o 'Esqueci minha senha' fica logo abaixo do botão, sem sobra vertical", async () => {
+  it("o 'Esqueci minha senha' fica logo abaixo do botão, sem sobra vertical (16 px, ritmo de 2026-09-07)", async () => {
     servico();
     await abrir();
     const esqueci = screen.getByRole("button", { name: "Esqueci minha senha" });
-    expect(esqueci.className).toMatch(/\bmt-3\b/);
+    expect(esqueci.className).toMatch(/\bmt-4\b/);
     expect(esqueci.className).not.toMatch(/\bmt-[5-9]\b/);
   });
 });

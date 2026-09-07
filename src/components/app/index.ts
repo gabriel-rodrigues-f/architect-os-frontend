@@ -5,6 +5,7 @@ export * from "./AccessRecoveryRequestPanel";
 export * from "./AppShell";
 export * from "./AuthAlert";
 export * from "./AuthScreenShell";
+export * from "./BrandLockup";
 export * from "./SynapseBackground";
 export * from "./PersonCombobox";
 export * from "./CapabilityCombobox";

@@ -108,61 +108,64 @@ export function LoginScreen() {
       <h1 className="font-display text-2xl font-semibold tracking-tight">
         {firstAccess ? t("login.firstAccess.title") : t("login.title")}
       </h1>
-      <p className="mt-1.5 text-sm text-muted-foreground">
+      <p className="mt-2 text-sm text-muted-foreground">
         {firstAccess ? t("login.firstAccess.lead") : t("login.lead")}
       </p>
 
-      <form className="mt-6 space-y-4" onSubmit={submit}>
-        {firstAccess && (
+      {/* Ritmo do cartão (2026-09-07): apoio → 28 → campos a 20 entre si → 16 → botão → 16 → Esqueci. */}
+      <form className="mt-7" onSubmit={submit}>
+        <div data-testid="auth-fields" className="space-y-5">
+          {firstAccess && (
+            <div className="space-y-1.5">
+              <Label htmlFor="name">{t("login.name")}</Label>
+              <Input
+                id="name"
+                autoComplete="name"
+                required
+                className="auth-field"
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+              />
+            </div>
+          )}
+
           <div className="space-y-1.5">
-            <Label htmlFor="name">{t("login.name")}</Label>
+            <Label htmlFor="email">{t("login.email")}</Label>
             <Input
-              id="name"
-              autoComplete="name"
+              id="email"
+              type="email"
+              autoComplete="email"
               required
+              aria-invalid={invalid || undefined}
               className="auth-field"
-              value={form.name}
-              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
             />
           </div>
-        )}
 
-        <div className="space-y-1.5">
-          <Label htmlFor="email">{t("login.email")}</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            aria-invalid={invalid || undefined}
-            className="auth-field"
-            value={form.email}
-            onChange={(event) => setForm({ ...form, email: event.target.value })}
-          />
+          <div className="space-y-1.5">
+            <Label htmlFor="password">{t("login.password")}</Label>
+            <PasswordInput
+              id="password"
+              autoComplete={firstAccess ? "new-password" : "current-password"}
+              required
+              minLength={firstAccess ? 12 : 1}
+              aria-invalid={invalid || undefined}
+              className="auth-field"
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+            />
+            {firstAccess && (
+              <p className="text-xs text-muted-foreground">{t("login.firstAccess.minLength")}</p>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="password">{t("login.password")}</Label>
-          <PasswordInput
-            id="password"
-            autoComplete={firstAccess ? "new-password" : "current-password"}
-            required
-            minLength={firstAccess ? 12 : 1}
-            aria-invalid={invalid || undefined}
-            className="auth-field"
-            value={form.password}
-            onChange={(event) => setForm({ ...form, password: event.target.value })}
-          />
-          {firstAccess && (
-            <p className="text-xs text-muted-foreground">{t("login.firstAccess.minLength")}</p>
-          )}
-        </div>
-
-        {error && <AuthAlert>{error}</AuthAlert>}
+        {error && <AuthAlert className="mt-4">{error}</AuthAlert>}
 
         <Button
           type="submit"
-          className="auth-cta w-full"
+          className="auth-cta mt-4 w-full"
           // Dono (2026-09-07): Enter envia o formulário — o botão só espera a
           // consulta da instância quando a tela ainda pode virar "primeiro acesso".
           disabled={submitting || (!checkedInstance && mode === "register")}
@@ -186,7 +189,7 @@ export function LoginScreen() {
             setMode("recovery");
             setError(null);
           }}
-          className="auth-link mt-3 w-full text-center text-xs text-muted-foreground"
+          className="auth-link mt-4 w-full text-center text-xs text-muted-foreground"
         >
           {t("accessRecovery.request.link")}
         </button>

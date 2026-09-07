@@ -174,10 +174,10 @@ describe("SynapseNetwork — conexões e pulsos", () => {
     }
   });
 
-  it("um pulso acende os nós perto da frente de onda e se apaga entre 300 e 500 ms", () => {
+  it("um pulso local acende os nós perto da frente de onda e se apaga entre 300 e 500 ms", () => {
     const net = network();
     const origem = net.snapshot.nodes[0]!;
-    net.pulse({ x: origem.x, y: origem.y });
+    net.pulse({ x: origem.x, y: origem.y }, "local");
     expect(net.snapshot.pulses).toHaveLength(1);
     const duration = net.snapshot.pulses[0]!.duration;
     expect(duration).toBeGreaterThanOrEqual(300);
