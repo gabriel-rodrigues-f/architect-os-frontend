@@ -34,6 +34,7 @@ export * from "./SetPasswordScreen";
 export * from "./SingleSelectFilter";
 export * from "./SortableHeader";
 export * from "./TeamChoiceField";
+export * from "./TeamTransferRequests";
 export * from "./TreatGapInPlanAction";
 export * from "./TruncationNotice";
 export * from "./ViewToggle";

@@ -5,14 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
-import { GapBadge, Initials, LevelBadge } from "@/components/app/ui-bits";
+import { GapBadge, Initials, LevelBadge, StatusBadge } from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { type Architect } from "@/lib/domain";
+import { type Architect, type TeamTransferRequestView } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
-import { useSuccessToast } from "@/hooks";
-import { teamsApi } from "@/lib/api";
+import { usePendingTeamTransfers, useSuccessToast } from "@/hooks";
+import { teamsApi, teamTransfersApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
@@ -322,6 +322,10 @@ export function useTeamRoster(isAdmin: boolean) {
  * aqui do mesmo jeito; o que a tela não faz é oferecer-lhe uma senioridade,
  * porque o domínio recusa (`SENIORITY_NOT_APPLICABLE_TO_LEADERSHIP`). Sem
  * senioridade, o diálogo é só de time — e continua exigindo motivo.
+ *
+ * Dono (2026-09-06): para o GERENTE a mudança de time é uma SOLICITAÇÃO — o
+ * gerente do destino aprova, e só então a pessoa migra. O nível continua
+ * mudando na hora. O admin segue movendo direto (correção de cadastro).
  */
 export function TeamOrLevelChangeDialog({
   architect,
@@ -335,14 +339,60 @@ export function TeamOrLevelChangeDialog({
   const { t } = useI18n();
   const viewModel = useTeamViewModel();
   const notifySuccess = useSuccessToast();
+  const user = useCurrentUser();
+  const transfers = usePendingTeamTransfers(user);
+  const byRequest = transfers.viewModel.teamChangeModeFor(user, architect) === "request";
 
   const careerLevels = useCareerLevelsByRank();
   const seniority = useSeniorityReading();
   const [toRole, setToRole] = useState<ArchitectFormRole>("");
   const [toTeamId, setToTeamId] = useState<string | null>(architect.teamId ?? null);
   const change = new TeamOrLevelChange(architect, toRole, toTeamId);
+  const asksTransfer = byRequest && change.teamChanged && change.toTeamId !== null;
   const currentTeam = viewModel.teamNameOf(architect.teamId, teams) ?? t("team.transition.noTeam");
   const offersSeniority = SeniorityReading.has(architect);
+
+  const body = byRequest
+    ? t("team.transfer.body", { time: currentTeam })
+    : offersSeniority
+      ? t("team.transition.body", {
+          atual: seniority.labelOf(architect.role),
+          time: currentTeam,
+        })
+      : t("team.transition.body.teamOnly", { time: currentTeam });
+
+  const submitImmediately = (reason: string) =>
+    viewModel.changeTeamOrLevel(change, reason).then((updated) =>
+      notifySuccess(
+        "msg.people.careerLevelTransition.success",
+        {
+          nome: architect.name,
+          time: viewModel.teamNameOf(updated.teamId, teams) ?? t("team.transition.noTeam"),
+        },
+        updated,
+      ),
+    );
+
+  const submitByRequest = (reason: string) =>
+    viewModel.requestTeamChange(change, reason, teamTransfersApi).then(({ updated, requested }) => {
+      if (requested === null) {
+        notifySuccess(
+          "msg.people.careerLevelTransition.success",
+          { nome: architect.name, time: currentTeam },
+          updated,
+        );
+        return;
+      }
+      notifySuccess(
+        "team.transfer.requested.toast",
+        {
+          nome: architect.name,
+          destino: viewModel.teamNameOf(requested.toTeamId, teams) ?? requested.toTeamId,
+        },
+        requested,
+      );
+      void transfers.invalidate();
+    });
 
   return (
     <CommandWithReasonDialog
@@ -351,19 +401,18 @@ export function TeamOrLevelChangeDialog({
           ? t("team.transition.title", { nome: architect.name })
           : t("team.transition.title.teamOnly", { nome: architect.name })
       }
-      body={
-        offersSeniority
-          ? t("team.transition.body", {
-              atual: seniority.labelOf(architect.role),
-              time: currentTeam,
-            })
-          : t("team.transition.body.teamOnly", { time: currentTeam })
-      }
+      body={body}
       reasonInputId="transition-reason"
       reasonLabel={t("team.transition.reasonLabel")}
-      reasonPlaceholder={t(change.reasonPlaceholderKey)}
-      confirmLabel={t("team.transition.confirm")}
-      submittingLabel={t("team.transition.submitting")}
+      reasonPlaceholder={t(
+        asksTransfer && !change.levelChanged
+          ? "team.transfer.reasonPlaceholder"
+          : change.reasonPlaceholderKey,
+      )}
+      confirmLabel={asksTransfer ? t("team.transfer.confirm") : t("team.transition.confirm")}
+      submittingLabel={
+        asksTransfer ? t("team.transfer.submitting") : t("team.transition.submitting")
+      }
       fallbackError={t("team.transition.error")}
       canSubmit={change.isEffective}
       extraFields={() => (
@@ -396,7 +445,8 @@ export function TeamOrLevelChangeDialog({
               value={toTeamId ?? ""}
               onChange={(e) => setToTeamId(e.target.value === "" ? null : e.target.value)}
             >
-              <option value="">{t("team.transition.noTeam")}</option>
+              {/* Uma transferência tem destino: "Sem time" é só do admin, que move direto. */}
+              {!byRequest && <option value="">{t("team.transition.noTeam")}</option>}
               {viewModel.allocatableTeams(teams).map((team) => (
                 <option key={team.id} value={team.id}>
                   {team.name}
@@ -406,18 +456,7 @@ export function TeamOrLevelChangeDialog({
           </div>
         </div>
       )}
-      onSubmit={(reason) =>
-        viewModel.changeTeamOrLevel(change, reason).then((updated) =>
-          notifySuccess(
-            "msg.people.careerLevelTransition.success",
-            {
-              nome: architect.name,
-              time: viewModel.teamNameOf(updated.teamId, teams) ?? t("team.transition.noTeam"),
-            },
-            updated,
-          ),
-        )
-      }
+      onSubmit={byRequest ? submitByRequest : submitImmediately}
       onClose={onClose}
     />
   );
@@ -443,6 +482,7 @@ export function TeamRosterView({
   isAdmin,
   teams,
   decidesCareerOf,
+  pendingTransferOf = () => undefined,
   onTransition,
   onReactivate,
 }: {
@@ -453,10 +493,21 @@ export function TeamRosterView({
   teams: readonly TeamSummary[];
   /** D3 (2026-09-05): quem muda nível/time e reativa é o gerente designado (ou o admin como correção). */
   decidesCareerOf: (architect: Architect) => boolean;
+  /** Dono (2026-09-06): a pessoa com solicitação de transferência pendente carrega o selo com o destino. */
+  pendingTransferOf?: (architect: Architect) => TeamTransferRequestView | undefined;
   onTransition: (architect: Architect) => void;
   onReactivate: (architect: Architect) => void;
 }) {
   const { t } = useI18n();
+  const pendingTransferBadge = (architect: Architect) => {
+    const pending = pendingTransferOf(architect);
+    return pending ? (
+      <StatusBadge
+        tone="progress"
+        label={t("team.transfer.pending.badge", { destino: pending.toTeamName })}
+      />
+    ) : null;
+  };
   const showsActions = pageItems.some(({ architect }) => decidesCareerOf(architect));
   const position = usePositionReading(teams, useCareerLevelsByRank());
   const teamNameOf = (teamId: string | null | undefined) =>
@@ -482,6 +533,7 @@ export function TeamRosterView({
               <p className="truncate text-xs text-muted-foreground" title={a.email}>
                 {a.email}
               </p>
+              {pendingTransferBadge(a) && <div className="mt-1.5">{pendingTransferBadge(a)}</div>}
             </div>
             {decidesCareerOf(a) && (
               <div className="flex shrink-0 gap-1">
@@ -589,6 +641,7 @@ export function TeamRosterView({
                   <p className="truncate text-xs text-muted-foreground" title={a.email}>
                     {a.email}
                   </p>
+                  {pendingTransferBadge(a) && <div className="mt-1">{pendingTransferBadge(a)}</div>}
                 </td>
                 <td
                   className="whitespace-nowrap px-4 py-3 text-muted-foreground"

@@ -14,6 +14,9 @@ const DECORATION_BY_EVENT_TYPE: Record<string, NoticeDecoration> = {
   "assessment.completed": { tone: "success", icon: "completed" },
   "mentoring.recorded": { tone: "info", icon: "mentoring" },
   "support.access-opened": { tone: "warning", icon: "review" },
+  "team-transfer.requested": { tone: "info", icon: "review" },
+  "team-transfer.approved": { tone: "success", icon: "completed" },
+  "team-transfer.refused": { tone: "warning", icon: "generic" },
 };
 
 const FALLBACK: NoticeDecoration = { tone: "info", icon: "generic" };

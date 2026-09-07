@@ -28,6 +28,7 @@ import {
   type TeamTransitionsGateway,
 } from "./team-transitions.gateway";
 import { HttpTeamsGateway, type TeamsGateway } from "./teams.gateway";
+import { HttpTeamTransfersGateway, type TeamTransfersGateway } from "./team-transfers.gateway";
 import { HttpWorkAssistantsGateway, type WorkAssistantsGateway } from "./work-assistants.gateway";
 
 interface FrontendConfig {
@@ -59,6 +60,7 @@ export class FrontendContainer {
   readonly teamRosterGateway: TeamRosterGateway;
   readonly teamsGateway: TeamsGateway;
   readonly teamTransitionsGateway: TeamTransitionsGateway;
+  readonly teamTransfersGateway: TeamTransfersGateway;
   readonly workAssistantsGateway: WorkAssistantsGateway;
 
   private constructor(config: FrontendConfig) {
@@ -90,6 +92,7 @@ export class FrontendContainer {
     this.teamRosterGateway = new HttpTeamRosterGateway(this.apiClient);
     this.teamsGateway = new HttpTeamsGateway(this.apiClient);
     this.teamTransitionsGateway = new HttpTeamTransitionsGateway(this.apiClient);
+    this.teamTransfersGateway = new HttpTeamTransfersGateway(this.apiClient);
     this.workAssistantsGateway = new HttpWorkAssistantsGateway(this.apiClient);
   }
 

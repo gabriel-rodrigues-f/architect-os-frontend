@@ -10,6 +10,7 @@ import {
   SingleSelectFilter,
   TeamOrLevelChangeDialog,
   TeamRosterView,
+  TeamTransferRequestsSection,
   useCardsAndTableViews,
   useTeamRoster,
   useTeamRosterActions,
@@ -20,6 +21,7 @@ import { FilterField } from "@/components/app/FilterField";
 import { PersonCombobox } from "@/components/app/PersonCombobox";
 import { EmptyState as EmptyStateCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
+import { usePendingTeamTransfers } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
@@ -91,10 +93,15 @@ function TeamRoster() {
   const actions = useTeamRosterActions();
   const roster = useTeamRoster(isAdmin);
   const cardsAndTableViews = useCardsAndTableViews();
+  // Dono (2026-09-06): as transferências pendentes ficam visíveis aqui — no
+  // bloco e no selo da pessoa. Só admin e gerente com vínculo consultam.
+  const transfers = usePendingTeamTransfers(user);
 
   return (
     <>
       <PageHeader title={t("team.title")} description={t("team.subtitle")} help={help} />
+
+      <TeamTransferRequestsSection />
 
       {store.architectsIncludingInactive.length === 0 ? (
         <EmptyStateCard
@@ -201,6 +208,9 @@ function TeamRoster() {
               isAdmin={isAdmin}
               teams={actions.allTeams}
               decidesCareerOf={(architect) => viewModel.decidesCareerOf(user, architect)}
+              pendingTransferOf={(architect) =>
+                transfers.viewModel.pendingOf(architect.id, transfers.requests)
+              }
               onTransition={actions.setTransitioning}
               onReactivate={actions.reactivate}
             />

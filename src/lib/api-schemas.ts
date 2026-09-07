@@ -558,3 +558,30 @@ export const learningPathsResponseSchema = z.array(learningPath);
 export const mentoringSessionsResponseSchema = z.array(mentoringSession);
 export const evidencesResponseSchema = z.array(evidence);
 export const activeCycleResponseSchema = z.object({ cycleId: z.string() });
+
+const teamTransferRequestStatus = z.enum(["pending", "approved", "refused", "cancelled"]);
+
+export const teamTransferRequestSchema = z.object({
+  id: z.string(),
+  architectId: z.string(),
+  fromTeamId: z.string(),
+  toTeamId: z.string(),
+  reason: z.string(),
+  requestedByUserId: z.string(),
+  requestedAt: z.string(),
+  status: teamTransferRequestStatus,
+  decidedByUserId: z.string().nullable(),
+  decidedAt: z.string().nullable(),
+  decisionNote: z.string().nullable(),
+  version: z.number(),
+});
+
+export const teamTransferRequestViewSchema = teamTransferRequestSchema.extend({
+  architectName: z.string(),
+  fromTeamName: z.string(),
+  toTeamName: z.string(),
+  requestedByName: z.string(),
+  decidedByName: z.string().nullable(),
+});
+
+export const teamTransferRequestsResponseSchema = z.array(teamTransferRequestViewSchema);

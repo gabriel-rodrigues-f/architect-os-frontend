@@ -41,7 +41,7 @@ import { semanticTone } from "@/components/app/ui-bits";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useReducedMotion } from "@/hooks";
+import { usePendingTeamTransfers, useReducedMotion } from "@/hooks";
 import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 import { CollapsedNavGroups } from "@/lib/collapsed-nav-groups";
 import { DailyGreetingToast } from "@/components/app/DailyGreetingToast";
@@ -83,6 +83,9 @@ interface NavItem {
   external?: boolean;
 
   hintKey?: MessageKey;
+
+  /** Dono (2026-09-06): o item carrega a contagem de transferências A APROVAR por quem está logado. */
+  countsPendingTeamTransfers?: boolean;
 }
 
 const OWN_ARCHITECT_PARAM = "$architectId";
@@ -160,6 +163,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Users,
         activePrefixes: ["/architects"],
         leadershipOnly: true,
+        countsPendingTeamTransfers: true,
       },
       {
         to: "/assessments",
@@ -401,6 +405,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navItems = navGroups.flatMap((group) => group.items);
   const reducedMotion = useReducedMotion();
 
+  const transfers = usePendingTeamTransfers(user);
+  const pendingToDecide = user ? transfers.viewModel.countToDecide(user, transfers.requests) : 0;
+  const pendingBadgeOf = (item: NavItem) =>
+    item.countsPendingTeamTransfers && pendingToDecide > 0 ? (
+      <span
+        aria-label={t("team.transfers.nav.badge", { n: pendingToDecide })}
+        title={t("team.transfers.nav.badge", { n: pendingToDecide })}
+        className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold tabular-nums text-primary-foreground"
+      >
+        {pendingToDecide > 99 ? "99+" : pendingToDecide}
+      </span>
+    ) : null;
+
   const [collapsed, setCollapsed] = useState(false);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [resizing, setResizing] = useState(false);
@@ -536,6 +553,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           {label}
         </span>
+        {!collapsed && pendingBadgeOf(item)}
       </>
     );
     const link = item.external ? (
@@ -859,6 +877,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
                       {t(item.labelKey)}
+                      {pendingBadgeOf(item)}
                     </Link>
                   )
                 }

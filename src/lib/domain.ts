@@ -533,3 +533,35 @@ export const gapSeverityOf: (gap: number) => GapSeverity =
 
 export const GAP_SEVERITY_MESSAGE_KEY: Record<GapSeverity, MessageKey> =
   defaultGapSeverityRuler.messageKey;
+
+/**
+ * Decisão do dono (2026-09-06): para o gerente, mudar alguém de time é uma
+ * SOLICITAÇÃO — o gerente do time de destino aprova, e só então a pessoa
+ * migra. O admin continua movendo direto (correção de cadastro).
+ */
+export type TeamTransferRequestStatus = "pending" | "approved" | "refused" | "cancelled";
+
+/** A foto que os POSTs devolvem (`TeamTransferRequestSnapshot` no backend). */
+export interface TeamTransferRequest {
+  id: string;
+  architectId: string;
+  fromTeamId: string;
+  toTeamId: string;
+  reason: string;
+  requestedByUserId: string;
+  requestedAt: string;
+  status: TeamTransferRequestStatus;
+  decidedByUserId: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  version: number;
+}
+
+/** A listagem (`GET /team-transfer-requests`): a foto mais os nomes, para a tela não juntar tabelas. */
+export interface TeamTransferRequestView extends TeamTransferRequest {
+  architectName: string;
+  fromTeamName: string;
+  toTeamName: string;
+  requestedByName: string;
+  decidedByName: string | null;
+}

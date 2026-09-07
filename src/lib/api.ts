@@ -27,6 +27,7 @@ const {
   teamRosterGateway,
   teamsGateway,
   teamTransitionsGateway,
+  teamTransfersGateway,
   workAssistantsGateway,
 } = defaultContainer;
 
@@ -54,6 +55,7 @@ export const reportsApi = { ...reportsGateway };
 export const teamsApi = { ...teamsGateway };
 export const teamRosterApi = { ...teamRosterGateway };
 export const teamTransitionsApi = { ...teamTransitionsGateway };
+export const teamTransfersApi = { ...teamTransfersGateway };
 export const personAssistantsApi = { ...personAssistantsGateway };
 export const workAssistantsApi = { ...workAssistantsGateway };
 export const operationsApi = new ApiOperationsGateway(defaultContainer.apiClient);

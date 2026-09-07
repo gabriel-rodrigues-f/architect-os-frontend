@@ -1,6 +1,7 @@
 import type { MessageKey } from "../i18n/registry";
 import type { SessionUser } from "../api";
-import type { Architect, RoleName } from "../domain";
+import type { Architect, RoleName, TeamTransferRequest } from "../domain";
+import type { TeamTransfersGateway } from "../gateways/team-transfers.gateway";
 import type { TeamSummary } from "../gateways/teams.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
 import { SeniorityReading } from "../seniority";
@@ -23,6 +24,16 @@ export type TeamRosterService = Pick<
   | "allocateArchitectToTeam"
   | "releaseArchitectFromTeam"
 >;
+
+/** Quem SOLICITA a transferência quando a mudança de time não é imediata (dono, 2026-09-06). */
+export type TeamTransferRequester = Pick<TeamTransfersGateway, "requestTeamTransfer">;
+
+export interface TeamChangeRequested {
+  /** A pessoa como ficou depois do que mudou na hora (o nível). */
+  readonly updated: Architect;
+  /** A solicitação criada, quando o time mudou; `null` quando só o nível mudou. */
+  readonly requested: TeamTransferRequest | null;
+}
 
 export class TeamOrLevelChange {
   constructor(
@@ -99,6 +110,28 @@ export class TeamViewModel {
 
   transitionCareerLevel(architectId: string, toRole: RoleName, reason: string): Promise<Architect> {
     return this.service.transitionCareerLevel(architectId, toRole, reason);
+  }
+
+  /**
+   * O caminho do GERENTE (dono, 2026-09-06): o nível muda na hora, porque é
+   * dele; o time vira SOLICITAÇÃO ao gerente do destino, com o mesmo motivo.
+   * "Sem time" não existe neste caminho — uma transferência tem destino.
+   */
+  async requestTeamChange(
+    change: TeamOrLevelChange,
+    reason: string,
+    transfers: TeamTransferRequester,
+  ): Promise<TeamChangeRequested> {
+    const { id } = change.architect;
+    let updated = change.architect;
+    if (change.levelChanged && change.toRole !== "") {
+      updated = await this.service.transitionCareerLevel(id, change.toRole, reason);
+    }
+    const requested =
+      change.teamChanged && change.toTeamId !== null
+        ? await transfers.requestTeamTransfer(id, change.toTeamId, reason)
+        : null;
+    return { updated, requested };
   }
 
   async changeTeamOrLevel(change: TeamOrLevelChange, reason: string): Promise<Architect> {
