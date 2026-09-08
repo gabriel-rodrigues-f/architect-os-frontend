@@ -54,14 +54,13 @@ const checkboxDe = (name: string) =>
   screen.getByRole("option", { name }).querySelector('[role="checkbox"]');
 
 /**
- * Dono (2026-09-08, item 2), literal: *"o filtro hoje obscurecido
- * (desabilitado) passa a poder ser aberto, mostrando 'Nenhum profissional
- * cadastrado — clique para cadastrar', que leva ao cadastro"*.
+ * Dono (2026-09-08), literal: *"Ao invés de aparecer como linha clicável no
+ * filtro, vamos bloquear o filtro e disponibilizamos o botão de criação mais
+ * abaixo, dentro do quadro principal e centralizado na tela."*
  *
- * Sem sessão — que é como esta suíte monta a peça — a pergunta de alcance
- * responde "não cadastra": sobra a frase, e o campo continua obscurecido.
- * O caminho de quem CADASTRA gente é provado em
- * `tests/components/app/nenhum-seletor-vazio.test.tsx`, com sessão.
+ * Então o campo sem ninguém é moldura muda: a frase, o gatilho bloqueado e
+ * nada mais — para todos. O botão de cadastro é provado em
+ * `tests/components/app/vazio-no-centro.test.tsx`, no centro do quadro.
  */
 describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08)", () => {
   afterEach(() => cleanup());
@@ -81,7 +80,7 @@ describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08
         </I18nProvider>,
       );
 
-      expect(vazio().textContent).toContain("Nenhum profissional cadastrado");
+      expect(vazio().textContent).toContain("Não há profissionais cadastrados");
       expect(screen.queryByText("Todo o time")).toBeNull();
 
       await userEvent.click(vazio());
@@ -90,7 +89,7 @@ describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08
     },
   );
 
-  it("sem alcance ao cadastro, o campo continua obscurecido e não oferece porta nenhuma", () => {
+  it("o campo fica bloqueado e não oferece porta nenhuma — nem para quem cadastra", () => {
     render(
       <I18nProvider>
         <PersonCombobox

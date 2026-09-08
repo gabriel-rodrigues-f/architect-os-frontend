@@ -1,4 +1,4 @@
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -60,13 +60,13 @@ import {
  * (Avaliações, Calibração). Com o alcance vazio, nenhuma delas desenha
  * "Todo o time"; todas dizem a mesma frase.
  *
- * ADENDO DO DONO, 2026-09-08 (item 2) — a frase MUDOU e o campo deixou de
- * ser um muro: *"o filtro hoje obscurecido (desabilitado) passa a poder ser
- * aberto, mostrando 'Nenhum profissional cadastrado — clique para cadastrar',
- * que leva ao cadastro"*. O que esta suíte guarda continua valendo — não há
- * "Todo o time" de ninguém, e nenhuma lista abre —, e o que ela afirma sobre
- * o TEXTO passa a ser a frase nova. Quem NÃO cadastra gente (o tech lead)
- * continua com o campo obscurecido e sem porta.
+ * ADENDO DO DONO, 2026-09-08 — o campo VOLTOU a ser muro, de propósito:
+ * *"Ao invés de aparecer como linha clicável no filtro, vamos bloquear o
+ * filtro e disponibilizamos o botão de criação mais abaixo, dentro do quadro
+ * principal e centralizado na tela."* O que esta suíte guarda continua
+ * valendo — não há "Todo o time" de ninguém, e nenhuma lista abre —, e o
+ * TEXTO do campo passa a ser "Não há profissionais cadastrados". Onde o botão
+ * de cadastro aparece é assunto de `cadastro-no-centro-da-tela.test.tsx`.
  */
 const fetchMock = vi.fn();
 
@@ -99,8 +99,8 @@ const comoAtor = (user: SessionUser) =>
 
 /** O que o CORPO da tela diz quando não há ninguém. */
 const mensagemDoCorpo = "Não há profissionais cadastrados.";
-/** O que o CAMPO diz — e, para quem cadastra, o convite em que se clica. */
-const mensagemDoCampo = "Nenhum profissional cadastrado — clique para cadastrar";
+/** O que o CAMPO BLOQUEADO diz — a mesma frase, para todos. */
+const mensagemDoCampo = "Não há profissionais cadastrados";
 
 describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", () => {
   beforeEach(() => {
@@ -141,7 +141,6 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     comoAtor(fixtureAssignedTechLeadUser);
     renderWithApp(<ComparePage />);
 
-    // O tech lead NÃO cadastra gente: campo obscurecido, sem porta nenhuma.
     const seletor = await screen.findByRole("button", { name: "Profissionais para comparar" });
     expect(seletor.textContent).toContain(mensagemDoCampo);
     expect(seletor.hasAttribute("disabled")).toBe(true);
@@ -151,21 +150,17 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });
 
-  it("Avaliações (uma pessoa): a mesma frase, e o campo abre o convite ao cadastro", async () => {
+  it("Avaliações (uma pessoa): a mesma frase, e o campo não abre nada", async () => {
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<AssessmentsPage />);
 
     const seletor = await screen.findByRole("button", { name: "Profissional" });
     expect(seletor.textContent).toContain(mensagemDoCampo);
+    expect(seletor.hasAttribute("disabled")).toBe(true);
 
     await userEvent.click(seletor);
-    // Não há lista de pessoas: o painel traz a frase e o caminho do cadastro.
     expect(screen.queryByRole("listbox")).toBeNull();
-    expect(
-      within(await screen.findByRole("dialog")).getByRole("link", {
-        name: "Cadastrar primeiro profissional",
-      }),
-    ).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("Calibração (uma pessoa): usa a mesma combobox das outras telas, com a mesma mensagem", async () => {

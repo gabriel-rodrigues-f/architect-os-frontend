@@ -17,6 +17,7 @@ export * from "./CommandWithReasonDialog";
 export * from "./ConfirmDialog";
 export * from "./DataOriginCallout";
 export * from "./DeactivatedPersonNotice";
+export * from "./EmptyStateCallToAction";
 export * from "./EvaluatorDistributionCard";
 export * from "./FilterField";
 export * from "./FilterTriggerButton";

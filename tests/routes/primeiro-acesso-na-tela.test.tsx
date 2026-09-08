@@ -242,6 +242,15 @@ afterEach(() => {
   toast.dismiss();
 });
 
+/*
+ * Todo teste deste arquivo sobe a SPA inteira e digita senha por senha com
+ * digitação real (três campos de 16 caracteres por volta). Isso passa dos 5 s
+ * padrão do vitest quando a máquina está carregada — e a exigência do espaço
+ * no meio (dono, 2026-09-08) acrescentou mais uma volta ao teste das recusas.
+ * O orçamento é do ARQUIVO para não virar remendo teste a teste.
+ */
+vi.setConfig({ testTimeout: 30_000 });
+
 describe("o primeiro acesso segura a porta até a senha ser trocada", () => {
   it("quem entra com a marca de pé cai na troca de senha, não na aplicação", async () => {
     await subirASpa();
@@ -442,10 +451,7 @@ describe("o primeiro acesso segura a porta até a senha ser trocada", () => {
       // A exigência apontada volta a faltar na lista, mesmo estando de pé aqui.
       expect(screen.getAllByText("ainda falta").length, exigencia).toBe(1);
     }
-    // Oito voltas, cada uma redigitando os três campos com digitação real:
-    // ~380 teclas. Passa dos 5 s padrão quando a máquina está carregada, e
-    // a exigência do espaço no meio (2026-09-08) acrescentou mais uma volta.
-  }, 30_000);
+  });
 
   it("senha atual errada diz o que houve, sem nenhum detalhe técnico", async () => {
     await subirASpa();

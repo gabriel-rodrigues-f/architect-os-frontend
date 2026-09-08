@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import {
   ChevronDown,
   ChevronUp,
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 import {
   ConfirmDialog,
   EmptyState,
+  EmptyStateCallToAction,
   LevelBadge,
   PageAction,
   PageActions,
@@ -38,6 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { LEVELS, type Competency, type Capability } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
+import { initialSearchParam } from "@/lib/search-params";
 import { workAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
@@ -70,7 +73,17 @@ function useCompetencyMatrixViewModel(): CompetencyMatrixViewModel {
   );
 }
 
+/**
+ * O botão de cadastro de capacidade de OUTRAS telas chega com
+ * `?cadastrar=capacidade` — levar à tela não basta (dono, item 12): o
+ * formulário abre junto. É o que a `Registration.CAPABILITY` escreve no link.
+ */
+const matrixSearchSchema = z.object({
+  cadastrar: z.literal("capacidade").optional(),
+});
+
 export const Route = createFileRoute("/competency-matrix")({
+  validateSearch: matrixSearchSchema,
   beforeLoad: requireSystemOperatorReach,
   head: () => ({
     meta: [
@@ -104,7 +117,9 @@ function MatrixScreen() {
   const viewModel = useCompetencyMatrixViewModel();
 
   const isAdmin = viewModel.isAdmin(useCurrentUser());
-  const [creatingCapability, setCreatingCapability] = useState(false);
+  const [creatingCapability, setCreatingCapability] = useState(
+    () => initialSearchParam("cadastrar") === "capacidade",
+  );
 
   const [importing, setImporting] = useState(false);
   const { t } = useI18n();
@@ -218,6 +233,16 @@ function MatrixScreen() {
   const capabilityCompetencyCount = (capabilityId: string) =>
     store.competencies.filter((c) => c.capabilityId === capabilityId).length;
 
+  /*
+   * Dono (2026-09-08): sem capacidade nenhuma o botão de cadastro sai do canto
+   * e aparece no CENTRO do quadro. É a MESMA ação, hospedada num lugar de cada
+   * vez — a importação continua no canto, porque não é o cadastro.
+   */
+  const semCapacidades = store.capabilities.length === 0;
+  const cadastrarCapacidade = isAdmin ? (
+    <PageAction label={t("matrix.newCapability")} onClick={() => setCreatingCapability(true)} />
+  ) : undefined;
+
   return (
     <>
       <PageHeader
@@ -227,15 +252,15 @@ function MatrixScreen() {
         actions={
           isAdmin ? (
             <PageActions>
+              {/* A importação é ação de APOIO sempre — o papel não muda
+                  quando o botão de cadastro vai para o centro da tela. */}
               <PageAction
+                rank="supporting"
                 icon={Upload}
                 label={t("matrix.import.button")}
                 onClick={() => setImporting(true)}
               />
-              <PageAction
-                label={t("matrix.newCapability")}
-                onClick={() => setCreatingCapability(true)}
-              />
+              {semCapacidades ? undefined : cadastrarCapacidade}
             </PageActions>
           ) : undefined
         }
@@ -269,8 +294,10 @@ function MatrixScreen() {
         </div>
       </SectionCard>
 
-      {store.capabilities.length === 0 && (
-        <EmptyState title={t("matrix.empty.title")} hint={t("matrix.empty.hint")} />
+      {semCapacidades && (
+        <EmptyStateCallToAction title={t("matrix.empty.title")} hint={t("matrix.empty.hint")}>
+          {cadastrarCapacidade}
+        </EmptyStateCallToAction>
       )}
 
       {store.capabilities.length > 0 && (

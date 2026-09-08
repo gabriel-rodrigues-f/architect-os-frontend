@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -35,30 +35,24 @@ import { fixtureAdminUser } from "../../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp } from "../../helpers/render-app";
 
 /**
- * Dono (2026-09-08), REINCIDENTE — já estava na FILA desde 2026-09-02:
- * *"não devemos ter comboboxes vazios. Quando ainda não houver ciclos
- * cadastrados, mostrar 'Não há ciclos cadastrados' + 'Cadastrar primeiro
- * ciclo' como hiperlink para a tela de cadastro"*.
+ * FILTRO SEM OPÇÕES É FILTRO BLOQUEADO — pedido do dono (2026-09-08), que
+ * SUBSTITUI o desenho anterior (o convite de cadastro dentro do painel do
+ * filtro): *"o usuário precisa ver, à primeira vista, o botão de cadastro
+ * quando não há nada cadastrado. Ao invés de aparecer como linha clicável no
+ * filtro, vamos bloquear o filtro e disponibilizamos o botão de criação mais
+ * abaixo, dentro do quadro principal e centralizado na tela."*
  *
- * Voltou porque a régua morava em cada tela: a onda de 2026-09-02 cobriu o
- * Painel e Times, e o seletor do CABEÇALHO passou batido. Agora a régua mora
- * no COMPONENTE de seleção — sem opções, ele NUNCA desenha um campo vazio:
- * desenha a frase e, quando há tela de cadastro, o convite de cadastro.
- * Nenhuma tela precisa lembrar; nenhuma tela consegue esquecer.
- *
- * RECUSA DO DONO (2026-09-08), literal: *"isso que você fez com os botões não
- * está aceitável... não podemos, do ponto de vista de UX, ter um hiperlink
- * abaixo de um botão assim. O texto deve aparecer quando o usuário clicar no
- * botão do filtro. Isso vale para todos."* Então o convite mudou de lugar:
- * ele mora DENTRO do painel do seletor, que abre no clique. Nada, em hipótese
- * nenhuma, é desenhado abaixo do gatilho — e o gatilho volta a ser botão, não
- * âncora: gatilho é gatilho.
+ * Então o seletor vazio volta a ser só a MOLDURA COM A FRASE: gatilho
+ * desabilitado, sem `Popover`, sem linha clicável, sem hiperlink — para
+ * TODOS, inclusive para quem alcança o cadastro. O convite mudou de lugar,
+ * não de existência: ele vive no `EmptyStateCallToAction`, no centro do
+ * quadro principal, e é o teste `vazio-no-centro` que o guarda.
  */
 const renderizar = (ui: React.ReactElement) => render(<I18nProvider>{ui}</I18nProvider>);
 
 afterEach(() => cleanup());
 
-describe("SingleSelectFilter sem opções — nunca um campo vazio", () => {
+describe("SingleSelectFilter sem opções — moldura, frase e nada mais", () => {
   it("sem lista e sem frase declarada, ainda assim diz que não há o que escolher", () => {
     renderizar(
       <SingleSelectFilter id="ciclo" label="Ciclo" options={[]} value="" onChange={vi.fn()} />,
@@ -69,7 +63,7 @@ describe("SingleSelectFilter sem opções — nunca um campo vazio", () => {
     expect(gatilho.hasAttribute("disabled")).toBe(true);
   });
 
-  it("com a frase do domínio, é ela que aparece — e o campo não abre lista nenhuma", async () => {
+  it("com a frase do domínio, é ela que aparece — e o campo não abre nada", async () => {
     renderizar(
       <SingleSelectFilter
         id="ciclo"
@@ -85,6 +79,7 @@ describe("SingleSelectFilter sem opções — nunca um campo vazio", () => {
     expect(gatilho.textContent).toContain("Não há ciclos cadastrados");
     await userEvent.click(gatilho);
     expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   const comCadastro = (
@@ -101,72 +96,41 @@ describe("SingleSelectFilter sem opções — nunca um campo vazio", () => {
     />
   );
 
-  it("o convite de cadastro só aparece DENTRO do painel, quando o gatilho é clicado", async () => {
+  /**
+   * A troca de desenho, virada asserção: mesmo QUEM ALCANÇA o cadastro vê o
+   * filtro bloqueado. O botão de cadastro dele está no centro da tela.
+   */
+  it("mesmo com cadastro alcançável, o gatilho fica bloqueado e não abre painel", async () => {
     renderizar(comCadastro);
 
     const gatilho = screen.getByRole("button", { name: "Ciclo" });
     expect(gatilho.textContent).toContain("Não há ciclos cadastrados");
-    expect(gatilho.hasAttribute("disabled")).toBe(false);
-    // Antes do clique não há convite nenhum na tela — nem abaixo, nem ao lado.
-    expect(screen.queryByRole("link")).toBeNull();
+    expect(gatilho.hasAttribute("disabled")).toBe(true);
 
     await userEvent.click(gatilho);
 
-    const painel = await screen.findByRole("dialog");
-    expect(within(painel).getByText("Não há ciclos cadastrados")).toBeTruthy();
-    const convite = within(painel).getByRole("link", { name: "Cadastrar primeiro ciclo" });
-    expect(convite.getAttribute("href")).toBe("/cycles");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
-  /**
-   * A recusa do dono, virada asserção: NADA é renderizado depois do gatilho.
-   * O hiperlink irmão que ficava "abaixo do botão" não existe mais — nem
-   * fechado, nem aberto.
-   */
-  it("nada é renderizado abaixo do gatilho — nem antes, nem depois de abrir o painel", async () => {
+  it("nada é renderizado ao redor do gatilho — nem linha clicável, nem hiperlink", () => {
     renderizar(comCadastro);
 
     const gatilho = screen.getByRole("button", { name: "Ciclo" });
     expect(gatilho.nextElementSibling).toBeNull();
     expect(gatilho.tagName).toBe("BUTTON");
-
-    await userEvent.click(gatilho);
-
-    await screen.findByRole("dialog");
-    expect(gatilho.nextElementSibling).toBeNull();
     expect(gatilho.parentElement?.querySelector("a")).toBeNull();
+    expect(gatilho.getAttribute("aria-haspopup")).toBeNull();
   });
 
-  it("o painel é alcançável por teclado, e o convite dentro dele também", async () => {
+  it("o teclado também não abre o que não existe", async () => {
     renderizar(comCadastro);
 
     const gatilho = screen.getByRole("button", { name: "Ciclo" });
     gatilho.focus();
     await userEvent.keyboard("{Enter}");
 
-    const painel = await screen.findByRole("dialog");
-    const convite = within(painel).getByRole("link", { name: "Cadastrar primeiro ciclo" });
-    await userEvent.tab();
-    expect(document.activeElement).toBe(convite);
-  });
-
-  it("sem tela de cadastro alcançável, só a frase — gatilho obscurecido e nenhum painel", async () => {
-    renderizar(
-      <SingleSelectFilter
-        id="ciclo"
-        label="Ciclo"
-        options={[]}
-        value=""
-        onChange={vi.fn()}
-        empty={{ message: "Não há ciclos cadastrados" }}
-      />,
-    );
-
-    const gatilho = screen.getByRole("button", { name: "Ciclo" });
-    expect(gatilho.hasAttribute("disabled")).toBe(true);
-    await userEvent.click(gatilho);
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("com opções, nada disso aparece: o seletor é o de sempre", async () => {
@@ -199,7 +163,7 @@ describe("MultiSelectFilter sem opções — a mesma régua, o mesmo desenho", (
     noneSummaryLabel: "Nenhuma",
   };
 
-  it("sem lista, diz a frase do domínio e abre o convite de cadastro no clique", async () => {
+  it("sem lista, diz a frase do domínio e fica bloqueado", async () => {
     renderizar(
       <MultiSelectFilter
         {...comum}
@@ -211,20 +175,14 @@ describe("MultiSelectFilter sem opções — a mesma régua, o mesmo desenho", (
       />,
     );
 
-    // Com tela de cadastro alcançável o gatilho deixa de ser botão morto: ele
-    // abre o painel onde mora o convite (dono, 2026-09-08 — recusa dos botões).
     const gatilho = screen.getByRole("button", { name: "Capacidades" });
     expect(gatilho.textContent).toContain("Não há capacidades cadastradas");
-    expect(screen.queryByRole("link")).toBeNull();
+    expect(gatilho.hasAttribute("disabled")).toBe(true);
 
     await userEvent.click(gatilho);
 
-    const painel = await screen.findByRole("dialog");
-    expect(
-      within(painel)
-        .getByRole("link", { name: "Cadastrar primeira capacidade" })
-        .getAttribute("href"),
-    ).toBe("/competency-matrix");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("sem frase declarada, cai na frase da casa — nunca num campo vazio", () => {
@@ -238,14 +196,15 @@ describe("MultiSelectFilter sem opções — a mesma régua, o mesmo desenho", (
 
 /**
  * O CASO DO DONO, na tela onde ele o viu: o seletor de ciclo do CABEÇALHO.
- * Foi o único que a onda de 2026-09-02 não cobriu, e por isso o pedido voltou.
+ * Sem ciclo cadastrado ele diz a frase e não abre nada — o cadastro de ciclo
+ * mora no centro da tela de Ciclos de Avaliação.
  */
 describe("o seletor de ciclo do cabeçalho, sem ciclo cadastrado", () => {
   const fetchMock = vi.fn();
 
   const semCiclos = (href: string) => (href.includes("/cycles") ? jsonResponse([]) : undefined);
 
-  it("diz que não há ciclos e, no clique, abre o painel com o convite de cadastro", async () => {
+  it("diz que não há ciclos e fica bloqueado, sem painel e sem hiperlink", async () => {
     window.localStorage.clear();
     window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();
@@ -263,14 +222,12 @@ describe("o seletor de ciclo do cabeçalho, sem ciclo cadastrado", () => {
     await screen.findByText("conteúdo");
     const gatilho = await screen.findByRole("button", { name: "Ciclo" });
     expect(gatilho.textContent).toContain("Não há ciclos cadastrados");
+    expect(gatilho.hasAttribute("disabled")).toBe(true);
     expect(gatilho.nextElementSibling).toBeNull();
 
     await userEvent.click(gatilho);
 
-    const painel = await screen.findByRole("dialog");
-    expect(
-      within(painel).getByRole("link", { name: "Cadastrar primeiro ciclo" }).getAttribute("href"),
-    ).toBe("/cycles");
+    expect(screen.queryByRole("dialog")).toBeNull();
     vi.unstubAllGlobals();
   });
 });

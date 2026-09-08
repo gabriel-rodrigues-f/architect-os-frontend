@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import {
   CommandWithReasonDialog,
+  EmptyStateCallToAction,
   GapBadge,
   LevelBadge,
   PageHeader,
@@ -39,6 +40,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonPicker } from "@/lib/person-selection";
 import type { PlanWorkflowPolicy } from "@/lib/plan-workflow-policy";
+import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { initialSearchParam, replaceSearchParam } from "@/lib/search-params";
 import type { Gap } from "@/lib/selectors";
@@ -138,6 +140,9 @@ function PlansScreen() {
   });
 
   const suggestions = viewModel.suggestions(gaps, plan);
+  // Dono (2026-09-08): sem ninguém cadastrado o filtro fica bloqueado e o
+  // cadastro sai dele — vai para o centro do quadro principal.
+  const semNinguem = sel.activeProfessionals.length === 0;
 
   const creatingForGap = workflow.canEditDiagnostic
     ? viewModel.treatableGap(gaps, plan, competencyInFocus)
@@ -159,83 +164,95 @@ function PlansScreen() {
         }
       />
 
-      {plan && <PlanStatusBar plan={plan} workflow={workflow} />}
+      {semNinguem && (
+        <EmptyStateCallToAction
+          title={t("person.none")}
+          hint={t("pdi.empty.noProfessionals")}
+          registrations={[Registration.PROFESSIONAL]}
+        />
+      )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-4">
-          {plan?.items.map((item) => (
-            <PlanItemCard
-              key={item.id}
-              planId={plan.id}
-              item={item}
-              canEditDiagnostic={workflow.canEditDiagnostic}
-              canEditExecution={workflow.canEditExecution}
-              canReschedule={workflow.canRescheduleItems}
-              smartEditing={smartEditingId === item.id}
-              onSmartEditingChange={(open) => setSmartEditingId(open ? item.id : null)}
-            />
-          ))}
-          {!plan?.items.length && (
-            <SectionCard title={t("pdi.empty.title")} description={t("pdi.empty.subtitle")}>
-              <p className="text-sm text-muted-foreground">O plano deste ciclo ainda está vazio.</p>
+      {!semNinguem && plan && <PlanStatusBar plan={plan} workflow={workflow} />}
+
+      {!semNinguem && (
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-4">
+            {plan?.items.map((item) => (
+              <PlanItemCard
+                key={item.id}
+                planId={plan.id}
+                item={item}
+                canEditDiagnostic={workflow.canEditDiagnostic}
+                canEditExecution={workflow.canEditExecution}
+                canReschedule={workflow.canRescheduleItems}
+                smartEditing={smartEditingId === item.id}
+                onSmartEditingChange={(open) => setSmartEditingId(open ? item.id : null)}
+              />
+            ))}
+            {!plan?.items.length && (
+              <SectionCard title={t("pdi.empty.title")} description={t("pdi.empty.subtitle")}>
+                <p className="text-sm text-muted-foreground">
+                  O plano deste ciclo ainda está vazio.
+                </p>
+              </SectionCard>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <SectionCard
+              title={t("pdi.suggestions.title")}
+              description={t("pdi.suggestions.subtitle")}
+            >
+              <ul className="space-y-2">
+                {suggestions.map((g) => (
+                  <li key={g.item.competencyId} className="surface-inset p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{g.competency?.name}</p>
+                      <GapBadge gap={g.gap} />
+                    </div>
+                    {workflow.canEditDiagnostic && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="mt-2 px-0"
+                        onClick={() => focusCompetency(g.item.competencyId)}
+                      >
+                        <Sparkles className="mr-1.5 h-3.5 w-3.5" /> {t("pdi.suggestions.add")}
+                      </Button>
+                    )}
+                  </li>
+                ))}
+                {!suggestions.length && (
+                  <p className="text-sm text-muted-foreground">{t("pdi.suggestions.none")}</p>
+                )}
+              </ul>
             </SectionCard>
-          )}
+
+            {isLeadOfProfessional && professional && (
+              <SessionScriptAssistant
+                professionalId={professional.id}
+                personName={professional.name}
+              />
+            )}
+
+            <SectionCard
+              title={t("pdi.actionModel.title")}
+              description={t("pdi.actionModel.subtitle")}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {actionTypes.options.map((option, i) => (
+                  <span
+                    key={option.code}
+                    className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
+                  >
+                    {i + 1}. {option.code}
+                  </span>
+                ))}
+              </div>
+            </SectionCard>
+          </div>
         </div>
-
-        <div className="space-y-6">
-          <SectionCard
-            title={t("pdi.suggestions.title")}
-            description={t("pdi.suggestions.subtitle")}
-          >
-            <ul className="space-y-2">
-              {suggestions.map((g) => (
-                <li key={g.item.competencyId} className="surface-inset p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium">{g.competency?.name}</p>
-                    <GapBadge gap={g.gap} />
-                  </div>
-                  {workflow.canEditDiagnostic && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="mt-2 px-0"
-                      onClick={() => focusCompetency(g.item.competencyId)}
-                    >
-                      <Sparkles className="mr-1.5 h-3.5 w-3.5" /> {t("pdi.suggestions.add")}
-                    </Button>
-                  )}
-                </li>
-              ))}
-              {!suggestions.length && (
-                <p className="text-sm text-muted-foreground">{t("pdi.suggestions.none")}</p>
-              )}
-            </ul>
-          </SectionCard>
-
-          {isLeadOfProfessional && professional && (
-            <SessionScriptAssistant
-              professionalId={professional.id}
-              personName={professional.name}
-            />
-          )}
-
-          <SectionCard
-            title={t("pdi.actionModel.title")}
-            description={t("pdi.actionModel.subtitle")}
-          >
-            <div className="flex flex-wrap gap-1.5">
-              {actionTypes.options.map((option, i) => (
-                <span
-                  key={option.code}
-                  className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
-                >
-                  {i + 1}. {option.code}
-                </span>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-      </div>
+      )}
 
       {creatingForGap && creatingForGap.competency && professional && (
         <NewPlanItemDialog

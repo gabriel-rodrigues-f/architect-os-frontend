@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import {
   ConfirmDialog,
+  EmptyStateCallToAction,
   LevelBadge,
   OutOfReachScreen,
   PageAction,
@@ -110,6 +111,19 @@ function CycleAdministration() {
 
   const closedCycles = store.cycles.filter((c) => c.status !== "Planned");
 
+  /*
+   * Dono (2026-09-08), SUBSTITUINDO o item 7 da rodada anterior: sem ciclo
+   * nenhum, o botão de cadastro vai para o CENTRO do quadro e sai do canto —
+   * é uma ação só, num lugar só de cada vez.
+   */
+  const semCiclos = store.cycles.length === 0;
+  const cadastrarCiclo = isAdmin ? (
+    <PageAction
+      label={t("cycle.new")}
+      onClick={() => setEditing(emptyCycle(store.cycles, scheme))}
+    />
+  ) : undefined;
+
   const compare = store.competencies.slice(0, 12).map((c) => {
     const levels = closedCycles.map((cy) => ({
       cycle: cy.name,
@@ -134,12 +148,7 @@ function CycleAdministration() {
               label={t("cycle.professional")}
               className="w-48"
             />
-            {isAdmin && (
-              <PageAction
-                label={t("cycle.new")}
-                onClick={() => setEditing(emptyCycle(store.cycles, scheme))}
-              />
-            )}
+            {semCiclos ? undefined : cadastrarCiclo}
           </PageActions>
         }
       />
@@ -201,15 +210,11 @@ function CycleAdministration() {
             </p>
           </div>
         ))}
-        {store.cycles.length === 0 && (
-          <div className="surface-card p-6 text-center sm:col-span-3">
-            <p className="text-sm font-medium">{t("cycle.empty")}</p>
-            {/*
-             * Dono (2026-09-08, item 7): SAI o botão do centro da tela. A ação
-             * de cadastrar ciclo é uma só, a do canto — dois botões para o
-             * mesmo ato faziam a tela perguntar duas vezes a mesma coisa.
-             */}
-            <p className="mt-1 text-sm text-muted-foreground">{t("cycle.empty.hint")}</p>
+        {semCiclos && (
+          <div className="sm:col-span-3">
+            <EmptyStateCallToAction title={t("cycle.empty")} hint={t("cycle.empty.hint")}>
+              {cadastrarCiclo}
+            </EmptyStateCallToAction>
           </div>
         )}
       </div>

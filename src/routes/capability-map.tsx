@@ -5,6 +5,7 @@ import {
   Callout,
   type CardsOrTable,
   EmptyState,
+  EmptyStateCallToAction,
   KeyFigureCard,
   OutOfReachScreen,
   PageHeader,
@@ -23,6 +24,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { Registration } from "@/lib/registration";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useScoringBands, useSelectors, useStore } from "@/lib/store";
@@ -107,7 +109,13 @@ function TeamCapabilityCoverage() {
       <PageHeader title={t("cap.title")} description={t("cap.subtitle")} help={help} />
 
       {store.capabilities.length === 0 ? (
-        <EmptyState title={t("cap.empty.title")} hint={t("cap.empty.hint")} />
+        /* Dono (2026-09-08): sem capacidade nenhuma, o botão de cadastro no
+         * CENTRO do quadro principal — é o único próximo passo desta tela. */
+        <EmptyStateCallToAction
+          title={t("cap.empty.title")}
+          hint={t("cap.empty.hint")}
+          registrations={[Registration.CAPABILITY]}
+        />
       ) : population.length === 0 ? (
         <EmptyState title={t("cap.empty.noScope.title")} hint={t("cap.empty.noScope.hint")} />
       ) : (

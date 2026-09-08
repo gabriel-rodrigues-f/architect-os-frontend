@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import {
   Bar,
   EmptyState,
+  EmptyStateCallToAction,
   PageAction,
   PageHeader,
   SectionAction,
@@ -122,21 +123,30 @@ function LearningScreen() {
   const canEditProgress = (professionalId: string) =>
     defaultUiAuthorizationPolicy.recordsTrailProgressOf(user, sel.professionalById(professionalId));
 
+  /*
+   * Dono (2026-09-08): *"sem nenhuma trilha, o botão do canto superior direito
+   * DESAPARECE e aparece só no centro; com pelo menos uma trilha, volta ao
+   * canto como hoje."* É a MESMA ação — declarada uma vez, hospedada ora pelo
+   * cabeçalho, ora pelo bloco do centro. Nunca as duas ao mesmo tempo.
+   */
+  const semTrilhas = store.learningPaths.length === 0;
+  const cadastrarTrilha = canCreatePath ? (
+    <PageAction label={t("path.new.placeholder")} onClick={() => setCreatingPath(true)} />
+  ) : undefined;
+
   return (
     <>
       <PageHeader
         title={t("path.title")}
         description={t("path.subtitle")}
         help={help}
-        actions={
-          canCreatePath ? (
-            <PageAction label={t("path.new.placeholder")} onClick={() => setCreatingPath(true)} />
-          ) : undefined
-        }
+        actions={semTrilhas ? undefined : cadastrarTrilha}
       />
 
-      {store.learningPaths.length === 0 && (
-        <EmptyState title={t("path.empty.title")} hint={t("path.empty.hint")} />
+      {semTrilhas && (
+        <EmptyStateCallToAction title={t("path.empty.title")} hint={t("path.empty.hint")}>
+          {cadastrarTrilha}
+        </EmptyStateCallToAction>
       )}
 
       {store.learningPaths.length > 0 && (

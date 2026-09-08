@@ -1,19 +1,18 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import {
   CapabilityHeatmap,
   EmptyState,
+  EmptyStateCallToAction,
   GapTable,
   OutOfReachScreen,
-  PageAction,
   PageHeader,
   PersonCombobox,
   SectionCard,
   useGapAnalysisData,
 } from "@/components/app";
-import { useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/auth";
 import { PersonPicker } from "@/lib/person-selection";
@@ -81,7 +80,6 @@ function TeamProgression() {
   const { store, selected, setSelected, professionals, priorities, mastery, scopeLabel } =
     useGapAnalysisData();
   const [exportingPdf, setExportingPdf] = useState(false);
-  const cadastroDePessoa = useSelectionEmptyState(Registration.PROFESSIONAL);
   const semNinguem = store.professionals.length === 0;
 
   const reportInput = () => ({
@@ -123,10 +121,9 @@ function TeamProgression() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {/*
-             * Dono (2026-09-08, item 3): o filtro NÃO some mais quando não há
-             * ninguém — ele passa a dizer "Nenhum profissional cadastrado —
-             * clique para cadastrar" e a levar ao cadastro. Quem não cadastra
-             * gente lê a frase e não recebe porta nenhuma; a régua é da
+             * Dono (2026-09-08): o filtro NÃO some quando não há ninguém — ele
+             * fica BLOQUEADO, dizendo "Não há profissionais cadastrados". O
+             * botão de cadastro é o do centro da tela, abaixo. A régua é da
              * `PersonCombobox`, e esta tela não a repete.
              */}
             <PersonCombobox
@@ -156,27 +153,20 @@ function TeamProgression() {
       />
 
       {professionals.length === 0 ? (
-        <EmptyState
-          title={semNinguem ? t("person.none") : t("gap.empty")}
-          hint={semNinguem ? t("gap.empty.noProfessionals") : t("gap.empty.filterHint")}
-          /*
-           * Dono (2026-09-08, item 3): mais um botão de cadastrar o primeiro
-           * profissional NO CENTRO da tela, e SÓ quando não houver nenhum —
-           * com filtro que não achou ninguém, cadastrar não é o próximo passo.
-           */
-          action={
-            semNinguem && cadastroDePessoa.registration ? (
-              <PageAction className="mt-4" label={t("team.empty.cta")} asChild>
-                <Link
-                  to={cadastroDePessoa.registration.to}
-                  {...(cadastroDePessoa.registration.search
-                    ? { search: cadastroDePessoa.registration.search }
-                    : {})}
-                />
-              </PageAction>
-            ) : undefined
-          }
-        />
+        /*
+         * Dono (2026-09-08): o botão de cadastro fica NO CENTRO da tela, e SÓ
+         * quando não houver ninguém — com filtro que não achou ninguém,
+         * cadastrar não é o próximo passo, é limpar o filtro.
+         */
+        semNinguem ? (
+          <EmptyStateCallToAction
+            title={t("person.none")}
+            hint={t("gap.empty.noProfessionals")}
+            registrations={[Registration.PROFESSIONAL]}
+          />
+        ) : (
+          <EmptyState title={t("gap.empty")} hint={t("gap.empty.filterHint")} />
+        )
       ) : (
         <>
           <SectionCard

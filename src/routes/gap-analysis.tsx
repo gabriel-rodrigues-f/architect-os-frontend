@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import {
   CapabilityRadar,
   EmptyState,
+  EmptyStateCallToAction,
   GapBadge,
   GapClosureSection,
   KeyFigureCard,
@@ -21,6 +22,7 @@ import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { Registration } from "@/lib/registration";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { KeyFigureFormatter } from "@/lib/key-figure-format";
@@ -115,14 +117,17 @@ function TeamPriorities() {
       />
 
       {professionals.length === 0 ? (
-        <EmptyState
-          title={store.professionals.length === 0 ? t("person.none") : t("gap.empty")}
-          hint={
-            store.professionals.length === 0
-              ? t("gap.empty.noProfessionals")
-              : t("gap.empty.filterHint")
-          }
-        />
+        // Dono (2026-09-08): sem ninguém cadastrado, o botão de cadastro no
+        // CENTRO do quadro; com filtro que não achou ninguém, só a mensagem.
+        store.professionals.length === 0 ? (
+          <EmptyStateCallToAction
+            title={t("person.none")}
+            hint={t("gap.empty.noProfessionals")}
+            registrations={[Registration.PROFESSIONAL]}
+          />
+        ) : (
+          <EmptyState title={t("gap.empty")} hint={t("gap.empty.filterHint")} />
+        )
       ) : (
         <>
           <KeyFigureCard

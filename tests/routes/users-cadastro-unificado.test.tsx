@@ -256,12 +256,13 @@ describe("o time entra no cadastro", () => {
    * tela, revisão de papéis de 2026-09-05) recebe a explicação: um seletor
    * vazio com o botão apagado é um beco sem explicação.
    *
-   * Item 12 do dono (2026-09-08): agora o beco tem saída. O campo deixa de
-   * oferecer "Escolha o time" para uma lista que não existe e passa a
-   * oferecer o caminho — "Cadastrar primeiro time", que abre o FORMULÁRIO de
-   * cadastro de times, não só a tela.
+   * Item 12 do dono (2026-09-08): o campo deixa de oferecer "Escolha o time"
+   * para uma lista que não existe. Na volta do mesmo dia, o dono trocou o
+   * desenho: *"Ao invés de aparecer como linha clicável no filtro, vamos
+   * bloquear o filtro"* — então o campo fica BLOQUEADO com a frase, sem
+   * hiperlink nenhum, e a explicação abaixo dele continua sendo a saída.
    */
-  it("quem não tem time ativo nenhum recebe a explicação E o caminho do cadastro", async () => {
+  it("quem não tem time ativo nenhum recebe a explicação, e o campo fica bloqueado", async () => {
     const soTimesDesativados: FetchRoute = (href, init) =>
       href.endsWith(apiPath("/teams")) && (init?.method ?? "GET") === "GET"
         ? jsonResponse(TIMES.map((time) => ({ ...time, active: false })))
@@ -269,14 +270,13 @@ describe("o time entra no cadastro", () => {
     const dialogo = await abrirCadastro(fixtureAdminUser, [soTimesDesativados]);
 
     expect(dialogo.queryByText("Escolha o time")).toBeNull();
-    expect(dialogo.getByText("Nenhum time cadastrado — clique para cadastrar")).toBeTruthy();
-    // O convite não fica solto abaixo do campo (recusa do dono, 2026-09-08):
-    // ele mora no painel que o próprio campo abre.
-    expect(dialogo.queryByRole("link", { name: "Cadastrar primeiro time" })).toBeNull();
-    await userEvent.click(dialogo.getByRole("button", { name: "Time" }));
-    expect(screen.getByRole("link", { name: "Cadastrar primeiro time" }).getAttribute("href")).toBe(
-      "/teams?cadastrar=time",
-    );
+    expect(dialogo.getByText("Não há times cadastrados")).toBeTruthy();
+    // Filtro sem opções é filtro bloqueado (dono, 2026-09-08): nada abre, e
+    // nenhum hiperlink pende do campo.
+    const campoDeTime = dialogo.getByRole("button", { name: "Time" });
+    expect(campoDeTime.hasAttribute("disabled")).toBe(true);
+    await userEvent.click(campoDeTime);
+    expect(screen.queryByRole("link", { name: /Cadastrar/ })).toBeNull();
     expect(
       dialogo.getByText(
         "Você não lidera nenhum time ativo — peça ao administrador para vinculá-lo a um time.",

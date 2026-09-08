@@ -13,18 +13,44 @@ import type {
   GapCycleTotal,
 } from "@/lib/gateways/analytics.gateway";
 import { useI18n } from "@/lib/i18n";
+import { useStore } from "@/lib/store";
 import { GapClosureViewModel, type GapMovementRow } from "@/lib/view-models";
 
 const GAP_CLOSURE_QUERY_KEY = ["analytics", "gap-closure"];
 const GAP_CLOSURE_EXPLANATION_QUERY_KEY = [...GAP_CLOSURE_QUERY_KEY, "explanation"];
 
+/**
+ * A EVOLUÇÃO ENTRE CICLOS SÓ PERGUNTA QUANDO EXISTE CICLO.
+ *
+ * Bug irmão do banco vazio (dono, 2026-09-08): a seção chamava
+ * `gapClosure({})` sem ciclo, o servidor tentava resolver "o ciclo vigente",
+ * não havia nenhum e devolvia 404 — e a tela pintava "Não foi possível
+ * carregar a evolução entre ciclos" em VERMELHO, como se o serviço tivesse
+ * caído. A rota existe (sem sessão responde 401): é 404 de NEGÓCIO, e negócio
+ * ausente não é falha de serviço.
+ *
+ * Sem ciclo, então, nada é perguntado: entra o estado vazio no vocabulário da
+ * casa. Com ciclo, a pergunta é a de sempre — e o ciclo viaja EXPLÍCITO, para
+ * o servidor não ter que adivinhar qual é o vigente.
+ */
 export function GapClosureSection() {
   const { t } = useI18n();
+  const store = useStore();
   const vm = useMemo(() => new GapClosureViewModel(), []);
+  const cycleId = store.activeCycleId;
+  const semCiclo = cycleId === "";
   const closure = useQuery({
-    queryKey: GAP_CLOSURE_QUERY_KEY,
-    queryFn: () => analyticsApi.gapClosure({}),
+    queryKey: [...GAP_CLOSURE_QUERY_KEY, cycleId],
+    queryFn: () => analyticsApi.gapClosure({ cycleId }),
+    enabled: !semCiclo,
   });
+
+  if (semCiclo)
+    return (
+      <SectionCard title={t("gapClosure.title")} description={t("gapClosure.subtitle")}>
+        <EmptyState title={t("gapClosure.noCycle")} hint={t("gapClosure.noCycle.hint")} />
+      </SectionCard>
+    );
 
   return (
     <QuerySection

@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   ComparisonRadar,
   EmptyState,
+  EmptyStateCallToAction,
   type EvolutionSeries,
   LevelHeatCell,
   LevelScaleKey,
@@ -19,6 +20,7 @@ import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { Registration } from "@/lib/registration";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
@@ -120,7 +122,19 @@ function ProfessionalsComparison() {
         }
       />
 
-      {professionals.length < 2 ? (
+      {store.professionals.length === 0 ? (
+        /*
+         * Dono (2026-09-08): sem ninguém cadastrado o filtro fica bloqueado e
+         * o cadastro aparece no CENTRO do quadro principal — "Selecione ao
+         * menos 2 profissionais" não é o próximo passo de quem não tem
+         * nenhum.
+         */
+        <EmptyStateCallToAction
+          title={t("person.none")}
+          hint={t("compare.empty.noProfessionals")}
+          registrations={[Registration.PROFESSIONAL]}
+        />
+      ) : professionals.length < 2 ? (
         <EmptyState title={t("compare.empty")} />
       ) : (
         <SectionCard

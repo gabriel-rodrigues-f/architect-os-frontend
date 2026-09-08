@@ -6,6 +6,7 @@ import {
   Callout,
   DataOriginCallout,
   EmptyState,
+  EmptyStateCallToAction,
   EvaluatorDistributionCard,
   PageHeader,
   PersonCombobox,
@@ -94,7 +95,13 @@ function CalibrationBoard() {
   const store = useStore();
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const [assistedProfessionalId, setAssistedProfessionalId] = useState<string | null>(null);
-  const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
+  /*
+   * Bug irmão do banco vazio (dono, 2026-09-08): sem ciclo ativo o servidor
+   * responde `activeCycleId: ""`, e o `??` deixava a string VAZIA passar —
+   * a tela perguntava por um ciclo que não existe e recebia 404 de negócio,
+   * pintado como falha de serviço. Ciclo vazio é ciclo NENHUM.
+   */
+  const cycleId = selectedCycleId ?? (store.activeCycleId || store.cycles[0]?.id) ?? null;
   // O convite de cadastro pergunta o ALCANCE ao `Registration` — declarar o
   // destino à mão aqui oferecia a porta a quem não a alcança.
   const cicloVazio = useSelectionEmptyState(Registration.CYCLE);
@@ -114,7 +121,15 @@ function CalibrationBoard() {
       />
 
       {cycleId === null ? (
-        <EmptyState title={t("calibration.noCycle")} />
+        /*
+         * Dono (2026-09-08): os DOIS filtros desta tela ficam bloqueados sem
+         * dado; o cadastro de ciclo vai para o centro do quadro principal.
+         */
+        <EmptyStateCallToAction
+          title={t("calibration.noCycle")}
+          hint={t("calibration.noCycle.hint")}
+          registrations={[Registration.CYCLE]}
+        />
       ) : (
         <>
           <div className="mb-6 flex flex-wrap items-end gap-4">

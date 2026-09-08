@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import {
+  EmptyStateCallToAction,
   MenteeFilterCombobox,
   MentoringTimeline,
   NewMentoringSessionDialog,
@@ -14,6 +15,7 @@ import { personAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
+import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { usePageHelp } from "@/lib/page-help";
 import { useStore } from "@/lib/store";
@@ -64,6 +66,8 @@ function MentoringScreen() {
   const { filter, setFilter, sessions } = useMentoringTimeline();
   const mentee = store.professionals.find((professional) => professional.id === filter);
   const canPrepare = mentee !== undefined && defaultUiAuthorizationPolicy.isLeadOf(user, mentee);
+  // Dono (2026-09-08): o cadastro sai do filtro e vai para o centro do quadro.
+  const semNinguem = store.professionals.length === 0;
 
   return (
     <>
@@ -85,6 +89,14 @@ function MentoringScreen() {
         }
       />
 
+      {semNinguem && (
+        <EmptyStateCallToAction
+          title={t("person.none")}
+          hint={t("mentor.empty.noProfessionals")}
+          registrations={[Registration.PROFESSIONAL]}
+        />
+      )}
+
       {/*
         Um cartão só de IA (dono, 2026-09-07): o roteiro de 1:1 se consolidou
         na preparação, que responde na ordem liturgia → resumo do perfil →
@@ -105,15 +117,17 @@ function MentoringScreen() {
         />
       )}
 
-      <SectionCard
-        title={t("mentor.timeline.title")}
-        description={t("mentor.timeline.forPerson", {
-          n: sessions.length,
-          nome: mentee?.name ?? "",
-        })}
-      >
-        <MentoringTimeline sessions={sessions} />
-      </SectionCard>
+      {!semNinguem && (
+        <SectionCard
+          title={t("mentor.timeline.title")}
+          description={t("mentor.timeline.forPerson", {
+            n: sessions.length,
+            nome: mentee?.name ?? "",
+          })}
+        >
+          <MentoringTimeline sessions={sessions} />
+        </SectionCard>
+      )}
     </>
   );
 }

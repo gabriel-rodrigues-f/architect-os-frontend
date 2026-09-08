@@ -12,6 +12,7 @@ import {
   CareerPortfolioSection,
   ConfirmDialog,
   DevelopmentSummarySection,
+  EmptyStateCallToAction,
   EvidenceLedgerSection,
   PageHeader,
   SectionCard,
@@ -28,6 +29,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useLabels } from "@/lib/labels";
+import { Registration } from "@/lib/registration";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamString } from "@/hooks";
 
@@ -116,6 +118,17 @@ function AssessmentsScreen() {
   } = useAssessmentPermissions(professionalId, selectedProfessional, assessment);
 
   const selected = store.capabilities.filter((c) => capabilityIds.includes(c.id));
+
+  /*
+   * Dono (2026-09-08): com o banco vazio esta tela mostra DOIS botões no
+   * centro — "Cadastrar Profissional" e "Cadastrar Capacidade" —, e só os
+   * dos assuntos que de fato faltam: cadastrar gente não é o próximo passo
+   * de quem já tem gente e não tem catálogo.
+   */
+  const cadastrosQueFaltam = [
+    ...(store.professionals.length === 0 ? [Registration.PROFESSIONAL] : []),
+    ...(store.capabilities.length === 0 ? [Registration.CAPABILITY] : []),
+  ];
 
   const toggleCapability = (id: string) =>
     setCapabilityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -308,16 +321,18 @@ function AssessmentsScreen() {
         />
       )}
 
-      {!assessment ? (
+      {cadastrosQueFaltam.length > 0 ? (
+        <EmptyStateCallToAction
+          title={t("asmt.empty.title")}
+          hint={t("asmt.empty.hint")}
+          registrations={cadastrosQueFaltam}
+        />
+      ) : !assessment ? (
         <SectionCard
           title={t("asmt.noAssessment.title")}
           description={t("asmt.noAssessment.subtitle")}
         >
-          {store.professionals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("asmt.noAssessment.noProfessionals")}
-            </p>
-          ) : selectedProfessional && !selectedProfessional.active ? (
+          {selectedProfessional && !selectedProfessional.active ? (
             <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.inactive")}</p>
           ) : !isActiveCycle ? (
             <p className="text-sm text-muted-foreground">
