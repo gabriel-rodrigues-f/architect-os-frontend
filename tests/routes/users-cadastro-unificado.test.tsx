@@ -83,7 +83,7 @@ function renderAs(user: SessionUser, extras: FetchRoute[] = []) {
 
 async function abrirCadastro(user: SessionUser, extras: FetchRoute[] = []) {
   renderAs(user, extras);
-  const abrir = await screen.findByRole("button", { name: "Cadastrar pessoa" });
+  const abrir = await screen.findByRole("button", { name: "Cadastrar Profissional" });
   await userEvent.click(abrir);
   return within(await screen.findByRole("dialog"));
 }
@@ -126,14 +126,18 @@ describe("Usuários é o único lugar de cadastro — os cargos que cada persona
     vi.unstubAllGlobals();
   });
 
-  it("o admin cadastra Gerente, Tech Lead e Membro — nunca outro Administrador", async () => {
+  it("o admin cadastra Gerente, Tech Lead e Profissional — nunca outro Administrador", async () => {
     const dialogo = await abrirCadastro(fixtureAdminUser);
-    expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual(["Gerente", "Tech Lead", "Membro"]);
+    expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual([
+      "Gerente",
+      "Tech Lead",
+      "Profissional",
+    ]);
   });
 
-  it("o gerente cadastra Tech Lead e Membro", async () => {
+  it("o gerente cadastra Tech Lead e Profissional", async () => {
     const dialogo = await abrirCadastro(fixtureAssignedManagerUser);
-    expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual(["Tech Lead", "Membro"]);
+    expect(rotulosDe(dialogo.getByLabelText("Cargo"))).toEqual(["Tech Lead", "Profissional"]);
   });
 
   /** D4 (dono, 2026-09-05): o tech lead indica, o gerente cadastra — a ação nem aparece. */
@@ -142,7 +146,7 @@ describe("Usuários é o único lugar de cadastro — os cargos que cada persona
     expect(
       await screen.findByText("Cadastrar pessoas é do administrador e do gerente."),
     ).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Cadastrar pessoa" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cadastrar Profissional" })).toBeNull();
   });
 });
 
@@ -157,7 +161,7 @@ describe("senioridade aparece e some com o cargo", () => {
     vi.unstubAllGlobals();
   });
 
-  it("Membro tem Senioridade, com os níveis de carreira da organização", async () => {
+  it("Profissional tem Senioridade, com os níveis de carreira da organização", async () => {
     const dialogo = await abrirCadastro(fixtureAdminUser);
     await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "member");
     expect(rotulosDe(dialogo.getByLabelText("Senioridade"))).toEqual(
@@ -213,7 +217,7 @@ describe("senioridade aparece e some com o cargo", () => {
     await userEvent.type(dialogo.getByLabelText("Nome"), "Joana Prado");
     await userEvent.type(dialogo.getByLabelText("E-mail"), "joana@empresa.com");
     await escolherTime(dialogo, "Dados");
-    await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar pessoa" }));
+    await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar Profissional" }));
 
     expect(corpoDaAdmissao()).toEqual({
       name: "Joana Prado",
@@ -241,9 +245,9 @@ describe("o time entra no cadastro", () => {
     await userEvent.type(dialogo.getByLabelText("E-mail"), "joana@empresa.com");
     await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "tech_lead");
 
-    expect(dialogo.getByRole("button", { name: "Cadastrar pessoa" }).hasAttribute("disabled")).toBe(
-      true,
-    );
+    expect(
+      dialogo.getByRole("button", { name: "Cadastrar Profissional" }).hasAttribute("disabled"),
+    ).toBe(true);
   });
 
   /**
@@ -251,14 +255,24 @@ describe("o time entra no cadastro", () => {
    * com todos os times desativados — o gerente sem vínculo nem alcança a
    * tela, revisão de papéis de 2026-09-05) recebe a explicação: um seletor
    * vazio com o botão apagado é um beco sem explicação.
+   *
+   * Item 12 do dono (2026-09-08): agora o beco tem saída. O campo deixa de
+   * oferecer "Escolha o time" para uma lista que não existe e passa a
+   * oferecer o caminho — "Cadastrar primeiro time", que abre o FORMULÁRIO de
+   * cadastro de times, não só a tela.
    */
-  it("quem não tem time ativo nenhum recebe a explicação, não um seletor vazio", async () => {
+  it("quem não tem time ativo nenhum recebe a explicação E o caminho do cadastro", async () => {
     const soTimesDesativados: FetchRoute = (href, init) =>
       href.endsWith(apiPath("/teams")) && (init?.method ?? "GET") === "GET"
         ? jsonResponse(TIMES.map((time) => ({ ...time, active: false })))
         : undefined;
     const dialogo = await abrirCadastro(fixtureAdminUser, [soTimesDesativados]);
-    expect(await timesOferecidos(dialogo)).toEqual([]);
+
+    expect(dialogo.queryByText("Escolha o time")).toBeNull();
+    expect(dialogo.getByText("Nenhum time cadastrado — clique para cadastrar")).toBeTruthy();
+    expect(
+      dialogo.getByRole("link", { name: "Cadastrar primeiro time" }).getAttribute("href"),
+    ).toBe("/teams?cadastrar=time");
     expect(
       dialogo.getByText(
         "Você não lidera nenhum time ativo — peça ao administrador para vinculá-lo a um time.",
@@ -313,19 +327,19 @@ describe("a recusa do serviço fala no campo e trava o envio", () => {
     await userEvent.type(dialogo.getByLabelText("E-mail"), "joana@empresa.com");
     await userEvent.selectOptions(dialogo.getByLabelText("Cargo"), "manager");
     await escolherTime(dialogo, "Plataforma");
-    await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar pessoa" }));
+    await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar Profissional" }));
 
     const recusa = await dialogo.findByRole("alert");
     expect(recusa.textContent).toContain("Marina Alves");
     expect(seletorDeTime(dialogo).getAttribute("aria-describedby")).toBe(recusa.id);
-    expect(dialogo.getByRole("button", { name: "Cadastrar pessoa" }).hasAttribute("disabled")).toBe(
-      true,
-    );
+    expect(
+      dialogo.getByRole("button", { name: "Cadastrar Profissional" }).hasAttribute("disabled"),
+    ).toBe(true);
 
     await escolherTime(dialogo, "Dados");
-    expect(dialogo.getByRole("button", { name: "Cadastrar pessoa" }).hasAttribute("disabled")).toBe(
-      false,
-    );
+    expect(
+      dialogo.getByRole("button", { name: "Cadastrar Profissional" }).hasAttribute("disabled"),
+    ).toBe(false);
   });
 });
 
@@ -366,7 +380,7 @@ describe("depois de cadastrar, a tela diz o que ACONTECEU com o acesso", () => {
     await userEvent.type(dialogo.getByLabelText("Nome"), "Joana Prado");
     await userEvent.type(dialogo.getByLabelText("E-mail"), "joana@empresa.com");
     await escolherTime(dialogo, "Dados");
-    await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar pessoa" }));
+    await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar Profissional" }));
     // O diálogo de sucesso substitui o de cadastro no MESMO papel; espera-se
     // pelo título dele, e não por "um dialog", que já existe.
     await screen.findByText("Pessoa cadastrada");

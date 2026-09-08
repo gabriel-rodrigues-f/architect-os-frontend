@@ -1,5 +1,6 @@
+import { useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
-import { useI18n } from "@/lib/i18n";
+import { Registration } from "@/lib/registration";
 import type { TeamChoice } from "@/lib/team-choice";
 
 /**
@@ -13,6 +14,13 @@ import type { TeamChoice } from "@/lib/team-choice";
  * o leitor de tela chega por `aria-describedby`).
  *
  * Usado em Cadastrar pessoa, Régua do Time e Política de Progressão.
+ *
+ * Dono (2026-09-08, item 12) — o campo de time do diálogo "escapou da
+ * catraca": a opção vazia ("Escolha o time") entrava na lista sempre, então a
+ * lista NUNCA chegava vazia e o estado de vazio nunca aparecia. Agora, sem
+ * time nenhum, não há o que escolher: some a opção vazia e entra o seletor
+ * vazio, com "Cadastrar primeiro time" levando ao FORMULÁRIO de cadastro
+ * — já aberto, não só à tela.
  */
 export function TeamChoiceField({
   id,
@@ -36,15 +44,18 @@ export function TeamChoiceField({
   describedBy?: string | undefined;
   className?: string | undefined;
 }) {
-  const { t } = useI18n();
   const explanationId = `${id}-locked`;
   const { lockedTeam } = choice;
+  const semTime = lockedTeam === null && choice.teams.length === 0;
+  const vazio = useSelectionEmptyState(Registration.TEAM);
   const options = lockedTeam
     ? [{ value: lockedTeam.id, label: lockedTeam.name }]
-    : [
-        ...(emptyOption ? [emptyOption] : []),
-        ...choice.teams.map((team) => ({ value: team.id, label: team.name })),
-      ];
+    : semTime
+      ? []
+      : [
+          ...(emptyOption ? [emptyOption] : []),
+          ...choice.teams.map((team) => ({ value: team.id, label: team.name })),
+        ];
 
   return (
     <div className={className} title={lockedTeam ? lockedExplanation : undefined}>
@@ -57,7 +68,7 @@ export function TeamChoiceField({
         disabled={lockedTeam !== null}
         title={lockedTeam ? lockedExplanation : undefined}
         describedBy={lockedTeam ? explanationId : describedBy}
-        empty={{ message: t("teamChoice.empty") }}
+        empty={vazio}
       />
       {lockedTeam && (
         <p id={explanationId} className="mt-1 text-xs text-muted-foreground">

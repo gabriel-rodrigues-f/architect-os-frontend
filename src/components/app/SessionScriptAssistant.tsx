@@ -4,7 +4,7 @@ import { useI18n } from "@/lib/i18n";
 
 /**
  * O roteiro de PDI sugerido mora ONDE a pauta acontece (dono, 2026-09-07): no
- * Plano Individual de Desenvolvimento. O roteiro de 1:1 que morava em
+ * Plano de Desenvolvimento Individual. O roteiro de 1:1 que morava em
  * Mentoria se consolidou na "Preparação do 1:1" (pedido do dono do mesmo
  * dia), então esta é a única pauta que sobrou — sem seletor de pauta, porque
  * uma operação de negócio só não precisa de um.

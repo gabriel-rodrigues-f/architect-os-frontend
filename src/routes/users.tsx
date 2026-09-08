@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useMemo, useState } from "react";
 
@@ -32,6 +33,7 @@ import { UserRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { initialSearchParam } from "@/lib/search-params";
 import { usePageHelp } from "@/lib/page-help";
 import {
   AdmissionRefusal,
@@ -46,7 +48,18 @@ import { useCareerLevelsByRank } from "@/lib/store";
 import { TeamChoice } from "@/lib/team-choice";
 import { AccountsDirectory, TableOrder, type AccountsColumn } from "@/lib/view-models";
 
+/**
+ * Dono (2026-09-08, item 2): o filtro de pessoa vazio leva ao cadastro. Este
+ * parâmetro é o que a `Registration.PROFESSIONAL` escreve no link — e abre o
+ * diálogo de cadastro assim que a tela monta, em vez de deixar a pessoa
+ * procurar o botão que ela já pediu.
+ */
+const usersSearchSchema = z.object({
+  cadastrar: z.literal("profissional").optional(),
+});
+
 export const Route = createFileRoute("/users")({
+  validateSearch: usersSearchSchema,
   beforeLoad: requirePeopleAdministrationReach,
   head: () => ({
     meta: [
@@ -54,7 +67,7 @@ export const Route = createFileRoute("/users")({
       {
         name: "description",
         content:
-          "Cadastro de pessoas: cargo (diretoria, suporte, gerente, Tech Lead, membro), senioridade, time e status da conta.",
+          "Cadastro de pessoas: cargo (administrador, suporte, gerente, Tech Lead, profissional), senioridade, time e status da conta.",
       },
       { property: "og:title", content: "Contas e Acessos — Synapse" },
       {
@@ -100,7 +113,11 @@ function UsersDirectory() {
   const administersPeople = defaultUiAuthorizationPolicy.canAdministerPeople(user);
   const admits = defaultPersonAdmissionPolicy.admits(user);
   const queryClient = useQueryClient();
-  const [admitting, setAdmitting] = useState(false);
+  // O link do filtro de pessoa vazio chega com `?cadastrar=profissional`: o
+  // diálogo de cadastro já nasce aberto (dono, 2026-09-08, item 2).
+  const [admitting, setAdmitting] = useState(
+    () => initialSearchParam("cadastrar") === "profissional",
+  );
   const [editing, setEditing] = useState<SessionUser | null>(null);
   const [statusChange, setStatusChange] = useState<AccountStatusChange | null>(null);
   const [restoringAccessOf, setRestoringAccessOf] = useState<SessionUser | null>(null);

@@ -86,7 +86,7 @@ describe("Matriz — nome repetido de competência impede seguir", () => {
     });
     renderWithApp(<MatrixPage />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Nova capacidade" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Capacidade" }));
     await userEvent.type(screen.getByLabelText("Nome"), "Plataformas");
     await userEvent.type(screen.getByLabelText("Competência 1"), "Terraform");
     await userEvent.type(screen.getByLabelText("Competência 2"), "Kubernetes");
@@ -96,7 +96,7 @@ describe("Matriz — nome repetido de competência impede seguir", () => {
     const refusal = await screen.findByText(takenInAnother);
     expect(refusal.closest("div")?.contains(screen.getByLabelText("Competência 2"))).toBe(true);
     expect(screen.getByRole("button", { name: "Criar" })).toHaveProperty("disabled", true);
-    expect(screen.getByRole("heading", { name: "Nova capacidade" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Cadastrar Capacidade" })).toBeTruthy();
 
     await userEvent.clear(screen.getByLabelText("Competência 2"));
     await userEvent.type(screen.getByLabelText("Competência 2"), "Kustomize");

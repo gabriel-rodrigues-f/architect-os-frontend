@@ -131,7 +131,7 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await userEvent.click(within(dialog).getByRole("button", { name: "Salvar alterações" }));
 
     // Vira a etapa de confirmação — nada foi salvo ainda.
-    await screen.findByText("Conceder acesso de Diretoria");
+    await screen.findByText("Conceder acesso de Administrador");
     const isPatchCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];
       return String(url).includes(apiPath("/auth/users/")) && init?.method === "PATCH";
@@ -154,8 +154,10 @@ describe("Usuários — edição protegida (FE-360-009)", () => {
     await userEvent.selectOptions(within(dialog).getByLabelText("Cargo"), "admin");
     await userEvent.click(within(dialog).getByRole("button", { name: "Salvar alterações" }));
 
-    await screen.findByText("Conceder acesso de Diretoria");
-    await userEvent.click(screen.getByRole("button", { name: "Confirmar concessão de Diretoria" }));
+    await screen.findByText("Conceder acesso de Administrador");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirmar concessão de Administrador" }),
+    );
 
     const isPatchCall = (call: unknown[]) => {
       const [url, init] = call as [string, RequestInit?];

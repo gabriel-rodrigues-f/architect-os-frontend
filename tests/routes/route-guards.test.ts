@@ -97,7 +97,7 @@ describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organi
     expect(await navegarComoUsuario(fixtureAdminUser, href)).toBe(href);
   });
 
-  it("ADMIN calibra — a diretoria faz tudo (regra 6, 2026-09-08); o suporte não", async () => {
+  it("ADMIN calibra — o administrador faz tudo (regra 6, 2026-09-08); o suporte não", async () => {
     expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/calibration");
     expect(await navegarComoUsuario(fixtureSupportUser, "/calibration")).toBe("/");
   });
@@ -304,7 +304,7 @@ describe("requireCalibrationReach — a guarda da leitura de calibração", () =
     expect(await alcancaCalibracao(gestorSemVinculo)).toBe(false);
   });
 
-  it("deixa passar a diretoria (regra 6) e nega o suporte", async () => {
+  it("deixa passar o administrador (regra 6) e nega o suporte", async () => {
     expect(await alcancaCalibracao(fixtureAdminUser)).toBe(true);
     expect(await alcancaCalibracao(fixtureSupportUser)).toBe(false);
   });
@@ -497,7 +497,7 @@ async function alcancaAnaliseDoTime(user: SessionUser): Promise<boolean> {
 }
 
 describe("requireTeamAnalysisReach — a guarda da análise do time", () => {
-  it("passa quem lidera COM vínculo e a diretoria — member, lead sem vínculo e suporte não (revisão de papéis, 2026-09-05; adendo 2026-09-08)", async () => {
+  it("passa quem lidera COM vínculo e o administrador — member, lead sem vínculo e suporte não (revisão de papéis, 2026-09-05; adendo 2026-09-08)", async () => {
     expect(await alcancaAnaliseDoTime(fixtureMemberUser)).toBe(false);
     expect(await alcancaAnaliseDoTime(fixtureUnassignedTechLeadUser)).toBe(false);
     expect(await alcancaAnaliseDoTime(fixtureAssignedTechLeadUser)).toBe(true);

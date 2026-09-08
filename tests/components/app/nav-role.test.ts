@@ -95,7 +95,7 @@ describe("AppShell — navegação recortada por papel", () => {
     expect(paths).not.toContain("/capability-map");
   });
 
-  it("ADMIN (diretoria) vê TUDO o que o gerente vê — calibração inclusa (regra 6) — MAIS a Administração", () => {
+  it("ADMIN (administrador) vê TUDO o que o gerente vê — calibração inclusa (regra 6) — MAIS a Administração", () => {
     const paths = destinosDe(fixtureAdminUser);
     for (const path of destinosDe(fixtureAssignedManagerUser)) expect(paths, path).toContain(path);
     expect(paths).toContain("/competency-matrix");

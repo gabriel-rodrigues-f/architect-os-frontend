@@ -12,10 +12,14 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
       children,
       to,
       params: _params,
-      search: _search,
+      search,
       ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a href={to} {...rest}>
+    }: ComponentProps<"a"> & {
+      to?: string;
+      params?: unknown;
+      search?: Record<string, string> | undefined;
+    }) => (
+      <a href={search ? `${to ?? ""}?${new URLSearchParams(search).toString()}` : to} {...rest}>
         {children}
       </a>
     ),
@@ -151,7 +155,9 @@ describe("MultiSelectFilter sem opções — a mesma régua, o mesmo desenho", (
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Capacidades" }).textContent).toContain(
+    // Com tela de cadastro alcançável o gatilho deixa de ser botão morto: é
+    // a própria porta (dono, 2026-09-08, item 2).
+    expect(screen.getByRole("link", { name: "Capacidades" }).textContent).toContain(
       "Não há capacidades cadastradas",
     );
     expect(
@@ -193,7 +199,7 @@ describe("o seletor de ciclo do cabeçalho, sem ciclo cadastrado", () => {
     );
 
     await screen.findByText("conteúdo");
-    const gatilho = await screen.findByRole("button", { name: "Ciclo" });
+    const gatilho = await screen.findByRole("link", { name: "Ciclo" });
     expect(gatilho.textContent).toContain("Não há ciclos cadastrados");
     expect(
       screen.getByRole("link", { name: "Cadastrar primeiro ciclo" }).getAttribute("href"),

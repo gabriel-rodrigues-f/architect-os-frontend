@@ -3,6 +3,7 @@ import { LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { DailyGreetingToast } from "@/components/app/DailyGreetingToast";
+import { useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { NavGroupSection } from "@/components/app/NavGroupSection";
 import { NavLinkItem } from "@/components/app/NavLinkItem";
 import { NoticeBell } from "@/components/app/NoticeBell";
@@ -25,6 +26,7 @@ import {
   isNavItemActive,
   type NavItem,
 } from "@/lib/navigation-catalog";
+import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { SidebarPreferences, defaultSidebarPreferences } from "@/lib/sidebar-preferences";
 import { SessionEndReason } from "@/lib/session-end-reason";
@@ -70,6 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
   const { t } = useI18n();
+  const cicloVazio = useSelectionEmptyState(Registration.CYCLE);
 
   // PR 9 ([FA-01]): o encerramento por inatividade leva a razão — o login explica.
   const idlePhase = useIdleSession({
@@ -443,17 +446,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                       options={cycles.map((cycle) => ({ value: cycle.id, label: cycle.name }))}
                       // Dono (2026-09-08, reincidente): sem ciclo, o seletor do
                       // cabeçalho DIZ que não há e leva a quem pode cadastrar.
-                      empty={{
-                        message: t("cycles.selector.empty"),
-                        ...(defaultUiAuthorizationPolicy.isLeadership(user)
-                          ? {
-                              registration: {
-                                label: t("cycles.selector.register"),
-                                to: "/cycles",
-                              },
-                            }
-                          : {}),
-                      }}
+                      // A frase, o destino e a pergunta de alcance vêm do
+                      // `Registration` — a tela não repete nenhuma das três.
+                      empty={cicloVazio}
                       triggerClassName="h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
                     />
                   </>

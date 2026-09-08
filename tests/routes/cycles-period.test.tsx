@@ -30,9 +30,9 @@ describe("Ciclos — identidade matemática (ano + semestre)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("sugere o próximo período livre ao abrir 'Novo ciclo' (2026 H1 e H2 já existem)", async () => {
+  it("sugere o próximo período livre ao abrir 'Cadastrar Ciclo' (2026 H1 e H2 já existem)", async () => {
     renderWithApp(<CyclesPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Novo ciclo" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Ciclo" }));
 
     expect(await screen.findByLabelText("Semestre")).toHaveProperty("value", "H1");
     expect(screen.getByRole("spinbutton")).toHaveProperty("value", "2027");
@@ -40,7 +40,7 @@ describe("Ciclos — identidade matemática (ano + semestre)", () => {
 
   it("bloqueia salvar um período já usado e mostra o motivo", async () => {
     renderWithApp(<CyclesPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Novo ciclo" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Ciclo" }));
 
     const ano = await screen.findByRole("spinbutton");
     fireEvent.change(ano, { target: { value: "2026" } });

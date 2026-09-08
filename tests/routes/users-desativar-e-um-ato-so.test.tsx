@@ -134,7 +134,7 @@ describe("Usuários — desativar é um ato só, e ativar é o mesmo ato de volt
   });
 
   /** Regra 6 (dono, 2026-09-08): "o administrador precisa poder desativar normalmente qualquer outro usuário". */
-  it("a diretoria desativa qualquer outra conta — outro ADMIN e o suporte inclusive; só não a própria", async () => {
+  it("o administrador desativa qualquer outra conta — outro ADMIN e o suporte inclusive; só não a própria", async () => {
     const outraDiretora: SessionUser = {
       ...fixtureAdminUser,
       id: "conta-outra-diretora",

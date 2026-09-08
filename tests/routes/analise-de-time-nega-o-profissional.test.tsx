@@ -133,7 +133,7 @@ describe("as cinco telas de análise do time negam o profissional — a tela é 
   );
 
   it.each(TELAS)(
-    "$rota: tech lead sem vínculo e suporte recebem a negativa — o alcance é o VÍNCULO (revisão de papéis, 2026-09-05; a diretoria lê a organização, adendo 2026-09-08)",
+    "$rota: tech lead sem vínculo e suporte recebem a negativa — o alcance é o VÍNCULO (revisão de papéis, 2026-09-05; o administrador lê a organização, adendo 2026-09-08)",
     async ({ Page }) => {
       for (const user of [fixtureUnassignedTechLeadUser, fixtureSupportUser]) {
         renderAs(user, <Page />);

@@ -258,6 +258,16 @@ export function useCurrentUser(): SessionUser {
 }
 
 /**
+ * A sessão QUANDO ela existe. Serve a quem só faz uma pergunta de ALCANCE —
+ * "esta pessoa cadastra time?" — e sabe responder "não" sem sessão nenhuma:
+ * a tela de login, e uma peça montada sozinha fora do provedor. Quem precisa
+ * da pessoa logada para funcionar continua usando `useCurrentUser`, que grita.
+ */
+export function useOptionalUser(): SessionUser | null {
+  return useContext(Ctx)?.user ?? null;
+}
+
+/**
  * Só `UserFacingError` tem mensagem escrita PARA a tela — `ApiError` inclusive,
  * que herda dele e cuja frase vem do serviço ou da `ApiFailureReading`. Um
  * `Error` qualquer (`TypeError`, `ZodError`, invariante de componente) carrega

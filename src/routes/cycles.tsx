@@ -204,14 +204,12 @@ function CycleAdministration() {
         {store.cycles.length === 0 && (
           <div className="surface-card p-6 text-center sm:col-span-3">
             <p className="text-sm font-medium">{t("cycle.empty")}</p>
+            {/*
+             * Dono (2026-09-08, item 7): SAI o botão do centro da tela. A ação
+             * de cadastrar ciclo é uma só, a do canto — dois botões para o
+             * mesmo ato faziam a tela perguntar duas vezes a mesma coisa.
+             */}
             <p className="mt-1 text-sm text-muted-foreground">{t("cycle.empty.hint")}</p>
-            {isAdmin && (
-              <PageAction
-                className="mt-4"
-                label={t("cycle.new")}
-                onClick={() => setEditing(emptyCycle(store.cycles, scheme))}
-              />
-            )}
           </div>
         )}
       </div>

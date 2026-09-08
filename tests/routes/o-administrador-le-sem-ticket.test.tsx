@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * PR 5 (adendo do dono, 2026-09-08, item 2) — a diretoria "precisa ver tudo
+ * PR 5 (adendo do dono, 2026-09-08, item 2) — o administrador "precisa ver tudo
  * sobre todos": abre a ficha de qualquer pessoa SEM passe de suporte. E, pela
  * regra 6 (dono, 2026-09-08: "ele pode fazer tudo na plataforma"), AGE sobre
  * ela: encontra na ficha as mesmas ações que quem a lidera. O SUPPORT
@@ -55,7 +55,7 @@ function renderAs(user: SessionUser) {
   return renderCareerFile(<ProfilePage />);
 }
 
-describe("a diretoria lê a ficha sem ticket; o suporte declara o motivo", () => {
+describe("o administrador lê a ficha sem ticket; o suporte declara o motivo", () => {
   beforeEach(() => {
     window.localStorage.setItem("synapse:locale", "pt");
     fetchMock.mockReset();

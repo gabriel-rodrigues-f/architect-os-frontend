@@ -8,7 +8,7 @@ export type TeamMemberRole = (typeof TEAM_MEMBER_ROLES)[number];
 /**
  * PR 5 (adendo do dono, 2026-09-08, item 2) — os papéis de ORGANIZAÇÃO, que
  * não são papéis de time, espelhando `backend/.../entities/user.ts`: `admin`
- * é a diretoria e os sócios ("estão acima dos gerentes e precisam ver tudo
+ * é o administrador e os sócios ("estão acima dos gerentes e precisam ver tudo
  * sobre todos"); `support` é o antigo admin ("a pessoa que entraria para
  * realizar tarefas de suporte, de fato").
  */
@@ -29,7 +29,7 @@ export type UserStatus = "active" | "disabled";
  *  - `operatesTheSystem`: ADMIN e SUPPORT — contas, times, catálogo, ciclos,
  *    configurações, Métricas da Plataforma. É o que o antigo `admin` fazia,
  *    e ADMIN pode tudo que SUPPORT pode;
- *  - `readsTheOrganization`: só ADMIN — a diretoria lê tudo de todos, sem
+ *  - `readsTheOrganization`: só ADMIN — o administrador lê tudo de todos, sem
  *    passe de suporte. Ler, não agir: quem age sobre pessoa é quem a lidera
  *    por vínculo.
  */
@@ -59,7 +59,7 @@ export class UserRoles {
     return UserRoles.isOrganizationRole(role);
   }
 
-  /** Só ADMIN: a diretoria lê a organização inteira — e não age sobre pessoas. */
+  /** Só ADMIN: o administrador lê a organização inteira — e não age sobre pessoas. */
   static readsTheOrganization(role: string): boolean {
     return role === UserRoles.ADMIN;
   }

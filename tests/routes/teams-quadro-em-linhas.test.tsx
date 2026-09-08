@@ -182,8 +182,8 @@ describe("/teams — o quadro em linhas, lido pelo gateway em memória (o orácu
     expect(linhas.map((celulas) => celulas.slice(0, 3))).toEqual([
       ["Gerente do time", "gerente-do-time@company.com", "Gerente"],
       ["Carla Souza", "carla@company.com", "Tech Lead"],
-      ["Ana Martins", "ana@company.com", "Membro"],
-      ["Bruno Almeida", "bruno@company.com", "Membro"],
+      ["Ana Martins", "ana@company.com", "Profissional"],
+      ["Bruno Almeida", "bruno@company.com", "Profissional"],
     ]);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
@@ -300,7 +300,7 @@ describe("/teams — as ações de cada linha", () => {
 
     await userEvent.click(screen.getByLabelText("Trocar papel de Carla Souza"));
     await userEvent.click(await screen.findByLabelText("Novo papel"));
-    await userEvent.click(screen.getByRole("option", { name: "Membro" }));
+    await userEvent.click(screen.getByRole("option", { name: "Profissional" }));
     await userEvent.click(screen.getByRole("button", { name: "Trocar papel" }));
 
     const [, init] = chamadas("PATCH", `${CAMINHO_DO_QUADRO}/conta-carla/tech_lead`)[0] as [
@@ -310,7 +310,7 @@ describe("/teams — as ações de cada linha", () => {
     expect(JSON.parse(String(init.body))).toEqual({ role: "member" });
     await waitFor(() => {
       const linhas = linhasDaTabela(screen.getByRole("table", { name: "Vínculos do time" }));
-      expect(linhas.find((celulas) => celulas[0] === "Carla Souza")?.[2]).toBe("Membro");
+      expect(linhas.find((celulas) => celulas[0] === "Carla Souza")?.[2]).toBe("Profissional");
     });
   });
 

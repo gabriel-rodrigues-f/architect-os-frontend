@@ -86,7 +86,7 @@ describe("Usuários — o seletor de papel é derivado do vocabulário", () => {
     renderWithApp(<UsersPage />);
 
     await screen.findByText("Outro Membro");
-    await userEvent.click(screen.getByRole("button", { name: "Cadastrar pessoa" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar Profissional" }));
 
     const dialog = await screen.findByRole("dialog");
     expect(papeisOferecidosEm(dialog)).toEqual(rotulados(TEAM_MEMBER_ROLES));
@@ -108,7 +108,7 @@ describe("Usuários — o seletor de papel é derivado do vocabulário", () => {
    * atribui ADMIN"; o suporte "não cria nem promove ADMIN". O seletor do
    * suporte nem mostra a opção.
    */
-  it("para o SUPPORT, o diálogo de edição não oferece `admin` — o suporte não nomeia a diretoria", async () => {
+  it("para o SUPPORT, o diálogo de edição não oferece `admin` — o suporte não nomeia o administrador", async () => {
     mockBackend(fixtureSupportUser);
     renderWithApp(<UsersPage />);
 
@@ -149,13 +149,15 @@ describe("Usuários — a prosa da tela conhece os cinco papéis", () => {
 
   it("nomeia o gerente — a tela que ATRIBUI papel não pode descrever só três", () => {
     const texto = prosa();
-    for (const palavra of ["diretoria", "suporte", "gerente", "tech lead", "membro"]) {
+    for (const palavra of ["administrador", "suporte", "gerente", "tech lead", "profissional"]) {
       expect(texto, palavra).toContain(palavra);
     }
   });
 
   it("não descreve mais o papel morto nem o administrador de antes do quinto papel", () => {
     expect(prosa()).not.toContain("(administrador, tech lead, membro)");
-    expect(prosa()).not.toContain("administrador");
+    // Regra 7 do dono (2026-09-06): o quinto papel não se chama mais pelo
+    // nome do órgão — nem na prosa da aba do navegador.
+    expect(prosa()).not.toMatch(/diretor/);
   });
 });

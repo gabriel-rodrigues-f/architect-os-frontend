@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import {
@@ -7,12 +7,14 @@ import {
   EmptyState,
   LevelBadge,
   MultiSelectFilter,
+  PageAction,
   PageHeader,
   QuerySection,
   SectionCard,
   SingleSelectFilter,
   TeamChoiceField,
 } from "@/components/app";
+import { useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { FilterField } from "@/components/app/FilterField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ import type { TeamRuleView } from "@/lib/gateways/career.gateway";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadReach } from "@/lib/route-guards";
+import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useOperationalSettings, useStore } from "@/lib/store";
 
@@ -89,6 +92,7 @@ function TeamRulesScreen() {
 
   const [chosenTeamId, setChosenTeamId] = useState<string | null>(null);
   const [chosenLevelId, setChosenLevelId] = useState<string | null>(null);
+  const cadastroDeTime = useSelectionEmptyState(Registration.TEAM);
 
   const teams = (teamsQuery.data ?? []).filter(
     (team) => team.active && defaultUiAuthorizationPolicy.canConfigureRulesOf(user, team.id),
@@ -108,7 +112,27 @@ function TeamRulesScreen() {
       />
 
       {teamId === null || careerLevel === null ? (
-        <EmptyState title={t("teamRules.noTeam")} />
+        <EmptyState
+          title={t("teamRules.noTeam")}
+          /*
+           * Dono (2026-09-08, item 8): como o item 3, mas para TIME — o botão
+           * do centro cadastra o PRIMEIRO time, e só existe quando não há
+           * nenhum. Sem time nenhum não há régua a definir; com times, a
+           * ausência é de escolha, não de cadastro.
+           */
+          action={
+            teams.length === 0 && cadastroDeTime.registration ? (
+              <PageAction className="mt-4" label={t("teams.create.action")} asChild>
+                <Link
+                  to={cadastroDeTime.registration.to}
+                  {...(cadastroDeTime.registration.search
+                    ? { search: cadastroDeTime.registration.search }
+                    : {})}
+                />
+              </PageAction>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           <div className="mb-6 grid max-w-xl gap-4 sm:grid-cols-2">

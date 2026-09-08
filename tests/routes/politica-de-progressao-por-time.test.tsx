@@ -227,7 +227,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
     expect((within(linha).getByRole("spinbutton") as HTMLInputElement).value).toBe("5");
   });
 
-  it("a diretoria escolhe qualquer time e edita a régua dele — ela faz tudo (regra 6, 2026-09-08)", async () => {
+  it("o administrador escolhe qualquer time e edita a régua dele — ela faz tudo (regra 6, 2026-09-08)", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
       state: doisTimesDivergem(),

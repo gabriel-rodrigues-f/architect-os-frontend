@@ -43,7 +43,7 @@ import {
 } from "../helpers/render-app";
 
 /**
- * Pedido do dono (2026-09-08), literal: *"o botão 'Nova trilha' em Trilhas de
+ * Pedido do dono (2026-09-08), literal: *"o botão 'Cadastrar Trilha' em Trilhas de
  * Aprendizagem tem a mesma identidade visual de 'Ciclos de Avaliação > Novo
  * ciclo' e 'Catálogo de Competências > Nova capacidade'. Mas 'Estrutura de
  * Times > Criar time' e 'Contas e Acessos > Cadastrar pessoas' não seguem o
@@ -88,35 +88,35 @@ interface TelaDoDono {
 const TELAS: TelaDoDono[] = [
   {
     tela: "Trilhas de Aprendizagem",
-    rotulo: "Nova trilha",
+    rotulo: "Cadastrar Trilha",
     Pagina: LearningRoute.options.component as () => ReactNode,
     user: fixtureAssignedManagerUser,
     routes: [],
   },
   {
     tela: "Ciclos de Avaliação",
-    rotulo: "Novo ciclo",
+    rotulo: "Cadastrar Ciclo",
     Pagina: CyclesRoute.options.component as () => ReactNode,
     user: fixtureAdminUser,
     routes: [],
   },
   {
     tela: "Catálogo de Competências",
-    rotulo: "Nova capacidade",
+    rotulo: "Cadastrar Capacidade",
     Pagina: MatrixRoute.options.component as () => ReactNode,
     user: fixtureAdminUser,
     routes: [careerLevelsRoute],
   },
   {
     tela: "Estrutura de Times",
-    rotulo: "Criar time",
+    rotulo: "Cadastrar Time",
     Pagina: TeamsRoute.options.component as () => ReactNode,
     user: fixtureAdminUser,
     routes: [rotaDeTimes, rotaDeContas, rotaDoQuadro],
   },
   {
     tela: "Contas e Acessos",
-    rotulo: "Cadastrar pessoa",
+    rotulo: "Cadastrar Profissional",
     Pagina: UsersRoute.options.component as () => ReactNode,
     user: fixtureAdminUser,
     routes: [rotaDeContas, rotaDeTimes, careerLevelsRoute],

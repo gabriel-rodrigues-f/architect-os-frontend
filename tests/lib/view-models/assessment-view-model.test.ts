@@ -164,7 +164,7 @@ describe("AssessmentViewModel", () => {
       expect(result.canEditLeaderFinal).toBe(false);
     });
 
-    it("a diretoria (ADMIN) lidera qualquer pessoa: pontua e conclui (regra 6, 2026-09-08)", () => {
+    it("o administrador (ADMIN) lidera qualquer pessoa: pontua e conclui (regra 6, 2026-09-08)", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "In Review" as const };
       const result = vm.permissionsFor(fixtureAdminUser, "ana", anaArchitect, assessment);

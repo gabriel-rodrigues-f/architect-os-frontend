@@ -195,7 +195,7 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
     expect(screen.queryByText("Marina Lopes")).toBeNull();
   });
 
-  it("regra 6 (dono, 2026-09-08): a diretoria recebe a tela inteira — ela faz tudo", async () => {
+  it("regra 6 (dono, 2026-09-08): o administrador recebe a tela inteira — ela faz tudo", async () => {
     renderAs(fixtureAdminUser);
     expect(await screen.findByText("Marina Lopes")).toBeTruthy();
     expect(screen.getByText("Média geral")).toBeTruthy();
@@ -263,7 +263,7 @@ describe("/calibration não CONSULTA para quem não calibra — o `enabled` é p
     expect(calibrationSpy).not.toHaveBeenCalled();
   });
 
-  it("regra 6: para a diretoria a consulta SAI, com o ciclo ativo", async () => {
+  it("regra 6: para o administrador a consulta SAI, com o ciclo ativo", async () => {
     renderAs(fixtureAdminUser);
     await screen.findByText("Marina Lopes");
     expect(calibrationSpy).toHaveBeenCalledWith("2026-h2");

@@ -1,4 +1,6 @@
 import { configure } from "@testing-library/dom";
+import { createElement, type ComponentProps } from "react";
+import { vi } from "vitest";
 
 /**
  * Lacunas do jsdom que o Radix e o cmdk assumem existir no navegador. Sem elas,
@@ -58,3 +60,39 @@ window.localStorage.setItem("synapse:locale", "pt");
  * demais não mede o produto: mede a carga da máquina.
  */
 configure({ asyncUtilTimeout: 5000 });
+
+/**
+ * O `<Link>` do TanStack Router exige o `RouterProvider` montado. A maioria
+ * das suítes monta a TELA, não o roteador — e isso bastava enquanto o link
+ * era raro. Desde 2026-09-08 ele deixou de ser: todo seletor vazio de quem
+ * cadastra oferece a porta de cadastro (`EmptySelection`), e a porta é um
+ * `<Link>`. Sem router, a peça quebrava no mount em dezenas de arquivos.
+ *
+ * Esta é a MESMA lacuna de ambiente que `ResizeObserver` e `matchMedia` acima:
+ * o navegador (aqui, o roteador do app) existe em produção e não no jsdom. O
+ * dublê desenha a âncora com `href` — `to` mais o `search`, quando há —, que
+ * é justamente o que os testes afirmam. Nenhuma asserção fica mais frouxa: o
+ * arquivo que quer outro dublê declara o seu `vi.mock` e ele vence este.
+ */
+vi.mock("@tanstack/react-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
+  return {
+    ...actual,
+    Link: ({
+      children,
+      to,
+      params: _params,
+      search,
+      ...rest
+    }: ComponentProps<"a"> & {
+      to?: string;
+      params?: unknown;
+      search?: Record<string, string> | undefined;
+    }) =>
+      createElement(
+        "a",
+        { href: search ? `${to ?? ""}?${new URLSearchParams(search).toString()}` : to, ...rest },
+        children,
+      ),
+  };
+});

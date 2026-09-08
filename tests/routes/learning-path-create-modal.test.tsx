@@ -10,7 +10,7 @@ import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app
 import { apiPath } from "@/lib/api-path";
 
 /**
- * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Nova trilha" troca o
+ * R2-UX-12 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — "Cadastrar Trilha" troca o
  * input solto no cabeçalho + "Criar trilha" em 2 tempos (nome sozinho,
  * depois reabrir "Editar" pra completar) por um único botão que abre um
  * modal já com nome, descrição, competências e atribuições.
@@ -47,12 +47,12 @@ describe("Trilhas — criação via modal (mata os 2 tempos)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("botão 'Nova trilha' abre modal com nome, descrição, competências e atribuições", async () => {
+  it("botão 'Cadastrar Trilha' abre modal com nome, descrição, competências e atribuições", async () => {
     renderWithApp(<LearningPage />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Nova trilha" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Trilha" }));
 
-    expect(screen.getByRole("heading", { name: "Nova trilha" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Cadastrar Trilha" })).toBeTruthy();
     expect(screen.getByLabelText("Nome")).toBeTruthy();
     expect(screen.getByLabelText("Descrição")).toBeTruthy();
     expect(screen.getByText("Competências")).toBeTruthy();
@@ -62,7 +62,7 @@ describe("Trilhas — criação via modal (mata os 2 tempos)", () => {
   it("criar com nome, descrição e competência marcada envia tudo num POST só", async () => {
     renderWithApp(<LearningPage />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Nova trilha" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Trilha" }));
     await userEvent.type(screen.getByLabelText("Nome"), "Trilha de Observabilidade");
     await userEvent.type(screen.getByLabelText("Descrição"), "Métricas, logs e tracing.");
     const primeiraCompetencia = fixtureState.competencies[0];
@@ -90,6 +90,8 @@ describe("Trilhas — criação via modal (mata os 2 tempos)", () => {
       items: [],
     });
 
-    await waitFor(() => expect(screen.queryByRole("heading", { name: "Nova trilha" })).toBeNull());
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Cadastrar Trilha" })).toBeNull(),
+    );
   });
 });

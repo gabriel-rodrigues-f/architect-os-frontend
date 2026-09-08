@@ -52,9 +52,9 @@ describe("Ciclos — cadência QUARTERLY (CFG-05/B9)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("'Novo ciclo' oferece Q1..Q4 e sugere o primeiro trimestre livre com as datas certas", async () => {
+  it("'Cadastrar Ciclo' oferece Q1..Q4 e sugere o primeiro trimestre livre com as datas certas", async () => {
     renderWithApp(<CyclesPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Novo ciclo" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Ciclo" }));
 
     // A fixture tem 2026-h1/2026-h2 (ids semestrais) — nenhum id trimestral
     // usado, então o primeiro livre é 2026 Q1. Ciclos existentes seguem
@@ -71,7 +71,7 @@ describe("Ciclos — cadência QUARTERLY (CFG-05/B9)", () => {
 
   it("trocar o trimestre recalcula as datas do período", async () => {
     renderWithApp(<CyclesPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Novo ciclo" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Ciclo" }));
 
     await userEvent.selectOptions(await screen.findByLabelText("Trimestre"), "Q3");
     expect(screen.getByLabelText("Início")).toHaveProperty("value", "2026-07-01");
@@ -80,7 +80,7 @@ describe("Ciclos — cadência QUARTERLY (CFG-05/B9)", () => {
 
   it("salvar cria o ciclo com id e nome trimestrais", async () => {
     renderWithApp(<CyclesPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Novo ciclo" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Ciclo" }));
     await userEvent.selectOptions(await screen.findByLabelText("Trimestre"), "Q2");
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
 

@@ -164,7 +164,7 @@ describe("/teams — a lista, com ativos e desativados", () => {
     renderAs(fixtureAssignedManagerUser);
     expect(await screen.findByText("Time Plataforma")).toBeTruthy();
     expect(screen.queryByText("Time Dados")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Criar time" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cadastrar Time" })).toBeNull();
   });
 });
 
@@ -183,7 +183,7 @@ describe("/teams — criar, renomear, desativar", () => {
     renderAs(fixtureAdminUser, [rotaDeCriacao]);
     await screen.findByText("Time Plataforma");
 
-    await userEvent.click(screen.getByRole("button", { name: "Criar time" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar Time" }));
     await userEvent.type(screen.getByLabelText("Nome do time"), "Time Novo");
     await userEvent.click(screen.getByRole("button", { name: "Salvar time" }));
 

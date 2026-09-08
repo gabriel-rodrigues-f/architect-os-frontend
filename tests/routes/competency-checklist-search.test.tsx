@@ -103,7 +103,7 @@ describe("Checklists de competências — busca local acima de 20 itens (R2-ESC-
     mockFetch(manyCompetenciesState);
     renderWithApp(<LearningPage />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Nova trilha" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Trilha" }));
     const filtro = await screen.findByLabelText("Buscar competência…");
 
     expect(screen.getByText("Observabilidade e SRE")).toBeTruthy();

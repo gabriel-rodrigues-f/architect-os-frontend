@@ -10,6 +10,7 @@ import {
   SectionAction,
   SectionCard,
 } from "@/components/app";
+import { RegistrationLink, useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ import {
 import { useServerDraft, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
@@ -36,6 +38,28 @@ import { LearningPathsViewModel } from "@/lib/view-models";
 function useLearningPathsViewModel(): LearningPathsViewModel {
   const store = useStore();
   return useMemo(() => new LearningPathsViewModel(store), [store]);
+}
+
+/**
+ * NINGUÉM PARA ATRIBUIR AINDA — a mesma frase e o mesmo destino nos dois
+ * diálogos da tela, o de criar e o de editar trilha (regra de reuso: dois
+ * lugares, um componente). Segue o item 2 do dono: quem cadastra gente
+ * recebe o hiperlink; quem não cadastra lê só a frase.
+ */
+function NoPeopleYet() {
+  const { t } = useI18n();
+  const vazio = useSelectionEmptyState(Registration.PROFESSIONAL);
+  return (
+    <p className="text-sm text-muted-foreground">
+      {t("person.none")}{" "}
+      {vazio.registration ? (
+        <RegistrationLink
+          registration={vazio.registration}
+          className="text-primary underline underline-offset-2"
+        />
+      ) : null}
+    </p>
+  );
 }
 
 export const Route = createFileRoute("/learning-paths")({
@@ -88,7 +112,7 @@ function LearningScreen() {
       return next;
     });
 
-  // Regra 6 (dono, 2026-09-08): quem lidera cria e edita a sua; a diretoria, qualquer uma; o suporte, nenhuma.
+  // Regra 6 (dono, 2026-09-08): quem lidera cria e edita a sua; o administrador, qualquer uma; o suporte, nenhuma.
   const canCreatePath = defaultUiAuthorizationPolicy.createsLearningPath(user);
 
   const canEdit = (path: LearningPath) =>
@@ -418,9 +442,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
                     <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
-                {store.architects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("person.none")}</p>
-                )}
+                {store.architects.length === 0 && <NoPeopleYet />}
               </div>
             </div>
           </div>
@@ -658,9 +680,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                     <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
-                {store.architects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("person.none")}</p>
-                )}
+                {store.architects.length === 0 && <NoPeopleYet />}
               </div>
             </div>
           </div>

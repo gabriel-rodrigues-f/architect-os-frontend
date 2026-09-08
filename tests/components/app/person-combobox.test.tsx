@@ -50,15 +50,27 @@ const abrir = () => userEvent.click(trigger());
 const checkboxDe = (name: string) =>
   screen.getByRole("option", { name }).querySelector('[role="checkbox"]');
 
-describe("PersonCombobox — alcance vazio (dono, 2026-09-06)", () => {
+/**
+ * Dono (2026-09-08, item 2), literal: *"o filtro hoje obscurecido
+ * (desabilitado) passa a poder ser aberto, mostrando 'Nenhum profissional
+ * cadastrado — clique para cadastrar', que leva ao cadastro"*.
+ *
+ * Sem sessão — que é como esta suíte monta a peça — a pergunta de alcance
+ * responde "não cadastra": sobra a frase, e o campo continua obscurecido.
+ * O caminho de quem CADASTRA gente é provado em
+ * `tests/components/app/nenhum-seletor-vazio.test.tsx`, com sessão.
+ */
+describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08)", () => {
   afterEach(() => cleanup());
+
+  const vazio = () => screen.getByRole("button", { name: "Pessoas" });
 
   it.each([
     ["uma pessoa", PersonPicker.one([], null)],
     ["várias com 'Todo o time'", PersonPicker.many([], [])],
     ["várias com teto", PersonPicker.upTo(2, [], [])],
   ])(
-    "na forma %s a tela mostra só 'Não há pessoas cadastradas.' e nada abre",
+    "na forma %s a tela diz que não há profissional cadastrado e nada abre",
     async (_f, picker) => {
       render(
         <I18nProvider>
@@ -66,15 +78,25 @@ describe("PersonCombobox — alcance vazio (dono, 2026-09-06)", () => {
         </I18nProvider>,
       );
 
-      expect(trigger().textContent).toContain("Não há pessoas cadastradas.");
-      expect(trigger().hasAttribute("disabled")).toBe(true);
+      expect(vazio().textContent).toContain("Nenhum profissional cadastrado");
       expect(screen.queryByText("Todo o time")).toBeNull();
 
-      await userEvent.click(trigger());
+      await userEvent.click(vazio());
       expect(screen.queryByRole("listbox")).toBeNull();
       expect(screen.queryByText("Todo o time")).toBeNull();
     },
   );
+
+  it("sem alcance ao cadastro, o campo continua obscurecido e não oferece porta nenhuma", () => {
+    render(
+      <I18nProvider>
+        <PersonCombobox picker={PersonPicker.many([], [])} onChange={vi.fn()} label="Pessoas" />
+      </I18nProvider>,
+    );
+
+    expect(vazio().hasAttribute("disabled")).toBe(true);
+    expect(screen.queryByRole("link")).toBeNull();
+  });
 });
 
 describe("PersonCombobox — busca", () => {

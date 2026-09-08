@@ -172,7 +172,7 @@ describe("profissional desativado some da aplicação", () => {
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<LearningPathsPage />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Nova trilha" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Trilha" }));
 
     const dialogo = await screen.findByRole("dialog");
     expect(within(dialogo).getByText("Ana Martins")).toBeTruthy();

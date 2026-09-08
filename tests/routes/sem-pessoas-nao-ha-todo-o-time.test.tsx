@@ -10,12 +10,18 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
     ...actual,
     Link: ({
       children,
-      to: _to,
+      to,
       params: _params,
-      search: _search,
+      search,
       ...rest
-    }: ComponentProps<"a"> & { to?: string; params?: unknown; search?: unknown }) => (
-      <a {...rest}>{children}</a>
+    }: ComponentProps<"a"> & {
+      to?: string;
+      params?: unknown;
+      search?: Record<string, string> | undefined;
+    }) => (
+      <a href={search ? `${to ?? ""}?${new URLSearchParams(search).toString()}` : to} {...rest}>
+        {children}
+      </a>
     ),
   };
 });
@@ -53,6 +59,14 @@ import {
  * (Progressão, Prioridades), várias com teto (Comparativo) e uma pessoa
  * (Avaliações, Calibração). Com o alcance vazio, nenhuma delas desenha
  * "Todo o time"; todas dizem a mesma frase.
+ *
+ * ADENDO DO DONO, 2026-09-08 (item 2) — a frase MUDOU e o campo deixou de
+ * ser um muro: *"o filtro hoje obscurecido (desabilitado) passa a poder ser
+ * aberto, mostrando 'Nenhum profissional cadastrado — clique para cadastrar',
+ * que leva ao cadastro"*. O que esta suíte guarda continua valendo — não há
+ * "Todo o time" de ninguém, e nenhuma lista abre —, e o que ela afirma sobre
+ * o TEXTO passa a ser a frase nova. Quem NÃO cadastra gente (o tech lead)
+ * continua com o campo obscurecido e sem porta.
  */
 const fetchMock = vi.fn();
 
@@ -83,7 +97,10 @@ const comoAtor = (user: SessionUser) =>
     routes: [emptyAuthUsersRoute, careerLevelsRoute, emptyEligibilityRoute, calibracaoVazia],
   });
 
-const mensagem = "Não há pessoas cadastradas.";
+/** O que o CORPO da tela diz quando não há ninguém. */
+const mensagemDoCorpo = "Não há pessoas cadastradas.";
+/** O que o CAMPO diz — e, para quem cadastra, o convite em que se clica. */
+const mensagemDoCampo = "Nenhum profissional cadastrado — clique para cadastrar";
 
 describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", () => {
   beforeEach(() => {
@@ -102,10 +119,10 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<ProgressionPage />);
 
-    expect(await screen.findByText(mensagem)).toBeTruthy();
-    // Dono: "quero ver apenas a mensagem" — uma vez, e nenhum seletor.
-    expect(screen.getAllByText(mensagem)).toHaveLength(1);
+    expect(await screen.findByText(mensagemDoCorpo)).toBeTruthy();
+    // Nenhuma lista para abrir: o campo virou porta, não combobox.
     expect(screen.queryByRole("combobox", { name: "Pessoas" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Pessoas" }).textContent).toContain(mensagemDoCampo);
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });
 
@@ -113,8 +130,7 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<GapAnalysisPage />);
 
-    expect(await screen.findByText(mensagem)).toBeTruthy();
-    expect(screen.getAllByText(mensagem)).toHaveLength(1);
+    expect(await screen.findByText(mensagemDoCorpo)).toBeTruthy();
     expect(screen.queryByRole("combobox", { name: "Pessoas" })).toBeNull();
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });
@@ -123,21 +139,22 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     comoAtor(fixtureAssignedTechLeadUser);
     renderWithApp(<ComparePage />);
 
-    const seletor = await screen.findByRole("combobox", { name: "Pessoas para comparar" });
-    expect(seletor.textContent).toContain(mensagem);
+    // O tech lead NÃO cadastra gente: campo obscurecido, sem porta nenhuma.
+    const seletor = await screen.findByRole("button", { name: "Pessoas para comparar" });
+    expect(seletor.textContent).toContain(mensagemDoCampo);
+    expect(seletor.hasAttribute("disabled")).toBe(true);
 
     await userEvent.click(seletor);
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });
 
-  it("Avaliações (uma pessoa): a mesma mensagem, e não 'Nenhum profissional cadastrado'", async () => {
+  it("Avaliações (uma pessoa): a mesma frase, e o campo leva ao cadastro", async () => {
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<AssessmentsPage />);
 
-    const seletor = await screen.findByRole("combobox", { name: "Profissional" });
-    expect(seletor.textContent).toContain(mensagem);
-    expect(screen.queryByText(/Nenhum profissional cadastrado/)).toBeNull();
+    const seletor = await screen.findByRole("link", { name: "Profissional" });
+    expect(seletor.textContent).toContain(mensagemDoCampo);
 
     await userEvent.click(seletor);
     expect(screen.queryByRole("listbox")).toBeNull();
@@ -147,10 +164,10 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<CalibrationPage />);
 
-    const seletor = await screen.findByRole("combobox", {
+    const seletor = await screen.findByRole("link", {
       name: /Pessoa para a leitura de apoio/,
     });
-    expect(seletor.textContent).toContain(mensagem);
+    expect(seletor.textContent).toContain(mensagemDoCampo);
     expect(document.querySelector("select#calibration-assistance-architect")).toBeNull();
   });
 });

@@ -86,7 +86,7 @@ describe("Usuários — falha de gravação é anunciada (QA-04)", () => {
     renderWithApp(<UsersPage />);
 
     await screen.findByText("Outro Membro");
-    await userEvent.click(screen.getByRole("button", { name: "Cadastrar pessoa" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar Profissional" }));
 
     const dialogo = await screen.findByRole("dialog");
     await userEvent.type(within(dialogo).getByLabelText("Nome"), "Nova Pessoa");
@@ -94,7 +94,7 @@ describe("Usuários — falha de gravação é anunciada (QA-04)", () => {
     await userEvent.selectOptions(within(dialogo).getByLabelText("Cargo"), "tech_lead");
     await userEvent.click(within(dialogo).getByLabelText("Time", { selector: "button" }));
     await userEvent.click(screen.getByRole("option", { name: "Plataforma" }));
-    await userEvent.click(within(dialogo).getByRole("button", { name: "Cadastrar pessoa" }));
+    await userEvent.click(within(dialogo).getByRole("button", { name: "Cadastrar Profissional" }));
 
     const alerta = await within(dialogo).findByRole("alert");
     expect(alerta.textContent).toBe("Falha ao gravar a conta");

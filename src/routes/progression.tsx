@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -7,11 +7,13 @@ import {
   EmptyState,
   GapTable,
   OutOfReachScreen,
+  PageAction,
   PageHeader,
   PersonCombobox,
   SectionCard,
   useGapAnalysisData,
 } from "@/components/app";
+import { useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/auth";
 import { PersonPicker } from "@/lib/person-selection";
@@ -20,6 +22,7 @@ import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { Registration } from "@/lib/registration";
 import { useGapSeverityRuler, useSelectors } from "@/lib/store";
 import { exportTeamReportCsv } from "@/lib/team-report-csv";
 
@@ -78,6 +81,8 @@ function TeamProgression() {
   const { store, selected, setSelected, architects, priorities, mastery, scopeLabel } =
     useGapAnalysisData();
   const [exportingPdf, setExportingPdf] = useState(false);
+  const cadastroDePessoa = useSelectionEmptyState(Registration.PROFESSIONAL);
+  const semNinguem = store.architects.length === 0;
 
   const reportInput = () => ({
     scopeLabel,
@@ -117,15 +122,19 @@ function TeamProgression() {
         help={help}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {/* Dono (2026-09-06): sem ninguém no alcance, só a mensagem do corpo. */}
-            {store.architects.length > 0 && (
-              <PersonCombobox
-                picker={PersonPicker.many(store.architects, selected)}
-                onChange={setSelected}
-                label={t("person.label")}
-                className="w-64"
-              />
-            )}
+            {/*
+             * Dono (2026-09-08, item 3): o filtro NÃO some mais quando não há
+             * ninguém — ele passa a dizer "Nenhum profissional cadastrado —
+             * clique para cadastrar" e a levar ao cadastro. Quem não cadastra
+             * gente lê a frase e não recebe porta nenhuma; a régua é da
+             * `PersonCombobox`, e esta tela não a repete.
+             */}
+            <PersonCombobox
+              picker={PersonPicker.many(store.architects, selected)}
+              onChange={setSelected}
+              label={t("person.label")}
+              className="w-64"
+            />
             <Button
               size="sm"
               variant="secondary"
@@ -148,9 +157,24 @@ function TeamProgression() {
 
       {architects.length === 0 ? (
         <EmptyState
-          title={store.architects.length === 0 ? t("person.none") : t("gap.empty")}
-          hint={
-            store.architects.length === 0 ? t("gap.empty.noArchitects") : t("gap.empty.filterHint")
+          title={semNinguem ? t("person.none") : t("gap.empty")}
+          hint={semNinguem ? t("gap.empty.noArchitects") : t("gap.empty.filterHint")}
+          /*
+           * Dono (2026-09-08, item 3): mais um botão de cadastrar o primeiro
+           * profissional NO CENTRO da tela, e SÓ quando não houver nenhum —
+           * com filtro que não achou ninguém, cadastrar não é o próximo passo.
+           */
+          action={
+            semNinguem && cadastroDePessoa.registration ? (
+              <PageAction className="mt-4" label={t("team.empty.cta")} asChild>
+                <Link
+                  to={cadastroDePessoa.registration.to}
+                  {...(cadastroDePessoa.registration.search
+                    ? { search: cadastroDePessoa.registration.search }
+                    : {})}
+                />
+              </PageAction>
+            ) : undefined
           }
         />
       ) : (

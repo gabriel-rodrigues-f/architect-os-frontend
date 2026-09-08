@@ -5,6 +5,7 @@ import {
   DataViewToolbar,
   MultiSelectFilter,
   OutOfReachScreen,
+  PageAction,
   PageHeader,
   Pagination,
   SingleSelectFilter,
@@ -20,7 +21,6 @@ import { EmptyState } from "@/components/app/DataView";
 import { FilterField } from "@/components/app/FilterField";
 import { PersonCombobox } from "@/components/app/PersonCombobox";
 import { EmptyState as EmptyStateCard } from "@/components/app/ui-bits";
-import { Button } from "@/components/ui/button";
 import { usePendingTeamTransfers } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
@@ -108,9 +108,14 @@ function TeamRoster() {
           title={t("team.empty.title")}
           hint={t("team.empty.hint")}
           action={
-            <Button className="mt-4" asChild>
-              <Link to="/users">{t("team.empty.cta")}</Link>
-            </Button>
+            /*
+             * Dono (2026-09-08, item 1): sem ninguém cadastrado, o botão do
+             * centro é "Cadastrar Profissional" — e é a MESMA ação de página
+             * das outras telas, não um botão escrito à mão aqui.
+             */
+            <PageAction className="mt-4" label={t("team.empty.cta")} asChild>
+              <Link to="/users" search={{ cadastrar: "profissional" }} />
+            </PageAction>
           }
         />
       ) : (

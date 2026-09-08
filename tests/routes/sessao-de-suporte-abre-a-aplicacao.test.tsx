@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * indexava um `Record<UserRole, …>` que não tinha `support`.
  *
  * A prova é a MENOR possível: a casca monta com a sessão do suporte e com a
- * da diretoria, e o menu de quem opera o sistema está lá.
+ * do administrador, e o menu de quem opera o sistema está lá.
  */
 const fetchMock = vi.fn();
 
@@ -70,7 +70,7 @@ describe("a sessão de SUPPORT abre a aplicação (regressão 2026-09-08)", () =
     expect(screen.queryByText("Avaliação de Desempenho")).toBeNull();
   });
 
-  it("com `/auth/me` devolvendo `admin` (diretoria), a casca monta com Administração e Gestão", async () => {
+  it("com `/auth/me` devolvendo `admin` (administrador), a casca monta com Administração e Gestão", async () => {
     renderShellAs(fixtureAdminUser);
     await screen.findByRole("button", { name: "Administração" });
     expect(screen.getByText("conteúdo da tela")).toBeTruthy();

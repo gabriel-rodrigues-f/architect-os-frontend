@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -41,6 +42,7 @@ import type {
 } from "@/lib/gateways/team-transitions.gateway";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
+import { initialSearchParam } from "@/lib/search-params";
 import { usePageHelp } from "@/lib/page-help";
 import { requirePeopleAdministrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -52,7 +54,17 @@ import {
   type TeamStatusFilter,
 } from "@/lib/view-models";
 
+/**
+ * Dono (2026-09-08, item 12): o seletor de time vazio leva ao FORMULÁRIO de
+ * cadastro — "não só à tela". É este parâmetro que a `Registration.TEAM`
+ * escreve no link, e é ele que abre o diálogo assim que a tela monta.
+ */
+const teamsSearchSchema = z.object({
+  cadastrar: z.literal("time").optional(),
+});
+
 export const Route = createFileRoute("/teams")({
+  validateSearch: teamsSearchSchema,
   beforeLoad: requirePeopleAdministrationReach,
   head: () => ({
     meta: [
@@ -130,7 +142,11 @@ function TeamsScreen() {
   const notifySuccess = useSuccessToast();
   const [status, setStatus] = useState<TeamStatusFilter>("active");
   const [chosenTeamId, setChosenTeamId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  // O link do seletor de time vazio chega com `?cadastrar=time`: o diálogo
+  // de cadastro já nasce aberto (dono, 2026-09-08, item 12). A leitura é a
+  // da casa (`initialSearchParam`), a mesma de Avaliações e PDI — ela não
+  // exige o roteador montado, e a tela é montada sem ele em teste.
+  const [creating, setCreating] = useState(() => initialSearchParam("cadastrar") === "time");
   const [renaming, setRenaming] = useState<TeamSummary | null>(null);
   const [deactivating, setDeactivating] = useState<TeamSummary | null>(null);
   const [refusal, setRefusal] = useState<{ team: TeamSummary; activeArchitects: number } | null>(

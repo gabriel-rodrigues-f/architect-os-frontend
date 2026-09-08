@@ -14,7 +14,7 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
  *    ciclos, faixas, times, contas, importação, operação. Sobre uma pessoa
  *    ele só LÊ, em MODO DE SUPORTE, declarando o motivo (`SupportAccess`), e
  *    nunca age nem usa IA;
- *  - a DIRETORIA (ADMIN) opera o sistema como o suporte, lê a organização
+ *  - a ADMINISTRADOR (ADMIN) opera o sistema como o suporte, lê a organização
  *    inteira — times, pessoas, avaliações, PDI, mentoria — sem passe de
  *    suporte, E age sobre qualquer pessoa e qualquer time (dono, 2026-09-08,
  *    regra 6: "o administrador será diretor e C-level, ele pode fazer tudo
@@ -61,7 +61,7 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
 type AccountLike = { id: string; status: string; role: string };
 
 export class UiAuthorizationPolicy {
-  /** LEITURA sobre uma pessoa: ela mesma, quem a lidera por vínculo, a diretoria, ou o suporte (em modo de suporte). */
+  /** LEITURA sobre uma pessoa: ela mesma, quem a lidera por vínculo, o administrador, ou o suporte (em modo de suporte). */
   canReadAbout(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (!architect) return false;
     if (this.isOwn(user, architect)) return true;
@@ -70,7 +70,7 @@ export class UiAuthorizationPolicy {
   }
 
   /**
-   * AÇÃO sobre uma pessoa: quem a lidera por vínculo, ou a diretoria (regra
+   * AÇÃO sobre uma pessoa: quem a lidera por vínculo, ou o administrador (regra
    * 6). O suporte não, e NINGUÉM age sobre si (dono, 2026-09-06):
    * "autoavaliação é um processo de PDI e 1:1 — o líder faz perguntas e
    * anota a opinião do membro". Quem lidera registra a autoavaliação, a
@@ -107,12 +107,12 @@ export class UiAuthorizationPolicy {
     return this.leadsOrDirects(user, architect);
   }
 
-  /** Trilhas de aprendizagem: quem lidera cria; a diretoria também (regra 6); o suporte não. */
+  /** Trilhas de aprendizagem: quem lidera cria; o administrador também (regra 6); o suporte não. */
   createsLearningPath(user: SessionUser): boolean {
     return this.actsForTheOrganization(user) || TeamLeadershipRoles.includes(user.role);
   }
 
-  /** O autor edita a sua; a diretoria edita qualquer uma; trilha sem autor é de quem lidera. */
+  /** O autor edita a sua; o administrador edita qualquer uma; trilha sem autor é de quem lidera. */
   editsLearningPath(
     user: SessionUser,
     path: { createdByUserId?: string | null | undefined },
@@ -131,7 +131,7 @@ export class UiAuthorizationPolicy {
     return this.isLeadership(user);
   }
 
-  /** Liderança por VÍNCULO no time da pessoa, ou a diretoria — nunca sobre si. */
+  /** Liderança por VÍNCULO no time da pessoa, ou o administrador — nunca sobre si. */
   isLeadOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (this.isOwn(user, architect)) return false;
     return this.leadsOrDirects(user, architect);
@@ -155,7 +155,7 @@ export class UiAuthorizationPolicy {
     return this.ownFirst(user, architects, (architect) => this.leadsOrDirects(user, architect));
   }
 
-  /** Quem pode ser mentorado: quem está abaixo na hierarquia — ninguém mentora a si mesmo. A diretoria, qualquer um. */
+  /** Quem pode ser mentorado: quem está abaixo na hierarquia — ninguém mentora a si mesmo. O administrador, qualquer um. */
   mentorableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
     return architects.filter(
       (architect) => !this.isOwn(user, architect) && this.leadsOrDirects(user, architect),
@@ -197,14 +197,14 @@ export class UiAuthorizationPolicy {
 
   /**
    * DECISÃO de carreira — nível, conclusão da avaliação, desativação: o
-   * gerente designado, ou a diretoria (regra 6). O suporte opera o sistema e
+   * gerente designado, ou o administrador (regra 6). O suporte opera o sistema e
    * não decide — o servidor responde 403 (`CAREER_DECISION_RESERVED_TO_MANAGER`).
    */
   decidesCareerOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     return this.isAssignedManagerOf(user, architect);
   }
 
-  /** A FICHA FUNCIONAL e o extrato completo: a própria pessoa, o gerente designado, a diretoria, o suporte em suporte. */
+  /** A FICHA FUNCIONAL e o extrato completo: a própria pessoa, o gerente designado, o administrador, o suporte em suporte. */
   canReadPersonnelFileOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (this.isOwn(user, architect)) return true;
     if (this.readsEveryone(user)) return true;
@@ -216,13 +216,13 @@ export class UiAuthorizationPolicy {
     return UserRoles.operatesTheSystem(user.role);
   }
 
-  /** Só ADMIN: a diretoria lê tudo de todos, sem passe de suporte. */
+  /** Só ADMIN: o administrador lê tudo de todos, sem passe de suporte. */
   readsTheOrganization(user: SessionUser): boolean {
     return UserRoles.readsTheOrganization(user.role);
   }
 
   /**
-   * Só ADMIN: a diretoria AGE sobre qualquer pessoa e qualquer time (dono,
+   * Só ADMIN: o administrador AGE sobre qualquer pessoa e qualquer time (dono,
    * 2026-09-08, regra 6). Espelha `AuthorizationService.actsForTheOrganization`
    * — cada pergunta de ação desta política consulta isto antes do vínculo.
    */
@@ -232,7 +232,7 @@ export class UiAuthorizationPolicy {
 
   /**
    * O SUPORTE lê sobre pessoas só em MODO DE SUPORTE, por ticket
-   * (`SupportAccess`); a diretoria lê sem ticket. A ficha pergunta isto antes
+   * (`SupportAccess`); o administrador lê sem ticket. A ficha pergunta isto antes
    * de pedir o motivo.
    */
   readsPeopleOnlyInSupportMode(user: SessionUser): boolean {
@@ -249,7 +249,7 @@ export class UiAuthorizationPolicy {
     return UserRoles.assignableBy(user.role);
   }
 
-  /** Análise de time (cobertura, prioridades, necessidades): liderança COM vínculo, e a diretoria sobre a organização. */
+  /** Análise de time (cobertura, prioridades, necessidades): liderança COM vínculo, e o administrador sobre a organização. */
   canAnalyzeTeam(user: SessionUser): boolean {
     if (this.readsTheOrganization(user)) return true;
     return this.isLeadership(user) && this.scopeGrantingTeamsOf(user).size > 0;
@@ -294,7 +294,7 @@ export class UiAuthorizationPolicy {
     return user.architectId !== null && user.role !== TeamLeadershipRoles.MANAGER;
   }
 
-  /** O gerente de UM time, por vínculo — ou a diretoria (regra 6): quem decide sobre o destino de uma transferência. */
+  /** O gerente de UM time, por vínculo — ou o administrador (regra 6): quem decide sobre o destino de uma transferência. */
   managesTeam(user: SessionUser, teamId: string): boolean {
     if (this.actsForTheOrganization(user)) return true;
     return (
@@ -311,7 +311,7 @@ export class UiAuthorizationPolicy {
   /**
    * Quem lidera alguém — com vínculo — tem o que FAZER em Avaliações, PDI e
    * Mentoria; quem tem ficha própria tem o que LER ali (dono, 2026-09-06: os
-   * três menus continuam no menu do profissional, em leitura); a diretoria
+   * três menus continuam no menu do profissional, em leitura); o administrador
    * LÊ os três sobre a organização inteira. O suporte sem vínculo, não.
    */
   worksWithPeople(user: SessionUser): boolean {
@@ -322,7 +322,7 @@ export class UiAuthorizationPolicy {
 
   /**
    * Quem agenda o follow-up de uma sessão de mentoria: quem a registrou, ou
-   * a diretoria (regra 6). O suporte não age sobre pessoa.
+   * o administrador (regra 6). O suporte não age sobre pessoa.
    */
   schedulesMentoringFollowUpOf(
     user: SessionUser,
@@ -343,12 +343,12 @@ export class UiAuthorizationPolicy {
     return this.canReadAbout(user, architect);
   }
 
-  /** O Extrato é de quem lê a ficha: a própria pessoa, quem a lidera por vínculo, a diretoria, o suporte em suporte (dono, 2026-09-06). */
+  /** O Extrato é de quem lê a ficha: a própria pessoa, quem a lidera por vínculo, o administrador, o suporte em suporte (dono, 2026-09-06). */
   canOpenStatementOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     return this.canReadAbout(user, architect);
   }
 
-  /** Calibração é rito de gestão: o gerente com vínculo, ou a diretoria (regra 6); o suporte não. */
+  /** Calibração é rito de gestão: o gerente com vínculo, ou o administrador (regra 6); o suporte não. */
   canCalibrate(user: SessionUser): boolean {
     if (this.actsForTheOrganization(user)) return true;
     return (
@@ -357,7 +357,7 @@ export class UiAuthorizationPolicy {
     );
   }
 
-  /** A régua do time é regida por quem lidera o time — e pela diretoria (regra 6). */
+  /** A régua do time é regida por quem lidera o time — e pelo administrador (regra 6). */
   canConfigureRulesOf(user: SessionUser, teamId: string): boolean {
     if (this.actsForTheOrganization(user)) return true;
     return this.scopeGrantingTeamsOf(user).has(teamId);
@@ -398,14 +398,14 @@ export class UiAuthorizationPolicy {
     return this.scopeGrantingTeamsOf(user).has(architect.teamId);
   }
 
-  /** Quem lidera a pessoa por vínculo — ou a diretoria, sobre qualquer pessoa (regra 6). */
+  /** Quem lidera a pessoa por vínculo — ou o administrador, sobre qualquer pessoa (regra 6). */
   private leadsOrDirects(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
     if (!architect) return false;
     if (this.actsForTheOrganization(user)) return true;
     return this.leadsTeamOf(user, architect);
   }
 
-  /** Diretoria e suporte leem sobre qualquer pessoa — a diretoria sem ticket, o suporte em modo de suporte. */
+  /** Administrador e suporte leem sobre qualquer pessoa — o administrador sem ticket, o suporte em modo de suporte. */
   private readsEveryone(user: SessionUser): boolean {
     return this.operatesTheSystem(user) || this.readsTheOrganization(user);
   }
@@ -421,7 +421,7 @@ export class UiAuthorizationPolicy {
     return this.teamsBoundAs(user, [user.role]);
   }
 
-  /** O vínculo ESTRITO (papel E vínculo iguais) — que a diretoria dispensa (regra 6). */
+  /** O vínculo ESTRITO (papel E vínculo iguais) — que o administrador dispensa (regra 6). */
   private hasStrictBondWith(
     user: SessionUser,
     architect: ScopedArchitect | undefined,

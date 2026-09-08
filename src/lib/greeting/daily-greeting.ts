@@ -12,7 +12,7 @@ type GreetingKey =
   | "greeting.admin"
   | "greeting.director";
 
-/** Uma saudação por papel — a de quem mantém o sistema é do suporte (o antigo admin); a diretoria tem a dela. */
+/** Uma saudação por papel — a de quem mantém o sistema é do suporte (o antigo admin); o administrador tem a dela. */
 const GREETING_BY_ROLE: Record<UserRole, GreetingKey> = {
   [UserRoles.ADMIN]: "greeting.director",
   [UserRoles.SUPPORT]: "greeting.admin",

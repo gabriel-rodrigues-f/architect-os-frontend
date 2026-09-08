@@ -1,6 +1,7 @@
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 
+import { EmptySelectionField, useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -15,6 +16,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n } from "@/lib/i18n";
 import type { PersonPicker } from "@/lib/person-selection";
+import { Registration } from "@/lib/registration";
 import { cn } from "@/lib/utils";
 
 /**
@@ -22,9 +24,12 @@ import { cn } from "@/lib/utils";
  * (uma pessoa, várias com "Todo o time", várias com teto) vem do
  * `PersonPicker`; este componente só desenha o que o objeto decide.
  *
- * Com alcance vazio não há lista: o gatilho vira a própria mensagem
- * "Não há pessoas cadastradas." e não abre — não existe "Todo o time" de
- * ninguém. A busca que não acha ninguém diz "Nenhuma pessoa encontrada.".
+ * Com alcance vazio não há lista: o gatilho vira a própria frase do vazio —
+ * não existe "Todo o time" de ninguém. E, desde 2026-09-08 (pedido literal do
+ * dono), ele deixa de ser um campo obscurecido para quem CADASTRA gente: a
+ * frase vira "Nenhum profissional cadastrado — clique para cadastrar" e o
+ * gatilho leva ao cadastro. Quem não cadastra continua lendo só a frase. A
+ * busca que não acha ninguém diz "Nenhuma pessoa encontrada.".
  *
  * Na forma "só eu" (dono, 2026-09-06) não há combobox: o profissional não
  * busca outros membros em parte nenhuma — a tela mostra o nome dele, e só.
@@ -49,6 +54,7 @@ export function PersonCombobox({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const vazio = useSelectionEmptyState(Registration.PROFESSIONAL);
 
   const summaryText = (): string => {
     const summary = picker.summary;
@@ -74,20 +80,13 @@ export function PersonCombobox({
 
   if (picker.isEmpty) {
     return (
-      <FilterTriggerButton
-        id={id}
-        role="combobox"
-        aria-label={label}
-        aria-haspopup="listbox"
-        aria-expanded={false}
-        aria-invalid={invalid}
-        disabled
-        title={summary}
-        className={className}
-      >
-        <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
-        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-      </FilterTriggerButton>
+      <EmptySelectionField
+        id={id ?? "person-combobox"}
+        ariaLabel={label}
+        empty={vazio}
+        triggerClassName={className}
+        icon={ChevronsUpDown}
+      />
     );
   }
 

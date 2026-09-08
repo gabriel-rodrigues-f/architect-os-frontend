@@ -63,10 +63,10 @@ describe("saudação do primeiro acesso do dia", () => {
 
   /**
    * PR 5 (adendo do dono, 2026-09-08, item 2) — a saudação de quem mantém o
-   * sistema em ordem é a do SUPPORT (o antigo admin); a diretoria, que lê a
+   * sistema em ordem é a do SUPPORT (o antigo admin); o administrador, que lê a
    * organização, recebe a dela.
    */
-  it("o suporte recebe a saudação de quem mantém o sistema; a diretoria, a de quem lê a organização", async () => {
+  it("o suporte recebe a saudação de quem mantém o sistema; o administrador, a de quem lê a organização", async () => {
     mockAppFetch(fetchMock, { user: fixtureSupportUser });
     renderWithApp(<DailyGreetingToast />);
     expect((await screen.findByTestId("daily-greeting")).textContent).toContain(

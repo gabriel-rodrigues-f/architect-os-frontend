@@ -3,7 +3,7 @@ import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
 
 /**
  * Sessão de ADMIN — desde o PR 5 (adendo do dono, 2026-09-08, item 2) é a
- * DIRETORIA: opera o sistema como o suporte E lê a organização inteira sem
+ * ADMINISTRADOR: opera o sistema como o suporte E lê a organização inteira sem
  * passe de suporte. Continua sem agir sobre pessoas. Usada nos testes que
  * exercitam telas atrás de `useCurrentUser()`: dá acesso total, sem prender
  * o teste a ser dono de um arquiteto específico.

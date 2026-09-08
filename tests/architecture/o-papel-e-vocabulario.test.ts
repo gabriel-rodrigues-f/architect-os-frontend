@@ -10,7 +10,7 @@ import { TEAM_LEADERSHIP_ROLES, USER_ROLES, UserRoles } from "@/lib/gateways/aut
  * PR 5 (revisão mestre 2026-09-08, §4.2 RBAC-06) — o literal `"admin"` solto
  * em nove arquivos significava "quem opera o sistema" num lugar e "quem lê
  * tudo" noutro. Quando o banco ganhou o quinto papel (`support` é o antigo
- * admin; `admin` virou a diretoria), o frontend quebrou de uma vez: o
+ * admin; `admin` virou o administrador), o frontend quebrou de uma vez: o
  * `/auth/me` chegava com `support` e nenhum ramo o reconhecia.
  *
  * A catraca espelha a do backend (`o-time-e-a-fonte-do-escopo.test.ts`): os

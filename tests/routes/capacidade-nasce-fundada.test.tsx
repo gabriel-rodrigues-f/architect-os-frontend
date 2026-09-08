@@ -19,7 +19,7 @@ import {
  * já me abra um modal para em seguida criar as 3 competencias. se o usuário
  * não inserir as 3 competencias, não deve ser possível criar a capacidade."*
  *
- * A capacidade deixa de nascer vazia: "Nova capacidade" abre UM modal que
+ * A capacidade deixa de nascer vazia: "Cadastrar Capacidade" abre UM modal que
  * coleta o nome e as competências que a definem, e "Criar" chama a operação
  * atômica do backend (`POST /capabilities` com `competencies`). Não sobra
  * caminho de tela para capacidade vazia.
@@ -63,7 +63,7 @@ const postedFoundation = (): Record<string, unknown> => {
 
 const openFoundationDialog = async () => {
   renderWithApp(<MatrixPage />);
-  await userEvent.click(await screen.findByRole("button", { name: "Nova capacidade" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Cadastrar Capacidade" }));
 };
 
 describe("Matriz — a capacidade nasce fundada com as suas competências", () => {
@@ -84,7 +84,7 @@ describe("Matriz — a capacidade nasce fundada com as suas competências", () =
   it("o modal pede o nome e as competências mínimas da política, sem campo de sigla", async () => {
     await openFoundationDialog();
 
-    expect(screen.getByRole("heading", { name: "Nova capacidade" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Cadastrar Capacidade" })).toBeTruthy();
     expect(screen.getByLabelText("Nome")).toBeTruthy();
     expect(screen.queryByLabelText("Sigla")).toBeNull();
     for (const posicao of [1, 2, 3]) {
@@ -130,7 +130,7 @@ describe("Matriz — a capacidade nasce fundada com as suas competências", () =
     expect(postedFoundation()).not.toHaveProperty("short");
 
     await waitFor(() =>
-      expect(screen.queryByRole("heading", { name: "Nova capacidade" })).toBeNull(),
+      expect(screen.queryByRole("heading", { name: "Cadastrar Capacidade" })).toBeNull(),
     );
   });
 

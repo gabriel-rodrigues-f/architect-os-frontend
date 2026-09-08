@@ -160,7 +160,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
     renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
-    expect(screen.queryByRole("button", { name: "Nova trilha" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cadastrar Trilha" })).toBeNull();
   });
 
   it("admin vê o botão de criar trilha nova", async () => {
@@ -168,6 +168,6 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
     renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
-    expect(screen.getByRole("button", { name: "Nova trilha" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cadastrar Trilha" })).toBeTruthy();
   });
 });

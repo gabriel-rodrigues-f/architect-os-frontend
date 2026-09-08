@@ -34,11 +34,11 @@ const contas: SessionUser[] = [
 const rotulos = {
   roleLabel: (role: string) =>
     ({
-      admin: "Diretoria",
+      admin: "Administrador",
       support: "Suporte",
       manager: "Gerente",
       tech_lead: "Tech Lead",
-      member: "Membro",
+      member: "Profissional",
     })[role] ?? role,
   statusLabel: (status: string) => (status === "active" ? "Ativa" : "Desativada"),
   noTeam: "Sem time",

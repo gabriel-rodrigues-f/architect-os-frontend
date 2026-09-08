@@ -24,7 +24,7 @@ describe("UiAuthorizationPolicy", () => {
   const anaInLedTeam = { id: "ana", teamId: "time-plataforma" };
 
   describe("canActFor", () => {
-    it("a diretoria (ADMIN) age por qualquer pessoa, com ou sem time — ela faz tudo (dono, 2026-09-08, regra 6)", () => {
+    it("o administrador (ADMIN) age por qualquer pessoa, com ou sem time — ela faz tudo (dono, 2026-09-08, regra 6)", () => {
       expect(policy.canActFor(fixtureAdminUser, anaAsArchitect)).toBe(true);
       expect(policy.canActFor(fixtureAdminUser, anaInLedTeam)).toBe(true);
       expect(policy.canReadAbout(fixtureAdminUser, anaInLedTeam)).toBe(true);
@@ -39,7 +39,7 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canReadAbout(fixtureSupportUser, anaInLedTeam)).toBe(true);
     });
 
-    it("o limite de todos vale para a diretoria: não age sobre si", () => {
+    it("o limite de todos vale para o administrador: não age sobre si", () => {
       const diretoraComFicha = { ...fixtureAdminUser, architectId: "ana" };
       expect(policy.canActFor(diretoraComFicha, anaInLedTeam)).toBe(false);
       expect(policy.isLeadOf(diretoraComFicha, anaInLedTeam)).toBe(false);
@@ -93,7 +93,7 @@ describe("UiAuthorizationPolicy", () => {
   });
 
   describe("isLeadOf", () => {
-    it("a diretoria lidera qualquer pessoa (regra 6); o suporte, ninguém (D1)", () => {
+    it("o administrador lidera qualquer pessoa (regra 6); o suporte, ninguém (D1)", () => {
       expect(policy.isLeadOf(fixtureAdminUser, anaAsArchitect)).toBe(true);
       expect(policy.isLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
       expect(policy.isLeadOf(fixtureSupportUser, anaAsArchitect)).toBe(false);
@@ -159,7 +159,7 @@ describe("UiAuthorizationPolicy", () => {
   });
 
   describe("isAssignedTechLeadOf", () => {
-    it("a diretoria dispensa o vínculo estrito (regra 6); o suporte não tem bypass — reabertura de PDI é do Tech Lead responsável", () => {
+    it("o administrador dispensa o vínculo estrito (regra 6); o suporte não tem bypass — reabertura de PDI é do Tech Lead responsável", () => {
       expect(policy.isAssignedTechLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
       expect(policy.isAssignedManagerOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
       expect(policy.isAssignedTechLeadOf(fixtureSupportUser, anaInLedTeam)).toBe(false);
@@ -183,7 +183,7 @@ describe("UiAuthorizationPolicy", () => {
    * PR 5 (adendo do dono, 2026-09-08, item 2) — `isAdmin` morreu porque fazia
    * duas perguntas com um nome só. `operatesTheSystem` é o que o antigo admin
    * fazia (contas, times, catálogo, ciclos, configurações) e vale para ADMIN
-   * e SUPPORT; `readsTheOrganization` é só da diretoria.
+   * e SUPPORT; `readsTheOrganization` é só do administrador.
    */
   describe("operatesTheSystem / readsTheOrganization", () => {
     it("ADMIN e SUPPORT operam o sistema; os papéis de time não", () => {
@@ -248,7 +248,7 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.worksWithPeople(fixtureSupportUser)).toBe(false);
     });
 
-    it("os dois administram contas e times e alcançam todos os times; só a diretoria decide carreira", () => {
+    it("os dois administram contas e times e alcançam todos os times; só o administrador decide carreira", () => {
       for (const conta of [fixtureAdminUser, fixtureSupportUser]) {
         expect(policy.canAdministerPeople(conta), conta.role).toBe(true);
         expect(policy.configurableTeamIds(conta), conta.role).toBe("all");
@@ -284,11 +284,11 @@ describe("UiAuthorizationPolicy", () => {
     });
 
     it("SUPPORT não muda o status de uma conta de ADMIN; ADMIN muda a de qualquer outra pessoa", () => {
-      const contaDaDiretoria = { id: "diretor", status: "active", role: "admin" };
+      const contaDoAdministrador = { id: "diretor", status: "active", role: "admin" };
       const contaDoSuporte = { id: "outro-suporte", status: "active", role: "support" };
-      expect(policy.administersAccount(fixtureSupportUser, contaDaDiretoria)).toBe(false);
+      expect(policy.administersAccount(fixtureSupportUser, contaDoAdministrador)).toBe(false);
       expect(policy.administersAccount(fixtureSupportUser, contaDoSuporte)).toBe(true);
-      expect(policy.administersAccount(fixtureAdminUser, contaDaDiretoria)).toBe(true);
+      expect(policy.administersAccount(fixtureAdminUser, contaDoAdministrador)).toBe(true);
       expect(policy.administersAccount(fixtureAdminUser, contaDoSuporte)).toBe(true);
       // O gerente não altera conta de organização nem de gerente.
       expect(policy.administersAccount(fixtureAssignedManagerUser, contaDoSuporte)).toBe(false);
@@ -352,7 +352,7 @@ describe("canConfigureRulesOf — o dono da régua do time", () => {
     expect(policy.canConfigureRulesOf(gerente, OUTRO_TIME)).toBe(true);
   });
 
-  it("CONCEDE para a diretoria em qualquer time (regra 6); NEGA para o suporte, que só lê", () => {
+  it("CONCEDE para o administrador em qualquer time (regra 6); NEGA para o suporte, que só lê", () => {
     expect(policy.canConfigureRulesOf(fixtureAdminUser, TIME)).toBe(true);
     expect(policy.canConfigureRulesOf(fixtureAdminUser, OUTRO_TIME)).toBe(true);
     expect(policy.canConfigureRulesOf(fixtureSupportUser, TIME)).toBe(false);
@@ -507,7 +507,7 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
     expect(policy.isAssignedTechLeadOf(doisChapeus, anaNoTime)).toBe(false);
   });
 
-  it("gerente, tech lead, suporte e diretoria são liderança para o texto de ajuda e o catálogo", () => {
+  it("gerente, tech lead, suporte e administrador são liderança para o texto de ajuda e o catálogo", () => {
     const as = (role: UserRole): SessionUser => ({ ...fixtureMemberUser, role });
     expect(policy.isLeadership(as("manager"))).toBe(true);
     expect(policy.isLeadership(as("tech_lead"))).toBe(true);

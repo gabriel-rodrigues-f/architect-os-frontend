@@ -80,7 +80,7 @@ describe("/users nega DADO a quem não administra pessoas — a tela é a últim
   it("quem não é liderança não recebe a ação de cadastrar", async () => {
     renderAs(fixtureMemberUser);
     await screen.findByText("Cadastrar pessoas é do administrador e do gerente.");
-    expect(screen.queryByRole("button", { name: "Cadastrar pessoa" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cadastrar Profissional" })).toBeNull();
   });
 
   /**
@@ -97,7 +97,7 @@ describe("/users nega DADO a quem não administra pessoas — a tela é a últim
     expect(
       await screen.findByText("Cadastrar pessoas é do administrador e do gerente."),
     ).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Cadastrar pessoa" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cadastrar Profissional" })).toBeNull();
     expect(screen.queryByText("Ana Martins")).toBeNull();
     expect(pediuAsContas()).toBe(false);
   });
@@ -106,14 +106,14 @@ describe("/users nega DADO a quem não administra pessoas — a tela é a últim
   it("gerente com vínculo alcança o diretório e recebe a ação de cadastrar", async () => {
     renderAs(fixtureAssignedManagerUser);
     expect(await screen.findByText("Ana Martins")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Cadastrar pessoa" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cadastrar Profissional" })).toBeTruthy();
     expect(pediuAsContas()).toBe(true);
   });
 
   it("admin alcança o diretório, recebe a ação de cadastrar e as contas chegam à tela", async () => {
     renderAs(fixtureAdminUser);
     expect(await screen.findByText("Ana Martins")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Cadastrar pessoa" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cadastrar Profissional" })).toBeTruthy();
     expect(pediuAsContas()).toBe(true);
   });
 });
