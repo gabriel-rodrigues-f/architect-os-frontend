@@ -13,6 +13,7 @@ import {
   StatusBadge,
 } from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
+import { TruncatedText } from "@/components/app/TruncatedText";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { type Professional, type TeamTransferRequestView } from "@/lib/domain";
@@ -541,9 +542,7 @@ export function TeamRosterView({
               <span className="block truncate text-xs text-muted-foreground">
                 {position.labelOf(a)}
               </span>
-              <p className="truncate text-xs text-muted-foreground" title={a.email}>
-                {a.email}
-              </p>
+              <TruncatedText text={a.email} className="block text-xs text-muted-foreground" />
               {pendingTransferBadge(a) && <div className="mt-1.5">{pendingTransferBadge(a)}</div>}
             </div>
             {decidesCareerOf(a) && (
@@ -587,9 +586,7 @@ export function TeamRosterView({
                 key={g.item.competencyId}
                 className="flex items-center justify-between gap-2 text-sm"
               >
-                <span className="min-w-0 flex-1 truncate" title={g.competency?.name}>
-                  {g.competency?.name}
-                </span>
+                <TruncatedText text={g.competency?.name ?? ""} className="flex-1" />
                 <GapBadge gap={g.gap} />
               </div>
             ))}
@@ -654,9 +651,7 @@ export function TeamRosterView({
                   >
                     {a.name}
                   </Link>
-                  <p className="truncate text-xs text-muted-foreground" title={a.email}>
-                    {a.email}
-                  </p>
+                  <TruncatedText text={a.email} className="block text-xs text-muted-foreground" />
                   {pendingTransferBadge(a) && <div className="mt-1">{pendingTransferBadge(a)}</div>}
                 </td>
                 <td
@@ -667,9 +662,7 @@ export function TeamRosterView({
                 </td>
                 {isAdmin && (
                   <td className="max-w-[160px] px-4 py-3 text-muted-foreground">
-                    <span className="block truncate" title={teamNameOf(a.teamId)}>
-                      {teamNameOf(a.teamId)}
-                    </span>
+                    <TruncatedText text={teamNameOf(a.teamId)} className="block" />
                   </td>
                 )}
                 <td className="px-4 py-3 text-center">

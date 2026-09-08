@@ -10,6 +10,7 @@ import { QuerySection } from "@/components/app/QuerySection";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type {
   Professional,
   Assessment,
@@ -718,6 +719,83 @@ function LevelSelect({
   );
 }
 
+/**
+ * O campo da nota do líder — e, à direita dele, o aviso de divergência.
+ *
+ * Dono (2026-09-08, item 4): *"o triângulo não pode mudar a largura do
+ * campo"*. Antes o seletor era `w-full` e dividia a célula com o ícone: a
+ * linha que divergia ficava com o campo mais estreito do que a vizinha, e a
+ * coluna balançava conforme o dado. Agora o campo tem largura FIXA (menor do
+ * que a de antes) e o ícone mora num espaço próprio, sempre reservado — ele
+ * entra e sai sem empurrar nada.
+ *
+ * Duas telas usavam a mesma composição à mão (a tabela e o bloco empilhado
+ * de tela estreita): dois lugares, um componente.
+ */
+function LeaderScoreField({
+  item,
+  competencyName,
+  canEdit,
+  onChange,
+}: {
+  item: AssessmentItem;
+  competencyName: string;
+  canEdit: boolean;
+  onChange: (level: Level) => void;
+}) {
+  const { t } = useI18n();
+  const diverges = item.self !== null && item.leader !== null && item.self !== item.leader;
+  return (
+    <div className="flex items-center gap-1">
+      <div data-leader-score className="w-16 shrink-0">
+        {canEdit ? (
+          <LevelSelect
+            value={item.leader}
+            onChange={onChange}
+            ariaLabel={t("asmt.select.leader", { competency: competencyName })}
+          />
+        ) : (
+          <LevelBadge level={item.leader ?? undefined} />
+        )}
+      </div>
+      <span data-divergence-slot className="flex size-4 shrink-0 items-center justify-center">
+        {diverges && <DivergenceHint />}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * O triângulo que diz que a autoavaliação e a nota do líder não coincidem —
+ * com a EXPLICAÇÃO do que isso significa. [F-02]: `title=` nativo não abre no
+ * toque nem por teclado; o gatilho é um botão focalizável e a cópia
+ * só-leitor deixa o texto ao alcance de quem não vê o balão.
+ */
+function DivergenceHint() {
+  const { t } = useI18n();
+  return (
+    <>
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label={t("asmt.divergence")}
+              className="flex size-4 items-center justify-center rounded-full text-[var(--gap-high-fg)] transition-fast focus-visible:focus-ring"
+            >
+              <AlertTriangle className="size-3.5" aria-hidden="true" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-64 text-center">
+            {t("asmt.divergence.hint")}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <span className="sr-only">{t("asmt.divergence.hint")}</span>
+    </>
+  );
+}
+
 function AssessmentDistance({ item }: { item: AssessmentItem }) {
   const { t } = useI18n();
   if (item.final === null) {
@@ -844,9 +922,6 @@ export function CapabilityAssessmentCard({
                 const item = assessment.items.find((i) => i.competencyId === c.id);
                 if (!item) return null;
 
-                const diverges =
-                  item.self !== null && item.leader !== null && item.self !== item.leader;
-
                 const acceptedEvidence = store.evidences.filter(
                   (e) =>
                     e.professionalId === professionalId &&
@@ -883,25 +958,12 @@ export function CapabilityAssessmentCard({
                       {seesAssessmentNumbers && (
                         <>
                           <td className="px-1 py-2">
-                            <div className="flex items-center gap-1">
-                              {canEditLeaderFinal ? (
-                                <LevelSelect
-                                  value={item.leader}
-                                  onChange={(v) =>
-                                    viewModel.updateLeaderScore(assessment.id, c.id, v)
-                                  }
-                                  ariaLabel={t("asmt.select.leader", { competency: c.name })}
-                                />
-                              ) : (
-                                <LevelBadge level={item.leader ?? undefined} />
-                              )}
-                              {diverges && (
-                                <AlertTriangle
-                                  className="h-3.5 w-3.5 shrink-0 text-[var(--gap-high-fg)]"
-                                  aria-label={t("asmt.divergence")}
-                                />
-                              )}
-                            </div>
+                            <LeaderScoreField
+                              item={item}
+                              competencyName={c.name}
+                              canEdit={canEditLeaderFinal}
+                              onChange={(v) => viewModel.updateLeaderScore(assessment.id, c.id, v)}
+                            />
                           </td>
                           <td className="px-1 py-2 text-center">
                             <LevelBadge level={item.target} />
@@ -1009,8 +1071,6 @@ function CompetencyStackedCard({
   const user = useCurrentUser();
   const viewModel = useAssessmentViewModel();
 
-  const diverges = item.self !== null && item.leader !== null && item.self !== item.leader;
-
   const acceptedEvidence = store.evidences.filter(
     (e) =>
       e.professionalId === professionalId &&
@@ -1059,22 +1119,13 @@ function CompetencyStackedCard({
               <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
                 {t("asmt.col.techLead")}
               </p>
-              <div className="mt-1 flex items-center gap-1">
-                {canEditLeaderFinal ? (
-                  <LevelSelect
-                    value={item.leader}
-                    onChange={(v) => viewModel.updateLeaderScore(assessmentId, competency.id, v)}
-                    ariaLabel={t("asmt.select.leader", { competency: competency.name })}
-                  />
-                ) : (
-                  <LevelBadge level={item.leader ?? undefined} />
-                )}
-                {diverges && (
-                  <AlertTriangle
-                    className="h-3.5 w-3.5 shrink-0 text-[var(--gap-high-fg)]"
-                    aria-label={t("asmt.divergence")}
-                  />
-                )}
+              <div className="mt-1">
+                <LeaderScoreField
+                  item={item}
+                  competencyName={competency.name}
+                  canEdit={canEditLeaderFinal}
+                  onChange={(v) => viewModel.updateLeaderScore(assessmentId, competency.id, v)}
+                />
               </div>
             </div>
             <div>

@@ -88,7 +88,9 @@ describe("Avaliações — evidência aceita aparece como contexto", () => {
     const linha = (await screen.findByText("Serverless")).closest("tr")!;
     expect(within(linha).queryByLabelText(/evidência aceita/i)).toBeNull();
 
-    await userEvent.click(within(linha).getByRole("button"));
+    // A linha tem mais de um botão desde que a divergência ganhou explicação
+    // (lote do dono de 2026-09-08, item 4): o alvo aqui é o de comentários.
+    await userEvent.click(within(linha).getByRole("button", { name: /Serverless$/ }));
     expect(screen.queryByText("Evidências aceitas")).toBeNull();
   });
 });

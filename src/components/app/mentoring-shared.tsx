@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 
 import { PageAction } from "@/components/app/PageAction";
 import { PersonCombobox } from "@/components/app/PersonCombobox";
+import { TruncatedText } from "@/components/app/TruncatedText";
 import { FieldLabel, Initials, SectionHeading } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -410,27 +410,6 @@ function useTeamRuleCompetencies(mentee: Professional | undefined): Competency[]
   return active.filter((c) => ids.has(c.id));
 }
 
-/**
- * O nome da competência por inteiro no ponteiro E no teclado (dono,
- * 2026-09-08, item 6): a lista corta o nome longo para não estourar a
- * largura do diálogo, e o `Tooltip` da casa devolve o texto completo. O
- * gatilho é focalizável de propósito — `title=` nativo não abre com Tab.
- */
-function CompetencyName({ name }: { name: string }) {
-  return (
-    <TooltipProvider delayDuration={150}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span tabIndex={0} className="min-w-0 flex-1 truncate">
-            {name}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="top">{name}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
 export function NewMentoringSessionDialog({
   menteeOptions,
   onRegistered,
@@ -567,7 +546,7 @@ export function NewMentoringSessionDialog({
                     checked={sessionForm.competencyIds.includes(c.id)}
                     onChange={() => sessionForm.toggleCompetency(c.id)}
                   />
-                  <CompetencyName name={c.name} />
+                  <TruncatedText text={c.name} className="flex-1" />
                 </label>
               ))}
               {discussedList.length === 0 && (

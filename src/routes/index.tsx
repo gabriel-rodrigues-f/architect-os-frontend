@@ -534,9 +534,16 @@ function LeadHome() {
     <>
       {header}
 
+      {/*
+       * Dono (2026-09-08, item 8): o "bloco vazio com moldura" à direita era
+       * o cartão parando na altura do próprio conteúdo dentro de uma célula
+       * de grade já esticada. `h-full` vai no CARTÃO (e no bloco de revelação
+       * que o embrulha), nunca no conteúdo.
+       */}
       <div className="grid gap-6 xl:grid-cols-2">
-        <RevealBlock order={0}>
+        <RevealBlock order={0} className="h-full">
           <KeyFigureCard
+            className="h-full"
             label={t("dash.cycleAssessment.title")}
             value={KeyFigureFormatter.ratio(coverage.completed, people.length)}
             format="percent"
@@ -583,8 +590,9 @@ function LeadHome() {
           </KeyFigureCard>
         </RevealBlock>
 
-        <RevealBlock order={1}>
+        <RevealBlock order={1} className="h-full">
           <KeyFigureCard
+            className="h-full"
             label={t("dash.severity.title")}
             value={criticalGaps}
             tone={StatTones.bySeverity(criticalGaps)}
@@ -608,8 +616,9 @@ function LeadHome() {
           </KeyFigureCard>
         </RevealBlock>
 
-        <RevealBlock order={2}>
+        <RevealBlock order={2} className="h-full">
           <KeyFigureCard
+            className="h-full"
             label={t("dash.plans.title")}
             value={approvedPlans.length}
             caption={t("dash.plans.caption", { n: approvedPlans.length, total: people.length })}
@@ -632,12 +641,14 @@ function LeadHome() {
           </KeyFigureCard>
         </RevealBlock>
 
-        <RevealBlock order={3}>
+        <RevealBlock order={3} className="h-full">
           <KeyFigureCard
+            className="h-full"
             label={t("dash.lead.title")}
             value={queues.totalPending}
             tone={StatTones.byPending(queues.totalPending)}
             caption={t("dash.lead.caption", { n: people.length })}
+            help={<DashboardCardHelp card="leadActions" />}
           >
             {queues.totalPending === 0 ? (
               <p className="text-sm text-muted-foreground">{t("dash.lead.allClear.body")}</p>

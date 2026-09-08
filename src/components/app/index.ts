@@ -49,6 +49,7 @@ export * from "./SortableHeader";
 export * from "./TeamChoiceField";
 export * from "./TeamTransferRequests";
 export * from "./TreatGapInPlanAction";
+export * from "./TruncatedText";
 export * from "./TruncationNotice";
 export * from "./ViewToggle";
 export * from "./assessments-shared";

@@ -23,8 +23,14 @@ import { emptyAuthUsersRoute, mockAppFetch, renderWithApp } from "../helpers/ren
 
 /**
  * R2-VIS-02 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — texto com `truncate`
- * escondia a parte cortada sem nenhum jeito de ler o valor inteiro (nem
- * hover). Regra: todo `truncate` carrega `title` com o texto completo.
+ * escondia a parte cortada sem nenhum jeito de ler o valor inteiro. A regra
+ * de então era "todo `truncate` carrega `title`".
+ *
+ * A revisão mestre de 2026-09-08 ([F-02]) trocou o COMO sem mexer no QUÊ: o
+ * `title` do navegador não abre no toque nem por teclado, então o texto
+ * inteiro passa a vir do `TruncatedText` — gatilho focalizável e balão da
+ * casa. O que este arquivo cobra continua sendo o mesmo: o que a tela corta,
+ * a tela devolve.
  */
 const fetchMock = vi.fn();
 
@@ -32,7 +38,7 @@ const fetchMock = vi.fn();
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
-describe("Time — truncate sempre carrega title", () => {
+describe("Time — o que a tela corta, a tela devolve", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -44,22 +50,25 @@ describe("Time — truncate sempre carrega title", () => {
     vi.unstubAllGlobals();
   });
 
-  it("cartão de profissional: e-mail truncado tem title com o valor completo", async () => {
+  it("cartão de profissional: o e-mail cortado devolve o valor inteiro, alcançável por teclado", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
     const email = screen.getByText("ana@company.com");
-    expect(email.getAttribute("title")).toBe("ana@company.com");
+    expect(email.className).toContain("truncate");
+    expect(email.getAttribute("tabindex")).toBe("0");
   });
 
-  it("tabela: nome, e-mail e especialização truncados têm title", async () => {
+  it("tabela: o nome e o e-mail cortados devolvem o valor inteiro", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
     await userEvent.click(screen.getByRole("button", { name: "Tabela" }));
 
+    // O nome é um LINK: o texto inteiro já está no nome acessível do próprio
+    // link, e o `title` fica como redundância para quem enxerga o corte.
     const nameLinks = await screen.findAllByText("Ana Martins");
     expect(nameLinks.some((el) => el.getAttribute("title") === "Ana Martins")).toBe(true);
 
     const emailCells = screen.getAllByText("ana@company.com");
-    expect(emailCells.some((el) => el.getAttribute("title") === "ana@company.com")).toBe(true);
+    expect(emailCells.some((el) => el.getAttribute("tabindex") === "0")).toBe(true);
   });
 });

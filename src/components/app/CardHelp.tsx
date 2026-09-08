@@ -42,6 +42,7 @@ export const DASHBOARD_CARDS = [
   "leadCalibration",
   "leadEvidence",
   "leadApproval",
+  "leadActions",
 ] as const;
 export type DashboardCard = (typeof DASHBOARD_CARDS)[number];
 

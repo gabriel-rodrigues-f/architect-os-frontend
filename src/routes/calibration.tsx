@@ -157,15 +157,25 @@ function CalibrationBoard() {
             {(data) => (
               <>
                 <DataOriginCallout origin={data.dataOrigin} className="mb-6" />
+                {/*
+                 * O aviso é do DADO, não do vazio. Ele morava dentro do ramo
+                 * "nenhum avaliador" e por isso sumia justamente no caso que
+                 * mais precisa dele: com dado misto, as notas órfãs saem dos
+                 * cartões mas continuam contando na "Média geral" — a média
+                 * dos avaliadores deixa de fechar com a média geral e nada na
+                 * tela explica a diferença. Agora aparece sempre que houver
+                 * nota sem autor.
+                 */}
+                {(data.unattributed?.itemsCount ?? 0) > 0 && (
+                  <Callout tone="warning" className="mb-6">
+                    <strong>{t("calibration.unattributed.title")}</strong>{" "}
+                    {t("calibration.unattributed.hint", {
+                      n: data.unattributed?.itemsCount ?? 0,
+                    })}
+                  </Callout>
+                )}
                 {data.evaluators.length === 0 ? (
-                  (data.unattributed?.itemsCount ?? 0) > 0 ? (
-                    <Callout tone="warning">
-                      <strong>{t("calibration.unattributed.title")}</strong>{" "}
-                      {t("calibration.unattributed.hint", {
-                        n: data.unattributed?.itemsCount ?? 0,
-                      })}
-                    </Callout>
-                  ) : (
+                  (data.unattributed?.itemsCount ?? 0) > 0 ? null : (
                     <EmptyState title={t("calibration.empty")} hint={t("calibration.emptyHint")} />
                   )
                 ) : (

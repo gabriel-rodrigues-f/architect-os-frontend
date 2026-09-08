@@ -287,3 +287,74 @@ describe("/calibration não CONSULTA para quem não calibra — o `enabled` é p
     expect(calibrationSpy).toHaveBeenCalledWith("2026-h2");
   });
 });
+
+/**
+ * Item 3 do lote de 2026-09-08: o aviso de *"Notas sem autor registrado"*
+ * morava DENTRO do ramo `evaluators.length === 0` — só aparecia quando não
+ * havia avaliador nenhum. Com dado MISTO (parte das notas com autor, parte
+ * sem) ele sumia da tela, e as notas órfãs continuavam contando na "Média
+ * geral": os números da Calibração deixavam de fechar entre si — a média dos
+ * cartões não bate com a média geral — sem ninguém avisar.
+ *
+ * Nasceu VERMELHO: com os três avaliadores e 7 notas órfãs, a tela de hoje
+ * não mostra o aviso.
+ */
+describe("o aviso de notas sem autor não depende de a tela estar vazia", () => {
+  const comOrfas = (evaluators: typeof calibracaoDoServidor.evaluators) => ({
+    ...calibracaoDoServidor,
+    evaluators,
+    unattributed: {
+      distribution: distribuicaoDe([1, 2, 2, 1, 1]),
+      average: 3,
+      itemsCount: 7,
+    },
+  });
+
+  const renderComResposta = (resposta: unknown) => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      state: scopedFixtureStateFor(fixtureAssignedManagerUser, fixtureState, ["time-plataforma"]),
+      routes: [
+        (href: string) =>
+          href.includes(apiPath("/calibration")) ? jsonResponse(resposta) : undefined,
+      ],
+    });
+    renderWithApp(<CalibrationPage />);
+  };
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("dado misto: o aviso aparece JUNTO com a distribuição dos avaliadores", async () => {
+    renderComResposta(comOrfas(calibracaoDoServidor.evaluators));
+
+    expect(await screen.findByText("Notas sem autor registrado")).toBeTruthy();
+    expect(screen.getByText("Marina Lopes")).toBeTruthy();
+    expect(screen.getByText("Média geral")).toBeTruthy();
+  });
+
+  it("o aviso diz QUANTAS notas estão fora da comparação", async () => {
+    renderComResposta(comOrfas(calibracaoDoServidor.evaluators));
+
+    const aviso = (await screen.findByText("Notas sem autor registrado")).closest("div");
+    expect(aviso?.textContent).toContain("7");
+  });
+
+  it("sem avaliador nenhum, o aviso continua sendo o que a tela mostra", async () => {
+    renderComResposta(comOrfas([]));
+
+    expect(await screen.findByText("Notas sem autor registrado")).toBeTruthy();
+    expect(screen.queryByText("Nenhuma avaliação com nota neste ciclo")).toBeNull();
+  });
+
+  it("sem nota órfã nenhuma, ninguém é avisado à toa", async () => {
+    renderComResposta(calibracaoDoServidor);
+
+    await screen.findByText("Marina Lopes");
+    expect(screen.queryByText("Notas sem autor registrado")).toBeNull();
+  });
+});

@@ -13,10 +13,10 @@ import {
   SectionHeading,
   SortableHeader,
   StatTones,
+  TruncatedText,
   useCardsAndTableViews,
   ViewToggle,
 } from "@/components/app";
-import { Badge } from "@/components/ui/badge";
 import type { Professional, Capability } from "@/lib/domain";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { CoverageTableOrder } from "@/lib/view-models";
@@ -30,6 +30,7 @@ import { requireTeamAnalysisReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useScoringBands, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/capability-map")({
   head: () => ({
@@ -178,11 +179,8 @@ function TeamCapabilityCoverage() {
                   <tbody>
                     {withRisk.map((area) => (
                       <tr key={area.cat.id} className="border-b border-border/60 last:border-0">
-                        <td
-                          className="max-w-[220px] truncate px-4 py-3 font-medium"
-                          title={area.cat.name}
-                        >
-                          {area.cat.name}
+                        <td className="px-4 py-3 font-medium">
+                          <TruncatedText text={area.cat.name} className="block max-w-[220px]" />
                         </td>
                         {area.bands.map((band) => (
                           <td key={band.key} className="px-4 py-3 text-center tabular-nums">
@@ -196,14 +194,14 @@ function TeamCapabilityCoverage() {
                             <UnassessedDisclosure
                               capability={area.cat}
                               people={area.unassessed}
-                              className="font-medium underline decoration-dotted underline-offset-2 hover:text-foreground"
+                              className="font-medium text-foreground transition-fast hover:text-primary focus-visible:focus-ring"
                             >
                               {area.notAssessed}
                             </UnassessedDisclosure>
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <RiskBadge risk={area.risk} referenceCount={area.references.length} />
+                          <RiskText risk={area.risk} referenceCount={area.references.length} />
                         </td>
                       </tr>
                     ))}
@@ -237,7 +235,7 @@ function TeamCapabilityCoverage() {
                         <UnassessedDisclosure
                           capability={area.cat}
                           people={area.unassessed}
-                          className="text-left underline decoration-dotted underline-offset-2 hover:text-foreground"
+                          className="text-left transition-fast hover:text-foreground focus-visible:focus-ring"
                         >
                           {t("cap.notAssessed", { n: area.notAssessed })}
                         </UnassessedDisclosure>
@@ -254,18 +252,30 @@ function TeamCapabilityCoverage() {
   );
 }
 
-function RiskBadge({ risk, referenceCount }: { risk: RiskState; referenceCount: number }) {
+/**
+ * Dono (2026-09-08, item 3 da fila): *"tirar o aspecto de botão da coluna
+ * Risco — parece clicável e não é"*. Era um `Badge`, com moldura, fundo e
+ * peso de botão numa coluna que ninguém aciona. Vira TEXTO: só o tom
+ * distingue os quatro estados, e a frase inteira — que morava num `title=`
+ * nativo, invisível ao toque e ao teclado ([F-02]) — fica visível para quem
+ * usa leitor de tela.
+ */
+const RISK_TONE: Record<RiskState, string> = {
+  concentrationRisk: "text-destructive",
+  noReference: "text-muted-foreground",
+  insufficientData: "text-muted-foreground",
+  distributedCoverage: "text-foreground",
+};
+
+function RiskText({ risk, referenceCount }: { risk: RiskState; referenceCount: number }) {
   const { t } = useI18n();
-  const variant =
-    risk === "concentrationRisk"
-      ? "destructive"
-      : risk === "noReference" || risk === "insufficientData"
-        ? "secondary"
-        : "outline";
   return (
-    <Badge variant={variant} title={t(`cap.risk.${risk}`, { n: referenceCount })}>
-      {t(`cap.risk.badge.${risk}`)}
-    </Badge>
+    <>
+      <span data-risk={risk} className={cn("font-medium", RISK_TONE[risk])}>
+        {t(`cap.risk.badge.${risk}`)}
+      </span>
+      <span className="sr-only">{t(`cap.risk.${risk}`, { n: referenceCount })}</span>
+    </>
   );
 }
 

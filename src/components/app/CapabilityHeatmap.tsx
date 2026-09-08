@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
 import { LevelHeatCell, LevelScaleKey } from "@/components/app/level-encoding";
+import { TruncatedText } from "@/components/app/TruncatedText";
 import { useHorizontalOverflow } from "@/hooks";
 import type { Capability } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
@@ -98,10 +99,11 @@ export function CapabilityHeatmap({
                   <th
                     key={c.id}
                     scope="col"
-                    className="sticky top-0 z-10 max-w-[64px] truncate bg-card text-center text-meta text-muted-foreground"
-                    title={c.name}
+                    className="sticky top-0 z-10 bg-card text-center text-meta text-muted-foreground"
                   >
-                    {sel.capabilityShortLabel(c)}
+                    <TruncatedText text={c.name} className="block max-w-[64px]">
+                      {sel.capabilityShortLabel(c)}
+                    </TruncatedText>
                   </th>
                 ))}
               </tr>
