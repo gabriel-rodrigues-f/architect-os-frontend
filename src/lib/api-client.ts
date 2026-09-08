@@ -41,20 +41,6 @@ export const NETWORK_UNAVAILABLE_CODE = "NETWORK_UNAVAILABLE";
 export type ApiFailureInterceptor = (error: ApiError) => void;
 
 /**
- * O RESULTADO de uma requisição, como o cliente o viu: método, recurso e
- * status (0 quando o `fetch` rejeitou). É o que a rede de sinapses recebe para
- * decidir o tom do pulso (`SynapseOutcomeRule`) — o cliente é o funil de TODAS
- * as escritas, então é o único ponto de anúncio.
- */
-export interface ApiOutcome {
-  readonly method: string;
-  readonly resource: string;
-  readonly status: number;
-}
-
-export type ApiOutcomeInterceptor = (outcome: ApiOutcome) => void;
-
-/**
  * Os cabeçalhos que UMA requisição leva além dos seus — decididos pelo
  * recurso, requisição a requisição ([FA-07]: o passe de suporte só vai nas
  * requisições sobre a pessoa do passe, nunca em toda requisição da aba).
@@ -118,7 +104,6 @@ export class ApiClient {
     private readonly baseUrl: string = API_URL,
     private readonly interceptFailure: ApiFailureInterceptor = () => {},
     private readonly headersFor: HeaderProvider = () => ({}),
-    private readonly observeOutcome: ApiOutcomeInterceptor = () => {},
   ) {}
 
   urlOf(resource: string): string {
@@ -130,14 +115,16 @@ export class ApiClient {
     return error;
   }
 
+  /**
+   * O CLIENTE NÃO ANUNCIA NADA À REDE (dono, 2026-09-08: *"mantenha a sinapse
+   * dentro da aplicação pós usuário logado, mas remova a piscada, tanto azul
+   * quanto vermelha"*). Ele faz a requisição e lê a falha; a rede do fundo
+   * segue viva pelo movimento próprio dos nós, sem pulso por resultado.
+   */
   private async send(resource: string, init: RequestInit): Promise<Response> {
-    const method = (init.method ?? "GET").toUpperCase();
     try {
-      const response = await fetch(this.urlOf(resource), init);
-      this.observeOutcome({ method, resource, status: response.status });
-      return response;
+      return await fetch(this.urlOf(resource), init);
     } catch (cause) {
-      this.observeOutcome({ method, resource, status: NETWORK_UNAVAILABLE_STATUS });
       throw this.intercepted(networkUnavailableError(cause));
     }
   }

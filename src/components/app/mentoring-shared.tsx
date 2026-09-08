@@ -113,7 +113,7 @@ function useMentoringSessionForm(
   const durationInvalid =
     form.durationMin.trim().length > 0 && (!Number.isInteger(durationValue) || durationValue <= 0);
 
-  const { submitting: saving, run, rejectLocally } = useToastSubmit();
+  const { submitting: saving, run } = useToastSubmit();
   const notifySuccess = useSuccessToast();
 
   const submit = async () => {
@@ -125,8 +125,6 @@ function useMentoringSessionForm(
       );
       setProficiencyMissingLevel(proficiencyIncomplete);
       setShowToast(true);
-      // Mensagem vermelha sem ir ao serviço: a rede fica sabendo por aqui (inventário 2026-09-08, §5.8).
-      rejectLocally();
       return;
     }
 

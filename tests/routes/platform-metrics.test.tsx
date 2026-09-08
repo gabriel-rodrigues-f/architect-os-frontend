@@ -163,11 +163,11 @@ describe("a aba vai direto à porta — nenhuma resposta cross-origin no caminho
     expect(bateuNaPorta()).toBe(false);
   });
 
-  it("a transição pede à rede um pulso azul — e nenhum com movimento reduzido", async () => {
+  it("a transição NÃO pisca a rede — nem com movimento, nem sem ele", async () => {
     abaDeMentira();
     abrirTela(fixtureAdminUser);
     await screen.findByText("Métricas abertas em outra aba");
-    expect(defaultContainer.synapseSignals.drainPulses()).toEqual(["primary"]);
+    expect(defaultContainer.synapseSignals.drainPulses()).toEqual([]);
 
     cleanup();
     defaultContainer.platformMetricsTab.release();

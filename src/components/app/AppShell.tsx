@@ -60,9 +60,12 @@ const clampWidth = SidebarPreferences.clampWidth;
  * `StoreProvider`, pela mesma razão do `AppToaster`: não desmonta quando o
  * miolo carrega. É a composição INTERIOR — discreta, em toda a viewport e
  * ATRÁS do conteúdo (`z-0` contra o `z-10` da coluna e do miolo): ela aparece
- * nos vãos, e os cartões, opacos, a escondem onde há leitura. Quem fala
- * com ela é o `ApiClient`, pelos `synapseSignals` do container: escrita
- * aceita → azul; recusa com mensagem vermelha → vermelho.
+ * nos vãos, e os cartões, opacos, a escondem onde há leitura.
+ *
+ * Ela fica VIVA, e não PISCA (dono, 2026-09-08: *"vamos manter a sinapse
+ * dentro da aplicação pós usuário logado, mas remova a piscada, tanto azul
+ * quanto vermelha"*): o movimento é o próprio dos nós; nenhuma escrita,
+ * recusa ou transição de dentro da aplicação pede pulso.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });

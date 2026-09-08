@@ -3,7 +3,6 @@ import { toast } from "sonner";
 
 import { ApiError } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth";
-import { useSynapseSignals } from "@/lib/dependencies";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { successMessageOf } from "@/lib/success-message";
 
@@ -18,19 +17,13 @@ function submitErrorMessage(error: unknown, fallback: SubmitErrorFallback): stri
 
 /**
  * A RECUSA LOCAL — campos obrigatórios vazios, senha que não confere, duração
- * inválida — é mensagem vermelha sem ir ao serviço, então o anúncio à rede não
- * pode vir do `ApiClient` (inventário 2026-09-08, §1.3-3). Vem daqui: a tela
- * que já centraliza o envio chama `rejectLocally()` no lugar de `run()`.
+ * inválida — é mensagem vermelha e PARA POR AÍ (dono, 2026-09-08: *"remova a
+ * piscada, tanto azul quanto vermelha"* dentro da aplicação logada). Não há
+ * mais `rejectLocally()`: a tela mostra a mensagem, a rede do fundo não pisca.
  */
-function useLocalRefusal(): () => void {
-  const signals = useSynapseSignals();
-  return useCallback(() => signals?.pulseWith("danger"), [signals]);
-}
-
 export function useAsyncSubmit(fallback: SubmitErrorFallback) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const rejectLocally = useLocalRefusal();
 
   const run = async <T>(action: () => Promise<T>): Promise<AsyncSubmitResult<T>> => {
     setError(null);
@@ -45,7 +38,7 @@ export function useAsyncSubmit(fallback: SubmitErrorFallback) {
     }
   };
 
-  return { submitting, error, clearError: () => setError(null), run, rejectLocally };
+  return { submitting, error, clearError: () => setError(null), run };
 }
 
 export function useSuccessToast() {
@@ -60,7 +53,6 @@ export function useSuccessToast() {
 
 export function useToastSubmit(fallback: SubmitErrorFallback = authErrorMessage) {
   const [submitting, setSubmitting] = useState(false);
-  const rejectLocally = useLocalRefusal();
 
   const run = async <T>(action: () => Promise<T>): Promise<AsyncSubmitResult<T>> => {
     setSubmitting(true);
@@ -74,5 +66,5 @@ export function useToastSubmit(fallback: SubmitErrorFallback = authErrorMessage)
     }
   };
 
-  return { submitting, run, rejectLocally };
+  return { submitting, run };
 }

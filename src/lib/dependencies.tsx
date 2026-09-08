@@ -24,9 +24,9 @@ export function useContainer(): FrontendContainer {
 
 /**
  * A rede de sinapses da aplicação, se houver container por perto. `null` fora
- * dele — uma tela de porta montada sozinha, um hook num teste — para que quem
- * só quer avisar a rede (`useAsyncSubmit.rejectLocally`) nunca precise dela
- * para funcionar.
+ * dele — uma casca montada sozinha num teste — para que quem só quer desenhar
+ * a rede do fundo nunca precise dela para funcionar. Ninguém dentro da
+ * aplicação logada pulsa por este canal (dono, 2026-09-08).
  */
 export function useSynapseSignals(): SynapseSignals | null {
   return useContext(Ctx)?.synapseSignals ?? null;

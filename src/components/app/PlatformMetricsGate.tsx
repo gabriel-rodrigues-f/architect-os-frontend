@@ -3,8 +3,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { PageHelpContent } from "@/components/app/PageHelp";
 import { PageHeader } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
-import { useReducedMotion } from "@/hooks";
-import { usePlatformMetricsTab, useSynapseSignals } from "@/lib/dependencies";
+import { usePlatformMetricsTab } from "@/lib/dependencies";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { ObservabilityAddress } from "@/lib/platform-metrics";
 
@@ -61,8 +60,11 @@ class MetricsOpening {
  * efeito elegante".
  *
  * A elegância aqui não é decoração: é a ORDEM. O item do menu deixou de ser
- * uma âncora `target="_blank"` e virou rota; a rota pulsa a rede, leva a aba
- * que o clique já reservou até a porta das métricas e diz onde ela ficou.
+ * uma âncora `target="_blank"` e virou rota; a rota leva a aba que o clique
+ * já reservou até a porta das métricas e diz onde ela ficou. A rede do fundo
+ * não pisca na transição (dono, 2026-09-08: *"remova a piscada, tanto azul
+ * quanto vermelha"* dentro da aplicação logada) — ela segue viva pelo
+ * movimento próprio dos nós.
  *
  * O QUE ESTA TELA NÃO FAZ MAIS (mesma data, "não consigo mais visualizar o
  * grafana, tela branca"): bater na porta por `fetch` antes de navegar. A
@@ -71,9 +73,9 @@ class MetricsOpening {
  * navegada e ficava branca. A conferência que sobra é a da MESMA ORIGEM: o
  * alcance vem do `/auth/me` e é a rota que o aplica antes de desenhar aqui.
  *
- * Com movimento reduzido não há pulso, e a entrada não anima (a regra do
- * `auth-rise` vive dentro de `no-preference`): a abertura continua a mesma,
- * direta. A preferência tira a animação, nunca a função.
+ * Com movimento reduzido a entrada não anima (a regra do `auth-rise` vive
+ * dentro de `no-preference`): a abertura continua a mesma, direta. A
+ * preferência tira a animação, nunca a função.
  */
 export function PlatformMetricsGate({
   help,
@@ -81,16 +83,8 @@ export function PlatformMetricsGate({
   help: { lead: PageHelpContent; member: PageHelpContent };
 }) {
   const { t } = useI18n();
-  const reducedMotion = useReducedMotion();
-  const signals = useSynapseSignals();
   const tab = usePlatformMetricsTab();
   const [shown, setShown] = useState<boolean | null>(null);
-
-  // A transição é da REDE: um pulso primary enquanto a aba vai para a porta.
-  useEffect(() => {
-    if (reducedMotion) return;
-    signals?.pulseWith("primary");
-  }, [signals, reducedMotion]);
 
   useEffect(() => {
     if (shown !== null) return;

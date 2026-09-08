@@ -1,12 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { ReactNode } from "react";
-
-import { useAsyncSubmit, useToastSubmit } from "@/hooks";
+import { useAsyncSubmit } from "@/hooks";
 import { ApiError } from "@/lib/api";
-import { DependencyProvider } from "@/lib/dependencies";
-import { FrontendContainer } from "@/lib/gateways/container";
 
 /**
  * OO3-11/D-6 (reuso final) — contrato do ciclo assíncrono compartilhado
@@ -81,44 +77,5 @@ describe("useAsyncSubmit", () => {
     });
     act(() => result.current.clearError());
     expect(result.current.error).toBeNull();
-  });
-});
-
-/**
- * A RECUSA LOCAL (inventário 2026-09-08, §5.8): campos vazios, senha que não
- * confere, duração inválida — a mensagem vermelha aparece SEM ir ao serviço,
- * então o anúncio à rede não pode vir do `ApiClient`. Vem do ponto que já
- * centraliza o envio: `rejectLocally()` pulsa vermelho nos sinais da
- * aplicação. Sem container por perto (uma tela de porta), não pulsa nada e
- * não quebra.
- */
-describe("useAsyncSubmit / useToastSubmit — rejectLocally", () => {
-  function comContainer() {
-    const container = FrontendContainer.create({ baseUrl: "http://api.local" });
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <DependencyProvider container={container}>{children}</DependencyProvider>
-    );
-    return { container, wrapper };
-  }
-
-  it("pulsa vermelho nos sinais do container, sem tocar em `error` nem em `submitting`", () => {
-    const { container, wrapper } = comContainer();
-    const { result } = renderHook(() => useAsyncSubmit("fallback"), { wrapper });
-    act(() => result.current.rejectLocally());
-    expect(container.synapseSignals.drainPulses()).toEqual(["danger"]);
-    expect(result.current.error).toBeNull();
-    expect(result.current.submitting).toBe(false);
-  });
-
-  it("o mesmo ponto existe no envio com toast", () => {
-    const { container, wrapper } = comContainer();
-    const { result } = renderHook(() => useToastSubmit(), { wrapper });
-    act(() => result.current.rejectLocally());
-    expect(container.synapseSignals.drainPulses()).toEqual(["danger"]);
-  });
-
-  it("sem container, não pulsa e não quebra", () => {
-    const { result } = renderHook(() => useAsyncSubmit("fallback"));
-    expect(() => act(() => result.current.rejectLocally())).not.toThrow();
   });
 });

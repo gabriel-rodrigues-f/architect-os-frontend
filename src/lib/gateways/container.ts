@@ -3,7 +3,6 @@ import { MetricsTab } from "../platform-metrics";
 import { SessionPolicy } from "../session-policy";
 import { SupportAccess } from "../support-access";
 import { SynapseSignals } from "../synapse-network";
-import { SynapseOutcomeAnnouncer } from "../synapse-outcome";
 import { HttpAnalyticsGateway, type AnalyticsGateway } from "./analytics.gateway";
 import { HttpProfessionalsGateway, type ProfessionalsGateway } from "./professionals.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
@@ -45,9 +44,10 @@ export class FrontendContainer {
   readonly supportAccess: SupportAccess;
   /**
    * O ÚNICO canal da aplicação para a rede de sinapses do fundo (dono,
-   * 2026-09-08). O `ApiClient` anuncia aqui o resultado de toda escrita, pela
-   * régua do `SynapseOutcomeAnnouncer`; a casca (`AppShell`) desenha a rede
-   * que o lê. Um por container, nunca por tela.
+   * 2026-09-08). A casca (`AppShell`) desenha a rede que o lê. Ninguém
+   * DENTRO da aplicação logada pulsa por aqui: a rede fica viva pelo
+   * movimento próprio dos nós, sem piscada por resultado. Um por container,
+   * nunca por tela.
    */
   readonly synapseSignals: SynapseSignals;
   /**
@@ -87,7 +87,6 @@ export class FrontendContainer {
     this.supportAccess = new SupportAccess();
     this.synapseSignals = new SynapseSignals();
     this.platformMetricsTab = new MetricsTab();
-    const synapseAnnouncer = new SynapseOutcomeAnnouncer(this.synapseSignals);
     this.apiClient = new ApiClient(
       config.baseUrl,
       (error) => {
@@ -95,7 +94,6 @@ export class FrontendContainer {
         this.supportAccess.reviewFailure(error);
       },
       (resource) => this.supportAccess.headersFor(resource),
-      (outcome) => synapseAnnouncer.observe(outcome),
     );
     this.analyticsGateway = new HttpAnalyticsGateway(this.apiClient);
     this.professionalsGateway = new HttpProfessionalsGateway(this.apiClient);

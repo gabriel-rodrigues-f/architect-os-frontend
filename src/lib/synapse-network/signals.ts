@@ -16,7 +16,8 @@ import type { CollectivePulse, CollectivePulseListener, PulseTone } from "./syna
  *
  * O tom (dono, 2026-09-08): `pulseWith("danger")` é a recusa, `pulseWith("primary")`
  * o sucesso. A fila guarda UM pedido por tom — dois pedidos do mesmo tom antes
- * do quadro seguinte são um pulso só; é a primeira camada da coalescência.
+ * do quadro seguinte são um pulso só. Hoje quem pede pulso é a PORTA: dentro
+ * da aplicação logada a rede fica viva sem piscar (dono, 2026-09-08).
  */
 export class SynapseSignals {
   private readonly pendingTones = new Set<PulseTone>();
