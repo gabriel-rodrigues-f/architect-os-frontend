@@ -75,7 +75,7 @@ async function envelopeApiResponse(response: Response): Promise<Response> {
  * ADR-0011, fase 1 — as telas estranguladas consomem os endpoints por
  * contexto em vez do blob `/state`. Este roteador serve cada contexto a
  * partir da MESMA fixture, aplicando o filtro de querystring que o backend
- * aplica (`architectId`/`menteeId`), para que os testes de tela exercitem a
+ * aplica (`professionalId`/`menteeId`), para que os testes de tela exercitem a
  * paridade blob ↔ contexto sem duplicar dados.
  */
 function stateContextResponse(
@@ -88,20 +88,21 @@ function stateContextResponse(
   const url = new URL(href, "http://localhost");
   const path = url.pathname;
   const query = url.searchParams;
-  const byArchitect = <T extends { architectId: string }>(items: T[]): T[] => {
-    const architectId = query.get("architectId");
-    return architectId ? items.filter((item) => item.architectId === architectId) : items;
+  const byProfessional = <T extends { professionalId: string }>(items: T[]): T[] => {
+    const professionalId = query.get("professionalId");
+    return professionalId ? items.filter((item) => item.professionalId === professionalId) : items;
   };
-  if (path.endsWith(apiPath("/architects"))) return jsonResponse(state.architects);
-  if (path.endsWith(apiPath("/assessments"))) return jsonResponse(byArchitect(state.assessments));
+  if (path.endsWith(apiPath("/professionals"))) return jsonResponse(state.professionals);
+  if (path.endsWith(apiPath("/assessments")))
+    return jsonResponse(byProfessional(state.assessments));
   if (path.endsWith(apiPath("/capabilities"))) return jsonResponse(state.capabilities);
   if (path.endsWith(apiPath("/competencies"))) return jsonResponse(state.competencies);
   if (path.endsWith(apiPath("/cycles"))) return jsonResponse(state.cycles);
   if (path.endsWith(apiPath("/team-rules"))) return jsonResponse(state.teamLevelRules);
   if (path.endsWith(apiPath("/settings/active-cycle")))
     return jsonResponse({ cycleId: state.activeCycleId });
-  if (path.endsWith(apiPath("/plans"))) return jsonResponse(byArchitect(state.plans));
-  if (path.endsWith(apiPath("/evidences"))) return jsonResponse(byArchitect(state.evidences));
+  if (path.endsWith(apiPath("/plans"))) return jsonResponse(byProfessional(state.plans));
+  if (path.endsWith(apiPath("/evidences"))) return jsonResponse(byProfessional(state.evidences));
   if (path.endsWith(apiPath("/mentoring-sessions"))) {
     const menteeId = query.get("menteeId");
     return jsonResponse(
@@ -111,11 +112,11 @@ function stateContextResponse(
     );
   }
   if (path.endsWith(apiPath("/learning-paths"))) {
-    const architectId = query.get("architectId");
+    const professionalId = query.get("professionalId");
     return jsonResponse(
-      architectId
+      professionalId
         ? state.learningPaths.filter((learningPath) =>
-            learningPath.assignedTo.includes(architectId),
+            learningPath.assignedTo.includes(professionalId),
           )
         : state.learningPaths,
     );

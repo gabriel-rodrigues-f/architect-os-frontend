@@ -22,12 +22,12 @@ export class LearningPathsViewModel {
 
   progressFor(
     path: Pick<LearningPath, "progress">,
-    architectId: string,
+    professionalId: string,
     itemId: string,
   ): LearningItemProgress {
     return (
-      path.progress.find((p) => p.architectId === architectId && p.itemId === itemId) ?? {
-        architectId,
+      path.progress.find((p) => p.professionalId === professionalId && p.itemId === itemId) ?? {
+        professionalId,
         itemId,
         status: "Not Started",
         progress: 0,
@@ -37,18 +37,25 @@ export class LearningPathsViewModel {
 
   private personProgress(
     path: Pick<LearningPath, "progress" | "items">,
-    architectId: string,
+    professionalId: string,
   ): number {
-    const values = path.items.map((item) => this.progressFor(path, architectId, item.id).progress);
+    const values = path.items.map(
+      (item) => this.progressFor(path, professionalId, item.id).progress,
+    );
     return values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
   }
 
-  progressPercentFor(path: Pick<LearningPath, "progress" | "items">, architectId: string): number {
-    return Math.round(this.personProgress(path, architectId));
+  progressPercentFor(
+    path: Pick<LearningPath, "progress" | "items">,
+    professionalId: string,
+  ): number {
+    return Math.round(this.personProgress(path, professionalId));
   }
 
   teamProgressPercent(path: Pick<LearningPath, "progress" | "items" | "assignedTo">): number {
-    const perPerson = path.assignedTo.map((architectId) => this.personProgress(path, architectId));
+    const perPerson = path.assignedTo.map((professionalId) =>
+      this.personProgress(path, professionalId),
+    );
     return perPerson.length
       ? Math.round(perPerson.reduce((s, v) => s + v, 0) / perPerson.length)
       : 0;
@@ -93,12 +100,12 @@ export class LearningPathsViewModel {
     });
   }
 
-  toggleAssignment(path: Pick<LearningPath, "id" | "assignedTo">, architectId: string): void {
+  toggleAssignment(path: Pick<LearningPath, "id" | "assignedTo">, professionalId: string): void {
     const current = path.assignedTo;
     this.service.updateLearningPath(path.id, {
-      assignedTo: current.includes(architectId)
-        ? current.filter((id) => id !== architectId)
-        : [...current, architectId],
+      assignedTo: current.includes(professionalId)
+        ? current.filter((id) => id !== professionalId)
+        : [...current, professionalId],
     });
   }
 
@@ -130,7 +137,7 @@ export class LearningPathsViewModel {
     this.service.removeLearningPath(pathId, onConfirmed);
   }
 
-  recordProgress(pathId: string, architectId: string, itemId: string, progress: number): void {
-    this.service.updateLearningItemProgress(pathId, architectId, itemId, progress);
+  recordProgress(pathId: string, professionalId: string, itemId: string, progress: number): void {
+    this.service.updateLearningItemProgress(pathId, professionalId, itemId, progress);
   }
 }

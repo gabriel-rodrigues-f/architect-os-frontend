@@ -45,11 +45,15 @@ const rotaDeTimes: FetchRoute = (href, init) =>
  */
 const estado: AppState = {
   ...fixtureState,
-  architects: [
-    { ...fixtureState.architects[0]!, careerLevelId: "arquiteto-de-solucoes-ii", cargo: "member" },
-    { ...fixtureState.architects[1]!, cargo: "tech_lead" },
+  professionals: [
     {
-      ...fixtureState.architects[0]!,
+      ...fixtureState.professionals[0]!,
+      careerLevelId: "arquiteto-de-solucoes-ii",
+      cargo: "member",
+    },
+    { ...fixtureState.professionals[1]!, cargo: "tech_lead" },
+    {
+      ...fixtureState.professionals[0]!,
       id: "gerente",
       name: "Gabriela Gerente",
       email: "gerente@company.com",

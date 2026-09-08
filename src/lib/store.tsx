@@ -10,7 +10,7 @@ import type {
 } from "./gateways/catalog.gateway";
 import type { TextTemplateRecord } from "./gateways/config.gateway";
 import type {
-  Architect,
+  Professional,
   Assessment,
   CareerLevel,
   Competency,
@@ -48,7 +48,7 @@ import {
   type ScoringBands,
   type ScoringScale,
 } from "./scoring-bands";
-import { ArchitectRoster, createSelectors } from "./selectors";
+import { ProfessionalRoster, createSelectors } from "./selectors";
 import type { VocabularyItemInput, VocabularyItemPatch } from "./gateways/config.gateway";
 import type { CatalogImportPayload, CatalogImportSummary } from "./catalog-import";
 import {
@@ -134,24 +134,27 @@ export function useObjectiveFromGap(): RenderObjectiveFromGap {
 }
 
 export interface Api extends AppState {
-  architectsIncludingInactive: Architect[];
+  professionalsIncludingInactive: Professional[];
 
-  updateArchitect: (id: string, patch: Partial<Omit<Architect, "id" | "role" | "version">>) => void;
+  updateProfessional: (
+    id: string,
+    patch: Partial<Omit<Professional, "id" | "role" | "version">>,
+  ) => void;
 
-  transitionCareerLevel: (id: string, toRole: RoleName, reason: string) => Promise<Architect>;
+  transitionCareerLevel: (id: string, toRole: RoleName, reason: string) => Promise<Professional>;
 
-  deactivate: (id: string, reason: string) => Promise<Architect>;
+  deactivate: (id: string, reason: string) => Promise<Professional>;
 
   /** Reativar é o mesmo ato de desativar, de volta: profissional e conta juntos. */
   /** `onConfirmed` roda na resposta 2xx — o aviso de sucesso da mutação otimista mora lá (inventário 2026-09-08, §5.7). */
-  reactivateArchitect: (id: string, expectedVersion: number, onConfirmed?: () => void) => void;
+  reactivateProfessional: (id: string, expectedVersion: number, onConfirmed?: () => void) => void;
 
-  allocateArchitectToTeam: (
-    architectId: string,
+  allocateProfessionalToTeam: (
+    professionalId: string,
     teamId: string,
     reason: string,
-  ) => Promise<Architect>;
-  releaseArchitectFromTeam: (architectId: string) => Promise<Architect>;
+  ) => Promise<Professional>;
+  releaseProfessionalFromTeam: (professionalId: string) => Promise<Professional>;
 
   defineTeamRuleMinimum: (
     teamId: string,
@@ -202,7 +205,7 @@ export interface Api extends AppState {
   addCycle: (c: DevelopmentCycle) => void;
   updateCycle: (id: string, patch: Partial<Omit<DevelopmentCycle, "id">>) => void;
   removeCycle: (id: string) => void;
-  openAssessment: (architectId: string, cycleId: string) => Promise<Assessment>;
+  openAssessment: (professionalId: string, cycleId: string) => Promise<Assessment>;
   setAssessmentStatus: (id: string, status: Assessment["status"]) => Promise<Assessment>;
   updateLearningPath: (
     id: string,
@@ -239,10 +242,10 @@ export interface Api extends AppState {
       final: Level;
     }>,
   ) => void;
-  addPlanItem: (architectId: string, item: DevelopmentPlanItem) => void;
+  addPlanItem: (professionalId: string, item: DevelopmentPlanItem) => void;
 
   createPlanItemFromGap: (
-    architectId: string,
+    professionalId: string,
     item: {
       id: string;
       assessmentId: string;
@@ -292,7 +295,7 @@ export interface Api extends AppState {
   scheduleMentoringFollowUp: (id: string, nextSession: string | null) => Promise<MentoringSession>;
   updateLearningItemProgress: (
     pathId: string,
-    architectId: string,
+    professionalId: string,
     itemId: string,
     progress: number,
   ) => void;
@@ -331,42 +334,42 @@ export function buildApi(
       ? state.capabilities
       : [...state.capabilities].sort(defaultNameFormatter.byName),
 
-    architects: UnrequestedSlice.is(state.architects)
-      ? state.architects
-      : ArchitectRoster.active(state.architects),
+    professionals: UnrequestedSlice.is(state.professionals)
+      ? state.professionals
+      : ProfessionalRoster.active(state.professionals),
     // O gerente nunca é SUJEITO em tela nenhuma — nem no Time (dono, 2026-09-06).
-    architectsIncludingInactive: UnrequestedSlice.is(state.architects)
-      ? state.architects
-      : ArchitectRoster.professionals(state.architects),
+    professionalsIncludingInactive: UnrequestedSlice.is(state.professionals)
+      ? state.professionals
+      : ProfessionalRoster.professionals(state.professionals),
 
-    // ONDA 45 — `addArchitect` morreu com `POST /architects`, a porta legada
+    // ONDA 45 — `addProfessional` morreu com `POST /professionals`, a porta legada
     // que criava PROFISSIONAL sem conta. Nenhuma tela a chamava; ela existia
     // como um caminho aberto para produzir alguém que aparece em Time e nunca
     // em Usuários. Quem cadastra pessoa é a admissão, em Usuários.
 
-    updateArchitect: (id, patch) => {
+    updateProfessional: (id, patch) => {
       runner.optimistic(
         (s) => ({
           ...s,
-          architects: s.architects.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+          professionals: s.professionals.map((a) => (a.id === id ? { ...a, ...patch } : a)),
         }),
-        () => api.updateArchitect(id, patch),
+        () => api.updateProfessional(id, patch),
       );
     },
 
-    reactivateArchitect: (id, expectedVersion, onConfirmed) => {
+    reactivateProfessional: (id, expectedVersion, onConfirmed) => {
       runner.optimistic(
         (state) => ({
           ...state,
-          architects: state.architects.map((architect) =>
-            architect.id === id ? { ...architect, active: true } : architect,
+          professionals: state.professionals.map((professional) =>
+            professional.id === id ? { ...professional, active: true } : professional,
           ),
         }),
         () => api.reactivate(id, expectedVersion),
         (updated) => (state) => ({
           ...state,
-          architects: state.architects.map((architect) =>
-            architect.id === id ? updated : architect,
+          professionals: state.professionals.map((professional) =>
+            professional.id === id ? updated : professional,
           ),
         }),
         onConfirmed,
@@ -459,7 +462,7 @@ export function buildApi(
 
     transitionCareerLevel: async (id, toRole, reason) => {
       const expectedVersion = expectedVersionOf(
-        state.architects.find((a) => a.id === id)?.version,
+        state.professionals.find((a) => a.id === id)?.version,
         "deste profissional",
         id,
       );
@@ -467,14 +470,14 @@ export function buildApi(
         () => api.transitionCareerLevel(id, toRole, reason, expectedVersion),
         (updated) => (s) => ({
           ...s,
-          architects: s.architects.map((a) => (a.id === id ? updated : a)),
+          professionals: s.professionals.map((a) => (a.id === id ? updated : a)),
         }),
       );
     },
 
     deactivate: async (id, reason) => {
       const expectedVersion = expectedVersionOf(
-        state.architects.find((a) => a.id === id)?.version,
+        state.professionals.find((a) => a.id === id)?.version,
         "deste profissional",
         id,
       );
@@ -482,29 +485,29 @@ export function buildApi(
         () => api.deactivate(id, reason, expectedVersion),
         (updated) => (s) => ({
           ...s,
-          architects: s.architects.map((a) => (a.id === id ? updated : a)),
+          professionals: s.professionals.map((a) => (a.id === id ? updated : a)),
         }),
       );
     },
 
-    allocateArchitectToTeam: (architectId, teamId, reason) =>
+    allocateProfessionalToTeam: (professionalId, teamId, reason) =>
       runner.command(
-        () => api.allocateArchitectToTeam(architectId, teamId, reason),
+        () => api.allocateProfessionalToTeam(professionalId, teamId, reason),
         (allocated) => (state) => ({
           ...state,
-          architects: state.architects.map((architect) =>
-            architect.id === architectId ? allocated : architect,
+          professionals: state.professionals.map((professional) =>
+            professional.id === professionalId ? allocated : professional,
           ),
         }),
       ),
 
-    releaseArchitectFromTeam: (architectId) =>
+    releaseProfessionalFromTeam: (professionalId) =>
       runner.command(
-        () => api.releaseArchitectFromTeam(architectId),
+        () => api.releaseProfessionalFromTeam(professionalId),
         (released) => (state) => ({
           ...state,
-          architects: state.architects.map((architect) =>
-            architect.id === architectId ? released : architect,
+          professionals: state.professionals.map((professional) =>
+            professional.id === professionalId ? released : professional,
           ),
         }),
       ),
@@ -707,11 +710,11 @@ export function buildApi(
         }),
       ),
 
-    addPlanItem: (architectId, item) => {
+    addPlanItem: (professionalId, item) => {
       runner.optimistic(
         (s) => {
           const existing = s.plans.find(
-            (p) => p.architectId === architectId && p.cycleId === s.activeCycleId,
+            (p) => p.professionalId === professionalId && p.cycleId === s.activeCycleId,
           );
           if (existing) {
             return {
@@ -726,8 +729,8 @@ export function buildApi(
             plans: [
               ...s.plans,
               {
-                id: `pdi-${architectId}-${s.activeCycleId}`,
-                architectId,
+                id: `pdi-${professionalId}-${s.activeCycleId}`,
+                professionalId,
                 cycleId: s.activeCycleId,
                 status: "Draft",
                 items: [item],
@@ -736,13 +739,13 @@ export function buildApi(
             ],
           };
         },
-        () => api.addPlanItem(architectId, state.activeCycleId, item),
+        () => api.addPlanItem(professionalId, state.activeCycleId, item),
       );
     },
 
-    createPlanItemFromGap: (architectId, item) =>
+    createPlanItemFromGap: (professionalId, item) =>
       runner.command(
-        () => api.createPlanItemFromGap(architectId, item),
+        () => api.createPlanItemFromGap(professionalId, item),
         (updated) => (s) => ({
           ...s,
           plans: s.plans.some((p) => p.id === updated.id)
@@ -892,7 +895,7 @@ export function buildApi(
         (created) => (s) => ({ ...s, learningPaths: [created, ...s.learningPaths] }),
       ),
 
-    updateLearningItemProgress: (pathId, architectId, itemId, progress) => {
+    updateLearningItemProgress: (pathId, professionalId, itemId, progress) => {
       const status: LearningItemProgress["status"] =
         progress >= 100 ? "Completed" : progress > 0 ? "In Progress" : "Not Started";
       runner.optimistic(
@@ -904,18 +907,18 @@ export function buildApi(
               : {
                   ...p,
                   progress: p.progress.some(
-                    (e) => e.architectId === architectId && e.itemId === itemId,
+                    (e) => e.professionalId === professionalId && e.itemId === itemId,
                   )
                     ? p.progress.map((e) =>
-                        e.architectId === architectId && e.itemId === itemId
+                        e.professionalId === professionalId && e.itemId === itemId
                           ? { ...e, progress, status }
                           : e,
                       )
-                    : [...p.progress, { architectId, itemId, progress, status }],
+                    : [...p.progress, { professionalId, itemId, progress, status }],
                 },
           ),
         }),
-        () => api.patchLearningItemProgress(pathId, architectId, itemId, progress),
+        () => api.patchLearningItemProgress(pathId, professionalId, itemId, progress),
       );
     },
 
@@ -943,9 +946,9 @@ export function buildApi(
       );
     },
 
-    openAssessment: (architectId, cycleId) =>
+    openAssessment: (professionalId, cycleId) =>
       runner.command(
-        () => api.openAssessment(architectId, cycleId),
+        () => api.openAssessment(professionalId, cycleId),
         (assessment) => (s) => ({
           ...s,
           assessments: s.assessments.some((a) => a.id === assessment.id)
@@ -1090,15 +1093,15 @@ export function useStore() {
 }
 
 /**
- * Os selectors indexam a lista CRUA de propósito: `architectById` precisa
+ * Os selectors indexam a lista CRUA de propósito: `professionalById` precisa
  * resolver quem foi desativado para a ficha aberta pelo link de `/team`
  * continuar de pé. Quem lista, seleciona, desenha ou conta gente consome
- * `store.architects` (já ativa) ou `sel.activeArchitects`.
+ * `store.professionals` (já ativa) ou `sel.activeProfessionals`.
  */
 export function useSelectors() {
   const store = useStore();
   return useMemo(
-    () => createSelectors({ ...store, architects: store.architectsIncludingInactive }),
+    () => createSelectors({ ...store, professionals: store.professionalsIncludingInactive }),
     [store],
   );
 }

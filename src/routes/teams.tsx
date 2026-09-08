@@ -32,7 +32,7 @@ import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { authApi, teamRosterApi, teamsApi, teamTransitionsApi, type SessionUser } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { TeamMemberRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
 import type { TeamRosterMember } from "@/lib/gateways/team-roster.gateway";
 import type {
@@ -96,7 +96,7 @@ function useTeamTransitionsViewModel(): TeamTransitionsViewModel {
   return useMemo(() => new TeamTransitionsViewModel(defaultUiAuthorizationPolicy), []);
 }
 
-const TEAMS_CONTEXTS: readonly ContextScopeRequest[] = ["architects"];
+const TEAMS_CONTEXTS: readonly ContextScopeRequest[] = ["professionals"];
 
 function TeamsPage() {
   const { t } = useI18n();
@@ -149,7 +149,7 @@ function TeamsScreen() {
   const [creating, setCreating] = useState(() => initialSearchParam("cadastrar") === "time");
   const [renaming, setRenaming] = useState<TeamSummary | null>(null);
   const [deactivating, setDeactivating] = useState<TeamSummary | null>(null);
-  const [refusal, setRefusal] = useState<{ team: TeamSummary; activeArchitects: number } | null>(
+  const [refusal, setRefusal] = useState<{ team: TeamSummary; activeProfessionals: number } | null>(
     null,
   );
   const { error: deactivationError, run: runDeactivation } = useAsyncSubmit(
@@ -177,7 +177,7 @@ function TeamsScreen() {
       return;
     }
     const explained = registry.deactivationRefusalOf(result.error);
-    if (explained) setRefusal({ team, activeArchitects: explained.activeArchitects });
+    if (explained) setRefusal({ team, activeProfessionals: explained.activeProfessionals });
   };
 
   return (
@@ -210,7 +210,7 @@ function TeamsScreen() {
       {refusal && (
         <Callout tone="warning" className="mb-4">
           {t("teams.deactivate.stillHasPeople", {
-            n: refusal.activeArchitects,
+            n: refusal.activeProfessionals,
             nome: refusal.team.name,
           })}
         </Callout>
@@ -354,7 +354,7 @@ function TeamTable({
                     />
                   </td>
                   <td className="py-2 tabular-nums">
-                    {registry.activePeopleOf(team.id, store.architects).length}
+                    {registry.activePeopleOf(team.id, store.professionals).length}
                   </td>
                   <td className="py-2">
                     <div className="flex flex-wrap gap-2">
@@ -571,7 +571,7 @@ function TeamTransitionsRowView({
           </>
         )}
       </td>
-      <td className="py-2 text-center tabular-nums">{row.activeArchitects}</td>
+      <td className="py-2 text-center tabular-nums">{row.activeProfessionals}</td>
       <td className="py-2 text-center tabular-nums">{rate ?? "—"}</td>
     </tr>
   );
@@ -1045,15 +1045,15 @@ function TeamPeople({
   const store = useStore();
   const notifySuccess = useSuccessToast();
   const [allocating, setAllocating] = useState(false);
-  const [releasing, setReleasing] = useState<Architect | null>(null);
+  const [releasing, setReleasing] = useState<Professional | null>(null);
   const { error, run } = useAsyncSubmit(
     (failure) => registry.allocationRefusalOf(failure) ?? t("teams.people.error"),
   );
-  const people = registry.activePeopleOf(team.id, store.architects);
+  const people = registry.activePeopleOf(team.id, store.professionals);
 
-  const release = async (person: Architect) => {
+  const release = async (person: Professional) => {
     setReleasing(null);
-    const result = await run(() => store.releaseArchitectFromTeam(person.id));
+    const result = await run(() => store.releaseProfessionalFromTeam(person.id));
     if (!result.ok) return;
     notifySuccess(
       "msg.people.release.success",
@@ -1116,7 +1116,7 @@ function TeamPeople({
       {allocating && (
         <AllocatePersonDialog
           team={team}
-          candidates={registry.allocatableTo(team.id, store.architects)}
+          candidates={registry.allocatableTo(team.id, store.professionals)}
           teams={teams}
           registry={registry}
           onCancel={() => setAllocating(false)}
@@ -1143,26 +1143,26 @@ function AllocatePersonDialog({
   onAllocated,
 }: {
   team: TeamSummary;
-  candidates: readonly Architect[];
+  candidates: readonly Professional[];
   teams: readonly TeamSummary[];
   registry: TeamRegistryViewModel;
   onCancel: () => void;
-  onAllocated: (person: Architect, allocated: Architect) => void;
+  onAllocated: (person: Professional, allocated: Professional) => void;
 }) {
   const { t } = useI18n();
   const store = useStore();
-  const [architectId, setArchitectId] = useState("");
+  const [professionalId, setProfessionalId] = useState("");
   const [reason, setReason] = useState("");
   const { submitting, error, run } = useAsyncSubmit(
     (failure) => registry.allocationRefusalOf(failure) ?? t("teams.people.error"),
   );
-  const chosen = candidates.find((candidate) => candidate.id === architectId);
+  const chosen = candidates.find((candidate) => candidate.id === professionalId);
   const justified = reason.trim() !== "";
 
   const allocate = async () => {
     if (!chosen || !justified) return;
     const result = await run(() =>
-      store.allocateArchitectToTeam(chosen.id, team.id, reason.trim()),
+      store.allocateProfessionalToTeam(chosen.id, team.id, reason.trim()),
     );
     if (result.ok) onAllocated(chosen, result.value);
   };
@@ -1182,8 +1182,8 @@ function AllocatePersonDialog({
               <SingleSelectFilter
                 id={`team-allocate-${team.id}`}
                 label={t("teams.people.person")}
-                value={architectId}
-                onChange={setArchitectId}
+                value={professionalId}
+                onChange={setProfessionalId}
                 options={[
                   { value: "", label: t("teams.people.choosePerson") },
                   ...candidates.map((candidate) => ({

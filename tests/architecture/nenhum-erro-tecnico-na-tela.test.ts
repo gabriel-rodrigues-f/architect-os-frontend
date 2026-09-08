@@ -35,8 +35,8 @@ import pt from "@/locales/pt.json";
  *      success(...)`, e todo texto JSX. É onde a frase da captura nasceu.
  *
  *   3. QUALQUER literal de `src/`, para as marcas que nenhum identificador
- *      legítimo tem. `"/api/v1/architects"` é caminho de contrato e fica;
- *      `"GET"` é verbo de método e fica; `"GET /api/v1/architects falhou"` é
+ *      legítimo tem. `"/api/v1/professionals"` é caminho de contrato e fica;
+ *      `"GET"` é verbo de método e fica; `"GET /api/v1/professionals falhou"` é
  *      frase — e só pode ser frase, porque junta verbo, caminho e prosa. Foi
  *      exatamente essa a forma dos dez vazamentos do `state-contexts.gateway`.
  *

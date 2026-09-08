@@ -61,9 +61,9 @@ export class TeamTransitionsViewModel {
   }
 
   rateOf(row: TeamTransitionsRow, locale: string): string | null {
-    return row.transitionsPerActiveArchitect === null
+    return row.transitionsPerActiveProfessional === null
       ? null
-      : this.decimal(locale, 2).format(row.transitionsPerActiveArchitect);
+      : this.decimal(locale, 2).format(row.transitionsPerActiveProfessional);
   }
 
   averageDaysOf(row: TeamTransitionsRow, locale: string): string | null {

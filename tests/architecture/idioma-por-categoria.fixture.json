@@ -42,7 +42,7 @@
     "src/lib/theme.tsx": 1,
     "src/lib/view-models/plan-item-from-gap.ts": 1,
     "src/routes/__root.tsx": 3,
-    "src/routes/architects.$architectId.evolution.tsx": 1,
+    "src/routes/professionals.$professionalId.evolution.tsx": 1,
     "src/routes/cycles.tsx": 1,
     "src/routes/settings.tsx": 1
   }

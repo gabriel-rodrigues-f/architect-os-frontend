@@ -38,7 +38,7 @@ const DATABASE_URL =
   process.env["E2E_DATABASE_URL"] ?? "postgres://architect:architect@localhost:5433/architect_os";
 
 const RUN_ID = Date.now().toString(36);
-const ARCHITECT_NAME = "E2E Fluxos de Escrita";
+const PROFESSIONAL_NAME = "E2E Fluxos de Escrita";
 const LEAD_NAME = "E2E Fluxos Lead";
 const MEMBER_EMAIL = `e2e-flux-member-${RUN_ID}@architect-os.local`;
 const LEAD_EMAIL = `e2e-flux-lead-${RUN_ID}@architect-os.local`;
@@ -48,7 +48,7 @@ const ACTION_PLAN = `E2E plano de ação ${RUN_ID} — praticar com revisão do 
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
-let architectId: string;
+let professionalId: string;
 let assessmentId: string;
 let capabilityIds: string[];
 let teamId: string;
@@ -107,7 +107,7 @@ test.beforeAll(async ({ playwright }) => {
 
   // ONDA 37 (ADR-0084) — o time nasce primeiro e as duas pessoas nascem
   // nele: a conta e o profissional do member são o MESMO cadastro, e é dele
-  // que sai o `architectId` que esta jornada inteira usa.
+  // que sai o `professionalId` que esta jornada inteira usa.
   teamId = await registerTeamWithRules(api, `flux-${RUN_ID}`);
   await admitPersonToTeam({
     playwright,
@@ -120,13 +120,13 @@ test.beforeAll(async ({ playwright }) => {
   const admittedMember = await admitPersonToTeam({
     playwright,
     api,
-    name: ARCHITECT_NAME,
+    name: PROFESSIONAL_NAME,
     email: MEMBER_EMAIL,
     role: "member",
     teamId,
     careerLevelId: await seniorityNamed(api, "Pleno"),
   });
-  architectId = admittedMember.architectId;
+  professionalId = admittedMember.professionalId;
 
   const cycles = await json<Array<{ id: string; status: string }>>(
     await api.get(apiPath("/cycles")),
@@ -134,12 +134,12 @@ test.beforeAll(async ({ playwright }) => {
   const cycleId = cycles.find((cycle) => cycle.status === "Active")?.id ?? cycles[0]!.id;
 
   const assessment = await json<{ id: string }>(
-    await api.post(apiPath("/assessments"), { data: { architectId, cycleId } }),
+    await api.post(apiPath("/assessments"), { data: { professionalId, cycleId } }),
   );
   assessmentId = assessment.id;
 
   // A avaliação NASCE SEM ITENS: eles materializam quando o PRÓPRIO
-  // arquiteto propõe capacidades ao portfólio do ciclo (mínimo 3 para
+  // profissional propõe capacidades ao portfólio do ciclo (mínimo 3 para
   // enviar — PORTFOLIO_BELOW_MINIMUM). As 3 primeiras do catálogo, porque
   // a primeira é a que a tela de avaliação seleciona por padrão — é nela
   // que o teste 1 vai mexer. Preencher as dezenas de autoavaliações linha
@@ -167,22 +167,23 @@ test.afterAll(async () => {
   const client = new Client({ connectionString: DATABASE_URL });
   await client.connect();
   try {
-    // O ledger de evolução referencia architects com RESTRICT de propósito
-    // (migração ledger-architect-restrict) — concluir a avaliação no teste 2
+    // O ledger de evolução referencia professionals com RESTRICT de propósito
+    // (migração ledger-professional-restrict) — concluir a avaliação no teste 2
     // grava degraus lá, e a limpeza precisa removê-los primeiro, na mão.
-    await client.query("DELETE FROM architect_competency_level_events WHERE architect_id = $1", [
-      architectId,
-    ]);
-    await client.query("DELETE FROM architect_competency_state WHERE architect_id = $1", [
-      architectId,
+    await client.query(
+      "DELETE FROM professional_competency_level_events WHERE professional_id = $1",
+      [professionalId],
+    );
+    await client.query("DELETE FROM professional_competency_state WHERE professional_id = $1", [
+      professionalId,
     ]);
     await client.query(
       `DELETE FROM professional_state_snapshot_items
-        WHERE snapshot_id IN (SELECT id FROM professional_state_snapshots WHERE architect_id = $1)`,
-      [architectId],
+        WHERE snapshot_id IN (SELECT id FROM professional_state_snapshots WHERE professional_id = $1)`,
+      [professionalId],
     );
-    await client.query("DELETE FROM professional_state_snapshots WHERE architect_id = $1", [
-      architectId,
+    await client.query("DELETE FROM professional_state_snapshots WHERE professional_id = $1", [
+      professionalId,
     ]);
     await client.query(
       "DELETE FROM domain_vocabularies WHERE vocabulary = 'EVIDENCE_TYPE' AND code = $1",
@@ -198,7 +199,7 @@ test.afterAll(async () => {
 test("Member avalia uma competência pela UI e envia a avaliação para revisão", async ({ page }) => {
   await login(page, MEMBER_EMAIL, PASSWORD, "Minha Evolução");
 
-  await page.goto(`/assessments?architectId=${architectId}`);
+  await page.goto(`/assessments?professionalId=${professionalId}`);
   await expect(statusBar(page)).toContainText("Rascunho");
 
   const autoavaliacao = page.getByLabel(/^Autoavaliação — /).first();
@@ -238,7 +239,7 @@ test("Tech Lead pontua pela UI e conclui a avaliação", async ({ page, playwrig
 
   await login(page, LEAD_EMAIL, PASSWORD, "Ações da Liderança");
 
-  await page.goto(`/assessments?architectId=${architectId}`);
+  await page.goto(`/assessments?professionalId=${professionalId}`);
   await expect(statusBar(page)).toContainText("Em revisão");
 
   const notaLead = page.getByLabel(/^Nota do Tech Lead — /).first();
@@ -267,7 +268,7 @@ test("Tech Lead pontua pela UI e conclui a avaliação", async ({ page, playwrig
 test("Member cria uma ação de PDI a partir do maior gap", async ({ page }) => {
   await login(page, MEMBER_EMAIL, PASSWORD, "Minha Evolução");
 
-  await page.goto(`/development-plans?architectId=${architectId}`);
+  await page.goto(`/development-plans?professionalId=${professionalId}`);
 
   const sugestoes = page.locator("section, div").filter({ hasText: "Maiores distâncias" });
   const adicionar = page.getByRole("button", { name: "Adicionar ao PDI" }).first();
@@ -294,14 +295,14 @@ test("Member cria uma ação de PDI a partir do maior gap", async ({ page }) => 
 
 // Onda 31 tirou do profissional a própria ficha de carreira — e com ela o
 // ÚNICO ponto da aplicação que registra evidência (`EvidenceDialog` só vive
-// em `architects.$architectId.index.tsx`, atrás de `canActFor`). O gesto
+// em `professionals.$professionalId.index.tsx`, atrás de `canActFor`). O gesto
 // continua existindo para quem lidera: o Tech Lead registra na ficha do
 // liderado. A lacuna do profissional está relatada na fatia; o spec cobre o
 // caminho que a aplicação oferece hoje.
 test("Tech Lead registra uma evidência na ficha do liderado", async ({ page }) => {
   await login(page, LEAD_EMAIL, PASSWORD, "Ações da Liderança");
 
-  await page.goto(`/architects/${architectId}`);
+  await page.goto(`/professionals/${professionalId}`);
   await expect(page.getByText("Evidências", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
 

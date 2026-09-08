@@ -7,7 +7,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as GapRoute } from "@/routes/gap-analysis";
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import type { AppState } from "@/lib/api";
 import type { Assessment, DevelopmentPlan } from "@/lib/domain";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
@@ -51,7 +51,9 @@ const estadoBase: AppState = {
 
 const comPlanoDaAnaEm = (status: DevelopmentPlan["status"]): AppState => ({
   ...estadoBase,
-  plans: estadoBase.plans.map((plan) => (plan.architectId === "ana" ? { ...plan, status } : plan)),
+  plans: estadoBase.plans.map((plan) =>
+    plan.professionalId === "ana" ? { ...plan, status } : plan,
+  ),
 });
 
 /** Bruno herda um plano aprovado para a linha de Prioridades dele travar tambem. */
@@ -60,11 +62,11 @@ const comBrunoTambemAprovado: AppState = {
   plans: [
     ...estadoBase.plans.map((plan) => ({ ...plan, status: "Approved" as const })),
     ...estadoBase.plans
-      .filter((plan) => plan.architectId === "ana")
+      .filter((plan) => plan.professionalId === "ana")
       .map((plan) => ({
         ...plan,
         id: "pdi-bruno",
-        architectId: "bruno",
+        professionalId: "bruno",
         status: "Approved" as const,
         items: [],
       })),
@@ -101,7 +103,7 @@ describe("Perfil — '+ PDI' com o plano aprovado", () => {
 
     const acao = await screen.findByRole("link", { name: "+ PDI" });
     const href = acao.getAttribute("href") ?? "";
-    expect(href).toContain("architectId=ana");
+    expect(href).toContain("professionalId=ana");
     expect(href).toContain("competencyId=cloud-serverless");
     expect(screen.queryByRole("button", { name: "+ PDI" })).toBeNull();
   });

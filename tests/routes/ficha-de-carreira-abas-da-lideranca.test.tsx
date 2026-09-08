@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Mesma razão de `architect-profile-fora-do-escopo.test.tsx`: as quatro
+ * Mesma razão de `professional-profile-fora-do-escopo.test.tsx`: as quatro
  * telas leem `Route.useParams()`, que só existe dentro de uma árvore de
- * rotas montada. O parâmetro é fixado em "ana" — o arquiteto DA SESSÃO do
+ * rotas montada. O parâmetro é fixado em "ana" — o profissional DA SESSÃO do
  * member, que é exatamente o caso que o dono fechou.
  */
 vi.mock("@tanstack/react-router", () =>
@@ -14,10 +14,10 @@ vi.mock("@tanstack/react-router", () =>
 
 import type { SessionUser } from "@/lib/api";
 import type { CareerFileTab } from "@/lib/career-file";
-import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
-import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
-import { Route as StatementRoute } from "@/routes/architects.$architectId.statement";
+import { Route as EvolutionRoute } from "@/routes/professionals.$professionalId.evolution";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
+import { Route as RoadmapRoute } from "@/routes/professionals.$professionalId.roadmap";
+import { Route as StatementRoute } from "@/routes/professionals.$professionalId.statement";
 import {
   fixtureAssignedManagerUser,
   fixtureMemberUser,
@@ -34,7 +34,7 @@ import {
 import { renderCareerFile } from "../helpers/ficha";
 
 /**
- * O gêmeo de tela das ABAS da ficha de carreira — `/architects/$architectId/
+ * O gêmeo de tela das ABAS da ficha de carreira — `/professionals/$professionalId/
  * evolution|roadmap|statement`.
  *
  * D2 (dono, 2026-09-05): a pessoa vê tudo o que é dela — radar, distâncias,
@@ -58,22 +58,22 @@ const ABAS: ReadonlyArray<readonly [string, () => ReactNode, CareerFileTab]> = [
 const ABAS_DA_LIDERANCA =
   "Evolução, Extrato e Roteiro são leituras da liderança sobre a carreira de uma pessoa.";
 
-/** Uma consulta de aba sobre a pessoa — pelo caminho (`/architects/ana/...`) ou pelo corpo (`architectId: "ana"`). */
-function pediuAlgoSobre(architectId: string): boolean {
+/** Uma consulta de aba sobre a pessoa — pelo caminho (`/professionals/ana/...`) ou pelo corpo (`professionalId: "ana"`). */
+function pediuAlgoSobre(professionalId: string): boolean {
   return fetchMock.mock.calls.some(([entrada, init]) => {
     const href = String(entrada instanceof Request ? entrada.url : entrada);
     if (href.endsWith(apiPath("/auth/me")) || href.includes("/state")) return false;
     const corpo = String((init as RequestInit | undefined)?.body ?? "");
     return (
-      href.includes(`/architects/${architectId}/`) ||
-      corpo.includes(`"architectId":"${architectId}"`)
+      href.includes(`/professionals/${professionalId}/`) ||
+      corpo.includes(`"professionalId":"${professionalId}"`)
     );
   });
 }
 
 /** O mínimo que as abas pedem ao servidor sobre "ana" — vazio, mas na forma certa. */
 const evolutionVazia = {
-  architect: { id: "ana", name: "Ana Martins", role: "Pleno", careerLevelName: null },
+  professional: { id: "ana", name: "Ana Martins", role: "Pleno", careerLevelName: null },
   summary: {
     coverage: { covered: 0, total: 0 },
     initialAverage: null,
@@ -92,17 +92,17 @@ const evolutionVazia = {
 const rotasDasAbas: FetchRoute[] = [
   careerLevelsRoute,
   (href, init) =>
-    href.endsWith(apiPath("/evolution/architect")) && init?.method === "POST"
+    href.endsWith(apiPath("/evolution/professional")) && init?.method === "POST"
       ? jsonResponse(evolutionVazia)
       : undefined,
   (href) =>
-    href.endsWith(apiPath("/architects/ana/career-level-transitions"))
+    href.endsWith(apiPath("/professionals/ana/career-level-transitions"))
       ? jsonResponse([])
       : undefined,
   (href, init) =>
     href.endsWith(apiPath("/reports/career-statement")) && init?.method === "POST"
       ? jsonResponse({
-          architect: { id: "ana", name: "Ana Martins", role: "Pleno" },
+          professional: { id: "ana", name: "Ana Martins", role: "Pleno" },
           range: { from: "2000-01-01", to: "2026-12-31" },
           kinds: ["teamTransition"],
           totals: { teamTransition: 0 },

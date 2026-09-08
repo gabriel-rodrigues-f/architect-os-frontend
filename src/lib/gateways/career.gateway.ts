@@ -1,6 +1,6 @@
 import type { CareerLevel, Level, TeamLevelRule } from "../domain";
 import {
-  architectAdherenceResponseSchema,
+  professionalAdherenceResponseSchema,
   careerLevelsResponseSchema,
   teamRuleResponseSchema,
 } from "../api-schemas";
@@ -22,8 +22,8 @@ export interface TeamRuleDefinition {
   competencies: TeamRuleCompetencyRequirement[];
 }
 
-export interface ArchitectAdherence {
-  architectId: string;
+export interface ProfessionalAdherence {
+  professionalId: string;
   teamId: string | null;
   careerLevelId: string;
   adherence: {
@@ -45,11 +45,11 @@ export interface CareerGateway {
     careerLevelId: string,
     definition: TeamRuleDefinition,
   ): Promise<TeamRuleView>;
-  architectAdherence(
-    architectId: string,
+  professionalAdherence(
+    professionalId: string,
     careerLevelId: string,
     teamId?: string,
-  ): Promise<ArchitectAdherence>;
+  ): Promise<ProfessionalAdherence>;
 }
 
 export class HttpCareerGateway implements CareerGateway {
@@ -72,15 +72,17 @@ export class HttpCareerGateway implements CareerGateway {
   ): Promise<TeamRuleView> =>
     this.client.put<TeamRuleView>(`/teams/${teamId}/rules/${careerLevelId}`, definition);
 
-  architectAdherence = (
-    architectId: string,
+  professionalAdherence = (
+    professionalId: string,
     careerLevelId: string,
     teamId?: string,
-  ): Promise<ArchitectAdherence> => {
+  ): Promise<ProfessionalAdherence> => {
     const query = new URLSearchParams({ careerLevelId });
     if (teamId !== undefined) query.set("teamId", teamId);
     return this.client
-      .request<ArchitectAdherence>(`/architects/${architectId}/adherence?${query.toString()}`)
-      .then((data) => architectAdherenceResponseSchema.parse(data) as ArchitectAdherence);
+      .request<ProfessionalAdherence>(
+        `/professionals/${professionalId}/adherence?${query.toString()}`,
+      )
+      .then((data) => professionalAdherenceResponseSchema.parse(data) as ProfessionalAdherence);
   };
 }

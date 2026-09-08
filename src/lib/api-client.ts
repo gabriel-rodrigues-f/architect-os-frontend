@@ -1,5 +1,5 @@
 import type {
-  Architect,
+  Professional,
   Assessment,
   Capability,
   Competency,
@@ -18,7 +18,7 @@ export interface AppState {
   capabilities: Capability[];
   competencies: Competency[];
   teamLevelRules: TeamLevelRule[];
-  architects: Architect[];
+  professionals: Professional[];
   assessments: Assessment[];
   cycles: DevelopmentCycle[];
   plans: DevelopmentPlan[];

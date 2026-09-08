@@ -5,14 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { type AppState, type SessionUser } from "@/lib/api";
-import type { Architect, MentoringSession } from "@/lib/domain";
+import type { Professional, MentoringSession } from "@/lib/domain";
 import { fixtureState } from "../helpers/fixtures";
 import { configurationRoute, contextsOf, hrefOf, renderWithApp } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
 
 /**
  * R2-UX-11 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — mentoria é sempre 1:1, então
- * o filtro da linha do tempo troca seleção múltipla (`ArchitectFilter`) por
+ * o filtro da linha do tempo troca seleção múltipla (`ProfessionalFilter`) por
  * único. Pedido do usuário revisando o app rodando: "em 'mentoria' não deve
  * haver a opção de 'todo time'. a sessão é sempre individual" — a opção
  * "Todo o time" foi removida por completo; o filtro nasce já escolhendo a
@@ -28,17 +28,17 @@ const admin: SessionUser = {
   email: "admin@company.com",
   name: "Admin",
   role: "admin",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
 };
 
-const carla: Architect = {
+const carla: Professional = {
   id: "carla",
   name: "Carla Nunes",
   role: "Júnior",
-  yearsAsArchitect: 2,
+  yearsAsProfessional: 2,
   specialization: "",
   email: "carla@company.com",
   active: false,
@@ -75,7 +75,7 @@ const sessaoCarla: MentoringSession = {
 
 const state: AppState = {
   ...fixtureState,
-  architects: [...fixtureState.architects, carla],
+  professionals: [...fixtureState.professionals, carla],
   mentoringSessions: [sessaoAna, sessaoCarla],
 };
 

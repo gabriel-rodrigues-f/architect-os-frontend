@@ -74,12 +74,16 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
     montar(fixtureAssignedManagerUser);
 
     renderWithApp(
-      <PersonCombobox picker={PersonPicker.many([], [])} onChange={vi.fn()} label="Pessoas" />,
+      <PersonCombobox
+        picker={PersonPicker.many([], [])}
+        onChange={vi.fn()}
+        label="Profissionais"
+      />,
     );
 
-    // O campo continua se chamando "Pessoas" para quem usa leitor de tela —
+    // O campo continua se chamando "Profissionais" para quem usa leitor de tela —
     // o que muda é que ele deixou de ser um botão morto e virou uma porta.
-    const gatilho = await screen.findByRole("link", { name: "Pessoas" });
+    const gatilho = await screen.findByRole("link", { name: "Profissionais" });
     expect(gatilho.textContent).toContain("Nenhum profissional cadastrado — clique para cadastrar");
     expect(gatilho.getAttribute("href")).toBe("/users?cadastrar=profissional");
   });
@@ -88,7 +92,11 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
     montar(fixtureAssignedManagerUser);
 
     renderWithApp(
-      <PersonCombobox picker={PersonPicker.many([], [])} onChange={vi.fn()} label="Pessoas" />,
+      <PersonCombobox
+        picker={PersonPicker.many([], [])}
+        onChange={vi.fn()}
+        label="Profissionais"
+      />,
     );
 
     const link = await screen.findByRole("link", { name: "Cadastrar primeiro profissional" });
@@ -99,10 +107,14 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
     montar(fixtureMemberUser);
 
     renderWithApp(
-      <PersonCombobox picker={PersonPicker.many([], [])} onChange={vi.fn()} label="Pessoas" />,
+      <PersonCombobox
+        picker={PersonPicker.many([], [])}
+        onChange={vi.fn()}
+        label="Profissionais"
+      />,
     );
 
-    const campo = await screen.findByRole("button", { name: "Pessoas" });
+    const campo = await screen.findByRole("button", { name: "Profissionais" });
     expect(campo.textContent).toContain("Nenhum profissional cadastrado");
     expect(campo.hasAttribute("disabled")).toBe(true);
     await userEvent.click(campo);

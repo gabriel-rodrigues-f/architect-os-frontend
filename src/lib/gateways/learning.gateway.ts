@@ -14,7 +14,7 @@ export interface LearningGateway {
   removeLearningItem(pathId: string, itemId: string): Promise<LearningPath>;
   patchLearningItemProgress(
     pathId: string,
-    architectId: string,
+    professionalId: string,
     itemId: string,
     progress: number,
   ): Promise<LearningPath>;
@@ -44,11 +44,14 @@ export class HttpLearningGateway implements LearningGateway {
 
   patchLearningItemProgress = (
     pathId: string,
-    architectId: string,
+    professionalId: string,
     itemId: string,
     progress: number,
   ): Promise<LearningPath> =>
-    this.client.patch<LearningPath>(`/learning-paths/${pathId}/progress/${architectId}/${itemId}`, {
-      progress,
-    });
+    this.client.patch<LearningPath>(
+      `/learning-paths/${pathId}/progress/${professionalId}/${itemId}`,
+      {
+        progress,
+      },
+    );
 }

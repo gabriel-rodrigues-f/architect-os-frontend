@@ -1,6 +1,6 @@
 import type { MessageKey } from "../i18n/registry";
 import type { SessionUser } from "../api";
-import type { Architect, RoleName, TeamTransferRequest } from "../domain";
+import type { Professional, RoleName, TeamTransferRequest } from "../domain";
 import type { TeamTransfersGateway } from "../gateways/team-transfers.gateway";
 import type { TeamSummary } from "../gateways/teams.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
@@ -8,7 +8,7 @@ import { SeniorityReading } from "../seniority";
 import type { Api } from "../store";
 
 /** Vazio enquanto nenhum nível de carreira estiver escolhido — nunca um `RoleName` inventado. */
-export type ArchitectFormRole = RoleName | "";
+export type ProfessionalFormRole = RoleName | "";
 
 /**
  * ONDA 37 — o que /team ainda escreve. Cadastrar, editar e desativar saíram
@@ -19,10 +19,10 @@ export type ArchitectFormRole = RoleName | "";
  */
 export type TeamRosterService = Pick<
   Api,
-  | "reactivateArchitect"
+  | "reactivateProfessional"
   | "transitionCareerLevel"
-  | "allocateArchitectToTeam"
-  | "releaseArchitectFromTeam"
+  | "allocateProfessionalToTeam"
+  | "releaseProfessionalFromTeam"
 >;
 
 /** Quem SOLICITA a transferência quando a mudança de time não é imediata (dono, 2026-09-06). */
@@ -30,25 +30,25 @@ export type TeamTransferRequester = Pick<TeamTransfersGateway, "requestTeamTrans
 
 export interface TeamChangeRequested {
   /** A pessoa como ficou depois do que mudou na hora (o nível). */
-  readonly updated: Architect;
+  readonly updated: Professional;
   /** A solicitação criada, quando o time mudou; `null` quando só o nível mudou. */
   readonly requested: TeamTransferRequest | null;
 }
 
 export class TeamOrLevelChange {
   constructor(
-    readonly architect: Architect,
-    readonly toRole: ArchitectFormRole,
+    readonly professional: Professional,
+    readonly toRole: ProfessionalFormRole,
     readonly toTeamId: string | null,
   ) {}
 
   get levelChanged(): boolean {
-    if (!SeniorityReading.has(this.architect)) return false;
-    return this.toRole !== "" && this.toRole !== this.architect.role;
+    if (!SeniorityReading.has(this.professional)) return false;
+    return this.toRole !== "" && this.toRole !== this.professional.role;
   }
 
   get teamChanged(): boolean {
-    return this.toTeamId !== (this.architect.teamId ?? null);
+    return this.toTeamId !== (this.professional.teamId ?? null);
   }
 
   get isEffective(): boolean {
@@ -80,8 +80,8 @@ export class TeamViewModel {
   }
 
   /** D3 (dono, 2026-09-05): nível, desativação e reativação — gerente designado, ou admin como correção. */
-  decidesCareerOf(user: SessionUser, architect: Pick<Architect, "id" | "teamId">): boolean {
-    return this.policy.decidesCareerOf(user, architect);
+  decidesCareerOf(user: SessionUser, professional: Pick<Professional, "id" | "teamId">): boolean {
+    return this.policy.decidesCareerOf(user, professional);
   }
 
   decidesCareerOfSomeone(user: SessionUser): boolean {
@@ -105,12 +105,16 @@ export class TeamViewModel {
   }
 
   /** Otimista: `onConfirmed` roda quando o serviço confirma — o aviso de sucesso vai lá, não no clique. */
-  reactivate(architect: Architect, onConfirmed?: () => void): void {
-    this.service.reactivateArchitect(architect.id, architect.version, onConfirmed);
+  reactivate(professional: Professional, onConfirmed?: () => void): void {
+    this.service.reactivateProfessional(professional.id, professional.version, onConfirmed);
   }
 
-  transitionCareerLevel(architectId: string, toRole: RoleName, reason: string): Promise<Architect> {
-    return this.service.transitionCareerLevel(architectId, toRole, reason);
+  transitionCareerLevel(
+    professionalId: string,
+    toRole: RoleName,
+    reason: string,
+  ): Promise<Professional> {
+    return this.service.transitionCareerLevel(professionalId, toRole, reason);
   }
 
   /**
@@ -123,8 +127,8 @@ export class TeamViewModel {
     reason: string,
     transfers: TeamTransferRequester,
   ): Promise<TeamChangeRequested> {
-    const { id } = change.architect;
-    let updated = change.architect;
+    const { id } = change.professional;
+    let updated = change.professional;
     if (change.levelChanged && change.toRole !== "") {
       updated = await this.service.transitionCareerLevel(id, change.toRole, reason);
     }
@@ -135,17 +139,17 @@ export class TeamViewModel {
     return { updated, requested };
   }
 
-  async changeTeamOrLevel(change: TeamOrLevelChange, reason: string): Promise<Architect> {
-    const { id } = change.architect;
-    let updated = change.architect;
+  async changeTeamOrLevel(change: TeamOrLevelChange, reason: string): Promise<Professional> {
+    const { id } = change.professional;
+    let updated = change.professional;
     if (change.levelChanged && change.toRole !== "") {
       updated = await this.service.transitionCareerLevel(id, change.toRole, reason);
     }
     if (change.teamChanged) {
       updated =
         change.toTeamId === null
-          ? await this.service.releaseArchitectFromTeam(id)
-          : await this.service.allocateArchitectToTeam(id, change.toTeamId, reason);
+          ? await this.service.releaseProfessionalFromTeam(id)
+          : await this.service.allocateProfessionalToTeam(id, change.toTeamId, reason);
     }
     return updated;
   }

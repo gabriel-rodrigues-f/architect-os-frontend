@@ -39,8 +39,8 @@ export interface StagnationAlert {
 
 export interface WorkAssistantsGateway {
   assistEvidenceReview(evidenceId: string): Promise<WorkAssistance>;
-  assistAssessmentCalibration(architectId: string): Promise<WorkAssistance>;
-  alertAboutStagnation(architectId: string): Promise<StagnationAlert>;
+  assistAssessmentCalibration(professionalId: string): Promise<WorkAssistance>;
+  alertAboutStagnation(professionalId: string): Promise<StagnationAlert>;
   reviewCatalogQuality(): Promise<WorkAssistance>;
 }
 
@@ -56,13 +56,13 @@ export class HttpWorkAssistantsGateway implements WorkAssistantsGateway {
       workAssistanceResponseSchema.parse(data),
     );
 
-  assistAssessmentCalibration = (architectId: string): Promise<WorkAssistance> =>
-    this.call.read(`/architects/${architectId}/calibration-assistance`, (data) =>
+  assistAssessmentCalibration = (professionalId: string): Promise<WorkAssistance> =>
+    this.call.read(`/professionals/${professionalId}/calibration-assistance`, (data) =>
       workAssistanceResponseSchema.parse(data),
     );
 
-  alertAboutStagnation = (architectId: string): Promise<StagnationAlert> =>
-    this.call.read(`/architects/${architectId}/stagnation-alert`, (data) =>
+  alertAboutStagnation = (professionalId: string): Promise<StagnationAlert> =>
+    this.call.read(`/professionals/${professionalId}/stagnation-alert`, (data) =>
       stagnationAlertResponseSchema.parse(data),
     );
 

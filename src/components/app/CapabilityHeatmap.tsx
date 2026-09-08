@@ -11,13 +11,13 @@ import { useSelectors } from "@/lib/store";
 
 function useHeatmapColumns(
   capabilities: readonly Capability[],
-  architects: readonly { id: string }[],
-  capabilityAveragesFor: (architectId: string) => readonly CapabilityAverage[],
+  professionals: readonly { id: string }[],
+  capabilityAveragesFor: (professionalId: string) => readonly CapabilityAverage[],
 ) {
   const [showAll, setShowAll] = useState(false);
   const visibleCapabilities = showAll
     ? [...capabilities]
-    : capHeatmapColumns(capabilities, architects, capabilityAveragesFor);
+    : capHeatmapColumns(capabilities, professionals, capabilityAveragesFor);
   const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
   return {
     visibleCapabilities,
@@ -29,7 +29,7 @@ function useHeatmapColumns(
 
 /**
  * O dono pediu, olhando a tela: "quero visualizar no máximo 5 linhas de
- * pessoas; a partir do quinto, deve haver scroll dos arquitetos."
+ * pessoas; a partir do quinto, deve haver scroll dos profissionais."
  *
  * O teto era `max-h-[480px]`, um número de pixels que casava com 5 linhas por
  * acidente da fonte e do espaçamento de hoje — e que passava a caber 6 assim
@@ -50,21 +50,21 @@ class JanelaDoMapa {
 }
 
 export function CapabilityHeatmap({
-  architects,
+  professionals,
   capabilities,
   capabilityAveragesFor,
   linkToProfile = false,
 }: {
-  architects: readonly { id: string; name: string }[];
+  professionals: readonly { id: string; name: string }[];
   capabilities: readonly Capability[];
-  capabilityAveragesFor: (architectId: string) => readonly CapabilityAverage[];
+  capabilityAveragesFor: (professionalId: string) => readonly CapabilityAverage[];
   linkToProfile?: boolean;
 }) {
   const { t } = useI18n();
   const sel = useSelectors();
   const { visibleCapabilities, visibleCapabilityIds, showAll, toggle } = useHeatmapColumns(
     capabilities,
-    architects,
+    professionals,
     capabilityAveragesFor,
   );
   const { scrollRef, overflowStart, overflowEnd } = useHorizontalOverflow<HTMLDivElement>();
@@ -92,7 +92,7 @@ export function CapabilityHeatmap({
                   scope="col"
                   className="sticky left-0 top-0 z-20 w-44 bg-card text-left text-xs uppercase tracking-wide text-muted-foreground"
                 >
-                  {t("col.architect")}
+                  {t("col.professional")}
                 </th>
                 {visibleCapabilities.map((c) => (
                   <th
@@ -107,7 +107,7 @@ export function CapabilityHeatmap({
               </tr>
             </thead>
             <tbody>
-              {architects.map((a) => (
+              {professionals.map((a) => (
                 <tr key={a.id}>
                   {linkToProfile ? (
                     <th
@@ -115,8 +115,8 @@ export function CapabilityHeatmap({
                       className="sticky left-0 z-10 bg-card py-1 text-left text-sm font-medium"
                     >
                       <Link
-                        to="/architects/$architectId"
-                        params={{ architectId: a.id }}
+                        to="/professionals/$professionalId"
+                        params={{ professionalId: a.id }}
                         className="hover:underline"
                       >
                         {a.name}

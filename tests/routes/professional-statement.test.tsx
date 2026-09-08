@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as StatementRoute } from "@/routes/architects.$architectId.statement";
+import { Route as StatementRoute } from "@/routes/professionals.$professionalId.statement";
 import { apiPath } from "@/lib/api-path";
 import type { AppState } from "@/lib/api";
 import {
@@ -36,18 +36,18 @@ const StatementPage = StatementRoute.options.component as () => ReactNode;
 
 const transition = {
   id: "tr-1",
-  architectId: "ana",
+  professionalId: "ana",
   fromRole: "Júnior",
   toRole: "Pleno",
   actorUserId: "user-lead",
   reason: "Promoção do ciclo",
   occurredAt: "2026-03-10T12:00:00.000Z",
-  architectVersion: 3,
+  professionalVersion: 3,
 };
 
 const competencyEvent = {
   id: "ev-1",
-  architectId: "ana",
+  professionalId: "ana",
   competencyId: "security-iam",
   fromLevel: 2,
   toLevel: 3,
@@ -60,7 +60,7 @@ const competencyEvent = {
 };
 
 const evolutionResult = {
-  architect: {
+  professional: {
     id: "ana",
     name: "Ana Martins",
     role: "Pleno",
@@ -124,7 +124,7 @@ const statementRoutes = ({ failTransitions = false } = {}) => [
   (href: string, init?: RequestInit): Response | undefined =>
     href.endsWith(apiPath("/reports/career-statement")) && init?.method === "POST"
       ? jsonResponse({
-          architect: { id: "ana", name: "Ana Martins", role: "Pleno" },
+          professional: { id: "ana", name: "Ana Martins", role: "Pleno" },
           range: { from: "2000-01-01", to: "2026-12-31" },
           kinds: ["teamTransition"],
           totals: { teamTransition: 1 },
@@ -132,7 +132,7 @@ const statementRoutes = ({ failTransitions = false } = {}) => [
         })
       : undefined,
   (href: string): Response | undefined => {
-    if (href.endsWith(apiPath("/architects/ana/career-level-transitions"))) {
+    if (href.endsWith(apiPath("/professionals/ana/career-level-transitions"))) {
       return failTransitions
         ? jsonResponse({ code: "INTERNAL", message: "erro", correlationId: "x" }, 500)
         : jsonResponse([transition]);
@@ -140,19 +140,19 @@ const statementRoutes = ({ failTransitions = false } = {}) => [
     return undefined;
   },
   (href: string, init?: RequestInit): Response | undefined =>
-    href.endsWith(apiPath("/evolution/architect")) && init?.method === "POST"
+    href.endsWith(apiPath("/evolution/professional")) && init?.method === "POST"
       ? jsonResponse(evolutionResult)
       : undefined,
   (href: string): Response | undefined =>
     href.endsWith(apiPath("/plans/pdi-ana/events")) ? jsonResponse([planEvent]) : undefined,
 ];
 
-describe("/architects/$architectId/statement — extrato de carreira", () => {
+describe("/professionals/$professionalId/statement — extrato de carreira", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     careerFileRouter.push.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    window.history.replaceState(null, "", "/architects/ana/statement");
+    window.history.replaceState(null, "", "/professionals/ana/statement");
   });
 
   afterEach(() => {
@@ -267,10 +267,10 @@ describe("/architects/$architectId/statement — extrato de carreira", () => {
         (init as RequestInit | undefined)?.method === "POST",
     );
     const corpo = JSON.parse(String((pedido?.[1] as RequestInit).body)) as {
-      architectId: string;
+      professionalId: string;
       kinds: string[];
     };
-    expect(corpo.architectId).toBe("ana");
+    expect(corpo.professionalId).toBe("ana");
     expect(corpo.kinds).toEqual(["teamTransition"]);
 
     await userEvent.click(screen.getByRole("button", { name: /Tipos de entrada/ }));

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * Mesma razão das demais telas com `<Link>`/`Route.useParams()`: precisam de
  * um `RouterProvider` de verdade. Aqui também trocamos `createFileRoute` por
- * uma versão que devolve `architectId` fixo — a tela real recebe isso via
+ * uma versão que devolve `professionalId` fixo — a tela real recebe isso via
  * `Route.useParams()`, que só existe dentro de uma árvore de rotas montada
  * de verdade.
  */
@@ -14,8 +14,8 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
-import type { ArchitectEvolutionResult } from "@/lib/domain";
+import { Route as EvolutionRoute } from "@/routes/professionals.$professionalId.evolution";
+import type { ProfessionalEvolutionResult } from "@/lib/domain";
 import { jsonResponse, mockAppFetch } from "../helpers/render-app";
 import { renderCareerFile } from "../helpers/ficha";
 import { apiPath } from "@/lib/api-path";
@@ -24,13 +24,13 @@ import { apiPath } from "@/lib/api-path";
  * R3-008 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — os filtros de Período e
  * Fonte da tela de Evolução trocaram de `<select>` nativo por
  * `SingleSelectFilter`. Prova que a troca de controle preservou o
- * comportamento: abrir, escolher, ver o `POST /api/v1/evolution/architect`
+ * comportamento: abrir, escolher, ver o `POST /api/v1/evolution/professional`
  * seguinte carregar o filtro novo.
  */
 const fetchMock = vi.fn();
 
-const emptyEvolutionResult: ArchitectEvolutionResult = {
-  architect: {
+const emptyEvolutionResult: ProfessionalEvolutionResult = {
+  professional: {
     id: "ana",
     name: "Ana Martins",
     role: "Pleno",
@@ -60,14 +60,14 @@ const EvolutionPage = EvolutionRoute.options.component as () => ReactNode;
 
 const renderEvolution = () => renderCareerFile(<EvolutionPage />, { tab: "evolution" });
 
-describe("Evolução do arquiteto — filtros de Período e Fonte (R3-008)", () => {
+describe("Evolução do profissional — filtros de Período e Fonte (R3-008)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
       routes: [
         (href) =>
-          href.endsWith(apiPath("/evolution/architect"))
+          href.endsWith(apiPath("/evolution/professional"))
             ? jsonResponse(emptyEvolutionResult)
             : undefined,
       ],
@@ -98,7 +98,9 @@ describe("Evolução do arquiteto — filtros de Período e Fonte (R3-008)", () 
 
     // A troca de preset dispara uma nova busca com o range recalculado.
     expect(
-      fetchMock.mock.calls.some(([url]) => String(url).endsWith(apiPath("/evolution/architect"))),
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith(apiPath("/evolution/professional")),
+      ),
     ).toBe(true);
   });
 

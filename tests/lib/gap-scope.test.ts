@@ -9,7 +9,7 @@ import { fixtureState } from "../helpers/fixtures";
  * heatmap, prioridades e tabela. Estes testes cobrem a lógica de recorte usada
  * por todos eles.
  */
-describe("recorte por arquitetos selecionados", () => {
+describe("recorte por profissionais selecionados", () => {
   const sel = createSelectors(fixtureState);
 
   /**
@@ -20,23 +20,23 @@ describe("recorte por arquitetos selecionados", () => {
    * quem inicializa o `useState`, não desta função.
    */
   it("filtro vazio significa ninguém selecionado", () => {
-    expect(PersonPicker.peopleIn(fixtureState.architects, [])).toHaveLength(0);
+    expect(PersonPicker.peopleIn(fixtureState.professionals, [])).toHaveLength(0);
   });
 
-  it("mantém apenas os arquitetos escolhidos, na ordem da lista", () => {
-    const filtered = PersonPicker.peopleIn(fixtureState.architects, ["bruno"]);
+  it("mantém apenas os profissionais escolhidos, na ordem da lista", () => {
+    const filtered = PersonPicker.peopleIn(fixtureState.professionals, ["bruno"]);
     expect(filtered.map((a) => a.id)).toEqual(["bruno"]);
   });
 
   it("ignora ids desconhecidos em vez de quebrar", () => {
-    expect(PersonPicker.peopleIn(fixtureState.architects, ["ninguem"])).toEqual([]);
+    expect(PersonPicker.peopleIn(fixtureState.professionals, ["ninguem"])).toEqual([]);
   });
 
   /** OO3-11k — chama `sel.teamAverageFor` (a regra do radar), em vez de reimplementá-la aqui. */
   const radarFor = (ids: string[]) => {
-    const architects = PersonPicker.peopleIn(fixtureState.architects, ids);
+    const professionals = PersonPicker.peopleIn(fixtureState.professionals, ids);
     return fixtureState.capabilities.map((cat) => {
-      const { atual, alvo } = sel.teamAverageFor(cat.id, architects);
+      const { atual, alvo } = sel.teamAverageFor(cat.id, professionals);
       return {
         domain: cat.short,
         atual: Number((atual.avg ?? 0).toFixed(2)),
@@ -47,12 +47,12 @@ describe("recorte por arquitetos selecionados", () => {
     });
   };
 
-  it("o radar de um arquiteto usa só os níveis dele", () => {
+  it("o radar de um profissional usa só os níveis dele", () => {
     const cloud = radarFor(["ana"]).find((r) => r.domain === "Cloud");
     expect(cloud).toMatchObject({ atual: 4, alvo: 4 });
   });
 
-  it("o radar de dois arquitetos é a média entre eles", () => {
+  it("o radar de dois profissionais é a média entre eles", () => {
     // Ana tem 4 em Cloud, Bruno 2.5 → média 3.25
     const cloud = radarFor(["ana", "bruno"]).find((r) => r.domain === "Cloud");
     expect(cloud?.atual).toBe(3.25);
@@ -73,7 +73,10 @@ describe("recorte por arquitetos selecionados", () => {
   it("pessoa sem assessment oficial não entra na média da capacidade, só na cobertura", () => {
     const semAssessment = createSelectors({
       ...fixtureState,
-      architects: [...fixtureState.architects, { ...fixtureState.architects[0]!, id: "diego" }],
+      professionals: [
+        ...fixtureState.professionals,
+        { ...fixtureState.professionals[0]!, id: "diego" },
+      ],
     });
     const rows = fixtureState.capabilities.map((cat) => ({
       domain: cat.short,
@@ -86,10 +89,10 @@ describe("recorte por arquitetos selecionados", () => {
   });
 
   const consolidate = (ids: string[]) => {
-    const architects = PersonPicker.peopleIn(fixtureState.architects, ids);
+    const professionals = PersonPicker.peopleIn(fixtureState.professionals, ids);
     const map = new Map<string, { people: number; totalGap: number; maxGap: number }>();
-    for (const architect of architects) {
-      for (const gap of sel.gapsFor(architect.id)) {
+    for (const professional of professionals) {
+      for (const gap of sel.gapsFor(professional.id)) {
         if (gap.gap <= 0 || !gap.competency) continue;
         const current = map.get(gap.competency.id) ?? { people: 0, totalGap: 0, maxGap: 0 };
         map.set(gap.competency.id, {
@@ -102,7 +105,7 @@ describe("recorte por arquitetos selecionados", () => {
     return map;
   };
 
-  it("as prioridades somam o impacto apenas dos arquitetos filtrados", () => {
+  it("as prioridades somam o impacto apenas dos profissionais filtrados", () => {
     const soBruno = consolidate(["bruno"]);
     expect(soBruno.get("security-iam")).toMatchObject({ people: 1, totalGap: 1 });
     expect(soBruno.get("cloud-k8s")).toMatchObject({ people: 1, totalGap: 1 });

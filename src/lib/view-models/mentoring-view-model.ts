@@ -1,5 +1,5 @@
 import { UserFacingError } from "../api-errors";
-import type { Architect, DevelopmentPlan, MentoringSession, ProficiencyUpdate } from "../domain";
+import type { Professional, DevelopmentPlan, MentoringSession, ProficiencyUpdate } from "../domain";
 import type { Gap } from "../selectors";
 import type { Api } from "../store";
 import { createPlanItemFromGap } from "./plan-item-from-gap";
@@ -63,7 +63,7 @@ export class MentoringViewModel {
 
   async sendToPlan(
     session: Pick<MentoringSession, "menteeId" | "topic" | "actions" | "nextSession">,
-    mentee: Pick<Architect, "name">,
+    mentee: Pick<Professional, "name">,
     eligible: { assessmentId: string; competencyId: string },
   ): Promise<DevelopmentPlan> {
     const targetDate = session.nextSession;

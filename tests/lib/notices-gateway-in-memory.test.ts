@@ -16,20 +16,20 @@ import {
  * DESTINATÁRIOS (CONTRATO.md, PRD-02, confirmado pelo dono em 2026-08-29):
  * "tech lead vê os avisos do TIME (PDI vencendo, avaliação parada, evidência
  * esperando revisão); a própria pessoa vê SÓ os dela". O administrador NÃO é
- * destinatário — ele não tem time nem arquiteto vinculado, e por isso a caixa
+ * destinatário — ele não tem time nem profissional vinculado, e por isso a caixa
  * dele fica vazia até a fila de administrador existir (revisão do PO,
  * 2026-08-30, item "o que está travado no processo").
  *
  * ONDA 21 — o que mudou aqui e POR QUÊ (a inversão da Central de avisos).
  * Medido na aplicação viva, com as próprias mãos, antes de escrever código:
- *  - `GET /auth/me` de `techlead@synapse.local` devolve `architectId: null` e
+ *  - `GET /auth/me` de `techlead@synapse.local` devolve `professionalId: null` e
  *    `memberships: [{ teamId: "time-do-lead-<uuid>", role: "tech_lead" }]` —
  *    o uuid nasce da instalação e MUDA a cada seed;
  *  - as fixtures falavam `team-integration` / `team-architecture`, literais
  *    que não existem em base nenhuma: nunca casavam, e o sino do lead abria
  *    em "Nenhum aviso" mesmo com 3 pendências reais na fila dele;
  *  - `GET /auth/me` de `admin@synapse.local` devolve `memberships: []` e
- *    `architectId: null`, e mesmo assim ele via os 5 avisos;
+ *    `professionalId: null`, e mesmo assim ele via os 5 avisos;
  *  - `SELECT count(*) FROM development_plan_items` = **0**. Nenhum plano tem
  *    item: o aviso "Workshop de Clean Core" citava algo que não existe.
  *
@@ -41,19 +41,23 @@ const REAL_TEAM_ID = "time-do-lead-eef4b11a-31be-40ca-9b97-2889851e85c3";
 
 const techLead: NoticesViewer = {
   role: "tech_lead",
-  architectId: null,
+  professionalId: null,
   memberships: [{ teamId: REAL_TEAM_ID, role: "tech_lead" }],
 };
 const gerente: NoticesViewer = {
   role: "tech_lead",
-  architectId: null,
+  professionalId: null,
   memberships: [{ teamId: REAL_TEAM_ID, role: "manager" }],
 };
-const administrador: NoticesViewer = { role: "admin", architectId: null, memberships: [] };
-const techLeadSemVinculo: NoticesViewer = { role: "tech_lead", architectId: null, memberships: [] };
-const memberAna: NoticesViewer = { role: "member", architectId: "demo-ana-martins" };
-const memberCarla: NoticesViewer = { role: "member", architectId: "demo-carla-souza" };
-const memberWithoutArchitect: NoticesViewer = { role: "member", architectId: null };
+const administrador: NoticesViewer = { role: "admin", professionalId: null, memberships: [] };
+const techLeadSemVinculo: NoticesViewer = {
+  role: "tech_lead",
+  professionalId: null,
+  memberships: [],
+};
+const memberAna: NoticesViewer = { role: "member", professionalId: "demo-ana-martins" };
+const memberCarla: NoticesViewer = { role: "member", professionalId: "demo-carla-souza" };
+const memberWithoutProfessional: NoticesViewer = { role: "member", professionalId: null };
 
 const gatewayFor = (viewer: NoticesViewer) =>
   new InMemoryNoticesGateway(() => Promise.resolve(viewer));
@@ -121,7 +125,7 @@ describe("InMemoryNoticesGateway — recorte por destinatário (o mock É o serv
   it("member vê SÓ os próprios avisos — nunca um aviso do time sobre outra pessoa", async () => {
     const page = await gatewayFor(memberAna).notices({ status: "all" });
     expect(page.notices.length).toBeGreaterThan(0);
-    expect(page.notices.every((item) => item.architectId === "demo-ana-martins")).toBe(true);
+    expect(page.notices.every((item) => item.professionalId === "demo-ana-martins")).toBe(true);
   });
 
   it("unreadCount do member conta só o escopo dele, não o do time", async () => {
@@ -133,11 +137,11 @@ describe("InMemoryNoticesGateway — recorte por destinatário (o mock É o serv
 
   it("member de outra pessoa não herda avisos alheios pelo time em comum", async () => {
     const page = await gatewayFor(memberCarla).notices({ status: "all" });
-    expect(page.notices.every((item) => item.architectId === "demo-carla-souza")).toBe(true);
+    expect(page.notices.every((item) => item.professionalId === "demo-carla-souza")).toBe(true);
   });
 
-  it("member sem arquiteto vinculado não vê aviso nenhum", async () => {
-    const page = await gatewayFor(memberWithoutArchitect).notices({ status: "all" });
+  it("member sem profissional vinculado não vê aviso nenhum", async () => {
+    const page = await gatewayFor(memberWithoutProfessional).notices({ status: "all" });
     expect(page.notices).toEqual([]);
     expect(page.unreadCount).toBe(0);
   });
@@ -159,7 +163,7 @@ describe("InMemoryNoticesGateway — recorte por destinatário (o mock É o serv
   it("vínculo de MEMBRO não concede o escopo do time — quem não lidera não lê o time", async () => {
     const apenasMembro: NoticesViewer = {
       role: "tech_lead",
-      architectId: null,
+      professionalId: null,
       memberships: [{ teamId: REAL_TEAM_ID, role: "member" }],
     };
     const page = await gatewayFor(apenasMembro).notices({ status: "all" });
@@ -181,15 +185,15 @@ describe("InMemoryNoticesGateway — recorte por destinatário (o mock É o serv
 
 /**
  * Ressalva 2 da onda 17 — a fixture do sino falava uma língua que o seed real
- * não fala. Os `architectId` eram apelidos inventados (`ana`, `bruno`,
+ * não fala. Os `professionalId` eram apelidos inventados (`ana`, `bruno`,
  * `carla`) enquanto o seed de demonstração do backend cadastra
  * `demo-ana-martins` e companhia. Estes testes amarram a fixture ao seed: são
  * o alarme que dispara se alguém reintroduzir apelido inventado. Os ids vêm de
  * `backend/src/scripts/seed-demo.ts` — conferidos contra a base viva
- * (`SELECT id FROM architects`), não adivinhados.
+ * (`SELECT id FROM professionals`), não adivinhados.
  */
 describe("InMemoryNoticesGateway — a fixture fala os ids do seed real", () => {
-  const SEED_ARCHITECT_IDS = [
+  const SEED_PROFESSIONAL_IDS = [
     "demo-ana-martins",
     "demo-bruno-almeida",
     "demo-carla-souza",
@@ -197,27 +201,27 @@ describe("InMemoryNoticesGateway — a fixture fala os ids do seed real", () => 
     "demo-elisa-prado",
   ];
 
-  it("todo aviso aponta para um arquiteto que existe no seed de demonstração", async () => {
+  it("todo aviso aponta para um profissional que existe no seed de demonstração", async () => {
     const page = await gatewayFor(techLead).notices({ status: "all" });
     expect(page.notices.length).toBeGreaterThan(0);
     for (const notice of page.notices) {
-      expect(SEED_ARCHITECT_IDS).toContain(notice.architectId);
+      expect(SEED_PROFESSIONAL_IDS).toContain(notice.professionalId);
     }
   });
 
   it("o member do seed (dev@synapse.local → demo-ana-martins) vê os avisos DELE, não 'Nenhum aviso'", async () => {
     const page = await gatewayFor(memberAna).notices({ status: "all" });
     expect(page.notices.length).toBeGreaterThan(0);
-    expect(page.notices.every((item) => item.architectId === "demo-ana-martins")).toBe(true);
+    expect(page.notices.every((item) => item.professionalId === "demo-ana-martins")).toBe(true);
     expect(page.unreadCount).toBeGreaterThan(0);
   });
 
-  it("o link de cada aviso aponta para o arquiteto do próprio aviso", async () => {
+  it("o link de cada aviso aponta para o profissional do próprio aviso", async () => {
     const page = await gatewayFor(techLead).notices({ status: "all" });
-    const withArchitectInLink = page.notices.filter((item) => item.link.includes("demo-"));
-    expect(withArchitectInLink.length).toBeGreaterThan(0);
-    for (const notice of withArchitectInLink) {
-      expect(notice.link).toContain(notice.architectId!);
+    const withProfessionalInLink = page.notices.filter((item) => item.link.includes("demo-"));
+    expect(withProfessionalInLink.length).toBeGreaterThan(0);
+    for (const notice of withProfessionalInLink) {
+      expect(notice.link).toContain(notice.professionalId!);
     }
   });
 });
@@ -241,7 +245,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
     link: "/assessments",
     occurredAt: new Date().toISOString(),
     readAt: null,
-    architectId: "arquiteto-de-outro-time",
+    professionalId: "profissional-de-outro-time",
     teamId: "time-que-o-lead-nao-lidera",
   };
 
@@ -249,14 +253,14 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
     id: "aviso-do-time-do-lead",
     eventType: "evidence.awaitingReview",
     title: "Evidência de Carla Souza espera revisão: Desenho do data mart de logística",
-    link: "/architects/demo-carla-souza",
+    link: "/professionals/demo-carla-souza",
     occurredAt: new Date(Date.now() - 60_000).toISOString(),
     readAt: null,
-    architectId: "demo-carla-souza",
+    professionalId: "demo-carla-souza",
     teamId: DEMONSTRATION_TEAM_ID,
   };
 
-  it("o tech lead do seed — uuid de time real, sem arquiteto — vê os avisos do time dele", async () => {
+  it("o tech lead do seed — uuid de time real, sem profissional — vê os avisos do time dele", async () => {
     const page = await gatewayFor(techLead).notices({ status: "all" });
     expect(page.notices.length).toBeGreaterThan(0);
     expect(page.unreadCount).toBeGreaterThan(0);
@@ -267,7 +271,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
     expect(page.notices.every((item) => item.teamId === REAL_TEAM_ID)).toBe(true);
   });
 
-  it("o administrador, sem time e sem arquiteto, não recebe aviso de trabalho de ninguém", async () => {
+  it("o administrador, sem time e sem profissional, não recebe aviso de trabalho de ninguém", async () => {
     const page = await gatewayFor(administrador).notices({ status: "all" });
     expect(page.notices).toEqual([]);
     expect(page.unreadCount).toBe(0);
@@ -296,7 +300,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
   it("marcar todos como lidos não alcança o aviso do time alheio", async () => {
     const doTimeVizinho: NoticesViewer = {
       role: "tech_lead",
-      architectId: null,
+      professionalId: null,
       memberships: [{ teamId: "time-que-o-lead-nao-lidera", role: "tech_lead" }],
     };
     let viewer = techLead;
@@ -328,7 +332,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
   });
 
   it("sessão sem o campo memberships (backend antigo) falha FECHADA, nunca aberta", async () => {
-    const sessaoAntiga: NoticesViewer = { role: "tech_lead", architectId: null };
+    const sessaoAntiga: NoticesViewer = { role: "tech_lead", professionalId: null };
     const page = await gatewayFor(sessaoAntiga).notices({ status: "all" });
     expect(page.notices).toEqual([]);
     expect(page.unreadCount).toBe(0);
@@ -358,7 +362,7 @@ describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recort
     link: "/assessments",
     occurredAt: new Date().toISOString(),
     readAt: null,
-    architectId: "arquiteto-de-outro-time",
+    professionalId: "profissional-de-outro-time",
     teamId: "time-que-o-lead-nao-lidera",
   };
 
@@ -366,16 +370,16 @@ describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recort
     id: "aviso-do-time-do-lead",
     eventType: "evidence.awaitingReview",
     title: "Evidência de Carla Souza espera revisão: Desenho do data mart de logística",
-    link: "/architects/demo-carla-souza",
+    link: "/professionals/demo-carla-souza",
     occurredAt: new Date(Date.now() - 60_000).toISOString(),
     readAt: null,
-    architectId: "demo-carla-souza",
+    professionalId: "demo-carla-souza",
     teamId: DEMONSTRATION_TEAM_ID,
   };
 
   const doTimeVizinho: NoticesViewer = {
     role: "tech_lead",
-    architectId: null,
+    professionalId: null,
     memberships: [{ teamId: "time-que-o-lead-nao-lidera", role: "tech_lead" }],
   };
 
@@ -399,7 +403,7 @@ describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recort
   it("o member não marca como lido o aviso do time — só alcança os próprios", async () => {
     const gateway = new InMemoryNoticesGateway(() => Promise.resolve(memberAna));
     const doTime = (await gatewayFor(techLead).notices({ status: "unread" })).notices.find(
-      (item) => item.architectId !== "demo-ana-martins",
+      (item) => item.professionalId !== "demo-ana-martins",
     );
     expect(doTime).toBeDefined();
     await gateway.markNoticeRead(doTime!.id);

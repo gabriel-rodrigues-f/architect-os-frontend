@@ -2,12 +2,12 @@ import { cleanup, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-/** Mesma razão de `architect-profile-fora-do-escopo.test.tsx`: `Route.useParams()` exige árvore montada. */
+/** Mesma razão de `professional-profile-fora-do-escopo.test.tsx`: `Route.useParams()` exige árvore montada. */
 vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import type { AppState } from "@/lib/api";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch } from "../helpers/render-app";

@@ -9,12 +9,12 @@ import type { ApiClient } from "../api-client";
 
 export interface DevelopmentGateway {
   addPlanItem(
-    architectId: string,
+    professionalId: string,
     cycleId: string,
     item: DevelopmentPlanItem,
   ): Promise<DevelopmentPlan>;
   createPlanItemFromGap(
-    architectId: string,
+    professionalId: string,
     item: {
       id: string;
       assessmentId: string;
@@ -62,14 +62,14 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
   constructor(private readonly client: ApiClient) {}
 
   addPlanItem = (
-    architectId: string,
+    professionalId: string,
     cycleId: string,
     item: DevelopmentPlanItem,
   ): Promise<DevelopmentPlan> =>
-    this.client.post<DevelopmentPlan>(`/plans/${architectId}/items`, { cycleId, item });
+    this.client.post<DevelopmentPlan>(`/plans/${professionalId}/items`, { cycleId, item });
 
   createPlanItemFromGap = (
-    architectId: string,
+    professionalId: string,
     item: {
       id: string;
       assessmentId: string;
@@ -83,7 +83,7 @@ export class HttpDevelopmentGateway implements DevelopmentGateway {
       dedicationHoursPerWeek?: number | null;
     },
   ): Promise<DevelopmentPlan> =>
-    this.client.post<DevelopmentPlan>(`/plans/${architectId}/items/from-gap`, item);
+    this.client.post<DevelopmentPlan>(`/plans/${professionalId}/items/from-gap`, item);
 
   patchPlanItem = (
     planId: string,

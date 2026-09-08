@@ -24,7 +24,7 @@ const DATABASE_URL =
   process.env["E2E_DATABASE_URL"] ?? "postgres://architect:architect@localhost:5433/architect_os";
 
 const RUN_ID = Date.now().toString(36);
-const ARCHITECT_NAME = "E2E Mentoring Mentee";
+const PROFESSIONAL_NAME = "E2E Mentoring Mentee";
 const MENTEE_EMAIL = `e2e-ment-mentee-${RUN_ID}@architect-os.local`;
 const LEAD_EMAIL = `e2e-ment-lead-${RUN_ID}@architect-os.local`;
 const TOPIC = `E2E revisão de arquitetura ${RUN_ID}`;
@@ -56,7 +56,7 @@ test.beforeAll(async ({ playwright }) => {
   await admitPersonToTeam({
     playwright,
     api,
-    name: ARCHITECT_NAME,
+    name: PROFESSIONAL_NAME,
     email: MENTEE_EMAIL,
     role: "member",
     teamId,
@@ -90,11 +90,11 @@ test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo
   // campo; sem isto `getByLabel` casa os dois (e mais campos, por
   // sobreposição de texto) e vira "strict mode violation".
   const dialog = page.getByRole("dialog", { name: "Nova sessão de mentoria" });
-  // "Mentorado" deixou de ser <select> nativo: é o ArchitectSelectCombobox
+  // "Mentorado" deixou de ser <select> nativo: é o ProfessionalSelectCombobox
   // (botão role="combobox" + popover cmdk) — abre e escolhe a opção pelo
   // nome, como uma pessoa faria.
   await dialog.getByRole("combobox", { name: "Mentorado", exact: true }).click();
-  await page.getByRole("option", { name: ARCHITECT_NAME }).click();
+  await page.getByRole("option", { name: PROFESSIONAL_NAME }).click();
   await dialog.getByLabel("Tema", { exact: true }).fill(TOPIC);
   await dialog
     .getByLabel("Notas", { exact: true })
@@ -106,7 +106,7 @@ test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo
   await dialog.getByLabel("Duração (min)", { exact: true }).fill("45");
   await dialog.getByRole("button", { name: "Salvar sessão" }).click();
 
-  await expect(page.getByText(`Sessão com ${ARCHITECT_NAME} registrada`)).toBeVisible();
+  await expect(page.getByText(`Sessão com ${PROFESSIONAL_NAME} registrada`)).toBeVisible();
   await expect(page.getByText(TOPIC)).toBeVisible();
 
   // Recarrega — a sessão tem que vir do servidor, não só do estado otimista da aba.
@@ -117,6 +117,6 @@ test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo
   // anterior prova; o que este trecho prova é a PERSISTÊNCIA.)
   await page.reload();
   await page.getByRole("combobox", { name: "Filtrar mentorado" }).click();
-  await page.getByRole("option", { name: ARCHITECT_NAME }).click();
+  await page.getByRole("option", { name: PROFESSIONAL_NAME }).click();
   await expect(page.getByText(TOPIC)).toBeVisible();
 });

@@ -1,6 +1,6 @@
 import type { AppState } from "./api";
 import type {
-  Architect,
+  Professional,
   Assessment,
   AssessmentTargetSemantics,
   Competency,
@@ -15,7 +15,7 @@ export const emptyState: AppState = {
   capabilities: [],
   competencies: [],
   teamLevelRules: [],
-  architects: [],
+  professionals: [],
   assessments: [],
   cycles: [],
   plans: [],
@@ -54,31 +54,32 @@ export interface TrainingNeed {
   avgGap: number;
   totalGap: number;
 
-  architectIds: string[];
+  professionalIds: string[];
 }
 
 const byId = <T extends { id: string }>(items: T[]): Map<string, T> =>
   new Map(items.map((item) => [item.id, item]));
 
-const cycleKey = (architectId: string, cycleId: string) => `${architectId} ${cycleId}`;
+const cycleKey = (professionalId: string, cycleId: string) => `${professionalId} ${cycleId}`;
 
-const indexByArchitectAndCycle = <T extends { architectId: string; cycleId: string }>(
+const indexByProfessionalAndCycle = <T extends { professionalId: string; cycleId: string }>(
   items: T[],
-): Map<string, T> => new Map(items.map((item) => [cycleKey(item.architectId, item.cycleId), item]));
+): Map<string, T> =>
+  new Map(items.map((item) => [cycleKey(item.professionalId, item.cycleId), item]));
 
 export class SelectorIndex {
   readonly competencyIndex: Map<string, Competency>;
   readonly capabilityIndex: Map<string, Capability>;
-  readonly architectIndex: Map<string, Architect>;
+  readonly professionalIndex: Map<string, Professional>;
   readonly assessmentIndex: Map<string, Assessment>;
   readonly planIndex: Map<string, AppState["plans"][number]>;
 
   constructor(private readonly state: AppState) {
     this.competencyIndex = byId(state.competencies);
     this.capabilityIndex = byId(state.capabilities);
-    this.architectIndex = byId(state.architects);
-    this.assessmentIndex = indexByArchitectAndCycle(state.assessments);
-    this.planIndex = indexByArchitectAndCycle(state.plans);
+    this.professionalIndex = byId(state.professionals);
+    this.assessmentIndex = indexByProfessionalAndCycle(state.assessments);
+    this.planIndex = indexByProfessionalAndCycle(state.plans);
   }
 
   get activeCycleId(): string {
@@ -86,46 +87,48 @@ export class SelectorIndex {
   }
 }
 
-export class ArchitectRoster {
+export class ProfessionalRoster {
   /**
    * Quem entra em toda leitura de capacidade: ativo E profissional. O gerente
    * (cargo `manager`) fica de fora de Avaliações, Prioridades, Progressão,
    * Comparativo, PDI e afins (dono, 2026-09-06); o Time o lista pelo roster
    * completo, com o filtro de status.
    */
-  static active(architects: readonly Architect[]): Architect[] {
-    return ArchitectRoster.professionals(architects).filter((architect) => architect.active);
+  static active(professionals: readonly Professional[]): Professional[] {
+    return ProfessionalRoster.professionals(professionals).filter(
+      (professional) => professional.active,
+    );
   }
 
   /** Todo mundo menos o gerente — ativos e desativados. É o que o Time lista. */
-  static professionals(architects: readonly Architect[]): Architect[] {
-    return architects.filter((architect) => PositionReading.isProfessional(architect));
+  static professionals(professionals: readonly Professional[]): Professional[] {
+    return professionals.filter((professional) => PositionReading.isProfessional(professional));
   }
 }
 
-export class ArchitectSelectors {
-  readonly active: Architect[];
+export class ProfessionalSelectors {
+  readonly active: Professional[];
 
   constructor(
     state: AppState,
     private readonly index: SelectorIndex,
   ) {
-    this.active = ArchitectRoster.active(state.architects);
+    this.active = ProfessionalRoster.active(state.professionals);
   }
 
-  byId = (id: string): Architect | undefined => this.index.architectIndex.get(id);
+  byId = (id: string): Professional | undefined => this.index.professionalIndex.get(id);
 
   specializationLabel = (
-    architect: Pick<Architect, "specialization" | "primarySpecializationCompetencyId">,
+    professional: Pick<Professional, "specialization" | "primarySpecializationCompetencyId">,
   ): string => {
-    if (architect.primarySpecializationCompetencyId) {
+    if (professional.primarySpecializationCompetencyId) {
       const competency = this.index.competencyIndex.get(
-        architect.primarySpecializationCompetencyId,
+        professional.primarySpecializationCompetencyId,
       );
       if (competency) return competency.name;
     }
-    return architect.specialization
-      ? `${architect.specialization} (pendente de migração)`
+    return professional.specialization
+      ? `${professional.specialization} (pendente de migração)`
       : "Especialização não definida";
   };
 }
@@ -148,24 +151,24 @@ export class AssessmentSelectors {
   };
 
   assessmentFor = (
-    architectId: string,
+    professionalId: string,
     cycleId = this.index.activeCycleId,
-  ): Assessment | undefined => this.index.assessmentIndex.get(cycleKey(architectId, cycleId));
+  ): Assessment | undefined => this.index.assessmentIndex.get(cycleKey(professionalId, cycleId));
 
   officialAssessmentFor = (
-    architectId: string,
+    professionalId: string,
     cycleId = this.index.activeCycleId,
   ): Assessment | undefined => {
-    const assessment = this.assessmentFor(architectId, cycleId);
+    const assessment = this.assessmentFor(professionalId, cycleId);
     return assessment?.status === "Completed" ? assessment : undefined;
   };
 
-  gapsFor = (architectId: string, cycleId = this.index.activeCycleId): Gap[] => {
-    const cacheKey = cycleKey(architectId, cycleId);
+  gapsFor = (professionalId: string, cycleId = this.index.activeCycleId): Gap[] => {
+    const cacheKey = cycleKey(professionalId, cycleId);
     const cached = this.gapsCache.get(cacheKey);
     if (cached) return cached;
 
-    const assessment = this.officialAssessmentFor(architectId, cycleId);
+    const assessment = this.officialAssessmentFor(professionalId, cycleId);
     const gaps = !assessment
       ? []
       : assessment.items
@@ -184,11 +187,11 @@ export class AssessmentSelectors {
     return gaps;
   };
 
-  progressionGapsFor = (architectId: string, cycleId = this.index.activeCycleId): Gap[] =>
-    this.gapsFor(architectId, cycleId).filter((g) => g.targetSemantics !== "MASTERY");
+  progressionGapsFor = (professionalId: string, cycleId = this.index.activeCycleId): Gap[] =>
+    this.gapsFor(professionalId, cycleId).filter((g) => g.targetSemantics !== "MASTERY");
 
-  masteryOpportunitiesFor = (architectId: string, cycleId = this.index.activeCycleId): Gap[] =>
-    this.gapsFor(architectId, cycleId).filter((g) => g.targetSemantics === "MASTERY");
+  masteryOpportunitiesFor = (professionalId: string, cycleId = this.index.activeCycleId): Gap[] =>
+    this.gapsFor(professionalId, cycleId).filter((g) => g.targetSemantics === "MASTERY");
 }
 
 export interface ConsolidatedGapRow {
@@ -197,7 +200,7 @@ export interface ConsolidatedGapRow {
   capabilityId: string;
   people: number;
 
-  architectNames: string[];
+  professionalNames: string[];
   totalGap: number;
   maxGap: number;
   avgGap: number;
@@ -209,8 +212,8 @@ export class GapConsolidationSelectors {
   constructor(private readonly assessment: AssessmentSelectors) {}
 
   consolidate(
-    architects: readonly Architect[],
-    gapsFor: (architectId: string) => Gap[],
+    professionals: readonly Professional[],
+    gapsFor: (professionalId: string) => Gap[],
   ): ConsolidatedGapRow[] {
     const map = new Map<
       string,
@@ -219,7 +222,7 @@ export class GapConsolidationSelectors {
         name: string;
         capabilityId: string;
         people: number;
-        architectNames: string[];
+        professionalNames: string[];
         totalGap: number;
         maxGap: number;
         sumFinal: number;
@@ -227,8 +230,8 @@ export class GapConsolidationSelectors {
       }
     >();
 
-    for (const architect of architects) {
-      for (const gap of gapsFor(architect.id)) {
+    for (const professional of professionals) {
+      for (const gap of gapsFor(professional.id)) {
         if (gap.gap <= 0 || !gap.competency) continue;
         let current = map.get(gap.competency.id);
         if (!current) {
@@ -237,7 +240,7 @@ export class GapConsolidationSelectors {
             name: gap.competency.name,
             capabilityId: gap.competency.capabilityId,
             people: 0,
-            architectNames: [],
+            professionalNames: [],
             totalGap: 0,
             maxGap: 0,
             sumFinal: 0,
@@ -246,7 +249,7 @@ export class GapConsolidationSelectors {
           map.set(gap.competency.id, current);
         }
         current.people += 1;
-        current.architectNames.push(architect.name);
+        current.professionalNames.push(professional.name);
         current.totalGap += gap.gap;
         current.maxGap = Math.max(current.maxGap, gap.gap);
         current.sumFinal += gap.item.final;
@@ -264,18 +267,18 @@ export class GapConsolidationSelectors {
       .sort((a, b) => b.totalGap - a.totalGap || b.maxGap - a.maxGap);
   }
 
-  progression = (architects: readonly Architect[]): ConsolidatedGapRow[] =>
-    this.consolidate(architects, this.assessment.progressionGapsFor);
+  progression = (professionals: readonly Professional[]): ConsolidatedGapRow[] =>
+    this.consolidate(professionals, this.assessment.progressionGapsFor);
 
-  mastery = (architects: readonly Architect[]): ConsolidatedGapRow[] =>
-    this.consolidate(architects, this.assessment.masteryOpportunitiesFor);
+  mastery = (professionals: readonly Professional[]): ConsolidatedGapRow[] =>
+    this.consolidate(professionals, this.assessment.masteryOpportunitiesFor);
 }
 
 export class DevelopmentSelectors {
   constructor(private readonly index: SelectorIndex) {}
 
-  planFor = (architectId: string, cycleId = this.index.activeCycleId) =>
-    this.index.planIndex.get(cycleKey(architectId, cycleId));
+  planFor = (professionalId: string, cycleId = this.index.activeCycleId) =>
+    this.index.planIndex.get(cycleKey(professionalId, cycleId));
 
   evidencesForPlanItem = (evidences: readonly Evidence[], itemId: string): Evidence[] =>
     evidences.filter((e) => e.developmentPlanItemId === itemId);
@@ -301,19 +304,19 @@ export class CapabilitySelectors {
     this.shortLabels.get(c.id) ?? c.short;
 
   coverageFor = (
-    architectId: string,
+    professionalId: string,
     cycleId?: string,
   ): { avg: number | undefined; covered: number; total: number } =>
-    averageWithCoverage(this.capabilityAverages(architectId, cycleId).map((d) => d.avg));
+    averageWithCoverage(this.capabilityAverages(professionalId, cycleId).map((d) => d.avg));
 
   teamAverageFor = (
     capabilityId: string,
-    architects: readonly Pick<Architect, "id">[],
+    professionals: readonly Pick<Professional, "id">[],
   ): {
     atual: { avg: number | undefined; covered: number; total: number };
     alvo: { avg: number | undefined; covered: number; total: number };
   } => {
-    const rows = architects.map((a) =>
+    const rows = professionals.map((a) =>
       this.capabilityAverages(a.id).find((d) => d.capability.id === capabilityId),
     );
     return {
@@ -323,15 +326,16 @@ export class CapabilitySelectors {
   };
 
   capabilityAverages = (
-    architectId: string,
+    professionalId: string,
     cycleId = this.index.activeCycleId,
   ): CapabilityAverage[] => {
-    const cacheKey = cycleKey(architectId, cycleId);
+    const cacheKey = cycleKey(professionalId, cycleId);
     const cached = this.averagesCache.get(cacheKey);
     if (cached) return cached;
 
     const totals = new Map<string, { final: number; target: number; count: number }>();
-    for (const item of this.assessment.officialAssessmentFor(architectId, cycleId)?.items ?? []) {
+    for (const item of this.assessment.officialAssessmentFor(professionalId, cycleId)?.items ??
+      []) {
       if (item.final === null) continue;
       const capabilityId =
         this.index.competencyIndex.get(item.competencyId)?.capabilityId ?? item.capabilityId;
@@ -357,26 +361,26 @@ export class CapabilitySelectors {
 
 export class TrainingSelectors {
   constructor(
-    private readonly architect: ArchitectSelectors,
+    private readonly professional: ProfessionalSelectors,
     private readonly assessment: AssessmentSelectors,
   ) {}
 
-  teamTrainingNeeds = (population: Architect[] = this.architect.active): TrainingNeed[] => {
+  teamTrainingNeeds = (population: Professional[] = this.professional.active): TrainingNeed[] => {
     const totals = new Map<
       string,
-      { competency: Competency; people: number; totalGap: number; architectIds: string[] }
+      { competency: Competency; people: number; totalGap: number; professionalIds: string[] }
     >();
-    for (const architect of population) {
-      for (const gap of this.assessment.progressionGapsFor(architect.id)) {
+    for (const professional of population) {
+      for (const gap of this.assessment.progressionGapsFor(professional.id)) {
         if (gap.gap <= 0) continue;
         let acc = totals.get(gap.item.competencyId);
         if (!acc) {
-          acc = { competency: gap.competency, people: 0, totalGap: 0, architectIds: [] };
+          acc = { competency: gap.competency, people: 0, totalGap: 0, professionalIds: [] };
           totals.set(gap.item.competencyId, acc);
         }
         acc.people += 1;
         acc.totalGap += gap.gap;
-        acc.architectIds.push(architect.id);
+        acc.professionalIds.push(professional.id);
       }
     }
 
@@ -386,7 +390,7 @@ export class TrainingSelectors {
         people: v.people,
         avgGap: Number((v.totalGap / v.people).toFixed(1)),
         totalGap: v.totalGap,
-        architectIds: v.architectIds,
+        professionalIds: v.professionalIds,
       }))
       .sort((x, y) => y.totalGap - x.totalGap);
   };
@@ -394,19 +398,19 @@ export class TrainingSelectors {
 
 export function createSelectors(state: AppState) {
   const index = new SelectorIndex(state);
-  const architect = new ArchitectSelectors(state, index);
+  const professional = new ProfessionalSelectors(state, index);
   const assessment = new AssessmentSelectors(index);
   const development = new DevelopmentSelectors(index);
   const capability = new CapabilitySelectors(state, index, assessment);
-  const training = new TrainingSelectors(architect, assessment);
+  const training = new TrainingSelectors(professional, assessment);
   const gapConsolidation = new GapConsolidationSelectors(assessment);
 
   return {
     competencyById: capability.competencyById,
     capabilityById: capability.capabilityById,
-    architectById: architect.byId,
-    activeArchitects: architect.active,
-    specializationLabel: architect.specializationLabel,
+    professionalById: professional.byId,
+    activeProfessionals: professional.active,
+    specializationLabel: professional.specializationLabel,
     assessmentFor: assessment.assessmentFor,
     officialAssessmentFor: assessment.officialAssessmentFor,
     planFor: development.planFor,

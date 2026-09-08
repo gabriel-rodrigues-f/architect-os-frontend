@@ -71,7 +71,7 @@ describe("heatmap de capacidades — colunas excedentes ganham affordance de rol
   it("mostra o fade na borda cortada e o move conforme a rolagem", async () => {
     renderWithApp(
       <CapabilityHeatmap
-        architects={fixtureState.architects}
+        professionals={fixtureState.professionals}
         capabilities={fixtureState.capabilities}
         capabilityAveragesFor={() => averages}
       />,

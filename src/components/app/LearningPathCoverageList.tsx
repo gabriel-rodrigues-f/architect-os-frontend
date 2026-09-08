@@ -6,10 +6,10 @@ import type { MissingCompetencyView, RoadmapCoverage } from "@/lib/view-models";
 
 export function LearningPathCoverageList({
   coverage,
-  architectId,
+  professionalId,
 }: {
   coverage: RoadmapCoverage;
-  architectId: string;
+  professionalId: string;
 }) {
   const { t } = useI18n();
   if (coverage.paths.length === 0 && coverage.uncovered.length === 0) {
@@ -39,7 +39,7 @@ export function LearningPathCoverageList({
         </ul>
       )}
       {coverage.uncovered.length > 0 && (
-        <UncoveredCompetencies uncovered={coverage.uncovered} architectId={architectId} />
+        <UncoveredCompetencies uncovered={coverage.uncovered} professionalId={professionalId} />
       )}
     </div>
   );
@@ -47,10 +47,10 @@ export function LearningPathCoverageList({
 
 function UncoveredCompetencies({
   uncovered,
-  architectId,
+  professionalId,
 }: {
   uncovered: readonly MissingCompetencyView[];
-  architectId: string;
+  professionalId: string;
 }) {
   const { t } = useI18n();
   return (
@@ -61,7 +61,7 @@ function UncoveredCompetencies({
       </p>
       <Link
         to="/development-plans"
-        search={{ architectId }}
+        search={{ professionalId }}
         className="mt-2 inline-block text-primary underline"
       >
         {t("roadmap.coverage.createPdi")}

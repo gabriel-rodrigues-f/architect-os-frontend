@@ -26,7 +26,7 @@ export function CardHelp({ title, what, how }: { title: string; what: string; ho
 }
 
 export const DASHBOARD_CARDS = [
-  "architects",
+  "professionals",
   "activePlans",
   "criticalGaps",
   "goalsInProgress",

@@ -1,4 +1,4 @@
-import { capabilityShortLabels, type Architect, type Capability } from "../domain";
+import { capabilityShortLabels, type Professional, type Capability } from "../domain";
 import type { MessageKey } from "../i18n";
 import { defaultGapSeverityRuler, type GapSeverityRuler } from "../scoring-bands";
 import type { CapabilityAverage, ConsolidatedGapRow } from "../selectors";
@@ -7,9 +7,9 @@ import { defaultDateFormatter } from "../text";
 export interface TeamReportInput {
   scopeLabel: string;
   generatedAt: Date;
-  architects: Pick<Architect, "id" | "name">[];
+  professionals: Pick<Professional, "id" | "name">[];
   capabilities: Pick<Capability, "id" | "name" | "short">[];
-  capabilityAveragesFor: (architectId: string) => CapabilityAverage[];
+  capabilityAveragesFor: (professionalId: string) => CapabilityAverage[];
   priorities: ConsolidatedGapRow[];
   mastery: ConsolidatedGapRow[];
 }
@@ -34,13 +34,13 @@ export class TeamReportPresenter {
   get heatmapHead(): string[] {
     const shortLabels = capabilityShortLabels(this.input.capabilities);
     return [
-      this.t("col.architect"),
+      this.t("col.professional"),
       ...this.input.capabilities.map((c) => shortLabels.get(c.id) ?? c.short),
     ];
   }
 
   get heatmapBody(): (string | number)[][] {
-    return this.input.architects.map((a) => {
+    return this.input.professionals.map((a) => {
       const averages = this.input.capabilityAveragesFor(a.id);
       return [
         a.name,

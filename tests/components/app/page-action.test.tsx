@@ -146,9 +146,9 @@ describe("SectionAction — a ação de cabeçalho de seção", () => {
   it("dentro de um grupo continua sendo de seção — a régua da seção não se mistura", () => {
     render(
       <PageActions>
-        <SectionAction label="Alocar pessoa" />
+        <SectionAction label="Alocar profissional" />
       </PageActions>,
     );
-    expect(botao("Alocar pessoa").getAttribute("data-page-action")).toBe("section");
+    expect(botao("Alocar profissional").getAttribute("data-page-action")).toBe("section");
   });
 });

@@ -32,7 +32,7 @@ import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamString } from "@/hooks";
 
 const assessmentsSearchSchema = z.object({
-  architectId: z.string().optional(),
+  professionalId: z.string().optional(),
   cycleId: z.string().optional(),
 });
 
@@ -74,9 +74,9 @@ function AssessmentsScreen() {
   const store = useStore();
   const sel = useSelectors();
   const user = useCurrentUser();
-  const assessable = defaultUiAuthorizationPolicy.assessableBy(user, store.architects);
-  const [architectId, setArchitectId] = useSearchParamString(
-    "architectId",
+  const assessable = defaultUiAuthorizationPolicy.assessableBy(user, store.professionals);
+  const [professionalId, setProfessionalId] = useSearchParamString(
+    "professionalId",
     () => assessable[0]?.id ?? "",
   );
 
@@ -96,8 +96,8 @@ function AssessmentsScreen() {
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [confirmingCompletion, setConfirmingCompletion] = useState(false);
 
-  const assessment = sel.assessmentFor(architectId, cycleId);
-  const selectedArchitect = sel.architectById(architectId);
+  const assessment = sel.assessmentFor(professionalId, cycleId);
+  const selectedProfessional = sel.professionalById(professionalId);
 
   const {
     isSubject,
@@ -113,7 +113,7 @@ function AssessmentsScreen() {
     incompleteLeaderFinal,
     seesAssessmentNumbers,
     completion,
-  } = useAssessmentPermissions(architectId, selectedArchitect, assessment);
+  } = useAssessmentPermissions(professionalId, selectedProfessional, assessment);
 
   const selected = store.capabilities.filter((c) => capabilityIds.includes(c.id));
 
@@ -171,9 +171,9 @@ function AssessmentsScreen() {
         actions={
           <div className="flex flex-wrap gap-2">
             <PersonCombobox
-              picker={PersonPicker.oneFor(user, assessable, architectId)}
-              onChange={([id]) => setArchitectId(id ?? "")}
-              label={t("asmt.architect")}
+              picker={PersonPicker.oneFor(user, assessable, professionalId)}
+              onChange={([id]) => setProfessionalId(id ?? "")}
+              label={t("asmt.professional")}
               className="w-56"
             />
             <CapabilityCombobox
@@ -270,9 +270,9 @@ function AssessmentsScreen() {
         <ConfirmDialog
           open={confirmingCompletion}
           destructive={false}
-          title={t("asmt.completeConfirm.title", { nome: selectedArchitect?.name ?? "" })}
+          title={t("asmt.completeConfirm.title", { nome: selectedProfessional?.name ?? "" })}
           description={t("asmt.completeConfirm.summary", {
-            nome: selectedArchitect?.name ?? "",
+            nome: selectedProfessional?.name ?? "",
             competencias:
               completion.competencyCount === 1
                 ? t("asmt.competencyCount.one")
@@ -296,13 +296,13 @@ function AssessmentsScreen() {
       {assessment && <DevelopmentSummarySection assessment={assessment} isLead={isLead} />}
 
       {/* Ninguém age sobre si (dono, 2026-09-06): a pessoa LÊ as próprias evidências; quem lidera registra e reenvia. */}
-      {selectedArchitect && (isSubject || isLead) && (
+      {selectedProfessional && (isSubject || isLead) && (
         <EvidenceLedgerSection
           className="mb-6"
-          architectId={selectedArchitect.id}
-          plan={sel.planFor(selectedArchitect.id)}
+          professionalId={selectedProfessional.id}
+          plan={sel.planFor(selectedProfessional.id)}
           evidences={store.evidences.filter(
-            (evidence) => evidence.architectId === selectedArchitect.id,
+            (evidence) => evidence.professionalId === selectedProfessional.id,
           )}
           canRegister={isLead}
         />
@@ -313,9 +313,11 @@ function AssessmentsScreen() {
           title={t("asmt.noAssessment.title")}
           description={t("asmt.noAssessment.subtitle")}
         >
-          {store.architects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.noArchitects")}</p>
-          ) : selectedArchitect && !selectedArchitect.active ? (
+          {store.professionals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {t("asmt.noAssessment.noProfessionals")}
+            </p>
+          ) : selectedProfessional && !selectedProfessional.active ? (
             <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.inactive")}</p>
           ) : !isActiveCycle ? (
             <p className="text-sm text-muted-foreground">
@@ -327,12 +329,12 @@ function AssessmentsScreen() {
               {openError && <p className="mt-2 text-sm text-destructive">{openError}</p>}
               <Button
                 className="mt-4"
-                disabled={opening || !architectId || !store.activeCycleId}
+                disabled={opening || !professionalId || !store.activeCycleId}
                 onClick={() => {
                   setOpenError(null);
                   setOpening(true);
                   store
-                    .openAssessment(architectId, store.activeCycleId)
+                    .openAssessment(professionalId, store.activeCycleId)
                     .catch((error: unknown) =>
                       setOpenError(
                         error instanceof UserFacingError ? error.message : t("asmt.openError"),
@@ -400,7 +402,7 @@ function AssessmentsScreen() {
               canEditSelf={canEditSelf}
               canEditLeaderFinal={canEditLeaderFinal}
               seesAssessmentNumbers={seesAssessmentNumbers}
-              architectId={architectId}
+              professionalId={professionalId}
               openComment={openComment}
               onToggleComment={(id) => setOpenComment((prev) => (prev === id ? null : id))}
             />

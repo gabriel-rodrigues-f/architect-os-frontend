@@ -137,11 +137,11 @@ describe("LearningPathsViewModel", () => {
   });
 
   /**
-   * FATIA `inativo-some` (dono, 2026-09-03) — `assignableArchitects` existia
+   * FATIA `inativo-some` (dono, 2026-09-03) — `assignableProfessionals` existia
    * para reoferecer quem já estava atribuído MESMO inativo (AUDITORIA-TERCEIRA-
    * RODADA, EPIC E). O pedido do dono revoga essa exceção: desativado não
    * aparece em lugar nenhum. A régua virou uma só, e mora no store — a tela
-   * consome `store.architects`, que já nasce ativa —, então o método morreu
+   * consome `store.professionals`, que já nasce ativa —, então o método morreu
    * junto com o conceito, em vez de virar uma identidade sem dono.
    */
 
@@ -210,8 +210,8 @@ describe("LearningPathsViewModel", () => {
         items: [{ id: "i1" }, { id: "i2" }] as never,
         assignedTo: ["ana", "bruno"],
         progress: [
-          { architectId: "ana", itemId: "i1", status: "Completed", progress: 100 },
-          { architectId: "ana", itemId: "i2", status: "In Progress", progress: 51 },
+          { professionalId: "ana", itemId: "i1", status: "Completed", progress: 100 },
+          { professionalId: "ana", itemId: "i2", status: "In Progress", progress: 51 },
         ] as never,
       },
       semItem: { items: [] as never, assignedTo: ["ana"], progress: [] as never },
@@ -222,7 +222,7 @@ describe("LearningPathsViewModel", () => {
       const { vm } = makeVm();
       expect(vm.progressFor(paths.comProgresso, "ana", "i1").progress).toBe(100);
       expect(vm.progressFor(paths.comProgresso, "bruno", "i1")).toEqual({
-        architectId: "bruno",
+        professionalId: "bruno",
         itemId: "i1",
         status: "Not Started",
         progress: 0,
@@ -245,7 +245,7 @@ describe("LearningPathsViewModel", () => {
   });
 
   describe("recordProgress", () => {
-    it("delega (pathId, architectId, itemId, progress) 1:1 para o serviço", () => {
+    it("delega (pathId, professionalId, itemId, progress) 1:1 para o serviço", () => {
       const { vm, service } = makeVm();
       vm.recordProgress("trilha-1", "ana", "item-1", 70);
       expect(service.updateLearningItemProgress).toHaveBeenCalledWith(

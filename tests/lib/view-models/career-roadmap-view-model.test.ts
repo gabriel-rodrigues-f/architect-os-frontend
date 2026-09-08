@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CareerLevel, Competency, LearningPath } from "@/lib/domain";
-import type { ArchitectAdherence } from "@/lib/gateways/career.gateway";
+import type { ProfessionalAdherence } from "@/lib/gateways/career.gateway";
 import { CareerRoadmapViewModel, LearningPathsViewModel } from "@/lib/view-models";
 
 /**
@@ -31,9 +31,9 @@ const CATALOG = new Map<string, Competency>([
 
 function adherence(
   missing: { competencyId: string; currentLevel: number; requiredLevel: number }[],
-): ArchitectAdherence {
+): ProfessionalAdherence {
   return {
-    architectId: "ana",
+    professionalId: "ana",
     teamId: "time-integracao",
     careerLevelId: "nivel-pleno",
     adherence: { percentage: 72, missingCompetencies: missing },
@@ -171,8 +171,8 @@ describe("CareerRoadmapViewModel — cobertura das trilhas", () => {
         { id: "i2", title: "Workshop", type: "Workshop", hours: 4 },
       ],
       progress: [
-        { architectId: "ana", itemId: "i1", status: "Completed", progress: 100 },
-        { architectId: "ana", itemId: "i2", status: "In Progress", progress: 50 },
+        { professionalId: "ana", itemId: "i1", status: "Completed", progress: 100 },
+        { professionalId: "ana", itemId: "i2", status: "In Progress", progress: 50 },
       ],
     });
     const coverage = vm.coverageFor("ana", missing, [trilha]);

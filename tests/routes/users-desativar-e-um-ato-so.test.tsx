@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiPath } from "@/lib/api-path";
 import type { SessionUser } from "@/lib/api";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { Route as UsersRoute } from "@/routes/users";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
@@ -33,16 +33,16 @@ const fetchMock = vi.fn();
 
 const UsersPage = UsersRoute.options.component as () => ReactNode;
 
-const [primeira] = fixtureState.architects;
+const [primeira] = fixtureState.professionals;
 if (!primeira) throw new Error("fixture sem Ana");
-const ana: Architect = primeira;
+const ana: Professional = primeira;
 
 const contaDaAna: SessionUser = {
   id: "conta-ana",
   email: "ana@company.com",
   name: "Ana Martins",
   role: "member",
-  architectId: ana.id,
+  professionalId: ana.id,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -53,7 +53,7 @@ const gestorSemProfissional: SessionUser = {
   email: "gerente@company.com",
   name: "Gerente Sem Quadro",
   role: "manager",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -69,17 +69,17 @@ const rotaDeContas =
 const rotaDoProfissional =
   (profissional: typeof ana): FetchRoute =>
   (href, init) =>
-    href.endsWith(apiPath(`/architects/${ana.id}`)) && (init?.method ?? "GET") === "GET"
+    href.endsWith(apiPath(`/professionals/${ana.id}`)) && (init?.method ?? "GET") === "GET"
       ? jsonResponse({ ...profissional, version: 7 })
       : undefined;
 
 const rotaDeDesativacao: FetchRoute = (href, init) =>
-  init?.method === "POST" && href.endsWith(apiPath(`/architects/${ana.id}/deactivate`))
+  init?.method === "POST" && href.endsWith(apiPath(`/professionals/${ana.id}/deactivate`))
     ? jsonResponse({ ...ana, active: false, version: 8 })
     : undefined;
 
 const rotaDeReativacao: FetchRoute = (href, init) =>
-  init?.method === "POST" && href.endsWith(apiPath(`/architects/${ana.id}/reactivate`))
+  init?.method === "POST" && href.endsWith(apiPath(`/professionals/${ana.id}/reactivate`))
     ? jsonResponse({ ...ana, active: true, version: 8 })
     : undefined;
 
@@ -179,7 +179,7 @@ describe("Usuários — desativar é um ato só, e ativar é o mesmo ato de volt
     await userEvent.type(dialogo.getByLabelText("Motivo da desativação"), "Saiu da organização");
     await userEvent.click(dialogo.getByRole("button", { name: "Desativar" }));
 
-    const posts = chamadas("POST", apiPath(`/architects/${ana.id}/deactivate`));
+    const posts = chamadas("POST", apiPath(`/professionals/${ana.id}/deactivate`));
     expect(posts).toHaveLength(1);
     expect(JSON.parse(String((posts[0]?.[1] as RequestInit).body))).toEqual({
       reason: "Saiu da organização",
@@ -199,7 +199,7 @@ describe("Usuários — desativar é um ato só, e ativar é o mesmo ato de volt
     expect(dialogo.getByText("Ativar Ana Martins?")).toBeTruthy();
     await userEvent.click(dialogo.getByRole("button", { name: "Ativar" }));
 
-    const posts = chamadas("POST", apiPath(`/architects/${ana.id}/reactivate`));
+    const posts = chamadas("POST", apiPath(`/professionals/${ana.id}/reactivate`));
     expect(posts).toHaveLength(1);
     expect(JSON.parse(String((posts[0]?.[1] as RequestInit).body))).toEqual({
       expectedVersion: 7,

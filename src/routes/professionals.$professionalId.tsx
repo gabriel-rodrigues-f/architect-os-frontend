@@ -28,17 +28,17 @@ import type { SupportPass } from "@/lib/support-access";
  * (`ProfileHeading`). Trocar de aba não remonta o cabeçalho.
  *
  * EM MODO DE SUPORTE (PR 6, RBAC-03) o passe abre só a ficha funcional
- * (`GET /architects/:id`): avaliações, PDI, mentoria, evidências, extrato,
+ * (`GET /professionals/:id`): avaliações, PDI, mentoria, evidências, extrato,
  * evolução e trilhas respondem 403 ao suporte mesmo com passe. A tela não
  * pede o que o serviço recusa — desenha o ramo "indisponível" no lugar das
  * abas (`SupportModeCareerFile`) e a ficha funcional segue.
  */
-export const Route = createFileRoute("/architects/$architectId")({
+export const Route = createFileRoute("/professionals/$professionalId")({
   component: CareerFileLayout,
 });
 
 function CareerFileLayout() {
-  const { architectId } = Route.useParams();
+  const { professionalId } = Route.useParams();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const tab = CareerFileTabs.fromPathname(pathname);
   const user = useCurrentUser();
@@ -59,9 +59,9 @@ function CareerFileLayout() {
   }, [supportAccess]);
   const inSupportMode =
     defaultUiAuthorizationPolicy.readsPeopleOnlyInSupportMode(user) &&
-    user.architectId !== architectId;
+    user.professionalId !== professionalId;
   const supportPass =
-    inSupportMode && grantedThisVisit ? supportAccess.grantedFor(architectId) : null;
+    inSupportMode && grantedThisVisit ? supportAccess.grantedFor(professionalId) : null;
   const needsSupportAccess = inSupportMode && supportPass === null;
 
   // Evolução, Extrato e Roteiro são da própria pessoa e de quem a lidera
@@ -69,7 +69,7 @@ function CareerFileLayout() {
   // A negativa vem ANTES de qualquer escopo: quem não alcança não consulta.
   const canOpenCareerTabs =
     !CareerFileTabs.isLeadershipTab(tab) ||
-    defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architectId);
+    defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, professionalId);
 
   if (!canOpenCareerTabs) {
     return (
@@ -84,9 +84,9 @@ function CareerFileLayout() {
 
   if (needsSupportAccess) {
     return (
-      <ContextScope contexts={["architects"]}>
+      <ContextScope contexts={["professionals"]}>
         <SupportAccessGate
-          architectId={architectId}
+          professionalId={professionalId}
           onGranted={() => {
             void queryClient.invalidateQueries();
             setGrantedThisVisit(true);
@@ -102,14 +102,14 @@ function CareerFileLayout() {
   }
 
   return (
-    <ContextScope contexts={ContextScopes.careerFileOf(architectId)}>
-      <CareerFile architectId={architectId} tab={tab} />
+    <ContextScope contexts={ContextScopes.careerFileOf(professionalId)}>
+      <CareerFile professionalId={professionalId} tab={tab} />
     </ContextScope>
   );
 }
 
 /**
- * A FICHA FUNCIONAL em modo de suporte: só `GET /architects/:id` (com os
+ * A FICHA FUNCIONAL em modo de suporte: só `GET /professionals/:id` (com os
  * três cabeçalhos do passe), o cabeçalho fixo com nome, posição e status, e
  * o ramo "indisponível" no lugar de qualquer aba. Nenhuma fatia por pessoa é
  * pedida — o serviço a recusaria com 403.
@@ -124,11 +124,16 @@ function SupportModeCareerFile({
   help: ReturnType<typeof usePageHelp>;
 }) {
   const { t } = useI18n();
-  const { architectsGateway } = useContainer();
+  const { professionalsGateway } = useContainer();
   const seniority = useSeniorityReading();
   const query = useQuery({
-    queryKey: ["architects", pass.architectId, "ficha-funcional", pass.issuedAt.toISOString()],
-    queryFn: () => architectsGateway.professional(pass.architectId),
+    queryKey: [
+      "professionals",
+      pass.professionalId,
+      "ficha-funcional",
+      pass.issuedAt.toISOString(),
+    ],
+    queryFn: () => professionalsGateway.professional(pass.professionalId),
   });
 
   if (query.isPending) return <LoadingState />;
@@ -137,23 +142,23 @@ function SupportModeCareerFile({
       <ConnectionError
         error={query.error}
         onRetry={() => void query.refetch()}
-        resource="architects"
+        resource="professionals"
       />
     );
   }
-  const architect = query.data;
+  const professional = query.data;
   const heading = {
-    title: architect.name,
-    description: `${seniority.labelOf(architect.role)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`,
+    title: professional.name,
+    description: `${seniority.labelOf(professional.role)} · ${t("arch.yearsOfExperience", { n: professional.yearsAsProfessional })}`,
     help,
   };
 
   return (
     <CareerFileHeadingSlot>
       <Callout tone="warning" className="mb-4">
-        {t("support.banner", { nome: architect.name })}
+        {t("support.banner", { nome: professional.name })}
       </Callout>
-      <ProfileHeader architect={architect} active={tab} tabs={false} />
+      <ProfileHeader professional={professional} active={tab} tabs={false} />
       <ProfileHeading {...heading} />
       <Callout tone="info" role="status">
         {t("support.unavailable")}
@@ -164,21 +169,23 @@ function SupportModeCareerFile({
 
 /** Pede o motivo com o NOME da pessoa na frente — o diretório já diz quem é. */
 function SupportAccessGate({
-  architectId,
+  professionalId,
   onGranted,
   onCancel,
 }: {
-  architectId: string;
+  professionalId: string;
   onGranted: () => void;
   onCancel: () => void;
 }) {
-  // Só o nome da pessoa: o portão pede a fatia `architects` e nada mais —
+  // Só o nome da pessoa: o portão pede a fatia `professionals` e nada mais —
   // `useSelectors()` indexaria o estado inteiro antes de o motivo existir.
-  const person = useStore().architects.find((architect) => architect.id === architectId);
+  const person = useStore().professionals.find(
+    (professional) => professional.id === professionalId,
+  );
   return (
     <SupportAccessDialog
-      architectId={architectId}
-      personName={person?.name ?? architectId}
+      professionalId={professionalId}
+      personName={person?.name ?? professionalId}
       onGranted={onGranted}
       onCancel={onCancel}
     />
@@ -186,12 +193,12 @@ function SupportAccessGate({
 }
 
 /** O cabeçalho fixo da ficha, montado uma vez, com a aba ativa marcada. */
-function CareerFile({ architectId, tab }: { architectId: string; tab: CareerFileTab }) {
-  const architect = useSelectors().architectById(architectId);
+function CareerFile({ professionalId, tab }: { professionalId: string; tab: CareerFileTab }) {
+  const professional = useSelectors().professionalById(professionalId);
 
   return (
     <CareerFileHeadingSlot>
-      {architect && <ProfileHeader architect={architect} active={tab} />}
+      {professional && <ProfileHeader professional={professional} active={tab} />}
       <Outlet />
     </CareerFileHeadingSlot>
   );

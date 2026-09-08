@@ -170,7 +170,9 @@ describe("Operação (CFG-05 admin UI)", () => {
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
 
     await userEvent.selectOptions(within(block).getByLabelText("Cadência dos ciclos"), "QUARTERLY");
-    const thresholdInput = within(block).getByLabelText("Mínimo de pessoas (intervenção coletiva)");
+    const thresholdInput = within(block).getByLabelText(
+      "Mínimo de profissionais (intervenção coletiva)",
+    );
     await userEvent.clear(thresholdInput);
     await userEvent.type(thresholdInput, "2");
     await userEvent.click(within(block).getByRole("button", { name: "Salvar" }));

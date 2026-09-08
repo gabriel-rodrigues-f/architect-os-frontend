@@ -5,7 +5,7 @@ const {
   sessionPolicy,
   supportAccess,
   analyticsGateway,
-  architectsGateway,
+  professionalsGateway,
   assessmentGateway,
   authGateway,
   calibrationGateway,
@@ -32,7 +32,7 @@ const {
 
 export const api = {
   ...cyclesGateway,
-  ...architectsGateway,
+  ...professionalsGateway,
   ...careerGateway,
   ...catalogGateway,
   ...configGateway,

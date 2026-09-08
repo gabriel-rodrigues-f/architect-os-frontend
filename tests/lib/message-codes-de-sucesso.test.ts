@@ -53,7 +53,7 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
  * só este repositório está clonado.
  */
 
-// ONDA 45: 63 -> 62. `people.create.success` morreu com `POST /architects`, a
+// ONDA 45: 63 -> 62. `people.create.success` morreu com `POST /professionals`, a
 // porta legada que criava profissional sem conta; a tradução foi junto.
 // 2026-09-06: 63 -> 67 — os quatro atos da solicitação de transferência de time.
 const CODIGOS_ESPERADOS = 67;

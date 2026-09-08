@@ -29,7 +29,7 @@ describe("SupportPass — validade de 15 minutos a partir do motivo declarado", 
   it("os cabeçalhos levam a pessoa, o motivo e o instante da emissão em ISO", () => {
     const pass = new SupportPass("ana", "chamado 4821, conferir evidência", NOW);
     expect(pass.headers()).toEqual({
-      "x-support-architect": "ana",
+      "x-support-professional": "ana",
       "x-support-reason": "chamado 4821, conferir evidência",
       "x-support-issued-at": "2026-09-08T10:00:00.000Z",
     });
@@ -37,12 +37,12 @@ describe("SupportPass — validade de 15 minutos a partir do motivo declarado", 
 
   it("é sobre a pessoa quando o id é segmento do caminho ou valor de consulta — não parte de outro id", () => {
     const pass = new SupportPass("ana", "chamado 4821, conferir evidência", NOW);
-    expect(pass.isAbout("/architects/ana")).toBe(true);
-    expect(pass.isAbout("/architects/ana/career-level-transitions")).toBe(true);
-    expect(pass.isAbout("/assessments?architectId=ana")).toBe(true);
+    expect(pass.isAbout("/professionals/ana")).toBe(true);
+    expect(pass.isAbout("/professionals/ana/career-level-transitions")).toBe(true);
+    expect(pass.isAbout("/assessments?professionalId=ana")).toBe(true);
     expect(pass.isAbout("/mentoring-sessions?cycleId=2026&menteeId=ana")).toBe(true);
-    expect(pass.isAbout("/architects")).toBe(false);
-    expect(pass.isAbout("/architects/anabela")).toBe(false);
+    expect(pass.isAbout("/professionals")).toBe(false);
+    expect(pass.isAbout("/professionals/anabela")).toBe(false);
     expect(pass.isAbout("/teams")).toBe(false);
   });
 });
@@ -57,7 +57,7 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
   it("concede, responde pela pessoa do passe e por mais ninguém", () => {
     const { access } = accessAt(NOW);
     const pass = access.grant("ana", "chamado 4821, conferir evidência");
-    expect(pass?.architectId).toBe("ana");
+    expect(pass?.professionalId).toBe("ana");
     expect(access.grantedFor("ana")).toBe(pass);
     expect(access.grantedFor("bruno")).toBeNull();
   });
@@ -65,7 +65,7 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
   it("os cabeçalhos vão só na requisição sobre a pessoa do passe", () => {
     const { access } = accessAt(NOW);
     access.grant("ana", "chamado 4821, conferir evidência");
-    expect(access.headersFor("/architects/ana")).toHaveProperty("x-support-issued-at");
+    expect(access.headersFor("/professionals/ana")).toHaveProperty("x-support-issued-at");
     expect(access.headersFor("/teams")).toEqual({});
     expect(access.headersFor("/auth/users")).toEqual({});
   });
@@ -82,7 +82,7 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
     access.grant("ana", "chamado 4821, conferir evidência");
     access.clear();
     expect(access.grantedFor("ana")).toBeNull();
-    expect(access.headersFor("/architects/ana")).toEqual({});
+    expect(access.headersFor("/professionals/ana")).toEqual({});
   });
 
   it("SUPPORT_PASS_EXPIRED do serviço apaga o passe e avisa quem reabre o diálogo", () => {
@@ -128,14 +128,14 @@ describe("ApiClient — o passe entra pelo provedor de cabeçalhos, requisição
       (resource) => access.headersFor(resource),
     );
 
-    await client.request("/architects/ana");
+    await client.request("/professionals/ana");
     await client.request("/teams");
 
     const headersOf = (index: number) =>
       (fetchMock.mock.calls[index]?.[1] as RequestInit).headers as Record<string, string>;
     expect(headersOf(0)["x-support-issued-at"]).toBe("2026-09-08T10:00:00.000Z");
-    expect(headersOf(0)["x-support-architect"]).toBe("ana");
+    expect(headersOf(0)["x-support-professional"]).toBe("ana");
     expect(headersOf(1)).not.toHaveProperty("x-support-issued-at");
-    expect(headersOf(1)).not.toHaveProperty("x-support-architect");
+    expect(headersOf(1)).not.toHaveProperty("x-support-professional");
   });
 });

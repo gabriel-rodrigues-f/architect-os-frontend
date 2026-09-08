@@ -118,7 +118,7 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
   it("mentoria: as listas de competências do formulário não deixam rótulo órfão", async () => {
     mockAppFetch(fetchMock);
     const user = userEvent.setup();
-    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.architects]} />, {
+    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.professionals]} />, {
       contexts: MENTORING_CONTEXTS,
     });
 
@@ -131,7 +131,7 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
   it("mentoria: a lista de competências discutidas tem nome acessível de grupo", async () => {
     mockAppFetch(fetchMock);
     const user = userEvent.setup();
-    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.architects]} />, {
+    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.professionals]} />, {
       contexts: MENTORING_CONTEXTS,
     });
 

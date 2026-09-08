@@ -29,7 +29,7 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * (`estrangulamento-painel.test.tsx`), agora para /team: a tela renderiza o
  * roster completo alimentada só pelos contextos E nenhuma requisição a
  * `/api/v1/state` acontece. Nasceu VERMELHO: sem o ContextScope, /team em
- * modo "contexts" caía no estado vazio ("Nenhum arquiteto cadastrado").
+ * modo "contexts" caía no estado vazio ("Nenhum profissional cadastrado").
  */
 const fetchMock = vi.fn();
 
@@ -57,6 +57,6 @@ describe("estrangulamento fase 1 — /team vive sem o blob /state", () => {
       call[0] instanceof Request ? call[0].url : String(call[0]),
     );
     expect(requestedPaths.some((href) => href.endsWith(apiPath("/state")))).toBe(false);
-    expect(requestedPaths.some((href) => href.endsWith(apiPath("/architects")))).toBe(true);
+    expect(requestedPaths.some((href) => href.endsWith(apiPath("/professionals")))).toBe(true);
   });
 });

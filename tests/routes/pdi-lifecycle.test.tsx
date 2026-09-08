@@ -52,7 +52,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   });
 
   it("item do PDI não mostra percentual — só o status", async () => {
-    window.history.pushState({}, "", "?architectId=ana");
+    window.history.pushState({}, "", "?professionalId=ana");
     renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
@@ -61,7 +61,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   });
 
   it("mostra a situação do plano e permite concluir o PDI já aprovado", async () => {
-    window.history.pushState({}, "", "?architectId=ana");
+    window.history.pushState({}, "", "?professionalId=ana");
     renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
@@ -86,7 +86,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   });
 
   it("adicionar uma sugestão ao PDI abre um formulário — não cria com tipo/prazo fabricados", async () => {
-    window.history.pushState({}, "", "?architectId=bruno");
+    window.history.pushState({}, "", "?professionalId=bruno");
     renderWithApp(<PlansPage />);
 
     const addButtons = await screen.findAllByRole("button", { name: /Adicionar ao PDI/ });
@@ -163,7 +163,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     };
     mockAppFetch(fetchMock, { state });
 
-    window.history.pushState({}, "", "?architectId=ana");
+    window.history.pushState({}, "", "?professionalId=ana");
     renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
@@ -208,7 +208,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
       ],
     });
 
-    window.history.pushState({}, "", "?architectId=ana");
+    window.history.pushState({}, "", "?professionalId=ana");
     renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
@@ -240,7 +240,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
   });
 
   it("plano Approved: tipo de ação vira texto, status continua editável, sem botão de remover", async () => {
-    window.history.pushState({}, "", "?architectId=ana");
+    window.history.pushState({}, "", "?professionalId=ana");
     renderWithApp(<PlansPage />);
     await screen.findByText("Evoluir IAM");
 
@@ -261,7 +261,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
     const completedState: AppState = {
       ...fixtureState,
       plans: fixtureState.plans.map((p) =>
-        p.architectId === "ana" ? { ...p, status: "Completed" as const } : p,
+        p.professionalId === "ana" ? { ...p, status: "Completed" as const } : p,
       ),
     };
     const fixtureLeadOfAna: SessionUser = {
@@ -269,7 +269,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
       email: "tech-lead-ana@company.com",
       name: "Tech Lead da Ana",
       role: "tech_lead",
-      architectId: null,
+      professionalId: null,
       status: "active",
       mustChangePassword: false,
       createdAt: "2026-01-01T00:00:00Z",
@@ -291,7 +291,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
     it("admin não vê o botão Reabrir PDI — só o Tech Lead responsável reabre", async () => {
       mockFetchAs(fixtureAssignedManagerUser, completedState);
-      window.history.pushState({}, "", "?architectId=ana");
+      window.history.pushState({}, "", "?professionalId=ana");
       renderWithApp(<PlansPage />);
       await screen.findByText("Evoluir IAM");
       expect(screen.getByText("Concluído")).toBeTruthy();
@@ -300,7 +300,7 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
 
     it("Tech Lead responsável reabre com motivo obrigatório", async () => {
       mockFetchAs(fixtureLeadOfAna, completedState);
-      window.history.pushState({}, "", "?architectId=ana");
+      window.history.pushState({}, "", "?professionalId=ana");
       renderWithApp(<PlansPage />);
       await screen.findByText("Evoluir IAM");
 

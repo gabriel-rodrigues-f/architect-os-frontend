@@ -78,9 +78,9 @@ const levelTransitionPairSchema = z.object({
 const teamTransitionsRowSchema = z.object({
   teamId: z.string(),
   teamName: z.string(),
-  activeArchitects: z.number(),
+  activeProfessionals: z.number(),
   transitions: z.number(),
-  transitionsPerActiveArchitect: z.number().nullable(),
+  transitionsPerActiveProfessional: z.number().nullable(),
   measuredOrigins: z.number(),
   averageDaysInOriginLevel: z.number().nullable(),
   pairs: z.array(levelTransitionPairSchema),
@@ -105,8 +105,8 @@ export const careerStatementTeamTransitionsResponseSchema = z.object({
   ),
 });
 
-export const architectAdherenceResponseSchema = z.object({
-  architectId: z.string(),
+export const professionalAdherenceResponseSchema = z.object({
+  professionalId: z.string(),
   teamId: z.string().nullable(),
   careerLevelId: z.string(),
   adherence: z.object({
@@ -129,7 +129,7 @@ const notice = z.object({
   link: z.string(),
   occurredAt: z.string(),
   readAt: z.string().nullable(),
-  architectId: z.string().nullable(),
+  professionalId: z.string().nullable(),
   teamId: z.string().nullable(),
 });
 
@@ -386,12 +386,12 @@ export const catalogImportSummarySchema = z.object({
   ),
 });
 
-const architect = z.object({
+const professional = z.object({
   id: z.string(),
   name: z.string(),
   role: roleName.nullable(),
   careerLevelId: z.string().nullish(),
-  yearsAsArchitect: z.number(),
+  yearsAsProfessional: z.number(),
   specialization: z.string(),
   primarySpecializationCompetencyId: z.string().nullish(),
   email: z.string(),
@@ -428,7 +428,7 @@ const assessmentItem = z.object({
 
 const assessment = z.object({
   id: z.string(),
-  architectId: z.string(),
+  professionalId: z.string(),
   cycleId: z.string(),
   status: z.enum(["Draft", "In Review", "Completed"]),
   items: z.array(assessmentItem),
@@ -485,7 +485,7 @@ const developmentPlanItem = z.object({
 
 const developmentPlan = z.object({
   id: z.string(),
-  architectId: z.string(),
+  professionalId: z.string(),
   cycleId: z.string(),
   status: z.enum(["Draft", "Approved", "Completed"]),
   items: z.array(developmentPlanItem),
@@ -507,7 +507,7 @@ const learningPathItem = z.object({
 });
 
 const learningItemProgress = z.object({
-  architectId: z.string(),
+  professionalId: z.string(),
   itemId: z.string(),
   status: z.enum(["Not Started", "In Progress", "Completed"]),
   progress: z.number(),
@@ -543,7 +543,7 @@ const mentoringSession = z.object({
 
 const evidence = z.object({
   id: z.string(),
-  architectId: z.string(),
+  professionalId: z.string(),
   title: z.string(),
   description: z.string(),
 
@@ -561,7 +561,7 @@ const evidence = z.object({
   reviewedAt: z.string().nullish(),
 });
 
-export const architectsResponseSchema = z.array(architect);
+export const professionalsResponseSchema = z.array(professional);
 export const assessmentsResponseSchema = z.array(assessment);
 export const capabilitiesResponseSchema = z.array(capability);
 export const competenciesResponseSchema = z.array(competency);
@@ -577,7 +577,7 @@ const teamTransferRequestStatus = z.enum(["pending", "approved", "refused", "can
 
 export const teamTransferRequestSchema = z.object({
   id: z.string(),
-  architectId: z.string(),
+  professionalId: z.string(),
   fromTeamId: z.string(),
   toTeamId: z.string(),
   reason: z.string(),
@@ -591,7 +591,7 @@ export const teamTransferRequestSchema = z.object({
 });
 
 export const teamTransferRequestViewSchema = teamTransferRequestSchema.extend({
-  architectName: z.string(),
+  professionalName: z.string(),
   fromTeamName: z.string(),
   toTeamName: z.string(),
   requestedByName: z.string(),

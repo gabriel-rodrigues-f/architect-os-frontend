@@ -30,7 +30,7 @@ const admin: SessionUser = {
   email: "admin@empresa.com",
   name: "Admin",
   role: "admin",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",

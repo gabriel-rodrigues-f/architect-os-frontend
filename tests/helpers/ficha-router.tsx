@@ -20,18 +20,18 @@ import { PlainLink } from "./react-router-mock";
  * importa o roteador — importá-la daqui travaria o carregamento em círculo.
  * Quem monta a rota é `ficha.tsx`.
  *
- * O endereço atual (`pathname`, `architectId`) e o conteúdo do `Outlet` vivem
+ * O endereço atual (`pathname`, `professionalId`) e o conteúdo do `Outlet` vivem
  * numa loja mínima que o mock lê por `useSyncExternalStore` — trocar de aba
  * (`goToTab`) re-renderiza o layout sem remontar nada, como o roteador faria.
  */
 interface CareerFileLocation {
-  architectId: string;
+  professionalId: string;
   tab: CareerFileTab;
   outlet: ReactNode;
 }
 
 class CareerFileRouterStore {
-  private state: CareerFileLocation = { architectId: "ana", tab: "overview", outlet: null };
+  private state: CareerFileLocation = { professionalId: "ana", tab: "overview", outlet: null };
   private readonly listeners = new Set<() => void>();
   readonly navigate = vi.fn();
   readonly push = vi.fn();
@@ -41,8 +41,10 @@ class CareerFileRouterStore {
   }
 
   get pathname(): string {
-    const { architectId, tab } = this.state;
-    return tab === "overview" ? `/architects/${architectId}` : `/architects/${architectId}/${tab}`;
+    const { professionalId, tab } = this.state;
+    return tab === "overview"
+      ? `/professionals/${professionalId}`
+      : `/professionals/${professionalId}/${tab}`;
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -56,7 +58,7 @@ class CareerFileRouterStore {
   }
 
   reset(): void {
-    this.state = { architectId: "ana", tab: "overview", outlet: null };
+    this.state = { professionalId: "ana", tab: "overview", outlet: null };
     this.navigate.mockReset();
     this.push.mockReset();
   }
@@ -105,7 +107,7 @@ export async function reactRouterOfCareerFile(): Promise<typeof import("@tanstac
         options,
         useParams: () => {
           useCareerFileLocation();
-          return { architectId: careerFileRouter.snapshot.architectId };
+          return { professionalId: careerFileRouter.snapshot.professionalId };
         },
       })) as unknown as typeof actual.createFileRoute,
   };

@@ -76,7 +76,7 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
     expect((await screen.findAllByText(/Ana Martins/)).length).toBeGreaterThan(0);
 
     expect(requestedPaths().some((href) => href.endsWith(apiPath("/state")))).toBe(false);
-    expect(requestedPaths().some((href) => href.endsWith(apiPath("/architects")))).toBe(true);
+    expect(requestedPaths().some((href) => href.endsWith(apiPath("/professionals")))).toBe(true);
   });
 
   it("D1 (dono, 2026-09-05): o Painel de operação do admin lê /operations/overview, sem /state", async () => {
@@ -88,7 +88,7 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
     renderWithApp(<DashboardPage />);
 
     expect(await screen.findByText("Visão do Sistema")).toBeTruthy();
-    expect(await screen.findByText("Pessoas ativas")).toBeTruthy();
+    expect(await screen.findByText("Profissionais ativos")).toBeTruthy();
 
     expect(requestedPaths().some((href) => href.endsWith(apiPath("/state")))).toBe(false);
     expect(requestedPaths().some((href) => href.endsWith(apiPath("/operations/overview")))).toBe(

@@ -10,24 +10,25 @@ import { cn } from "@/lib/utils";
 const SHAPE = "whitespace-nowrap text-xs";
 
 export function TreatGapInPlanAction({
-  architectId,
+  professionalId,
   competencyId,
   label,
 }: {
-  architectId: string | undefined;
+  professionalId: string | undefined;
   competencyId: string;
   label: string;
 }) {
   const user = useCurrentUser();
   const sel = useSelectors();
   const { t } = useI18n();
-  const architect = architectId === undefined ? undefined : sel.architectById(architectId);
+  const professional =
+    professionalId === undefined ? undefined : sel.professionalById(professionalId);
   const workflow = PlanWorkflowPolicy.forPlan(
-    architectId === undefined ? undefined : sel.planFor(architectId),
+    professionalId === undefined ? undefined : sel.planFor(professionalId),
     {
-      actsForArchitect: defaultUiAuthorizationPolicy.canActFor(user, architect),
-      isLeadOfArchitect: defaultUiAuthorizationPolicy.isLeadOf(user, architect),
-      isAssignedTechLead: defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect),
+      actsForProfessional: defaultUiAuthorizationPolicy.canActFor(user, professional),
+      isLeadOfProfessional: defaultUiAuthorizationPolicy.isLeadOf(user, professional),
+      isAssignedTechLead: defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, professional),
     },
   );
   const blockedReasonKey = workflow.newActionBlockedReasonKey;
@@ -48,7 +49,7 @@ export function TreatGapInPlanAction({
   return (
     <Link
       to="/development-plans"
-      search={{ architectId, competencyId }}
+      search={{ professionalId, competencyId }}
       className={cn(SHAPE, "text-primary hover:underline")}
     >
       {label}

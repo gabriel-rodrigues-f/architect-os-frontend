@@ -1,5 +1,5 @@
 import type { AppState, SessionUser } from "../api";
-import type { Architect, Assessment, DevelopmentPlan, Evidence, LearningPath } from "../domain";
+import type { Professional, Assessment, DevelopmentPlan, Evidence, LearningPath } from "../domain";
 import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "../scope";
 import { defaultGapSeverityRuler, type BandTone, type GapSeverityRuler } from "../scoring-bands";
 import type { Gap, Selectors } from "../selectors";
@@ -11,28 +11,28 @@ interface AssessmentCoverage {
   notStarted: number;
 }
 
-interface GapWithArchitect extends Gap {
-  architect: Architect;
+interface GapWithProfessional extends Gap {
+  professional: Professional;
 }
 
 export const CRITICAL_GAP_THRESHOLD = defaultGapSeverityRuler.criticalThreshold;
 
-interface ArchitectAwaitingCalibration {
-  architect: Architect;
+interface ProfessionalAwaitingCalibration {
+  professional: Professional;
   assessment: Assessment | undefined;
 }
 
-interface ArchitectAwaitingApproval {
-  architect: Architect;
+interface ProfessionalAwaitingApproval {
+  professional: Professional;
   plan: DevelopmentPlan | undefined;
 }
 
 export class LeadPendingQueues {
   constructor(
-    readonly people: readonly Architect[],
-    readonly awaitingCalibration: readonly ArchitectAwaitingCalibration[],
+    readonly people: readonly Professional[],
+    readonly awaitingCalibration: readonly ProfessionalAwaitingCalibration[],
     readonly pendingEvidence: readonly Evidence[],
-    readonly awaitingApproval: readonly ArchitectAwaitingApproval[],
+    readonly awaitingApproval: readonly ProfessionalAwaitingApproval[],
   ) {}
 
   get totalPending(): number {
@@ -43,12 +43,12 @@ export class LeadPendingQueues {
 }
 
 export class DashboardPresenter {
-  private readonly gapsCache = new WeakMap<readonly Architect[], GapWithArchitect[]>();
+  private readonly gapsCache = new WeakMap<readonly Professional[], GapWithProfessional[]>();
 
   constructor(
     private readonly state: Pick<
       AppState,
-      "architects" | "evidences" | "plans" | "learningPaths" | "cycles" | "activeCycleId"
+      "professionals" | "evidences" | "plans" | "learningPaths" | "cycles" | "activeCycleId"
     >,
     private readonly sel: Pick<Selectors, "progressionGapsFor" | "assessmentFor" | "planFor">,
     private readonly criticalGapThreshold: number = CRITICAL_GAP_THRESHOLD,
@@ -60,22 +60,25 @@ export class DashboardPresenter {
   }
 
   pendingQueuesFor(user: SessionUser): LeadPendingQueues {
-    const people = this.state.architects.filter(
-      (architect) => architect.active && this.authorization.leadsTeamOf(user, architect),
+    const people = this.state.professionals.filter(
+      (professional) => professional.active && this.authorization.leadsTeamOf(user, professional),
     );
 
     const awaitingCalibration = people
-      .map((architect) => ({ architect, assessment: this.sel.assessmentFor(architect.id) }))
+      .map((professional) => ({
+        professional,
+        assessment: this.sel.assessmentFor(professional.id),
+      }))
       .filter((entry) => entry.assessment?.status === "In Review");
 
     const pendingEvidence = this.state.evidences.filter(
       (evidence) =>
-        people.some((architect) => architect.id === evidence.architectId) &&
+        people.some((professional) => professional.id === evidence.professionalId) &&
         evidence.status === "Pending",
     );
 
     const awaitingApproval = people
-      .map((architect) => ({ architect, plan: this.sel.planFor(architect.id) }))
+      .map((professional) => ({ professional, plan: this.sel.planFor(professional.id) }))
       .filter(
         (entry) => entry.plan && entry.plan.status === "Draft" && entry.plan.items.length > 0,
       );
@@ -83,12 +86,12 @@ export class DashboardPresenter {
     return new LeadPendingQueues(people, awaitingCalibration, pendingEvidence, awaitingApproval);
   }
 
-  gapsOf(population: readonly Architect[]): GapWithArchitect[] {
+  gapsOf(population: readonly Professional[]): GapWithProfessional[] {
     const cached = this.gapsCache.get(population);
     if (cached) return cached;
 
     const gaps = population.flatMap((a) =>
-      this.sel.progressionGapsFor(a.id).map((g) => ({ ...g, architect: a })),
+      this.sel.progressionGapsFor(a.id).map((g) => ({ ...g, professional: a })),
     );
 
     this.gapsCache.set(population, gaps);
@@ -97,7 +100,7 @@ export class DashboardPresenter {
 
   /** Quantas distâncias do time caem em cada faixa de severidade da régua. */
   gapsBySeverity(
-    population: readonly Architect[],
+    population: readonly Professional[],
     ruler: GapSeverityRuler,
   ): Record<BandTone, number> {
     const counts: Record<BandTone, number> = { ok: 0, low: 0, high: 0, critical: 0 };
@@ -105,11 +108,11 @@ export class DashboardPresenter {
     return counts;
   }
 
-  criticalGapCount(population: readonly Architect[]): number {
+  criticalGapCount(population: readonly Professional[]): number {
     return this.gapsOf(population).filter((g) => g.gap >= this.criticalGapThreshold).length;
   }
 
-  topGaps(population: readonly Architect[], limit = 6): GapWithArchitect[] {
+  topGaps(population: readonly Professional[], limit = 6): GapWithProfessional[] {
     return this.largestBy(this.gapsOf(population), (gap) => gap.gap, limit);
   }
 
@@ -135,7 +138,7 @@ export class DashboardPresenter {
     ).length;
   }
 
-  assessmentCoverage(population: readonly Architect[]): AssessmentCoverage {
+  assessmentCoverage(population: readonly Professional[]): AssessmentCoverage {
     return population.reduce(
       (acc, a) => {
         const status = this.sel.assessmentFor(a.id)?.status;
@@ -195,12 +198,12 @@ export class PersonalDashboardPresenter {
     private readonly sel: Pick<Selectors, "progressionGapsFor" | "planFor">,
   ) {}
 
-  openGaps(architectId: string): Gap[] {
-    return this.sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
+  openGaps(professionalId: string): Gap[] {
+    return this.sel.progressionGapsFor(professionalId).filter((g) => g.gap > 0);
   }
 
-  planItemCounts(architectId: string): PlanItemCounts {
-    const items = this.sel.planFor(architectId)?.items ?? [];
+  planItemCounts(professionalId: string): PlanItemCounts {
+    const items = this.sel.planFor(professionalId)?.items ?? [];
     return {
       notStarted: items.filter((i) => i.status === "Not Started").length,
       inProgress: items.filter((i) => i.status === "In Progress").length,
@@ -209,15 +212,16 @@ export class PersonalDashboardPresenter {
     };
   }
 
-  evidencesOf(architectId: string): Evidence[] {
-    return this.state.evidences.filter((evidence) => evidence.architectId === architectId);
+  evidencesOf(professionalId: string): Evidence[] {
+    return this.state.evidences.filter((evidence) => evidence.professionalId === professionalId);
   }
 
-  pendingEvidenceCount(architectId: string): number {
-    return this.evidencesOf(architectId).filter((evidence) => evidence.status === "Pending").length;
+  pendingEvidenceCount(professionalId: string): number {
+    return this.evidencesOf(professionalId).filter((evidence) => evidence.status === "Pending")
+      .length;
   }
 
-  assignedPaths(architectId: string): LearningPath[] {
-    return this.state.learningPaths.filter((p) => p.assignedTo.includes(architectId));
+  assignedPaths(professionalId: string): LearningPath[] {
+    return this.state.learningPaths.filter((p) => p.assignedTo.includes(professionalId));
   }
 }

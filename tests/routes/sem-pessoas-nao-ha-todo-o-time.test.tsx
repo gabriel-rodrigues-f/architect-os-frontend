@@ -78,7 +78,7 @@ const ProgressionPage = ProgressionRoute.options.component as () => ReactNode;
 
 const semNinguem: AppState = {
   ...fixtureState,
-  architects: [],
+  professionals: [],
   assessments: [],
   plans: [],
   evidences: [],
@@ -98,7 +98,7 @@ const comoAtor = (user: SessionUser) =>
   });
 
 /** O que o CORPO da tela diz quando não há ninguém. */
-const mensagemDoCorpo = "Não há pessoas cadastradas.";
+const mensagemDoCorpo = "Não há profissionais cadastrados.";
 /** O que o CAMPO diz — e, para quem cadastra, o convite em que se clica. */
 const mensagemDoCampo = "Nenhum profissional cadastrado — clique para cadastrar";
 
@@ -121,8 +121,10 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
 
     expect(await screen.findByText(mensagemDoCorpo)).toBeTruthy();
     // Nenhuma lista para abrir: o campo virou porta, não combobox.
-    expect(screen.queryByRole("combobox", { name: "Pessoas" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Pessoas" }).textContent).toContain(mensagemDoCampo);
+    expect(screen.queryByRole("combobox", { name: "Profissionais" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Profissionais" }).textContent).toContain(
+      mensagemDoCampo,
+    );
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });
 
@@ -131,7 +133,7 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     renderWithApp(<GapAnalysisPage />);
 
     expect(await screen.findByText(mensagemDoCorpo)).toBeTruthy();
-    expect(screen.queryByRole("combobox", { name: "Pessoas" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Profissionais" })).toBeNull();
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });
 
@@ -140,7 +142,7 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     renderWithApp(<ComparePage />);
 
     // O tech lead NÃO cadastra gente: campo obscurecido, sem porta nenhuma.
-    const seletor = await screen.findByRole("button", { name: "Pessoas para comparar" });
+    const seletor = await screen.findByRole("button", { name: "Profissionais para comparar" });
     expect(seletor.textContent).toContain(mensagemDoCampo);
     expect(seletor.hasAttribute("disabled")).toBe(true);
 
@@ -165,9 +167,9 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     renderWithApp(<CalibrationPage />);
 
     const seletor = await screen.findByRole("link", {
-      name: /Pessoa para a leitura de apoio/,
+      name: /Profissional para a leitura de apoio/,
     });
     expect(seletor.textContent).toContain(mensagemDoCampo);
-    expect(document.querySelector("select#calibration-assistance-architect")).toBeNull();
+    expect(document.querySelector("select#calibration-assistance-professional")).toBeNull();
   });
 });

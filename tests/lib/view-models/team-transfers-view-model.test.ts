@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Architect, TeamTransferRequestView } from "@/lib/domain";
+import type { Professional, TeamTransferRequestView } from "@/lib/domain";
 import type { SessionUser } from "@/lib/api";
 import { UiAuthorizationPolicy } from "@/lib/scope";
 import { TeamTransfersViewModel } from "@/lib/view-models";
@@ -21,7 +21,7 @@ import {
  * Este é o view-model de QUEM VÊ O QUÊ — testado sem React, contra a mesma
  * `UiAuthorizationPolicy` que as telas usam.
  */
-const ana = { id: "ana", teamId: fixtureTeamId } as Architect;
+const ana = { id: "ana", teamId: fixtureTeamId } as Professional;
 
 const gerenteDeDados: SessionUser = {
   ...fixtureAssignedManagerUser,
@@ -31,7 +31,7 @@ const gerenteDeDados: SessionUser = {
 
 const solicitacao = (patch: Partial<TeamTransferRequestView> = {}): TeamTransferRequestView => ({
   id: "req-1",
-  architectId: "ana",
+  professionalId: "ana",
   fromTeamId: fixtureTeamId,
   toTeamId: "time-dados",
   reason: "Realocação por demanda do produto",
@@ -42,7 +42,7 @@ const solicitacao = (patch: Partial<TeamTransferRequestView> = {}): TeamTransfer
   decidedAt: null,
   decisionNote: null,
   version: 1,
-  architectName: "Ana Martins",
+  professionalName: "Ana Martins",
   fromTeamName: "Time Plataforma",
   toTeamName: "Time Dados",
   requestedByName: "Gerente do time",

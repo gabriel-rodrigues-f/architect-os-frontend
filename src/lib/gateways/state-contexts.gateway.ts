@@ -12,7 +12,7 @@ import {
 } from "../api-client";
 import {
   activeCycleResponseSchema,
-  architectsResponseSchema,
+  professionalsResponseSchema,
   assessmentsResponseSchema,
   capabilitiesResponseSchema,
   competenciesResponseSchema,
@@ -24,7 +24,7 @@ import {
   teamLevelRulesResponseSchema,
 } from "../api-schemas";
 import type {
-  Architect,
+  Professional,
   Assessment,
   Capability,
   Competency,
@@ -36,22 +36,22 @@ import type {
   TeamLevelRule,
 } from "../domain";
 
-export interface ArchitectScopedFilter {
-  architectId?: string | undefined;
+export interface ProfessionalScopedFilter {
+  professionalId?: string | undefined;
 }
 
 export interface StateContextsGateway {
-  listArchitects(): Promise<Architect[]>;
-  listAssessments(filter?: ArchitectScopedFilter): Promise<Assessment[]>;
+  listProfessionals(): Promise<Professional[]>;
+  listAssessments(filter?: ProfessionalScopedFilter): Promise<Assessment[]>;
   listCapabilities(): Promise<Capability[]>;
   listCompetencies(): Promise<Competency[]>;
   listCycles(): Promise<DevelopmentCycle[]>;
   listTeamLevelRules(): Promise<TeamLevelRule[]>;
   activeCycle(): Promise<{ cycleId: string }>;
-  listPlans(filter?: ArchitectScopedFilter): Promise<DevelopmentPlan[]>;
-  listLearningPaths(filter?: ArchitectScopedFilter): Promise<LearningPath[]>;
-  listMentoringSessions(filter?: ArchitectScopedFilter): Promise<MentoringSession[]>;
-  listEvidences(filter?: ArchitectScopedFilter): Promise<Evidence[]>;
+  listPlans(filter?: ProfessionalScopedFilter): Promise<DevelopmentPlan[]>;
+  listLearningPaths(filter?: ProfessionalScopedFilter): Promise<LearningPath[]>;
+  listMentoringSessions(filter?: ProfessionalScopedFilter): Promise<MentoringSession[]>;
+  listEvidences(filter?: ProfessionalScopedFilter): Promise<Evidence[]>;
 }
 
 interface ContractResult {
@@ -99,19 +99,21 @@ export class HttpStateContextsGateway implements StateContextsGateway {
     return schema.parse(envelope ? envelope.data : body) as z.infer<Schema>;
   }
 
-  private architectQuery(filter: ArchitectScopedFilter | undefined) {
-    return filter?.architectId ? { params: { query: { architectId: filter.architectId } } } : {};
+  private professionalQuery(filter: ProfessionalScopedFilter | undefined) {
+    return filter?.professionalId
+      ? { params: { query: { professionalId: filter.professionalId } } }
+      : {};
   }
 
-  listArchitects = (): Promise<Architect[]> =>
+  listProfessionals = (): Promise<Professional[]> =>
     this.reading(
-      () => this.contract.GET("/api/v1/architects"),
-      architectsResponseSchema,
-    ) as Promise<Architect[]>;
+      () => this.contract.GET("/api/v1/professionals"),
+      professionalsResponseSchema,
+    ) as Promise<Professional[]>;
 
-  listAssessments = (filter?: ArchitectScopedFilter): Promise<Assessment[]> =>
+  listAssessments = (filter?: ProfessionalScopedFilter): Promise<Assessment[]> =>
     this.reading(
-      () => this.contract.GET("/api/v1/assessments", this.architectQuery(filter) as never),
+      () => this.contract.GET("/api/v1/assessments", this.professionalQuery(filter) as never),
       assessmentsResponseSchema,
     ) as Promise<Assessment[]>;
 
@@ -133,31 +135,31 @@ export class HttpStateContextsGateway implements StateContextsGateway {
       activeCycleResponseSchema,
     );
 
-  listPlans = (filter?: ArchitectScopedFilter): Promise<DevelopmentPlan[]> =>
+  listPlans = (filter?: ProfessionalScopedFilter): Promise<DevelopmentPlan[]> =>
     this.reading(
-      () => this.contract.GET("/api/v1/plans", this.architectQuery(filter)),
+      () => this.contract.GET("/api/v1/plans", this.professionalQuery(filter)),
       plansResponseSchema,
     ) as Promise<DevelopmentPlan[]>;
 
-  listLearningPaths = (filter?: ArchitectScopedFilter): Promise<LearningPath[]> =>
+  listLearningPaths = (filter?: ProfessionalScopedFilter): Promise<LearningPath[]> =>
     this.reading(
-      () => this.contract.GET("/api/v1/learning-paths", this.architectQuery(filter)),
+      () => this.contract.GET("/api/v1/learning-paths", this.professionalQuery(filter)),
       learningPathsResponseSchema,
     ) as Promise<LearningPath[]>;
 
-  listMentoringSessions = (filter?: ArchitectScopedFilter): Promise<MentoringSession[]> =>
+  listMentoringSessions = (filter?: ProfessionalScopedFilter): Promise<MentoringSession[]> =>
     this.reading(
       () =>
         this.contract.GET(
           "/api/v1/mentoring-sessions",
-          filter?.architectId ? { params: { query: { menteeId: filter.architectId } } } : {},
+          filter?.professionalId ? { params: { query: { menteeId: filter.professionalId } } } : {},
         ),
       mentoringSessionsResponseSchema,
     ) as Promise<MentoringSession[]>;
 
-  listEvidences = (filter?: ArchitectScopedFilter): Promise<Evidence[]> =>
+  listEvidences = (filter?: ProfessionalScopedFilter): Promise<Evidence[]> =>
     this.reading(
-      () => this.contract.GET("/api/v1/evidences", this.architectQuery(filter)),
+      () => this.contract.GET("/api/v1/evidences", this.professionalQuery(filter)),
       evidencesResponseSchema,
     ) as Promise<Evidence[]>;
 }

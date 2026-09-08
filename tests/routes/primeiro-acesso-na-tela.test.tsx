@@ -52,7 +52,7 @@ const contaAdmitida: SessionUser = {
   email: EMAIL,
   name: "Recém admitida",
   role: "member",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: true,
   createdAt: "2026-01-01T00:00:00Z",

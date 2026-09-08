@@ -37,7 +37,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * alheio.
  *
  * O recorte de quem alcança o quê é do SERVIDOR (`NoticeInboxAuthorization`
- * compõe `visibleArchitectIds` no backend). O que se prende aqui é o CONSUMO:
+ * compõe `visibleProfessionalIds` no backend). O que se prende aqui é o CONSUMO:
  * com o servidor devolvendo X, a tela mostra X e nada além — nada de fixture
  * residual, nada de item inventado, nada de contagem própria. E as duas
  * escritas endereçam SÓ a caixa de quem chama: `/notices/:id/read` e
@@ -55,7 +55,7 @@ const AVISO_DO_TIME = {
   link: "/mentoring",
   occurredAt: "2026-08-29T12:00:00.000Z",
   readAt: null,
-  architectId: "demo-bruno-almeida",
+  professionalId: "demo-bruno-almeida",
   teamId: "time-do-lead",
 };
 
@@ -162,6 +162,6 @@ describe("as escritas de aviso endereçam só a caixa de quem chama", () => {
     const url = new URL(chamada!.href);
     expect(url.pathname).toBe(apiPath("/notices/read-all"));
     expect([...url.searchParams.keys()]).toEqual([]);
-    expect(chamada!.body ?? "{}").not.toMatch(/architectId|teamId|userId|readerId/);
+    expect(chamada!.body ?? "{}").not.toMatch(/professionalId|teamId|userId|readerId/);
   });
 });

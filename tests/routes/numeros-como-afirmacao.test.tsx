@@ -66,13 +66,13 @@ describe("números como afirmação nas telas de análise", () => {
 
   it("Plano de Capacitação afirma quantas pessoas capacitar", async () => {
     renderWithApp(<TrainingNeedsPage />);
-    const figura = await figuraDe("Pessoas a capacitar");
+    const figura = await figuraDe("Profissionais a capacitar");
     expect(figura.querySelector(".key-figure-value")?.textContent).toMatch(/^\d+$/);
   });
 
   it("Risco de Concentração afirma quantas capacidades dependem de uma pessoa só", async () => {
     renderWithApp(<CapabilityPage />);
-    const figura = await figuraDe("Capacidades com uma pessoa só");
+    const figura = await figuraDe("Capacidades com um profissional só");
     expect(figura.querySelector(".key-figure-value")?.textContent).toMatch(/^\d+$/);
   });
 

@@ -138,19 +138,19 @@ describe("Avaliações — seleção de capacidades", () => {
   });
 
   /**
-   * R2-ESC-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o seletor de arquitetos
+   * R2-ESC-04 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — o seletor de profissionais
    * deixou de ser `<select>` nativo e virou combobox pesquisável
-   * (ArchitectSelectCombobox), mesma regra de "mais de 15 opções" já
+   * (ProfessionalSelectCombobox), mesma regra de "mais de 15 opções" já
    * aplicada ao seletor de Capacidades acima.
    */
-  it("o seletor de arquitetos vira combobox pesquisável", async () => {
+  it("o seletor de profissionais vira combobox pesquisável", async () => {
     renderPage();
     await screen.findByText("Kubernetes");
 
-    const arquitetos = screen.getByRole("combobox", { name: "Profissional" });
-    expect(arquitetos.tagName).toBe("BUTTON");
+    const profissionais = screen.getByRole("combobox", { name: "Profissional" });
+    expect(profissionais.tagName).toBe("BUTTON");
 
-    await userEvent.click(arquitetos);
+    await userEvent.click(profissionais);
     expect(await screen.findByRole("option", { name: "Ana Martins" })).toBeTruthy();
   });
 });

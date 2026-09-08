@@ -2,33 +2,33 @@ import { cleanup, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-/** Mesma razão de `architect-profile-fora-do-escopo.test.tsx`: `Route.useParams()` exige árvore montada. */
+/** Mesma razão de `professional-profile-fora-do-escopo.test.tsx`: `Route.useParams()` exige árvore montada. */
 vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import { apiPath } from "@/lib/api-path";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch } from "../helpers/render-app";
 import { renderCareerFile } from "../helpers/ficha";
 
 /**
- * ADR-0011, fase 1 — terceira tela: o perfil do arquiteto consome os
- * contextos ESCOPADOS pela pessoa (`?architectId=`/`?menteeId=`), não o
+ * ADR-0011, fase 1 — terceira tela: o perfil do profissional consome os
+ * contextos ESCOPADOS pela pessoa (`?professionalId=`/`?menteeId=`), não o
  * blob. Três invariantes:
  *   1. a tela renderiza o perfil completo alimentada só pelos contextos;
  *   2. NENHUMA requisição a `/api/v1/state` acontece;
  *   3. os contextos por pessoa vão FILTRADOS na querystring — é o corte de
  *      payload que motivou a fase 1 (não baixar o time inteiro para ver um).
  * Nasceu VERMELHO: sem o ContextScope, o perfil em modo "contexts" caía em
- * "Arquiteto não encontrado.".
+ * "Profissional não encontrado.".
  */
 const fetchMock = vi.fn();
 
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 
-describe("estrangulamento fase 1 — perfil do arquiteto vive sem o blob /state", () => {
+describe("estrangulamento fase 1 — perfil do profissional vive sem o blob /state", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -51,10 +51,10 @@ describe("estrangulamento fase 1 — perfil do arquiteto vive sem o blob /state"
     );
     expect(requestedPaths.some((href) => href.endsWith(apiPath("/state")))).toBe(false);
     expect(
-      requestedPaths.some((href) => href.endsWith(`${apiPath("/assessments")}?architectId=ana`)),
+      requestedPaths.some((href) => href.endsWith(`${apiPath("/assessments")}?professionalId=ana`)),
     ).toBe(true);
     expect(
-      requestedPaths.some((href) => href.endsWith(`${apiPath("/evidences")}?architectId=ana`)),
+      requestedPaths.some((href) => href.endsWith(`${apiPath("/evidences")}?professionalId=ana`)),
     ).toBe(true);
     expect(
       requestedPaths.some((href) =>

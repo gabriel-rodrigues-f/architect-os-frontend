@@ -62,7 +62,7 @@ describe("cabeçalho fixo — a mesma régua do StablePageFrame", () => {
     // Como a rota-pai monta ([FA-08]): o bloco fixo abre o encaixe, a aba publica o título nele.
     renderWithApp(
       <CareerFileHeadingSlot>
-        <ProfileHeader architect={fixtureState.architects[0]!} active="overview" />
+        <ProfileHeader professional={fixtureState.professionals[0]!} active="overview" />
         <ProfileHeading title="Ana Martins" description="Arquiteta · Nível II" />
       </CareerFileHeadingSlot>,
       { contexts: SELECTOR_CONTEXTS },

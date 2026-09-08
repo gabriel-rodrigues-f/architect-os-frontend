@@ -9,7 +9,7 @@ import { SELECTOR_CONTEXTS } from "@/lib/context-scope";
 
 /**
  * F2 (caminhos quentes) — `useGapAnalysisData` recortava a população
- * (`Selection.explicit(selected).apply(store.architects)`) direto no corpo do
+ * (`Selection.explicit(selected).apply(store.professionals)`) direto no corpo do
  * hook. O recorte devolve um array novo a cada render, e esse array é
  * dependência de três `useMemo` pesados (radar, consolidação de progressão e
  * consolidação de maestria, que varrem o time inteiro): identidade nova a cada
@@ -71,7 +71,7 @@ describe("useGapAnalysisData — memo do recorte da população (F2)", () => {
     expect(depois.store).toBe(antes.store);
     expect(depois.selected).toBe(antes.selected);
 
-    expect(depois.architects).toBe(antes.architects);
+    expect(depois.professionals).toBe(antes.professionals);
     expect(depois.radar).toBe(antes.radar);
     expect(depois.priorities).toBe(antes.priorities);
     expect(depois.mastery).toBe(antes.mastery);
@@ -82,8 +82,8 @@ describe("useGapAnalysisData — memo do recorte da população (F2)", () => {
     await screen.findByText("passo:0");
 
     const atual = snapshots[snapshots.length - 1]!;
-    expect(atual.architects.map((a) => a.id)).toEqual(atual.selected);
-    expect(atual.architects.map((a) => a.id)).toEqual(["ana", "bruno"]);
+    expect(atual.professionals.map((a) => a.id)).toEqual(atual.selected);
+    expect(atual.professionals.map((a) => a.id)).toEqual(["ana", "bruno"]);
     // Onda 36.1: o eixo do radar carrega o NOME da capacidade, não o `short`
     // (pedido do dono — "quero que apareça todo o texto"; o short é uma
     // palavra só e fazia "Clean Core" parecer duas capacidades).

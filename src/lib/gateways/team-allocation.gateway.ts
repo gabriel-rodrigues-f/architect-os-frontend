@@ -1,15 +1,19 @@
 import { ApiError } from "../api-errors";
 import type { ApiClient } from "../api-client";
-import type { Architect } from "../domain";
+import type { Professional } from "../domain";
 import type { TeamSummary } from "./teams.gateway";
 
 export interface TeamAllocationGateway {
-  allocateArchitectToTeam(architectId: string, teamId: string, reason: string): Promise<Architect>;
-  releaseArchitectFromTeam(architectId: string): Promise<Architect>;
+  allocateProfessionalToTeam(
+    professionalId: string,
+    teamId: string,
+    reason: string,
+  ): Promise<Professional>;
+  releaseProfessionalFromTeam(professionalId: string): Promise<Professional>;
 }
 
 export interface TeamAllocationMade {
-  readonly architectId: string;
+  readonly professionalId: string;
   readonly teamId: string;
   readonly reason: string;
 }
@@ -17,15 +21,18 @@ export interface TeamAllocationMade {
 export class HttpTeamAllocationGateway implements TeamAllocationGateway {
   constructor(private readonly client: ApiClient) {}
 
-  allocateArchitectToTeam = (
-    architectId: string,
+  allocateProfessionalToTeam = (
+    professionalId: string,
     teamId: string,
     reason: string,
-  ): Promise<Architect> =>
-    this.client.post<Architect>(`/architects/${architectId}/team-allocation`, { teamId, reason });
+  ): Promise<Professional> =>
+    this.client.post<Professional>(`/professionals/${professionalId}/team-allocation`, {
+      teamId,
+      reason,
+    });
 
-  releaseArchitectFromTeam = (architectId: string): Promise<Architect> =>
-    this.client.del<Architect>(`/architects/${architectId}/team-allocation`);
+  releaseProfessionalFromTeam = (professionalId: string): Promise<Professional> =>
+    this.client.del<Professional>(`/professionals/${professionalId}/team-allocation`);
 }
 
 export class TeamAllocationRefusal {
@@ -33,12 +40,12 @@ export class TeamAllocationRefusal {
     return new ApiError("Informe o motivo da mudança de time.", 400, undefined, "VALIDATION_ERROR");
   }
 
-  static architectNotFound(architectId: string): ApiError {
+  static professionalNotFound(professionalId: string): ApiError {
     return new ApiError(
-      `Arquiteto ${architectId} não encontrado.`,
+      `Profissional ${professionalId} não encontrado.`,
       404,
       undefined,
-      "ARCHITECT_NOT_FOUND",
+      "PROFESSIONAL_NOT_FOUND",
     );
   }
 
@@ -55,65 +62,69 @@ export class TeamAllocationRefusal {
     );
   }
 
-  static alreadyInTeam(architect: Architect): ApiError {
+  static alreadyInTeam(professional: Professional): ApiError {
     return new ApiError(
-      `${architect.name} já está neste time.`,
+      `${professional.name} já está neste time.`,
       409,
       undefined,
-      "ARCHITECT_ALREADY_IN_TEAM",
+      "PROFESSIONAL_ALREADY_IN_TEAM",
     );
   }
 
-  static withoutTeam(architect: Architect): ApiError {
+  static withoutTeam(professional: Professional): ApiError {
     return new ApiError(
-      `${architect.name} não está em nenhum time.`,
+      `${professional.name} não está em nenhum time.`,
       409,
       undefined,
-      "ARCHITECT_WITHOUT_TEAM",
+      "PROFESSIONAL_WITHOUT_TEAM",
     );
   }
 }
 
 export class InMemoryTeamAllocationGateway implements TeamAllocationGateway {
-  private readonly architectsById: Map<string, Architect>;
+  private readonly professionalsById: Map<string, Professional>;
   readonly allocationsMade: TeamAllocationMade[] = [];
   readonly releasesMade: string[] = [];
 
   constructor(
-    architects: readonly Architect[],
+    professionals: readonly Professional[],
     private readonly teams: readonly TeamSummary[],
   ) {
-    this.architectsById = new Map(architects.map((architect) => [architect.id, { ...architect }]));
+    this.professionalsById = new Map(
+      professionals.map((professional) => [professional.id, { ...professional }]),
+    );
   }
 
-  allocateArchitectToTeam = (
-    architectId: string,
+  allocateProfessionalToTeam = (
+    professionalId: string,
     teamId: string,
     reason: string,
-  ): Promise<Architect> => {
+  ): Promise<Professional> => {
     if (reason.trim() === "") return Promise.reject(TeamAllocationRefusal.reasonRequired());
-    const architect = this.architectsById.get(architectId);
-    if (!architect) return Promise.reject(TeamAllocationRefusal.architectNotFound(architectId));
+    const professional = this.professionalsById.get(professionalId);
+    if (!professional)
+      return Promise.reject(TeamAllocationRefusal.professionalNotFound(professionalId));
     const team = this.teams.find((candidate) => candidate.id === teamId);
     if (!team) return Promise.reject(TeamAllocationRefusal.teamNotFound(teamId));
     if (!team.active) return Promise.reject(TeamAllocationRefusal.teamDeactivated());
-    if (architect.teamId === teamId) {
-      return Promise.reject(TeamAllocationRefusal.alreadyInTeam(architect));
+    if (professional.teamId === teamId) {
+      return Promise.reject(TeamAllocationRefusal.alreadyInTeam(professional));
     }
-    const allocated = { ...architect, teamId, version: architect.version + 1 };
-    this.architectsById.set(architectId, allocated);
-    this.allocationsMade.push({ architectId, teamId, reason });
+    const allocated = { ...professional, teamId, version: professional.version + 1 };
+    this.professionalsById.set(professionalId, allocated);
+    this.allocationsMade.push({ professionalId, teamId, reason });
     return Promise.resolve(allocated);
   };
 
-  releaseArchitectFromTeam = (architectId: string): Promise<Architect> => {
-    const architect = this.architectsById.get(architectId);
-    if (!architect) return Promise.reject(TeamAllocationRefusal.architectNotFound(architectId));
-    if (architect.teamId == null)
-      return Promise.reject(TeamAllocationRefusal.withoutTeam(architect));
-    const released = { ...architect, teamId: null, version: architect.version + 1 };
-    this.architectsById.set(architectId, released);
-    this.releasesMade.push(architectId);
+  releaseProfessionalFromTeam = (professionalId: string): Promise<Professional> => {
+    const professional = this.professionalsById.get(professionalId);
+    if (!professional)
+      return Promise.reject(TeamAllocationRefusal.professionalNotFound(professionalId));
+    if (professional.teamId == null)
+      return Promise.reject(TeamAllocationRefusal.withoutTeam(professional));
+    const released = { ...professional, teamId: null, version: professional.version + 1 };
+    this.professionalsById.set(professionalId, released);
+    this.releasesMade.push(professionalId);
     return Promise.resolve(released);
   };
 }

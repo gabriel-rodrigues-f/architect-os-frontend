@@ -110,12 +110,12 @@ export class DevelopmentPlansViewModel {
   }
 
   createItemFromGap(
-    architectId: string,
+    professionalId: string,
     gap: Gap,
     draft: NewPlanItemDraft,
     ownerName: string,
   ): Promise<DevelopmentPlan> {
-    return createPlanItemFromGap(this.service, architectId, {
+    return createPlanItemFromGap(this.service, professionalId, {
       assessmentId: gap.assessmentId,
       competencyId: gap.item.competencyId,
 

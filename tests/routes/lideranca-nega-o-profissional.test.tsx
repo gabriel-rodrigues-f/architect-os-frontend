@@ -87,7 +87,7 @@ describe("/team nega o profissional — a tela é a última barreira", () => {
     renderAs(fixtureMemberUser, <TeamPage />);
     expect(await screen.findByText(TIME_VISAO_DE_LIDERANCA)).toBeTruthy();
     expect(screen.queryByText("Ana Martins")).toBeNull();
-    expect(pediu("/architects")).toBe(false);
+    expect(pediu("/professionals")).toBe(false);
   });
 
   it("a tela negada continua se explicando — o ? está lá", async () => {

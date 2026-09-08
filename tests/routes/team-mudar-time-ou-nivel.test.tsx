@@ -39,7 +39,7 @@ import {
  *       novo nível) E motivo."
  *
  * O diálogo da setinha vira "Mudar time ou nível". O time muda pela
- * operação de negócio `POST /architects/:id/team-allocation { teamId, reason }`
+ * operação de negócio `POST /professionals/:id/team-allocation { teamId, reason }`
  * (contrato novo desta onda; o gateway em memória é o oráculo) e "Sem time"
  * pelo DELETE que já existia; o nível, pela transição que já existia — com o
  * mesmo motivo. Quando os dois mudam, o nível vai ANTES: a transição carrega
@@ -49,7 +49,7 @@ const fetchMock = vi.fn();
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
-const ana = fixtureState.architects[0];
+const ana = fixtureState.professionals[0];
 if (!ana) throw new Error("fixture sem Ana");
 
 const times = [
@@ -63,8 +63,8 @@ const rotaDeTimes: FetchRoute = (href, init) =>
     ? jsonResponse(times)
     : undefined;
 
-const TRANSICAO = apiPath("/architects/ana/career-level-transition");
-const ALOCACAO = apiPath("/architects/ana/team-allocation");
+const TRANSICAO = apiPath("/professionals/ana/career-level-transition");
+const ALOCACAO = apiPath("/professionals/ana/team-allocation");
 
 const escritas: string[] = [];
 
@@ -179,8 +179,10 @@ describe("/team — o diálogo da setinha é 'Mudar time ou nível'", () => {
   });
 
   it("mudar só o time vai pelo gateway em memória com o motivo — o oráculo do contrato", async () => {
-    const gateway = new InMemoryTeamAllocationGateway(fixtureState.architects, times);
-    vi.spyOn(api, "allocateArchitectToTeam").mockImplementation(gateway.allocateArchitectToTeam);
+    const gateway = new InMemoryTeamAllocationGateway(fixtureState.professionals, times);
+    vi.spyOn(api, "allocateProfessionalToTeam").mockImplementation(
+      gateway.allocateProfessionalToTeam,
+    );
 
     const { time, motivo, confirmar } = await abrirODialogo();
     await userEvent.selectOptions(time, "time-dados");
@@ -189,7 +191,7 @@ describe("/team — o diálogo da setinha é 'Mudar time ou nível'", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(gateway.allocationsMade).toEqual([
-      { architectId: "ana", teamId: "time-dados", reason: "Realocação por demanda do produto" },
+      { professionalId: "ana", teamId: "time-dados", reason: "Realocação por demanda do produto" },
     ]);
     expect(escritas).toEqual([]);
   });

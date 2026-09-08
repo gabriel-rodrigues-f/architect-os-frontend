@@ -118,7 +118,7 @@ test("member acessando /calibration direto pela URL vê o aviso de restrição, 
   await expect(page.getByText("Média geral")).toHaveCount(0);
 });
 
-test("perfil de um arquiteto inexistente mostra 'não encontrado', não uma tela quebrada", async ({
+test("perfil de um profissional inexistente mostra 'não encontrado', não uma tela quebrada", async ({
   page,
 }) => {
   await page.goto("/");
@@ -129,6 +129,6 @@ test("perfil de um arquiteto inexistente mostra 'não encontrado', não uma tela
   // contra o POST de login ainda em voo e aterrissa deslogado.
   await expect(page.getByText("Painel de Capacidades")).toBeVisible();
 
-  await page.goto(`/architects/e2e-nao-existe-${RUN_ID}`);
+  await page.goto(`/professionals/e2e-nao-existe-${RUN_ID}`);
   await expect(page.getByText("Profissional não encontrado.")).toBeVisible();
 });

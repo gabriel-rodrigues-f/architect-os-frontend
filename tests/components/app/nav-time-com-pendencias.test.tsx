@@ -42,7 +42,7 @@ const fetchMock = vi.fn();
 const pendentes = (paraMim: number, minhas: number): FetchRoute => {
   const chegando = Array.from({ length: paraMim }, (_, indice) => ({
     id: `chega-${indice}`,
-    architectId: `p-${indice}`,
+    professionalId: `p-${indice}`,
     fromTeamId: "time-dados",
     toTeamId: "time-plataforma",
     reason: "x",
@@ -53,7 +53,7 @@ const pendentes = (paraMim: number, minhas: number): FetchRoute => {
     decidedAt: null,
     decisionNote: null,
     version: 1,
-    architectName: `Pessoa ${indice}`,
+    professionalName: `Pessoa ${indice}`,
     fromTeamName: "Time Dados",
     toTeamName: "Time Plataforma",
     requestedByName: "Gerente de Dados",

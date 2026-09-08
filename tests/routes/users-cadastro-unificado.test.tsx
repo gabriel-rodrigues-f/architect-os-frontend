@@ -203,7 +203,7 @@ describe("senioridade aparece e some com o cargo", () => {
       (href, init) =>
         href.endsWith(apiPath("/auth/users")) && init?.method === "POST"
           ? jsonResponse(
-              { user: fixtureAdminUser, architectId: "novo", invitationDelivered: true },
+              { user: fixtureAdminUser, professionalId: "novo", invitationDelivered: true },
               201,
             )
           : undefined,
@@ -369,7 +369,7 @@ describe("depois de cadastrar, a tela diz o que ACONTECEU com o acesso", () => {
     (invitationDelivered: boolean): FetchRoute =>
     (href, init) =>
       href.endsWith(apiPath("/auth/users")) && init?.method === "POST"
-        ? jsonResponse({ user: fixtureAdminUser, architectId: "novo", invitationDelivered }, 201)
+        ? jsonResponse({ user: fixtureAdminUser, professionalId: "novo", invitationDelivered }, 201)
         : undefined;
 
   async function cadastrar(invitationDelivered: boolean) {
@@ -383,7 +383,7 @@ describe("depois de cadastrar, a tela diz o que ACONTECEU com o acesso", () => {
     await userEvent.click(dialogo.getByRole("button", { name: "Cadastrar Profissional" }));
     // O diálogo de sucesso substitui o de cadastro no MESMO papel; espera-se
     // pelo título dele, e não por "um dialog", que já existe.
-    await screen.findByText("Pessoa cadastrada");
+    await screen.findByText("Profissional cadastrado");
     return within(screen.getByRole("dialog"));
   }
 

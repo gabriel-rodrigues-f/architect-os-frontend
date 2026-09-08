@@ -13,7 +13,7 @@ export type CareerFileTab = (typeof CAREER_FILE_TABS)[number];
 export class CareerFileTabs {
   static readonly ALL = CAREER_FILE_TABS;
 
-  /** `/architects/ana/evolution` → `evolution`; `/architects/ana` (com ou sem barra) → `overview`. */
+  /** `/professionals/ana/evolution` → `evolution`; `/professionals/ana` (com ou sem barra) → `overview`. */
   static fromPathname(pathname: string): CareerFileTab {
     const ultimo = pathname.replace(/\/+$/, "").split("/").pop() ?? "";
     return CareerFileTabs.includes(ultimo) && ultimo !== "overview" ? ultimo : "overview";
@@ -42,7 +42,7 @@ export class CareerFileTabs {
 }
 
 export type CareerFileHelpKey =
-  "architectProfile" | "architectEvolution" | "architectStatement" | "architectRoadmap";
+  "professionalProfile" | "professionalEvolution" | "professionalStatement" | "professionalRoadmap";
 
 const TITLE_KEY: Record<CareerFileTab, MessageKey> = {
   overview: "arch.tabs.overview",
@@ -52,8 +52,8 @@ const TITLE_KEY: Record<CareerFileTab, MessageKey> = {
 };
 
 const HELP_KEY: Record<CareerFileTab, CareerFileHelpKey> = {
-  overview: "architectProfile",
-  evolution: "architectEvolution",
-  statement: "architectStatement",
-  roadmap: "architectRoadmap",
+  overview: "professionalProfile",
+  evolution: "professionalEvolution",
+  statement: "professionalStatement",
+  roadmap: "professionalRoadmap",
 };

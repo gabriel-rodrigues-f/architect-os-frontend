@@ -18,7 +18,7 @@ const MENTORING_CONTEXTS: readonly ContextScopeRequest[] = [
 /**
  * F2 (caminhos quentes) — cada item da linha do tempo chamava `useSelectors()`
  * por conta própria, e cada chamada monta um `SelectorIndex` inteiro (índices
- * de competência, capacidade, arquiteto, avaliação e PDI) mais os caches
+ * de competência, capacidade, profissional, avaliação e PDI) mais os caches
  * vazios que vêm junto. Numa lista de N sessões isso é N índices e N caches
  * frios, quando um só, montado no pai, serve a lista inteira.
  *

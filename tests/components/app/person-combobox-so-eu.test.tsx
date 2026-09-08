@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PersonCombobox } from "@/components/app/PersonCombobox";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { I18nProvider } from "@/lib/i18n";
 import { PersonPicker } from "@/lib/person-selection";
 import { fixtureAssignedTechLeadUser, fixtureMemberUser } from "../../helpers/fixtures";
@@ -13,11 +13,11 @@ import { fixtureAssignedTechLeadUser, fixtureMemberUser } from "../../helpers/fi
  * informações sobre si." A forma "só eu" do `PersonPicker` é a resposta em UM
  * lugar: sem gatilho, sem lista, sem busca — a tela mostra o nome da pessoa.
  */
-const pessoa = (id: string, name: string, teamId = "time-plataforma"): Architect => ({
+const pessoa = (id: string, name: string, teamId = "time-plataforma"): Professional => ({
   id,
   name,
   role: "Pleno",
-  yearsAsArchitect: 3,
+  yearsAsProfessional: 3,
   specialization: "",
   email: `${id}@a.com`,
   active: true,
@@ -72,7 +72,7 @@ describe("PersonPicker — a forma 'só eu' (dono, 2026-09-06)", () => {
     expect(screen.queryByLabelText("Profissional")).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
-    expect(screen.queryByPlaceholderText("Buscar pessoa…")).toBeNull();
+    expect(screen.queryByPlaceholderText("Buscar profissional…")).toBeNull();
   });
 
   it("quem lidera continua com a combobox de sempre", () => {

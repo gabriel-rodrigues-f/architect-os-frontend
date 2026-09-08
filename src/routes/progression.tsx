@@ -78,16 +78,16 @@ function TeamProgression() {
   const sel = useSelectors();
 
   const ruler = useGapSeverityRuler();
-  const { store, selected, setSelected, architects, priorities, mastery, scopeLabel } =
+  const { store, selected, setSelected, professionals, priorities, mastery, scopeLabel } =
     useGapAnalysisData();
   const [exportingPdf, setExportingPdf] = useState(false);
   const cadastroDePessoa = useSelectionEmptyState(Registration.PROFESSIONAL);
-  const semNinguem = store.architects.length === 0;
+  const semNinguem = store.professionals.length === 0;
 
   const reportInput = () => ({
     scopeLabel,
     generatedAt: new Date(),
-    architects,
+    professionals,
     capabilities: store.capabilities,
     capabilityAveragesFor: sel.capabilityAverages,
     priorities,
@@ -130,7 +130,7 @@ function TeamProgression() {
              * `PersonCombobox`, e esta tela não a repete.
              */}
             <PersonCombobox
-              picker={PersonPicker.many(store.architects, selected)}
+              picker={PersonPicker.many(store.professionals, selected)}
               onChange={setSelected}
               label={t("person.label")}
               className="w-64"
@@ -138,7 +138,7 @@ function TeamProgression() {
             <Button
               size="sm"
               variant="secondary"
-              disabled={architects.length === 0}
+              disabled={professionals.length === 0}
               onClick={exportCsv}
             >
               {t("gap.export.csv")}
@@ -146,7 +146,7 @@ function TeamProgression() {
             <Button
               size="sm"
               variant="secondary"
-              disabled={architects.length === 0 || exportingPdf}
+              disabled={professionals.length === 0 || exportingPdf}
               onClick={() => void exportPdf()}
             >
               {exportingPdf ? t("gap.export.generating") : t("gap.export.pdf")}
@@ -155,10 +155,10 @@ function TeamProgression() {
         }
       />
 
-      {architects.length === 0 ? (
+      {professionals.length === 0 ? (
         <EmptyState
           title={semNinguem ? t("person.none") : t("gap.empty")}
-          hint={semNinguem ? t("gap.empty.noArchitects") : t("gap.empty.filterHint")}
+          hint={semNinguem ? t("gap.empty.noProfessionals") : t("gap.empty.filterHint")}
           /*
            * Dono (2026-09-08, item 3): mais um botão de cadastrar o primeiro
            * profissional NO CENTRO da tela, e SÓ quando não houver nenhum —
@@ -184,7 +184,7 @@ function TeamProgression() {
             description={t("gap.heatmap.subtitle", { escopo: scopeLabel })}
           >
             <CapabilityHeatmap
-              architects={architects}
+              professionals={professionals}
               capabilities={store.capabilities}
               capabilityAveragesFor={sel.capabilityAverages}
               linkToProfile

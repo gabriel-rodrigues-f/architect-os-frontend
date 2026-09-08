@@ -2,7 +2,7 @@ import { ApiError } from "../api-errors";
 import type { ApiClient } from "../api-client";
 import { teamTransferRequestSchema, teamTransferRequestsResponseSchema } from "../api-schemas";
 import type {
-  Architect,
+  Professional,
   TeamTransferRequest,
   TeamTransferRequestStatus,
   TeamTransferRequestView,
@@ -12,7 +12,7 @@ import type { TeamSummary } from "./teams.gateway";
 
 /**
  * Contrato do backend ebb305f — a mudança de time como SOLICITAÇÃO:
- *   POST /architects/:id/team-transfer-requests { toTeamId, reason }   — o gerente do time atual
+ *   POST /professionals/:id/team-transfer-requests { toTeamId, reason }   — o gerente do time atual
  *   GET  /team-transfer-requests?status=pending                          — as minhas ∪ as do meu destino
  *   POST /team-transfer-requests/:id/approve { note? }                   — o gerente do destino (ou admin)
  *   POST /team-transfer-requests/:id/refuse  { note }                    — idem, nota obrigatória
@@ -20,7 +20,7 @@ import type { TeamSummary } from "./teams.gateway";
  */
 export interface TeamTransfersGateway {
   requestTeamTransfer(
-    architectId: string,
+    professionalId: string,
     toTeamId: string,
     reason: string,
   ): Promise<TeamTransferRequest>;
@@ -34,12 +34,15 @@ export class HttpTeamTransfersGateway implements TeamTransfersGateway {
   constructor(private readonly client: ApiClient) {}
 
   requestTeamTransfer = (
-    architectId: string,
+    professionalId: string,
     toTeamId: string,
     reason: string,
   ): Promise<TeamTransferRequest> =>
     this.client
-      .post<unknown>(`/architects/${architectId}/team-transfer-requests`, { toTeamId, reason })
+      .post<unknown>(`/professionals/${professionalId}/team-transfer-requests`, {
+        toTeamId,
+        reason,
+      })
       .then((data) => this.snapshot(data));
 
   teamTransferRequests = (
@@ -98,9 +101,9 @@ export class TeamTransferRefusal {
     );
   }
 
-  static alreadyPending(architect: Architect): ApiError {
+  static alreadyPending(professional: Professional): ApiError {
     return new ApiError(
-      `${architect.name} já tem uma transferência pendente.`,
+      `${professional.name} já tem uma transferência pendente.`,
       409,
       undefined,
       "TEAM_TRANSFER_REQUEST_PENDING",
@@ -125,12 +128,12 @@ export class TeamTransferRefusal {
     );
   }
 
-  static personNotFound(architectId: string): ApiError {
+  static personNotFound(professionalId: string): ApiError {
     return new ApiError(
-      `Profissional ${architectId} não encontrado.`,
+      `Profissional ${professionalId} não encontrado.`,
       404,
       undefined,
-      "ARCHITECT_NOT_FOUND",
+      "PROFESSIONAL_NOT_FOUND",
     );
   }
 
@@ -144,12 +147,12 @@ export class TeamTransferRefusal {
  * backend e a consequência da aprovação (a pessoa migra).
  */
 export class InMemoryTeamTransfersGateway implements TeamTransfersGateway {
-  private readonly peopleById: Map<string, Architect>;
+  private readonly peopleById: Map<string, Professional>;
   private readonly requests: TeamTransferRequest[] = [];
   private sequence = 0;
 
   constructor(
-    people: readonly Architect[],
+    people: readonly Professional[],
     private readonly teams: readonly TeamSummary[],
     private readonly actor: Pick<SessionUser, "id" | "name">,
     private readonly now: () => string = () => new Date().toISOString(),
@@ -157,27 +160,27 @@ export class InMemoryTeamTransfersGateway implements TeamTransfersGateway {
     this.peopleById = new Map(people.map((person) => [person.id, { ...person }]));
   }
 
-  teamOf(architectId: string): string | null {
-    return this.peopleById.get(architectId)?.teamId ?? null;
+  teamOf(professionalId: string): string | null {
+    return this.peopleById.get(professionalId)?.teamId ?? null;
   }
 
   requestTeamTransfer = (
-    architectId: string,
+    professionalId: string,
     toTeamId: string,
     reason: string,
   ): Promise<TeamTransferRequest> => {
     if (reason.trim() === "") return Promise.reject(TeamTransferRefusal.reasonRequired());
-    const person = this.peopleById.get(architectId);
-    if (!person) return Promise.reject(TeamTransferRefusal.personNotFound(architectId));
+    const person = this.peopleById.get(professionalId);
+    if (!person) return Promise.reject(TeamTransferRefusal.personNotFound(professionalId));
     if (!this.teams.some((team) => team.id === toTeamId))
       return Promise.reject(TeamTransferRefusal.teamNotFound(toTeamId));
     if (person.teamId === toTeamId) return Promise.reject(TeamTransferRefusal.toSameTeam());
-    if (this.requests.some((it) => it.architectId === architectId && it.status === "pending"))
+    if (this.requests.some((it) => it.professionalId === professionalId && it.status === "pending"))
       return Promise.reject(TeamTransferRefusal.alreadyPending(person));
     this.sequence += 1;
     const request: TeamTransferRequest = {
       id: `transfer-${this.sequence}`,
-      architectId,
+      professionalId,
       fromTeamId: person.teamId ?? "",
       toTeamId,
       reason,
@@ -203,7 +206,7 @@ export class InMemoryTeamTransfersGateway implements TeamTransfersGateway {
 
   approveTeamTransfer = (requestId: string, note?: string): Promise<TeamTransferRequest> =>
     this.decide(requestId, "approved", note ?? null).then((approved) => {
-      const person = this.peopleById.get(approved.architectId);
+      const person = this.peopleById.get(approved.professionalId);
       if (person) {
         this.peopleById.set(person.id, {
           ...person,
@@ -245,7 +248,7 @@ export class InMemoryTeamTransfersGateway implements TeamTransfersGateway {
       userId === null ? null : userId === this.actor.id ? this.actor.name : userId;
     return {
       ...request,
-      architectName: this.peopleById.get(request.architectId)?.name ?? request.architectId,
+      professionalName: this.peopleById.get(request.professionalId)?.name ?? request.professionalId,
       fromTeamName: nameOfTeam(request.fromTeamId),
       toTeamName: nameOfTeam(request.toTeamId),
       requestedByName: nameOfUser(request.requestedByUserId) ?? request.requestedByUserId,

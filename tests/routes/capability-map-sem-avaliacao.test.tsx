@@ -44,7 +44,7 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * Onda 35, item 8 (dono, 2026-09-02): "De quem o time depende › Sem avaliação —
  * linkar para abrir". O número da coluna vira acesso às pessoas sem avaliação
  * naquela capacidade neste ciclo, e cada pessoa abre a própria avaliação em
- * `/assessments?architectId=<id>`. Zero continua só número.
+ * `/assessments?professionalId=<id>`. Zero continua só número.
  */
 const fetchMock = vi.fn();
 
@@ -54,7 +54,7 @@ const semAvaliacaoNoCicloAtivo = (id: string, name: string) => ({
   id,
   name,
   role: "Júnior",
-  yearsAsArchitect: 2,
+  yearsAsProfessional: 2,
   specialization: "Cloud",
   email: `${id}@company.com`,
   active: true,
@@ -65,8 +65,8 @@ const semAvaliacaoNoCicloAtivo = (id: string, name: string) => ({
 /** Ana e Bruno têm avaliação concluída em 2026-h2; Carla e Diego não têm nenhuma. */
 const stateComDuasPessoasSemAvaliacao: AppState = {
   ...fixtureState,
-  architects: [
-    ...fixtureState.architects,
+  professionals: [
+    ...fixtureState.professionals,
     semAvaliacaoNoCicloAtivo("carla", "Carla Souza"),
     semAvaliacaoNoCicloAtivo("diego", "Diego Lima"),
   ],
@@ -93,7 +93,7 @@ describe("De quem o time depende — 'Sem avaliação' abre a avaliação de cad
     vi.unstubAllGlobals();
   });
 
-  it("nos cartões: o acesso revela os dois nomes e cada link aponta para /assessments com o architectId certo", async () => {
+  it("nos cartões: o acesso revela os dois nomes e cada link aponta para /assessments com o professionalId certo", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
       state: comoGerente(stateComDuasPessoasSemAvaliacao),
@@ -111,9 +111,9 @@ describe("De quem o time depende — 'Sem avaliação' abre a avaliação de cad
     const carla = within(card).getByRole("link", { name: "Carla Souza" });
     const diego = within(card).getByRole("link", { name: "Diego Lima" });
     expect(hrefDe(carla).pathname).toBe("/assessments");
-    expect(hrefDe(carla).searchParams.get("architectId")).toBe("carla");
+    expect(hrefDe(carla).searchParams.get("professionalId")).toBe("carla");
     expect(hrefDe(diego).pathname).toBe("/assessments");
-    expect(hrefDe(diego).searchParams.get("architectId")).toBe("diego");
+    expect(hrefDe(diego).searchParams.get("professionalId")).toBe("diego");
   });
 
   it("na tabela: o número da coluna é o acesso, com nome que diz a capacidade, e abre pelo teclado", async () => {
@@ -138,7 +138,7 @@ describe("De quem o time depende — 'Sem avaliação' abre a avaliação de cad
     expect(acesso.getAttribute("aria-expanded")).toBe("true");
     const links = within(linha).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual(["Carla Souza", "Diego Lima"]);
-    expect(links.map((link) => hrefDe(link).searchParams.get("architectId"))).toEqual([
+    expect(links.map((link) => hrefDe(link).searchParams.get("professionalId"))).toEqual([
       "carla",
       "diego",
     ]);

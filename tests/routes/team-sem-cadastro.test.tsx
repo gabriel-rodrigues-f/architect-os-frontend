@@ -98,8 +98,8 @@ describe("Time perde o cadastro, a edição e a desativação de profissional", 
   });
 
   it("o vazio aponta para Usuários, que é onde a pessoa nasce", async () => {
-    renderTeam({ ...fixtureState, architects: [] });
-    expect(await screen.findByText("Nenhuma pessoa cadastrada")).toBeTruthy();
+    renderTeam({ ...fixtureState, professionals: [] });
+    expect(await screen.findByText("Nenhum profissional cadastrado")).toBeTruthy();
     const atalho = await screen.findByRole("link", {
       name: "Cadastrar Profissional",
     });

@@ -42,9 +42,9 @@ describe("initialSearchParam / replaceSearchParam", () => {
   });
 
   it("preserva os demais parâmetros da URL", () => {
-    window.history.replaceState(null, "", "/assessments?architectId=ana&cycleId=2026-h1");
+    window.history.replaceState(null, "", "/assessments?professionalId=ana&cycleId=2026-h1");
     replaceSearchParam("cycleId", "2026-h2");
-    expect(initialSearchParam("architectId")).toBe("ana");
+    expect(initialSearchParam("professionalId")).toBe("ana");
     expect(initialSearchParam("cycleId")).toBe("2026-h2");
   });
 });

@@ -15,17 +15,17 @@ export function useGapAnalysisData() {
   const store = useStore();
   const sel = useSelectors();
 
-  const defaultSelected = useMemo(() => sel.activeArchitects.map((a) => a.id), [sel]);
+  const defaultSelected = useMemo(() => sel.activeProfessionals.map((a) => a.id), [sel]);
   const [selected, setSelected] = useSearchParamList("selected", () => defaultSelected);
 
-  const architects = useMemo(
-    () => Selection.explicit(selected).apply(store.architects),
-    [selected, store.architects],
+  const professionals = useMemo(
+    () => Selection.explicit(selected).apply(store.professionals),
+    [selected, store.professionals],
   );
 
   const radar = useMemo(() => {
     return store.capabilities.map((cat) => {
-      const { atual, alvo } = sel.teamAverageFor(cat.id, architects);
+      const { atual, alvo } = sel.teamAverageFor(cat.id, professionals);
       return {
         capability: cat.name,
         atual: Number((atual.avg ?? 0).toFixed(2)),
@@ -34,33 +34,36 @@ export function useGapAnalysisData() {
         total: atual.total,
       };
     });
-  }, [architects, store.capabilities, sel]);
+  }, [professionals, store.capabilities, sel]);
 
   const radarCoverage = radar.reduce(
     (min, r) => (r.covered < min.covered ? r : min),
     radar[0] ?? { covered: 0, total: 0 },
   );
 
-  const priorities = useMemo(() => sel.consolidateProgressionGaps(architects), [architects, sel]);
+  const priorities = useMemo(
+    () => sel.consolidateProgressionGaps(professionals),
+    [professionals, sel],
+  );
 
-  const mastery = useMemo(() => sel.consolidateMasteryGaps(architects), [architects, sel]);
+  const mastery = useMemo(() => sel.consolidateMasteryGaps(professionals), [professionals, sel]);
 
   const { t } = useI18n();
 
   const scopeLabel =
     selected.length === 0
       ? t("gap.scope.none")
-      : architects.length === store.architects.length
+      : professionals.length === store.professionals.length
         ? t("gap.scope.wholeTeam")
-        : architects.length > 3
-          ? t("gap.scope.count", { n: architects.length })
-          : architects.map((a) => a.name.split(" ")[0]).join(", ") || t("gap.scope.empty");
+        : professionals.length > 3
+          ? t("gap.scope.count", { n: professionals.length })
+          : professionals.map((a) => a.name.split(" ")[0]).join(", ") || t("gap.scope.empty");
 
   return {
     store,
     selected,
     setSelected,
-    architects,
+    professionals,
     radar,
     radarCoverage,
     priorities,
@@ -121,7 +124,10 @@ export function GapTable({
               <td className="py-2 text-muted-foreground">
                 {capabilities.find((c) => c.id === row.capabilityId)?.name}
               </td>
-              <td className="py-2 text-center tabular-nums" title={row.architectNames.join(", ")}>
+              <td
+                className="py-2 text-center tabular-nums"
+                title={row.professionalNames.join(", ")}
+              >
                 {row.people}
               </td>
               <td className="py-2 text-center tabular-nums">{row.avgFinal}</td>
@@ -153,8 +159,8 @@ export const MAX_HEATMAP_COLUMNS = 20;
 
 export function capHeatmapColumns<C extends { id: string }>(
   capabilities: readonly C[],
-  architects: readonly { id: string }[],
-  capabilityAveragesFor: (architectId: string) => readonly {
+  professionals: readonly { id: string }[],
+  capabilityAveragesFor: (professionalId: string) => readonly {
     capability: { id: string };
     avg: number | undefined;
     target: number | undefined;
@@ -163,8 +169,8 @@ export function capHeatmapColumns<C extends { id: string }>(
 ): C[] {
   const worstGapByCapability = new Map<string, number>();
   if (capabilities.length > max) {
-    for (const architect of architects) {
-      for (const row of capabilityAveragesFor(architect.id)) {
+    for (const professional of professionals) {
+      for (const row of capabilityAveragesFor(professional.id)) {
         if (row.avg === undefined || row.target === undefined) continue;
         const gap = row.target - row.avg;
         const prev = worstGapByCapability.get(row.capability.id) ?? -Infinity;

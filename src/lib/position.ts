@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { Architect, CareerLevel } from "./domain";
+import type { Professional, CareerLevel } from "./domain";
 import type { TeamSummary } from "./gateways/teams.gateway";
 import { useI18n, type MessageKey } from "./i18n";
 import { AUSENCIA } from "./seniority";
@@ -23,20 +23,22 @@ export class PositionReading {
     private readonly careerLevels: readonly CareerLevel[],
   ) {}
 
-  static isProfessional(architect: Pick<Architect, "cargo">): boolean {
-    return architect.cargo !== "manager";
+  static isProfessional(professional: Pick<Professional, "cargo">): boolean {
+    return professional.cargo !== "manager";
   }
 
   static roman(rank: number): string {
     return ROMAN[rank - 1] ?? String(rank);
   }
 
-  labelOf(architect: Pick<Architect, "cargo" | "teamId" | "careerLevelId" | "role">): string {
-    if (architect.cargo === "manager") return this.t("users.role.manager");
-    if (architect.cargo === "tech_lead") return this.t("users.role.tech_lead");
-    const team = this.teams.find((candidate) => candidate.id === architect.teamId)?.name;
-    const level = this.careerLevels.find((candidate) => candidate.id === architect.careerLevelId);
-    const seniority = level ? PositionReading.roman(level.rank) : (architect.role ?? null);
+  labelOf(professional: Pick<Professional, "cargo" | "teamId" | "careerLevelId" | "role">): string {
+    if (professional.cargo === "manager") return this.t("users.role.manager");
+    if (professional.cargo === "tech_lead") return this.t("users.role.tech_lead");
+    const team = this.teams.find((candidate) => candidate.id === professional.teamId)?.name;
+    const level = this.careerLevels.find(
+      (candidate) => candidate.id === professional.careerLevelId,
+    );
+    const seniority = level ? PositionReading.roman(level.rank) : (professional.role ?? null);
     const parts = [team, seniority].filter((part): part is string => Boolean(part));
     return parts.length > 0 ? parts.join(" ") : AUSENCIA;
   }

@@ -6,7 +6,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import {
   fixtureAssignedTechLeadUser,
   fixtureMemberUser,

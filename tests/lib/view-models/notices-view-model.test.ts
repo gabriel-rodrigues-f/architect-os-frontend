@@ -15,10 +15,10 @@ function notice(overrides: Partial<Notice>): Notice {
     id: "notice-1",
     eventType: "pdi.item.dueSoon",
     title: "Item de PDI vence em 3 dias",
-    link: "/development-plans?architectId=ana",
+    link: "/development-plans?professionalId=ana",
     occurredAt: "2026-08-28T09:00:00.000Z",
     readAt: null,
-    architectId: "ana",
+    professionalId: "ana",
     teamId: "team-integration",
     ...overrides,
   };

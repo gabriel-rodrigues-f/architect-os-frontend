@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Architect, Assessment, AssessmentEligibility, Capability } from "@/lib/domain";
+import type { Professional, Assessment, AssessmentEligibility, Capability } from "@/lib/domain";
 import { UiAuthorizationPolicy } from "@/lib/scope";
 import {
   AssessmentViewModel,
@@ -56,7 +56,7 @@ function fakePortfolioService(): AssessmentPortfolioService & {
 
 const baseAssessment: Assessment = {
   id: "asmt-1",
-  architectId: "ana",
+  professionalId: "ana",
   cycleId: "2026-h2",
   status: "Draft",
   modelVersion: 2,
@@ -66,11 +66,11 @@ const baseAssessment: Assessment = {
   items: [],
 };
 
-const anaArchitect: Architect = {
+const anaProfessional: Professional = {
   id: "ana",
   name: "Ana Martins",
   role: "Júnior",
-  yearsAsArchitect: 2,
+  yearsAsProfessional: 2,
   specialization: "",
   email: "ana@company.com",
   active: true,
@@ -90,7 +90,7 @@ describe("AssessmentViewModel", () => {
   describe("permissionsFor", () => {
     it("o profissional em Draft é SUJEITO, não agente (dono, 2026-09-06): lê, e nem registra a autoavaliação nem envia para revisão", () => {
       const { vm } = makeVm();
-      const result = vm.permissionsFor(fixtureMemberUser, "ana", anaArchitect, baseAssessment);
+      const result = vm.permissionsFor(fixtureMemberUser, "ana", anaProfessional, baseAssessment);
       expect(result.isSubject).toBe(true);
       expect(result.isLead).toBe(false);
       expect(result.canEditSelf).toBe(false);
@@ -104,7 +104,7 @@ describe("AssessmentViewModel", () => {
       const result = vm.permissionsFor(
         fixtureAssignedTechLeadUser,
         "ana",
-        anaArchitect,
+        anaProfessional,
         baseAssessment,
       );
       expect(result.isSubject).toBe(false);
@@ -117,7 +117,7 @@ describe("AssessmentViewModel", () => {
     it("tech lead com ficha própria NÃO é dono da própria avaliação nem líder de si — nada a fazer (dono, 2026-09-06)", () => {
       const { vm } = makeVm();
       const techLeadAna = { ...fixtureMemberUser, role: "tech_lead" as const };
-      const result = vm.permissionsFor(techLeadAna, "ana", anaArchitect, baseAssessment);
+      const result = vm.permissionsFor(techLeadAna, "ana", anaProfessional, baseAssessment);
       expect(result.isSubject).toBe(true);
       expect(result.isLead).toBe(false);
       expect(result.canEditSelf).toBe(false);
@@ -131,7 +131,7 @@ describe("AssessmentViewModel", () => {
       const result = vm.permissionsFor(
         fixtureAssignedTechLeadUser,
         "ana",
-        anaArchitect,
+        anaProfessional,
         assessment,
       );
       expect(result.isSubject).toBe(false);
@@ -143,16 +143,16 @@ describe("AssessmentViewModel", () => {
       const doGerente = vm.permissionsFor(
         fixtureAssignedManagerUser,
         "ana",
-        anaArchitect,
+        anaProfessional,
         assessment,
       );
       expect(doGerente.canEditLeaderFinal).toBe(true);
       expect(doGerente.canComplete).toBe(true);
     });
 
-    it("lead sobre arquiteto SEM TIME não ganha canEditLeaderFinal — UX-001 pós-Fase 2 (vínculo é o time; lead de outro time nem recebe a pessoa no recorte do servidor)", () => {
+    it("lead sobre profissional SEM TIME não ganha canEditLeaderFinal — UX-001 pós-Fase 2 (vínculo é o time; lead de outro time nem recebe a pessoa no recorte do servidor)", () => {
       const { vm } = makeVm();
-      const teamlessAna = { ...anaArchitect, teamId: null };
+      const teamlessAna = { ...anaProfessional, teamId: null };
       const assessment = { ...baseAssessment, status: "In Review" as const };
       const result = vm.permissionsFor(
         fixtureUnassignedTechLeadUser,
@@ -167,7 +167,7 @@ describe("AssessmentViewModel", () => {
     it("o administrador (ADMIN) lidera qualquer pessoa: pontua e conclui (regra 6, 2026-09-08)", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "In Review" as const };
-      const result = vm.permissionsFor(fixtureAdminUser, "ana", anaArchitect, assessment);
+      const result = vm.permissionsFor(fixtureAdminUser, "ana", anaProfessional, assessment);
       expect(result.isSubject).toBe(false);
       expect(result.isLead).toBe(true);
       expect(result.canEditLeaderFinal).toBe(true);
@@ -177,7 +177,7 @@ describe("AssessmentViewModel", () => {
     it("o suporte não é lead nem dono: não pontua nem conclui (D1/D3)", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "In Review" as const };
-      const result = vm.permissionsFor(fixtureSupportUser, "ana", anaArchitect, assessment);
+      const result = vm.permissionsFor(fixtureSupportUser, "ana", anaProfessional, assessment);
       expect(result.isSubject).toBe(false);
       expect(result.isLead).toBe(false);
       expect(result.canEditLeaderFinal).toBe(false);
@@ -188,22 +188,28 @@ describe("AssessmentViewModel", () => {
       const { vm } = makeVm();
       const completed = { ...baseAssessment, status: "Completed" as const };
       expect(
-        vm.permissionsFor(fixtureMemberUser, "ana", anaArchitect, completed).seesAssessmentNumbers,
+        vm.permissionsFor(fixtureMemberUser, "ana", anaProfessional, completed)
+          .seesAssessmentNumbers,
       ).toBe(true);
       expect(
-        vm.permissionsFor(fixtureMemberUser, "bruno", { ...anaArchitect, id: "bruno" }, completed)
-          .seesAssessmentNumbers,
+        vm.permissionsFor(
+          fixtureMemberUser,
+          "bruno",
+          { ...anaProfessional, id: "bruno" },
+          completed,
+        ).seesAssessmentNumbers,
       ).toBe(false);
       expect(
-        vm.permissionsFor(fixtureUnassignedTechLeadUser, "ana", anaArchitect, completed)
+        vm.permissionsFor(fixtureUnassignedTechLeadUser, "ana", anaProfessional, completed)
           .seesAssessmentNumbers,
       ).toBe(true);
       expect(
-        vm.permissionsFor(fixtureAdminUser, "ana", anaArchitect, completed).seesAssessmentNumbers,
+        vm.permissionsFor(fixtureAdminUser, "ana", anaProfessional, completed)
+          .seesAssessmentNumbers,
       ).toBe(true);
       const ownerAsLeadToo = { ...fixtureMemberUser, role: "tech_lead" as const };
       expect(
-        vm.permissionsFor(ownerAsLeadToo, "ana", anaArchitect, completed).seesAssessmentNumbers,
+        vm.permissionsFor(ownerAsLeadToo, "ana", anaProfessional, completed).seesAssessmentNumbers,
       ).toBe(true);
     });
 
@@ -211,9 +217,15 @@ describe("AssessmentViewModel", () => {
       const { vm } = makeVm();
       const assessment = { ...baseAssessment, status: "Completed" as const };
       expect(
-        vm.permissionsFor(fixtureAssignedTechLeadUser, "ana", anaArchitect, assessment).canReopen,
+        vm.permissionsFor(fixtureAssignedTechLeadUser, "ana", anaProfessional, assessment)
+          .canReopen,
       ).toBe(false);
-      const result = vm.permissionsFor(fixtureAssignedManagerUser, "ana", anaArchitect, assessment);
+      const result = vm.permissionsFor(
+        fixtureAssignedManagerUser,
+        "ana",
+        anaProfessional,
+        assessment,
+      );
       expect(result.isCompleted).toBe(true);
       expect(result.canReopen).toBe(true);
       expect(result.canEditSelf).toBe(false);
@@ -235,14 +247,14 @@ describe("AssessmentViewModel", () => {
           },
         ],
       };
-      const result = vm.permissionsFor(fixtureMemberUser, "ana", anaArchitect, assessment);
+      const result = vm.permissionsFor(fixtureMemberUser, "ana", anaProfessional, assessment);
       expect(result.incompleteSelf).toBe(true);
       expect(result.incompleteLeaderFinal).toBe(true);
     });
 
     it("sem assessment (ainda não aberto), nada trava por item incompleto e status é undefined", () => {
       const { vm } = makeVm();
-      const result = vm.permissionsFor(fixtureMemberUser, "ana", anaArchitect, undefined);
+      const result = vm.permissionsFor(fixtureMemberUser, "ana", anaProfessional, undefined);
       expect(result.status).toBeUndefined();
       expect(result.incompleteSelf).toBe(false);
       expect(result.incompleteLeaderFinal).toBe(false);

@@ -17,9 +17,9 @@ describe("Initials — filtra por letra/dígito, ignora símbolo solto", () => {
   });
 
   it("nome com aspas/símbolos soltos: pula até achar letra, não gera aspas nas iniciais", () => {
-    const { getByText, queryByText } = render(<Initials name={'Arquiteto "R&D" <Ops>'} />);
-    expect(getByText("AR")).toBeTruthy();
-    expect(queryByText('A"')).toBeNull();
+    const { getByText, queryByText } = render(<Initials name={'Profissional "R&D" <Ops>'} />);
+    expect(getByText("PR")).toBeTruthy();
+    expect(queryByText('P"')).toBeNull();
   });
 
   it("espaço duplo: palavra vazia não conta como iniciais", () => {

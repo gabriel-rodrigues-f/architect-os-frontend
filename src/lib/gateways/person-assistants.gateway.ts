@@ -83,19 +83,19 @@ export interface DevelopmentPlanAdvice extends PersonAdvice {
 
 /** Preparação do 1:1 e roteiro de PDI pedem a mesma coisa: a pessoa e o perfil. */
 export interface ProfiledAdviceRequest {
-  architectId: string;
+  professionalId: string;
   profile: GenerationProfileName;
 }
 
 export interface DevelopmentPlanRecommendationRequest {
-  architectId: string;
+  professionalId: string;
   competencyId: string;
 }
 
 export interface PersonAssistantsGateway {
   prepareOneOnOne(request: ProfiledAdviceRequest): Promise<OneOnOnePreparation>;
   writeSessionScript(request: ProfiledAdviceRequest): Promise<SessionScriptAdvice>;
-  explainCareerReadiness(architectId: string): Promise<CareerReadinessAdvice>;
+  explainCareerReadiness(professionalId: string): Promise<CareerReadinessAdvice>;
   recommendDevelopmentPlanItem(
     request: DevelopmentPlanRecommendationRequest,
   ): Promise<DevelopmentPlanAdvice>;
@@ -109,34 +109,36 @@ export class HttpPersonAssistantsGateway implements PersonAssistantsGateway {
   }
 
   prepareOneOnOne = ({
-    architectId,
+    professionalId,
     profile,
   }: ProfiledAdviceRequest): Promise<OneOnOnePreparation> =>
     this.call.read(
-      AssistantCall.resourceOf(`/architects/${architectId}/one-on-one-preparation`, { profile }),
+      AssistantCall.resourceOf(`/professionals/${professionalId}/one-on-one-preparation`, {
+        profile,
+      }),
       (data) => oneOnOnePreparationResponseSchema.parse(data),
     );
 
   writeSessionScript = ({
-    architectId,
+    professionalId,
     profile,
   }: ProfiledAdviceRequest): Promise<SessionScriptAdvice> =>
     this.call.read(
-      AssistantCall.resourceOf(`/architects/${architectId}/session-script`, { profile }),
+      AssistantCall.resourceOf(`/professionals/${professionalId}/session-script`, { profile }),
       (data) => sessionScriptAdviceResponseSchema.parse(data),
     );
 
-  explainCareerReadiness = (architectId: string): Promise<CareerReadinessAdvice> =>
-    this.call.read(`/architects/${architectId}/career-readiness-explanation`, (data) =>
+  explainCareerReadiness = (professionalId: string): Promise<CareerReadinessAdvice> =>
+    this.call.read(`/professionals/${professionalId}/career-readiness-explanation`, (data) =>
       careerReadinessAdviceResponseSchema.parse(data),
     );
 
   recommendDevelopmentPlanItem = ({
-    architectId,
+    professionalId,
     competencyId,
   }: DevelopmentPlanRecommendationRequest): Promise<DevelopmentPlanAdvice> =>
     this.call.read(
-      AssistantCall.resourceOf(`/architects/${architectId}/development-plan-recommendation`, {
+      AssistantCall.resourceOf(`/professionals/${professionalId}/development-plan-recommendation`, {
         competencyId,
       }),
       (data) => developmentPlanAdviceResponseSchema.parse(data),

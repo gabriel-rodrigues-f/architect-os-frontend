@@ -1,5 +1,5 @@
 import { ApiError, UserFacingError } from "../api-errors";
-import type { Architect } from "../domain";
+import type { Professional } from "../domain";
 import type { SessionUser, TeamMemberRole } from "../gateways/auth.gateway";
 import { TeamMemberRoles, UserRoles } from "../gateways/auth.gateway";
 import type { TeamSummary } from "../gateways/teams.gateway";
@@ -20,12 +20,12 @@ export class TeamStatusFilters {
 export class TeamDeactivationRefusal {
   static readonly CODE = "TEAM_STILL_HAS_PEOPLE";
 
-  private constructor(readonly activeArchitects: number) {}
+  private constructor(readonly activeProfessionals: number) {}
 
   static of(error: unknown): TeamDeactivationRefusal | null {
     if (!(error instanceof ApiError) || error.code !== TeamDeactivationRefusal.CODE) return null;
-    const details = error.details as { activeArchitects?: unknown } | undefined;
-    const count = details?.activeArchitects;
+    const details = error.details as { activeProfessionals?: unknown } | undefined;
+    const count = details?.activeProfessionals;
     return typeof count === "number" ? new TeamDeactivationRefusal(count) : null;
   }
 }
@@ -80,13 +80,15 @@ export class TeamRegistryViewModel {
     return teams.filter((team) => team.active === (filter === "active"));
   }
 
-  activePeopleOf(teamId: string, architects: readonly Architect[]): Architect[] {
-    return architects.filter((architect) => architect.active && architect.teamId === teamId);
+  activePeopleOf(teamId: string, professionals: readonly Professional[]): Professional[] {
+    return professionals.filter(
+      (professional) => professional.active && professional.teamId === teamId,
+    );
   }
 
-  allocatableTo(teamId: string, architects: readonly Architect[]): Architect[] {
-    return architects
-      .filter((architect) => architect.active && architect.teamId !== teamId)
+  allocatableTo(teamId: string, professionals: readonly Professional[]): Professional[] {
+    return professionals
+      .filter((professional) => professional.active && professional.teamId !== teamId)
       .sort(defaultNameFormatter.byName);
   }
 

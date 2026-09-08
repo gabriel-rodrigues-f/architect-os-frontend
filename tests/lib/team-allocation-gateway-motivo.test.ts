@@ -5,7 +5,7 @@ import { InMemoryTeamAllocationGateway } from "@/lib/gateways/team-allocation.ga
 import { fixtureState, fixtureTeamId } from "../helpers/fixtures";
 
 /**
- * Onda 35 — contrato novo do backend: `POST /architects/:id/team-allocation`
+ * Onda 35 — contrato novo do backend: `POST /professionals/:id/team-allocation`
  * recebe `{ teamId, reason }`, com `reason` obrigatório e não vazio; sem ele,
  * 400. O gateway em memória é o oráculo desse contrato para as telas — se ele
  * aceitasse alocação sem motivo, a tela passaria verde aqui e 400 no ar.
@@ -17,21 +17,21 @@ const times = [
 
 describe("gateway em memória de alocação — o motivo é obrigatório, como no serviço", () => {
   it("aloca com motivo e o registra junto da alocação feita", async () => {
-    const gateway = new InMemoryTeamAllocationGateway(fixtureState.architects, times);
+    const gateway = new InMemoryTeamAllocationGateway(fixtureState.professionals, times);
 
-    const alocada = await gateway.allocateArchitectToTeam("ana", "time-dados", "Demanda nova");
+    const alocada = await gateway.allocateProfessionalToTeam("ana", "time-dados", "Demanda nova");
 
     expect(alocada.teamId).toBe("time-dados");
     expect(gateway.allocationsMade).toEqual([
-      { architectId: "ana", teamId: "time-dados", reason: "Demanda nova" },
+      { professionalId: "ana", teamId: "time-dados", reason: "Demanda nova" },
     ]);
   });
 
   it("recusa com 400 quando o motivo está vazio ou só tem espaços", async () => {
-    const gateway = new InMemoryTeamAllocationGateway(fixtureState.architects, times);
+    const gateway = new InMemoryTeamAllocationGateway(fixtureState.professionals, times);
 
     for (const motivo of ["", "   "]) {
-      const recusa = await gateway.allocateArchitectToTeam("ana", "time-dados", motivo).then(
+      const recusa = await gateway.allocateProfessionalToTeam("ana", "time-dados", motivo).then(
         () => null,
         (error: unknown) => error,
       );

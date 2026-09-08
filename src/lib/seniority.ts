@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { Architect, RoleName } from "./domain";
+import type { Professional, RoleName } from "./domain";
 import { useI18n, type MessageKey } from "./i18n";
 
 /**
@@ -28,8 +28,8 @@ export class SeniorityReading {
   }
 
   /** Tem senioridade? É o que decide se a tela oferece senioridade a esta pessoa. */
-  static has(architect: Pick<Architect, "role">): boolean {
-    return architect.role != null;
+  static has(professional: Pick<Professional, "role">): boolean {
+    return professional.role != null;
   }
 
   /**
@@ -37,10 +37,10 @@ export class SeniorityReading {
    * de fora dela e continua contado como pessoa em toda contagem de gente.
    */
   static withinLevels(
-    architect: Pick<Architect, "role">,
+    professional: Pick<Professional, "role">,
     chosenLevels: readonly string[],
   ): boolean {
-    return architect.role != null && chosenLevels.includes(architect.role);
+    return professional.role != null && chosenLevels.includes(professional.role);
   }
 }
 

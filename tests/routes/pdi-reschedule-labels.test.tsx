@@ -33,7 +33,7 @@ describe("PDI — diálogo de reprogramação sem label órfão", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock);
-    window.history.pushState({}, "", "?architectId=ana");
+    window.history.pushState({}, "", "?professionalId=ana");
   });
 
   afterEach(() => {

@@ -70,19 +70,19 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     caminho: "/api/v1/cycles/2026-h1",
   },
   {
-    nome: "edição de arquiteto",
-    enviar: () => api.updateArchitect("ana", { name: "Ana" }),
-    caminho: "/api/v1/architects/ana",
+    nome: "edição de profissional",
+    enviar: () => api.updateProfessional("ana", { name: "Ana" }),
+    caminho: "/api/v1/professionals/ana",
   },
   {
-    nome: "desativação de arquiteto",
+    nome: "desativação de profissional",
     enviar: () => api.deactivate("ana", "saiu do time", 1),
-    caminho: "/api/v1/architects/ana/deactivate",
+    caminho: "/api/v1/professionals/ana/deactivate",
   },
   {
     nome: "histórico de nível de carreira",
     enviar: () => api.careerLevelTransitions("ana"),
-    caminho: "/api/v1/architects/ana/career-level-transitions",
+    caminho: "/api/v1/professionals/ana/career-level-transitions",
   },
   {
     nome: "níveis de carreira",
@@ -105,9 +105,9 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     caminho: "/api/v1/teams/time-plataforma/rules/senior",
   },
   {
-    nome: "aderência do arquiteto à régua",
-    enviar: () => api.architectAdherence("ana", "senior"),
-    caminho: "/api/v1/architects/ana/adherence?careerLevelId=senior",
+    nome: "aderência do profissional à régua",
+    enviar: () => api.professionalAdherence("ana", "senior"),
+    caminho: "/api/v1/professionals/ana/adherence?careerLevelId=senior",
   },
   {
     nome: "remoção de capacidade",
@@ -202,9 +202,9 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     caminho: "/api/v1/mentoring-sessions/m-1",
   },
   {
-    nome: "evolução do arquiteto",
-    enviar: () => evolutionApi.architect("ana", evolutionFilters),
-    caminho: "/api/v1/evolution/architect",
+    nome: "evolução do profissional",
+    enviar: () => evolutionApi.professional("ana", evolutionFilters),
+    caminho: "/api/v1/evolution/professional",
   },
   {
     nome: "evolução do time",

@@ -1,5 +1,5 @@
 import type { SessionUser } from "../api";
-import type { Architect, TeamTransferRequestView } from "../domain";
+import type { Professional, TeamTransferRequestView } from "../domain";
 import type { UiAuthorizationPolicy } from "../scope";
 
 /**
@@ -23,10 +23,10 @@ export class TeamTransfersViewModel {
 
   teamChangeModeFor(
     user: SessionUser,
-    architect: Pick<Architect, "id" | "teamId">,
+    professional: Pick<Professional, "id" | "teamId">,
   ): TeamChangeMode | null {
     if (this.policy.operatesTheSystem(user)) return "immediate";
-    if (this.policy.isAssignedManagerOf(user, architect)) return "request";
+    if (this.policy.isAssignedManagerOf(user, professional)) return "request";
     return null;
   }
 
@@ -61,11 +61,11 @@ export class TeamTransfersViewModel {
   }
 
   pendingOf(
-    architectId: string,
+    professionalId: string,
     requests: readonly TeamTransferRequestView[],
   ): TeamTransferRequestView | undefined {
     return requests.find(
-      (request) => request.status === "pending" && request.architectId === architectId,
+      (request) => request.status === "pending" && request.professionalId === professionalId,
     );
   }
 

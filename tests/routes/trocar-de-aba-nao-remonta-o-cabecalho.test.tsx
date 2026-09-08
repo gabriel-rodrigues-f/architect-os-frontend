@@ -7,9 +7,9 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { apiPath } from "@/lib/api-path";
-import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
-import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
+import { Route as EvolutionRoute } from "@/routes/professionals.$professionalId.evolution";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
+import { Route as RoadmapRoute } from "@/routes/professionals.$professionalId.roadmap";
 import { fixtureAssignedManagerUser, fixtureState, fixtureSupportUser } from "../helpers/fixtures";
 import { goToTab, renderCareerFile } from "../helpers/ficha";
 import { careerLevelsRoute, jsonResponse, mockAppFetch } from "../helpers/render-app";
@@ -27,11 +27,11 @@ const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 const EvolutionPage = EvolutionRoute.options.component as () => ReactNode;
 const RoadmapPage = RoadmapRoute.options.component as () => ReactNode;
 
-/** O `POST /evolution/architect` vazio — a Evolução abre sem série nenhuma. */
+/** O `POST /evolution/professional` vazio — a Evolução abre sem série nenhuma. */
 const evolutionRoute = (href: string) =>
-  href.endsWith(apiPath("/evolution/architect"))
+  href.endsWith(apiPath("/evolution/professional"))
     ? jsonResponse({
-        architect: { id: "ana", name: "Ana Martins", careerLevelName: null },
+        professional: { id: "ana", name: "Ana Martins", careerLevelName: null },
         summary: {
           coverage: { covered: 0, total: 0 },
           initialAverage: null,

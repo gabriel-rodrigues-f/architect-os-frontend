@@ -5,14 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * Mesma razão de `evolution-filters-select.test.tsx`: a tela lê
  * `Route.useParams()`, que só existe dentro de uma árvore de rotas montada.
- * Aqui o parâmetro é fixado em "bruno" — o arquiteto que o payload recortado
+ * Aqui o parâmetro é fixado em "bruno" — o profissional que o payload recortado
  * de um member NÃO contém.
  */
 vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import { fixtureMemberUser, scopedFixtureStateFor } from "../helpers/fixtures";
 import { mockAppFetch } from "../helpers/render-app";
 import { renderCareerFile } from "../helpers/ficha";
@@ -45,8 +45,8 @@ describe("perfil fora do escopo cai no estado 'não encontrado' da própria tela
     vi.unstubAllGlobals();
   });
 
-  it("member em /architects/bruno vê 'Arquiteto não encontrado.' com caminho de volta", async () => {
-    renderCareerFile(<ProfilePage />, { architectId: "bruno" });
+  it("member em /professionals/bruno vê 'Profissional não encontrado.' com caminho de volta", async () => {
+    renderCareerFile(<ProfilePage />, { professionalId: "bruno" });
 
     expect(await screen.findByText(/Profissional não encontrado\./)).toBeTruthy();
     expect(screen.getByText(/Voltar/)).toBeTruthy();
@@ -54,7 +54,7 @@ describe("perfil fora do escopo cai no estado 'não encontrado' da própria tela
 
   it("o texto do estado 'não encontrado' segue o idioma da interface", async () => {
     window.localStorage.setItem("synapse:locale", "en");
-    renderCareerFile(<ProfilePage />, { architectId: "bruno" });
+    renderCareerFile(<ProfilePage />, { professionalId: "bruno" });
 
     expect(await screen.findByText(/Professional not found\./)).toBeTruthy();
     expect(screen.queryByText(/Profissional não encontrado\./)).toBeNull();

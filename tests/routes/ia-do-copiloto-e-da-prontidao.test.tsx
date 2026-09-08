@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as MentoringRoute } from "@/routes/mentoring";
-import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
+import { Route as RoadmapRoute } from "@/routes/professionals.$professionalId.roadmap";
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import { fixtureAssignedManagerUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
@@ -49,17 +49,17 @@ const PROXIMO_NIVEL = "arquiteto-de-solucoes-iii";
 
 const anaNoNivelDois: AppState = {
   ...fixtureState,
-  architects: fixtureState.architects.map((architect) =>
-    architect.id === "ana" ? { ...architect, careerLevelId: NIVEL_ATUAL } : architect,
+  professionals: fixtureState.professionals.map((professional) =>
+    professional.id === "ana" ? { ...professional, careerLevelId: NIVEL_ATUAL } : professional,
   ),
 };
 
 const aderenciaRoute: FetchRoute = (href) => {
-  if (!href.includes(apiPath("/architects/ana/adherence"))) return undefined;
+  if (!href.includes(apiPath("/professionals/ana/adherence"))) return undefined;
   const careerLevelId = new URL(href, "http://localhost").searchParams.get("careerLevelId") ?? "";
   const percentage = careerLevelId === PROXIMO_NIVEL ? 0.58 : 0.93;
   return jsonResponse({
-    architectId: "ana",
+    professionalId: "ana",
     teamId: "time-plataforma",
     careerLevelId,
     adherence: {
@@ -138,7 +138,7 @@ describe("copiloto de 1:1 — onde a conversa acontece", () => {
       ),
       "http://localhost",
     );
-    expect(url.pathname).toBe(apiPath("/architects/ana/one-on-one-preparation"));
+    expect(url.pathname).toBe(apiPath("/professionals/ana/one-on-one-preparation"));
 
     expect(await screen.findByText(/Comece pelo item de PDI mais antigo/)).toBeTruthy();
     expect(screen.getByText(/Última 1:1 há 40 dias/)).toBeTruthy();

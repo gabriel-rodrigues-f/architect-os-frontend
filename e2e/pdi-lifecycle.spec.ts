@@ -33,7 +33,7 @@ const ITEM_ID = `e2e-pdi-item-${RUN_ID}`;
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
-let architectId: string;
+let professionalId: string;
 let teamId: string;
 let cycleId: string;
 let competencyId: string;
@@ -66,7 +66,7 @@ test.beforeAll(async ({ playwright }) => {
     teamId,
     careerLevelId: await seniorityNamed(api, "Pleno"),
   });
-  architectId = admittedMember.architectId;
+  professionalId = admittedMember.professionalId;
 
   const cycles = await json<Array<{ id: string; status: string }>>(
     await api.get(apiPath("/cycles")),
@@ -78,7 +78,7 @@ test.beforeAll(async ({ playwright }) => {
   const today = new Date().toISOString().slice(0, 10);
   const inThreeMonths = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   await json(
-    await api.post(apiPath(`/plans/${architectId}/items`), {
+    await api.post(apiPath(`/plans/${professionalId}/items`), {
       data: {
         cycleId,
         item: {
@@ -115,7 +115,7 @@ test("Tech Lead registra check-in e avança o status de um item de PDI", async (
   // contra o POST de login ainda em voo e aterrissa deslogado.
   await expect(page.getByText("Ações da Liderança")).toBeVisible();
 
-  await page.goto(`/development-plans?architectId=${architectId}`);
+  await page.goto(`/development-plans?professionalId=${professionalId}`);
   await expect(page.getByText("E2E — fechar o gap de referência")).toBeVisible();
 
   // Check-in: campo de texto livre + "Registrar" — ver `pdi.checkin.*` em locales/pt.json.

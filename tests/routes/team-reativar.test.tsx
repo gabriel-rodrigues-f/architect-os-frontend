@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * `<Link>` do TanStack Router precisa de um `RouterProvider` real (a árvore
- * de rotas inteira) para resolver `to="/architects/$architectId"`. A tela de
+ * de rotas inteira) para resolver `to="/professionals/$professionalId"`. A tela de
  * Time usa `<Link>` nos cards; troca por âncora comum — não é o que se testa.
  */
 vi.mock("@tanstack/react-router", async (importOriginal) => {
@@ -41,13 +41,13 @@ const fetchMock = vi.fn();
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
-const ana = fixtureState.architects[0];
+const ana = fixtureState.professionals[0];
 if (!ana) throw new Error("fixture sem Ana");
 
 const comAnaInativa = {
   ...fixtureState,
-  architects: fixtureState.architects.map((architect) =>
-    architect.id === ana.id ? { ...architect, active: false } : architect,
+  professionals: fixtureState.professionals.map((professional) =>
+    professional.id === ana.id ? { ...professional, active: false } : professional,
   ),
 };
 
@@ -63,7 +63,7 @@ describe("Time — reativar devolve a pessoa ao roster ativo", () => {
         (href, init) => {
           if (
             init?.method === "POST" &&
-            href.endsWith(apiPath(`/architects/${ana.id}/reactivate`))
+            href.endsWith(apiPath(`/professionals/${ana.id}/reactivate`))
           ) {
             return new Response(
               JSON.stringify({ ...ana, active: true, version: ana.version + 1 }),

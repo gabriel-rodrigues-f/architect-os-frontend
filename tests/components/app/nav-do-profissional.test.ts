@@ -30,7 +30,7 @@ import {
  * influenciá-lo negativamente" · "'Minha Carreira' pode ser removido da role
  * do profissional" · "o profissional não pode ver os menus 'time' e
  * 'política de Progressão'". O Roteiro continua existindo — é a liderança
- * quem o abre, pela ficha da pessoa — e quem lidera e tem arquiteto
+ * quem o abre, pela ficha da pessoa — e quem lidera e tem profissional
  * vinculado continua com o item: para os outros papéis nada muda.
  */
 const destinos = (user: SessionUser | undefined): string[] =>
@@ -40,17 +40,17 @@ const rotulosDeGrupo = (user: SessionUser | undefined): (string | undefined)[] =
   filterNavGroups(NAV_GROUPS, user).map((grupo) => grupo.labelKey);
 
 /**
- * Quem lidera E é arquiteto. Até 2026-09-05 era o único caso com "Minha
+ * Quem lidera E é profissional. Até 2026-09-05 era o único caso com "Minha
  * carreira"; o dono devolveu o item ao profissional, em leitura.
  */
-const liderComArquiteto: SessionUser = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+const liderComProfissional: SessionUser = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
 
 /** As quatro entradas do grupo "Minha carreira" (dono, 2026-09-06), na ordem do menu. */
 const MINHA_CARREIRA_DE_ANA = [
-  "/architects/ana",
-  "/architects/ana/evolution",
-  "/architects/ana/statement",
-  "/architects/ana/roadmap",
+  "/professionals/ana",
+  "/professionals/ana/evolution",
+  "/professionals/ana/statement",
+  "/professionals/ana/roadmap",
 ];
 
 /** As cinco ferramentas de diagnóstico do TIME, medidas sobre a base inteira. */
@@ -118,35 +118,35 @@ describe("menu do profissional — a carreira dele em leitura, e nada do time", 
 
 describe("menu de carreira — o gerente não tem 'Minha carreira' (dono, 2026-09-06)", () => {
   it("gerente com ficha vinculada NÃO recebe 'Minha carreira' — ele não é um profissional com capacidades", () => {
-    const gerenteComFicha: SessionUser = { ...fixtureAssignedManagerUser, architectId: "ana" };
-    expect(destinos(gerenteComFicha).some((destino) => destino.startsWith("/architects/"))).toBe(
+    const gerenteComFicha: SessionUser = { ...fixtureAssignedManagerUser, professionalId: "ana" };
+    expect(destinos(gerenteComFicha).some((destino) => destino.startsWith("/professionals/"))).toBe(
       false,
     );
   });
 });
 
 describe("menu de carreira — para os outros papéis nada muda", () => {
-  it("quem lidera e tem arquiteto vinculado recebe o mesmo grupo Minha carreira, endereçado ao próprio arquiteto", () => {
+  it("quem lidera e tem profissional vinculado recebe o mesmo grupo Minha carreira, endereçado ao próprio profissional", () => {
     for (const destino of MINHA_CARREIRA_DE_ANA) {
-      expect(destinos(liderComArquiteto), destino).toContain(destino);
+      expect(destinos(liderComProfissional), destino).toContain(destino);
     }
   });
 
   it("o grupo de carreira de quem lidera nasce no topo do menu", () => {
-    const primeiro = filterNavGroups(NAV_GROUPS, liderComArquiteto)[0];
+    const primeiro = filterNavGroups(NAV_GROUPS, liderComProfissional)[0];
     expect(primeiro?.labelKey).toBe("nav.group.myCareer");
     expect(primeiro?.items.map((item) => item.to)).toEqual(MINHA_CARREIRA_DE_ANA);
   });
 
   /**
    * O destino é do DONO da sessão, nunca um caminho com o parâmetro cru: um
-   * `/architects/$architectId/roadmap` no menu levaria a uma rota que não
+   * `/professionals/$professionalId/roadmap` no menu levaria a uma rota que não
    * resolve, e um id fixo levaria à carreira de outra pessoa.
    */
   it("nenhum destino do menu carrega parâmetro de rota por resolver", () => {
     for (const user of [
       fixtureMemberUser,
-      liderComArquiteto,
+      liderComProfissional,
       fixtureAdminUser,
       fixtureAssignedTechLeadUser,
       fixtureUnassignedTechLeadUser,
@@ -155,17 +155,19 @@ describe("menu de carreira — para os outros papéis nada muda", () => {
     }
   });
 
-  it("quem não tem arquiteto vinculado não recebe o item — não há carreira a mostrar", () => {
-    expect(destinos(fixtureAdminUser).some((destino) => destino.includes("/architects/"))).toBe(
+  it("quem não tem profissional vinculado não recebe o item — não há carreira a mostrar", () => {
+    expect(destinos(fixtureAdminUser).some((destino) => destino.includes("/professionals/"))).toBe(
       false,
     );
     expect(
-      destinos(fixtureUnassignedTechLeadUser).some((destino) => destino.includes("/architects/")),
+      destinos(fixtureUnassignedTechLeadUser).some((destino) =>
+        destino.includes("/professionals/"),
+      ),
     ).toBe(false);
   });
 
   it("sem sessão o menu não inventa carreira de ninguém", () => {
-    expect(destinos(undefined).some((destino) => destino.includes("/architects/"))).toBe(false);
+    expect(destinos(undefined).some((destino) => destino.includes("/professionals/"))).toBe(false);
   });
 });
 

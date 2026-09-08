@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, type SessionUser } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { InMemoryTeamAllocationGateway } from "@/lib/gateways/team-allocation.gateway";
 import { Route as TeamsRoute } from "@/routes/teams";
 import {
@@ -21,8 +21,8 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * Onda 33 — achado (2) da revisão de PO (2026-09-02): "o admin não consegue
  * colocar uma pessoa num time. [...] o quadro seguiu dizendo 'Nenhuma pessoa
  * ativa neste time'". O Quadro só vinculava CONTAS; o vínculo do PROFISSIONAL
- * com o time é `architects.team_id`, e ele nasce aqui pela operação de
- * negócio `POST/DELETE /architects/:id/team-allocation`.
+ * com o time é `professionals.team_id`, e ele nasce aqui pela operação de
+ * negócio `POST/DELETE /professionals/:id/team-allocation`.
  *
  * Quem aloca e retira é quem compõe o time (`canComposeTeam`): admin sempre,
  * gerente só do time que gere — o espelho da regra do backend. O tech lead
@@ -37,11 +37,11 @@ const times = [
   { id: "time-dados", name: "Time Dados", active: true },
 ];
 
-const diego: Architect = {
+const diego: Professional = {
   id: "diego",
   name: "Diego Ramos",
   role: "Júnior",
-  yearsAsArchitect: 2,
+  yearsAsProfessional: 2,
   specialization: "",
   email: "diego@company.com",
   active: true,
@@ -49,11 +49,11 @@ const diego: Architect = {
   version: 1,
 };
 
-const elisa: Architect = {
+const elisa: Professional = {
   id: "elisa",
   name: "Elisa Costa",
   role: "Pleno",
-  yearsAsArchitect: 4,
+  yearsAsProfessional: 4,
   specialization: "",
   email: "elisa@company.com",
   active: true,
@@ -61,11 +61,11 @@ const elisa: Architect = {
   version: 1,
 };
 
-const fabio: Architect = {
+const fabio: Professional = {
   id: "fabio",
   name: "Fábio Lima",
   role: "Sênior",
-  yearsAsArchitect: 9,
+  yearsAsProfessional: 9,
   specialization: "",
   email: "fabio@company.com",
   active: false,
@@ -104,7 +104,7 @@ function renderAs(user: SessionUser, routes: FetchRoute[] = []) {
   const scoped = scopedFixtureStateFor(user, fixtureState, [fixtureTeamId]);
   mockAppFetch(fetchMock, {
     user,
-    state: { ...scoped, architects: [...scoped.architects, diego, elisa, fabio] },
+    state: { ...scoped, professionals: [...scoped.professionals, diego, elisa, fabio] },
     routes: [...routes, rotaDeTimes, rotaDeContas, rotaDoQuadroVazio],
   });
   return renderWithApp(<TeamsPage />);
@@ -113,14 +113,14 @@ function renderAs(user: SessionUser, routes: FetchRoute[] = []) {
 async function abrirOQuadro() {
   await screen.findByText("Time Plataforma");
   await userEvent.click(screen.getByLabelText("Quadro de Time Plataforma"));
-  await screen.findByText("Pessoas do time");
+  await screen.findByText("Profissionais do time");
 }
 
 const secaoDePessoas = () =>
-  within(screen.getByText("Pessoas do time").closest("section") as HTMLElement);
+  within(screen.getByText("Profissionais do time").closest("section") as HTMLElement);
 
 async function abrirODialogoDeAlocacao() {
-  await userEvent.click(screen.getByRole("button", { name: "Alocar pessoa" }));
+  await userEvent.click(screen.getByRole("button", { name: "Alocar profissional" }));
   return within(await screen.findByRole("dialog"));
 }
 
@@ -140,9 +140,14 @@ afterEach(() => {
 });
 
 describe("/teams — alocar pessoa ao time, pelo gateway em memória (o oráculo do contrato)", () => {
-  it("o gerente do time vê 'Alocar pessoa', escolhe entre os ativos que não estão neste time e a pessoa entra no quadro", async () => {
-    const gateway = new InMemoryTeamAllocationGateway([...fixtureState.architects, diego], times);
-    vi.spyOn(api, "allocateArchitectToTeam").mockImplementation(gateway.allocateArchitectToTeam);
+  it("o gerente do time vê 'Alocar profissional', escolhe entre os ativos que não estão neste time e a pessoa entra no quadro", async () => {
+    const gateway = new InMemoryTeamAllocationGateway(
+      [...fixtureState.professionals, diego],
+      times,
+    );
+    vi.spyOn(api, "allocateProfessionalToTeam").mockImplementation(
+      gateway.allocateProfessionalToTeam,
+    );
 
     renderAs(fixtureAssignedManagerUser);
     await abrirOQuadro();
@@ -151,7 +156,7 @@ describe("/teams — alocar pessoa ao time, pelo gateway em memória (o oráculo
     expect(secaoDePessoas().queryByText("Diego Ramos")).toBeNull();
 
     const dialogo = await abrirODialogoDeAlocacao();
-    await userEvent.click(dialogo.getByLabelText("Pessoa"));
+    await userEvent.click(dialogo.getByLabelText("Profissional"));
     const opcoes = screen.getAllByRole("option").map((opcao) => opcao.textContent?.trim());
     expect(opcoes).toContain("Diego Ramos — sem time");
     expect(opcoes).toContain("Elisa Costa — Time Dados");
@@ -165,22 +170,24 @@ describe("/teams — alocar pessoa ao time, pelo gateway em memória (o oráculo
 
     expect(await secaoDePessoas().findByText("Diego Ramos")).toBeTruthy();
     expect(gateway.allocationsMade).toEqual([
-      { architectId: "diego", teamId: fixtureTeamId, reason: MOTIVO },
+      { professionalId: "diego", teamId: fixtureTeamId, reason: MOTIVO },
     ]);
   });
 
   it("a recusa do serviço aparece no diálogo, com a mensagem dele, e o quadro não muda", async () => {
     const gateway = new InMemoryTeamAllocationGateway(
-      [...fixtureState.architects, diego],
+      [...fixtureState.professionals, diego],
       times.map((time) => (time.id === fixtureTeamId ? { ...time, active: false } : time)),
     );
-    vi.spyOn(api, "allocateArchitectToTeam").mockImplementation(gateway.allocateArchitectToTeam);
+    vi.spyOn(api, "allocateProfessionalToTeam").mockImplementation(
+      gateway.allocateProfessionalToTeam,
+    );
 
     renderAs(fixtureAssignedManagerUser);
     await abrirOQuadro();
 
     const dialogo = await abrirODialogoDeAlocacao();
-    await userEvent.click(dialogo.getByLabelText("Pessoa"));
+    await userEvent.click(dialogo.getByLabelText("Profissional"));
     await userEvent.click(screen.getByRole("option", { name: "Diego Ramos — sem time" }));
     await userEvent.type(dialogo.getByLabelText("Motivo da mudança"), MOTIVO);
     await userEvent.click(dialogo.getByRole("button", { name: "Alocar" }));
@@ -193,9 +200,12 @@ describe("/teams — alocar pessoa ao time, pelo gateway em memória (o oráculo
 });
 
 describe("/teams — alocar e retirar pelo container de produção (o contrato no fio)", () => {
-  it("alocar chama POST /architects/:id/team-allocation com { teamId, reason } e a pessoa passa a listar no quadro", async () => {
+  it("alocar chama POST /professionals/:id/team-allocation com { teamId, reason } e a pessoa passa a listar no quadro", async () => {
     const alocacao: FetchRoute = (href, init) => {
-      if (href.endsWith(apiPath("/architects/diego/team-allocation")) && init?.method === "POST") {
+      if (
+        href.endsWith(apiPath("/professionals/diego/team-allocation")) &&
+        init?.method === "POST"
+      ) {
         const body = JSON.parse(String(init.body)) as { teamId: string };
         return jsonResponse({
           data: { ...diego, teamId: body.teamId, version: 2 },
@@ -208,24 +218,24 @@ describe("/teams — alocar e retirar pelo container de produção (o contrato n
     await abrirOQuadro();
 
     const dialogo = await abrirODialogoDeAlocacao();
-    await userEvent.click(dialogo.getByLabelText("Pessoa"));
+    await userEvent.click(dialogo.getByLabelText("Profissional"));
     await userEvent.click(screen.getByRole("option", { name: "Diego Ramos — sem time" }));
     await userEvent.type(dialogo.getByLabelText("Motivo da mudança"), MOTIVO);
     await userEvent.click(dialogo.getByRole("button", { name: "Alocar" }));
 
     expect(await secaoDePessoas().findByText("Diego Ramos")).toBeTruthy();
-    const [chamada] = chamadas("POST", apiPath("/architects/diego/team-allocation"));
+    const [chamada] = chamadas("POST", apiPath("/professionals/diego/team-allocation"));
     expect(JSON.parse(String((chamada?.[1] as RequestInit).body))).toEqual({
       teamId: fixtureTeamId,
       reason: MOTIVO,
     });
   });
 
-  it("retirar pede confirmação, chama DELETE /architects/:id/team-allocation e a pessoa some do quadro", async () => {
+  it("retirar pede confirmação, chama DELETE /professionals/:id/team-allocation e a pessoa some do quadro", async () => {
     const retirada: FetchRoute = (href, init) =>
-      href.endsWith(apiPath("/architects/ana/team-allocation")) && init?.method === "DELETE"
+      href.endsWith(apiPath("/professionals/ana/team-allocation")) && init?.method === "DELETE"
         ? jsonResponse({
-            data: { ...fixtureState.architects[0], teamId: null, version: 2 },
+            data: { ...fixtureState.professionals[0], teamId: null, version: 2 },
             message: { code: "people.release.success" },
           })
         : undefined;
@@ -233,19 +243,19 @@ describe("/teams — alocar e retirar pelo container de produção (o contrato n
     await abrirOQuadro();
 
     await userEvent.click(screen.getByLabelText("Retirar Ana Martins do time"));
-    expect(chamadas("DELETE", apiPath("/architects/ana/team-allocation"))).toHaveLength(0);
+    expect(chamadas("DELETE", apiPath("/professionals/ana/team-allocation"))).toHaveLength(0);
     await userEvent.click(screen.getByRole("button", { name: "Retirar do time" }));
 
     await waitFor(() => expect(secaoDePessoas().queryByText("Ana Martins")).toBeNull());
-    expect(chamadas("DELETE", apiPath("/architects/ana/team-allocation"))).toHaveLength(1);
+    expect(chamadas("DELETE", apiPath("/professionals/ana/team-allocation"))).toHaveLength(1);
     expect(secaoDePessoas().getByText("Bruno Almeida")).toBeTruthy();
   });
 
   it("o 409 do serviço nomeia a recusa — o diálogo mostra a mensagem dele, não inventa outra", async () => {
     const recusa: FetchRoute = (href, init) =>
-      href.endsWith(apiPath("/architects/diego/team-allocation")) && init?.method === "POST"
+      href.endsWith(apiPath("/professionals/diego/team-allocation")) && init?.method === "POST"
         ? jsonResponse(
-            { code: "ARCHITECT_ALREADY_IN_TEAM", message: "Diego Ramos já está neste time." },
+            { code: "PROFESSIONAL_ALREADY_IN_TEAM", message: "Diego Ramos já está neste time." },
             409,
           )
         : undefined;
@@ -253,7 +263,7 @@ describe("/teams — alocar e retirar pelo container de produção (o contrato n
     await abrirOQuadro();
 
     const dialogo = await abrirODialogoDeAlocacao();
-    await userEvent.click(dialogo.getByLabelText("Pessoa"));
+    await userEvent.click(dialogo.getByLabelText("Profissional"));
     await userEvent.click(screen.getByRole("option", { name: "Diego Ramos — sem time" }));
     await userEvent.type(dialogo.getByLabelText("Motivo da mudança"), MOTIVO);
     await userEvent.click(dialogo.getByRole("button", { name: "Alocar" }));
@@ -266,11 +276,11 @@ describe("/teams — alocar e retirar pelo container de produção (o contrato n
 });
 
 describe("/teams — quem não compõe o time não aloca", () => {
-  it("o tech lead não vê 'Alocar pessoa' nem 'Retirar do time'", async () => {
+  it("o tech lead não vê 'Alocar profissional' nem 'Retirar do time'", async () => {
     renderAs(fixtureAssignedTechLeadUser);
     await screen.findByText(/restrito ao administrador e ao gerente designado/i);
 
-    expect(screen.queryByRole("button", { name: "Alocar pessoa" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Alocar profissional" })).toBeNull();
     expect(screen.queryByLabelText(/Retirar .* do time/)).toBeNull();
   });
 });

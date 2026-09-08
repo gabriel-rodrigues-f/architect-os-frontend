@@ -59,7 +59,7 @@ describe("cliente da API", () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(500);
-    expect(error.message).not.toContain(apiPath("/architects/ana"));
+    expect(error.message).not.toContain(apiPath("/professionals/ana"));
     expect(error.message).toBe(
       "O serviço está fora do ar no momento. Tente de novo em alguns instantes.",
     );

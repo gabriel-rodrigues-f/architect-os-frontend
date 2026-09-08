@@ -58,7 +58,7 @@ describe("ApiClient — envelope de sucesso RF-05 ({ data, message })", () => {
   it("corpo cru (sem envelope) passa intacto — tolerância de transição", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: "a1", name: "Ana" }));
     const client = new ApiClient("http://api.local");
-    const result = await client.request<{ id: string }>("/architects/a1");
+    const result = await client.request<{ id: string }>("/professionals/a1");
     expect(result).toEqual({ id: "a1", name: "Ana" });
   });
 

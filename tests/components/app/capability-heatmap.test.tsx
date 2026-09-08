@@ -37,13 +37,13 @@ describe("CapabilityHeatmap", () => {
     // bruno sem assessment: toda célula dele fica sem média.
     const state: AppState = {
       ...fixtureState,
-      assessments: fixtureState.assessments.filter((a) => a.architectId !== "bruno"),
+      assessments: fixtureState.assessments.filter((a) => a.professionalId !== "bruno"),
     };
     mockAppFetch(fetchMock, { user: fixtureAdminUser, state });
     const sel = createSelectors(state);
     renderWithApp(
       <CapabilityHeatmap
-        architects={state.architects}
+        professionals={state.professionals}
         capabilities={state.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
@@ -70,7 +70,7 @@ describe("CapabilityHeatmap", () => {
     const sel = createSelectors(fixtureState);
     renderWithApp(
       <CapabilityHeatmap
-        architects={fixtureState.architects}
+        professionals={fixtureState.professionals}
         capabilities={fixtureState.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
@@ -87,7 +87,7 @@ describe("CapabilityHeatmap", () => {
     const sel = createSelectors(fixtureState);
     renderWithApp(
       <CapabilityHeatmap
-        architects={fixtureState.architects}
+        professionals={fixtureState.professionals}
         capabilities={fixtureState.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
@@ -111,7 +111,7 @@ describe("CapabilityHeatmap", () => {
     const sel = createSelectors(fixtureState);
     renderWithApp(
       <CapabilityHeatmap
-        architects={fixtureState.architects}
+        professionals={fixtureState.professionals}
         capabilities={fixtureState.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,
@@ -142,7 +142,7 @@ describe("CapabilityHeatmap", () => {
     const sel = createSelectors(state);
     renderWithApp(
       <CapabilityHeatmap
-        architects={state.architects}
+        professionals={state.professionals}
         capabilities={state.capabilities}
         capabilityAveragesFor={sel.capabilityAverages}
       />,

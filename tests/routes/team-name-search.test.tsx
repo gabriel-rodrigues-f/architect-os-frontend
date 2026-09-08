@@ -52,12 +52,12 @@ describe("Time — seleção de pessoas (PersonCombobox)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("desmarcar 'Todo o time' e marcar uma pessoa isola a lista; o chip 'Pessoas' limpa a seleção", async () => {
+  it("desmarcar 'Todo o time' e marcar uma pessoa isola a lista; o chip 'Profissionais' limpa a seleção", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
     expect(screen.getByText("Bruno Almeida")).toBeTruthy();
 
-    await userEvent.click(screen.getByRole("combobox", { name: "Pessoas" }));
+    await userEvent.click(screen.getByRole("combobox", { name: "Profissionais" }));
     await userEvent.click(await screen.findByText("Todo o time"));
     await userEvent.click(await screen.findByText("Ana Martins"));
     await userEvent.keyboard("{Escape}");
@@ -66,7 +66,7 @@ describe("Time — seleção de pessoas (PersonCombobox)", () => {
     // "Ana Martins" agora também aparece no resumo do combobox — só uma pessoa selecionada.
     expect(screen.getAllByText("Ana Martins").length).toBeGreaterThan(0);
 
-    await userEvent.click(screen.getByRole("button", { name: /Pessoas: 1 selecionadas/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Profissionais: 1 selecionados/ }));
 
     expect(await screen.findByText("Bruno Almeida")).toBeTruthy();
     expect(screen.getAllByText("Ana Martins").length).toBeGreaterThan(0);

@@ -30,7 +30,7 @@ import {
   type StatementPeriodPreset,
 } from "@/lib/view-models";
 
-export const Route = createFileRoute("/architects/$architectId/statement")({
+export const Route = createFileRoute("/professionals/$professionalId/statement")({
   head: () => ({
     meta: [
       { title: "Extrato de Carreira — Synapse" },
@@ -42,7 +42,7 @@ export const Route = createFileRoute("/architects/$architectId/statement")({
     ],
   }),
   beforeLoad: requireCareerTabsReach,
-  component: StatementOfArchitect,
+  component: StatementOfProfessional,
 });
 
 const STATEMENT_KINDS: readonly StatementEntryKind[] = [
@@ -81,16 +81,16 @@ function useCareerStatementViewModel(): CareerStatementViewModel {
   );
 }
 
-function StatementOfArchitect() {
-  const { architectId } = Route.useParams();
+function StatementOfProfessional() {
+  const { professionalId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
   const { t, locale } = useI18n();
-  const help = usePageHelp("architectStatement");
+  const help = usePageHelp("professionalStatement");
   const { user } = useAuth();
   const router = useRouter();
   const vm = useCareerStatementViewModel();
-  const architect = sel.architectById(architectId);
+  const professional = sel.professionalById(professionalId);
 
   const [preset, setPreset] = useState<StatementPeriodPreset>("all");
   const [kinds, setKinds] = useState<string[]>([...STATEMENT_KINDS]);
@@ -106,26 +106,26 @@ function StatementOfArchitect() {
   );
 
   const transitionsQuery = useQuery({
-    queryKey: ["career-level-transitions", architectId],
-    queryFn: () => api.careerLevelTransitions(architectId),
-    enabled: architect !== undefined,
+    queryKey: ["career-level-transitions", professionalId],
+    queryFn: () => api.careerLevelTransitions(professionalId),
+    enabled: professional !== undefined,
   });
   const teamTransitionsQuery = useQuery({
-    queryKey: ["statement-team-transitions", architectId],
-    queryFn: () => reportsApi.teamTransitionsOf(architectId, allTimeFilters.range),
-    enabled: architect !== undefined,
+    queryKey: ["statement-team-transitions", professionalId],
+    queryFn: () => reportsApi.teamTransitionsOf(professionalId, allTimeFilters.range),
+    enabled: professional !== undefined,
   });
   const stepsQuery = useQuery({
-    queryKey: ["statement-steps", architectId],
-    queryFn: () => evolutionApi.architect(architectId, allTimeFilters),
-    enabled: architect !== undefined,
+    queryKey: ["statement-steps", professionalId],
+    queryFn: () => evolutionApi.professional(professionalId, allTimeFilters),
+    enabled: professional !== undefined,
   });
-  const plans = store.plans.filter((plan) => plan.architectId === architectId);
+  const plans = store.plans.filter((plan) => plan.professionalId === professionalId);
   const planEventsQuery = useQuery({
-    queryKey: ["statement-plan-events", architectId, plans.map((plan) => plan.id).join(",")],
+    queryKey: ["statement-plan-events", professionalId, plans.map((plan) => plan.id).join(",")],
     queryFn: () =>
       Promise.all(plans.map((plan) => api.planEvents(plan.id))).then((lists) => lists.flat()),
-    enabled: architect !== undefined,
+    enabled: professional !== undefined,
   });
 
   const { submitting: exporting, run: runExport } = useToastSubmit(t("evolution.export.error"));
@@ -133,19 +133,19 @@ function StatementOfArchitect() {
   const entries = useMemo(
     () =>
       vm.entries({
-        architectId,
+        professionalId,
         transitions: transitionsQuery.data ?? [],
         teamTransitions: teamTransitionsQuery.data ?? [],
         competencyEvents: stepsQuery.data?.events ?? [],
-        evidences: store.evidences.filter((evidence) => evidence.architectId === architectId),
+        evidences: store.evidences.filter((evidence) => evidence.professionalId === professionalId),
         planEvents: planEventsQuery.data ?? [],
         mentoringSessions: store.mentoringSessions.filter(
-          (session) => session.menteeId === architectId,
+          (session) => session.menteeId === professionalId,
         ),
       }),
     [
       vm,
-      architectId,
+      professionalId,
       transitionsQuery.data,
       teamTransitionsQuery.data,
       stepsQuery.data,
@@ -154,7 +154,7 @@ function StatementOfArchitect() {
     ],
   );
 
-  if (!architect) {
+  if (!professional) {
     return (
       <div className="surface-card p-6 text-sm">
         {t("arch.notFound")}{" "}
@@ -168,11 +168,11 @@ function StatementOfArchitect() {
   // O extrato carrega a ficha funcional: a própria pessoa, o gerente designado,
   // o admin em suporte (revisão de papéis, 2026-09-05). O tech lead não.
   const canGenerate =
-    user !== null && defaultUiAuthorizationPolicy.canOpenStatementOf(user, architect);
+    user !== null && defaultUiAuthorizationPolicy.canOpenStatementOf(user, professional);
 
   const exportPdf = async () => {
     const result = await runExport(() =>
-      reportsApi.exportEvolutionPdf(architectId, allTimeFilters),
+      reportsApi.exportEvolutionPdf(professionalId, allTimeFilters),
     );
     if (!result.ok) return;
     downloadBlob(result.value.blob, result.value.filename);
@@ -198,7 +198,7 @@ function StatementOfArchitect() {
       <div>
         <ProfileHeading
           help={help}
-          title={t("statement.title", { nome: architect.name })}
+          title={t("statement.title", { nome: professional.name })}
           description={t("statement.description")}
           actions={
             <div className="flex flex-wrap items-center gap-2">
@@ -212,7 +212,7 @@ function StatementOfArchitect() {
                   {exporting ? t("evolution.export.generating") : t("evolution.export.button")}
                 </Button>
               )}
-              <ProfileBackLink architectId={architect.id} to="overview" />
+              <ProfileBackLink professionalId={professional.id} to="overview" />
             </div>
           }
         />

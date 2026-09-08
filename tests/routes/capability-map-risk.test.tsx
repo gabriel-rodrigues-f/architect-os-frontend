@@ -111,7 +111,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
       email: "lead-de-ana@company.com",
       name: "Lead de Ana",
       role: "tech_lead",
-      architectId: null,
+      professionalId: null,
       status: "active",
       mustChangePassword: false,
       createdAt: "2026-01-01T00:00:00Z",
@@ -120,15 +120,15 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
     };
     const state: AppState = {
       ...fixtureState,
-      architects: [
-        ...fixtureState.architects.map((a) =>
+      professionals: [
+        ...fixtureState.professionals.map((a) =>
           a.id === "ana" ? { ...a, teamId: "time-de-ana" } : a,
         ),
         {
           id: "carla",
           name: "Carla Souza",
           role: "Sênior",
-          yearsAsArchitect: 8,
+          yearsAsProfessional: 8,
           specialization: "Cloud",
           email: "carla@company.com",
           active: true,
@@ -139,7 +139,7 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
         ...fixtureState.assessments,
         {
           id: "carla-h2",
-          architectId: "carla",
+          professionalId: "carla",
           cycleId: "2026-h2",
           status: "Completed",
           modelVersion: 1,

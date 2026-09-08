@@ -57,7 +57,7 @@ function useDevelopmentPlansViewModel() {
 }
 
 const developmentPlansSearchSchema = z.object({
-  architectId: z.string().optional(),
+  professionalId: z.string().optional(),
   competencyId: z.string().optional(),
 });
 
@@ -103,9 +103,9 @@ function PlansScreen() {
 
   const actionTypes = useVocabulary("ACTION_TYPE");
   const viewModel = useDevelopmentPlansViewModel();
-  const [architectId, setArchitectId] = useSearchParamString(
-    "architectId",
-    () => sel.activeArchitects[0]?.id ?? "",
+  const [professionalId, setProfessionalId] = useSearchParamString(
+    "professionalId",
+    () => sel.activeProfessionals[0]?.id ?? "",
   );
 
   const [smartEditingId, setSmartEditingId] = useState<string | null>(null);
@@ -122,19 +122,19 @@ function PlansScreen() {
   const creating = useAsyncSubmit(t("pdi.newItem.error"));
   const help = usePageHelp("developmentPlans");
   const user = useCurrentUser();
-  const architect = sel.architectById(architectId);
+  const professional = sel.professionalById(professionalId);
 
-  const actsForArchitect = defaultUiAuthorizationPolicy.canActFor(user, architect);
+  const actsForProfessional = defaultUiAuthorizationPolicy.canActFor(user, professional);
   // O roteiro de PDI é de quem lidera a pessoa (dono, 2026-09-07) — nunca dela mesma.
-  const isLeadOfArchitect = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
-  const plan = sel.planFor(architectId);
+  const isLeadOfProfessional = defaultUiAuthorizationPolicy.isLeadOf(user, professional);
+  const plan = sel.planFor(professionalId);
 
-  const gaps = sel.progressionGapsFor(architectId).filter((g) => g.gap > 0);
+  const gaps = sel.progressionGapsFor(professionalId).filter((g) => g.gap > 0);
 
   const workflow = viewModel.workflowFor(plan, {
-    actsForArchitect,
-    isLeadOfArchitect,
-    isAssignedTechLead: defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, architect),
+    actsForProfessional,
+    isLeadOfProfessional,
+    isAssignedTechLead: defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, professional),
   });
 
   const suggestions = viewModel.suggestions(gaps, plan);
@@ -151,9 +151,9 @@ function PlansScreen() {
         help={help}
         actions={
           <PersonCombobox
-            picker={PersonPicker.oneFor(user, sel.activeArchitects, architectId)}
-            onChange={([id]) => setArchitectId(id ?? "")}
-            label={t("pdi.architect")}
+            picker={PersonPicker.oneFor(user, sel.activeProfessionals, professionalId)}
+            onChange={([id]) => setProfessionalId(id ?? "")}
+            label={t("pdi.professional")}
             className="w-48"
           />
         }
@@ -212,8 +212,11 @@ function PlansScreen() {
             </ul>
           </SectionCard>
 
-          {isLeadOfArchitect && architect && (
-            <SessionScriptAssistant architectId={architect.id} personName={architect.name} />
+          {isLeadOfProfessional && professional && (
+            <SessionScriptAssistant
+              professionalId={professional.id}
+              personName={professional.name}
+            />
           )}
 
           <SectionCard
@@ -234,7 +237,7 @@ function PlansScreen() {
         </div>
       </div>
 
-      {creatingForGap && creatingForGap.competency && architect && (
+      {creatingForGap && creatingForGap.competency && professional && (
         <NewPlanItemDialog
           gap={creatingForGap}
           submitting={creating.submitting}
@@ -245,7 +248,7 @@ function PlansScreen() {
           }}
           onSave={async (draft) => {
             const result = await creating.run(() =>
-              viewModel.createItemFromGap(architectId, creatingForGap, draft, architect.name),
+              viewModel.createItemFromGap(professionalId, creatingForGap, draft, professional.name),
             );
             if (result.ok) focusCompetency("");
           }}

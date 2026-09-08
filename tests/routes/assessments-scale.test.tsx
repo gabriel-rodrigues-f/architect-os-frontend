@@ -45,7 +45,7 @@ const MANY_COMPETENCIES: Competency[] = MANY_CAPABILITIES.map((cap, i) => ({
 
 const draftAssessment: Assessment = {
   id: "ana-draft",
-  architectId: "ana",
+  professionalId: "ana",
   cycleId: "2026-h2",
   status: "Draft",
   modelVersion: 1,

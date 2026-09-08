@@ -3,10 +3,10 @@
     "/": {
       "alcance": "autenticado"
     },
-    "/architects/$architectId": {
+    "/professionals/$professionalId": {
       "alcance": "autenticado"
     },
-    "/architects/$architectId/evolution": {
+    "/professionals/$professionalId/evolution": {
       "alcance": "ficha-de-carreira",
       "guarda": "requireCareerTabsReach",
       "sinal": "canOpenCareerTabs",
@@ -14,7 +14,7 @@
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
     },
-    "/architects/$architectId/roadmap": {
+    "/professionals/$professionalId/roadmap": {
       "alcance": "ficha-de-carreira",
       "guarda": "requireCareerTabsReach",
       "sinal": "canOpenCareerTabs",
@@ -22,7 +22,7 @@
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
     },
-    "/architects/$architectId/statement": {
+    "/professionals/$professionalId/statement": {
       "alcance": "ficha-de-carreira",
       "guarda": "requireCareerTabsReach",
       "sinal": "canOpenCareerTabs",

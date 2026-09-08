@@ -18,7 +18,7 @@ export class SupportPass {
   private static readonly VALIDITY_MS = SupportPass.VALIDITY_MINUTES * 60 * 1000;
 
   constructor(
-    readonly architectId: string,
+    readonly professionalId: string,
     readonly reason: string,
     readonly issuedAt: Date,
   ) {}
@@ -33,19 +33,19 @@ export class SupportPass {
 
   /**
    * A requisição é SOBRE a pessoa quando o id dela é um segmento do caminho
-   * (`/architects/ana`, `/architects/ana/deactivate`) ou o valor de um
-   * parâmetro de consulta (`?architectId=ana`, `&menteeId=ana`). Parte de
-   * outro id (`/architects/anabela`) não conta.
+   * (`/professionals/ana`, `/professionals/ana/deactivate`) ou o valor de um
+   * parâmetro de consulta (`?professionalId=ana`, `&menteeId=ana`). Parte de
+   * outro id (`/professionals/anabela`) não conta.
    */
   isAbout(resource: string): boolean {
     return resource
       .split(/[/?&=]/)
-      .some((segment) => decodeURIComponent(segment) === this.architectId);
+      .some((segment) => decodeURIComponent(segment) === this.professionalId);
   }
 
   headers(): Record<string, string> {
     return {
-      [SupportAccess.ARCHITECT_HEADER]: this.architectId,
+      [SupportAccess.PROFESSIONAL_HEADER]: this.professionalId,
       [SupportAccess.REASON_HEADER]: this.reason,
       [SupportAccess.ISSUED_AT_HEADER]: this.issuedAt.toISOString(),
     };
@@ -53,7 +53,7 @@ export class SupportPass {
 }
 
 export class SupportAccess {
-  static readonly ARCHITECT_HEADER = "x-support-architect";
+  static readonly PROFESSIONAL_HEADER = "x-support-professional";
   static readonly REASON_HEADER = "x-support-reason";
   static readonly ISSUED_AT_HEADER = "x-support-issued-at";
   static readonly MIN_REASON_LENGTH = 12;
@@ -66,17 +66,17 @@ export class SupportAccess {
 
   constructor(private readonly clock: () => Date = () => new Date()) {}
 
-  grant(architectId: string, reason: string): SupportPass | null {
+  grant(professionalId: string, reason: string): SupportPass | null {
     const trimmed = reason.trim();
     if (trimmed.length < SupportAccess.MIN_REASON_LENGTH) return null;
-    this.current = new SupportPass(architectId, trimmed, this.clock());
+    this.current = new SupportPass(professionalId, trimmed, this.clock());
     return this.current;
   }
 
   /** O passe desta pessoa, enquanto vale para a tela — vencido, é como se não existisse. */
-  grantedFor(architectId: string): SupportPass | null {
+  grantedFor(professionalId: string): SupportPass | null {
     const pass = this.current;
-    if (!pass || pass.architectId !== architectId) return null;
+    if (!pass || pass.professionalId !== professionalId) return null;
     return pass.isExpiredAt(this.clock()) ? null : pass;
   }
 

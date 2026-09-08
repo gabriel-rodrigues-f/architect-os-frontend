@@ -29,18 +29,18 @@ const vm = () =>
 
 const transition: CareerLevelTransition = {
   id: "tr-1",
-  architectId: "ana",
+  professionalId: "ana",
   fromRole: "Júnior",
   toRole: "Pleno",
   actorUserId: "user-lead",
   reason: "Promoção do ciclo",
   occurredAt: "2026-03-10T12:00:00.000Z",
-  architectVersion: 3,
+  professionalVersion: 3,
 };
 
 const competencyEvent = {
   id: "ev-1",
-  architectId: "ana",
+  professionalId: "ana",
   competencyId: "cc",
   fromLevel: 2 as const,
   toLevel: 3 as const,
@@ -54,7 +54,7 @@ const competencyEvent = {
 
 const evidence: Evidence = {
   id: "evd-1",
-  architectId: "ana",
+  professionalId: "ana",
   title: "Certificação BTP",
   description: "Prova de certificação",
   type: "Certification",
@@ -98,7 +98,7 @@ const teamTransition: TeamTransitionRecord = {
 };
 
 const sources: StatementSources = {
-  architectId: "ana",
+  professionalId: "ana",
   transitions: [transition],
   teamTransitions: [teamTransition],
   competencyEvents: [competencyEvent],
@@ -131,9 +131,9 @@ describe("CareerStatementViewModel — normalização das 5 fontes", () => {
 
   it("cada entrada aponta para a origem (link interno)", () => {
     const entries = vm().entries(sources);
-    expect(entries.find((entry) => entry.kind === "evidence")?.link).toBe("/architects/ana");
+    expect(entries.find((entry) => entry.kind === "evidence")?.link).toBe("/professionals/ana");
     expect(entries.find((entry) => entry.kind === "pdi")?.link).toBe(
-      "/development-plans?architectId=ana",
+      "/development-plans?professionalId=ana",
     );
     expect(entries.find((entry) => entry.kind === "mentoring")?.link).toBe("/mentoring");
   });
@@ -191,7 +191,7 @@ describe("CareerStatementViewModel — mudança de time no extrato", () => {
     expect(entry?.id).toBe("team-transition-tt-1");
     expect(entry?.title).toBe("statement.entry.teamTransition Plataforma Dados");
     expect(entry?.detail).toBe("Reforço do time de dados");
-    expect(entry?.link).toBe("/architects/ana");
+    expect(entry?.link).toBe("/professionals/ana");
   });
 
   it("sem time anterior: 'entrou no time Y'", () => {

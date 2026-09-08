@@ -85,7 +85,7 @@ async function prepara(corpo: unknown): Promise<void> {
 
 beforeEach(() => {
   window.localStorage.setItem("synapse:locale", "pt");
-  window.history.pushState({}, "", "?architectId=ana");
+  window.history.pushState({}, "", "?professionalId=ana");
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });

@@ -16,7 +16,7 @@ import {
 import { apiPath } from "@/lib/api-path";
 
 /**
- * Comentário pertence a quem escreveu — não é mais um par arquiteto+Tech Lead
+ * Comentário pertence a quem escreveu — não é mais um par profissional+Tech Lead
  * salvo junto (ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 5). Só
  * o autor edita ou exclui a própria fala.
  */

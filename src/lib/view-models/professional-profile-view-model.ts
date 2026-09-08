@@ -1,7 +1,7 @@
 import type { Evidence, EvidenceType } from "../domain";
 import type { Api } from "../store";
 
-export type ArchitectProfileService = Pick<
+export type ProfessionalProfileService = Pick<
   Api,
   "addEvidence" | "resubmitEvidence" | "reviewEvidence"
 >;
@@ -33,8 +33,8 @@ export interface NextStepSignals {
   assessmentAwaitingCalibration: boolean;
 }
 
-export class ArchitectProfileViewModel {
-  constructor(private readonly service: ArchitectProfileService) {}
+export class ProfessionalProfileViewModel {
+  constructor(private readonly service: ProfessionalProfileService) {}
 
   nextSteps(input: NextStepSignals): NextStep[] {
     const steps: NextStep[] = [];
@@ -63,10 +63,10 @@ export class ArchitectProfileViewModel {
     return evidence.status === "Pending" ? "Accepted" : evidence.status;
   }
 
-  registerEvidence(architectId: string, draft: EvidenceDraft): Promise<Evidence> {
+  registerEvidence(professionalId: string, draft: EvidenceDraft): Promise<Evidence> {
     return this.service.addEvidence({
       id: "",
-      architectId,
+      professionalId,
       title: draft.title.trim(),
       description: draft.description.trim(),
       type: draft.type,

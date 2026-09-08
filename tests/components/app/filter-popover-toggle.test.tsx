@@ -163,7 +163,7 @@ describe.each(filters)("$name — alternar no mouse", ({ renderFilter }) => {
  * O que a fatia de 22/08 (REVISAO-360-FRONTEND, Seção 80) buscava e que segue
  * valendo: seta abre, o foco entra na lista, seta navega com volta nas pontas,
  * Home/End vão às pontas, Escape fecha e devolve o foco ao gatilho. Estava
- * coberto só no ArchitectFilter — os outros dois carregavam o mesmo código sem
+ * coberto só no ProfessionalFilter — os outros dois carregavam o mesmo código sem
  * rede nenhuma.
  */
 describe.each(filters)(

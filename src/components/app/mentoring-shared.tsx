@@ -19,7 +19,7 @@ import {
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 
-import type { Architect, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
+import type { Professional, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { PersonPicker } from "@/lib/person-selection";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -51,7 +51,7 @@ interface ProficiencyDraft {
  * alfabética) e o registro recém-criado não aparece na tela de quem o criou.
  */
 function useMentoringSessionForm(
-  menteeOptions: Architect[],
+  menteeOptions: Professional[],
   onRegistered?: (menteeId: string) => void,
 ) {
   const store = useStore();
@@ -142,7 +142,7 @@ function useMentoringSessionForm(
     if (!result.ok) return;
     notifySuccess(
       "msg.mentoring.create.success",
-      { nome: sel.architectById(form.menteeId)?.name ?? "" },
+      { nome: sel.professionalById(form.menteeId)?.name ?? "" },
       result.value,
     );
     setForm({
@@ -189,11 +189,11 @@ function useMentoringSessionForm(
 export function useMentoringTimeline() {
   const store = useStore();
   const user = useCurrentUser();
-  const orderedArchitects = [...store.architects].sort(defaultNameFormatter.byName);
+  const orderedProfessionals = [...store.professionals].sort(defaultNameFormatter.byName);
   // O profissional não escolhe pessoa (dono, 2026-09-06): a linha do tempo é a dele.
   const defaultMenteeId = defaultUiAuthorizationPolicy.picksPeople(user)
-    ? (orderedArchitects[0]?.id ?? "")
-    : (user.architectId ?? "");
+    ? (orderedProfessionals[0]?.id ?? "")
+    : (user.professionalId ?? "");
   const [filter, setFilter] = useState<string>(defaultMenteeId);
 
   const sessions = [...store.mentoringSessions]
@@ -204,11 +204,11 @@ export function useMentoringTimeline() {
 }
 
 export function MenteeFilterCombobox({
-  architects,
+  professionals,
   selected,
   onChange,
 }: {
-  architects: readonly Architect[];
+  professionals: readonly Professional[];
   selected: string;
   onChange: (value: string) => void;
 }) {
@@ -216,7 +216,7 @@ export function MenteeFilterCombobox({
   const user = useCurrentUser();
   return (
     <PersonCombobox
-      picker={PersonPicker.oneFor(user, architects, selected)}
+      picker={PersonPicker.oneFor(user, professionals, selected)}
       onChange={([id]) => onChange(id ?? "")}
       label={t("mentor.filter.label")}
       className="w-64"
@@ -315,11 +315,11 @@ function MentoringTimelineItem({
     <li className="relative">
       <span className="absolute -left-[31px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
       <div className="flex flex-wrap items-center gap-2">
-        <Initials name={selectors.architectById(session.menteeId)?.name ?? "?"} />
+        <Initials name={selectors.professionalById(session.menteeId)?.name ?? "?"} />
         <div>
           <p className="text-sm font-medium">{session.topic}</p>
           <p className="text-xs text-muted-foreground">
-            {selectors.architectById(session.menteeId)?.name} · mentor {session.mentor} ·{" "}
+            {selectors.professionalById(session.menteeId)?.name} · mentor {session.mentor} ·{" "}
             {defaultDateFormatter.formatDate(session.date, locale)} · {session.durationMin} min
           </p>
         </div>
@@ -336,7 +336,7 @@ function MentoringTimelineItem({
           className="mt-2"
           disabled={sending}
           onClick={() => {
-            const mentee = selectors.architectById(session.menteeId);
+            const mentee = selectors.professionalById(session.menteeId);
             const competency = eligible.competency;
             if (!mentee || !competency) return;
             void run(() =>
@@ -404,7 +404,7 @@ export function NewMentoringSessionDialog({
   menteeOptions,
   onRegistered,
 }: {
-  menteeOptions: Architect[];
+  menteeOptions: Professional[];
   onRegistered?: (menteeId: string) => void;
 }) {
   const { t } = useI18n();
@@ -576,7 +576,7 @@ export function NewMentoringSessionDialog({
           </div>
           {defaultUiAuthorizationPolicy.isAssignedTechLeadOf(
             user,
-            sel.architectById(sessionForm.form.menteeId),
+            sel.professionalById(sessionForm.form.menteeId),
           ) && (
             <div className="min-w-0">
               <FieldLabel

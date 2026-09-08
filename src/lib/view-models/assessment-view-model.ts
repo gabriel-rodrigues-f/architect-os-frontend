@@ -1,6 +1,6 @@
 import type { api, SessionUser } from "../api";
 import type {
-  Architect,
+  Professional,
   Assessment,
   AssessmentCapability,
   AssessmentDevelopmentSummary,
@@ -60,18 +60,18 @@ export class AssessmentViewModel {
 
   permissionsFor(
     user: SessionUser,
-    architectId: string,
-    selectedArchitect: Architect | undefined,
+    professionalId: string,
+    selectedProfessional: Professional | undefined,
     assessment: Assessment | undefined,
   ): AssessmentPermissions {
     // Ninguém age sobre si (dono, 2026-09-06): a autoavaliação é registrada
     // por quem lidera, na 1:1. O sujeito LÊ — veredito, respostas, números.
-    const isSubject = this.policy.readsOwn(user, architectId);
-    const isLead = this.policy.isLeadOf(user, selectedArchitect);
+    const isSubject = this.policy.readsOwn(user, professionalId);
+    const isLead = this.policy.isLeadOf(user, selectedProfessional);
     // D4 (dono, 2026-09-05): o tech lead pontua; quem CONCLUI e REABRE é o
     // gerente designado (ou o admin como correção). D2: a própria pessoa vê
     // os próprios números.
-    const decides = this.policy.decidesCareerOf(user, selectedArchitect);
+    const decides = this.policy.decidesCareerOf(user, selectedProfessional);
     const status = assessment?.status;
     const isCompleted = status === "Completed";
     const canEditSelf = isLead && status === "Draft";

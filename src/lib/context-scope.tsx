@@ -29,7 +29,7 @@ export type ContextScopeRequest = StateContextName | StateContextRequest;
  * menos é ler fatia não pedida (a catraca de `state-contexts.ts` lança).
  */
 export const SELECTOR_CONTEXTS: readonly ContextScopeRequest[] = [
-  "architects",
+  "professionals",
   "assessments",
   "capabilities",
   "competencies",
@@ -44,18 +44,18 @@ export const SELECTOR_CONTEXTS: readonly ContextScopeRequest[] = [
  * estranguladas.
  */
 export class ContextScopes {
-  static careerFileOf(architectId: string): readonly ContextScopeRequest[] {
+  static careerFileOf(professionalId: string): readonly ContextScopeRequest[] {
     return [
-      "architects",
+      "professionals",
       "capabilities",
       "competencies",
       "cycles",
       "activeCycle",
-      { name: "assessments", architectId },
-      { name: "plans", architectId },
-      { name: "evidences", architectId },
-      { name: "mentoringSessions", architectId },
-      { name: "learningPaths", architectId },
+      { name: "assessments", professionalId },
+      { name: "plans", professionalId },
+      { name: "evidences", professionalId },
+      { name: "mentoringSessions", professionalId },
+      { name: "learningPaths", professionalId },
     ];
   }
 

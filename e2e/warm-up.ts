@@ -6,7 +6,7 @@ import { chromium, type FullConfig } from "@playwright/test";
  * transformado sob demanda no primeiro carregamento, e o painel depois do
  * login pede outra leva de módulos. Medido na rodada de entrega
  * (2026-09-02): o primeiro spec da rodada gastava ~25 s no `goto("/")` e
- * estourava os 30 s de teste em `architect-evolution-route.spec.ts` — duas
+ * estourava os 30 s de teste em `professional-evolution-route.spec.ts` — duas
  * rodadas seguidas, sempre o primeiro, nunca o segundo com a mesma
  * asserção. Pagar o custo aqui, uma vez, tira do primeiro spec um vermelho
  * que não é dele. Sem credencial de admin aquece só a tela de login.

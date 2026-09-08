@@ -127,7 +127,7 @@ describe("PDI — plano de ação não perde o que está sendo digitado", () => 
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    window.history.pushState({}, "", "?architectId=ana");
+    window.history.pushState({}, "", "?professionalId=ana");
   });
 
   afterEach(() => {

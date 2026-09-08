@@ -30,11 +30,11 @@ import { Route as TeamRulesRouteImport } from './routes/team-rules'
 import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
 import { Route as UsersRouteImport } from './routes/users'
-import { Route as ArchitectsArchitectIdRouteImport } from './routes/architects.$architectId'
-import { Route as ArchitectsArchitectIdIndexRouteImport } from './routes/architects.$architectId.index'
-import { Route as ArchitectsArchitectIdEvolutionRouteImport } from './routes/architects.$architectId.evolution'
-import { Route as ArchitectsArchitectIdRoadmapRouteImport } from './routes/architects.$architectId.roadmap'
-import { Route as ArchitectsArchitectIdStatementRouteImport } from './routes/architects.$architectId.statement'
+import { Route as ProfessionalsProfessionalIdRouteImport } from './routes/professionals.$professionalId'
+import { Route as ProfessionalsProfessionalIdIndexRouteImport } from './routes/professionals.$professionalId.index'
+import { Route as ProfessionalsProfessionalIdEvolutionRouteImport } from './routes/professionals.$professionalId.evolution'
+import { Route as ProfessionalsProfessionalIdRoadmapRouteImport } from './routes/professionals.$professionalId.roadmap'
+import { Route as ProfessionalsProfessionalIdStatementRouteImport } from './routes/professionals.$professionalId.statement'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -141,34 +141,35 @@ const UsersRoute = UsersRouteImport.update({
   path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ArchitectsArchitectIdRoute = ArchitectsArchitectIdRouteImport.update({
-  id: '/architects/$architectId',
-  path: '/architects/$architectId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ArchitectsArchitectIdIndexRoute =
-  ArchitectsArchitectIdIndexRouteImport.update({
+const ProfessionalsProfessionalIdRoute =
+  ProfessionalsProfessionalIdRouteImport.update({
+    id: '/professionals/$professionalId',
+    path: '/professionals/$professionalId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ProfessionalsProfessionalIdIndexRoute =
+  ProfessionalsProfessionalIdIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => ArchitectsArchitectIdRoute,
+    getParentRoute: () => ProfessionalsProfessionalIdRoute,
   } as any)
-const ArchitectsArchitectIdEvolutionRoute =
-  ArchitectsArchitectIdEvolutionRouteImport.update({
+const ProfessionalsProfessionalIdEvolutionRoute =
+  ProfessionalsProfessionalIdEvolutionRouteImport.update({
     id: '/evolution',
     path: '/evolution',
-    getParentRoute: () => ArchitectsArchitectIdRoute,
+    getParentRoute: () => ProfessionalsProfessionalIdRoute,
   } as any)
-const ArchitectsArchitectIdRoadmapRoute =
-  ArchitectsArchitectIdRoadmapRouteImport.update({
+const ProfessionalsProfessionalIdRoadmapRoute =
+  ProfessionalsProfessionalIdRoadmapRouteImport.update({
     id: '/roadmap',
     path: '/roadmap',
-    getParentRoute: () => ArchitectsArchitectIdRoute,
+    getParentRoute: () => ProfessionalsProfessionalIdRoute,
   } as any)
-const ArchitectsArchitectIdStatementRoute =
-  ArchitectsArchitectIdStatementRouteImport.update({
+const ProfessionalsProfessionalIdStatementRoute =
+  ProfessionalsProfessionalIdStatementRouteImport.update({
     id: '/statement',
     path: '/statement',
-    getParentRoute: () => ArchitectsArchitectIdRoute,
+    getParentRoute: () => ProfessionalsProfessionalIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -193,11 +194,11 @@ export interface FileRoutesByFullPath {
   '/teams': typeof TeamsRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
-  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
-  '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
-  '/architects/$architectId/statement': typeof ArchitectsArchitectIdStatementRoute
-  '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
+  '/professionals/$professionalId': typeof ProfessionalsProfessionalIdRouteWithChildren
+  '/professionals/$professionalId/evolution': typeof ProfessionalsProfessionalIdEvolutionRoute
+  '/professionals/$professionalId/roadmap': typeof ProfessionalsProfessionalIdRoadmapRoute
+  '/professionals/$professionalId/statement': typeof ProfessionalsProfessionalIdStatementRoute
+  '/professionals/$professionalId/': typeof ProfessionalsProfessionalIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -221,10 +222,10 @@ export interface FileRoutesByTo {
   '/teams': typeof TeamsRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
-  '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
-  '/architects/$architectId/statement': typeof ArchitectsArchitectIdStatementRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdIndexRoute
+  '/professionals/$professionalId/evolution': typeof ProfessionalsProfessionalIdEvolutionRoute
+  '/professionals/$professionalId/roadmap': typeof ProfessionalsProfessionalIdRoadmapRoute
+  '/professionals/$professionalId/statement': typeof ProfessionalsProfessionalIdStatementRoute
+  '/professionals/$professionalId': typeof ProfessionalsProfessionalIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -249,11 +250,11 @@ export interface FileRoutesById {
   '/teams': typeof TeamsRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
-  '/architects/$architectId': typeof ArchitectsArchitectIdRouteWithChildren
-  '/architects/$architectId/evolution': typeof ArchitectsArchitectIdEvolutionRoute
-  '/architects/$architectId/roadmap': typeof ArchitectsArchitectIdRoadmapRoute
-  '/architects/$architectId/statement': typeof ArchitectsArchitectIdStatementRoute
-  '/architects/$architectId/': typeof ArchitectsArchitectIdIndexRoute
+  '/professionals/$professionalId': typeof ProfessionalsProfessionalIdRouteWithChildren
+  '/professionals/$professionalId/evolution': typeof ProfessionalsProfessionalIdEvolutionRoute
+  '/professionals/$professionalId/roadmap': typeof ProfessionalsProfessionalIdRoadmapRoute
+  '/professionals/$professionalId/statement': typeof ProfessionalsProfessionalIdStatementRoute
+  '/professionals/$professionalId/': typeof ProfessionalsProfessionalIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -279,11 +280,11 @@ export interface FileRouteTypes {
     | '/teams'
     | '/training-needs'
     | '/users'
-    | '/architects/$architectId'
-    | '/architects/$architectId/evolution'
-    | '/architects/$architectId/roadmap'
-    | '/architects/$architectId/statement'
-    | '/architects/$architectId/'
+    | '/professionals/$professionalId'
+    | '/professionals/$professionalId/evolution'
+    | '/professionals/$professionalId/roadmap'
+    | '/professionals/$professionalId/statement'
+    | '/professionals/$professionalId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -307,10 +308,10 @@ export interface FileRouteTypes {
     | '/teams'
     | '/training-needs'
     | '/users'
-    | '/architects/$architectId/evolution'
-    | '/architects/$architectId/roadmap'
-    | '/architects/$architectId/statement'
-    | '/architects/$architectId'
+    | '/professionals/$professionalId/evolution'
+    | '/professionals/$professionalId/roadmap'
+    | '/professionals/$professionalId/statement'
+    | '/professionals/$professionalId'
   id:
     | '__root__'
     | '/'
@@ -334,11 +335,11 @@ export interface FileRouteTypes {
     | '/teams'
     | '/training-needs'
     | '/users'
-    | '/architects/$architectId'
-    | '/architects/$architectId/evolution'
-    | '/architects/$architectId/roadmap'
-    | '/architects/$architectId/statement'
-    | '/architects/$architectId/'
+    | '/professionals/$professionalId'
+    | '/professionals/$professionalId/evolution'
+    | '/professionals/$professionalId/roadmap'
+    | '/professionals/$professionalId/statement'
+    | '/professionals/$professionalId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -363,7 +364,7 @@ export interface RootRouteChildren {
   TeamsRoute: typeof TeamsRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
   UsersRoute: typeof UsersRoute
-  ArchitectsArchitectIdRoute: typeof ArchitectsArchitectIdRouteWithChildren
+  ProfessionalsProfessionalIdRoute: typeof ProfessionalsProfessionalIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -515,61 +516,66 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/architects/$architectId': {
-      id: '/architects/$architectId'
-      path: '/architects/$architectId'
-      fullPath: '/architects/$architectId'
-      preLoaderRoute: typeof ArchitectsArchitectIdRouteImport
+    '/professionals/$professionalId': {
+      id: '/professionals/$professionalId'
+      path: '/professionals/$professionalId'
+      fullPath: '/professionals/$professionalId'
+      preLoaderRoute: typeof ProfessionalsProfessionalIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/architects/$architectId/': {
-      id: '/architects/$architectId/'
+    '/professionals/$professionalId/': {
+      id: '/professionals/$professionalId/'
       path: '/'
-      fullPath: '/architects/$architectId/'
-      preLoaderRoute: typeof ArchitectsArchitectIdIndexRouteImport
-      parentRoute: typeof ArchitectsArchitectIdRoute
+      fullPath: '/professionals/$professionalId/'
+      preLoaderRoute: typeof ProfessionalsProfessionalIdIndexRouteImport
+      parentRoute: typeof ProfessionalsProfessionalIdRoute
     }
-    '/architects/$architectId/evolution': {
-      id: '/architects/$architectId/evolution'
+    '/professionals/$professionalId/evolution': {
+      id: '/professionals/$professionalId/evolution'
       path: '/evolution'
-      fullPath: '/architects/$architectId/evolution'
-      preLoaderRoute: typeof ArchitectsArchitectIdEvolutionRouteImport
-      parentRoute: typeof ArchitectsArchitectIdRoute
+      fullPath: '/professionals/$professionalId/evolution'
+      preLoaderRoute: typeof ProfessionalsProfessionalIdEvolutionRouteImport
+      parentRoute: typeof ProfessionalsProfessionalIdRoute
     }
-    '/architects/$architectId/roadmap': {
-      id: '/architects/$architectId/roadmap'
+    '/professionals/$professionalId/roadmap': {
+      id: '/professionals/$professionalId/roadmap'
       path: '/roadmap'
-      fullPath: '/architects/$architectId/roadmap'
-      preLoaderRoute: typeof ArchitectsArchitectIdRoadmapRouteImport
-      parentRoute: typeof ArchitectsArchitectIdRoute
+      fullPath: '/professionals/$professionalId/roadmap'
+      preLoaderRoute: typeof ProfessionalsProfessionalIdRoadmapRouteImport
+      parentRoute: typeof ProfessionalsProfessionalIdRoute
     }
-    '/architects/$architectId/statement': {
-      id: '/architects/$architectId/statement'
+    '/professionals/$professionalId/statement': {
+      id: '/professionals/$professionalId/statement'
       path: '/statement'
-      fullPath: '/architects/$architectId/statement'
-      preLoaderRoute: typeof ArchitectsArchitectIdStatementRouteImport
-      parentRoute: typeof ArchitectsArchitectIdRoute
+      fullPath: '/professionals/$professionalId/statement'
+      preLoaderRoute: typeof ProfessionalsProfessionalIdStatementRouteImport
+      parentRoute: typeof ProfessionalsProfessionalIdRoute
     }
   }
 }
 
-interface ArchitectsArchitectIdRouteChildren {
-  ArchitectsArchitectIdEvolutionRoute: typeof ArchitectsArchitectIdEvolutionRoute
-  ArchitectsArchitectIdRoadmapRoute: typeof ArchitectsArchitectIdRoadmapRoute
-  ArchitectsArchitectIdStatementRoute: typeof ArchitectsArchitectIdStatementRoute
-  ArchitectsArchitectIdIndexRoute: typeof ArchitectsArchitectIdIndexRoute
+interface ProfessionalsProfessionalIdRouteChildren {
+  ProfessionalsProfessionalIdEvolutionRoute: typeof ProfessionalsProfessionalIdEvolutionRoute
+  ProfessionalsProfessionalIdRoadmapRoute: typeof ProfessionalsProfessionalIdRoadmapRoute
+  ProfessionalsProfessionalIdStatementRoute: typeof ProfessionalsProfessionalIdStatementRoute
+  ProfessionalsProfessionalIdIndexRoute: typeof ProfessionalsProfessionalIdIndexRoute
 }
 
-const ArchitectsArchitectIdRouteChildren: ArchitectsArchitectIdRouteChildren = {
-  ArchitectsArchitectIdEvolutionRoute: ArchitectsArchitectIdEvolutionRoute,
-  ArchitectsArchitectIdRoadmapRoute: ArchitectsArchitectIdRoadmapRoute,
-  ArchitectsArchitectIdStatementRoute: ArchitectsArchitectIdStatementRoute,
-  ArchitectsArchitectIdIndexRoute: ArchitectsArchitectIdIndexRoute,
-}
+const ProfessionalsProfessionalIdRouteChildren: ProfessionalsProfessionalIdRouteChildren =
+  {
+    ProfessionalsProfessionalIdEvolutionRoute:
+      ProfessionalsProfessionalIdEvolutionRoute,
+    ProfessionalsProfessionalIdRoadmapRoute:
+      ProfessionalsProfessionalIdRoadmapRoute,
+    ProfessionalsProfessionalIdStatementRoute:
+      ProfessionalsProfessionalIdStatementRoute,
+    ProfessionalsProfessionalIdIndexRoute:
+      ProfessionalsProfessionalIdIndexRoute,
+  }
 
-const ArchitectsArchitectIdRouteWithChildren =
-  ArchitectsArchitectIdRoute._addFileChildren(
-    ArchitectsArchitectIdRouteChildren,
+const ProfessionalsProfessionalIdRouteWithChildren =
+  ProfessionalsProfessionalIdRoute._addFileChildren(
+    ProfessionalsProfessionalIdRouteChildren,
   )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -594,7 +600,8 @@ const rootRouteChildren: RootRouteChildren = {
   TeamsRoute: TeamsRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
   UsersRoute: UsersRoute,
-  ArchitectsArchitectIdRoute: ArchitectsArchitectIdRouteWithChildren,
+  ProfessionalsProfessionalIdRoute:
+    ProfessionalsProfessionalIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

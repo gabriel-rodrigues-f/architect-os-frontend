@@ -10,8 +10,8 @@ vi.mock("@tanstack/react-router", () =>
 
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
-import type { Architect } from "@/lib/domain";
-import { Route as ArchitectRoute } from "@/routes/architects.$architectId.index";
+import type { Professional } from "@/lib/domain";
+import { Route as ProfessionalRoute } from "@/routes/professionals.$professionalId.index";
 import { Route as TeamRoute } from "@/routes/team";
 import {
   fixtureAdminUser,
@@ -47,17 +47,17 @@ import { renderCareerFile } from "../helpers/ficha";
 const fetchMock = vi.fn();
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
-const ArchitectPage = ArchitectRoute.options.component as () => ReactNode;
+const ProfessionalPage = ProfessionalRoute.options.component as () => ReactNode;
 
 const SEM_SENIORIDADE = "carla";
 
 /** O tech lead do time: cargo sim, senioridade não. */
-const carla: Architect = {
+const carla: Professional = {
   id: SEM_SENIORIDADE,
   name: "Carla Ribeiro",
   role: null,
   careerLevelId: null,
-  yearsAsArchitect: 9,
+  yearsAsProfessional: 9,
   specialization: "Platform",
   email: "carla@company.com",
   active: true,
@@ -68,7 +68,7 @@ const carla: Architect = {
 
 const stateComLideranca: AppState = {
   ...fixtureState,
-  architects: [...fixtureState.architects, carla],
+  professionals: [...fixtureState.professionals, carla],
 };
 
 const times = [
@@ -81,8 +81,8 @@ const rotaDeTimes: FetchRoute = (href, init) =>
     ? jsonResponse(times)
     : undefined;
 
-const ALOCACAO = apiPath(`/architects/${SEM_SENIORIDADE}/team-allocation`);
-const TRANSICAO = apiPath(`/architects/${SEM_SENIORIDADE}/career-level-transition`);
+const ALOCACAO = apiPath(`/professionals/${SEM_SENIORIDADE}/team-allocation`);
+const TRANSICAO = apiPath(`/professionals/${SEM_SENIORIDADE}/career-level-transition`);
 
 const escritas: string[] = [];
 
@@ -160,7 +160,7 @@ describe("ONDA 37 — quem não tem senioridade não derruba a tela", () => {
 
   it("na ficha da pessoa a senioridade ausente é o travessão, nunca 'null'", async () => {
     montarTime(fixtureAssignedManagerUser);
-    renderCareerFile(<ArchitectPage />, { architectId: "carla" });
+    renderCareerFile(<ProfessionalPage />, { professionalId: "carla" });
 
     const cabecalho = await screen.findByText(/9 anos/);
     expect(cabecalho.textContent).toContain("—");

@@ -85,7 +85,7 @@ function App({ children }: { children: ReactNode }) {
           <AuthProvider>
             <Casca>
               <StoreProvider>
-                <ContextScope contexts={["architects"]}>{children}</ContextScope>
+                <ContextScope contexts={["professionals"]}>{children}</ContextScope>
               </StoreProvider>
             </Casca>
           </AuthProvider>
@@ -109,7 +109,7 @@ describe("a casca não pisca — carregar o conteúdo não apaga a navegação",
   it("com a consulta do store PENDENTE, o menu continua no documento", async () => {
     fetchMock.mockImplementation((input: string | URL | Request, init?: RequestInit) => {
       const href = input instanceof Request ? input.url : String(input);
-      if (href.endsWith(apiPath("/architects"))) return estadoQueNuncaChega();
+      if (href.endsWith(apiPath("/professionals"))) return estadoQueNuncaChega();
       if (href.endsWith(apiPath("/auth/me")))
         return Promise.resolve(jsonResponse({ data: fixtureAssignedManagerUser }));
       return Promise.resolve(configurationRoute(href, init) ?? new Response("{}", { status: 200 }));
@@ -137,7 +137,7 @@ describe("a casca não pisca — carregar o conteúdo não apaga a navegação",
     async () => {
       fetchMock.mockImplementation((input: string | URL | Request, init?: RequestInit) => {
         const href = input instanceof Request ? input.url : String(input);
-        if (href.endsWith(apiPath("/architects")))
+        if (href.endsWith(apiPath("/professionals")))
           return Promise.resolve(new Response(null, { status: 500 }));
         if (href.endsWith(apiPath("/auth/me")))
           return Promise.resolve(jsonResponse({ data: fixtureAssignedManagerUser }));

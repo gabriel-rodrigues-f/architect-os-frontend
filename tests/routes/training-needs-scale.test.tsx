@@ -43,11 +43,11 @@ const MANY_COMPETENCIES: Competency[] = Array.from({ length: 16 }, (_, i) => ({
   active: true,
 }));
 
-const carla: AppState["architects"][number] = {
+const carla: AppState["professionals"][number] = {
   id: "carla",
   name: "Carla Souza",
   role: "Pleno",
-  yearsAsArchitect: 5,
+  yearsAsProfessional: 5,
   specialization: "",
   email: "carla@company.com",
   active: true,
@@ -65,10 +65,10 @@ function itemsFor(): AssessmentItem[] {
   }));
 }
 
-function assessmentFor(id: string, architectId: string): Assessment {
+function assessmentFor(id: string, professionalId: string): Assessment {
   return {
     id,
-    architectId,
+    professionalId,
     cycleId: "2026-h2",
     status: "Completed",
     modelVersion: 1,
@@ -81,7 +81,7 @@ function assessmentFor(id: string, architectId: string): Assessment {
 
 const state: AppState = {
   ...fixtureState,
-  architects: [...fixtureState.architects, carla],
+  professionals: [...fixtureState.professionals, carla],
   competencies: MANY_COMPETENCIES,
   learningPaths: [],
   assessments: [

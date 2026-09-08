@@ -17,28 +17,28 @@ export interface TeamTransitionRecord {
 
 export interface ReportsGateway {
   exportEvolutionPdf(
-    architectId: string,
+    professionalId: string,
     filters: EvolutionFilters,
   ): Promise<{ blob: Blob; filename: string }>;
-  teamTransitionsOf(architectId: string, range: CalendarRange): Promise<TeamTransitionRecord[]>;
+  teamTransitionsOf(professionalId: string, range: CalendarRange): Promise<TeamTransitionRecord[]>;
 }
 
 export class HttpReportsGateway implements ReportsGateway {
   constructor(private readonly client: ApiClient) {}
 
   exportEvolutionPdf = (
-    architectId: string,
+    professionalId: string,
     filters: EvolutionFilters,
   ): Promise<{ blob: Blob; filename: string }> =>
-    this.client.requestBlob("/reports/evolution/pdf", { architectId, ...filters });
+    this.client.requestBlob("/reports/evolution/pdf", { professionalId, ...filters });
 
   teamTransitionsOf = (
-    architectId: string,
+    professionalId: string,
     range: CalendarRange,
   ): Promise<TeamTransitionRecord[]> =>
     this.client
       .post<unknown>("/reports/career-statement", {
-        architectId,
+        professionalId,
         range,
         kinds: ["teamTransition"],
       })
@@ -51,18 +51,21 @@ export class HttpReportsGateway implements ReportsGateway {
 
 export class InMemoryReportsGateway implements ReportsGateway {
   constructor(
-    private readonly transitionsByArchitect: ReadonlyMap<string, readonly TeamTransitionRecord[]>,
+    private readonly transitionsByProfessional: ReadonlyMap<
+      string,
+      readonly TeamTransitionRecord[]
+    >,
   ) {}
 
-  exportEvolutionPdf = (architectId: string): Promise<{ blob: Blob; filename: string }> =>
-    Promise.resolve({ blob: new Blob(), filename: `evolucao-${architectId}.pdf` });
+  exportEvolutionPdf = (professionalId: string): Promise<{ blob: Blob; filename: string }> =>
+    Promise.resolve({ blob: new Blob(), filename: `evolucao-${professionalId}.pdf` });
 
   teamTransitionsOf = (
-    architectId: string,
+    professionalId: string,
     range: CalendarRange,
   ): Promise<TeamTransitionRecord[]> =>
     Promise.resolve(
-      (this.transitionsByArchitect.get(architectId) ?? [])
+      (this.transitionsByProfessional.get(professionalId) ?? [])
         .filter((record) => record.occurredOn >= range.from && record.occurredOn <= range.to)
         .sort((left, right) => right.occurredOn.localeCompare(left.occurredOn)),
     );

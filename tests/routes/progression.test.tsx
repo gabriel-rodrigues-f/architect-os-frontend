@@ -161,8 +161,8 @@ describe("Progressão — heatmap, tabela e maestria", () => {
     });
     expect(competencyHeader.className).toContain("sticky");
 
-    const architectHeader = screen.getByRole("columnheader", { name: "Profissional" });
-    expect(architectHeader.className).toContain("sticky");
+    const professionalHeader = screen.getByRole("columnheader", { name: "Profissional" });
+    expect(professionalHeader.className).toContain("sticky");
   });
 
   /**

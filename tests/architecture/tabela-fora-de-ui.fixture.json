@@ -4,7 +4,7 @@
   "src/components/app/charts.tsx": 1,
   "src/components/app/gap-analysis-shared.tsx": 1,
   "src/components/app/team-shared.tsx": 1,
-  "src/routes/architects.$architectId.evolution.tsx": 1,
+  "src/routes/professionals.$professionalId.evolution.tsx": 1,
   "src/routes/capability-map.tsx": 1,
   "src/routes/compare.tsx": 1,
   "src/routes/competency-matrix.tsx": 1,

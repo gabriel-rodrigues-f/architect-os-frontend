@@ -43,7 +43,7 @@ const fixtureTechLeadDeAna: SessionUser = {
   email: "techlead-de-ana@company.com",
   name: "Tech Lead de Ana",
   role: "tech_lead",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -135,8 +135,8 @@ describe("Avaliações — as evidências da pessoa", () => {
   it("tech lead do time ganha a seção na avaliação da liderada e abre o MESMO diálogo de registro da ficha (dono, 2026-09-06)", async () => {
     const state: AppState = {
       ...fixtureState,
-      architects: fixtureState.architects.map((architect) =>
-        architect.id === "ana" ? { ...architect, teamId: TIME_DE_ANA } : architect,
+      professionals: fixtureState.professionals.map((professional) =>
+        professional.id === "ana" ? { ...professional, teamId: TIME_DE_ANA } : professional,
       ),
     };
     mockAppFetch(fetchMock, {

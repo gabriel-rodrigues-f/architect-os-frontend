@@ -74,7 +74,7 @@ export interface NavItem {
   countsPendingTeamTransfers?: boolean;
 }
 
-const OWN_ARCHITECT_PARAM = "$architectId";
+const OWN_PROFESSIONAL_PARAM = "$professionalId";
 
 export interface NavGroup {
   labelKey?: MessageKey;
@@ -93,25 +93,25 @@ export const NAV_GROUPS: NavGroup[] = [
     labelKey: MY_CAREER_GROUP_KEY,
     items: [
       {
-        to: `/architects/${OWN_ARCHITECT_PARAM}`,
+        to: `/professionals/${OWN_PROFESSIONAL_PARAM}`,
         labelKey: "arch.tabs.overview",
         icon: Compass,
         ownCareerOnly: true,
       },
       {
-        to: `/architects/${OWN_ARCHITECT_PARAM}/evolution`,
+        to: `/professionals/${OWN_PROFESSIONAL_PARAM}/evolution`,
         labelKey: "arch.tabs.evolution",
         icon: TrendingUp,
         ownCareerOnly: true,
       },
       {
-        to: `/architects/${OWN_ARCHITECT_PARAM}/statement`,
+        to: `/professionals/${OWN_PROFESSIONAL_PARAM}/statement`,
         labelKey: "arch.tabs.statement",
         icon: FileText,
         ownCareerOnly: true,
       },
       {
-        to: `/architects/${OWN_ARCHITECT_PARAM}/roadmap`,
+        to: `/professionals/${OWN_PROFESSIONAL_PARAM}/roadmap`,
         labelKey: "arch.tabs.roadmap",
         icon: Milestone,
         ownCareerOnly: true,
@@ -126,7 +126,7 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/team",
         labelKey: "nav.team",
         icon: Users,
-        activePrefixes: ["/architects"],
+        activePrefixes: ["/professionals"],
         leadershipOnly: true,
         countsPendingTeamTransfers: true,
       },
@@ -255,9 +255,9 @@ export class NavigationOfUser {
   }
 
   addressed(item: NavItem): NavItem {
-    const architectId = this.ownArchitectId;
-    if (!item.ownCareerOnly || architectId === null) return item;
-    const resolve = (path: string) => path.replace(OWN_ARCHITECT_PARAM, architectId);
+    const professionalId = this.ownProfessionalId;
+    if (!item.ownCareerOnly || professionalId === null) return item;
+    const resolve = (path: string) => path.replace(OWN_PROFESSIONAL_PARAM, professionalId);
     return {
       ...item,
       to: resolve(item.to),
@@ -265,8 +265,8 @@ export class NavigationOfUser {
     };
   }
 
-  private get ownArchitectId(): string | null {
-    return this.user?.architectId ?? null;
+  private get ownProfessionalId(): string | null {
+    return this.user?.professionalId ?? null;
   }
 }
 

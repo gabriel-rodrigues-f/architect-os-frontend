@@ -44,7 +44,7 @@ describe("Time — truncate sempre carrega title", () => {
     vi.unstubAllGlobals();
   });
 
-  it("cartão de arquiteto: e-mail truncado tem title com o valor completo", async () => {
+  it("cartão de profissional: e-mail truncado tem title com o valor completo", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
     const email = screen.getByText("ana@company.com");

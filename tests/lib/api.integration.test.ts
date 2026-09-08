@@ -37,7 +37,7 @@ async function snapshotPelasFatias(): Promise<AppState> {
     capabilities,
     competencies,
     teamLevelRules,
-    architects,
+    professionals,
     assessments,
     cycles,
     plans,
@@ -49,7 +49,7 @@ async function snapshotPelasFatias(): Promise<AppState> {
     stateContextsApi.listCapabilities(),
     stateContextsApi.listCompetencies(),
     stateContextsApi.listTeamLevelRules(),
-    stateContextsApi.listArchitects(),
+    stateContextsApi.listProfessionals(),
     stateContextsApi.listAssessments(),
     stateContextsApi.listCycles(),
     stateContextsApi.listPlans(),
@@ -62,7 +62,7 @@ async function snapshotPelasFatias(): Promise<AppState> {
     capabilities,
     competencies,
     teamLevelRules,
-    architects,
+    professionals,
     assessments,
     cycles,
     plans,
@@ -91,7 +91,7 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
     const savedCookie = storedCookie;
     storedCookie = undefined;
     try {
-      await expect(stateContextsApi.listArchitects()).rejects.toMatchObject({ status: 401 });
+      await expect(stateContextsApi.listProfessionals()).rejects.toMatchObject({ status: 401 });
     } finally {
       storedCookie = savedCookie;
     }
@@ -101,7 +101,7 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
     for (const key of [
       "capabilities",
       "competencies",
-      "architects",
+      "professionals",
       "assessments",
       "cycles",
       "plans",
@@ -141,8 +141,8 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
     const sel = createSelectors(state);
     expect(sel.teamTrainingNeeds()).toBeInstanceOf(Array);
 
-    for (const architect of state.architects) {
-      expect(sel.capabilityAverages(architect.id)).toHaveLength(state.capabilities.length);
+    for (const professional of state.professionals) {
+      expect(sel.capabilityAverages(professional.id)).toHaveLength(state.capabilities.length);
     }
   });
 });

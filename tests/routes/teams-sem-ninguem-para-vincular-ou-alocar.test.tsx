@@ -29,7 +29,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * Onda 35 — achado 4 do dono (2026-09-02), literal: "Times › Vincular pessoa
  * sem ninguém disponível: em vez do combobox, 'Nenhuma pessoa cadastrada.
  * Clique para cadastrar uma pessoa' → tela de cadastro." O mesmo tratamento
- * em "Alocar pessoa" (profissionais), com link para /team. Só o estado vazio
+ * em "Alocar profissional" (profissionais), com link para /team. Só o estado vazio
  * muda: com gente disponível, o combobox continua.
  */
 const fetchMock = vi.fn();
@@ -54,7 +54,7 @@ const rotaDoQuadroVazio: FetchRoute = (href, init) =>
 async function abrirOQuadro() {
   await screen.findByText("Time Plataforma");
   await userEvent.click(screen.getByLabelText("Quadro de Time Plataforma"));
-  await screen.findByText("Pessoas do time");
+  await screen.findByText("Profissionais do time");
 }
 
 describe("/teams — sem ninguém para vincular ou alocar, a tela aponta o cadastro", () => {
@@ -79,26 +79,26 @@ describe("/teams — sem ninguém para vincular ou alocar, a tela aponta o cadas
     vi.unstubAllGlobals();
   });
 
-  it("'Vincular pessoa' sem conta disponível: no lugar do combobox, o texto e o link para /users", async () => {
+  it("'Vincular profissional' sem conta disponível: no lugar do combobox, o texto e o link para /users", async () => {
     renderWithApp(<TeamsPage />);
     await abrirOQuadro();
 
-    const secao = within(screen.getByText("Vincular pessoa").closest("div") as HTMLElement);
-    expect(secao.getByText("Nenhuma pessoa cadastrada.")).toBeTruthy();
-    const link = secao.getByRole("link", { name: "Clique para cadastrar uma pessoa" });
+    const secao = within(screen.getByText("Vincular profissional").closest("div") as HTMLElement);
+    expect(secao.getByText("Nenhum profissional cadastrado.")).toBeTruthy();
+    const link = secao.getByRole("link", { name: "Clique para cadastrar um profissional" });
     expect(link.getAttribute("href")).toBe("/users");
-    expect(secao.queryByLabelText("Pessoa")).toBeNull();
+    expect(secao.queryByLabelText("Profissional")).toBeNull();
     expect(secao.queryByRole("button", { name: "Vincular" })).toBeNull();
   });
 
-  it("'Alocar pessoa' sem profissional disponível: o texto e o link para /team, sem combobox", async () => {
+  it("'Alocar profissional' sem profissional disponível: o texto e o link para /team, sem combobox", async () => {
     renderWithApp(<TeamsPage />);
     await abrirOQuadro();
 
-    await userEvent.click(screen.getByRole("button", { name: "Alocar pessoa" }));
+    await userEvent.click(screen.getByRole("button", { name: "Alocar profissional" }));
     const dialogo = within(await screen.findByRole("dialog"));
-    const link = dialogo.getByRole("link", { name: "Clique para cadastrar uma pessoa" });
+    const link = dialogo.getByRole("link", { name: "Clique para cadastrar um profissional" });
     expect(link.getAttribute("href")).toBe("/team");
-    expect(dialogo.queryByLabelText("Pessoa")).toBeNull();
+    expect(dialogo.queryByLabelText("Profissional")).toBeNull();
   });
 });

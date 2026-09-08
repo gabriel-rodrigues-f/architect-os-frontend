@@ -86,14 +86,15 @@ const QUALIFICADOR_DO_TIME_ANTIGO_EM_INGLES =
  * Literais de `src/` que ainda dizem "arquiteto", cada um com o motivo de
  * existir. Linha aqui é dívida declarada com dono, nunca atalho: pagar a
  * dívida exige tirá-la da lista.
+ *
+ * ADR-0096 (2026-09-08) esvaziou a lista: a única exceção que existia era o
+ * oráculo em memória de ARCHITECT_NOT_FOUND em `team-allocation.gateway.ts`,
+ * que espelhava a mensagem PT-BR do backend. O backend renomeou a entidade
+ * (PROFESSIONAL_NOT_FOUND, "Profissional ... não encontrado") e o oráculo
+ * acompanhou — a dívida foi paga, não perdoada. A lista continua aqui porque a
+ * rede que a lê é a mesma; vazia, ela reprova a PRIMEIRA reincidência.
  */
-const EXCECOES_DE_SRC: ReadonlyArray<{ readonly onde: string; readonly motivo: string }> = [
-  {
-    onde: join("src", "lib", "gateways", "team-allocation.gateway.ts"),
-    motivo:
-      "oráculo em memória de ARCHITECT_NOT_FOUND: espelha a mensagem do backend (CONTRATO: as mensagens PT-BR são contrato); muda quando o backend renomear a entidade",
-  },
-];
+const EXCECOES_DE_SRC: ReadonlyArray<{ readonly onde: string; readonly motivo: string }> = [];
 
 const ARQUIVOS_GERADOS = [
   join("src", "lib", "api-contract.gen.ts"),

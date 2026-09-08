@@ -27,7 +27,7 @@ import { Route as LearningPathsRoute } from "@/routes/learning-paths";
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as TeamRoute } from "@/routes/team";
 import type { AppState, SessionUser } from "@/lib/api";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import {
   fixtureAdminUser,
   fixtureAssignedManagerUser,
@@ -56,19 +56,19 @@ import {
  * filtro de status — hoje é o único lugar onde o administrador reencontra
  * quem desativou; sem ela a desativação seria irreversível pela interface.
  *
- * O ponto único é o store: `store.architects` passou a ser a lista ATIVA e o
- * acesso ao cru ficou NOMEADO (`store.architectsIncludingInactive`), usado só
+ * O ponto único é o store: `store.professionals` passou a ser a lista ATIVA e o
+ * acesso ao cru ficou NOMEADO (`store.professionalsIncludingInactive`), usado só
  * por `/team`. Por isso estes testes exercitam TELAS, não o filtro: é a tela
  * que o dono viu errada.
  */
 
 const fetchMock = vi.fn();
 
-const raquel: Architect = {
+const raquel: Professional = {
   id: "raquel",
   name: "Raquel Marangoni",
   role: "Pleno",
-  yearsAsArchitect: 5,
+  yearsAsProfessional: 5,
   specialization: "",
   email: "raquel@company.com",
   active: false,
@@ -83,7 +83,7 @@ const raquel: Architect = {
  */
 const comInativa: AppState = {
   ...fixtureState,
-  architects: [...fixtureState.architects, raquel],
+  professionals: [...fixtureState.professionals, raquel],
   learningPaths: fixtureState.learningPaths.map((path) => ({
     ...path,
     assignedTo: [...path.assignedTo, raquel.id],
@@ -101,9 +101,9 @@ const TeamPage = TeamRoute.options.component as () => ReactNode;
 const nomesDasOpcoes = (): string[] =>
   screen.getAllByRole("option").map((opcao) => opcao.textContent?.trim() ?? "");
 
-/** O filtro de pessoas do Comparativo é a `PersonCombobox` "Pessoas para comparar". */
+/** O filtro de pessoas do Comparativo é a `PersonCombobox` "Profissionais para comparar". */
 const gatilhoDoFiltroDePessoas = (): HTMLElement =>
-  screen.getByRole("combobox", { name: "Pessoas para comparar" });
+  screen.getByRole("combobox", { name: "Profissionais para comparar" });
 
 /**
  * Revisão de papéis (dono, 2026-09-05): cada tela tem o SEU ator. As telas de
@@ -208,7 +208,7 @@ describe("profissional desativado some da aplicação", () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Ana Martins");
 
-    await userEvent.click(screen.getByLabelText("Pessoas"));
+    await userEvent.click(screen.getByLabelText("Profissionais"));
     const menu = within(await screen.findByRole("listbox"));
 
     expect(menu.queryByText("Raquel Marangoni")).toBeNull();

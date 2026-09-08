@@ -19,11 +19,11 @@ interface PlanItemFromGapDraft {
 
 export function createPlanItemFromGap(
   service: PlanItemFromGapService,
-  architectId: string,
+  professionalId: string,
   draft: PlanItemFromGapDraft,
 ): Promise<DevelopmentPlan> {
-  return service.createPlanItemFromGap(architectId, {
-    id: `pdi-${architectId}-${draft.competencyId}-${Date.now()}`,
+  return service.createPlanItemFromGap(professionalId, {
+    id: `pdi-${professionalId}-${draft.competencyId}-${Date.now()}`,
     assessmentId: draft.assessmentId,
     competencyId: draft.competencyId,
     objective: draft.objective,
@@ -39,28 +39,28 @@ export function createPlanItemFromGap(
 }
 
 export class FurthestFromTarget {
-  private readonly architectByCompetency: ReadonlyMap<string, string>;
+  private readonly professionalByCompetency: ReadonlyMap<string, string>;
 
   constructor(
-    architects: readonly { id: string }[],
-    gapsFor: (architectId: string) => readonly Gap[],
+    professionals: readonly { id: string }[],
+    gapsFor: (professionalId: string) => readonly Gap[],
   ) {
-    const furthest = new Map<string, { architectId: string; distance: number }>();
-    for (const architect of architects) {
-      for (const gap of gapsFor(architect.id)) {
+    const furthest = new Map<string, { professionalId: string; distance: number }>();
+    for (const professional of professionals) {
+      for (const gap of gapsFor(professional.id)) {
         if (gap.gap <= 0 || !gap.competency) continue;
         const known = furthest.get(gap.competency.id);
         if (!known || gap.gap > known.distance) {
-          furthest.set(gap.competency.id, { architectId: architect.id, distance: gap.gap });
+          furthest.set(gap.competency.id, { professionalId: professional.id, distance: gap.gap });
         }
       }
     }
-    this.architectByCompetency = new Map(
-      [...furthest].map(([competencyId, who]) => [competencyId, who.architectId]),
+    this.professionalByCompetency = new Map(
+      [...furthest].map(([competencyId, who]) => [competencyId, who.professionalId]),
     );
   }
 
-  architectFor(competencyId: string): string | undefined {
-    return this.architectByCompetency.get(competencyId);
+  professionalFor(competencyId: string): string | undefined {
+    return this.professionalByCompetency.get(competencyId);
   }
 }

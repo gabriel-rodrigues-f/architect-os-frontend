@@ -195,15 +195,15 @@ describe("Avaliações — campos por papel e status", () => {
    * UX-001 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md), semântica
    * pós-Fase 2 — o vínculo virou o TIME (ADR-0035): um lead de outro time
    * nem recebe a pessoa no recorte do servidor; o caso que a UI ainda decide
-   * sozinha é o arquiteto SEM time. Revisão de papéis (2026-09-05): o alcance
+   * sozinha é o profissional SEM time. Revisão de papéis (2026-09-05): o alcance
    * é o VÍNCULO, não o papel — a pessoa sem time nem entra no seletor de
    * Avaliações do tech lead sem vínculo, então a avaliação dela não abre.
    */
-  it("tech lead sem vínculo não alcança a avaliação de arquiteto sem time — nem líder/final, nem a tabela", async () => {
+  it("tech lead sem vínculo não alcança a avaliação de profissional sem time — nem líder/final, nem a tabela", async () => {
     mockSession(fixtureUnassignedTechLeadUser, {
       ...inReviewState,
-      architects: inReviewState.architects.map((architect) => ({
-        ...architect,
+      professionals: inReviewState.professionals.map((professional) => ({
+        ...professional,
         teamId: null,
       })),
     });
@@ -276,7 +276,7 @@ describe("Avaliações — campos por papel e status", () => {
    * diferentes, então o teste prova qual dos dois realmente abriu.
    */
   it("deep-link com cycleId abre o assessment do ciclo do link, não o ciclo ativo", async () => {
-    window.history.pushState({}, "", "?architectId=ana&cycleId=2026-h1");
+    window.history.pushState({}, "", "?professionalId=ana&cycleId=2026-h1");
     mockSession(fixtureAssignedManagerUser, fixtureState);
     renderWithApp(<AssessmentsPage />);
 

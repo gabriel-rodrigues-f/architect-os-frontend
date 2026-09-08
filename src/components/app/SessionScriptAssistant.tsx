@@ -17,11 +17,11 @@ import { useI18n } from "@/lib/i18n";
  * responde 403 a qualquer outro. A tela decide isso; o componente só desenha.
  */
 export function SessionScriptAssistant({
-  architectId,
+  professionalId,
   personName,
   className,
 }: {
-  architectId: string;
+  professionalId: string;
   personName: string;
   className?: string;
 }) {
@@ -32,8 +32,8 @@ export function SessionScriptAssistant({
       description={t("ai.scripts.subtitle", { nome: personName })}
       actionLabel={t("ai.scripts.developmentPlan")}
       transcriptHeadline={t("ai.scripts.developmentPlan")}
-      queryKey={["assistants", "session-script", architectId]}
-      ask={(profile) => personAssistantsApi.writeSessionScript({ architectId, profile })}
+      queryKey={["assistants", "session-script", professionalId]}
+      ask={(profile) => personAssistantsApi.writeSessionScript({ professionalId, profile })}
       {...(className === undefined ? {} : { className })}
     />
   );

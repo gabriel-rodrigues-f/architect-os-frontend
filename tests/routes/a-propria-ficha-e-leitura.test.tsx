@@ -8,8 +8,8 @@ vi.mock("@tanstack/react-router", () =>
 
 import type { SessionUser } from "@/lib/api";
 import type { CareerFileTab } from "@/lib/career-file";
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
-import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
+import { Route as RoadmapRoute } from "@/routes/professionals.$professionalId.roadmap";
 import {
   fixtureAdminUser,
   fixtureAssignedTechLeadUser,
@@ -41,8 +41,8 @@ const RoadmapPage = RoadmapRoute.options.component as () => ReactNode;
 const ACOES_DA_LIDERANCA = [/^Revisar$/];
 const ACOES_DA_FICHA = [/^\+ PDI$/, /^Registrar$/];
 
-const techLeadQueEAna: SessionUser = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
-const adminQueEAna: SessionUser = { ...fixtureAdminUser, architectId: "ana" };
+const techLeadQueEAna: SessionUser = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
+const adminQueEAna: SessionUser = { ...fixtureAdminUser, professionalId: "ana" };
 
 function renderAs(user: SessionUser, Page: () => ReactNode, tab: CareerFileTab = "overview") {
   mockAppFetch(fetchMock, { user, state: fixtureState, routes: [careerLevelsRoute] });
@@ -81,7 +81,7 @@ describe("a própria ficha é leitura — sem ação e sem IA, para qualquer pap
   });
 
   it("na ficha de um liderado, o mesmo tech lead continua com as ações de liderança", async () => {
-    renderAs({ ...fixtureAssignedTechLeadUser, architectId: "bruno" }, ProfilePage);
+    renderAs({ ...fixtureAssignedTechLeadUser, professionalId: "bruno" }, ProfilePage);
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     for (const acao of ACOES_DA_LIDERANCA) {
       expect(screen.getByRole("button", { name: acao }), String(acao)).toBeTruthy();

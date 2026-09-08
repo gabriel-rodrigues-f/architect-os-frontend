@@ -73,12 +73,20 @@ function TeamPriorities() {
   const { t } = useI18n();
   const help = usePageHelp("gapAnalysis");
   const sel = useSelectors();
-  const { store, selected, setSelected, architects, radar, radarCoverage, priorities, scopeLabel } =
-    useGapAnalysisData();
+  const {
+    store,
+    selected,
+    setSelected,
+    professionals,
+    radar,
+    radarCoverage,
+    priorities,
+    scopeLabel,
+  } = useGapAnalysisData();
 
   const furthestFromTarget = useMemo(
-    () => new FurthestFromTarget(architects, sel.progressionGapsFor),
-    [architects, sel],
+    () => new FurthestFromTarget(professionals, sel.progressionGapsFor),
+    [professionals, sel],
   );
   // Números como afirmação (referência FIAP 2026-09-06, §2 item 2): a distância
   // média por pessoa × competência em evolução, no recorte escolhido.
@@ -95,9 +103,9 @@ function TeamPriorities() {
         help={help}
         actions={
           // Dono (2026-09-06): sem ninguém no alcance, só a mensagem do corpo.
-          store.architects.length > 0 ? (
+          store.professionals.length > 0 ? (
             <PersonCombobox
-              picker={PersonPicker.many(store.architects, selected)}
+              picker={PersonPicker.many(store.professionals, selected)}
               onChange={setSelected}
               label={t("person.label")}
               className="w-64"
@@ -106,11 +114,13 @@ function TeamPriorities() {
         }
       />
 
-      {architects.length === 0 ? (
+      {professionals.length === 0 ? (
         <EmptyState
-          title={store.architects.length === 0 ? t("person.none") : t("gap.empty")}
+          title={store.professionals.length === 0 ? t("person.none") : t("gap.empty")}
           hint={
-            store.architects.length === 0 ? t("gap.empty.noArchitects") : t("gap.empty.filterHint")
+            store.professionals.length === 0
+              ? t("gap.empty.noProfessionals")
+              : t("gap.empty.filterHint")
           }
         />
       ) : (
@@ -122,7 +132,7 @@ function TeamPriorities() {
             format="decimal"
             caption={t("gap.figure.caption", {
               competencies: priorities.length,
-              people: architects.length,
+              people: professionals.length,
             })}
           />
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -144,7 +154,7 @@ function TeamPriorities() {
             <SectionCard
               className="flex flex-col"
               title={t("gap.priorities.title")}
-              description={t("gap.priorities.subtitle", { n: architects.length })}
+              description={t("gap.priorities.subtitle", { n: professionals.length })}
             >
               <div className="max-h-[460px] space-y-4 overflow-y-auto pr-1">
                 <GapPriorityList
@@ -195,13 +205,13 @@ function GapPriorityList({
               {t("gap.priorities.avgGapLine", { avg: row.avgGap })}
             </p>
             <p className="text-xs text-muted-foreground">
-              <NameList names={row.architectNames} />
+              <NameList names={row.professionalNames} />
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <GapBadge gap={row.maxGap} />
             <TreatGapInPlanAction
-              architectId={furthestFromTarget.architectFor(row.competencyId)}
+              professionalId={furthestFromTarget.professionalFor(row.competencyId)}
               competencyId={row.competencyId}
               label={t("gap.priorities.action")}
             />

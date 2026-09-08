@@ -26,7 +26,7 @@ import { apiPath } from "@/lib/api-path";
  * de leitura de risco. Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-
  * SYNAPSE.md, EPIC 6.
  *
- * `strongDomain`/`gapDomain` saíram do cadastro de arquiteto (AUDITORIA-
+ * `strongDomain`/`gapDomain` saíram do cadastro de profissional (AUDITORIA-
  * TERCEIRA-RODADA-RECONSTRUCAO-PRODUTO-SYNAPSE.md, Seção 11), então excluir
  * uma capacidade não bloqueia mais por vínculo — só pede confirmação.
  */

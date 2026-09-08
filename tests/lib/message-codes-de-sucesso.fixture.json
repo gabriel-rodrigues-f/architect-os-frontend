@@ -203,7 +203,7 @@
       "resposta": "ok"
     },
     "learningPath.progress.update.success": {
-      "rota": "PATCH /learning-paths/:pathId/progress/:architectId/:itemId",
+      "rota": "PATCH /learning-paths/:pathId/progress/:professionalId/:itemId",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
       "resposta": "ok"
     },
@@ -228,42 +228,42 @@
       "resposta": "ok"
     },
     "people.allocate.success": {
-      "rota": "POST /architects/:id/team-allocation",
+      "rota": "POST /professionals/:id/team-allocation",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
       "resposta": "ok"
     },
     "people.careerLevelTransition.success": {
-      "rota": "POST /architects/:id/career-level-transition",
+      "rota": "POST /professionals/:id/career-level-transition",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
       "resposta": "ok"
     },
     "people.deactivate.success": {
-      "rota": "POST /architects/:id/deactivate",
+      "rota": "POST /professionals/:id/deactivate",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
       "resposta": "ok"
     },
     "people.reactivate.success": {
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
       "resposta": "ok",
-      "rota": "POST /architects/:id/reactivate"
+      "rota": "POST /professionals/:id/reactivate"
     },
     "people.release.success": {
-      "rota": "DELETE /architects/:id/team-allocation",
+      "rota": "DELETE /professionals/:id/team-allocation",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
       "resposta": "ok"
     },
     "people.update.success": {
-      "rota": "PATCH /architects/:id",
+      "rota": "PATCH /professionals/:id",
       "arquivo": "src/modules/people/infrastructure/controllers/people.controller.ts",
       "resposta": "ok"
     },
     "plan.item.add.success": {
-      "rota": "POST /plans/:architectId/items",
+      "rota": "POST /plans/:professionalId/items",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
       "resposta": "created"
     },
     "plan.item.addFromGap.success": {
-      "rota": "POST /plans/:architectId/items/from-gap",
+      "rota": "POST /plans/:professionalId/items/from-gap",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
       "resposta": "created"
     },
@@ -333,7 +333,7 @@
       "resposta": "ok"
     },
     "transfers.request.success": {
-      "rota": "POST /architects/:id/team-transfer-requests",
+      "rota": "POST /professionals/:id/team-transfer-requests",
       "arquivo": "src/modules/transfers/infrastructure/controllers/team-transfer.controller.ts",
       "resposta": "created"
     }

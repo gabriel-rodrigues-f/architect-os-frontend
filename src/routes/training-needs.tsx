@@ -77,11 +77,11 @@ function TeamTrainingNeeds() {
   const { t } = useI18n();
   const help = usePageHelp("trainingNeeds");
 
-  const population = sel.activeArchitects;
+  const population = sel.activeProfessionals;
   const needs = sel.teamTrainingNeeds(population);
   // Números como afirmação (referência FIAP 2026-09-06, §2 item 2): quantas
   // pessoas distintas aparecem em alguma competência em evolução.
-  const peopleToBuild = new Set(needs.flatMap((need) => need.architectIds)).size;
+  const peopleToBuild = new Set(needs.flatMap((need) => need.professionalIds)).size;
 
   const [showAllTop, setShowAllTop] = useState(false);
   const top = showAllTop ? needs : needs.slice(0, 15);
@@ -104,7 +104,7 @@ function TeamTrainingNeeds() {
         name: t("needs.intervention.pathName", { competencia: competency.name }),
         description: t("needs.intervention.pathDescription", { n: need.people }),
         competencyIds: [competency.id],
-        assignedTo: need.architectIds,
+        assignedTo: need.professionalIds,
         items: [],
         progress: [],
         createdBy: user.email,
@@ -121,7 +121,7 @@ function TeamTrainingNeeds() {
     store.learningPaths.some(
       (p) =>
         p.competencyIds.includes(need.competency.id) &&
-        p.assignedTo.some((id) => need.architectIds.includes(id)),
+        p.assignedTo.some((id) => need.professionalIds.includes(id)),
     );
 
   return (

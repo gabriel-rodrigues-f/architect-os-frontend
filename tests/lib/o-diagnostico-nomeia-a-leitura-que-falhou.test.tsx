@@ -84,7 +84,7 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
   it("entre vários contextos, o nomeado é o que falhou, não o primeiro pedido", async () => {
     mockAppFetch(fetchMock, { state: fixtureState, routes: [rotaQueFalha("/evidences")] });
     renderWithApp(
-      <ContextScope contexts={["architects", "plans", "evidences"]}>
+      <ContextScope contexts={["professionals", "plans", "evidences"]}>
         <p>conteúdo</p>
       </ContextScope>,
     );
@@ -93,6 +93,6 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
       linha.includes("falha ao carregar"),
     );
     expect(diagnosticos.some((linha) => linha.includes("evidences"))).toBe(true);
-    expect(diagnosticos.some((linha) => linha.includes("architects"))).toBe(false);
+    expect(diagnosticos.some((linha) => linha.includes("professionals"))).toBe(false);
   });
 });

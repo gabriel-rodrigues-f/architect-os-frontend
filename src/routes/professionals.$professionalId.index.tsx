@@ -30,7 +30,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type Evidence } from "@/lib/domain";
-import { useArchitectProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
+import { useProfessionalProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -41,37 +41,37 @@ import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { LearningPathsViewModel } from "@/lib/view-models";
 
-export const Route = createFileRoute("/architects/$architectId/")({
+export const Route = createFileRoute("/professionals/$professionalId/")({
   head: () => ({
     meta: [
-      { title: "Architect Profile — Synapse" },
+      { title: "Professional Profile — Synapse" },
       {
         name: "description",
         content:
           "Perfil completo do profissional: competências, gaps, PDI, metas, mentorias e evidências.",
       },
-      { property: "og:title", content: "Architect Profile — Synapse" },
+      { property: "og:title", content: "Professional Profile — Synapse" },
       {
         property: "og:description",
         content: "Visão 360 do desenvolvimento técnico individual do profissional.",
       },
     ],
   }),
-  component: ArchitectWorkspace,
-  notFoundComponent: ArchitectNotFound,
+  component: ProfessionalWorkspace,
+  notFoundComponent: ProfessionalNotFound,
 });
 
-function ArchitectNotFound() {
+function ProfessionalNotFound() {
   const { t } = useI18n();
   return <p className="text-sm text-muted-foreground">{t("arch.notFound")}</p>;
 }
 
-function ArchitectWorkspace() {
-  const { architectId } = Route.useParams();
+function ProfessionalWorkspace() {
+  const { professionalId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
 
-  const viewModel = useArchitectProfileViewModel();
+  const viewModel = useProfessionalProfileViewModel();
   const learningPathsViewModel = useMemo(() => new LearningPathsViewModel(store), [store]);
 
   const personal = useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
@@ -81,14 +81,14 @@ function ArchitectWorkspace() {
   const actionTypes = useVocabulary("ACTION_TYPE");
   const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const { t, locale } = useI18n();
-  const help = usePageHelp("architectProfile");
+  const help = usePageHelp("professionalProfile");
   const user = useCurrentUser();
-  const architect = sel.architectById(architectId);
+  const professional = sel.professionalById(professionalId);
 
-  const canEditOwn = defaultUiAuthorizationPolicy.canActOnCareerFileOf(user, architect);
-  const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
+  const canEditOwn = defaultUiAuthorizationPolicy.canActOnCareerFileOf(user, professional);
+  const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, professional);
 
-  if (!architect) {
+  if (!professional) {
     return (
       <div className="surface-card p-6 text-sm">
         {t("arch.notFound")}{" "}
@@ -99,42 +99,42 @@ function ArchitectWorkspace() {
     );
   }
 
-  const gaps = personal.openGaps(architect.id);
-  const capabilityAvgs = sel.capabilityAverages(architect.id);
-  const plan = sel.planFor(architect.id);
-  const sessions = store.mentoringSessions.filter((m) => m.menteeId === architect.id);
-  const evidences = store.evidences.filter((e) => e.architectId === architect.id);
-  const assessment = sel.assessmentFor(architect.id);
+  const gaps = personal.openGaps(professional.id);
+  const capabilityAvgs = sel.capabilityAverages(professional.id);
+  const plan = sel.planFor(professional.id);
+  const sessions = store.mentoringSessions.filter((m) => m.menteeId === professional.id);
+  const evidences = store.evidences.filter((e) => e.professionalId === professional.id);
+  const assessment = sel.assessmentFor(professional.id);
 
   const nextSteps = viewModel.nextSteps({
     canEditOwn,
     canReviewEvidence,
-    itemsNotStartedCount: personal.planItemCounts(architect.id).notStarted,
+    itemsNotStartedCount: personal.planItemCounts(professional.id).notStarted,
     gapsNotInPlanCount: gaps.filter(
       (g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId),
     ).length,
-    evidencesPendingCount: personal.pendingEvidenceCount(architect.id),
+    evidencesPendingCount: personal.pendingEvidenceCount(professional.id),
     assessmentAwaitingCalibration: assessment?.status === "In Review",
   });
 
   const assessmentHistory = store.assessments
-    .filter((a) => a.architectId === architect.id)
+    .filter((a) => a.professionalId === professional.id)
     .map((a) => ({ assessment: a, cycle: store.cycles.find((c) => c.id === a.cycleId) }))
     .sort((x, y) => (y.cycle?.start ?? "").localeCompare(x.cycle?.start ?? ""));
-  const paths = personal.assignedPaths(architect.id);
+  const paths = personal.assignedPaths(professional.id);
   const {
     avg,
     covered: coveredCapabilities,
     total: totalCapabilities,
-  } = sel.coverageFor(architect.id);
+  } = sel.coverageFor(professional.id);
 
   return (
     <>
       <ProfileHeading
-        title={architect.name}
-        description={`${seniority.labelOf(architect.role)} · ${t("arch.yearsOfExperience", { n: architect.yearsAsArchitect })}`}
+        title={professional.name}
+        description={`${seniority.labelOf(professional.role)} · ${t("arch.yearsOfExperience", { n: professional.yearsAsProfessional })}`}
         help={help}
-        actions={<ProfileBackLink architectId={architect.id} to="team" />}
+        actions={<ProfileBackLink professionalId={professional.id} to="team" />}
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -193,7 +193,7 @@ function ArchitectWorkspace() {
                       to={
                         step.kind === "assessmentAwaiting" ? "/assessments" : "/development-plans"
                       }
-                      search={{ architectId: architect.id }}
+                      search={{ professionalId: professional.id }}
                       className="whitespace-nowrap text-xs text-primary hover:underline"
                     >
                       {t("arch.nextSteps.cta")}
@@ -234,7 +234,7 @@ function ArchitectWorkspace() {
                       <GapBadge gap={g.gap} />
                       {canEditOwn && !inPlan && (
                         <TreatGapInPlanAction
-                          architectId={architect.id}
+                          professionalId={professional.id}
                           competencyId={g.item.competencyId}
                           label={t("arch.gaps.addToPlan")}
                         />
@@ -265,7 +265,7 @@ function ArchitectWorkspace() {
                     </span>
                     <Link
                       to="/assessments"
-                      search={{ architectId: architect.id, cycleId: assessment.cycleId }}
+                      search={{ professionalId: professional.id, cycleId: assessment.cycleId }}
                       className="whitespace-nowrap text-xs text-primary hover:underline"
                     >
                       {t("arch.history.view")}
@@ -325,7 +325,7 @@ function ArchitectWorkspace() {
           <SectionCard title={t("arch.paths.title")} description={t("arch.paths.subtitle")}>
             <ul className="space-y-2">
               {paths.map((p) => {
-                const value = learningPathsViewModel.progressPercentFor(p, architect.id);
+                const value = learningPathsViewModel.progressPercentFor(p, professional.id);
                 return (
                   <li key={p.id} className="surface-inset p-2.5">
                     <p className="text-sm font-medium">{p.name}</p>
@@ -344,7 +344,9 @@ function ArchitectWorkspace() {
             title={t("arch.evidence.title")}
             description={t("arch.evidence.subtitle")}
             actions={
-              canEditOwn ? <EvidenceDialog architectId={architect.id} plan={plan} /> : undefined
+              canEditOwn ? (
+                <EvidenceDialog professionalId={professional.id} plan={plan} />
+              ) : undefined
             }
           >
             <ul className="space-y-2">
@@ -412,7 +414,7 @@ function ArchitectWorkspace() {
 function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
   const { t } = useI18n();
   const labels = useLabels();
-  const viewModel = useArchitectProfileViewModel();
+  const viewModel = useProfessionalProfileViewModel();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Exclude<Evidence["status"], "Pending">>(
     viewModel.preselectedReviewDecisionFor(evidence),

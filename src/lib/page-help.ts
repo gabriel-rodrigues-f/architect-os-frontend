@@ -45,15 +45,15 @@ type PageHelpRouteKey =
   | "cycles"
   | "settings"
   | "users"
-  | "architectProfile"
-  | "architectEvolution"
+  | "professionalProfile"
+  | "professionalEvolution"
   | "teamRules"
   | "teams"
   | "calibration"
   | "notices"
   | "platformMetrics"
-  | "architectRoadmap"
-  | "architectStatement";
+  | "professionalRoadmap"
+  | "professionalStatement";
 
 export function usePageHelp(route: PageHelpRouteKey): {
   lead: PageHelpContent;

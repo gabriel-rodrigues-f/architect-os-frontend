@@ -38,7 +38,7 @@ const gapRow = (overrides: Partial<ConsolidatedGapRow> = {}): ConsolidatedGapRow
   name: 'Kubernetes, "prod"\nmulti-linha',
   capabilityId: "cloud",
   people: 2,
-  architectNames: ["Ana", "Bruno"],
+  professionalNames: ["Ana", "Bruno"],
   totalGap: 3,
   maxGap: 2,
   avgGap: 1.5,
@@ -53,7 +53,7 @@ const sec = { id: "security", name: "Security", short: "Sec" };
 const entradaCompleta = (): TeamReportInput => ({
   scopeLabel: "Time inteiro",
   generatedAt: new Date("2026-08-26T02:00:00Z"),
-  architects: [
+  professionals: [
     { id: "ana", name: "Ana" },
     { id: "bruno", name: 'Bruno "B", o Grande' },
   ],

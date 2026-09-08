@@ -91,7 +91,7 @@ describe("ApiClient — anuncia o resultado de cada resposta", () => {
   it("rota de IA → nada; exportação → nada; marcar aviso lido → nada", async () => {
     const { client, signals } = clienteLigadoARede();
     fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({ data: {} })));
-    await client.request("/architects/a1/one-on-one-preparation?profile=moderate");
+    await client.request("/professionals/a1/one-on-one-preparation?profile=moderate");
     await client.post("/notices/n1/read", {});
     fetchMock.mockResolvedValueOnce(
       new Response(new Blob(), {

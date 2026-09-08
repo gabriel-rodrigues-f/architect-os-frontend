@@ -20,7 +20,7 @@ const fetchMock = vi.fn();
 
 const draftAssessment: Assessment = {
   id: "asmt-ana-draft",
-  architectId: "ana",
+  professionalId: "ana",
   cycleId: "2026-h2",
   status: "Draft",
   modelVersion: 2,
@@ -58,7 +58,7 @@ const eligibilityBase: AssessmentEligibility = {
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
 const renderPage = () => {
-  window.history.pushState({}, "", "?architectId=ana&cycleId=2026-h2");
+  window.history.pushState({}, "", "?professionalId=ana&cycleId=2026-h2");
   return renderWithApp(<AssessmentsPage />);
 };
 

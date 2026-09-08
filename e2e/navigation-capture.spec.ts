@@ -77,7 +77,7 @@ const PASSWORD = CREDENTIALS[ROLE]?.password;
  * Papel × alcance declarado. As contas de `seed:access-profiles` têm
  * vínculo (o gerente rege dois times, o tech lead um), por isso os dois
  * alcançam `lead-com-vinculo`; o profissional visita a PRÓPRIA ficha
- * (`resolveArchitectId` prefere o `architectId` da sessão), que a guarda
+ * (`resolveProfessionalId` prefere o `professionalId` da sessão), que a guarda
  * `requireCareerFileReach` nega a ele.
  */
 const TODOS = ["admin", "manager", "tech_lead", "member"] as const;
@@ -121,10 +121,10 @@ const TEXTOS_PT = JSON.parse(
  * em leitura e não há texto a cobrar.
  */
 const NEGATIVA_NA_TELA: Readonly<Record<string, string>> = {
-  "/architects/$architectId": "arch.careerFile.ownOutOfReach",
-  "/architects/$architectId/evolution": "arch.careerFile.ownOutOfReach",
-  "/architects/$architectId/roadmap": "arch.careerFile.ownOutOfReach",
-  "/architects/$architectId/statement": "arch.careerFile.ownOutOfReach",
+  "/professionals/$professionalId": "arch.careerFile.ownOutOfReach",
+  "/professionals/$professionalId/evolution": "arch.careerFile.ownOutOfReach",
+  "/professionals/$professionalId/roadmap": "arch.careerFile.ownOutOfReach",
+  "/professionals/$professionalId/statement": "arch.careerFile.ownOutOfReach",
   "/calibration": "calibration.restricted",
   "/capability-map": "cap.teamAnalysisOnly",
   "/compare": "cap.teamAnalysisOnly",
@@ -149,16 +149,17 @@ const NEGATIVA_NA_TELA: Readonly<Record<string, string>> = {
  * abaixo falha se os dois conjuntos divergirem em qualquer direção
  * (rota nova sem visita, ou visita órfã de rota removida).
  */
-type VisitContext = { architectId: string | null };
+type VisitContext = { professionalId: string | null };
 const VISITAS: Record<string, (ctx: VisitContext) => string | null> = {
   "/": () => "/",
-  "/architects/$architectId": (ctx) => ctx.architectId && `/architects/${ctx.architectId}`,
-  "/architects/$architectId/evolution": (ctx) =>
-    ctx.architectId && `/architects/${ctx.architectId}/evolution`,
-  "/architects/$architectId/roadmap": (ctx) =>
-    ctx.architectId && `/architects/${ctx.architectId}/roadmap`,
-  "/architects/$architectId/statement": (ctx) =>
-    ctx.architectId && `/architects/${ctx.architectId}/statement`,
+  "/professionals/$professionalId": (ctx) =>
+    ctx.professionalId && `/professionals/${ctx.professionalId}`,
+  "/professionals/$professionalId/evolution": (ctx) =>
+    ctx.professionalId && `/professionals/${ctx.professionalId}/evolution`,
+  "/professionals/$professionalId/roadmap": (ctx) =>
+    ctx.professionalId && `/professionals/${ctx.professionalId}/roadmap`,
+  "/professionals/$professionalId/statement": (ctx) =>
+    ctx.professionalId && `/professionals/${ctx.professionalId}/statement`,
   "/assessments": () => "/assessments",
   "/calibration": () => "/calibration",
   "/capability-map": () => "/capability-map",
@@ -215,7 +216,7 @@ async function login(page: Page): Promise<void> {
   await expect(page.locator("nav").first()).toBeVisible();
 }
 
-async function resolveArchitectId(
+async function resolveProfessionalId(
   playwright: typeof import("playwright-core"),
 ): Promise<string | null> {
   const api = await playwright.request.newContext({ baseURL: API_URL });
@@ -228,13 +229,13 @@ async function resolveArchitectId(
     }
     const me = await api.get(apiPath("/auth/me"));
     if (me.ok()) {
-      const session = (await me.json()) as { data?: { architectId?: string | null } } & {
-        architectId?: string | null;
+      const session = (await me.json()) as { data?: { professionalId?: string | null } } & {
+        professionalId?: string | null;
       };
-      const own = session.data?.architectId ?? session.architectId;
+      const own = session.data?.professionalId ?? session.professionalId;
       if (own) return own;
     }
-    const response = await api.get(apiPath("/architects"));
+    const response = await api.get(apiPath("/professionals"));
     if (!response.ok()) return null;
     const body: unknown = await response.json();
     const lista = (
@@ -275,7 +276,7 @@ for (const tema of TEMAS) {
       // contexto → matches false; emulateMedia → true.
       await page.emulateMedia({ reducedMotion: "reduce" });
 
-      const architectId = await resolveArchitectId(playwright);
+      const professionalId = await resolveProfessionalId(playwright);
       const dir = join(SCREENSHOTS_DIR, ROLE, tema);
       mkdirSync(dir, { recursive: true });
 
@@ -293,10 +294,10 @@ for (const tema of TEMAS) {
       const resumo: string[] = [];
 
       for (const rota of Object.keys(VISITAS).sort()) {
-        const url = VISITAS[rota]!({ architectId });
+        const url = VISITAS[rota]!({ professionalId });
         if (!url) {
           semEstado.push(rota);
-          resumo.push(`${rota} → SEM ESTADO NO SEED (nenhum arquiteto visível para ${ROLE})`);
+          resumo.push(`${rota} → SEM ESTADO NO SEED (nenhum profissional visível para ${ROLE})`);
           continue;
         }
 

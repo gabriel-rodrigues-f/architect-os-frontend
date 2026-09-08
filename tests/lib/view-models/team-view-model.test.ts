@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { UiAuthorizationPolicy } from "@/lib/scope";
 import { TeamViewModel, type TeamRosterService } from "@/lib/view-models";
 import { fixtureAdminUser, fixtureMemberUser } from "../../helpers/fixtures";
@@ -13,16 +13,16 @@ import { fixtureAdminUser, fixtureMemberUser } from "../../helpers/fixtures";
  * conhece a forma estreita da interface.
  */
 function fakeService(): TeamRosterService & {
-  reactivateArchitect: ReturnType<typeof vi.fn>;
+  reactivateProfessional: ReturnType<typeof vi.fn>;
   transitionCareerLevel: ReturnType<typeof vi.fn>;
-  allocateArchitectToTeam: ReturnType<typeof vi.fn>;
-  releaseArchitectFromTeam: ReturnType<typeof vi.fn>;
+  allocateProfessionalToTeam: ReturnType<typeof vi.fn>;
+  releaseProfessionalFromTeam: ReturnType<typeof vi.fn>;
 } {
   return {
-    reactivateArchitect: vi.fn(),
-    transitionCareerLevel: vi.fn(async () => ({ id: "ana" }) as Architect),
-    allocateArchitectToTeam: vi.fn(async () => ({ id: "ana" }) as Architect),
-    releaseArchitectFromTeam: vi.fn(async () => ({ id: "ana" }) as Architect),
+    reactivateProfessional: vi.fn(),
+    transitionCareerLevel: vi.fn(async () => ({ id: "ana" }) as Professional),
+    allocateProfessionalToTeam: vi.fn(async () => ({ id: "ana" }) as Professional),
+    releaseProfessionalFromTeam: vi.fn(async () => ({ id: "ana" }) as Professional),
   };
 }
 
@@ -36,21 +36,21 @@ describe("TeamViewModel", () => {
   });
 
   /**
-   * ONDA 37 — `validate`/`submit`/`emptyArchitectForm` e `deactivate` saíram
+   * ONDA 37 — `validate`/`submit`/`emptyProfessionalForm` e `deactivate` saíram
    * da classe com o formulário: cadastrar, editar e desativar são de
    * Usuários agora, e a régua de lá é `PersonAdmission`
    * (`tests/lib/person-admission.test.ts`). O que sobrou aqui é o que /team
    * ainda faz: mudar time ou nível, e reativar.
    */
   describe("reactivate", () => {
-    it("chama reactivateArchitect(id, version) — o mesmo ato da desativação, de volta (profissional E conta), com a trava de versão", () => {
+    it("chama reactivateProfessional(id, version) — o mesmo ato da desativação, de volta (profissional E conta), com a trava de versão", () => {
       const service = fakeService();
       const vm = new TeamViewModel(service, new UiAuthorizationPolicy());
-      const architect = { id: "bruno", version: 3 } as Architect;
+      const professional = { id: "bruno", version: 3 } as Professional;
 
-      vm.reactivate(architect);
+      vm.reactivate(professional);
 
-      expect(service.reactivateArchitect).toHaveBeenCalledWith("bruno", 3, undefined);
+      expect(service.reactivateProfessional).toHaveBeenCalledWith("bruno", 3, undefined);
     });
   });
 

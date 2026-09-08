@@ -28,7 +28,7 @@ import {
   type MissingCompetencyView,
 } from "@/lib/view-models";
 
-export const Route = createFileRoute("/architects/$architectId/roadmap")({
+export const Route = createFileRoute("/professionals/$professionalId/roadmap")({
   head: () => ({
     meta: [
       { title: "Roteiro de Carreira — Synapse" },
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/architects/$architectId/roadmap")({
     ],
   }),
   beforeLoad: requireCareerTabsReach,
-  component: RoadmapOfArchitect,
+  component: RoadmapOfProfessional,
 });
 
 function useCareerRoadmapViewModel(): CareerRoadmapViewModel {
@@ -56,32 +56,32 @@ function useCareerRoadmapViewModel(): CareerRoadmapViewModel {
 const SUMMARY_SKELETON = <div className="h-28 animate-pulse rounded-md bg-secondary" />;
 const SECTION_SKELETON = <div className="h-24 animate-pulse rounded-md bg-secondary" />;
 
-function RoadmapOfArchitect() {
-  const { architectId } = Route.useParams();
+function RoadmapOfProfessional() {
+  const { professionalId } = Route.useParams();
   const sel = useSelectors();
   const store = useStore();
   const user = useCurrentUser();
   const { t } = useI18n();
-  const help = usePageHelp("architectRoadmap");
+  const help = usePageHelp("professionalRoadmap");
   const vm = useCareerRoadmapViewModel();
-  const architect = sel.architectById(architectId);
+  const professional = sel.professionalById(professionalId);
 
-  const canExplainReadiness = defaultUiAuthorizationPolicy.isLeadOf(user, architect);
-  const currentLevel = vm.levelOf(architect?.careerLevelId);
+  const canExplainReadiness = defaultUiAuthorizationPolicy.isLeadOf(user, professional);
+  const currentLevel = vm.levelOf(professional?.careerLevelId);
   const nextLevel = currentLevel ? vm.nextLevelFor(currentLevel.id) : null;
 
   const currentQuery = useQuery({
-    queryKey: ["architect-adherence", architectId, currentLevel?.id ?? null],
-    queryFn: () => api.architectAdherence(architectId, currentLevel?.id ?? ""),
-    enabled: architect !== undefined && currentLevel !== null,
+    queryKey: ["professional-adherence", professionalId, currentLevel?.id ?? null],
+    queryFn: () => api.professionalAdherence(professionalId, currentLevel?.id ?? ""),
+    enabled: professional !== undefined && currentLevel !== null,
   });
   const nextQuery = useQuery({
-    queryKey: ["architect-adherence", architectId, nextLevel?.id ?? null],
-    queryFn: () => api.architectAdherence(architectId, nextLevel?.id ?? ""),
-    enabled: architect !== undefined && nextLevel !== null,
+    queryKey: ["professional-adherence", professionalId, nextLevel?.id ?? null],
+    queryFn: () => api.professionalAdherence(professionalId, nextLevel?.id ?? ""),
+    enabled: professional !== undefined && nextLevel !== null,
   });
 
-  if (!architect) {
+  if (!professional) {
     return (
       <div className="surface-card p-6 text-sm">
         {t("arch.notFound")}{" "}
@@ -96,9 +96,9 @@ function RoadmapOfArchitect() {
     <>
       <ProfileHeading
         help={help}
-        title={t("roadmap.title", { nome: architect.name })}
+        title={t("roadmap.title", { nome: professional.name })}
         description={t("roadmap.description")}
-        actions={<ProfileBackLink architectId={architect.id} to="overview" />}
+        actions={<ProfileBackLink professionalId={professional.id} to="overview" />}
       />
     </>
   );
@@ -173,8 +173,8 @@ function RoadmapOfArchitect() {
           description={t("ai.readiness.subtitle")}
           actionLabel={t("ai.readiness.action")}
           transcriptHeadline={t("ai.readiness.title")}
-          queryKey={["assistants", "career-readiness-explanation", architectId]}
-          ask={() => personAssistantsApi.explainCareerReadiness(architectId)}
+          queryKey={["assistants", "career-readiness-explanation", professionalId]}
+          ask={() => personAssistantsApi.explainCareerReadiness(professionalId)}
           beforeNarration={(advice) =>
             advice.readiness === null ? null : (
               <CareerReadinessVerdictLines verdict={advice.readiness} />
@@ -215,11 +215,11 @@ function RoadmapOfArchitect() {
               ) : (
                 <LearningPathCoverageList
                   coverage={vm.coverageFor(
-                    architectId,
+                    professionalId,
                     vm.missingCompetencies(data),
                     store.learningPaths,
                   )}
-                  architectId={architectId}
+                  professionalId={professionalId}
                 />
               )
             }

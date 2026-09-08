@@ -59,7 +59,7 @@ export const Route = createFileRoute("/")({
 });
 
 const PAINEL_CONTEXTS: readonly ContextScopeRequest[] = [
-  "architects",
+  "professionals",
   "assessments",
   "capabilities",
   "competencies",
@@ -319,10 +319,10 @@ function MemberHome() {
   const { t } = useI18n();
   const help = usePageHelp("dash");
   const personal = usePersonalDashboardPresenter();
-  const architectId = user.architectId;
-  const architect = architectId ? sel.architectById(architectId) : undefined;
+  const professionalId = user.professionalId;
+  const professional = professionalId ? sel.professionalById(professionalId) : undefined;
 
-  if (!architectId || !architect) {
+  if (!professionalId || !professional) {
     return (
       <>
         <PageHeader title={t("dash.member.title")} help={help} />
@@ -333,24 +333,24 @@ function MemberHome() {
     );
   }
 
-  const assessment = sel.assessmentFor(architectId);
-  const plan = sel.planFor(architectId);
-  const itemsByStatus = personal.planItemCounts(architectId);
-  const paths = personal.assignedPaths(architectId);
-  const evidencePending = personal.pendingEvidenceCount(architectId);
+  const assessment = sel.assessmentFor(professionalId);
+  const plan = sel.planFor(professionalId);
+  const itemsByStatus = personal.planItemCounts(professionalId);
+  const paths = personal.assignedPaths(professionalId);
+  const evidencePending = personal.pendingEvidenceCount(professionalId);
   // D2 (dono, 2026-09-05): a pessoa vê os PRÓPRIOS números — radar, distâncias, aderência.
-  const ownRadar = sel.capabilityAverages(architectId).map((point) => ({
+  const ownRadar = sel.capabilityAverages(professionalId).map((point) => ({
     capability: point.capability.name,
     atual: point.avg ?? 0,
     alvo: point.target ?? 0,
   }));
-  const ownGaps = personal.openGaps(architectId).slice(0, 6);
+  const ownGaps = personal.openGaps(professionalId).slice(0, 6);
 
   return (
     <>
       <PageHeader
         title={t("dash.member.title")}
-        description={t("dash.member.subtitle", { nome: architect.name })}
+        description={t("dash.member.subtitle", { nome: professional.name })}
         help={help}
       />
 
@@ -402,8 +402,8 @@ function MemberHome() {
             </ul>
           )}
           <Link
-            to="/architects/$architectId/roadmap"
-            params={{ architectId }}
+            to="/professionals/$professionalId/roadmap"
+            params={{ professionalId }}
             className="mt-3 inline-block text-sm text-primary underline"
           >
             {t("dash.member.roadmap")}
@@ -454,7 +454,7 @@ function MemberHome() {
           )}
           <Link
             to="/development-plans"
-            search={{ architectId }}
+            search={{ professionalId }}
             className="mt-4 inline-block text-xs text-primary hover:underline"
           >
             {t("dash.member.pdi.cta")}
@@ -667,14 +667,14 @@ function LeadQueues({ queues }: { queues: LeadPendingQueues }) {
           {t("dash.lead.awaitingCalibration")}
         </SectionHeading>
         <ul className="mt-2 space-y-2">
-          {awaitingCalibration.map(({ architect }) => (
-            <li key={architect.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
+          {awaitingCalibration.map(({ professional }) => (
+            <li key={professional.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
               <Link
                 to="/assessments"
-                search={{ architectId: architect.id }}
+                search={{ professionalId: professional.id }}
                 className="text-sm hover:underline"
               >
-                {architect.name}
+                {professional.name}
               </Link>
             </li>
           ))}
@@ -690,11 +690,11 @@ function LeadQueues({ queues }: { queues: LeadPendingQueues }) {
           {pendingEvidence.map((evidence) => (
             <li key={evidence.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
               <Link
-                to="/architects/$architectId"
-                params={{ architectId: evidence.architectId }}
+                to="/professionals/$professionalId"
+                params={{ professionalId: evidence.professionalId }}
                 className="text-sm hover:underline"
               >
-                {sel.architectById(evidence.architectId)?.name} — {evidence.title}
+                {sel.professionalById(evidence.professionalId)?.name} — {evidence.title}
               </Link>
               <span className="ml-2 text-xs text-muted-foreground">
                 {labels.evidenceStatus[evidence.status]}
@@ -710,14 +710,14 @@ function LeadQueues({ queues }: { queues: LeadPendingQueues }) {
           {t("dash.lead.awaitingApproval")}
         </SectionHeading>
         <ul className="mt-2 space-y-2">
-          {awaitingApproval.map(({ architect }) => (
-            <li key={architect.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
+          {awaitingApproval.map(({ professional }) => (
+            <li key={professional.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
               <Link
                 to="/development-plans"
-                search={{ architectId: architect.id }}
+                search={{ professionalId: professional.id }}
                 className="text-sm hover:underline"
               >
-                {architect.name}
+                {professional.name}
               </Link>
             </li>
           ))}

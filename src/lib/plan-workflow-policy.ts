@@ -4,8 +4,8 @@ import type { MessageKey } from "./i18n";
 export type PlanStatus = DevelopmentPlan["status"];
 
 export interface PlanActorReach {
-  readonly actsForArchitect: boolean;
-  readonly isLeadOfArchitect: boolean;
+  readonly actsForProfessional: boolean;
+  readonly isLeadOfProfessional: boolean;
   readonly isAssignedTechLead: boolean;
 }
 
@@ -20,15 +20,15 @@ export class PlanWorkflowPolicy {
   }
 
   get canApprove(): boolean {
-    return this.status === "Draft" && this.reach.isLeadOfArchitect;
+    return this.status === "Draft" && this.reach.isLeadOfProfessional;
   }
 
   get canReturnToDraft(): boolean {
-    return this.status === "Approved" && this.reach.isLeadOfArchitect;
+    return this.status === "Approved" && this.reach.isLeadOfProfessional;
   }
 
   get canComplete(): boolean {
-    return this.status === "Approved" && this.reach.actsForArchitect;
+    return this.status === "Approved" && this.reach.actsForProfessional;
   }
 
   get canReopen(): boolean {
@@ -37,16 +37,18 @@ export class PlanWorkflowPolicy {
 
   get ownerSeesLockedMessage(): boolean {
     return (
-      this.status === "Completed" && this.reach.actsForArchitect && !this.reach.isAssignedTechLead
+      this.status === "Completed" &&
+      this.reach.actsForProfessional &&
+      !this.reach.isAssignedTechLead
     );
   }
 
   get canEditDiagnostic(): boolean {
-    return this.reach.actsForArchitect && this.status === "Draft";
+    return this.reach.actsForProfessional && this.status === "Draft";
   }
 
   get canEditExecution(): boolean {
-    return this.reach.actsForArchitect && this.status !== "Completed";
+    return this.reach.actsForProfessional && this.status !== "Completed";
   }
 
   get canRescheduleItems(): boolean {
@@ -55,7 +57,7 @@ export class PlanWorkflowPolicy {
 
   get newActionBlockedReasonKey(): MessageKey | undefined {
     if (this.canEditDiagnostic) return undefined;
-    if (!this.reach.actsForArchitect) return "pdi.newAction.blocked.notYours";
+    if (!this.reach.actsForProfessional) return "pdi.newAction.blocked.notYours";
     if (this.status === "Completed") return "pdi.newAction.blocked.completed";
     return "pdi.newAction.blocked.approved";
   }

@@ -42,14 +42,14 @@ describe("useSearchParamString", () => {
   });
 
   it("lê o escalar da URL uma vez, com fallback do chamador", () => {
-    window.history.replaceState(null, "", "/assessments?architectId=ana");
-    const { result } = renderHook(() => useSearchParamString("architectId", () => "fallback"));
+    window.history.replaceState(null, "", "/assessments?professionalId=ana");
+    const { result } = renderHook(() => useSearchParamString("professionalId", () => "fallback"));
     expect(result.current[0]).toBe("ana");
   });
 
   it("sem writeBack (default), o setter NUNCA toca na URL — comportamento de /assessments e /development-plans", () => {
     window.history.replaceState(null, "", "/development-plans");
-    const { result } = renderHook(() => useSearchParamString("architectId", () => "ana"));
+    const { result } = renderHook(() => useSearchParamString("professionalId", () => "ana"));
     act(() => {
       result.current[1]("bruno");
     });

@@ -5,7 +5,7 @@ import { SupportAccess } from "../support-access";
 import { SynapseSignals } from "../synapse-network";
 import { SynapseOutcomeAnnouncer } from "../synapse-outcome";
 import { HttpAnalyticsGateway, type AnalyticsGateway } from "./analytics.gateway";
-import { HttpArchitectsGateway, type ArchitectsGateway } from "./architects.gateway";
+import { HttpProfessionalsGateway, type ProfessionalsGateway } from "./professionals.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
 import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
 import { HttpCalibrationGateway, type CalibrationGateway } from "./calibration.gateway";
@@ -58,7 +58,7 @@ export class FrontendContainer {
   readonly platformMetricsTab: MetricsTab;
   readonly apiClient: ApiClient;
   readonly analyticsGateway: AnalyticsGateway;
-  readonly architectsGateway: ArchitectsGateway;
+  readonly professionalsGateway: ProfessionalsGateway;
   readonly assessmentGateway: AssessmentGateway;
   readonly authGateway: AuthGateway;
   readonly calibrationGateway: CalibrationGateway;
@@ -98,7 +98,7 @@ export class FrontendContainer {
       (outcome) => synapseAnnouncer.observe(outcome),
     );
     this.analyticsGateway = new HttpAnalyticsGateway(this.apiClient);
-    this.architectsGateway = new HttpArchitectsGateway(this.apiClient);
+    this.professionalsGateway = new HttpProfessionalsGateway(this.apiClient);
     this.assessmentGateway = new HttpAssessmentGateway(this.apiClient);
     this.authGateway = new HttpAuthGateway(this.apiClient);
     this.calibrationGateway = new HttpCalibrationGateway(this.apiClient);

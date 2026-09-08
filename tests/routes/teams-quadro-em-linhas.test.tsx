@@ -230,7 +230,7 @@ describe("/teams — o quadro em linhas pelo container de produção", () => {
     expect(await screen.findByText(INDISPONIVEL)).toBeTruthy();
     expect(screen.queryByRole("table", { name: "Vínculos do time" })).toBeNull();
     expect(screen.queryByText(DECLARACAO)).toBeNull();
-    const pessoas = screen.getByText("Pessoas do time").closest("section") as HTMLElement;
+    const pessoas = screen.getByText("Profissionais do time").closest("section") as HTMLElement;
     expect(within(pessoas).getByText("Ana Martins")).toBeTruthy();
   });
 

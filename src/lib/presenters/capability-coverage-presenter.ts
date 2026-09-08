@@ -1,4 +1,4 @@
-import type { Architect, Capability } from "../domain";
+import type { Professional, Capability } from "../domain";
 import type { MessageKey } from "../i18n";
 import {
   DEFAULT_SCORING_BANDS,
@@ -21,12 +21,12 @@ interface CapabilityCoverageArea {
     key: string;
     labelKey: MessageKey;
     tone: string;
-    people: { architect: Architect; level: number }[];
+    people: { professional: Professional; level: number }[];
   }[];
   assessedCount: number;
   notAssessed: number;
-  unassessed: Architect[];
-  references: { architect: Architect; level: number }[];
+  unassessed: Professional[];
+  references: { professional: Professional; level: number }[];
   risk: RiskState;
 }
 
@@ -36,7 +36,9 @@ export class CapabilityCoveragePresenter {
 
   constructor(
     private readonly capabilities: readonly Capability[],
-    private readonly capabilityAveragesFor: (architectId: string) => readonly CapabilityAverage[],
+    private readonly capabilityAveragesFor: (
+      professionalId: string,
+    ) => readonly CapabilityAverage[],
     scales: {
       PROFICIENCY: readonly ScoringBand[];
       CONCENTRATION_RISK: readonly ScoringBand[];
@@ -55,20 +57,20 @@ export class CapabilityCoveragePresenter {
     return "distributedCoverage";
   }
 
-  areas(population: readonly Architect[]): CapabilityCoverageArea[] {
+  areas(population: readonly Professional[]): CapabilityCoverageArea[] {
     return this.capabilities
       .filter((cat) => cat.active)
       .map((cat) => {
         const people = population.map((a) => ({
-          architect: a,
+          professional: a,
           level: this.capabilityAveragesFor(a.id).find((d) => d.capability.id === cat.id)?.avg,
         }));
         const assessed = people.filter(
-          (p): p is { architect: Architect; level: number } => p.level !== undefined,
+          (p): p is { professional: Professional; level: number } => p.level !== undefined,
         );
         const unassessed = people
           .filter((person) => person.level === undefined)
-          .map((person) => person.architect);
+          .map((person) => person.professional);
         const notAssessed = unassessed.length;
         const bands = this.bands.map((band) => ({
           ...band,

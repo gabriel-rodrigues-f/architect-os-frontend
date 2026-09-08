@@ -79,13 +79,13 @@ export interface Competency {
  * tech lead não têm senioridade, e o servidor devolve `role: null` e
  * `careerLevelId: null` neles: a ausência é o dado, não um erro de leitura.
  */
-export interface Architect {
+export interface Professional {
   id: string;
   name: string;
   role: RoleName | null;
 
   careerLevelId?: string | null | undefined;
-  yearsAsArchitect: number;
+  yearsAsProfessional: number;
   specialization: string;
 
   primarySpecializationCompetencyId?: string | null | undefined;
@@ -98,24 +98,24 @@ export interface Architect {
   /**
    * O cargo da conta ligada à pessoa (`users.role`): `manager`, `tech_lead`
    * ou `member`; `null` sem conta. Dono (2026-09-06): o gerente não é um
-   * profissional com capacidades — ver `ArchitectRoster.professionals`.
+   * profissional com capacidades — ver `ProfessionalRoster.professionals`.
    */
-  cargo?: ArchitectCargo | null | undefined;
+  cargo?: ProfessionalCargo | null | undefined;
 
   version: number;
 }
 
-export type ArchitectCargo = "manager" | "tech_lead" | "member";
+export type ProfessionalCargo = "manager" | "tech_lead" | "member";
 
 export interface CareerLevelTransition {
   id: string;
-  architectId: string;
+  professionalId: string;
   fromRole: RoleName;
   toRole: RoleName;
   actorUserId: string;
   reason: string;
   occurredAt: string;
-  architectVersion: number;
+  professionalVersion: number;
 }
 
 type AssessmentParticipantRole = "PROFESSIONAL" | "TECH_LEAD";
@@ -153,7 +153,7 @@ export type AssessmentTargetSemantics = "CURRENT_ROLE" | "NEXT_ROLE" | "MASTERY"
 
 export interface Assessment {
   id: string;
-  architectId: string;
+  professionalId: string;
   cycleId: string;
   status: "Draft" | "In Review" | "Completed";
   items: AssessmentItem[];
@@ -261,7 +261,7 @@ export interface SmartGoal {
 
 export interface DevelopmentPlan {
   id: string;
-  architectId: string;
+  professionalId: string;
   cycleId: string;
   status: "Draft" | "Approved" | "Completed";
   items: DevelopmentPlanItem[];
@@ -313,7 +313,7 @@ export interface LearningPathItem {
 }
 
 export interface LearningItemProgress {
-  architectId: string;
+  professionalId: string;
   itemId: string;
   status: "Not Started" | "In Progress" | "Completed";
   progress: number;
@@ -365,7 +365,7 @@ export type SelectionScope = GenericSelectionScope<string>;
 
 interface CompetencyLevelEvent {
   id: string;
-  architectId: string;
+  professionalId: string;
   competencyId: string;
   fromLevel: Level | null;
   toLevel: Level;
@@ -391,7 +391,7 @@ interface ProfessionalStateSnapshotItem {
 
 interface ProfessionalStateSnapshot {
   id: string;
-  architectId: string;
+  professionalId: string;
   effectiveDate: string;
   recordedAt: string;
   sourceType: ProficiencySourceType;
@@ -447,8 +447,8 @@ interface EvolutionSummary {
   assessmentCount: number;
 }
 
-export interface ArchitectEvolutionResult {
-  architect: { id: string; name: string; role: RoleName; careerLevelName: string | null };
+export interface ProfessionalEvolutionResult {
+  professional: { id: string; name: string; role: RoleName; careerLevelName: string | null };
   summary: EvolutionSummary;
   capabilitySeries: CapabilitySeries[];
   competencySeries: CompetencySeries[];
@@ -458,12 +458,12 @@ export interface ArchitectEvolutionResult {
 }
 
 export interface TeamEvolutionResult {
-  architectCount: number;
+  professionalCount: number;
   summary: EvolutionSummary;
   capabilitySeries: CapabilitySeries[];
-  perArchitect: Array<{
-    architectId: string;
-    architectName: string;
+  perProfessional: Array<{
+    professionalId: string;
+    professionalName: string;
     initialAverage: number | null;
     currentAverage: number | null;
     delta: number | null;
@@ -506,7 +506,7 @@ export const EVIDENCE_TYPES: EvidenceType[] = [
 
 export interface Evidence {
   id: string;
-  architectId: string;
+  professionalId: string;
   title: string;
   description: string;
   type: EvidenceType;
@@ -544,7 +544,7 @@ export type TeamTransferRequestStatus = "pending" | "approved" | "refused" | "ca
 /** A foto que os POSTs devolvem (`TeamTransferRequestSnapshot` no backend). */
 export interface TeamTransferRequest {
   id: string;
-  architectId: string;
+  professionalId: string;
   fromTeamId: string;
   toTeamId: string;
   reason: string;
@@ -559,7 +559,7 @@ export interface TeamTransferRequest {
 
 /** A listagem (`GET /team-transfer-requests`): a foto mais os nomes, para a tela não juntar tabelas. */
 export interface TeamTransferRequestView extends TeamTransferRequest {
-  architectName: string;
+  professionalName: string;
   fromTeamName: string;
   toTeamName: string;
   requestedByName: string;

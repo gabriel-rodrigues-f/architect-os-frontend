@@ -18,8 +18,8 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
  * O backend está no ar e provado:
  *   POST /api/v1/analytics/team-transitions
  *     { period: { from, to }, teamIds? }
- *   → { data: { period, teams: [ { teamId, teamName, activeArchitects,
- *       transitions, transitionsPerActiveArchitect, measuredOrigins,
+ *   → { data: { period, teams: [ { teamId, teamName, activeProfessionals,
+ *       transitions, transitionsPerActiveProfessional, measuredOrigins,
  *       averageDaysInOriginLevel, pairs: [ { fromRole, toRole, transitions,
  *       averageDaysInOriginLevel } ] } ], withoutRecordedTeam } }
  *
@@ -42,9 +42,9 @@ const periodo = { from: "2025-09-02", to: "2026-09-02" };
 const plataforma: TeamTransitionsRow = {
   teamId: "time-plataforma",
   teamName: "Time Plataforma",
-  activeArchitects: 4,
+  activeProfessionals: 4,
   transitions: 2,
-  transitionsPerActiveArchitect: 0.5,
+  transitionsPerActiveProfessional: 0.5,
   measuredOrigins: 1,
   averageDaysInOriginLevel: 120,
   pairs: [{ fromRole: "Júnior", toRole: "Pleno", transitions: 2, averageDaysInOriginLevel: 120 }],
@@ -52,9 +52,9 @@ const plataforma: TeamTransitionsRow = {
 const dados: TeamTransitionsRow = {
   teamId: "time-dados",
   teamName: "Time Dados",
-  activeArchitects: 0,
+  activeProfessionals: 0,
   transitions: 3,
-  transitionsPerActiveArchitect: null,
+  transitionsPerActiveProfessional: null,
   measuredOrigins: 0,
   averageDaysInOriginLevel: null,
   pairs: [{ fromRole: "Pleno", toRole: "Sênior", transitions: 3, averageDaysInOriginLevel: null }],
@@ -62,9 +62,9 @@ const dados: TeamTransitionsRow = {
 const legado: TeamTransitionsRow = {
   teamId: "time-legado",
   teamName: "Time Legado",
-  activeArchitects: 2,
+  activeProfessionals: 2,
   transitions: 0,
-  transitionsPerActiveArchitect: 0,
+  transitionsPerActiveProfessional: 0,
   measuredOrigins: 0,
   averageDaysInOriginLevel: null,
   pairs: [],

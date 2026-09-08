@@ -1100,7 +1100,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{id}/adherence": {
+    "/api/v1/professionals/{id}/adherence": {
         parameters: {
             query?: never;
             header?: never;
@@ -1319,7 +1319,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects": {
+    "/api/v1/professionals": {
         parameters: {
             query?: never;
             header?: never;
@@ -1352,7 +1352,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{id}": {
+    "/api/v1/professionals/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1397,7 +1397,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         name?: string;
-                        yearsAsArchitect?: number;
+                        yearsAsProfessional?: number;
                         /** @default  */
                         specialization?: string;
                         /** Format: email */
@@ -1422,7 +1422,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/api/v1/architects/{id}/career-level-transition": {
+    "/api/v1/professionals/{id}/career-level-transition": {
         parameters: {
             query?: never;
             header?: never;
@@ -1465,7 +1465,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{id}/career-level-transitions": {
+    "/api/v1/professionals/{id}/career-level-transitions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1500,7 +1500,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{id}/deactivate": {
+    "/api/v1/professionals/{id}/deactivate": {
         parameters: {
             query?: never;
             header?: never;
@@ -1542,7 +1542,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{id}/reactivate": {
+    "/api/v1/professionals/{id}/reactivate": {
         parameters: {
             query?: never;
             header?: never;
@@ -1583,7 +1583,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{id}/deactivations": {
+    "/api/v1/professionals/{id}/deactivations": {
         parameters: {
             query?: never;
             header?: never;
@@ -1618,7 +1618,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{id}/team-allocation": {
+    "/api/v1/professionals/{id}/team-allocation": {
         parameters: {
             query?: never;
             header?: never;
@@ -1679,7 +1679,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{id}/team-transfer-requests": {
+    "/api/v1/professionals/{id}/team-transfer-requests": {
         parameters: {
             query?: never;
             header?: never;
@@ -2094,7 +2094,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    architectId?: string;
+                    professionalId?: string;
                 };
                 header?: never;
                 path?: never;
@@ -2314,7 +2314,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/learning-paths/{pathId}/progress/{architectId}/{itemId}": {
+    "/api/v1/learning-paths/{pathId}/progress/{professionalId}/{itemId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2333,7 +2333,7 @@ export interface paths {
                 header?: never;
                 path: {
                     pathId: string;
-                    architectId: string;
+                    professionalId: string;
                     itemId: string;
                 };
                 cookie?: never;
@@ -2367,7 +2367,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    architectId?: string;
+                    professionalId?: string;
                 };
                 header?: never;
                 path?: never;
@@ -2392,7 +2392,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/plans/{architectId}/items": {
+    "/api/v1/plans/{professionalId}/items": {
         parameters: {
             query?: never;
             header?: never;
@@ -2406,7 +2406,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    architectId: string;
+                    professionalId: string;
                 };
                 cookie?: never;
             };
@@ -2427,7 +2427,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/plans/{architectId}/items/from-gap": {
+    "/api/v1/plans/{professionalId}/items/from-gap": {
         parameters: {
             query?: never;
             header?: never;
@@ -2441,7 +2441,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    architectId: string;
+                    professionalId: string;
                 };
                 cookie?: never;
             };
@@ -2776,7 +2776,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    architectId?: string;
+                    professionalId?: string;
                 };
                 header?: never;
                 path?: never;
@@ -2804,7 +2804,7 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        architectId: string;
+                        professionalId: string;
                         title: string;
                         /** @default  */
                         description?: string;
@@ -3238,7 +3238,7 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        architectId: string;
+                        professionalId: string;
                         cycleId: string;
                     };
                 };
@@ -3682,7 +3682,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/api/v1/evolution/architect": {
+    "/api/v1/evolution/professional": {
         parameters: {
             query?: never;
             header?: never;
@@ -3726,7 +3726,7 @@ export interface paths {
                          * @enum {string}
                          */
                         source?: "ALL" | "MENTORING" | "ASSESSMENT";
-                        architectId: string;
+                        professionalId: string;
                     };
                 };
             };
@@ -3790,7 +3790,7 @@ export interface paths {
                          * @enum {string}
                          */
                         source?: "ALL" | "MENTORING" | "ASSESSMENT";
-                        architects: {
+                        professionals: {
                             /** @enum {string} */
                             mode: "ALL_VISIBLE";
                         } | {
@@ -3966,7 +3966,7 @@ export interface paths {
                          * @enum {string}
                          */
                         source?: "ALL" | "MENTORING" | "ASSESSMENT";
-                        architectId: string;
+                        professionalId: string;
                     };
                 };
             };
@@ -4005,7 +4005,7 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        architectId: string;
+                        professionalId: string;
                         range: {
                             from: string;
                             to: string;
@@ -4059,7 +4059,7 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        architectId: string;
+                        professionalId: string;
                         range: {
                             from: string;
                             to: string;
@@ -4340,7 +4340,7 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        architectId: string;
+                        professionalId: string;
                         range: {
                             from: string;
                             to: string;
@@ -4407,7 +4407,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{architectId}/one-on-one-preparation": {
+    "/api/v1/professionals/{professionalId}/one-on-one-preparation": {
         parameters: {
             query?: never;
             header?: never;
@@ -4421,7 +4421,7 @@ export interface paths {
                 };
                 header?: never;
                 path: {
-                    architectId: string;
+                    professionalId: string;
                 };
                 cookie?: never;
             };
@@ -4444,7 +4444,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{architectId}/development-plan-recommendation": {
+    "/api/v1/professionals/{professionalId}/development-plan-recommendation": {
         parameters: {
             query?: never;
             header?: never;
@@ -4458,7 +4458,7 @@ export interface paths {
                 };
                 header?: never;
                 path: {
-                    architectId: string;
+                    professionalId: string;
                 };
                 cookie?: never;
             };
@@ -4481,7 +4481,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{architectId}/career-readiness-explanation": {
+    "/api/v1/professionals/{professionalId}/career-readiness-explanation": {
         parameters: {
             query?: never;
             header?: never;
@@ -4493,7 +4493,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    architectId: string;
+                    professionalId: string;
                 };
                 cookie?: never;
             };
@@ -4516,7 +4516,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{architectId}/session-script": {
+    "/api/v1/professionals/{professionalId}/session-script": {
         parameters: {
             query?: never;
             header?: never;
@@ -4530,7 +4530,7 @@ export interface paths {
                 };
                 header?: never;
                 path: {
-                    architectId: string;
+                    professionalId: string;
                 };
                 cookie?: never;
             };
@@ -4588,7 +4588,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{architectId}/calibration-assistance": {
+    "/api/v1/professionals/{professionalId}/calibration-assistance": {
         parameters: {
             query?: never;
             header?: never;
@@ -4600,7 +4600,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    architectId: string;
+                    professionalId: string;
                 };
                 cookie?: never;
             };
@@ -4623,7 +4623,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/architects/{architectId}/stagnation-alert": {
+    "/api/v1/professionals/{professionalId}/stagnation-alert": {
         parameters: {
             query?: never;
             header?: never;
@@ -4635,7 +4635,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    architectId: string;
+                    professionalId: string;
                 };
                 cookie?: never;
             };

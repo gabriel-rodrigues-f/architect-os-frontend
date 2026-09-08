@@ -36,9 +36,9 @@ import { apiPath } from "@/lib/api-path";
 
 const fetchMock = vi.fn();
 
-/** O recorte de pessoas é a `PersonCombobox` "Pessoas" (2026-09-06). */
-const getArchitectFilterTrigger = (): HTMLElement =>
-  screen.getByRole("combobox", { name: "Pessoas" });
+/** O recorte de pessoas é a `PersonCombobox` "Profissionais" (2026-09-06). */
+const getProfessionalFilterTrigger = (): HTMLElement =>
+  screen.getByRole("combobox", { name: "Profissionais" });
 
 /**
  * Competência nova, com gap RESTRITIVO para Ana em 2026-h2 — sem isto, a
@@ -140,13 +140,13 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
   it("mostra todos os nomes quando mais de uma pessoa tem a mesma lacuna", async () => {
     const carlaState: AppState = {
       ...state,
-      architects: [
-        ...state.architects,
+      professionals: [
+        ...state.professionals,
         {
           id: "carla",
           name: "Carla Souza",
           role: "Pleno",
-          yearsAsArchitect: 5,
+          yearsAsProfessional: 5,
           specialization: "Dados",
           email: "carla@company.com",
           active: true,
@@ -157,7 +157,7 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
         ...state.assessments,
         {
           id: "carla-h2",
-          architectId: "carla",
+          professionalId: "carla",
           cycleId: "2026-h2",
           status: "Completed",
           modelVersion: 1,
@@ -208,7 +208,7 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
 
   /**
    * B-12 (AUDITORIA-FINAL-ENTERPRISE-SYNAPSE-2026-08-22.md, P1) — trocar o
-   * recorte de arquitetos escreve na URL (não só em memória), para que F5 e
+   * recorte de profissionais escreve na URL (não só em memória), para que F5 e
    * links copiados preservem o filtro em vez de sempre voltar ao time
    * inteiro.
    */
@@ -217,7 +217,7 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
     await screen.findByText("Radar de Capacidades");
 
     // Time inteiro nasce selecionado — desmarcar Bruno deixa só Ana.
-    await userEvent.click(getArchitectFilterTrigger());
+    await userEvent.click(getProfessionalFilterTrigger());
     await userEvent.click(screen.getByRole("option", { name: "Bruno Almeida" }));
 
     expect(window.location.search).toBe("?selected=ana");
@@ -228,26 +228,26 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
     renderGap();
     await screen.findByText("Radar de Capacidades");
 
-    const scopeChip = getArchitectFilterTrigger();
+    const scopeChip = getProfessionalFilterTrigger();
     expect(scopeChip.textContent).toContain("Bruno Almeida");
     expect(scopeChip.textContent).not.toContain("Todo o time");
   });
 
   /**
    * R2-ESC-05 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `scopeLabel` alimenta
-   * `t()`/PDF como string simples; acima de 3 pessoas selecionadas (e sem
+   * `t()`/PDF como string simples; acima de 3 profissionais selecionados (e sem
    * ser o time inteiro) vira contagem, não a lista de primeiros nomes
    * crescendo sem teto.
    */
-  it("scopeLabel vira contagem acima de 3 pessoas selecionadas, sem ser o time inteiro", async () => {
-    const seisArquitetos: AppState = {
+  it("scopeLabel vira contagem acima de 3 profissionais selecionados, sem ser o time inteiro", async () => {
+    const seisProfissionais: AppState = {
       ...state,
-      architects: [
-        ...state.architects,
-        { ...state.architects[0]!, id: "c1", name: "C1", email: "c1@x.com" },
-        { ...state.architects[0]!, id: "c2", name: "C2", email: "c2@x.com" },
-        { ...state.architects[0]!, id: "c3", name: "C3", email: "c3@x.com" },
-        { ...state.architects[0]!, id: "c4", name: "C4", email: "c4@x.com" },
+      professionals: [
+        ...state.professionals,
+        { ...state.professionals[0]!, id: "c1", name: "C1", email: "c1@x.com" },
+        { ...state.professionals[0]!, id: "c2", name: "C2", email: "c2@x.com" },
+        { ...state.professionals[0]!, id: "c3", name: "C3", email: "c3@x.com" },
+        { ...state.professionals[0]!, id: "c4", name: "C4", email: "c4@x.com" },
       ],
     };
     fetchMock.mockImplementation((input: string | URL | Request) => {
@@ -260,17 +260,17 @@ describe("Prioridades de Desenvolvimento — lista única + maestria", () => {
           }),
         );
       }
-      const fatia = contextsOf(seisArquitetos)(String(url));
+      const fatia = contextsOf(seisProfissionais)(String(url));
       if (fatia) return Promise.resolve(fatia);
       const configuration = configurationRoute(String(url));
       if (configuration) return Promise.resolve(configuration);
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
 
-    // 5 de 6 arquitetos — mais de 3, mas não o time inteiro.
+    // 5 de 6 profissionais — mais de 3, mas não o time inteiro.
     window.history.replaceState(null, "", "/gap-analysis?selected=ana,bruno,c1,c2,c3");
     renderGap();
 
-    expect(await screen.findByText(/5 pessoas selecionadas/)).toBeTruthy();
+    expect(await screen.findByText(/5 profissionais selecionados/)).toBeTruthy();
   });
 });

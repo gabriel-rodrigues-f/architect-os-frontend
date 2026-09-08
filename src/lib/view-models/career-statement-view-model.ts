@@ -1,5 +1,5 @@
 import type {
-  ArchitectEvolutionResult,
+  ProfessionalEvolutionResult,
   CareerLevelTransition,
   DevelopmentPlanEvent,
   Evidence,
@@ -26,10 +26,10 @@ export interface StatementYearGroup {
   entries: StatementEntry[];
 }
 
-export type StatementCompetencyEvent = ArchitectEvolutionResult["events"][number];
+export type StatementCompetencyEvent = ProfessionalEvolutionResult["events"][number];
 
 export interface StatementSources {
-  architectId: string;
+  professionalId: string;
   transitions: readonly CareerLevelTransition[];
   teamTransitions: readonly TeamTransitionRecord[];
   competencyEvents: readonly StatementCompetencyEvent[];
@@ -72,7 +72,7 @@ export class CareerStatementViewModel {
   ) {}
 
   entries(sources: StatementSources): StatementEntry[] {
-    const profileLink = `/architects/${sources.architectId}`;
+    const profileLink = `/professionals/${sources.professionalId}`;
     const all: StatementEntry[] = [
       ...sources.transitions.map((transition) => ({
         id: `transition-${transition.id}`,
@@ -89,7 +89,7 @@ export class CareerStatementViewModel {
         this.teamTransitionEntry(transition, profileLink),
       ),
       ...sources.competencyEvents.map((event) =>
-        this.competencyStepEntry(event, sources.architectId),
+        this.competencyStepEntry(event, sources.professionalId),
       ),
       ...sources.evidences.map((evidence) => ({
         id: `evidence-${evidence.id}`,
@@ -105,7 +105,7 @@ export class CareerStatementViewModel {
         date: event.occurredAt,
         title: this.translate(PLAN_EVENT_TITLE_KEY[event.eventType]),
         detail: event.reason,
-        link: `/development-plans?architectId=${sources.architectId}`,
+        link: `/development-plans?professionalId=${sources.professionalId}`,
       })),
       ...sources.mentoringSessions.map((session) => ({
         id: `mentoring-${session.id}`,
@@ -136,7 +136,7 @@ export class CareerStatementViewModel {
     };
   }
 
-  competencyStepEntry(event: StatementCompetencyEvent, architectId: string): StatementEntry {
+  competencyStepEntry(event: StatementCompetencyEvent, professionalId: string): StatementEntry {
     const competency = this.competencyName(event.competencyId) ?? event.competencyId;
     return {
       id: `step-${event.id}`,
@@ -154,7 +154,7 @@ export class CareerStatementViewModel {
               to: event.toLevel,
             }),
       detail: event.note,
-      link: `/architects/${architectId}/evolution`,
+      link: `/professionals/${professionalId}/evolution`,
     };
   }
 

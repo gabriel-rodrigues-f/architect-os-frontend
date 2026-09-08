@@ -307,45 +307,45 @@ export function NameList({
  * para o Time (na Visão geral) ou para a Visão geral (nas abas).
  */
 export function ProfileBackLink({
-  architectId,
+  professionalId,
   to,
 }: {
-  architectId: string;
+  professionalId: string;
   to: "team" | "overview";
 }) {
   const { t } = useI18n();
   const user = useCurrentUser();
-  if (defaultUiAuthorizationPolicy.readsOwn(user, architectId)) return null;
+  if (defaultUiAuthorizationPolicy.readsOwn(user, professionalId)) return null;
   const className = "rounded-md border border-input px-3 py-2 text-sm hover:bg-accent";
   return to === "team" ? (
     <Link to="/team" className={className}>
       {t("arch.back")}
     </Link>
   ) : (
-    <Link to="/architects/$architectId" params={{ architectId }} className={className}>
+    <Link to="/professionals/$professionalId" params={{ professionalId }} className={className}>
       {t("arch.back")}
     </Link>
   );
 }
 
 export function ProfileTabs({
-  architectId,
+  professionalId,
   active,
 }: {
-  architectId: string;
+  professionalId: string;
   active: "overview" | "evolution" | "statement" | "roadmap";
 }) {
   const { t } = useI18n();
   const user = useCurrentUser();
-  const architect = useSelectors().architectById(architectId);
+  const professional = useSelectors().professionalById(professionalId);
   // Revisão de papéis (2026-09-05): Evolução e Roteiro são da própria pessoa e
   // de quem a lidera; o Extrato carrega a ficha funcional — própria pessoa,
   // gerente designado e admin em suporte. O tech lead não vê o Extrato.
   // Dono (2026-09-07): na PRÓPRIA ficha a navegação é só pelo grupo "Minha
   // Carreira" da coluna — as abas horizontais eram redundantes e fora do padrão.
-  if (user.architectId === architectId) return null;
-  const careerTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, architect);
-  const statementTab = defaultUiAuthorizationPolicy.canOpenStatementOf(user, architect);
+  if (user.professionalId === professionalId) return null;
+  const careerTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, professional);
+  const statementTab = defaultUiAuthorizationPolicy.canOpenStatementOf(user, professional);
   const tabClass = (isActive: boolean) =>
     cn(
       "border-b-2 px-1 pb-2 text-sm font-medium transition-base",
@@ -356,8 +356,8 @@ export function ProfileTabs({
   return (
     <nav className="scroll-visible -mx-5 mb-6 flex gap-6 overflow-x-auto border-b border-border px-5 lg:-mx-8 lg:px-8">
       <Link
-        to="/architects/$architectId"
-        params={{ architectId }}
+        to="/professionals/$professionalId"
+        params={{ professionalId }}
         aria-current={active === "overview" ? "page" : undefined}
         className={tabClass(active === "overview")}
       >
@@ -366,8 +366,8 @@ export function ProfileTabs({
       {careerTabs && (
         <>
           <Link
-            to="/architects/$architectId/evolution"
-            params={{ architectId }}
+            to="/professionals/$professionalId/evolution"
+            params={{ professionalId }}
             aria-current={active === "evolution" ? "page" : undefined}
             className={tabClass(active === "evolution")}
           >
@@ -375,8 +375,8 @@ export function ProfileTabs({
           </Link>
           {statementTab && (
             <Link
-              to="/architects/$architectId/statement"
-              params={{ architectId }}
+              to="/professionals/$professionalId/statement"
+              params={{ professionalId }}
               aria-current={active === "statement" ? "page" : undefined}
               className={tabClass(active === "statement")}
             >
@@ -384,8 +384,8 @@ export function ProfileTabs({
             </Link>
           )}
           <Link
-            to="/architects/$architectId/roadmap"
-            params={{ architectId }}
+            to="/professionals/$professionalId/roadmap"
+            params={{ professionalId }}
             aria-current={active === "roadmap" ? "page" : undefined}
             className={tabClass(active === "roadmap")}
           >

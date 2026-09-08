@@ -29,8 +29,8 @@ const state: AppState = {
       assignedTo: ["ana", "bruno"],
       items: [{ id: "item-1", title: "Curso X", type: "Curso", hours: 4 }],
       progress: [
-        { architectId: "ana", itemId: "item-1", status: "In Progress", progress: 40 },
-        { architectId: "bruno", itemId: "item-1", status: "Not Started", progress: 0 },
+        { professionalId: "ana", itemId: "item-1", status: "In Progress", progress: 40 },
+        { professionalId: "bruno", itemId: "item-1", status: "Not Started", progress: 0 },
       ],
       createdBy: null,
     },
@@ -57,7 +57,7 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
   });
 
   it("member vê a própria linha editável e a de outra pessoa só leitura", async () => {
-    mockSession(fixtureMemberUser); // Ana Martins, architectId "ana"
+    mockSession(fixtureMemberUser); // Ana Martins, professionalId "ana"
     renderWithApp(<LearningPage />);
 
     // REVISAO-360-FRONTEND, Seção 34 — a trilha nasce recolhida; os itens só aparecem depois de expandir.

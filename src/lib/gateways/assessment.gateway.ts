@@ -18,7 +18,7 @@ export interface AssessmentItemPatch {
 export type CommentInput = Pick<AssessmentComment, "text">;
 
 export interface AssessmentGateway {
-  openAssessment(architectId: string, cycleId: string): Promise<Assessment>;
+  openAssessment(professionalId: string, cycleId: string): Promise<Assessment>;
   setAssessmentStatus(
     id: string,
     status: Assessment["status"],
@@ -72,8 +72,8 @@ export interface AssessmentGateway {
 export class HttpAssessmentGateway implements AssessmentGateway {
   constructor(private readonly client: ApiClient) {}
 
-  openAssessment = (architectId: string, cycleId: string): Promise<Assessment> =>
-    this.client.post<Assessment>("/assessments", { architectId, cycleId });
+  openAssessment = (professionalId: string, cycleId: string): Promise<Assessment> =>
+    this.client.post<Assessment>("/assessments", { professionalId, cycleId });
 
   setAssessmentStatus = (
     id: string,

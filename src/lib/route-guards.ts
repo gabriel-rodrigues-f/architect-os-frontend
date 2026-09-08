@@ -13,7 +13,7 @@ type RouteGuard = (args: { context: RouteGuardContext }) => Promise<void>;
 
 type CareerFileRouteGuard = (args: {
   context: RouteGuardContext;
-  params: { architectId: string };
+  params: { professionalId: string };
 }) => Promise<void>;
 
 class NavigationBarrier {
@@ -44,7 +44,9 @@ class NavigationBarrier {
     this.requireReach(context, (user) => this.policy.readsPlatformMetrics(user));
 
   requireCareerTabsReach: CareerFileRouteGuard = ({ context, params }) =>
-    this.requireReach(context, (user) => this.policy.canOpenCareerTabsOf(user, params.architectId));
+    this.requireReach(context, (user) =>
+      this.policy.canOpenCareerTabsOf(user, params.professionalId),
+    );
 
   private async requireReach(
     context: RouteGuardContext,

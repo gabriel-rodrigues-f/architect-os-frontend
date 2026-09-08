@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PersonCombobox } from "@/components/app/PersonCombobox";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { I18nProvider } from "@/lib/i18n";
 import { PersonPicker } from "@/lib/person-selection";
 
@@ -19,18 +19,18 @@ import { PersonPicker } from "@/lib/person-selection";
  * reescrever nada. A guarda de regra (`pick` recusa acima do teto) é coberta
  * em `tests/lib/person-selection.test.ts`; aqui fica a apresentação.
  */
-const pessoa = (id: string, name: string): Architect => ({
+const pessoa = (id: string, name: string): Professional => ({
   id,
   name,
   role: "Pleno",
-  yearsAsArchitect: 3,
+  yearsAsProfessional: 3,
   specialization: "",
   email: `${id}@a.com`,
   active: true,
   version: 1,
 });
 
-const architects: Architect[] = [
+const professionals: Professional[] = [
   pessoa("ana", "Ana Martins"),
   pessoa("bruno", "Bruno Almeida"),
   pessoa("carla", "Carla Souza"),
@@ -40,18 +40,18 @@ function montar(selected: string[], max?: number) {
   const onChange = vi.fn();
   const picker =
     max === undefined
-      ? PersonPicker.many(architects, selected)
-      : PersonPicker.upTo(max, architects, selected);
+      ? PersonPicker.many(professionals, selected)
+      : PersonPicker.upTo(max, professionals, selected);
   render(
     <I18nProvider>
-      <PersonCombobox picker={picker} onChange={onChange} label="Pessoas para comparar" />
+      <PersonCombobox picker={picker} onChange={onChange} label="Profissionais para comparar" />
     </I18nProvider>,
   );
   return onChange;
 }
 
 const abrir = () =>
-  userEvent.click(screen.getByRole("combobox", { name: "Pessoas para comparar" }));
+  userEvent.click(screen.getByRole("combobox", { name: "Profissionais para comparar" }));
 
 describe("o teto do Comparativo", () => {
   afterEach(() => cleanup());

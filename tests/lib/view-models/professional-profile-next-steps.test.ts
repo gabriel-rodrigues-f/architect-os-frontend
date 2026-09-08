@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ArchitectProfileViewModel, type ArchitectProfileService } from "@/lib/view-models";
+import { ProfessionalProfileViewModel, type ProfessionalProfileService } from "@/lib/view-models";
 
 /**
  * FASE 2 (quinta rodada) — "perfil deveria ser o centro da jornada...
@@ -12,14 +12,14 @@ import { ArchitectProfileViewModel, type ArchitectProfileService } from "@/lib/v
  * importava a rota para alcançá-lo. A regra passou para a view-model do
  * perfil; as asserções abaixo são as mesmas, linha por linha.
  */
-const fakeService = (): ArchitectProfileService => ({
+const fakeService = (): ProfessionalProfileService => ({
   addEvidence: vi.fn(),
   resubmitEvidence: vi.fn(),
   reviewEvidence: vi.fn(),
 });
 
-const computeNextSteps: ArchitectProfileViewModel["nextSteps"] = (input) =>
-  new ArchitectProfileViewModel(fakeService()).nextSteps(input);
+const computeNextSteps: ProfessionalProfileViewModel["nextSteps"] = (input) =>
+  new ProfessionalProfileViewModel(fakeService()).nextSteps(input);
 
 describe("Workspace da pessoa — próximos passos", () => {
   const base = {

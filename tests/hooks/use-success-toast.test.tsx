@@ -41,7 +41,7 @@ describe("useSuccessToast — toast pelo message code do servidor (RF-05)", () =
       ),
     );
     const client = new ApiClient("http://api.local");
-    const result = await client.post<{ id: string }>("/architects/c1/career-level", {});
+    const result = await client.post<{ id: string }>("/professionals/c1/career-level", {});
 
     const { result: hook } = renderHook(() => useSuccessToast(), { wrapper });
     act(() => hook.current("team.reactivate.toast", { nome: "Ana" }, result));

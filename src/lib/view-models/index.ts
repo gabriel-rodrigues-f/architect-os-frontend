@@ -1,4 +1,4 @@
-export * from "./architect-profile-view-model";
+export * from "./professional-profile-view-model";
 export * from "./assessment-view-model";
 export * from "./calibration-view-model";
 export * from "./career-roadmap-view-model";

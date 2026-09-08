@@ -21,7 +21,7 @@ import pt from "@/locales/pt.json";
  * na tela, e é o que impede a próxima nascer sem o limite escrito.
  */
 const TELAS_COM_IA = [
-  "architectRoadmap",
+  "professionalRoadmap",
   "mentoring",
   "developmentPlans",
   "calibration",

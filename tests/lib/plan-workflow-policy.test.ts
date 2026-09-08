@@ -10,8 +10,8 @@ import { PlanWorkflowPolicy, type PlanActorReach } from "@/lib/plan-workflow-pol
  * algum deles mudar, o comportamento da tela mudou.
  */
 const reach = (parcial: Partial<PlanActorReach> = {}): PlanActorReach => ({
-  actsForArchitect: false,
-  isLeadOfArchitect: false,
+  actsForProfessional: false,
+  isLeadOfProfessional: false,
   isAssignedTechLead: false,
   ...parcial,
 });
@@ -25,13 +25,13 @@ describe("PlanWorkflowPolicy", () => {
   describe("aprovar", () => {
     it("o líder aprova o plano em Draft, e só nele", () => {
       for (const status of STATUSES) {
-        const policy = new PlanWorkflowPolicy(status, reach({ isLeadOfArchitect: true }));
+        const policy = new PlanWorkflowPolicy(status, reach({ isLeadOfProfessional: true }));
         expect(policy.canApprove).toBe(status === "Draft");
       }
     });
 
     it("quem não é líder não aprova nem em Draft", () => {
-      const policy = new PlanWorkflowPolicy("Draft", reach({ actsForArchitect: true }));
+      const policy = new PlanWorkflowPolicy("Draft", reach({ actsForProfessional: true }));
       expect(policy.canApprove).toBe(false);
     });
   });
@@ -39,27 +39,27 @@ describe("PlanWorkflowPolicy", () => {
   describe("devolver para rascunho", () => {
     it("o líder devolve o plano Approved, e só ele", () => {
       for (const status of STATUSES) {
-        const policy = new PlanWorkflowPolicy(status, reach({ isLeadOfArchitect: true }));
+        const policy = new PlanWorkflowPolicy(status, reach({ isLeadOfProfessional: true }));
         expect(policy.canReturnToDraft).toBe(status === "Approved");
       }
     });
 
-    it("quem só age pelo arquiteto não devolve o plano aprovado", () => {
-      const policy = new PlanWorkflowPolicy("Approved", reach({ actsForArchitect: true }));
+    it("quem só age pelo profissional não devolve o plano aprovado", () => {
+      const policy = new PlanWorkflowPolicy("Approved", reach({ actsForProfessional: true }));
       expect(policy.canReturnToDraft).toBe(false);
     });
   });
 
   describe("concluir", () => {
-    it("quem age pelo arquiteto conclui o plano Approved, e só ele", () => {
+    it("quem age pelo profissional conclui o plano Approved, e só ele", () => {
       for (const status of STATUSES) {
-        const policy = new PlanWorkflowPolicy(status, reach({ actsForArchitect: true }));
+        const policy = new PlanWorkflowPolicy(status, reach({ actsForProfessional: true }));
         expect(policy.canComplete).toBe(status === "Approved");
       }
     });
 
-    it("líder que não age pelo arquiteto não conclui", () => {
-      const policy = new PlanWorkflowPolicy("Approved", reach({ isLeadOfArchitect: true }));
+    it("líder que não age pelo profissional não conclui", () => {
+      const policy = new PlanWorkflowPolicy("Approved", reach({ isLeadOfProfessional: true }));
       expect(policy.canComplete).toBe(false);
     });
   });
@@ -73,33 +73,33 @@ describe("PlanWorkflowPolicy", () => {
     });
 
     it("o dono do plano concluído não o reabre — vê a mensagem de travado", () => {
-      const policy = new PlanWorkflowPolicy("Completed", reach({ actsForArchitect: true }));
+      const policy = new PlanWorkflowPolicy("Completed", reach({ actsForProfessional: true }));
       expect(policy.canReopen).toBe(false);
       expect(policy.ownerSeesLockedMessage).toBe(true);
     });
 
-    it("o tech lead atribuído que também age pelo arquiteto não vê a mensagem de travado", () => {
+    it("o tech lead atribuído que também age pelo profissional não vê a mensagem de travado", () => {
       const policy = new PlanWorkflowPolicy(
         "Completed",
-        reach({ actsForArchitect: true, isAssignedTechLead: true }),
+        reach({ actsForProfessional: true, isAssignedTechLead: true }),
       );
       expect(policy.ownerSeesLockedMessage).toBe(false);
     });
 
     it("plano não concluído não mostra mensagem de travado a ninguém", () => {
-      const policy = new PlanWorkflowPolicy("Approved", reach({ actsForArchitect: true }));
+      const policy = new PlanWorkflowPolicy("Approved", reach({ actsForProfessional: true }));
       expect(policy.ownerSeesLockedMessage).toBe(false);
     });
   });
 
   describe("edição do diagnóstico e da execução", () => {
-    it("o diagnóstico só se edita em Draft, e só por quem age pelo arquiteto", () => {
+    it("o diagnóstico só se edita em Draft, e só por quem age pelo profissional", () => {
       for (const status of STATUSES) {
         expect(
-          new PlanWorkflowPolicy(status, reach({ actsForArchitect: true })).canEditDiagnostic,
+          new PlanWorkflowPolicy(status, reach({ actsForProfessional: true })).canEditDiagnostic,
         ).toBe(status === "Draft");
         expect(
-          new PlanWorkflowPolicy(status, reach({ isLeadOfArchitect: true })).canEditDiagnostic,
+          new PlanWorkflowPolicy(status, reach({ isLeadOfProfessional: true })).canEditDiagnostic,
         ).toBe(false);
       }
     });
@@ -107,7 +107,7 @@ describe("PlanWorkflowPolicy", () => {
     it("a execução se edita até o plano ser concluído", () => {
       for (const status of STATUSES) {
         expect(
-          new PlanWorkflowPolicy(status, reach({ actsForArchitect: true })).canEditExecution,
+          new PlanWorkflowPolicy(status, reach({ actsForProfessional: true })).canEditExecution,
         ).toBe(status !== "Completed");
       }
     });
@@ -115,17 +115,18 @@ describe("PlanWorkflowPolicy", () => {
     it("remarcar item exige plano Approved e edição de execução liberada", () => {
       for (const status of STATUSES) {
         expect(
-          new PlanWorkflowPolicy(status, reach({ actsForArchitect: true })).canRescheduleItems,
+          new PlanWorkflowPolicy(status, reach({ actsForProfessional: true })).canRescheduleItems,
         ).toBe(status === "Approved");
       }
       expect(
-        new PlanWorkflowPolicy("Approved", reach({ isLeadOfArchitect: true })).canRescheduleItems,
+        new PlanWorkflowPolicy("Approved", reach({ isLeadOfProfessional: true }))
+          .canRescheduleItems,
       ).toBe(false);
     });
   });
 
   describe("o que impede a conclusão", () => {
-    const policy = new PlanWorkflowPolicy("Approved", reach({ actsForArchitect: true }));
+    const policy = new PlanWorkflowPolicy("Approved", reach({ actsForProfessional: true }));
 
     it("plano sem item nenhum: não há o que concluir", () => {
       expect(policy.completionBlockedReasonKey([])).toBe("pdi.plan.incomplete.noItems");

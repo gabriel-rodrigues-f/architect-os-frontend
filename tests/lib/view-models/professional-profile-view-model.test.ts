@@ -2,18 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Evidence } from "@/lib/domain";
 import {
-  ArchitectProfileViewModel,
-  type ArchitectProfileService,
+  ProfessionalProfileViewModel,
+  type ProfessionalProfileService,
   type EvidenceDraft,
 } from "@/lib/view-models";
 
 /**
  * OO3-10c (Fase OO-3) — mesmo padrão dos demais testes de ViewModel:
- * `ArchitectProfileService` falso com `vi.fn()` (sem montar `useStore()`/
+ * `ProfessionalProfileService` falso com `vi.fn()` (sem montar `useStore()`/
  * React), cobrindo a montagem de payload e as validações que saíram dos
- * três diálogos de Evidência de `architects.$architectId.index.tsx`.
+ * três diálogos de Evidência de `professionals.$professionalId.index.tsx`.
  */
-function fakeService(): ArchitectProfileService & {
+function fakeService(): ProfessionalProfileService & {
   addEvidence: ReturnType<typeof vi.fn>;
   resubmitEvidence: ReturnType<typeof vi.fn>;
   reviewEvidence: ReturnType<typeof vi.fn>;
@@ -38,15 +38,15 @@ const draft = (overrides: Partial<EvidenceDraft> = {}): EvidenceDraft => ({
   ...overrides,
 });
 
-describe("ArchitectProfileViewModel", () => {
+describe("ProfessionalProfileViewModel", () => {
   describe("registerEvidence", () => {
     it("id vazio (servidor gera, IDOR-001), competencyIds vazio, status Pending, textos sem espaços nas pontas", async () => {
       const service = fakeService();
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await vm.registerEvidence("ana", draft());
       expect(service.addEvidence).toHaveBeenCalledWith({
         id: "",
-        architectId: "ana",
+        professionalId: "ana",
         title: "Workshop de eventos",
         description: "Condução do workshop",
         type: "Project",
@@ -59,7 +59,7 @@ describe("ArchitectProfileViewModel", () => {
 
     it("project/url/pdiItemId vazios nem entram no corpo; preenchidos entram sem espaços nas pontas", async () => {
       const service = fakeService();
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await vm.registerEvidence(
         "ana",
         draft({ project: "  Loja X  ", url: "  https://exemplo.dev  ", pdiItemId: "item-1" }),
@@ -79,7 +79,7 @@ describe("ArchitectProfileViewModel", () => {
 
     it("issuer só entra para Certification — em outro tipo a chave nem vai, mesmo preenchida", async () => {
       const service = fakeService();
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await vm.registerEvidence("ana", draft({ issuer: "  CNCF  " }));
       const [projectPayload] = service.addEvidence.mock.calls[0] as [Record<string, unknown>];
       expect(projectPayload).not.toHaveProperty("issuer");
@@ -93,7 +93,7 @@ describe("ArchitectProfileViewModel", () => {
     it("propaga o erro do serviço — o diálogo decide toast/mensagem", async () => {
       const service = fakeService();
       service.addEvidence.mockRejectedValueOnce(new Error("403 fora do escopo"));
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await expect(vm.registerEvidence("ana", draft())).rejects.toThrow("403 fora do escopo");
     });
   });
@@ -107,7 +107,7 @@ describe("ArchitectProfileViewModel", () => {
 
     it("só os campos que mudaram entram no patch (ENT-EVD-002)", async () => {
       const service = fakeService();
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await vm.resubmit(evidence, {
         description: "  Descrição corrigida  ",
         url: "https://antigo.dev",
@@ -119,7 +119,7 @@ describe("ArchitectProfileViewModel", () => {
 
     it("nada mudou (só espaços) — patch vazio, sem chave nenhuma", async () => {
       const service = fakeService();
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await vm.resubmit(evidence, {
         description: "  Descrição original  ",
         url: "  https://antigo.dev  ",
@@ -129,7 +129,7 @@ describe("ArchitectProfileViewModel", () => {
 
     it("evidência sem url: comparar contra '' — preencher a url entra no patch", async () => {
       const service = fakeService();
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await vm.resubmit(
         { ...evidence, url: undefined },
         { description: "Descrição original", url: "https://novo.dev" },
@@ -141,7 +141,7 @@ describe("ArchitectProfileViewModel", () => {
   describe("review", () => {
     it("comentário preenchido vai sem espaços nas pontas", async () => {
       const service = fakeService();
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await vm.review("ev-1", "Accepted", "  Ótima evidência  ");
       expect(service.reviewEvidence).toHaveBeenCalledWith("ev-1", {
         status: "Accepted",
@@ -151,7 +151,7 @@ describe("ArchitectProfileViewModel", () => {
 
     it("comentário vazio nem entra no corpo", async () => {
       const service = fakeService();
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await vm.review("ev-1", "Rejected", "   ");
       expect(service.reviewEvidence).toHaveBeenCalledWith("ev-1", { status: "Rejected" });
     });
@@ -159,7 +159,7 @@ describe("ArchitectProfileViewModel", () => {
     it("propaga o erro do serviço — decisão de Tech Lead nunca aparece salva sem confirmação (EPIC L)", async () => {
       const service = fakeService();
       service.reviewEvidence.mockRejectedValueOnce(new Error("409 revisado por outra pessoa"));
-      const vm = new ArchitectProfileViewModel(service);
+      const vm = new ProfessionalProfileViewModel(service);
       await expect(vm.review("ev-1", "Accepted", "")).rejects.toThrow(
         "409 revisado por outra pessoa",
       );
@@ -173,16 +173,16 @@ describe("ArchitectProfileViewModel", () => {
  * componente: uma no estado inicial e outra ao reabrir. Duas cópias da
  * mesma regra no mesmo arquivo é a definição do problema.
  */
-describe("ArchitectProfileViewModel — decisão pré-selecionada da revisão", () => {
+describe("ProfessionalProfileViewModel — decisão pré-selecionada da revisão", () => {
   const evidenceWith = (status: Evidence["status"]): Pick<Evidence, "status"> => ({ status });
 
   it("evidência ainda pendente chega com Accepted marcado", () => {
-    const vm = new ArchitectProfileViewModel(fakeService());
+    const vm = new ProfessionalProfileViewModel(fakeService());
     expect(vm.preselectedReviewDecisionFor(evidenceWith("Pending"))).toBe("Accepted");
   });
 
   it("evidência já revisada chega com a própria decisão marcada", () => {
-    const vm = new ArchitectProfileViewModel(fakeService());
+    const vm = new ProfessionalProfileViewModel(fakeService());
     expect(vm.preselectedReviewDecisionFor(evidenceWith("Rejected"))).toBe("Rejected");
     expect(vm.preselectedReviewDecisionFor(evidenceWith("Needs Improvement"))).toBe(
       "Needs Improvement",

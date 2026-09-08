@@ -3,6 +3,7 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  redirect,
   useRouter,
   HeadContent,
   Scripts,
@@ -15,6 +16,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "../lib/auth";
 import { DependencyProvider } from "../lib/dependencies";
 import { I18nProvider } from "../lib/i18n";
+import { LegacyProfessionalLink } from "../lib/legacy-professional-links";
 import { defaultPublicReach } from "../lib/public-reach";
 import { ThemeProvider, useTheme } from "../lib/theme";
 import { ThemeChoice } from "../lib/theme-choice";
@@ -111,6 +113,17 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  /*
+   * ADR-0096 — link velho da ficha (`/professionals/<id>/…`) não morre: aponta
+   * para o endereço novo. Mora na RAIZ, e não num arquivo de rota
+   * `professionals.*`, porque o caminho velho deixou de existir de propósito —
+   * ressuscitá-lo como arquivo faria dele rota de novo, com alcance,
+   * ajuda de tela e screenshot para declarar. Aqui ele é só uma placa.
+   */
+  beforeLoad: ({ location }) => {
+    const enderecoNovo = LegacyProfessionalLink.redirectFor(location.pathname);
+    if (enderecoNovo) throw redirect({ href: enderecoNovo, replace: true });
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },

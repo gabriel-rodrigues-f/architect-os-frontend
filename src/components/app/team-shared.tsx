@@ -15,7 +15,7 @@ import {
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { type Architect, type TeamTransferRequestView } from "@/lib/domain";
+import { type Professional, type TeamTransferRequestView } from "@/lib/domain";
 import { Selection } from "@/lib/selection";
 import { usePendingTeamTransfers, useSuccessToast } from "@/hooks";
 import { teamsApi, teamTransfersApi } from "@/lib/api";
@@ -29,12 +29,12 @@ import { AUSENCIA, SeniorityReading, useSeniorityReading } from "@/lib/seniority
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { TeamOrLevelChange, TeamViewModel, type ArchitectFormRole } from "@/lib/view-models";
+import { TeamOrLevelChange, TeamViewModel, type ProfessionalFormRole } from "@/lib/view-models";
 
 const NO_CAPABILITY = "__no-capability__";
 
-interface EnrichedArchitect {
-  architect: Architect;
+interface EnrichedProfessional {
+  professional: Professional;
   topGaps: Gap[];
   avg: number | undefined;
   hasOfficial: boolean;
@@ -71,13 +71,13 @@ export function useTeamRosterActions() {
   const allTeams = teamsQuery.data ?? [];
   const teams = decidesForSomeone ? viewModel.allocatableTeams(allTeams) : [];
 
-  const [transitioning, setTransitioning] = useState<Architect | null>(null);
+  const [transitioning, setTransitioning] = useState<Professional | null>(null);
   const notifySuccess = useSuccessToast();
 
   // O aviso sai com a resposta, não com o clique: toast verde e recusa vermelha nunca no mesmo instante.
-  const reactivate = (architect: Architect) => {
-    viewModel.reactivate(architect, () =>
-      notifySuccess("team.reactivate.toast", { nome: architect.name }),
+  const reactivate = (professional: Professional) => {
+    viewModel.reactivate(professional, () =>
+      notifySuccess("team.reactivate.toast", { nome: professional.name }),
     );
   };
 
@@ -106,7 +106,7 @@ export function useTeamRoster(isAdmin: boolean) {
     setPage(1);
   }, [nameSelectionChosen, statusFilter, roleSelection, capabilitySelection, sort]);
 
-  const lastMentoringByArchitect = useMemo(() => {
+  const lastMentoringByProfessional = useMemo(() => {
     const map = new Map<string, string>();
     for (const session of store.mentoringSessions) {
       const prev = map.get(session.menteeId);
@@ -129,7 +129,7 @@ export function useTeamRoster(isAdmin: boolean) {
       id: c.id,
       label: c.name,
     }));
-    const hasNone = store.architectsIncludingInactive.some((a) => {
+    const hasNone = store.professionalsIncludingInactive.some((a) => {
       const competency = a.primarySpecializationCompetencyId
         ? sel.competencyById(a.primarySpecializationCompetencyId)
         : undefined;
@@ -143,7 +143,7 @@ export function useTeamRoster(isAdmin: boolean) {
       });
     }
     return options;
-  }, [store.capabilities, store.architectsIncludingInactive, sel, t]);
+  }, [store.capabilities, store.professionalsIncludingInactive, sel, t]);
 
   const capabilityFilter = useMemo(
     () => capabilitySelection ?? capabilityOptions.map((option) => option.id),
@@ -164,16 +164,16 @@ export function useTeamRoster(isAdmin: boolean) {
    * Quando ele pede "Inativos", o menu passa a oferecê-los — senão a tela
    * mostraria cartões que o filtro de nomes se recusa a nomear.
    *
-   * Antes disto o menu recebia `architectsIncludingInactive` — o nome da
+   * Antes disto o menu recebia `professionalsIncludingInactive` — o nome da
    * coleção já dizia o que ela faz — e oferecia gente que a lista não
    * desenhava: escolher essa pessoa devolvia lista vazia, sem dizer por quê.
    */
   const filterablePeople = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
-    return store.architectsIncludingInactive.filter((pessoa) =>
+    return store.professionalsIncludingInactive.filter((pessoa) =>
       effectiveStatus.includes(pessoa.active ? "active" : "inactive"),
     );
-  }, [store.architectsIncludingInactive, isAdmin, statusFilter]);
+  }, [store.professionalsIncludingInactive, isAdmin, statusFilter]);
 
   const nameSelection = useMemo(
     () => nameSelectionChosen ?? filterablePeople.map((pessoa) => pessoa.id),
@@ -184,7 +184,7 @@ export function useTeamRoster(isAdmin: boolean) {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
 
     const nameFilter = Selection.explicit(nameSelection);
-    return store.architectsIncludingInactive.filter((a) => {
+    return store.professionalsIncludingInactive.filter((a) => {
       if (!nameFilter.contains(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
 
@@ -197,7 +197,7 @@ export function useTeamRoster(isAdmin: boolean) {
       return true;
     });
   }, [
-    store.architectsIncludingInactive,
+    store.professionalsIncludingInactive,
     isAdmin,
     statusFilter,
     roleSelection,
@@ -208,34 +208,35 @@ export function useTeamRoster(isAdmin: boolean) {
 
   const enrichedSorted = useMemo(() => {
     const withStats = filtered.map((a) => ({
-      architect: a,
+      professional: a,
       topGaps: sel.progressionGapsFor(a.id).slice(0, 3),
       avg: sel.coverageFor(a.id).avg,
       hasOfficial: sel.officialAssessmentFor(a.id) !== undefined,
-      lastMentoring: lastMentoringByArchitect.get(a.id),
+      lastMentoring: lastMentoringByProfessional.get(a.id),
     }));
     switch (sort) {
       case "name-desc":
-        withStats.sort((x, y) => defaultNameFormatter.byName(y.architect, x.architect));
+        withStats.sort((x, y) => defaultNameFormatter.byName(y.professional, x.professional));
         break;
       case "level":
         withStats.sort(
           (x, y) =>
-            (y.avg ?? -1) - (x.avg ?? -1) || defaultNameFormatter.byName(x.architect, y.architect),
+            (y.avg ?? -1) - (x.avg ?? -1) ||
+            defaultNameFormatter.byName(x.professional, y.professional),
         );
         break;
       case "recent":
         withStats.sort(
           (x, y) =>
             (y.lastMentoring ?? "").localeCompare(x.lastMentoring ?? "") ||
-            defaultNameFormatter.byName(x.architect, y.architect),
+            defaultNameFormatter.byName(x.professional, y.professional),
         );
         break;
       default:
-        withStats.sort((x, y) => defaultNameFormatter.byName(x.architect, y.architect));
+        withStats.sort((x, y) => defaultNameFormatter.byName(x.professional, y.professional));
     }
     return withStats;
-  }, [filtered, sel, lastMentoringByArchitect, sort]);
+  }, [filtered, sel, lastMentoringByProfessional, sort]);
 
   const totalPages = Math.max(1, Math.ceil(enrichedSorted.length / pageSize));
   const clampedPage = Math.min(page, totalPages);
@@ -336,11 +337,11 @@ export function useTeamRoster(isAdmin: boolean) {
  * mudando na hora. O admin segue movendo direto (correção de cadastro).
  */
 export function TeamOrLevelChangeDialog({
-  architect,
+  professional,
   teams,
   onClose,
 }: {
-  architect: Architect;
+  professional: Professional;
   teams: readonly TeamSummary[];
   onClose: () => void;
 }) {
@@ -349,22 +350,23 @@ export function TeamOrLevelChangeDialog({
   const notifySuccess = useSuccessToast();
   const user = useCurrentUser();
   const transfers = usePendingTeamTransfers(user);
-  const byRequest = transfers.viewModel.teamChangeModeFor(user, architect) === "request";
+  const byRequest = transfers.viewModel.teamChangeModeFor(user, professional) === "request";
 
   const careerLevels = useCareerLevelsByRank();
   const seniority = useSeniorityReading();
-  const [toRole, setToRole] = useState<ArchitectFormRole>("");
-  const [toTeamId, setToTeamId] = useState<string | null>(architect.teamId ?? null);
-  const change = new TeamOrLevelChange(architect, toRole, toTeamId);
+  const [toRole, setToRole] = useState<ProfessionalFormRole>("");
+  const [toTeamId, setToTeamId] = useState<string | null>(professional.teamId ?? null);
+  const change = new TeamOrLevelChange(professional, toRole, toTeamId);
   const asksTransfer = byRequest && change.teamChanged && change.toTeamId !== null;
-  const currentTeam = viewModel.teamNameOf(architect.teamId, teams) ?? t("team.transition.noTeam");
-  const offersSeniority = SeniorityReading.has(architect);
+  const currentTeam =
+    viewModel.teamNameOf(professional.teamId, teams) ?? t("team.transition.noTeam");
+  const offersSeniority = SeniorityReading.has(professional);
 
   const body = byRequest
     ? t("team.transfer.body", { time: currentTeam })
     : offersSeniority
       ? t("team.transition.body", {
-          atual: seniority.labelOf(architect.role),
+          atual: seniority.labelOf(professional.role),
           time: currentTeam,
         })
       : t("team.transition.body.teamOnly", { time: currentTeam });
@@ -374,7 +376,7 @@ export function TeamOrLevelChangeDialog({
       notifySuccess(
         "msg.people.careerLevelTransition.success",
         {
-          nome: architect.name,
+          nome: professional.name,
           time: viewModel.teamNameOf(updated.teamId, teams) ?? t("team.transition.noTeam"),
         },
         updated,
@@ -386,7 +388,7 @@ export function TeamOrLevelChangeDialog({
       if (requested === null) {
         notifySuccess(
           "msg.people.careerLevelTransition.success",
-          { nome: architect.name, time: currentTeam },
+          { nome: professional.name, time: currentTeam },
           updated,
         );
         return;
@@ -394,7 +396,7 @@ export function TeamOrLevelChangeDialog({
       notifySuccess(
         "team.transfer.requested.toast",
         {
-          nome: architect.name,
+          nome: professional.name,
           destino: viewModel.teamNameOf(requested.toTeamId, teams) ?? requested.toTeamId,
         },
         requested,
@@ -406,8 +408,8 @@ export function TeamOrLevelChangeDialog({
     <CommandWithReasonDialog
       title={
         offersSeniority
-          ? t("team.transition.title", { nome: architect.name })
-          : t("team.transition.title.teamOnly", { nome: architect.name })
+          ? t("team.transition.title", { nome: professional.name })
+          : t("team.transition.title.teamOnly", { nome: professional.name })
       }
       body={body}
       reasonInputId="transition-reason"
@@ -432,10 +434,10 @@ export function TeamOrLevelChangeDialog({
                 id="transition-to-role"
                 className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
                 value={toRole}
-                onChange={(e) => setToRole(e.target.value as ArchitectFormRole)}
+                onChange={(e) => setToRole(e.target.value as ProfessionalFormRole)}
               >
                 <option value="">{t("team.transition.keepRole")}</option>
-                {viewModel.otherCareerLevels(careerLevels, architect.role).map((l) => (
+                {viewModel.otherCareerLevels(careerLevels, professional.role).map((l) => (
                   <option key={l.id} value={l.name}>
                     {l.name}
                   </option>
@@ -494,21 +496,21 @@ export function TeamRosterView({
   onTransition,
   onReactivate,
 }: {
-  pageItems: EnrichedArchitect[];
+  pageItems: EnrichedProfessional[];
   view: "cards" | "table";
   isAdmin: boolean;
   /** Todos os times conhecidos — para a Posição e para o nome do time. */
   teams: readonly TeamSummary[];
   /** D3 (2026-09-05): quem muda nível/time e reativa é o gerente designado (ou o admin como correção). */
-  decidesCareerOf: (architect: Architect) => boolean;
+  decidesCareerOf: (professional: Professional) => boolean;
   /** Dono (2026-09-06): a pessoa com solicitação de transferência pendente carrega o selo com o destino. */
-  pendingTransferOf?: (architect: Architect) => TeamTransferRequestView | undefined;
-  onTransition: (architect: Architect) => void;
-  onReactivate: (architect: Architect) => void;
+  pendingTransferOf?: (professional: Professional) => TeamTransferRequestView | undefined;
+  onTransition: (professional: Professional) => void;
+  onReactivate: (professional: Professional) => void;
 }) {
   const { t } = useI18n();
-  const pendingTransferBadge = (architect: Architect) => {
-    const pending = pendingTransferOf(architect);
+  const pendingTransferBadge = (professional: Professional) => {
+    const pending = pendingTransferOf(professional);
     return pending ? (
       <StatusBadge
         tone="progress"
@@ -516,21 +518,21 @@ export function TeamRosterView({
       />
     ) : null;
   };
-  const showsActions = pageItems.some(({ architect }) => decidesCareerOf(architect));
+  const showsActions = pageItems.some(({ professional }) => decidesCareerOf(professional));
   const position = usePositionReading(teams, useCareerLevelsByRank());
   const teamNameOf = (teamId: string | null | undefined) =>
     teams.find((team) => team.id === teamId)?.name ?? AUSENCIA;
 
   return view === "cards" ? (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => (
+      {pageItems.map(({ professional: a, topGaps: top, avg, hasOfficial }) => (
         <div key={a.id} className="surface-card surface-interactive p-5">
           <div className="flex items-start gap-3">
             <Initials name={a.name} />
             <div className="min-w-0 flex-1">
               <Link
-                to="/architects/$architectId"
-                params={{ architectId: a.id }}
+                to="/professionals/$professionalId"
+                params={{ professionalId: a.id }}
                 className="font-display text-base font-semibold hover:underline"
               >
                 {a.name}
@@ -634,7 +636,7 @@ export function TeamRosterView({
           </tr>
         </thead>
         <tbody>
-          {pageItems.map(({ architect: a, topGaps: top, avg, hasOfficial }) => {
+          {pageItems.map(({ professional: a, topGaps: top, avg, hasOfficial }) => {
             return (
               <tr
                 key={a.id}
@@ -642,8 +644,8 @@ export function TeamRosterView({
               >
                 <td className="max-w-[220px] px-4 py-3">
                   <Link
-                    to="/architects/$architectId"
-                    params={{ architectId: a.id }}
+                    to="/professionals/$professionalId"
+                    params={{ professionalId: a.id }}
                     className="block truncate font-medium hover:underline"
                     title={a.name}
                   >

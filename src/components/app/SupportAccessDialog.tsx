@@ -14,12 +14,12 @@ import { SupportAccess } from "@/lib/support-access";
  * PR 6: o passe vale 15 minutos e vive na instância do container ([FA-07]).
  */
 export function SupportAccessDialog({
-  architectId,
+  professionalId,
   personName,
   onGranted,
   onCancel,
 }: {
-  architectId: string;
+  professionalId: string;
   personName: string;
   onGranted: () => void;
   onCancel: () => void;
@@ -45,7 +45,7 @@ export function SupportAccessDialog({
         className="mt-4 space-y-3"
         onSubmit={(event) => {
           event.preventDefault();
-          if (supportAccess.grant(architectId, reason)) onGranted();
+          if (supportAccess.grant(professionalId, reason)) onGranted();
         }}
       >
         <div>

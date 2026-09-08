@@ -1,4 +1,4 @@
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
 import { useHeadingSlotMount } from "./CareerFileHeading";
@@ -9,7 +9,7 @@ import { ProfileTabs } from "./ui-bits";
 /**
  * O cabeçalho da ficha da pessoa — nome, posição/nível e abas — num bloco
  * FIXO enquanto o corpo rola (referência FIAP 2026-09-06, §2 item 7). Desde
- * [FA-08] ele é da ROTA-PAI (`architects.$architectId.tsx`) e é montado UMA
+ * [FA-08] ele é da ROTA-PAI (`professionals.$professionalId.tsx`) e é montado UMA
  * vez: as quatro abas (Visão geral, Evolução, Extrato, Roteiro) só publicam o
  * próprio título no encaixe (`ProfileHeading`), e trocar de aba não remonta
  * o bloco.
@@ -23,11 +23,11 @@ import { ProfileTabs } from "./ui-bits";
  * funcional — e o bloco vem sem elas (`tabs={false}`), sem ler o store.
  */
 export function ProfileHeader({
-  architect,
+  professional,
   active,
   tabs = true,
 }: {
-  architect: Pick<Architect, "id" | "active">;
+  professional: Pick<Professional, "id" | "active">;
   active: Parameters<typeof ProfileTabs>[0]["active"];
   tabs?: boolean;
 }) {
@@ -41,8 +41,8 @@ export function ProfileHeader({
       )}
     >
       <div ref={mountHeading} data-heading-slot />
-      <DeactivatedPersonNotice active={architect.active} />
-      {tabs && <ProfileTabs architectId={architect.id} active={active} />}
+      <DeactivatedPersonNotice active={professional.active} />
+      {tabs && <ProfileTabs professionalId={professional.id} active={active} />}
     </div>
   );
 }

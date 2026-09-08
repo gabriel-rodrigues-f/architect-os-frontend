@@ -7,8 +7,8 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { apiPath } from "@/lib/api-path";
-import type { ArchitectEvolutionResult } from "@/lib/domain";
-import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
+import type { ProfessionalEvolutionResult } from "@/lib/domain";
+import { Route as EvolutionRoute } from "@/routes/professionals.$professionalId.evolution";
 import { jsonResponse, mockAppFetch } from "../helpers/render-app";
 import { renderCareerFile } from "../helpers/ficha";
 
@@ -32,7 +32,7 @@ const fetchMock = vi.fn();
 
 const degrau = {
   id: "evento-1",
-  architectId: "ana",
+  professionalId: "ana",
   competencyId: "k8s",
   fromLevel: 2,
   toLevel: 3,
@@ -42,10 +42,10 @@ const degrau = {
   recordedAt: "2026-08-01T00:00:00.000Z",
   actorUserId: "admin",
   note: null,
-} as const satisfies ArchitectEvolutionResult["events"][number];
+} as const satisfies ProfessionalEvolutionResult["events"][number];
 
-const resultado: ArchitectEvolutionResult = {
-  architect: {
+const resultado: ProfessionalEvolutionResult = {
+  professional: {
     id: "ana",
     name: "Ana Martins",
     role: "Pleno",
@@ -108,14 +108,14 @@ const tituloDeSecao = (container: HTMLElement, titulo: string): Element[] =>
     (titulos) => titulos.textContent?.trim() === titulo,
   );
 
-describe("Evolução do arquiteto — nenhuma subvisão repete a vizinha", () => {
+describe("Evolução do profissional — nenhuma subvisão repete a vizinha", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
       routes: [
         (href) =>
-          href.endsWith(apiPath("/evolution/architect")) ? jsonResponse(resultado) : undefined,
+          href.endsWith(apiPath("/evolution/professional")) ? jsonResponse(resultado) : undefined,
       ],
     });
   });

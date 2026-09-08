@@ -6,14 +6,14 @@ import { TeamLeadershipRoles } from "@/lib/gateways/auth.gateway";
  * ADMINISTRADOR: opera o sistema como o suporte E lê a organização inteira sem
  * passe de suporte. Continua sem agir sobre pessoas. Usada nos testes que
  * exercitam telas atrás de `useCurrentUser()`: dá acesso total, sem prender
- * o teste a ser dono de um arquiteto específico.
+ * o teste a ser dono de um profissional específico.
  */
 export const fixtureAdminUser: SessionUser = {
   id: "test-admin",
   email: "admin@teste.local",
   name: "Admin de teste",
   role: "admin",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -29,7 +29,7 @@ export const fixtureSupportUser: SessionUser = {
   email: "suporte@teste.local",
   name: "Suporte de teste",
   role: "support",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -41,16 +41,16 @@ export const fixtureMemberUser: SessionUser = {
   email: "ana@company.com",
   name: "Ana Martins",
   role: "member",
-  architectId: "ana",
+  professionalId: "ana",
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
 };
 
 /**
- * Sessão de tech lead sem nenhum arquiteto no escopo (o recorte do servidor
+ * Sessão de tech lead sem nenhum profissional no escopo (o recorte do servidor
  * não lhe entrega ninguém) — usada para provar que `isLeadOf` nega por padrão
- * sobre arquiteto sem time, em vez de liberar campo pra qualquer conta de
+ * sobre profissional sem time, em vez de liberar campo pra qualquer conta de
  * liderança da empresa (UX-001, semântica pós-Fase 2: o vínculo é o TIME).
  */
 export const fixtureUnassignedTechLeadUser: SessionUser = {
@@ -58,7 +58,7 @@ export const fixtureUnassignedTechLeadUser: SessionUser = {
   email: "tech-lead-sem-atribuicao@company.com",
   name: "Tech Lead sem atribuição",
   role: "tech_lead",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -76,7 +76,7 @@ export const fixtureAssignedTechLeadUser: SessionUser = {
   email: "tech-lead-do-time@company.com",
   name: "Tech Lead do time",
   role: "tech_lead",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -93,7 +93,7 @@ export const fixtureAssignedManagerUser: SessionUser = {
   email: "gerente-do-time@company.com",
   name: "Gerente do time",
   role: "manager",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -122,7 +122,7 @@ export const fixtureTeamId = "time-plataforma";
  * exigido moram na régua do time e chegam à UI pela FOTO do item de
  * avaliação); `careerLevelPolicies` morreu e `/state` carrega
  * `teamLevelRules` (piso por time×nível); curadoria sem contagem por tipo
- * (o teto virou sinal, ADR-0034); arquiteto com `teamId`, sem `leadUserId`.
+ * (o teto virou sinal, ADR-0034); profissional com `teamId`, sem `leadUserId`.
  */
 export const fixtureState: AppState = {
   capabilities: [
@@ -187,12 +187,12 @@ export const fixtureState: AppState = {
       active: true,
     },
   ],
-  architects: [
+  professionals: [
     {
       id: "ana",
       name: "Ana Martins",
       role: "Pleno",
-      yearsAsArchitect: 6,
+      yearsAsProfessional: 6,
       specialization: "Integration",
       email: "ana@company.com",
       active: true,
@@ -203,7 +203,7 @@ export const fixtureState: AppState = {
       id: "bruno",
       name: "Bruno Almeida",
       role: "Júnior",
-      yearsAsArchitect: 3,
+      yearsAsProfessional: 3,
       specialization: "Cloud",
       email: "bruno@company.com",
       active: true,
@@ -214,7 +214,7 @@ export const fixtureState: AppState = {
   assessments: [
     {
       id: "ana-h1",
-      architectId: "ana",
+      professionalId: "ana",
       cycleId: "2026-h1",
       status: "Completed",
       modelVersion: 1,
@@ -250,7 +250,7 @@ export const fixtureState: AppState = {
     },
     {
       id: "ana-h2",
-      architectId: "ana",
+      professionalId: "ana",
       cycleId: "2026-h2",
       // Completed: gapsFor/capabilityAverages só usam assessment oficial.
       status: "Completed",
@@ -287,7 +287,7 @@ export const fixtureState: AppState = {
     },
     {
       id: "bruno-h2",
-      architectId: "bruno",
+      professionalId: "bruno",
       cycleId: "2026-h2",
       status: "Completed",
       modelVersion: 1,
@@ -329,7 +329,7 @@ export const fixtureState: AppState = {
   plans: [
     {
       id: "pdi-ana",
-      architectId: "ana",
+      professionalId: "ana",
       cycleId: "2026-h2",
       status: "Approved",
       version: 1,
@@ -388,8 +388,8 @@ export const fixtureState: AppState = {
         { id: "lp-sec-2", title: "OAuth", type: "Curso", hours: 6 },
       ],
       progress: [
-        { architectId: "ana", itemId: "lp-sec-1", status: "Completed", progress: 100 },
-        { architectId: "ana", itemId: "lp-sec-2", status: "In Progress", progress: 20 },
+        { professionalId: "ana", itemId: "lp-sec-1", status: "Completed", progress: 100 },
+        { professionalId: "ana", itemId: "lp-sec-2", status: "In Progress", progress: 20 },
       ],
     },
   ],
@@ -397,7 +397,7 @@ export const fixtureState: AppState = {
   evidences: [
     {
       id: "e1",
-      architectId: "ana",
+      professionalId: "ana",
       title: "ADR-014",
       description: "",
       type: "ADR",
@@ -413,7 +413,7 @@ export const fixtureState: AppState = {
 /**
  * O payload que o servidor manda DE VERDADE desde o roster fechado
  * (backend `d1edba4`) e o escopo por TIME da Fase 2 (backend `f1926f7`,
- * ADR-0035): `AuthorizationService.scopeAppState` recorta `architects`,
+ * ADR-0035): `AuthorizationService.scopeAppState` recorta `professionals`,
  * `assessments`, `plans`, `evidences`, `mentoringSessions`, `learningPaths`
  * e `teamLevelRules` pelo conjunto visível do papel — member vê só a si,
  * lead vê os times que lidera (papel E vínculo `tech_lead`/`manager`),
@@ -424,7 +424,7 @@ export const fixtureState: AppState = {
  *
  * Nota fiel ao backend: `learningPaths` sobrevive inteiro quando UM dos
  * atribuídos é visível — `assignedTo` e `progress` seguem carregando ids fora
- * do escopo. É exatamente o caso que produz assignee sem `Architect`
+ * do escopo. É exatamente o caso que produz assignee sem `Professional`
  * correspondente no cliente.
  */
 export function scopedFixtureStateFor(
@@ -435,25 +435,28 @@ export function scopedFixtureStateFor(
   if (user.role === "admin") return state;
 
   const visibleIds = new Set<string>();
-  if (user.architectId) visibleIds.add(user.architectId);
+  if (user.professionalId) visibleIds.add(user.professionalId);
   const scopeGrantingTeams = new Set(TeamLeadershipRoles.includes(user.role) ? leadTeamIds : []);
-  for (const architect of state.architects) {
-    if (architect.teamId && scopeGrantingTeams.has(architect.teamId)) {
-      visibleIds.add(architect.id);
+  for (const professional of state.professionals) {
+    if (professional.teamId && scopeGrantingTeams.has(professional.teamId)) {
+      visibleIds.add(professional.id);
     }
   }
   const visibleTeamIds = new Set(scopeGrantingTeams);
-  for (const architect of state.architects) {
-    if (visibleIds.has(architect.id) && architect.teamId) visibleTeamIds.add(architect.teamId);
+  for (const professional of state.professionals) {
+    if (visibleIds.has(professional.id) && professional.teamId)
+      visibleTeamIds.add(professional.teamId);
   }
 
   return {
     ...state,
-    architects: state.architects.filter((architect) => visibleIds.has(architect.id)),
+    professionals: state.professionals.filter((professional) => visibleIds.has(professional.id)),
     teamLevelRules: state.teamLevelRules.filter((rule) => visibleTeamIds.has(rule.teamId)),
-    assessments: state.assessments.filter((assessment) => visibleIds.has(assessment.architectId)),
-    plans: state.plans.filter((plan) => visibleIds.has(plan.architectId)),
-    evidences: state.evidences.filter((evidence) => visibleIds.has(evidence.architectId)),
+    assessments: state.assessments.filter((assessment) =>
+      visibleIds.has(assessment.professionalId),
+    ),
+    plans: state.plans.filter((plan) => visibleIds.has(plan.professionalId)),
+    evidences: state.evidences.filter((evidence) => visibleIds.has(evidence.professionalId)),
     mentoringSessions: state.mentoringSessions.filter(
       (session) => visibleIds.has(session.menteeId) || session.mentorUserId === user.id,
     ),

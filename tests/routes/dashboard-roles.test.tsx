@@ -53,7 +53,7 @@ const fixtureLeadOfAna: SessionUser = {
   email: "lead-de-ana@company.com",
   name: "Lead de Ana",
   role: "tech_lead",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -70,7 +70,7 @@ const fixtureGestorDeAna: SessionUser = {
   email: "gerente-de-ana@company.com",
   name: "Gerente de Ana",
   role: "manager",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -98,8 +98,8 @@ function renderAs(user: SessionUser, state: AppState = fixtureState) {
 function renderAsLeaderOfAna(user: SessionUser) {
   const state: AppState = {
     ...fixtureState,
-    architects: fixtureState.architects.map((architect) =>
-      architect.id === "ana" ? { ...architect, teamId: TIME_DE_ANA } : architect,
+    professionals: fixtureState.professionals.map((professional) =>
+      professional.id === "ana" ? { ...professional, teamId: TIME_DE_ANA } : professional,
     ),
   };
   return renderAs(user, scopedFixtureStateFor(user, state, [TIME_DE_ANA]));
@@ -119,7 +119,7 @@ describe("Painel — Home por papel", () => {
   it("D1 (dono, 2026-09-05): admin vê o Painel de operação — contagens, sem nome de pessoa", async () => {
     renderAs(fixtureAdminUser);
     await screen.findByText("Visão do Sistema");
-    expect(await screen.findByText("Pessoas ativas")).toBeTruthy();
+    expect(await screen.findByText("Profissionais ativos")).toBeTruthy();
     expect(screen.getByText("Contas por cargo")).toBeTruthy();
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
     expect(screen.queryByText("Ações da Liderança")).toBeNull();
@@ -150,8 +150,8 @@ describe("Painel — Home por papel", () => {
     expect(screen.queryByText("Competências em evolução")).toBeNull();
   });
 
-  it("member sem architectId vinculado vê o estado de conta não vinculada", async () => {
-    const unlinked: SessionUser = { ...fixtureMemberUser, architectId: null };
+  it("member sem professionalId vinculado vê o estado de conta não vinculada", async () => {
+    const unlinked: SessionUser = { ...fixtureMemberUser, professionalId: null };
     renderAs(unlinked);
     await screen.findByText("Minha Evolução");
     expect(
@@ -163,7 +163,7 @@ describe("Painel — Home por papel", () => {
     renderAs(fixtureLeadOfAna, scopedFixtureStateFor(fixtureLeadOfAna));
     await screen.findByText("Ações da Liderança");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
+    expect(await screen.findByText("Nenhum profissional sob sua liderança ainda")).toBeTruthy();
   });
 
   it("gerente vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
@@ -185,7 +185,7 @@ describe("Painel — Home por papel", () => {
     await screen.findByText("Ações da Liderança");
     // "e1" na fixture: evidência Pending de "ana", título "ADR-014" — o servidor
     // entregou, mas sem membership a fila não é dele.
-    expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
+    expect(await screen.findByText("Nenhum profissional sob sua liderança ainda")).toBeTruthy();
     expect(screen.queryByText(/ADR-014/)).toBeNull();
   });
 });

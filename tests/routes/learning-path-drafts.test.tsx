@@ -49,7 +49,7 @@ const PROGRESSO_OAUTH = TRILHA.progress[1]!;
  * na tela), sem passar por rascunho local nenhum — logo não depende do
  * comportamento sob teste.
  */
-const BRUNO = fixtureState.architects[1]!;
+const BRUNO = fixtureState.professionals[1]!;
 
 function estadoRevalidado(): AppState {
   return {

@@ -17,9 +17,9 @@ export interface LevelTransitionPair {
 export interface TeamTransitionsRow {
   teamId: string;
   teamName: string;
-  activeArchitects: number;
+  activeProfessionals: number;
   transitions: number;
-  transitionsPerActiveArchitect: number | null;
+  transitionsPerActiveProfessional: number | null;
   measuredOrigins: number;
   averageDaysInOriginLevel: number | null;
   pairs: LevelTransitionPair[];

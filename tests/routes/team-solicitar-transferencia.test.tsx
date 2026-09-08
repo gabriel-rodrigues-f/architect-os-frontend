@@ -47,7 +47,7 @@ const fetchMock = vi.fn();
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
-const ana = fixtureState.architects[0];
+const ana = fixtureState.professionals[0];
 if (!ana) throw new Error("fixture sem Ana");
 
 const times = [
@@ -55,9 +55,9 @@ const times = [
   { id: "time-dados", name: "Time Dados", active: true },
 ];
 
-const TRANSICAO = apiPath("/architects/ana/career-level-transition");
-const ALOCACAO = apiPath("/architects/ana/team-allocation");
-const SOLICITACAO = apiPath("/architects/ana/team-transfer-requests");
+const TRANSICAO = apiPath("/professionals/ana/career-level-transition");
+const ALOCACAO = apiPath("/professionals/ana/team-allocation");
+const SOLICITACAO = apiPath("/professionals/ana/team-transfer-requests");
 
 const escritas: string[] = [];
 
@@ -82,7 +82,7 @@ const rotas: FetchRoute = (href, init) => {
       {
         data: {
           id: "req-1",
-          architectId: "ana",
+          professionalId: "ana",
           fromTeamId: fixtureTeamId,
           toTeamId: body.toTeamId,
           reason: body.reason,

@@ -4,48 +4,51 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PersonCombobox } from "@/components/app/PersonCombobox";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { I18nProvider } from "@/lib/i18n";
 import { PersonPicker } from "@/lib/person-selection";
 
 /**
  * A combobox de pessoa única da aplicação (dono, 2026-09-06). Esta suíte
- * herda o que `architect-filter-select-all.test.tsx` garantia para o filtro
+ * herda o que `professional-filter-select-all.test.tsx` garantia para o filtro
  * de várias pessoas — "Todo o time" como alternador de verdade, seleção
  * sempre explícita, roster que encolhe — e acrescenta o que motivou a troca:
  * com alcance vazio, "Todo o time" não existe e a única coisa na tela é
- * "Não há pessoas cadastradas."; a busca que não acha ninguém diz
- * "Nenhuma pessoa encontrada." — as mesmas duas frases em todas as telas.
+ * "Não há profissionais cadastrados."; a busca que não acha ninguém diz
+ * "Nenhum profissional encontrado." — as mesmas duas frases em todas as telas.
  */
-const pessoa = (id: string, name: string): Architect => ({
+const pessoa = (id: string, name: string): Professional => ({
   id,
   name,
   role: "Pleno",
-  yearsAsArchitect: 3,
+  yearsAsProfessional: 3,
   specialization: "",
   email: `${id}@a.com`,
   active: true,
   version: 1,
 });
 
-const architects: Architect[] = [pessoa("ana", "Ana Martins"), pessoa("bruno", "Bruno Almeida")];
-const threeArchitects: Architect[] = [...architects, pessoa("carla", "Carla Souza")];
+const professionals: Professional[] = [
+  pessoa("ana", "Ana Martins"),
+  pessoa("bruno", "Bruno Almeida"),
+];
+const threeProfessionals: Professional[] = [...professionals, pessoa("carla", "Carla Souza")];
 
-const renderMany = (selected: string[], reach: Architect[] = architects) => {
+const renderMany = (selected: string[], reach: Professional[] = professionals) => {
   const onChange = vi.fn();
   render(
     <I18nProvider>
       <PersonCombobox
         picker={PersonPicker.many(reach, selected)}
         onChange={onChange}
-        label="Pessoas"
+        label="Profissionais"
       />
     </I18nProvider>,
   );
   return onChange;
 };
 
-const trigger = () => screen.getByRole("combobox", { name: "Pessoas" });
+const trigger = () => screen.getByRole("combobox", { name: "Profissionais" });
 const abrir = () => userEvent.click(trigger());
 const checkboxDe = (name: string) =>
   screen.getByRole("option", { name }).querySelector('[role="checkbox"]');
@@ -63,7 +66,7 @@ const checkboxDe = (name: string) =>
 describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08)", () => {
   afterEach(() => cleanup());
 
-  const vazio = () => screen.getByRole("button", { name: "Pessoas" });
+  const vazio = () => screen.getByRole("button", { name: "Profissionais" });
 
   it.each([
     ["uma pessoa", PersonPicker.one([], null)],
@@ -74,7 +77,7 @@ describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08
     async (_f, picker) => {
       render(
         <I18nProvider>
-          <PersonCombobox picker={picker} onChange={vi.fn()} label="Pessoas" />
+          <PersonCombobox picker={picker} onChange={vi.fn()} label="Profissionais" />
         </I18nProvider>,
       );
 
@@ -90,7 +93,11 @@ describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08
   it("sem alcance ao cadastro, o campo continua obscurecido e não oferece porta nenhuma", () => {
     render(
       <I18nProvider>
-        <PersonCombobox picker={PersonPicker.many([], [])} onChange={vi.fn()} label="Pessoas" />
+        <PersonCombobox
+          picker={PersonPicker.many([], [])}
+          onChange={vi.fn()}
+          label="Profissionais"
+        />
       </I18nProvider>,
     );
 
@@ -102,12 +109,12 @@ describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08
 describe("PersonCombobox — busca", () => {
   afterEach(() => cleanup());
 
-  it("quando a busca não acha ninguém, diz 'Nenhuma pessoa encontrada.'", async () => {
+  it("quando a busca não acha ninguém, diz 'Nenhum profissional encontrado.'", async () => {
     renderMany([]);
     await abrir();
-    await userEvent.type(screen.getByPlaceholderText("Buscar pessoa…"), "zzz");
+    await userEvent.type(screen.getByPlaceholderText("Buscar profissional…"), "zzz");
 
-    expect(await screen.findByText("Nenhuma pessoa encontrada.")).toBeTruthy();
+    expect(await screen.findByText("Nenhum profissional encontrado.")).toBeTruthy();
     expect(screen.queryByRole("option", { name: "Ana Martins" })).toBeNull();
   });
 });
@@ -134,7 +141,7 @@ describe("PersonCombobox — 'Todo o time' como alternador de verdade", () => {
     for (const name of ["Ana Martins", "Bruno Almeida"]) {
       expect(checkboxDe(name)?.getAttribute("aria-checked")).toBe("false");
     }
-    expect(trigger().textContent).toContain("Nenhuma pessoa selecionada");
+    expect(trigger().textContent).toContain("Nenhum profissional selecionado");
   });
 
   it("clicar em 'Todo o time' já marcado desmarca tudo; com seleção parcial marca todo mundo", async () => {
@@ -160,7 +167,7 @@ describe("PersonCombobox — 'Todo o time' como alternador de verdade", () => {
   });
 
   it("com uma pessoa já selecionada, o mestre fica indeterminado e marcar outra amplia", async () => {
-    const onChange = renderMany(["ana"], threeArchitects);
+    const onChange = renderMany(["ana"], threeProfessionals);
     await abrir();
 
     expect(checkboxDe("Todo o time")?.getAttribute("data-state")).toBe("indeterminate");
@@ -178,17 +185,17 @@ describe("PersonCombobox — 'Todo o time' como alternador de verdade", () => {
 
   it("quando o alcance encolhe e deixa a seleção com um id órfão, o resumo se recalcula sozinho", async () => {
     function Harness() {
-      const [reach, setReach] = useState(threeArchitects);
+      const [reach, setReach] = useState(threeProfessionals);
       const [selected, setSelected] = useState(["ana", "bruno", "carla"]);
       return (
         <div>
-          <button type="button" onClick={() => setReach(architects)}>
+          <button type="button" onClick={() => setReach(professionals)}>
             Remover Carla do alcance
           </button>
           <PersonCombobox
             picker={PersonPicker.many(reach, selected)}
             onChange={setSelected}
-            label="Pessoas"
+            label="Profissionais"
           />
         </div>
       );
@@ -213,13 +220,13 @@ describe("PersonCombobox — uma pessoa", () => {
     render(
       <I18nProvider>
         <PersonCombobox
-          picker={PersonPicker.one(architects, null)}
+          picker={PersonPicker.one(professionals, null)}
           onChange={onChange}
-          label="Pessoas"
+          label="Profissionais"
         />
       </I18nProvider>,
     );
-    expect(trigger().textContent).toContain("Selecionar pessoa…");
+    expect(trigger().textContent).toContain("Selecionar profissional…");
 
     await abrir();
     expect(screen.queryByRole("option", { name: "Todo o time" })).toBeNull();

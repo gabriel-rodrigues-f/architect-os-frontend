@@ -103,7 +103,7 @@ function TeamRoster() {
 
       <TeamTransferRequestsSection />
 
-      {store.architectsIncludingInactive.length === 0 ? (
+      {store.professionalsIncludingInactive.length === 0 ? (
         <EmptyStateCard
           title={t("team.empty.title")}
           hint={t("team.empty.hint")}
@@ -132,7 +132,7 @@ function TeamRoster() {
               Regra do dono (2026-09-04): *"nenhum profissional desativado
               poderia aparecer em filtros na aplicação, em nenhum filtro"*.
 
-              Antes daqui ele recebia `architectsIncludingInactive` — o nome da
+              Antes daqui ele recebia `professionalsIncludingInactive` — o nome da
               coleção já dizia o que ela faz. O resultado era um menu que
               oferecia alguém que a lista se recusava a desenhar: escolher essa
               pessoa devolvia lista vazia, sem explicar por quê. O contador
@@ -213,9 +213,9 @@ function TeamRoster() {
               view={roster.view}
               isAdmin={isAdmin}
               teams={actions.allTeams}
-              decidesCareerOf={(architect) => viewModel.decidesCareerOf(user, architect)}
-              pendingTransferOf={(architect) =>
-                transfers.viewModel.pendingOf(architect.id, transfers.requests)
+              decidesCareerOf={(professional) => viewModel.decidesCareerOf(user, professional)}
+              pendingTransferOf={(professional) =>
+                transfers.viewModel.pendingOf(professional.id, transfers.requests)
               }
               onTransition={actions.setTransitioning}
               onReactivate={actions.reactivate}
@@ -235,7 +235,7 @@ function TeamRoster() {
 
       {actions.transitioning && (
         <TeamOrLevelChangeDialog
-          architect={actions.transitioning}
+          professional={actions.transitioning}
           teams={actions.teams}
           onClose={() => actions.setTransitioning(null)}
         />

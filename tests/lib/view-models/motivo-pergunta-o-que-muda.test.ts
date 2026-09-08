@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { TeamOrLevelChange } from "@/lib/view-models/team-view-model";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 
 /**
  * Pedido do dono (2026-09-03), diante do diálogo "Mudar time ou nível":
@@ -18,7 +18,7 @@ describe("TeamOrLevelChange — a pergunta do motivo segue o que muda", () => {
     name: "Gabriel Marangoni",
     role: "Pleno",
     teamId: "time-arquitetura",
-  } as unknown as Architect;
+  } as unknown as Professional;
 
   it("mudando só o nível, pergunta pelo nível", () => {
     const mudanca = new TeamOrLevelChange(pessoa, "Sênior", "time-arquitetura");

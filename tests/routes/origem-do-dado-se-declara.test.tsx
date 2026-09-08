@@ -89,7 +89,7 @@ const avisosDaOrganizacao = {
       link: "/assessments",
       occurredAt: "2026-08-29T12:00:00.000Z",
       readAt: null,
-      architectId: "arquiteto-real",
+      professionalId: "profissional-real",
       teamId: "time-real",
     },
   ],

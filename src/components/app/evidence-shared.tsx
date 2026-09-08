@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useArchitectProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
+import { useProfessionalProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
 import type { DevelopmentPlan, Evidence, EvidenceType } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
@@ -56,16 +56,16 @@ export function EvidenceStatusBadge({ status }: { status: Evidence["status"] }) 
 }
 
 export function EvidenceDialog({
-  architectId,
+  professionalId,
   plan,
 }: {
-  architectId: string;
+  professionalId: string;
   plan: DevelopmentPlan | undefined;
 }) {
   const planItems = plan?.items ?? [];
   const { t } = useI18n();
   const labels = useLabels();
-  const viewModel = useArchitectProfileViewModel();
+  const viewModel = useProfessionalProfileViewModel();
 
   const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const [open, setOpen] = useState(false);
@@ -87,7 +87,7 @@ export function EvidenceDialog({
     const nome = title.trim();
     if (!nome || !type) return;
     const result = await run(() =>
-      viewModel.registerEvidence(architectId, {
+      viewModel.registerEvidence(professionalId, {
         title,
         description,
         type: type as EvidenceType,
@@ -249,7 +249,7 @@ export function EvidenceDialog({
 
 export function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
   const { t } = useI18n();
-  const viewModel = useArchitectProfileViewModel();
+  const viewModel = useProfessionalProfileViewModel();
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState(evidence.description);
   const [url, setUrl] = useState(evidence.url ?? "");
@@ -327,13 +327,13 @@ export function ResubmitEvidenceDialog({ evidence }: { evidence: Evidence }) {
  * registra em Avaliações. A revisão (ato da liderança) continua na ficha.
  */
 export function EvidenceLedgerSection({
-  architectId,
+  professionalId,
   plan,
   evidences,
   canRegister,
   className,
 }: {
-  architectId: string;
+  professionalId: string;
   plan: DevelopmentPlan | undefined;
   evidences: readonly Evidence[];
   canRegister: boolean;
@@ -346,7 +346,9 @@ export function EvidenceLedgerSection({
       {...(className ? { className } : {})}
       title={t("asmt.evidenceLedger.title")}
       description={t("asmt.evidenceLedger.subtitle")}
-      actions={canRegister ? <EvidenceDialog architectId={architectId} plan={plan} /> : undefined}
+      actions={
+        canRegister ? <EvidenceDialog professionalId={professionalId} plan={plan} /> : undefined
+      }
     >
       <ul className="space-y-2">
         {evidences.map((evidence) => (

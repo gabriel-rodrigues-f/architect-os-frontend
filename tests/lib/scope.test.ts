@@ -20,19 +20,19 @@ import {
  */
 describe("UiAuthorizationPolicy", () => {
   const policy = new UiAuthorizationPolicy();
-  const anaAsArchitect = { id: "ana", teamId: null };
+  const anaAsProfessional = { id: "ana", teamId: null };
   const anaInLedTeam = { id: "ana", teamId: "time-plataforma" };
 
   describe("canActFor", () => {
     it("o administrador (ADMIN) age por qualquer pessoa, com ou sem time — ela faz tudo (dono, 2026-09-08, regra 6)", () => {
-      expect(policy.canActFor(fixtureAdminUser, anaAsArchitect)).toBe(true);
+      expect(policy.canActFor(fixtureAdminUser, anaAsProfessional)).toBe(true);
       expect(policy.canActFor(fixtureAdminUser, anaInLedTeam)).toBe(true);
       expect(policy.canReadAbout(fixtureAdminUser, anaInLedTeam)).toBe(true);
       expect(policy.actsForTheOrganization(fixtureAdminUser)).toBe(true);
     });
 
     it("o suporte NÃO age por ninguém — opera o sistema, não as pessoas (D1, 2026-09-05)", () => {
-      expect(policy.canActFor(fixtureSupportUser, anaAsArchitect)).toBe(false);
+      expect(policy.canActFor(fixtureSupportUser, anaAsProfessional)).toBe(false);
       expect(policy.canActFor(fixtureSupportUser, anaInLedTeam)).toBe(false);
       expect(policy.actsForTheOrganization(fixtureSupportUser)).toBe(false);
       // Só LÊ, em modo de suporte — a tela pede o motivo antes de abrir a ficha.
@@ -40,7 +40,7 @@ describe("UiAuthorizationPolicy", () => {
     });
 
     it("o limite de todos vale para o administrador: não age sobre si", () => {
-      const diretoraComFicha = { ...fixtureAdminUser, architectId: "ana" };
+      const diretoraComFicha = { ...fixtureAdminUser, professionalId: "ana" };
       expect(policy.canActFor(diretoraComFicha, anaInLedTeam)).toBe(false);
       expect(policy.isLeadOf(diretoraComFicha, anaInLedTeam)).toBe(false);
       expect(policy.decidesCareerOf(diretoraComFicha, anaInLedTeam)).toBe(false);
@@ -48,17 +48,17 @@ describe("UiAuthorizationPolicy", () => {
     });
 
     it("ninguém age sobre si — nem o profissional (dono, 2026-09-06): a autoavaliação, a evidência e o PDI dele são registrados por quem o lidera", () => {
-      expect(policy.canActFor(fixtureMemberUser, anaAsArchitect)).toBe(false);
+      expect(policy.canActFor(fixtureMemberUser, anaAsProfessional)).toBe(false);
       expect(policy.actsOnSelf(fixtureMemberUser, "ana")).toBe(false);
       // Ele continua LENDO tudo o que é dele.
       expect(policy.readsOwn(fixtureMemberUser, "ana")).toBe(true);
-      expect(policy.canReadAbout(fixtureMemberUser, anaAsArchitect)).toBe(true);
+      expect(policy.canReadAbout(fixtureMemberUser, anaAsProfessional)).toBe(true);
     });
 
     it("exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha é do profissional — e de quem o lidera", () => {
-      expect(policy.recordsTrailProgressOf(fixtureMemberUser, anaAsArchitect)).toBe(true);
+      expect(policy.recordsTrailProgressOf(fixtureMemberUser, anaAsProfessional)).toBe(true);
       expect(policy.recordsTrailProgressOf(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(true);
-      const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+      const techLeadAna = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
       expect(policy.recordsTrailProgressOf(techLeadAna, anaInLedTeam)).toBe(false);
     });
 
@@ -69,7 +69,7 @@ describe("UiAuthorizationPolicy", () => {
     });
 
     it("o tech lead NUNCA age sobre si (dono, 2026-09-06): não se avalia, não abre PDI nem roteiro próprio; só lê", () => {
-      const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+      const techLeadAna = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
       expect(policy.canActFor(techLeadAna, anaInLedTeam)).toBe(false);
       expect(policy.isLeadOf(techLeadAna, anaInLedTeam)).toBe(false);
       expect(policy.isAssignedTechLeadOf(techLeadAna, anaInLedTeam)).toBe(false);
@@ -77,16 +77,16 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canReadAbout(techLeadAna, anaInLedTeam)).toBe(true);
     });
 
-    it("lead não age sobre arquiteto SEM TIME — a Fase 2 trocou o vínculo: sem time, sem dono", () => {
-      expect(policy.canActFor(fixtureUnassignedTechLeadUser, anaAsArchitect)).toBe(false);
+    it("lead não age sobre profissional SEM TIME — a Fase 2 trocou o vínculo: sem time, sem dono", () => {
+      expect(policy.canActFor(fixtureUnassignedTechLeadUser, anaAsProfessional)).toBe(false);
     });
 
-    it("lead age sobre arquiteto com time SÓ com vínculo naquele time — o atalho 'qualquer outra pessoa' morreu (inconsistência G)", () => {
+    it("lead age sobre profissional com time SÓ com vínculo naquele time — o atalho 'qualquer outra pessoa' morreu (inconsistência G)", () => {
       expect(policy.canActFor(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(true);
       expect(policy.canActFor(fixtureUnassignedTechLeadUser, anaInLedTeam)).toBe(false);
     });
 
-    it("sem architect, ninguém age", () => {
+    it("sem professional, ninguém age", () => {
       expect(policy.canActFor(fixtureMemberUser, undefined)).toBe(false);
       expect(policy.canActFor(fixtureAdminUser, undefined)).toBe(false);
     });
@@ -94,21 +94,21 @@ describe("UiAuthorizationPolicy", () => {
 
   describe("isLeadOf", () => {
     it("o administrador lidera qualquer pessoa (regra 6); o suporte, ninguém (D1)", () => {
-      expect(policy.isLeadOf(fixtureAdminUser, anaAsArchitect)).toBe(true);
+      expect(policy.isLeadOf(fixtureAdminUser, anaAsProfessional)).toBe(true);
       expect(policy.isLeadOf(fixtureAdminUser, anaInLedTeam)).toBe(true);
-      expect(policy.isLeadOf(fixtureSupportUser, anaAsArchitect)).toBe(false);
+      expect(policy.isLeadOf(fixtureSupportUser, anaAsProfessional)).toBe(false);
       expect(policy.isLeadOf(fixtureSupportUser, anaInLedTeam)).toBe(false);
     });
 
     it("a própria pessoa NÃO é lead de si mesma", () => {
-      expect(policy.isLeadOf(fixtureMemberUser, anaAsArchitect)).toBe(false);
+      expect(policy.isLeadOf(fixtureMemberUser, anaAsProfessional)).toBe(false);
       expect(policy.isLeadOf({ ...fixtureMemberUser, role: "tech_lead" }, anaInLedTeam)).toBe(
         false,
       );
     });
 
-    it("lead responde true para arquiteto do time onde tem vínculo, false sem time e sem vínculo", () => {
-      expect(policy.isLeadOf(fixtureAssignedTechLeadUser, anaAsArchitect)).toBe(false);
+    it("lead responde true para profissional do time onde tem vínculo, false sem time e sem vínculo", () => {
+      expect(policy.isLeadOf(fixtureAssignedTechLeadUser, anaAsProfessional)).toBe(false);
       expect(policy.isLeadOf(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(true);
       expect(policy.isLeadOf(fixtureUnassignedTechLeadUser, anaInLedTeam)).toBe(false);
     });
@@ -125,14 +125,14 @@ describe("UiAuthorizationPolicy", () => {
     const bia = { id: "bia", teamId: "time-plataforma" };
 
     it("tech lead com ficha própria NÃO se vê na lista — ele não se avalia (dono, 2026-09-06)", () => {
-      const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+      const techLeadAna = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
       expect(policy.assessableBy(techLeadAna, [bia, ana])).toEqual([bia]);
     });
 
     it("gerente com ficha própria também não se vê — só os liderados", () => {
       const managerAna = {
         ...fixtureAssignedManagerUser,
-        architectId: "ana",
+        professionalId: "ana",
       };
       expect(policy.assessableBy(managerAna, [bia, ana])).toEqual([bia]);
     });
@@ -152,7 +152,7 @@ describe("UiAuthorizationPolicy", () => {
     const bia = { id: "bia", teamId: "time-plataforma" };
 
     it("ninguém mentora a si mesmo, nem o profissional", () => {
-      const techLeadAna = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+      const techLeadAna = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
       expect(policy.mentorableBy(techLeadAna, [ana, bia])).toEqual([bia]);
       expect(policy.mentorableBy(fixtureMemberUser, [ana])).toEqual([]);
     });
@@ -174,8 +174,10 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.isAssignedTechLeadOf(fixtureUnassignedTechLeadUser, anaInLedTeam)).toBe(false);
     });
 
-    it("arquiteto sem time responde false", () => {
-      expect(policy.isAssignedTechLeadOf(fixtureAssignedTechLeadUser, anaAsArchitect)).toBe(false);
+    it("profissional sem time responde false", () => {
+      expect(policy.isAssignedTechLeadOf(fixtureAssignedTechLeadUser, anaAsProfessional)).toBe(
+        false,
+      );
     });
   });
 
@@ -221,9 +223,9 @@ describe("UiAuthorizationPolicy", () => {
       );
       expect(policy.createsLearningPath(fixtureAdminUser)).toBe(true);
       expect(policy.editsLearningPath(fixtureAdminUser, { createdByUserId: "x" })).toBe(true);
-      expect(policy.mentorableBy(fixtureAdminUser, [anaInLedTeam, anaAsArchitect])).toEqual([
+      expect(policy.mentorableBy(fixtureAdminUser, [anaInLedTeam, anaAsProfessional])).toEqual([
         anaInLedTeam,
-        anaAsArchitect,
+        anaAsProfessional,
       ]);
       expect(policy.assessableBy(fixtureAdminUser, [anaInLedTeam])).toEqual([anaInLedTeam]);
 
@@ -388,16 +390,16 @@ describe("configurableTeamIds — quais réguas a tela pode oferecer", () => {
 
 /**
  * O limite que o cabeçalho de `scope.ts` registrava como pergunta de contrato:
- * o lead-arquiteto que lidera o PRÓPRIO time não se distinguia, e a UI lhe
+ * o lead-profissional que lidera o PRÓPRIO time não se distinguia, e a UI lhe
  * escondia ações que o backend permitia. Com `memberships` na sessão ele
  * passa a se distinguir — e só quando o vínculo existe.
  */
-describe("o lead-arquiteto que lidera o próprio time", () => {
+describe("o lead-profissional que lidera o próprio time", () => {
   const policy = new UiAuthorizationPolicy();
   const eleMesmo = { id: "ana", teamId: "time-plataforma" };
-  const leadArquiteto = {
+  const leadProfissional = {
     ...fixtureAssignedTechLeadUser,
-    architectId: "ana",
+    professionalId: "ana",
     memberships: [{ teamId: "time-plataforma", role: "tech_lead" as const }],
   };
 
@@ -408,25 +410,25 @@ describe("o lead-arquiteto que lidera o próprio time", () => {
    * OUTROS do time; para si, não há liderança.
    */
   it("NÃO é lead de si mesmo, mesmo liderando o próprio time", () => {
-    expect(policy.isLeadOf(leadArquiteto, eleMesmo)).toBe(false);
+    expect(policy.isLeadOf(leadProfissional, eleMesmo)).toBe(false);
   });
 
-  it("a própria ficha não tem ação: nem para o líder, nem para o admin com arquiteto", () => {
-    expect(policy.canActOnCareerFileOf(leadArquiteto, eleMesmo)).toBe(false);
-    expect(policy.canActOnCareerFileOf({ ...fixtureAdminUser, architectId: "ana" }, eleMesmo)).toBe(
-      false,
-    );
-    expect(policy.isLeadOf({ ...fixtureAdminUser, architectId: "ana" }, eleMesmo)).toBe(false);
+  it("a própria ficha não tem ação: nem para o líder, nem para o admin com profissional", () => {
+    expect(policy.canActOnCareerFileOf(leadProfissional, eleMesmo)).toBe(false);
+    expect(
+      policy.canActOnCareerFileOf({ ...fixtureAdminUser, professionalId: "ana" }, eleMesmo),
+    ).toBe(false);
+    expect(policy.isLeadOf({ ...fixtureAdminUser, professionalId: "ana" }, eleMesmo)).toBe(false);
   });
 
   it("na ficha de um liderado, o líder continua agindo e liderando", () => {
     const liderado = { id: "bruno", teamId: "time-plataforma" };
-    expect(policy.isLeadOf(leadArquiteto, liderado)).toBe(true);
-    expect(policy.canActOnCareerFileOf(leadArquiteto, liderado)).toBe(true);
+    expect(policy.isLeadOf(leadProfissional, liderado)).toBe(true);
+    expect(policy.canActOnCareerFileOf(leadProfissional, liderado)).toBe(true);
   });
 
   it("sem vínculo, nada muda: continua não sendo lead de si mesmo", () => {
-    expect(policy.isLeadOf({ ...leadArquiteto, memberships: [] }, eleMesmo)).toBe(false);
+    expect(policy.isLeadOf({ ...leadProfissional, memberships: [] }, eleMesmo)).toBe(false);
   });
 });
 
@@ -450,7 +452,7 @@ describe("os quatro papéis — alcance é união, poder é estrito", () => {
   const conta = (role: UserRole, memberships: readonly TeamMembership[]): SessionUser => ({
     ...fixtureMemberUser,
     id: `conta-${role}`,
-    architectId: null,
+    professionalId: null,
     role,
     memberships,
   });
@@ -547,7 +549,7 @@ describe("o profissional não vê os próprios números", () => {
     expect(policy.canOpenCareerTabsOf(fixtureAdminUser, "ana")).toBe(true);
     expect(policy.canOpenCareerTabsOf(fixtureAssignedTechLeadUser, "ana")).toBe(true);
     expect(
-      policy.canOpenCareerTabsOf({ ...fixtureAssignedTechLeadUser, architectId: "ana" }, "ana"),
+      policy.canOpenCareerTabsOf({ ...fixtureAssignedTechLeadUser, professionalId: "ana" }, "ana"),
     ).toBe(true);
   });
 

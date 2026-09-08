@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ArchitectRoster,
-  ArchitectSelectors,
+  ProfessionalRoster,
+  ProfessionalSelectors,
   AssessmentSelectors,
   CapabilitySelectors,
   createSelectors,
@@ -14,25 +14,25 @@ import {
 import type { AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
 
-describe("ArchitectRoster.active — o gerente não é um profissional com capacidades (dono, 2026-09-06)", () => {
+describe("ProfessionalRoster.active — o gerente não é um profissional com capacidades (dono, 2026-09-06)", () => {
   it("o gerente (cargo manager) sai de toda leitura de capacidade; tech lead e membro ficam", () => {
     const gerente = {
-      ...fixtureState.architects[0]!,
+      ...fixtureState.professionals[0]!,
       id: "gerente",
       name: "Gerente",
       cargo: "manager" as const,
     };
     const techLead = {
-      ...fixtureState.architects[0]!,
+      ...fixtureState.professionals[0]!,
       id: "tl",
       name: "TL",
       cargo: "tech_lead" as const,
     };
     const sel = createSelectors({
       ...fixtureState,
-      architects: [...fixtureState.architects, gerente, techLead],
+      professionals: [...fixtureState.professionals, gerente, techLead],
     });
-    const ids = sel.activeArchitects.map((architect) => architect.id);
+    const ids = sel.activeProfessionals.map((professional) => professional.id);
     expect(ids).not.toContain("gerente");
     expect(ids).toContain("tl");
     expect(ids).toContain("ana");
@@ -40,13 +40,13 @@ describe("ArchitectRoster.active — o gerente não é um profissional com capac
 
   it("nem o roster completo (o do Time) lista o gerente — ele nunca é sujeito", () => {
     const gerente = {
-      ...fixtureState.architects[0]!,
+      ...fixtureState.professionals[0]!,
       id: "gerente",
       name: "Gerente",
       cargo: "manager" as const,
     };
-    const ids = ArchitectRoster.professionals([...fixtureState.architects, gerente]).map(
-      (architect) => architect.id,
+    const ids = ProfessionalRoster.professionals([...fixtureState.professionals, gerente]).map(
+      (professional) => professional.id,
     );
     expect(ids).not.toContain("gerente");
     expect(ids).toContain("ana");
@@ -57,7 +57,10 @@ describe("coverageFor / teamAverageFor (OO3-11k — média com cobertura, nunca 
   // "diego" não tem assessment — contribui na cobertura, nunca na média.
   const state: AppState = {
     ...fixtureState,
-    architects: [...fixtureState.architects, { ...fixtureState.architects[0]!, id: "diego" }],
+    professionals: [
+      ...fixtureState.professionals,
+      { ...fixtureState.professionals[0]!, id: "diego" },
+    ],
   };
   const sel = createSelectors(state);
 
@@ -90,7 +93,7 @@ describe("createSelectors", () => {
   it("resolve entidades por id", () => {
     expect(s.competencyById("cloud-k8s")?.name).toBe("Kubernetes");
     expect(s.capabilityById("security")?.short).toBe("Security");
-    expect(s.architectById("ana")?.name).toBe("Ana Martins");
+    expect(s.professionalById("ana")?.name).toBe("Ana Martins");
     expect(s.competencyById("nao-existe")).toBeUndefined();
   });
 
@@ -129,7 +132,7 @@ describe("createSelectors", () => {
         {
           ...fixtureState.assessments[0]!,
           id: "draft-1",
-          architectId: "diego",
+          professionalId: "diego",
           cycleId: "2026-h2",
           status: "Draft",
         },
@@ -141,7 +144,7 @@ describe("createSelectors", () => {
         {
           ...fixtureState.assessments[0]!,
           id: "review-1",
-          architectId: "diego",
+          professionalId: "diego",
           cycleId: "2026-h2",
           status: "In Review",
         },
@@ -153,7 +156,7 @@ describe("createSelectors", () => {
         {
           ...fixtureState.assessments[0]!,
           id: "done-1",
-          architectId: "diego",
+          professionalId: "diego",
           cycleId: "2026-h2",
           status: "Completed",
         },
@@ -209,20 +212,20 @@ describe("createSelectors", () => {
 
   /**
    * EPIC E — quem já saiu do time não conta como time atual: nem na lista
-   * de `activeArchitects`, nem na Necessidade de Treinamento agregada.
+   * de `activeProfessionals`, nem na Necessidade de Treinamento agregada.
    * `gapsFor`/`capabilityAverages` continuam funcionando por id explícito (uma
    * tela histórica pode pedir o gap de alguém inativo de propósito).
    */
-  describe("activeArchitects — time atual exclui quem saiu", () => {
+  describe("activeProfessionals — time atual exclui quem saiu", () => {
     const comInativo = createSelectors({
       ...fixtureState,
-      architects: fixtureState.architects.map((a) =>
+      professionals: fixtureState.professionals.map((a) =>
         a.id === "bruno" ? { ...a, active: false } : a,
       ),
     });
 
-    it("activeArchitects não lista bruno", () => {
-      expect(comInativo.activeArchitects.map((a) => a.id)).toEqual(["ana"]);
+    it("activeProfessionals não lista bruno", () => {
+      expect(comInativo.activeProfessionals.map((a) => a.id)).toEqual(["ana"]);
     });
 
     it("teamTrainingNeeds ignora as lacunas de bruno", () => {
@@ -249,11 +252,11 @@ describe("createSelectors", () => {
 describe("classes por contexto (instanciadas diretamente)", () => {
   const index = new SelectorIndex(fixtureState);
 
-  it("ArchitectSelectors resolve por id e lista só quem está ativo", () => {
-    const architects = new ArchitectSelectors(fixtureState, index);
-    expect(architects.byId("ana")?.name).toBe("Ana Martins");
-    expect(architects.byId("nao-existe")).toBeUndefined();
-    expect(architects.active.map((a) => a.id)).toEqual(["ana", "bruno"]);
+  it("ProfessionalSelectors resolve por id e lista só quem está ativo", () => {
+    const professionals = new ProfessionalSelectors(fixtureState, index);
+    expect(professionals.byId("ana")?.name).toBe("Ana Martins");
+    expect(professionals.byId("nao-existe")).toBeUndefined();
+    expect(professionals.active.map((a) => a.id)).toEqual(["ana", "bruno"]);
   });
 
   it("AssessmentSelectors calcula gap igual ao objeto achatado", () => {
@@ -279,20 +282,20 @@ describe("classes por contexto (instanciadas diretamente)", () => {
     expect(cloud).toMatchObject({ avg: 4, target: 4 });
   });
 
-  it("TrainingSelectors agrega necessidade de treinamento a partir de Architect + Assessment", () => {
-    const architects = new ArchitectSelectors(fixtureState, index);
+  it("TrainingSelectors agrega necessidade de treinamento a partir de Professional + Assessment", () => {
+    const professionals = new ProfessionalSelectors(fixtureState, index);
     const assessment = new AssessmentSelectors(index);
-    const training = new TrainingSelectors(architects, assessment);
+    const training = new TrainingSelectors(professionals, assessment);
     const needs = training.teamTrainingNeeds();
     expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam", "cloud-k8s"]);
   });
 });
 
-describe("activeArchitects", () => {
+describe("activeProfessionals", () => {
   /**
    * Onda 10, T8 — `visibleTo` (OO3-11a) morreu com o roster fechado no
    * backend (`d1edba4`): o recorte de QUEM aparece é do servidor, que só
-   * manda os arquitetos do escopo do papel (`scopedFixtureStateFor` espelha
+   * manda os profissionais do escopo do papel (`scopedFixtureStateFor` espelha
    * esse payload). O que continua sendo regra de UI legítima — e é o que
    * estes casos fixam — é o filtro por `active`: um desligado que VEM no
    * payload (o servidor não recorta por `active`) não entra nas populações
@@ -300,13 +303,13 @@ describe("activeArchitects", () => {
    */
   const state: AppState = {
     ...fixtureState,
-    architects: [
-      ...fixtureState.architects,
+    professionals: [
+      ...fixtureState.professionals,
       {
         id: "carla",
         name: "Carla Inativa",
         role: "Júnior",
-        yearsAsArchitect: 2,
+        yearsAsProfessional: 2,
         specialization: "Data",
         email: "carla@company.com",
         active: false,
@@ -317,15 +320,18 @@ describe("activeArchitects", () => {
   const sel = createSelectors(state);
 
   it("inativo presente no payload nunca entra na população ativa", () => {
-    expect(sel.activeArchitects.map((architect) => architect.id)).toEqual(["ana", "bruno"]);
+    expect(sel.activeProfessionals.map((professional) => professional.id)).toEqual([
+      "ana",
+      "bruno",
+    ]);
   });
 
   it("continua alcançável por id — a ficha dele não some, só as listas", () => {
-    expect(sel.architectById("carla")?.name).toBe("Carla Inativa");
+    expect(sel.professionalById("carla")?.name).toBe("Carla Inativa");
   });
 
   it("é a MESMA referência entre leituras — identidade estável para useMemo", () => {
-    expect(sel.activeArchitects).toBe(sel.activeArchitects);
+    expect(sel.activeProfessionals).toBe(sel.activeProfessionals);
   });
 });
 
@@ -356,10 +362,10 @@ describe("consolidação de gaps (GapConsolidationSelectors)", () => {
   const sel = createSelectors(fixtureState);
 
   it("agrega por competência somando pessoas e gap total; gap <= 0 é descartado", () => {
-    const rows = sel.consolidateProgressionGaps(fixtureState.architects);
+    const rows = sel.consolidateProgressionGaps(fixtureState.professionals);
     const iam = rows.find((r) => r.competencyId === "security-iam");
     expect(iam).toMatchObject({ people: 2, totalGap: 2 });
-    expect(iam?.architectNames.sort()).toEqual(["Ana Martins", "Bruno Almeida"]);
+    expect(iam?.professionalNames.sort()).toEqual(["Ana Martins", "Bruno Almeida"]);
     // cloud-serverless: gap 0 para os dois — nunca vira linha.
     expect(rows.some((r) => r.competencyId === "cloud-serverless")).toBe(false);
   });
@@ -380,7 +386,7 @@ describe("consolidação de gaps (GapConsolidationSelectors)", () => {
           : a,
       ),
     };
-    const rows = createSelectors(state).consolidateProgressionGaps(state.architects);
+    const rows = createSelectors(state).consolidateProgressionGaps(state.professionals);
     const iam = rows.find((r) => r.competencyId === "security-iam");
     // ana: final 2 → 3 (gap 1); bruno: final 1 → 4 (gap 3)
     expect(iam).toMatchObject({
@@ -394,7 +400,7 @@ describe("consolidação de gaps (GapConsolidationSelectors)", () => {
   });
 
   it("ordena por totalGap desc com desempate por maxGap desc", () => {
-    const rows = sel.consolidateProgressionGaps(fixtureState.architects);
+    const rows = sel.consolidateProgressionGaps(fixtureState.professionals);
     for (let i = 1; i < rows.length; i += 1) {
       const prev = rows[i - 1]!;
       const cur = rows[i]!;
@@ -406,26 +412,26 @@ describe("consolidação de gaps (GapConsolidationSelectors)", () => {
   });
 
   it("consolidateMasteryGaps usa só itens MASTERY — com a fixture atual, nenhum", () => {
-    expect(sel.consolidateMasteryGaps(fixtureState.architects)).toEqual([]);
+    expect(sel.consolidateMasteryGaps(fixtureState.professionals)).toEqual([]);
   });
 });
 
 /**
  * F2 (caminhos quentes) — `consolidate` e `teamTrainingNeeds` acumulavam com
- * `[...acumulador, item]` dentro de laço duplo (arquitetos × lacunas), o que
+ * `[...acumulador, item]` dentro de laço duplo (profissionais × lacunas), o que
  * recopia a lista inteira a cada pessoa. A troca por acumulação em lugar não
- * pode mudar NADA do resultado — inclusive a ORDEM dentro de `architectNames`
- * e `architectIds`, que é a ordem da população recebida e é o que a tela usa
+ * pode mudar NADA do resultado — inclusive a ORDEM dentro de `professionalNames`
+ * e `professionalIds`, que é a ordem da população recebida e é o que a tela usa
  * no `title` da coluna "pessoas". Estes casos fixam a saída de hoje inteira,
  * campo a campo, com três pessoas na mesma competência (é preciso k ≥ 3 para
  * uma regressão de ordem aparecer).
  */
 describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
-  const carla: AppState["architects"][number] = {
+  const carla: AppState["professionals"][number] = {
     id: "carla",
     name: "Carla Souza",
     role: "Sênior",
-    yearsAsArchitect: 9,
+    yearsAsProfessional: 9,
     specialization: "Data",
     email: "carla@company.com",
     active: true,
@@ -434,12 +440,12 @@ describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
 
   const state: AppState = {
     ...fixtureState,
-    architects: [...fixtureState.architects, carla],
+    professionals: [...fixtureState.professionals, carla],
     assessments: [
       ...fixtureState.assessments,
       {
         id: "carla-h2",
-        architectId: "carla",
+        professionalId: "carla",
         cycleId: "2026-h2",
         status: "Completed",
         modelVersion: 1,
@@ -473,13 +479,13 @@ describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
    * - cloud-serverless não tem lacuna em ninguém — nunca vira linha.
    */
   it("consolidateProgressionGaps devolve exatamente as linhas de hoje, com os nomes na ordem da população", () => {
-    expect(sel.consolidateProgressionGaps(state.architects)).toEqual([
+    expect(sel.consolidateProgressionGaps(state.professionals)).toEqual([
       {
         competencyId: "cloud-k8s",
         name: "Kubernetes",
         capabilityId: "cloud",
         people: 2,
-        architectNames: ["Bruno Almeida", "Carla Souza"],
+        professionalNames: ["Bruno Almeida", "Carla Souza"],
         totalGap: 5,
         maxGap: 4,
         sumFinal: 3,
@@ -493,7 +499,7 @@ describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
         name: "IAM",
         capabilityId: "security",
         people: 3,
-        architectNames: ["Ana Martins", "Bruno Almeida", "Carla Souza"],
+        professionalNames: ["Ana Martins", "Bruno Almeida", "Carla Souza"],
         totalGap: 4,
         maxGap: 2,
         sumFinal: 5,
@@ -505,12 +511,12 @@ describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
     ]);
   });
 
-  it("a ordem de architectNames acompanha a ordem da população, não a do catálogo", () => {
-    const invertida = [...state.architects].reverse();
+  it("a ordem de professionalNames acompanha a ordem da população, não a do catálogo", () => {
+    const invertida = [...state.professionals].reverse();
     const linha = sel
       .consolidateProgressionGaps(invertida)
       .find((r) => r.competencyId === "security-iam");
-    expect(linha?.architectNames).toEqual(["Carla Souza", "Bruno Almeida", "Ana Martins"]);
+    expect(linha?.professionalNames).toEqual(["Carla Souza", "Bruno Almeida", "Ana Martins"]);
   });
 
   it("teamTrainingNeeds devolve exatamente as necessidades de hoje, com os ids na ordem da população", () => {
@@ -520,14 +526,14 @@ describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
         people: 2,
         avgGap: 2.5,
         totalGap: 5,
-        architectIds: ["bruno", "carla"],
+        professionalIds: ["bruno", "carla"],
       },
       {
         competency: state.competencies.find((c) => c.id === "security-iam"),
         people: 3,
         avgGap: 1.3,
         totalGap: 4,
-        architectIds: ["ana", "bruno", "carla"],
+        professionalIds: ["ana", "bruno", "carla"],
       },
     ]);
   });
@@ -538,8 +544,8 @@ describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
   });
 
   it("consolidar duas vezes não acumula nada de uma chamada para a outra", () => {
-    const primeira = sel.consolidateProgressionGaps(state.architects);
-    expect(sel.consolidateProgressionGaps(state.architects)).toEqual(primeira);
+    const primeira = sel.consolidateProgressionGaps(state.professionals);
+    expect(sel.consolidateProgressionGaps(state.professionals)).toEqual(primeira);
     expect(sel.teamTrainingNeeds()).toEqual(sel.teamTrainingNeeds());
   });
 });

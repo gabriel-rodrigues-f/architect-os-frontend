@@ -6,9 +6,9 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
-import { Route as EvolutionRoute } from "@/routes/architects.$architectId.evolution";
-import type { ArchitectEvolutionResult } from "@/lib/domain";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
+import { Route as EvolutionRoute } from "@/routes/professionals.$professionalId.evolution";
+import type { ProfessionalEvolutionResult } from "@/lib/domain";
 import { apiPath } from "@/lib/api-path";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch } from "../helpers/render-app";
@@ -34,8 +34,8 @@ const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 const EvolutionPage = EvolutionRoute.options.component as () => ReactNode;
 
 /** A régua da Evolução é OUTRA: o nível no fim do período filtrado. */
-const evolucaoDaAna: ArchitectEvolutionResult = {
-  architect: {
+const evolucaoDaAna: ProfessionalEvolutionResult = {
+  professional: {
     id: "ana",
     name: "Ana Martins",
     role: "Pleno",
@@ -110,7 +110,9 @@ describe("Nível médio — cada tela diz qual régua usa", () => {
       state: fixtureState,
       routes: [
         (href) =>
-          href.endsWith(apiPath("/evolution/architect")) ? jsonResponse(evolucaoDaAna) : undefined,
+          href.endsWith(apiPath("/evolution/professional"))
+            ? jsonResponse(evolucaoDaAna)
+            : undefined,
       ],
     });
     const { container } = renderCareerFile(<EvolutionPage />, { tab: "evolution" });

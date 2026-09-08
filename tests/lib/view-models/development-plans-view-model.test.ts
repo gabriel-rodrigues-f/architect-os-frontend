@@ -34,7 +34,7 @@ function fakeService(): DevelopmentPlanService & {
     reschedulePlanItem: vi.fn(async (planId: string) => ({ id: planId }) as DevelopmentPlan),
     addPlanItemCheckin: vi.fn(async (planId: string) => ({ id: planId }) as DevelopmentPlan),
     createPlanItemFromGap: vi.fn(
-      async (architectId: string) => ({ id: architectId }) as DevelopmentPlan,
+      async (professionalId: string) => ({ id: professionalId }) as DevelopmentPlan,
     ),
   };
 }
@@ -50,7 +50,7 @@ const gap = (competencyId: string, value: number): Gap =>
 
 describe("DevelopmentPlansViewModel", () => {
   describe("status do plano do ciclo", () => {
-    it("arquiteto sem plano no ciclo conta como rascunho", () => {
+    it("profissional sem plano no ciclo conta como rascunho", () => {
       const vm = new DevelopmentPlansViewModel(fakeService());
       expect(vm.statusOf(undefined)).toBe("Draft");
     });
@@ -65,8 +65,8 @@ describe("DevelopmentPlansViewModel", () => {
     it("sem plano, o fluxo é o de um rascunho — o líder pode aprovar", () => {
       const vm = new DevelopmentPlansViewModel(fakeService());
       const workflow = vm.workflowFor(undefined, {
-        actsForArchitect: true,
-        isLeadOfArchitect: true,
+        actsForProfessional: true,
+        isLeadOfProfessional: true,
         isAssignedTechLead: false,
       });
       expect(workflow.canApprove).toBe(true);
@@ -76,8 +76,8 @@ describe("DevelopmentPlansViewModel", () => {
     it("com plano concluído, o fluxo trava a edição de execução", () => {
       const vm = new DevelopmentPlansViewModel(fakeService());
       const workflow = vm.workflowFor({ status: "Completed" } as DevelopmentPlan, {
-        actsForArchitect: true,
-        isLeadOfArchitect: true,
+        actsForProfessional: true,
+        isLeadOfProfessional: true,
         isAssignedTechLead: false,
       });
       expect(workflow.canEditExecution).toBe(false);

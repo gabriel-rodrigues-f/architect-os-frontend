@@ -38,10 +38,10 @@ import { apiPath } from "@/lib/api-path";
  *
  * R2-UX-08/OO-03 — este teste usava "Desativar" como veículo do PATCH
  * otimista, mas desativação deixou de ser isso: virou `POST
- * /api/v1/architects/:id/deactivate`, sem otimismo nenhum (motivo obrigatório
+ * /api/v1/professionals/:id/deactivate`, sem otimismo nenhum (motivo obrigatório
  * + concorrência otimista — ver team-deactivate.test.tsx, que cobre o 409
  * desse fluxo novo, mostrado dentro do próprio diálogo). "Reativar"
- * é o POST otimista de reativação (`reactivateArchitect(id, version)` — o mesmo
+ * é o POST otimista de reativação (`reactivateProfessional(id, version)` — o mesmo
  * ato da desativação, de volta; sem diálogo em Time, um clique só) — assume
  * aqui o lugar de "Desativar" como veículo desta cobertura.
  */
@@ -49,7 +49,9 @@ import { apiPath } from "@/lib/api-path";
 /** Ana Martins já nasce inativa nesta suíte, só para o botão "Reativar" existir de cara. */
 const stateWithInactiveAna: AppState = {
   ...fixtureState,
-  architects: fixtureState.architects.map((a) => (a.id === "ana" ? { ...a, active: false } : a)),
+  professionals: fixtureState.professionals.map((a) =>
+    a.id === "ana" ? { ...a, active: false } : a,
+  ),
 };
 
 const fetchMock = vi.fn();
@@ -69,7 +71,7 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
         emptyAuthUsersRoute,
         // O servidor recusa a reativação — simula uma regra de negócio.
         (href, init) =>
-          init?.method === "POST" && href.endsWith(apiPath("/architects/ana/reactivate"))
+          init?.method === "POST" && href.endsWith(apiPath("/professionals/ana/reactivate"))
             ? jsonResponse({ error: "Conflict", message: "Não é possível reativar agora." }, 409)
             : undefined,
       ],
@@ -88,11 +90,11 @@ describe("store.remote — erro do servidor não fica em silêncio", () => {
         <Toaster theme="light" position="bottom-right" duration={3000} />
       </>,
     );
-    const nome = stateWithInactiveAna.architects[0]!.name;
+    const nome = stateWithInactiveAna.professionals[0]!.name;
 
     // Ana já nasce inativa nesta suíte — espera o roster carregar (via quem
     // continua ativo) antes de mexer no filtro.
-    await screen.findByText(stateWithInactiveAna.architects[1]!.name);
+    await screen.findByText(stateWithInactiveAna.professionals[1]!.name);
 
     // Status nasce filtrado só em "Ativos" — inclui "Inativos" pra achar
     // quem já está desativado e ver o botão "Reativar".

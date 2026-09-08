@@ -16,7 +16,7 @@ import {
   ViewToggle,
 } from "@/components/app";
 import { Badge } from "@/components/ui/badge";
-import type { Architect, Capability } from "@/lib/domain";
+import type { Professional, Capability } from "@/lib/domain";
 import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { CoverageTableOrder } from "@/lib/view-models";
 import { useCurrentUser } from "@/lib/auth";
@@ -83,7 +83,7 @@ function TeamCapabilityCoverage() {
   const [viewOverride, setViewOverride] = useState<CardsOrTable | null>(null);
   const cardsAndTableViews = useCardsAndTableViews();
 
-  const population = sel.activeArchitects;
+  const population = sel.activeProfessionals;
 
   const scoringBands = useScoringBands();
 
@@ -211,14 +211,14 @@ function TeamCapabilityCoverage() {
                         <Group
                           key={band.key}
                           label={t(band.labelKey)}
-                          people={band.people.map((p) => p.architect)}
+                          people={band.people.map((p) => p.professional)}
                           tone={band.tone}
                         />
                       ))}
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground">
                       {t("cap.references.label")}{" "}
-                      <ProfileLinkList people={area.references.map((p) => p.architect)} />
+                      <ProfileLinkList people={area.references.map((p) => p.professional)} />
                     </p>
                     {area.unassessed.length > 0 && (
                       <div className="mt-1 text-xs text-muted-foreground">
@@ -263,7 +263,7 @@ function Group({
   tone,
 }: {
   label: string;
-  people: readonly Architect[];
+  people: readonly Professional[];
   tone: string;
 }) {
   return (
@@ -290,7 +290,7 @@ function UnassessedDisclosure({
   children,
 }: {
   capability: Capability;
-  people: readonly Architect[];
+  people: readonly Professional[];
   className: string;
   children: ReactNode;
 }) {
@@ -312,15 +312,15 @@ function UnassessedDisclosure({
       </button>
       {open && (
         <ul id={listId} aria-label={t("cap.notAssessed.list", params)} className="mt-1 space-y-0.5">
-          {people.map((architect) => (
-            <li key={architect.id}>
+          {people.map((professional) => (
+            <li key={professional.id}>
               <Link
                 to="/assessments"
-                search={{ architectId: architect.id }}
-                title={t("cap.notAssessed.openAssessment", { nome: architect.name })}
+                search={{ professionalId: professional.id }}
+                title={t("cap.notAssessed.openAssessment", { nome: professional.name })}
                 className="text-foreground underline-offset-2 hover:underline"
               >
-                {architect.name}
+                {professional.name}
               </Link>
             </li>
           ))}
@@ -335,27 +335,27 @@ function ProfileLinkList({
   max = 5,
   emptyLabel,
 }: {
-  people: readonly Architect[];
+  people: readonly Professional[];
   max?: number;
   emptyLabel?: string;
 }) {
   const { t } = useI18n();
   if (people.length === 0) return <>{emptyLabel ?? t("common.none")}</>;
   const { shown, remaining } = defaultNameFormatter.truncateNames(
-    people.map((architect) => architect.name),
+    people.map((professional) => professional.name),
     max,
   );
   return (
-    <span title={people.map((architect) => architect.name).join(", ")}>
-      {people.slice(0, shown.length).map((architect, index) => (
-        <span key={architect.id}>
+    <span title={people.map((professional) => professional.name).join(", ")}>
+      {people.slice(0, shown.length).map((professional, index) => (
+        <span key={professional.id}>
           {index > 0 && ", "}
           <Link
-            to="/architects/$architectId"
-            params={{ architectId: architect.id }}
+            to="/professionals/$professionalId"
+            params={{ professionalId: professional.id }}
             className="underline-offset-2 hover:underline"
           >
-            {architect.name}
+            {professional.name}
           </Link>
         </span>
       ))}

@@ -51,8 +51,8 @@ import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
  */
 const fetchMock = vi.fn();
 
-/** Quem lidera E é arquiteto: o único caso em que "Minha carreira" ainda aparece. */
-const liderComArquiteto: SessionUser = { ...fixtureAssignedTechLeadUser, architectId: "ana" };
+/** Quem lidera E é profissional: o único caso em que "Minha carreira" ainda aparece. */
+const liderComProfissional: SessionUser = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
 
 const itensAtivos = (): string[] => {
   const aside = document.querySelector("aside");
@@ -104,33 +104,33 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
   /**
    * Onda 35 — achado 9 do dono (2026-09-02), literal: "Ao ver um
    * profissional, a barra lateral deve marcar 'Time'." A ficha
-   * (/architects/$id/*) é aberta a partir do roster de /team e nenhum item
+   * (/professionals/$id/*) é aberta a partir do roster de /team e nenhum item
    * acendia. Quem lidera E tem a própria ficha continua com "Minha carreira"
    * acesa na PRÓPRIA ficha — o item mais específico ganha; em qualquer outra
    * ficha, é o Time.
    */
-  it("na ficha de uma pessoa (/architects/ana) o Time acende", async () => {
-    await renderEm("/architects/ana");
+  it("na ficha de uma pessoa (/professionals/ana) o Time acende", async () => {
+    await renderEm("/professionals/ana");
 
     expect(itensAtivos()).toEqual(["Talentos do Time"]);
   });
 
-  it("nas abas da ficha (/architects/ana/evolution) o Time continua aceso", async () => {
-    await renderEm("/architects/ana/evolution");
+  it("nas abas da ficha (/professionals/ana/evolution) o Time continua aceso", async () => {
+    await renderEm("/professionals/ana/evolution");
 
     expect(itensAtivos()).toEqual(["Talentos do Time"]);
   });
 
   it("quem lidera e tem a própria ficha: na própria, só a aba do grupo Minha carreira (dono, 2026-09-06); na de outra pessoa, só Talentos do Time", async () => {
-    await renderEm("/architects/ana/roadmap", liderComArquiteto);
+    await renderEm("/professionals/ana/roadmap", liderComProfissional);
     expect(itensAtivos()).toEqual(["Roteiro"]);
     cleanup();
 
-    await renderEm("/architects/ana", liderComArquiteto);
+    await renderEm("/professionals/ana", liderComProfissional);
     expect(itensAtivos()).toEqual(["Visão geral"]);
     cleanup();
 
-    await renderEm("/architects/bruno", liderComArquiteto);
+    await renderEm("/professionals/bruno", liderComProfissional);
     expect(itensAtivos()).toEqual(["Talentos do Time"]);
   });
 
@@ -156,7 +156,7 @@ describe("item ativo do menu — a rota acende um item, nunca dois", () => {
       fixtureMemberUser,
       fixtureAssignedTechLeadUser,
       fixtureUnassignedTechLeadUser,
-      liderComArquiteto,
+      liderComProfissional,
     ];
     for (const user of perfis) {
       const itens = filterNavGroups(NAV_GROUPS, user).flatMap((grupo) => grupo.items);

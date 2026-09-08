@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import type {
-  Architect,
+  Professional,
   Assessment,
   AssessmentComment,
   AssessmentDevelopmentSummary,
@@ -37,8 +37,8 @@ function useAssessmentViewModel(): AssessmentViewModel {
 }
 
 export function useAssessmentPermissions(
-  architectId: string,
-  selectedArchitect: Architect | undefined,
+  professionalId: string,
+  selectedProfessional: Professional | undefined,
   assessment: Assessment | undefined,
 ) {
   const user = useCurrentUser();
@@ -49,7 +49,7 @@ export function useAssessmentPermissions(
     store.competencies,
   );
   return {
-    ...viewModel.permissionsFor(user, architectId, selectedArchitect, assessment),
+    ...viewModel.permissionsFor(user, professionalId, selectedProfessional, assessment),
     completion,
   };
 }
@@ -737,7 +737,7 @@ export function CapabilityAssessmentCard({
   canEditSelf,
   canEditLeaderFinal,
   seesAssessmentNumbers,
-  architectId,
+  professionalId,
   openComment,
   onToggleComment,
 }: {
@@ -747,7 +747,7 @@ export function CapabilityAssessmentCard({
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
   seesAssessmentNumbers: boolean;
-  architectId: string;
+  professionalId: string;
   openComment: string | null;
   onToggleComment: (competencyId: string) => void;
 }) {
@@ -792,7 +792,7 @@ export function CapabilityAssessmentCard({
                 competency={c}
                 item={item}
                 assessmentId={assessment.id}
-                architectId={architectId}
+                professionalId={professionalId}
                 canEditSelf={canEditSelf}
                 canEditLeaderFinal={canEditLeaderFinal}
                 seesAssessmentNumbers={seesAssessmentNumbers}
@@ -849,7 +849,7 @@ export function CapabilityAssessmentCard({
 
                 const acceptedEvidence = store.evidences.filter(
                   (e) =>
-                    e.architectId === architectId &&
+                    e.professionalId === professionalId &&
                     e.status === "Accepted" &&
                     e.competencyIds.includes(c.id),
                 );
@@ -985,7 +985,7 @@ function CompetencyStackedCard({
   competency,
   item,
   assessmentId,
-  architectId,
+  professionalId,
   canEditSelf,
   canEditLeaderFinal,
   seesAssessmentNumbers,
@@ -995,7 +995,7 @@ function CompetencyStackedCard({
   competency: Competency;
   item: AssessmentItem;
   assessmentId: string;
-  architectId: string;
+  professionalId: string;
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
   seesAssessmentNumbers: boolean;
@@ -1013,7 +1013,7 @@ function CompetencyStackedCard({
 
   const acceptedEvidence = store.evidences.filter(
     (e) =>
-      e.architectId === architectId &&
+      e.professionalId === professionalId &&
       e.status === "Accepted" &&
       e.competencyIds.includes(competency.id),
   );

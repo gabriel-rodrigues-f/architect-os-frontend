@@ -24,7 +24,7 @@ import { apiPath } from "../src/lib/api-path";
  *
  * ONDA 37 (backend ADR-0084) — o TIME nasce primeiro e as duas pessoas
  * nascem nele. Não há mais profissional criado à parte para depois receber
- * uma conta: `POST /auth/users` devolve `architectId` porque a conta e o
+ * uma conta: `POST /auth/users` devolve `professionalId` porque a conta e o
  * profissional são o mesmo cadastro.
  *
  * Requer:
@@ -45,7 +45,7 @@ const LEAD_EMAIL = `e2e-lead-${RUN_ID}@architect-os.local`;
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
-let architectId: string;
+let professionalId: string;
 let teamId: string;
 
 test.beforeAll(async ({ playwright }) => {
@@ -92,7 +92,7 @@ test.beforeAll(async ({ playwright }) => {
     teamId,
     careerLevelId: await seniorityNamed(api, "Pleno"),
   });
-  architectId = admittedMember.architectId;
+  professionalId = admittedMember.professionalId;
 
   await api.dispose();
 });
@@ -137,7 +137,7 @@ test("Member — Minha Evolução, navegação restrita e a própria ficha negad
   // ficha de carreira dele é lida por quem o lidera. No acesso direto por
   // URL a guarda é cega à sessão (SSR) e quem nega é a TELA — sem os
   // "Próximos passos" que ela mostrava antes.
-  await page.goto(`/architects/${architectId}`);
+  await page.goto(`/professionals/${professionalId}`);
   await expect(
     page.getByText("A sua ficha de carreira é lida por quem lidera você."),
   ).toBeVisible();
@@ -154,12 +154,14 @@ test("Lead — Pendências do Lead escopadas à própria liderança", async ({ p
   // quadro e nas contagens de PESSOAS, só não nas leituras por senioridade
   // (ela não tem nível de carreira). Contar 1 aqui seria congelar o modelo
   // velho, em que a conta do lead não tinha profissional nenhum.
-  const myPeopleCard = page.locator(".surface-card", { hasText: "Pessoas sob sua liderança" });
+  const myPeopleCard = page.locator(".surface-card", {
+    hasText: "Profissionais sob sua liderança",
+  });
   await expect(myPeopleCard).toContainText("2");
 
   // Sem avaliação/evidência/PDI pendente ainda — estado "tudo em dia".
   await expect(page.getByText("Nada pendente no momento")).toBeVisible();
 
-  await page.goto(`/architects/${architectId}`);
+  await page.goto(`/professionals/${professionalId}`);
   await expect(page.getByText(MEMBER_NAME).first()).toBeVisible();
 });

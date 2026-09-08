@@ -63,7 +63,7 @@ const BLOCOS_DA_LIDERANCA = [
 ];
 
 const BLOCOS_DO_SISTEMA = [
-  "Pessoas ativas",
+  "Profissionais ativos",
   "Times ativos",
   "Contas ativas",
   "Ciclo vigente",
@@ -123,7 +123,7 @@ describe("Painel Executivo — um bloco, uma ideia, um número-síntese", () => 
       ...scopedFixtureStateFor({ ...fixtureAssignedTechLeadUser, memberships: [] }),
     });
     await screen.findByText("Painel Executivo");
-    expect(await screen.findByText("Nenhuma pessoa sob sua liderança ainda")).toBeTruthy();
+    expect(await screen.findByText("Nenhum profissional sob sua liderança ainda")).toBeTruthy();
     expect(screen.queryByText("Distâncias por severidade")).toBeNull();
   });
 

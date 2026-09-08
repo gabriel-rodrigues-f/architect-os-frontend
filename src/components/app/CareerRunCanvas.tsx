@@ -56,7 +56,7 @@ class CareerRunPainter {
       context.closePath();
       context.fill();
     }
-    // A pessoa: um arquiteto estilizado — cabeça, tronco, pernas.
+    // A pessoa: um profissional estilizado — cabeça, tronco, pernas.
     const baseY = GROUND_Y - runner.y;
     const centerX = RUNNER_X + runner.width / 2;
     context.fillStyle = colors.fg;

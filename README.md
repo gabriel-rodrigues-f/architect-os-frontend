@@ -24,7 +24,7 @@ Uma consequência que custou um diagnóstico: o `connect-src` do CSP só libera
 `localhost:4000` quando a PÁGINA também vem de `localhost` — servida de um
 domínio de verdade, ela não publica um destino na máquina de quem abre.
 
-Interface de gestão de capacidades técnicas de um time de Arquitetos de Soluções: matriz de
+Interface de gestão de capacidades técnicas de um time de Profissionais de Soluções: matriz de
 competências, assessments, gaps, PDIs, OKRs, trilhas, mentorias, evidências e 9-box.
 
 TanStack Start + React 19 + Tailwind 4, consumindo a API em
@@ -83,12 +83,12 @@ O token é guardado no `localStorage` e a sessão é revalidada a cada carga.
 ## Como conversa com a API
 
 Cada rota declara as fatias de estado que lê (`<ContextScope contexts={…}>`) e o front as
-busca nos endpoints por contexto (`/architects`, `/assessments`, `/cycles`, …); nas mutações,
+busca nos endpoints por contexto (`/professionals`, `/assessments`, `/cycles`, …); nas mutações,
 atualiza o cache do React Query na hora e envia a alteração à API; em erro, revalida as fatias.
 
 O prefixo `/api/v1` mora num lugar só: `src/lib/api-path.ts`. O `ApiClient` compõe
 `base + prefixo + recurso`, então os call sites dos gateways passam apenas o recurso
-(`/architects`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
+(`/professionals`, `/cycles/${id}`) — nenhum deles escreve `/api` à mão.
 
 ### Tipos gerados do contrato OpenAPI (ADR-0011, fase 1)
 
@@ -99,7 +99,7 @@ estar por perto.
 
 **Lacuna conhecida do contrato, registrada sem inventar:** o `openapi.json` do backend não
 declara response schemas (todo 200 sai como `content?: never`) e nem toda rota declara o
-querystring (ex.: `GET /api/v1/assessments` aceita `architectId`/`cycleId` que não estão no
+querystring (ex.: `GET /api/v1/assessments` aceita `professionalId`/`cycleId` que não estão no
 documento). Por isso os tipos gerados valem para **paths, params e bodies**; as **respostas**
 continuam validadas em runtime pelos schemas zod de `src/lib/api-schemas.ts`, um por fatia.
 Quando o backend publicar response schemas, a derivação por zod pode ser aposentada rota a rota.
@@ -112,7 +112,7 @@ declara os contextos de que precisa e o `ContextScope` (`src/lib/context-scope.t
 `AppState` parcial a partir dos endpoints por contexto, servindo-o pelo MESMO
 `useStore()`/`useSelectors()` de sempre — telas, view-models e presenters não sabem a
 diferença. Quem usa seletores pede pelo menos `SELECTOR_CONTEXTS` (as fatias que o
-construtor indexa); a ficha de carreira usa `ContextScopes.careerFileOf(architectId)`, com
+construtor indexa); a ficha de carreira usa `ContextScopes.careerFileOf(professionalId)`, com
 recorte por pessoa feito pelo servidor.
 
 **A fatia que a tela não pediu não se lê.** Em desenvolvimento e em teste, ler uma fatia

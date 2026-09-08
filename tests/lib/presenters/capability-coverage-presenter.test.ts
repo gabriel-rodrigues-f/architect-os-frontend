@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Architect, Capability } from "@/lib/domain";
+import type { Professional, Capability } from "@/lib/domain";
 import { BANDS, CapabilityCoveragePresenter } from "@/lib/presenters";
 import { DEFAULT_SCORING_BANDS, type ScoringBand } from "@/lib/scoring-bands";
 import type { CapabilityAverage } from "@/lib/selectors";
@@ -22,11 +22,11 @@ const capability = (id: string, active = true): Capability => ({
   },
 });
 
-const architect = (id: string): Architect => ({
+const professional = (id: string): Professional => ({
   id,
   name: id,
   role: "Júnior",
-  yearsAsArchitect: 1,
+  yearsAsProfessional: 1,
   specialization: "",
   email: `${id}@x`,
   active: true,
@@ -35,8 +35,8 @@ const architect = (id: string): Architect => ({
 
 const presenterWithLevels = (levels: Record<string, number | undefined>) => {
   const cap = capability("cloud");
-  const averagesFor = (architectId: string): CapabilityAverage[] => [
-    { capability: cap, avg: levels[architectId], target: undefined },
+  const averagesFor = (professionalId: string): CapabilityAverage[] => [
+    { capability: cap, avg: levels[professionalId], target: undefined },
   ];
   return new CapabilityCoveragePresenter([cap], averagesFor);
 };
@@ -55,9 +55,9 @@ describe("CapabilityCoveragePresenter.classifyRisk", () => {
 describe("CapabilityCoveragePresenter.areas", () => {
   it("fronteira de faixa: 2.5 cai em practitioners, 2.49 em developing (min <= nível < max)", () => {
     const presenter = presenterWithLevels({ ana: 2.5, bruno: 2.49 });
-    const [area] = presenter.areas([architect("ana"), architect("bruno")]);
+    const [area] = presenter.areas([professional("ana"), professional("bruno")]);
     const byKey = Object.fromEntries(
-      area!.bands.map((b) => [b.key, b.people.map((p) => p.architect.id)]),
+      area!.bands.map((b) => [b.key, b.people.map((p) => p.professional.id)]),
     );
     expect(byKey["practitioners"]).toEqual(["ana"]);
     expect(byKey["developing"]).toEqual(["bruno"]);
@@ -65,7 +65,7 @@ describe("CapabilityCoveragePresenter.areas", () => {
 
   it("sem avg a pessoa cai em notAssessed, nunca numa faixa; população vazia = insufficientData", () => {
     const presenter = presenterWithLevels({ ana: undefined });
-    const [area] = presenter.areas([architect("ana")]);
+    const [area] = presenter.areas([professional("ana")]);
     expect(area).toMatchObject({ assessedCount: 0, notAssessed: 1, risk: "insufficientData" });
   });
 
@@ -76,32 +76,38 @@ describe("CapabilityCoveragePresenter.areas", () => {
    */
   it("expõe QUEM está sem avaliação, na ordem da população, e o número é o tamanho dessa lista", () => {
     const presenter = presenterWithLevels({ ana: 4, carla: undefined, diego: undefined });
-    const [area] = presenter.areas([architect("ana"), architect("carla"), architect("diego")]);
+    const [area] = presenter.areas([
+      professional("ana"),
+      professional("carla"),
+      professional("diego"),
+    ]);
     expect(area!.unassessed.map((person) => person.id)).toEqual(["carla", "diego"]);
     expect(area!.notAssessed).toBe(area!.unassessed.length);
   });
 
   it("referências = avançados + especialistas; 1 referência é risco de concentração, 2+ distribui", () => {
     const umaReferencia = presenterWithLevels({ ana: 4, bruno: 2.5 });
-    expect(umaReferencia.areas([architect("ana"), architect("bruno")])[0]).toMatchObject({
+    expect(umaReferencia.areas([professional("ana"), professional("bruno")])[0]).toMatchObject({
       risk: "concentrationRisk",
     });
 
     const duasReferencias = presenterWithLevels({ ana: 4, carla: 4.5 });
-    const [area] = duasReferencias.areas([architect("ana"), architect("carla")]);
+    const [area] = duasReferencias.areas([professional("ana"), professional("carla")]);
     expect(area!.risk).toBe("distributedCoverage");
-    expect(area!.references.map((p) => p.architect.id).sort()).toEqual(["ana", "carla"]);
+    expect(area!.references.map((p) => p.professional.id).sort()).toEqual(["ana", "carla"]);
   });
 
   it("sem ninguém avançado/especialista, o estado é noReference", () => {
     const presenter = presenterWithLevels({ ana: 2, bruno: 3 });
-    expect(presenter.areas([architect("ana"), architect("bruno")])[0]!.risk).toBe("noReference");
+    expect(presenter.areas([professional("ana"), professional("bruno")])[0]!.risk).toBe(
+      "noReference",
+    );
   });
 
   it("capacidade inativa não vira área", () => {
     const inativa = capability("legacy", false);
     const presenter = new CapabilityCoveragePresenter([inativa], () => []);
-    expect(presenter.areas([architect("ana")])).toEqual([]);
+    expect(presenter.areas([professional("ana")])).toEqual([]);
   });
 });
 
@@ -144,7 +150,7 @@ describe("CapabilityCoveragePresenter com escalas configuradas (CFG-02)", () => 
       ],
       CONCENTRATION_RISK: DEFAULT_SCORING_BANDS.CONCENTRATION_RISK,
     });
-    const [area] = presenter.areas([architect("ana")]);
+    const [area] = presenter.areas([professional("ana")]);
     const byKey = Object.fromEntries(area!.bands.map((b) => [b.key, b.people.length]));
     expect(byKey).toEqual({ developing: 1, experts: 0 }); // no default, 2.5 era practitioners
   });
@@ -172,7 +178,7 @@ describe("CapabilityCoveragePresenter com escalas configuradas (CFG-02)", () => 
     });
     expect(presenter.classifyRisk(3, 2)).toBe("concentrationRisk"); // no default, 2 já distribuía
     expect(presenter.classifyRisk(3, 3)).toBe("distributedCoverage");
-    expect(presenter.areas([architect("ana"), architect("bruno")])[0]!.risk).toBe(
+    expect(presenter.areas([professional("ana"), professional("bruno")])[0]!.risk).toBe(
       "concentrationRisk",
     );
   });

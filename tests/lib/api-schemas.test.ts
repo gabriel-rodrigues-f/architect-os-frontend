@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  architectsResponseSchema,
+  professionalsResponseSchema,
   assessmentsResponseSchema,
   capabilitiesResponseSchema,
   careerLevelsResponseSchema,
@@ -41,25 +41,25 @@ describe("careerLevelsResponseSchema", () => {
  * um bug (comentário em `api-schemas.ts`).
  */
 describe("schema de fatia — comportamento de strip de campo desconhecido", () => {
-  it("valida a fixture real de arquitetos", () => {
-    expect(() => architectsResponseSchema.parse(fixtureState.architects)).not.toThrow();
+  it("valida a fixture real de profissionais", () => {
+    expect(() => professionalsResponseSchema.parse(fixtureState.professionals)).not.toThrow();
   });
 
   it("um campo REMOVIDO do payload (ex.: campo obrigatório ausente) quebra a validação", () => {
-    const [first, ...rest] = fixtureState.architects;
+    const [first, ...rest] = fixtureState.professionals;
     const { name: _name, ...withoutName } = first!;
-    expect(() => architectsResponseSchema.parse([withoutName, ...rest])).toThrow();
+    expect(() => professionalsResponseSchema.parse([withoutName, ...rest])).toThrow();
   });
 
   it("um campo NOVO e desconhecido no payload é descartado em silêncio, não rejeitado", () => {
-    const withExtraField = fixtureState.architects.map((architect) => ({
-      ...architect,
+    const withExtraField = fixtureState.professionals.map((professional) => ({
+      ...professional,
       campoNovoDoServidor: "valor qualquer",
     }));
-    const parsed = architectsResponseSchema.parse(withExtraField);
+    const parsed = professionalsResponseSchema.parse(withExtraField);
     expect(parsed[0]).not.toHaveProperty("campoNovoDoServidor");
     // O resto do payload continua íntegro — só a chave desconhecida some.
-    expect(parsed).toEqual(fixtureState.architects);
+    expect(parsed).toEqual(fixtureState.professionals);
   });
 });
 
@@ -68,7 +68,7 @@ describe("schema de fatia — comportamento de strip de campo desconhecido", () 
  * contrato do `/state` mudou de forma: a competência global perdeu
  * `requirementType`/`expected` (a régua do time é a dona), a curadoria
  * perdeu a contagem por tipo (teto virou sinal), `careerLevelPolicies`
- * morreu dando lugar a `teamLevelRules`, e o arquiteto trocou
+ * morreu dando lugar a `teamLevelRules`, e o profissional trocou
  * `leadUserId` por `teamId`. Estes testes provam que o parser aceita o
  * payload REAL do backend novo — era exatamente aqui que o frontend
  * quebrava (o zod rejeitava o parse inteiro e derrubava o app).
@@ -95,14 +95,14 @@ describe("schemas de fatia — contrato da Fase 2 (régua por time)", () => {
     expect(fixtureState).not.toHaveProperty("careerLevelPolicies");
   });
 
-  it("aceita curadoria sem contagem por tipo e arquiteto com teamId", () => {
+  it("aceita curadoria sem contagem por tipo e profissional com teamId", () => {
     const capabilities = capabilitiesResponseSchema.parse(fixtureState.capabilities);
     expect(capabilities[0]?.curation).toEqual({
       activeCompetencyCount: 2,
       status: "READY",
     });
-    const architects = architectsResponseSchema.parse(fixtureState.architects);
-    expect(architects[0]?.teamId).toBe("time-plataforma");
+    const professionals = professionalsResponseSchema.parse(fixtureState.professionals);
+    expect(professionals[0]?.teamId).toBe("time-plataforma");
   });
 
   it("a FOTO do item de avaliação não carrega mais requirementType (onda 36, ADR-0082)", () => {
@@ -113,26 +113,26 @@ describe("schemas de fatia — contrato da Fase 2 (régua por time)", () => {
 
 /**
  * R2-TEC-20 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — `role` era um
- * `z.enum([...3 nomes])` fechado: um arquiteto num 4º nível de carreira
+ * `z.enum([...3 nomes])` fechado: um profissional num 4º nível de carreira
  * (cenário já documentado como esperado, ADR-0002) fazia `appStateSchema.
  * parse` inteiro falhar, derrubando o app TODO em `ConnectionError`
- * (`store.tsx`) por causa de UM arquiteto. `z.string()` aceita qualquer
+ * (`store.tsx`) por causa de UM profissional. `z.string()` aceita qualquer
  * nome de cargo — este teste prova que um nome desconhecido não quebra
  * mais a validação (o comportamento antigo era exatamente o oposto:
  * `.toThrow()`, não `.not.toThrow()`).
  */
-describe("schema de arquitetos — role aceita nomes além dos 3 conhecidos (R2-TEC-20)", () => {
-  it("um arquiteto com role de um 4º nível de carreira (desconhecido) não quebra a validação", () => {
+describe("schema de profissionais — role aceita nomes além dos 3 conhecidos (R2-TEC-20)", () => {
+  it("um profissional com role de um 4º nível de carreira (desconhecido) não quebra a validação", () => {
     const withFourthLevelRole = [
-      { ...fixtureState.architects[0], role: "Especialista" },
-      ...fixtureState.architects.slice(1),
+      { ...fixtureState.professionals[0], role: "Especialista" },
+      ...fixtureState.professionals.slice(1),
     ];
-    expect(() => architectsResponseSchema.parse(withFourthLevelRole)).not.toThrow();
-    const parsed = architectsResponseSchema.parse(withFourthLevelRole);
+    expect(() => professionalsResponseSchema.parse(withFourthLevelRole)).not.toThrow();
+    const parsed = professionalsResponseSchema.parse(withFourthLevelRole);
     expect(parsed[0]?.role).toBe("Especialista");
   });
 
   it("os 3 nomes conhecidos continuam validando normalmente", () => {
-    expect(() => architectsResponseSchema.parse(fixtureState.architects)).not.toThrow();
+    expect(() => professionalsResponseSchema.parse(fixtureState.professionals)).not.toThrow();
   });
 });

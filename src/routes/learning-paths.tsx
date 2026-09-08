@@ -119,8 +119,8 @@ function LearningScreen() {
     defaultUiAuthorizationPolicy.editsLearningPath(user, path);
 
   // A exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha é do profissional.
-  const canEditProgress = (architectId: string) =>
-    defaultUiAuthorizationPolicy.recordsTrailProgressOf(user, sel.architectById(architectId));
+  const canEditProgress = (professionalId: string) =>
+    defaultUiAuthorizationPolicy.recordsTrailProgressOf(user, sel.professionalById(professionalId));
 
   return (
     <>
@@ -175,7 +175,7 @@ function LearningScreen() {
                   (sel.competencyById(cid)?.name ?? "").toLowerCase().includes(term),
                 ) ||
                 path.assignedTo.some((aid) =>
-                  (sel.architectById(aid)?.name ?? "").toLowerCase().includes(term),
+                  (sel.professionalById(aid)?.name ?? "").toLowerCase().includes(term),
                 ),
             )
           : store.learningPaths;
@@ -260,7 +260,7 @@ function LearningScreen() {
                     ))}
                     {path.assignedTo.map((aid) => (
                       <span key={aid} className="rounded-md border border-border px-2 py-0.5">
-                        {sel.architectById(aid)?.name ?? t("path.assignee.outOfScope")}
+                        {sel.professionalById(aid)?.name ?? t("path.assignee.outOfScope")}
                       </span>
                     ))}
                   </div>
@@ -281,25 +281,25 @@ function LearningScreen() {
                             </div>
                           </div>
                           <div className="mt-2 space-y-1.5">
-                            {path.assignedTo.map((architectId) => {
-                              const person = sel.architectById(architectId);
-                              const prog = vm.progressFor(path, architectId, item.id);
+                            {path.assignedTo.map((professionalId) => {
+                              const person = sel.professionalById(professionalId);
+                              const prog = vm.progressFor(path, professionalId, item.id);
                               const nome = person?.name ?? t("path.assignee.outOfScope");
                               return (
-                                <div key={architectId} className="flex items-center gap-2 pl-2">
+                                <div key={professionalId} className="flex items-center gap-2 pl-2">
                                   <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">
                                     {nome}
                                   </span>
                                   <ProgressControl
                                     progress={prog.progress}
                                     statusLabel={labels.learningStatus[prog.status]}
-                                    editable={canEditProgress(architectId)}
+                                    editable={canEditProgress(professionalId)}
                                     ariaLabel={t("path.item.progressAriaLabel", {
                                       nome,
                                       item: item.title,
                                     })}
                                     onCommit={(value) =>
-                                      vm.recordProgress(path.id, architectId, item.id, value)
+                                      vm.recordProgress(path.id, professionalId, item.id, value)
                                     }
                                   />
                                 </div>
@@ -432,7 +432,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
             <div>
               <Label>{t("path.edit.assignedTo")}</Label>
               <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
-                {store.architects.map((a) => (
+                {store.professionals.map((a) => (
                   <label key={a.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
                       type="checkbox"
@@ -442,7 +442,7 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
                     <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
-                {store.architects.length === 0 && <NoPeopleYet />}
+                {store.professionals.length === 0 && <NoPeopleYet />}
               </div>
             </div>
           </div>
@@ -670,7 +670,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
             <div>
               <Label>{t("path.edit.assignedTo")}</Label>
               <div className="mt-2 max-h-40 overflow-y-auto surface-inset p-2">
-                {store.architects.map((a) => (
+                {store.professionals.map((a) => (
                   <label key={a.id} className="flex items-center gap-2 py-0.5 text-sm">
                     <input
                       type="checkbox"
@@ -680,7 +680,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                     <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
-                {store.architects.length === 0 && <NoPeopleYet />}
+                {store.professionals.length === 0 && <NoPeopleYet />}
               </div>
             </div>
           </div>

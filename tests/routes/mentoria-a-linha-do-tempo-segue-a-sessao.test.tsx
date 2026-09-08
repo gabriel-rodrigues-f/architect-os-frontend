@@ -56,7 +56,7 @@ describe("mentoria — a linha do tempo segue a sessão recém-registrada", () =
   });
 
   it("registrar para quem NÃO é o primeiro da lista traz a linha do tempo junto", async () => {
-    const [primeira, segunda] = [...state.architects]
+    const [primeira, segunda] = [...state.professionals]
       .sort((um, outro) => um.name.localeCompare(outro.name))
       .filter((pessoa) => pessoa.active);
     expect(primeira, "a fixture precisa de duas pessoas ativas").toBeTruthy();

@@ -7,7 +7,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as PlansRoute } from "@/routes/development-plans";
 import type { SessionUser } from "@/lib/api";
@@ -81,7 +81,7 @@ const rotaDe =
   (recurso: string, responder: (url: URL) => Response): FetchRoute =>
   (href) => {
     const url = new URL(href, "http://localhost");
-    return url.pathname.endsWith(apiPath(`/architects/ana/${recurso}`))
+    return url.pathname.endsWith(apiPath(`/professionals/ana/${recurso}`))
       ? responder(url)
       : undefined;
   };
@@ -89,7 +89,7 @@ const rotaDe =
 const urlsDe = (recurso: string): URL[] =>
   fetchMock.mock.calls
     .map((chamada) => new URL(String(chamada[0]), "http://localhost"))
-    .filter((url) => url.pathname.endsWith(apiPath(`/architects/ana/${recurso}`)));
+    .filter((url) => url.pathname.endsWith(apiPath(`/professionals/ana/${recurso}`)));
 
 const montaFicha = (user: SessionUser, routes: FetchRoute[] = []) => {
   mockAppFetch(fetchMock, { user, routes });
@@ -103,7 +103,7 @@ const monta = (Page: () => ReactNode, user: SessionUser, routes: FetchRoute[] = 
 
 beforeEach(() => {
   window.localStorage.setItem("synapse:locale", "pt");
-  window.history.pushState({}, "", "?architectId=ana");
+  window.history.pushState({}, "", "?professionalId=ana");
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });

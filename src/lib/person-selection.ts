@@ -1,5 +1,5 @@
 import type { SessionUser } from "@/lib/api";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { defaultNameFormatter } from "@/lib/text";
@@ -38,7 +38,7 @@ export interface PersonPickShape {
   /** Teto de pessoas; `undefined` quando não há. */
   readonly max: number | undefined;
   /** A forma oferece "Todo o time"? Nunca com alcance vazio. */
-  offersWholeTeam(reach: readonly Architect[]): boolean;
+  offersWholeTeam(reach: readonly Professional[]): boolean;
   /** A seleção que resulta de escolher `id` a partir de `selected`. */
   pick(selected: readonly string[], id: string): string[];
   /** `id` ainda pode ser marcado (teto não batido)? */
@@ -86,7 +86,7 @@ class ManyPeople implements PersonPickShape {
   readonly fixed = false;
   readonly max: number | undefined = undefined;
 
-  offersWholeTeam(reach: readonly Architect[]): boolean {
+  offersWholeTeam(reach: readonly Professional[]): boolean {
     return reach.length > 0;
   }
 
@@ -124,22 +124,22 @@ class ManyPeopleUpTo extends ManyPeople {
 
 export class PersonPicker {
   /** O alcance em ordem alfabética — a ordem em que a lista desenha. */
-  readonly people: readonly Architect[];
+  readonly people: readonly Professional[];
 
   private constructor(
     readonly shape: PersonPickShape,
-    reach: readonly Architect[],
+    reach: readonly Professional[],
     readonly selected: readonly string[],
   ) {
     this.people = [...reach].sort(defaultNameFormatter.byName);
   }
 
-  static one(reach: readonly Architect[], selectedId: string | null | undefined): PersonPicker {
+  static one(reach: readonly Professional[], selectedId: string | null | undefined): PersonPicker {
     return new PersonPicker(new OnePerson(), reach, selectedId ? [selectedId] : []);
   }
 
   /** A forma "só eu": o alcance é a própria pessoa e a escolha é ela, fixa. */
-  static onlyMe(me: Architect | undefined): PersonPicker {
+  static onlyMe(me: Professional | undefined): PersonPicker {
     return new PersonPicker(new OnlyMe(), me ? [me] : [], me ? [me.id] : []);
   }
 
@@ -150,7 +150,7 @@ export class PersonPicker {
    */
   static oneFor(
     user: SessionUser,
-    reach: readonly Architect[],
+    reach: readonly Professional[],
     selectedId: string | null | undefined,
     policy = defaultUiAuthorizationPolicy,
   ): PersonPicker {
@@ -158,11 +158,15 @@ export class PersonPicker {
     return PersonPicker.onlyMe(reach.find((person) => policy.readsOwn(user, person.id)));
   }
 
-  static many(reach: readonly Architect[], selected: readonly string[]): PersonPicker {
+  static many(reach: readonly Professional[], selected: readonly string[]): PersonPicker {
     return new PersonPicker(new ManyPeople(), reach, selected);
   }
 
-  static upTo(max: number, reach: readonly Architect[], selected: readonly string[]): PersonPicker {
+  static upTo(
+    max: number,
+    reach: readonly Professional[],
+    selected: readonly string[],
+  ): PersonPicker {
     return new PersonPicker(new ManyPeopleUpTo(max), reach, selected);
   }
 

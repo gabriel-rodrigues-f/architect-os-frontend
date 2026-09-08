@@ -11,8 +11,8 @@ import { describe, expect, it } from "vitest";
  * ao invés de aparecer como inativo, ele não deve mais aparecer em nenhuma
  * parte da aplicação."
  *
- * A régua virou ESTRUTURA, não vigilância: `store.architects` é a lista ATIVA
- * e o acesso ao cru tem nome próprio, `architectsIncludingInactive`. Assim uma
+ * A régua virou ESTRUTURA, não vigilância: `store.professionals` é a lista ATIVA
+ * e o acesso ao cru tem nome próprio, `professionalsIncludingInactive`. Assim uma
  * tela nova acerta por padrão — quem quiser inativo precisa PEDIR pelo nome, e
  * quem pede fica visível aqui.
  *
@@ -52,7 +52,7 @@ class ArquivoDeFonte {
   }
 
   get leInativo(): boolean {
-    return this.conteudo.includes("architectsIncludingInactive");
+    return this.conteudo.includes("professionalsIncludingInactive");
   }
 }
 
@@ -71,7 +71,7 @@ describe("inativo só aparece na tela Time", () => {
 
   it("o sufixo '(inativo)' não existe mais em nenhum seletor", () => {
     const comSufixo = arquivos
-      .filter((fonte) => fonte.conteudo.includes("architectCombobox.inactiveName"))
+      .filter((fonte) => fonte.conteudo.includes("professionalCombobox.inactiveName"))
       .map((fonte) => fonte.caminho);
     expect(comSufixo).toEqual([]);
   });

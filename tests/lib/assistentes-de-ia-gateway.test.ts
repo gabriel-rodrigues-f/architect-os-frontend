@@ -73,7 +73,7 @@ describe("assistentes da pessoa — a URL de cada operação de negócio", () =>
    */
   it("preparar o 1:1 lê a rota da pessoa com o perfil de geração escolhido", async () => {
     await preparaO1x1("methodical");
-    expect(urlDaChamada().pathname).toBe("/api/v1/architects/ana/one-on-one-preparation");
+    expect(urlDaChamada().pathname).toBe("/api/v1/professionals/ana/one-on-one-preparation");
     expect(urlDaChamada().searchParams.get("profile")).toBe("methodical");
     expect(urlDaChamada().searchParams.has("agenda")).toBe(false);
   });
@@ -89,7 +89,7 @@ describe("assistentes da pessoa — a URL de cada operação de negócio", () =>
       jsonResponse({ data: { ...conselho, profile: "methodical", outline: ["A"] } }),
     );
     await geraRoteiro("methodical");
-    expect(urlDaChamada().pathname).toBe("/api/v1/architects/ana/session-script");
+    expect(urlDaChamada().pathname).toBe("/api/v1/professionals/ana/session-script");
     expect(urlDaChamada().searchParams.has("agenda")).toBe(false);
     expect(urlDaChamada().searchParams.get("profile")).toBe("methodical");
   });
@@ -120,8 +120,10 @@ describe("assistentes da pessoa — a URL de cada operação de negócio", () =>
         },
       }),
     );
-    await pessoas().recommendDevelopmentPlanItem({ architectId: "ana", competencyId: "c1" });
-    expect(urlDaChamada().pathname).toBe("/api/v1/architects/ana/development-plan-recommendation");
+    await pessoas().recommendDevelopmentPlanItem({ professionalId: "ana", competencyId: "c1" });
+    expect(urlDaChamada().pathname).toBe(
+      "/api/v1/professionals/ana/development-plan-recommendation",
+    );
     expect(urlDaChamada().searchParams.get("competencyId")).toBe("c1");
   });
 
@@ -162,14 +164,14 @@ describe("assistentes do trabalho — a URL e a recusa do serviço", () => {
   it("a calibração e o aviso de estagnação são da pessoa", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ data: apuracao }));
     await trabalho().assistAssessmentCalibration("ana");
-    expect(urlDaChamada().pathname).toBe("/api/v1/architects/ana/calibration-assistance");
+    expect(urlDaChamada().pathname).toBe("/api/v1/professionals/ana/calibration-assistance");
 
     fetchMock.mockResolvedValue(
       jsonResponse({ data: { subject: "s", signals: [], requiresAttention: false, alert: null } }),
     );
     fetchMock.mockClear();
     await trabalho().alertAboutStagnation("ana");
-    expect(urlDaChamada().pathname).toBe("/api/v1/architects/ana/stagnation-alert");
+    expect(urlDaChamada().pathname).toBe("/api/v1/professionals/ana/stagnation-alert");
   });
 
   it("sem sinal de estagnação o aviso é nulo e nada foi pedido ao provedor", async () => {
@@ -221,7 +223,7 @@ describe("tempo-limite — a única rota da casa que pode demorar minutos", () =
         }),
     );
     const falha = await pessoas(5)
-      .prepareOneOnOne({ architectId: "ana", profile: "moderate" })
+      .prepareOneOnOne({ professionalId: "ana", profile: "moderate" })
       .catch((erro: unknown) => erro);
     expect(falha).toBeInstanceOf(AssistantTimedOutError);
   });
@@ -248,7 +250,7 @@ describe("tempo-limite — a única rota da casa que pode demorar minutos", () =
 });
 
 async function geraRoteiro(profile: "empirical" | "moderate" | "methodical"): Promise<void> {
-  await pessoas().writeSessionScript({ architectId: "ana", profile });
+  await pessoas().writeSessionScript({ professionalId: "ana", profile });
 }
 
 async function preparaO1x1(
@@ -258,5 +260,5 @@ async function preparaO1x1(
   fetchMock.mockResolvedValue(
     jsonResponse({ data: { ...conselho, profile, scriptProvenance: "selo-opaco" } }),
   );
-  return pessoas(timeoutMs).prepareOneOnOne({ architectId: "ana", profile });
+  return pessoas(timeoutMs).prepareOneOnOne({ professionalId: "ana", profile });
 }

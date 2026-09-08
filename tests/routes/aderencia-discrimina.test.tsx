@@ -6,7 +6,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as RoadmapRoute } from "@/routes/architects.$architectId.roadmap";
+import { Route as RoadmapRoute } from "@/routes/professionals.$professionalId.roadmap";
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import { fixtureAssignedManagerUser, fixtureCareerLevels, fixtureState } from "../helpers/fixtures";
@@ -48,8 +48,8 @@ const NOME_PROXIMO = nomeDoNivel(PROXIMO_NIVEL);
 
 const anaNoNivelDois: AppState = {
   ...fixtureState,
-  architects: fixtureState.architects.map((architect) =>
-    architect.id === "ana" ? { ...architect, careerLevelId: NIVEL_ATUAL } : architect,
+  professionals: fixtureState.professionals.map((professional) =>
+    professional.id === "ana" ? { ...professional, careerLevelId: NIVEL_ATUAL } : professional,
   ),
 };
 
@@ -61,12 +61,12 @@ const anaNoNivelDois: AppState = {
 const aderenciaRoute =
   (porNivel: Record<string, { percentage: number; missingCompetencies: number }>): FetchRoute =>
   (href) => {
-    if (!href.includes(apiPath("/architects/ana/adherence"))) return undefined;
+    if (!href.includes(apiPath("/professionals/ana/adherence"))) return undefined;
     const careerLevelId = new URL(href, "http://localhost").searchParams.get("careerLevelId") ?? "";
     const resposta = porNivel[careerLevelId];
     if (!resposta) return undefined;
     return jsonResponse({
-      architectId: "ana",
+      professionalId: "ana",
       teamId: "time-plataforma",
       careerLevelId,
       adherence: {

@@ -120,7 +120,7 @@ export interface SessionUser {
   email: string;
   name: string;
   role: UserRole;
-  architectId: string | null;
+  professionalId: string | null;
   status: UserStatus;
   mustChangePassword: boolean;
   createdAt: string;
@@ -142,7 +142,7 @@ export interface AuthGateway {
     id: string,
     patch_: Partial<{
       role: UserRole;
-      architectId: string | null;
+      professionalId: string | null;
       status: UserStatus;
       name: string;
       email: string;
@@ -166,7 +166,7 @@ export interface AccessInvitationHolder {
  * ONDA 37 (backend ADR-0084) — ADMITIR a pessoa no time é uma operação só:
  * a conta, o profissional e o vínculo de time nascem numa transação. Por
  * isso o nome não é `createUser` — não se cria um usuário, admite-se uma
- * pessoa. `architectId` saiu: não se pendura mais conta em profissional
+ * pessoa. `professionalId` saiu: não se pendura mais conta em profissional
  * criado antes. `careerLevelId` é a SENIORIDADE, e só o profissional tem.
  */
 export interface PersonAdmissionInput {
@@ -179,7 +179,7 @@ export interface PersonAdmissionInput {
 
 export interface AdmittedPerson {
   user: SessionUser;
-  architectId: string;
+  professionalId: string;
   /**
    * Se o convite de acesso SAIU por e-mail.
    *
@@ -216,7 +216,7 @@ export class HttpAuthGateway implements AuthGateway {
     id: string,
     patch_: Partial<{
       role: UserRole;
-      architectId: string | null;
+      professionalId: string | null;
       status: UserStatus;
       name: string;
       email: string;

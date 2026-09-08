@@ -17,7 +17,7 @@ afterEach(cleanup);
 function tabela(density?: "compact" | "comfortable") {
   return render(
     <Table {...(density ? { density } : {})}>
-      <TCaption>Pessoas do time</TCaption>
+      <TCaption>Profissionais do time</TCaption>
       <THead>
         <Tr>
           <Th>Nome</Th>
@@ -62,7 +62,7 @@ describe("Table — a tabela da casa", () => {
 
   it("a legenda existe e a tabela rola dentro do próprio contêiner", () => {
     const { container } = tabela();
-    expect(screen.getByText("Pessoas do time").tagName).toBe("CAPTION");
+    expect(screen.getByText("Profissionais do time").tagName).toBe("CAPTION");
     expect(container.querySelector("table")?.parentElement?.className).toContain("overflow-x-auto");
   });
 

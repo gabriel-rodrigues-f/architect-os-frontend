@@ -22,7 +22,7 @@ describe("FrontendContainer", () => {
 
     expect(container.apiClient).toBeDefined();
     for (const gateway of [
-      container.architectsGateway,
+      container.professionalsGateway,
       container.assessmentGateway,
       container.authGateway,
       container.careerGateway,

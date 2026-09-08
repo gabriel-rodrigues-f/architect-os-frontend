@@ -90,7 +90,7 @@ function CycleAdministration() {
   const { setActiveCycle: activateCycle } = useCycleSelection();
 
   const isAdmin = defaultUiAuthorizationPolicy.operatesTheSystem(useCurrentUser());
-  const [architectId, setArchitectId] = useState(store.architects[0]?.id ?? "");
+  const [professionalId, setProfessionalId] = useState(store.professionals[0]?.id ?? "");
   const { t, locale } = useI18n();
   const help = usePageHelp("cycles");
   const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
@@ -114,7 +114,7 @@ function CycleAdministration() {
     const levels = closedCycles.map((cy) => ({
       cycle: cy.name,
       level:
-        sel.officialAssessmentFor(architectId, cy.id)?.items.find((i) => i.competencyId === c.id)
+        sel.officialAssessmentFor(professionalId, cy.id)?.items.find((i) => i.competencyId === c.id)
           ?.final ?? undefined,
     }));
     return { competency: c, levels };
@@ -129,9 +129,9 @@ function CycleAdministration() {
         actions={
           <PageActions>
             <PersonCombobox
-              picker={PersonPicker.one(store.architects, architectId)}
-              onChange={([id]) => setArchitectId(id ?? "")}
-              label={t("cycle.architect")}
+              picker={PersonPicker.one(store.professionals, professionalId)}
+              onChange={([id]) => setProfessionalId(id ?? "")}
+              label={t("cycle.professional")}
               className="w-48"
             />
             {isAdmin && (

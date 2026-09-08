@@ -10,10 +10,10 @@ import { apiPath } from "../src/lib/api-path";
  *
  * Onda 33 — a massa passou a nascer PELA API, não mais por SQL. O SQL direto
  * tinha um defeito que a rodada de entrega provou: o roster
- * (`GET /architects`) vive em cache (`architects:all`, TTL de
+ * (`GET /professionals`) vive em cache (`professionals:all`, TTL de
  * CACHE_TTL_SECONDS) invalidado só pelas escritas da aplicação. Um
- * `UPDATE architects SET team_id` por fora deixava o cache com `teamId:
- * null`, `visibleArchitectIds` não via a pessoa e o tech lead abria o painel
+ * `UPDATE professionals SET team_id` por fora deixava o cache com `teamId:
+ * null`, `visibleProfessionalIds` não via a pessoa e o tech lead abria o painel
  * com "Pessoas sob sua liderança 0" — com o banco certo. Escrever pela porta
  * que invalida é a única forma de o vínculo valer no mesmo instante.
  *
@@ -62,7 +62,7 @@ export interface AdmissionInput {
 
 export interface AdmittedPerson {
   userId: string;
-  architectId: string;
+  professionalId: string;
 }
 
 const LEVEL_CEILING = 5;
@@ -150,7 +150,7 @@ export async function registerTeamWithRules(
 export async function admitPersonToTeam(input: AdmissionInput): Promise<AdmittedPerson> {
   const admitted = await unwrap<{
     user: { id: string };
-    architectId: string;
+    professionalId: string;
     temporaryPassword: string;
   }>(
     await input.api.post(apiPath("/auth/users"), {
@@ -178,7 +178,7 @@ export async function admitPersonToTeam(input: AdmissionInput): Promise<Admitted
   }
   await guest.dispose();
 
-  return { userId: admitted.user.id, architectId: admitted.architectId };
+  return { userId: admitted.user.id, professionalId: admitted.professionalId };
 }
 
 /**
@@ -196,7 +196,7 @@ export async function dischargePeople(databaseUrl: string, emails: string[]): Pr
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
   try {
-    await client.query(`DELETE FROM architects WHERE email = ANY($1::text[])`, [emails]);
+    await client.query(`DELETE FROM professionals WHERE email = ANY($1::text[])`, [emails]);
     await client.query(`DELETE FROM users WHERE email = ANY($1::text[])`, [emails]);
   } finally {
     await client.end();
@@ -204,7 +204,7 @@ export async function dischargePeople(databaseUrl: string, emails: string[]): Pr
 }
 
 /**
- * Remover DEPOIS dos profissionais do spec: `architects.team_id` referencia o
+ * Remover DEPOIS dos profissionais do spec: `professionals.team_id` referencia o
  * time. O cache de roster expira em CACHE_TTL_SECONDS e o spec seguinte cria
  * gente nova pela API, que invalida.
  */
@@ -212,7 +212,7 @@ export async function unlinkTeam(databaseUrl: string, teamId: string): Promise<v
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
   try {
-    await client.query(`UPDATE architects SET team_id = NULL WHERE team_id = $1`, [teamId]);
+    await client.query(`UPDATE professionals SET team_id = NULL WHERE team_id = $1`, [teamId]);
     await client.query(`DELETE FROM team_level_rules WHERE team_id = $1`, [teamId]);
     await client.query(`DELETE FROM team_memberships WHERE team_id = $1`, [teamId]);
     await client.query(`DELETE FROM teams WHERE id = $1`, [teamId]);

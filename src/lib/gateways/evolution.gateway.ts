@@ -1,5 +1,5 @@
 import type {
-  ArchitectEvolutionResult,
+  ProfessionalEvolutionResult,
   EvolutionFilters,
   SelectionScope,
   TeamEvolutionResult,
@@ -7,19 +7,25 @@ import type {
 import type { ApiClient } from "../api-client";
 
 export interface EvolutionGateway {
-  architect(architectId: string, filters: EvolutionFilters): Promise<ArchitectEvolutionResult>;
-  team(architects: SelectionScope, filters: EvolutionFilters): Promise<TeamEvolutionResult>;
+  professional(
+    professionalId: string,
+    filters: EvolutionFilters,
+  ): Promise<ProfessionalEvolutionResult>;
+  team(professionals: SelectionScope, filters: EvolutionFilters): Promise<TeamEvolutionResult>;
 }
 
 export class HttpEvolutionGateway implements EvolutionGateway {
   constructor(private readonly client: ApiClient) {}
 
-  architect = (architectId: string, filters: EvolutionFilters): Promise<ArchitectEvolutionResult> =>
-    this.client.post<ArchitectEvolutionResult>("/evolution/architect", {
-      architectId,
+  professional = (
+    professionalId: string,
+    filters: EvolutionFilters,
+  ): Promise<ProfessionalEvolutionResult> =>
+    this.client.post<ProfessionalEvolutionResult>("/evolution/professional", {
+      professionalId,
       ...filters,
     });
 
-  team = (architects: SelectionScope, filters: EvolutionFilters): Promise<TeamEvolutionResult> =>
-    this.client.post<TeamEvolutionResult>("/evolution/team", { architects, ...filters });
+  team = (professionals: SelectionScope, filters: EvolutionFilters): Promise<TeamEvolutionResult> =>
+    this.client.post<TeamEvolutionResult>("/evolution/team", { professionals, ...filters });
 }

@@ -9,7 +9,7 @@ vi.mock("@tanstack/react-router", () =>
 
 import { supportAccess } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import { fixtureState, fixtureSupportUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
@@ -22,7 +22,7 @@ import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * PR 6 (RBAC-03, [FA-07]) — o passe de suporte abre SÓ a ficha funcional
- * (`GET /architects/:id`); avaliações, PDI, mentoria, evidências e trilhas
+ * (`GET /professionals/:id`); avaliações, PDI, mentoria, evidências e trilhas
  * respondem 403 ao suporte mesmo com passe. A tela não pede o que o serviço
  * recusa: desenha o ramo "indisponível no modo de suporte" no lugar das
  * seções, e a ficha funcional segue. O passe vale 15 minutos; vencido, o
@@ -31,17 +31,17 @@ import { renderCareerFile } from "../helpers/ficha";
 const fetchMock = vi.fn();
 
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
-const ana = fixtureState.architects.find((architect) => architect.id === "ana");
+const ana = fixtureState.professionals.find((professional) => professional.id === "ana");
 const MOTIVO = "chamado 4821, conferir evidência duplicada";
 const TITULO_DO_DIALOGO = "Abrir a ficha em modo de suporte";
 
 const fichaFuncionalRoute: FetchRoute = (href, init) =>
-  href.endsWith(apiPath("/architects/ana")) && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/professionals/ana")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse(ana)
     : undefined;
 
 const passeVencidoRoute: FetchRoute = (href) =>
-  href.endsWith(apiPath("/architects/ana"))
+  href.endsWith(apiPath("/professionals/ana"))
     ? jsonResponse({ code: "SUPPORT_PASS_EXPIRED", message: "O passe de suporte venceu." }, 403)
     : undefined;
 
@@ -96,11 +96,11 @@ describe("ficha em modo de suporte", () => {
     await abrirEmSuporte();
     await screen.findByText(/Indisponível no modo de suporte/);
 
-    const daPessoa = chamadasPara(apiPath("/architects/ana"));
+    const daPessoa = chamadasPara(apiPath("/professionals/ana"));
     expect(daPessoa.length).toBeGreaterThan(0);
     for (const call of daPessoa) {
       const headers = (call[1] as RequestInit).headers as Record<string, string>;
-      expect(headers["x-support-architect"]).toBe("ana");
+      expect(headers["x-support-professional"]).toBe("ana");
       expect(headers["x-support-reason"]).toBe(MOTIVO);
       expect(headers["x-support-issued-at"]).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     }
@@ -121,7 +121,9 @@ describe("ficha em modo de suporte", () => {
     });
     await abrirEmSuporte();
 
-    await waitFor(() => expect(chamadasPara(apiPath("/architects/ana")).length).toBeGreaterThan(0));
+    await waitFor(() =>
+      expect(chamadasPara(apiPath("/professionals/ana")).length).toBeGreaterThan(0),
+    );
     await waitFor(() => expect(supportAccess.grantedFor("ana")).toBeNull());
     expect(await screen.findByText(TITULO_DO_DIALOGO)).toBeTruthy();
     expect(screen.queryByText(/Indisponível no modo de suporte/)).toBeNull();

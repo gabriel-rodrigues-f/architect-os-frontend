@@ -1,9 +1,9 @@
 import type { SessionUser } from "./api";
 import { TeamLeadershipRoles, UserRoles } from "./gateways/auth.gateway";
 import type { TeamLeadershipRole, UserRole } from "./gateways/auth.gateway";
-import type { Architect } from "./domain";
+import type { Professional } from "./domain";
 
-type ScopedArchitect = Pick<Architect, "id" | "teamId">;
+type ScopedProfessional = Pick<Professional, "id" | "teamId">;
 
 /**
  * Revisão de papéis (dono, 2026-09-05, D1–D5; adendo 2026-09-08, item 2) — a
@@ -33,11 +33,11 @@ type ScopedArchitect = Pick<Architect, "id" | "teamId">;
 
 /**
  * Fase 2 (backend ADR-0035) — `lead_user_id` morreu: o vínculo de escopo é o
- * TIME (`architects.team_id` + `team_memberships`). Desde a onda 17.1 a
+ * TIME (`professionals.team_id` + `team_memberships`). Desde a onda 17.1 a
  * sessão (`/auth/me`) carrega `memberships`, e são eles que respondem ONDE o
  * papel vale — os DOIS eixos, como o backend os exige. Onde a sessão ainda
  * não traz vínculo, a política se apoia no recorte do servidor: para uma
- * conta de liderança, todo arquiteto COM TIME que o `/state` entrega chegou
+ * conta de liderança, todo profissional COM TIME que o `/state` entrega chegou
  * porque o usuário lidera aquele time.
  *
  * Fase 3 (backend ADR-0047) — o papel `lead` virou `manager` + `tech_lead`, e
@@ -62,11 +62,11 @@ type AccountLike = { id: string; status: string; role: string };
 
 export class UiAuthorizationPolicy {
   /** LEITURA sobre uma pessoa: ela mesma, quem a lidera por vínculo, o administrador, ou o suporte (em modo de suporte). */
-  canReadAbout(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (!architect) return false;
-    if (this.isOwn(user, architect)) return true;
+  canReadAbout(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (!professional) return false;
+    if (this.isOwn(user, professional)) return true;
     if (this.readsEveryone(user)) return true;
-    return this.leadsTeamOf(user, architect);
+    return this.leadsTeamOf(user, professional);
   }
 
   /**
@@ -77,10 +77,10 @@ export class UiAuthorizationPolicy {
    * evidência e o PDI; a pessoa LÊ tudo o que é dela (`canReadAbout`,
    * `readsOwn`).
    */
-  canActFor(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (!architect) return false;
-    if (this.isOwn(user, architect)) return this.actsOnSelf(user, architect.id);
-    return this.leadsOrDirects(user, architect);
+  canActFor(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (!professional) return false;
+    if (this.isOwn(user, professional)) return this.actsOnSelf(user, professional.id);
+    return this.leadsOrDirects(user, professional);
   }
 
   /**
@@ -88,23 +88,23 @@ export class UiAuthorizationPolicy {
    * Continua existindo como a resposta NOMEADA à pergunta — quem ler a régua
    * encontra aqui a decisão, e não um `false` perdido dentro de `canActFor`.
    */
-  actsOnSelf(_user: SessionUser, _architectId: string | undefined): boolean {
+  actsOnSelf(_user: SessionUser, _professionalId: string | undefined): boolean {
     return false;
   }
 
   /** A pessoa LENDO o que é dela — números, veredito, respostas, radar, Evolução, Extrato, Roteiro. */
-  readsOwn(user: SessionUser, architectId: string | undefined): boolean {
-    return architectId !== undefined && user.architectId === architectId;
+  readsOwn(user: SessionUser, professionalId: string | undefined): boolean {
+    return professionalId !== undefined && user.professionalId === professionalId;
   }
 
   /**
    * A única exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha
    * de aprendizagem continua sendo do profissional — e de quem o lidera.
    */
-  recordsTrailProgressOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (!architect) return false;
-    if (this.isOwn(user, architect)) return this.isSubjectOnly(user);
-    return this.leadsOrDirects(user, architect);
+  recordsTrailProgressOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (!professional) return false;
+    if (this.isOwn(user, professional)) return this.isSubjectOnly(user);
+    return this.leadsOrDirects(user, professional);
   }
 
   /** Trilhas de aprendizagem: quem lidera cria; o administrador também (regra 6); o suporte não. */
@@ -132,9 +132,9 @@ export class UiAuthorizationPolicy {
   }
 
   /** Liderança por VÍNCULO no time da pessoa, ou o administrador — nunca sobre si. */
-  isLeadOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (this.isOwn(user, architect)) return false;
-    return this.leadsOrDirects(user, architect);
+  isLeadOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (this.isOwn(user, professional)) return false;
+    return this.leadsOrDirects(user, professional);
   }
 
   /**
@@ -142,42 +142,44 @@ export class UiAuthorizationPolicy {
    * PDI, reenviar evidência. Na própria ficha não há ação nenhuma: a ficha é
    * leitura; quem registra evidência faz isso em Avaliações (dono, 2026-09-05).
    */
-  canActOnCareerFileOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (this.isOwn(user, architect)) return false;
-    return this.canActFor(user, architect);
+  canActOnCareerFileOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (this.isOwn(user, professional)) return false;
+    return this.canActFor(user, professional);
   }
 
   /**
    * Quem aparece em Avaliações: para o profissional, SÓ ele (em leitura); para
    * quem lidera, os liderados — nunca ele mesmo (dono, 2026-09-06).
    */
-  assessableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
-    return this.ownFirst(user, architects, (architect) => this.leadsOrDirects(user, architect));
-  }
-
-  /** Quem pode ser mentorado: quem está abaixo na hierarquia — ninguém mentora a si mesmo. O administrador, qualquer um. */
-  mentorableBy<A extends ScopedArchitect>(user: SessionUser, architects: readonly A[]): A[] {
-    return architects.filter(
-      (architect) => !this.isOwn(user, architect) && this.leadsOrDirects(user, architect),
+  assessableBy<A extends ScopedProfessional>(user: SessionUser, professionals: readonly A[]): A[] {
+    return this.ownFirst(user, professionals, (professional) =>
+      this.leadsOrDirects(user, professional),
     );
   }
 
-  private ownFirst<A extends ScopedArchitect>(
+  /** Quem pode ser mentorado: quem está abaixo na hierarquia — ninguém mentora a si mesmo. O administrador, qualquer um. */
+  mentorableBy<A extends ScopedProfessional>(user: SessionUser, professionals: readonly A[]): A[] {
+    return professionals.filter(
+      (professional) => !this.isOwn(user, professional) && this.leadsOrDirects(user, professional),
+    );
+  }
+
+  private ownFirst<A extends ScopedProfessional>(
     user: SessionUser,
-    architects: readonly A[],
-    reaches: (architect: A) => boolean,
+    professionals: readonly A[],
+    reaches: (professional: A) => boolean,
   ): A[] {
     const own = this.isSubjectOnly(user)
-      ? architects.filter((architect) => this.isOwn(user, architect))
+      ? professionals.filter((professional) => this.isOwn(user, professional))
       : [];
-    const led = architects.filter(
-      (architect) => !this.isOwn(user, architect) && reaches(architect),
+    const led = professionals.filter(
+      (professional) => !this.isOwn(user, professional) && reaches(professional),
     );
     return [...own, ...led];
   }
 
-  private isOwn(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    return architect !== undefined && user.architectId === architect.id;
+  private isOwn(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    return professional !== undefined && user.professionalId === professional.id;
   }
 
   /** O profissional: sujeito da própria carreira e de mais ninguém. */
@@ -185,14 +187,14 @@ export class UiAuthorizationPolicy {
     return user.role === "member";
   }
 
-  isAssignedTechLeadOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (this.isOwn(user, architect)) return false;
-    return this.hasStrictBondWith(user, architect, TeamLeadershipRoles.TECH_LEAD);
+  isAssignedTechLeadOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (this.isOwn(user, professional)) return false;
+    return this.hasStrictBondWith(user, professional, TeamLeadershipRoles.TECH_LEAD);
   }
 
-  isAssignedManagerOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (this.isOwn(user, architect)) return false;
-    return this.hasStrictBondWith(user, architect, TeamLeadershipRoles.MANAGER);
+  isAssignedManagerOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (this.isOwn(user, professional)) return false;
+    return this.hasStrictBondWith(user, professional, TeamLeadershipRoles.MANAGER);
   }
 
   /**
@@ -200,15 +202,15 @@ export class UiAuthorizationPolicy {
    * gerente designado, ou o administrador (regra 6). O suporte opera o sistema e
    * não decide — o servidor responde 403 (`CAREER_DECISION_RESERVED_TO_MANAGER`).
    */
-  decidesCareerOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    return this.isAssignedManagerOf(user, architect);
+  decidesCareerOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    return this.isAssignedManagerOf(user, professional);
   }
 
   /** A FICHA FUNCIONAL e o extrato completo: a própria pessoa, o gerente designado, o administrador, o suporte em suporte. */
-  canReadPersonnelFileOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (this.isOwn(user, architect)) return true;
+  canReadPersonnelFileOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (this.isOwn(user, professional)) return true;
     if (this.readsEveryone(user)) return true;
-    return this.isAssignedManagerOf(user, architect);
+    return this.isAssignedManagerOf(user, professional);
   }
 
   /** ADMIN e SUPPORT: contas, times, catálogo, ciclos, configurações — o que o antigo admin fazia. */
@@ -291,7 +293,7 @@ export class UiAuthorizationPolicy {
    * não, porque não é um profissional com capacidades (dono, 2026-09-06).
    */
   hasOwnCareerFile(user: SessionUser): boolean {
-    return user.architectId !== null && user.role !== TeamLeadershipRoles.MANAGER;
+    return user.professionalId !== null && user.role !== TeamLeadershipRoles.MANAGER;
   }
 
   /** O gerente de UM time, por vínculo — ou o administrador (regra 6): quem decide sobre o destino de uma transferência. */
@@ -336,16 +338,19 @@ export class UiAuthorizationPolicy {
    * (D2), de quem a lidera por vínculo, e do admin em modo de suporte. Com só
    * o id na mão (guarda de rota) a régua é a do papel; a tela confere o vínculo.
    */
-  canOpenCareerTabsOf(user: SessionUser, architect: ScopedArchitect | string | undefined): boolean {
-    if (typeof architect === "string") {
-      return user.architectId === architect || this.isLeadership(user);
+  canOpenCareerTabsOf(
+    user: SessionUser,
+    professional: ScopedProfessional | string | undefined,
+  ): boolean {
+    if (typeof professional === "string") {
+      return user.professionalId === professional || this.isLeadership(user);
     }
-    return this.canReadAbout(user, architect);
+    return this.canReadAbout(user, professional);
   }
 
   /** O Extrato é de quem lê a ficha: a própria pessoa, quem a lidera por vínculo, o administrador, o suporte em suporte (dono, 2026-09-06). */
-  canOpenStatementOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    return this.canReadAbout(user, architect);
+  canOpenStatementOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    return this.canReadAbout(user, professional);
   }
 
   /** Calibração é rito de gestão: o gerente com vínculo, ou o administrador (regra 6); o suporte não. */
@@ -391,18 +396,18 @@ export class UiAuthorizationPolicy {
   }
 
   /** Liderança do time da pessoa, por VÍNCULO — sem o atalho antigo de "qualquer outra pessoa" (inconsistência G). */
-  leadsTeamOf(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (!architect || !TeamLeadershipRoles.includes(user.role) || architect.teamId == null) {
+  leadsTeamOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (!professional || !TeamLeadershipRoles.includes(user.role) || professional.teamId == null) {
       return false;
     }
-    return this.scopeGrantingTeamsOf(user).has(architect.teamId);
+    return this.scopeGrantingTeamsOf(user).has(professional.teamId);
   }
 
   /** Quem lidera a pessoa por vínculo — ou o administrador, sobre qualquer pessoa (regra 6). */
-  private leadsOrDirects(user: SessionUser, architect: ScopedArchitect | undefined): boolean {
-    if (!architect) return false;
+  private leadsOrDirects(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+    if (!professional) return false;
     if (this.actsForTheOrganization(user)) return true;
-    return this.leadsTeamOf(user, architect);
+    return this.leadsTeamOf(user, professional);
   }
 
   /** Administrador e suporte leem sobre qualquer pessoa — o administrador sem ticket, o suporte em modo de suporte. */
@@ -424,13 +429,13 @@ export class UiAuthorizationPolicy {
   /** O vínculo ESTRITO (papel E vínculo iguais) — que o administrador dispensa (regra 6). */
   private hasStrictBondWith(
     user: SessionUser,
-    architect: ScopedArchitect | undefined,
+    professional: ScopedProfessional | undefined,
     role: TeamLeadershipRole,
   ): boolean {
-    if (!architect) return false;
+    if (!professional) return false;
     if (this.actsForTheOrganization(user)) return true;
-    if (user.role !== role || architect.teamId == null) return false;
-    return this.teamsBoundAs(user, [role]).has(architect.teamId);
+    if (user.role !== role || professional.teamId == null) return false;
+    return this.teamsBoundAs(user, [role]).has(professional.teamId);
   }
 
   private teamsBoundAs(

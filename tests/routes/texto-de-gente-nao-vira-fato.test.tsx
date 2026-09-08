@@ -23,7 +23,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
       (options: Record<string, unknown>) => ({
         ...options,
         options,
-        useParams: () => ({ architectId: "ana" }),
+        useParams: () => ({ professionalId: "ana" }),
       }),
   };
 });

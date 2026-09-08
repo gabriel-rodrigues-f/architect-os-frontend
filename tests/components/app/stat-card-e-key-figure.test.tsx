@@ -40,10 +40,10 @@ describe("StatCard é KeyFigureCard size=sm", () => {
   it("o KeyFigureCard grande continua no Display XL, e o número é o mesmo objeto", () => {
     render(
       <I18nProvider>
-        <KeyFigureCard label="Pessoas" value={1234} />
+        <KeyFigureCard label="Profissionais" value={1234} />
       </I18nProvider>,
     );
-    const figura = screen.getByText("Pessoas").closest("[data-key-figure]")!;
+    const figura = screen.getByText("Profissionais").closest("[data-key-figure]")!;
     expect(figura.getAttribute("data-size")).toBe("md");
     expect(screen.getByText("1.234").className).toContain("key-figure-value");
   });

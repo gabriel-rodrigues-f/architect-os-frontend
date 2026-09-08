@@ -6,7 +6,7 @@ import { fixtureAssignedManagerUser, fixtureState, fixtureTeamId } from "../help
 
 /**
  * O gateway em memória é o ORÁCULO do contrato do backend (ebb305f):
- *   POST /architects/:id/team-transfer-requests { toTeamId, reason }
+ *   POST /professionals/:id/team-transfer-requests { toTeamId, reason }
  *   POST /team-transfer-requests/:id/{approve,refuse,cancel}
  * Ele reproduz as recusas que a tela precisa saber tratar — motivo vazio,
  * mesmo time, pendência duplicada, decisão repetida, nota de recusa vazia.
@@ -17,7 +17,7 @@ const times = [
 ];
 
 const novo = () =>
-  new InMemoryTeamTransfersGateway(fixtureState.architects, times, fixtureAssignedManagerUser);
+  new InMemoryTeamTransfersGateway(fixtureState.professionals, times, fixtureAssignedManagerUser);
 
 describe("InMemoryTeamTransfersGateway — solicitar", () => {
   it("cria a solicitação pendente com quem pediu e os nomes dos dois times", async () => {
@@ -29,7 +29,7 @@ describe("InMemoryTeamTransfersGateway — solicitar", () => {
 
     const [vista] = await gateway.teamTransferRequests("pending");
     expect(vista).toMatchObject({
-      architectName: "Ana Martins",
+      professionalName: "Ana Martins",
       fromTeamName: "Time Plataforma",
       toTeamName: "Time Dados",
       requestedByName: fixtureAssignedManagerUser.name,

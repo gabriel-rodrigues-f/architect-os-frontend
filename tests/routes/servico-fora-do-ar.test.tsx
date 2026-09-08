@@ -40,7 +40,7 @@ describe("serviço fora do ar — uma tela só, com a corrida, e o aviso de volt
             ? new Response("sem serviço", { status: 502 })
             : undefined,
         (href) =>
-          href.endsWith(apiPath("/architects"))
+          href.endsWith(apiPath("/professionals"))
             ? new Response("sem serviço", { status: 502 })
             : undefined,
       ],

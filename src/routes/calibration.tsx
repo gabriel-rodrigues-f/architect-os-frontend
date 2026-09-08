@@ -54,7 +54,7 @@ const CARDS_SKELETON = (
 );
 
 const CALIBRATION_CONTEXTS: readonly ContextScopeRequest[] = [
-  "architects",
+  "professionals",
   "cycles",
   "activeCycle",
 ];
@@ -91,7 +91,7 @@ function CalibrationBoard() {
   const vm = useCalibrationViewModel();
   const store = useStore();
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
-  const [assistedArchitectId, setAssistedArchitectId] = useState<string | null>(null);
+  const [assistedProfessionalId, setAssistedProfessionalId] = useState<string | null>(null);
   const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
 
   const query = useQuery({
@@ -126,7 +126,10 @@ function CalibrationBoard() {
             />
           </div>
 
-          <CalibrationAssistant selected={assistedArchitectId} onSelect={setAssistedArchitectId} />
+          <CalibrationAssistant
+            selected={assistedProfessionalId}
+            onSelect={setAssistedProfessionalId}
+          />
 
           <QuerySection
             query={query}
@@ -189,7 +192,7 @@ function CalibrationBoard() {
 
 /**
  * A ponte entre uma tela POR CICLO e uma rota POR PESSOA
- * (`/architects/:id/calibration-assistance`).
+ * (`/professionals/:id/calibration-assistance`).
  *
  * O seletor é explícito de propósito: a tela poderia escolher alguém sozinha —
  * o primeiro do roster, o de maior divergência — e escolher a pessoa errada
@@ -202,7 +205,7 @@ function CalibrationAssistant({
   onSelect,
 }: {
   selected: string | null;
-  onSelect: (architectId: string | null) => void;
+  onSelect: (professionalId: string | null) => void;
 }) {
   const { t } = useI18n();
   const store = useStore();
@@ -210,11 +213,11 @@ function CalibrationAssistant({
   return (
     <div className="mb-6">
       <div className="mb-4 max-w-xs">
-        <Label htmlFor="calibration-assistance-architect">{t("ai.calibration.person")}</Label>
+        <Label htmlFor="calibration-assistance-professional">{t("ai.calibration.person")}</Label>
         <PersonCombobox
-          id="calibration-assistance-architect"
+          id="calibration-assistance-professional"
           picker={PersonPicker.one(
-            defaultUiAuthorizationPolicy.mentorableBy(user, store.architects),
+            defaultUiAuthorizationPolicy.mentorableBy(user, store.professionals),
             selected,
           )}
           onChange={([id]) => onSelect(id ?? null)}

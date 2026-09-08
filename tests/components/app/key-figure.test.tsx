@@ -49,8 +49,10 @@ describe("KeyFigureFormatter — o formato do número-síntese", () => {
 
 describe("KeyFigure — valor grande, legenda pequena, tendência opcional", () => {
   it("mostra o rótulo, o valor formatado e a legenda", () => {
-    comIdioma(<KeyFigure label="Pessoas a capacitar" value={1234} caption="em 3 competências" />);
-    expect(screen.getByText("Pessoas a capacitar").className).toContain("section-heading");
+    comIdioma(
+      <KeyFigure label="Profissionais a capacitar" value={1234} caption="em 3 competências" />,
+    );
+    expect(screen.getByText("Profissionais a capacitar").className).toContain("section-heading");
     expect(screen.getByText("1.234").className).toContain("key-figure-value");
     expect(screen.getByText("em 3 competências")).toBeTruthy();
   });
@@ -99,8 +101,10 @@ describe("KeyFigure — valor grande, legenda pequena, tendência opcional", () 
   });
 
   it("KeyFigureCard é o mesmo número dentro de uma superfície de cartão", () => {
-    comIdioma(<KeyFigureCard label="Capacidades com uma pessoa só" value={2} />);
-    const figura = screen.getByText("Capacidades com uma pessoa só").closest("[data-key-figure]")!;
+    comIdioma(<KeyFigureCard label="Capacidades com um profissional só" value={2} />);
+    const figura = screen
+      .getByText("Capacidades com um profissional só")
+      .closest("[data-key-figure]")!;
     expect(figura.parentElement?.className).toContain("surface-card");
   });
 

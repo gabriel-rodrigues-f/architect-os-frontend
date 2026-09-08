@@ -3,7 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { stateContextsApi, type AppState } from "./api";
 
 const STATE_CONTEXT_NAMES = [
-  "architects",
+  "professionals",
   "assessments",
   "capabilities",
   "competencies",
@@ -20,22 +20,22 @@ export type StateContextName = (typeof STATE_CONTEXT_NAMES)[number];
 
 export interface StateContextRequest {
   name: StateContextName;
-  architectId?: string | undefined;
+  professionalId?: string | undefined;
 }
 
 const CONTEXT_STALE_TIME = 30_000;
 
 interface StateContextDefinition {
-  fetchSlice: (filter: { architectId?: string | undefined }) => Promise<unknown>;
+  fetchSlice: (filter: { professionalId?: string | undefined }) => Promise<unknown>;
   mergeInto: (state: AppState, slice: unknown) => AppState;
   sliceOf: (state: AppState) => unknown;
 }
 
 const definitions: Record<StateContextName, StateContextDefinition> = {
-  architects: {
-    fetchSlice: () => stateContextsApi.listArchitects(),
-    mergeInto: (state, slice) => ({ ...state, architects: slice as AppState["architects"] }),
-    sliceOf: (state) => state.architects,
+  professionals: {
+    fetchSlice: () => stateContextsApi.listProfessionals(),
+    mergeInto: (state, slice) => ({ ...state, professionals: slice as AppState["professionals"] }),
+    sliceOf: (state) => state.professionals,
   },
   assessments: {
     fetchSlice: (filter) => stateContextsApi.listAssessments(filter),
@@ -101,7 +101,7 @@ const definitions: Record<StateContextName, StateContextDefinition> = {
 /**
  * ADR-0011, fase final — a fatia que a tela NÃO pediu não se lê. Enquanto o
  * blob `/state` existia, uma tela que esquecesse uma fatia caía no vazio em
- * silêncio ("Nenhum arquiteto cadastrado" com o banco cheio). Agora, em
+ * silêncio ("Nenhum profissional cadastrado" com o banco cheio). Agora, em
  * desenvolvimento e em teste, ler uma fatia não pedida lança — com o nome da
  * fatia e a instrução. Em produção o vazio continua sendo vazio: uma tela
  * incompleta é defeito, não indisponibilidade.
@@ -137,8 +137,8 @@ export class UnrequestedSlice {
 
 class StateContextCatalog {
   queryKeyOf(request: StateContextRequest): readonly unknown[] {
-    return request.architectId
-      ? (["state-context", request.name, { architectId: request.architectId }] as const)
+    return request.professionalId
+      ? (["state-context", request.name, { professionalId: request.professionalId }] as const)
       : (["state-context", request.name] as const);
   }
 
@@ -146,7 +146,7 @@ class StateContextCatalog {
     const definition = definitions[request.name];
     return {
       queryKey: this.queryKeyOf(request),
-      queryFn: () => definition.fetchSlice({ architectId: request.architectId }),
+      queryFn: () => definition.fetchSlice({ professionalId: request.professionalId }),
       staleTime: CONTEXT_STALE_TIME,
       retry: 1,
       enabled: typeof window !== "undefined",

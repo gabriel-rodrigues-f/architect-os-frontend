@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { AppState } from "@/lib/api";
-import type { Architect, Assessment, Capability, Competency, Level } from "@/lib/domain";
+import type { Professional, Assessment, Capability, Competency, Level } from "@/lib/domain";
 import {
   CRITICAL_GAP_THRESHOLD,
   DashboardPresenter,
@@ -27,7 +27,7 @@ const presenterFor = (state: AppState) => {
 };
 
 describe("DashboardPresenter", () => {
-  const architects = fixtureState.architects;
+  const professionals = fixtureState.professionals;
 
   it("limiar de gap crítico é 3: gap 2 não conta, gap 3 conta", () => {
     expect(CRITICAL_GAP_THRESHOLD).toBe(3);
@@ -46,16 +46,16 @@ describe("DashboardPresenter", () => {
           : a,
       ),
     };
-    expect(presenterFor(fixtureState).presenter.criticalGapCount(architects)).toBe(0);
-    expect(presenterFor(withCriticalGap).presenter.criticalGapCount(architects)).toBe(1);
+    expect(presenterFor(fixtureState).presenter.criticalGapCount(professionals)).toBe(0);
+    expect(presenterFor(withCriticalGap).presenter.criticalGapCount(professionals)).toBe(1);
   });
 
   it("topGaps respeita o limite e ordena do maior gap para o menor", () => {
     const { presenter } = presenterFor(fixtureState);
-    const top = presenter.topGaps(architects, 2);
+    const top = presenter.topGaps(professionals, 2);
     expect(top).toHaveLength(2);
     expect(top[0]!.gap).toBeGreaterThanOrEqual(top[1]!.gap);
-    const all = presenter.topGaps(architects);
+    const all = presenter.topGaps(professionals);
     expect(all.map((g) => g.gap)).toEqual([...all.map((g) => g.gap)].sort((a, b) => b - a));
   });
 
@@ -65,10 +65,10 @@ describe("DashboardPresenter", () => {
       assessments: fixtureState.assessments.filter((a) => a.id !== "bruno-h2"),
     };
     const { presenter } = presenterFor(semAssessmentDoBruno);
-    const coverage = presenter.assessmentCoverage(architects);
+    const coverage = presenter.assessmentCoverage(professionals);
     expect(coverage).toEqual({ completed: 1, inReview: 0, draft: 0, notStarted: 1 });
     expect(coverage.completed + coverage.inReview + coverage.draft + coverage.notStarted).toBe(
-      architects.length,
+      professionals.length,
     );
   });
 
@@ -100,7 +100,7 @@ describe("DashboardPresenter", () => {
 
 /**
  * OO3-11/D-5 (reuso final) — os KPIs pessoais compartilhados entre a Home
- * de Member (`routes/index.tsx`) e o perfil do arquiteto.
+ * de Member (`routes/index.tsx`) e o perfil do profissional.
  */
 describe("PersonalDashboardPresenter", () => {
   const personalFor = (state: AppState) =>
@@ -137,7 +137,7 @@ describe("PersonalDashboardPresenter", () => {
       evidences: [
         ...fixtureState.evidences,
         { ...fixtureState.evidences[0]!, id: "e2", status: "Accepted" as const },
-        { ...fixtureState.evidences[0]!, id: "e3", architectId: "bruno" },
+        { ...fixtureState.evidences[0]!, id: "e3", professionalId: "bruno" },
       ],
     };
     const personal = personalFor(comRevisada);
@@ -161,13 +161,13 @@ describe("PersonalDashboardPresenter", () => {
 describe("DashboardPresenter com limiar configurado (CFG-02)", () => {
   it("limiar 2 (bands fake) passa a contar gaps que o default ignorava", () => {
     const sel = createSelectors(fixtureState);
-    const architects = fixtureState.architects;
+    const professionals = fixtureState.professionals;
     const defaultPresenter = new DashboardPresenter(fixtureState, sel);
     const strictPresenter = new DashboardPresenter(fixtureState, sel, 2);
-    const gapsAtLeast2 = defaultPresenter.gapsOf(architects).filter((g) => g.gap >= 2).length;
-    expect(strictPresenter.criticalGapCount(architects)).toBe(gapsAtLeast2);
-    expect(strictPresenter.criticalGapCount(architects)).toBeGreaterThanOrEqual(
-      defaultPresenter.criticalGapCount(architects),
+    const gapsAtLeast2 = defaultPresenter.gapsOf(professionals).filter((g) => g.gap >= 2).length;
+    expect(strictPresenter.criticalGapCount(professionals)).toBe(gapsAtLeast2);
+    expect(strictPresenter.criticalGapCount(professionals)).toBeGreaterThanOrEqual(
+      defaultPresenter.criticalGapCount(professionals),
     );
   });
 });
@@ -182,7 +182,7 @@ describe("DashboardPresenter com limiar configurado (CFG-02)", () => {
  * tudo seja provadamente equivalente, não "parecida".
  */
 describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
-  const ARCHITECTS = 8;
+  const PROFESSIONALS = 8;
   const COMPETENCIES = 9;
 
   const empatadoState = (): AppState => {
@@ -209,11 +209,11 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
       active: true,
     }));
 
-    const architects: Architect[] = Array.from({ length: ARCHITECTS }, (_, i) => ({
+    const professionals: Professional[] = Array.from({ length: PROFESSIONALS }, (_, i) => ({
       id: `arq-${i}`,
-      name: `Arquiteto ${i}`,
+      name: `Profissional ${i}`,
       role: "Pleno",
-      yearsAsArchitect: 5,
+      yearsAsProfessional: 5,
       specialization: "Integration",
       email: `arq-${i}@company.com`,
       active: true,
@@ -221,9 +221,9 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
     }));
 
     // final varia em ciclo curto: muitos gaps iguais, que é onde o desempate importa.
-    const assessments: Assessment[] = architects.map((a, ai) => ({
+    const assessments: Assessment[] = professionals.map((a, ai) => ({
       id: `${a.id}-ciclo`,
-      architectId: a.id,
+      professionalId: a.id,
       cycleId: "ciclo",
       status: "Completed",
       modelVersion: 1,
@@ -244,7 +244,7 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
       ...fixtureState,
       capabilities: [capability],
       competencies,
-      architects,
+      professionals,
       assessments,
       plans: [],
       cycles: [
@@ -258,23 +258,26 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
   const presenterFor = () => new DashboardPresenter(state, createSelectors(state));
 
   /** Identidade de negócio de uma linha de prioridade: quem, em qual competência, com qual gap. */
-  const rowKey = (g: { architect: { id: string }; item: { competencyId: string }; gap: number }) =>
-    `${g.architect.id}|${g.item.competencyId}|${g.gap}`;
+  const rowKey = (g: {
+    professional: { id: string };
+    item: { competencyId: string };
+    gap: number;
+  }) => `${g.professional.id}|${g.item.competencyId}|${g.gap}`;
 
   it("gapsOf mantém a ordem: população na ordem recebida, gaps na ordem do selector", () => {
     const presenter = presenterFor();
     const sel = createSelectors(state);
-    const esperado = state.architects.flatMap((a) =>
+    const esperado = state.professionals.flatMap((a) =>
       sel.progressionGapsFor(a.id).map((g) => `${a.id}|${g.item.competencyId}|${g.gap}`),
     );
 
-    expect(presenter.gapsOf(state.architects).map(rowKey)).toEqual(esperado);
-    expect(esperado).toHaveLength(ARCHITECTS * COMPETENCIES);
+    expect(presenter.gapsOf(state.professionals).map(rowKey)).toEqual(esperado);
+    expect(esperado).toHaveLength(PROFESSIONALS * COMPETENCIES);
   });
 
   it("topGaps é idêntico a ordenar tudo por gap desc e cortar — inclusive no empate", () => {
     const presenter = presenterFor();
-    const todos = presenter.gapsOf(state.architects);
+    const todos = presenter.gapsOf(state.professionals);
     // referência: exatamente o algoritmo antigo (sort estável + slice).
     const referencia = (limit: number) =>
       [...todos]
@@ -283,33 +286,33 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
         .map(rowKey);
 
     for (const limit of [0, 1, 2, 6, 7, 20, todos.length, todos.length + 5]) {
-      expect(presenter.topGaps(state.architects, limit).map(rowKey)).toEqual(referencia(limit));
+      expect(presenter.topGaps(state.professionals, limit).map(rowKey)).toEqual(referencia(limit));
     }
     // o default do painel são 6 linhas
-    expect(presenter.topGaps(state.architects).map(rowKey)).toEqual(referencia(6));
+    expect(presenter.topGaps(state.professionals).map(rowKey)).toEqual(referencia(6));
     // o cenário precisa ter empates, senão o teste não prova nada sobre desempate
-    const seis = presenter.topGaps(state.architects).map((g) => g.gap);
+    const seis = presenter.topGaps(state.professionals).map((g) => g.gap);
     expect(new Set(seis).size).toBeLessThan(seis.length);
   });
 
   it("topGaps não reordena a lista base nem os gaps do selector", () => {
     const presenter = presenterFor();
-    const antes = presenter.gapsOf(state.architects).map(rowKey);
-    presenter.topGaps(state.architects, 6);
-    expect(presenter.gapsOf(state.architects).map(rowKey)).toEqual(antes);
+    const antes = presenter.gapsOf(state.professionals).map(rowKey);
+    presenter.topGaps(state.professionals, 6);
+    expect(presenter.gapsOf(state.professionals).map(rowKey)).toEqual(antes);
   });
 
   it("criticalGapCount continua contando todos os gaps acima do limiar", () => {
     const presenter = new DashboardPresenter(state, createSelectors(state), 3);
-    const esperado = presenter.gapsOf(state.architects).filter((g) => g.gap >= 3).length;
-    expect(presenter.criticalGapCount(state.architects)).toBe(esperado);
+    const esperado = presenter.gapsOf(state.professionals).filter((g) => g.gap >= 3).length;
+    expect(presenter.criticalGapCount(state.professionals)).toBe(esperado);
     expect(esperado).toBeGreaterThan(0);
   });
 
   it("gapsOf reaproveita o cálculo da mesma população — o painel chama duas vezes por render", () => {
     const presenter = presenterFor();
-    const primeiro = presenter.gapsOf(state.architects);
-    expect(presenter.gapsOf(state.architects)).toBe(primeiro);
+    const primeiro = presenter.gapsOf(state.professionals);
+    expect(presenter.gapsOf(state.professionals)).toBe(primeiro);
   });
 });
 
@@ -330,21 +333,21 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
 
   it("as pessoas da fila são só as ativas que o usuário lidera", () => {
     const comInativo = stateWith({
-      architects: fixtureState.architects.map((architect) =>
-        architect.id === "bruno" ? { ...architect, active: false } : architect,
+      professionals: fixtureState.professionals.map((professional) =>
+        professional.id === "bruno" ? { ...professional, active: false } : professional,
       ),
     });
-    expect(queuesOf(fixtureState).people.map((architect) => architect.id)).toEqual([
+    expect(queuesOf(fixtureState).people.map((professional) => professional.id)).toEqual([
       "ana",
       "bruno",
     ]);
-    expect(queuesOf(comInativo).people.map((architect) => architect.id)).toEqual(["ana"]);
+    expect(queuesOf(comInativo).people.map((professional) => professional.id)).toEqual(["ana"]);
   });
 
   it("o gerente recolhe as mesmas pendências do tech lead — alcance não distingue os dois", () => {
     const gerente = { ...fixtureAssignedManagerUser };
 
-    expect(queuesOf(fixtureState, gerente).people.map((architect) => architect.id)).toEqual([
+    expect(queuesOf(fixtureState, gerente).people.map((professional) => professional.id)).toEqual([
       "ana",
       "bruno",
     ]);
@@ -357,7 +360,10 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
 
   it("lead sem vínculo nenhum e sem time não recolhe pendência alguma", () => {
     const semTime = stateWith({
-      architects: fixtureState.architects.map((architect) => ({ ...architect, teamId: null })),
+      professionals: fixtureState.professionals.map((professional) => ({
+        ...professional,
+        teamId: null,
+      })),
     });
     const queues = queuesOf(semTime, fixtureUnassignedTechLeadUser);
     expect(queues.people).toEqual([]);
@@ -372,7 +378,7 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
       ),
     });
     expect(queuesOf(fixtureState).awaitingCalibration).toEqual([]);
-    expect(queuesOf(emRevisao).awaitingCalibration.map((entry) => entry.architect.id)).toEqual([
+    expect(queuesOf(emRevisao).awaitingCalibration.map((entry) => entry.professional.id)).toEqual([
       "bruno",
     ]);
   });
@@ -381,9 +387,9 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
     const comOutraPendente = stateWith({
       evidences: [
         ...fixtureState.evidences,
-        { ...fixtureState.evidences[0]!, id: "e2", architectId: "bruno" },
+        { ...fixtureState.evidences[0]!, id: "e2", professionalId: "bruno" },
         { ...fixtureState.evidences[0]!, id: "e3", status: "Accepted" as const },
-        { ...fixtureState.evidences[0]!, id: "e4", architectId: "de-fora" },
+        { ...fixtureState.evidences[0]!, id: "e4", professionalId: "de-fora" },
       ],
     });
     expect(queuesOf(comOutraPendente).pendingEvidence.map((evidence) => evidence.id)).toEqual([
@@ -401,9 +407,9 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
       plans: [{ ...planoDeAna, status: "Draft" as const, items: [] }],
     });
     expect(queuesOf(fixtureState).awaitingApproval).toEqual([]);
-    expect(queuesOf(rascunhoComItem).awaitingApproval.map((entry) => entry.architect.id)).toEqual([
-      "ana",
-    ]);
+    expect(
+      queuesOf(rascunhoComItem).awaitingApproval.map((entry) => entry.professional.id),
+    ).toEqual(["ana"]);
     expect(queuesOf(rascunhoVazio).awaitingApproval).toEqual([]);
   });
 

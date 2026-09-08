@@ -92,7 +92,7 @@ describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organi
     "/team-rules",
     "/capability-map",
     "/progression",
-    "/architects/ana/evolution",
+    "/professionals/ana/evolution",
   ])("ADMIN alcança %s — leitura da organização inteira e administração", async (href) => {
     expect(await navegarComoUsuario(fixtureAdminUser, href)).toBe(href);
   });
@@ -137,18 +137,18 @@ describe("guardas de navegação das telas administrativas", () => {
 
 /**
  * Onda 10, T7 — desde o roster fechado (backend `d1edba4`), o perfil fora do
- * escopo NÃO vem no payload de `/state`: a antiga guarda `requireArchitectReach`
- * nunca mais encontrava o arquiteto e caía no ramo "não encontrei, libero" —
+ * escopo NÃO vem no payload de `/state`: a antiga guarda `requireProfessionalReach`
+ * nunca mais encontrava o profissional e caía no ramo "não encontrei, libero" —
  * redirect morto, e o teste antigo só ficava verde porque a fixture emitia o
  * payload que o servidor não manda mais. A negação decidida para o mundo
  * recortado é o estado "não encontrado" que a própria tela já tem (fixado em
- * `architect-profile-fora-do-escopo.test.tsx`); aqui se fixa a metade da
+ * `professional-profile-fora-do-escopo.test.tsx`); aqui se fixa a metade da
  * navegação: a rota RESOLVE, ninguém é jogado para a home.
  */
-describe("navegação do perfil de arquiteto no mundo recortado", () => {
+describe("navegação do perfil de profissional no mundo recortado", () => {
   it("member em perfil fora do escopo permanece na URL — a negação é o 'não encontrado' da tela", async () => {
-    expect(await navegarComoUsuario(fixtureMemberUser, "/architects/bruno")).toBe(
-      "/architects/bruno",
+    expect(await navegarComoUsuario(fixtureMemberUser, "/professionals/bruno")).toBe(
+      "/professionals/bruno",
     );
   });
 
@@ -157,23 +157,25 @@ describe("navegação do perfil de arquiteto no mundo recortado", () => {
    * a Visão geral da própria ficha abre sem guarda. (Era negada desde 01/09.)
    */
   it("o member abre a PRÓPRIA Visão geral — é a tela de leitura do progresso dele", async () => {
-    expect(await navegarComoUsuario(fixtureMemberUser, "/architects/ana")).toBe("/architects/ana");
+    expect(await navegarComoUsuario(fixtureMemberUser, "/professionals/ana")).toBe(
+      "/professionals/ana",
+    );
   });
 
   it("mantém qualquer perfil aberto para admin", async () => {
-    expect(await navegarComoUsuario(fixtureAdminUser, "/architects/bruno")).toBe(
-      "/architects/bruno",
+    expect(await navegarComoUsuario(fixtureAdminUser, "/professionals/bruno")).toBe(
+      "/professionals/bruno",
     );
   });
 
   /**
    * UX-001 continua valendo, imposto pelo servidor: o payload recortado de um
-   * lead sem atribuição não traz o arquiteto, então a rota resolve e a tela
+   * lead sem atribuição não traz o profissional, então a rota resolve e a tela
    * mostra "não encontrado" — nada do perfil chega ao navegador.
    */
-  it("lead sem atribuição permanece na URL e não recebe o arquiteto no payload", async () => {
-    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/architects/bruno")).toBe(
-      "/architects/bruno",
+  it("lead sem atribuição permanece na URL e não recebe o profissional no payload", async () => {
+    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/professionals/bruno")).toBe(
+      "/professionals/bruno",
     );
   });
 
@@ -319,10 +321,10 @@ describe("requireCalibrationReach — a guarda da leitura de calibração", () =
  * são as mesmas rotas, e o dono não pediu para quebrá-las.
  */
 const FICHA_DE_ANA = [
-  "/architects/ana",
-  "/architects/ana/evolution",
-  "/architects/ana/roadmap",
-  "/architects/ana/statement",
+  "/professionals/ana",
+  "/professionals/ana/evolution",
+  "/professionals/ana/roadmap",
+  "/professionals/ana/statement",
 ];
 
 /** As três abas que o servidor reserva à liderança (ADR-0070); a Visão geral é da pessoa. */
@@ -381,11 +383,11 @@ async function alcancaLideranca(user: SessionUser): Promise<boolean> {
   }
 }
 
-async function alcancaFichaDe(user: SessionUser, architectId: string): Promise<boolean> {
+async function alcancaFichaDe(user: SessionUser, professionalId: string): Promise<boolean> {
   const queryClient = createAppQueryClient();
   queryClient.setQueryData(SESSION_QUERY_KEY, user);
   try {
-    await requireCareerTabsReach({ context: { queryClient }, params: { architectId } });
+    await requireCareerTabsReach({ context: { queryClient }, params: { professionalId } });
     return true;
   } catch (erro) {
     if (isRedirect(erro)) return false;
@@ -406,10 +408,10 @@ describe("requireLeadershipReach e requireCareerTabsReach — as guardas do prof
     expect(await alcancaFichaDe(fixtureMemberUser, "bruno")).toBe(false);
   });
 
-  it("quem lidera abre as abas de qualquer ficha, inclusive da própria quando tem arquiteto vinculado", async () => {
+  it("quem lidera abre as abas de qualquer ficha, inclusive da própria quando tem profissional vinculado", async () => {
     expect(await alcancaFichaDe(fixtureAssignedTechLeadUser, "ana")).toBe(true);
     expect(
-      await alcancaFichaDe({ ...fixtureAssignedTechLeadUser, architectId: "ana" }, "ana"),
+      await alcancaFichaDe({ ...fixtureAssignedTechLeadUser, professionalId: "ana" }, "ana"),
     ).toBe(true);
     expect(await alcancaFichaDe(fixtureAdminUser, "ana")).toBe(true);
   });

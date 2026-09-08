@@ -24,12 +24,12 @@ const fetchMock = vi.fn();
 
 function StoreProbe() {
   const store = useStore();
-  return <p>arquitetos:{store.architects.length}</p>;
+  return <p>profissionais:{store.professionals.length}</p>;
 }
 
 const countStateFetches = () =>
   fetchMock.mock.calls.filter(([url]) =>
-    (url instanceof Request ? url.url : String(url)).endsWith(apiPath("/architects")),
+    (url instanceof Request ? url.url : String(url)).endsWith(apiPath("/professionals")),
   ).length;
 
 describe("fatia de contexto — não refaz a leitura ao recuperar o foco da janela (R2-TEC-19)", () => {
@@ -50,13 +50,13 @@ describe("fatia de contexto — não refaz a leitura ao recuperar o foco da jane
 
   it("recuperar o foco da janela depois do staleTime não dispara um novo fetch da fatia", async () => {
     renderWithApp(
-      <ContextScope contexts={["architects"]}>
+      <ContextScope contexts={["professionals"]}>
         <StoreProbe />
       </ContextScope>,
     );
 
     await waitFor(() => expect(countStateFetches()).toBe(1));
-    await screen.findByText(`arquitetos:${(fixtureState as AppState).architects.length}`);
+    await screen.findByText(`profissionais:${(fixtureState as AppState).professionals.length}`);
 
     /**
      * Só `Date` fica fake (`toFake: ["Date"]`) — `setTimeout`/promises

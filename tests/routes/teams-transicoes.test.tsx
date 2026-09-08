@@ -51,9 +51,9 @@ const NEGATIVA =
 const plataforma: TeamTransitionsRow = {
   teamId: fixtureTeamId,
   teamName: "Time Plataforma",
-  activeArchitects: 4,
+  activeProfessionals: 4,
   transitions: 2,
-  transitionsPerActiveArchitect: 0.5,
+  transitionsPerActiveProfessional: 0.5,
   measuredOrigins: 1,
   averageDaysInOriginLevel: 120,
   pairs: [{ fromRole: "Júnior", toRole: "Pleno", transitions: 2, averageDaysInOriginLevel: 120 }],
@@ -61,9 +61,9 @@ const plataforma: TeamTransitionsRow = {
 const dados: TeamTransitionsRow = {
   teamId: "time-dados",
   teamName: "Time Dados",
-  activeArchitects: 0,
+  activeProfessionals: 0,
   transitions: 3,
-  transitionsPerActiveArchitect: null,
+  transitionsPerActiveProfessional: null,
   measuredOrigins: 0,
   averageDaysInOriginLevel: null,
   pairs: [
@@ -74,9 +74,9 @@ const dados: TeamTransitionsRow = {
 const legado: TeamTransitionsRow = {
   teamId: "time-legado",
   teamName: "Time Legado",
-  activeArchitects: 2,
+  activeProfessionals: 2,
   transitions: 0,
-  transitionsPerActiveArchitect: 0,
+  transitionsPerActiveProfessional: 0,
   measuredOrigins: 0,
   averageDaysInOriginLevel: null,
   pairs: [],
@@ -192,7 +192,7 @@ describe("/teams — Transições por time, lido pelo gateway em memória (o or�
     registraGatewayEmMemoria(new InMemoryTeamTransitionsGateway([], null));
     renderAs(fixtureAssignedManagerUser);
     expect(
-      await screen.findByText("Nenhum time com transição ou pessoa ativa neste período."),
+      await screen.findByText("Nenhum time com transição ou profissional ativo neste período."),
     ).toBeTruthy();
     expect(screen.queryByRole("table", { name: "Transições por time" })).toBeNull();
   });

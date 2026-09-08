@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n";
 
 /**
  * R3-007 (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md) — bug relatado pela dona do
- * produto: com um único arquiteto sem especialização cadastrada,
+ * produto: com um único profissional sem especialização cadastrada,
  * `specializationOptions`/`capabilityOptions` (`team-shared.tsx`) tinham
  * exatamente UMA entrada — a opção-placeholder sintética ("Sem
  * especialização"/"Sem capacidade") que dá um id filtrável pra quem não tem

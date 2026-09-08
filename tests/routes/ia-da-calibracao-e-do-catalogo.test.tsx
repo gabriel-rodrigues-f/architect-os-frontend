@@ -23,7 +23,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
       (options: Record<string, unknown>) => ({
         ...options,
         options,
-        useParams: () => ({ architectId: "ana" }),
+        useParams: () => ({ professionalId: "ana" }),
       }),
   };
 });
@@ -42,7 +42,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  *
  * Cada um traz uma pergunta de projeto que o teste responde:
  *
- *  - a calibração do backend é **por pessoa** (`/architects/:id/…`) e a tela
+ *  - a calibração do backend é **por pessoa** (`/professionals/:id/…`) e a tela
  *    de calibração é **por ciclo**. A ponte é um seletor de pessoa explícito;
  *    sem ele a tela teria de escolher alguém sozinha, e escolher a pessoa
  *    errada numa tela de calibração é pior do que não sugerir nada;
@@ -105,7 +105,7 @@ describe("calibração — a leitura de apoio é da pessoa escolhida", () => {
     const usuario = userEvent.setup();
 
     await usuario.click(
-      await screen.findByRole("combobox", { name: /Pessoa para a leitura de apoio/ }),
+      await screen.findByRole("combobox", { name: /Profissional para a leitura de apoio/ }),
     );
     await usuario.click(await screen.findByRole("option", { name: /Bruno Almeida/ }));
     await usuario.click(screen.getByRole("button", { name: /Ler apoio à calibração/ }));
@@ -118,7 +118,7 @@ describe("calibração — a leitura de apoio é da pessoa escolhida", () => {
       ).toBe(1),
     );
     expect(urlDe("calibration-assistance").pathname).toBe(
-      apiPath("/architects/bruno/calibration-assistance"),
+      apiPath("/professionals/bruno/calibration-assistance"),
     );
     expect(await screen.findByText(/dois avaliadores com réguas diferentes/)).toBeTruthy();
     expect(screen.getByText("Duas notas distantes no mesmo ciclo")).toBeTruthy();

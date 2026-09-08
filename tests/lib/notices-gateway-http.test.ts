@@ -118,7 +118,7 @@ describe("HttpNoticesGateway — o que volta do servidor", () => {
               link: "/assessments",
               occurredAt: "2026-08-29T12:00:00.000Z",
               readAt: null,
-              architectId: "demo-ana-martins",
+              professionalId: "demo-ana-martins",
               teamId: "time-real",
             },
           ],

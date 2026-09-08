@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { PersonPicker } from "@/lib/person-selection";
 
 /**
@@ -14,11 +14,11 @@ import { PersonPicker } from "@/lib/person-selection";
  * / várias com teto) é uma Strategy; o alcance vazio é tratado uma vez só, no
  * contexto — nenhuma forma oferece "Todo o time" de ninguém.
  */
-const pessoa = (id: string, name: string): Architect => ({
+const pessoa = (id: string, name: string): Professional => ({
   id,
   name,
   role: "Pleno",
-  yearsAsArchitect: 3,
+  yearsAsProfessional: 3,
   specialization: "",
   email: `${id}@a.com`,
   active: true,

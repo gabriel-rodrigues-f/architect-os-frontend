@@ -10,7 +10,7 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 /**
  * Onda 10, T8 — o payload recortado (backend `d1edba4`) mantém a trilha
  * inteira quando UM dos atribuídos é visível: `assignedTo`/`progress` seguem
- * carregando ids fora do escopo, mas o `Architect` correspondente não vem.
+ * carregando ids fora do escopo, mas o `Professional` correspondente não vem.
  * A tela mostrava o id cru ("brn-7f3a…") como se fosse nome. O rótulo
  * decidido é `path.assignee.outOfScope`, via i18n — nunca o id.
  */
@@ -27,8 +27,8 @@ const stateComTrilhaCompartilhada: AppState = {
       assignedTo: ["ana", "bruno"],
       items: [{ id: "item-1", title: "Curso X", type: "Curso", hours: 4 }],
       progress: [
-        { architectId: "ana", itemId: "item-1", status: "In Progress", progress: 40 },
-        { architectId: "bruno", itemId: "item-1", status: "Not Started", progress: 0 },
+        { professionalId: "ana", itemId: "item-1", status: "In Progress", progress: 40 },
+        { professionalId: "bruno", itemId: "item-1", status: "Not Started", progress: 0 },
       ],
       createdBy: null,
     },

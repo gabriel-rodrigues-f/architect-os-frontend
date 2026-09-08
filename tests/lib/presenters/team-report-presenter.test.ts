@@ -22,7 +22,7 @@ const gapRow = (overrides: Partial<ConsolidatedGapRow> = {}): ConsolidatedGapRow
   name: "Kubernetes",
   capabilityId: "cloud",
   people: 2,
-  architectNames: ["Ana", "Bruno"],
+  professionalNames: ["Ana", "Bruno"],
   totalGap: 3,
   maxGap: 2,
   avgGap: 1.5,
@@ -34,7 +34,7 @@ const gapRow = (overrides: Partial<ConsolidatedGapRow> = {}): ConsolidatedGapRow
 const input = (overrides: Partial<TeamReportInput> = {}): TeamReportInput => ({
   scopeLabel: "Time inteiro",
   generatedAt: new Date("2026-08-26T02:00:00Z"),
-  architects: [{ id: "ana", name: "Ana" }],
+  professionals: [{ id: "ana", name: "Ana" }],
   capabilities: [
     { id: "cloud", name: "Cloud", short: "Cld" },
     { id: "security", name: "Security", short: "Cld" },
@@ -48,7 +48,7 @@ const input = (overrides: Partial<TeamReportInput> = {}): TeamReportInput => ({
 describe("TeamReportPresenter", () => {
   it("heatmapHead deduplica siglas repetidas do catálogo", () => {
     const presenter = new TeamReportPresenter(fakeT, input());
-    expect(presenter.heatmapHead).toEqual(["col.architect", "Cld", "Cld (2)"]);
+    expect(presenter.heatmapHead).toEqual(["col.professional", "Cld", "Cld (2)"]);
   });
 
   it('heatmapBody usa "—" para média ausente — nunca 0', () => {

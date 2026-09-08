@@ -10,7 +10,7 @@ export interface Notice {
   link: string;
   occurredAt: string;
   readAt: string | null;
-  architectId: string | null;
+  professionalId: string | null;
   teamId: string | null;
 }
 
@@ -54,7 +54,7 @@ export class HttpNoticesGateway implements NoticesGateway {
   markAllNoticesRead = (): Promise<void> => this.client.post<void>("/notices/read-all", {});
 }
 
-export type NoticesViewer = Pick<SessionUser, "role" | "architectId" | "memberships">;
+export type NoticesViewer = Pick<SessionUser, "role" | "professionalId" | "memberships">;
 
 export const DEMONSTRATION_TEAM_ID = "time-em-demonstracao";
 
@@ -68,20 +68,20 @@ const fixtureNotices = (now: number): Notice[] => [
     id: "notice-evidence-carla-awaiting-review",
     eventType: "evidence.awaitingReview",
     title: "Evidência de Carla Souza espera revisão: Desenho do data mart de logística",
-    link: "/architects/demo-carla-souza",
+    link: "/professionals/demo-carla-souza",
     occurredAt: new Date(now - 2 * HOUR_MS).toISOString(),
     readAt: null,
-    architectId: "demo-carla-souza",
+    professionalId: "demo-carla-souza",
     teamId: DEMONSTRATION_TEAM_ID,
   },
   {
     id: "notice-evidence-elisa-awaiting-review",
     eventType: "evidence.awaitingReview",
     title: "Evidência de Elisa Prado espera revisão: Contrato v2 do serviço de catálogo",
-    link: "/architects/demo-elisa-prado",
+    link: "/professionals/demo-elisa-prado",
     occurredAt: new Date(now - 6 * HOUR_MS).toISOString(),
     readAt: null,
-    architectId: "demo-elisa-prado",
+    professionalId: "demo-elisa-prado",
     teamId: DEMONSTRATION_TEAM_ID,
   },
   {
@@ -91,7 +91,7 @@ const fixtureNotices = (now: number): Notice[] => [
     link: "/assessments",
     occurredAt: new Date(now - 1 * DAY_MS).toISOString(),
     readAt: null,
-    architectId: "demo-diego-rocha",
+    professionalId: "demo-diego-rocha",
     teamId: DEMONSTRATION_TEAM_ID,
   },
   {
@@ -101,7 +101,7 @@ const fixtureNotices = (now: number): Notice[] => [
     link: "/assessments",
     occurredAt: new Date(now - 2 * DAY_MS).toISOString(),
     readAt: null,
-    architectId: "demo-ana-martins",
+    professionalId: "demo-ana-martins",
     teamId: DEMONSTRATION_TEAM_ID,
   },
   {
@@ -111,7 +111,7 @@ const fixtureNotices = (now: number): Notice[] => [
     link: "/mentoring",
     occurredAt: new Date(now - 3 * DAY_MS).toISOString(),
     readAt: new Date(now - 2 * DAY_MS).toISOString(),
-    architectId: "demo-bruno-almeida",
+    professionalId: "demo-bruno-almeida",
     teamId: DEMONSTRATION_TEAM_ID,
   },
 ];
@@ -174,7 +174,8 @@ export class InMemoryNoticesGateway implements NoticesGateway {
   }
 
   private reaches(notice: Notice, viewer: NoticesViewer, ledTeamIds: string[]): boolean {
-    if (viewer.architectId !== null && notice.architectId === viewer.architectId) return true;
+    if (viewer.professionalId !== null && notice.professionalId === viewer.professionalId)
+      return true;
     if (ledTeamIds.length === 0) return false;
     if (notice.teamId === DEMONSTRATION_TEAM_ID) return true;
     return notice.teamId !== null && ledTeamIds.includes(notice.teamId);

@@ -8,7 +8,7 @@ import { Selection, type SelectionScope } from "@/lib/selection";
  * ninguém) com o `SelectionScope` do fluxo de Evolução (chips: `[]` =
  * todas). Cobre a semântica de vazio de cada construtor e as conversões
  * de/para o shape wire — a cobertura de tela existente (`gap-scope.test.ts`,
- * `architect-filter-select-all.test.tsx`, `evolution-filters-select.test.tsx`)
+ * `professional-filter-select-all.test.tsx`, `evolution-filters-select.test.tsx`)
  * continua sendo a characterization do comportamento por tela.
  */
 const items = [{ id: "ana" }, { id: "bruno" }, { id: "carla" }];
@@ -22,7 +22,7 @@ describe("Selection.explicit — pertencimento explícito ([] = ninguém)", () =
     expect(none.contains("ana")).toBe(false);
   });
 
-  it("recorta por pertencimento preservando a ordem dos itens (contrato do applyArchitectFilter)", () => {
+  it("recorta por pertencimento preservando a ordem dos itens (contrato do applyProfessionalFilter)", () => {
     const sel = Selection.explicit<string>(["carla", "ana"]);
     expect(sel.apply(items)).toEqual([{ id: "ana" }, { id: "carla" }]);
     expect(sel.contains("bruno")).toBe(false);

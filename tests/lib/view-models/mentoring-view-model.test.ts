@@ -33,7 +33,8 @@ function fakeService(): MentoringService & {
         ({ id, nextSession }) as unknown as MentoringSession,
     ),
     createPlanItemFromGap: vi.fn(
-      async (architectId: string) => ({ id: "plano-1", architectId }) as unknown as DevelopmentPlan,
+      async (professionalId: string) =>
+        ({ id: "plano-1", professionalId }) as unknown as DevelopmentPlan,
     ),
   };
 }

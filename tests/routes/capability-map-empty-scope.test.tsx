@@ -42,7 +42,7 @@ const leadWithNoOne: SessionUser = {
   email: "lead-sem-ninguem@company.com",
   name: "Lead Sem Ninguém",
   role: "tech_lead",
-  architectId: null,
+  professionalId: null,
   status: "active",
   mustChangePassword: false,
   createdAt: "2026-01-01T00:00:00Z",
@@ -69,7 +69,7 @@ describe("Mapa de Capacidades — escopo vazio vira uma mensagem, não N repeti�
   it("mostra a mensagem única de escopo vazio, nunca 'Dados insuficientes' repetido por capacidade", async () => {
     renderWithApp(<CapabilityPage />);
 
-    expect(await screen.findByText("Nenhuma pessoa no seu escopo")).toBeTruthy();
+    expect(await screen.findByText("Nenhum profissional no seu escopo")).toBeTruthy();
     expect(screen.queryByText(/Dados insuficientes/)).toBeNull();
     expect(screen.queryByText("Cloud Architecture")).toBeNull();
   });
@@ -82,7 +82,7 @@ describe("Mapa de Capacidades — escopo vazio vira uma mensagem, não N repeti�
     renderWithApp(<CapabilityPage />);
 
     expect(await screen.findByText("A análise do time é uma leitura de liderança.")).toBeTruthy();
-    expect(screen.queryByText("Nenhuma pessoa no seu escopo")).toBeNull();
+    expect(screen.queryByText("Nenhum profissional no seu escopo")).toBeNull();
     expect(screen.queryByText("Cloud Architecture")).toBeNull();
   });
 });

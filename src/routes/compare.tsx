@@ -84,11 +84,11 @@ function ProfessionalsComparison() {
     { value: "table" as const, label: t("compare.view.table"), icon: Table2 },
   ];
 
-  const architects = Selection.explicit(selected).apply(store.architects);
-  const series: EvolutionSeries[] = architects.map((a) => ({ key: a.id, label: a.name }));
+  const professionals = Selection.explicit(selected).apply(store.professionals);
+  const series: EvolutionSeries[] = professionals.map((a) => ({ key: a.id, label: a.name }));
 
-  const averagesByArchitect = new Map(
-    architects.map((a) => [
+  const averagesByProfessional = new Map(
+    professionals.map((a) => [
       a.id,
       new Map(sel.capabilityAverages(a.id).map((d) => [d.capability.id, d.avg])),
     ]),
@@ -98,8 +98,8 @@ function ProfessionalsComparison() {
     const row: Record<string, string | number> = {
       capability: capability.name,
     };
-    for (const architect of architects) {
-      row[architect.id] = averagesByArchitect.get(architect.id)?.get(capability.id) ?? 0;
+    for (const professional of professionals) {
+      row[professional.id] = averagesByProfessional.get(professional.id)?.get(capability.id) ?? 0;
     }
     return row;
   });
@@ -112,7 +112,7 @@ function ProfessionalsComparison() {
         help={help}
         actions={
           <PersonCombobox
-            picker={PersonPicker.upTo(2, store.architects, selected)}
+            picker={PersonPicker.upTo(2, store.professionals, selected)}
             onChange={setSelected}
             label={t("compare.selector.label")}
             className="w-64"
@@ -120,7 +120,7 @@ function ProfessionalsComparison() {
         }
       />
 
-      {architects.length < 2 ? (
+      {professionals.length < 2 ? (
         <EmptyState title={t("compare.empty")} />
       ) : (
         <SectionCard
@@ -143,7 +143,7 @@ function ProfessionalsComparison() {
                       >
                         {t("col.capability")}
                       </th>
-                      {architects.map((a) => (
+                      {professionals.map((a) => (
                         <th
                           key={a.id}
                           scope="col"
@@ -164,8 +164,8 @@ function ProfessionalsComparison() {
                         >
                           {sel.capabilityShortLabel(capability)}
                         </th>
-                        {architects.map((a) => {
-                          const avg = averagesByArchitect.get(a.id)?.get(capability.id);
+                        {professionals.map((a) => {
+                          const avg = averagesByProfessional.get(a.id)?.get(capability.id);
                           return (
                             <td key={a.id} className="min-w-[52px]">
                               <LevelHeatCell

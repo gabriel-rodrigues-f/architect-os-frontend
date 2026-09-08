@@ -39,9 +39,9 @@ describe("Tela de conexão indisponível — sem instrução de desenvolvedor em
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
       routes: [
-        // a fatia de arquitetos falha com 500 — as rotas têm precedência sobre o padrão.
+        // a fatia de profissionais falha com 500 — as rotas têm precedência sobre o padrão.
         (href) =>
-          href.endsWith(apiPath("/architects"))
+          href.endsWith(apiPath("/professionals"))
             ? new Response("erro interno", { status: 500 })
             : undefined,
       ],

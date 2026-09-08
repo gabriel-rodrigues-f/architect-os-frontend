@@ -67,10 +67,10 @@ describe("De quem o time depende — o diagnóstico termina em caminho", () => {
     const ana = within(cartao).getAllByRole("link", { name: "Ana Martins" });
     expect(ana.length).toBeGreaterThan(0);
     for (const link of ana) {
-      expect(link.getAttribute("href")).toBe("/architects/ana");
+      expect(link.getAttribute("href")).toBe("/professionals/ana");
     }
     expect(within(cartao).getByRole("link", { name: "Bruno Almeida" }).getAttribute("href")).toBe(
-      "/architects/bruno",
+      "/professionals/bruno",
     );
   });
 
@@ -83,7 +83,7 @@ describe("De quem o time depende — o diagnóstico termina em caminho", () => {
       .closest("p")!;
     expect(
       within(referencias).getByRole("link", { name: "Ana Martins" }).getAttribute("href"),
-    ).toBe("/architects/ana");
+    ).toBe("/professionals/ana");
   });
 
   it("com capacidade em risco, a tela oferece mentoria e necessidades de treinamento", async () => {

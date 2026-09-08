@@ -192,14 +192,14 @@ describe("/teams — criar, renomear, desativar", () => {
     expect(await screen.findByText("Time Novo")).toBeTruthy();
   });
 
-  it("a recusa 409 da desativação aparece na tela com o número de pessoas ativas", async () => {
+  it("a recusa 409 da desativação aparece na tela com o número de profissionais ativos", async () => {
     const recusa: FetchRoute = (href, init) =>
       href.includes("/deactivate") && init?.method === "POST"
         ? jsonResponse(
             {
               code: "TEAM_STILL_HAS_PEOPLE",
               message: "Este time ainda tem 2 pessoa(s) ativa(s).",
-              details: { activeArchitects: 2 },
+              details: { activeProfessionals: 2 },
             },
             409,
           )
@@ -211,9 +211,12 @@ describe("/teams — criar, renomear, desativar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Desativar time" }));
 
     expect(
-      await screen.findByText("2 pessoas ativas — mova-as antes de desativar Time Plataforma.", {
-        exact: false,
-      }),
+      await screen.findByText(
+        "2 profissionais ativos — mova-os antes de desativar Time Plataforma.",
+        {
+          exact: false,
+        },
+      ),
     ).toBeTruthy();
     expect(chamadas("POST", "/deactivate")).toHaveLength(1);
   });
@@ -247,7 +250,9 @@ describe("/teams — o quadro do time", () => {
 
     await userEvent.click(screen.getByLabelText("Quadro de Time Plataforma"));
 
-    const quadro = (await screen.findByText("Pessoas do time")).closest("section") as HTMLElement;
+    const quadro = (await screen.findByText("Profissionais do time")).closest(
+      "section",
+    ) as HTMLElement;
     expect(within(quadro).getByText("Ana Martins")).toBeTruthy();
     expect(within(quadro).getByText("Bruno Almeida")).toBeTruthy();
   });
@@ -278,7 +283,7 @@ describe("/teams — o quadro do time", () => {
     await screen.findByText("Time Plataforma");
     await userEvent.click(screen.getByLabelText("Quadro de Time Plataforma"));
 
-    await userEvent.click(await screen.findByLabelText("Pessoa"));
+    await userEvent.click(await screen.findByLabelText("Profissional"));
     await userEvent.click(screen.getByRole("option", { name: "Carla Souza" }));
     await userEvent.click(screen.getByLabelText("Papel no time"));
     await userEvent.click(screen.getByRole("option", { name: "Tech Lead" }));
@@ -307,7 +312,7 @@ describe("/teams — o quadro do time", () => {
     await screen.findByText("Time Plataforma");
     await userEvent.click(screen.getByLabelText("Quadro de Time Plataforma"));
 
-    await userEvent.click(await screen.findByLabelText("Pessoa"));
+    await userEvent.click(await screen.findByLabelText("Profissional"));
     await userEvent.click(screen.getByRole("option", { name: "Carla Souza" }));
     await userEvent.click(screen.getByLabelText("Papel no time"));
     await userEvent.click(screen.getByRole("option", { name: "Gerente" }));
@@ -324,7 +329,7 @@ describe("/teams — o quadro do time", () => {
     await userEvent.click(screen.getByLabelText("Quadro de Time Plataforma"));
 
     expect(await screen.findByText("Ana Martins")).toBeTruthy();
-    expect(screen.queryByLabelText("Pessoa")).toBeNull();
+    expect(screen.queryByLabelText("Profissional")).toBeNull();
     expect(chamadas("GET", apiPath("/auth/users"))).toHaveLength(0);
   });
 });

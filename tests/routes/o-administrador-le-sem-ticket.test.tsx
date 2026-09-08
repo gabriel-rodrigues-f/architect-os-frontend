@@ -18,7 +18,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { supportAccess, type SessionUser } from "@/lib/api";
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import {
   fixtureAdminUser,
   fixtureAssignedManagerUser,
@@ -39,10 +39,10 @@ const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 /** As ações que a ficha de um liderado oferece a quem o lidera ("+ PDI" só aparece com distância fora do PDI). */
 const ACOES_DA_LIDERANCA = [/^Revisar$/, /^Registrar$/];
 
-/** O passe do suporte abre SÓ a ficha funcional (`GET /architects/:id`). */
-const ana = fixtureState.architects.find((architect) => architect.id === "ana");
+/** O passe do suporte abre SÓ a ficha funcional (`GET /professionals/:id`). */
+const ana = fixtureState.professionals.find((professional) => professional.id === "ana");
 const fichaFuncionalRoute: FetchRoute = (href, init) =>
-  href.endsWith(apiPath("/architects/ana")) && (init?.method ?? "GET") === "GET"
+  href.endsWith(apiPath("/professionals/ana")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse(ana)
     : undefined;
 

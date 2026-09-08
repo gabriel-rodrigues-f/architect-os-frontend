@@ -1,5 +1,5 @@
 import type { CareerLevel, Competency, LearningPath } from "../domain";
-import type { ArchitectAdherence } from "../gateways/career.gateway";
+import type { ProfessionalAdherence } from "../gateways/career.gateway";
 import type { LearningPathsViewModel } from "./learning-paths-view-model";
 
 export interface MissingCompetencyView {
@@ -43,11 +43,11 @@ export class CareerRoadmapViewModel {
     return above[0] ?? null;
   }
 
-  adherencePercent(adherence: ArchitectAdherence): number {
+  adherencePercent(adherence: ProfessionalAdherence): number {
     return adherence.adherence.percentage * 100;
   }
 
-  missingCompetencies(adherence: ArchitectAdherence): MissingCompetencyView[] {
+  missingCompetencies(adherence: ProfessionalAdherence): MissingCompetencyView[] {
     return adherence.adherence.missingCompetencies
       .map((missing) => ({
         competencyId: missing.competencyId,
@@ -60,7 +60,7 @@ export class CareerRoadmapViewModel {
   }
 
   coverageFor(
-    architectId: string,
+    professionalId: string,
     missing: readonly MissingCompetencyView[],
     paths: readonly LearningPath[],
   ): RoadmapCoverage {
@@ -69,7 +69,7 @@ export class CareerRoadmapViewModel {
         pathId: path.id,
         name: path.name,
         covered: missing.filter((item) => path.competencyIds.includes(item.competencyId)),
-        progressPercent: this.learningProgress.progressPercentFor(path, architectId),
+        progressPercent: this.learningProgress.progressPercentFor(path, professionalId),
       }))
       .filter((view) => view.covered.length > 0)
       .sort(

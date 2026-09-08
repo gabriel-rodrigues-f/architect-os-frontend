@@ -7,9 +7,9 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import type { AppState } from "@/lib/api";
-import type { Architect } from "@/lib/domain";
+import type { Professional } from "@/lib/domain";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch } from "../helpers/render-app";
 import { renderCareerFile } from "../helpers/ficha";
@@ -25,11 +25,11 @@ import { renderCareerFile } from "../helpers/ficha";
 
 const fetchMock = vi.fn();
 
-const raquel: Architect = {
+const raquel: Professional = {
   id: "raquel",
   name: "Raquel Marangoni",
   role: "Pleno",
-  yearsAsArchitect: 5,
+  yearsAsProfessional: 5,
   specialization: "",
   email: "raquel@company.com",
   active: false,
@@ -38,7 +38,7 @@ const raquel: Architect = {
 
 const comInativa: AppState = {
   ...fixtureState,
-  architects: [...fixtureState.architects, raquel],
+  professionals: [...fixtureState.professionals, raquel],
 };
 
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
@@ -60,7 +60,7 @@ describe("ficha de quem está desativado avisa e aponta para Time", () => {
   });
 
   it("mostra o aviso de desativado, com o caminho para Time", async () => {
-    renderCareerFile(<ProfilePage />, { architectId: "raquel" });
+    renderCareerFile(<ProfilePage />, { professionalId: "raquel" });
 
     const aviso = await screen.findByRole("status");
     expect(aviso.textContent).toMatch(/desativad/);
@@ -70,10 +70,10 @@ describe("ficha de quem está desativado avisa e aponta para Time", () => {
   it("a ficha de quem está ativo não mostra aviso nenhum", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
-      state: { ...comInativa, architects: fixtureState.architects },
+      state: { ...comInativa, professionals: fixtureState.professionals },
       routes: [careerLevelsRoute],
     });
-    renderCareerFile(<ProfilePage />, { architectId: "raquel" });
+    renderCareerFile(<ProfilePage />, { professionalId: "raquel" });
 
     await screen.findByText(/não encontrado|Ana Martins|Bruno Almeida/);
     expect(screen.queryByRole("status")).toBeNull();

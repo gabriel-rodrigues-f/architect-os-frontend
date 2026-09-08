@@ -29,11 +29,11 @@ import { apiPath } from "@/lib/api-path";
 const fetchMock = vi.fn();
 
 /** Terceira pessoa com a mesma lacuna de segurança que ana e bruno já têm na fixture. */
-const carla: AppState["architects"][number] = {
+const carla: AppState["professionals"][number] = {
   id: "carla",
   name: "Carla Souza",
   role: "Pleno",
-  yearsAsArchitect: 5,
+  yearsAsProfessional: 5,
   specialization: "Segurança",
   email: "carla@company.com",
   active: true,
@@ -42,7 +42,7 @@ const carla: AppState["architects"][number] = {
 
 const state: AppState = {
   ...fixtureState,
-  architects: [...fixtureState.architects, carla],
+  professionals: [...fixtureState.professionals, carla],
   // Sem trilha nenhuma de partida: a fixture padrão já tem uma para
   // security-iam, o que esconderia o botão de criação neste teste.
   learningPaths: [],
@@ -50,7 +50,7 @@ const state: AppState = {
     ...fixtureState.assessments,
     {
       id: "carla-h2",
-      architectId: "carla",
+      professionalId: "carla",
       cycleId: "2026-h2",
       status: "Completed",
       modelVersion: 1,

@@ -14,7 +14,7 @@ vi.mock("@tanstack/react-router", () =>
 
 import { Route as GapRoute } from "@/routes/gap-analysis";
 import { Route as PlansRoute } from "@/routes/development-plans";
-import { Route as ProfileRoute } from "@/routes/architects.$architectId.index";
+import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import type { AppState } from "@/lib/api";
 import type { Assessment, DevelopmentPlan } from "@/lib/domain";
 import { fixtureAssignedManagerUser, fixtureMemberUser, fixtureState } from "../helpers/fixtures";
@@ -108,7 +108,7 @@ describe("Prioridades — 'Tratar no PDI' carrega pessoa e competência", () => 
 
     const href = hrefDe(acao);
     expect(href).toContain("competencyId=security-iam");
-    expect(href).toContain("architectId=bruno");
+    expect(href).toContain("professionalId=bruno");
   });
 });
 
@@ -125,14 +125,14 @@ describe("Perfil — '+ PDI' carrega a competência da linha clicada", () => {
 
     const acao = await screen.findByRole("link", { name: "+ PDI" });
     const href = hrefDe(acao);
-    expect(href).toContain("architectId=ana");
+    expect(href).toContain("professionalId=ana");
     expect(href).toContain("competencyId=cloud-serverless");
   });
 });
 
 describe("Plano — o destino abre a criação do item já na competência recebida", () => {
   it("abre o diálogo da competência do link, sem a pessoa ter de reencontrá-la", async () => {
-    irPara("?architectId=ana&competencyId=cloud-serverless");
+    irPara("?professionalId=ana&competencyId=cloud-serverless");
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
@@ -141,7 +141,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
   });
 
   it("não abre nada para quem não pode editar o diagnóstico daquela pessoa", async () => {
-    irPara("?architectId=bruno&competencyId=security-iam");
+    irPara("?professionalId=bruno&competencyId=security-iam");
     mockAppFetch(fetchMock, { user: fixtureMemberUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
@@ -150,7 +150,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
   });
 
   it("não reabre competência que já é item do plano", async () => {
-    irPara("?architectId=ana&competencyId=security-iam");
+    irPara("?professionalId=ana&competencyId=security-iam");
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 
@@ -164,7 +164,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
    * porta lateral que reabre o que a aprovação fechou.
    */
   it("não abre em plano já aprovado, nem para quem pode agir pela pessoa", async () => {
-    irPara("?architectId=ana&competencyId=cloud-serverless");
+    irPara("?professionalId=ana&competencyId=cloud-serverless");
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoBase });
     renderWithApp(<PlansPage />);
 
@@ -173,7 +173,7 @@ describe("Plano — o destino abre a criação do item já na competência receb
   });
 
   it("ignora competência que não existe em vez de quebrar a tela", async () => {
-    irPara("?architectId=ana&competencyId=competencia-que-nao-existe");
+    irPara("?professionalId=ana&competencyId=competencia-que-nao-existe");
     mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, state: estadoComPlanoEmRascunho });
     renderWithApp(<PlansPage />);
 

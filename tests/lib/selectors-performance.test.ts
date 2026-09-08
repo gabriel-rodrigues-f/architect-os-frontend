@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { AppState } from "@/lib/api";
-import type { Assessment, Competency, Capability, Architect, Level } from "@/lib/domain";
+import type { Assessment, Competency, Capability, Professional, Level } from "@/lib/domain";
 import { createSelectors, emptyState } from "@/lib/selectors";
 
 /**
@@ -13,7 +13,7 @@ import { createSelectors, emptyState } from "@/lib/selectors";
 
 const CAPABILITIES_COUNT = 12;
 const COMPETENCIES_PER_CAPABILITY = 25; // 300 competências
-const ARCHITECTS = 40;
+const PROFESSIONALS = 40;
 
 function buildLargeState(): AppState {
   const capabilities: Capability[] = Array.from({ length: CAPABILITIES_COUNT }, (_, i) => ({
@@ -43,20 +43,20 @@ function buildLargeState(): AppState {
     })),
   );
 
-  const architects: Architect[] = Array.from({ length: ARCHITECTS }, (_, i) => ({
+  const professionals: Professional[] = Array.from({ length: PROFESSIONALS }, (_, i) => ({
     id: `arq-${i}`,
-    name: `Arquiteto ${i}`,
+    name: `Profissional ${i}`,
     role: "Pleno",
-    yearsAsArchitect: 5,
+    yearsAsProfessional: 5,
     specialization: "Arquitetura de Soluções",
     email: `arq-${i}@empresa.com`,
     active: true,
     version: 1,
   }));
 
-  const assessments: Assessment[] = architects.map((a) => ({
+  const assessments: Assessment[] = professionals.map((a) => ({
     id: `${a.id}-ciclo`,
-    architectId: a.id,
+    professionalId: a.id,
     cycleId: "ciclo",
     // Completed: gapsFor/teamTrainingNeeds só contam assessment oficial.
     status: "Completed",
@@ -78,7 +78,7 @@ function buildLargeState(): AppState {
     ...emptyState,
     capabilities,
     competencies,
-    architects,
+    professionals,
     assessments,
     cycles: [
       { id: "ciclo", name: "Ciclo", start: "2026-01-01", end: "2026-06-30", status: "Active" },
@@ -94,12 +94,12 @@ describe("selectors em escala", () => {
     const sel = createSelectors(state);
 
     const started = performance.now();
-    for (const architect of state.architects) {
-      sel.capabilityAverages(architect.id);
+    for (const professional of state.professionals) {
+      sel.capabilityAverages(professional.id);
     }
     const elapsed = performance.now() - started;
 
-    // 40 arquitetos × 300 competências × 12 capacidades. Com busca linear em laço
+    // 40 profissionais × 300 competências × 12 capacidades. Com busca linear em laço
     // isso passava de segundos; indexado fica na casa das dezenas de ms.
     expect(elapsed).toBeLessThan(250);
   });

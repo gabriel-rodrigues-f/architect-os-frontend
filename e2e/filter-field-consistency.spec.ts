@@ -6,7 +6,7 @@ import { apiPath } from "../src/lib/api-path";
 /**
  * Régua da família de seletores/campos de filtro (onda15/seletores-
  * unificados) — defeito visto pelo dono usando a aplicação: em /team o
- * rótulo "Pessoas" saía menor que os demais (12px vs 14px) e com menos
+ * rótulo "Profissionais" saía menor que os demais (12px vs 14px) e com menos
  * respiro (22px vs 26px), desnivelando as colunas do grid; em /assessments
  * o combobox de pessoa (36px) e o de capacidades (38px) tinham alturas e
  * regras de largura distintas. Causa raiz: cada seletor carregava rótulo/
@@ -28,7 +28,7 @@ const DATABASE_URL =
   process.env["E2E_DATABASE_URL"] ?? "postgres://architect:architect@localhost:5433/architect_os";
 
 const RUN_ID = Date.now().toString(36);
-const ARCHITECT_EMAIL = `e2e-regua-${RUN_ID}@architect-os.local`;
+const PROFESSIONAL_EMAIL = `e2e-regua-${RUN_ID}@architect-os.local`;
 
 const LABEL_FONT_PX = "14px";
 const TRIGGER_HEIGHT_PX = 36;
@@ -36,7 +36,7 @@ const LABEL_TO_FIELD_GAP_PX = 26;
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
 
-let architectId: string;
+let professionalId: string;
 
 test.beforeAll(async ({ playwright }) => {
   const api: APIRequestContext = await playwright.request.newContext({ baseURL: API_URL });
@@ -45,7 +45,7 @@ test.beforeAll(async ({ playwright }) => {
   });
   if (!logged.ok()) throw new Error(`login admin falhou: ${logged.status()}`);
 
-  // ONDA 45 — `POST /architects` MORREU: era a porta legada que criava
+  // ONDA 45 — `POST /professionals` MORREU: era a porta legada que criava
   // profissional sem conta, e ela contrariava o ADR-0084. A massa passa a ser
   // plantada pela admissão, que é o caminho de verdade — e que exige time e
   // senioridade, lidos aqui das próprias rotas do produto.
@@ -60,24 +60,24 @@ test.beforeAll(async ({ playwright }) => {
   const created = await api.post(apiPath("/auth/users"), {
     data: {
       name: "E2E Régua de Filtros",
-      email: ARCHITECT_EMAIL,
+      email: PROFESSIONAL_EMAIL,
       role: "member",
       teamId,
       careerLevelId,
     },
   });
   if (!created.ok()) throw new Error(`admissão falhou: ${created.status()}`);
-  const body = (await created.json()) as { data?: { architectId: string } };
-  architectId = body.data?.architectId ?? "";
+  const body = (await created.json()) as { data?: { professionalId: string } };
+  professionalId = body.data?.professionalId ?? "";
   await api.dispose();
 });
 
 test.afterAll(async () => {
-  if (!architectId) return;
+  if (!professionalId) return;
   const client = new Client({ connectionString: DATABASE_URL });
   await client.connect();
   try {
-    await client.query("DELETE FROM architects WHERE id = $1", [architectId]);
+    await client.query("DELETE FROM professionals WHERE id = $1", [professionalId]);
   } finally {
     await client.end();
   }
@@ -161,7 +161,7 @@ test("/team — rótulos 14px, respiro 26px e triggers de 36px em toda a barra d
 }) => {
   await login(page);
   await page.goto("/team");
-  await expect(page.locator('label[for="architect-name-combobox"]')).toBeVisible();
+  await expect(page.locator('label[for="professional-name-combobox"]')).toBeVisible();
 
   const measures = await measureTriggers(page);
   const labeled = measures.filter((medida) => medida.label).map((medida) => medida.label!.text);
@@ -169,7 +169,13 @@ test("/team — rótulos 14px, respiro 26px e triggers de 36px em toda a barra d
   // campo do cadastro (*"não estou vendo valor"*), e com o campo morto o
   // filtro que o lia não tem mais o que filtrar. Exigi-lo aqui seria a
   // régua congelando um campo que a aplicação não tem.
-  for (const expected of ["Pessoas", "Status", "Nível de carreira", "Capacidade", "Ordenar por"]) {
+  for (const expected of [
+    "Profissionais",
+    "Status",
+    "Nível de carreira",
+    "Capacidade",
+    "Ordenar por",
+  ]) {
     expect.soft(labeled, `campo com rótulo "${expected}" presente em /team`).toContain(expected);
   }
   assertRuler(measures);

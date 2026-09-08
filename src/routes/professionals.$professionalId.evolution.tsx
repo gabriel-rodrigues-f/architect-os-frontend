@@ -26,12 +26,12 @@ import { cn } from "@/lib/utils";
 import { defaultDateFormatter } from "@/lib/text";
 import { downloadBlob } from "@/lib/download";
 
-export const Route = createFileRoute("/architects/$architectId/evolution")({
+export const Route = createFileRoute("/professionals/$professionalId/evolution")({
   head: () => ({
     meta: [{ title: "Evolução — Synapse" }],
   }),
   beforeLoad: requireCareerTabsReach,
-  component: EvolutionOfArchitect,
+  component: EvolutionOfProfessional,
 });
 
 type PeriodPreset = "30" | "60" | "90" | "180" | "365" | "all" | "custom";
@@ -66,14 +66,14 @@ const VIEWS: { id: EvolutionView; labelKey: MessageKey }[] = [
 
 const MAX_DEFAULT_SERIES = 6;
 
-function EvolutionOfArchitect() {
-  const { architectId } = Route.useParams();
+function EvolutionOfProfessional() {
+  const { professionalId } = Route.useParams();
   const store = useStore();
   const sel = useSelectors();
   const { t } = useI18n();
   const seniority = useSeniorityReading();
-  const help = usePageHelp("architectEvolution");
-  const architect = sel.architectById(architectId);
+  const help = usePageHelp("professionalEvolution");
+  const professional = sel.professionalById(professionalId);
 
   const [preset, setPreset] = useState<PeriodPreset>("90");
   const [custom, setCustom] = useState({
@@ -106,8 +106,8 @@ function EvolutionOfArchitect() {
   };
 
   const queryKey = [
-    "evolution-architect",
-    architectId,
+    "evolution-professional",
+    professionalId,
     range.from,
     range.to,
     selectedCapabilityIds.join(","),
@@ -115,13 +115,13 @@ function EvolutionOfArchitect() {
   ];
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey,
-    queryFn: () => evolutionApi.architect(architectId, filters),
-    enabled: !!architect,
+    queryFn: () => evolutionApi.professional(professionalId, filters),
+    enabled: !!professional,
   });
 
   const { submitting: exporting, run: runExport } = useToastSubmit(t("evolution.export.error"));
   const exportPdf = async () => {
-    const result = await runExport(() => reportsApi.exportEvolutionPdf(architectId, filters));
+    const result = await runExport(() => reportsApi.exportEvolutionPdf(professionalId, filters));
     if (!result.ok) return;
     downloadBlob(result.value.blob, result.value.filename);
   };
@@ -192,7 +192,7 @@ function EvolutionOfArchitect() {
     [sortedComparisons],
   );
 
-  if (!architect) {
+  if (!professional) {
     return (
       <div className="surface-card p-6 text-sm">
         {t("arch.notFound")}{" "}
@@ -206,10 +206,11 @@ function EvolutionOfArchitect() {
   return (
     <>
       <ProfileHeading
-        title={t("evolution.title", { nome: architect.name })}
-        description={`${seniority.labelOf(architect.role)}${
-          data?.architect.careerLevelName && data.architect.careerLevelName !== architect.role
-            ? ` · ${data.architect.careerLevelName}`
+        title={t("evolution.title", { nome: professional.name })}
+        description={`${seniority.labelOf(professional.role)}${
+          data?.professional.careerLevelName &&
+          data.professional.careerLevelName !== professional.role
+            ? ` · ${data.professional.careerLevelName}`
             : ""
         }`}
         help={help}
@@ -223,7 +224,7 @@ function EvolutionOfArchitect() {
             >
               {exporting ? t("evolution.export.generating") : t("evolution.export.button")}
             </Button>
-            <ProfileBackLink architectId={architect.id} to="overview" />
+            <ProfileBackLink professionalId={professional.id} to="overview" />
           </div>
         }
       />

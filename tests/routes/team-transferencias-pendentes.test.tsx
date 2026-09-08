@@ -54,7 +54,7 @@ const times = [
 
 const base: TeamTransferRequestView = {
   id: "req-base",
-  architectId: "ana",
+  professionalId: "ana",
   fromTeamId: fixtureTeamId,
   toTeamId: "time-dados",
   reason: "Demanda do produto",
@@ -65,7 +65,7 @@ const base: TeamTransferRequestView = {
   decidedAt: null,
   decisionNote: null,
   version: 1,
-  architectName: "Ana Martins",
+  professionalName: "Ana Martins",
   fromTeamName: "Time Plataforma",
   toTeamName: "Time Dados",
   requestedByName: "Gerente do time",
@@ -76,12 +76,12 @@ const base: TeamTransferRequestView = {
 const chegando: TeamTransferRequestView = {
   ...base,
   id: "req-carla",
-  architectId: "carla",
+  professionalId: "carla",
   fromTeamId: "time-dados",
   toTeamId: fixtureTeamId,
   reason: "Carla quer voltar para a plataforma",
   requestedByUserId: "gerente-de-dados",
-  architectName: "Carla Souza",
+  professionalName: "Carla Souza",
   fromTeamName: "Time Dados",
   toTeamName: "Time Plataforma",
   requestedByName: "Gerente de Dados",

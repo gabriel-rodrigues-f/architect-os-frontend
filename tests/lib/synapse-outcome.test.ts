@@ -42,7 +42,7 @@ describe("SynapseOutcomeRule — método e status viram tom, ou silêncio", () =
 
   it("a rota silenciosa não pulsa nem no sucesso nem na recusa", () => {
     for (const resource of [
-      "/architects/a1/one-on-one-preparation?profile=moderate",
+      "/professionals/a1/one-on-one-preparation?profile=moderate",
       "/reports/evolution/pdf",
       "/notices/n1/read",
       "/notices/read-all",
@@ -56,13 +56,13 @@ describe("SynapseOutcomeRule — método e status viram tom, ou silêncio", () =
 
 describe("SilentRoutes — a lista nomeada do que não pulsa", () => {
   it.each([
-    "/architects/a1/one-on-one-preparation",
-    "/architects/a1/session-script?profile=empirical",
-    "/architects/a1/career-readiness-explanation",
-    "/architects/a1/development-plan-recommendation?competencyId=c1",
+    "/professionals/a1/one-on-one-preparation",
+    "/professionals/a1/session-script?profile=empirical",
+    "/professionals/a1/career-readiness-explanation",
+    "/professionals/a1/development-plan-recommendation?competencyId=c1",
     "/evidences/e1/review-assistance",
-    "/architects/a1/calibration-assistance",
-    "/architects/a1/stagnation-alert",
+    "/professionals/a1/calibration-assistance",
+    "/professionals/a1/stagnation-alert",
     "/capabilities/quality-review",
     "/reports/evolution/pdf",
     "/reports/career-statement",
@@ -80,7 +80,7 @@ describe("SilentRoutes — a lista nomeada do que não pulsa", () => {
 
   it.each([
     "/cycles",
-    "/architects/a1",
+    "/professionals/a1",
     "/auth/users",
     "/auth/users/u1",
     "/auth/users/u1/access-recovery",

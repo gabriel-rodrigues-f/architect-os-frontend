@@ -40,7 +40,7 @@ export function TeamTransferRequestsSection() {
     request: TeamTransferRequestView,
     fallback: MessageKey,
   ) => {
-    notifySuccess(fallback, { nome: request.architectName }, decided);
+    notifySuccess(fallback, { nome: request.professionalName }, decided);
     void invalidate();
     void stateContextCatalog.invalidateAll(queryClient);
     void queryClient.invalidateQueries({ queryKey: NOTICES_QUERY_KEY });
@@ -104,9 +104,9 @@ export function TeamTransferRequestsSection() {
 
       {refusing && (
         <CommandWithReasonDialog
-          title={t("team.transfers.refuse.title", { nome: refusing.architectName })}
+          title={t("team.transfers.refuse.title", { nome: refusing.professionalName })}
           body={t("team.transfers.refuse.body", {
-            nome: refusing.architectName,
+            nome: refusing.professionalName,
             origem: refusing.fromTeamName,
           })}
           reasonInputId="transfer-refusal-note"
@@ -143,7 +143,7 @@ function TeamTransferRequestList({
         {requests.map((request) => (
           <li key={request.id} className="flex flex-wrap items-start justify-between gap-3 p-3">
             <div className="min-w-0 flex-1 text-sm">
-              <p className="font-medium">{request.architectName}</p>
+              <p className="font-medium">{request.professionalName}</p>
               <p className="text-muted-foreground">
                 {t("team.transfers.route", {
                   origem: request.fromTeamName,

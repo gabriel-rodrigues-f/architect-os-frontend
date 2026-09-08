@@ -769,7 +769,7 @@ function AccountStatusChangeDialog({
   onClose: () => void;
   onChanged: () => void;
 }) {
-  if (change.account.architectId === null) {
+  if (change.account.professionalId === null) {
     return <AccountOnlyStatusDialog change={change} onClose={onClose} onChanged={onChanged} />;
   }
   if (change.to === "disabled") {
@@ -832,12 +832,12 @@ function ReactivatePersonDialog({
 }) {
   const { t } = useI18n();
   const notifySuccess = useSuccessToast();
-  const architectId = account.architectId ?? "";
+  const professionalId = account.professionalId ?? "";
 
   const professional = useQuery({
-    queryKey: ["professional", architectId],
-    queryFn: () => api.professional(architectId),
-    enabled: architectId !== "",
+    queryKey: ["professional", professionalId],
+    queryFn: () => api.professional(professionalId),
+    enabled: professionalId !== "",
   });
 
   return (
@@ -850,7 +850,7 @@ function ReactivatePersonDialog({
       canSubmit={professional.data !== undefined}
       onSubmit={async () => {
         const version = professional.data?.version ?? 0;
-        const updated = await api.reactivate(architectId, version);
+        const updated = await api.reactivate(professionalId, version);
         notifySuccess("msg.people.reactivate.success", { nome: account.name }, updated);
         onReactivated();
       }}
@@ -870,12 +870,12 @@ function DeactivatePersonDialog({
 }) {
   const { t } = useI18n();
   const notifySuccess = useSuccessToast();
-  const architectId = account.architectId ?? "";
+  const professionalId = account.professionalId ?? "";
 
   const professional = useQuery({
-    queryKey: ["professional", architectId],
-    queryFn: () => api.professional(architectId),
-    enabled: architectId !== "",
+    queryKey: ["professional", professionalId],
+    queryFn: () => api.professional(professionalId),
+    enabled: professionalId !== "",
   });
 
   return (
@@ -892,7 +892,7 @@ function DeactivatePersonDialog({
       canSubmit={professional.data !== undefined}
       onSubmit={async (reason) => {
         const version = professional.data?.version ?? 0;
-        const updated = await api.deactivate(architectId, reason, version);
+        const updated = await api.deactivate(professionalId, reason, version);
         notifySuccess("msg.people.deactivate.success", { nome: account.name }, updated);
         onDeactivated();
       }}

@@ -19,7 +19,7 @@ const fetchMock = vi.fn();
 
 const evidenciaAceita: Evidence = {
   id: "ev-aceita",
-  architectId: "ana",
+  professionalId: "ana",
   title: "ADR-014 — Estratégia de retry",
   description: "",
   type: "ADR",
@@ -31,7 +31,7 @@ const evidenciaAceita: Evidence = {
 
 const evidenciaPendente: Evidence = {
   id: "ev-pendente",
-  architectId: "ana",
+  professionalId: "ana",
   title: "Curso de Kubernetes avançado",
   description: "",
   type: "Course",

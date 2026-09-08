@@ -60,9 +60,9 @@ function MentoringScreen() {
    * vê as próprias sessões. Registrar sessão e preparar a 1:1 são de quem
    * mentora, e ninguém mentora a si mesmo (dono, 2026-09-05).
    */
-  const menteeOptions = defaultUiAuthorizationPolicy.mentorableBy(user, store.architects);
+  const menteeOptions = defaultUiAuthorizationPolicy.mentorableBy(user, store.professionals);
   const { filter, setFilter, sessions } = useMentoringTimeline();
-  const mentee = store.architects.find((architect) => architect.id === filter);
+  const mentee = store.professionals.find((professional) => professional.id === filter);
   const canPrepare = mentee !== undefined && defaultUiAuthorizationPolicy.isLeadOf(user, mentee);
 
   return (
@@ -74,7 +74,7 @@ function MentoringScreen() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <MenteeFilterCombobox
-              architects={store.architects}
+              professionals={store.professionals}
               selected={filter}
               onChange={setFilter}
             />
@@ -99,7 +99,7 @@ function MentoringScreen() {
           transcriptHeadline={t("ai.oneOnOne.title")}
           queryKey={["assistants", "one-on-one-preparation", mentee.id]}
           ask={(profile) =>
-            personAssistantsApi.prepareOneOnOne({ architectId: mentee.id, profile })
+            personAssistantsApi.prepareOneOnOne({ professionalId: mentee.id, profile })
           }
           narration={(text) => <OneOnOnePreparationNarration text={text} />}
         />
