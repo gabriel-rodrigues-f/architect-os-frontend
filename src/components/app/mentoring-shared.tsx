@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useSuccessToast, useToastSubmit } from "@/hooks";
+import { useSearchParamString, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 
 import type { Professional, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
@@ -192,7 +192,13 @@ export function useMentoringTimeline() {
   const defaultMenteeId = defaultUiAuthorizationPolicy.picksPeople(user)
     ? (orderedProfessionals[0]?.id ?? "")
     : (user.professionalId ?? "");
-  const [filter, setFilter] = useState<string>(defaultMenteeId);
+  /**
+   * O aviso de "mentoria registrada" chega com a PESSOA no endereço
+   * (`/mentoring?menteeId=…`, dono 2026-09-08): quem clica no aviso de Bruno
+   * abre a linha do tempo de Bruno, não a da primeira pessoa da lista. Sem
+   * parâmetro na URL, o padrão continua o mesmo de antes.
+   */
+  const [filter, setFilter] = useSearchParamString("menteeId", () => defaultMenteeId);
 
   const sessions = [...store.mentoringSessions]
     .filter((s) => s.menteeId === filter)

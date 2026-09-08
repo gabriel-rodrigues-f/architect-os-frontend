@@ -7,27 +7,32 @@ import { NoticeList } from "@/components/app/NoticeList";
 import {
   DataOriginCallout,
   EmptyState,
+  PageAction,
+  PageActions,
   PageHeader,
   QuerySection,
-  SectionGroup,
   SingleSelectFilter,
 } from "@/components/app";
-import { Button } from "@/components/ui/button";
 import { noticesApi } from "@/lib/api";
 import type { Notice, NoticeStatusFilter } from "@/lib/gateways/notices.gateway";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { defaultDateFormatter } from "@/lib/text";
+import { Selection } from "@/lib/selection";
 import { NoticesViewModel } from "@/lib/view-models";
 
 export const Route = createFileRoute("/notices")({
   head: () => ({
     meta: [
-      { title: "Central de Avisos — Synapse" },
+      { title: "Avisos — Synapse" },
       {
         name: "description",
         content:
-          "Central de avisos: PDIs vencendo, avaliações paradas e evidências esperando revisão, no escopo de quem vê.",
+          "Avisos: PDIs vencendo, avaliações paradas e evidências esperando revisão, no escopo de quem vê.",
+      },
+      { property: "og:title", content: "Avisos — Synapse" },
+      {
+        property: "og:description",
+        content: "O que precisa da sua atenção, no seu escopo, com o destino de cada aviso.",
       },
     ],
   }),
@@ -39,12 +44,18 @@ function useNoticesViewModel(): NoticesViewModel {
 }
 
 function NoticesPage() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const help = usePageHelp("notices");
   const vm = useNoticesViewModel();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<NoticeStatusFilter>("all");
+  /**
+   * A SELEÇÃO da tela (dono, 2026-09-08): caixa por linha e uma ação que
+   * marca SÓ o que está marcado — ao lado da que marca tudo, que continua.
+   */
+  const [selectedIds, setSelectedIds] = useState<readonly string[]>([]);
+  const selection = Selection.explicit(selectedIds);
 
   const query = useQuery({
     queryKey: [...NOTICES_QUERY_KEY, "page", status],
@@ -61,10 +72,31 @@ function NoticesPage() {
     mutationFn: () => noticesApi.markAllNoticesRead(),
     onSettled: invalidate,
   });
+  const markSelected = useMutation({
+    mutationFn: async (ids: readonly string[]) => {
+      for (const id of ids) await noticesApi.markNoticeRead(id);
+    },
+    onSettled: () => {
+      setSelectedIds([]);
+      return invalidate();
+    },
+  });
 
-  const openNotice = (notice: Notice) => {
+  const markIfUnread = (notice: Notice) => {
     if (vm.isUnread(notice)) markRead.mutate(notice.id);
-    router.history.push(notice.link);
+  };
+
+  const goToNotice = (notice: Notice, destination: string) => {
+    markIfUnread(notice);
+    router.history.push(destination);
+  };
+
+  const toggleSelection = (notice: Notice) => {
+    setSelectedIds((current) =>
+      current.includes(notice.id)
+        ? current.filter((id) => id !== notice.id)
+        : [...current, notice.id],
+    );
   };
 
   const unreadCount = query.data?.unreadCount ?? 0;
@@ -76,14 +108,20 @@ function NoticesPage() {
         title={t("notices.title")}
         description={t("notices.description")}
         actions={
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={unreadCount === 0 || markAll.isPending}
-            onClick={() => markAll.mutate()}
-          >
-            {t("notices.markAllRead")}
-          </Button>
+          <PageActions>
+            <PageAction
+              icon={null}
+              label={t("notices.markSelectedRead")}
+              disabled={selectedIds.length === 0 || markSelected.isPending}
+              onClick={() => markSelected.mutate(selectedIds)}
+            />
+            <PageAction
+              icon={null}
+              label={t("notices.markAllRead")}
+              disabled={unreadCount === 0 || markAll.isPending}
+              onClick={() => markAll.mutate()}
+            />
+          </PageActions>
         }
       />
 
@@ -98,6 +136,9 @@ function NoticesPage() {
             { value: "unread", label: t("notices.filter.unread") },
           ]}
         />
+        <p role="status" className="text-label text-muted-foreground">
+          {t("notices.selectedCount", { n: selectedIds.length })}
+        </p>
       </div>
 
       <QuerySection
@@ -111,21 +152,15 @@ function NoticesPage() {
             {data.notices.length === 0 ? (
               <EmptyState title={t("notices.empty")} hint={t("notices.emptyHint")} />
             ) : (
-              <div className="space-y-6">
-                {vm.groupByDay(data.notices).map((group) => (
-                  <SectionGroup
-                    key={group.day}
-                    title={defaultDateFormatter.formatDate(group.day, locale) ?? group.day}
-                  >
-                    <div className="surface-card p-2">
-                      <NoticeList
-                        notices={group.notices}
-                        unreadOf={(notice) => vm.isUnread(notice)}
-                        onOpen={openNotice}
-                      />
-                    </div>
-                  </SectionGroup>
-                ))}
+              <div className="surface-card p-2">
+                <NoticeList
+                  notices={vm.newestFirst(data.notices)}
+                  unreadOf={(notice) => vm.isUnread(notice)}
+                  onOpen={markIfUnread}
+                  onNavigate={goToNotice}
+                  selectedOf={(notice) => selection.contains(notice.id)}
+                  onToggleSelection={toggleSelection}
+                />
               </div>
             )}
           </>

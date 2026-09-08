@@ -4,6 +4,7 @@ import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 import { Route as CapabilityMapRoute } from "@/routes/capability-map";
 import { Route as CompareRoute } from "@/routes/compare";
+import { Route as NoticesRoute } from "@/routes/notices";
 
 /**
  * Recomendação do PO (revisao-po-2026-08-30) sobre a fila visual do dono: o
@@ -24,10 +25,9 @@ const catalogos: [string, Catalogo][] = [
   ["en", en as Catalogo],
 ];
 
-const metaDe = (
-  route: typeof CompareRoute | typeof CapabilityMapRoute,
-  chave: "title" | "og:title",
-): string | undefined => {
+type RotaComNome = typeof CompareRoute | typeof CapabilityMapRoute | typeof NoticesRoute;
+
+const metaDe = (route: RotaComNome, chave: "title" | "og:title"): string | undefined => {
   const head = route.options.head as undefined | (() => { meta?: Record<string, string>[] });
   const meta = head?.().meta ?? [];
   if (chave === "title") return meta.find((tag) => tag["title"] !== undefined)?.["title"];
@@ -37,7 +37,7 @@ const metaDe = (
 const NOMES_DE_TELA: {
   tela: string;
   chaves: string[];
-  route: typeof CompareRoute | typeof CapabilityMapRoute;
+  route: RotaComNome;
 }[] = [
   {
     tela: "Comparativo",
@@ -58,6 +58,23 @@ const NOMES_DE_TELA: {
       "help.capabilityMap.member.title",
     ],
     route: CapabilityMapRoute,
+  },
+  /**
+   * Dono (2026-09-08): *"o título da tela passa de 'Central de avisos' para
+   * 'Avisos', inclusive no `<title>` do navegador e na ajuda"*. Eram três
+   * nomes para a mesma tela — "Central de avisos" no cabeçalho, "Central de
+   * Avisos" na ajuda e "Central de Avisos — Synapse" na aba —, e o menu não
+   * tinha nome nenhum porque a tela não tinha entrada.
+   */
+  {
+    tela: "Avisos",
+    chaves: [
+      "notices.title",
+      "nav.notices",
+      "help.notices.lead.title",
+      "help.notices.member.title",
+    ],
+    route: NoticesRoute,
   },
 ];
 

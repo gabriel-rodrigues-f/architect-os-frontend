@@ -227,7 +227,13 @@ describe("menu do profissional — nada que ele usa é levado junto", () => {
     }
   });
 
-  it("o menu dele tem nove itens — as quatro entradas da carreira dele e as cinco telas que ele lê; nada de gestão de time", () => {
-    expect(destinos(fixtureMemberUser)).toHaveLength(9);
+  /**
+   * Dez desde 2026-09-08: a décima é `/notices`, o item do grupo "Central do
+   * Usuário". Avisos são de todo mundo — até esta fatia a tela estava no ar
+   * sem entrada de menu nenhuma, alcançável só pelo sino.
+   */
+  it("o menu dele tem dez itens — a carreira dele, as cinco telas que ele lê, os Avisos; nada de gestão de time", () => {
+    expect(destinos(fixtureMemberUser)).toHaveLength(10);
+    expect(destinos(fixtureMemberUser)).toContain("/notices");
   });
 });

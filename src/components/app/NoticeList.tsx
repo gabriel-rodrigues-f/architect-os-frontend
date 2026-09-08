@@ -9,8 +9,11 @@ import {
 import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
 
 import { semanticTone } from "@/components/app/ui-bits";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Notice } from "@/lib/gateways/notices.gateway";
 import { useI18n } from "@/lib/i18n";
+import { defaultNoticeDestination } from "@/lib/notice-destination";
 import {
   defaultNoticeRoutingPolicy,
   type NoticeIcon,
@@ -50,25 +53,96 @@ class NoticeToneChips {
   }
 }
 
+/**
+ * A LINHA DE UM AVISO, compartilhada pelo sino e pela tela (regra 6).
+ *
+ * Dono (2026-09-08), duas decisões que moram aqui:
+ *   1. o CLIQUE NA LINHA marca como lida — e só isso. Quem quer ir para a
+ *      tela do aviso clica no hiperlink "Clique para visualizar", que
+ *      NAVEGA E MARCA. Os dois atos são elementos irmãos, nunca aninhados:
+ *      botão dentro de botão não existe em HTML, e é assim que a marcação
+ *      não dispara duas vezes num clique só;
+ *   2. a DATA saiu do cabeçalho de grupo e entrou na linha, ao lado do
+ *      título; o "há {tanto tempo}" continua embaixo.
+ */
 export function NoticeList({
   notices,
   unreadOf,
   onOpen,
+  onNavigate,
   itemWrapper = (element) => element,
+  selectedOf,
+  onToggleSelection,
 }: {
   notices: readonly Notice[];
   unreadOf: (notice: Notice) => boolean;
+  /** O clique na linha: marcar como lida. */
   onOpen: (notice: Notice) => void;
+  /** O clique no hiperlink: ir para o destino daquele aviso — e marcar. */
+  onNavigate: (notice: Notice, destination: string) => void;
   itemWrapper?: (element: ReactElement) => ReactNode;
+  /** Com os dois, a linha ganha caixa de seleção; sem eles, não há seleção. */
+  selectedOf?: (notice: Notice) => boolean;
+  onToggleSelection?: (notice: Notice) => void;
 }) {
+  const { t } = useI18n();
+  const selectable = selectedOf !== undefined && onToggleSelection !== undefined;
   return (
     <ul className="divide-y divide-border">
       {notices.map((notice) => (
-        <li key={notice.id}>
-          {itemWrapper(<NoticeItem notice={notice} unread={unreadOf(notice)} onOpen={onOpen} />)}
+        <li key={notice.id} className="flex items-center gap-2">
+          {selectable && (
+            <Checkbox
+              className="ml-2"
+              checked={selectedOf(notice)}
+              onCheckedChange={() => onToggleSelection(notice)}
+              aria-label={t("notices.select", { titulo: notice.title })}
+            />
+          )}
+          {itemWrapper(
+            <NoticeItem
+              notice={notice}
+              unread={unreadOf(notice)}
+              onOpen={onOpen}
+              className="min-w-0 flex-1"
+            />,
+          )}
+          {itemWrapper(<NoticeDestinationLink notice={notice} onNavigate={onNavigate} />)}
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * O HIPERLINK DA LINHA. É um `<a>` de verdade — endereço visível na barra de
+ * status, alcançável por Tab, abrível em aba nova pelo navegador —, e o
+ * clique comum é interceptado para navegar dentro da aplicação sem recarregar
+ * a página. A tinta vem da variante `link` do `Button`, o único lugar da casa
+ * onde o sublinhado no ponteiro mora.
+ */
+function NoticeDestinationLink({
+  notice,
+  onNavigate,
+  ...rest
+}: {
+  notice: Notice;
+  onNavigate: (notice: Notice, destination: string) => void;
+} & ComponentPropsWithoutRef<"button">) {
+  const { t } = useI18n();
+  const destination = defaultNoticeDestination.of(notice);
+  return (
+    <Button asChild variant="link" size="sm" {...rest} className={cn("shrink-0", rest.className)}>
+      <a
+        href={destination}
+        onClick={(event) => {
+          event.preventDefault();
+          onNavigate(notice, destination);
+        }}
+      >
+        {t("notices.open")}
+      </a>
+    </Button>
   );
 }
 
@@ -85,6 +159,7 @@ export function NoticeItem({
   const { t, locale } = useI18n();
   const Icon = ICON_BY_KIND[defaultNoticeRoutingPolicy.iconOf(notice.eventType)];
   const chip = NoticeToneChips.byTone()[defaultNoticeRoutingPolicy.toneOf(notice.eventType)];
+  const day = defaultDateFormatter.formatDate(notice.occurredAt, locale);
   return (
     <button
       type="button"
@@ -102,7 +177,10 @@ export function NoticeItem({
         <Icon className="h-3.5 w-3.5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={cn("block text-sm", unread && "font-medium")}>{notice.title}</span>
+        <span className={cn("block text-sm", unread && "font-medium")}>
+          <span>{notice.title}</span>
+          {day !== null && <span className="text-muted-foreground">{` - ${day}`}</span>}
+        </span>
         <span className="mt-0.5 block text-xs text-muted-foreground">
           {defaultDateFormatter.formatRelative(notice.occurredAt, locale)}
         </span>

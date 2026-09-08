@@ -6,9 +6,13 @@ import { NoticesViewModel } from "@/lib/view-models";
 
 /**
  * Tela 2 (spec-telas-novas-2026-08-29, FASE A) — a central de avisos nasce
- * com porta + mock tipado. A VM agrupa por dia e ordena do mais recente para
- * o mais antigo; a policy só DECORA (ícone/tom por eventType) — o `link` vem
- * do backend e o escopo (time vs próprio) é do SERVIDOR, nunca da UI.
+ * com porta + mock tipado. A policy só DECORA (ícone/tom por eventType) — o
+ * `link` vem do backend e o escopo (time vs próprio) é do SERVIDOR, nunca da
+ * UI.
+ *
+ * O agrupamento por dia saiu da VM em 2026-09-08 (decisão do dono: a data
+ * entra na linha, o cabeçalho de dia acaba). O que entrou no lugar é a
+ * paginação do sino: cursor da próxima página e junção do que já chegou.
  */
 function notice(overrides: Partial<Notice>): Notice {
   return {
@@ -24,38 +28,57 @@ function notice(overrides: Partial<Notice>): Notice {
   };
 }
 
-describe("NoticesViewModel — agrupamento por dia", () => {
+describe("NoticesViewModel — ordem e leitura", () => {
   const vm = new NoticesViewModel();
 
-  it("agrupa por dia (mais recente primeiro) e, dentro do dia, do mais novo para o mais velho", () => {
-    const groups = vm.groupByDay([
-      notice({ id: "a", occurredAt: "2026-08-27T08:00:00.000Z" }),
-      notice({ id: "b", occurredAt: "2026-08-28T09:30:00.000Z" }),
-      notice({ id: "c", occurredAt: "2026-08-28T07:15:00.000Z" }),
+  it("ordena do mais recente para o mais antigo", () => {
+    const ordered = vm.newestFirst([
+      notice({ id: "velho", occurredAt: "2026-08-20T08:00:00.000Z" }),
+      notice({ id: "novo", occurredAt: "2026-08-28T08:00:00.000Z" }),
+      notice({ id: "meio", occurredAt: "2026-08-25T08:00:00.000Z" }),
     ]);
-    expect(groups.map((group) => group.day)).toEqual(["2026-08-28", "2026-08-27"]);
-    expect(groups[0]?.notices.map((item) => item.id)).toEqual(["b", "c"]);
-  });
-
-  it("lista vazia produz zero grupos, nunca um grupo vazio", () => {
-    expect(vm.groupByDay([])).toEqual([]);
-  });
-
-  it("recorta os últimos N para o dropdown do sino sem perder a ordenação", () => {
-    const latest = vm.latest(
-      [
-        notice({ id: "velho", occurredAt: "2026-08-20T08:00:00.000Z" }),
-        notice({ id: "novo", occurredAt: "2026-08-28T08:00:00.000Z" }),
-        notice({ id: "meio", occurredAt: "2026-08-25T08:00:00.000Z" }),
-      ],
-      2,
-    );
-    expect(latest.map((item) => item.id)).toEqual(["novo", "meio"]);
+    expect(ordered.map((item) => item.id)).toEqual(["novo", "meio", "velho"]);
   });
 
   it("não-lido é readAt nulo", () => {
     expect(vm.isUnread(notice({ readAt: null }))).toBe(true);
     expect(vm.isUnread(notice({ readAt: "2026-08-28T10:00:00.000Z" }))).toBe(false);
+  });
+});
+
+describe("NoticesViewModel — a paginação do sino", () => {
+  const vm = new NoticesViewModel();
+
+  it("o cursor da próxima página é o instante do aviso mais antigo recebido", () => {
+    const cursor = vm.cursorAfter(
+      [
+        notice({ id: "novo", occurredAt: "2026-08-28T08:00:00.000Z" }),
+        notice({ id: "velho", occurredAt: "2026-08-20T08:00:00.000Z" }),
+      ],
+      2,
+    );
+    expect(cursor).toBe("2026-08-20T08:00:00.000Z");
+  });
+
+  it("página incompleta é o fim da caixa: não há próxima", () => {
+    expect(vm.cursorAfter([notice({})], 5)).toBeUndefined();
+    expect(vm.cursorAfter([], 5)).toBeUndefined();
+  });
+
+  it("junta as páginas numa lista só, ordenada e sem repetir aviso", () => {
+    const primeira = [
+      notice({ id: "b", occurredAt: "2026-08-28T09:30:00.000Z" }),
+      notice({ id: "c", occurredAt: "2026-08-28T07:15:00.000Z" }),
+    ];
+    const segunda = [
+      notice({ id: "c", occurredAt: "2026-08-28T07:15:00.000Z" }),
+      notice({ id: "a", occurredAt: "2026-08-27T08:00:00.000Z" }),
+    ];
+    expect(vm.merge([primeira, segunda]).map((item) => item.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("sem página nenhuma, a caixa é vazia — nunca undefined", () => {
+    expect(vm.merge([])).toEqual([]);
   });
 });
 

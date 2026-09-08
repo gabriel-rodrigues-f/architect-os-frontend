@@ -1,6 +1,7 @@
 import {
   Activity,
   BarChart3,
+  Bell,
   BookOpen,
   Building2,
   CalendarRange,
@@ -220,6 +221,17 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       { to: "/users", labelKey: "nav.users", icon: UserCog, peopleAdministrationOnly: true },
     ],
+  },
+  /**
+   * A CENTRAL DO USUÁRIO fecha a coluna (dono, 2026-09-08). Até aqui os
+   * Avisos só existiam no sino do cabeçalho: a tela estava no ar sem NENHUMA
+   * entrada de menu, alcançável só por URL ou pelo "Ver todos" do popover.
+   * O grupo não tem régua de alcance porque avisos são de todo mundo — cada
+   * papel vê a caixa dele, e o recorte é do servidor.
+   */
+  {
+    labelKey: "nav.group.userCenter",
+    items: [{ to: "/notices", labelKey: "nav.notices", icon: Bell }],
   },
 ];
 
