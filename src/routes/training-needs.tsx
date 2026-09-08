@@ -76,6 +76,13 @@ function TeamTrainingNeeds() {
   const user = useCurrentUser();
   const { t } = useI18n();
   const help = usePageHelp("trainingNeeds");
+  /*
+   * Varredura do pedido do dono (2026-09-08): AÇÃO OFERECIDA A QUEM NÃO AGE.
+   * Alcançar a análise do time é pergunta de LEITURA; criar a intervenção
+   * cria uma TRILHA, e quem responde por isso é `createsLearningPath` — o
+   * suporte, por exemplo, lê a tela inteira e não cria trilha nenhuma.
+   */
+  const canCreateIntervention = defaultUiAuthorizationPolicy.createsLearningPath(user);
 
   const population = sel.activeProfessionals;
   const needs = sel.teamTrainingNeeds(population);
@@ -219,13 +226,13 @@ function TeamTrainingNeeds() {
                     <Link to="/learning-paths" className="text-xs text-primary hover:underline">
                       {t("needs.intervention.view")}
                     </Link>
-                  ) : (
+                  ) : canCreateIntervention ? (
                     <SectionAction
                       label={t("needs.intervention.create")}
                       disabled={submitting}
                       onClick={() => createIntervention(n)}
                     />
-                  )}
+                  ) : null}
                 </div>
               </li>
             ))}

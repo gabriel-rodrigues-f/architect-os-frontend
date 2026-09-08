@@ -41,6 +41,14 @@ interface AssessmentPermissions {
   isLead: boolean;
   status: Assessment["status"] | undefined;
   isCompleted: boolean;
+  /**
+   * QUEM ABRE A AVALIAÇÃO DO CICLO. Dono (2026-09-08): *"acessando como
+   * profissional, não posso ver um botão de 'Abrir avaliação do ciclo';
+   * consequentemente não verei a mensagem em vermelho acima."* A ação era
+   * oferecida a todos e recusada pelo serviço — o vermelho era a recusa. A
+   * pergunta passa a ser feita ANTES de desenhar, e a quem sabe respondê-la.
+   */
+  canOpen: boolean;
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
   canSubmit: boolean;
@@ -74,6 +82,9 @@ export class AssessmentViewModel {
     const decides = this.policy.decidesCareerOf(user, selectedProfessional);
     const status = assessment?.status;
     const isCompleted = status === "Completed";
+    // Abre quem vai preencher: a liderança com vínculo naquela pessoa.
+    // Ninguém age sobre si, então o sujeito nunca abre a própria avaliação.
+    const canOpen = isLead;
     const canEditSelf = isLead && status === "Draft";
     const canEditLeaderFinal = isLead && status === "In Review";
     const canSubmit = isLead && status === "Draft";
@@ -91,6 +102,7 @@ export class AssessmentViewModel {
       isLead,
       status,
       isCompleted,
+      canOpen,
       canEditSelf,
       canEditLeaderFinal,
       canSubmit,

@@ -100,7 +100,7 @@ describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08
       </I18nProvider>,
     );
 
-    expect(vazio().hasAttribute("disabled")).toBe(true);
+    expect(vazio().getAttribute("aria-disabled")).toBe("true");
     expect(screen.queryByRole("link")).toBeNull();
   });
 });

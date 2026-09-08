@@ -44,7 +44,7 @@ describe("MultiSelectFilter — só opção-placeholder equivale a vazio", () =>
     );
 
     const trigger = screen.getByRole("button", { name: "Especialização" }) as HTMLButtonElement;
-    expect(trigger.disabled).toBe(true);
+    expect(trigger.getAttribute("aria-disabled")).toBe("true");
     expect(trigger.textContent).toContain("Nenhuma especialização cadastrada.");
     // Nunca deveria ter mostrado o resumo de "tudo selecionado" pra uma
     // opção que não é uma escolha real.

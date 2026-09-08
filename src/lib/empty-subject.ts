@@ -20,6 +20,15 @@ import type { I18nApi, MessageKey } from "./i18n";
  * A LINHA 2 não mora aqui de propósito: ela explica a regra de negócio
  * DAQUELA tela, e por isso é declarada junto com o resto da configuração da
  * tela. Um assunto, uma linha 1; uma tela, uma linha 2.
+ *
+ * NEM TODO VAZIO É DE CADASTRO (dono, 2026-09-08): *"precisamos corrigir o
+ * texto do Extrato para 'Nenhum evento no período'. Sempre vamos utilizar,
+ * havendo algo vazio no centro da tela, 'Nenhum {alguma coisa} {contexto}'."*
+ * Evento não se cadastra: acontece. Avaliação não se cadastra: é feita. Então
+ * o objeto ganhou o SEGUNDO molde — `Nenhum(a) {assunto} {contexto}` — e os
+ * assuntos que só existem em contexto (`IN_CONTEXT`). O que NÃO mudou é a
+ * régua: a concordância continua vindo do gênero declarado aqui, e nenhuma
+ * tela escreve a frase inteira.
  */
 export type SubjectGender = "masculino" | "feminino";
 
@@ -45,7 +54,19 @@ export class EmptySubject {
   /** "Nenhum nível de carreira cadastrado" — as réguas e os filtros de nível. */
   static readonly CAREER_LEVEL = new EmptySubject("careerLevel", "masculino");
 
-  /** Todos os assuntos, para a régua do formato poder varrer sem lista paralela. */
+  /** "Nenhum evento no período" — o Extrato; evento não se cadastra, acontece. */
+  static readonly EVENT = new EmptySubject("event", "masculino");
+
+  /** "Nenhuma avaliação neste ciclo" — a Avaliação de Desempenho e a ficha. */
+  static readonly ASSESSMENT = new EmptySubject("assessment", "feminino");
+
+  /** "Nenhum nível registrado neste ciclo" — o radar e as réguas de nível. */
+  static readonly LEVEL = new EmptySubject("level", "masculino");
+
+  /** "Nenhuma nota neste ciclo" — a distribuição e a Calibração. */
+  static readonly SCORE = new EmptySubject("score", "feminino");
+
+  /** Os assuntos que se CADASTRAM — os do molde "…cadastrado". */
   static readonly ALL: readonly EmptySubject[] = [
     EmptySubject.PROFESSIONAL,
     EmptySubject.CAPABILITY,
@@ -54,6 +75,20 @@ export class EmptySubject {
     EmptySubject.CYCLE,
     EmptySubject.TEAM,
     EmptySubject.CAREER_LEVEL,
+  ];
+
+  /** Os assuntos que só existem EM CONTEXTO — não se cadastram, acontecem. */
+  static readonly IN_CONTEXT: readonly EmptySubject[] = [
+    EmptySubject.EVENT,
+    EmptySubject.ASSESSMENT,
+    EmptySubject.LEVEL,
+    EmptySubject.SCORE,
+  ];
+
+  /** Todos, para a régua do formato varrer sem lista paralela. */
+  static readonly EVERY: readonly EmptySubject[] = [
+    ...EmptySubject.ALL,
+    ...EmptySubject.IN_CONTEXT,
   ];
 
   private constructor(
@@ -73,8 +108,27 @@ export class EmptySubject {
     return this.gender === "masculino" ? "empty.title.masculine" : "empty.title.feminine";
   }
 
+  /** O molde do vazio EM CONTEXTO, escolhido pela mesma concordância. */
+  get contextPatternKey(): MessageKey {
+    return this.gender === "masculino"
+      ? "empty.title.masculine.context"
+      : "empty.title.feminine.context";
+  }
+
   /** A LINHA 1, pronta: "Nenhuma capacidade cadastrada". Sem ponto final. */
   title(t: I18nApi["t"]): string {
     return t(this.patternKey, { assunto: t(this.nounKey) });
+  }
+
+  /**
+   * A LINHA 1 do vazio que não é de cadastro: "Nenhum evento no período".
+   * O CONTEXTO é uma chave de texto — quem chama escolhe qual, nunca escreve
+   * a frase; o "Nenhum"/"Nenhuma" continua sendo decisão do assunto.
+   */
+  titleIn(t: I18nApi["t"], contextKey: MessageKey): string {
+    return t(this.contextPatternKey, {
+      assunto: t(this.nounKey),
+      contexto: t(contextKey),
+    });
   }
 }

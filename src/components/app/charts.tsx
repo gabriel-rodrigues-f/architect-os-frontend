@@ -4,6 +4,7 @@ import { lazy, Suspense, useState } from "react";
 import { topByRelevance } from "@/lib/collections";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { useI18n } from "@/lib/i18n";
+import { EmptySubject } from "@/lib/empty-subject";
 
 const CapabilityRadarFigure = lazy(() =>
   import("./charts-recharts").then((charts) => ({ default: charts.CapabilityRadarFigure })),
@@ -43,7 +44,10 @@ interface ChartFrameProps {
   height: number;
 
   isEmpty: boolean;
+  /** A LINHA 1 do vazio, no molde da casa ("Nenhum nível registrado neste ciclo"). */
   emptyMessage: string;
+  /** A LINHA 2: a regra de negócio que explica por que o gráfico está vazio. */
+  emptyHint: string;
 
   dataTable: ReactNode;
   children: ReactElement;
@@ -54,6 +58,7 @@ function ChartFrame({
   height,
   isEmpty,
   emptyMessage,
+  emptyHint,
   dataTable,
   children,
 }: ChartFrameProps) {
@@ -63,7 +68,10 @@ function ChartFrame({
         className="flex items-center justify-center rounded-md border border-dashed border-border px-4 text-center"
         style={{ height }}
       >
-        <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+        <div>
+          <p className="text-body text-foreground">{emptyMessage}</p>
+          <p className="mt-1 text-meta text-muted-foreground">{emptyHint}</p>
+        </div>
       </div>
     );
   }
@@ -179,7 +187,8 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
         label={t("chart.radar.label")}
         height={height}
         isEmpty={data.length === 0}
-        emptyMessage={t("chart.empty.radar")}
+        emptyMessage={EmptySubject.LEVEL.titleIn(t, "empty.context.recorded")}
+        emptyHint={t("chart.empty.radar.hint")}
         dataTable={
           <DataTable
             caption={t("chart.radar.label")}
@@ -241,7 +250,8 @@ export function ComparisonRadar({
         label={t("chart.comparison.label")}
         height={height}
         isEmpty={data.length === 0 || series.length === 0}
-        emptyMessage={t("chart.empty.comparison")}
+        emptyMessage={EmptySubject.PROFESSIONAL.titleIn(t, "empty.context.selected")}
+        emptyHint={t("chart.empty.comparison")}
         dataTable={
           <DataTable
             caption={t("chart.comparison.label")}
@@ -283,7 +293,8 @@ export function EvolutionLine({
       label={t("chart.evolution.label")}
       height={height}
       isEmpty={data.length === 0 || series.length === 0}
-      emptyMessage={t("chart.empty.evolution")}
+      emptyMessage={EmptySubject.CYCLE.titleIn(t, "empty.context.completedToCompare")}
+      emptyHint={t("chart.empty.evolution")}
       dataTable={
         <DataTable
           caption={t("chart.evolution.label")}
@@ -329,7 +340,8 @@ export function ProficiencyTimeline({
       label={label}
       height={height}
       isEmpty={data.length === 0}
-      emptyMessage={t("chart.empty.evolution")}
+      emptyMessage={EmptySubject.CYCLE.titleIn(t, "empty.context.completedToCompare")}
+      emptyHint={t("chart.empty.evolution")}
       dataTable={
         <DataTable
           caption={label}
@@ -367,7 +379,8 @@ export function LevelDistribution({
       label={label}
       height={height}
       isEmpty={data.every((row) => row.count === 0)}
-      emptyMessage={t("chart.empty.distribution")}
+      emptyMessage={EmptySubject.SCORE.titleIn(t, "empty.context.inThisCycle")}
+      emptyHint={t("chart.empty.distribution.hint")}
       dataTable={
         <DataTable
           caption={label}
@@ -406,7 +419,8 @@ export function AssessmentCoverageChart({
       label={label}
       height={height}
       isEmpty={data.every((slice) => slice.count === 0)}
-      emptyMessage={t("chart.empty.coverage")}
+      emptyMessage={t("chart.empty.coverage.title")}
+      emptyHint={t("chart.empty.coverage")}
       dataTable={
         <DataTable
           caption={label}
@@ -436,6 +450,7 @@ export function GapSeverityChart({ data, height = 220 }: { data: SeverityBar[]; 
       height={height}
       isEmpty={data.every((bar) => bar.count === 0)}
       emptyMessage={t("chart.empty.severity")}
+      emptyHint={t("chart.empty.severity.hint")}
       dataTable={
         <DataTable
           caption={label}

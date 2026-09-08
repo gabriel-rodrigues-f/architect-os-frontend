@@ -1,8 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { FilterField } from "@/components/app/FilterField";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
+import { PageAction } from "@/components/app/PageAction";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOptionalUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import type { Registration, RegistrationSearch } from "@/lib/registration";
@@ -25,6 +28,10 @@ import type { Registration, RegistrationSearch } from "@/lib/registration";
 export interface SelectionEmptyState {
   /** A LINHA 1, no formato único do `EmptySubject`: "Nenhum ciclo cadastrado". */
   readonly message: string;
+  /** A LINHA 2 do assunto — a regra de negócio que explica o bloqueio. */
+  readonly hint?: string | undefined;
+  /** O ÍCONE do assunto, no cartão. Sem assunto declarado, o de informação. */
+  readonly icon?: typeof ChevronDown | undefined;
   /** A tela onde se cadastra a primeira opção — só para quem a alcança. */
   readonly registration?: {
     readonly label: string;
@@ -43,9 +50,13 @@ export function useSelectionEmptyState(registration: Registration): SelectionEmp
   const { t } = useI18n();
   const user = useOptionalUser();
   const message = registration.emptyTitle(t);
-  if (!registration.reachedBy(user)) return { message };
+  const hint = t(registration.hintKey);
+  const icon = registration.icon;
+  if (!registration.reachedBy(user)) return { message, hint, icon };
   return {
     message,
+    hint,
+    icon,
     registration: {
       label: t(registration.registerKey),
       to: registration.to,
@@ -122,15 +133,38 @@ export function EmptyFieldInvite({ registration }: { registration: Registration 
  * declarado, a da casa. É por isso que a régua mora aqui e não em cada tela:
  * uma tela pode esquecer de tratar a lista vazia, este componente não.
  *
- * FILTRO SEM OPÇÕES É FILTRO BLOQUEADO (dono, 2026-09-08, substituindo o
- * desenho do convite dentro do painel): *"Ao invés de aparecer como linha
- * clicável no filtro, vamos bloquear o filtro e disponibilizamos o botão de
- * criação mais abaixo, dentro do quadro principal e centralizado na tela."*
+ * FILTRO SEM OPÇÕES É FILTRO BLOQUEADO (dono, 2026-09-08): *"Ao invés de
+ * aparecer como linha clicável no filtro, vamos bloquear o filtro."* O
+ * gatilho continua não escolhendo nada — não abre lista, não vira âncora.
  *
- * Então aqui não há `Popover`, não há linha clicável e não há hiperlink —
- * para TODOS, inclusive para quem alcança o cadastro. Só a moldura, a frase e
- * o gatilho desabilitado. O convite mudou de lugar, não de existência: quem o
- * desenha é o `EmptyStateCallToAction`, no centro do quadro principal.
+ * O QUE ENTROU DEPOIS (dono, 2026-09-08, com captura): *"não havendo ciclos
+ * cadastrados, quero um estado de hover em cima do campo de ciclos que hoje
+ * está bloqueado. Ao clicar em 'Cadastrar primeiro ciclo', devo ser
+ * direcionado ao formulário de cadastro de ciclo."* O bloqueio deixou de ser
+ * uma parede muda: ele explica. O CARTÃO nasce aqui e vale para TODO filtro
+ * bloqueado, não só o de ciclo — ícone do assunto, a linha 1, a linha 2 e,
+ * para quem alcança o cadastro, um botão primário de largura cheia que abre o
+ * FORMULÁRIO (o `search` do `Registration`), não só a tela.
+ *
+ * Quatro decisões que o cartão obriga, e o motivo de cada uma:
+ *
+ *  1. **Bloqueado, não desabilitado.** `disabled` some da tabulação e não
+ *     emite evento de ponteiro: o cartão nunca abriria por teclado e o botão
+ *     de dentro seria inalcançável. O gatilho fica com `aria-disabled`.
+ *  2. **Sair do gatilho PARA o cartão não fecha.** Fechar no `pointerleave`
+ *     do campo tornaria o botão impossível de clicar — o ponteiro tem de
+ *     atravessar. Quem decide é o DESTINO do evento (`relatedTarget`): só
+ *     fecha quando ele está fora do conjunto gatilho+cartão. Por isso o
+ *     cartão encosta no campo (`sideOffset={0}`), sem vão para o ponteiro
+ *     cair no meio do caminho.
+ *  3. **O foco não é sequestrado.** Abrir por hover não pode roubar o foco de
+ *     onde a pessoa está; então o cartão nunca se autofoca, e quem quer
+ *     entrar nele pede (Enter, espaço ou seta para baixo no gatilho).
+ *  4. **Esc e a navegação fecham.** O Esc é do teclado; o clique no botão
+ *     troca de tela e o cartão não pode sobreviver à troca.
+ *
+ * Não há dependência nova: o `Popover` da casa (`@radix-ui/react-popover`) é
+ * quem posiciona; quem manda no abrir e fechar é este componente.
  */
 export function EmptySelectionField({
   id,
@@ -153,6 +187,57 @@ export function EmptySelectionField({
   const { t } = useI18n();
   const message = empty?.message ?? t("selector.empty");
   const Icone = icon ?? ChevronDown;
+  const IconeDoAssunto = empty?.icon ?? Info;
+
+  const [aberto, setAberto] = useState(false);
+  const gatilho = useRef<HTMLButtonElement>(null);
+  const cartao = useRef<HTMLDivElement>(null);
+
+  /**
+   * O conjunto é gatilho + cartão, e o cartão só fecha quando o ponteiro e o
+   * foco saem dos DOIS. A conferência é adiada um turno de propósito: sair do
+   * gatilho e entrar no cartão dispara a saída ANTES da entrada, e decidir na
+   * hora fecharia o cartão no meio do caminho do ponteiro — o botão de
+   * cadastro ficaria inalcançável, que é exatamente o defeito que o dono
+   * mandou evitar. (`relatedTarget` não serve: em `pointerleave` ele é
+   * opcional e chega vazio em boa parte dos ambientes.)
+   */
+  const ponteiro = useRef({ gatilho: false, cartao: false });
+  const conferencia = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => () => clearTimeout(conferencia.current), []);
+
+  const focoNoConjunto = (): boolean => {
+    const focado = document.activeElement;
+    if (!(focado instanceof Node)) return false;
+    return Boolean(gatilho.current?.contains(focado)) || Boolean(cartao.current?.contains(focado));
+  };
+
+  const entra = (parte: "gatilho" | "cartao") => () => {
+    ponteiro.current[parte] = true;
+    setAberto(true);
+  };
+
+  const sai = (parte: "gatilho" | "cartao") => () => {
+    ponteiro.current[parte] = false;
+    clearTimeout(conferencia.current);
+    conferencia.current = setTimeout(() => {
+      if (ponteiro.current.gatilho || ponteiro.current.cartao || focoNoConjunto()) return;
+      setAberto(false);
+    }, 0);
+  };
+
+  const teclaNoGatilho = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Escape") {
+      setAberto(false);
+      return;
+    }
+    if (event.key !== "Enter" && event.key !== " " && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    setAberto(true);
+    // O cartão pode ainda não estar montado: o foco vai no próximo quadro.
+    requestAnimationFrame(() => cartao.current?.querySelector<HTMLElement>("a, button")?.focus());
+  };
 
   /*
    * O gatilho é `<button>`, então o `<label for>` do `FilterField` já o nomeia
@@ -161,17 +246,67 @@ export function EmptySelectionField({
    */
   return (
     <FilterField label={label} htmlFor={id}>
-      <FilterTriggerButton
-        id={id}
-        disabled
-        aria-label={label ? undefined : ariaLabel}
-        aria-describedby={describedBy}
-        title={message}
-        className={triggerClassName}
-      >
-        <span className="min-w-0 flex-1 truncate text-left">{message}</span>
-        <Icone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-      </FilterTriggerButton>
+      <Popover open={aberto} onOpenChange={setAberto}>
+        <PopoverTrigger asChild>
+          <FilterTriggerButton
+            ref={gatilho}
+            id={id}
+            blocked
+            aria-label={label ? undefined : ariaLabel}
+            aria-describedby={describedBy}
+            className={triggerClassName}
+            /*
+             * O clique num filtro bloqueado não escolhe NADA — e também não
+             * pode fechar o cartão que acabou de abrir no hover (o `Popover`
+             * alterna no clique do gatilho; `preventDefault` desliga isso).
+             */
+            onClick={(event) => event.preventDefault()}
+            onPointerEnter={entra("gatilho")}
+            onPointerLeave={sai("gatilho")}
+            onFocus={() => setAberto(true)}
+            onBlur={sai("gatilho")}
+            onKeyDown={teclaNoGatilho}
+          >
+            <span className="min-w-0 flex-1 truncate text-left">{message}</span>
+            <Icone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          </FilterTriggerButton>
+        </PopoverTrigger>
+        <PopoverContent
+          ref={cartao}
+          align="start"
+          sideOffset={0}
+          className="space-y-3"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          onPointerEnter={entra("cartao")}
+          onPointerLeave={sai("cartao")}
+          onBlur={sai("cartao")}
+        >
+          <div className="flex items-start gap-2">
+            <IconeDoAssunto
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <div className="space-y-1">
+              <p className="text-label font-medium text-foreground">{message}</p>
+              {empty?.hint ? <p className="text-meta text-muted-foreground">{empty.hint}</p> : null}
+            </div>
+          </div>
+          {empty?.registration ? (
+            <PageAction
+              label={empty.registration.label}
+              className="w-full"
+              asChild
+              onClick={() => setAberto(false)}
+            >
+              <Link
+                to={empty.registration.to}
+                {...(empty.registration.search ? { search: empty.registration.search } : {})}
+              />
+            </PageAction>
+          ) : null}
+        </PopoverContent>
+      </Popover>
     </FilterField>
   );
 }

@@ -165,7 +165,7 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     expect(botaoDeCadastro("Cadastrar Profissional")).toBeTruthy();
     // O filtro do cabeçalho continua lá, bloqueado — e sem porta nenhuma.
     const filtro = screen.getByRole("button", { name: "Profissionais" });
-    expect(filtro.hasAttribute("disabled")).toBe(true);
+    expect(filtro.getAttribute("aria-disabled")).toBe("true");
   });
 
   it("Perfis lado a lado: Cadastrar Profissional", async () => {
@@ -289,7 +289,7 @@ describe("a evolução entre ciclos, com o banco vazio", () => {
     comoAdmin([rotaProibida]);
     renderWithApp(<GapAnalysisPage />);
 
-    expect(await screen.findByText("Não há ciclo para comparar")).toBeTruthy();
+    expect(await screen.findByText("Nenhum ciclo para comparar")).toBeTruthy();
     expect(screen.queryByText("Não foi possível carregar a evolução entre ciclos")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
     expect(

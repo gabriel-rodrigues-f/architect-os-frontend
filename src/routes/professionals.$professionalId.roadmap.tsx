@@ -17,6 +17,7 @@ import {
 import { api, personAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import type { CareerLevel } from "@/lib/domain";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireCareerTabsReach } from "@/lib/route-guards";
@@ -107,7 +108,10 @@ function RoadmapOfProfessional() {
     return (
       <>
         {header}
-        <EmptyState title={t("roadmap.noCurrentLevel")} />
+        <EmptyState
+          title={EmptySubject.CAREER_LEVEL.titleIn(t, "empty.context.forThisPerson")}
+          hint={t("roadmap.noCurrentLevel")}
+        />
       </>
     );
   }

@@ -98,10 +98,12 @@ describe("Avaliação de Desempenho: o filtro de capacidades fica bloqueado como
 
     const capacidades = await screen.findByRole("button", { name: "Capacidades" });
     expect(capacidades.textContent).toContain("Nenhuma capacidade cadastrada");
-    expect(capacidades.hasAttribute("disabled")).toBe(true);
+    expect(capacidades.getAttribute("aria-disabled")).toBe("true");
 
     await userEvent.click(capacidades);
-    expect(screen.queryByRole("dialog")).toBeNull();
+    // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
     expect(screen.queryByText("Selecionar todas")).toBeNull();
   });
 
@@ -111,8 +113,8 @@ describe("Avaliação de Desempenho: o filtro de capacidades fica bloqueado como
 
     const profissional = await screen.findByRole("button", { name: "Profissional" });
     const capacidades = screen.getByRole("button", { name: "Capacidades" });
-    expect(profissional.hasAttribute("disabled")).toBe(true);
-    expect(capacidades.hasAttribute("disabled")).toBe(true);
+    expect(profissional.getAttribute("aria-disabled")).toBe("true");
+    expect(capacidades.getAttribute("aria-disabled")).toBe("true");
   });
 
   it("com capacidades cadastradas, o filtro é o de sempre e abre a lista", async () => {
@@ -125,7 +127,7 @@ describe("Avaliação de Desempenho: o filtro de capacidades fica bloqueado como
      * bloqueio não é cosmético: não há lista a abrir.
      */
     const capacidades = await screen.findByRole("combobox", { name: "Capacidades" });
-    expect(capacidades.hasAttribute("disabled")).toBe(false);
+    expect(capacidades.hasAttribute("aria-disabled")).toBe(false);
     expect(screen.queryByRole("button", { name: "Capacidades" })).toBeNull();
 
     await userEvent.click(capacidades);

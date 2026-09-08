@@ -1,6 +1,6 @@
 import { Check, Circle, Minus } from "lucide-react";
 
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/app/PasswordInput";
 import { Label } from "@/components/ui/label";
 import type { PasswordChoice } from "@/hooks";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -31,7 +31,12 @@ import { cn } from "@/lib/utils";
  *     backend (`PasswordChoice.pointed`), a exigência volta a faltar mesmo
  *     que aqui parecesse de pé — o serviço é a autoridade.
  *
- *  3. **O que não dá para medir aqui não ganha tique verde.** Sem o e-mail da
+ *  3. **O olhinho é o mesmo do login.** Dono (2026-09-08): *"os forms de
+ *     criação e recuperação de senha precisam ter o olhinho, assim como o
+ *     form de login."* Os dois campos são `PasswordInput`, que já traz o botão
+ *     com nome acessível, `aria-pressed` e teclado — nada aqui redesenha isso.
+ *
+ *  4. **O que não dá para medir aqui não ganha tique verde.** Sem o e-mail da
  *     pessoa — o caso de quem chega pelo link — a exigência do próprio e-mail
  *     aparece como "confere ao salvar", nunca como atendida.
  */
@@ -53,9 +58,8 @@ export function PasswordChoiceFields({ choice }: { choice: PasswordChoice }) {
     <>
       <div>
         <Label htmlFor="new-password">{t("password.newPassword")}</Label>
-        <Input
+        <PasswordInput
           id="new-password"
-          type="password"
           autoComplete="new-password"
           required
           aria-describedby="password-requirements"
@@ -85,9 +89,8 @@ export function PasswordChoiceFields({ choice }: { choice: PasswordChoice }) {
 
       <div>
         <Label htmlFor="confirm-password">{t("password.confirmation")}</Label>
-        <Input
+        <PasswordInput
           id="confirm-password"
-          type="password"
           autoComplete="new-password"
           required
           value={choice.confirmation}

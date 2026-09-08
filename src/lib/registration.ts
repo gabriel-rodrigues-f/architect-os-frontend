@@ -1,3 +1,5 @@
+import { Building2, CalendarRange, Layers, Target, Users } from "lucide-react";
+
 import { EmptySubject } from "./empty-subject";
 import type { SessionUser } from "./api";
 import type { I18nApi, MessageKey } from "./i18n";
@@ -18,6 +20,11 @@ import { defaultUiAuthorizationPolicy, UiAuthorizationPolicy } from "./scope";
  * foi quem desenha — saiu o `EmptySelectionField`, entrou o
  * `EmptyStateCallToAction`, no centro do quadro principal.
  *
+ * O CARTÃO DO FILTRO BLOQUEADO (dono, 2026-09-08) reusa este mesmo objeto: o
+ * ícone do assunto, a linha 1 (do `EmptySubject`), a linha 2 (`hintKey`) e o
+ * botão de largura cheia (`registerKey` + `to` + `search`) já moram aqui. O
+ * campo só desenha; nenhuma tela escreve nada disso.
+ *
  * O `search` existe porque levar à TELA não basta (pedido do dono, item 12):
  * o botão do time vazio abre o FORMULÁRIO de cadastro de times, não a lista
  * de times. Quem não tem formulário para abrir — o ciclo — não declara
@@ -29,6 +36,9 @@ export interface RegistrationSearch {
 
 type ReachQuestion = (policy: UiAuthorizationPolicy, user: SessionUser) => boolean;
 
+/** A assinatura dos ícones lucide, como no `PageAction` e no `Callout`. */
+type RegistrationIcon = typeof Users;
+
 export class Registration {
   /** A pessoa nasce em Contas e Acessos — conta e profissional num ato só. */
   static readonly PROFESSIONAL = new Registration(
@@ -37,6 +47,7 @@ export class Registration {
     "/users",
     { cadastrar: "profissional" },
     "team.empty.cta",
+    Users,
     (policy, user) => policy.canAdministerPeople(user),
   );
 
@@ -47,6 +58,7 @@ export class Registration {
     "/teams",
     { cadastrar: "time" },
     "teams.create.action",
+    Building2,
     (policy, user) => policy.canAdministerPeople(user),
   );
 
@@ -57,6 +69,7 @@ export class Registration {
     "/cycles",
     undefined,
     "cycle.new",
+    CalendarRange,
     (policy, user) => policy.isLeadership(user),
   );
 
@@ -67,6 +80,7 @@ export class Registration {
     "/competency-matrix",
     { cadastrar: "capacidade" },
     "matrix.newCapability",
+    Layers,
     (policy, user) => policy.operatesTheSystem(user),
   );
 
@@ -82,6 +96,7 @@ export class Registration {
     "/competency-matrix",
     undefined,
     "competency.new",
+    Target,
     (policy, user) => policy.operatesTheSystem(user),
   );
 
@@ -103,12 +118,24 @@ export class Registration {
      * usa no canto: um assunto, uma palavra, escrita uma vez só.
      */
     private readonly actionKey: MessageKey,
+    /** O ÍCONE do assunto, para o cartão do filtro bloqueado. */
+    readonly icon: RegistrationIcon,
     private readonly reaches: ReachQuestion,
   ) {}
 
   /** "Nenhum profissional cadastrado" — a LINHA 1, vinda do assunto. */
   emptyTitle(t: I18nApi["t"]): string {
     return this.emptySubject.title(t);
+  }
+
+  /**
+   * A LINHA 2 do assunto: a regra de negócio que explica por que o filtro está
+   * bloqueado. Mora aqui, e não na tela, porque é a mesma em todo filtro do
+   * mesmo assunto — a linha 2 DA TELA continua sendo da tela, no
+   * `EmptyStateCallToAction`.
+   */
+  get hintKey(): MessageKey {
+    return `${this.subject}.selector.hint` as MessageKey;
   }
 
   /** "Cadastrar primeiro profissional" — o rótulo do hiperlink em meio a texto. */

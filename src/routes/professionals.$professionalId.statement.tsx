@@ -17,6 +17,7 @@ import { api, evolutionApi, reportsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { downloadBlob } from "@/lib/download";
 import type { EvolutionFilters } from "@/lib/domain";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireCareerTabsReach } from "@/lib/route-guards";
@@ -261,7 +262,10 @@ function StatementOfProfessional() {
 
       {pending && FEED_SKELETON}
       {!pending && groups.length === 0 ? (
-        <EmptyState title={t("statement.empty")} hint={t("statement.emptyHint")} />
+        <EmptyState
+          title={EmptySubject.EVENT.titleIn(t, "empty.context.inPeriod")}
+          hint={t("statement.emptyHint")}
+        />
       ) : (
         <CareerEventTimeline
           groups={groups}

@@ -63,7 +63,7 @@ describe("a sessão de SUPPORT abre a aplicação (regressão 2026-09-08)", () =
 
   it("com `/auth/me` devolvendo `support`, a casca monta e mostra a Administração", async () => {
     renderShellAs(fixtureSupportUser);
-    await screen.findByRole("button", { name: "Administração" });
+    await screen.findByText("Administração");
     expect(screen.getByText("conteúdo da tela")).toBeTruthy();
     expect(screen.getByText("Catálogo de Competências")).toBeTruthy();
     expect(screen.getByText("Métricas da Plataforma")).toBeTruthy();
@@ -72,7 +72,7 @@ describe("a sessão de SUPPORT abre a aplicação (regressão 2026-09-08)", () =
 
   it("com `/auth/me` devolvendo `admin` (administrador), a casca monta com Administração e Gestão", async () => {
     renderShellAs(fixtureAdminUser);
-    await screen.findByRole("button", { name: "Administração" });
+    await screen.findByText("Administração");
     expect(screen.getByText("conteúdo da tela")).toBeTruthy();
     expect(screen.getByText("Catálogo de Competências")).toBeTruthy();
     expect(screen.getByText("Avaliação de Desempenho")).toBeTruthy();

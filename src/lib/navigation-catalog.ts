@@ -308,12 +308,3 @@ export function isNavItemActive(
   if (own < 0) return false;
   return siblings.every((sibling) => sibling === item || match.specificityOf(sibling) <= own);
 }
-
-export function isNavItemHiddenByCollapse(
-  item: NavItem,
-  pathname: string,
-  isGroupCollapsed: boolean,
-  siblings: readonly NavItem[] = [],
-): boolean {
-  return isGroupCollapsed && !isNavItemActive(item, pathname, siblings);
-}

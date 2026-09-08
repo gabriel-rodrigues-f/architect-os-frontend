@@ -1,4 +1,3 @@
-import { defaultSidebarPreferences } from "@/lib/sidebar-preferences";
 import { DashboardEntrance } from "@/lib/dashboard-entrance";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -173,7 +172,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string, onAccepted?: () => Promise<void> | void) => {
       const result = await authApi.login(email, password);
       await onAccepted?.();
-      defaultSidebarPreferences.forgetCollapsedGroups();
       // A primeira abertura do Painel depois do login ganha a entrada orquestrada.
       DashboardEntrance.arm(result.user);
       await openSession(result.user);
@@ -188,7 +186,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ) => {
       const result = await authApi.register(input);
       await onAccepted?.();
-      defaultSidebarPreferences.forgetCollapsedGroups();
       DashboardEntrance.arm(result.user);
       await openSession(result.user);
     },

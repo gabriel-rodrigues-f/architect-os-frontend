@@ -4,9 +4,10 @@ import { BrowserMemory } from "@/lib/browser-memory";
 import { SidebarPreferences } from "@/lib/sidebar-preferences";
 
 /**
- * [FA-05] — as preferências da coluna (recolhida, largura, grupos fechados)
- * eram seis `setItem` soltos no `AppShell`; agora são UM objeto sobre a
- * `BrowserMemory`, com a chave legada migrada e a largura sempre no intervalo.
+ * [FA-05] — as preferências da coluna (recolhida, largura) eram seis `setItem`
+ * soltos no `AppShell`; agora são UM objeto sobre a `BrowserMemory`, com a
+ * chave legada migrada e a largura sempre no intervalo. Os grupos fechados
+ * saíram do objeto junto com a setinha do menu (dono, 2026-09-08).
  */
 describe("SidebarPreferences", () => {
   afterEach(() => window.localStorage.clear());
@@ -35,16 +36,6 @@ describe("SidebarPreferences", () => {
     expect(prefs.chosenWidth).toBeNull();
   });
 
-  it("grupos fechados: conjunto vazio sem nada salvo; lembra, esquece, e ignora lixo", () => {
-    expect(prefs.collapsedGroups.size).toBe(0);
-    prefs.rememberCollapsedGroups(new Set(["nav.group.development"]));
-    expect([...prefs.collapsedGroups]).toEqual(["nav.group.development"]);
-    prefs.forgetCollapsedGroups();
-    expect(prefs.collapsedGroups.size).toBe(0);
-    window.localStorage.setItem(SidebarPreferences.COLLAPSED_GROUPS_KEY, "{nope");
-    expect(prefs.collapsedGroups.size).toBe(0);
-  });
-
   it("com o storage bloqueado, nada lança e as leituras caem no padrão", () => {
     const bloqueadas = new SidebarPreferences(
       new BrowserMemory(() => {
@@ -53,9 +44,7 @@ describe("SidebarPreferences", () => {
     );
     expect(() => bloqueadas.rememberCollapsed(true)).not.toThrow();
     expect(() => bloqueadas.rememberWidth(300)).not.toThrow();
-    expect(() => bloqueadas.rememberCollapsedGroups(new Set(["x"]))).not.toThrow();
     expect(bloqueadas.collapsed).toBe(false);
     expect(bloqueadas.chosenWidth).toBeNull();
-    expect(bloqueadas.collapsedGroups.size).toBe(0);
   });
 });

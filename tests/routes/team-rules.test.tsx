@@ -133,13 +133,9 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
     fetchMock.mockReset();
   });
 
-  it("404 TeamRuleNotFoundError vira 'ainda não tem régua', nunca erro de tela", async () => {
+  it("404 TeamRuleNotFoundError vira 'Nenhuma régua', nunca erro de tela", async () => {
     renderAs(fixtureAssignedManagerUser, [semRegua]);
-    expect(
-      await screen.findByText("Este time ainda não tem régua para Júnior.", {
-        exact: false,
-      }),
-    ).toBeTruthy();
+    expect(await screen.findByText("Nenhuma régua para Júnior", { exact: false })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Definir régua" })).toBeTruthy();
   });
 

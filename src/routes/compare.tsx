@@ -136,7 +136,10 @@ function ProfessionalsComparison() {
           registrations={[Registration.PROFESSIONAL]}
         />
       ) : professionals.length < 2 ? (
-        <EmptyState title={t("compare.empty")} />
+        <EmptyState
+          title={EmptySubject.PROFESSIONAL.titleIn(t, "empty.context.selected")}
+          hint={t("compare.empty")}
+        />
       ) : (
         <SectionCard
           title={t(view === "radar" ? "compare.radar.title" : "compare.table.title")}

@@ -118,7 +118,10 @@ function TeamCapabilityCoverage() {
           registrations={[Registration.CAPABILITY]}
         />
       ) : population.length === 0 ? (
-        <EmptyState title={t("cap.empty.noScope.title")} hint={t("cap.empty.noScope.hint")} />
+        <EmptyState
+          title={EmptySubject.PROFESSIONAL.titleIn(t, "empty.context.inYourScope")}
+          hint={t("cap.empty.noScope.hint")}
+        />
       ) : (
         <>
           <KeyFigureCard

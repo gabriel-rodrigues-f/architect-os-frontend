@@ -5,6 +5,14 @@ import { cn } from "@/lib/utils";
 
 interface FilterTriggerButtonProps extends ComponentPropsWithoutRef<"button"> {
   children: ReactNode;
+  /**
+   * BLOQUEADO NÃO É DESABILITADO. O gatilho não escolhe nada, mas continua na
+   * ordem de tabulação e continua recebendo ponteiro — é a única forma de o
+   * cartão que explica o bloqueio abrir no HOVER e no FOCO (dono, 2026-09-08).
+   * Um `disabled` de verdade some do teclado e não emite evento de mouse:
+   * quem só navega por teclado nunca chegaria ao botão de cadastro do cartão.
+   */
+  blocked?: boolean;
 }
 
 /**
@@ -15,16 +23,17 @@ interface FilterTriggerButtonProps extends ComponentPropsWithoutRef<"button"> {
  * âncora deixa de ser gatilho, e o dono recusou esse desenho em 2026-09-08.
  */
 export const FilterTriggerButton = forwardRef<HTMLButtonElement, FilterTriggerButtonProps>(
-  function FilterTriggerButton({ className, disabled, children, ...props }, ref) {
+  function FilterTriggerButton({ className, disabled, blocked, children, ...props }, ref) {
     return (
       <button
         ref={ref}
         type="button"
         disabled={disabled}
+        aria-disabled={blocked ? true : undefined}
         className={cn(
           FieldControl.campo(),
           "min-w-48 cursor-pointer items-center justify-between gap-2 bg-card text-body md:text-body",
-          disabled && "cursor-not-allowed text-muted-foreground",
+          (disabled || blocked) && "cursor-not-allowed text-muted-foreground",
           className,
         )}
         {...props}

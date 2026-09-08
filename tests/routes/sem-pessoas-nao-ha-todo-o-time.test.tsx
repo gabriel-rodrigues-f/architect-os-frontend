@@ -146,7 +146,7 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
 
     const seletor = await screen.findByRole("button", { name: "Profissionais para comparar" });
     expect(seletor.textContent).toContain(mensagemDoCampo);
-    expect(seletor.hasAttribute("disabled")).toBe(true);
+    expect(seletor.getAttribute("aria-disabled")).toBe("true");
 
     await userEvent.click(seletor);
     expect(screen.queryByRole("listbox")).toBeNull();
@@ -159,11 +159,13 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
 
     const seletor = await screen.findByRole("button", { name: "Profissional" });
     expect(seletor.textContent).toContain(mensagemDoCampo);
-    expect(seletor.hasAttribute("disabled")).toBe(true);
+    expect(seletor.getAttribute("aria-disabled")).toBe("true");
 
     await userEvent.click(seletor);
     expect(screen.queryByRole("listbox")).toBeNull();
-    expect(screen.queryByRole("dialog")).toBeNull();
+    // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
   });
 
   it("Calibração (uma pessoa): usa a mesma combobox das outras telas, com a mesma mensagem", async () => {

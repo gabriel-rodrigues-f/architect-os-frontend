@@ -42,11 +42,17 @@ import { jsonResponse, mockAppFetch, renderWithApp } from "../../helpers/render-
  * filtro, vamos bloquear o filtro e disponibilizamos o botão de criação mais
  * abaixo, dentro do quadro principal e centralizado na tela."*
  *
- * Então o seletor vazio volta a ser só a MOLDURA COM A FRASE: gatilho
- * desabilitado, sem `Popover`, sem linha clicável, sem hiperlink — para
- * TODOS, inclusive para quem alcança o cadastro. O convite mudou de lugar,
- * não de existência: ele vive no `EmptyStateCallToAction`, no centro do
- * quadro principal, e é o teste `vazio-no-centro` que o guarda.
+ * Então o seletor vazio é a MOLDURA COM A FRASE: o gatilho não escolhe nada,
+ * não abre lista e não vira âncora, e não há hiperlink pendurado embaixo dele
+ * — para TODOS, inclusive para quem alcança o cadastro. O convite do CENTRO
+ * da tela mudou de lugar, não de existência: vive no `EmptyStateCallToAction`
+ * e é o teste `vazio-no-centro` que o guarda.
+ *
+ * O que entrou depois (dono, 2026-09-08): o bloqueio passou a EXPLICAR-SE num
+ * cartão que abre no hover e no foco, com o convite dentro. O cartão é do
+ * `EmptySelectionField` e quem o prova é `cartao-do-filtro-bloqueado`; aqui
+ * a régua que continua valendo é a outra — nada pendurado ao redor do campo,
+ * e lista de opções nunca.
  */
 const renderizar = (ui: React.ReactElement) => render(<I18nProvider>{ui}</I18nProvider>);
 
@@ -60,7 +66,7 @@ describe("SingleSelectFilter sem opções — moldura, frase e nada mais", () =>
 
     const gatilho = screen.getByRole("button", { name: "Ciclo" });
     expect(gatilho.textContent).toContain("Não há nada para escolher aqui");
-    expect(gatilho.hasAttribute("disabled")).toBe(true);
+    expect(gatilho.getAttribute("aria-disabled")).toBe("true");
   });
 
   it("com a frase do domínio, é ela que aparece — e o campo não abre nada", async () => {
@@ -79,7 +85,6 @@ describe("SingleSelectFilter sem opções — moldura, frase e nada mais", () =>
     expect(gatilho.textContent).toContain("Nenhum ciclo cadastrado");
     await userEvent.click(gatilho);
     expect(screen.queryByRole("listbox")).toBeNull();
-    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   const comCadastro = (
@@ -100,37 +105,27 @@ describe("SingleSelectFilter sem opções — moldura, frase e nada mais", () =>
    * A troca de desenho, virada asserção: mesmo QUEM ALCANÇA o cadastro vê o
    * filtro bloqueado. O botão de cadastro dele está no centro da tela.
    */
-  it("mesmo com cadastro alcançável, o gatilho fica bloqueado e não abre painel", async () => {
+  it("mesmo com cadastro alcançável, o gatilho fica bloqueado e nunca abre LISTA", async () => {
     renderizar(comCadastro);
 
     const gatilho = screen.getByRole("button", { name: "Ciclo" });
     expect(gatilho.textContent).toContain("Nenhum ciclo cadastrado");
-    expect(gatilho.hasAttribute("disabled")).toBe(true);
+    expect(gatilho.getAttribute("aria-disabled")).toBe("true");
 
     await userEvent.click(gatilho);
 
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
   });
 
-  it("nada é renderizado ao redor do gatilho — nem linha clicável, nem hiperlink", () => {
+  it("nada fica PENDURADO ao redor do gatilho: o convite mora dentro do cartão", () => {
     renderizar(comCadastro);
 
     const gatilho = screen.getByRole("button", { name: "Ciclo" });
-    expect(gatilho.nextElementSibling).toBeNull();
     expect(gatilho.tagName).toBe("BUTTON");
+    // Fechado, não há nem hiperlink irmão nem hiperlink no campo.
     expect(gatilho.parentElement?.querySelector("a")).toBeNull();
-    expect(gatilho.getAttribute("aria-haspopup")).toBeNull();
-  });
-
-  it("o teclado também não abre o que não existe", async () => {
-    renderizar(comCadastro);
-
-    const gatilho = screen.getByRole("button", { name: "Ciclo" });
-    gatilho.focus();
-    await userEvent.keyboard("{Enter}");
-
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("com opções, nada disso aparece: o seletor é o de sempre", async () => {
@@ -177,12 +172,18 @@ describe("MultiSelectFilter sem opções — a mesma régua, o mesmo desenho", (
 
     const gatilho = screen.getByRole("button", { name: "Capacidades" });
     expect(gatilho.textContent).toContain("Nenhuma capacidade cadastrada");
-    expect(gatilho.hasAttribute("disabled")).toBe(true);
+    expect(gatilho.getAttribute("aria-disabled")).toBe("true");
 
     await userEvent.click(gatilho);
 
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByRole("link")).toBeNull();
+    // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
+    // O hiperlink de cadastro, se houver, mora DENTRO do cartão que explica o
+    // bloqueio — nunca pendurado no campo (dono, 2026-09-08).
+    for (const hiperlink of screen.queryAllByRole("link")) {
+      expect(screen.getByRole("dialog").contains(hiperlink)).toBe(true);
+    }
   });
 
   it("sem frase declarada, cai na frase da casa — nunca num campo vazio", () => {
@@ -222,12 +223,14 @@ describe("o seletor de ciclo do cabeçalho, sem ciclo cadastrado", () => {
     await screen.findByText("conteúdo");
     const gatilho = await screen.findByRole("button", { name: "Ciclo" });
     expect(gatilho.textContent).toContain("Nenhum ciclo cadastrado");
-    expect(gatilho.hasAttribute("disabled")).toBe(true);
+    expect(gatilho.getAttribute("aria-disabled")).toBe("true");
     expect(gatilho.nextElementSibling).toBeNull();
 
     await userEvent.click(gatilho);
 
-    expect(screen.queryByRole("dialog")).toBeNull();
+    // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
     vi.unstubAllGlobals();
   });
 });

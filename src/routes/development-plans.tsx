@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import {
   CommandWithReasonDialog,
+  EmptyState,
   EmptyStateCallToAction,
   GapBadge,
   LevelBadge,
@@ -493,7 +494,7 @@ function PlanItemCard({
       <ActionPlanField
         key={item.version}
         value={item.actionPlan}
-        disabled={!canEditExecution}
+        canEdit={canEditExecution}
         onSave={(actionPlan) => viewModel.saveActionPlan(planId, item.id, actionPlan)}
       />
 
@@ -567,13 +568,30 @@ function PlanItemCard({
   );
 }
 
+/**
+ * O PLANO DE AÇÃO — caixa de escrita para quem escreve, TEXTO para quem lê.
+ *
+ * Dono (2026-09-08, com captura): *"hoje eu vejo um bloco de texto, enganando
+ * o usuário a passar o mouse por ali, mas este bloco na realidade está
+ * bloqueado. Não precisamos deste bloco. Quando um avaliador escrever algo,
+ * deve aparecer como bloco de escrita, não como texto."*
+ *
+ * Este campo era o ÚNICO do cartão que continuava desenhando a caixa mesmo
+ * para quem não pode escrever — todos os irmãos (tipo de ação, situação,
+ * prazo) já trocavam para leitura. A régua da casa já estava escrita no
+ * `ReflectionField` das Avaliações (2026-09-07): *"sem caixa de formulário
+ * desabilitada fingindo ser editável"*. Aqui ela passou a valer.
+ *
+ * Sem nada escrito e sem poder escrever, vale o padrão do Extrato: as duas
+ * linhas do vazio, dizendo que avaliação nenhuma foi feita neste ciclo.
+ */
 function ActionPlanField({
   value,
-  disabled,
+  canEdit,
   onSave,
 }: {
   value: string;
-  disabled: boolean;
+  canEdit: boolean;
   onSave: (value: string) => void;
 }) {
   const { t } = useI18n();
@@ -595,13 +613,26 @@ function ActionPlanField({
         </p>
         {saved && <span className="text-xs text-success-fg">{t("pdi.saved")}</span>}
       </div>
-      <Textarea
-        value={draft}
-        disabled={disabled}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        placeholder={t("pdi.field.actionPlan.placeholder")}
-      />
+      {canEdit ? (
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          placeholder={t("pdi.field.actionPlan.placeholder")}
+        />
+      ) : value.trim() === "" ? (
+        <EmptyState
+          title={EmptySubject.ASSESSMENT.titleIn(t, "empty.context.inThisCycle")}
+          hint={t("pdi.field.actionPlan.readOnly.hint")}
+        />
+      ) : (
+        <p
+          className="whitespace-pre-line text-body text-foreground"
+          data-testid="action-plan-reading"
+        >
+          {value}
+        </p>
+      )}
     </div>
   );
 }

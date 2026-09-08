@@ -15,6 +15,7 @@ import type {
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { GapClosureViewModel, type GapMovementRow } from "@/lib/view-models";
+import { EmptySubject } from "@/lib/empty-subject";
 
 const GAP_CLOSURE_QUERY_KEY = ["analytics", "gap-closure"];
 const GAP_CLOSURE_EXPLANATION_QUERY_KEY = [...GAP_CLOSURE_QUERY_KEY, "explanation"];
@@ -48,7 +49,10 @@ export function GapClosureSection() {
   if (semCiclo)
     return (
       <SectionCard title={t("gapClosure.title")} description={t("gapClosure.subtitle")}>
-        <EmptyState title={t("gapClosure.noCycle")} hint={t("gapClosure.noCycle.hint")} />
+        <EmptyState
+          title={EmptySubject.CYCLE.titleIn(t, "empty.context.toCompare")}
+          hint={t("gapClosure.noCycle.hint")}
+        />
       </SectionCard>
     );
 
@@ -75,7 +79,7 @@ export function GapClosureSection() {
             </>
           ) : (
             <EmptyState
-              title={t("gapClosure.noPreviousCycle")}
+              title={EmptySubject.CYCLE.titleIn(t, "empty.context.previousToCompare")}
               hint={t("gapClosure.noPreviousCycle.hint")}
             />
           )}

@@ -108,24 +108,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [resizing, setResizing] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-
-  // Dono (2026-09-06): na primeira abertura após o login, todos os grupos
-  // nascem abertos — o login esquece a preferência (`forgetCollapsedGroups`).
-  useEffect(() => {
-    setCollapsedGroups(preferences.collapsedGroups);
-  }, [preferences]);
-
-  const toggleGroup = (labelKey: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(labelKey)) next.delete(labelKey);
-      else next.add(labelKey);
-      preferences.rememberCollapsedGroups(next);
-      return next;
-    });
-  };
-
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -216,21 +198,18 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (variant === "sheet") setMobileNavOpen(false);
   };
 
-  const renderNavItem =
-    (variant: "sidebar" | "sheet") =>
-    (item: NavItem, hidden = false) => (
-      <NavLinkItem
-        key={item.to}
-        item={item}
-        label={t(item.labelKey)}
-        active={isNavItemActive(item, pathname, navItems)}
-        hidden={hidden}
-        collapsed={variant === "sidebar" && collapsed}
-        hint={item.hintKey ? t(item.hintKey) : undefined}
-        badge={pendingBadgeOf(item)}
-        onNavigate={onNavigateFrom(item, variant)}
-      />
-    );
+  const renderNavItem = (variant: "sidebar" | "sheet") => (item: NavItem) => (
+    <NavLinkItem
+      key={item.to}
+      item={item}
+      label={t(item.labelKey)}
+      active={isNavItemActive(item, pathname, navItems)}
+      collapsed={variant === "sidebar" && collapsed}
+      hint={item.hintKey ? t(item.hintKey) : undefined}
+      badge={pendingBadgeOf(item)}
+      onNavigate={onNavigateFrom(item, variant)}
+    />
+  );
   const renderDesktopNavItem = renderNavItem("sidebar");
   const renderSheetNavItem = renderNavItem("sheet");
 
@@ -351,13 +330,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={group.labelKey}
                   group={group}
                   groupIndex={groupIndex}
-                  pathname={pathname}
-                  collapsedGroups={collapsedGroups}
-                  onToggleGroup={toggleGroup}
-                  reducedMotion={reducedMotion}
                   groupLabel={t(group.labelKey)}
                   renderItem={renderDesktopNavItem}
-                  siblings={navItems}
                 />
               );
             })}
@@ -498,13 +472,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={group.labelKey ?? `mobile-group-${groupIndex}`}
                 group={group}
                 groupIndex={groupIndex}
-                pathname={pathname}
-                collapsedGroups={collapsedGroups}
-                onToggleGroup={toggleGroup}
-                reducedMotion={reducedMotion}
                 groupLabel={group.labelKey ? t(group.labelKey) : ""}
-                idPrefix="mobile-"
-                siblings={navItems}
                 renderItem={renderSheetNavItem}
               />
             ))}

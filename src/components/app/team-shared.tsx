@@ -21,6 +21,7 @@ import { usePendingTeamTransfers, useSuccessToast } from "@/hooks";
 import { teamsApi, teamTransfersApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -594,7 +595,9 @@ export function TeamRosterView({
             ))}
             {top.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                {hasOfficial ? t("team.card.noGaps") : t("team.card.notAssessed")}
+                {hasOfficial
+                  ? t("team.card.noGaps")
+                  : EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}
               </p>
             )}
           </div>

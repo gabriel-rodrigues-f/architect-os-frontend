@@ -8,6 +8,7 @@ import { ChevronDown, CircleAlert, CircleCheck, Info, TriangleAlert } from "luci
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/lib/domain";
 import { useGapSeverityRuler, useSelectors } from "@/lib/store";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { useSeniorityReading } from "@/lib/seniority";
@@ -48,7 +49,10 @@ export function LevelBadge({
   const labels = useLabels();
   if (level === undefined) {
     return (
-      <Chip className={cn("tabular-nums", levelBg[0])} tooltip={t("level.cellTooltip.none")}>
+      <Chip
+        className={cn("tabular-nums", levelBg[0])}
+        tooltip={EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}
+      >
         —
       </Chip>
     );
@@ -76,7 +80,7 @@ export function LevelCell({ level }: { level: number | undefined }) {
       )}
       title={
         level === undefined
-          ? t("level.cellTooltip.none")
+          ? EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")
           : t("level.cellTooltip", {
               nome: labels.levelName[level as keyof typeof labels.levelName] ?? "—",
               n: level,
@@ -100,7 +104,7 @@ export function GapBadge({ gap }: { gap: number | undefined }) {
   const ruler = useGapSeverityRuler();
   if (gap === undefined) {
     return (
-      <Chip tone="neutral" tooltip={t("level.cellTooltip.none")}>
+      <Chip tone="neutral" tooltip={EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}>
         —
       </Chip>
     );

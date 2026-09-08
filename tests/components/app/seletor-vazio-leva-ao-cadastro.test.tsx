@@ -79,15 +79,21 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
 
     const gatilho = await screen.findByRole("button", { name: "Profissionais" });
     expect(gatilho.textContent).toContain("Nenhum profissional cadastrado");
-    expect(gatilho.hasAttribute("disabled")).toBe(true);
+    expect(gatilho.getAttribute("aria-disabled")).toBe("true");
 
     await userEvent.click(gatilho);
 
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByRole("link")).toBeNull();
+    // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
+    // O hiperlink de cadastro, se houver, mora DENTRO do cartão que explica o
+    // bloqueio — nunca pendurado no campo (dono, 2026-09-08).
+    for (const hiperlink of screen.queryAllByRole("link")) {
+      expect(screen.getByRole("dialog").contains(hiperlink)).toBe(true);
+    }
   });
 
-  it("não desenha NADA ao redor do gatilho — nem linha clicável, nem hiperlink", async () => {
+  it("não desenha nada PENDURADO ao redor do gatilho — o convite mora no cartão", async () => {
     montar(fixtureAssignedManagerUser);
 
     renderWithApp(
@@ -99,9 +105,8 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
     );
 
     const gatilho = await screen.findByRole("button", { name: "Profissionais" });
-    expect(gatilho.nextElementSibling).toBeNull();
     expect(gatilho.parentElement?.querySelector("a")).toBeNull();
-    expect(gatilho.getAttribute("aria-haspopup")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("para quem NÃO cadastra gente é exatamente a mesma coisa", async () => {
@@ -117,10 +122,16 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
 
     const campo = await screen.findByRole("button", { name: "Profissionais" });
     expect(campo.textContent).toContain("Nenhum profissional cadastrado");
-    expect(campo.hasAttribute("disabled")).toBe(true);
+    expect(campo.getAttribute("aria-disabled")).toBe("true");
     await userEvent.click(campo);
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByRole("link")).toBeNull();
+    // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
+    // O hiperlink de cadastro, se houver, mora DENTRO do cartão que explica o
+    // bloqueio — nunca pendurado no campo (dono, 2026-09-08).
+    for (const hiperlink of screen.queryAllByRole("link")) {
+      expect(screen.getByRole("dialog").contains(hiperlink)).toBe(true);
+    }
   });
 });
 
@@ -146,10 +157,16 @@ describe("o campo de time do diálogo de cadastro, sem nenhum time", () => {
     expect(screen.queryByText("Escolha o time")).toBeNull();
 
     const gatilho = screen.getByRole("button", { name: "Time" });
-    expect(gatilho.hasAttribute("disabled")).toBe(true);
+    expect(gatilho.getAttribute("aria-disabled")).toBe("true");
     await userEvent.click(gatilho);
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByRole("link")).toBeNull();
+    // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
+    // O hiperlink de cadastro, se houver, mora DENTRO do cartão que explica o
+    // bloqueio — nunca pendurado no campo (dono, 2026-09-08).
+    for (const hiperlink of screen.queryAllByRole("link")) {
+      expect(screen.getByRole("dialog").contains(hiperlink)).toBe(true);
+    }
   });
 
   it("com times cadastrados, o campo é o de sempre — com a opção vazia de volta", async () => {

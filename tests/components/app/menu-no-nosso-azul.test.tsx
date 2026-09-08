@@ -122,7 +122,7 @@ describe("storage bloqueado não derruba o clique ([FA-05])", () => {
     vi.restoreAllMocks();
   });
 
-  it("recolher o menu e fechar um grupo funcionam mesmo com o navegador recusando gravar", async () => {
+  it("recolher o menu funciona mesmo com o navegador recusando gravar", async () => {
     renderShell();
     const user = userEvent.setup();
     const toggle = await screen.findByRole("button", { name: "Esconder menu lateral" });
@@ -131,9 +131,6 @@ describe("storage bloqueado não derruba o clique ([FA-05])", () => {
     await user.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
 
-    const grupo = screen.getByRole("button", { name: "Crescimento" });
-    await user.click(grupo);
-    expect(grupo.getAttribute("aria-expanded")).toBe("false");
     expect(window.localStorage.getItem(SidebarPreferences.COLLAPSED_KEY)).toBeNull();
   });
 });

@@ -14,8 +14,6 @@ import { cn } from "@/lib/utils";
  *  - no HOVER o texto pinta de azul, sobre um fundo sutil;
  *  - ATIVO = texto azul + fundo sutil + indicador lateral de 2 px em azul.
  *
- * Quem está fora de alcance por teclado (item de grupo recolhido) recebe
- * `tabIndex=-1` e `aria-hidden` — os dois menus continuam iguais nisso.
  *
  * TODO item é ROTA (dono, 2026-09-08). A âncora externa `target="_blank"`
  * morreu com o item das Métricas da Plataforma: ela não mudava a rota, e por
@@ -37,14 +35,10 @@ export class NavLinkStyle {
     "bg-sidebar-emphasis-subtle font-medium text-sidebar-emphasis before:opacity-100";
 }
 
-export const outOfReachProps = (hidden: boolean) =>
-  hidden ? ({ tabIndex: -1, "aria-hidden": true } as const) : {};
-
 export function NavLinkItem({
   item,
   label,
   active,
-  hidden = false,
   collapsed = false,
   hint,
   badge = null,
@@ -53,7 +47,6 @@ export function NavLinkItem({
   item: NavItem;
   label: string;
   active: boolean;
-  hidden?: boolean;
   /** Coluna recolhida ao trilho: só o ícone, o rótulo vira tooltip. */
   collapsed?: boolean;
   hint?: string | undefined;
@@ -88,7 +81,6 @@ export function NavLinkItem({
       title={hint}
       data-active={active}
       onClick={onNavigate}
-      {...outOfReachProps(hidden)}
       className={className}
     >
       {conteudo}

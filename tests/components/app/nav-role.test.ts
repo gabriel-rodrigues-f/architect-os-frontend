@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { NAV_GROUPS, filterNavGroups, isNavItemHiddenByCollapse } from "@/lib/navigation-catalog";
+import { NAV_GROUPS, filterNavGroups } from "@/lib/navigation-catalog";
 import type { SessionUser, UserRole } from "@/lib/api";
 import {
   fixtureAdminUser,
@@ -207,45 +207,5 @@ describe("AppShell — navegação recortada por papel", () => {
       "/training-needs",
       "/compare",
     ]);
-  });
-});
-
-/**
- * Feedback ao vivo do product owner (SYNAPSE-DIRECIONAMENTO-EXECUCAO.md,
- * Bloco 7) — antes, o grupo da rota ativa nunca podia ser recolhido de
- * verdade (ver `nav-collapsible-groups.test.tsx` para o comportamento de
- * UI). `isNavItemHiddenByCollapse` é a função pura por trás da correção
- * final: cada item esconde no PRÓPRIO lugar da lista, nunca reordena — a
- * primeira tentativa (`partitionGroupItems`, removida) extraía o item
- * ativo pra um slot fixo, o que reordenava a lista toda vez que o item
- * ativo mudava, mesmo com o grupo expandido (bug real, reportado pelo
- * usuário, coberto pelo teste "trocar a rota ativa não reordena o grupo
- * expandido" em `nav-collapsible-groups.test.tsx` — é exatamente o tipo
- * de caso que uma função pura testada em isolamento, ANTES de plugar na
- * renderização, deveria ter pego).
- */
-describe("isNavItemHiddenByCollapse — esconde no próprio lugar, nunca reordena", () => {
-  const group = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.group.operation")!;
-
-  it("grupo expandido: nenhum item esconde, não importa qual rota está ativa", () => {
-    for (const pathname of ["/", "/team", "/assessments", "/rota-que-nao-existe"]) {
-      for (const item of group.items) {
-        expect(isNavItemHiddenByCollapse(item, pathname, false)).toBe(false);
-      }
-    }
-  });
-
-  it("grupo recolhido, sem rota ativa dentro: todos os itens escondem", () => {
-    for (const item of group.items) {
-      expect(isNavItemHiddenByCollapse(item, "/settings", true)).toBe(true);
-    }
-  });
-
-  it("grupo recolhido, com rota ativa dentro: só o item ativo continua visível", () => {
-    const activeItem = group.items.find((item) => item.to === "/team")!;
-    expect(isNavItemHiddenByCollapse(activeItem, "/team", true)).toBe(false);
-    for (const item of group.items.filter((item) => item.to !== "/team")) {
-      expect(isNavItemHiddenByCollapse(item, "/team", true)).toBe(true);
-    }
   });
 });

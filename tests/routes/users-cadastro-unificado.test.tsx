@@ -271,12 +271,16 @@ describe("o time entra no cadastro", () => {
 
     expect(dialogo.queryByText("Escolha o time")).toBeNull();
     expect(dialogo.getByText("Nenhum time cadastrado")).toBeTruthy();
-    // Filtro sem opções é filtro bloqueado (dono, 2026-09-08): nada abre, e
-    // nenhum hiperlink pende do campo.
+    // Filtro sem opções é filtro bloqueado (dono, 2026-09-08): não abre lista,
+    // e o convite de cadastro mora no cartão do bloqueio, nunca pendurado no
+    // campo. Quem não alcança o cadastro de times não recebe nem o do cartão.
     const campoDeTime = dialogo.getByRole("button", { name: "Time" });
-    expect(campoDeTime.hasAttribute("disabled")).toBe(true);
+    expect(campoDeTime.getAttribute("aria-disabled")).toBe("true");
     await userEvent.click(campoDeTime);
-    expect(screen.queryByRole("link", { name: /Cadastrar/ })).toBeNull();
+    expect(screen.queryByRole("listbox")).toBeNull();
+    for (const hiperlink of screen.queryAllByRole("link", { name: /Cadastrar/ })) {
+      expect(screen.getByRole("dialog", { name: "" }).contains(hiperlink)).toBe(true);
+    }
     expect(
       dialogo.getByText(
         "Você não lidera nenhum time ativo — peça ao administrador para vinculá-lo a um time.",

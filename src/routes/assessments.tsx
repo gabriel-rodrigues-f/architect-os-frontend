@@ -26,6 +26,7 @@ import { api, UserFacingError } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { PersonPicker } from "@/lib/person-selection";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useLabels } from "@/lib/labels";
@@ -106,6 +107,7 @@ function AssessmentsScreen() {
     isLead,
     status,
     isCompleted,
+    canOpen,
     canEditSelf,
     canEditLeaderFinal,
     canSubmit,
@@ -335,9 +337,17 @@ function AssessmentsScreen() {
           registrations={cadastrosQueFaltam}
         />
       ) : !assessment ? (
+        /*
+         * Dono (2026-09-08): *"acessando como profissional, não posso ver um
+         * botão de 'Abrir avaliação do ciclo'; consequentemente não verei a
+         * mensagem em vermelho acima. Verei dados de avaliação nesta tela
+         * quando estas forem realizadas."* Para quem não abre, as duas linhas
+         * do vazio dizem só isso — sem convite, e sem o vermelho, que é a
+         * recusa do serviço a um ato que nunca deveria ter sido oferecido.
+         */
         <SectionCard
-          title={t("asmt.noAssessment.title")}
-          description={t("asmt.noAssessment.subtitle")}
+          title={EmptySubject.ASSESSMENT.titleIn(t, "empty.context.inThisCycle")}
+          description={canOpen ? t("asmt.noAssessment.subtitle") : t("asmt.noAssessment.readOnly")}
         >
           {selectedProfessional && !selectedProfessional.active ? (
             <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.inactive")}</p>
@@ -345,7 +355,7 @@ function AssessmentsScreen() {
             <p className="text-sm text-muted-foreground">
               {t("asmt.noAssessment.historicalCycle", { cycle: viewedCycle?.name ?? cycleId })}
             </p>
-          ) : (
+          ) : !canOpen ? null : (
             <>
               <p className="text-sm text-muted-foreground">{t("asmt.noAssessment.openExplain")}</p>
               {openError && <p className="mt-2 text-sm text-destructive">{openError}</p>}

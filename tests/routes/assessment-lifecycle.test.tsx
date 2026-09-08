@@ -209,7 +209,7 @@ describe("Avaliações — campos por papel e status", () => {
     });
     renderWithApp(<AssessmentsPage />);
 
-    expect(await screen.findByText("Sem avaliação neste ciclo")).toBeTruthy();
+    expect(await screen.findByText("Nenhuma avaliação neste ciclo")).toBeTruthy();
     expect(screen.queryByText("Kubernetes")).toBeNull();
     expect(document.querySelectorAll("select")).toHaveLength(0);
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
