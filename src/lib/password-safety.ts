@@ -9,18 +9,25 @@ import type { MessageKey } from "./i18n";
  * ser segura. mínimo 8 caracteres sendo eles no mínimo: 1 maiúscula, 1 número,
  * 1 minúscula, 1 símbolo, não pode conter 1234 e nem o próprio e-mail."*
  *
+ * Regra do dono (2026-09-08), literal: *"deve haver, obrigatoriamente, 1
+ * espaço no meio da senha"*. É a oitava exigência, `inner-space`, e ela entra
+ * na MESMA posição do servidor — depois do símbolo, antes das proibições.
+ *
  * QUEM DECIDE É O BACKEND. Ele já recusa com `WEAK_PASSWORD` e
- * `details.requirement` — um dos sete nomes abaixo, que é o contrato medido.
+ * `details.requirement` — um dos oito nomes abaixo, que é o contrato medido.
  * Esta classe existe para a outra metade do pedido: *as exigências à vista,
  * ANTES de errar*. Ela lê a senha enquanto a pessoa digita e diz quais
  * exigências já estão de pé, para ninguém descobrir a régua só depois de
  * apanhar do formulário.
  *
- * Por isso a leitura local NUNCA tranca o botão: se ela e o backend
- * discordarem numa borda (o que conta como "sequência óbvia", o quanto do
- * e-mail conta como "o próprio e-mail"), quem manda é o serviço, e a pessoa
- * segue podendo enviar. A lista é orientação; a recusa é do backend, e
- * `PasswordRefusal` a traduz de volta para a exigência exata.
+ * O que MUDOU em 2026-09-08: a leitura local passou a trancar o botão. O dono
+ * viu o formulário sair com as duas senhas diferentes — *"Somente é possível
+ * enviar o formulário de senha depois do usuário preencher ambos os campos
+ * corretamente"*. O espelho continua sendo espelho: a exigência que esta tela
+ * NÃO consegue medir (o próprio e-mail, para quem chega pelo link) não tranca
+ * nada, e a exigência apontada pelo serviço vale sobre a leitura local — mas
+ * ela se apaga assim que a pessoa mexe na senha, senão o botão viraria porta
+ * trancada por dentro. Quem faz essa conta é `PasswordChecklist`.
  */
 export const PASSWORD_REQUIREMENTS = [
   "minimum-length",
@@ -28,6 +35,7 @@ export const PASSWORD_REQUIREMENTS = [
   "lowercase-letter",
   "digit",
   "symbol",
+  "inner-space",
   "obvious-sequence",
   "own-email",
 ] as const;
@@ -41,6 +49,7 @@ export const PASSWORD_REQUIREMENT_ITEM: Readonly<Record<PasswordRequirement, Mes
   "lowercase-letter": "password.requirement.lowercaseLetter",
   digit: "password.requirement.digit",
   symbol: "password.requirement.symbol",
+  "inner-space": "password.requirement.innerSpace",
   "obvious-sequence": "password.requirement.obviousSequence",
   "own-email": "password.requirement.ownEmail",
 };
@@ -52,6 +61,7 @@ export const PASSWORD_REQUIREMENT_REFUSAL: Readonly<Record<PasswordRequirement, 
   "lowercase-letter": "password.refused.lowercaseLetter",
   digit: "password.refused.digit",
   symbol: "password.refused.symbol",
+  "inner-space": "password.refused.innerSpace",
   "obvious-sequence": "password.refused.obviousSequence",
   "own-email": "password.refused.ownEmail",
 };
@@ -64,8 +74,17 @@ export class SafePassword {
 
   private static readonly UPPERCASE = /\p{Lu}/u;
   private static readonly LOWERCASE = /\p{Ll}/u;
-  private static readonly DIGIT = /\d/;
-  private static readonly SYMBOL = /[^\p{L}\p{N}]/u;
+  private static readonly DIGIT = /\p{Nd}/u;
+  /**
+   * Símbolo é o que não é letra, nem dígito, NEM BRANCO — escrito igual ao
+   * servidor. Enquanto o branco contava como símbolo aqui, a régua dava tique
+   * verde em "Abcdefg 1" e o serviço recusava a mesma senha; com o espaço
+   * virando exigência própria, essa divergência deixaria a lista inteira
+   * verde numa senha que não passa.
+   */
+  private static readonly SYMBOL = /[^\p{L}\p{Nd}\s]/u;
+  /** Um espaço (U+0020) ladeado por não-brancos: nem na ponta, nem colado a outro branco. */
+  private static readonly INNER_SPACE = /\S \S/u;
   private static readonly OBVIOUS_SEQUENCE = /1234/;
 
   /** A exigência que só o e-mail da pessoa permite medir. */
@@ -131,6 +150,8 @@ export class SafePassword {
         return SafePassword.DIGIT.test(password);
       case "symbol":
         return SafePassword.SYMBOL.test(password);
+      case "inner-space":
+        return SafePassword.INNER_SPACE.test(password);
       case "obvious-sequence":
         return !SafePassword.OBVIOUS_SEQUENCE.test(password);
       case "own-email":
@@ -173,6 +194,98 @@ export class SafePassword {
 
   get safe(): boolean {
     return this.unmet.size === 0 && this.unmeasurable.size === 0;
+  }
+}
+
+/**
+ * A CONFERÊNCIA DAS DUAS CAIXAS — o item que fecha a lista, e o único que o
+ * servidor nunca vai medir.
+ *
+ * Pedido do dono (2026-09-08): *"no momento de reset, criação de senha, deve
+ * haver um bullet validando senha nova e repita a senha nova. hoje isso não
+ * existe."* Ele não é uma `PasswordRequirement`: o corpo de
+ * `POST /auth/change-password` leva UMA senha, e repetir a segunda só para o
+ * serviço poder compará-las seria mandar a mesma credencial duas vezes por um
+ * fato que a tela já sabe. Por isso o código dele vive aqui e não no contrato
+ * de erro — e por isso o espelho de `PASSWORD_REQUIREMENTS` continua idêntico
+ * ao do servidor, exigência por exigência.
+ */
+export const PASSWORD_CONFIRMATION_CHECK = "matching-confirmation";
+
+export type PasswordCheck = PasswordRequirement | typeof PASSWORD_CONFIRMATION_CHECK;
+
+/** A lista que a tela desenha, na ordem: as oito do servidor, e a conferência por último. */
+export const PASSWORD_CHECKS: readonly PasswordCheck[] = [
+  ...PASSWORD_REQUIREMENTS,
+  PASSWORD_CONFIRMATION_CHECK,
+];
+
+export const PASSWORD_CHECK_ITEM: Readonly<Record<PasswordCheck, MessageKey>> = {
+  ...PASSWORD_REQUIREMENT_ITEM,
+  [PASSWORD_CONFIRMATION_CHECK]: "password.requirement.matchingConfirmation",
+};
+
+/**
+ * A LISTA INTEIRA DE UMA ESCOLHA DE SENHA, e a única resposta que o botão de
+ * enviar precisa: `ready`.
+ *
+ * Ela junta as três autoridades que decidem a cor de um item, na ordem em que
+ * mandam:
+ *
+ *  1. **o serviço**, que apontou uma exigência na última recusa — ela volta a
+ *     faltar mesmo que aqui parecesse de pé;
+ *  2. **o que esta tela não consegue medir** (o próprio e-mail, para quem
+ *     chega pelo link sem sessão) — nem verde, nem vermelho, e nunca tranca o
+ *     botão: quem confere é o serviço, ao salvar;
+ *  3. **a leitura local**, para todo o resto, mais a conferência das duas
+ *     caixas.
+ *
+ * `ready` é "nenhum item vermelho". Não é "tudo verde": o item não-mensurável
+ * ficaria vermelho para sempre e a pessoa não teria como salvar nunca.
+ */
+export class PasswordChecklist {
+  private constructor(
+    private readonly safety: SafePassword,
+    private readonly confirmed: boolean,
+    private readonly pointedByTheService: PasswordRequirement | null,
+  ) {}
+
+  /**
+   * Repetição VAZIA não confere, mesmo com a senha nova também vazia: o campo
+   * em branco é o estado antes de digitar, e dois brancos iguais não são duas
+   * senhas iguais.
+   */
+  static of(
+    safety: SafePassword,
+    newPassword: string,
+    confirmation: string,
+    pointed: PasswordRequirement | null = null,
+  ): PasswordChecklist {
+    return new PasswordChecklist(
+      safety,
+      confirmation !== "" && confirmation === newPassword,
+      pointed,
+    );
+  }
+
+  meets(check: PasswordCheck): boolean {
+    if (check === PASSWORD_CONFIRMATION_CHECK) return this.confirmed;
+    return this.safety.meets(check) && this.pointedByTheService !== check;
+  }
+
+  /** A exigência está à vista e esta tela não tem como medi-la. */
+  cannotMeasure(check: PasswordCheck): boolean {
+    return check !== PASSWORD_CONFIRMATION_CHECK && this.safety.cannotMeasure(check);
+  }
+
+  /** O serviço recusou por esta exigência: a palavra dele vale sobre a leitura local. */
+  pointed(check: PasswordCheck): boolean {
+    return this.pointedByTheService === check;
+  }
+
+  /** Nenhum item vermelho — é o que libera o botão de enviar. */
+  get ready(): boolean {
+    return PASSWORD_CHECKS.every((check) => this.meets(check) || this.cannotMeasure(check));
   }
 }
 

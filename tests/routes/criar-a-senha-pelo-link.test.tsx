@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiPath } from "@/lib/api-path";
-import { PASSWORD_REQUIREMENTS } from "@/lib/password-safety";
+import { PASSWORD_CHECKS } from "@/lib/password-safety";
 import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
 import { jsonResponse } from "../helpers/render-app";
@@ -45,11 +45,11 @@ const TOKEN = "convite-de-mentira-do-teste";
 /**
  * O que a pessoa digita nos dois campos. MONTADA em vez de escrita à mão: este
  * repositório é público, e a régua da casa é que nada com cara de credencial
- * vire literal — nem em teste, nem como exemplo. Ela atende às seis exigências
+ * vire literal — nem em teste, nem como exemplo. Ela atende às sete exigências
  * que uma tela sem sessão consegue medir.
  */
-const ESCOLHIDA = ["Alameda", "#", "azul", "9"].join("");
-const OUTRA = ["Alameda", "#", "verde", "8"].join("");
+const ESCOLHIDA = ["Alameda", "# ", "azul", "9"].join("");
+const OUTRA = ["Alameda", "# ", "verde", "8"].join("");
 
 class RecusaDoServico {
   private constructor(
@@ -200,8 +200,10 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
       "ter uma letra minúscula",
       "ter um número",
       "ter um símbolo, como ! ? # ou @",
+      "ter um espaço no meio, nunca no começo nem no fim",
       "não ter 1234 nem outra sequência óbvia",
       "não ter o seu e-mail dentro dela",
+      "ser igual nos dois campos",
     ]) {
       expect(screen.getByText(item), item).toBeTruthy();
     }
@@ -224,12 +226,12 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
 
     await preencher(usuario, ESCOLHIDA);
     await waitFor(() =>
-      expect(screen.getAllByText("já atendido").length).toBe(PASSWORD_REQUIREMENTS.length),
+      expect(screen.getAllByText("já atendido").length).toBe(PASSWORD_CHECKS.length),
     );
     expect(screen.queryByText("confere ao salvar")).toBeNull();
 
     // A senha com o e-mail dentro fica APONTADA antes de qualquer envio.
-    await preencher(usuario, ["Rafael.lima", "#", "2026"].join(""));
+    await preencher(usuario, ["Rafael.lima", "# ", "2026"].join(""));
     await waitFor(() => expect(screen.getByText("ainda falta")).toBeTruthy());
     expect(servidor.senhasCriadas).toEqual([]);
   });
@@ -258,17 +260,49 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
     expect(servidor.senhasCriadas).toEqual([{ token: TOKEN, newPassword: ESCOLHIDA }]);
   });
 
-  it("as duas senhas diferentes não chegam nem a sair da tela", async () => {
+  /**
+   * O BULLET DE CONFERÊNCIA (dono, 2026-09-08). Antes, o formulário saía com
+   * as duas senhas diferentes e a pessoa só lia o aviso depois do envio.
+   * Agora o botão não abre — e a exigência que ESTA tela não mede (o próprio
+   * e-mail, enquanto o convite não diz a quem é) continua sem trancar nada.
+   */
+  it("as duas senhas diferentes trancam o botão, e nada sai da tela", async () => {
     const usuario = await abrirOLink(`?token=${TOKEN}`);
     await screen.findByText("Defina sua senha");
 
     await preencher(usuario, ESCOLHIDA, OUTRA);
+
+    const botao = screen.getByRole("button", { name: "Definir senha" });
+    await waitFor(() => expect(botao.hasAttribute("disabled")).toBe(true));
+    // O motivo é legível: o botão aponta para a frase, que existe enquanto a
+    // lista não fecha. Sem `title` — a catraca da casa não deixa nascer um.
+    expect(botao.getAttribute("aria-describedby")).toBe("password-submit-blocked");
+    expect(document.getElementById("password-submit-blocked")?.textContent).toBe(
+      "Atenda a todos os itens da lista acima para continuar.",
+    );
+    expect(screen.getAllByText("ainda falta").length).toBe(1);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(servidor.senhasCriadas).toEqual([]);
+
+    await usuario.clear(screen.getByLabelText("Repita a senha nova"));
+    await usuario.type(screen.getByLabelText("Repita a senha nova"), ESCOLHIDA);
+
+    await waitFor(() => expect(botao.hasAttribute("disabled")).toBe(false));
+    expect(servidor.senhasCriadas).toEqual([]);
+  });
+
+  /** A senha vai para o serviço COMO FOI DIGITADA — nenhum campo apara nada. */
+  it("a senha com espaço nas pontas é enviada inteira, sem aparar", async () => {
+    const COM_ESPACOS = ` ${ESCOLHIDA} `;
+    const usuario = await abrirOLink(`?token=${TOKEN}`);
+    await screen.findByText("Defina sua senha");
+
+    await preencher(usuario, COM_ESPACOS);
     await salvar(usuario);
 
-    expect((await screen.findByRole("alert")).textContent).toBe(
-      "As duas senhas novas estão diferentes. Digite a mesma nos dois campos.",
+    await waitFor(() =>
+      expect(servidor.senhasCriadas).toEqual([{ token: TOKEN, newPassword: COM_ESPACOS }]),
     );
-    expect(servidor.senhasCriadas).toEqual([]);
   });
 
   it("senha fraca volta apontada na lista, com a frase daquela exigência", async () => {

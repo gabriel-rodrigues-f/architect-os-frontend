@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { PasswordChoice } from "@/hooks";
 import { useI18n, type MessageKey } from "@/lib/i18n";
-import { PASSWORD_REQUIREMENTS, PASSWORD_REQUIREMENT_ITEM } from "@/lib/password-safety";
+import { PASSWORD_CHECKS, PASSWORD_CHECK_ITEM } from "@/lib/password-safety";
 import { cn } from "@/lib/utils";
 
 /**
@@ -12,9 +12,14 @@ import { cn } from "@/lib/utils";
  *
  * Saiu inteiro de `FirstAccessScreen`, onde nasceu, quando a criação de senha
  * pelo link do convite virou a segunda tela a pedir a mesma coisa. Copiar as
- * sete exigências para lá seria garantir que um dia elas divergissem — a
- * lista já é derivada de `PASSWORD_REQUIREMENTS`, que é o contrato medido do
- * backend, e agora o DESENHO dela também tem um dono só.
+ * exigências para lá seria garantir que um dia elas divergissem — a lista já
+ * é derivada de `PASSWORD_CHECKS` (as oito de `PASSWORD_REQUIREMENTS`, que é
+ * o contrato medido do backend, mais a conferência das duas caixas), e agora
+ * o DESENHO dela também tem um dono só.
+ *
+ * Dono (2026-09-08): *"deve haver um bullet validando senha nova e repita a
+ * senha nova. hoje isso não existe."* O bullet fecha a lista, e ele é o único
+ * item que só esta tela mede — o serviço nunca vê a repetição.
  *
  * As três escolhas que vieram junto, e que valem para as duas telas:
  *
@@ -30,6 +35,17 @@ import { cn } from "@/lib/utils";
  *     pessoa — o caso de quem chega pelo link — a exigência do próprio e-mail
  *     aparece como "confere ao salvar", nunca como atendida.
  */
+/**
+ * O MOTIVO DE O BOTÃO ESTAR TRANCADO, para quem não vê a cor da lista.
+ *
+ * Ele mora aqui, e não em cada tela, porque as duas telas fazem a mesma
+ * pergunta ao mesmo estado — e porque o motivo é a LISTA, que é desta casa.
+ * As telas só apontam para ele com `aria-describedby`; a régua da casa não
+ * deixa nascer `title` novo, e um botão desabilitado sem motivo legível seria
+ * uma porta sem placa.
+ */
+export const PASSWORD_SUBMIT_BLOCKED_ID = "password-submit-blocked";
+
 export function PasswordChoiceFields({ choice }: { choice: PasswordChoice }) {
   const { t } = useI18n();
 
@@ -52,14 +68,16 @@ export function PasswordChoiceFields({ choice }: { choice: PasswordChoice }) {
         <p id="password-requirements" className="text-label font-medium text-foreground">
           {t("password.requirements")}
         </p>
-        <ul className="mt-1.5 space-y-1">
-          {PASSWORD_REQUIREMENTS.map((requirement) => (
+        {/* `aria-live` discreto: quem ouve a tela acompanha o item que acabou
+            de fechar, sem precisar reler a lista inteira a cada tecla. */}
+        <ul className="mt-1.5 space-y-1" aria-live="polite">
+          {PASSWORD_CHECKS.map((check) => (
             <PasswordRequirementItem
-              key={requirement}
-              label={t(PASSWORD_REQUIREMENT_ITEM[requirement])}
-              met={choice.safety.meets(requirement) && choice.pointed !== requirement}
-              unmeasured={choice.safety.cannotMeasure(requirement)}
-              pointed={choice.pointed === requirement}
+              key={check}
+              label={t(PASSWORD_CHECK_ITEM[check])}
+              met={choice.checklist.meets(check)}
+              unmeasured={choice.checklist.cannotMeasure(check)}
+              pointed={choice.checklist.pointed(check)}
             />
           ))}
         </ul>
@@ -76,6 +94,12 @@ export function PasswordChoiceFields({ choice }: { choice: PasswordChoice }) {
           onChange={(event) => choice.setConfirmation(event.target.value)}
         />
       </div>
+
+      {!choice.ready && (
+        <p id={PASSWORD_SUBMIT_BLOCKED_ID} className="sr-only">
+          {t("password.submitBlocked")}
+        </p>
+      )}
     </>
   );
 }

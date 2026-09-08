@@ -2,7 +2,10 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { AuthScreenShell } from "@/components/app/AuthScreenShell";
-import { PasswordChoiceFields } from "@/components/app/PasswordChoiceFields";
+import {
+  PasswordChoiceFields,
+  PASSWORD_SUBMIT_BLOCKED_ID,
+} from "@/components/app/PasswordChoiceFields";
 import { PasswordInput } from "@/components/app/PasswordInput";
 import { AuthAlert } from "@/components/app/AuthAlert";
 import { Button } from "@/components/ui/button";
@@ -37,19 +40,26 @@ import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
  *
  * Duas escolhas que valem explicação:
  *
- *  1. **O botão não tranca.** Quem decide é o backend; a leitura local é
- *     orientação. Se as duas discordarem numa borda, a pessoa continua podendo
- *     enviar e a recusa do serviço aponta a exigência exata
- *     (`PasswordRefusal`, de `details.requirement`) — que passa a valer mesmo
- *     sobre a leitura local, porque o serviço é a autoridade.
+ *  1. **O botão tranca até a lista fechar** (dono, 2026-09-08: *"Somente é
+ *     possível enviar o formulário de senha depois do usuário preencher ambos
+ *     os campos corretamente"*). Ele nasceu destrancado, e por um bom motivo:
+ *     quem decide é o backend. O que o dono viu foi o outro lado da moeda —
+ *     um formulário que sai com as duas senhas diferentes é um erro que a
+ *     tela já sabia. A trava é a lista, não uma segunda régua: o que a tela
+ *     não consegue medir não tranca nada, e a exigência apontada pelo serviço
+ *     se apaga assim que a pessoa mexe na senha, para a recusa de um texto
+ *     antigo não trancar o texto novo. Discordando o serviço numa borda, a
+ *     recusa dele continua sendo a palavra final (`PasswordRefusal`, de
+ *     `details.requirement`).
  *
  *  2. **Sair funciona.** `POST /auth/logout` é uma das três rotas liberadas
  *     enquanto a marca está de pé. Quem não quiser trocar agora precisa
  *     conseguir sair — senão a tela deixaria de ser porta e viraria armadilha.
  *
  * A rede ao fundo (dono, 2026-09-08) pulsa com o resultado, nunca com o
- * envio: senha que não confere (recusa local) e recusa do serviço → vermelho;
- * senha trocada → azul; serviço fora → nada.
+ * envio: recusa do serviço → vermelho; senha trocada → azul; serviço fora →
+ * nada. A recusa local deixou de pulsar porque deixou de existir: com o botão
+ * trancado pela lista, o formulário não sai para ser recusado aqui.
  */
 export function FirstAccessScreen() {
   const { user, logout, changePassword } = useAuth();
@@ -66,11 +76,9 @@ export function FirstAccessScreen() {
     setError(null);
     choice.point(null);
 
-    if (!choice.matches) {
-      setError(t("password.mismatch"));
-      signals.pulseWith("danger");
-      return;
-    }
+    // A lista é a porta: o botão já está desabilitado, e isto fecha o caminho
+    // do teclado. Nenhuma frase aqui — o item vermelho da lista é a frase.
+    if (!choice.ready) return;
 
     setSubmitting(true);
     try {
@@ -111,7 +119,12 @@ export function FirstAccessScreen() {
 
         {error !== null && <AuthAlert>{error}</AuthAlert>}
 
-        <Button type="submit" className="w-full" disabled={submitting}>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={submitting || !choice.ready}
+          aria-describedby={choice.ready ? undefined : PASSWORD_SUBMIT_BLOCKED_ID}
+        >
           {submitting ? t("firstAccess.submitting") : t("firstAccess.submit")}
         </Button>
       </form>

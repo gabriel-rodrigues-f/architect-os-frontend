@@ -5,7 +5,10 @@ import { toast } from "sonner";
 
 import { AccessRecoveryRequestPanel } from "@/components/app/AccessRecoveryRequestPanel";
 import { AuthScreenShell } from "@/components/app/AuthScreenShell";
-import { PasswordChoiceFields } from "@/components/app/PasswordChoiceFields";
+import {
+  PasswordChoiceFields,
+  PASSWORD_SUBMIT_BLOCKED_ID,
+} from "@/components/app/PasswordChoiceFields";
 import { AuthAlert } from "@/components/app/AuthAlert";
 import { Button } from "@/components/ui/button";
 import { usePasswordChoice } from "@/hooks";
@@ -50,6 +53,12 @@ import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
  *     chega, a exigência fica "confere ao salvar" (`withoutKnownEmail`); link
  *     recusado na chegada leva direto à tela de pedir outro, sem formulário.
  *     O serviço continua sendo a autoridade ao salvar.
+ *
+ *  4. **O botão só abre com a lista fechada** (dono, 2026-09-08). Inclusive o
+ *     bullet novo, o da conferência das duas caixas — o formulário saía com
+ *     senhas diferentes e só descobria isso depois. A exigência que esta tela
+ *     NÃO mede (o próprio e-mail, enquanto o convite não diz a quem é) segue
+ *     sem trancar nada: ela não é vermelha, é não-conferível aqui.
  */
 export function SetPasswordScreen({ token }: { token: string | undefined }) {
   const { t } = useI18n();
@@ -69,7 +78,9 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [askingForANewLink, setAskingForANewLink] = useState(false);
-  // A rede ao fundo pulsa com o resultado (dono, 2026-09-08): recusa local ou do serviço → vermelho; senha criada → azul.
+  // A rede ao fundo pulsa com o resultado (dono, 2026-09-08): recusa do
+  // serviço → vermelho; senha criada → azul. Não há mais recusa local a
+  // pulsar: com o botão trancado pela lista, o formulário não sai errado.
   const [signals] = useState(() => new SynapseSignals());
 
   const invitation = AccessInvitation.of(token);
@@ -90,11 +101,9 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
     setRefusal(null);
     choice.point(null);
 
-    if (!choice.matches) {
-      setError(t("password.mismatch"));
-      signals.pulseWith("danger");
-      return;
-    }
+    // A lista é a porta: o botão já está desabilitado, e isto fecha o caminho
+    // do teclado. Nenhuma frase aqui — o item vermelho da lista é a frase.
+    if (!choice.ready) return;
 
     setSubmitting(true);
     try {
@@ -166,7 +175,12 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
 
         {error !== null && <AuthAlert>{error}</AuthAlert>}
 
-        <Button type="submit" className="w-full" disabled={submitting}>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={submitting || !choice.ready}
+          aria-describedby={choice.ready ? undefined : PASSWORD_SUBMIT_BLOCKED_ID}
+        >
           {submitting ? t("setPassword.submitting") : t("setPassword.submit")}
         </Button>
       </form>
