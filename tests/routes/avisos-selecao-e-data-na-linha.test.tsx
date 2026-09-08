@@ -28,9 +28,10 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
 
 /**
  * Dono (2026-09-08), a tela de Avisos em três decisões:
- *   1. SELEÇÃO MÚLTIPLA — caixa por linha e "Marcar selecionados como lidos"
- *      ao lado da ação que marca todos. A rede aqui é a que importa: marcar
- *      os selecionados escreve SÓ nos escolhidos;
+ *   1. SELEÇÃO MÚLTIPLA — a caixa NASCE ESCONDIDA e "Selecionar" a revela por
+ *      linha, com "Marcar selecionados como lidos" ao lado da ação que marca
+ *      todos. A rede aqui é a que importa: marcar os selecionados escreve SÓ
+ *      nos escolhidos;
  *   2. A DATA SAI DO AGRUPAMENTO e entra na linha (`título - dd/mm/aaaa`).
  *      Não há mais cabeçalho de data acima do grupo, e não nasceu filtro de
  *      data nenhum;
@@ -81,10 +82,49 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** Item 10: nada de caixa antes de alguém pedir para selecionar. */
+async function entrarNaSelecao() {
+  await userEvent.click(screen.getByRole("button", { name: "Selecionar" }));
+}
+
+describe("a caixa de seleção nasce escondida", () => {
+  it("sem clicar em 'Selecionar', nenhuma linha tem caixa — nem a ação de marcar os selecionados", async () => {
+    renderWithApp(<NoticesPage />);
+    await screen.findByText("Mentoria de hoje");
+
+    expect(screen.queryAllByRole("checkbox")).toEqual([]);
+    expect(screen.queryByRole("button", { name: "Marcar selecionados como lidos" })).toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("'Selecionar' revela as caixas; sair some com tudo e esquece o que estava marcado", async () => {
+    renderWithApp(<NoticesPage />);
+    await screen.findByText("Mentoria de hoje");
+
+    await entrarNaSelecao();
+    await userEvent.click(
+      screen.getByRole("checkbox", { name: "Selecionar aviso: Mentoria de hoje" }),
+    );
+    expect(screen.getByRole("status").textContent).toBe("1 selecionado(s)");
+
+    await userEvent.click(screen.getByRole("button", { name: "Sair da seleção" }));
+    expect(screen.queryAllByRole("checkbox")).toEqual([]);
+
+    await entrarNaSelecao();
+    expect(screen.getByRole("status").textContent).toBe("0 selecionado(s)");
+    expect(
+      screen
+        .getByRole("checkbox", { name: "Selecionar aviso: Mentoria de hoje" })
+        .getAttribute("data-state"),
+    ).toBe("unchecked");
+  });
+});
+
 describe("a seleção múltipla marca só os escolhidos", () => {
   it("cada linha tem a própria caixa, nomeada pelo aviso", async () => {
     renderWithApp(<NoticesPage />);
     await screen.findByText("Mentoria de hoje");
+    await entrarNaSelecao();
     expect(
       screen.getByRole("checkbox", { name: "Selecionar aviso: Mentoria de hoje" }),
     ).toBeTruthy();
@@ -96,6 +136,7 @@ describe("a seleção múltipla marca só os escolhidos", () => {
   it("sem nada selecionado, a ação não age — e a contagem diz zero", async () => {
     renderWithApp(<NoticesPage />);
     await screen.findByText("Mentoria de hoje");
+    await entrarNaSelecao();
     const acao = screen.getByRole("button", { name: "Marcar selecionados como lidos" });
     expect(acao.hasAttribute("disabled")).toBe(true);
     expect(screen.getByRole("status").textContent).toBe("0 selecionado(s)");
@@ -104,6 +145,7 @@ describe("a seleção múltipla marca só os escolhidos", () => {
   it("marcar os selecionados escreve SÓ nos escolhidos", async () => {
     renderWithApp(<NoticesPage />);
     await screen.findByText("Mentoria de hoje");
+    await entrarNaSelecao();
     await userEvent.click(
       screen.getByRole("checkbox", { name: "Selecionar aviso: Mentoria de hoje" }),
     );
@@ -112,11 +154,14 @@ describe("a seleção múltipla marca só os escolhidos", () => {
     expect(escritasDeLeitura()).toEqual([apiPath(`/notices/${DE_HOJE.id}/read`)]);
   });
 
-  it("a ação de marcar TODOS continua na tela, ao lado da de selecionados", async () => {
+  it("a ação de marcar TODOS continua na tela, dentro e fora do modo de seleção", async () => {
     renderWithApp(<NoticesPage />);
     await screen.findByText("Mentoria de hoje");
     await userEvent.click(screen.getByRole("button", { name: /marcar todos/i }));
     expect(escritasDeLeitura()).toEqual([apiPath("/notices/read-all")]);
+
+    await entrarNaSelecao();
+    expect(screen.getByRole("button", { name: /marcar todos/i })).toBeTruthy();
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { DevelopmentPlan, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
+import type { DevelopmentPlan, MentoringSession } from "@/lib/domain";
 import type { Gap } from "@/lib/selectors";
 import {
   MentoringViewModel,
@@ -15,9 +15,8 @@ import {
  * mesmo espírito de `learning-paths-view-model.test.ts`/
  * `development-plans-view-model.test.ts`: a cobertura de componente já
  * existente (`mentoring-validation.test.tsx`/`mentoring-followup.test.tsx`/
- * `mentoring-to-pdi.test.tsx`/`mentoring-proficiency.test.tsx`) já cobre o
- * fim a fim via UI (formulário, autorização, PDI); este cobre a classe
- * isolada.
+ * `mentoring-to-pdi.test.tsx`) já cobre o fim a fim via UI (formulário,
+ * autorização, PDI); este cobre a classe isolada.
  */
 function fakeService(): MentoringService & {
   addMentoringSession: ReturnType<typeof vi.fn>;
@@ -49,8 +48,6 @@ function draft(overrides: Partial<MentoringSessionDraft> = {}): MentoringSession
     date: "2026-08-20",
     topic: "Revisão de arquitetura de eventos",
     notes: "Discutimos o desenho de filas",
-    decisions: "Adotar outbox pattern",
-    actions: "Prototipar outbox até sexta",
     nextSession: "",
     ...overrides,
   };
@@ -67,35 +64,31 @@ const gap = (competencyId: string): Gap =>
 
 describe("MentoringViewModel", () => {
   describe("createSession", () => {
-    it("monta o payload com id vazio, mentor da sessão autenticada, nextSession só quando preenchido", async () => {
+    /**
+     * Dono (2026-09-08, itens 4 e 5): o formulário pergunta Tema e Notas — as
+     * "Decisões", as "Ações" e a "Evolução observada" saíram da tela e param
+     * de viajar no pedido.
+     */
+    it("monta o payload com id vazio, mentor da sessão autenticada, sem decisões/ações", async () => {
       const { vm, service } = makeVm();
-      const proficiencyUpdates: ProficiencyUpdate[] = [
-        { competencyId: "cloud-k8s", observedLevel: 3 },
-      ];
-      await vm.createSession("Beatriz Lead", draft(), 45, ["cloud-k8s"], proficiencyUpdates);
-      expect(service.addMentoringSession).toHaveBeenCalledWith(
-        {
-          id: "",
-          mentor: "Beatriz Lead",
-          menteeId: "ana",
-          date: "2026-08-20",
-          durationMin: 45,
-          topic: "Revisão de arquitetura de eventos",
-          competencyIds: ["cloud-k8s"],
-          notes: "Discutimos o desenho de filas",
-          decisions: "Adotar outbox pattern",
-          actions: "Prototipar outbox até sexta",
-        },
-        proficiencyUpdates,
-      );
+      await vm.createSession("Beatriz Lead", draft(), 45, ["cloud-k8s"]);
+      expect(service.addMentoringSession).toHaveBeenCalledWith({
+        id: "",
+        mentor: "Beatriz Lead",
+        menteeId: "ana",
+        date: "2026-08-20",
+        durationMin: 45,
+        topic: "Revisão de arquitetura de eventos",
+        competencyIds: ["cloud-k8s"],
+        notes: "Discutimos o desenho de filas",
+      });
     });
 
     it("inclui nextSession no payload só quando preenchido", async () => {
       const { vm, service } = makeVm();
-      await vm.createSession("Beatriz Lead", draft({ nextSession: "2026-09-01" }), 30, [], []);
+      await vm.createSession("Beatriz Lead", draft({ nextSession: "2026-09-01" }), 30, []);
       expect(service.addMentoringSession).toHaveBeenCalledWith(
         expect.objectContaining({ nextSession: "2026-09-01" }),
-        [],
       );
     });
 
@@ -103,7 +96,49 @@ describe("MentoringViewModel", () => {
       const service = fakeService();
       service.addMentoringSession.mockRejectedValueOnce(new Error("403"));
       const { vm } = makeVm(service);
-      await expect(vm.createSession("Beatriz Lead", draft(), 30, [], [])).rejects.toThrow("403");
+      await expect(vm.createSession("Beatriz Lead", draft(), 30, [])).rejects.toThrow("403");
+    });
+  });
+
+  /** Dono (2026-09-08, itens 7 e 2): a ordem da linha do tempo e o dono do follow-up. */
+  describe("newestFirst e followUpSessionOf", () => {
+    const sessao = (id: string, date: string): MentoringSession =>
+      ({ id, date, menteeId: "ana" }) as MentoringSession;
+
+    it("ordena da mais nova para a mais antiga", () => {
+      const { vm } = makeVm();
+      const ordenadas = vm.newestFirst([
+        sessao("antiga", "2026-08-03"),
+        sessao("nova", "2026-08-10"),
+      ]);
+      expect(ordenadas.map((item) => item.id)).toEqual(["nova", "antiga"]);
+    });
+
+    it("empata sessões do mesmo dia em vez de invertê-las — a ordem do serviço fica", () => {
+      const { vm } = makeVm();
+      const doServico = [sessao("primeira", "2026-08-10"), sessao("segunda", "2026-08-10")];
+      expect(vm.newestFirst(doServico).map((item) => item.id)).toEqual(["primeira", "segunda"]);
+    });
+
+    it("não mexe na lista que recebeu", () => {
+      const { vm } = makeVm();
+      const doServico = [sessao("antiga", "2026-08-03"), sessao("nova", "2026-08-10")];
+      vm.newestFirst(doServico);
+      expect(doServico.map((item) => item.id)).toEqual(["antiga", "nova"]);
+    });
+
+    it("o follow-up pende da sessão mais recente da pessoa", () => {
+      const { vm } = makeVm();
+      const escolhida = vm.followUpSessionOf([
+        sessao("antiga", "2026-08-03"),
+        sessao("nova", "2026-08-10"),
+      ]);
+      expect(escolhida?.id).toBe("nova");
+    });
+
+    it("sem sessão nenhuma, não há follow-up para pendurar", () => {
+      const { vm } = makeVm();
+      expect(vm.followUpSessionOf([])).toBeUndefined();
     });
   });
 

@@ -73,8 +73,6 @@ describe("mentoria — a linha do tempo segue a sessão recém-registrada", () =
 
     await userEvent.type(screen.getByLabelText("Tema", { exact: true }), "Particionamento");
     await userEvent.type(screen.getByLabelText("Notas", { exact: true }), "n");
-    await userEvent.type(screen.getByLabelText("Decisões", { exact: true }), "d");
-    await userEvent.type(screen.getByLabelText("Ações", { exact: true }), "a");
     await userEvent.type(screen.getByLabelText("Duração (min)", { exact: true }), "45");
     await userEvent.click(screen.getByRole("button", { name: "Salvar sessão" }));
 

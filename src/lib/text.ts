@@ -46,6 +46,12 @@ const DAY_MONTH_YEAR: Intl.DateTimeFormatOptions = {
 
 const DAY_MONTH_YEAR_UTC: Intl.DateTimeFormatOptions = { ...DAY_MONTH_YEAR, timeZone: "UTC" };
 
+const DAY_MONTH_YEAR_AND_TIME: Intl.DateTimeFormatOptions = {
+  ...DAY_MONTH_YEAR,
+  hour: "2-digit",
+  minute: "2-digit",
+};
+
 export class DateFormatter {
   formatDate(iso: string | null | undefined, locale: string): string | null {
     if (!iso) return null;
@@ -55,6 +61,22 @@ export class DateFormatter {
       locale,
       DATE_ONLY.test(iso) ? DAY_MONTH_YEAR_UTC : DAY_MONTH_YEAR,
     ).format(date);
+  }
+
+  /**
+   * O DIA E A HORA de um registro que tem hora — e só o dia de um que não tem
+   * (dono, 2026-09-08, item 7: *"cada uma mostra hora junto da data"*).
+   *
+   * Um dia puro (`2026-08-10`) não guarda instante nenhum: escrever "00:00"
+   * ali seria inventar uma hora que ninguém marcou. Por isso a distinção não
+   * é do chamador — é do dado.
+   */
+  formatDayAndTime(iso: string | null | undefined, locale: string): string | null {
+    if (!iso) return null;
+    if (DATE_ONLY.test(iso)) return this.formatDate(iso, locale);
+    const moment = new Date(iso);
+    if (Number.isNaN(moment.getTime())) return null;
+    return dateTimeFormatFor(locale, DAY_MONTH_YEAR_AND_TIME).format(moment);
   }
 
   todayIso(): string {

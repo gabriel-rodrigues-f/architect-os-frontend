@@ -363,10 +363,15 @@ function TeamRuleEditor({
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th scope="col" className="py-2">
+                  {/*
+                    Dono (2026-09-08): faltava respiro entre o seletor "Na
+                    régua" e o "Nível mínimo" da mesma linha — o `pr-4` da
+                    escala da casa afasta uma coluna da outra.
+                  */}
+                  <th scope="col" className="py-2 pr-4">
                     {t("teamRules.col.competency")}
                   </th>
-                  <th scope="col" className="py-2">
+                  <th scope="col" className="py-2 pr-4">
                     {t("teamRules.col.inRule")}
                   </th>
                   <th scope="col" className="py-2">
@@ -384,8 +389,8 @@ function TeamRuleEditor({
                       key={competency.id}
                       className="border-b border-border/60 align-top last:border-0"
                     >
-                      <td className="py-2 font-medium">{competency.name}</td>
-                      <td className="py-2">
+                      <td className="py-2 pr-4 font-medium">{competency.name}</td>
+                      <td className="py-2 pr-4">
                         <SingleSelectFilter
                           id={`team-rule-membership-${competency.id}`}
                           ariaLabel={`${t("teamRules.col.inRule")} — ${competency.name}`}

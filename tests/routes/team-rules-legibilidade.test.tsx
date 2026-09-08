@@ -111,3 +111,34 @@ describe("Régua do Time — cada capacidade escolhida tem delimitação própri
     }
   });
 });
+
+/**
+ * Dono (2026-09-08, item 1), com captura: *"falta respiro entre o seletor 'Na
+ * régua' e o 'Nível mínimo' na mesma linha"*. jsdom não mede pixel, mas mede
+ * a REGRA: a coluna que vem antes carrega o espaçamento da escala da casa, e
+ * não um valor solto inventado na linha.
+ */
+describe("Perfil de Competências do Time — respiro entre 'Na régua' e 'Nível mínimo'", () => {
+  it("a célula de 'Na régua' afasta a próxima coluna com o espaçamento da escala", async () => {
+    renderPage();
+    await screen.findByText("Kubernetes");
+
+    const naRegua = screen
+      .getByLabelText("Na régua — Kubernetes")
+      .closest("td") as HTMLTableCellElement;
+    const nivelMinimo = screen
+      .getByLabelText("Nível mínimo — Kubernetes")
+      .closest("td") as HTMLTableCellElement;
+
+    expect(naRegua.className.split(" ")).toContain("pr-4");
+    expect(naRegua.nextElementSibling).toBe(nivelMinimo);
+  });
+
+  it("o cabeçalho acompanha a célula — a coluna inteira respira", async () => {
+    renderPage();
+    await screen.findByText("Kubernetes");
+
+    const cabecalho = screen.getByRole("columnheader", { name: "Na régua" });
+    expect(cabecalho.className.split(" ")).toContain("pr-4");
+  });
+});

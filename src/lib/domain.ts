@@ -347,15 +347,16 @@ export interface MentoringSession {
   topic: string;
   competencyIds: string[];
   notes: string;
-  decisions: string;
-  actions: string;
-  nextSession?: string | undefined;
-}
 
-export interface ProficiencyUpdate {
-  competencyId: string;
-  observedLevel: Level;
-  note?: string | undefined;
+  /**
+   * A HISTÓRIA, não o formulário (dono, 2026-09-08, item 4): "Decisões" e
+   * "Ações" saíram da tela de registro e deixaram de viajar no pedido — as
+   * sessões antigas continuam trazendo os dois do serviço, e são elas que
+   * ainda os desenham.
+   */
+  decisions?: string | undefined;
+  actions?: string | undefined;
+  nextSession?: string | undefined;
 }
 
 type ProficiencySourceType = "ASSESSMENT" | "MENTORING";

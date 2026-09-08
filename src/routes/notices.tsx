@@ -53,9 +53,20 @@ function NoticesPage() {
   /**
    * A SELEÇÃO da tela (dono, 2026-09-08): caixa por linha e uma ação que
    * marca SÓ o que está marcado — ao lado da que marca tudo, que continua.
+   *
+   * A caixa NASCE ESCONDIDA (dono, 2026-09-08, item 10): quem só lê os avisos
+   * não vê caixa nenhuma. "Selecionar" revela as caixas; sair do modo esconde
+   * tudo de novo E ESQUECE o que estava marcado — seleção que sobrevive
+   * escondida volta a agir sem ninguém ver.
    */
+  const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<readonly string[]>([]);
   const selection = Selection.explicit(selectedIds);
+
+  const toggleSelectionMode = () => {
+    setSelecting((current) => !current);
+    setSelectedIds([]);
+  };
 
   const query = useQuery({
     queryKey: [...NOTICES_QUERY_KEY, "page", status],
@@ -111,10 +122,18 @@ function NoticesPage() {
           <PageActions>
             <PageAction
               icon={null}
-              label={t("notices.markSelectedRead")}
-              disabled={selectedIds.length === 0 || markSelected.isPending}
-              onClick={() => markSelected.mutate(selectedIds)}
+              label={t(selecting ? "notices.selection.stop" : "notices.selection.start")}
+              aria-pressed={selecting}
+              onClick={toggleSelectionMode}
             />
+            {selecting && (
+              <PageAction
+                icon={null}
+                label={t("notices.markSelectedRead")}
+                disabled={selectedIds.length === 0 || markSelected.isPending}
+                onClick={() => markSelected.mutate(selectedIds)}
+              />
+            )}
             <PageAction
               icon={null}
               label={t("notices.markAllRead")}
@@ -136,9 +155,11 @@ function NoticesPage() {
             { value: "unread", label: t("notices.filter.unread") },
           ]}
         />
-        <p role="status" className="text-label text-muted-foreground">
-          {t("notices.selectedCount", { n: selectedIds.length })}
-        </p>
+        {selecting && (
+          <p role="status" className="text-label text-muted-foreground">
+            {t("notices.selectedCount", { n: selectedIds.length })}
+          </p>
+        )}
       </div>
 
       <QuerySection
@@ -158,8 +179,12 @@ function NoticesPage() {
                   unreadOf={(notice) => vm.isUnread(notice)}
                   onOpen={markIfUnread}
                   onNavigate={goToNotice}
-                  selectedOf={(notice) => selection.contains(notice.id)}
-                  onToggleSelection={toggleSelection}
+                  {...(selecting
+                    ? {
+                        selectedOf: (notice: Notice) => selection.contains(notice.id),
+                        onToggleSelection: toggleSelection,
+                      }
+                    : {})}
                 />
               </div>
             )}

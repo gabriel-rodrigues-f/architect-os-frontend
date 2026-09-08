@@ -25,7 +25,6 @@ import type {
   LearningPathItem,
   Level,
   MentoringSession,
-  ProficiencyUpdate,
   RoleName,
   TeamLevelRule,
 } from "./domain";
@@ -287,10 +286,7 @@ export interface Api extends AppState {
 
   resubmitEvidence: (id: string, patch: { description?: string; url?: string }) => Promise<void>;
 
-  addMentoringSession: (
-    m: MentoringSession,
-    proficiencyUpdates?: ProficiencyUpdate[],
-  ) => Promise<MentoringSession>;
+  addMentoringSession: (m: MentoringSession) => Promise<MentoringSession>;
 
   scheduleMentoringFollowUp: (id: string, nextSession: string | null) => Promise<MentoringSession>;
   updateLearningItemProgress: (
@@ -874,9 +870,9 @@ export function buildApi(
       );
     },
 
-    addMentoringSession: (m, proficiencyUpdates = []) =>
+    addMentoringSession: (m) =>
       runner.command(
-        () => api.createMentoringSession(m, proficiencyUpdates),
+        () => api.createMentoringSession(m),
         (created) => (s) => ({ ...s, mentoringSessions: [created, ...s.mentoringSessions] }),
       ),
 

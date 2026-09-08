@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   EmptyStateCallToAction,
   MenteeFilterCombobox,
+  MentoringFollowUp,
   MentoringTimeline,
   NewMentoringSessionDialog,
   OneOnOnePreparationNarration,
@@ -125,6 +126,12 @@ function MentoringScreen() {
             n: sessions.length,
             nome: mentee?.name ?? "",
           })}
+          /*
+            Dono (2026-09-08): o follow-up é UM só, no canto superior da caixa
+            — a evolução é contínua, e a próxima conversa não pende de cada
+            linha da história.
+          */
+          actions={<MentoringFollowUp sessions={sessions} />}
         >
           <MentoringTimeline sessions={sessions} />
         </SectionCard>

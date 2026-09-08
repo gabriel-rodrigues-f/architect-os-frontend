@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -17,9 +19,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useSearchParamString, useSuccessToast, useToastSubmit } from "@/hooks";
+import { api } from "@/lib/api";
+import { ApiError } from "@/lib/api-errors";
 import { useCurrentUser } from "@/lib/auth";
 
-import type { Professional, Level, MentoringSession, ProficiencyUpdate } from "@/lib/domain";
+import type { Competency, Professional, MentoringSession } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { PersonPicker } from "@/lib/person-selection";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -28,22 +32,8 @@ import { useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { MentoringViewModel } from "@/lib/view-models";
 
-const REQUIRED_FIELDS = [
-  "menteeId",
-  "date",
-  "durationMin",
-  "topic",
-  "notes",
-  "decisions",
-  "actions",
-] as const;
+const REQUIRED_FIELDS = ["menteeId", "date", "durationMin", "topic", "notes"] as const;
 type RequiredField = (typeof REQUIRED_FIELDS)[number];
-
-interface ProficiencyDraft {
-  competencyId: string;
-  observedLevel: Level | null;
-  note?: string | undefined;
-}
 
 /**
  * `onRegistered` recebe quem acabou de ganhar a sessão: sem isso a linha do
@@ -67,32 +57,10 @@ function useMentoringSessionForm(
     durationMin: "",
     topic: "",
     notes: "",
-    decisions: "",
-    actions: "",
     nextSession: "",
   });
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
-  const [proficiencyUpdates, setProficiencyUpdates] = useState<ProficiencyDraft[]>([]);
-  const toggleProficiencyUpdate = (competencyId: string) =>
-    setProficiencyUpdates((prev) =>
-      prev.some((u) => u.competencyId === competencyId)
-        ? prev.filter((u) => u.competencyId !== competencyId)
-        : [...prev, { competencyId, observedLevel: null }],
-    );
-  const setProficiencyLevel = (competencyId: string, observedLevel: number) => {
-    setProficiencyUpdates((prev) =>
-      prev.map((u) =>
-        u.competencyId === competencyId ? { ...u, observedLevel: observedLevel as Level } : u,
-      ),
-    );
-    setProficiencyMissingLevel(false);
-  };
-  const setProficiencyNote = (competencyId: string, note: string) =>
-    setProficiencyUpdates((prev) =>
-      prev.map((u) => (u.competencyId === competencyId ? { ...u, note: note || undefined } : u)),
-    );
 
-  const [proficiencyMissingLevel, setProficiencyMissingLevel] = useState(false);
   const toggleCompetency = (id: string) =>
     setCompetencyIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
@@ -102,6 +70,9 @@ function useMentoringSessionForm(
   const setField = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setMissing((prev) => prev.filter((f) => f !== field));
+    // As competências discutidas são as da RÉGUA DA PESSOA (item 8): trocar de
+    // mentorado troca a lista, e o que ficou marcado era da régua da anterior.
+    if (field === "menteeId") setCompetencyIds([]);
   };
 
   const isMissing = (field: RequiredField) => missing.includes(field);
@@ -116,26 +87,24 @@ function useMentoringSessionForm(
   const { submitting: saving, run } = useToastSubmit();
   const notifySuccess = useSuccessToast();
 
+  const close = () => {
+    setMissing([]);
+    setShowToast(false);
+    setOpen(false);
+  };
+
   const submit = async () => {
     const vazios = REQUIRED_FIELDS.filter((f) => !form[f].trim());
-    const proficiencyIncomplete = proficiencyUpdates.some((u) => u.observedLevel === null);
-    if (vazios.length > 0 || durationInvalid || proficiencyIncomplete) {
+    if (vazios.length > 0 || durationInvalid) {
       setMissing(
         durationInvalid && !vazios.includes("durationMin") ? [...vazios, "durationMin"] : vazios,
       );
-      setProficiencyMissingLevel(proficiencyIncomplete);
       setShowToast(true);
       return;
     }
 
-    const confirmedUpdates: ProficiencyUpdate[] = proficiencyUpdates.map((u) => ({
-      competencyId: u.competencyId,
-      observedLevel: u.observedLevel as Level,
-      ...(u.note ? { note: u.note } : {}),
-    }));
-
     const result = await run(() =>
-      viewModel.createSession(user.name, form, durationValue, competencyIds, confirmedUpdates),
+      viewModel.createSession(user.name, form, durationValue, competencyIds),
     );
     if (!result.ok) return;
     notifySuccess(
@@ -148,16 +117,10 @@ function useMentoringSessionForm(
       durationMin: "",
       topic: "",
       notes: "",
-      decisions: "",
-      actions: "",
       nextSession: "",
     });
     setCompetencyIds([]);
-    setProficiencyUpdates([]);
-    setProficiencyMissingLevel(false);
-    setMissing([]);
-    setShowToast(false);
-    setOpen(false);
+    close();
     onRegistered?.(form.menteeId);
   };
 
@@ -175,11 +138,7 @@ function useMentoringSessionForm(
     durationInvalid,
     competencyIds,
     toggleCompetency,
-    proficiencyUpdates,
-    toggleProficiencyUpdate,
-    setProficiencyLevel,
-    setProficiencyNote,
-    proficiencyMissingLevel,
+    close,
     submit,
   };
 }
@@ -187,6 +146,7 @@ function useMentoringSessionForm(
 export function useMentoringTimeline() {
   const store = useStore();
   const user = useCurrentUser();
+  const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
   const orderedProfessionals = [...store.professionals].sort(defaultNameFormatter.byName);
   // O profissional não escolhe pessoa (dono, 2026-09-06): a linha do tempo é a dele.
   const defaultMenteeId = defaultUiAuthorizationPolicy.picksPeople(user)
@@ -200,9 +160,9 @@ export function useMentoringTimeline() {
    */
   const [filter, setFilter] = useSearchParamString("menteeId", () => defaultMenteeId);
 
-  const sessions = [...store.mentoringSessions]
-    .filter((s) => s.menteeId === filter)
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  const sessions = viewModel.newestFirst(
+    store.mentoringSessions.filter((s) => s.menteeId === filter),
+  );
 
   return { filter, setFilter, sessions };
 }
@@ -228,14 +188,36 @@ export function MenteeFilterCombobox({
   );
 }
 
-function FollowUpScheduler({ session }: { session: MentoringSession }) {
+/**
+ * O FOLLOW-UP DA PESSOA, um só, no canto superior da caixa da Linha do Tempo
+ * (dono, 2026-09-08, item 2): *"o follow-up não deve aparecer em cada linha,
+ * porque a evolução é contínua"*. Ele pende da sessão mais recente — a que
+ * marca a próxima conversa —, e quem não agenda apenas lê a data marcada.
+ */
+export function MentoringFollowUp({ sessions }: { sessions: readonly MentoringSession[] }) {
   const { t, locale } = useI18n();
   const notifySuccess = useSuccessToast();
   const store = useStore();
+  const user = useCurrentUser();
   const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
+  const session = viewModel.followUpSessionOf(sessions);
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(session.nextSession ?? "");
+  const [value, setValue] = useState("");
   const { submitting: saving, run } = useToastSubmit(t("mentor.followUp.error"));
+
+  if (!session) return null;
+
+  const scheduled = session.nextSession
+    ? t("mentor.followUp.scheduled", {
+        data: defaultDateFormatter.formatDate(session.nextSession, locale) ?? "",
+      })
+    : t("mentor.followUp.none");
+
+  if (!defaultUiAuthorizationPolicy.schedulesMentoringFollowUpOf(user, session)) {
+    return session.nextSession ? (
+      <p className="text-xs text-muted-foreground">{scheduled}</p>
+    ) : null;
+  }
 
   const save = () => {
     void run(() => viewModel.scheduleFollowUp(session.id, value || null)).then((result) => {
@@ -247,19 +229,16 @@ function FollowUpScheduler({ session }: { session: MentoringSession }) {
 
   if (!editing) {
     return (
-      <div className="mt-2 flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground">
-          {session.nextSession
-            ? t("mentor.followUp.scheduled", {
-                data: defaultDateFormatter.formatDate(session.nextSession, locale) ?? "",
-              })
-            : t("mentor.followUp.none")}
-        </span>
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-muted-foreground">{scheduled}</span>
         <Button
           variant="ghost"
           size="sm"
           className="h-6 px-1.5 text-xs"
-          onClick={() => setEditing(true)}
+          onClick={() => {
+            setValue(session.nextSession ?? "");
+            setEditing(true);
+          }}
         >
           {t("mentor.followUp.action")}
         </Button>
@@ -268,7 +247,7 @@ function FollowUpScheduler({ session }: { session: MentoringSession }) {
   }
 
   return (
-    <div className="mt-2 flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <Input
         type="date"
         className="h-8 w-40 text-xs"
@@ -292,7 +271,7 @@ function Block({ title, text }: { title: string; text: string }) {
       <SectionHeading as="p" muted>
         {title}
       </SectionHeading>
-      <p className="mt-1 text-sm">{text || "—"}</p>
+      <p className="mt-1 text-sm">{text}</p>
     </div>
   );
 }
@@ -308,12 +287,13 @@ function MentoringTimelineItem({
   const notifySuccess = useSuccessToast();
   const store = useStore();
   const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
-  const user = useCurrentUser();
   const { submitting: sending, run } = useToastSubmit(t("mentor.toPdi.error"));
 
   const plan = selectors.planFor(session.menteeId);
   const gaps = selectors.progressionGapsFor(session.menteeId);
   const eligible = viewModel.eligibleGapForPlan(session, gaps, plan);
+  const decisions = session.decisions?.trim() ?? "";
+  const actions = session.actions?.trim() ?? "";
 
   return (
     <li className="relative">
@@ -324,16 +304,21 @@ function MentoringTimelineItem({
           <p className="text-sm font-medium">{session.topic}</p>
           <p className="text-xs text-muted-foreground">
             {selectors.professionalById(session.menteeId)?.name} · mentor {session.mentor} ·{" "}
-            {defaultDateFormatter.formatDate(session.date, locale)} · {session.durationMin} min
+            {defaultDateFormatter.formatDayAndTime(session.date, locale)} · {session.durationMin}{" "}
+            min
           </p>
         </div>
       </div>
+      {/*
+        Tema e Notas são o registro de hoje (dono, 2026-09-08, item 4); os dois
+        blocos que saíram do formulário só aparecem na sessão que já os tem.
+      */}
       <div className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
-        <Block title={t("mentor.block.notes")} text={session.notes} />
-        <Block title={t("mentor.block.decisions")} text={session.decisions} />
-        <Block title={t("mentor.block.actions")} text={session.actions} />
+        <Block title={t("mentor.block.notes")} text={session.notes || "—"} />
+        {decisions && <Block title={t("mentor.block.decisions")} text={decisions} />}
+        {actions && <Block title={t("mentor.block.actions")} text={actions} />}
       </div>
-      {session.actions.trim() && eligible?.competency && (
+      {actions && eligible?.competency && (
         <Button
           variant="secondary"
           size="sm"
@@ -372,17 +357,6 @@ function MentoringTimelineItem({
           ))}
         </div>
       )}
-      {defaultUiAuthorizationPolicy.schedulesMentoringFollowUpOf(user, session) && (
-        <FollowUpScheduler session={session} />
-      )}
-      {session.nextSession &&
-        !defaultUiAuthorizationPolicy.schedulesMentoringFollowUpOf(user, session) && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {t("mentor.followUp.scheduled", {
-              data: defaultDateFormatter.formatDate(session.nextSession, locale) ?? "",
-            })}
-          </p>
-        )}
     </li>
   );
 }
@@ -404,6 +378,59 @@ export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }
   );
 }
 
+/**
+ * As competências que a régua do TIME da pessoa cobra (dono, 2026-09-08,
+ * item 8): a lista de "Competências discutidas" era o catálogo inteiro, e
+ * oferecia a quem mentora competências que o time da pessoa nem exige.
+ *
+ * A régua é por time × nível de carreira, e é do serviço. Sem time, sem nível
+ * ou sem régua definida ali (404), não há recorte nenhum a aplicar e o
+ * catálogo ativo continua sendo a lista — restringir para o vazio esconderia
+ * a competência sem nenhuma régua a justificar a ausência.
+ */
+function useTeamRuleCompetencies(mentee: Professional | undefined): Competency[] {
+  const store = useStore();
+  const teamId = mentee?.teamId ?? "";
+  const careerLevelId = mentee?.careerLevelId ?? "";
+  const rule = useQuery({
+    queryKey: ["team-rule", teamId, careerLevelId],
+    queryFn: () =>
+      api.teamRule(teamId, careerLevelId).catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }),
+    enabled: teamId !== "" && careerLevelId !== "",
+    retry: false,
+  });
+
+  const active = store.competencies.filter((c) => c.active);
+  const inRule = rule.data?.competencies;
+  if (!inRule) return active;
+  const ids = new Set(inRule.map((entry) => entry.competencyId));
+  return active.filter((c) => ids.has(c.id));
+}
+
+/**
+ * O nome da competência por inteiro no ponteiro E no teclado (dono,
+ * 2026-09-08, item 6): a lista corta o nome longo para não estourar a
+ * largura do diálogo, e o `Tooltip` da casa devolve o texto completo. O
+ * gatilho é focalizável de propósito — `title=` nativo não abre com Tab.
+ */
+function CompetencyName({ name }: { name: string }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={0} className="min-w-0 flex-1 truncate">
+            {name}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top">{name}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export function NewMentoringSessionDialog({
   menteeOptions,
   onRegistered,
@@ -412,19 +439,13 @@ export function NewMentoringSessionDialog({
   onRegistered?: (menteeId: string) => void;
 }) {
   const { t } = useI18n();
-  const store = useStore();
-  const user = useCurrentUser();
   const sel = useSelectors();
   const sessionForm = useMentoringSessionForm(menteeOptions, onRegistered);
 
   const [competencyFilter, setCompetencyFilter] = useState("");
-  const [proficiencyFilter, setProficiencyFilter] = useState("");
-  const activeCompetencies = store.competencies.filter((c) => c.active);
-  const discussedList = activeCompetencies.filter((c) =>
+  const ruleCompetencies = useTeamRuleCompetencies(sel.professionalById(sessionForm.form.menteeId));
+  const discussedList = ruleCompetencies.filter((c) =>
     defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
-  );
-  const proficiencyList = activeCompetencies.filter((c) =>
-    defaultNameFormatter.matchesSearch(c.name, proficiencyFilter.trim().toLowerCase()),
   );
 
   return (
@@ -517,30 +538,6 @@ export function NewMentoringSessionDialog({
               onChange={(e) => sessionForm.setField("notes", e.target.value)}
             />
           </div>
-          <div>
-            <FieldLabel htmlFor="decisions" hint={t("mentor.form.decisionsHint")}>
-              {t("mentor.form.decisions")}
-            </FieldLabel>
-            <Textarea
-              id="decisions"
-              aria-invalid={sessionForm.isMissing("decisions")}
-              className={sessionForm.invalid("decisions")}
-              value={sessionForm.form.decisions}
-              onChange={(e) => sessionForm.setField("decisions", e.target.value)}
-            />
-          </div>
-          <div>
-            <FieldLabel htmlFor="actions" hint={t("mentor.form.actionsHint")}>
-              {t("mentor.form.actions")}
-            </FieldLabel>
-            <Textarea
-              id="actions"
-              aria-invalid={sessionForm.isMissing("actions")}
-              className={sessionForm.invalid("actions")}
-              value={sessionForm.form.actions}
-              onChange={(e) => sessionForm.setField("actions", e.target.value)}
-            />
-          </div>
           <div className="min-w-0">
             <FieldLabel
               labelId="mentor-competencies-label"
@@ -548,7 +545,7 @@ export function NewMentoringSessionDialog({
             >
               {t("mentor.form.competencies")}
             </FieldLabel>
-            {activeCompetencies.length > 20 && (
+            {ruleCompetencies.length > 20 && (
               <Input
                 aria-label={t("common.searchCompetency")}
                 placeholder={t("common.searchCompetency")}
@@ -570,7 +567,7 @@ export function NewMentoringSessionDialog({
                     checked={sessionForm.competencyIds.includes(c.id)}
                     onChange={() => sessionForm.toggleCompetency(c.id)}
                   />
-                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                  <CompetencyName name={c.name} />
                 </label>
               ))}
               {discussedList.length === 0 && (
@@ -578,97 +575,6 @@ export function NewMentoringSessionDialog({
               )}
             </div>
           </div>
-          {defaultUiAuthorizationPolicy.isAssignedTechLeadOf(
-            user,
-            sel.professionalById(sessionForm.form.menteeId),
-          ) && (
-            <div className="min-w-0">
-              <FieldLabel
-                labelId="mentor-proficiency-label"
-                hint={t("mentor.form.proficiencyHint")}
-              >
-                {t("mentor.form.proficiency")}
-              </FieldLabel>
-              {activeCompetencies.length > 20 && (
-                <Input
-                  aria-label={t("common.searchCompetency")}
-                  placeholder={t("common.searchCompetency")}
-                  value={proficiencyFilter}
-                  onChange={(e) => setProficiencyFilter(e.target.value)}
-                  className="mt-1"
-                />
-              )}
-              <div
-                id="mentor-proficiency"
-                role="group"
-                aria-labelledby="mentor-proficiency-label"
-                className="mt-1 max-h-48 overflow-y-auto overflow-x-hidden surface-inset p-2"
-              >
-                {proficiencyList.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
-                )}
-                {proficiencyList.map((c) => {
-                  const update = sessionForm.proficiencyUpdates.find(
-                    (u) => u.competencyId === c.id,
-                  );
-                  return (
-                    <div key={c.id} className="py-1">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={!!update}
-                          onChange={() => sessionForm.toggleProficiencyUpdate(c.id)}
-                        />
-                        <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                      </label>
-                      {update && (
-                        <div className="ml-6 mt-1">
-                          <div className="flex items-center gap-2">
-                            <select
-                              className={`rounded-md border bg-card px-2 py-1 text-xs ${
-                                sessionForm.proficiencyMissingLevel && update.observedLevel === null
-                                  ? "border-destructive ring-1 ring-destructive"
-                                  : "border-input"
-                              }`}
-                              value={update.observedLevel ?? ""}
-                              aria-invalid={
-                                sessionForm.proficiencyMissingLevel && update.observedLevel === null
-                              }
-                              onChange={(e) =>
-                                sessionForm.setProficiencyLevel(c.id, Number(e.target.value))
-                              }
-                              aria-label={t("mentor.form.proficiencyLevel", { nome: c.name })}
-                            >
-                              <option value="" disabled>
-                                {t("mentor.form.proficiencySelectLevel")}
-                              </option>
-                              {[1, 2, 3, 4, 5].map((level) => (
-                                <option key={level} value={level}>
-                                  L{level}
-                                </option>
-                              ))}
-                            </select>
-                            <input
-                              type="text"
-                              placeholder={t("mentor.form.proficiencyNote")}
-                              className="flex-1 rounded-md border border-input bg-card px-2 py-1 text-xs"
-                              value={update.note ?? ""}
-                              onChange={(e) => sessionForm.setProficiencyNote(c.id, e.target.value)}
-                            />
-                          </div>
-                          {sessionForm.proficiencyMissingLevel && update.observedLevel === null && (
-                            <p className="mt-1 text-xs text-destructive">
-                              {t("mentor.form.proficiencyLevelRequired")}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
         {sessionForm.showToast && (
           <div
@@ -688,6 +594,9 @@ export function NewMentoringSessionDialog({
           </div>
         )}
         <DialogFooter>
+          <Button variant="outline" onClick={sessionForm.close}>
+            {t("common.cancel")}
+          </Button>
           <Button disabled={sessionForm.saving} onClick={() => void sessionForm.submit()}>
             {sessionForm.saving ? t("mentor.followUp.saving") : t("mentor.form.save")}
           </Button>

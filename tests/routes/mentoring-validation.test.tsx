@@ -89,8 +89,8 @@ describe("Mentoria — campos obrigatórios", () => {
 
     expect(await screen.findByText(AVISO)).toBeTruthy();
 
-    // Tema, Notas, Decisões, Ações e Duração nascem vazios e ficam marcados
-    for (const campo of ["Tema", "Notas", "Decisões", "Ações", "Duração (min)"]) {
+    // Tema, Notas e Duração nascem vazios e ficam marcados
+    for (const campo of ["Tema", "Notas", "Duração (min)"]) {
       expect(screen.getByLabelText(campo).getAttribute("aria-invalid")).toBe("true");
     }
     // Mentorado e Data têm valor padrão, então não são apontados
@@ -128,8 +128,6 @@ describe("Mentoria — campos obrigatórios", () => {
 
     await userEvent.type(screen.getByLabelText("Tema"), "Revisão de arquitetura");
     await userEvent.type(screen.getByLabelText("Notas"), "Discutimos o trade-off");
-    await userEvent.type(screen.getByLabelText("Decisões"), "Seguir com event-driven");
-    await userEvent.type(screen.getByLabelText("Ações"), "Escrever o ADR");
     await userEvent.type(screen.getByLabelText("Duração (min)"), "45");
 
     await userEvent.click(screen.getByRole("button", { name: "Salvar sessão" }));
@@ -154,14 +152,15 @@ describe("Mentoria — ajuda dos campos", () => {
   });
 
   /**
-   * Cada um dos quatro campos que a pessoa pediu explicação — Tema, Notas,
-   * Decisões, Ações — precisa ter seu próprio botão de ajuda, e não um só
-   * genérico. Mentorado e Data ficam de fora: não foram pedidos.
+   * Cada campo que a pessoa pediu explicação precisa ter seu próprio botão de
+   * ajuda, e não um só genérico. Mentorado e Data ficam de fora: não foram
+   * pedidos. "Decisões" e "Ações" saíram do formulário (dono, 2026-09-08,
+   * item 4) e levaram a ajuda delas junto.
    */
-  it("Tema, Notas, Decisões e Ações têm botão de ajuda; Mentorado e Data não", async () => {
+  it("Tema e Notas têm botão de ajuda; Mentorado e Data não", async () => {
     await abrirFormulario();
 
-    for (const campo of ["Tema", "Notas", "Decisões", "Ações"]) {
+    for (const campo of ["Tema", "Notas"]) {
       expect(screen.getByRole("button", { name: `O que é o campo ${campo}` })).toBeTruthy();
     }
     expect(screen.queryByRole("button", { name: /O que é o campo Mentorado/ })).toBeNull();

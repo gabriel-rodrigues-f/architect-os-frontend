@@ -15,6 +15,12 @@ import { apiPath } from "@/lib/api-path";
  * aconteceu. Só quem registrou a sessão (`mentorUserId`) vê a ação — quem
  * está só de passagem pela tela não mexe no compromisso de outra pessoa.
  * Ver AUDITORIA-QUARTA-REVISAO-ESTADO-ATUAL-SYNAPSE.md.
+ *
+ * Dono (2026-09-08, item 2): *"o follow-up não deve aparecer em cada linha,
+ * porque a evolução é contínua. Precisa aparecer no canto superior da caixa
+ * de Linha do Tempo"*. É UM ponto só, no cabeçalho do cartão, e pende da
+ * sessão mais recente da pessoa — as linhas não têm mais nem a ação nem o
+ * "sem follow-up agendado".
  */
 
 const fetchMock = vi.fn();
@@ -163,5 +169,91 @@ describe("Mentoria — agendar follow-up", () => {
     // foi mentorado aparece sem escolher ninguém.
     await screen.findByText("Sessão para follow-up");
     expect(screen.queryByRole("button", { name: "Registrar sessão" })).toBeNull();
+  });
+});
+
+describe("Mentoria — o follow-up é um só, no topo da Linha do Tempo (dono, 2026-09-08)", () => {
+  const maisAntiga: MentoringSession = { ...sessao, id: "m-antiga", date: "2026-07-01" };
+  const maisNova: MentoringSession = {
+    ...sessao,
+    id: "m-nova",
+    date: "2026-08-15",
+    topic: "Sessão mais nova",
+    nextSession: "2026-09-20",
+  };
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const montaCom = (sessoes: MentoringSession[], user = mentor) => {
+    mockAppFetch(fetchMock, {
+      user,
+      state: { ...fixtureState, mentoringSessions: sessoes },
+      routes: [
+        (href, init) =>
+          init?.method === "PATCH" && href.includes(apiPath("/mentoring-sessions/"))
+            ? jsonResponse({ ...maisNova, nextSession: "2026-09-01" })
+            : undefined,
+      ],
+    });
+    renderWithApp(<MentoringPage />);
+  };
+
+  it("com três sessões, há UMA ação de follow-up — e ela está no cabeçalho do cartão, fora das linhas", async () => {
+    montaCom([maisAntiga, sessao, maisNova]);
+    await selectMentee("Bruno Almeida");
+    await screen.findByText("Sessão mais nova");
+
+    const acoes = screen.getAllByRole("button", { name: "Agendar follow-up" });
+    expect(acoes).toHaveLength(1);
+    expect(acoes[0]!.closest("li")).toBeNull();
+    expect(acoes[0]!.closest("section")?.getAttribute("aria-labelledby")).toBeTruthy();
+  });
+
+  it("nenhuma linha diz mais 'Sem follow-up agendado'", async () => {
+    montaCom([maisAntiga, sessao]);
+    await selectMentee("Bruno Almeida");
+    await screen.findAllByText("Sessão para follow-up");
+
+    for (const linha of screen.getAllByRole("listitem")) {
+      expect(linha.textContent ?? "").not.toContain("Sem follow-up agendado");
+      expect(linha.textContent ?? "").not.toContain("Agendar follow-up");
+      expect(linha.textContent ?? "").not.toContain("Próxima sessão:");
+    }
+  });
+
+  it("o ponto de follow-up é o da sessão mais recente: agendar escreve no id dela", async () => {
+    montaCom([maisAntiga, sessao, maisNova]);
+    await selectMentee("Bruno Almeida");
+    await screen.findByText("Sessão mais nova");
+
+    await userEvent.click(screen.getByRole("button", { name: "Agendar follow-up" }));
+    await userEvent.type(screen.getByLabelText("Agendar follow-up"), "2026-09-01");
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) =>
+            String(url).endsWith(apiPath(`/mentoring-sessions/${maisNova.id}`)) &&
+            (init as RequestInit)?.method === "PATCH",
+        ),
+      ).toBe(true),
+    );
+  });
+
+  it("quem não agenda apenas lê a próxima conversa marcada, no mesmo canto", async () => {
+    montaCom([maisNova], outsider);
+    await screen.findByText("Sessão mais nova");
+
+    expect(screen.getByText("Próxima sessão: 20/09/2026")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Agendar follow-up" })).toBeNull();
   });
 });
