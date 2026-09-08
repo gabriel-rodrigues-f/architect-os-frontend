@@ -1,4 +1,4 @@
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -50,6 +50,12 @@ import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
  * `TeamChoiceField`, que perguntam ao `Registration` a frase, o destino e o
  * alcance. Por isso esta suíte prova o COMPONENTE — as onze telas que o dono
  * listou herdam o comportamento sem repetir uma linha.
+ *
+ * RECUSA DO DONO no mesmo dia, sobre o desenho que a primeira volta deu:
+ * *"não podemos, do ponto de vista de UX, ter um hiperlink abaixo de um botão
+ * assim. O texto deve aparecer quando o usuário clicar no botão do filtro."*
+ * O convite deixou de ser irmão do gatilho e passou a morar DENTRO do painel
+ * que o gatilho abre — e o gatilho voltou a ser botão, não âncora.
  */
 const fetchMock = vi.fn();
 
@@ -70,7 +76,7 @@ beforeEach(() => {
 });
 
 describe("o filtro de pessoa sem ninguém cadastrado", () => {
-  it("diz a frase do dono e o próprio gatilho leva ao cadastro, já aberto", async () => {
+  it("diz a frase do dono e, no clique, abre o painel com o convite de cadastro", async () => {
     montar(fixtureAssignedManagerUser);
 
     renderWithApp(
@@ -82,13 +88,21 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
     );
 
     // O campo continua se chamando "Profissionais" para quem usa leitor de tela —
-    // o que muda é que ele deixou de ser um botão morto e virou uma porta.
-    const gatilho = await screen.findByRole("link", { name: "Profissionais" });
+    // o que muda é que ele deixou de ser um botão morto e passou a abrir painel.
+    const gatilho = await screen.findByRole("button", { name: "Profissionais" });
     expect(gatilho.textContent).toContain("Nenhum profissional cadastrado — clique para cadastrar");
-    expect(gatilho.getAttribute("href")).toBe("/users?cadastrar=profissional");
+    expect(screen.queryByRole("link")).toBeNull();
+
+    await userEvent.click(gatilho);
+
+    const painel = await screen.findByRole("dialog");
+    const convite = within(painel).getByRole("link", {
+      name: "Cadastrar primeiro profissional",
+    });
+    expect(convite.getAttribute("href")).toBe("/users?cadastrar=profissional");
   });
 
-  it("oferece também o hiperlink nomeado, para quem não clica no campo", async () => {
+  it("não desenha NADA abaixo do gatilho — a recusa do dono, virada asserção", async () => {
     montar(fixtureAssignedManagerUser);
 
     renderWithApp(
@@ -99,8 +113,14 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
       />,
     );
 
-    const link = await screen.findByRole("link", { name: "Cadastrar primeiro profissional" });
-    expect(link.getAttribute("href")).toBe("/users?cadastrar=profissional");
+    const gatilho = await screen.findByRole("button", { name: "Profissionais" });
+    expect(gatilho.nextElementSibling).toBeNull();
+
+    await userEvent.click(gatilho);
+
+    await screen.findByRole("dialog");
+    expect(gatilho.nextElementSibling).toBeNull();
+    expect(gatilho.parentElement?.querySelector("a")).toBeNull();
   });
 
   it("para quem NÃO cadastra gente, o campo continua obscurecido e sem porta", async () => {
@@ -118,6 +138,7 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
     expect(campo.textContent).toContain("Nenhum profissional cadastrado");
     expect(campo.hasAttribute("disabled")).toBe(true);
     await userEvent.click(campo);
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByRole("link")).toBeNull();
   });
 });
@@ -144,12 +165,15 @@ describe("o campo de time do diálogo de cadastro, sem nenhum time", () => {
     expect(screen.queryByText("Escolha o time")).toBeNull();
   });
 
-  it("o hiperlink abre o FORMULÁRIO de cadastro de times, não só a tela", async () => {
+  it("o convite, dentro do painel, abre o FORMULÁRIO de cadastro de times, não só a tela", async () => {
     montar(fixtureAssignedManagerUser);
 
     renderWithApp(campo(TeamChoice.for(fixtureAssignedManagerUser, [])));
 
-    const link = await screen.findByRole("link", { name: "Cadastrar primeiro time" });
+    await userEvent.click(await screen.findByRole("button", { name: "Time" }));
+
+    const painel = await screen.findByRole("dialog");
+    const link = within(painel).getByRole("link", { name: "Cadastrar primeiro time" });
     expect(link.getAttribute("href")).toBe("/teams?cadastrar=time");
   });
 

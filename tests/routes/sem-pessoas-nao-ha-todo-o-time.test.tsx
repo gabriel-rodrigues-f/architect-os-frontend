@@ -1,4 +1,4 @@
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -120,9 +120,9 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     renderWithApp(<ProgressionPage />);
 
     expect(await screen.findByText(mensagemDoCorpo)).toBeTruthy();
-    // Nenhuma lista para abrir: o campo virou porta, não combobox.
+    // Nenhuma lista de pessoas para abrir: o que o campo abre é o convite.
     expect(screen.queryByRole("combobox", { name: "Profissionais" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Profissionais" }).textContent).toContain(
+    expect(screen.getByRole("button", { name: "Profissionais" }).textContent).toContain(
       mensagemDoCampo,
     );
     expect(screen.queryByText(/Todo o time/)).toBeNull();
@@ -151,25 +151,32 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });
 
-  it("Avaliações (uma pessoa): a mesma frase, e o campo leva ao cadastro", async () => {
+  it("Avaliações (uma pessoa): a mesma frase, e o campo abre o convite ao cadastro", async () => {
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<AssessmentsPage />);
 
-    const seletor = await screen.findByRole("link", { name: "Profissional" });
+    const seletor = await screen.findByRole("button", { name: "Profissional" });
     expect(seletor.textContent).toContain(mensagemDoCampo);
 
     await userEvent.click(seletor);
+    // Não há lista de pessoas: o painel traz a frase e o caminho do cadastro.
     expect(screen.queryByRole("listbox")).toBeNull();
+    expect(
+      within(await screen.findByRole("dialog")).getByRole("link", {
+        name: "Cadastrar primeiro profissional",
+      }),
+    ).toBeTruthy();
   });
 
   it("Calibração (uma pessoa): usa a mesma combobox das outras telas, com a mesma mensagem", async () => {
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<CalibrationPage />);
 
-    const seletor = await screen.findByRole("link", {
+    const seletor = await screen.findByRole("button", {
       name: /Profissional para a leitura de apoio/,
     });
     expect(seletor.textContent).toContain(mensagemDoCampo);
+    expect(seletor.nextElementSibling).toBeNull();
     expect(document.querySelector("select#calibration-assistance-professional")).toBeNull();
   });
 });

@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 
 import { FilterField } from "@/components/app/FilterField";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOptionalUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import type { Registration, RegistrationSearch } from "@/lib/registration";
@@ -53,22 +55,30 @@ export function useSelectionEmptyState(registration: Registration): SelectionEmp
 }
 
 /**
- * O HIPERLINK DE CADASTRO — o mesmo em toda parte: no seletor vazio, e na
- * lista de pessoas de um diálogo que ainda não tem ninguém para listar
- * (regra de reuso: dois lugares, um componente).
+ * O HIPERLINK DE CADASTRO — o mesmo em toda parte: DENTRO do painel do
+ * seletor vazio, e no corpo de um diálogo cuja lista de pessoas ainda não tem
+ * ninguém para listar (regra de reuso: dois lugares, um componente).
+ *
+ * Onde ele NÃO pode aparecer é solto abaixo de um campo — recusa do dono
+ * (2026-09-08): *"não podemos, do ponto de vista de UX, ter um hiperlink
+ * abaixo de um botão assim"*.
  */
 export function RegistrationLink({
   registration,
   className,
+  onNavigate,
 }: {
   registration: NonNullable<SelectionEmptyState["registration"]>;
   className?: string | undefined;
+  /** Quem abriu um painel para mostrar este convite o fecha ao navegar. */
+  onNavigate?: (() => void) | undefined;
 }) {
   return (
     <Link
       to={registration.to}
       {...(registration.search ? { search: registration.search } : {})}
       className={className}
+      {...(onNavigate ? { onClick: onNavigate } : {})}
     >
       {registration.label}
     </Link>
@@ -88,8 +98,16 @@ export function RegistrationLink({
  * Dono (2026-09-08), sobre o gatilho: *"o filtro hoje obscurecido
  * (desabilitado) passa a poder ser aberto"*. Então ele só fica desabilitado
  * para quem NÃO alcança o cadastro — não há lista a abrir nem porta a
- * oferecer. Para quem alcança, o próprio gatilho é a porta: um link com a
- * frase que convida ("… — clique para cadastrar").
+ * oferecer.
+ *
+ * Para quem alcança, o gatilho ABRE UM PAINEL, como qualquer seletor cheio:
+ * mesmo `Popover`, mesma largura, mesmo alinhamento. Dentro dele, a frase e o
+ * convite de cadastro, desenhado como um item de lista. A primeira volta
+ * desta fatia pendurou o convite ABAIXO do campo e o dono recusou, literal:
+ * *"não podemos, do ponto de vista de UX, ter um hiperlink abaixo de um botão
+ * assim. O texto deve aparecer quando o usuário clicar no botão do filtro.
+ * Isso vale para todos."* Por isso NADA é renderizado fora do gatilho e do
+ * painel — e o gatilho é botão, nunca âncora: gatilho é gatilho.
  */
 export function EmptySelectionField({
   id,
@@ -110,49 +128,54 @@ export function EmptySelectionField({
   icon?: typeof ChevronDown | undefined;
 }) {
   const { t } = useI18n();
+  const [open, setOpen] = useState(false);
   const message = empty?.message ?? t("selector.empty");
   const registration = empty?.registration;
   const Icone = icon ?? ChevronDown;
   /*
-   * O `<label for>` do `FilterField` nomeia BOTÃO, não âncora: um `<a>` não é
-   * elemento rotulável. Então, quando o gatilho vira porta, o nome do campo
-   * viaja no `aria-label` — o campo continua se chamando "Ciclo" para quem
-   * usa leitor de tela, e a frase continua sendo o conteúdo dele.
+   * O gatilho é `<button>`, então o `<label for>` do `FilterField` já o nomeia
+   * — o campo continua se chamando "Ciclo" para quem usa leitor de tela. Sem
+   * rótulo visível, o nome viaja no `aria-label`, como no seletor cheio.
    */
   const nomeDoCampo = label ?? ariaLabel;
 
+  const gatilho = (
+    <FilterTriggerButton
+      id={id}
+      disabled={registration === undefined}
+      aria-haspopup={registration ? "dialog" : undefined}
+      aria-label={label ? undefined : ariaLabel}
+      aria-describedby={describedBy}
+      title={message}
+      className={triggerClassName}
+    >
+      <span className="min-w-0 flex-1 truncate text-left">{message}</span>
+      <Icone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+    </FilterTriggerButton>
+  );
+
+  // Quem não alcança o cadastro não tem painel: nem lista, nem porta. Só a
+  // frase, no campo obscurecido — como sempre foi.
+  if (!registration)
+    return (
+      <FilterField label={label} htmlFor={id}>
+        {gatilho}
+      </FilterField>
+    );
+
   return (
     <FilterField label={label} htmlFor={id}>
-      <FilterTriggerButton
-        id={id}
-        asChild={registration !== undefined}
-        disabled={registration === undefined}
-        aria-label={registration ? nomeDoCampo : label ? undefined : ariaLabel}
-        aria-describedby={describedBy}
-        title={message}
-        className={triggerClassName}
-      >
-        {registration ? (
-          <Link
-            to={registration.to}
-            {...(registration.search ? { search: registration.search } : {})}
-          >
-            <span className="min-w-0 flex-1 truncate text-left">{message}</span>
-            <Icone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          </Link>
-        ) : (
-          <>
-            <span className="min-w-0 flex-1 truncate text-left">{message}</span>
-            <Icone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          </>
-        )}
-      </FilterTriggerButton>
-      {registration ? (
-        <RegistrationLink
-          registration={registration}
-          className="mt-1 inline-block text-meta text-primary underline underline-offset-2"
-        />
-      ) : null}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>{gatilho}</PopoverTrigger>
+        <PopoverContent aria-label={nomeDoCampo} align="start" className="w-56 p-1">
+          <p className="px-2 py-1.5 text-body text-muted-foreground">{message}</p>
+          <RegistrationLink
+            registration={registration}
+            onNavigate={() => setOpen(false)}
+            className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-body font-medium text-primary hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
+          />
+        </PopoverContent>
+      </Popover>
     </FilterField>
   );
 }

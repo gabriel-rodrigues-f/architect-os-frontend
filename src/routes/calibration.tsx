@@ -15,7 +15,9 @@ import {
   WorkAssistanceSection,
 } from "@/components/app";
 import { Label } from "@/components/ui/label";
+import { useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { calibrationApi, workAssistantsApi } from "@/lib/api";
+import { Registration } from "@/lib/registration";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import { useI18n } from "@/lib/i18n";
@@ -93,6 +95,9 @@ function CalibrationBoard() {
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const [assistedProfessionalId, setAssistedProfessionalId] = useState<string | null>(null);
   const cycleId = selectedCycleId ?? store.activeCycleId ?? store.cycles[0]?.id ?? null;
+  // O convite de cadastro pergunta o ALCANCE ao `Registration` — declarar o
+  // destino à mão aqui oferecia a porta a quem não a alcança.
+  const cicloVazio = useSelectionEmptyState(Registration.CYCLE);
 
   const query = useQuery({
     queryKey: ["calibration", cycleId],
@@ -119,10 +124,7 @@ function CalibrationBoard() {
               value={cycleId}
               onChange={setSelectedCycleId}
               options={store.cycles.map((cycle) => ({ value: cycle.id, label: cycle.name }))}
-              empty={{
-                message: t("cycles.selector.empty"),
-                registration: { label: t("cycles.selector.register"), to: "/cycles" },
-              }}
+              empty={cicloVazio}
             />
           </div>
 

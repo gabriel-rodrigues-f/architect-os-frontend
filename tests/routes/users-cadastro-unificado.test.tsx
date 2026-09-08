@@ -270,9 +270,13 @@ describe("o time entra no cadastro", () => {
 
     expect(dialogo.queryByText("Escolha o time")).toBeNull();
     expect(dialogo.getByText("Nenhum time cadastrado — clique para cadastrar")).toBeTruthy();
-    expect(
-      dialogo.getByRole("link", { name: "Cadastrar primeiro time" }).getAttribute("href"),
-    ).toBe("/teams?cadastrar=time");
+    // O convite não fica solto abaixo do campo (recusa do dono, 2026-09-08):
+    // ele mora no painel que o próprio campo abre.
+    expect(dialogo.queryByRole("link", { name: "Cadastrar primeiro time" })).toBeNull();
+    await userEvent.click(dialogo.getByRole("button", { name: "Time" }));
+    expect(screen.getByRole("link", { name: "Cadastrar primeiro time" }).getAttribute("href")).toBe(
+      "/teams?cadastrar=time",
+    );
     expect(
       dialogo.getByText(
         "Você não lidera nenhum time ativo — peça ao administrador para vinculá-lo a um time.",
