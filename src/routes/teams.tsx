@@ -187,6 +187,7 @@ function TeamsScreen() {
             value: filter,
             label: t(`teams.status.${filter}`),
           }))}
+          empty={{ message: t("teams.filter.status.empty") }}
         />
       </div>
 
@@ -931,6 +932,7 @@ function MembershipForm({
             value={role}
             onChange={(value) => TeamMemberRoles.includes(value) && setRole(value)}
             options={roles.map((option) => ({ value: option, label: t(`users.role.${option}`) }))}
+            empty={{ message: t("teams.membership.role.empty") }}
           />
           <Button size="sm" disabled={!ready} onClick={() => void assign()}>
             {t("teams.membership.assign")}

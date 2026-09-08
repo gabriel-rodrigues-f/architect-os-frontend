@@ -1,4 +1,5 @@
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
+import { useI18n } from "@/lib/i18n";
 import type { TeamChoice } from "@/lib/team-choice";
 
 /**
@@ -35,6 +36,7 @@ export function TeamChoiceField({
   describedBy?: string | undefined;
   className?: string | undefined;
 }) {
+  const { t } = useI18n();
   const explanationId = `${id}-locked`;
   const { lockedTeam } = choice;
   const options = lockedTeam
@@ -55,6 +57,7 @@ export function TeamChoiceField({
         disabled={lockedTeam !== null}
         title={lockedTeam ? lockedExplanation : undefined}
         describedBy={lockedTeam ? explanationId : describedBy}
+        empty={{ message: t("teamChoice.empty") }}
       />
       {lockedTeam && (
         <p id={explanationId} className="mt-1 text-xs text-muted-foreground">

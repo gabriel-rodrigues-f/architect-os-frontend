@@ -139,7 +139,7 @@ const COLLECTIVE_PULSE_MIN_MS = 12000;
 const COLLECTIVE_PULSE_SPREAD_MS = 8000;
 /** O halo em volta da marca onde a rede quase some, em px. */
 const BRAND_HALO = 40;
-const VISIBILITY = { brand: 0.3, behindCard: 0.15, behindContent: 0, elsewhere: 1 } as const;
+const VISIBILITY = { brand: 0.3, behindCard: 0.15, elsewhere: 1 } as const;
 const CLUSTERED_SHARE = 0.7;
 const EDGE_MARGIN = 24;
 
@@ -174,34 +174,13 @@ export type DeviceClass = "mobile" | "tablet" | "desktop";
  */
 export class CompositionZone {
   /**
-   * @param brand A marca — só nas telas de porta. `null` é a composição do
-   *   INTERIOR: sem diagonal, sem halo; só o conteúdo a excluir.
-   * @param card O bloco protegido: o cartão do login ou o `<main>` do interior.
+   * @param brand A marca — a composição da PORTA sempre a tem.
+   * @param card O bloco protegido: o cartão do login.
    */
   constructor(
-    readonly brand: Zone | null,
+    readonly brand: Zone,
     readonly card: Zone,
   ) {}
-
-  /**
-   * A composição do INTERIOR (dono, 2026-09-08: "o mesmo efeito da tela de
-   * login, quero no fundo da aplicação como um todo"): o conteúdo — o `<main>`
-   * — é zona de exclusão total, e a rede vive nas margens: cabeçalho, bordas,
-   * o vão da coluna. Nunca atrás de tabelas e cartões, porque eles moram lá.
-   */
-  static aroundContent(canvas: Zone, content: Zone): CompositionZone | null {
-    if (CompositionZone.empty(canvas) || CompositionZone.empty(content)) return null;
-    return new CompositionZone(null, {
-      x: content.x - canvas.x,
-      y: content.y - canvas.y,
-      width: content.width,
-      height: content.height,
-    });
-  }
-
-  private get behindCard(): number {
-    return this.brand ? VISIBILITY.behindCard : VISIBILITY.behindContent;
-  }
 
   /** A partir do que a tela mediu (`getBoundingClientRect`), relativo ao canvas; `null` se algo ainda não tem tamanho. */
   static measured(canvas: Zone, brand: Zone, card: Zone): CompositionZone | null {
@@ -227,16 +206,14 @@ export class CompositionZone {
 
   /** O multiplicador de opacidade num ponto: ~0.3 no halo da marca, ~0.15 atrás do cartão, 1 no resto. */
   visibilityAt(point: Point): number {
-    if (this.brand && CompositionZone.contains(this.brand, point, BRAND_HALO)) {
-      return VISIBILITY.brand;
-    }
-    if (CompositionZone.contains(this.card, point)) return this.behindCard;
+    if (CompositionZone.contains(this.brand, point, BRAND_HALO)) return VISIBILITY.brand;
+    if (CompositionZone.contains(this.card, point)) return VISIBILITY.behindCard;
     return VISIBILITY.elsewhere;
   }
 
   /** Se o segmento entre dois pontos passa pelas letras da marca. */
   crossesBrand(from: Point, to: Point): boolean {
-    return this.brand !== null && CompositionZone.segmentMeets(this.brand, from, to);
+    return CompositionZone.segmentMeets(this.brand, from, to);
   }
 
   /** Liang–Barsky: o segmento toca o retângulo se sobra algum `t` em [0, 1] depois dos quatro cortes. */
@@ -279,14 +256,9 @@ export class CompositionZone {
    * esquerda). Sobe da esquerda para a direita, cruzando o vão pelo meio.
    */
   along(t: number): Point {
-    if (!this.brand) return this.contentCentre();
     const from = { x: this.brand.x, y: this.brand.y + this.brand.height };
     const to = { x: this.card.x + this.card.width * 0.25, y: this.card.y };
     return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
-  }
-
-  private contentCentre(): Point {
-    return { x: this.card.x + this.card.width / 2, y: this.card.y + this.card.height / 2 };
   }
 
   /** O peso (0..1] de um ponto receber um nó — a densidade por região. */
@@ -294,8 +266,6 @@ export class CompositionZone {
     const toEdge = Math.min(point.x, width - point.x, point.y, height - point.y);
     if (toEdge < Math.min(width, height) * EXTREME_SHARE) return WEIGHT.extreme;
     if (CompositionZone.contains(this.card, point, EDGE_MARGIN)) return WEIGHT.behindCard;
-    // No interior não há "perto do conteúdo": as margens são estreitas e são tudo o que a rede tem.
-    if (!this.brand) return WEIGHT.center;
     if (CompositionZone.contains(this.card, point, NEAR_CARD)) return WEIGHT.nearCard;
     if (CompositionZone.contains(this.brand, point)) return WEIGHT.brand;
     const brandRight = this.brand.x + this.brand.width;
@@ -343,16 +313,25 @@ export class NetworkComposition {
     readonly zone: CompositionZone | null = null,
   ) {}
 
-  /** O interior é bem mais discreto que o login: menos da metade dos nós para a mesma largura. */
-  static readonly INTERIOR_DENSITY = 0.45;
+  /**
+   * O interior é mais discreto que o login, e não menos que isso. Era 0.45 e
+   * ninguém a via (dono, 2026-09-08: "ainda não vejo a rede de sinapses no
+   * fundo da aplicação"): com o conteúdo apagando a maior parte dos nós, 45%
+   * de uma rede quase toda invisível é nada. Sem zona de exclusão, 70% da
+   * densidade do login cobre a viewport sem disputar com o texto.
+   */
+  static readonly INTERIOR_DENSITY = 0.7;
 
-  /** A composição do interior: a densidade contida, em volta do conteúdo. */
-  static interior(width: number, zone: CompositionZone | null): NetworkComposition {
-    const door = NetworkComposition.for(width, zone);
+  /**
+   * A composição do INTERIOR: a viewport inteira, sem zona. A rede fica
+   * ATRÁS do conteúdo (`z-0`), e os cartões, que têm fundo opaco, a escondem
+   * onde há leitura — a exclusão é do desenho da página, não do motor.
+   */
+  static interior(width: number): NetworkComposition {
+    const door = NetworkComposition.for(width);
     return new NetworkComposition(
       Math.max(1, Math.round(door.nodes * NetworkComposition.INTERIOR_DENSITY)),
       door.device,
-      zone,
     );
   }
 
@@ -376,6 +355,17 @@ export class NetworkComposition {
 }
 
 export class SynapseNetwork {
+  /**
+   * Quanto dura a onda coletiva, para quem precisa ESPERAR por ela.
+   *
+   * Dono (2026-09-08): *"ao inserir a senha correta quero ver a rede piscando
+   * em azul; se necessário, atrase 1 segundo a entrada"*. A duração é do
+   * motor — quem espera lê daqui, e não escreve "1000" na tela.
+   */
+  static get COLLECTIVE_PULSE_DURATION_MS(): number {
+    return COLLECTIVE_PULSE_DURATION_MS;
+  }
+
   private readonly nodes: NetworkNode[] = [];
   private links: NetworkLink[] = [];
   private pulses: Pulse[] = [];
@@ -490,7 +480,7 @@ export class SynapseNetwork {
 
   private seed(composition: NetworkComposition): void {
     const { zone } = composition;
-    const clusters = zone?.brand ? this.clustersAlong(zone, zone.brand) : this.clusterCenters();
+    const clusters = zone ? this.clustersAlong(zone, zone.brand) : this.clusterCenters();
     const spread = Math.min(this.width, this.height) * 0.12;
     let id = 0;
     for (const plane of [0, 1, 2] as const) {

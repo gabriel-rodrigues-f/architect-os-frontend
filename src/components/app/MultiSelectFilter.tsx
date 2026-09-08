@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+import { EmptySelectionField, type SelectionEmptyState } from "@/components/app/EmptySelection";
 import { FilterField } from "@/components/app/FilterField";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,7 +26,7 @@ export function MultiSelectFilter({
   selectAllLabel,
   allSummaryLabel,
   noneSummaryLabel,
-  emptyLabel,
+  empty,
 }: {
   id: string;
   label: string;
@@ -35,8 +36,8 @@ export function MultiSelectFilter({
   selectAllLabel: string;
   allSummaryLabel: string;
   noneSummaryLabel: string;
-
-  emptyLabel?: string;
+  /** O que dizer quando não há opção nenhuma; sem isto, a frase da casa. */
+  empty?: SelectionEmptyState | undefined;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -67,20 +68,21 @@ export function MultiSelectFilter({
           ? (options.find((o) => o.id === selected[0])?.label ?? t("filter.multi.count", { n: 1 }))
           : t("filter.multi.count", { n: selected.length });
 
+  if (isEmpty) {
+    return <EmptySelectionField id={id} label={label} empty={empty} />;
+  }
+
   return (
     <FilterField label={label} htmlFor={id}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <FilterTriggerButton
             id={id}
-            disabled={isEmpty}
             onKeyDown={onTriggerKeyDown}
             aria-haspopup="listbox"
-            title={isEmpty ? (emptyLabel ?? t("filter.multi.empty")) : summary}
+            title={summary}
           >
-            <span className="min-w-0 flex-1 truncate text-left">
-              {isEmpty ? (emptyLabel ?? t("filter.multi.empty")) : summary}
-            </span>
+            <span className="min-w-0 flex-1 truncate text-left">{summary}</span>
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           </FilterTriggerButton>
         </PopoverTrigger>
@@ -133,9 +135,6 @@ export function MultiSelectFilter({
               </button>
             );
           })}
-          {options.length === 0 && (
-            <p className="px-2 py-1.5 text-sm text-muted-foreground">{t("filter.multi.empty")}</p>
-          )}
         </PopoverContent>
       </Popover>
     </FilterField>

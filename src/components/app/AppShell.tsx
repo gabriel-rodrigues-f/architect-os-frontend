@@ -56,8 +56,9 @@ const clampWidth = SidebarPreferences.clampWidth;
  * A REDE DE SINAPSES NO FUNDO (dono, 2026-09-08: "o mesmo efeito da tela de
  * login, quero no fundo da aplicação como um todo"). Ela mora aqui, fora do
  * `StoreProvider`, pela mesma razão do `AppToaster`: não desmonta quando o
- * miolo carrega. É a composição INTERIOR — contida, e com o `<main>` como
- * zona de exclusão, para nunca passar atrás de tabelas e cartões. Quem fala
+ * miolo carrega. É a composição INTERIOR — discreta, em toda a viewport e
+ * ATRÁS do conteúdo (`z-0` contra o `z-10` da coluna e do miolo): ela aparece
+ * nos vãos, e os cartões, opacos, a escondem onde há leitura. Quem fala
  * com ela é o `ApiClient`, pelos `synapseSignals` do container: escrita
  * aceita → azul; recusa com mensagem vermelha → vermelho.
  */
@@ -66,7 +67,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Sem container por perto (uma casca montada sozinha num teste), não há rede — e nada quebra.
   const synapseSignals = useSynapseSignals();
   const platformMetricsTab = usePlatformMetricsTab();
-  const contentRef = useRef<HTMLElement>(null);
   const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
   const { t } = useI18n();
@@ -237,7 +237,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {t("shell.skipToContent")}
       </a>
       {/* O canvas é fixo ao viewport e fica atrás de tudo; o `body` pinta o fundo. */}
-      {synapseSignals && <SynapseBackground signals={synapseSignals} exclusionRef={contentRef} />}
+      {synapseSignals && <SynapseBackground signals={synapseSignals} scene="interior" />}
       <div className="relative z-10 flex min-h-screen w-full">
         <aside
           style={{ width: collapsed ? SidebarPreferences.RAIL_WIDTH : width }}
@@ -441,6 +441,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                       value={activeCycleId}
                       onChange={setActiveCycle}
                       options={cycles.map((cycle) => ({ value: cycle.id, label: cycle.name }))}
+                      // Dono (2026-09-08, reincidente): sem ciclo, o seletor do
+                      // cabeçalho DIZ que não há e leva a quem pode cadastrar.
+                      empty={{
+                        message: t("cycles.selector.empty"),
+                        ...(defaultUiAuthorizationPolicy.isLeadership(user)
+                          ? {
+                              registration: {
+                                label: t("cycles.selector.register"),
+                                to: "/cycles",
+                              },
+                            }
+                          : {}),
+                      }}
                       triggerClassName="h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
                     />
                   </>
@@ -462,7 +475,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <PageFrame
             id={MAIN_CONTENT_ID}
-            ref={contentRef}
             pathname={pathname}
             className={cn(PAGE_CONTAINER, "flex-1 px-5 py-6 lg:px-8 lg:py-8")}
           >

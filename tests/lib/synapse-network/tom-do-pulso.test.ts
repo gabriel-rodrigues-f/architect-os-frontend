@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CompositionZone,
   NetworkComposition,
   SynapseNetwork,
   SynapseSignals,
@@ -100,34 +99,28 @@ describe("SynapseSignals — a tela pede o pulso com o tom", () => {
   });
 });
 
-describe("NetworkComposition — a composição do interior, contida e em volta do conteúdo", () => {
-  const CANVAS: Zone = { x: 0, y: 0, width: 1440, height: 900 };
+describe("NetworkComposition — a composição do interior, em toda a viewport", () => {
   const CONTEUDO: Zone = { x: 280, y: 74, width: 1000, height: 826 };
 
-  it("tem bem menos nós que a do login para a mesma largura", () => {
+  it("tem menos nós que a do login para a mesma largura — discreta, não ausente", () => {
     const porta = NetworkComposition.for(1440);
-    const interior = NetworkComposition.interior(
-      1440,
-      CompositionZone.aroundContent(CANVAS, CONTEUDO),
-    );
-    expect(interior.nodes).toBeLessThanOrEqual(Math.ceil(porta.nodes * 0.5));
-    expect(interior.nodes).toBeGreaterThan(0);
+    const interior = NetworkComposition.interior(1440);
+    expect(interior.nodes).toBeLessThan(porta.nodes);
+    expect(interior.nodes).toBeGreaterThanOrEqual(Math.round(porta.nodes * 0.5));
   });
 
-  it("a zona em volta do conteúdo apaga o que cai atrás dele e deixa as margens inteiras", () => {
-    const zone = CompositionZone.aroundContent(CANVAS, CONTEUDO)!;
-    expect(zone.visibilityAt({ x: 700, y: 400 })).toBe(0);
-    expect(zone.visibilityAt({ x: 100, y: 400 })).toBe(1);
-    expect(zone.visibilityAt({ x: 700, y: 30 })).toBe(1);
-    expect(zone.crossesBrand({ x: 0, y: 0 }, { x: 1440, y: 900 })).toBe(false);
-  });
-
-  it("a rede do interior nasce nas margens: a grande maioria dos nós fica fora do conteúdo", () => {
-    const zone = CompositionZone.aroundContent(CANVAS, CONTEUDO)!;
+  /**
+   * Dono (2026-09-08): *"ainda não vejo a rede de sinapses no fundo da
+   * aplicação; quero ver no fundo de todas as telas"*. A fatia anterior punha
+   * o `<main>` INTEIRO como zona de exclusão (visibilidade 0) — e o `<main>`
+   * é a tela toda. Não sobrava nada visível. Agora o interior não tem zona:
+   * a rede corre a viewport inteira, atrás do conteúdo, e aparece nos vãos.
+   */
+  it("a rede do interior nasce em toda a viewport, e a área do conteúdo tem nós VISÍVEIS", () => {
     const net = new SynapseNetwork(
       1440,
       900,
-      NetworkComposition.interior(1440, zone),
+      NetworkComposition.interior(1440),
       new SeededRandom(11).next,
     );
     const nodes = net.snapshot.nodes;
@@ -138,11 +131,12 @@ describe("NetworkComposition — a composição do interior, contida e em volta 
         node.y >= CONTEUDO.y &&
         node.y <= CONTEUDO.y + CONTEUDO.height,
     );
-    expect(dentro.length / nodes.length).toBeLessThan(0.25);
-    for (const node of dentro) expect(node.visibility).toBe(0);
+    expect(dentro.length).toBeGreaterThan(nodes.length * 0.25);
+    for (const node of dentro) expect(node.visibility).toBe(1);
   });
 
-  it("sem medida do conteúdo, não há zona — a rede nasce como antes", () => {
-    expect(CompositionZone.aroundContent(CANVAS, { x: 0, y: 0, width: 0, height: 0 })).toBeNull();
+  it("o interior não tem marca: nenhuma aresta é recusada por cruzar letras", () => {
+    const interior = NetworkComposition.interior(1440);
+    expect(interior.zone).toBeNull();
   });
 });

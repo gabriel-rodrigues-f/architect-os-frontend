@@ -69,6 +69,7 @@ export function PreferencesMenu() {
             disabled={loading}
             onChange={setLocale}
             options={locales.map((known) => ({ value: known.code, label: known.label }))}
+            empty={{ message: t("prefs.language.empty") }}
           />
         </div>
       </PopoverContent>

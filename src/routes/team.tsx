@@ -152,7 +152,7 @@ function TeamRoster() {
                 selectAllLabel={t("team.filter.status.all")}
                 allSummaryLabel={t("team.filter.status.all")}
                 noneSummaryLabel={t("team.filter.chip.none")}
-                emptyLabel={t("team.filter.status.empty")}
+                empty={{ message: t("team.filter.status.empty") }}
               />
             )}
             <MultiSelectFilter
@@ -164,7 +164,7 @@ function TeamRoster() {
               selectAllLabel={t("team.filter.role.all")}
               allSummaryLabel={t("team.filter.role.all")}
               noneSummaryLabel={t("team.filter.chip.none")}
-              emptyLabel={t("team.filter.role.empty")}
+              empty={{ message: t("team.filter.role.empty") }}
             />
             <MultiSelectFilter
               id="team-filter-capability"
@@ -175,7 +175,7 @@ function TeamRoster() {
               selectAllLabel={t("team.filter.capability.all")}
               allSummaryLabel={t("team.filter.capability.all")}
               noneSummaryLabel={t("team.filter.chip.none")}
-              emptyLabel={t("team.filter.capability.empty")}
+              empty={{ message: t("team.filter.capability.empty") }}
             />
             <SingleSelectFilter
               id="team-sort"
@@ -183,6 +183,7 @@ function TeamRoster() {
               options={roster.sortOptions}
               value={roster.sort}
               onChange={(value) => roster.setSort(value as typeof roster.sort)}
+              empty={{ message: t("dataView.sort.empty") }}
             />
           </DataViewToolbar>
 

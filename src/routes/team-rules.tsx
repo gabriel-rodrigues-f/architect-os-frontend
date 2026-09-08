@@ -126,6 +126,13 @@ function TeamRulesScreen() {
               value={careerLevel.id}
               onChange={setChosenLevelId}
               options={careerLevels.map((level) => ({ value: level.id, label: level.name }))}
+              empty={{
+                message: t("teamRules.filter.careerLevel.empty"),
+                registration: {
+                  label: t("teamRules.filter.careerLevel.register"),
+                  to: "/settings",
+                },
+              }}
             />
           </div>
 
@@ -259,6 +266,13 @@ function TeamRuleEditor({
               id: capability.id,
               label: capability.name,
             }))}
+            empty={{
+              message: t("teamRules.capabilities.empty"),
+              registration: {
+                label: t("teamRules.capabilities.register"),
+                to: "/competency-matrix",
+              },
+            }}
             selected={[...editor.capabilityIds]}
             onChange={(ids) =>
               setEditor((current) =>
@@ -383,6 +397,7 @@ function TeamRuleEditor({
                                   current.withRequiredLevel(competency.id, Number(value)),
                                 )
                               }
+                              empty={{ message: t("teamRules.level.empty") }}
                               options={LEVEL_OPTIONS.map((option) => ({
                                 value: String(option),
                                 label: t("teamRules.level.option", { n: option }),

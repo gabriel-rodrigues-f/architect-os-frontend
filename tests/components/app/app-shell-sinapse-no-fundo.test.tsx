@@ -25,10 +25,16 @@ import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
 
 /**
  * Dono (2026-09-08): "o mesmo efeito da tela de login, quero no fundo da
- * aplicação como um todo". A rede vive na casca (`AppShell`), atrás de tudo,
- * numa composição INTERIOR: contida, e com o `<main>` como zona de exclusão —
- * a rede corre pelas margens (cabeçalho, bordas), nunca atrás de tabelas e
- * cartões. Com movimento reduzido, é um quadro parado e nenhum pulso anima.
+ * aplicação como um todo" — e, no mesmo dia, a cobrança: *"ainda não vejo a
+ * rede de sinapses no fundo da aplicação; quero ver no fundo de todas as
+ * telas"*. A primeira tentativa punha o `<main>` INTEIRO como zona de
+ * exclusão (visibilidade 0), e o `<main>` é a tela toda: sobrava a moldura, e
+ * a moldura é opaca. Não havia nada para ver.
+ *
+ * Agora a rede corre a VIEWPORT INTEIRA, atrás do conteúdo (`z-0`, o
+ * conteúdo em `z-10`): os cartões têm fundo opaco, então ela aparece nos vãos
+ * e nas áreas vazias, sem atrapalhar a leitura. Com movimento reduzido, é um
+ * quadro parado e nenhum pulso anima.
  */
 const fetchMock = vi.fn();
 
@@ -126,7 +132,7 @@ describe("AppShell — a rede de sinapses no fundo da aplicação", () => {
     expect(request).toHaveBeenCalled();
   });
 
-  it("o <main> é a zona de exclusão: nenhum nó visível é pintado atrás do conteúdo", async () => {
+  it("há nós VISÍVEIS pintados dentro da área do conteúdo, não só nas bordas", async () => {
     comMovimento(true);
     const arcos = palcoMedido();
     renderShell();
@@ -141,7 +147,30 @@ describe("AppShell — a rede de sinapses no fundo da aplicação", () => {
         arco.y >= main.y &&
         arco.y <= main.y + main.height,
     );
-    expect(atrasDoConteudo).toEqual([]);
+    // A área do conteúdo é ~64% da viewport medida: uma rede uniforme põe boa
+    // parte dos nós ali. "Discreta" é opacidade, não ausência.
+    expect(atrasDoConteudo.length).toBeGreaterThan(visiveis.length * 0.25);
+  });
+
+  it("os nós dentro do conteúdo são discretos, mas nenhum é apagado por exclusão", async () => {
+    comMovimento(true);
+    const arcos = palcoMedido();
+    renderShell();
+    await screen.findByText("conteúdo");
+    const main = RETANGULOS["MAIN"]!;
+    const dentro = arcos.filter(
+      (arco) =>
+        arco.x >= main.x &&
+        arco.x <= main.x + main.width &&
+        arco.y >= main.y &&
+        arco.y <= main.y + main.height,
+    );
+    expect(dentro.length).toBeGreaterThan(0);
+    for (const arco of dentro) {
+      expect(arco.alpha).toBeGreaterThan(0);
+      // Fundo é fundo: nenhum nó chega perto de competir com o texto.
+      expect(arco.alpha).toBeLessThan(0.9);
+    }
   });
 
   it("com movimento reduzido, a rede é um quadro parado: nenhum relógio, nenhum pulso", async () => {

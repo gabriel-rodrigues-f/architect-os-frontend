@@ -16,8 +16,14 @@ import {
 const MAX_DEVICE_PIXEL_RATIO = 2;
 const PLANE_ALPHA = [0.35, 0.55, 0.85] as const;
 const LINK_ALPHA = [0.14, 0.22, 0.32] as const;
-/** O interior é denso de conteúdo: planos e arestas a menos da metade da força do login. */
-const INTERIOR_INTENSITY = 0.45;
+/**
+ * O interior é denso de conteúdo, então a rede pinta mais fraca que no login
+ * — mas VISÍVEL (dono, 2026-09-08: "ainda não vejo a rede de sinapses no
+ * fundo da aplicação"). Era 0.45 sobre uma rede quase toda excluída pelo
+ * conteúdo, o que dava zero na tela; agora a rede corre a viewport inteira e
+ * 0.7 é o ponto em que ela aparece nos vãos sem disputar com o texto.
+ */
+const INTERIOR_INTENSITY = 0.7;
 
 type SceneKind = "door" | "interior";
 
@@ -28,13 +34,13 @@ type SceneKind = "door" | "interior";
  *
  * Duas cenas (dono, 2026-09-08: "o mesmo efeito da tela de login, quero no
  * fundo da aplicação como um todo"): a PORTA, com marca e cartão; o
- * INTERIOR, contido, com o conteúdo como zona de exclusão.
+ * INTERIOR, discreto, em toda a viewport atrás do conteúdo.
  */
 interface SynapseScene {
   readonly kind: SceneKind;
   /** Multiplicador de opacidade de planos e arestas. */
   readonly intensity: number;
-  composition(canvas: DOMRect, width: number, height: number): NetworkComposition;
+  composition(canvas: DOMRect, width: number): NetworkComposition;
   /** A zona que ganha intensidade quando a tela pede ênfase; `null` se a cena não tem uma. */
   emphasisZone(): Zone | null;
   /** De onde parte o pulso pedido pela tela; `undefined` deixa o motor escolher o centro. */
@@ -70,27 +76,22 @@ class DoorScene implements SynapseScene {
 }
 
 /**
- * O interior: a rede nas margens — cabeçalho, bordas, o vão da coluna — e
- * nunca atrás do conteúdo (`<main>`), que é a zona de exclusão até o pé do
- * canvas. Não há ênfase; o pulso nasce onde está o ponteiro, ou no centro.
+ * O interior: a rede em TODA a viewport, atrás do conteúdo. Não há zona de
+ * exclusão — a exclusão é do desenho da página, não do motor: o canvas é
+ * `z-0`, o conteúdo é `z-10` e os cartões têm fundo opaco, então a rede
+ * aparece nos vãos e nas áreas vazias e some sob quem tem o que ler.
+ *
+ * A tentativa anterior (2026-09-08) excluía o `<main>` inteiro, que é a tela
+ * toda: sobrava a moldura opaca, e o dono não via rede nenhuma.
+ *
+ * Não há ênfase; o pulso nasce onde está o ponteiro, ou no centro.
  */
 class InteriorScene implements SynapseScene {
   readonly kind = "interior";
   readonly intensity = INTERIOR_INTENSITY;
 
-  constructor(private readonly content: RefObject<HTMLElement | null>) {}
-
-  composition(canvas: DOMRect, width: number, height: number): NetworkComposition {
-    const content = this.content.current?.getBoundingClientRect();
-    const zone = content
-      ? CompositionZone.aroundContent(canvas, {
-          x: content.x,
-          y: content.y,
-          width: content.width,
-          height: Math.max(content.height, canvas.y + height - content.y),
-        })
-      : null;
-    return NetworkComposition.interior(width, zone);
+  composition(_canvas: DOMRect, width: number): NetworkComposition {
+    return NetworkComposition.interior(width);
   }
 
   emphasisZone(): Zone | null {
@@ -241,7 +242,7 @@ class SynapseStage {
     this.network = new SynapseNetwork(
       this.width,
       this.height,
-      this.scene.composition(rect, this.width, this.height),
+      this.scene.composition(rect, this.width),
     );
     this.listenToCollective();
     this.painter = SynapsePainter.for(this.canvas, this.scene.intensity);
@@ -301,40 +302,40 @@ class SynapseStage {
 /**
  * A rede de sinapses ao fundo — do login e, desde 2026-09-08, da aplicação
  * inteira. O motor é o `SynapseNetwork`; este componente só liga o canvas
- * (DPR ≤ 2, resize), a cena (porta: marca e cartão; interior: o conteúdo a
- * excluir), o ponteiro (mouse e toque leve), os sinais da tela e o relógio —
+ * (DPR ≤ 2, resize), a cena (porta: marca e cartão; interior: a viewport
+ * inteira), o ponteiro (mouse e toque leve), os sinais da tela e o relógio —
  * que pausa com a aba escondida e é cancelado no unmount. Com
  * `prefers-reduced-motion`, desenha um quadro parado, não anima e não pulsa.
  *
- * `exclusionRef` escolhe a cena: com ele, é o INTERIOR (o canvas é fixo ao
- * viewport, atrás de tudo); sem ele, a PORTA (o canvas preenche o palco).
+ * `scene` escolhe a cena: `"interior"` (o canvas é fixo ao viewport, atrás de
+ * tudo) ou `"door"`, o padrão (o canvas preenche o palco do login).
  */
 export function SynapseBackground({
   signals,
   focalRef,
   brandRef,
-  exclusionRef,
+  scene: kind = "door",
 }: {
   signals: SynapseSignals;
   /** Porta — o cartão: zona de ênfase, origem do pulso e um dos dois blocos da composição. */
   focalRef?: RefObject<HTMLElement | null>;
   /** Porta — a marca: o outro bloco da composição; a rede se adensa entre os dois. */
   brandRef?: RefObject<HTMLElement | null>;
-  /** Interior — o conteúdo (`<main>`) que a rede nunca atravessa. */
-  exclusionRef?: RefObject<HTMLElement | null>;
+  /** Qual cena a rede vive: a PORTA (padrão) ou o INTERIOR da aplicação. */
+  scene?: SceneKind;
 }) {
   const reducedMotion = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [motion, setMotion] = useState<"live" | "still">(reducedMotion ? "still" : "live");
-  const kind: SceneKind = exclusionRef ? "interior" : "door";
 
   useEffect(() => {
     setMotion(reducedMotion ? "still" : "live");
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const scene: SynapseScene = exclusionRef
-      ? new InteriorScene(exclusionRef)
-      : new DoorScene(focalRef ?? { current: null }, brandRef ?? { current: null });
+    const scene: SynapseScene =
+      kind === "interior"
+        ? new InteriorScene()
+        : new DoorScene(focalRef ?? { current: null }, brandRef ?? { current: null });
     const stage = new SynapseStage(canvas, signals, scene);
     if (reducedMotion) {
       stage.still();
@@ -364,7 +365,7 @@ export function SynapseBackground({
       window.removeEventListener("pointercancel", onLeave);
       document.removeEventListener("pointerleave", onLeave);
     };
-  }, [reducedMotion, signals, focalRef, brandRef, exclusionRef]);
+  }, [reducedMotion, signals, focalRef, brandRef, kind]);
 
   return (
     <canvas

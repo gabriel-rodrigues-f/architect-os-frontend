@@ -1,27 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import type { PageHelpContent } from "@/components/app/PageHelp";
-import { ServiceOutageScreen } from "@/components/app/ServiceOutageScreen";
-import { Callout, PageHeader } from "@/components/app/ui-bits";
+import { PageHeader } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { useReducedMotion } from "@/hooks";
 import { usePlatformMetricsTab, useSynapseSignals } from "@/lib/dependencies";
 import { useI18n, type MessageKey } from "@/lib/i18n";
-import {
-  ObservabilityAddress,
-  PlatformMetricsDoor,
-  type MetricsRefusal,
-} from "@/lib/platform-metrics";
-
-/** A batida na porta é uma consulta só, e ela não é compartilhada com tela nenhuma. */
-const PLATFORM_METRICS_DOOR_QUERY_KEY = ["platform-metrics", "door"];
+import { ObservabilityAddress } from "@/lib/platform-metrics";
 
 /**
  * A FASE DA ABERTURA — o que a tela desenha, e o único lugar onde a ordem das
- * perguntas está escrita: sem resposta ainda é ABERTURA; sem serviço atrás da
- * porta é INDISPONIBILIDADE; recusa é RECUSA; e, com a porta aberta, ainda é
- * abertura até a aba ser levada ao painel — o que o navegador pode bloquear.
+ * perguntas está escrita: enquanto a aba não foi tentada é ABERTURA; depois
+ * ela está ABERTA em outra aba, ou BLOQUEADA pelo navegador.
+ *
+ * Não há mais fase de recusa nem de indisponibilidade aqui (regressão da tela
+ * branca, 2026-09-08): as duas nasciam de LER a resposta da porta por `fetch`
+ * cross-origin, coisa que o navegador não permite. A recusa por alcance é da
+ * política, antes desta tela (`OutOfReachScreen`); a recusa por sessão e a
+ * queda do serviço são da porta, dentro da aba, onde elas têm resposta de
+ * verdade para mostrar.
  */
 class MetricsOpening {
   private static readonly OPENING = new MetricsOpening(
@@ -39,51 +36,21 @@ class MetricsOpening {
     "metrics.blocked",
     "metrics.blockedHint",
   );
-  private static readonly REFUSED = new MetricsOpening("refused");
-  private static readonly OUTAGE = new MetricsOpening("outage");
 
   private constructor(
-    readonly name: "opening" | "opened" | "blocked" | "refused" | "outage",
-    private readonly headline?: MessageKey,
-    private readonly hint?: MessageKey,
+    readonly name: "opening" | "opened" | "blocked",
+    readonly headline: MessageKey,
+    readonly hint: MessageKey,
   ) {}
 
-  /** O que a fase DIZ — as duas frases da tela; `null` nas fases que falam por outro componente. */
-  get says(): { readonly headline: MessageKey; readonly hint: MessageKey } | null {
-    if (this.headline === undefined || this.hint === undefined) return null;
-    return { headline: this.headline, hint: this.hint };
-  }
-
-  static of(
-    waiting: boolean,
-    outage: boolean,
-    refusal: MetricsRefusal | null,
-    shown: boolean | null,
-  ): MetricsOpening {
-    if (waiting) return MetricsOpening.OPENING;
-    if (outage) return MetricsOpening.OUTAGE;
-    if (refusal) return MetricsOpening.REFUSED;
+  static of(shown: boolean | null): MetricsOpening {
     if (shown === null) return MetricsOpening.OPENING;
     return shown ? MetricsOpening.OPENED : MetricsOpening.BLOCKED;
   }
 
-  /** A frase da recusa nomeia a RAZÃO, não o status: sessão não reconhecida ou conta sem alcance. */
-  static readonly REFUSAL_MESSAGE: Readonly<Record<MetricsRefusal, MessageKey>> = {
-    unauthenticated: "metrics.refused.unauthenticated",
-    forbidden: "metrics.refused.forbidden",
-  };
-
-  get isOutage(): boolean {
-    return this.name === "outage";
-  }
-
-  get isRefused(): boolean {
-    return this.name === "refused";
-  }
-
   /** Só depois de a aba ter sido tentada faz sentido oferecer "Abrir de novo". */
   get offersAnotherTry(): boolean {
-    return this.name === "opened" || this.name === "blocked";
+    return this.name !== "opening";
   }
 }
 
@@ -93,14 +60,16 @@ class MetricsOpening {
  * sem elegância; quero que essa tela seja aberta de forma controlada, com um
  * efeito elegante".
  *
- * A elegância aqui não é decoração: é a ORDEM. Antes, o item do menu era uma
- * âncora `target="_blank"` que mandava a pessoa para o Grafana antes de saber
- * se a porta abria — e uma aba com um erro dentro é a forma mais deselegante
- * de responder. Agora a tela bate na porta (`GET {API}/grafana/`, que troca a
- * sessão do Synapse pelo cookie do Grafana), a rede de sinapses do interior
- * pulsa enquanto se espera, e só então a aba — a que o clique no menu já
- * reservou — é levada ao painel. Recusa vira frase com a razão; serviço fora
- * do ar vira a tela de indisponibilidade da casa, a mesma de todas as outras.
+ * A elegância aqui não é decoração: é a ORDEM. O item do menu deixou de ser
+ * uma âncora `target="_blank"` e virou rota; a rota pulsa a rede, leva a aba
+ * que o clique já reservou até a porta das métricas e diz onde ela ficou.
+ *
+ * O QUE ESTA TELA NÃO FAZ MAIS (mesma data, "não consigo mais visualizar o
+ * grafana, tela branca"): bater na porta por `fetch` antes de navegar. A
+ * porta responde 302 para outra origem, o `fetch` esbarra em CORS e rejeita,
+ * e a tela lia isso como serviço fora do ar — a aba reservada nunca era
+ * navegada e ficava branca. A conferência que sobra é a da MESMA ORIGEM: o
+ * alcance vem do `/auth/me` e é a rota que o aplica antes de desenhar aqui.
  *
  * Com movimento reduzido não há pulso, e a entrada não anima (a regra do
  * `auth-rise` vive dentro de `no-preference`): a abertura continua a mesma,
@@ -115,52 +84,22 @@ export function PlatformMetricsGate({
   const reducedMotion = useReducedMotion();
   const signals = useSynapseSignals();
   const tab = usePlatformMetricsTab();
-  const door = useMemo(() => new PlatformMetricsDoor(), []);
   const [shown, setShown] = useState<boolean | null>(null);
 
-  const knock = useQuery({
-    queryKey: PLATFORM_METRICS_DOOR_QUERY_KEY,
-    queryFn: ({ signal }) => door.knock(signal),
-    retry: false,
-    gcTime: 0,
-    staleTime: 0,
-    refetchOnWindowFocus: false,
-  });
-
-  // A transição é da REDE: um pulso primary enquanto a porta responde.
+  // A transição é da REDE: um pulso primary enquanto a aba vai para a porta.
   useEffect(() => {
     if (reducedMotion) return;
     signals?.pulseWith("primary");
   }, [signals, reducedMotion]);
 
-  const answer = knock.data;
-  const ready = answer?.isReady === true;
-
   useEffect(() => {
-    if (!ready || shown !== null) return;
+    if (shown !== null) return;
     setShown(tab?.show(ObservabilityAddress.grafana) ?? false);
-  }, [ready, shown, tab]);
+  }, [shown, tab]);
 
-  const opening = MetricsOpening.of(
-    knock.isPending,
-    answer?.outage ?? true,
-    answer?.refusal ?? null,
-    shown,
-  );
+  const opening = MetricsOpening.of(shown);
 
   const openAgain = () => setShown(tab?.show(ObservabilityAddress.grafana) ?? false);
-
-  if (opening.isOutage) {
-    return (
-      <ServiceOutageScreen
-        onRetry={() => {
-          setShown(null);
-          tab?.release();
-          void knock.refetch();
-        }}
-      />
-    );
-  }
 
   return (
     <>
@@ -171,15 +110,10 @@ export function PlatformMetricsGate({
         className="auth-rise mx-auto max-w-prose py-12 text-center"
         style={{ "--auth-delay": "80ms", "--rise-distance": "8px" } as CSSProperties}
       >
-        {opening.says ? (
-          <div role="status">
-            <p className="text-section font-semibold text-foreground">{t(opening.says.headline)}</p>
-            <p className="mt-2 text-body text-muted-foreground">{t(opening.says.hint)}</p>
-          </div>
-        ) : null}
-        {opening.isRefused && answer?.refusal ? (
-          <Callout tone="danger">{t(MetricsOpening.REFUSAL_MESSAGE[answer.refusal])}</Callout>
-        ) : null}
+        <div role="status">
+          <p className="text-section font-semibold text-foreground">{t(opening.headline)}</p>
+          <p className="mt-2 text-body text-muted-foreground">{t(opening.hint)}</p>
+        </div>
         {opening.offersAnotherTry ? (
           <Button className="mt-6" onClick={openAgain}>
             {t("metrics.openAgain")}

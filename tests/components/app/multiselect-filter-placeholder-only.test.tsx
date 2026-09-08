@@ -38,7 +38,7 @@ describe("MultiSelectFilter — só opção-placeholder equivale a vazio", () =>
           selectAllLabel="Todas"
           allSummaryLabel="Todas selecionadas"
           noneSummaryLabel="Nenhuma"
-          emptyLabel="Nenhuma especialização cadastrada."
+          empty={{ message: "Nenhuma especialização cadastrada." }}
         />
       </I18nProvider>,
     );
@@ -66,7 +66,7 @@ describe("MultiSelectFilter — só opção-placeholder equivale a vazio", () =>
           selectAllLabel="Todas"
           allSummaryLabel="Todas selecionadas"
           noneSummaryLabel="Nenhuma"
-          emptyLabel="Nenhuma especialização cadastrada."
+          empty={{ message: "Nenhuma especialização cadastrada." }}
         />
       </I18nProvider>,
     );

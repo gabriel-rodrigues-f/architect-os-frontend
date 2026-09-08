@@ -24,35 +24,31 @@ import { defaultContainer } from "@/lib/gateways/container";
 import { ObservabilityAddress } from "@/lib/platform-metrics";
 import { Route as PlatformMetricsRoute } from "@/routes/platform-metrics";
 import { fixtureAdminUser, fixtureMemberUser } from "../helpers/fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
  * A TELA DAS MÉTRICAS DA PLATAFORMA — a abertura controlada que o dono pediu
  * em 2026-09-08: "quero que essa tela seja aberta de forma controlada, com um
  * efeito elegante".
  *
- * O que se prova aqui é a ORDEM, que é onde mora a elegância: a tela desenha
- * a transição, bate na porta do Grafana e só entrega a aba quando a porta
- * responde. Se a porta recusa, a razão vira frase — em vez de uma aba nova
- * com um erro dentro, que era o comportamento anterior. Se não há serviço
- * atrás dela, é a tela de indisponibilidade da casa.
+ * REGRESSÃO DO MESMO DIA — "não consigo mais visualizar o grafana, tela
+ * branca": a tela batia na porta (`GET {API}/grafana/`) por `fetch` ANTES de
+ * navegar a aba. A porta responde 302 para OUTRA ORIGEM
+ * (`grafana.localhost`), o `fetch` segue o redirecionamento, esbarra em CORS
+ * e REJEITA — e uma rejeição de CORS é indistinguível de queda de serviço.
+ * Resultado: a tela lia "serviço fora do ar", nunca navegava a aba reservada,
+ * e ela ficava em `about:blank`. Branca.
  *
- * É também o gêmeo de TELA que `alcance-por-rota` exige da rota restrita: o
- * `beforeLoad` é cego à sessão no SSR (a lição da onda 17), então a barreira
- * que sobra é a tela negar — e não bater na porta.
+ * A régua que sobrou: NENHUMA decisão desta tela pode depender de ler uma
+ * resposta cross-origin. Quem confere a sessão é a porta (401/403 e
+ * redirecionamento), dentro da aba; quem confere o ALCANCE é a política, que
+ * já veio no `/auth/me` da mesma origem e é o que a rota lê antes de desenhar.
  */
 const fetchMock = vi.fn();
 
 const PlatformMetricsPage = PlatformMetricsRoute.options.component as () => ReactNode;
 
 const GRAFANA = ObservabilityAddress.grafana;
-
-/** A porta do Grafana respondendo o que o teste mandar. */
-const porta = (status: number): FetchRoute =>
-  function responder(href) {
-    if (!href.includes("/grafana/")) return undefined;
-    return status === 200 ? jsonResponse({}) : new Response(null, { status });
-  };
 
 function comMovimento(reduzido: boolean) {
   vi.stubGlobal(
@@ -78,7 +74,7 @@ function abaDeMentira() {
   return { abrir, replace };
 }
 
-function abrirTela(user: SessionUser, rotas: FetchRoute[]) {
+function abrirTela(user: SessionUser, rotas: FetchRoute[] = []) {
   mockAppFetch(fetchMock, { user, routes: rotas });
   return renderWithApp(<PlatformMetricsPage />);
 }
@@ -107,26 +103,26 @@ afterEach(() => {
 });
 
 describe("/platform-metrics nega o profissional — a tela é a última barreira", () => {
-  it("o member vê a negativa e a porta do Grafana nem é procurada", async () => {
-    abrirTela(fixtureMemberUser, [porta(200)]);
+  it("o member vê a negativa e nenhuma aba é aberta", async () => {
+    const { abrir } = abaDeMentira();
+    abrirTela(fixtureMemberUser);
 
     expect(
       await screen.findByText("As métricas da plataforma são de quem opera e de quem lidera."),
     ).toBeTruthy();
     expect(screen.queryByTestId("platform-metrics-gate")).toBeNull();
-    expect(bateuNaPorta()).toBe(false);
+    expect(abrir).not.toHaveBeenCalled();
   });
 });
 
-describe("a abertura é controlada: a aba só é entregue quando a porta responde", () => {
-  it("com a aba reservada no clique do menu, a transição a leva ao painel e avisa onde ela está", async () => {
+describe("a aba vai direto à porta — nenhuma resposta cross-origin no caminho", () => {
+  it("com a aba reservada no clique do menu, a transição a leva à porta e avisa onde ela está", async () => {
     const { abrir, replace } = abaDeMentira();
     defaultContainer.platformMetricsTab.reserve();
     expect(abrir).toHaveBeenCalledWith("about:blank", expect.any(String));
     abrir.mockClear();
 
-    abrirTela(fixtureAdminUser, [porta(200)]);
-    expect(await screen.findByText("Abrindo…")).toBeTruthy();
+    abrirTela(fixtureAdminUser);
 
     expect(await screen.findByText("Métricas abertas em outra aba")).toBeTruthy();
     expect(fase()).toBe("opened");
@@ -136,15 +132,47 @@ describe("a abertura é controlada: a aba só é entregue quando a porta respond
     expect(screen.getByRole("button", { name: "Abrir de novo" })).toBeTruthy();
   });
 
+  /**
+   * O TESTE DA REGRESSÃO. Antes, este `fetch` rejeitado (é o que o navegador
+   * faz com o 302 para outra origem) parava tudo: a tela lia queda de serviço
+   * e a aba ficava branca. Agora ninguém pergunta nada à porta pelo `fetch`.
+   */
+  it("mesmo com a porta rejeitando o `fetch` por CORS, a aba É navegada — e a tela não inventa queda", async () => {
+    const { replace } = abaDeMentira();
+    defaultContainer.platformMetricsTab.reserve();
+    mockAppFetch(fetchMock, { user: fixtureAdminUser });
+    const aplicacao = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((entrada: unknown, init: unknown) =>
+      String(entrada).includes("/grafana/")
+        ? Promise.reject(new TypeError("Failed to fetch"))
+        : aplicacao(entrada, init),
+    );
+
+    renderWithApp(<PlatformMetricsPage />);
+
+    expect(await screen.findByText("Métricas abertas em outra aba")).toBeTruthy();
+    expect(replace).toHaveBeenCalledWith(GRAFANA);
+    expect(screen.queryByTestId("service-outage")).toBeNull();
+  });
+
+  it("a tela não pergunta nada à porta: quem confere a sessão é a própria porta, na aba", async () => {
+    abaDeMentira();
+    abrirTela(fixtureAdminUser);
+
+    await screen.findByText("Métricas abertas em outra aba");
+    expect(bateuNaPorta()).toBe(false);
+  });
+
   it("a transição pede à rede um pulso azul — e nenhum com movimento reduzido", async () => {
     abaDeMentira();
-    abrirTela(fixtureAdminUser, [porta(200)]);
+    abrirTela(fixtureAdminUser);
     await screen.findByText("Métricas abertas em outra aba");
     expect(defaultContainer.synapseSignals.drainPulses()).toEqual(["primary"]);
 
     cleanup();
+    defaultContainer.platformMetricsTab.release();
     comMovimento(true);
-    abrirTela(fixtureAdminUser, [porta(200)]);
+    abrirTela(fixtureAdminUser);
     // Sem animação, mas a abertura é a mesma: a preferência tira o movimento, nunca a função.
     expect(await screen.findByText("Métricas abertas em outra aba")).toBeTruthy();
     expect(defaultContainer.synapseSignals.drainPulses()).toEqual([]);
@@ -154,7 +182,7 @@ describe("a abertura é controlada: a aba só é entregue quando a porta respond
     const bloqueado = vi.fn().mockReturnValue(null);
     vi.stubGlobal("open", bloqueado);
 
-    abrirTela(fixtureAdminUser, [porta(200)]);
+    abrirTela(fixtureAdminUser);
 
     expect(await screen.findByText("O navegador não deixou a aba abrir")).toBeTruthy();
     expect(fase()).toBe("blocked");
@@ -164,55 +192,5 @@ describe("a abertura é controlada: a aba só é entregue quando a porta respond
     bloqueado.mockReturnValue({ closed: false, location: { replace: vi.fn() } });
     fireEvent.click(screen.getByRole("button", { name: "Abrir de novo" }));
     await waitFor(() => expect(fase()).toBe("opened"));
-  });
-});
-
-describe("a porta que recusa vira frase, não uma aba com erro dentro", () => {
-  it("403 diz que a conta não alcança as métricas, e nenhuma aba é aberta", async () => {
-    const { abrir } = abaDeMentira();
-
-    abrirTela(fixtureAdminUser, [porta(403)]);
-
-    expect((await screen.findByRole("alert")).textContent).toContain(
-      "A sua conta não alcança as métricas da plataforma.",
-    );
-    expect(fase()).toBe("refused");
-    expect(abrir).not.toHaveBeenCalled();
-  });
-
-  it("401 manda entrar de novo — é a sessão que a porta não reconheceu", async () => {
-    abaDeMentira();
-
-    abrirTela(fixtureAdminUser, [porta(401)]);
-
-    expect((await screen.findByRole("alert")).textContent).toContain(
-      "A porta das métricas não reconheceu a sua sessão.",
-    );
-  });
-});
-
-describe("sem serviço atrás da porta, é a tela de indisponibilidade da casa", () => {
-  it("a queda da rede leva à mesma tela de todas as outras, e não a uma frase própria", async () => {
-    abaDeMentira();
-    // A porta nem responde: o `fetch` rejeita, como na queda do serviço.
-    mockAppFetch(fetchMock, { user: fixtureAdminUser });
-    const aplicacao = fetchMock.getMockImplementation()!;
-    fetchMock.mockImplementation((entrada: unknown, init: unknown) =>
-      String(entrada).includes("/grafana/")
-        ? Promise.reject(new TypeError("sem rede"))
-        : aplicacao(entrada, init),
-    );
-
-    renderWithApp(<PlatformMetricsPage />);
-
-    expect(await screen.findByTestId("service-outage")).toBeTruthy();
-    expect(screen.queryByTestId("platform-metrics-gate")).toBeNull();
-  });
-
-  it("503 — a porta aberta sem Grafana atrás — também é indisponibilidade", async () => {
-    abaDeMentira();
-    abrirTela(fixtureAdminUser, [porta(503)]);
-
-    expect(await screen.findByTestId("service-outage")).toBeTruthy();
   });
 });

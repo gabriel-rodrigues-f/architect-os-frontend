@@ -119,6 +119,10 @@ function CalibrationBoard() {
               value={cycleId}
               onChange={setSelectedCycleId}
               options={store.cycles.map((cycle) => ({ value: cycle.id, label: cycle.name }))}
+              empty={{
+                message: t("cycles.selector.empty"),
+                registration: { label: t("cycles.selector.register"), to: "/cycles" },
+              }}
             />
           </div>
 

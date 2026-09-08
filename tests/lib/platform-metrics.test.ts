@@ -1,58 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { MetricsTab, PlatformMetricsDoor, type TabOpener } from "@/lib/platform-metrics";
+import { MetricsTab, ObservabilityAddress, type TabOpener } from "@/lib/platform-metrics";
 
 /**
- * A PORTA E A ABA das Métricas da Plataforma — as duas peças que fazem a
- * abertura ser controlada (dono, 2026-09-08), lidas sem tela nenhuma no meio.
+ * A ABA das Métricas da Plataforma — a peça que faz a abertura ser controlada
+ * (dono, 2026-09-08), lida sem tela nenhuma no meio.
  *
- * A porta é o que separa "abriu" de "abriu uma aba com um erro dentro": ela
- * traduz o status HTTP na única coisa que a tela precisa saber — pronto,
- * recusa COM razão, ou sem serviço atrás. A aba é o que faz o navegador
- * cooperar: ela nasce no gesto e é navegada depois, porque uma aba pedida
- * depois de um `await` é bloqueada como pop-up.
+ * A aba é o que faz o navegador cooperar: ela nasce no gesto e é navegada
+ * depois, porque uma aba pedida depois de um `await` é bloqueada como pop-up.
+ *
+ * A PORTA saiu daqui em 2026-09-08 (regressão "tela branca"): pré-conferir a
+ * porta por `fetch` era impossível de fazer certo — ela responde 302 para
+ * outra origem e o navegador transforma isso em rejeição de CORS, que é
+ * indistinguível de queda de serviço. Quem confere a sessão é a porta, dentro
+ * da aba; quem confere o alcance é a política, na mesma origem.
  */
-const PORTA = "https://api.exemplo/grafana/";
-
-const respondendo = (status: number) => {
-  const fetcher = vi.fn().mockResolvedValue(new Response(null, { status }));
-  return { fetcher, porta: new PlatformMetricsDoor(PORTA, fetcher) };
-};
-
-describe("PlatformMetricsDoor — o que a porta respondeu, em três leituras", () => {
-  it("bate no endereço da porta levando o cookie da sessão — sem credencial não há troca de passe", async () => {
-    const { fetcher, porta } = respondendo(200);
-    await porta.knock();
-    expect(fetcher).toHaveBeenCalledWith(
-      PORTA,
-      expect.objectContaining({ credentials: "include" }),
-    );
-  });
-
-  it("200 e 302 são pronto: a porta serviu, ou encaminhou", async () => {
-    for (const status of [200, 302]) {
-      const { porta } = respondendo(status);
-      expect((await porta.knock()).isReady, String(status)).toBe(true);
-    }
-  });
-
-  it("401 e 403 são recusa, e cada uma nomeia a própria razão", async () => {
-    expect((await respondendo(401).porta.knock()).refusal).toBe("unauthenticated");
-    expect((await respondendo(403).porta.knock()).refusal).toBe("forbidden");
-    expect((await respondendo(403).porta.knock()).isReady).toBe(false);
-  });
-
-  it("503 — a porta aberta sem Grafana atrás — é serviço fora do ar, não recusa", async () => {
-    const resposta = await respondendo(503).porta.knock();
-    expect(resposta.outage).toBe(true);
-    expect(resposta.refusal).toBeNull();
-  });
-
-  it("o `fetch` que rejeita também é serviço fora do ar — sem status, sem frase inventada", async () => {
-    const fetcher = vi.fn().mockRejectedValue(new TypeError("sem rede"));
-    const resposta = await new PlatformMetricsDoor(PORTA, fetcher).knock();
-    expect(resposta.outage).toBe(true);
-    expect(resposta.status).toBe(0);
+describe("ObservabilityAddress — o endereço da porta", () => {
+  it("é o `/grafana/` da própria API quando nada é declarado", () => {
+    expect(ObservabilityAddress.grafana.endsWith("/grafana/")).toBe(true);
   });
 });
 

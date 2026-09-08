@@ -70,22 +70,33 @@ describe("AppShell — seletor de Ciclo e de idioma (R3-008)", () => {
       </ThemeProvider>,
     );
 
+  /**
+   * O gatilho não tem `label` próprio (uso compacto — R3-008): o nome
+   * acessível vem do `<label htmlFor="cycle">`/`ariaLabel` fixo ("Ciclo"),
+   * igual ao que já acontece com "Ordenar por" em `single-select-filter.test.tsx`
+   * — o texto VISÍVEL (o ciclo selecionado) é conferido à parte, via
+   * `textContent`, nunca pelo nome do `role`.
+   *
+   * O gatilho é buscado DE NOVO depois da carga: enquanto a lista de ciclos
+   * não chega, quem desenha é o estado vazio ("Não há ciclos cadastrados",
+   * dono 2026-09-08) — outro elemento, e guardar a referência do primeiro
+   * deixaria o teste falando com um nó que já saiu da tela.
+   */
+  const gatilhoDoCiclo = async () => {
+    // fixtureState tem "2026 H1" (fechado) e "2026 H2" (ativo, activeCycleId).
+    // ADR-0011 fase 1: o seletor lê o contexto `cycles` (não mais o blob
+    // /state), então o rótulo chega quando a query resolve — daí o waitFor.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Ciclo" }).textContent).toContain("2026 H2"),
+    );
+    return screen.getByRole("button", { name: "Ciclo" });
+  };
+
   it("mostra o ciclo ativo no gatilho e troca ao escolher outro na lista", async () => {
     renderShell();
     const user = userEvent.setup();
 
-    /**
-     * O gatilho não tem `label` próprio (uso compacto — R3-008): o nome
-     * acessível vem do `<label htmlFor="cycle">`/`ariaLabel` fixo ("Ciclo"),
-     * igual ao que já acontece com "Ordenar por" em `single-select-filter.test.tsx`
-     * — o texto VISÍVEL (o ciclo selecionado) é conferido à parte, via
-     * `textContent`, nunca pelo nome do `role`.
-     */
-    const trigger = await screen.findByRole("button", { name: "Ciclo" });
-    // fixtureState tem "2026 H1" (fechado) e "2026 H2" (ativo, activeCycleId).
-    // ADR-0011 fase 1: o seletor lê o contexto `cycles` (não mais o blob
-    // /state), então o rótulo chega quando a query resolve — daí o waitFor.
-    await waitFor(() => expect(trigger.textContent).toContain("2026 H2"));
+    const trigger = await gatilhoDoCiclo();
 
     await user.click(trigger);
     const option = await screen.findByRole("option", { name: "2026 H1" });
@@ -101,7 +112,7 @@ describe("AppShell — seletor de Ciclo e de idioma (R3-008)", () => {
     renderShell();
     const user = userEvent.setup();
 
-    const trigger = await screen.findByRole("button", { name: "Ciclo" });
+    const trigger = await gatilhoDoCiclo();
     await user.click(trigger);
     expect(await screen.findByRole("listbox")).toBeTruthy();
 

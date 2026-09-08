@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+import { EmptySelectionField, type SelectionEmptyState } from "@/components/app/EmptySelection";
 import { FilterField } from "@/components/app/FilterField";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,6 +13,13 @@ interface SingleSelectFilterOption {
   label: string;
 }
 
+/**
+ * O seletor de UMA opção. Ele NUNCA aparece vazio (dono, 2026-09-08,
+ * reincidente): sem opções, quem desenha é o `EmptySelectionField` — a frase
+ * do domínio e, para quem alcança a tela de cadastro, o hiperlink que leva a
+ * ela. A régua é do componente; nenhuma das ~32 telas com seletor precisa
+ * lembrar dela, e nenhuma consegue esquecê-la.
+ */
 export function SingleSelectFilter({
   id,
   label,
@@ -23,6 +31,7 @@ export function SingleSelectFilter({
   title,
   describedBy,
   triggerClassName,
+  empty,
 }: {
   id: string;
 
@@ -38,6 +47,8 @@ export function SingleSelectFilter({
   describedBy?: string | undefined;
 
   triggerClassName?: string;
+  /** O que dizer quando não há opção nenhuma; sem isto, a frase da casa. */
+  empty?: SelectionEmptyState | undefined;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -56,6 +67,19 @@ export function SingleSelectFilter({
 
   const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
   const accessibleLabel = label ?? ariaLabel;
+
+  if (options.length === 0) {
+    return (
+      <EmptySelectionField
+        id={id}
+        label={label}
+        ariaLabel={ariaLabel}
+        empty={empty}
+        describedBy={describedBy}
+        triggerClassName={triggerClassName}
+      />
+    );
+  }
 
   return (
     <FilterField label={label} htmlFor={id}>

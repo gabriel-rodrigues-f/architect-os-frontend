@@ -25,11 +25,20 @@ interface AuthContextValue {
   bootstrap: SessionBootstrap;
   /** A pessoa pediu para tentar de novo enquanto o serviço está fora. */
   retrySession: () => void;
-  /** `onAccepted` roda assim que o serviço ACEITA a credencial, antes de a sessão abrir — é o instante do pulso azul do login. */
-  login: (email: string, password: string, onAccepted?: () => void) => Promise<void>;
+  /**
+   * `onAccepted` roda assim que o serviço ACEITA a credencial, antes de a
+   * sessão abrir — é o instante do pulso azul do login. Ele pode DEMORAR de
+   * propósito: a tela espera a onda azul cruzar a rede antes de a aplicação
+   * abrir (dono, 2026-09-08), e por isso a sessão só continua depois dele.
+   */
+  login: (
+    email: string,
+    password: string,
+    onAccepted?: () => Promise<void> | void,
+  ) => Promise<void>;
   register: (
     input: { name: string; email: string; password: string },
-    onAccepted?: () => void,
+    onAccepted?: () => Promise<void> | void,
   ) => Promise<void>;
   /** Revoga no serviço e fecha a sessão desta aba; a razão chega ao login (PR 9). */
   logout: (reason?: SessionEndReason) => Promise<void>;
@@ -161,9 +170,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const login = useCallback(
-    async (email: string, password: string, onAccepted?: () => void) => {
+    async (email: string, password: string, onAccepted?: () => Promise<void> | void) => {
       const result = await authApi.login(email, password);
-      onAccepted?.();
+      await onAccepted?.();
       defaultSidebarPreferences.forgetCollapsedGroups();
       // A primeira abertura do Painel depois do login ganha a entrada orquestrada.
       DashboardEntrance.arm(result.user);
@@ -173,9 +182,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (input: { name: string; email: string; password: string }, onAccepted?: () => void) => {
+    async (
+      input: { name: string; email: string; password: string },
+      onAccepted?: () => Promise<void> | void,
+    ) => {
       const result = await authApi.register(input);
-      onAccepted?.();
+      await onAccepted?.();
       defaultSidebarPreferences.forgetCollapsedGroups();
       DashboardEntrance.arm(result.user);
       await openSession(result.user);

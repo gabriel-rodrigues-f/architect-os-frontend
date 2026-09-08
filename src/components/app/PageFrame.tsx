@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { ShellHeader } from "@/lib/design";
 import { cn } from "@/lib/utils";
@@ -52,18 +52,14 @@ export function PageFrame({
   id,
   pathname,
   className = undefined,
-  ref,
   children,
 }: {
   id?: string | undefined;
   pathname: string;
   className?: string | undefined;
-  /** Quem precisa medir o `<main>` (a rede de sinapses o exclui) entrega o próprio ref. */
-  ref?: RefObject<HTMLElement | null>;
   children: ReactNode;
 }) {
-  const ownRef = useRef<HTMLElement>(null);
-  const mainRef = ref ?? ownRef;
+  const mainRef = useRef<HTMLElement>(null);
   const primeiraRota = useRef(true);
 
   useEffect(() => {

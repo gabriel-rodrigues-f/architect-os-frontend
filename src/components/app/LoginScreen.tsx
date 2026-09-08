@@ -15,8 +15,9 @@ import { authErrorMessage, useAuth } from "@/lib/auth";
 import { FormKeyboard } from "@/lib/form-keyboard";
 import { SessionEndReason, sessionEndMemory } from "@/lib/session-end-reason";
 import { instanceStatusQuery } from "@/lib/session-query";
+import { useReducedMotion } from "@/hooks";
 import { SynapseSignals } from "@/lib/synapse-network";
-import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
+import { EntrancePulseCeremony, SynapseOutcomeRule } from "@/lib/synapse-outcome";
 
 /**
  * ONDA DA RECUPERAÇÃO DE ACESSO (2026-09-04) — quem não consegue entrar sai
@@ -29,7 +30,7 @@ import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
  *
  * LOGIN "SYNAPSE NETWORK" (direção 2026-09-06): a casca (`AuthScreenShell`)
  * põe a rede de sinapses ao fundo e a marca ao lado; esta tela só fala com a
- * rede por `SynapseSignals`, e a autenticação nunca espera pela animação.
+ * rede por `SynapseSignals`.
  *
  * A COR DO PULSO ACOMPANHA O RESULTADO (dono, 2026-09-08): "se o login for
  * rejeitado, a sinapse deve ser vermelha, no mesmo tom do vermelho de erro do
@@ -38,6 +39,15 @@ import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
  * resposta: aceita → azul (`onAccepted`, antes de a sessão abrir, para a rede
  * ainda estar na tela); recusada → vermelho; serviço fora → nada, porque não
  * é culpa do que foi digitado (`SynapseOutcomeRule.toneOfDoorResult`).
+ *
+ * A ENTRADA ESPERA A PISCADA (dono, 2026-09-08): "ao inserir a senha correta
+ * eu quero ver a rede de sinapse piscando em azul […]. Se necessário, atrase
+ * 1 segundo a entrada do usuário para que seja possível ver a piscada em
+ * azul". O pulso azul já disparava, mas a sessão abria no mesmo instante e a
+ * tela trocava antes de a onda cruzar. Agora a `EntrancePulseCeremony` segura
+ * a abertura pelo tempo da onda (a duração vem do motor, não daqui); com
+ * movimento reduzido, entra na hora. A RECUSA continua sem espera — o
+ * vermelho pulsa e a pessoa já está onde vai corrigir a senha.
  *
  * A PORTA EXPLICA POR QUE VOCÊ SAIU (PR 9, [FA-01]/[FA-02]): inatividade e
  * expiração chegam como `SessionEndReason` — pelo portão, na mesma aba, ou
@@ -51,6 +61,7 @@ export function LoginScreen({
 }: { signals?: SynapseSignals; sessionEnd?: SessionEndReason | null } = {}) {
   const { login, register } = useAuth();
   const { t } = useI18n();
+  const reducedMotion = useReducedMotion();
   const [ownSignals] = useState(() => new SynapseSignals());
   const signals = givenSignals ?? ownSignals;
   const [mode, setMode] = useState<"login" | "register" | "recovery">("login");
@@ -97,7 +108,9 @@ export function LoginScreen({
     event.preventDefault();
     if (submitting) return;
     setSubmitting(true);
-    const accepted = () => signals.pulseWith("primary");
+    // O acerto pulsa azul e SEGURA a entrada até a onda terminar.
+    const ceremony = new EntrancePulseCeremony(signals, reducedMotion);
+    const accepted = () => ceremony.celebrate();
     try {
       if (mode === "register") {
         await register(

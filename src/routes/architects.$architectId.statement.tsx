@@ -227,6 +227,7 @@ function StatementOfArchitect() {
               value,
               label: t(labelKey),
             }))}
+            empty={{ message: t("statement.filters.period.empty") }}
           />
           <MultiSelectFilter
             id="statement-kinds"
@@ -240,6 +241,7 @@ function StatementOfArchitect() {
             selectAllLabel={t("statement.filters.all")}
             allSummaryLabel={t("statement.filters.all")}
             noneSummaryLabel={t("statement.filters.none")}
+            empty={{ message: t("statement.filters.kinds.empty") }}
           />
         </div>
 

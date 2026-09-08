@@ -195,6 +195,7 @@ function UsersDirectory() {
                   options={teamFilterOptions}
                   value={effectiveTeamFilter}
                   onChange={setTeamFilter}
+                  empty={{ message: t("users.filter.team.empty") }}
                 />
               </div>
               <div className="scroll-visible overflow-x-auto">
