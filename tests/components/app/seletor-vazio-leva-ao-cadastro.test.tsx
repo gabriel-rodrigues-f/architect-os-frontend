@@ -78,7 +78,7 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
     );
 
     const gatilho = await screen.findByRole("button", { name: "Profissionais" });
-    expect(gatilho.textContent).toContain("Não há profissionais cadastrados");
+    expect(gatilho.textContent).toContain("Nenhum profissional cadastrado");
     expect(gatilho.hasAttribute("disabled")).toBe(true);
 
     await userEvent.click(gatilho);
@@ -116,7 +116,7 @@ describe("o filtro de pessoa sem ninguém cadastrado", () => {
     );
 
     const campo = await screen.findByRole("button", { name: "Profissionais" });
-    expect(campo.textContent).toContain("Não há profissionais cadastrados");
+    expect(campo.textContent).toContain("Nenhum profissional cadastrado");
     expect(campo.hasAttribute("disabled")).toBe(true);
     await userEvent.click(campo);
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -142,7 +142,7 @@ describe("o campo de time do diálogo de cadastro, sem nenhum time", () => {
 
     renderWithApp(campo(TeamChoice.for(fixtureAssignedManagerUser, [])));
 
-    expect(await screen.findByText("Não há times cadastrados")).toBeTruthy();
+    expect(await screen.findByText("Nenhum time cadastrado")).toBeTruthy();
     expect(screen.queryByText("Escolha o time")).toBeNull();
 
     const gatilho = screen.getByRole("button", { name: "Time" });
@@ -165,6 +165,6 @@ describe("o campo de time do diálogo de cadastro, sem nenhum time", () => {
     );
 
     expect(await screen.findByRole("button", { name: "Time" })).toBeTruthy();
-    expect(screen.queryByText("Não há times cadastrados")).toBeNull();
+    expect(screen.queryByText("Nenhum time cadastrado")).toBeNull();
   });
 });

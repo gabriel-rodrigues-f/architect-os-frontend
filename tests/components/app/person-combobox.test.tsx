@@ -14,7 +14,7 @@ import { PersonPicker } from "@/lib/person-selection";
  * de várias pessoas — "Todo o time" como alternador de verdade, seleção
  * sempre explícita, roster que encolhe — e acrescenta o que motivou a troca:
  * com alcance vazio, "Todo o time" não existe e a única coisa na tela é
- * "Não há profissionais cadastrados."; a busca que não acha ninguém diz
+ * "Nenhum profissional cadastrado"; a busca que não acha ninguém diz
  * "Nenhum profissional encontrado." — as mesmas duas frases em todas as telas.
  */
 const pessoa = (id: string, name: string): Professional => ({
@@ -80,7 +80,7 @@ describe("PersonCombobox — alcance vazio (dono, 2026-09-06; item 2, 2026-09-08
         </I18nProvider>,
       );
 
-      expect(vazio().textContent).toContain("Não há profissionais cadastrados");
+      expect(vazio().textContent).toContain("Nenhum profissional cadastrado");
       expect(screen.queryByText("Todo o time")).toBeNull();
 
       await userEvent.click(vazio());

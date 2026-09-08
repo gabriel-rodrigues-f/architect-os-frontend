@@ -1,6 +1,7 @@
 import { ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 
+import { EmptySelectionField, useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { FilterTriggerButton } from "@/components/app/FilterTriggerButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -14,7 +15,21 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Capability } from "@/lib/domain";
+import { Registration } from "@/lib/registration";
 
+/**
+ * O FILTRO DE CAPACIDADES DA AVALIAÇÃO DE DESEMPENHO.
+ *
+ * Dono (2026-09-08, item 1): *"o filtro de CAPACIDADES sem capacidades
+ * cadastradas precisa ficar bloqueado, exatamente como o de profissionais"*.
+ * Ele escapou da catraca porque não é o seletor da casa nem um `<select>`
+ * nativo — é uma combobox própria, e desenhava um `Popover` com uma lista de
+ * nada, dizendo "Selecione capacidades" sobre um catálogo vazio.
+ *
+ * O conserto não é uma frase a mais aqui: é delegar o vazio ao MESMO
+ * `EmptySelectionField` da combobox de pessoa, que já sabe o desenho (moldura,
+ * frase e gatilho desabilitado) e pergunta a frase ao `Registration`.
+ */
 export function CapabilityCombobox({
   capabilities,
   selected,
@@ -32,6 +47,7 @@ export function CapabilityCombobox({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const vazio = useSelectionEmptyState(Registration.CAPABILITY);
 
   const todasMarcadas = capabilities.length > 0 && selected.length === capabilities.length;
   const algumaMarcada = selected.length > 0;
@@ -44,6 +60,18 @@ export function CapabilityCombobox({
         : selected.length === 1
           ? (selected[0]?.name ?? "")
           : `${selected.length} capacidades`;
+
+  if (capabilities.length === 0) {
+    return (
+      <EmptySelectionField
+        id="capability-combobox"
+        ariaLabel={label}
+        empty={vazio}
+        triggerClassName={className}
+        icon={ChevronsUpDown}
+      />
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

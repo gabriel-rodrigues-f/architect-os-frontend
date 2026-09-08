@@ -1,20 +1,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import {
   Callout,
   EmptyState,
+  EmptyStateCallToAction,
   LevelBadge,
   MultiSelectFilter,
-  PageAction,
   PageHeader,
   QuerySection,
   SectionCard,
   SingleSelectFilter,
   TeamChoiceField,
 } from "@/components/app";
-import { useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { FilterField } from "@/components/app/FilterField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import type { CareerLevel } from "@/lib/domain";
 import type { TeamRuleView } from "@/lib/gateways/career.gateway";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadReach } from "@/lib/route-guards";
@@ -92,7 +92,6 @@ function TeamRulesScreen() {
 
   const [chosenTeamId, setChosenTeamId] = useState<string | null>(null);
   const [chosenLevelId, setChosenLevelId] = useState<string | null>(null);
-  const cadastroDeTime = useSelectionEmptyState(Registration.TEAM);
 
   const teams = (teamsQuery.data ?? []).filter(
     (team) => team.active && defaultUiAuthorizationPolicy.canConfigureRulesOf(user, team.id),
@@ -112,27 +111,26 @@ function TeamRulesScreen() {
       />
 
       {teamId === null || careerLevel === null ? (
-        <EmptyState
-          title={t("teamRules.noTeam")}
-          /*
-           * Dono (2026-09-08, item 8): como o item 3, mas para TIME — o botão
-           * do centro cadastra o PRIMEIRO time, e só existe quando não há
-           * nenhum. Sem time nenhum não há régua a definir; com times, a
-           * ausência é de escolha, não de cadastro.
-           */
-          action={
-            teams.length === 0 && cadastroDeTime.registration ? (
-              <PageAction className="mt-4" label={t("teams.create.action")} asChild>
-                <Link
-                  to={cadastroDeTime.registration.to}
-                  {...(cadastroDeTime.registration.search
-                    ? { search: cadastroDeTime.registration.search }
-                    : {})}
-                />
-              </PageAction>
-            ) : undefined
-          }
-        />
+        /*
+         * Dono (2026-09-08, item 11): esta tela tinha UMA linha só ("Nenhum
+         * time disponível para configurar."). Passa a ter as duas, pelo mesmo
+         * bloco das outras — e o botão do centro cadastra o PRIMEIRO time.
+         *
+         * O que falta pode ser o TIME ou o NÍVEL DE CARREIRA: a régua é de um
+         * time num nível, e cada ausência tem a sua linha 1 e a sua linha 2.
+         */
+        teamId === null ? (
+          <EmptyStateCallToAction
+            subject={EmptySubject.TEAM}
+            hint={t("teamRules.noTeam.hint")}
+            registrations={[Registration.TEAM]}
+          />
+        ) : (
+          <EmptyStateCallToAction
+            subject={EmptySubject.CAREER_LEVEL}
+            hint={t("teamRules.noCareerLevel.hint")}
+          />
+        )
       ) : (
         <>
           <div className="mb-6 grid max-w-xl gap-4 sm:grid-cols-2">
@@ -151,7 +149,7 @@ function TeamRulesScreen() {
               onChange={setChosenLevelId}
               options={careerLevels.map((level) => ({ value: level.id, label: level.name }))}
               empty={{
-                message: t("teamRules.filter.careerLevel.empty"),
+                message: EmptySubject.CAREER_LEVEL.title(t),
                 registration: {
                   label: t("teamRules.filter.careerLevel.register"),
                   to: "/settings",
@@ -291,7 +289,7 @@ function TeamRuleEditor({
               label: capability.name,
             }))}
             empty={{
-              message: t("teamRules.capabilities.empty"),
+              message: EmptySubject.CAPABILITY.title(t),
               registration: {
                 label: t("teamRules.capabilities.register"),
                 to: "/competency-matrix",

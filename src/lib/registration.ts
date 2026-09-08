@@ -1,5 +1,6 @@
+import { EmptySubject } from "./empty-subject";
 import type { SessionUser } from "./api";
-import type { MessageKey } from "./i18n";
+import type { I18nApi, MessageKey } from "./i18n";
 import { defaultUiAuthorizationPolicy, UiAuthorizationPolicy } from "./scope";
 
 /**
@@ -32,6 +33,7 @@ export class Registration {
   /** A pessoa nasce em Contas e Acessos — conta e profissional num ato só. */
   static readonly PROFESSIONAL = new Registration(
     "people",
+    EmptySubject.PROFESSIONAL,
     "/users",
     { cadastrar: "profissional" },
     "team.empty.cta",
@@ -41,6 +43,7 @@ export class Registration {
   /** O time nasce em Estrutura de Times, pelo formulário de cadastro. */
   static readonly TEAM = new Registration(
     "teams",
+    EmptySubject.TEAM,
     "/teams",
     { cadastrar: "time" },
     "teams.create.action",
@@ -50,6 +53,7 @@ export class Registration {
   /** O ciclo nasce em Ciclos de Avaliação — a tela inteira é o cadastro. */
   static readonly CYCLE = new Registration(
     "cycles",
+    EmptySubject.CYCLE,
     "/cycles",
     undefined,
     "cycle.new",
@@ -59,15 +63,37 @@ export class Registration {
   /** A capacidade nasce no Catálogo de Competências, pelo diálogo de cadastro. */
   static readonly CAPABILITY = new Registration(
     "capabilities",
+    EmptySubject.CAPABILITY,
     "/competency-matrix",
     { cadastrar: "capacidade" },
     "matrix.newCapability",
     (policy, user) => policy.operatesTheSystem(user),
   );
 
+  /**
+   * A competência nasce DENTRO de uma capacidade (regra de domínio), e por
+   * isso o convite dela é para o Catálogo de Competências — não há formulário
+   * de competência solta para abrir. Sem NENHUMA capacidade, o convite certo
+   * não é este: é o da capacidade, e quem escolhe é a tela.
+   */
+  static readonly COMPETENCY = new Registration(
+    "competencies",
+    EmptySubject.COMPETENCY,
+    "/competency-matrix",
+    undefined,
+    "competency.new",
+    (policy, user) => policy.operatesTheSystem(user),
+  );
+
   private constructor(
     /** O assunto, que também nomeia as chaves de texto: `<assunto>.selector.*`. */
     readonly subject: string,
+    /**
+     * QUEM SABE A LINHA 1. O `Registration` sabe onde se cadastra; o
+     * `EmptySubject` sabe como se diz que ainda não há nenhum. Nenhuma tela
+     * escreve essa frase, e nenhuma pode escrevê-la diferente.
+     */
+    readonly emptySubject: EmptySubject,
     readonly to: string,
     readonly search: RegistrationSearch | undefined,
     /**
@@ -80,9 +106,9 @@ export class Registration {
     private readonly reaches: ReachQuestion,
   ) {}
 
-  /** "Não há profissionais cadastrados" — o que o filtro bloqueado diz. */
-  get emptyKey(): MessageKey {
-    return `${this.subject}.selector.empty` as MessageKey;
+  /** "Nenhum profissional cadastrado" — a LINHA 1, vinda do assunto. */
+  emptyTitle(t: I18nApi["t"]): string {
+    return this.emptySubject.title(t);
   }
 
   /** "Cadastrar primeiro profissional" — o rótulo do hiperlink em meio a texto. */

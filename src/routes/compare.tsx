@@ -18,6 +18,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Registration } from "@/lib/registration";
@@ -130,7 +131,7 @@ function ProfessionalsComparison() {
          * nenhum.
          */
         <EmptyStateCallToAction
-          title={t("person.none")}
+          subject={EmptySubject.PROFESSIONAL}
           hint={t("compare.empty.noProfessionals")}
           registrations={[Registration.PROFESSIONAL]}
         />

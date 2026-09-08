@@ -1,11 +1,11 @@
 import { useMemo } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 import {
   DataViewToolbar,
+  EmptyStateCallToAction,
   MultiSelectFilter,
   OutOfReachScreen,
-  PageAction,
   PageHeader,
   Pagination,
   SingleSelectFilter,
@@ -20,11 +20,12 @@ import {
 import { EmptyState } from "@/components/app/DataView";
 import { FilterField } from "@/components/app/FilterField";
 import { PersonCombobox } from "@/components/app/PersonCombobox";
-import { EmptyState as EmptyStateCard } from "@/components/app/ui-bits";
 import { usePendingTeamTransfers } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
+import { Registration } from "@/lib/registration";
 import { PersonPicker } from "@/lib/person-selection";
 import { usePageHelp } from "@/lib/page-help";
 import { requireLeadershipReach } from "@/lib/route-guards";
@@ -104,19 +105,16 @@ function TeamRoster() {
       <TeamTransferRequestsSection />
 
       {store.professionalsIncludingInactive.length === 0 ? (
-        <EmptyStateCard
-          title={t("team.empty.title")}
+        /*
+         * Dono (2026-09-08, item 1): sem ninguém cadastrado, o botão do
+         * centro é "Cadastrar Profissional" — e é o MESMO bloco das outras
+         * onze telas, não um estado vazio escrito à mão aqui. A linha 1 vem
+         * do assunto; a linha 2 é desta tela.
+         */
+        <EmptyStateCallToAction
+          subject={EmptySubject.PROFESSIONAL}
           hint={t("team.empty.hint")}
-          action={
-            /*
-             * Dono (2026-09-08, item 1): sem ninguém cadastrado, o botão do
-             * centro é "Cadastrar Profissional" — e é a MESMA ação de página
-             * das outras telas, não um botão escrito à mão aqui.
-             */
-            <PageAction className="mt-4" label={t("team.empty.cta")} asChild>
-              <Link to="/users" search={{ cadastrar: "profissional" }} />
-            </PageAction>
-          }
+          registrations={[Registration.PROFESSIONAL]}
         />
       ) : (
         <>
@@ -169,7 +167,7 @@ function TeamRoster() {
               selectAllLabel={t("team.filter.role.all")}
               allSummaryLabel={t("team.filter.role.all")}
               noneSummaryLabel={t("team.filter.chip.none")}
-              empty={{ message: t("team.filter.role.empty") }}
+              empty={{ message: EmptySubject.CAREER_LEVEL.title(t) }}
             />
             <MultiSelectFilter
               id="team-filter-capability"
@@ -180,7 +178,7 @@ function TeamRoster() {
               selectAllLabel={t("team.filter.capability.all")}
               allSummaryLabel={t("team.filter.capability.all")}
               noneSummaryLabel={t("team.filter.chip.none")}
-              empty={{ message: t("team.filter.capability.empty") }}
+              empty={{ message: EmptySubject.CAPABILITY.title(t) }}
             />
             <SingleSelectFilter
               id="team-sort"

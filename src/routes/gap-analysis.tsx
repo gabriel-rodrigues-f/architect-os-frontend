@@ -20,6 +20,7 @@ import type { ConsolidatedGapRow } from "@/lib/selectors";
 import { useCurrentUser } from "@/lib/auth";
 import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Registration } from "@/lib/registration";
@@ -121,7 +122,7 @@ function TeamPriorities() {
         // CENTRO do quadro; com filtro que não achou ninguém, só a mensagem.
         store.professionals.length === 0 ? (
           <EmptyStateCallToAction
-            title={t("person.none")}
+            subject={EmptySubject.PROFESSIONAL}
             hint={t("gap.empty.noProfessionals")}
             registrations={[Registration.PROFESSIONAL]}
           />

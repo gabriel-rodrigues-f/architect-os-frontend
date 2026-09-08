@@ -11,7 +11,7 @@ import {
   SectionAction,
   SectionCard,
 } from "@/components/app";
-import { RegistrationLink, useSelectionEmptyState } from "@/components/app/EmptySelection";
+import { EmptyFieldInvite } from "@/components/app/EmptySelection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
 import { type LearningItemType, type LearningPath, type LearningPathItem } from "@/lib/domain";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
@@ -42,24 +43,25 @@ function useLearningPathsViewModel(): LearningPathsViewModel {
 }
 
 /**
- * NINGUÉM PARA ATRIBUIR AINDA — a mesma frase e o mesmo destino nos dois
- * diálogos da tela, o de criar e o de editar trilha (regra de reuso: dois
- * lugares, um componente). Segue o item 2 do dono: quem cadastra gente
- * recebe o hiperlink; quem não cadastra lê só a frase.
+ * O CAMPO "COMPETÊNCIAS" VAZIO DOS DOIS DIÁLOGOS — criar e editar trilha.
+ *
+ * Dono (2026-09-08, item 2): o campo "Atribuída a" já convidava; este dizia
+ * só "Nenhuma competência encontrada." e não levava a lugar nenhum. *"Ele
+ * passa a convidar do mesmo jeito, pelo MESMO componente."*
+ *
+ * A REGRA DE DOMÍNIO decide QUAL convite: competência nasce DENTRO de uma
+ * capacidade. Sem nenhuma capacidade, convidar para cadastrar competência é
+ * mandar para uma porta que não abre — o convite é o da capacidade. Com
+ * capacidade e sem competência, o convite é o do Catálogo de Competências.
  */
-function NoPeopleYet() {
-  const { t } = useI18n();
-  const vazio = useSelectionEmptyState(Registration.PROFESSIONAL);
+function NoCompetenciesYet() {
+  const store = useStore();
   return (
-    <p className="text-sm text-muted-foreground">
-      {t("person.none")}{" "}
-      {vazio.registration ? (
-        <RegistrationLink
-          registration={vazio.registration}
-          className="text-primary underline underline-offset-2"
-        />
-      ) : null}
-    </p>
+    <EmptyFieldInvite
+      registration={
+        store.capabilities.length === 0 ? Registration.CAPABILITY : Registration.COMPETENCY
+      }
+    />
   );
 }
 
@@ -144,7 +146,7 @@ function LearningScreen() {
       />
 
       {semTrilhas && (
-        <EmptyStateCallToAction title={t("path.empty.title")} hint={t("path.empty.hint")}>
+        <EmptyStateCallToAction subject={EmptySubject.LEARNING_PATH} hint={t("path.empty.hint")}>
           {cadastrarTrilha}
         </EmptyStateCallToAction>
       )}
@@ -434,8 +436,12 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
                     <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   </label>
                 ))}
-                {visibleCompetencies.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                {store.competencies.length === 0 ? (
+                  <NoCompetenciesYet />
+                ) : (
+                  visibleCompetencies.length === 0 && (
+                    <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                  )
                 )}
               </div>
             </div>
@@ -452,7 +458,9 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
                     <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
-                {store.professionals.length === 0 && <NoPeopleYet />}
+                {store.professionals.length === 0 && (
+                  <EmptyFieldInvite registration={Registration.PROFESSIONAL} />
+                )}
               </div>
             </div>
           </div>
@@ -672,8 +680,12 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                     <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   </label>
                 ))}
-                {visibleCompetencies.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                {store.competencies.length === 0 ? (
+                  <NoCompetenciesYet />
+                ) : (
+                  visibleCompetencies.length === 0 && (
+                    <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                  )
                 )}
               </div>
             </div>
@@ -690,7 +702,9 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
                     <span className="min-w-0 flex-1 truncate">{a.name}</span>
                   </label>
                 ))}
-                {store.professionals.length === 0 && <NoPeopleYet />}
+                {store.professionals.length === 0 && (
+                  <EmptyFieldInvite registration={Registration.PROFESSIONAL} />
+                )}
               </div>
             </div>
           </div>

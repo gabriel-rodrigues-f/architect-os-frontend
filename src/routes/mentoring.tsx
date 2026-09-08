@@ -14,6 +14,7 @@ import {
 import { personAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -91,7 +92,7 @@ function MentoringScreen() {
 
       {semNinguem && (
         <EmptyStateCallToAction
-          title={t("person.none")}
+          subject={EmptySubject.PROFESSIONAL}
           hint={t("mentor.empty.noProfessionals")}
           registrations={[Registration.PROFESSIONAL]}
         />

@@ -126,7 +126,9 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     comoAdmin();
     renderWithApp(<AssessmentsPage />);
 
-    expect(await screen.findByText("Não há o que avaliar ainda")).toBeTruthy();
+    expect((await screen.findAllByText("Nenhum profissional cadastrado")).length).toBeGreaterThan(
+      0,
+    );
     expect(botaoDeCadastro("Cadastrar Profissional").getAttribute("href")).toBe(
       "/users?cadastrar=profissional",
     );
@@ -147,7 +149,9 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     comoAdmin();
     renderWithApp(<GapAnalysisPage />);
 
-    expect(await screen.findByText("Não há profissionais cadastrados.")).toBeTruthy();
+    expect((await screen.findAllByText("Nenhum profissional cadastrado")).length).toBeGreaterThan(
+      0,
+    );
     expect(botaoDeCadastro("Cadastrar Profissional")).toBeTruthy();
   });
 
@@ -155,7 +159,9 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     comoAdmin();
     renderWithApp(<ProgressionPage />);
 
-    expect(await screen.findByText("Não há profissionais cadastrados.")).toBeTruthy();
+    expect((await screen.findAllByText("Nenhum profissional cadastrado")).length).toBeGreaterThan(
+      0,
+    );
     expect(botaoDeCadastro("Cadastrar Profissional")).toBeTruthy();
     // O filtro do cabeçalho continua lá, bloqueado — e sem porta nenhuma.
     const filtro = screen.getByRole("button", { name: "Profissionais" });
@@ -166,7 +172,9 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     comoAdmin();
     renderWithApp(<ComparePage />);
 
-    expect(await screen.findByText("Não há profissionais cadastrados.")).toBeTruthy();
+    expect((await screen.findAllByText("Nenhum profissional cadastrado")).length).toBeGreaterThan(
+      0,
+    );
     expect(botaoDeCadastro("Cadastrar Profissional")).toBeTruthy();
     expect(screen.queryByText("Selecione ao menos 2 profissionais para comparar.")).toBeNull();
   });
@@ -175,7 +183,9 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     comoAdmin();
     renderWithApp(<DevelopmentPlansPage />);
 
-    expect(await screen.findByText("Não há profissionais cadastrados.")).toBeTruthy();
+    expect((await screen.findAllByText("Nenhum profissional cadastrado")).length).toBeGreaterThan(
+      0,
+    );
     expect(botaoDeCadastro("Cadastrar Profissional")).toBeTruthy();
   });
 
@@ -183,7 +193,9 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     comoAdmin();
     renderWithApp(<MentoringPage />);
 
-    expect(await screen.findByText("Não há profissionais cadastrados.")).toBeTruthy();
+    expect((await screen.findAllByText("Nenhum profissional cadastrado")).length).toBeGreaterThan(
+      0,
+    );
     expect(botaoDeCadastro("Cadastrar Profissional")).toBeTruthy();
   });
 
@@ -191,7 +203,7 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     comoAdmin();
     renderWithApp(<CalibrationPage />);
 
-    expect(await screen.findByText("Nenhum ciclo disponível")).toBeTruthy();
+    expect(await screen.findByText("Nenhum ciclo cadastrado")).toBeTruthy();
     expect(botaoDeCadastro("Cadastrar Ciclo").getAttribute("href")).toBe("/cycles");
     expect(screen.queryByRole("button", { name: "Ciclo" })).toBeNull();
   });
@@ -204,7 +216,9 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     comBanco(fixtureAssignedTechLeadUser, bancoVazio);
     renderWithApp(<ProgressionPage />);
 
-    expect(await screen.findByText("Não há profissionais cadastrados.")).toBeTruthy();
+    expect((await screen.findAllByText("Nenhum profissional cadastrado")).length).toBeGreaterThan(
+      0,
+    );
     expect(screen.queryByRole("link", { name: /Cadastrar/ })).toBeNull();
   });
 });

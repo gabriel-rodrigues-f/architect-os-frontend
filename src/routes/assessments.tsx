@@ -129,6 +129,13 @@ function AssessmentsScreen() {
     ...(store.professionals.length === 0 ? [Registration.PROFESSIONAL] : []),
     ...(store.capabilities.length === 0 ? [Registration.CAPABILITY] : []),
   ];
+  /*
+   * A LINHA 1 é a do PRIMEIRO assunto que falta — "Nenhum profissional
+   * cadastrado" quando não há gente, "Nenhuma capacidade cadastrada" quando
+   * só falta o catálogo. Quem sabe a frase é o assunto; a tela só sabe qual
+   * assunto está vazio.
+   */
+  const primeiroQueFalta = cadastrosQueFaltam[0];
 
   const toggleCapability = (id: string) =>
     setCapabilityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -321,9 +328,9 @@ function AssessmentsScreen() {
         />
       )}
 
-      {cadastrosQueFaltam.length > 0 ? (
+      {primeiroQueFalta ? (
         <EmptyStateCallToAction
-          title={t("asmt.empty.title")}
+          subject={primeiroQueFalta.emptySubject}
           hint={t("asmt.empty.hint")}
           registrations={cadastrosQueFaltam}
         />

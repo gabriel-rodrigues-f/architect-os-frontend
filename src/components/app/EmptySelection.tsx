@@ -23,7 +23,7 @@ import type { Registration, RegistrationSearch } from "@/lib/registration";
  * meio a texto (o corpo de um diálogo); o FILTRO não o usa mais.
  */
 export interface SelectionEmptyState {
-  /** A frase, no vocabulário do domínio: "Não há ciclos cadastrados". */
+  /** A LINHA 1, no formato único do `EmptySubject`: "Nenhum ciclo cadastrado". */
   readonly message: string;
   /** A tela onde se cadastra a primeira opção — só para quem a alcança. */
   readonly registration?: {
@@ -42,7 +42,7 @@ export interface SelectionEmptyState {
 export function useSelectionEmptyState(registration: Registration): SelectionEmptyState {
   const { t } = useI18n();
   const user = useOptionalUser();
-  const message = t(registration.emptyKey);
+  const message = registration.emptyTitle(t);
   if (!registration.reachedBy(user)) return { message };
   return {
     message,
@@ -83,6 +83,32 @@ export function RegistrationLink({
     >
       {registration.label}
     </Link>
+  );
+}
+
+/**
+ * O CAMPO DE DIÁLOGO SEM NADA PARA MARCAR — a linha 1 do assunto e, para quem
+ * alcança o cadastro, o convite no MESMO componente.
+ *
+ * Dono (2026-09-08, item 2): o campo "Atribuída a" vazio já convidava; o
+ * campo "Competências" dizia só "Nenhuma competência encontrada." e não
+ * levava a lugar nenhum. *"Ele passa a convidar do mesmo jeito, pelo MESMO
+ * componente"* — então quem escolhe é a TELA (qual assunto falta), e o
+ * desenho é um só. Este é o uso legítimo do hiperlink em meio a texto: corpo
+ * de diálogo, não filtro e não botão central.
+ */
+export function EmptyFieldInvite({ registration }: { registration: Registration }) {
+  const vazio = useSelectionEmptyState(registration);
+  return (
+    <p className="text-body text-muted-foreground">
+      {vazio.message}{" "}
+      {vazio.registration ? (
+        <RegistrationLink
+          registration={vazio.registration}
+          className="text-primary underline underline-offset-2"
+        />
+      ) : null}
+    </p>
   );
 }
 

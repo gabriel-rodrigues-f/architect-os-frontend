@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { PageAction, PageActionRank } from "@/components/app/PageAction";
 import { EmptyState } from "@/components/app/ui-bits";
 import { useOptionalUser } from "@/lib/auth";
+import type { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import type { Registration } from "@/lib/registration";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,13 @@ import { cn } from "@/lib/utils";
  * muda, e o convite passou a viver AQUI — a frase, uma linha curta de apoio e
  * o(s) botão(ões) de cadastro, centralizados, na variante primária.
  *
- * Onze telas usam este bloco, e nenhuma repete régua: o RÓTULO do botão, a
+ * DUAS LINHAS, SEMPRE (dono, 2026-09-08, item 3). A linha 1 é o título e vem
+ * do `EmptySubject` — nenhuma tela a escreve, e por isso nenhuma escreve
+ * "Não há…" nem "…disponível". A linha 2 é a regra de negócio DAQUELA tela e
+ * é obrigatória no tipo: o estado vazio de uma linha só (a Calibração era
+ * assim) não compila mais.
+ *
+ * Doze telas usam este bloco, e nenhuma repete régua: o RÓTULO do botão, a
  * TELA de destino, o `search` que abre o formulário e a pergunta de ALCANCE
  * vêm do `Registration`. Quem não alcança o cadastro lê a frase e não recebe
  * botão nenhum — mandar alguém para uma porta fechada é pior do que não
@@ -32,15 +39,21 @@ import { cn } from "@/lib/utils";
  * filho, e o bloco só a hospeda. É uma ação só, em um lugar só de cada vez.
  */
 export function EmptyStateCallToAction({
-  title,
+  subject,
   hint,
   registrations = [],
   children,
 }: {
-  /** A frase do vazio, no vocabulário do domínio. */
-  title: string;
-  /** A linha curta de apoio — por que a tela está vazia, e o que a enche. */
-  hint?: ReactNode;
+  /**
+   * O ASSUNTO que ainda não tem nenhum. A LINHA 1 vem dele, no formato único
+   * — a tela não a escreve, e por isso não pode escrevê-la diferente.
+   */
+  subject: EmptySubject;
+  /**
+   * A LINHA 2, a regra de negócio DESTA tela. É obrigatória: um estado vazio
+   * de uma linha só (a Calibração era assim) deixa de compilar.
+   */
+  hint: ReactNode;
   /** Os assuntos que faltam cadastrar, na ordem em que a tela os declara. */
   registrations?: readonly Registration[];
   /** A ação de cadastro que mora na própria tela (um diálogo), se houver. */
@@ -53,8 +66,8 @@ export function EmptyStateCallToAction({
 
   return (
     <EmptyState
-      title={title}
-      {...(hint !== undefined ? { hint } : {})}
+      title={subject.title(t)}
+      hint={hint}
       {...(temAcao
         ? {
             action: (

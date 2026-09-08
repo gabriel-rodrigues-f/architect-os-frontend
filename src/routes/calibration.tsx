@@ -21,6 +21,7 @@ import { calibrationApi, workAssistantsApi } from "@/lib/api";
 import { Registration } from "@/lib/registration";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonPicker } from "@/lib/person-selection";
@@ -126,7 +127,7 @@ function CalibrationBoard() {
          * dado; o cadastro de ciclo vai para o centro do quadro principal.
          */
         <EmptyStateCallToAction
-          title={t("calibration.noCycle")}
+          subject={EmptySubject.CYCLE}
           hint={t("calibration.noCycle.hint")}
           registrations={[Registration.CYCLE]}
         />

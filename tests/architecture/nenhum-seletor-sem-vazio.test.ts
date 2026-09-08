@@ -38,6 +38,21 @@ import { ArquivoFonte, Catraca, Varredura, raizDoFrontend } from "../helpers/cat
  *
  * Regravar: `ATUALIZAR_BASELINE_SELETOR_VAZIO=1 npx vitest run tests/architecture/nenhum-seletor-sem-vazio.test.ts`
  */
+/**
+ * A TERCEIRA FORMA, que esta régua deixou passar (dono, 2026-09-08): a
+ * COMBOBOX PRÓPRIA. O filtro de capacidades da Avaliação de Desempenho não é
+ * o seletor da casa nem um `<select>` nativo — é um componente que monta o
+ * próprio gatilho (`FilterTriggerButton`) e o próprio painel. Com o catálogo
+ * vazio ele abria um `Popover` de nada e dizia "Selecione capacidades".
+ *
+ * A régua nova: quem desenha um gatilho de filtro sobre uma lista de DADOS
+ * delega o vazio ao `EmptySelectionField` — o mesmo desenho da combobox de
+ * pessoa. Piso: ZERO. Prova do vermelho contra o `e13e5f3`: 1 ocorrência,
+ * `src/components/app/CapabilityCombobox.tsx`, exatamente a do pedido.
+ */
+const GATILHO_DE_FILTRO = /<FilterTriggerButton\b/;
+const DELEGA_O_VAZIO = /\bEmptySelectionField\b/;
+
 const SELETOR_DA_CASA = /<(?:Single|Multi)SelectFilter\b[\s\S]*?\/>/g;
 const SELECT_NATIVO = /<select\b[\s\S]*?<\/select>/g;
 /** Lista escrita ali mesmo: `options={[ ... ]}` nunca chega vazia por dados. */
@@ -50,6 +65,7 @@ const DONOS_DA_REGUA = [
   join("src", "components", "app", "EmptySelection.tsx"),
   join("src", "components", "app", "SingleSelectFilter.tsx"),
   join("src", "components", "app", "MultiSelectFilter.tsx"),
+  join("src", "components", "app", "FilterTriggerButton.tsx"),
 ];
 
 /** Seletor da CASA sem frase de vazio declarada — o piso deste é ZERO. */
@@ -72,8 +88,19 @@ export function selectsNativosDeDados(conteudo: string): number {
   return total;
 }
 
+/** Combobox própria sobre lista de dados que não delega o vazio — piso ZERO. */
+export function comboboxPropriaSemVazio(conteudo: string): number {
+  if (!GATILHO_DE_FILTRO.test(conteudo)) return 0;
+  if (!LISTA_DE_DADOS.test(conteudo)) return 0;
+  return DELEGA_O_VAZIO.test(conteudo) ? 0 : 1;
+}
+
 export function seletoresSemVazio(conteudo: string): number {
-  return seletoresDaCasaSemVazio(conteudo) + selectsNativosDeDados(conteudo);
+  return (
+    seletoresDaCasaSemVazio(conteudo) +
+    selectsNativosDeDados(conteudo) +
+    comboboxPropriaSemVazio(conteudo)
+  );
 }
 
 const eTelaDaCasa = (arquivo: ArquivoFonte): boolean =>
@@ -98,6 +125,32 @@ describe("nenhum seletor da aplicação aparece vazio", () => {
       eTelaDaCasa,
     );
     expect(pendentes).toEqual({});
+  });
+
+  it("nenhuma combobox PRÓPRIA fica sem o vazio da casa — o piso dela é ZERO", () => {
+    const pendentes = new Varredura().contagem(
+      (arquivo) => comboboxPropriaSemVazio(arquivo.conteudo),
+      eTelaDaCasa,
+    );
+    expect(pendentes).toEqual({});
+  });
+
+  it("a régua reconhece a combobox própria que não delega o vazio", () => {
+    const propria = `
+      export function CapabilityCombobox({ capabilities }) {
+        return (
+          <Popover>
+            <FilterTriggerButton>{resumo}</FilterTriggerButton>
+            {capabilities.map((c) => (<CommandItem key={c.id} />))}
+          </Popover>
+        );
+      }`;
+    expect(comboboxPropriaSemVazio(propria)).toBe(1);
+    expect(
+      comboboxPropriaSemVazio(
+        `${propria}\nif (capabilities.length === 0) return <EmptySelectionField empty={vazio} />;`,
+      ),
+    ).toBe(0);
   });
 
   it("a régua reconhece o seletor da casa sem `empty`, e poupa quem já declara", () => {

@@ -84,9 +84,9 @@ describe("/teams — sem ninguém para vincular ou alocar, a tela aponta o cadas
     await abrirOQuadro();
 
     const secao = within(screen.getByText("Vincular profissional").closest("div") as HTMLElement);
-    expect(secao.getByText("Nenhum profissional cadastrado.")).toBeTruthy();
-    const link = secao.getByRole("link", { name: "Clique para cadastrar um profissional" });
-    expect(link.getAttribute("href")).toBe("/users");
+    expect(secao.getByText(/Nenhum profissional cadastrado/)).toBeTruthy();
+    const link = secao.getByRole("link", { name: "Cadastrar primeiro profissional" });
+    expect(link.getAttribute("href")).toContain("/users");
     expect(secao.queryByLabelText("Profissional")).toBeNull();
     expect(secao.queryByRole("button", { name: "Vincular" })).toBeNull();
   });

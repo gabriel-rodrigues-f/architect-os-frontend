@@ -22,6 +22,7 @@ import { CapabilityCoveragePresenter, type RiskState } from "@/lib/presenters";
 import { CoverageTableOrder } from "@/lib/view-models";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Registration } from "@/lib/registration";
@@ -112,7 +113,7 @@ function TeamCapabilityCoverage() {
         /* Dono (2026-09-08): sem capacidade nenhuma, o botão de cadastro no
          * CENTRO do quadro principal — é o único próximo passo desta tela. */
         <EmptyStateCallToAction
-          title={t("cap.empty.title")}
+          subject={EmptySubject.CAPABILITY}
           hint={t("cap.empty.hint")}
           registrations={[Registration.CAPABILITY]}
         />

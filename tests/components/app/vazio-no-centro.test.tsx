@@ -26,6 +26,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { EmptyStateCallToAction } from "@/components/app/EmptyStateCallToAction";
 import { PageAction } from "@/components/app/PageAction";
+import { EmptySubject } from "@/lib/empty-subject";
 import { Registration } from "@/lib/registration";
 import {
   fixtureAdminUser,
@@ -69,13 +70,13 @@ describe("o bloco de cadastro no centro do quadro principal", () => {
 
     renderWithApp(
       <EmptyStateCallToAction
-        title="Não há profissionais cadastrados."
+        subject={EmptySubject.PROFESSIONAL}
         hint="Cadastre alguém para começar."
         registrations={[Registration.PROFESSIONAL]}
       />,
     );
 
-    expect(await screen.findByText("Não há profissionais cadastrados.")).toBeTruthy();
+    expect(await screen.findByText("Nenhum profissional cadastrado")).toBeTruthy();
     expect(screen.getByText("Cadastre alguém para começar.")).toBeTruthy();
     const botao = screen.getByRole("link", { name: "Cadastrar Profissional" });
     expect(botao.getAttribute("href")).toBe("/users?cadastrar=profissional");
@@ -87,12 +88,13 @@ describe("o bloco de cadastro no centro do quadro principal", () => {
 
     renderWithApp(
       <EmptyStateCallToAction
-        title="Não há o que avaliar ainda"
+        subject={EmptySubject.PROFESSIONAL}
+        hint="A avaliação começa pelo profissional e pelas capacidades do catálogo."
         registrations={[Registration.PROFESSIONAL, Registration.CAPABILITY]}
       />,
     );
 
-    const bloco = (await screen.findByText("Não há o que avaliar ainda")).closest("div");
+    const bloco = (await screen.findByText("Nenhum profissional cadastrado")).closest("div");
     expect(bloco).not.toBeNull();
     const rotulos = within(bloco as HTMLElement)
       .getAllByRole("link")
@@ -106,12 +108,13 @@ describe("o bloco de cadastro no centro do quadro principal", () => {
 
     renderWithApp(
       <EmptyStateCallToAction
-        title="Não há profissionais cadastrados."
+        subject={EmptySubject.PROFESSIONAL}
+        hint="Cadastre alguém para começar."
         registrations={[Registration.PROFESSIONAL, Registration.CAPABILITY]}
       />,
     );
 
-    expect(await screen.findByText("Não há profissionais cadastrados.")).toBeTruthy();
+    expect(await screen.findByText("Nenhum profissional cadastrado")).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
   });
 
@@ -124,7 +127,10 @@ describe("o bloco de cadastro no centro do quadro principal", () => {
     montar(fixtureAssignedManagerUser);
 
     renderWithApp(
-      <EmptyStateCallToAction title="Nenhuma trilha cadastrada">
+      <EmptyStateCallToAction
+        subject={EmptySubject.LEARNING_PATH}
+        hint="Crie a primeira trilha para organizar o desenvolvimento do time."
+      >
         <PageAction label="Cadastrar Trilha" onClick={vi.fn()} />
       </EmptyStateCallToAction>,
     );

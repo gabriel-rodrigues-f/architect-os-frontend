@@ -29,6 +29,7 @@ import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib
 import { useCycleSelection } from "@/lib/context-scope";
 import { CycleCadenceScheme } from "@/lib/cycle-cadence";
 import { useLabels } from "@/lib/labels";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import type { CycleCadence } from "@/lib/operational-settings";
 import { usePageHelp } from "@/lib/page-help";
@@ -212,7 +213,7 @@ function CycleAdministration() {
         ))}
         {semCiclos && (
           <div className="sm:col-span-3">
-            <EmptyStateCallToAction title={t("cycle.empty")} hint={t("cycle.empty.hint")}>
+            <EmptyStateCallToAction subject={EmptySubject.CYCLE} hint={t("cycle.empty.hint")}>
               {cadastrarCiclo}
             </EmptyStateCallToAction>
           </div>

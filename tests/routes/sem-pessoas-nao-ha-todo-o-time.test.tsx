@@ -65,7 +65,7 @@ import {
  * filtro e disponibilizamos o botão de criação mais abaixo, dentro do quadro
  * principal e centralizado na tela."* O que esta suíte guarda continua
  * valendo — não há "Todo o time" de ninguém, e nenhuma lista abre —, e o
- * TEXTO do campo passa a ser "Não há profissionais cadastrados". Onde o botão
+ * TEXTO do campo passa a ser "Nenhum profissional cadastrado". Onde o botão
  * de cadastro aparece é assunto de `cadastro-no-centro-da-tela.test.tsx`.
  */
 const fetchMock = vi.fn();
@@ -97,10 +97,13 @@ const comoAtor = (user: SessionUser) =>
     routes: [emptyAuthUsersRoute, careerLevelsRoute, emptyEligibilityRoute, calibracaoVazia],
   });
 
-/** O que o CORPO da tela diz quando não há ninguém. */
-const mensagemDoCorpo = "Não há profissionais cadastrados.";
-/** O que o CAMPO BLOQUEADO diz — a mesma frase, para todos. */
-const mensagemDoCampo = "Não há profissionais cadastrados";
+/**
+ * O que o CORPO e o CAMPO dizem quando não há ninguém — a MESMA frase, desde
+ * a padronização de 2026-09-08 (item 3): a linha 1 é do assunto, não do
+ * lugar. Por isso a busca é `findAllByText`: ela aparece duas vezes na tela.
+ */
+const mensagemDoCorpo = "Nenhum profissional cadastrado";
+const mensagemDoCampo = "Nenhum profissional cadastrado";
 
 describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", () => {
   beforeEach(() => {
@@ -119,7 +122,7 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<ProgressionPage />);
 
-    expect(await screen.findByText(mensagemDoCorpo)).toBeTruthy();
+    expect((await screen.findAllByText(mensagemDoCorpo)).length).toBeGreaterThan(0);
     // Nenhuma lista de pessoas para abrir: o que o campo abre é o convite.
     expect(screen.queryByRole("combobox", { name: "Profissionais" })).toBeNull();
     expect(screen.getByRole("button", { name: "Profissionais" }).textContent).toContain(
@@ -132,7 +135,7 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     comoAtor(fixtureAssignedManagerUser);
     renderWithApp(<GapAnalysisPage />);
 
-    expect(await screen.findByText(mensagemDoCorpo)).toBeTruthy();
+    expect((await screen.findAllByText(mensagemDoCorpo)).length).toBeGreaterThan(0);
     expect(screen.queryByRole("combobox", { name: "Profissionais" })).toBeNull();
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });

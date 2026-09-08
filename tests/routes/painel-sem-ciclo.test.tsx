@@ -55,7 +55,7 @@ import {
  * Revisão de papéis (dono, 2026-09-05, D1): o Painel do admin virou o Painel
  * de operação, e nele o ciclo é um CARTÃO ("Ciclo vigente"): sem ciclo ativo
  * o cartão diz "Nenhum ciclo ativo" e o atalho de Ciclos leva a /cycles. A
- * mensagem + botão "Cadastrar ciclo" segue sendo a resposta da liderança.
+ * mensagem + botão "Cadastrar Ciclo" segue sendo a resposta da liderança.
  */
 const fetchMock = vi.fn();
 
@@ -63,8 +63,8 @@ const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 
 const estadoSemCiclo: AppState = { ...fixtureState, cycles: [], activeCycleId: "" };
 
-const MENSAGEM = "Não há ciclos cadastrados";
-const BOTAO = "Cadastrar ciclo";
+const MENSAGEM = "Nenhum ciclo cadastrado";
+const BOTAO = "Cadastrar Ciclo";
 
 /** O panorama espelha o estado: sem ciclo ativo no `/state`, `cycle` é nulo. */
 const panoramaRoute =
@@ -113,7 +113,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
     expect(await screen.findByText("Nenhum ciclo ativo")).toBeTruthy();
     const atalho = screen.getByRole("link", { name: "Ciclos de Avaliação" });
     expect(atalho.getAttribute("href")).toBe("/cycles");
-    // A mensagem + botão "Cadastrar ciclo" é a resposta da liderança, não do painel de operação.
+    // A mensagem + botão "Cadastrar Ciclo" é a resposta da liderança, não do painel de operação.
     expect(screen.queryByText(MENSAGEM)).toBeNull();
     expect(screen.queryByRole("link", { name: BOTAO })).toBeNull();
   });

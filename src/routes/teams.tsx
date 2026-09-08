@@ -17,6 +17,7 @@ import {
   SingleSelectFilter,
   StatusBadge,
 } from "@/components/app";
+import { EmptyFieldInvite } from "@/components/app/EmptySelection";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,6 +43,7 @@ import type {
 } from "@/lib/gateways/team-transitions.gateway";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
+import { Registration } from "@/lib/registration";
 import { initialSearchParam } from "@/lib/search-params";
 import { usePageHelp } from "@/lib/page-help";
 import { requirePeopleAdministrationReach } from "@/lib/route-guards";
@@ -928,7 +930,7 @@ function MembershipForm({
       </p>
       {accounts.length === 0 ? (
         <div className="mt-3">
-          <RegisterPersonPrompt message={t("teams.membership.nobody")} to="/users" />
+          <EmptyFieldInvite registration={Registration.PROFESSIONAL} />
         </div>
       ) : (
         <div className="mt-3 grid items-end gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">

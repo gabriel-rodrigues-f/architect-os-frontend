@@ -60,7 +60,7 @@ export function PersonCombobox({
     const summary = picker.summary;
     switch (summary.kind) {
       case "empty":
-        return t("person.none");
+        return vazio.message;
       case "none":
         return picker.many ? t("person.noneSelected") : (placeholder ?? t("person.placeholder"));
       case "wholeTeam":

@@ -48,6 +48,7 @@ import { CatalogImportSample } from "@/lib/catalog-import-sample";
 import { CompetencyNameConflict } from "@/lib/competency-name-conflict";
 import { FileText } from "@/lib/file-text";
 import type { AffectedRecords, CompetencyRemovalOutcome } from "@/lib/gateways/catalog.gateway";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
@@ -295,7 +296,7 @@ function MatrixScreen() {
       </SectionCard>
 
       {semCapacidades && (
-        <EmptyStateCallToAction title={t("matrix.empty.title")} hint={t("matrix.empty.hint")}>
+        <EmptyStateCallToAction subject={EmptySubject.CAPABILITY} hint={t("matrix.empty.hint")}>
           {cadastrarCapacidade}
         </EmptyStateCallToAction>
       )}

@@ -32,6 +32,7 @@ import { api, authApi, teamsApi, type SessionUser, type UserRole } from "@/lib/a
 import { UserRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { initialSearchParam } from "@/lib/search-params";
 import { usePageHelp } from "@/lib/page-help";
@@ -212,7 +213,7 @@ function UsersDirectory() {
                   options={teamFilterOptions}
                   value={effectiveTeamFilter}
                   onChange={setTeamFilter}
-                  empty={{ message: t("users.filter.team.empty") }}
+                  empty={{ message: EmptySubject.TEAM.title(t) }}
                 />
               </div>
               <div className="scroll-visible overflow-x-auto">

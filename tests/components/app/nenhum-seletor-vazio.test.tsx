@@ -71,12 +71,12 @@ describe("SingleSelectFilter sem opções — moldura, frase e nada mais", () =>
         options={[]}
         value=""
         onChange={vi.fn()}
-        empty={{ message: "Não há ciclos cadastrados" }}
+        empty={{ message: "Nenhum ciclo cadastrado" }}
       />,
     );
 
     const gatilho = screen.getByRole("button", { name: "Ciclo" });
-    expect(gatilho.textContent).toContain("Não há ciclos cadastrados");
+    expect(gatilho.textContent).toContain("Nenhum ciclo cadastrado");
     await userEvent.click(gatilho);
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -90,7 +90,7 @@ describe("SingleSelectFilter sem opções — moldura, frase e nada mais", () =>
       value=""
       onChange={vi.fn()}
       empty={{
-        message: "Não há ciclos cadastrados",
+        message: "Nenhum ciclo cadastrado",
         registration: { label: "Cadastrar primeiro ciclo", to: "/cycles" },
       }}
     />
@@ -104,7 +104,7 @@ describe("SingleSelectFilter sem opções — moldura, frase e nada mais", () =>
     renderizar(comCadastro);
 
     const gatilho = screen.getByRole("button", { name: "Ciclo" });
-    expect(gatilho.textContent).toContain("Não há ciclos cadastrados");
+    expect(gatilho.textContent).toContain("Nenhum ciclo cadastrado");
     expect(gatilho.hasAttribute("disabled")).toBe(true);
 
     await userEvent.click(gatilho);
@@ -141,7 +141,7 @@ describe("SingleSelectFilter sem opções — moldura, frase e nada mais", () =>
         options={[{ value: "1", label: "2026.1" }]}
         value="1"
         onChange={vi.fn()}
-        empty={{ message: "Não há ciclos cadastrados" }}
+        empty={{ message: "Nenhum ciclo cadastrado" }}
       />,
     );
 
@@ -169,14 +169,14 @@ describe("MultiSelectFilter sem opções — a mesma régua, o mesmo desenho", (
         {...comum}
         options={[]}
         empty={{
-          message: "Não há capacidades cadastradas",
+          message: "Nenhuma capacidade cadastrada",
           registration: { label: "Cadastrar primeira capacidade", to: "/competency-matrix" },
         }}
       />,
     );
 
     const gatilho = screen.getByRole("button", { name: "Capacidades" });
-    expect(gatilho.textContent).toContain("Não há capacidades cadastradas");
+    expect(gatilho.textContent).toContain("Nenhuma capacidade cadastrada");
     expect(gatilho.hasAttribute("disabled")).toBe(true);
 
     await userEvent.click(gatilho);
@@ -221,7 +221,7 @@ describe("o seletor de ciclo do cabeçalho, sem ciclo cadastrado", () => {
 
     await screen.findByText("conteúdo");
     const gatilho = await screen.findByRole("button", { name: "Ciclo" });
-    expect(gatilho.textContent).toContain("Não há ciclos cadastrados");
+    expect(gatilho.textContent).toContain("Nenhum ciclo cadastrado");
     expect(gatilho.hasAttribute("disabled")).toBe(true);
     expect(gatilho.nextElementSibling).toBeNull();
 

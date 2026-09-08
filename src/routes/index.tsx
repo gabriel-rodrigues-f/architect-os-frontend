@@ -8,6 +8,7 @@ import {
   AssessmentCoverageChart,
   CapabilityRadar,
   DashboardCardHelp,
+  EmptyStateCallToAction,
   GapBadge,
   GapSeverityChart,
   KeyFigureCard,
@@ -32,7 +33,9 @@ import {
   type LeadPendingQueues,
   PersonalDashboardPresenter,
 } from "@/lib/presenters";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
+import { Registration } from "@/lib/registration";
 import type { DevelopmentPlan } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
@@ -131,15 +134,20 @@ function NoCycleRegistered({
   help: ReturnType<typeof usePageHelp>;
 }) {
   const { t } = useI18n();
+  /*
+   * A régua do vazio pegou o Painel junto (dono, 2026-09-08, item 3): aqui a
+   * frase era escrita à mão ("Não há ciclos cadastrados") e o botão tinha
+   * palavra própria ("Cadastrar ciclo"). Agora é o MESMO bloco das doze
+   * telas — linha 1 do assunto, linha 2 desta tela, botão do `Registration`.
+   */
   return (
     <>
       <PageHeader title={title} help={help} />
-      <SectionCard title={t("dash.noCycle.title")}>
-        <p className="text-sm text-muted-foreground">{t("dash.noCycle.body")}</p>
-        <Button asChild className="mt-4">
-          <Link to="/cycles">{t("dash.noCycle.cta")}</Link>
-        </Button>
-      </SectionCard>
+      <EmptyStateCallToAction
+        subject={EmptySubject.CYCLE}
+        hint={t("dash.noCycle.body")}
+        registrations={[Registration.CYCLE]}
+      />
     </>
   );
 }

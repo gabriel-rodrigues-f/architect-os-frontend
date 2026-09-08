@@ -270,7 +270,7 @@ describe("o time entra no cadastro", () => {
     const dialogo = await abrirCadastro(fixtureAdminUser, [soTimesDesativados]);
 
     expect(dialogo.queryByText("Escolha o time")).toBeNull();
-    expect(dialogo.getByText("Não há times cadastrados")).toBeTruthy();
+    expect(dialogo.getByText("Nenhum time cadastrado")).toBeTruthy();
     // Filtro sem opções é filtro bloqueado (dono, 2026-09-08): nada abre, e
     // nenhum hiperlink pende do campo.
     const campoDeTime = dialogo.getByRole("button", { name: "Time" });

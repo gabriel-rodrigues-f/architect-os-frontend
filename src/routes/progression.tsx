@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/lib/auth";
 import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
@@ -160,7 +161,7 @@ function TeamProgression() {
          */
         semNinguem ? (
           <EmptyStateCallToAction
-            title={t("person.none")}
+            subject={EmptySubject.PROFESSIONAL}
             hint={t("gap.empty.noProfessionals")}
             registrations={[Registration.PROFESSIONAL]}
           />

@@ -78,7 +78,7 @@ describe("AppShell — seletor de Ciclo e de idioma (R3-008)", () => {
    * `textContent`, nunca pelo nome do `role`.
    *
    * O gatilho é buscado DE NOVO depois da carga: enquanto a lista de ciclos
-   * não chega, quem desenha é o estado vazio ("Não há ciclos cadastrados",
+   * não chega, quem desenha é o estado vazio ("Nenhum ciclo cadastrado",
    * dono 2026-09-08) — outro elemento, e guardar a referência do primeiro
    * deixaria o teste falando com um nó que já saiu da tela.
    */

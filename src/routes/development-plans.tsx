@@ -36,6 +36,7 @@ import {
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useLabels } from "@/lib/labels";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { PersonPicker } from "@/lib/person-selection";
@@ -166,7 +167,7 @@ function PlansScreen() {
 
       {semNinguem && (
         <EmptyStateCallToAction
-          title={t("person.none")}
+          subject={EmptySubject.PROFESSIONAL}
           hint={t("pdi.empty.noProfessionals")}
           registrations={[Registration.PROFESSIONAL]}
         />
