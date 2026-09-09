@@ -596,9 +596,10 @@ function PlanItemCard({
  *
  * Este campo era o ÚNICO do cartão que continuava desenhando a caixa mesmo
  * para quem não pode escrever — todos os irmãos (tipo de ação, situação,
- * prazo) já trocavam para leitura. A régua da casa já estava escrita no
- * `ReflectionField` das Avaliações (2026-09-07): *"sem caixa de formulário
- * desabilitada fingindo ser editável"*. Aqui ela passou a valer.
+ * prazo) já trocavam para leitura. A régua da casa nasceu nas Avaliações em
+ * 2026-09-07 — *"sem caixa de formulário desabilitada fingindo ser
+ * editável"* — e aqui ela passou a valer. O campo que a estreou saiu do
+ * produto em 2026-09-09 com o Começar / Parar / Continuar; a régua ficou.
  *
  * Sem nada escrito e sem poder escrever, vale o padrão do Extrato: as duas
  * linhas do vazio, dizendo que avaliação nenhuma foi feita neste ciclo.
