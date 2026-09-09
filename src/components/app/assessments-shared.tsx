@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
-import { AlertTriangle, BadgeCheck } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
 import { Callout, GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
@@ -27,7 +27,7 @@ import { useAsyncSubmit, useNarrowViewport } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { stateContextCatalog } from "@/lib/state-contexts";
-import { useOperationalSettings, useStore, useVocabulary } from "@/lib/store";
+import { useOperationalSettings, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { AssessmentViewModel, type AssessmentCompletionBrief } from "@/lib/view-models";
@@ -815,7 +815,6 @@ export function CapabilityAssessmentCard({
   canEditSelf,
   canEditLeaderFinal,
   seesAssessmentNumbers,
-  professionalId,
   openComment,
   onToggleComment,
 }: {
@@ -825,14 +824,12 @@ export function CapabilityAssessmentCard({
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
   seesAssessmentNumbers: boolean;
-  professionalId: string;
   openComment: string | null;
   onToggleComment: (competencyId: string) => void;
 }) {
   const store = useStore();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
-  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const user = useCurrentUser();
   const viewModel = useAssessmentViewModel();
 
@@ -870,7 +867,6 @@ export function CapabilityAssessmentCard({
                 competency={c}
                 item={item}
                 assessmentId={assessment.id}
-                professionalId={professionalId}
                 canEditSelf={canEditSelf}
                 canEditLeaderFinal={canEditLeaderFinal}
                 seesAssessmentNumbers={seesAssessmentNumbers}
@@ -922,28 +918,10 @@ export function CapabilityAssessmentCard({
                 const item = assessment.items.find((i) => i.competencyId === c.id);
                 if (!item) return null;
 
-                const acceptedEvidence = store.evidences.filter(
-                  (e) =>
-                    e.professionalId === professionalId &&
-                    e.status === "Accepted" &&
-                    e.competencyIds.includes(c.id),
-                );
                 return (
                   <Fragment key={c.id}>
                     <tr className="border-b border-border/60">
-                      <td className="py-2 font-medium">
-                        <span className="flex items-center gap-1.5">
-                          {c.name}
-                          {acceptedEvidence.length > 0 && (
-                            <BadgeCheck
-                              className="h-3.5 w-3.5 shrink-0 text-[var(--level-5-fg)]"
-                              aria-label={t("asmt.evidence.badge", {
-                                n: acceptedEvidence.length,
-                              })}
-                            />
-                          )}
-                        </span>
-                      </td>
+                      <td className="py-2 font-medium">{c.name}</td>
                       <td className="px-1 py-2">
                         {canEditSelf ? (
                           <LevelSelect
@@ -1000,24 +978,6 @@ export function CapabilityAssessmentCard({
                         className="border-b border-border/60 bg-secondary/40"
                       >
                         <td colSpan={seesAssessmentNumbers ? 7 : 3} className="p-3">
-                          {acceptedEvidence.length > 0 && (
-                            <div className="mb-3 space-y-1.5 border-b border-border pb-3">
-                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {t("asmt.evidence.title")}
-                              </p>
-                              <ul className="space-y-1">
-                                {acceptedEvidence.map((e) => (
-                                  <li key={e.id} className="text-sm">
-                                    <span className="font-medium">{e.title}</span>{" "}
-                                    <span className="text-xs text-muted-foreground">
-                                      {evidenceTypes.label(e.type)} ·{" "}
-                                      {defaultDateFormatter.formatDate(e.date, locale)}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
                           <CommentSection
                             comments={item.comments}
                             currentUserId={user.id}
@@ -1047,7 +1007,6 @@ function CompetencyStackedCard({
   competency,
   item,
   assessmentId,
-  professionalId,
   canEditSelf,
   canEditLeaderFinal,
   seesAssessmentNumbers,
@@ -1057,26 +1016,16 @@ function CompetencyStackedCard({
   competency: Competency;
   item: AssessmentItem;
   assessmentId: string;
-  professionalId: string;
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
   seesAssessmentNumbers: boolean;
   openComment: string | null;
   onToggleComment: (competencyId: string) => void;
 }) {
-  const store = useStore();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
-  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const user = useCurrentUser();
   const viewModel = useAssessmentViewModel();
-
-  const acceptedEvidence = store.evidences.filter(
-    (e) =>
-      e.professionalId === professionalId &&
-      e.status === "Accepted" &&
-      e.competencyIds.includes(competency.id),
-  );
 
   return (
     <div
@@ -1084,15 +1033,7 @@ function CompetencyStackedCard({
       data-testid="competency-stacked-card"
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-sm font-medium">
-          {competency.name}
-          {acceptedEvidence.length > 0 && (
-            <BadgeCheck
-              className="h-3.5 w-3.5 shrink-0 text-[var(--level-5-fg)]"
-              aria-label={t("asmt.evidence.badge", { n: acceptedEvidence.length })}
-            />
-          )}
-        </span>
+        <span className="text-sm font-medium">{competency.name}</span>
         {seesAssessmentNumbers && <AssessmentDistance item={item} />}
       </div>
 
@@ -1166,24 +1107,6 @@ function CompetencyStackedCard({
 
       {openComment === competency.id && (
         <div id={commentPanelId(competency.id)} className="mt-3 border-t border-border pt-3">
-          {acceptedEvidence.length > 0 && (
-            <div className="mb-3 space-y-1.5 border-b border-border pb-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t("asmt.evidence.title")}
-              </p>
-              <ul className="space-y-1">
-                {acceptedEvidence.map((e) => (
-                  <li key={e.id} className="text-sm">
-                    <span className="font-medium">{e.title}</span>{" "}
-                    <span className="text-xs text-muted-foreground">
-                      {evidenceTypes.label(e.type)} ·{" "}
-                      {defaultDateFormatter.formatDate(e.date, locale)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
           <CommentSection
             comments={item.comments}
             currentUserId={user.id}

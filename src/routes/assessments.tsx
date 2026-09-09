@@ -13,7 +13,6 @@ import {
   ConfirmDialog,
   DevelopmentSummarySection,
   EmptyStateCallToAction,
-  EvidenceLedgerSection,
   PageHeader,
   SectionCard,
   StatusBadge,
@@ -32,7 +31,7 @@ import { usePageHelp } from "@/lib/page-help";
 import { useLabels } from "@/lib/labels";
 import { Registration } from "@/lib/registration";
 import { useSelectors, useStore } from "@/lib/store";
-import { useSearchParamString } from "@/hooks";
+import { useCycleInFocus, useSearchParamString } from "@/hooks";
 
 const assessmentsSearchSchema = z.object({
   professionalId: z.string().optional(),
@@ -59,11 +58,7 @@ export const Route = createFileRoute("/assessments")({
   component: AssessmentsPage,
 });
 
-const ASSESSMENTS_CONTEXTS: readonly ContextScopeRequest[] = [
-  ...SELECTOR_CONTEXTS,
-  "cycles",
-  "evidences",
-];
+const ASSESSMENTS_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS, "cycles"];
 
 function AssessmentsPage() {
   return (
@@ -83,7 +78,14 @@ function AssessmentsScreen() {
     () => assessable[0]?.id ?? "",
   );
 
-  const [cycleId] = useSearchParamString("cycleId", () => store.activeCycleId);
+  /*
+   * Dono (2026-09-08): *"quando mudo um ciclo, ainda vejo a mesma avaliação de
+   * desempenho."* Uma avaliação pertence a UM ciclo, e quem manda no ciclo é o
+   * seletor do cabeçalho; o `?cycleId=` do link do histórico (HIST-001) diz por
+   * onde a tela entra e vale até a primeira troca. A regra mora em
+   * `CycleInFocus`.
+   */
+  const cycleId = useCycleInFocus(store.activeCycleId);
   const isActiveCycle = cycleId === store.activeCycleId;
   const viewedCycle = store.cycles.find((c) => c.id === cycleId);
   const { t } = useI18n();
@@ -103,7 +105,6 @@ function AssessmentsScreen() {
   const selectedProfessional = sel.professionalById(professionalId);
 
   const {
-    isSubject,
     isLead,
     status,
     isCompleted,
@@ -317,19 +318,6 @@ function AssessmentsScreen() {
 
       {assessment && <DevelopmentSummarySection assessment={assessment} isLead={isLead} />}
 
-      {/* Ninguém age sobre si (dono, 2026-09-06): a pessoa LÊ as próprias evidências; quem lidera registra e reenvia. */}
-      {selectedProfessional && (isSubject || isLead) && (
-        <EvidenceLedgerSection
-          className="mb-6"
-          professionalId={selectedProfessional.id}
-          plan={sel.planFor(selectedProfessional.id)}
-          evidences={store.evidences.filter(
-            (evidence) => evidence.professionalId === selectedProfessional.id,
-          )}
-          canRegister={isLead}
-        />
-      )}
-
       {primeiroQueFalta ? (
         <EmptyStateCallToAction
           subject={primeiroQueFalta.emptySubject}
@@ -434,7 +422,6 @@ function AssessmentsScreen() {
               canEditSelf={canEditSelf}
               canEditLeaderFinal={canEditLeaderFinal}
               seesAssessmentNumbers={seesAssessmentNumbers}
-              professionalId={professionalId}
               openComment={openComment}
               onToggleComment={(id) => setOpenComment((prev) => (prev === id ? null : id))}
             />
