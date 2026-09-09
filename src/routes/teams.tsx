@@ -16,7 +16,6 @@ import {
   Seniority,
   SingleSelectFilter,
   StatusBadge,
-  TeamCareerLadderField,
 } from "@/components/app";
 import { EmptyFieldInvite } from "@/components/app/EmptySelection";
 import { Button } from "@/components/ui/button";
@@ -49,10 +48,8 @@ import { initialSearchParam } from "@/lib/search-params";
 import { usePageHelp } from "@/lib/page-help";
 import { requirePeopleAdministrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { TeamCareerLevelsQuery } from "@/lib/configuration-queries";
-import { useCareerLevelsByRank, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import {
-  TeamCareerLadderDraft,
   TeamRegistryViewModel,
   TeamStatusFilters,
   TeamTransitionsViewModel,
@@ -153,7 +150,6 @@ function TeamsScreen() {
   // exige o roteador montado, e a tela é montada sem ele em teste.
   const [creating, setCreating] = useState(() => initialSearchParam("cadastrar") === "time");
   const [renaming, setRenaming] = useState<TeamSummary | null>(null);
-  const [redrawingLadder, setRedrawingLadder] = useState<TeamSummary | null>(null);
   const [deactivating, setDeactivating] = useState<TeamSummary | null>(null);
   const [refusal, setRefusal] = useState<{ team: TeamSummary; activeProfessionals: number } | null>(
     null,
@@ -244,7 +240,6 @@ function TeamsScreen() {
                 canAdminister={canAdminister}
                 onRoster={(team) => setChosenTeamId(team.id)}
                 onRename={setRenaming}
-                onCareerLadder={setRedrawingLadder}
                 onDeactivate={setDeactivating}
               />
               {chosen && (
@@ -288,14 +283,6 @@ function TeamsScreen() {
         />
       )}
 
-      {redrawingLadder && (
-        <TeamCareerLadderDialog
-          team={redrawingLadder}
-          onCancel={() => setRedrawingLadder(null)}
-          onSaved={() => setRedrawingLadder(null)}
-        />
-      )}
-
       <ConfirmDialog
         open={deactivating !== null}
         title={deactivating && t("teams.deactivate.confirmTitle", { nome: deactivating.name })}
@@ -314,7 +301,6 @@ function TeamTable({
   canAdminister,
   onRoster,
   onRename,
-  onCareerLadder,
   onDeactivate,
 }: {
   teams: readonly TeamSummary[];
@@ -322,7 +308,6 @@ function TeamTable({
   canAdminister: boolean;
   onRoster: (team: TeamSummary) => void;
   onRename: (team: TeamSummary) => void;
-  onCareerLadder: (team: TeamSummary) => void;
   onDeactivate: (team: TeamSummary) => void;
 }) {
   const { t } = useI18n();
@@ -387,16 +372,6 @@ function TeamTable({
                           onClick={() => onRename(team)}
                         >
                           {t("teams.rename.action")}
-                        </Button>
-                      )}
-                      {canAdminister && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          aria-label={t("teams.careerLadder.actionFor", { nome: team.name })}
-                          onClick={() => onCareerLadder(team)}
-                        >
-                          {t("teams.careerLadder.action")}
                         </Button>
                       )}
                       {canAdminister && team.active && (
@@ -1054,13 +1029,9 @@ function TeamNameDialog({
 }
 
 /**
- * O CADASTRO DO TIME (dono, 2026-09-08): nome e ESCADA DE CARREIRA no mesmo
- * formulário. *"Ao cadastrar/editar um time, quem administra escolhe quais dos
- * cinco níveis aquele time usa e em que ordem."*
- *
- * A escada nasce com o catálogo inteiro marcado — é o que o time tinha antes
- * desta fatia, e a decisão de encurtar é de quem administra, não um efeito de
- * o formulário abrir vazio.
+ * O CADASTRO DO TIME. REGRA 19 (dono, 2026-09-09): o formulário pede o NOME, e
+ * só ele — *"Todos os times terão os 5 níveis"*. Quem escolhe o que cada nível
+ * exige continua sendo quem lidera, na tela de Perfil de Competências do Time.
  */
 function TeamRegistrationDialog({
   onCancel,
@@ -1072,22 +1043,14 @@ function TeamRegistrationDialog({
   reloadTeams: () => Promise<void>;
 }) {
   const { t } = useI18n();
-  const catalog = useCareerLevelsByRank();
   const [name, setName] = useState("");
-  const [draft, setDraft] = useState<TeamCareerLadderDraft | null>(null);
   const { submitting, error, run } = useAsyncSubmit(t("teams.create.error"));
-  const ladder =
-    draft ??
-    TeamCareerLadderDraft.of(
-      catalog,
-      catalog.map((level) => level.id),
-    );
   const trimmed = name.trim();
-  const canSave = trimmed.length > 0 && ladder.isValid && !submitting;
+  const canSave = trimmed.length > 0 && !submitting;
 
   const save = () =>
     run(async () => {
-      const created = await teamsApi.registerTeam(trimmed, ladder.careerLevelIds);
+      const created = await teamsApi.registerTeam(trimmed);
       await reloadTeams();
       onSaved(created);
     });
@@ -1108,100 +1071,12 @@ function TeamRegistrationDialog({
               onChange={(event) => setName(event.target.value)}
             />
           </div>
-          <TeamCareerLadderField
-            id="team-career-ladder"
-            draft={ladder}
-            onChange={setDraft}
-            disabled={submitting}
-          />
           {error && (
             <p className="text-body text-destructive" role="alert">
               {error}
             </p>
           )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel} disabled={submitting}>
-            {t("teams.name.cancel")}
-          </Button>
-          <Button disabled={!canSave} onClick={() => void save()}>
-            {submitting ? t("teams.name.saving") : t("teams.name.save")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/**
- * A ESCADA DE UM TIME QUE JÁ EXISTE. Encurtar não move ninguém: o serviço
- * recusa tirar um degrau que alguém ocupa (ou que já tem régua), e a recusa
- * chega aqui com os níveis nomeados.
- */
-function TeamCareerLadderDialog({
-  team,
-  onCancel,
-  onSaved,
-}: {
-  team: TeamSummary;
-  onCancel: () => void;
-  onSaved: () => void;
-}) {
-  const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const notifySuccess = useSuccessToast();
-  const catalog = useCareerLevelsByRank();
-  const [draft, setDraft] = useState<TeamCareerLadderDraft | null>(null);
-  const { submitting, error, run } = useAsyncSubmit(t("teams.careerLadder.error"));
-
-  const ladderQuery = useQuery({
-    queryKey: TeamCareerLevelsQuery.keyOf(team.id),
-    queryFn: () => teamsApi.careerLadderOf(team.id),
-  });
-  const saved = ladderQuery.data?.levels.map((level) => level.id) ?? [];
-  const ladder = draft ?? TeamCareerLadderDraft.of(catalog, saved);
-  const canSave = ladder.isValid && ladder.differsFrom(saved) && !submitting;
-
-  const save = () =>
-    run(async () => {
-      await teamsApi.defineCareerLadder(team.id, ladder.careerLevelIds);
-      await queryClient.invalidateQueries({ queryKey: TeamCareerLevelsQuery.keyOf(team.id) });
-      notifySuccess("msg.team.careerLadder.define.success", { nome: team.name });
-      onSaved();
-    });
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("teams.careerLadder.title", { nome: team.name })}</DialogTitle>
-        </DialogHeader>
-        <QuerySection
-          query={ladderQuery}
-          errorMessage={t("teams.careerLadder.load.error")}
-          skeleton={
-            <p className="text-body text-muted-foreground">{t("teams.careerLadder.loading")}</p>
-          }
-        >
-          {(loaded) => (
-            <div className="grid gap-3">
-              {!loaded.declared && (
-                <Callout tone="info">{t("teams.careerLadder.undeclared")}</Callout>
-              )}
-              <TeamCareerLadderField
-                id={`team-career-ladder-${team.id}`}
-                draft={ladder}
-                onChange={setDraft}
-                disabled={submitting}
-              />
-              {error && (
-                <p className="text-body text-destructive" role="alert">
-                  {error}
-                </p>
-              )}
-            </div>
-          )}
-        </QuerySection>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={submitting}>
             {t("teams.name.cancel")}

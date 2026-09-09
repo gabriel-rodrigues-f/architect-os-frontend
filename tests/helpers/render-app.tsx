@@ -204,24 +204,12 @@ export const emptyAuthUsersRoute: FetchRoute = (href) =>
  * careerLevels saiu de `/api/v1/state`) — replicada em vários testes de telas
  * administrativas do catálogo.
  *
- * Dono (2026-09-08) — ela responde TAMBÉM por `GET /teams/:teamId/career-levels`,
- * a escada daquele time, com o time oferecendo os cinco. As duas rotas terminam
- * em `/career-levels`, e responder a lista crua à segunda quebraria o schema
- * (`{ teamId, declared, levels }`) em toda tela que já registra esta ajudante —
- * é justamente o que aconteceu antes deste ramo existir. Quem quiser um time
- * com escada CURTA declara a sua própria rota depois desta.
+ * REGRA 19 (dono, 2026-09-09) — o ramo que respondia por
+ * `GET /teams/:teamId/career-levels` saiu junto com a escada por time. Há uma
+ * rota de níveis só, e é a da organização: todo time usa os cinco.
  */
-export const careerLevelsRoute: FetchRoute = (href) => {
-  const escadaDeUmTime = /\/teams\/([^/]+)\/career-levels$/.exec(href);
-  if (escadaDeUmTime) {
-    return jsonResponse({
-      teamId: escadaDeUmTime[1],
-      declared: true,
-      levels: fixtureCareerLevels,
-    });
-  }
-  return href.endsWith(apiPath("/career-levels")) ? jsonResponse(fixtureCareerLevels) : undefined;
-};
+export const careerLevelsRoute: FetchRoute = (href) =>
+  href.endsWith(apiPath("/career-levels")) ? jsonResponse(fixtureCareerLevels) : undefined;
 
 /**
  * D1 (dono, 2026-09-05): o Painel do admin é o `OperationsHome` — só contagens,

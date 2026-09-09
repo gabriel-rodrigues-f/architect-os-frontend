@@ -33,7 +33,7 @@ import { requireLeadReach } from "@/lib/route-guards";
 import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { QualifiedCapabilityMinimum } from "@/lib/presenters";
-import { useOperationalSettings, useStore, useTeamCareerLevels } from "@/lib/store";
+import { useCareerLevelsByRank, useOperationalSettings, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/team-rules")({
   beforeLoad: requireLeadReach,
@@ -100,11 +100,10 @@ function TeamRulesScreen() {
   // Dono (2026-09-06): quem lidera UM time não escolhe — o time fica fixado.
   const teamChoice = TeamChoice.for(user, teams);
   const teamId = teamChoice.resolve(chosenTeamId);
-  // Dono (2026-09-08): a régua é de um nível QUE ESTE TIME USA. A lista deixou
-  // de ser o catálogo da organização e passou a ser a escada do time — oferecer
-  // aqui um nível por onde o time não sobe seria convidar a escrever exigência
-  // para um degrau que ninguém vai pisar.
-  const careerLevels = useTeamCareerLevels(teamId);
+  // REGRA 19 (dono, 2026-09-09): todo time tem os cinco níveis, e a lista
+  // volta a ser o catálogo da organização. O que continua sendo DO TIME é o
+  // conteúdo da régua de cada nível — que é justamente o que esta tela edita.
+  const careerLevels = useCareerLevelsByRank();
   const careerLevel =
     careerLevels.find((level) => level.id === chosenLevelId) ?? careerLevels[0] ?? null;
 

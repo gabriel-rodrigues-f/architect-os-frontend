@@ -28,7 +28,7 @@ import { type Gap } from "@/lib/selectors";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { usePositionReading } from "@/lib/position";
 import { AUSENCIA, SeniorityReading, useSeniorityReading } from "@/lib/seniority";
-import { useCareerLevelsByRank, useSelectors, useStore, useTeamCareerLevels } from "@/lib/store";
+import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import { defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { TeamOrLevelChange, TeamViewModel, type ProfessionalFormRole } from "@/lib/view-models";
@@ -358,12 +358,11 @@ export function TeamOrLevelChangeDialog({
   const [toRole, setToRole] = useState<ProfessionalFormRole>("");
   const [toTeamId, setToTeamId] = useState<string | null>(professional.teamId ?? null);
   /*
-   * Dono (2026-09-08): os níveis oferecidos são os do time de DESTINO. Quem
-   * muda de time muda de escada junto — oferecer aqui o nível do time antigo
-   * é oferecer um degrau que o time novo não tem, e o serviço recusaria com
-   * razão. Sem time, o catálogo da organização.
+   * REGRA 19 (dono, 2026-09-09): todo time tem os cinco níveis, então os
+   * oferecidos aqui não dependem mais do time de destino — são o catálogo da
+   * organização. Mudar de time deixou de mudar de escada junto.
    */
-  const careerLevels = useTeamCareerLevels(toTeamId);
+  const careerLevels = useCareerLevelsByRank();
   const change = new TeamOrLevelChange(professional, toRole, toTeamId);
   const asksTransfer = byRequest && change.teamChanged && change.toTeamId !== null;
   const currentTeam =

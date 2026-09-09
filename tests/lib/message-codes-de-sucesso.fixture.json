@@ -178,9 +178,9 @@
       "resposta": "created"
     },
     "learningPath.enrollment.renew.success": {
-      "rota": "POST /learning-paths/:pathId/enrollments/:professionalId",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
-      "resposta": "ok"
+      "resposta": "ok",
+      "rota": "POST /learning-paths/:pathId/enrollments/:professionalId"
     },
     "learningPath.item.add.success": {
       "rota": "POST /learning-paths/:id/items",
@@ -280,11 +280,6 @@
     "plan.status.update.success": {
       "rota": "PATCH /plans/:planId/status",
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
-      "resposta": "ok"
-    },
-    "team.careerLadder.define.success": {
-      "rota": "PUT /teams/:teamId/career-levels",
-      "arquivo": "src/modules/people/infrastructure/controllers/teams.controller.ts",
       "resposta": "ok"
     },
     "team.deactivate.success": {

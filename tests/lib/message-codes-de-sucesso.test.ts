@@ -62,8 +62,12 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
  * `learningPath.enrollment.renew.success` (a reinscrição de quem estourou o
  * prazo da trilha); saíram os três da evidência — create, resubmit e review —
  * com a regra 17.
+ *
+ * REGRA 19 (2026-09-09): 66 − 1 = 65. `team.careerLadder.define.success` durou
+ * um dia — a escada de níveis do time saiu do produto, e `PUT
+ * /teams/:teamId/career-levels` com ela.
  */
-const CODIGOS_ESPERADOS = 66;
+const CODIGOS_ESPERADOS = 65;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
