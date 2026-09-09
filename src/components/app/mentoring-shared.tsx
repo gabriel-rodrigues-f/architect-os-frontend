@@ -1,11 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PageAction } from "@/components/app/PageAction";
-import { ReadingRefusal } from "@/components/app/ReadingRefusal";
 import { PersonCombobox } from "@/components/app/PersonCombobox";
-import { TruncatedText } from "@/components/app/TruncatedText";
 import { FieldLabel, Initials, SectionHeading } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,13 +17,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useSearchParamString, useSuccessToast, useToastSubmit } from "@/hooks";
-import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 
-import type { Competency, Professional, MentoringSession } from "@/lib/domain";
+import type { Professional, MentoringSession } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { PersonPicker } from "@/lib/person-selection";
-import { RefusalNumber } from "@/lib/refusal-number";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Selectors } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -58,12 +53,7 @@ function useMentoringSessionForm(
     durationMin: "",
     topic: "",
     notes: "",
-    nextSession: "",
   });
-  const [competencyIds, setCompetencyIds] = useState<string[]>([]);
-
-  const toggleCompetency = (id: string) =>
-    setCompetencyIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
   const [missing, setMissing] = useState<RequiredField[]>([]);
   const [showToast, setShowToast] = useState(false);
@@ -71,9 +61,6 @@ function useMentoringSessionForm(
   const setField = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setMissing((prev) => prev.filter((f) => f !== field));
-    // As competências discutidas são as da RÉGUA DA PESSOA (item 8): trocar de
-    // mentorado troca a lista, e o que ficou marcado era da régua da anterior.
-    if (field === "menteeId") setCompetencyIds([]);
   };
 
   const isMissing = (field: RequiredField) => missing.includes(field);
@@ -104,9 +91,7 @@ function useMentoringSessionForm(
       return;
     }
 
-    const result = await run(() =>
-      viewModel.createSession(user.name, form, durationValue, competencyIds),
-    );
+    const result = await run(() => viewModel.createSession(user.name, form, durationValue));
     if (!result.ok) return;
     notifySuccess(
       "msg.mentoring.create.success",
@@ -118,9 +103,7 @@ function useMentoringSessionForm(
       durationMin: "",
       topic: "",
       notes: "",
-      nextSession: "",
     });
-    setCompetencyIds([]);
     close();
     onRegistered?.(form.menteeId);
   };
@@ -137,8 +120,6 @@ function useMentoringSessionForm(
     setShowToast,
     saving,
     durationInvalid,
-    competencyIds,
-    toggleCompetency,
     close,
     submit,
   };
@@ -313,6 +294,10 @@ function MentoringTimelineItem({
       {/*
         Tema e Notas são o registro de hoje (dono, 2026-09-08, item 4); os dois
         blocos que saíram do formulário só aparecem na sessão que já os tem.
+
+        Os chips de competência embaixo da sessão saíram em 2026-09-09, com o
+        campo que os alimentava: *"ele anotou embaixo os temas que foram
+        abordados. Não acho útil."*
       */}
       <div className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
         <Block title={t("mentor.block.notes")} text={session.notes || "—"} />
@@ -349,15 +334,6 @@ function MentoringTimelineItem({
             : t("mentor.toPdi.action", { competencia: eligible.competency.name })}
         </Button>
       )}
-      {session.competencyIds.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-          {session.competencyIds.map((c) => (
-            <span key={c} className="rounded-md bg-secondary px-2 py-0.5">
-              {selectors.competencyById(c)?.name ?? c}
-            </span>
-          ))}
-        </div>
-      )}
     </li>
   );
 }
@@ -379,61 +355,6 @@ export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }
   );
 }
 
-/**
- * A régua do time da pessoa, do jeito que o formulário precisa dela: a lista
- * a oferecer, e se a leitura falhou.
- */
-interface TeamRuleCompetencies {
-  readonly list: Competency[];
-  /** A régua não pôde ser lida — e é por isso que a lista NÃO se abriu. */
-  readonly unreadable: boolean;
-  readonly retry: () => void;
-}
-
-/**
- * As competências que a régua do TIME da pessoa cobra (dono, 2026-09-08,
- * item 8): a lista de "Competências discutidas" era o catálogo inteiro, e
- * oferecia a quem mentora competências que o time da pessoa nem exige.
- *
- * A régua é por time × nível de carreira, e é do serviço. Sem time, sem nível
- * ou sem régua definida ali (404), não há recorte nenhum a aplicar e o
- * catálogo ativo continua sendo a lista — restringir para o vazio esconderia
- * a competência sem nenhuma régua a justificar a ausência.
- *
- * REGRA 18 (dono, 2026-09-09) — o que mudou aqui, e por quê. A lista se abria
- * sempre que a régua não estivesse em mãos, e "não estar em mãos" incluía a
- * leitura ter sido RECUSADA: a recusa era engolida, o defeito do item 8
- * voltava sozinho e nada aparecia na tela. Agora a lista só se ABRE com
- * resposta — ausência de régua abre, recusa se lê. A ausência é a do 404
- * desta rota, que é uma das duas exceções nomeadas do dono, e por isso é
- * assinada em `RefusalNumber`: se a régua do nível entrar no lote da regra
- * 18, a assinatura cai e este `catch` cai com ela.
- */
-function useTeamRuleCompetencies(mentee: Professional | undefined): TeamRuleCompetencies {
-  const store = useStore();
-  const teamId = mentee?.teamId ?? "";
-  const careerLevelId = mentee?.careerLevelId ?? "";
-  const rule = useQuery({
-    queryKey: ["team-rule", teamId, careerLevelId],
-    queryFn: () =>
-      api.teamRule(teamId, careerLevelId).catch((error: unknown) => {
-        if (RefusalNumber.answersAbsenceOn("regua-do-nivel", error)) return null;
-        throw error;
-      }),
-    enabled: teamId !== "" && careerLevelId !== "",
-    retry: false,
-  });
-
-  const retry = () => void rule.refetch();
-  if (rule.isError) return { list: [], unreadable: true, retry };
-
-  const active = store.competencies.filter((c) => c.active);
-  const inRule = rule.data?.competencies;
-  if (!inRule) return { list: active, unreadable: false, retry };
-  const ids = new Set(inRule.map((entry) => entry.competencyId));
-  return { list: active.filter((c) => ids.has(c.id)), unreadable: false, retry };
-}
-
 export function NewMentoringSessionDialog({
   menteeOptions,
   onRegistered,
@@ -442,14 +363,7 @@ export function NewMentoringSessionDialog({
   onRegistered?: (menteeId: string) => void;
 }) {
   const { t } = useI18n();
-  const sel = useSelectors();
   const sessionForm = useMentoringSessionForm(menteeOptions, onRegistered);
-
-  const [competencyFilter, setCompetencyFilter] = useState("");
-  const teamRule = useTeamRuleCompetencies(sel.professionalById(sessionForm.form.menteeId));
-  const discussedList = teamRule.list.filter((c) =>
-    defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
-  );
 
   return (
     <Dialog open={sessionForm.open} onOpenChange={sessionForm.setOpen}>
@@ -506,15 +420,6 @@ export function NewMentoringSessionDialog({
                 onKeyDown={(e) => e.key === "Enter" && void sessionForm.submit()}
               />
             </div>
-            <div>
-              <Label htmlFor="next-session">{t("mentor.form.nextSession")}</Label>
-              <Input
-                id="next-session"
-                type="date"
-                value={sessionForm.form.nextSession}
-                onChange={(e) => sessionForm.setField("nextSession", e.target.value)}
-              />
-            </div>
           </div>
           <div>
             <FieldLabel htmlFor="topic" hint={t("mentor.form.topicHint")}>
@@ -540,49 +445,6 @@ export function NewMentoringSessionDialog({
               value={sessionForm.form.notes}
               onChange={(e) => sessionForm.setField("notes", e.target.value)}
             />
-          </div>
-          <div className="min-w-0">
-            <FieldLabel
-              labelId="mentor-competencies-label"
-              hint={t("mentor.form.competenciesHint")}
-            >
-              {t("mentor.form.competencies")}
-            </FieldLabel>
-            {teamRule.unreadable ? (
-              <ReadingRefusal sentence={t("teamRules.error.load")} onRetry={teamRule.retry} />
-            ) : (
-              <>
-                {teamRule.list.length > 20 && (
-                  <Input
-                    aria-label={t("common.searchCompetency")}
-                    placeholder={t("common.searchCompetency")}
-                    value={competencyFilter}
-                    onChange={(e) => setCompetencyFilter(e.target.value)}
-                    className="mt-1"
-                  />
-                )}
-                <div
-                  id="mentor-competencies"
-                  role="group"
-                  aria-labelledby="mentor-competencies-label"
-                  className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
-                >
-                  {discussedList.map((c) => (
-                    <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={sessionForm.competencyIds.includes(c.id)}
-                        onChange={() => sessionForm.toggleCompetency(c.id)}
-                      />
-                      <TruncatedText text={c.name} className="flex-1" />
-                    </label>
-                  ))}
-                  {discussedList.length === 0 && (
-                    <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
-                  )}
-                </div>
-              </>
-            )}
           </div>
         </div>
         {sessionForm.showToast && (

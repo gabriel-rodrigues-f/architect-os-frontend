@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import {
-  GapBadge,
+  CompetencyGapRow,
   KeyFigureCard,
   OutOfReachScreen,
   PageHeader,
@@ -221,10 +221,7 @@ function TeamTrainingNeeds() {
           <ul className="space-y-3">
             {collective.map((n) => (
               <li key={n.competency.id} className="surface-inset p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{n.competency.name}</p>
-                  <GapBadge gap={Math.round(n.avgGap)} />
-                </div>
+                <CompetencyGapRow name={n.competency.name} gap={Math.round(n.avgGap)} />
                 <p className="mt-1 text-xs text-muted-foreground">
                   {t("needs.recommended.summary", { n: n.people })}
                 </p>

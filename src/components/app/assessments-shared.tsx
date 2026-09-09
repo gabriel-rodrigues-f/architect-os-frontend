@@ -23,7 +23,7 @@ import type {
 } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import { useAsyncSubmit, useNarrowViewport } from "@/hooks";
+import { useAsyncSubmit, useNarrowViewport, useSuccessToast } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { stateContextCatalog } from "@/lib/state-contexts";
@@ -573,6 +573,7 @@ function DevelopmentSummaryForm({
   const { t, locale } = useI18n();
   const queryClient = useQueryClient();
   const viewModel = useAssessmentViewModel();
+  const notifySuccess = useSuccessToast();
   const [startDoing, setStartDoing] = useState(data.startDoing);
   const [stopDoing, setStopDoing] = useState(data.stopDoing);
   const [continueDoing, setContinueDoing] = useState(data.continueDoing);
@@ -600,6 +601,14 @@ function DevelopmentSummaryForm({
     ).then((result) => {
       if (result.ok) {
         setSaveState("saved");
+        /*
+         * O RETORNO AO SALVAR (dono, 2026-09-09): *"quero ver uma mensagem de
+         * 'Salvo com sucesso'"*. O rótulo "Salvo" ao lado do botão é o estado
+         * do formulário; o aviso é o mecanismo da casa, e a frase vem do
+         * `messageCode` que o serviço já publica neste PUT — por isso
+         * `result.value` viaja como terceiro argumento.
+         */
+        notifySuccess("msg.assessment.developmentSummary.update.success", undefined, result.value);
         void queryClient.invalidateQueries({ queryKey });
         return;
       }

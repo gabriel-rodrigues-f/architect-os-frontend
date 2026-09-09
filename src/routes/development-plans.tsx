@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import {
   CommandWithReasonDialog,
+  CompetencyGapRow,
   EmptyState,
   EmptyStateCallToAction,
   GapBadge,
@@ -203,10 +204,7 @@ function PlansScreen() {
               <ul className="space-y-2">
                 {suggestions.map((g) => (
                   <li key={g.item.competencyId} className="surface-inset p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium">{g.competency?.name}</p>
-                      <GapBadge gap={g.gap} />
-                    </div>
+                    <CompetencyGapRow name={g.competency?.name ?? ""} gap={g.gap} />
                     {workflow.canEditDiagnostic && (
                       <Button
                         size="sm"

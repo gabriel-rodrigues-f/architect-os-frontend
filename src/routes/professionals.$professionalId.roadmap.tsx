@@ -247,7 +247,7 @@ function MissingCompetencyList({ missing }: { missing: readonly MissingCompetenc
           key={item.competencyId}
           className="flex flex-wrap items-center justify-between gap-2 py-2.5"
         >
-          <p className="text-sm font-medium">{item.name}</p>
+          <p className="min-w-0 break-words text-sm font-medium">{item.name}</p>
           <div className="flex items-center gap-2">
             <LevelBadge level={item.currentLevel} />
             <span aria-hidden className="text-xs text-muted-foreground">

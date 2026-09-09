@@ -115,7 +115,12 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
     expect(screen.getByText("Ciclo")).toBeTruthy();
   });
 
-  it("mentoria: as listas de competências do formulário não deixam rótulo órfão", async () => {
+  /**
+   * O grupo "Competências discutidas" saiu do formulário em 2026-09-09; o que
+   * esta régua guarda continua valendo para os cinco campos que ficaram —
+   * nenhum rótulo aponta para elemento que não se rotula.
+   */
+  it("mentoria: os campos do formulário não deixam rótulo órfão", async () => {
     mockAppFetch(fetchMock);
     const user = userEvent.setup();
     renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.professionals]} />, {
@@ -126,18 +131,5 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
     await screen.findByRole("dialog");
 
     expect(rotulosOrfaos()).toEqual([]);
-  });
-
-  it("mentoria: a lista de competências discutidas tem nome acessível de grupo", async () => {
-    mockAppFetch(fetchMock);
-    const user = userEvent.setup();
-    renderWithApp(<NewMentoringSessionDialog menteeOptions={[...fixtureState.professionals]} />, {
-      contexts: MENTORING_CONTEXTS,
-    });
-
-    await user.click(await screen.findByRole("button", { name: "Registrar sessão" }));
-    await screen.findByRole("dialog");
-
-    expect(screen.getByRole("group", { name: "Competências discutidas" })).toBeTruthy();
   });
 });

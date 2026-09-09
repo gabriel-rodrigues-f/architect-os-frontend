@@ -33,7 +33,7 @@
   "src/components/app/charts.tsx": 1,
   "src/components/app/gap-analysis-shared.tsx": 3,
   "src/components/app/level-encoding.tsx": 1,
-  "src/components/app/mentoring-shared.tsx": 13,
+  "src/components/app/mentoring-shared.tsx": 10,
   "src/components/app/team-shared.tsx": 15,
   "src/components/app/ui-bits.tsx": 9,
   "src/components/ui/command.tsx": 4,
@@ -46,7 +46,7 @@
   "src/routes/compare.tsx": 3,
   "src/routes/competency-matrix.tsx": 26,
   "src/routes/cycles.tsx": 12,
-  "src/routes/development-plans.tsx": 52,
+  "src/routes/development-plans.tsx": 51,
   "src/routes/gap-analysis.tsx": 6,
   "src/routes/index.tsx": 33,
   "src/routes/learning-paths.tsx": 23,
@@ -57,6 +57,6 @@
   "src/routes/settings.tsx": 63,
   "src/routes/team-rules.tsx": 9,
   "src/routes/teams.tsx": 30,
-  "src/routes/training-needs.tsx": 6,
+  "src/routes/training-needs.tsx": 5,
   "src/routes/users.tsx": 13
 }

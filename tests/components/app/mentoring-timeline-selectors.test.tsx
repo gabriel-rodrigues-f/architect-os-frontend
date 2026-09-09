@@ -83,7 +83,9 @@ describe("linha do tempo de mentoria — um índice de selectors por lista (F2)"
       "Bruno Almeida · mentor Gabriel Rodrigues · 02/08/2026 · 40 min",
       "Bruno Almeida · mentor Gabriel Rodrigues · 03/08/2026 · 50 min",
     ]);
-    expect(screen.getAllByText("Kubernetes")).toHaveLength(sessions.length);
+    // Os chips de competência saíram da linha do tempo (dono, 2026-09-09):
+    // "ele anotou embaixo os temas que foram abordados. Não acho útil."
+    expect(screen.queryByText("Kubernetes")).toBeNull();
   });
 
   it("o custo de montar os selectors não cresce com o tamanho da lista", async () => {
