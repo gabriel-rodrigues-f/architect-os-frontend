@@ -126,16 +126,6 @@ describe("a ficha de Talentos do Time não gera nada com IA", () => {
       expect(screen.queryByRole("button", { name: botao }), String(botao)).toBeNull();
     }
   });
-
-  it("o diálogo de revisar evidência também ficou sem apoio de IA", async () => {
-    montaFicha(fixtureAssignedTechLeadUser);
-    const usuario = userEvent.setup();
-    await usuario.click(await screen.findByRole("button", { name: /^Revisar$/ }));
-
-    const dialogo = screen.getByRole("dialog");
-    expect(dialogo.querySelector("#ev-review-status")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Ler apoio à revisão/ })).toBeNull();
-  });
 });
 
 describe("Mentoria e 1:1 — um cartão de IA só: a Preparação do 1:1", () => {

@@ -67,7 +67,6 @@ const bancoVazio: AppState = {
   plans: [],
   learningPaths: [],
   mentoringSessions: [],
-  evidences: [],
   activeCycleId: "",
 };
 

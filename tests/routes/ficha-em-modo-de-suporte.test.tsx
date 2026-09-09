@@ -22,7 +22,7 @@ import { renderCareerFile } from "../helpers/ficha";
 
 /**
  * PR 6 (RBAC-03, [FA-07]) — o passe de suporte abre SÓ a ficha funcional
- * (`GET /professionals/:id`); avaliações, PDI, mentoria, evidências e trilhas
+ * (`GET /professionals/:id`); avaliações, PDI, mentoria e trilhas
  * respondem 403 ao suporte mesmo com passe. A tela não pede o que o serviço
  * recusa: desenha o ramo "indisponível no modo de suporte" no lugar das
  * seções, e a ficha funcional segue. O passe vale 15 minutos; vencido, o
@@ -32,7 +32,7 @@ const fetchMock = vi.fn();
 
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 const ana = fixtureState.professionals.find((professional) => professional.id === "ana");
-const MOTIVO = "chamado 4821, conferir evidência duplicada";
+const MOTIVO = "chamado 4821, conferir cadastro duplicado";
 const TITULO_DO_DIALOGO = "Abrir a ficha em modo de suporte";
 
 const fichaFuncionalRoute: FetchRoute = (href, init) =>
@@ -84,7 +84,7 @@ describe("ficha em modo de suporte", () => {
     expect(screen.queryByText(/Falha ao carregar|Não foi possível/)).toBeNull();
     expect(chamadasPara(apiPath("/assessments"))).toHaveLength(0);
     expect(chamadasPara(apiPath("/plans"))).toHaveLength(0);
-    expect(chamadasPara(apiPath("/evidences"))).toHaveLength(0);
+    expect(chamadasPara(apiPath("/mentoring-sessions"))).toHaveLength(0);
   });
 
   it("os três cabeçalhos do passe vão na requisição da pessoa — e só nela", async () => {

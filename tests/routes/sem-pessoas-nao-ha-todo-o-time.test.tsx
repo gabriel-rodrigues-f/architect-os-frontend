@@ -81,7 +81,6 @@ const semNinguem: AppState = {
   professionals: [],
   assessments: [],
   plans: [],
-  evidences: [],
   mentoringSessions: [],
 };
 

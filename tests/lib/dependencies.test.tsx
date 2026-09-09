@@ -29,7 +29,6 @@ describe("FrontendContainer", () => {
       container.catalogGateway,
       container.cyclesGateway,
       container.developmentGateway,
-      container.evidenceGateway,
       container.evolutionGateway,
       container.learningGateway,
       container.mentoringGateway,

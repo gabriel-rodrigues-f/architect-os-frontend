@@ -111,7 +111,7 @@ describe("DateFormatter", () => {
 
 /**
  * F2 (caminhos quentes) — `formatDate` é chamada de dentro de `.map()` em
- * várias listas (mentoria, PDI, evidências, ciclos), e construir um
+ * várias listas (mentoria, PDI, trilhas, ciclos), e construir um
  * `Intl.DateTimeFormat` é caro: é onde mora a compilação das regras do
  * idioma. A instância é imutável e sem estado, então cachear por
  * (idioma, opções) é seguro. O primeiro bloco é de caracterização: a saída

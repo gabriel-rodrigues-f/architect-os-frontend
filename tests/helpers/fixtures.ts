@@ -394,19 +394,6 @@ export const fixtureState: AppState = {
     },
   ],
   mentoringSessions: [],
-  evidences: [
-    {
-      id: "e1",
-      professionalId: "ana",
-      title: "ADR-014",
-      description: "",
-      type: "ADR",
-      competencyIds: ["security-iam"],
-      date: "2026-08-06",
-      complexity: "High",
-      status: "Pending",
-    },
-  ],
   activeCycleId: "2026-h2",
 };
 
@@ -414,8 +401,8 @@ export const fixtureState: AppState = {
  * O payload que o servidor manda DE VERDADE desde o roster fechado
  * (backend `d1edba4`) e o escopo por TIME da Fase 2 (backend `f1926f7`,
  * ADR-0035): `AuthorizationService.scopeAppState` recorta `professionals`,
- * `assessments`, `plans`, `evidences`, `mentoringSessions`, `learningPaths`
- * e `teamLevelRules` pelo conjunto visível do papel — member vê só a si,
+ * `assessments`, `plans`, `mentoringSessions`, `learningPaths` e
+ * `teamLevelRules` pelo conjunto visível do papel — member vê só a si,
  * lead vê os times que lidera (papel E vínculo `tech_lead`/`manager`),
  * admin vê tudo. Este helper espelha aquele filtro, campo a campo, para que
  * os testes exercitem o mundo recortado em vez do payload antigo (roster
@@ -456,7 +443,6 @@ export function scopedFixtureStateFor(
       visibleIds.has(assessment.professionalId),
     ),
     plans: state.plans.filter((plan) => visibleIds.has(plan.professionalId)),
-    evidences: state.evidences.filter((evidence) => visibleIds.has(evidence.professionalId)),
     mentoringSessions: state.mentoringSessions.filter(
       (session) => visibleIds.has(session.menteeId) || session.mentorUserId === user.id,
     ),

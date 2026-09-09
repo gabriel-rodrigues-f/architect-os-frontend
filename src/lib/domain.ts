@@ -478,55 +478,6 @@ export interface EvolutionFilters {
   source: EvolutionSourceFilter;
 }
 
-export type EvidenceType =
-  | "Architecture Design"
-  | "ADR"
-  | "Technical Presentation"
-  | "Workshop"
-  | "Project"
-  | "Certification"
-  | "Course"
-  | "Proof of Concept"
-  | "Architecture Review"
-  | "Mentoring"
-  | "Technical Article";
-
-export const EVIDENCE_TYPES: EvidenceType[] = [
-  "Architecture Design",
-  "ADR",
-  "Technical Presentation",
-  "Workshop",
-  "Project",
-  "Certification",
-  "Course",
-  "Proof of Concept",
-  "Architecture Review",
-  "Mentoring",
-  "Technical Article",
-];
-
-export interface Evidence {
-  id: string;
-  professionalId: string;
-  title: string;
-  description: string;
-  type: EvidenceType;
-  competencyIds: string[];
-  date: string;
-  project?: string | undefined;
-  url?: string | undefined;
-  complexity: "Low" | "Medium" | "High";
-  leaderComment?: string | undefined;
-
-  status: "Pending" | "Accepted" | "Needs Improvement" | "Rejected";
-
-  issuer?: string | undefined;
-
-  developmentPlanItemId?: string | null | undefined;
-  reviewedByUserId?: string | null | undefined;
-  reviewedAt?: string | null | undefined;
-}
-
 type GapSeverity = BandTone;
 
 export const gapSeverityOf: (gap: number) => GapSeverity =

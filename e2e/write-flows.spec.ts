@@ -21,9 +21,10 @@ import {
  * Dos 5 fluxos principais, DOIS já têm spec própria nesta pasta e não são
  * duplicados aqui: registrar sessão de mentoria (`mentoring.spec.ts`) e
  * check-in/transição de item de PDI (`pdi-lifecycle.spec.ts`). Este spec
- * cobre os outros três — avaliação (member avalia e envia; lead pontua e
- * conclui), criação de item de PDI a partir de um gap, evidência — e a
- * configuração administrativa de vocabulário.
+ * cobre os outros dois — avaliação (member avalia e envia; lead pontua e
+ * conclui) e criação de item de PDI a partir de um gap — mais a configuração
+ * administrativa de vocabulário. (Havia um terceiro, o registro de evidência,
+ * que morreu com a evidência: dono, 2026-09-08, regra 17.)
  *
  * Os testes deste arquivo são UMA jornada em sequência (workers=1 no
  * config): a avaliação concluída no 2º teste é o que gera o gap que o 3º
@@ -43,7 +44,6 @@ const LEAD_NAME = "E2E Fluxos Lead";
 const MEMBER_EMAIL = `e2e-flux-member-${RUN_ID}@architect-os.local`;
 const LEAD_EMAIL = `e2e-flux-lead-${RUN_ID}@architect-os.local`;
 const VOCAB_CODE = `E2E_HARNESS_${RUN_ID.toUpperCase()}`;
-const EVIDENCE_TITLE = `E2E evidência ${RUN_ID}`;
 const ACTION_PLAN = `E2E plano de ação ${RUN_ID} — praticar com revisão do Tech Lead`;
 
 test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD não configurados.");
@@ -186,7 +186,7 @@ test.afterAll(async () => {
       professionalId,
     ]);
     await client.query(
-      "DELETE FROM domain_vocabularies WHERE vocabulary = 'EVIDENCE_TYPE' AND code = $1",
+      "DELETE FROM domain_vocabularies WHERE vocabulary = 'ACTION_TYPE' AND code = $1",
       [VOCAB_CODE],
     );
   } finally {
@@ -293,36 +293,7 @@ test("Member cria uma ação de PDI a partir do maior gap", async ({ page }) => 
   await expect(page.getByText(ACTION_PLAN)).toBeVisible();
 });
 
-// Onda 31 tirou do profissional a própria ficha de carreira — e com ela o
-// ÚNICO ponto da aplicação que registra evidência (`EvidenceDialog` só vive
-// em `professionals.$professionalId.index.tsx`, atrás de `canActFor`). O gesto
-// continua existindo para quem lidera: o Tech Lead registra na ficha do
-// liderado. A lacuna do profissional está relatada na fatia; o spec cobre o
-// caminho que a aplicação oferece hoje.
-test("Tech Lead registra uma evidência na ficha do liderado", async ({ page }) => {
-  await login(page, LEAD_EMAIL, PASSWORD, "Ações da Liderança");
-
-  await page.goto(`/professionals/${professionalId}`);
-  await expect(page.getByText("Evidências", { exact: true }).first()).toBeVisible();
-  await page.getByRole("button", { name: "Registrar", exact: true }).click();
-
-  const dialog = page.getByRole("dialog", { name: "Nova evidência" });
-  await dialog.locator("#ev-title").fill(EVIDENCE_TITLE);
-  await dialog.locator("#ev-complexity").selectOption("High");
-  await dialog.locator("#ev-project").fill("Projeto E2E");
-  await dialog
-    .locator("#ev-description")
-    .fill("E2E: prova concreta registrada pelo harness de entrega.");
-  await dialog.getByRole("button", { name: "Salvar evidência" }).click();
-
-  await expect(page.getByText(`Evidência "${EVIDENCE_TITLE}" registrada.`)).toBeVisible();
-  await expect(page.getByText(EVIDENCE_TITLE).first()).toBeVisible();
-
-  await page.reload();
-  await expect(page.getByText(EVIDENCE_TITLE).first()).toBeVisible();
-});
-
-test("Admin adiciona um código ao vocabulário de tipos de evidência", async ({ page }) => {
+test("Admin adiciona um código ao vocabulário de tipos de ação do PDI", async ({ page }) => {
   await login(page, ADMIN_EMAIL!, ADMIN_PASSWORD!, "Painel de Capacidades");
 
   await page.goto("/settings");
@@ -330,10 +301,10 @@ test("Admin adiciona um código ao vocabulário de tipos de evidência", async (
 
   const bloco = page
     .locator("div.surface-inset")
-    .filter({ has: page.getByText("Tipos de evidência", { exact: true }) });
+    .filter({ has: page.getByText("Tipos de ação do PDI", { exact: true }) });
   await bloco.getByRole("button", { name: "Novo código" }).click();
-  await bloco.locator("#vocab-new-code-EVIDENCE_TYPE").fill(VOCAB_CODE);
-  await bloco.locator("#vocab-new-labelkey-EVIDENCE_TYPE").fill(`evidenceType.e2e${RUN_ID}`);
+  await bloco.locator("#vocab-new-code-ACTION_TYPE").fill(VOCAB_CODE);
+  await bloco.locator("#vocab-new-labelkey-ACTION_TYPE").fill(`actionType.e2e${RUN_ID}`);
   await bloco.getByRole("button", { name: "Adicionar", exact: true }).click();
 
   await expect(page.getByText(`Código “${VOCAB_CODE}” adicionado.`)).toBeVisible();
@@ -343,7 +314,7 @@ test("Admin adiciona um código ao vocabulário de tipos de evidência", async (
   await expect(
     page
       .locator("div.surface-inset")
-      .filter({ has: page.getByText("Tipos de evidência", { exact: true }) })
+      .filter({ has: page.getByText("Tipos de ação do PDI", { exact: true }) })
       .getByText(VOCAB_CODE)
       .first(),
   ).toBeVisible();

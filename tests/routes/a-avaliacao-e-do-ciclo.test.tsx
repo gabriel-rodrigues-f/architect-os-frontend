@@ -131,4 +131,29 @@ describe("Avaliação de Desempenho — a avaliação é a do ciclo escolhido", 
 
     expect(notaFinalDeKubernetes()).toContain("3");
   });
+
+  /**
+   * A ordem é de MÃO ÚNICA. Quem só compara o ciclo ativo de agora com o do
+   * mount volta a obedecer ao link assim que o cabeçalho passeia e retorna ao
+   * ciclo de entrada — e a tela mostra outra vez a avaliação de outro ciclo,
+   * com o cabeçalho dizendo outra coisa. É o defeito do dono de novo, pela
+   * porta dos fundos.
+   */
+  it("depois da primeira troca o link não volta a mandar, nem no ciclo em que a tela entrou", async () => {
+    window.history.pushState({}, "", "/assessments?professionalId=ana&cycleId=2026-h1");
+    abrirTela();
+    await screen.findByText("Kubernetes");
+    expect(notaFinalDeKubernetes()).toContain("3");
+
+    trocarCicloPara("2026 H1");
+    await waitFor(() => {
+      expect(notaFinalDeKubernetes()).toContain("3");
+    });
+
+    trocarCicloPara("2026 H2");
+
+    await waitFor(() => {
+      expect(notaFinalDeKubernetes()).toContain("4");
+    });
+  }, 10_000);
 });

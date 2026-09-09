@@ -63,11 +63,18 @@ const LEADING_TEAM_ROLES = ["tech_lead", "manager"];
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
+/**
+ * Os avisos de demonstração. Dois deles falavam de evidência esperando revisão
+ * e saíram com ela (dono, 2026-09-08, regra 17); no lugar entraram dois de
+ * transferência de time — tipo de evento que o backend EMITE de verdade — para
+ * a lista de demonstração não encolher e continuar exercitando o aviso que
+ * aponta para a ficha de uma pessoa.
+ */
 const fixtureNotices = (now: number): Notice[] => [
   {
-    id: "notice-evidence-carla-awaiting-review",
-    eventType: "evidence.awaitingReview",
-    title: "Evidência de Carla Souza espera revisão: Desenho do data mart de logística",
+    id: "notice-team-transfer-carla-requested",
+    eventType: "team-transfer.requested",
+    title: "Carla Souza pediu transferência para o time de Dados",
     link: "/professionals/demo-carla-souza",
     occurredAt: new Date(now - 2 * HOUR_MS).toISOString(),
     readAt: null,
@@ -75,9 +82,9 @@ const fixtureNotices = (now: number): Notice[] => [
     teamId: DEMONSTRATION_TEAM_ID,
   },
   {
-    id: "notice-evidence-elisa-awaiting-review",
-    eventType: "evidence.awaitingReview",
-    title: "Evidência de Elisa Prado espera revisão: Contrato v2 do serviço de catálogo",
+    id: "notice-team-transfer-elisa-approved",
+    eventType: "team-transfer.approved",
+    title: "Transferência de Elisa Prado para o time de Plataforma foi aprovada",
     link: "/professionals/demo-elisa-prado",
     occurredAt: new Date(now - 6 * HOUR_MS).toISOString(),
     readAt: null,

@@ -53,7 +53,6 @@ export class ContextScopes {
       "activeCycle",
       { name: "assessments", professionalId },
       { name: "plans", professionalId },
-      { name: "evidences", professionalId },
       { name: "mentoringSessions", professionalId },
       { name: "learningPaths", professionalId },
     ];

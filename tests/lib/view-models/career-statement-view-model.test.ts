@@ -1,22 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  CareerLevelTransition,
-  DevelopmentPlanEvent,
-  Evidence,
-  MentoringSession,
-} from "@/lib/domain";
+import type { CareerLevelTransition, DevelopmentPlanEvent, MentoringSession } from "@/lib/domain";
 import type { TeamTransitionRecord } from "@/lib/gateways/reports.gateway";
 import { CareerStatementViewModel, type StatementSources } from "@/lib/view-models";
 
 /**
  * Tela 4 (spec §4, CONTRATO PRD-04) — extrato de carreira: a história da
- * pessoa em ordem CRONOLÓGICA, e TUDO entra — transições de nível, degraus
- * de competência, evidências, eventos de PDI e mentorias, as 5 fontes que
- * já existem. A VM normaliza as 5 no mesmo StatementEntry, ordena do mais
+ * pessoa em ordem CRONOLÓGICA, e TUDO entra — transições de nível, mudanças
+ * de time, degraus de competência, eventos de PDI e mentorias, as 5 fontes
+ * que já existem. A VM normaliza as 5 no mesmo StatementEntry, ordena do mais
  * recente para o mais antigo, agrupa por ano e aplica os filtros de
  * período/tipo. Quando o PRD-04 entregar o agregado, a VM troca 5 chamadas
- * por 1 sem a tela mudar.
+ * por 1 sem a tela mudar. (Eram 6 fontes: a evidência saiu do produto em
+ * 2026-09-08, regra 17.)
  *
  * O `translate` é injetado: título de entrada é texto de tela (i18n),
  * nunca string montada fora do catálogo.
@@ -50,18 +46,6 @@ const competencyEvent = {
   recordedAt: "2025-11-05T10:00:00.000Z",
   actorUserId: "user-lead",
   note: "Evoluiu no workshop",
-};
-
-const evidence: Evidence = {
-  id: "evd-1",
-  professionalId: "ana",
-  title: "Certificação BTP",
-  description: "Prova de certificação",
-  type: "Certification",
-  competencyIds: ["cc"],
-  date: "2026-01-20",
-  complexity: "Medium",
-  status: "Accepted",
 };
 
 const planEvent: DevelopmentPlanEvent = {
@@ -102,7 +86,6 @@ const sources: StatementSources = {
   transitions: [transition],
   teamTransitions: [teamTransition],
   competencyEvents: [competencyEvent],
-  evidences: [evidence],
   planEvents: [planEvent],
   mentoringSessions: [mentoring],
 };
@@ -114,7 +97,6 @@ describe("CareerStatementViewModel — normalização das 5 fontes", () => {
       "transition",
       "teamTransition",
       "pdi",
-      "evidence",
       "mentoring",
       "competencyStep",
     ]);
@@ -131,7 +113,7 @@ describe("CareerStatementViewModel — normalização das 5 fontes", () => {
 
   it("cada entrada aponta para a origem (link interno)", () => {
     const entries = vm().entries(sources);
-    expect(entries.find((entry) => entry.kind === "evidence")?.link).toBe("/professionals/ana");
+    expect(entries.find((entry) => entry.kind === "transition")?.link).toBe("/professionals/ana");
     expect(entries.find((entry) => entry.kind === "pdi")?.link).toBe(
       "/development-plans?professionalId=ana",
     );
@@ -141,23 +123,23 @@ describe("CareerStatementViewModel — normalização das 5 fontes", () => {
   it("agrupa por ano, do mais recente para o mais antigo", () => {
     const groups = vm().groupByYear(vm().entries(sources));
     expect(groups.map((group) => group.year)).toEqual(["2026", "2025"]);
-    expect(groups[0]?.entries).toHaveLength(4);
+    expect(groups[0]?.entries).toHaveLength(3);
     expect(groups[1]?.entries).toHaveLength(2);
   });
 
   it("filtra por tipo de entrada sem perder a ordem", () => {
     const feed = vm();
-    const filtered = feed.filterByKinds(feed.entries(sources), ["evidence", "mentoring"]);
-    expect(filtered.map((entry) => entry.kind)).toEqual(["evidence", "mentoring"]);
+    const filtered = feed.filterByKinds(feed.entries(sources), ["pdi", "mentoring"]);
+    expect(filtered.map((entry) => entry.kind)).toEqual(["pdi", "mentoring"]);
   });
 
   it("filtra por período usando o DIA da entrada (limites inclusivos)", () => {
     const feed = vm();
     const filtered = feed.filterByRange(feed.entries(sources), {
-      from: "2026-01-20",
-      to: "2026-02-01",
+      from: "2026-02-01",
+      to: "2026-02-15",
     });
-    expect(filtered.map((entry) => entry.kind)).toEqual(["pdi", "evidence"]);
+    expect(filtered.map((entry) => entry.kind)).toEqual(["teamTransition", "pdi"]);
   });
 
   it("degrau sem nível anterior usa o título de registro inicial", () => {
@@ -208,7 +190,6 @@ describe("CareerStatementViewModel — mudança de time no extrato", () => {
       "2026-03-10T12:00:00.000Z",
       "2026-02-15",
       "2026-02-01T09:00:00.000Z",
-      "2026-01-20",
       "2025-12-15",
       "2025-11-05",
     ]);

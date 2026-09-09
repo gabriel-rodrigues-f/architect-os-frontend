@@ -20,6 +20,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as DashboardRoute } from "@/routes/index";
+import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import {
   fixtureAdminUser,
@@ -65,14 +66,20 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
   });
 
   it("renderiza o painel da liderança vinculada pelos contextos, sem nenhuma chamada a /state", async () => {
+    const comPdiEmRascunho: AppState = {
+      ...fixtureState,
+      plans: fixtureState.plans.map((plan) =>
+        plan.professionalId === "ana" ? { ...plan, status: "Draft" as const } : plan,
+      ),
+    };
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
-      state: scopedFixtureStateFor(fixtureAssignedManagerUser, fixtureState, [fixtureTeamId]),
+      state: scopedFixtureStateFor(fixtureAssignedManagerUser, comPdiEmRascunho, [fixtureTeamId]),
     });
     renderWithApp(<DashboardPage />);
 
     expect(await screen.findByText("Ações da Liderança")).toBeTruthy();
-    // "e1" na fixture: evidência Pending de "ana", título "ADR-014".
+    // O PDI da Ana em rascunho é a pendência que põe o nome dela na fila.
     expect((await screen.findAllByText(/Ana Martins/)).length).toBeGreaterThan(0);
 
     expect(requestedPaths().some((href) => href.endsWith(apiPath("/state")))).toBe(false);

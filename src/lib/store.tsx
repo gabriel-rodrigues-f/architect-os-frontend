@@ -19,7 +19,6 @@ import type {
   DevelopmentPlan,
   DevelopmentPlanItem,
   DevelopmentPlanItemEvent,
-  Evidence,
   LearningItemProgress,
   LearningPath,
   LearningPathItem,
@@ -276,15 +275,6 @@ export interface Api extends AppState {
   reopenPlan: (planId: string, reason: string) => Promise<DevelopmentPlan>;
 
   addPlanItemCheckin: (planId: string, itemId: string, text: string) => Promise<DevelopmentPlan>;
-
-  addEvidence: (e: Evidence) => Promise<Evidence>;
-
-  reviewEvidence: (
-    id: string,
-    review: { status: Evidence["status"]; leaderComment?: string | undefined },
-  ) => Promise<void>;
-
-  resubmitEvidence: (id: string, patch: { description?: string; url?: string }) => Promise<void>;
 
   addMentoringSession: (m: MentoringSession) => Promise<MentoringSession>;
 
@@ -843,32 +833,6 @@ export function buildApi(
           plans: s.plans.map((p) => (p.id === planId ? updated : p)),
         }),
       ),
-
-    addEvidence: (e) =>
-      runner.command(
-        () => api.createEvidence(e),
-        (created) => (s) => ({ ...s, evidences: [created, ...s.evidences] }),
-      ),
-
-    reviewEvidence: async (id, review) => {
-      await runner.command(
-        () => api.reviewEvidence(id, review),
-        (updated) => (s) => ({
-          ...s,
-          evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
-        }),
-      );
-    },
-
-    resubmitEvidence: async (id, patch) => {
-      await runner.command(
-        () => api.resubmitEvidence(id, patch),
-        (updated) => (s) => ({
-          ...s,
-          evidences: s.evidences.map((e) => (e.id === id ? updated : e)),
-        }),
-      );
-    },
 
     addMentoringSession: (m) =>
       runner.command(

@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { ProfessionalProfileViewModel, type ProfessionalProfileService } from "@/lib/view-models";
+import { professionalProfileViewModel } from "@/lib/view-models";
 
 /**
  * FASE 2 (quinta rodada) — "perfil deveria ser o centro da jornada...
@@ -11,23 +11,23 @@ import { ProfessionalProfileViewModel, type ProfessionalProfileService } from "@
  * serviço de domínio exportado de um arquivo de ROTA, e este teste
  * importava a rota para alcançá-lo. A regra passou para a view-model do
  * perfil; as asserções abaixo são as mesmas, linha por linha.
+ *
+ * 2026-09-08 (regra 17) — a evidência saiu do produto, e com ela o passo
+ * "evidências aguardando revisão". O passo da avaliação esperando calibração
+ * dividia a MESMA guarda com ele: se a guarda saísse junto, a calibração
+ * sumiria da tela sem erro de tipo e sem teste vermelho. Por isso cada passo
+ * agora declara a sua própria guarda, e os dois casos abaixo — "sem
+ * leadsProfessional" e "com leadsProfessional" — existem para fixar que a
+ * calibração continua de pé por conta própria.
  */
-const fakeService = (): ProfessionalProfileService => ({
-  addEvidence: vi.fn(),
-  resubmitEvidence: vi.fn(),
-  reviewEvidence: vi.fn(),
-});
-
-const computeNextSteps: ProfessionalProfileViewModel["nextSteps"] = (input) =>
-  new ProfessionalProfileViewModel(fakeService()).nextSteps(input);
+const computeNextSteps = professionalProfileViewModel.nextSteps.bind(professionalProfileViewModel);
 
 describe("Workspace da pessoa — próximos passos", () => {
   const base = {
     canEditOwn: false,
-    canReviewEvidence: false,
+    leadsProfessional: false,
     itemsNotStartedCount: 0,
     gapsNotInPlanCount: 0,
-    evidencesPendingCount: 0,
     assessmentAwaitingCalibration: false,
   };
 
@@ -57,38 +57,31 @@ describe("Workspace da pessoa — próximos passos", () => {
     ]);
   });
 
-  it("sem canReviewEvidence, ignora evidência pendente e avaliação aguardando calibração", () => {
-    const steps = computeNextSteps({
-      ...base,
-      evidencesPendingCount: 1,
-      assessmentAwaitingCalibration: true,
-    });
+  it("sem leadsProfessional, ignora a avaliação aguardando calibração", () => {
+    const steps = computeNextSteps({ ...base, assessmentAwaitingCalibration: true });
     expect(steps).toEqual([]);
   });
 
-  it("com canReviewEvidence, lista evidência pendente e avaliação aguardando calibração", () => {
+  it("quem lidera vê a avaliação aguardando calibração mesmo sem nada a editar", () => {
     const steps = computeNextSteps({
       ...base,
-      canReviewEvidence: true,
-      evidencesPendingCount: 1,
+      leadsProfessional: true,
       assessmentAwaitingCalibration: true,
     });
-    expect(steps).toEqual([{ kind: "evidencesPending", count: 1 }, { kind: "assessmentAwaiting" }]);
+    expect(steps).toEqual([{ kind: "assessmentAwaiting" }]);
   });
 
-  it("com as duas permissões, mistura os quatro tipos de passo", () => {
+  it("com as duas guardas, mistura os três tipos de passo", () => {
     const steps = computeNextSteps({
       canEditOwn: true,
-      canReviewEvidence: true,
+      leadsProfessional: true,
       itemsNotStartedCount: 1,
       gapsNotInPlanCount: 1,
-      evidencesPendingCount: 1,
       assessmentAwaitingCalibration: true,
     });
     expect(steps.map((s) => s.kind)).toEqual([
       "itemsNotStarted",
       "gapsNotInPlan",
-      "evidencesPending",
       "assessmentAwaiting",
     ]);
   });

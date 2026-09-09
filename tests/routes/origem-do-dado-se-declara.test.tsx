@@ -171,7 +171,7 @@ describe("o sino de avisos declara a origem dos avisos que está mostrando", () 
     registraGatewayDeDemonstracao();
     renderWithApp(<NoticeBell />);
     await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-    await screen.findByText(/Evidência de Carla Souza espera revisão/);
+    await screen.findByText(/Carla Souza pediu transferência/);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 
@@ -185,7 +185,7 @@ describe("o sino de avisos declara a origem dos avisos que está mostrando", () 
   it("a central de avisos inteira declara a origem se um mock voltar a serví-la", async () => {
     registraGatewayDeDemonstracao();
     renderWithApp(<NoticesPage />);
-    await screen.findByText(/Evidência de Carla Souza espera revisão/);
+    await screen.findByText(/Carla Souza pediu transferência/);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 

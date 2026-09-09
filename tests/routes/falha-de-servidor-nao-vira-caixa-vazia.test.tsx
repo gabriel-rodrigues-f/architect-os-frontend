@@ -41,7 +41,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * do que em outras telas porque o estado vazio delas é uma frase tranquila:
  * "Nenhum aviso" e "Nenhuma avaliação com nota neste ciclo". Se a falha de
  * servidor cair no ramo vazio, o líder lê "está tudo em dia" enquanto três
- * evidências esperam revisão, e o gerente lê "ninguém deu nota" enquanto a
+ * PDIs esperam aprovação, e o gerente lê "ninguém deu nota" enquanto a
  * distribuição existe e não chegou.
  *
  * O invariante: falha de leitura mostra FALHA, com o convite de tentar de

@@ -56,7 +56,7 @@ import pt from "@/locales/pt.json";
  * em en — e o time não se chama mais "de Arquitetura" nos títulos ("Painel
  * de Capacidades", "liderança do time"). A régua reprova "arquiteto(a)(s)" e
  * "architect(s)" como PALAVRA, nunca "arquitetura"/"architecture": o tipo de
- * evidência "Desenho de arquitetura" é atividade técnica, não o nome do time.
+ * "Desenho de arquitetura" é atividade técnica, não o nome do time.
  * Identificador continua fora: a rota `/architects`, as chaves `asmt.architect`
  * e os ids de nível `arquiteto-de-solucoes-i|ii|iii` são endereço, não
  * vocabulário — por isso em `src/` só a palavra PORTUGUESA é varrida (a

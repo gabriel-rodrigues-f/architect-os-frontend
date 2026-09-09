@@ -388,7 +388,11 @@ describe("a varredura enxerga o app inteiro — catraca não pode ser decorativa
   });
 
   it("enxerga posição de mensagem de verdade — texto JSX, toast e ApiError", () => {
-    expect(fonte.emPosicaoDeMensagem.length).toBeGreaterThan(100);
+    // O piso desceu de 100 para 75 quando a evidência saiu do produto (dono,
+    // 2026-09-08, regra 17) e levou junto os diálogos de registrar, revisar e
+    // reenviar. O que o piso guarda é a varredura não virar decorativa; a
+    // margem continua larga.
+    expect(fonte.emPosicaoDeMensagem.length).toBeGreaterThan(75);
   });
 
   /**

@@ -172,21 +172,6 @@
       "arquivo": "src/modules/cycles/infrastructure/controllers/cycles.controller.ts",
       "resposta": "ok"
     },
-    "evidence.create.success": {
-      "rota": "POST /evidences",
-      "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "resposta": "created"
-    },
-    "evidence.resubmit.success": {
-      "rota": "POST /evidences/:id/resubmit",
-      "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "resposta": "ok"
-    },
-    "evidence.review.success": {
-      "rota": "PATCH /evidences/:id/review",
-      "arquivo": "src/modules/evidence/infrastructure/controllers/evidence.controller.ts",
-      "resposta": "ok"
-    },
     "learningPath.create.success": {
       "rota": "POST /learning-paths",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",

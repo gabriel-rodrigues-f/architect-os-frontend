@@ -68,7 +68,7 @@ describe("auth — fechar a sessão apaga o passe de suporte", () => {
   it("logout limpa o passe", async () => {
     render(<SessionProbe />, { wrapper: Wrapper });
     await screen.findByText(`LOGADO:${fixtureSupportUser.email}`);
-    supportAccess.grant("ana", "chamado 4821, conferir evidência");
+    supportAccess.grant("ana", "chamado 4821, conferir cadastro");
     expect(supportAccess.grantedFor("ana")).not.toBeNull();
 
     await userEvent.click(screen.getByRole("button", { name: "Sair" }));
@@ -80,7 +80,7 @@ describe("auth — fechar a sessão apaga o passe de suporte", () => {
   it("sessão derrubada pelo serviço (401) também limpa o passe", async () => {
     render(<SessionProbe />, { wrapper: Wrapper });
     await screen.findByText(`LOGADO:${fixtureSupportUser.email}`);
-    supportAccess.grant("ana", "chamado 4821, conferir evidência");
+    supportAccess.grant("ana", "chamado 4821, conferir cadastro");
 
     await userEvent.click(screen.getByRole("button", { name: "Disparar chamada autenticada" }));
 

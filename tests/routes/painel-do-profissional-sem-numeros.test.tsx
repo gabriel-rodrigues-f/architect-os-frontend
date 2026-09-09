@@ -37,9 +37,9 @@ import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers
  * "Segurança de APIs e Redes L1 → 4 Distância 3 · Crítico".
  *
  * O que sai do Painel do profissional: o radar e a lista de prioridades com
- * nível e distância. O que fica: a situação da avaliação (texto), as
- * evidências pendentes, Meu PDI, Minhas Trilhas e Minhas evidências. O
- * Painel dos outros papéis não muda — o admin continua com as prioridades.
+ * nível e distância. O que fica: a situação da avaliação (texto), Meu PDI e
+ * Minhas Trilhas. O Painel dos outros papéis não muda — o admin continua com
+ * as prioridades.
  *
  * A prova é no DOM: a fixture tem avaliação concluída da Ana com distância
  * aberta, então o radar e a lista TERIAM o que desenhar. Nasceu vermelho.
@@ -96,15 +96,13 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
     expect(screen.queryAllByText(DISTANCIA)).toEqual([]);
   });
 
-  it("o Painel é de números: situação, pendências, PDI e trilhas — evidência se registra em Avaliações", async () => {
+  it("o Painel é de números: situação da avaliação, PDI e trilhas — e nenhuma ação", async () => {
     renderAs(fixtureMemberUser);
     await screen.findByText("Minha Evolução");
 
     expect(await screen.findByText("Avaliação")).toBeTruthy();
-    expect(screen.getByText("Evidências pendentes")).toBeTruthy();
     expect(screen.getByText("Meu PDI")).toBeTruthy();
     expect(screen.getByText("Minhas Trilhas")).toBeTruthy();
-    expect(screen.queryByText("Minhas evidências")).toBeNull();
     expect(screen.queryByRole("button", { name: "Registrar" })).toBeNull();
   });
 

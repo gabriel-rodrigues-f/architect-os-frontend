@@ -32,7 +32,6 @@ const vocabItem = (code: string, labelKey: string, sortOrder: number, active = t
 const vocabulariesRoute: FetchRoute = (href, init) =>
   href.endsWith(apiPath("/config/vocabularies")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({
-        EVIDENCE_TYPE: [],
         LEARNING_ITEM_TYPE: [],
         ACTION_TYPE: [
           vocabItem("Learn", "actionType.learn", 1),

@@ -67,7 +67,6 @@ export type CompetencyRemovalOutcomeKind = "removed" | "archived";
 export interface AffectedRecords {
   assessments: number;
   planItems: number;
-  evidences: number;
   learningItems: number;
   teamRuleRequirements: number;
 }
@@ -148,7 +147,6 @@ export class InMemoryCompetencyRemoval implements Pick<CatalogGateway, "removeCo
     return {
       assessments: 0,
       planItems: 0,
-      evidences: 0,
       learningItems: 0,
       teamRuleRequirements: 0,
     };

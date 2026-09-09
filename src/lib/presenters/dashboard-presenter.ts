@@ -1,5 +1,5 @@
 import type { AppState, SessionUser } from "../api";
-import type { Professional, Assessment, DevelopmentPlan, Evidence, LearningPath } from "../domain";
+import type { Professional, Assessment, DevelopmentPlan, LearningPath } from "../domain";
 import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "../scope";
 import { defaultGapSeverityRuler, type BandTone, type GapSeverityRuler } from "../scoring-bands";
 import type { Gap, Selectors } from "../selectors";
@@ -27,18 +27,20 @@ interface ProfessionalAwaitingApproval {
   plan: DevelopmentPlan | undefined;
 }
 
+/**
+ * As filas que esperam uma decisão da liderança. Eram três; a de evidências a
+ * revisar saiu com a evidência (dono, 2026-09-08, regra 17), e `totalPending`
+ * — o número do bloco "Ações da Liderança" — passou a somar duas parcelas.
+ */
 export class LeadPendingQueues {
   constructor(
     readonly people: readonly Professional[],
     readonly awaitingCalibration: readonly ProfessionalAwaitingCalibration[],
-    readonly pendingEvidence: readonly Evidence[],
     readonly awaitingApproval: readonly ProfessionalAwaitingApproval[],
   ) {}
 
   get totalPending(): number {
-    return (
-      this.awaitingCalibration.length + this.pendingEvidence.length + this.awaitingApproval.length
-    );
+    return this.awaitingCalibration.length + this.awaitingApproval.length;
   }
 }
 
@@ -48,7 +50,7 @@ export class DashboardPresenter {
   constructor(
     private readonly state: Pick<
       AppState,
-      "professionals" | "evidences" | "plans" | "learningPaths" | "cycles" | "activeCycleId"
+      "professionals" | "plans" | "learningPaths" | "cycles" | "activeCycleId"
     >,
     private readonly sel: Pick<Selectors, "progressionGapsFor" | "assessmentFor" | "planFor">,
     private readonly criticalGapThreshold: number = CRITICAL_GAP_THRESHOLD,
@@ -71,19 +73,13 @@ export class DashboardPresenter {
       }))
       .filter((entry) => entry.assessment?.status === "In Review");
 
-    const pendingEvidence = this.state.evidences.filter(
-      (evidence) =>
-        people.some((professional) => professional.id === evidence.professionalId) &&
-        evidence.status === "Pending",
-    );
-
     const awaitingApproval = people
       .map((professional) => ({ professional, plan: this.sel.planFor(professional.id) }))
       .filter(
         (entry) => entry.plan && entry.plan.status === "Draft" && entry.plan.items.length > 0,
       );
 
-    return new LeadPendingQueues(people, awaitingCalibration, pendingEvidence, awaitingApproval);
+    return new LeadPendingQueues(people, awaitingCalibration, awaitingApproval);
   }
 
   gapsOf(population: readonly Professional[]): GapWithProfessional[] {
@@ -194,7 +190,7 @@ interface PlanItemCounts {
 
 export class PersonalDashboardPresenter {
   constructor(
-    private readonly state: Pick<AppState, "learningPaths" | "evidences">,
+    private readonly state: Pick<AppState, "learningPaths">,
     private readonly sel: Pick<Selectors, "progressionGapsFor" | "planFor">,
   ) {}
 
@@ -210,15 +206,6 @@ export class PersonalDashboardPresenter {
       blocked: items.filter((i) => i.status === "Blocked").length,
       completed: items.filter((i) => i.status === "Completed").length,
     };
-  }
-
-  evidencesOf(professionalId: string): Evidence[] {
-    return this.state.evidences.filter((evidence) => evidence.professionalId === professionalId);
-  }
-
-  pendingEvidenceCount(professionalId: string): number {
-    return this.evidencesOf(professionalId).filter((evidence) => evidence.status === "Pending")
-      .length;
   }
 
   assignedPaths(professionalId: string): LearningPath[] {

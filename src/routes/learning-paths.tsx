@@ -77,7 +77,7 @@ export const Route = createFileRoute("/learning-paths")({
       { property: "og:title", content: "Trilhas de Aprendizagem — Synapse" },
       {
         property: "og:description",
-        content: "Trilhas técnicas com progresso, evidências e responsáveis.",
+        content: "Trilhas técnicas com progresso e responsáveis.",
       },
     ],
   }),

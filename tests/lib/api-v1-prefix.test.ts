@@ -182,11 +182,6 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     caminho: "/api/v1/plans/pdi-ana/items/item-1",
   },
   {
-    nome: "revisões da evidência",
-    enviar: () => api.evidenceReviews("ev-1"),
-    caminho: "/api/v1/evidences/ev-1/reviews",
-  },
-  {
     nome: "remoção de trilha",
     enviar: () => api.deleteLearningPath("lp-1"),
     caminho: "/api/v1/learning-paths/lp-1",

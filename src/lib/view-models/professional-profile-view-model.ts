@@ -1,41 +1,30 @@
-import type { Evidence, EvidenceType } from "../domain";
-import type { Api } from "../store";
-
-export type ProfessionalProfileService = Pick<
-  Api,
-  "addEvidence" | "resubmitEvidence" | "reviewEvidence"
->;
-
-export interface EvidenceDraft {
-  title: string;
-  description: string;
-  type: EvidenceType;
-  date: string;
-  complexity: Evidence["complexity"];
-  project: string;
-  url: string;
-  issuer: string;
-  pdiItemId: string;
-}
-
+/**
+ * OS PRÓXIMOS PASSOS DA FICHA — o que a ficha de carreira pede a quem a abre.
+ *
+ * Cada passo tem um dono declarado: os dois primeiros são de quem AGE sobre a
+ * ficha (`canEditOwn`, `UiAuthorizationPolicy.canActOnCareerFileOf`), e o
+ * terceiro é de quem LIDERA a pessoa (`leadsProfessional`, `isLeadOf`) — a
+ * avaliação que espera calibração é notícia de quem lidera, não ato de ficha.
+ *
+ * Os dois sinais andavam juntos porque a revisão de evidência morava aqui; com
+ * a evidência fora do produto (dono, 2026-09-08, regra 17) cada guarda passou a
+ * dizer só o que é dela, para a calibração não sair de cena junto com a
+ * evidência.
+ */
 export type NextStep =
   | { kind: "itemsNotStarted"; count: number }
   | { kind: "gapsNotInPlan"; count: number }
-  | { kind: "evidencesPending"; count: number }
   | { kind: "assessmentAwaiting" };
 
 export interface NextStepSignals {
   canEditOwn: boolean;
-  canReviewEvidence: boolean;
+  leadsProfessional: boolean;
   itemsNotStartedCount: number;
   gapsNotInPlanCount: number;
-  evidencesPendingCount: number;
   assessmentAwaitingCalibration: boolean;
 }
 
 export class ProfessionalProfileViewModel {
-  constructor(private readonly service: ProfessionalProfileService) {}
-
   nextSteps(input: NextStepSignals): NextStep[] {
     const steps: NextStep[] = [];
     if (input.canEditOwn) {
@@ -46,63 +35,12 @@ export class ProfessionalProfileViewModel {
         steps.push({ kind: "gapsNotInPlan", count: input.gapsNotInPlanCount });
       }
     }
-    if (input.canReviewEvidence) {
-      if (input.evidencesPendingCount > 0) {
-        steps.push({ kind: "evidencesPending", count: input.evidencesPendingCount });
-      }
-      if (input.assessmentAwaitingCalibration) {
-        steps.push({ kind: "assessmentAwaiting" });
-      }
+    if (input.leadsProfessional && input.assessmentAwaitingCalibration) {
+      steps.push({ kind: "assessmentAwaiting" });
     }
     return steps;
   }
-
-  preselectedReviewDecisionFor(
-    evidence: Pick<Evidence, "status">,
-  ): Exclude<Evidence["status"], "Pending"> {
-    return evidence.status === "Pending" ? "Accepted" : evidence.status;
-  }
-
-  registerEvidence(professionalId: string, draft: EvidenceDraft): Promise<Evidence> {
-    return this.service.addEvidence({
-      id: "",
-      professionalId,
-      title: draft.title.trim(),
-      description: draft.description.trim(),
-      type: draft.type,
-      competencyIds: [],
-      date: draft.date,
-      complexity: draft.complexity,
-      status: "Pending",
-      ...(draft.project.trim() ? { project: draft.project.trim() } : {}),
-      ...(draft.url.trim() ? { url: draft.url.trim() } : {}),
-      ...(draft.type === "Certification" && draft.issuer.trim()
-        ? { issuer: draft.issuer.trim() }
-        : {}),
-      ...(draft.pdiItemId ? { developmentPlanItemId: draft.pdiItemId } : {}),
-    });
-  }
-
-  resubmit(
-    evidence: Pick<Evidence, "id" | "description" | "url">,
-    draft: { description: string; url: string },
-  ): Promise<void> {
-    return this.service.resubmitEvidence(evidence.id, {
-      ...(draft.description.trim() !== evidence.description
-        ? { description: draft.description.trim() }
-        : {}),
-      ...(draft.url.trim() !== (evidence.url ?? "") ? { url: draft.url.trim() } : {}),
-    });
-  }
-
-  review(
-    evidenceId: string,
-    status: Exclude<Evidence["status"], "Pending">,
-    comment: string,
-  ): Promise<void> {
-    return this.service.reviewEvidence(evidenceId, {
-      status,
-      ...(comment.trim() ? { leaderComment: comment.trim() } : {}),
-    });
-  }
 }
+
+/** A ficha não depende de serviço nenhum: os passos são função pura dos sinais. */
+export const professionalProfileViewModel = new ProfessionalProfileViewModel();

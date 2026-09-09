@@ -1115,7 +1115,6 @@ function OperationalSettingsSection() {
 }
 
 const VOCABULARY_TITLE_KEY: Record<VocabularyName, MessageKey> = {
-  EVIDENCE_TYPE: "config.vocab.name.EVIDENCE_TYPE",
   LEARNING_ITEM_TYPE: "config.vocab.name.LEARNING_ITEM_TYPE",
   ACTION_TYPE: "config.vocab.name.ACTION_TYPE",
 };

@@ -47,7 +47,7 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canActFor(diretoraComFicha, { id: "bruno", teamId: null })).toBe(true);
     });
 
-    it("ninguém age sobre si — nem o profissional (dono, 2026-09-06): a autoavaliação, a evidência e o PDI dele são registrados por quem o lidera", () => {
+    it("ninguém age sobre si — nem o profissional (dono, 2026-09-06): a autoavaliação e o PDI dele são registrados por quem o lidera", () => {
       expect(policy.canActFor(fixtureMemberUser, anaAsProfessional)).toBe(false);
       expect(policy.actsOnSelf(fixtureMemberUser, "ana")).toBe(false);
       // Ele continua LENDO tudo o que é dele.
@@ -405,8 +405,8 @@ describe("o lead-profissional que lidera o próprio time", () => {
 
   /**
    * 2026-09-05 — virou: NA PRÓPRIA FICHA, NINGUÉM É LÍDER. O dono viu gerente e
-   * tech lead na própria ficha com roteiro de 1:1 consigo mesmos e "revisar"
-   * as próprias evidências. O vínculo com o time continua valendo para os
+   * tech lead na própria ficha com roteiro de 1:1 consigo mesmos e agindo
+   * sobre a própria carreira. O vínculo com o time continua valendo para os
    * OUTROS do time; para si, não há liderança.
    */
   it("NÃO é lead de si mesmo, mesmo liderando o próprio time", () => {

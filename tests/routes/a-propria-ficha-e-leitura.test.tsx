@@ -6,7 +6,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import type { SessionUser } from "@/lib/api";
+import type { AppState, SessionUser } from "@/lib/api";
 import type { CareerFileTab } from "@/lib/career-file";
 import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import { Route as RoadmapRoute } from "@/routes/professionals.$professionalId.roadmap";
@@ -27,9 +27,8 @@ import { renderCareerFile } from "../helpers/ficha";
  *
  * A regra é uma só: NA PRÓPRIA FICHA, NINGUÉM É LÍDER. O tech lead que é a
  * Ana abre a ficha da Ana e vê o que a Ana pode ver — nenhum roteiro, nenhum
- * "sugerir PDI", nenhum "revisar" de evidência, nenhuma explicação de
- * prontidão, e nada de registrar evidência (isso mora em Avaliações). Na
- * ficha do Bruno, liderado dele, tudo continua.
+ * "+ PDI" para levar a distância ao plano, nenhuma explicação de prontidão.
+ * Na ficha do Bruno, liderado dele, tudo continua.
  */
 const fetchMock = vi.fn();
 
@@ -37,15 +36,37 @@ const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 const RoadmapPage = RoadmapRoute.options.component as () => ReactNode;
 
 // Desde 2026-09-07 a ficha não gera nada com IA (os roteiros moram em Mentoria
-// e no PDI); o que resta de liderança na ficha é revisar evidência.
-const ACOES_DA_LIDERANCA = [/^Revisar$/];
-const ACOES_DA_FICHA = [/^\+ PDI$/, /^Registrar$/];
+// e no PDI). Com a evidência fora do produto (dono, 2026-09-08, regra 17) a
+// ficha perdeu "Revisar" e "Registrar": a ÚNICA ação que resta a quem lidera é
+// levar a distância para o PDI. A ficha continua sendo lugar de decisão, mas
+// de uma decisão só.
+const ACOES_DA_LIDERANCA = [/^\+ PDI$/];
+
+/**
+ * A ficha só oferece "+ PDI" quando existe distância FORA do plano. Na fixture
+ * a única distância aberta da Ana (security-iam) já está no plano dela, então
+ * o estado abaixo tira esse item — é o mundo em que a ação de liderança tem o
+ * que fazer.
+ */
+const comDistanciaForaDoPlano: AppState = {
+  ...fixtureState,
+  plans: fixtureState.plans.map((plan) =>
+    plan.id === "pdi-ana"
+      ? { ...plan, items: plan.items.filter((item) => item.competencyId !== "security-iam") }
+      : plan,
+  ),
+};
 
 const techLeadQueEAna: SessionUser = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
 const adminQueEAna: SessionUser = { ...fixtureAdminUser, professionalId: "ana" };
 
-function renderAs(user: SessionUser, Page: () => ReactNode, tab: CareerFileTab = "overview") {
-  mockAppFetch(fetchMock, { user, state: fixtureState, routes: [careerLevelsRoute] });
+function renderAs(
+  user: SessionUser,
+  Page: () => ReactNode,
+  tab: CareerFileTab = "overview",
+  state: AppState = comDistanciaForaDoPlano,
+) {
+  mockAppFetch(fetchMock, { user, state, routes: [careerLevelsRoute] });
   return renderCareerFile(<Page />, { tab });
 }
 
@@ -69,7 +90,7 @@ describe("a própria ficha é leitura — sem ação e sem IA, para qualquer pap
     renderAs(user, ProfilePage);
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
     expect(screen.getByText("Nível médio")).toBeTruthy();
-    for (const acao of [...ACOES_DA_LIDERANCA, ...ACOES_DA_FICHA]) {
+    for (const acao of ACOES_DA_LIDERANCA) {
       expect(screen.queryByRole("button", { name: acao }), String(acao)).toBeNull();
     }
   });

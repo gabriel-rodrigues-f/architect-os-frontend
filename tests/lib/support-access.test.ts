@@ -20,23 +20,23 @@ function accessAt(now: Date): { access: SupportAccess; clock: { now: Date } } {
 
 describe("SupportPass — validade de 15 minutos a partir do motivo declarado", () => {
   it("vale até 15 minutos e vence depois", () => {
-    const pass = new SupportPass("ana", "chamado 4821, conferir evidência", NOW);
+    const pass = new SupportPass("ana", "chamado 4821, conferir cadastro", NOW);
     expect(pass.expiresAt.getTime()).toBe(NOW.getTime() + 15 * MINUTE);
     expect(pass.isExpiredAt(new Date(NOW.getTime() + 14 * MINUTE))).toBe(false);
     expect(pass.isExpiredAt(new Date(NOW.getTime() + 16 * MINUTE))).toBe(true);
   });
 
   it("os cabeçalhos levam a pessoa, o motivo e o instante da emissão em ISO", () => {
-    const pass = new SupportPass("ana", "chamado 4821, conferir evidência", NOW);
+    const pass = new SupportPass("ana", "chamado 4821, conferir cadastro", NOW);
     expect(pass.headers()).toEqual({
       "x-support-professional": "ana",
-      "x-support-reason": "chamado 4821, conferir evidência",
+      "x-support-reason": "chamado 4821, conferir cadastro",
       "x-support-issued-at": "2026-09-08T10:00:00.000Z",
     });
   });
 
   it("é sobre a pessoa quando o id é segmento do caminho ou valor de consulta — não parte de outro id", () => {
-    const pass = new SupportPass("ana", "chamado 4821, conferir evidência", NOW);
+    const pass = new SupportPass("ana", "chamado 4821, conferir cadastro", NOW);
     expect(pass.isAbout("/professionals/ana")).toBe(true);
     expect(pass.isAbout("/professionals/ana/career-level-transitions")).toBe(true);
     expect(pass.isAbout("/assessments?professionalId=ana")).toBe(true);
@@ -56,7 +56,7 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
 
   it("concede, responde pela pessoa do passe e por mais ninguém", () => {
     const { access } = accessAt(NOW);
-    const pass = access.grant("ana", "chamado 4821, conferir evidência");
+    const pass = access.grant("ana", "chamado 4821, conferir cadastro");
     expect(pass?.professionalId).toBe("ana");
     expect(access.grantedFor("ana")).toBe(pass);
     expect(access.grantedFor("bruno")).toBeNull();
@@ -64,7 +64,7 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
 
   it("os cabeçalhos vão só na requisição sobre a pessoa do passe", () => {
     const { access } = accessAt(NOW);
-    access.grant("ana", "chamado 4821, conferir evidência");
+    access.grant("ana", "chamado 4821, conferir cadastro");
     expect(access.headersFor("/professionals/ana")).toHaveProperty("x-support-issued-at");
     expect(access.headersFor("/teams")).toEqual({});
     expect(access.headersFor("/auth/users")).toEqual({});
@@ -72,14 +72,14 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
 
   it("passado o prazo o passe não vale mais para a tela", () => {
     const { access, clock } = accessAt(NOW);
-    access.grant("ana", "chamado 4821, conferir evidência");
+    access.grant("ana", "chamado 4821, conferir cadastro");
     clock.now = new Date(NOW.getTime() + 16 * MINUTE);
     expect(access.grantedFor("ana")).toBeNull();
   });
 
   it("`clear` apaga o passe", () => {
     const { access } = accessAt(NOW);
-    access.grant("ana", "chamado 4821, conferir evidência");
+    access.grant("ana", "chamado 4821, conferir cadastro");
     access.clear();
     expect(access.grantedFor("ana")).toBeNull();
     expect(access.headersFor("/professionals/ana")).toEqual({});
@@ -89,7 +89,7 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
     const { access } = accessAt(NOW);
     const expired = vi.fn();
     access.whenExpired(expired);
-    access.grant("ana", "chamado 4821, conferir evidência");
+    access.grant("ana", "chamado 4821, conferir cadastro");
 
     access.reviewFailure(new ApiError("venceu", 403, undefined, "SUPPORT_PASS_EXPIRED"));
 
@@ -101,7 +101,7 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
     const { access } = accessAt(NOW);
     const expired = vi.fn();
     access.whenExpired(expired);
-    access.grant("ana", "chamado 4821, conferir evidência");
+    access.grant("ana", "chamado 4821, conferir cadastro");
 
     access.reviewFailure(new ApiError("não", 403, undefined, "FORBIDDEN"));
 
@@ -121,7 +121,7 @@ describe("ApiClient — o passe entra pelo provedor de cabeçalhos, requisição
 
   it("manda `x-support-issued-at` na requisição da pessoa e em nenhuma outra", async () => {
     const { access } = accessAt(NOW);
-    access.grant("ana", "chamado 4821, conferir evidência");
+    access.grant("ana", "chamado 4821, conferir cadastro");
     const client = new ApiClient(
       "http://api.local",
       () => {},

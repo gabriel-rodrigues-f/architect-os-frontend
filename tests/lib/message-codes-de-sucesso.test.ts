@@ -56,11 +56,34 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
 // ONDA 45: 63 -> 62. `people.create.success` morreu com `POST /professionals`, a
 // porta legada que criava profissional sem conta; a tradução foi junto.
 // 2026-09-06: 63 -> 67 — os quatro atos da solicitação de transferência de time.
-const CODIGOS_ESPERADOS = 67;
+// 2026-09-08: 67 -> 64 — a evidência saiu do produto (regra 17) e levou os três
+// códigos dela: create, resubmit e review.
+const CODIGOS_ESPERADOS = 64;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
 const ORIGEM_DA_COPIA = "backend/tests/shared/http/message-codes-de-sucesso.fixture.json";
+
+/**
+ * O par da cópia é o backend da MESMA fatia. Quando este repositório está num
+ * worktree (`frontend/.worktrees/<fatia>`), o backend daquela fatia mora no
+ * worktree espelho (`backend/.worktrees/<fatia>`) — e é ELE que diz quais
+ * códigos existem nesta branch. O `backend/` da raiz é a `main`, que ainda não
+ * recebeu a fatia; compará-la com a cópia acusaria defasagem em toda fatia que
+ * mexe em código de mensagem. Por isso o worktree espelho vem primeiro, e a
+ * raiz fica como o caso de sempre (os dois repositórios lado a lado).
+ */
+const FATIA_EM_WORKTREE = /[/\\]\.worktrees[/\\]([^/\\]+)[/\\]/;
+
+function origensPossiveis(diretorio: string, arquivoDoTeste: string): string[] {
+  const fatia = FATIA_EM_WORKTREE.exec(arquivoDoTeste)?.[1];
+  return fatia
+    ? [
+        join(diretorio, ORIGEM_DA_COPIA.replace("backend/", `backend/.worktrees/${fatia}/`)),
+        join(diretorio, ORIGEM_DA_COPIA),
+      ]
+    : [join(diretorio, ORIGEM_DA_COPIA)];
+}
 
 /**
  * Os códigos que o backend emite e que este locale NÃO traduz hoje. A lista é
@@ -140,10 +163,12 @@ const chavesDeMensagem = (): string[] =>
 const codigoDaChave = (chave: string): string => chave.slice(PREFIXO_DE_MENSAGEM.length);
 
 function fixtureOriginal(): string | undefined {
-  let diretorio = dirname(fileURLToPath(import.meta.url));
+  const arquivoDoTeste = fileURLToPath(import.meta.url);
+  let diretorio = dirname(arquivoDoTeste);
   for (let subida = 0; subida < 8; subida += 1) {
-    const alvo = join(diretorio, ORIGEM_DA_COPIA);
-    if (existsSync(alvo)) return alvo;
+    for (const alvo of origensPossiveis(diretorio, arquivoDoTeste)) {
+      if (existsSync(alvo)) return alvo;
+    }
     const pai = dirname(diretorio);
     if (pai === diretorio) return undefined;
     diretorio = pai;

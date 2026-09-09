@@ -40,11 +40,10 @@ const vocabItem = (
 const vocabulariesGetRoute: FetchRoute = (href, init) =>
   href.endsWith(apiPath("/config/vocabularies")) && (init?.method ?? "GET") === "GET"
     ? jsonResponse({
-        EVIDENCE_TYPE: [
-          vocabItem("EVIDENCE_TYPE", "ADR", "evidenceType.adr", 1),
-          vocabItem("EVIDENCE_TYPE", "Patente", "evidenceType.patente", 2, false),
+        LEARNING_ITEM_TYPE: [
+          vocabItem("LEARNING_ITEM_TYPE", "Curso", "learningItemType.curso", 1),
+          vocabItem("LEARNING_ITEM_TYPE", "Podcast", "learningItemType.podcast", 2, false),
         ],
-        LEARNING_ITEM_TYPE: [vocabItem("LEARNING_ITEM_TYPE", "Curso", "learningItemType.curso", 1)],
         ACTION_TYPE: [vocabItem("ACTION_TYPE", "Learn", "actionType.learn", 1)],
       })
     : undefined;
@@ -57,7 +56,7 @@ const countGets = (suffix: string) =>
 
 async function vocabularySection(): Promise<HTMLElement> {
   // Onda 35, item 14: o cabeçalho do bloco é o NOME do grupo, nunca o código técnico.
-  const title = await screen.findByText("Tipos de evidência");
+  const title = await screen.findByText("Tipos de item de trilha");
   return title.closest("div.surface-inset") as HTMLElement;
 }
 
@@ -86,7 +85,6 @@ describe("Vocabulários falam a língua de quem configura", () => {
     renderWithApp(<SettingsPage />);
 
     await vocabularySection();
-    expect(screen.queryByText("EVIDENCE_TYPE")).toBeNull();
     expect(screen.queryByText("LEARNING_ITEM_TYPE")).toBeNull();
     expect(screen.queryByText("ACTION_TYPE")).toBeNull();
     expect(screen.getByText("Tipos de ação do PDI")).toBeTruthy();
@@ -102,12 +100,12 @@ describe("Vocabulários falam a língua de quem configura", () => {
 
     const block = await vocabularySection();
     await waitFor(() => {
-      expect(within(block).getByText("código: ADR")).toBeTruthy();
+      expect(within(block).getByText("código: Curso")).toBeTruthy();
     });
-    expect(within(block).queryByText(/ADR · evidenceType\.adr · #1/)).toBeNull();
-    expect(within(block).queryByText(/evidenceType\.adr/)).toBeNull();
-    expect(within(block).getByText("código: ADR").getAttribute("title")).toContain(
-      "evidenceType.adr",
+    expect(within(block).queryByText(/Curso · learningItemType\.curso · #1/)).toBeNull();
+    expect(within(block).queryByText(/learningItemType\.curso/)).toBeNull();
+    expect(within(block).getByText("código: Curso").getAttribute("title")).toContain(
+      "learningItemType.curso",
     );
   });
 });
@@ -136,7 +134,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
 
     const block = await vocabularySection();
     await waitFor(() => {
-      expect(within(block).getAllByText(/Patente/).length).toBeGreaterThan(0);
+      expect(within(block).getAllByText(/Podcast/).length).toBeGreaterThan(0);
     });
     expect(within(block).getByText("Inativo")).toBeTruthy();
     expect(within(block).getByRole("button", { name: "Reativar" })).toBeTruthy();
@@ -149,8 +147,11 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.includes(apiPath("/config/vocabularies/EVIDENCE_TYPE/")) && init?.method === "PATCH"
-            ? jsonResponse(vocabItem("EVIDENCE_TYPE", "ADR", "evidenceType.adr", 1, false))
+          href.includes(apiPath("/config/vocabularies/LEARNING_ITEM_TYPE/")) &&
+          init?.method === "PATCH"
+            ? jsonResponse(
+                vocabItem("LEARNING_ITEM_TYPE", "Curso", "learningItemType.curso", 1, false),
+              )
             : undefined,
         vocabulariesGetRoute,
       ],
@@ -168,7 +169,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       const patch = fetchMock.mock.calls.find((call) => {
         const [url, init] = call as [string, RequestInit | undefined];
         return (
-          String(url).endsWith(apiPath("/config/vocabularies/EVIDENCE_TYPE/ADR")) &&
+          String(url).endsWith(apiPath("/config/vocabularies/LEARNING_ITEM_TYPE/Curso")) &&
           init?.method === "PATCH"
         );
       });
@@ -186,10 +187,10 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       routes: [
         careerLevelsRoute,
         (href, init) =>
-          href.endsWith(apiPath("/config/vocabularies/EVIDENCE_TYPE/Palestra")) &&
+          href.endsWith(apiPath("/config/vocabularies/LEARNING_ITEM_TYPE/Webinar")) &&
           init?.method === "POST"
             ? jsonResponse(
-                { message: 'O vocabulário EVIDENCE_TYPE já tem o código "Palestra".' },
+                { message: 'O vocabulário LEARNING_ITEM_TYPE já tem o código "Webinar".' },
                 409,
               )
             : undefined,
@@ -200,10 +201,10 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
 
     const block = await vocabularySection();
     await userEvent.click(within(block).getByRole("button", { name: "Novo código" }));
-    await userEvent.type(within(block).getByLabelText("Código"), "Palestra");
+    await userEvent.type(within(block).getByLabelText("Código"), "Webinar");
     await userEvent.type(
       within(block).getByLabelText("Chave de rótulo (i18n)"),
-      "evidenceType.palestra",
+      "learningItemType.webinar",
     );
     await userEvent.click(within(block).getByRole("button", { name: "Adicionar" }));
 
@@ -211,7 +212,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       const call = fetchMock.mock.calls.find((entry) => {
         const [url, init] = entry as [string, RequestInit | undefined];
         return (
-          String(url).endsWith(apiPath("/config/vocabularies/EVIDENCE_TYPE/Palestra")) &&
+          String(url).endsWith(apiPath("/config/vocabularies/LEARNING_ITEM_TYPE/Webinar")) &&
           init?.method === "POST"
         );
       });
@@ -219,7 +220,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       return call!;
     });
     expect(JSON.parse(String((post[1] as RequestInit).body))).toEqual({
-      labelKey: "evidenceType.palestra",
+      labelKey: "learningItemType.webinar",
     });
 
     const alert = await within(block).findByRole("alert");

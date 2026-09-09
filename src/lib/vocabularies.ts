@@ -1,6 +1,6 @@
-import { ACTION_TYPES, EVIDENCE_TYPES, LEARNING_ITEM_TYPES } from "./domain";
+import { ACTION_TYPES, LEARNING_ITEM_TYPES } from "./domain";
 
-export const VOCABULARY_NAMES = ["EVIDENCE_TYPE", "LEARNING_ITEM_TYPE", "ACTION_TYPE"] as const;
+export const VOCABULARY_NAMES = ["LEARNING_ITEM_TYPE", "ACTION_TYPE"] as const;
 export type VocabularyName = (typeof VOCABULARY_NAMES)[number];
 
 export interface VocabularyItem {
@@ -19,19 +19,6 @@ export type Vocabularies = Record<VocabularyName, VocabularyItem[]>;
 type TranslateLabelKey = (labelKey: string) => string | undefined;
 
 const SEED_LABEL_KEYS: Record<VocabularyName, readonly string[]> = {
-  EVIDENCE_TYPE: [
-    "evidenceType.architectureDesign",
-    "evidenceType.adr",
-    "evidenceType.technicalPresentation",
-    "evidenceType.workshop",
-    "evidenceType.project",
-    "evidenceType.certification",
-    "evidenceType.course",
-    "evidenceType.proofOfConcept",
-    "evidenceType.architectureReview",
-    "evidenceType.mentoring",
-    "evidenceType.technicalArticle",
-  ],
   LEARNING_ITEM_TYPE: [
     "learningItemType.curso",
     "learningItemType.video",
@@ -55,7 +42,6 @@ const SEED_LABEL_KEYS: Record<VocabularyName, readonly string[]> = {
 };
 
 const SEED_CODES: Record<VocabularyName, readonly string[]> = {
-  EVIDENCE_TYPE: EVIDENCE_TYPES,
   LEARNING_ITEM_TYPE: LEARNING_ITEM_TYPES,
   ACTION_TYPE: ACTION_TYPES,
 };

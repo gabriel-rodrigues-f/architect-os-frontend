@@ -17,7 +17,6 @@ import {
   capabilitiesResponseSchema,
   competenciesResponseSchema,
   cyclesResponseSchema,
-  evidencesResponseSchema,
   learningPathsResponseSchema,
   mentoringSessionsResponseSchema,
   plansResponseSchema,
@@ -30,7 +29,6 @@ import type {
   Competency,
   DevelopmentCycle,
   DevelopmentPlan,
-  Evidence,
   LearningPath,
   MentoringSession,
   TeamLevelRule,
@@ -51,7 +49,6 @@ export interface StateContextsGateway {
   listPlans(filter?: ProfessionalScopedFilter): Promise<DevelopmentPlan[]>;
   listLearningPaths(filter?: ProfessionalScopedFilter): Promise<LearningPath[]>;
   listMentoringSessions(filter?: ProfessionalScopedFilter): Promise<MentoringSession[]>;
-  listEvidences(filter?: ProfessionalScopedFilter): Promise<Evidence[]>;
 }
 
 interface ContractResult {
@@ -156,10 +153,4 @@ export class HttpStateContextsGateway implements StateContextsGateway {
         ),
       mentoringSessionsResponseSchema,
     ) as Promise<MentoringSession[]>;
-
-  listEvidences = (filter?: ProfessionalScopedFilter): Promise<Evidence[]> =>
-    this.reading(
-      () => this.contract.GET("/api/v1/evidences", this.professionalQuery(filter)),
-      evidencesResponseSchema,
-    ) as Promise<Evidence[]>;
 }

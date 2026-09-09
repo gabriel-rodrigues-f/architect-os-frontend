@@ -8,7 +8,6 @@ const KIND_LABEL_KEY: Record<StatementEntryKind, MessageKey> = {
   transition: "statement.kind.transition",
   teamTransition: "statement.kind.teamTransition",
   competencyStep: "statement.kind.competencyStep",
-  evidence: "statement.kind.evidence",
   pdi: "statement.kind.pdi",
   mentoring: "statement.kind.mentoring",
 };
@@ -31,7 +30,6 @@ class CareerEventChips {
       transition: "bg-status-done text-[var(--status-done-fg)]",
       teamTransition: "bg-status-done text-[var(--status-done-fg)]",
       competencyStep: semanticTone.success,
-      evidence: "bg-secondary text-secondary-foreground",
       pdi: semanticTone.warning,
       mentoring: "bg-secondary text-secondary-foreground",
     };

@@ -25,7 +25,7 @@ Uma consequência que custou um diagnóstico: o `connect-src` do CSP só libera
 domínio de verdade, ela não publica um destino na máquina de quem abre.
 
 Interface de gestão de capacidades técnicas de um time de Profissionais de Soluções: matriz de
-competências, assessments, gaps, PDIs, OKRs, trilhas, mentorias, evidências e 9-box.
+competências, assessments, gaps, PDIs, OKRs, trilhas, mentorias e 9-box.
 
 TanStack Start + React 19 + Tailwind 4, consumindo a API em
 [architect-os-backend](https://github.com/gabriel-rodrigues-f/architect-os-backend).
@@ -210,7 +210,7 @@ O que cada peça garante:
   check-in/status de item de PDI (`pdi-lifecycle.spec.ts`) e, em
   `write-flows.spec.ts`: avaliar competência e enviar para revisão
   (member), pontuar e concluir (lead), criar ação de PDI a partir do gap,
-  registrar evidência e adicionar código de vocabulário (admin).
+  adicionar código de vocabulário (admin).
 
 Os specs E2E não rodam no `npm run gate` (unitário) — a separação é o
 `testDir: "./e2e"` do `playwright.config.ts` versus o Vitest.

@@ -45,8 +45,7 @@ export const Route = createFileRoute("/cycles")({
       { title: "Ciclos de Avaliação — Synapse" },
       {
         name: "description",
-        content:
-          "Ciclos semestrais de desenvolvimento com avaliação, PDI, metas, trilhas e evidências.",
+        content: "Ciclos semestrais de desenvolvimento com avaliação, PDI, metas e trilhas.",
       },
       { property: "og:title", content: "Ciclos de Avaliação — Synapse" },
       {

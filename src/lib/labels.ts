@@ -7,8 +7,6 @@ import type {
   DevelopmentCycle,
   DevelopmentPlan,
   DevelopmentPlanItem,
-  Evidence,
-  EvidenceType,
   LearningItemProgress,
   LearningItemType,
   Level,
@@ -61,33 +59,6 @@ const actionTypeKey: Record<ActionType, MessageKey> = {
   Lead: "action.lead",
 };
 
-const evidenceTypeKey: Record<EvidenceType, MessageKey> = {
-  "Architecture Design": "evidence.architectureDesign",
-  ADR: "evidence.adr",
-  "Technical Presentation": "evidence.technicalPresentation",
-  Workshop: "evidence.workshop",
-  Project: "evidence.project",
-  Certification: "evidence.certification",
-  Course: "evidence.course",
-  "Proof of Concept": "evidence.proofOfConcept",
-  "Architecture Review": "evidence.architectureReview",
-  Mentoring: "evidence.mentoring",
-  "Technical Article": "evidence.technicalArticle",
-};
-
-const complexityKey: Record<"Low" | "Medium" | "High", MessageKey> = {
-  Low: "complexity.low",
-  Medium: "complexity.medium",
-  High: "complexity.high",
-};
-
-const evidenceStatusKey: Record<Evidence["status"], MessageKey> = {
-  Pending: "evidence.status.pending",
-  Accepted: "evidence.status.accepted",
-  "Needs Improvement": "evidence.status.needsImprovement",
-  Rejected: "evidence.status.rejected",
-};
-
 const levelNameKey: Record<Level, MessageKey> = {
   1: "level.1",
   2: "level.2",
@@ -136,9 +107,6 @@ export const LABEL_KEY_MAPS = {
   cycleStatus: cycleStatusKey,
   assessmentStatus: assessmentStatusKey,
   actionType: actionTypeKey,
-  evidenceType: evidenceTypeKey,
-  complexity: complexityKey,
-  evidenceStatus: evidenceStatusKey,
   levelName: levelNameKey,
   levelDescription: levelDescriptionKey,
   learningItemType: learningItemTypeKey,
