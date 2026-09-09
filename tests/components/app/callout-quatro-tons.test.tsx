@@ -75,3 +75,53 @@ describe("AuthAlert — o compacto do tom danger nas telas de porta", () => {
     expect(alerta.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
   });
 });
+
+/**
+ * Dono, 2026-09-08, sobre o aviso de sessão expirada na tela de entrar:
+ * *"centralize verticalmente o ícone de informação e centralize centralmente
+ * o texto, identado à esquerda"*. A frase do aviso quebra em duas linhas e o
+ * ícone ficava preso ao topo da primeira, como se apontasse para meia frase.
+ *
+ * A regra vale para o `compact` — a caixa das telas de porta e dos diálogos,
+ * onde o conteúdo é sempre uma frase curta. O `Callout` largo continua
+ * alinhado pelo topo: ali cabe parágrafo com lista, e ícone no meio de cinco
+ * linhas flutuaria no vazio.
+ */
+describe("Callout compacto — o ícone no meio da frase (dono, 2026-09-08)", () => {
+  afterEach(cleanup);
+
+  it("compacto: a linha centraliza e o ícone não desce meio degrau", () => {
+    const { container } = render(
+      <Callout tone="info" compact>
+        Sua sessão expirou por inatividade. Entre novamente para continuar.
+      </Callout>,
+    );
+    const caixa = container.firstElementChild as HTMLElement;
+    expect(caixa.className).toContain("items-center");
+    expect(caixa.className).not.toContain("items-start");
+    expect(container.querySelector("svg")?.getAttribute("class") ?? "").not.toContain("mt-0.5");
+  });
+
+  it("largo: continua pelo topo, porque ali cabe conteúdo composto", () => {
+    const { container } = render(
+      <Callout tone="info">
+        <p>Um parágrafo</p>
+        <p>e outro embaixo</p>
+      </Callout>,
+    );
+    const caixa = container.firstElementChild as HTMLElement;
+    expect(caixa.className).toContain("items-start");
+    expect(container.querySelector("svg")?.getAttribute("class") ?? "").toContain("mt-0.5");
+  });
+
+  it("o texto do aviso é irmão do ícone, então as duas linhas alinham na mesma margem", () => {
+    const { container } = render(
+      <Callout tone="info" compact>
+        Sua sessão expirou por inatividade. Entre novamente para continuar.
+      </Callout>,
+    );
+    const caixa = container.firstElementChild as HTMLElement;
+    expect(caixa.childNodes.length).toBe(2);
+    expect(caixa.childNodes[1]?.nodeType).toBe(Node.TEXT_NODE);
+  });
+});

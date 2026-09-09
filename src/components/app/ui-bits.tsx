@@ -174,7 +174,11 @@ class CalloutToneStyle {
  * quem procura a frase encontra o próprio alerta (o leitor de tela e o
  * teste); conteúdo composto (parágrafo + lista, texto + botão) vai num
  * bloco próprio para correr ao lado do ícone. `compact` é a versão das
- * telas de porta (`AuthAlert`): menos respiro.
+ * telas de porta (`AuthAlert`) e dos diálogos: menos respiro e o ícone no
+ * MEIO da frase (dono, 2026-09-08 — no aviso de sessão expirada a frase
+ * quebrava em duas linhas e o ícone ficava preso ao topo, apontando para
+ * meia frase). O largo continua pelo topo: ali cabe parágrafo com lista, e
+ * ícone no meio de cinco linhas flutuaria no vazio.
  */
 export function Callout({
   tone,
@@ -195,13 +199,13 @@ export function Callout({
     <div
       {...(papel ? { role: papel } : {})}
       className={cn(
-        "flex items-start gap-2 rounded-md text-body",
-        compact ? "px-3 py-2" : "p-3",
+        "flex gap-2 rounded-md text-body",
+        compact ? "items-center px-3 py-2" : "items-start p-3",
         estilo.className,
         className,
       )}
     >
-      <estilo.Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <estilo.Icon className={cn("size-4 shrink-0", !compact && "mt-0.5")} aria-hidden="true" />
       {typeof children === "string" ? children : <div className="min-w-0 flex-1">{children}</div>}
     </div>
   );
