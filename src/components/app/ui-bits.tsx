@@ -117,6 +117,33 @@ export function GapBadge({ gap }: { gap: number | undefined }) {
   );
 }
 
+/**
+ * A LINHA DA COMPETÊNCIA COM A DISTÂNCIA — o nome à esquerda, o selo à
+ * direita (dono, 2026-09-09: *"o nível da distância está excedendo o bloco
+ * que o comporta"*).
+ *
+ * Ela existe porque o mesmo par estava escrito à mão em dois cartões — as
+ * "Maiores distâncias" do PDI e os "Treinamentos Recomendados para o Time" —,
+ * e nos dois com o mesmo defeito: o nome era um `<p>` sem `min-w-0`. Item de
+ * flex sem `min-w-0` não encolhe abaixo da própria palavra mais longa, e o
+ * selo é um `Chip` (`whitespace-nowrap` + `shrink-0`), cuja largura mínima é
+ * o texto inteiro. Os dois se recusavam a encolher, a soma passava da coluna
+ * — 320 px no PDI — e o selo vazava para fora do cartão.
+ *
+ * A régua do dono: o selo cabe, o NOME INTEIRO continua legível e nada sai do
+ * cartão. Por isso `min-w-0 break-words` no nome e nunca `truncate`: o nome
+ * quebra em mais linhas, que é o que já acontecia, mas agora dentro do
+ * cartão. Ele já reprovou nome de competência cortado.
+ */
+export function CompetencyGapRow({ name, gap }: { name: string; gap: number | undefined }) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <p className="min-w-0 flex-1 break-words text-body font-medium">{name}</p>
+      <GapBadge gap={gap} />
+    </div>
+  );
+}
+
 const statusTone: Record<"neutral" | "progress" | "done", string> = {
   neutral: "bg-status-neutral text-[var(--status-neutral-fg)]",
   progress: "bg-status-progress text-[var(--status-progress-fg)]",

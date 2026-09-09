@@ -10,17 +10,23 @@ export type MentoringService = Pick<
 >;
 
 /**
- * O que o formulário de sessão pergunta hoje (dono, 2026-09-08, item 4):
- * TEMA e NOTAS. "Decisões" e "Ações" saíram da tela e param de viajar no
- * pedido — o serviço continua aceitando os dois (têm padrão vazio lá), e as
- * sessões antigas continuam mostrando o que já registraram.
+ * O que o formulário de sessão pergunta hoje: MENTORADO, DATA DA MENTORIA,
+ * DURAÇÃO, TEMA e NOTAS — os cinco campos que o dono deixou em 2026-09-09.
+ *
+ * "Decisões" e "Ações" saíram em 2026-09-08 (item 4); "Próxima sessão" e
+ * "Competências discutidas" saíram em 2026-09-09. Os quatro param de viajar
+ * no pedido — o serviço continua aceitando todos, com padrão vazio lá, e as
+ * sessões antigas continuam trazendo o que já registraram.
+ *
+ * A PRÓXIMA CONVERSA não some do produto: quem a marca é o "Agendar
+ * follow-up" da Linha do Tempo, que escreve a mesma coluna por outro caminho
+ * (PATCH sobre a sessão mais recente da pessoa).
  */
 export interface MentoringSessionDraft {
   menteeId: string;
   date: string;
   topic: string;
   notes: string;
-  nextSession: string;
 }
 
 export class MentoringViewModel {
@@ -30,7 +36,6 @@ export class MentoringViewModel {
     mentorName: string,
     form: MentoringSessionDraft,
     durationMin: number,
-    competencyIds: string[],
   ): Promise<MentoringSession> {
     return this.service.addMentoringSession({
       id: "",
@@ -39,9 +44,7 @@ export class MentoringViewModel {
       date: form.date,
       durationMin,
       topic: form.topic,
-      competencyIds,
       notes: form.notes,
-      ...(form.nextSession ? { nextSession: form.nextSession } : {}),
     });
   }
 
@@ -74,7 +77,7 @@ export class MentoringViewModel {
     gaps: readonly Gap[],
     plan: Pick<DevelopmentPlan, "items"> | undefined,
   ): Gap | undefined {
-    return session.competencyIds
+    return (session.competencyIds ?? [])
       .map((competencyId) => gaps.find((g) => g.item.competencyId === competencyId))
       .find((g) => g && !plan?.items.some((i) => i.competencyId === g.item.competencyId));
   }

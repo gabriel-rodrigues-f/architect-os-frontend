@@ -14,6 +14,11 @@ import { cn } from "@/lib/utils";
  * padrão — o `text-label` da escala, o tamanho de rótulo de tabela e badge
  * (decisão do dono, UX-a).
  *
+ * `shrink-0` (dono, 2026-09-09): o chip é `whitespace-nowrap`, então a
+ * largura mínima dele já é o texto inteiro — mas quem lê a linha não vê isso,
+ * e dois cartões nasceram apostando que o selo encolheria. O chip declara que
+ * NÃO encolhe; quem encolhe é o texto ao lado, com `min-w-0`.
+ *
  * `tooltip` ([F-02]): a explicação do valor sai do `title=` nativo — que não
  * abre no toque nem por teclado — e vai para o `Tooltip` acessível, com uma
  * cópia só para leitor de tela logo depois do chip (fora dele, para o texto
@@ -64,7 +69,7 @@ export function Chip({
       data-tone={tone}
       data-size={size}
       className={cn(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-md font-medium",
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md font-medium",
         SIZE_CLASS[size],
         tone && TONE_CLASS[tone],
         className,

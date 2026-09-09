@@ -356,15 +356,19 @@ export interface MentoringSession {
   date: string;
   durationMin: number;
   topic: string;
-  competencyIds: string[];
   notes: string;
 
   /**
-   * A HISTÓRIA, não o formulário (dono, 2026-09-08, item 4): "Decisões" e
-   * "Ações" saíram da tela de registro e deixaram de viajar no pedido — as
-   * sessões antigas continuam trazendo os dois do serviço, e são elas que
-   * ainda os desenham.
+   * A HISTÓRIA, não o formulário (dono, 2026-09-08, item 4; 2026-09-09):
+   * "Decisões", "Ações", "Próxima sessão" e "Competências discutidas" saíram
+   * da tela de registro e deixaram de viajar no pedido — as sessões antigas
+   * continuam trazendo os quatro do serviço.
+   *
+   * `nextSession` continua sendo ESCRITO, por outro caminho: o "Agendar
+   * follow-up" da Linha do Tempo, que faz PATCH na sessão mais recente da
+   * pessoa. Só o campo do formulário morreu.
    */
+  competencyIds?: string[] | undefined;
   decisions?: string | undefined;
   actions?: string | undefined;
   nextSession?: string | undefined;

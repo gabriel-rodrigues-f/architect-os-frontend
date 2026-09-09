@@ -48,7 +48,6 @@ function draft(overrides: Partial<MentoringSessionDraft> = {}): MentoringSession
     date: "2026-08-20",
     topic: "Revisão de arquitetura de eventos",
     notes: "Discutimos o desenho de filas",
-    nextSession: "",
     ...overrides,
   };
 }
@@ -65,13 +64,14 @@ const gap = (competencyId: string): Gap =>
 describe("MentoringViewModel", () => {
   describe("createSession", () => {
     /**
-     * Dono (2026-09-08, itens 4 e 5): o formulário pergunta Tema e Notas — as
-     * "Decisões", as "Ações" e a "Evolução observada" saíram da tela e param
-     * de viajar no pedido.
+     * Dono (2026-09-08, itens 4 e 5; 2026-09-09): o formulário pergunta
+     * Mentorado, Data da Mentoria, Duração, Tema e Notas. "Decisões",
+     * "Ações", "Evolução observada", "Próxima sessão" e "Competências
+     * discutidas" saíram da tela e param de viajar no pedido.
      */
-    it("monta o payload com id vazio, mentor da sessão autenticada, sem decisões/ações", async () => {
+    it("monta o payload com id vazio e mentor da sessão autenticada, e só os cinco campos", async () => {
       const { vm, service } = makeVm();
-      await vm.createSession("Beatriz Lead", draft(), 45, ["cloud-k8s"]);
+      await vm.createSession("Beatriz Lead", draft(), 45);
       expect(service.addMentoringSession).toHaveBeenCalledWith({
         id: "",
         mentor: "Beatriz Lead",
@@ -79,24 +79,27 @@ describe("MentoringViewModel", () => {
         date: "2026-08-20",
         durationMin: 45,
         topic: "Revisão de arquitetura de eventos",
-        competencyIds: ["cloud-k8s"],
         notes: "Discutimos o desenho de filas",
       });
     });
 
-    it("inclui nextSession no payload só quando preenchido", async () => {
+    /**
+     * A próxima conversa continua existindo — quem a marca é o "Agendar
+     * follow-up" da Linha do Tempo, por PATCH, não este pedido.
+     */
+    it("nem nextSession nem competencyIds viajam na criação", async () => {
       const { vm, service } = makeVm();
-      await vm.createSession("Beatriz Lead", draft({ nextSession: "2026-09-01" }), 30, []);
-      expect(service.addMentoringSession).toHaveBeenCalledWith(
-        expect.objectContaining({ nextSession: "2026-09-01" }),
-      );
+      await vm.createSession("Beatriz Lead", draft(), 30);
+      const [payload] = service.addMentoringSession.mock.calls[0] ?? [];
+      expect(Object.keys(payload ?? {})).not.toContain("nextSession");
+      expect(Object.keys(payload ?? {})).not.toContain("competencyIds");
     });
 
     it("propaga o erro do serviço — quem chama decide toast/mensagem", async () => {
       const service = fakeService();
       service.addMentoringSession.mockRejectedValueOnce(new Error("403"));
       const { vm } = makeVm(service);
-      await expect(vm.createSession("Beatriz Lead", draft(), 30, [])).rejects.toThrow("403");
+      await expect(vm.createSession("Beatriz Lead", draft(), 30)).rejects.toThrow("403");
     });
   });
 

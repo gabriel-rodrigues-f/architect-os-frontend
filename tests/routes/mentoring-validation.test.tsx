@@ -93,8 +93,8 @@ describe("Mentoria — campos obrigatórios", () => {
     for (const campo of ["Tema", "Notas", "Duração (min)"]) {
       expect(screen.getByLabelText(campo).getAttribute("aria-invalid")).toBe("true");
     }
-    // Mentorado e Data têm valor padrão, então não são apontados
-    expect(screen.getByLabelText("Data").getAttribute("aria-invalid")).toBe("false");
+    // Mentorado e Data da Mentoria têm valor padrão, então não são apontados
+    expect(screen.getByLabelText("Data da Mentoria").getAttribute("aria-invalid")).toBe("false");
 
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
   });

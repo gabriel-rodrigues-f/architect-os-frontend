@@ -6,7 +6,6 @@
     "src/lib/view-models/team-registry-view-model.ts": "TEAM_TRANSFER_REQUIRES_REQUEST e TEAM_ALLOCATION_FORBIDDEN — o roteiro da transferência é instrução, não erro, e some se a linha olhar outro número"
   },
   "ausencia": {
-    "src/components/app/mentoring-shared.tsx": "regua-do-nivel",
     "src/lib/gateways/team-roster.gateway.ts": "quadro-do-time",
     "src/lib/store.tsx": "regua-do-nivel",
     "src/routes/team-rules.tsx": "regua-do-nivel"

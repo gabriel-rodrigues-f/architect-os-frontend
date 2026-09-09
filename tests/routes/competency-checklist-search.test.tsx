@@ -73,30 +73,21 @@ describe("Checklists de competências — busca local acima de 20 itens (R2-ESC-
     vi.unstubAllGlobals();
   });
 
-  it("Mentoria: acima de 20 competências, filtro aparece e restringe a lista", async () => {
+  /**
+   * A METADE DA MENTORIA SAIU (dono, 2026-09-09): *"Pode excluir […] o campo
+   * de seleção 'Competências discutidas'."* Sem checklist de competências no
+   * registro de sessão não há o que filtrar ali, e a busca local vive só nas
+   * Trilhas. O que sobrou é o teste abaixo, e ele guarda a régua inteira.
+   */
+  it("Mentoria: o registro de sessão não tem mais checklist nenhum para filtrar", async () => {
     mockFetch(manyCompetenciesState);
     renderWithApp(<MentoringPage />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
-    const filtro = await screen.findByLabelText("Buscar competência…");
-
-    expect(screen.getByText("Observabilidade e SRE")).toBeTruthy();
-    expect(screen.getByText("Competência 00")).toBeTruthy();
-
-    await userEvent.type(filtro, "observabilidade");
-
-    expect(screen.getByText("Observabilidade e SRE")).toBeTruthy();
-    expect(screen.queryByText("Competência 00")).toBeNull();
-  });
-
-  it("Mentoria: abaixo de 20 competências (fixture padrão), o filtro nem aparece", async () => {
-    mockFetch(fixtureState);
-    renderWithApp(<MentoringPage />);
-
-    await userEvent.click(await screen.findByRole("button", { name: "Registrar sessão" }));
-    await screen.findByText("Kubernetes");
+    await screen.findByRole("dialog", { name: "Nova sessão de mentoria" });
 
     expect(screen.queryByLabelText("Buscar competência…")).toBeNull();
+    expect(screen.queryAllByRole("checkbox")).toEqual([]);
   });
 
   it("Trilhas: acima de 20 competências, filtro aparece na criação de trilha", async () => {
