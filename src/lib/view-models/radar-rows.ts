@@ -24,11 +24,23 @@ interface RadarSeries {
 
 export type ComparisonRadarRow = Record<string, string | number | null>;
 
+/**
+ * Quantas pessoas do recorte têm medida num eixo — só o radar de TIME informa
+ * isto. A média de um time é a média de quem foi medido, e "3,25" com 2 de 8
+ * pessoas não diz a mesma coisa que "3,25" com 8 de 8. Numa ficha é uma
+ * pessoa só: seria sempre 1 de 1, e por isso a cobertura fica ausente lá.
+ */
+export interface AxisCoverage {
+  readonly covered: number;
+  readonly total: number;
+}
+
 /** Uma capacidade medida como a ficha a lê: a média de hoje e o alvo. */
 export interface CapabilityMeasure {
   readonly capability: RadarCapability;
   readonly avg: number | undefined;
   readonly target: number | undefined;
+  readonly coverage?: AxisCoverage;
 }
 
 /** A linha do radar de UMA pessoa: o eixo, o que ela tem hoje, o alvo dela. */
@@ -36,6 +48,8 @@ export interface CurrentAgainstTargetRow {
   readonly capability: string;
   readonly atual: number | null;
   readonly alvo: number | null;
+  readonly covered?: number;
+  readonly total?: number;
 }
 
 const CURRENT = "atual";
@@ -66,6 +80,13 @@ const TARGET = "alvo";
  * `?? 0`. Em vez de uma segunda régua, a régua ficou UMA — `measuredRows` — e
  * ganhou duas formas de linha: a do comparativo (uma coluna por pessoa) e a da
  * ficha (`atual` e `alvo`, do jeito que `CapabilityRadar` desenha).
+ *
+ * Os outros DOIS lugares com o mesmo defeito — o radar do próprio profissional
+ * no Painel e o radar de TIME da Análise de Lacunas — entraram na segunda
+ * forma, sem terceira régua. O time só pediu uma generalização: o eixo carrega
+ * COBERTURA (`AxisCoverage`), porque média de time se lê junto com quantas
+ * pessoas ela resume. E ela é OPCIONAL de propósito: quem desenha uma pessoa
+ * só não tem o que informar aí.
  */
 export class RadarRows {
   private constructor() {}
@@ -84,12 +105,23 @@ export class RadarRows {
     });
   }
 
-  /** A ficha: duas séries fixas — o que a pessoa tem hoje e o alvo dela. */
+  /**
+   * Duas séries fixas — o que se tem hoje e o alvo. É a forma da ficha (uma
+   * pessoa), do Painel do próprio profissional e do radar de TIME da Análise
+   * de Lacunas, onde cada eixo é a média do recorte. A única diferença do
+   * time é a COBERTURA, que viaja com o eixo quando quem chama a informa.
+   */
   static currentAgainstTarget(measures: readonly CapabilityMeasure[]): CurrentAgainstTargetRow[] {
     const averagesOf = (
       read: (measure: CapabilityMeasure) => number | undefined,
     ): ReadonlyMap<string, number | undefined> =>
       new Map(measures.map((measure) => [measure.capability.id, read(measure)]));
+
+    const coverageOf = new Map(
+      measures.flatMap((measure) =>
+        measure.coverage ? [[measure.capability.id, measure.coverage] as const] : [],
+      ),
+    );
 
     return RadarRows.measuredRows(
       measures.map((measure) => measure.capability),
@@ -101,6 +133,7 @@ export class RadarRows {
         capability: capability.name,
         atual: atual ?? null,
         alvo: alvo ?? null,
+        ...(coverageOf.get(capability.id) ?? {}),
       }),
     );
   }
