@@ -241,7 +241,7 @@ describe("Operação (CFG-05 admin UI)", () => {
    * vindo do GET de settings, mas quem abre a linha é o gerente de Plataforma,
    * que não vê o bloco Operação.
    */
-  it("o piso operacional NÃO rege mais o campo da régua: 1 é o piso do modelo (onda 36.1)", async () => {
+  it("o piso operacional NÃO rege o campo da régua: o piso do modelo é ZERO (dono, 2026-09-08)", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
       routes: [careerLevelsRoute, settingsGetRoute("SEMIANNUAL", 4, 3)],
@@ -259,7 +259,7 @@ describe("Operação (CFG-05 admin UI)", () => {
     await userEvent.click(editButtons[0]!);
 
     const input = section.querySelector('input[type="number"]') as HTMLInputElement;
-    expect(input.min).toBe("1");
+    expect(input.min).toBe("0");
     await userEvent.clear(input);
     await userEvent.type(input, "1"); // abaixo do piso operacional 4, e ainda assim gravável
     const saveButton = within(input.closest("tr") as HTMLElement).getByRole("button", {
@@ -267,8 +267,15 @@ describe("Operação (CFG-05 admin UI)", () => {
     }) as HTMLButtonElement;
     expect(saveButton.disabled).toBe(false);
 
+    // Dono (2026-09-08, regra 12): zero passou a ser valor de negócio — o nível
+    // que não exige capacidade qualificada nenhuma. O que continua fora é o
+    // negativo, que não é régua, é lixo.
     await userEvent.clear(input);
-    await userEvent.type(input, "0"); // zero continua fora: 1 é o piso, não a ausência de régua
+    await userEvent.type(input, "0");
+    expect(saveButton.disabled).toBe(false);
+
+    await userEvent.clear(input);
+    await userEvent.type(input, "-1");
     expect(saveButton.disabled).toBe(true);
   });
 });

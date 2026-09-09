@@ -16,6 +16,7 @@ export * from "./notices-view-model";
 export * from "./operational-settings-editor";
 export * from "./plan-item-from-gap";
 export * from "./scoring-bands-editor";
+export * from "./team-career-ladder-draft";
 export * from "./team-registry-view-model";
 export * from "./team-rule-editor-view-model";
 export * from "./team-view-model";

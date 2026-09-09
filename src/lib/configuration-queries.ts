@@ -1,4 +1,5 @@
-import { api } from "./api";
+import { api, teamsApi } from "./api";
+import type { TeamCareerLadder } from "./gateways/teams.gateway";
 import { CONFIG_QUERY_STALE_TIME } from "./query-client";
 
 export type ConfigurationRole = "ruler" | "wording";
@@ -46,6 +47,33 @@ class ConfigurationCatalog {
 }
 
 export const configurationCatalog = new ConfigurationCatalog();
+
+/**
+ * A ESCADA DE CARREIRA DE UM TIME (dono, 2026-09-08). Não entra no
+ * `ConfigurationCatalog` porque não é config da organização: a pergunta tem
+ * PARÂMETRO — "quais níveis ESTE time usa?" —, e cada time tem a sua chave.
+ *
+ * A chave mora aqui, e não em quem lê, porque quem EDITA a escada precisa
+ * invalidá-la: duas grafias da mesma chave em dois arquivos é o defeito em que
+ * a tela salva e continua mostrando o que salvou por cima.
+ */
+export class TeamCareerLevelsQuery {
+  static keyOf(teamId: string): readonly string[] {
+    return ["team-career-levels", teamId];
+  }
+
+  static optionsOf(teamId: string): {
+    queryKey: readonly string[];
+    queryFn: () => Promise<TeamCareerLadder>;
+    staleTime: number;
+  } {
+    return {
+      queryKey: TeamCareerLevelsQuery.keyOf(teamId),
+      queryFn: () => teamsApi.careerLadderOf(teamId),
+      staleTime: CONFIG_QUERY_STALE_TIME,
+    };
+  }
+}
 
 export interface ConfigurationLoad {
   isPending: boolean;

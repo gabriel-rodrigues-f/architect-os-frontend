@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -56,7 +56,14 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
 // ONDA 45: 63 -> 62. `people.create.success` morreu com `POST /professionals`, a
 // porta legada que criava profissional sem conta; a tradução foi junto.
 // 2026-09-06: 63 -> 67 — os quatro atos da solicitação de transferência de time.
-const CODIGOS_ESPERADOS = 67;
+/**
+ * Dono (2026-09-08) — +1: `team.careerLadder.define.success`, a estrutura de
+ * níveis do time. A cópia foi tirada do backend DA MESMA FATIA; enquanto ela
+ * não estiver integrada na main do backend, o aviso oportunista de procedência
+ * (o último `it` deste arquivo) acusa a diferença — é exatamente o que ele
+ * existe para fazer, e ele silencia sozinho quando os dois repos sobem juntos.
+ */
+const CODIGOS_ESPERADOS = 68;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
@@ -139,7 +146,39 @@ const chavesDeMensagem = (): string[] =>
 
 const codigoDaChave = (chave: string): string => chave.slice(PREFIXO_DE_MENSAGEM.length);
 
+/**
+ * O backend QUE CORRESPONDE A ESTE CHECKOUT.
+ *
+ * A subida ingênua encontra sempre `architect-os/backend`, a main — e a frota
+ * trabalha em worktrees: rodando de `frontend/.worktrees/<fatia>`, o par certo
+ * é `backend/.worktrees/<fatia>`, a metade da MESMA fatia, e não a main, que
+ * ainda não recebeu nem uma nem outra. Comparar worktree com main fazia este
+ * aviso gritar em TODA fatia de contrato, que é justamente quando ele precisa
+ * ser confiável — o mesmo erro de alcance que o gate de migration do backend
+ * cometeu na onda 25: um checkout ficava vermelho por causa de outro.
+ *
+ * Fora de worktree nada muda: a subida encontra a main, como sempre.
+ */
+function backendDoMesmoCheckout(): string | undefined {
+  const partes = fileURLToPath(import.meta.url).split(sep);
+  const emWorktree = partes.lastIndexOf(".worktrees");
+  if (emWorktree === -1) return undefined;
+  const raizDosRepos = partes.slice(0, emWorktree - 1).join(sep);
+  const fatia = partes[emWorktree + 1];
+  if (fatia === undefined) return undefined;
+  const alvo = join(
+    raizDosRepos,
+    "backend",
+    ".worktrees",
+    fatia,
+    ORIGEM_DA_COPIA.slice("backend/".length),
+  );
+  return existsSync(alvo) ? alvo : undefined;
+}
+
 function fixtureOriginal(): string | undefined {
+  const doMesmoCheckout = backendDoMesmoCheckout();
+  if (doMesmoCheckout !== undefined) return doMesmoCheckout;
   let diretorio = dirname(fileURLToPath(import.meta.url));
   for (let subida = 0; subida < 8; subida += 1) {
     const alvo = join(diretorio, ORIGEM_DA_COPIA);

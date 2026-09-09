@@ -38,7 +38,13 @@ import {
   fixtureUnassignedTechLeadUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import {
+  careerLevelsRoute,
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+  type FetchRoute,
+} from "../helpers/render-app";
 
 /**
  * Onda 31 — cadastro de times, a TELA da segunda porta do time (backend
@@ -97,7 +103,9 @@ function renderAs(user: SessionUser, routes: FetchRoute[] = []) {
   mockAppFetch(fetchMock, {
     user,
     state: scopedFixtureStateFor(user, fixtureState, [fixtureTeamId]),
-    routes: [...routes, rotaDeTimes, rotaDeContas, rotaDoQuadroVazio],
+    // Dono (2026-09-08): o time nasce com a ESCADA, e o formulário precisa do
+    // catálogo de níveis para oferecê-la.
+    routes: [...routes, careerLevelsRoute, rotaDeTimes, rotaDeContas, rotaDoQuadroVazio],
   });
   return renderWithApp(<TeamsPage />);
 }
@@ -169,7 +177,7 @@ describe("/teams — a lista, com ativos e desativados", () => {
 });
 
 describe("/teams — criar, renomear, desativar", () => {
-  it("criar time envia o nome ao serviço e a lista é recarregada", async () => {
+  it("criar time envia o nome E a escada de carreira ao serviço, e a lista é recarregada", async () => {
     const criado = { id: "time-novo", name: "Time Novo", active: true };
     let criouAlgo = false;
     const rotaDeCriacao: FetchRoute = (href, init) => {
@@ -188,8 +196,55 @@ describe("/teams — criar, renomear, desativar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Salvar time" }));
 
     const [, init] = chamadas("POST", apiPath("/teams"))[0] as [unknown, RequestInit];
-    expect(JSON.parse(String(init.body))).toEqual({ name: "Time Novo" });
+    // A escada nasce com o catálogo inteiro marcado, na ordem do catálogo — é
+    // o que o time tinha antes desta fatia, e encurtar é decisão de quem
+    // administra, não efeito de o formulário abrir vazio.
+    expect(JSON.parse(String(init.body))).toEqual({
+      name: "Time Novo",
+      careerLevelIds: [
+        "arquiteto-de-solucoes-i",
+        "arquiteto-de-solucoes-ii",
+        "arquiteto-de-solucoes-iii",
+      ],
+    });
     expect(await screen.findByText("Time Novo")).toBeTruthy();
+  });
+
+  it("desmarcar um nível encurta a escada que vai ao serviço — o time de plantão que para no Pleno", async () => {
+    const criado = { id: "time-plantao", name: "Plantão", active: true };
+    const rotaDeCriacao: FetchRoute = (href, init) =>
+      href.endsWith(apiPath("/teams")) && init?.method === "POST"
+        ? jsonResponse(criado, 201)
+        : undefined;
+    renderAs(fixtureAdminUser, [rotaDeCriacao]);
+    await screen.findByText("Time Plataforma");
+
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar Time" }));
+    await userEvent.type(screen.getByLabelText("Nome do time"), "Plantão");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Usar Sênior neste time" }));
+    await userEvent.click(screen.getByRole("button", { name: "Salvar time" }));
+
+    const [, init] = chamadas("POST", apiPath("/teams"))[0] as [unknown, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({
+      name: "Plantão",
+      careerLevelIds: ["arquiteto-de-solucoes-i", "arquiteto-de-solucoes-ii"],
+    });
+  });
+
+  it("sem nível nenhum marcado o salvar apaga: um time sem carreira não é cadastrável", async () => {
+    renderAs(fixtureAdminUser);
+    await screen.findByText("Time Plataforma");
+
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar Time" }));
+    await userEvent.type(screen.getByLabelText("Nome do time"), "Plantão");
+    for (const nivel of ["Júnior", "Pleno", "Sênior"]) {
+      await userEvent.click(screen.getByRole("checkbox", { name: `Usar ${nivel} neste time` }));
+    }
+
+    expect(screen.getByRole("button", { name: "Salvar time" })).toHaveProperty("disabled", true);
+    expect(
+      screen.getByText("Escolha ao menos um nível: um time sem nível nenhum não tem carreira."),
+    ).toBeTruthy();
   });
 
   it("a recusa 409 da desativação aparece na tela com o número de profissionais ativos", async () => {

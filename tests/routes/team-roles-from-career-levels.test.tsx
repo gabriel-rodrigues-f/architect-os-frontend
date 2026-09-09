@@ -55,6 +55,18 @@ describe("Time — níveis de carreira vêm de career_levels, não de array fixo
       user: fixtureAdminUser,
       state: fixtureState,
       routes: [
+        /*
+         * Dono (2026-09-08): os níveis oferecidos no diálogo são os do time de
+         * DESTINO, não os da organização. Aqui o time oferece os quatro — o que
+         * esta suíte prova é que a lista vem do dado, e não de um array fixo no
+         * código.
+         */
+        (href) => {
+          const escadaDeUmTime = /\/teams\/([^/]+)\/career-levels$/.exec(href);
+          return escadaDeUmTime
+            ? jsonResponse({ teamId: escadaDeUmTime[1], declared: true, levels: fourLevels })
+            : undefined;
+        },
         (href) => (href.endsWith(apiPath("/career-levels")) ? jsonResponse(fourLevels) : undefined),
         (href) => (href.endsWith(apiPath("/auth/users")) ? jsonResponse([]) : undefined),
       ],

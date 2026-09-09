@@ -21,8 +21,23 @@ export const niveisDeCarreira = [
   { id: NIVEL_SENIOR, name: "Sênior", rank: 3 },
 ] as const;
 
-export const niveisDeCarreiraRoute: FetchRoute = (href) =>
-  href.endsWith(apiPath("/career-levels")) ? jsonResponse(niveisDeCarreira) : undefined;
+/**
+ * Responde pelo catálogo da organização E pela escada de cada time (dono,
+ * 2026-09-08) — as duas rotas terminam em `/career-levels`, e aqui todo time
+ * oferece os três níveis. Quem precisa de um time com escada CURTA declara a
+ * sua própria rota DEPOIS desta.
+ */
+export const niveisDeCarreiraRoute: FetchRoute = (href) => {
+  const escadaDeUmTime = /\/teams\/([^/]+)\/career-levels$/.exec(href);
+  if (escadaDeUmTime) {
+    return jsonResponse({
+      teamId: escadaDeUmTime[1],
+      declared: true,
+      levels: niveisDeCarreira,
+    });
+  }
+  return href.endsWith(apiPath("/career-levels")) ? jsonResponse(niveisDeCarreira) : undefined;
+};
 
 export const TIME_PLATAFORMA = fixtureTeamId;
 export const TIME_INTEGRACOES = "time-integracoes";

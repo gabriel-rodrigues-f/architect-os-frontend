@@ -1,3 +1,4 @@
+import { QualifiedCapabilityMinimum } from "../presenters/progression-policy-presenter";
 import type { Competency, Level } from "../domain";
 import type { TeamRuleDefinition, TeamRuleView } from "../gateways/career.gateway";
 
@@ -12,6 +13,12 @@ export type TeamRuleErrorKey =
   | "teamRules.error.levelOutOfRange";
 
 export interface TeamRuleEditorInput {
+  /**
+   * O mínimo PADRÃO da organização (`career.minimumQualifiedFloor`). Ele
+   * SUGERE o valor com que a régua nova nasce — e só. Dono (2026-09-08, regra
+   * 12): *"Não haverá mais valor mínimo."* Usá-lo como limite era a
+   * organização decidindo a régua do time pela porta dos fundos.
+   */
   floor: number;
   competencyById: (id: string) => Competency | undefined;
   rule: TeamRuleView | null;
@@ -122,7 +129,7 @@ export class TeamRuleEditorViewModel {
 
   get errorKeys(): readonly TeamRuleErrorKey[] {
     const keys: TeamRuleErrorKey[] = [];
-    if (this.draft.minimumQualifiedCapabilities < this.input.floor) {
+    if (!QualifiedCapabilityMinimum.admits(this.draft.minimumQualifiedCapabilities)) {
       keys.push("teamRules.error.minimumBelowFloor");
     }
     if (
