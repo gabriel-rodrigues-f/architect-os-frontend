@@ -13,6 +13,7 @@ import { ContextScope, ContextScopes } from "@/lib/context-scope";
 import { useContainer } from "@/lib/dependencies";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { requireCareerTabsReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSeniorityReading } from "@/lib/seniority";
 import { ConnectionError, LoadingState, useSelectors, useStore } from "@/lib/store";
@@ -34,6 +35,7 @@ import type { SupportPass } from "@/lib/support-access";
  * abas (`SupportModeCareerFile`) e a ficha funcional segue.
  */
 export const Route = createFileRoute("/professionals/$professionalId")({
+  beforeLoad: requireCareerTabsReach,
   component: CareerFileLayout,
 });
 
@@ -64,20 +66,25 @@ function CareerFileLayout() {
     inSupportMode && grantedThisVisit ? supportAccess.grantedFor(professionalId) : null;
   const needsSupportAccess = inSupportMode && supportPass === null;
 
-  // Evolução, Extrato e Roteiro são da própria pessoa e de quem a lidera
-  // (D2). Com só o id na mão a régua é a do papel; a tela confere o vínculo.
-  // A negativa vem ANTES de qualquer escopo: quem não alcança não consulta.
-  const canOpenCareerTabs =
-    !CareerFileTabs.isLeadershipTab(tab) ||
-    defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, professionalId);
+  // A ficha inteira — Visão geral, Evolução, Extrato, Roteiro — é da própria
+  // pessoa e de quem a lidera (D2). A Visão geral ficava DE FORA desta
+  // pergunta: quem a segurava era a recusa do servidor nas quatro listagens
+  // por pessoa, e elas passaram a responder `200 []` no lugar do 403 — a tela
+  // abriria ZERADA sobre alguém que quem olha não alcança. Agora a pergunta é
+  // uma só, para as quatro abas.
+  //
+  // Com só o id na mão a régua é a do PAPEL; o VÍNCULO é pergunta das telas
+  // (`CareerFileReach`), que têm a pessoa em mãos. A negativa vem ANTES de
+  // qualquer escopo: quem não alcança não consulta.
+  const canOpenCareerTabs = defaultUiAuthorizationPolicy.canOpenCareerTabsOf(user, professionalId);
 
   if (!canOpenCareerTabs) {
     return (
       <OutOfReachScreen
         title={t(CareerFileTabs.titleKeyOf(tab))}
         help={help}
-        reason={t("arch.careerFile.tabsOutOfReach")}
-        hint={t("arch.careerFile.tabsOutOfReachHint")}
+        reason={t("arch.careerFile.outOfReach")}
+        hint={t("arch.careerFile.outOfReachHint")}
       />
     );
   }

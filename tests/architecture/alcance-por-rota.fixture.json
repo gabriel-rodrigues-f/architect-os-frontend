@@ -4,7 +4,18 @@
       "alcance": "autenticado"
     },
     "/professionals/$professionalId": {
-      "alcance": "autenticado"
+      "alcance": "ficha-de-carreira",
+      "guarda": "requireCareerTabsReach",
+      "sinal": "canOpenCareerTabs",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/a-visao-geral-tem-guarda.test.tsx",
+      "catalogosGlobais": [
+        {
+          "hook": "useVocabulary",
+          "justificativa": "GET /config/vocabularies é o vocabulário GLOBAL da organização (os rótulos de tipo de ação do PDI), sem recorte de time nem de pessoa: ele não diz nada sobre a pessoa da URL, e é o mesmo dicionário para toda conta logada. O hook não aceita `enabled`, e a Visão geral o chama antes do ramo de negação da rota-pai — declarar é a saída honesta, porque a consulta não vaza dado de ninguém."
+        }
+      ]
     },
     "/professionals/$professionalId/evolution": {
       "alcance": "ficha-de-carreira",

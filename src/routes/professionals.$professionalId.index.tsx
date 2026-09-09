@@ -7,6 +7,7 @@ import {
   GapBadge,
   Initials,
   LevelBadge,
+  OutOfReachNote,
   ProfileBackLink,
   ProfileHeading,
   SectionCard,
@@ -18,12 +19,13 @@ import { useLabels } from "@/lib/labels";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { defaultCareerFileReach } from "@/lib/person-listing";
 import { PersonalDashboardPresenter } from "@/lib/presenters";
 import { useSeniorityReading } from "@/lib/seniority";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
-import { LearningPathsViewModel, professionalProfileViewModel } from "@/lib/view-models";
+import { LearningPathsViewModel, professionalProfileViewModel, RadarRows } from "@/lib/view-models";
 
 export const Route = createFileRoute("/professionals/$professionalId/")({
   head: () => ({
@@ -86,6 +88,17 @@ function ProfessionalWorkspace() {
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === professional.id);
   const assessment = sel.assessmentFor(professional.id);
 
+  /*
+   * AS LISTAGENS POR PESSOA, COM O ALCANCE AO LADO. Elas passaram a responder
+   * `200 []` (em vez de `403`) a quem não alcança a pessoa — fechando o
+   * oráculo que dizia quem existe. O preço é que a lista vazia deixou de ser
+   * prova: onde a tela não distingue "não tem" de "não posso ver", ela não
+   * afirma nenhum dos dois.
+   */
+  const openGaps = defaultCareerFileReach.listingOf(user, professional, gaps);
+  const mentoring = defaultCareerFileReach.listingOf(user, professional, sessions);
+  const planItems = defaultCareerFileReach.listingOf(user, professional, plan?.items ?? []);
+
   const nextSteps = professionalProfileViewModel.nextSteps({
     canEditOwn,
     leadsProfessional,
@@ -101,6 +114,8 @@ function ProfessionalWorkspace() {
     .map((a) => ({ assessment: a, cycle: store.cycles.find((c) => c.id === a.cycleId) }))
     .sort((x, y) => (y.cycle?.start ?? "").localeCompare(x.cycle?.start ?? ""));
   const paths = personal.assignedPaths(professional.id);
+  const learningPaths = defaultCareerFileReach.listingOf(user, professional, paths);
+  const history = defaultCareerFileReach.listingOf(user, professional, assessmentHistory);
   const {
     avg,
     covered: coveredCapabilities,
@@ -121,18 +136,24 @@ function ProfessionalWorkspace() {
           label={t("arch.stat.avgLevel")}
           value={avg === undefined ? "—" : avg.toFixed(2)}
           hint={
-            coveredCapabilities < totalCapabilities
-              ? t("arch.stat.avgLevelHintPartial", {
-                  covered: coveredCapabilities,
-                  total: totalCapabilities,
-                })
-              : t("arch.stat.avgLevelHint")
+            !history.isKnown
+              ? t("arch.stat.avgLevelOutOfReachHint")
+              : coveredCapabilities < totalCapabilities
+                ? t("arch.stat.avgLevelHintPartial", {
+                    covered: coveredCapabilities,
+                    total: totalCapabilities,
+                  })
+                : t("arch.stat.avgLevelHint")
           }
         />
         <StatCard
           label={t("arch.stat.openGaps")}
-          value={`${gaps.length}`}
-          hint={t("arch.stat.openGapsHint")}
+          value={openGaps.count === undefined ? "—" : `${openGaps.count}`}
+          hint={t(
+            openGaps.count === undefined
+              ? "arch.stat.openGapsOutOfReachHint"
+              : "arch.stat.openGapsHint",
+          )}
         />
       </div>
 
@@ -175,13 +196,13 @@ function ProfessionalWorkspace() {
       <SectionGroup title={t("arch.group.diagnosis")}>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <SectionCard title={t("arch.radar.title")} description={t("arch.radar.subtitle")}>
-            <CapabilityRadar
-              data={capabilityAvgs.map((d) => ({
-                capability: d.capability.name,
-                atual: d.avg ?? 0,
-                alvo: d.target ?? 0,
-              }))}
-            />
+            {/*
+             * A MESMA RÉGUA DO RADAR COMPARATIVO (`RadarRows`): sem medida é
+             * ausência, nunca zero. Zero é o CENTRO do radar — com `?? 0` a
+             * ficha desenhava o polígono colapsado no meio e afirmava "esta
+             * pessoa tem zero aqui" onde o certo é "não há medida".
+             */}
+            <CapabilityRadar data={RadarRows.currentAgainstTarget(capabilityAvgs)} />
           </SectionCard>
 
           <SectionCard title={t("arch.gaps.title")} description={t("arch.gaps.subtitle")}>
@@ -209,9 +230,10 @@ function ProfessionalWorkspace() {
                   </li>
                 );
               })}
-              {!gaps.length && (
+              {openGaps.isEmptyForSure && (
                 <p className="text-sm text-muted-foreground">{t("arch.gaps.none")}</p>
               )}
+              {!openGaps.isKnown && <OutOfReachNote subject="arch.outOfReach.subject.gaps" />}
             </ul>
           </SectionCard>
         </div>
@@ -239,9 +261,10 @@ function ProfessionalWorkspace() {
                   </span>
                 </li>
               ))}
-              {!assessmentHistory.length && (
+              {history.isEmptyForSure && (
                 <p className="text-sm text-muted-foreground">{t("arch.history.none")}</p>
               )}
+              {!history.isKnown && <OutOfReachNote subject="arch.outOfReach.subject.assessments" />}
             </ul>
           </SectionCard>
         </div>
@@ -251,7 +274,7 @@ function ProfessionalWorkspace() {
         <div>
           <SectionCard title="PDI" description={t("arch.plan.subtitle")}>
             <ul className="space-y-3">
-              {(plan?.items ?? []).map((i) => (
+              {planItems.items.map((i) => (
                 <li key={i.id} className="surface-inset p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium">
@@ -267,9 +290,10 @@ function ProfessionalWorkspace() {
                   </p>
                 </li>
               ))}
-              {!plan?.items.length && (
+              {planItems.isEmptyForSure && (
                 <p className="text-sm text-muted-foreground">{t("arch.plan.none")}</p>
               )}
+              {!planItems.isKnown && <OutOfReachNote subject="arch.outOfReach.subject.planItems" />}
             </ul>
           </SectionCard>
         </div>
@@ -292,8 +316,11 @@ function ProfessionalWorkspace() {
                   </li>
                 );
               })}
-              {!paths.length && (
+              {learningPaths.isEmptyForSure && (
                 <p className="text-sm text-muted-foreground">{t("arch.paths.none")}</p>
+              )}
+              {!learningPaths.isKnown && (
+                <OutOfReachNote subject="arch.outOfReach.subject.learningPaths" />
               )}
             </ul>
           </SectionCard>
@@ -302,7 +329,11 @@ function ProfessionalWorkspace() {
         <SectionCard
           className="mt-6"
           title={t("arch.mentoring.title")}
-          description={t("arch.mentoring.count", { n: sessions.length })}
+          description={
+            mentoring.count === undefined
+              ? t("arch.mentoring.countOutOfReach")
+              : t("arch.mentoring.count", { n: mentoring.count })
+          }
         >
           <ol className="space-y-3">
             {sessions.map((s) => (
@@ -318,9 +349,10 @@ function ProfessionalWorkspace() {
                 </div>
               </li>
             ))}
-            {!sessions.length && (
+            {mentoring.isEmptyForSure && (
               <p className="text-sm text-muted-foreground">{t("arch.mentoring.none")}</p>
             )}
+            {!mentoring.isKnown && <OutOfReachNote subject="arch.outOfReach.subject.mentoring" />}
           </ol>
         </SectionCard>
       </SectionGroup>

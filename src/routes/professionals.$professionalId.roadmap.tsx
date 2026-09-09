@@ -20,7 +20,7 @@ import type { CareerLevel } from "@/lib/domain";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireCareerTabsReach } from "@/lib/route-guards";
+import { defaultCareerFileReach } from "@/lib/person-listing";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
 import {
@@ -40,7 +40,6 @@ export const Route = createFileRoute("/professionals/$professionalId/roadmap")({
       },
     ],
   }),
-  beforeLoad: requireCareerTabsReach,
   component: RoadmapOfProfessional,
 });
 
@@ -68,6 +67,7 @@ function RoadmapOfProfessional() {
   const professional = sel.professionalById(professionalId);
 
   const canExplainReadiness = defaultUiAuthorizationPolicy.isLeadOf(user, professional);
+  const learningPaths = defaultCareerFileReach.listingOf(user, professional, store.learningPaths);
   const currentLevel = vm.levelOf(professional?.careerLevelId);
   const nextLevel = currentLevel ? vm.nextLevelFor(currentLevel.id) : null;
 
@@ -221,9 +221,10 @@ function RoadmapOfProfessional() {
                   coverage={vm.coverageFor(
                     professionalId,
                     vm.missingCompetencies(data),
-                    store.learningPaths,
+                    learningPaths.items,
                   )}
                   professionalId={professionalId}
+                  pathsAreKnown={learningPaths.isKnown}
                 />
               )
             }

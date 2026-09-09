@@ -76,6 +76,12 @@ function RadarAxisTick(props: {
   );
 }
 
+/** O que o recharts entrega ao ponto — com a ausência como `null`. */
+interface RadarPointPayload {
+  atual?: number | null;
+  alvo?: number | null;
+}
+
 /**
  * No radar da pessoa, o ponto de cada capacidade diz de que lado do esperado
  * ela está: verde no esperado ou acima, âmbar a até um nível abaixo,
@@ -83,8 +89,9 @@ function RadarAxisTick(props: {
  * do ponto é o julgamento, e ele é por capacidade.
  */
 class RadarPointInk {
-  static of(payload: { atual?: number; alvo?: number } | undefined): string {
-    if (!payload || payload.alvo === undefined || payload.atual === undefined) {
+  /** Sem medida (`null`) não há julgamento: a cor volta a ser a da série. */
+  static of(payload: RadarPointPayload | undefined): string {
+    if (!payload || payload.alvo == null || payload.atual == null) {
       return "var(--chart-1)";
     }
     const distance = payload.alvo - payload.atual;
@@ -93,12 +100,7 @@ class RadarPointInk {
     return "var(--gap-critical-fg)";
   }
 
-  static dot(props: {
-    cx?: number;
-    cy?: number;
-    key?: string;
-    payload?: { atual?: number; alvo?: number };
-  }) {
+  static dot(props: { cx?: number; cy?: number; key?: string; payload?: RadarPointPayload }) {
     if (props.cx === undefined || props.cy === undefined) return <g key={props.key} />;
     return (
       <Symbols
@@ -160,6 +162,7 @@ export function CapabilityRadarFigure({
           strokeWidth={increasedContrast ? 2 : 1}
           fill={CHART_INK.reference}
           fillOpacity={0.08}
+          connectNulls
           isAnimationActive={!reducedMotion}
         />
         <Radar
@@ -171,6 +174,13 @@ export function CapabilityRadarFigure({
           fill="var(--chart-1)"
           fillOpacity={increasedContrast ? 0.16 : 0.28}
           dot={RadarPointInk.dot}
+          /**
+           * Liga os pontos que EXISTEM (dono, 2026-09-09: "deveria conectar os
+           * pontos no espaço já ocupado"). Capacidade sem medida chega como
+           * `null` — sem isto o polígono se partiria; com o `?? 0` de antes ele
+           * ia ao centro e a aresta atravessava a figura.
+           */
+          connectNulls
           isAnimationActive={!reducedMotion}
         />
         <Legend wrapperStyle={{ fontSize: 12, color: CHART_INK.axis }} />

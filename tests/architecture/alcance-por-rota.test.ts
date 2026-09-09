@@ -133,13 +133,13 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
-  autenticado: 7,
+  autenticado: 6,
   "opera-o-sistema": 1,
   "lead-com-vinculo": 1,
   calibracao: 1,
   lideranca: 3,
   "analise-de-time": 5,
-  "ficha-de-carreira": 3,
+  "ficha-de-carreira": 4,
   "gestao-de-pessoas": 2,
   "metricas-da-plataforma": 1,
 };

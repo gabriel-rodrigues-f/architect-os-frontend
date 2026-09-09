@@ -18,7 +18,6 @@ import { evolutionApi, reportsApi } from "@/lib/api";
 import type { CompetencyEvolutionComparison, EvolutionFilters } from "@/lib/domain";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireCareerTabsReach } from "@/lib/route-guards";
 import { Selection } from "@/lib/selection";
 import { useSeniorityReading } from "@/lib/seniority";
 import { useSelectors, useStore } from "@/lib/store";
@@ -30,7 +29,6 @@ export const Route = createFileRoute("/professionals/$professionalId/evolution")
   head: () => ({
     meta: [{ title: "Evolução — Synapse" }],
   }),
-  beforeLoad: requireCareerTabsReach,
   component: EvolutionOfProfessional,
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ComparisonRadarRows } from "@/lib/view-models/comparison-radar-rows";
+import { RadarRows } from "@/lib/view-models/radar-rows";
 
 /**
  * Dono, 2026-09-09, sobre o radar do Comparativo: *"ele não deveria gerar essa
@@ -25,7 +25,7 @@ describe("as linhas do radar comparativo", () => {
   it("ausência de média vira ausência, não zero — é o que criava a ponta", () => {
     // Os três eixos existem no radar porque a Helena mediu os três; o que se
     // observa aqui é o que acontece com a Débora, que só tem um.
-    const linhas = ComparisonRadarRows.of(capacidades, [
+    const linhas = RadarRows.of(capacidades, [
       { id: "debora", averages: new Map([["cloud", 3]]) },
       {
         id: "helena",
@@ -45,7 +45,7 @@ describe("as linhas do radar comparativo", () => {
   });
 
   it("zero medido continua zero — a régua não confunde as duas coisas", () => {
-    const linhas = ComparisonRadarRows.of(
+    const linhas = RadarRows.of(
       [capacidades[0]!],
       [{ id: "debora", averages: new Map([["cloud", 0]]) }],
     );
@@ -54,7 +54,7 @@ describe("as linhas do radar comparativo", () => {
   });
 
   it("eixo que ninguém mediu sai do radar — num comparativo ele não compara nada", () => {
-    const linhas = ComparisonRadarRows.of(capacidades, [
+    const linhas = RadarRows.of(capacidades, [
       { id: "debora", averages: new Map([["cloud", 3]]) },
       { id: "helena", averages: new Map([["dados", 2]]) },
     ]);
@@ -66,7 +66,7 @@ describe("as linhas do radar comparativo", () => {
   });
 
   it("mas eixo medido por UMA das duas fica — a diferença é o que se quer ver", () => {
-    const linhas = ComparisonRadarRows.of(
+    const linhas = RadarRows.of(
       [capacidades[0]!],
       [
         { id: "debora", averages: new Map([["cloud", 3]]) },
@@ -78,7 +78,7 @@ describe("as linhas do radar comparativo", () => {
   });
 
   it("chave presente com valor indefinido também é ausência — a origem devolve assim", () => {
-    const linhas = ComparisonRadarRows.of(capacidades, [
+    const linhas = RadarRows.of(capacidades, [
       {
         id: "debora",
         averages: new Map([
@@ -99,7 +99,7 @@ describe("as linhas do radar comparativo", () => {
   });
 
   it("a ordem do catálogo é preservada — o radar não reordena os eixos", () => {
-    const linhas = ComparisonRadarRows.of(capacidades, [
+    const linhas = RadarRows.of(capacidades, [
       {
         id: "debora",
         averages: new Map([

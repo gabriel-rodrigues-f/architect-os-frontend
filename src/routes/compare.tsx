@@ -27,7 +27,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamList } from "@/hooks";
-import { ComparisonRadarRows } from "@/lib/view-models";
+import { RadarRows } from "@/lib/view-models";
 
 export const Route = createFileRoute("/compare")({
   head: () => ({
@@ -98,7 +98,7 @@ function ProfessionalsComparison() {
     ]),
   );
 
-  const radarData = ComparisonRadarRows.of(
+  const radarData = RadarRows.of(
     store.capabilities,
     professionals.map((professional) => ({
       id: professional.id,
