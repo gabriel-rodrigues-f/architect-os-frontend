@@ -184,7 +184,7 @@ export function ComparisonRadarFigure({
   data,
   series,
 }: {
-  data: Record<string, string | number>[];
+  data: Record<string, string | number | null>[];
   series: EvolutionSeries[];
 }) {
   const { reducedMotion, increasedContrast } = useDisplayPreferences();
@@ -213,6 +213,13 @@ export function ComparisonRadarFigure({
               fill={estilo.color}
               fillOpacity={increasedContrast ? 0.06 : 0.12}
               dot={seriesDot(estilo)}
+              /**
+               * Liga os pontos que EXISTEM (dono, 2026-09-09: "deveria conectar
+               * os pontos no espaço já ocupado"). Sem isto, o eixo sem medida
+               * viraria um buraco e o polígono se partiria; com o `?? 0` de
+               * antes ele ia ao centro e a aresta atravessava a figura.
+               */
+              connectNulls
               isAnimationActive={!reducedMotion}
             />
           );
@@ -229,7 +236,7 @@ export function EvolutionLineFigure({
   series,
   xKey,
 }: {
-  data: Record<string, string | number>[];
+  data: Record<string, string | number | null>[];
   series: EvolutionSeries[];
   xKey: string;
 }) {

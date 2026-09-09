@@ -27,6 +27,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamList } from "@/hooks";
+import { ComparisonRadarRows } from "@/lib/view-models";
 
 export const Route = createFileRoute("/compare")({
   head: () => ({
@@ -97,15 +98,13 @@ function ProfessionalsComparison() {
     ]),
   );
 
-  const radarData = store.capabilities.map((capability) => {
-    const row: Record<string, string | number> = {
-      capability: capability.name,
-    };
-    for (const professional of professionals) {
-      row[professional.id] = averagesByProfessional.get(professional.id)?.get(capability.id) ?? 0;
-    }
-    return row;
-  });
+  const radarData = ComparisonRadarRows.of(
+    store.capabilities,
+    professionals.map((professional) => ({
+      id: professional.id,
+      averages: averagesByProfessional.get(professional.id) ?? new Map<string, number>(),
+    })),
+  );
 
   return (
     <>

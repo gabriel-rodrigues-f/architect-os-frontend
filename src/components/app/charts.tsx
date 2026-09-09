@@ -222,7 +222,7 @@ export function ComparisonRadar({
   series,
   height = 360,
 }: {
-  data: Record<string, string | number>[];
+  data: Record<string, string | number | null>[];
   series: EvolutionSeries[];
   height?: number;
 }) {
@@ -280,7 +280,7 @@ export function EvolutionLine({
   xKey = "cycle",
   height = 280,
 }: {
-  data: Record<string, string | number>[];
+  data: Record<string, string | number | null>[];
   series: EvolutionSeries[];
 
   xKey?: string;
