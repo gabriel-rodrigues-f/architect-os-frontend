@@ -30,6 +30,7 @@ export * from "./table-order";
 export * from "./accounts-directory";
 export {
   RadarRows,
+  type AxisCoverage,
   type CapabilityMeasure,
   type ComparisonRadarRow,
   type CurrentAgainstTargetRow,

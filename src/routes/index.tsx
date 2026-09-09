@@ -40,6 +40,7 @@ import type { DevelopmentPlan } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
+import { RadarRows } from "@/lib/view-models";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -345,11 +346,14 @@ function MemberHome() {
   const itemsByStatus = personal.planItemCounts(professionalId);
   const paths = personal.assignedPaths(professionalId);
   // D2 (dono, 2026-09-05): a pessoa vê os PRÓPRIOS números — radar, distâncias, aderência.
-  const ownRadar = sel.capabilityAverages(professionalId).map((point) => ({
-    capability: point.capability.name,
-    atual: point.avg ?? 0,
-    alvo: point.target ?? 0,
-  }));
+  /*
+   * A MESMA RÉGUA DO RADAR COMPARATIVO E DA FICHA (`RadarRows`): sem medida é
+   * ausência, nunca zero. Zero é o CENTRO do radar — com o `?? 0` de antes, a
+   * capacidade que ninguém tinha medido virava um ponto no meio, a aresta
+   * atravessava o polígono, e o Painel afirmava "você tem zero aqui" para
+   * quem só não foi avaliado nessa capacidade.
+   */
+  const ownRadar = RadarRows.currentAgainstTarget(sel.capabilityAverages(professionalId));
   const ownGaps = personal.openGaps(professionalId).slice(0, 6);
 
   return (

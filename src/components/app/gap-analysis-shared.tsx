@@ -10,6 +10,7 @@ import { type ConsolidatedGapRow } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
 import { useSearchParamList } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { type AxisCoverage, RadarRows } from "@/lib/view-models";
 
 export function useGapAnalysisData() {
   const store = useStore();
@@ -23,23 +24,38 @@ export function useGapAnalysisData() {
     [selected, store.professionals],
   );
 
-  const radar = useMemo(() => {
-    return store.capabilities.map((cat) => {
-      const { atual, alvo } = sel.teamAverageFor(cat.id, professionals);
+  /*
+   * A MESMA RÉGUA DOS OUTROS RADARES (`RadarRows`): sem medida é ausência,
+   * nunca zero. Zero é o CENTRO do radar, e aqui a afirmação era ainda maior
+   * que na ficha — com o `?? 0` de antes a tela dizia "este TIME tem zero
+   * nesta capacidade" onde o certo é "ninguém do recorte foi medido aqui".
+   *
+   * A nota de cobertura embaixo do radar é medida sobre o CATÁLOGO INTEIRO, de
+   * propósito: o eixo sem ninguém medido sai do desenho, e é justamente a
+   * frase "0 de N pessoas" que avisa que ele saiu.
+   */
+  const { radar, radarCoverage } = useMemo(() => {
+    const twoDecimals = (value: number | undefined) =>
+      value === undefined ? undefined : Number(value.toFixed(2));
+
+    const measures = store.capabilities.map((capability) => {
+      const { atual, alvo } = sel.teamAverageFor(capability.id, professionals);
       return {
-        capability: cat.name,
-        atual: Number((atual.avg ?? 0).toFixed(2)),
-        alvo: Number((alvo.avg ?? 0).toFixed(2)),
-        covered: atual.covered,
-        total: atual.total,
+        capability,
+        avg: twoDecimals(atual.avg),
+        target: twoDecimals(alvo.avg),
+        coverage: { covered: atual.covered, total: atual.total },
       };
     });
-  }, [professionals, store.capabilities, sel]);
 
-  const radarCoverage = radar.reduce(
-    (min, r) => (r.covered < min.covered ? r : min),
-    radar[0] ?? { covered: 0, total: 0 },
-  );
+    return {
+      radar: RadarRows.currentAgainstTarget(measures),
+      radarCoverage: measures.reduce<AxisCoverage>(
+        (menor, measure) => (measure.coverage.covered < menor.covered ? measure.coverage : menor),
+        measures[0]?.coverage ?? { covered: 0, total: 0 },
+      ),
+    };
+  }, [professionals, store.capabilities, sel]);
 
   const priorities = useMemo(
     () => sel.consolidateProgressionGaps(professionals),
