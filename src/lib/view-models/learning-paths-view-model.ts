@@ -115,15 +115,52 @@ export class LearningPathsViewModel {
     });
   }
 
+  /**
+   * A EDIÇÃO PEDIDA, e o que ela grava — a mesma régua do `removeItem` daqui
+   * de baixo: otimista, `onConfirmed` roda quando o SERVIÇO confirma, e é lá
+   * que mora o aviso de sucesso, nunca no clique.
+   */
   updateDetails(
     path: Pick<LearningPath, "id" | "name">,
     form: { name: string; description: string; completionDeadlineDays: number | null },
+    onConfirmed?: (updated: LearningPath) => void,
   ): void {
-    this.service.updateLearningPath(path.id, {
+    this.service.updateLearningPath(path.id, this.detailsPatchOf(path, form), onConfirmed);
+  }
+
+  /**
+   * O QUE SOBE NO PATCH — publicado para a tela conseguir perguntar se ainda
+   * há alteração pendente sem reconstruir a conta por fora (nome vazio cai no
+   * nome atual da trilha).
+   */
+  detailsPatchOf(
+    path: Pick<LearningPath, "name">,
+    form: { name: string; description: string; completionDeadlineDays: number | null },
+  ): Pick<LearningPath, "name" | "description" | "completionDeadlineDays"> {
+    return {
       name: form.name.trim() || path.name,
       description: form.description,
       completionDeadlineDays: form.completionDeadlineDays,
-    });
+    };
+  }
+
+  /**
+   * Ainda há o que salvar? A gravação otimista já deixou a trilha com os
+   * valores enviados antes da resposta, então isto vira `false` no instante
+   * do clique e volta a `true` se o serviço recusar e o rollback devolver os
+   * valores antigos — é a tranca do segundo envio, derivada do estado, sem
+   * `saving` local que ficaria preso na recusa.
+   */
+  hasPendingDetails(
+    path: Pick<LearningPath, "name" | "description" | "completionDeadlineDays">,
+    form: { name: string; description: string; completionDeadlineDays: number | null },
+  ): boolean {
+    const patch = this.detailsPatchOf(path, form);
+    return (
+      patch.name !== path.name ||
+      patch.description !== path.description ||
+      patch.completionDeadlineDays !== path.completionDeadlineDays
+    );
   }
 
   toggleCompetency(path: Pick<LearningPath, "id" | "competencyIds">, competencyId: string): void {

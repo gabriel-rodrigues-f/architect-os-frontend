@@ -686,13 +686,37 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
     defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
   );
 
+  /**
+   * O DIÁLOGO SÓ FECHA COM A CONFIRMAÇÃO DO SERVIÇO (2026-09-09).
+   *
+   * Terceiro lugar com o mesmo defeito, depois do selo "Salvo" do PDI e do
+   * diálogo de Ciclos (`ee05c75`). `vm.updateDetails` é `void` — gravação
+   * otimista, dispara e esquece — e a tela acendia o aviso verde e fechava o
+   * diálogo na sequência: duas afirmações de sucesso sem nenhuma confirmação.
+   * Com o servidor recusando, a pessoa lia "atualizada" e via o diálogo
+   * sumir, e só depois o rollback devolvia o nome antigo à lista.
+   *
+   * A régua é a do `removeItem` do view-model do PDI: `onConfirmed` roda
+   * quando o serviço confirma — o aviso vai lá, não no clique. A frase é a da
+   * casa, com o `messageCode` que este PATCH já publicava
+   * (`learningPath.update.success`) e que ninguém lia. A recusa continua
+   * vindo do `toast.error` do `MutationRunner`, e agora encontra o diálogo
+   * aberto — que é onde a pessoa pode corrigir.
+   */
+  const detailsForm = {
+    ...form,
+    completionDeadlineDays: CompletionDeadlineInput.toDays(deadlineDays),
+  };
+
+  /** Enquanto o PATCH não volta, a gravação otimista já zerou o que havia por salvar. */
+  const pendingDetails = vm.hasPendingDetails(path, detailsForm);
+
   const saveDetails = () => {
-    vm.updateDetails(path, {
-      ...form,
-      completionDeadlineDays: CompletionDeadlineInput.toDays(deadlineDays),
+    if (!pendingDetails) return;
+    vm.updateDetails(path, detailsForm, (updated) => {
+      notifySuccess("msg.learningPath.update.success", { nome: updated.name }, updated);
+      onClose();
     });
-    notifySuccess("msg.learningPath.update.success", { nome: form.name.trim() || path.name });
-    onClose();
   };
 
   const toggle = (field: "competencyIds" | "assignedTo", id: string) => {
@@ -864,7 +888,9 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
             <Button variant="outline" onClick={onClose}>
               {t("path.edit.close")}
             </Button>
-            <Button onClick={saveDetails}>{t("path.edit.save")}</Button>
+            <Button onClick={saveDetails} disabled={!pendingDetails}>
+              {t("path.edit.save")}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

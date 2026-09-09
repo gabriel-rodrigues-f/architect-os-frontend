@@ -112,11 +112,15 @@ describe("LearningPathsViewModel", () => {
         description: "nova descrição",
         completionDeadlineDays: null,
       });
-      expect(service.updateLearningPath).toHaveBeenCalledWith("trilha-1", {
-        name: "Cloud Native",
-        description: "nova descrição",
-        completionDeadlineDays: null,
-      });
+      expect(service.updateLearningPath).toHaveBeenCalledWith(
+        "trilha-1",
+        {
+          name: "Cloud Native",
+          description: "nova descrição",
+          completionDeadlineDays: null,
+        },
+        undefined,
+      );
     });
 
     it("nunca corta a descrição — mesmo comportamento que já existia inline", () => {
@@ -126,11 +130,73 @@ describe("LearningPathsViewModel", () => {
         description: "  com espaço  ",
         completionDeadlineDays: null,
       });
-      expect(service.updateLearningPath).toHaveBeenCalledWith("trilha-1", {
-        name: "Cloud Native II",
-        description: "  com espaço  ",
-        completionDeadlineDays: null,
-      });
+      expect(service.updateLearningPath).toHaveBeenCalledWith(
+        "trilha-1",
+        {
+          name: "Cloud Native II",
+          description: "  com espaço  ",
+          completionDeadlineDays: null,
+        },
+        undefined,
+      );
+    });
+
+    /**
+     * A régua do `removeItem` logo abaixo vale aqui: o aviso "Trilha
+     * atualizada" e o fechar do diálogo são afirmações à pessoa, e só podem
+     * sair quando o serviço confirmar. Sem este repasse, as duas voltam a
+     * acontecer no clique.
+     */
+    it("repassa o `onConfirmed` para o serviço", () => {
+      const { vm, service } = makeVm();
+      const onConfirmed = vi.fn();
+      vm.updateDetails(
+        path(),
+        { name: "Cloud Native II", description: "", completionDeadlineDays: null },
+        onConfirmed,
+      );
+      expect(service.updateLearningPath).toHaveBeenCalledWith(
+        "trilha-1",
+        expect.objectContaining({ name: "Cloud Native II" }),
+        onConfirmed,
+      );
+    });
+  });
+
+  /**
+   * A TRANCA DO SEGUNDO ENVIO, derivada do estado — o diálogo ficou aberto
+   * até a resposta, e é a gravação otimista que fecha a porta: com os valores
+   * já aplicados na trilha, não sobra alteração pendente.
+   */
+  describe("hasPendingDetails", () => {
+    interface DetailsForm {
+      name: string;
+      description: string;
+      completionDeadlineDays: number | null;
+    }
+
+    const form = (overrides: Partial<DetailsForm> = {}): DetailsForm => ({
+      name: "Cloud Native",
+      description: "Trilha de arquitetura em nuvem",
+      completionDeadlineDays: null,
+      ...overrides,
+    });
+
+    it("é falso quando o formulário repete o que a trilha já tem", () => {
+      const { vm } = makeVm();
+      expect(vm.hasPendingDetails(path(), form())).toBe(false);
+    });
+
+    it("é falso quando o nome está só com espaço — o PATCH cairia no nome atual", () => {
+      const { vm } = makeVm();
+      expect(vm.hasPendingDetails(path(), form({ name: "   " }))).toBe(false);
+    });
+
+    it("é verdadeiro quando o nome, a descrição ou o prazo mudam", () => {
+      const { vm } = makeVm();
+      expect(vm.hasPendingDetails(path(), form({ name: "Cloud Native II" }))).toBe(true);
+      expect(vm.hasPendingDetails(path(), form({ description: "outra" }))).toBe(true);
+      expect(vm.hasPendingDetails(path(), form({ completionDeadlineDays: 30 }))).toBe(true);
     });
   });
 

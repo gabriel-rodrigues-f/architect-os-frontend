@@ -214,7 +214,11 @@ export interface Api extends AppState {
   removeCycle: (id: string) => void;
   openAssessment: (professionalId: string, cycleId: string) => Promise<Assessment>;
   setAssessmentStatus: (id: string, status: Assessment["status"]) => Promise<Assessment>;
-  updateLearningPath: (id: string, patch: LearningPathPatch) => void;
+  updateLearningPath: (
+    id: string,
+    patch: LearningPathPatch,
+    onConfirmed?: (updated: LearningPath) => void,
+  ) => void;
   removeLearningPath: (id: string, onConfirmed?: () => void) => void;
   /** Fatia PRAZOS: inscrever de novo quem estourou o prazo da trilha. */
   renewLearningPathEnrollment: (pathId: string, professionalId: string) => Promise<LearningPath>;
@@ -975,13 +979,15 @@ export function buildApi(
       );
     },
 
-    updateLearningPath: (id, patch) => {
+    updateLearningPath: (id, patch, onConfirmed) => {
       runner.optimistic(
         (s) => ({
           ...s,
           learningPaths: s.learningPaths.map((p) => (p.id === id ? { ...p, ...patch } : p)),
         }),
         () => api.updateLearningPath(id, patch),
+        undefined,
+        onConfirmed,
       );
     },
 
