@@ -89,11 +89,28 @@ const calibracaoVazia: FetchRoute = (href) =>
     ? jsonResponse({ cycleId: "2026-h2", evaluators: [], overall: { average: null } })
     : undefined;
 
+/**
+ * Fatia CALIBRAÇÃO — a tela PERGUNTA se há provedor de linguagem natural
+ * antes de desenhar o seletor de pessoa e o botão. Sem a resposta não há
+ * seletor, e o que este arquivo guarda (a FRASE do campo bloqueado) deixaria
+ * de ser exercitado.
+ */
+const leituraConfigurada: FetchRoute = (href) =>
+  href.endsWith(apiPath("/assistants/availability"))
+    ? jsonResponse({ naturalLanguageReading: true })
+    : undefined;
+
 const comoAtor = (user: SessionUser) =>
   mockAppFetch(fetchMock, {
     user,
     state: semNinguem,
-    routes: [emptyAuthUsersRoute, careerLevelsRoute, emptyEligibilityRoute, calibracaoVazia],
+    routes: [
+      emptyAuthUsersRoute,
+      careerLevelsRoute,
+      emptyEligibilityRoute,
+      calibracaoVazia,
+      leituraConfigurada,
+    ],
   });
 
 /**

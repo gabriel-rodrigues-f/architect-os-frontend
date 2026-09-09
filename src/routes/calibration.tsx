@@ -17,7 +17,7 @@ import {
 } from "@/components/app";
 import { Label } from "@/components/ui/label";
 import { useSelectionEmptyState } from "@/components/app/EmptySelection";
-import { calibrationApi, workAssistantsApi } from "@/lib/api";
+import { calibrationApi, teamsApi, workAssistantsApi } from "@/lib/api";
 import { Registration } from "@/lib/registration";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
@@ -28,7 +28,7 @@ import { PersonPicker } from "@/lib/person-selection";
 import { requireCalibrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
-import { CalibrationViewModel } from "@/lib/view-models";
+import { CalibrationViewModel, TeamNames } from "@/lib/view-models";
 
 export const Route = createFileRoute("/calibration")({
   head: () => ({
@@ -44,10 +44,6 @@ export const Route = createFileRoute("/calibration")({
   beforeLoad: requireCalibrationReach,
   component: CalibrationPage,
 });
-
-function useCalibrationViewModel(): CalibrationViewModel {
-  return useMemo(() => new CalibrationViewModel(), []);
-}
 
 const CARDS_SKELETON = (
   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -86,6 +82,31 @@ function CalibrationPage() {
     <ContextScope contexts={CALIBRATION_CONTEXTS}>
       <CalibrationBoard />
     </ContextScope>
+  );
+}
+
+/**
+ * O nome do time vem de `GET /teams` — a listagem mínima que existe
+ * exatamente para o frontend NOMEAR times (matriz de permissão, justificativa
+ * de `GET /teams`). Antes desta fatia a tela mostrava `teamIds` cru, e o dono
+ * lia `seed-completo-time-dados` no lugar de "Dados e Inteligência": os nomes
+ * existiam, a tela é que não os buscava.
+ *
+ * Ela mora ABAIXO do ramo que nega a tela (`!canCalibrate`), e não por
+ * estética: quem não calibra nunca monta o `CalibrationBoard`, então esta
+ * consulta não sai em nome dele. A catraca de alcance por rota lê a ORDEM do
+ * arquivo, e aqui a ordem do arquivo é a verdade da execução.
+ *
+ * A consulta é de apoio, não de conteúdo: se ela não responder, o cartão fica
+ * sem a linha do time — o que a tela nunca faz é voltar a mostrar o
+ * identificador.
+ */
+function useCalibrationViewModel(): CalibrationViewModel {
+  const teams = useQuery({ queryKey: ["teams"], queryFn: teamsApi.teams, staleTime: 60_000 });
+  const rosterOfTeams = teams.data;
+  return useMemo(
+    () => new CalibrationViewModel(TeamNames.of(rosterOfTeams ?? [])),
+    [rosterOfTeams],
   );
 }
 
@@ -204,6 +225,8 @@ function CalibrationBoard() {
                           key={view.userId}
                           view={view}
                           scoreLevels={vm.scoreLevels(view.distribution)}
+                          overallAverageLabel={vm.overallAverageLabel(data)}
+                          thresholdLabel={vm.thresholdLabel()}
                         />
                       ))}
                     </div>
@@ -227,6 +250,20 @@ function CalibrationBoard() {
  * numa tela de calibração é pior do que não sugerir nada. Enquanto ninguém
  * escolhe, não há botão: é a mesma recusa de sempre, a aplicação não desenha
  * quando não sabe.
+ *
+ * A MESMA recusa governa agora o bloco inteiro. Sem provedor de linguagem
+ * natural configurado, "Ler apoio à calibração" só tem um destino, e é o erro
+ * — o padrão que o dono já reprovou duas vezes (a caixa de comentário e o
+ * bloco do Plano de Ação): oferecer ação que vai ser recusada. A tela
+ * PERGUNTA ao servidor, que é quem sabe: a escolha do provedor mora no boot
+ * do backend, e ler variável de ambiente no navegador seria mover a decisão
+ * para o lado errado da porta.
+ *
+ * Três estados, e o terceiro é o que importa: enquanto a pergunta não volta,
+ * nada é desenhado; respondida NÃO, a tela diz que a leitura não está
+ * configurada e o seletor some junto (sem leitura para gerar, ele não serve
+ * para nada); e se a PERGUNTA falhar, a tela também não desenha — mas não
+ * afirma "não está configurada", porque isso ela não sabe.
  */
 function CalibrationAssistant({
   selected,
@@ -238,6 +275,25 @@ function CalibrationAssistant({
   const { t } = useI18n();
   const store = useStore();
   const user = useCurrentUser();
+  const availability = useQuery({
+    queryKey: ["assistants", "availability"],
+    queryFn: workAssistantsApi.naturalLanguageReadingAvailability,
+    staleTime: 5 * 60_000,
+  });
+
+  if (availability.data === undefined) return null;
+
+  if (!availability.data.naturalLanguageReading) {
+    return (
+      <div className="mb-6">
+        <Callout tone="info">
+          <strong>{t("ai.calibration.unavailable.title")}</strong>{" "}
+          {t("ai.calibration.unavailable.hint")}
+        </Callout>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-6">
       <div className="mb-4 max-w-xs">

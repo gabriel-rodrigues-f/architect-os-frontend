@@ -87,6 +87,29 @@ const calibracaoDoServidor = {
 const calibrationRoute: FetchRoute = (href) =>
   href.includes(apiPath("/calibration")) ? jsonResponse(calibracaoDoServidor) : undefined;
 
+/**
+ * Fatia CALIBRAÇÃO — o cartão nomeia o time em vez de mostrar o
+ * identificador, então a tela passou a pedir a listagem mínima de times
+ * (`GET /teams`), e a leitura de apoio só é oferecida se houver provedor
+ * (`GET /assistants/availability`). As duas são rotas de APOIO: o que estes
+ * casos afirmam continua sendo o conteúdo da calibração.
+ */
+const teamsRoute: FetchRoute = (href, init) =>
+  href.endsWith(apiPath("/teams")) && (init?.method ?? "GET") === "GET"
+    ? jsonResponse([
+        { id: "team-integration", name: "Integração", active: true },
+        { id: "team-architecture", name: "Arquitetura", active: true },
+        { id: "team-platform", name: "Plataforma", active: true },
+      ])
+    : undefined;
+
+const leituraConfigurada: FetchRoute = (href) =>
+  href.endsWith(apiPath("/assistants/availability"))
+    ? jsonResponse({ naturalLanguageReading: true })
+    : undefined;
+
+const rotasDeApoio: FetchRoute[] = [teamsRoute, leituraConfigurada];
+
 describe("/calibration — distribuição de notas por avaliador", () => {
   beforeEach(() => {
     fetchMock.mockReset();
@@ -95,7 +118,7 @@ describe("/calibration — distribuição de notas por avaliador", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
       state: scopedFixtureStateFor(fixtureAssignedManagerUser, fixtureState, ["time-plataforma"]),
-      routes: [calibrationRoute],
+      routes: [calibrationRoute, ...rotasDeApoio],
     });
   });
 
@@ -171,7 +194,7 @@ describe("/calibration nega DADO a quem não calibra — a tela é a última bar
     mockAppFetch(fetchMock, {
       user,
       state: scopedFixtureStateFor(user),
-      routes: [calibrationRoute],
+      routes: [calibrationRoute, ...rotasDeApoio],
     });
     renderWithApp(<CalibrationPage />);
   };
@@ -252,7 +275,7 @@ describe("/calibration não CONSULTA para quem não calibra — o `enabled` é p
     mockAppFetch(fetchMock, {
       user,
       state: scopedFixtureStateFor(user),
-      routes: [calibrationRoute],
+      routes: [calibrationRoute, ...rotasDeApoio],
     });
     renderWithApp(<CalibrationPage />);
   };
@@ -319,6 +342,7 @@ describe("o aviso de notas sem autor não depende de a tela estar vazia", () => 
       routes: [
         (href: string) =>
           href.includes(apiPath("/calibration")) ? jsonResponse(resposta) : undefined,
+        ...rotasDeApoio,
       ],
     });
     renderWithApp(<CalibrationPage />);

@@ -1,5 +1,9 @@
 import type { ApiClient } from "../api-client";
-import { stagnationAlertResponseSchema, workAssistanceResponseSchema } from "../api-schemas";
+import {
+  assistantsAvailabilityResponseSchema,
+  stagnationAlertResponseSchema,
+  workAssistanceResponseSchema,
+} from "../api-schemas";
 import { AssistantCall } from "../assistants";
 
 /**
@@ -37,7 +41,20 @@ export interface StagnationAlert {
   alert: string | null;
 }
 
+/**
+ * O que a casa TEM para oferecer, perguntado antes de oferecer.
+ *
+ * Sem provedor de linguagem natural, "Ler apoio à calibração" só tem um
+ * destino possível — e a tela não pode descobrir isso sozinha: a escolha do
+ * provedor mora no servidor, e ler variável de ambiente no navegador seria
+ * mover a decisão para o lado errado da porta. Por isso a tela PERGUNTA.
+ */
+export interface AssistantsAvailability {
+  naturalLanguageReading: boolean;
+}
+
 export interface WorkAssistantsGateway {
+  naturalLanguageReadingAvailability(): Promise<AssistantsAvailability>;
   assistAssessmentCalibration(professionalId: string): Promise<WorkAssistance>;
   alertAboutStagnation(professionalId: string): Promise<StagnationAlert>;
   reviewCatalogQuality(): Promise<WorkAssistance>;
@@ -46,9 +63,22 @@ export interface WorkAssistantsGateway {
 export class HttpWorkAssistantsGateway implements WorkAssistantsGateway {
   private readonly call: AssistantCall;
 
-  constructor(client: ApiClient, timeoutMs?: number) {
+  constructor(
+    private readonly client: ApiClient,
+    timeoutMs?: number,
+  ) {
     this.call = new AssistantCall(client, timeoutMs);
   }
+
+  /**
+   * Sem `AssistantCall`: não há provedor no caminho desta pergunta, então não
+   * há tempo-limite de geração a impor. Ela é uma leitura de configuração, e
+   * responde em milissegundos ou não responde.
+   */
+  naturalLanguageReadingAvailability = (): Promise<AssistantsAvailability> =>
+    this.client
+      .request<unknown>("/assistants/availability")
+      .then((data) => assistantsAvailabilityResponseSchema.parse(data));
 
   assistAssessmentCalibration = (professionalId: string): Promise<WorkAssistance> =>
     this.call.read(`/professionals/${professionalId}/calibration-assistance`, (data) =>

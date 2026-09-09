@@ -5,6 +5,7 @@ import type { TeamTransfersGateway } from "../gateways/team-transfers.gateway";
 import type { TeamSummary } from "../gateways/teams.gateway";
 import type { UiAuthorizationPolicy } from "../scope";
 import { SeniorityReading } from "../seniority";
+import { TeamNames } from "./team-names";
 import type { Api } from "../store";
 
 /** Vazio enquanto nenhum nível de carreira estiver escolhido — nunca um `RoleName` inventado. */
@@ -92,9 +93,9 @@ export class TeamViewModel {
     return teams.filter((team) => team.active);
   }
 
+  /** Delegado a `TeamNames` — a busca do nome do time mora num lugar só. */
   teamNameOf(teamId: string | null | undefined, teams: readonly TeamSummary[]): string | null {
-    if (teamId == null) return null;
-    return teams.find((team) => team.id === teamId)?.name ?? null;
+    return TeamNames.of(teams).nameOf(teamId);
   }
 
   otherCareerLevels<TLevel extends { name: string }>(
