@@ -47,10 +47,7 @@ const sessaoComCompetencias: MentoringSession = {
   date: "2026-09-01",
   durationMin: 45,
   topic: "Particionamento",
-  competencyIds: ["cloud-k8s", "security-iam"],
   notes: "Discutimos as chaves",
-  decisions: "",
-  actions: "",
 };
 
 const state: AppState = {

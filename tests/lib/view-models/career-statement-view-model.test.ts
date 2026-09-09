@@ -67,10 +67,7 @@ const mentoring: MentoringSession = {
   date: "2025-12-15",
   durationMin: 60,
   topic: "Arquitetura de Eventos",
-  competencyIds: ["cc"],
   notes: "",
-  decisions: "",
-  actions: "",
 };
 
 const teamTransition: TeamTransitionRecord = {

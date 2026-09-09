@@ -85,10 +85,14 @@ test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo
   await page.goto("/mentoring");
   await page.getByRole("button", { name: "Registrar sessão" }).click();
 
-  // `exact: true` — "Tema"/"Notas"/"Decisões"/"Ações" também têm um botão de
-  // ajuda com `aria-label="O que é o campo {nome}"`, que CONTÉM o nome do
-  // campo; sem isto `getByLabel` casa os dois (e mais campos, por
-  // sobreposição de texto) e vira "strict mode violation".
+  // `exact: true` — "Tema" e "Notas" também têm um botão de ajuda com
+  // `aria-label="O que é o campo {nome}"`, que CONTÉM o nome do campo; sem
+  // isto `getByLabel` casa os dois (e mais campos, por sobreposição de texto)
+  // e vira "strict mode violation".
+  //
+  // "Decisões" e "Ações" saíram do formulário em 2026-09-08 e do produto em
+  // 2026-09-09; este spec ainda os preenchia e estava vermelho desde então —
+  // o gate roda typecheck+lint+test+build, não o Playwright.
   const dialog = page.getByRole("dialog", { name: "Nova sessão de mentoria" });
   // "Mentorado" deixou de ser <select> nativo: é o ProfessionalSelectCombobox
   // (botão role="combobox" + popover cmdk) — abre e escolhe a opção pelo
@@ -99,10 +103,6 @@ test("Tech Lead registra uma sessão de mentoria e ela aparece na linha do tempo
   await dialog
     .getByLabel("Notas", { exact: true })
     .fill("E2E: discutimos os trade-offs de particionamento.");
-  await dialog.getByLabel("Decisões", { exact: true }).fill("E2E: seguir com sharding por tenant.");
-  await dialog
-    .getByLabel("Ações", { exact: true })
-    .fill("E2E: prototipar a migração até a próxima sessão.");
   await dialog.getByLabel("Duração (min)", { exact: true }).fill("45");
   await dialog.getByRole("button", { name: "Salvar sessão" }).click();
 

@@ -71,13 +71,13 @@ const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 const TEMA_FORJADO =
   "<script data-forjado>window.__forjado = 1</script> retomar a conversa sobre o PDI";
 
-const DECISOES = "Fechar o item de PDI mais antigo até a próxima conversa.";
+const NOTAS = "Fechar o item de PDI mais antigo até a próxima conversa.";
 
 const FATO = "A última 1:1 aconteceu em 2026-06-01.";
 
 const ROTULO_DO_TEMA = "Tema da última 1:1, escrito por quem conduziu";
 
-const ROTULO_DAS_DECISOES = "Decisões da última 1:1, escritas por quem conduziu";
+const ROTULO_DAS_NOTAS = "Notas da última 1:1, escritas por quem conduziu";
 
 /**
  * O corpo da preparação de 1:1 COM O PROVEDOR NO CHÃO: `narration` nula e o
@@ -92,7 +92,7 @@ const preparacao = {
   facts: [FATO],
   written: [
     { label: ROTULO_DO_TEMA, text: TEMA_FORJADO },
-    { label: ROTULO_DAS_DECISOES, text: DECISOES },
+    { label: ROTULO_DAS_NOTAS, text: NOTAS },
   ],
   absences: [],
   narration: null as string | null,
@@ -144,8 +144,8 @@ describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro dele
     expect(screen.getByText("O que uma pessoa escreveu")).toBeTruthy();
     expect(screen.getByText(ROTULO_DO_TEMA)).toBeTruthy();
     expect(screen.getByText(TEMA_FORJADO)).toBeTruthy();
-    expect(screen.getByText(ROTULO_DAS_DECISOES)).toBeTruthy();
-    expect(screen.getByText(DECISOES)).toBeTruthy();
+    expect(screen.getByText(ROTULO_DAS_NOTAS)).toBeTruthy();
+    expect(screen.getByText(NOTAS)).toBeTruthy();
   });
 
   it("o que o sistema calculou e o que alguém digitou ficam em blocos diferentes", async () => {
@@ -162,7 +162,7 @@ describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro dele
         .map((item) => item.querySelector("span:last-child")?.textContent),
     ).toEqual([FATO]);
     expect(within(fatos).queryByText(TEMA_FORJADO)).toBeNull();
-    expect(within(fatos).queryByText(DECISOES)).toBeNull();
+    expect(within(fatos).queryByText(NOTAS)).toBeNull();
     // E o bloco do texto de gente não contém fato nenhum.
     expect(within(escrito).queryByText(FATO)).toBeNull();
     expect(escrito.contains(fatos)).toBe(false);
@@ -193,7 +193,7 @@ describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro dele
     });
     expect(transcricao).toContain(`* ${FATO}`);
     expect(transcricao).toContain(`> ${ROTULO_DO_TEMA}: ${TEMA_FORJADO}`);
-    expect(transcricao).toContain(`> ${ROTULO_DAS_DECISOES}: ${DECISOES}`);
+    expect(transcricao).toContain(`> ${ROTULO_DAS_NOTAS}: ${NOTAS}`);
   });
 });
 

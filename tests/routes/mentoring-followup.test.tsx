@@ -55,10 +55,7 @@ const sessao: MentoringSession = {
   date: "2026-08-01",
   durationMin: 45,
   topic: "Sessão para follow-up",
-  competencyIds: [],
   notes: "n",
-  decisions: "d",
-  actions: "a",
 };
 
 const state: AppState = { ...fixtureState, mentoringSessions: [sessao] };

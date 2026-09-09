@@ -103,10 +103,7 @@ const stateWithMentoring: AppState = {
       date: "2025-12-15",
       durationMin: 60,
       topic: "Arquitetura de Eventos",
-      competencyIds: ["security-iam"],
       notes: "",
-      decisions: "",
-      actions: "",
     },
   ],
 };

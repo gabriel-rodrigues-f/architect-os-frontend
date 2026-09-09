@@ -371,18 +371,15 @@ export interface MentoringSession {
   notes: string;
 
   /**
-   * A HISTÓRIA, não o formulário (dono, 2026-09-08, item 4; 2026-09-09):
-   * "Decisões", "Ações", "Próxima sessão" e "Competências discutidas" saíram
-   * da tela de registro e deixaram de viajar no pedido — as sessões antigas
-   * continuam trazendo os quatro do serviço.
+   * "Decisões", "Ações" e "Competências discutidas" saíram do produto inteiro
+   * em 2026-09-09 — *"deve morrer totalmente, front, back e banco"* —, e o
+   * texto que as sessões antigas tinham foi dobrado dentro de `notes` pela
+   * própria migração. A 1:1 guarda um bloco de anotações só.
    *
-   * `nextSession` continua sendo ESCRITO, por outro caminho: o "Agendar
-   * follow-up" da Linha do Tempo, que faz PATCH na sessão mais recente da
-   * pessoa. Só o campo do formulário morreu.
+   * `nextSession` FICA, e continua sendo escrito por outro caminho que não o
+   * formulário: o "Agendar follow-up" da Linha do Tempo, que faz PATCH na
+   * sessão mais recente da pessoa (regra 20).
    */
-  competencyIds?: string[] | undefined;
-  decisions?: string | undefined;
-  actions?: string | undefined;
   nextSession?: string | undefined;
 }
 

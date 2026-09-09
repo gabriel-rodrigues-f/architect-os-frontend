@@ -66,10 +66,7 @@ describe("Mentoria — campos obrigatórios", () => {
                   date: "2026-01-01",
                   durationMin: 45,
                   topic: "Revisão de arquitetura",
-                  competencyIds: [],
                   notes: "Discutimos o trade-off",
-                  decisions: "Seguir com event-driven",
-                  actions: "Escrever o ADR",
                 },
                 201,
               )

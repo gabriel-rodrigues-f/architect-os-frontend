@@ -184,11 +184,6 @@
       "count": 5
     }
   },
-  "src/lib/view-models/mentoring-view-model.ts": {
-    "id-length": {
-      "count": 3
-    }
-  },
   "src/lib/view-models/scoring-bands-editor.ts": {
     "id-length": {
       "count": 5

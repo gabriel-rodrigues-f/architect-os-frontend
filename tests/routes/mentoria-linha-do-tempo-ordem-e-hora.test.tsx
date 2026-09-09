@@ -35,10 +35,7 @@ const sessao = (id: string, topic: string, date: string): MentoringSession => ({
   date,
   durationMin: 45,
   topic,
-  competencyIds: [],
   notes: "n",
-  decisions: "",
-  actions: "",
 });
 
 /** Como o servidor manda: do mais novo para o mais antigo, dois no mesmo dia. */

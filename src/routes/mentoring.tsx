@@ -33,7 +33,7 @@ export const Route = createFileRoute("/mentoring")({
       { property: "og:title", content: "Mentoria e 1:1 — Synapse" },
       {
         property: "og:description",
-        content: "Temas, decisões, ações e próximos passos de cada sessão de mentoria.",
+        content: "Tema, notas e próximos passos de cada sessão de mentoria.",
       },
     ],
   }),
