@@ -292,6 +292,11 @@
       "arquivo": "src/modules/development/infrastructure/controllers/development.controller.ts",
       "resposta": "ok"
     },
+    "team.careerLadder.define.success": {
+      "rota": "PUT /teams/:teamId/career-levels",
+      "arquivo": "src/modules/people/infrastructure/controllers/teams.controller.ts",
+      "resposta": "ok"
+    },
     "team.deactivate.success": {
       "rota": "POST /teams/:teamId/deactivate",
       "arquivo": "src/modules/people/infrastructure/controllers/teams.controller.ts",

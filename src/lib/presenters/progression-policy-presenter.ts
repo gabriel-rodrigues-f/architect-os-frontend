@@ -2,21 +2,34 @@ import type { TeamLevelRule } from "../domain";
 import type { MessageKey } from "../i18n";
 
 /**
- * Onda 36.1 — pedido do dono: *"a quantidade de capacidades minima de um time
- * não pode ser 3, tem que ser 1."* Este é o piso do MODELO, espelho do
- * `career.schemas` do backend (`minimumQualifiedCapabilities` inteiro >= 1).
+ * O PISO DO MODELO, espelho do `career.schemas` do backend
+ * (`minimumQualifiedCapabilities` inteiro >= 0).
+ *
+ * Dono (2026-09-08, regra 12): *"vamos manter a configuração de capacidade
+ * mínima por perfil por time, apenas vamos remover a regra de que 3 é o
+ * mínimo. Não haverá mais valor mínimo."* A onda 36.1 já tinha baixado 3 para
+ * 1; agora o piso acaba. Existe Trainee com ZERO, e zero não é régua faltando:
+ * é uma régua que não exige capacidade qualificada nenhuma. Negativo continua
+ * sendo lixo.
  *
  * Não confundir com `career.minimumQualifiedFloor` de `app_settings`: aquele é
- * o mínimo PADRÃO — o que vale para o time sem régua acertada — e continua
- * sendo o valor que o editor sugere. Usá-lo como limite inferior do campo era
- * o que impedia gravar 1, e foi o que fez a tela responder 500 quando o
- * backend ainda tinha CHECK >= 3.
+ * o mínimo PADRÃO — o que vale para o nível cujo time ainda não acertou régua
+ * — e é o valor que o editor sugere.
  */
 export class QualifiedCapabilityMinimum {
-  static readonly FLOOR = 1;
+  static readonly FLOOR = 0;
 
   static admits(value: number): boolean {
     return Number.isInteger(value) && value >= QualifiedCapabilityMinimum.FLOOR;
+  }
+
+  /**
+   * O mínimo que não exige nada. A tela precisa da pergunta com nome para
+   * dizer isso sem parecer erro: com zero não existe alerta de "falta
+   * competência", porque não falta.
+   */
+  static demandsNothing(value: number): boolean {
+    return value === 0;
   }
 }
 

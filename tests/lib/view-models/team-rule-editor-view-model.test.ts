@@ -9,9 +9,16 @@ import { TeamRuleEditorViewModel, type TeamRuleErrorKey } from "@/lib/view-model
 /**
  * Fase C, tela 1 (spec-telas-novas-2026-08-29 §1) — o NÚCLEO da régua do
  * time. As três recusas abaixo são decisão de CONTRATO, não preferência de
- * tela: o piso ≥ floor é a mesma regra do `settings.tsx`, a competência só
- * pesa dentro de uma capacidade que a régua exige, e o nível vive em 1..5
- * (ADR-0032 tirou o nível exigido do catálogo global e o pôs AQUI).
+ * tela: a competência só pesa dentro de uma capacidade que a régua exige, o
+ * nível vive em 1..5 (ADR-0032 tirou o nível exigido do catálogo global e o
+ * pôs AQUI), e o mínimo é um inteiro não negativo.
+ *
+ * Dono (2026-09-08, regra 12): *"Não haverá mais valor mínimo."* O `floor`
+ * deixou de ser LIMITE e virou SUGESTÃO — é o valor com que a régua nova
+ * nasce, e nada mais. Antes desta fatia ele era os dois ao mesmo tempo, e a
+ * consequência era esta: com o padrão da organização em 3, um time que quisesse
+ * exigir 1 (ou zero, agora) via o botão Salvar apagado sem explicação nenhuma
+ * — a organização decidindo a régua do time pela porta dos fundos.
  */
 
 const FLOOR = 3;
@@ -67,16 +74,24 @@ describe("TeamRuleEditorViewModel — o rascunho da régua", () => {
 });
 
 describe("TeamRuleEditorViewModel — recusas de contrato", () => {
-  it("recusa piso menor que o floor da organização", () => {
-    const editor = editorComRegua().withMinimum(FLOOR - 1);
+  it("recusa mínimo negativo — não é régua, é lixo", () => {
+    const editor = editorComRegua().withMinimum(-1);
 
     expect(editor.errorKeys).toContain("teamRules.error.minimumBelowFloor");
     expect(editor.isValid).toBe(false);
     expect(editor.definition()).toBeNull();
   });
 
-  it("aceita piso exatamente igual ao floor — o limite é inclusivo", () => {
-    const editor = editorComRegua().withMinimum(FLOOR);
+  it("aceita ZERO: existe nível que não exige capacidade qualificada nenhuma", () => {
+    const editor = editorComRegua().withMinimum(0);
+
+    expect(editor.errorKeys).toEqual([]);
+    expect(editor.isValid).toBe(true);
+    expect(editor.definition()?.minimumQualifiedCapabilities).toBe(0);
+  });
+
+  it("aceita mínimo ABAIXO do padrão da organização — o padrão sugere, não limita", () => {
+    const editor = editorComRegua().withMinimum(FLOOR - 2);
 
     expect(editor.errorKeys).toEqual([]);
     expect(editor.isValid).toBe(true);

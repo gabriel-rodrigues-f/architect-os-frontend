@@ -21,14 +21,20 @@ import {
 import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
- * Onda 36.1 — pedido do dono, literal: *"a quantidade de capacidades minima de
- * um time não pode ser 3, tem que ser 1."* O backend já aceita 1
- * (`career.schemas`, migração 20260903500000000).
+ * Dono (2026-09-08, regra 12), literal: *"vamos manter a configuração de
+ * capacidade mínima por perfil por time, apenas vamos remover a regra de que 3
+ * é o mínimo. Não haverá mais valor mínimo."*
  *
- * O que segurava o 1 na tela era o piso OPERACIONAL (`career.minimumQualifiedFloor`,
- * 3 de fábrica) sendo usado como limite inferior do editor. Ele é o mínimo
- * PADRÃO — o que vale para o time que não acertou régua nenhuma —, não o menor
- * valor que uma régua pode ter. O editor passa a usar o piso do MODELO.
+ * Esta suíte era a da onda 36.1, que provava o piso 1 (*"não pode ser 3, tem
+ * que ser 1"*). O piso caiu de novo, e desta vez acabou: ZERO é um valor de
+ * negócio — existe Trainee que não exige capacidade qualificada nenhuma —, e a
+ * tela precisa dizer isso sem parecer erro.
+ *
+ * O que NÃO mudou, e é o que o último caso guarda: o piso OPERACIONAL
+ * (`career.minimumQualifiedFloor`) continua sendo o mínimo PADRÃO — o que vale
+ * para o time que não acertou régua nenhuma, e o valor que o editor sugere —,
+ * nunca o menor valor que uma régua pode ter. Usá-lo como limite era a
+ * organização decidindo a régua do time pela porta dos fundos.
  *
  * Revisão de papéis (dono, 2026-09-05, D1): quem edita a régua é o gerente
  * COM vínculo no time — o admin só a lê. O ator aqui é o gerente de Plataforma.
@@ -75,13 +81,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Política de Progressão — o mínimo de capacidades qualificadas aceita 1", () => {
-  it("o campo declara 1 como menor valor, não o piso operacional", async () => {
+describe("Política de Progressão — o mínimo de capacidades qualificadas acabou", () => {
+  it("o campo declara ZERO como menor valor, não o piso operacional", async () => {
     renderWithApp(<SettingsPage />);
     const linha = await linhaDoNivel();
     await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
 
-    expect(within(linha).getByRole("spinbutton").getAttribute("min")).toBe("1");
+    expect(within(linha).getByRole("spinbutton").getAttribute("min")).toBe("0");
   });
 
   it("digitar 1 mantém 'Salvar' aceso e grava o mínimo 1", async () => {
@@ -104,7 +110,7 @@ describe("Política de Progressão — o mínimo de capacidades qualificadas ace
     );
   });
 
-  it("zero continua recusado — 1 é o piso, não a ausência de régua", async () => {
+  it("digitar ZERO mantém 'Salvar' aceso e grava zero — não é régua faltando, é régua que não exige capacidade", async () => {
     renderWithApp(<SettingsPage />);
     const linha = await linhaDoNivel();
     await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
@@ -112,6 +118,26 @@ describe("Política de Progressão — o mínimo de capacidades qualificadas ace
     const campo = within(linha).getByRole("spinbutton");
     await userEvent.clear(campo);
     await userEvent.type(campo, "0");
+
+    const salvar = within(linha).getByRole("button", { name: "Salvar" });
+    expect(salvar).toHaveProperty("disabled", false);
+
+    await userEvent.click(salvar);
+    await waitFor(() =>
+      expect(gravacoes).toEqual([
+        { minimumQualifiedCapabilities: 0, capabilityIds: [], competencies: [] },
+      ]),
+    );
+  });
+
+  it("negativo continua recusado — zero é ausência de exigência, -1 é lixo", async () => {
+    renderWithApp(<SettingsPage />);
+    const linha = await linhaDoNivel();
+    await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
+
+    const campo = within(linha).getByRole("spinbutton");
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "-1");
 
     expect(within(linha).getByRole("button", { name: "Salvar" })).toHaveProperty("disabled", true);
     expect(screen.queryByText("Salvando…")).toBeNull();

@@ -31,7 +31,8 @@ import { usePageHelp } from "@/lib/page-help";
 import { requireLeadReach } from "@/lib/route-guards";
 import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useCareerLevelsByRank, useOperationalSettings, useStore } from "@/lib/store";
+import { QualifiedCapabilityMinimum } from "@/lib/presenters";
+import { useOperationalSettings, useStore, useTeamCareerLevels } from "@/lib/store";
 
 export const Route = createFileRoute("/team-rules")({
   beforeLoad: requireLeadReach,
@@ -83,7 +84,6 @@ function TeamRulesScreen() {
   const help = usePageHelp("teamRules");
   const user = useCurrentUser();
 
-  const careerLevels = useCareerLevelsByRank();
   const teamsQuery = useQuery({
     queryKey: ["teams"],
     queryFn: teamsApi.teams,
@@ -99,6 +99,11 @@ function TeamRulesScreen() {
   // Dono (2026-09-06): quem lidera UM time não escolhe — o time fica fixado.
   const teamChoice = TeamChoice.for(user, teams);
   const teamId = teamChoice.resolve(chosenTeamId);
+  // Dono (2026-09-08): a régua é de um nível QUE ESTE TIME USA. A lista deixou
+  // de ser o catálogo da organização e passou a ser a escada do time — oferecer
+  // aqui um nível por onde o time não sobe seria convidar a escrever exigência
+  // para um degrau que ninguém vai pisar.
+  const careerLevels = useTeamCareerLevels(teamId);
   const careerLevel =
     careerLevels.find((level) => level.id === chosenLevelId) ?? careerLevels[0] ?? null;
 
@@ -150,9 +155,10 @@ function TeamRulesScreen() {
               options={careerLevels.map((level) => ({ value: level.id, label: level.name }))}
               empty={{
                 message: EmptySubject.CAREER_LEVEL.title(t),
+                hint: t("teamRules.filter.careerLevel.ofTeam"),
                 registration: {
                   label: t("teamRules.filter.careerLevel.register"),
-                  to: "/settings",
+                  to: "/teams",
                 },
               }}
             />
@@ -314,15 +320,22 @@ function TeamRuleEditor({
             <Input
               id="team-rule-minimum"
               type="number"
-              min={floor}
+              min={QualifiedCapabilityMinimum.FLOOR}
               className="h-9 w-28"
               value={String(editor.minimumQualifiedCapabilities)}
               onChange={(event) =>
                 setEditor((current) => current.withMinimum(Number(event.target.value)))
               }
             />
+            {/*
+              Dono (2026-09-08): zero é valor válido, e a tela precisa dizer
+              isso SEM parecer erro — com zero não existe alerta de "falta
+              competência", porque não falta.
+            */}
             <p className="text-xs text-muted-foreground">
-              {t("teamRules.minimum.hint", { piso: floor })}
+              {QualifiedCapabilityMinimum.demandsNothing(editor.minimumQualifiedCapabilities)
+                ? t("teamRules.minimum.none")
+                : t("teamRules.minimum.hint")}
             </p>
           </FilterField>
         </div>
@@ -462,7 +475,7 @@ function TeamRuleEditor({
 
         {editor.errorKeys.map((key) => (
           <p key={key} className="mt-2 text-sm text-destructive" role="alert">
-            {t(key, { minimo: floor })}
+            {t(key)}
           </p>
         ))}
         {error && (

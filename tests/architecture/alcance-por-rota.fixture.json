@@ -148,8 +148,8 @@
       "provaDeTela": "tests/routes/team-rules.test.tsx",
       "catalogosGlobais": [
         {
-          "hook": "useCareerLevelsByRank",
-          "justificativa": "GET /career-levels é o catálogo GLOBAL da escada de carreira — o CONTRATO diz que posição e senioridade significam a mesma coisa na organização inteira —, então ele não tem recorte de time nem de pessoa para vazar. O hook de store.tsx não aceita `enabled`, e o QA de integração da onda 19 mediu no navegador com conta member em /team-rules: sai a consulta do catálogo e NÃO sai a do time, porque o teamsQuery respeita `enabled: canConfigure`."
+          "hook": "useTeamCareerLevels",
+          "justificativa": "Dono (2026-09-08): a régua é de um nível QUE ESTE TIME USA, e esta tela deixou de ler o catálogo global direto. O hook lê a escada do time por `GET /teams/:teamId/career-levels` e, por baixo, o catálogo global `GET /career-levels` — as duas rotas são público-para-logado por decisão registrada na matriz do backend: nem o catálogo da escada nem os degraus de um time nomeiam pessoa nenhuma, e o CONTRATO diz que Pleno significa a mesma coisa na organização inteira. Não há recorte a vazar. O que TEM recorte nesta tela — o conteúdo da régua e a lista de times configuráveis — continua atrás de `enabled: canConfigure`, medido no navegador com conta member na onda 19."
         }
       ]
     },

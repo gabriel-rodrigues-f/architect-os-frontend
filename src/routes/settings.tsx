@@ -39,11 +39,11 @@ import {
   type ScoringScale,
 } from "@/lib/scoring-bands";
 import {
-  useCareerLevelsByRank,
   useCurationPolicy,
   useOperationalSettings,
   useScoringRuler,
   useStore,
+  useTeamCareerLevels,
   useTextTemplates,
   useVocabularies,
   useVocabulary,
@@ -197,7 +197,6 @@ function SettingsScreen() {
 
 function CareerPolicySection() {
   const store = useStore();
-  const careerLevels = useCareerLevelsByRank();
   const readyCapabilities = store.capabilities.filter((c) => c.curation.status === "READY").length;
 
   const floor = useOperationalSettings().careerMinimumQualifiedFloor;
@@ -222,6 +221,11 @@ function CareerPolicySection() {
       ProgressionPolicyScope.ALL_TEAMS_CHOICE,
     teams,
   );
+  // Dono (2026-09-08): a estrutura de níveis é DO TIME. Com um time escolhido,
+  // as linhas são os degraus DELE, na ordem dele; em "Todos os times", o
+  // catálogo da organização — que é a única leitura possível quando a pergunta
+  // não é sobre um time.
+  const careerLevels = useTeamCareerLevels(scope.team?.id ?? null);
 
   return (
     <SectionCard
@@ -440,6 +444,12 @@ function CareerPolicyHint({
       </>
     );
   }
+  // Dono (2026-09-08): zero é valor válido, e a frase precisa dizer isso sem
+  // parecer régua faltando — "—" é régua ausente, zero é régua que não exige
+  // capacidade qualificada nenhuma.
+  if (QualifiedCapabilityMinimum.demandsNothing(reading.minimum)) {
+    return <>{t("policy.row.hint.none", { nivel: level.name })}</>;
+  }
   return <>{t("policy.row.hint", { nivel: level.name, minimo: reading.minimum })}</>;
 }
 
@@ -455,6 +465,9 @@ function CareerPolicyMinimumCell({ minimum }: { minimum: ProgressionMinimumPrese
         <p className="text-xs font-normal text-muted-foreground">{t("policy.row.variesByTeam")}</p>
       </>
     );
+  }
+  if (QualifiedCapabilityMinimum.demandsNothing(reading.minimum)) {
+    return <span>{t("policy.row.noMinimum")}</span>;
   }
   return <span className="tabular-nums">{reading.minimum}</span>;
 }
