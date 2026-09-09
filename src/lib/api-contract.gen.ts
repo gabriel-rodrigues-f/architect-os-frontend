@@ -2188,6 +2188,8 @@ export interface paths {
                         description?: string;
                         /** @default [] */
                         competencyIds?: string[];
+                        /** @default null */
+                        completionDeadlineDays?: number | null;
                         /** @default [] */
                         assignedTo?: string[];
                         /** @default [] */
@@ -2267,6 +2269,8 @@ export interface paths {
                         description?: string;
                         /** @default [] */
                         competencyIds?: string[];
+                        /** @default null */
+                        completionDeadlineDays?: number | null;
                         /** @default [] */
                         assignedTo?: string[];
                         /** @default [] */
@@ -2416,6 +2420,42 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/api/v1/learning-paths/{pathId}/enrollments/{professionalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    pathId: string;
+                    professionalId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/plans": {

@@ -55,11 +55,27 @@ describe("UiAuthorizationPolicy", () => {
       expect(policy.canReadAbout(fixtureMemberUser, anaAsProfessional)).toBe(true);
     });
 
-    it("exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha é do profissional — e de quem o lidera", () => {
-      expect(policy.recordsTrailProgressOf(fixtureMemberUser, anaAsProfessional)).toBe(true);
-      expect(policy.recordsTrailProgressOf(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(true);
+    /**
+     * FATIA PRAZOS, item 1 — o avanço na trilha é de quem APRENDE, e só dele.
+     * Quem lidera via o mesmo controle habilitado e escrevia o progresso no
+     * lugar da pessoa; a régua que o backend publica em `GET /auth/me` nunca
+     * disse isso (`own-trail.progress` é só do profissional).
+     */
+    it("o avanço na PRÓPRIA trilha é do profissional — e SÓ dele (fatia PRAZOS)", () => {
+      expect(policy.advancesOwnLearningPath(fixtureMemberUser, anaAsProfessional)).toBe(true);
+      expect(policy.advancesOwnLearningPath(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(false);
+      expect(policy.advancesOwnLearningPath(fixtureAssignedManagerUser, anaInLedTeam)).toBe(false);
+      expect(policy.advancesOwnLearningPath(fixtureAdminUser, anaInLedTeam)).toBe(false);
       const techLeadAna = { ...fixtureAssignedTechLeadUser, professionalId: "ana" };
-      expect(policy.recordsTrailProgressOf(techLeadAna, anaInLedTeam)).toBe(false);
+      expect(policy.advancesOwnLearningPath(techLeadAna, anaInLedTeam)).toBe(false);
+    });
+
+    it("inscrever (e reinscrever) continua sendo da pessoa e de quem a lidera", () => {
+      expect(policy.enrollsInLearningPath(fixtureMemberUser, anaAsProfessional)).toBe(true);
+      expect(policy.enrollsInLearningPath(fixtureAssignedTechLeadUser, anaInLedTeam)).toBe(true);
+      expect(policy.enrollsInLearningPath(fixtureAssignedManagerUser, anaInLedTeam)).toBe(true);
+      expect(policy.enrollsInLearningPath(fixtureAdminUser, anaInLedTeam)).toBe(true);
+      expect(policy.enrollsInLearningPath(fixtureSupportUser, anaInLedTeam)).toBe(false);
     });
 
     it("quem ESCOLHE pessoa é quem lidera; o profissional não busca outros membros em parte nenhuma (dono, 2026-09-06)", () => {

@@ -25,6 +25,8 @@ const stateComTrilhaCompartilhada: AppState = {
       description: "",
       competencyIds: [],
       assignedTo: ["ana", "bruno"],
+      enrollments: [],
+      completionDeadlineDays: null,
       items: [{ id: "item-1", title: "Curso X", type: "Curso", hours: 4 }],
       progress: [
         { professionalId: "ana", itemId: "item-1", status: "In Progress", progress: 40 },

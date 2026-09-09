@@ -280,7 +280,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
   it("nenhum aviso cita item de PDI — a base de demonstração não tem nenhum", async () => {
     const page = await gatewayFor(techLead).notices({ status: "all" });
     expect(page.notices.length).toBeGreaterThan(0);
-    expect(page.notices.some((item) => item.eventType === "pdi.item.dueSoon")).toBe(false);
+    expect(page.notices.some((item) => item.eventType === "development-item.deadline-approaching")).toBe(false);
     expect(page.notices.some((item) => item.title.includes("Workshop de Clean Core"))).toBe(false);
     expect(page.notices.some((item) => item.title.includes("PDI"))).toBe(false);
   });

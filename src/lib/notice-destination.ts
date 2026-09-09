@@ -13,6 +13,7 @@ import type { Notice } from "./gateways/notices.gateway";
  * novo. A tabela é do dono (2026-09-08):
  *
  *   assessment.completed  → a avaliação DAQUELA pessoa
+ *   development-item.deadline-approaching → o PDI DAQUELA pessoa (fatia PRAZOS)
  *   mentoring.recorded    → Mentoria filtrada NAQUELA pessoa
  *   digest.daily          → a própria tela de Avisos
  *   support.access-opened → a ficha da pessoa
@@ -80,6 +81,17 @@ export class NoticeDestination {
     new PersonDestinationRule("mentoring.recorded", "/mentoring", "menteeId"),
     new FixedDestinationRule("digest.daily", "/notices"),
     new PersonDestinationRule("support.access-opened", "/professionals", null),
+    /*
+     * Fatia PRAZOS: o aviso de prazo chega à pessoa E a quem a lidera, e o
+     * `link` do servidor é o genérico `/development-plans`. Sem esta regra,
+     * quem lidera três pessoas abriria o PDI da primeira da lista — o mesmo
+     * defeito que esta tabela nasceu para consertar.
+     */
+    new PersonDestinationRule(
+      "development-item.deadline-approaching",
+      "/development-plans",
+      "professionalId",
+    ),
   ];
 
   of(notice: NoticeContext): string {

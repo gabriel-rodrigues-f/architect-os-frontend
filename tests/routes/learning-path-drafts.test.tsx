@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as LearningRoute } from "@/routes/learning-paths";
 import type { AppState } from "@/lib/api";
-import { fixtureState, fixtureAssignedManagerUser } from "../helpers/fixtures";
+import { fixtureState, fixtureAssignedManagerUser, fixtureMemberUser } from "../helpers/fixtures";
 import {
   contextsOf,
   type FetchRoute,
@@ -78,13 +78,15 @@ function statePorChamada(...respostas: AppState[]): FetchRoute {
  * Quem edita a trilha é o gerente COM vínculo no time (D1, dono, 2026-09-05:
  * Trilhas é tela de pessoa, o admin não a alcança).
  */
-function mockComPatchRepresado(): () => void {
+function mockComPatchRepresado(
+  user: typeof fixtureAssignedManagerUser = fixtureAssignedManagerUser,
+): () => void {
   let soltar = () => {};
   const patchRespondido = new Promise<void>((resolve) => {
     soltar = resolve;
   });
   mockAppFetch(fetchMock, {
-    user: fixtureAssignedManagerUser,
+    user,
     routes: [
       (href, init) =>
         init?.method === "PATCH" && href.includes(apiPath("/learning-paths/"))
@@ -176,8 +178,14 @@ describe("Trilhas — edição em andamento não é sobrescrita pelo servidor", 
     );
   });
 
+  /**
+   * FATIA PRAZOS, item 1 — quem arrasta o progresso é a PRÓPRIA pessoa: o
+   * gerente perdeu o controle (ele acompanha, inscreve e administra a trilha,
+   * mas não estuda no lugar dela). O rascunho em arrasto continua sendo o que
+   * este teste protege; mudou de quem é a mão.
+   */
   it("mantém o progresso em arrasto quando a revalidação devolve o progresso anterior", async () => {
-    const soltarPatch = mockComPatchRepresado();
+    const soltarPatch = mockComPatchRepresado(fixtureMemberUser);
     renderWithApp(<LearningPage />);
 
     await screen.findByText(TRILHA.name);
@@ -195,9 +203,11 @@ describe("Trilhas — edição em andamento não é sobrescrita pelo servidor", 
     // 2. Recomeça o arrasto e ainda não soltou.
     fireEvent.change(slider, { target: { value: "80" } });
 
-    // 3. O servidor recusa; a revalidação chega e é renderizada (Bruno entra na trilha).
+    // 3. O servidor recusa; a revalidação chega e é renderizada (Bruno entra
+    // na trilha). O marcador é o NOME dele: a linha de progresso de quem a
+    // pessoa não é sai em leitura, sem `aria-label` de slider (fatia PRAZOS).
     soltarPatch();
-    await screen.findByLabelText(`Progresso de ${BRUNO.name} em ${ITEM_OAUTH.title}`);
+    await screen.findAllByText(BRUNO.name);
 
     // 4. A posição em que a pessoa está arrastando sobrevive.
     expect(

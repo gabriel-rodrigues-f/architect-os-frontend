@@ -8,7 +8,8 @@ interface NoticeDecoration {
 }
 
 const DECORATION_BY_EVENT_TYPE: Record<string, NoticeDecoration> = {
-  "pdi.item.dueSoon": { tone: "warning", icon: "deadline" },
+  // Fatia PRAZOS: o aviso de 15 e 5 dias antes do prazo do compromisso do PDI.
+  "development-item.deadline-approaching": { tone: "warning", icon: "deadline" },
   "assessment.stalled": { tone: "warning", icon: "stalled" },
   "evidence.awaitingReview": { tone: "info", icon: "review" },
   "assessment.completed": { tone: "success", icon: "completed" },
@@ -28,6 +29,16 @@ export class NoticeRoutingPolicy {
 
   iconOf(eventType: string): NoticeIcon {
     return (DECORATION_BY_EVENT_TYPE[eventType] ?? FALLBACK).icon;
+  }
+
+  /**
+   * Os tipos que esta política sabe decorar. Existe para a catraca
+   * (`decoracao-de-aviso-tem-emissor.test.ts`) poder perguntar à política o
+   * que ela promete, em vez de reler a tabela por fora: decoração de um tipo
+   * que ninguém emite não quebra nada — cai no genérico e some do radar.
+   */
+  decoratedEventTypes(): string[] {
+    return Object.keys(DECORATION_BY_EVENT_TYPE);
   }
 }
 

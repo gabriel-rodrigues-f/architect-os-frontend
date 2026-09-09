@@ -17,7 +17,7 @@ import { NoticesViewModel } from "@/lib/view-models";
 function notice(overrides: Partial<Notice>): Notice {
   return {
     id: "notice-1",
-    eventType: "pdi.item.dueSoon",
+    eventType: "development-item.deadline-approaching",
     title: "Item de PDI vence em 3 dias",
     link: "/development-plans?professionalId=ana",
     occurredAt: "2026-08-28T09:00:00.000Z",
@@ -86,7 +86,7 @@ describe("NoticeRoutingPolicy — decoração por eventType", () => {
   const policy = new NoticeRoutingPolicy();
 
   it("mapeia os 5 eventTypes do contrato", () => {
-    expect(policy.toneOf("pdi.item.dueSoon")).toBe("warning");
+    expect(policy.toneOf("development-item.deadline-approaching")).toBe("warning");
     expect(policy.toneOf("assessment.stalled")).toBe("warning");
     expect(policy.toneOf("evidence.awaitingReview")).toBe("info");
     expect(policy.toneOf("assessment.completed")).toBe("success");

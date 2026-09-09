@@ -67,7 +67,6 @@ describe("DevelopmentPlansViewModel", () => {
       const workflow = vm.workflowFor(undefined, {
         actsForProfessional: true,
         isLeadOfProfessional: true,
-        isAssignedTechLead: false,
       });
       expect(workflow.canApprove).toBe(true);
       expect(workflow.canEditDiagnostic).toBe(true);
@@ -78,10 +77,11 @@ describe("DevelopmentPlansViewModel", () => {
       const workflow = vm.workflowFor({ status: "Completed" } as DevelopmentPlan, {
         actsForProfessional: true,
         isLeadOfProfessional: true,
-        isAssignedTechLead: false,
       });
       expect(workflow.canEditExecution).toBe(false);
-      expect(workflow.ownerSeesLockedMessage).toBe(true);
+      // Fatia PRAZOS: quem lidera REABRE — não vê o aviso, vê o botão.
+      expect(workflow.canReopen).toBe(true);
+      expect(workflow.seesCompletedWithoutReopen).toBe(false);
     });
   });
 

@@ -20,6 +20,7 @@ function fakeService(): LearningPathService & {
   addLearningPathItem: ReturnType<typeof vi.fn>;
   removeLearningPathItem: ReturnType<typeof vi.fn>;
   updateLearningItemProgress: ReturnType<typeof vi.fn>;
+  renewLearningPathEnrollment: ReturnType<typeof vi.fn>;
 } {
   return {
     addLearningPath: vi.fn(async (p: LearningPath) => ({ ...p, id: "trilha-nova" })),
@@ -28,6 +29,9 @@ function fakeService(): LearningPathService & {
     addLearningPathItem: vi.fn(),
     removeLearningPathItem: vi.fn(),
     updateLearningItemProgress: vi.fn(),
+    renewLearningPathEnrollment: vi.fn(
+      async (_pathId: string, _professionalId: string) => ({}) as LearningPath,
+    ),
   };
 }
 
@@ -42,6 +46,8 @@ function path(overrides: Partial<LearningPath> = {}): LearningPath {
     description: "Trilha de arquitetura em nuvem",
     competencyIds: ["cloud-k8s"],
     assignedTo: ["ana"],
+    enrollments: [{ professionalId: "ana", enrolledAt: "2026-01-01T00:00:00.000Z" }],
+    completionDeadlineDays: null,
     items: [{ id: "item-1", title: "Curso de Kubernetes", type: "Curso", hours: 8 }],
     progress: [],
     createdBy: "lead@company.com",
@@ -57,7 +63,11 @@ describe("LearningPathsViewModel", () => {
       const { vm, service } = makeVm();
       await vm.createPath(
         fixtureAdminUser,
-        { name: "  Cloud Native  ", description: "  trilha de nuvem  " },
+        {
+          name: "  Cloud Native  ",
+          description: "  trilha de nuvem  ",
+          completionDeadlineDays: null,
+        },
         ["cloud-k8s"],
         ["ana"],
       );
@@ -67,6 +77,10 @@ describe("LearningPathsViewModel", () => {
         description: "trilha de nuvem",
         competencyIds: ["cloud-k8s"],
         assignedTo: ["ana"],
+        // Fatia PRAZOS: quem nasce inscrito ingressa AGORA — o relógio do
+        // prazo de cada pessoa começa no ingresso dela.
+        enrollments: [{ professionalId: "ana", enrolledAt: expect.any(String) }],
+        completionDeadlineDays: null,
         items: [],
         progress: [],
         createdBy: fixtureAdminUser.email,
@@ -80,7 +94,12 @@ describe("LearningPathsViewModel", () => {
       service.addLearningPath.mockRejectedValueOnce(new Error("403"));
       const { vm } = makeVm(service);
       await expect(
-        vm.createPath(fixtureAdminUser, { name: "X", description: "" }, [], []),
+        vm.createPath(
+          fixtureAdminUser,
+          { name: "X", description: "", completionDeadlineDays: null },
+          [],
+          [],
+        ),
       ).rejects.toThrow("403");
     });
   });
@@ -88,19 +107,29 @@ describe("LearningPathsViewModel", () => {
   describe("updateDetails", () => {
     it("corta o nome e cai para o nome atual quando o rascunho é só espaço", () => {
       const { vm, service } = makeVm();
-      vm.updateDetails(path(), { name: "   ", description: "nova descrição" });
+      vm.updateDetails(path(), {
+        name: "   ",
+        description: "nova descrição",
+        completionDeadlineDays: null,
+      });
       expect(service.updateLearningPath).toHaveBeenCalledWith("trilha-1", {
         name: "Cloud Native",
         description: "nova descrição",
+        completionDeadlineDays: null,
       });
     });
 
     it("nunca corta a descrição — mesmo comportamento que já existia inline", () => {
       const { vm, service } = makeVm();
-      vm.updateDetails(path(), { name: "Cloud Native II", description: "  com espaço  " });
+      vm.updateDetails(path(), {
+        name: "Cloud Native II",
+        description: "  com espaço  ",
+        completionDeadlineDays: null,
+      });
       expect(service.updateLearningPath).toHaveBeenCalledWith("trilha-1", {
         name: "Cloud Native II",
         description: "  com espaço  ",
+        completionDeadlineDays: null,
       });
     });
   });

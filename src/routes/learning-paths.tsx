@@ -31,6 +31,7 @@ import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { useLabels } from "@/lib/labels";
 import { type LearningItemType, type LearningPath, type LearningPathItem } from "@/lib/domain";
+import { CompletionDeadlineInput } from "@/lib/learning-path-enrollment";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -121,9 +122,19 @@ function LearningScreen() {
   const canEdit = (path: LearningPath) =>
     defaultUiAuthorizationPolicy.editsLearningPath(user, path);
 
-  // A exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha é do profissional.
-  const canEditProgress = (professionalId: string) =>
-    defaultUiAuthorizationPolicy.recordsTrailProgressOf(user, sel.professionalById(professionalId));
+  /*
+   * Fatia PRAZOS, item 1: o avanço é de quem APRENDE — quem lidera vê,
+   * inscreve e administra a trilha, mas não estuda no lugar da pessoa. E item
+   * 2: quem estourou o prazo SAIU da trilha; enquanto não se inscrever de
+   * novo, não avança. Oferecer o controle aqui seria prometer o que o
+   * servidor recusa.
+   */
+  const agora = new Date();
+  const canEditProgress = (path: LearningPath, professionalId: string) =>
+    defaultUiAuthorizationPolicy.advancesOwnLearningPath(
+      user,
+      sel.professionalById(professionalId),
+    ) && vm.deadlineFor(path, professionalId, agora)?.expired !== true;
 
   /*
    * Dono (2026-09-08): *"sem nenhuma trilha, o botão do canto superior direito
@@ -262,6 +273,9 @@ function LearningScreen() {
                     {t("path.summary.items", { n: path.items.length })}
                     {" · "}
                     {t("path.summary.people", { n: path.assignedTo.length })}
+                    {path.completionDeadlineDays !== null
+                      ? ` · ${t("path.summary.deadline", { n: path.completionDeadlineDays })}`
+                      : ""}
                   </p>
 
                   <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
@@ -271,9 +285,7 @@ function LearningScreen() {
                       </span>
                     ))}
                     {path.assignedTo.map((aid) => (
-                      <span key={aid} className="rounded-md border border-border px-2 py-0.5">
-                        {sel.professionalById(aid)?.name ?? t("path.assignee.outOfScope")}
-                      </span>
+                      <EnrollmentBadge key={aid} path={path} professionalId={aid} at={agora} />
                     ))}
                   </div>
 
@@ -305,7 +317,7 @@ function LearningScreen() {
                                   <ProgressControl
                                     progress={prog.progress}
                                     statusLabel={labels.learningStatus[prog.status]}
-                                    editable={canEditProgress(professionalId)}
+                                    editable={canEditProgress(path, professionalId)}
                                     ariaLabel={t("path.item.progressAriaLabel", {
                                       nome,
                                       item: item.title,
@@ -350,12 +362,121 @@ function LearningScreen() {
   );
 }
 
+/**
+ * FATIA PRAZOS, item 2 — a pessoa inscrita, com o PRAZO DELA ao lado.
+ *
+ * O prazo é de cada inscrito (conta do ingresso dele, nunca da criação da
+ * trilha), e por isso ele mora na etiqueta da PESSOA e não no cabeçalho da
+ * trilha: duas pessoas na mesma trilha têm dois vencimentos.
+ *
+ * Vencida, a etiqueta diz que a inscrição terminou e traz o convite de se
+ * inscrever de novo — para a própria pessoa e para quem a lidera, que são os
+ * dois que podem inscrever. Recomeça o relógio; o que já foi estudado fica.
+ */
+function EnrollmentBadge({
+  path,
+  professionalId,
+  at,
+}: {
+  path: LearningPath;
+  professionalId: string;
+  at: Date;
+}) {
+  const sel = useSelectors();
+  const user = useCurrentUser();
+  const vm = useLearningPathsViewModel();
+  const { t } = useI18n();
+  const { submitting, run } = useToastSubmit();
+  const notifySuccess = useSuccessToast();
+
+  const professional = sel.professionalById(professionalId);
+  const nome = professional?.name ?? t("path.assignee.outOfScope");
+  const prazo = vm.deadlineFor(path, professionalId, at);
+
+  if (!prazo?.hasDeadline) {
+    return <span className="rounded-md border border-border px-2 py-0.5">{nome}</span>;
+  }
+
+  if (!prazo.expired) {
+    const faltam = prazo.daysLeft ?? 0;
+    const quanto =
+      faltam <= 0
+        ? t("path.enrollment.dueToday")
+        : faltam === 1
+          ? t("path.enrollment.daysLeft.one")
+          : t("path.enrollment.daysLeft", { n: faltam });
+    return (
+      <span className="rounded-md border border-border px-2 py-0.5">
+        {nome} · {quanto}
+      </span>
+    );
+  }
+
+  const inscreverDeNovo = async () => {
+    const result = await run(() => vm.renewEnrollment(path.id, professionalId));
+    if (!result.ok) return;
+    notifySuccess("msg.learningPath.enrollment.renew.success", { nome });
+  };
+
+  return (
+    <span className="flex items-center gap-1.5 rounded-md border border-destructive px-2 py-0.5 text-destructive">
+      {nome} · {t("path.enrollment.expired")}
+      {defaultUiAuthorizationPolicy.enrollsInLearningPath(user, professional) && (
+        <button
+          type="button"
+          onClick={inscreverDeNovo}
+          disabled={submitting}
+          className="underline underline-offset-2"
+        >
+          {user.professionalId === professionalId
+            ? t("path.enrollment.renewSelf")
+            : t("path.enrollment.renew")}
+        </button>
+      )}
+    </span>
+  );
+}
+
+/**
+ * O PRAZO DE CONCLUSÃO num campo só — o mesmo nos dois diálogos, criar e
+ * editar. Vazio quer dizer SEM PRAZO: a trilha que nunca configurou continua
+ * sem vencer (dono), e zero diria "vence no instante do ingresso".
+ */
+function DeadlineDaysField({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div>
+      <Label htmlFor={id}>{t("path.edit.deadlineDays")}</Label>
+      <Input
+        id={id}
+        type="number"
+        min={1}
+        max={3650}
+        className="w-40"
+        placeholder={t("path.edit.deadlineDays.placeholder")}
+        value={value}
+        onChange={(evento) => onChange(evento.target.value)}
+      />
+      <p className="mt-1 text-xs text-muted-foreground">{t("path.edit.deadlineDays.hint")}</p>
+    </div>
+  );
+}
+
 function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const user = useCurrentUser();
   const { t } = useI18n();
   const vm = useLearningPathsViewModel();
   const [form, setForm] = useState({ name: "", description: "" });
+  const [deadlineDays, setDeadlineDays] = useState("");
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
 
@@ -380,7 +501,14 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
   const create = async () => {
     const trimmed = form.name.trim();
     if (!trimmed) return;
-    const result = await run(() => vm.createPath(user, form, competencyIds, assignedTo));
+    const result = await run(() =>
+      vm.createPath(
+        user,
+        { ...form, completionDeadlineDays: CompletionDeadlineInput.toDays(deadlineDays) },
+        competencyIds,
+        assignedTo,
+      ),
+    );
     if (!result.ok) return;
     notifySuccess("msg.learningPath.create.success", { nome: trimmed }, result.value);
     onClose();
@@ -412,6 +540,11 @@ function CreatePathDialog({ onClose }: { onClose: () => void }) {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
+          <DeadlineDaysField
+            id="new-path-deadline"
+            value={deadlineDays}
+            onChange={setDeadlineDays}
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -538,6 +671,9 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
 
   const itemTypes = useVocabulary("LEARNING_ITEM_TYPE");
   const [form, setForm] = useState({ name: path.name, description: path.description });
+  const [deadlineDays, setDeadlineDays] = useState(
+    CompletionDeadlineInput.fromDays(path.completionDeadlineDays),
+  );
   const firstItemTypeCode = itemTypes.options[0]?.code ?? "";
   const [newItem, setNewItem] = useState({
     title: "",
@@ -551,7 +687,10 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
   );
 
   const saveDetails = () => {
-    vm.updateDetails(path, form);
+    vm.updateDetails(path, {
+      ...form,
+      completionDeadlineDays: CompletionDeadlineInput.toDays(deadlineDays),
+    });
     notifySuccess("msg.learningPath.update.success", { nome: form.name.trim() || path.name });
     onClose();
   };
@@ -593,6 +732,7 @@ function EditPathDialog({ path, onClose }: { path: LearningPath; onClose: () => 
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
+          <DeadlineDaysField id="path-deadline" value={deadlineDays} onChange={setDeadlineDays} />
 
           <div>
             <Label>{t("path.edit.items")}</Label>

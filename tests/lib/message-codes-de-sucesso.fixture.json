@@ -192,6 +192,11 @@
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
       "resposta": "created"
     },
+    "learningPath.enrollment.renew.success": {
+      "rota": "POST /learning-paths/:pathId/enrollments/:professionalId",
+      "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",
+      "resposta": "ok"
+    },
     "learningPath.item.add.success": {
       "rota": "POST /learning-paths/:id/items",
       "arquivo": "src/modules/learning-paths/infrastructure/controllers/learning-paths.controller.ts",

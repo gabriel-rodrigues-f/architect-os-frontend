@@ -57,13 +57,18 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
 // porta legada que criava profissional sem conta; a tradução foi junto.
 // 2026-09-06: 63 -> 67 — os quatro atos da solicitação de transferência de time.
 /**
- * Dono (2026-09-08) — +1: `team.careerLadder.define.success`, a estrutura de
+ * Duas fatias da mesma noite entraram juntas e cada uma trouxe um código, por
+ * isso a catraca sobe 67 → 69: `team.careerLadder.define.success` (a estrutura
+ * de níveis do time) e `learningPath.enrollment.renew.success` (a reinscrição
+ * de quem estourou o prazo da trilha).
+ *
+ * Dono (2026-09-08) — `team.careerLadder.define.success`, a estrutura de
  * níveis do time. A cópia foi tirada do backend DA MESMA FATIA; enquanto ela
  * não estiver integrada na main do backend, o aviso oportunista de procedência
  * (o último `it` deste arquivo) acusa a diferença — é exatamente o que ele
  * existe para fazer, e ele silencia sozinho quando os dois repos sobem juntos.
  */
-const CODIGOS_ESPERADOS = 68;
+const CODIGOS_ESPERADOS = 69;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 

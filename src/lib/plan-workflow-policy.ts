@@ -6,7 +6,6 @@ export type PlanStatus = DevelopmentPlan["status"];
 export interface PlanActorReach {
   readonly actsForProfessional: boolean;
   readonly isLeadOfProfessional: boolean;
-  readonly isAssignedTechLead: boolean;
 }
 
 export class PlanWorkflowPolicy {
@@ -31,16 +30,20 @@ export class PlanWorkflowPolicy {
     return this.status === "Approved" && this.reach.actsForProfessional;
   }
 
+  /**
+   * Fatia PRAZOS, item 4 — reabrir é de QUEM LIDERA a pessoa (gerente ou tech
+   * lead) e do administrador: a mesma liderança que conclui, e a mesma
+   * pergunta que o backend faz (`reopensDevelopmentPlanOf`). Perguntava pelo
+   * vínculo estrito de tech lead e recusava o gerente numa ação que a régua
+   * lhe dá (`papeis-2026-09-06.md` §3).
+   */
   get canReopen(): boolean {
-    return this.status === "Completed" && this.reach.isAssignedTechLead;
+    return this.status === "Completed" && this.reach.actsForProfessional;
   }
 
-  get ownerSeesLockedMessage(): boolean {
-    return (
-      this.status === "Completed" &&
-      this.reach.actsForProfessional &&
-      !this.reach.isAssignedTechLead
-    );
+  /** Quem lê um PDI concluído sem poder reabri-lo merece saber quem reabre. */
+  get seesCompletedWithoutReopen(): boolean {
+    return this.status === "Completed" && !this.canReopen;
   }
 
   get canEditDiagnostic(): boolean {

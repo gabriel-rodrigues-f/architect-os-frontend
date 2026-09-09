@@ -9,6 +9,7 @@ import type {
   CompetencyRemovalSummary,
 } from "./gateways/catalog.gateway";
 import type { TextTemplateRecord } from "./gateways/config.gateway";
+import type { LearningPathPatch } from "./gateways/learning.gateway";
 import type {
   Professional,
   Assessment,
@@ -230,13 +231,10 @@ export interface Api extends AppState {
   removeCycle: (id: string) => void;
   openAssessment: (professionalId: string, cycleId: string) => Promise<Assessment>;
   setAssessmentStatus: (id: string, status: Assessment["status"]) => Promise<Assessment>;
-  updateLearningPath: (
-    id: string,
-    patch: Partial<
-      Pick<LearningPath, "name" | "description" | "competencyIds" | "assignedTo" | "items">
-    >,
-  ) => void;
+  updateLearningPath: (id: string, patch: LearningPathPatch) => void;
   removeLearningPath: (id: string, onConfirmed?: () => void) => void;
+  /** Fatia PRAZOS: inscrever de novo quem estourou o prazo da trilha. */
+  renewLearningPathEnrollment: (pathId: string, professionalId: string) => Promise<LearningPath>;
   addLearningPathItem: (pathId: string, item: LearningPathItem) => void;
   removeLearningPathItem: (pathId: string, itemId: string) => void;
   addAssessmentComment: (
@@ -913,6 +911,17 @@ export function buildApi(
       runner.command(
         () => api.createLearningPath(p),
         (created) => (s) => ({ ...s, learningPaths: [created, ...s.learningPaths] }),
+      ),
+
+    renewLearningPathEnrollment: (pathId, professionalId) =>
+      runner.command(
+        () => api.renewLearningPathEnrollment(pathId, professionalId),
+        (renewed) => (estado) => ({
+          ...estado,
+          learningPaths: estado.learningPaths.map((trilha) =>
+            trilha.id === pathId ? renewed : trilha,
+          ),
+        }),
       ),
 
     updateLearningItemProgress: (pathId, professionalId, itemId, progress) => {

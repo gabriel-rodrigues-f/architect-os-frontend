@@ -319,12 +319,23 @@ export interface LearningItemProgress {
   progress: number;
 }
 
+/** Fatia PRAZOS: quem está inscrito numa trilha, e desde quando. */
+export interface LearningPathEnrollment {
+  professionalId: string;
+  enrolledAt: string;
+}
+
 export interface LearningPath {
   id: string;
   name: string;
   description: string;
   competencyIds: string[];
+  /** Quem está inscrito, por id — projeção de `enrollments`. */
   assignedTo: string[];
+  /** Quem está inscrito e desde quando — o que o prazo precisa saber. */
+  enrollments: LearningPathEnrollment[];
+  /** Dias para concluir, contados do ingresso de cada inscrito. Nulo = sem prazo. */
+  completionDeadlineDays: number | null;
   items: LearningPathItem[];
 
   progress: LearningItemProgress[];

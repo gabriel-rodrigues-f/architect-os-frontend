@@ -24,6 +24,8 @@ const path = (overrides: Partial<LearningPath> = {}): LearningPath => ({
   description: "",
   competencyIds: [],
   assignedTo: [],
+  enrollments: [],
+  completionDeadlineDays: null,
   items: [],
   progress: [],
   createdBy: "ana@company.com",

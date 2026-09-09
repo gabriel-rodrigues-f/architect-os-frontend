@@ -12,7 +12,6 @@ import { PlanWorkflowPolicy, type PlanActorReach } from "@/lib/plan-workflow-pol
 const reach = (parcial: Partial<PlanActorReach> = {}): PlanActorReach => ({
   actsForProfessional: false,
   isLeadOfProfessional: false,
-  isAssignedTechLead: false,
   ...parcial,
 });
 
@@ -64,31 +63,46 @@ describe("PlanWorkflowPolicy", () => {
     });
   });
 
+  /**
+   * FATIA PRAZOS, item 4 — reabrir é de QUEM LIDERA (gerente ou tech lead) e
+   * do administrador, a mesma liderança que conclui. A tela dizia "Somente o
+   * Tech Lead responsável pode reabri-lo", e dizia a verdade sobre o backend
+   * de então: os dois perguntavam pelo vínculo estrito de tech lead e
+   * recusavam o gerente numa ação que a régua lhe dá.
+   */
   describe("reabrir", () => {
-    it("o tech lead atribuído reabre o plano Completed, e só nele", () => {
+    it("quem age pela pessoa reabre o plano Completed, e só nele — gerente, tech lead ou administrador", () => {
       for (const status of STATUSES) {
-        const policy = new PlanWorkflowPolicy(status, reach({ isAssignedTechLead: true }));
+        const policy = new PlanWorkflowPolicy(status, reach({ actsForProfessional: true }));
         expect(policy.canReopen).toBe(status === "Completed");
       }
     });
 
-    it("o dono do plano concluído não o reabre — vê a mensagem de travado", () => {
-      const policy = new PlanWorkflowPolicy("Completed", reach({ actsForProfessional: true }));
+    it("reabrir e concluir respondem à MESMA liderança", () => {
+      const lideranca = new PlanWorkflowPolicy("Completed", reach({ actsForProfessional: true }));
+      const semAlcance = new PlanWorkflowPolicy("Completed", reach());
+
+      expect(lideranca.canReopen).toBe(true);
+      expect(semAlcance.canReopen).toBe(false);
+    });
+
+    it("quem não age pela pessoa lê o plano concluído e a tela explica quem reabre", () => {
+      const policy = new PlanWorkflowPolicy("Completed", reach());
+
       expect(policy.canReopen).toBe(false);
-      expect(policy.ownerSeesLockedMessage).toBe(true);
+      expect(policy.seesCompletedWithoutReopen).toBe(true);
     });
 
-    it("o tech lead atribuído que também age pelo profissional não vê a mensagem de travado", () => {
-      const policy = new PlanWorkflowPolicy(
-        "Completed",
-        reach({ actsForProfessional: true, isAssignedTechLead: true }),
-      );
-      expect(policy.ownerSeesLockedMessage).toBe(false);
+    it("quem PODE reabrir não vê o aviso — ele tem o botão", () => {
+      const policy = new PlanWorkflowPolicy("Completed", reach({ actsForProfessional: true }));
+
+      expect(policy.seesCompletedWithoutReopen).toBe(false);
     });
 
-    it("plano não concluído não mostra mensagem de travado a ninguém", () => {
-      const policy = new PlanWorkflowPolicy("Approved", reach({ actsForProfessional: true }));
-      expect(policy.ownerSeesLockedMessage).toBe(false);
+    it("plano não concluído não mostra o aviso a ninguém", () => {
+      for (const status of ["Draft", "Approved"] as const) {
+        expect(new PlanWorkflowPolicy(status, reach()).seesCompletedWithoutReopen).toBe(false);
+      }
     });
   });
 

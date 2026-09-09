@@ -21,7 +21,7 @@ import { I18nProvider } from "@/lib/i18n";
 function notice(overrides: Partial<Notice>): Notice {
   return {
     id: "notice-1",
-    eventType: "pdi.item.dueSoon",
+    eventType: "development-item.deadline-approaching",
     title: "Item de PDI vence em 3 dias",
     link: "/development-plans?professionalId=ana",
     occurredAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
