@@ -79,6 +79,17 @@ const calibracaoVazia: FetchRoute = (href) =>
     ? jsonResponse({ cycleId: "2026-h2", evaluators: [], overall: { average: null } })
     : undefined;
 
+/**
+ * Fatia CALIBRAÇÃO — a tela PERGUNTA se há provedor de linguagem natural
+ * antes de desenhar o seletor e o botão. Sem esta resposta não há assistente
+ * nenhum na tela, e é isso que o caso "sem provedor" de
+ * `calibracao-se-explica.test.tsx` afirma pelo outro lado.
+ */
+const leituraConfigurada: FetchRoute = (href) =>
+  href.endsWith(apiPath("/assistants/availability"))
+    ? jsonResponse({ naturalLanguageReading: true })
+    : undefined;
+
 beforeEach(() => {
   window.localStorage.setItem("synapse:locale", "pt");
   fetchMock.mockReset();
@@ -96,6 +107,7 @@ describe("calibração — a leitura de apoio é da pessoa escolhida", () => {
       user: fixtureAssignedManagerUser,
       routes: [
         calibracaoVazia,
+        leituraConfigurada,
         rotaDeIa("calibration-assistance", () =>
           jsonResponse(apuracao("A diferença vem de dois avaliadores com réguas diferentes.")),
         ),

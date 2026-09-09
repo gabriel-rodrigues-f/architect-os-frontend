@@ -316,6 +316,15 @@ export const workAssistanceResponseSchema = z.object({
   reading: z.string(),
 });
 
+/**
+ * A pergunta que a tela faz ANTES de desenhar o botão de leitura de apoio:
+ * esta instalação TEM provedor de linguagem natural? Um campo só, e ele fala
+ * da leitura — não do fornecedor, do modelo nem do estado do socket.
+ */
+export const assistantsAvailabilityResponseSchema = z.object({
+  naturalLanguageReading: z.boolean(),
+});
+
 export const stagnationAlertResponseSchema = z.object({
   subject: z.string(),
   signals: z.array(z.string()),

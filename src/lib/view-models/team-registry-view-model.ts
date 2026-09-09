@@ -6,6 +6,7 @@ import type { TeamSummary } from "../gateways/teams.gateway";
 import { RefusalNumber } from "../refusal-number";
 import type { UiAuthorizationPolicy } from "../scope";
 import { defaultNameFormatter } from "../text";
+import { TeamNames } from "./team-names";
 
 export const TEAM_STATUS_FILTERS = ["active", "inactive", "all"] as const;
 export type TeamStatusFilter = (typeof TEAM_STATUS_FILTERS)[number];
@@ -93,9 +94,9 @@ export class TeamRegistryViewModel {
       .sort(defaultNameFormatter.byName);
   }
 
+  /** Delegado a `TeamNames` — a busca do nome do time mora num lugar só. */
   teamNameOf(teamId: string | null | undefined, teams: readonly TeamSummary[]): string | null {
-    if (teamId == null) return null;
-    return teams.find((team) => team.id === teamId)?.name ?? null;
+    return TeamNames.of(teams).nameOf(teamId);
   }
 
   /**
