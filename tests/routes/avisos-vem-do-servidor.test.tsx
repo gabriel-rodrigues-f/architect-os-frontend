@@ -51,13 +51,19 @@ const NoticesPage = NoticesRoute.options.component as () => ReactNode;
 const AVISO_DO_TIME = {
   id: "aviso-do-time-do-lead",
   eventType: "mentoring.recorded",
-  title: "Mentoria registrada para Bruno Almeida",
+  wording: { subjectName: "Bruno Almeida" },
   link: "/mentoring",
   occurredAt: "2026-08-29T12:00:00.000Z",
   readAt: null,
   professionalId: "demo-bruno-almeida",
   teamId: "time-do-lead",
 };
+
+/**
+ * A frase que a TELA monta a partir do tipo e das peças (dono, 2026-09-08). O
+ * servidor não a manda mais: é este teste que prova que ela nasce aqui.
+ */
+const FRASE_DO_AVISO = "Mentoria registrada para Bruno Almeida";
 
 const caixaDoServidor = (notices: unknown[], unreadCount: number): FetchRoute => {
   const rota: FetchRoute = (href, init) =>
@@ -106,14 +112,14 @@ describe("o sino do lead mostra a caixa que o servidor devolveu", () => {
     montaSessaoDoLead(caixaDoServidor([AVISO_DO_TIME], 1));
     renderWithApp(<NoticeBell />);
     await abreOSino();
-    expect(await screen.findByText(AVISO_DO_TIME.title)).toBeTruthy();
+    expect(await screen.findByText(FRASE_DO_AVISO)).toBeTruthy();
   });
 
   it("não mostra nada além do que o servidor devolveu", async () => {
     montaSessaoDoLead(caixaDoServidor([AVISO_DO_TIME], 1));
     renderWithApp(<NoticeBell />);
     await abreOSino();
-    await screen.findByText(AVISO_DO_TIME.title);
+    await screen.findByText(FRASE_DO_AVISO);
     expect(
       screen.getAllByText(/registrada|concluída|espera revisão|parada|rascunho/i),
     ).toHaveLength(1);
@@ -144,7 +150,7 @@ describe("as escritas de aviso endereçam só a caixa de quem chama", () => {
     montaSessaoDoLead(caixaDoServidor([AVISO_DO_TIME], 1));
     renderWithApp(<NoticeBell />);
     await abreOSino();
-    await userEvent.click(await screen.findByText(AVISO_DO_TIME.title));
+    await userEvent.click(await screen.findByText(FRASE_DO_AVISO));
     const escritas = escritasDeAviso();
     expect(escritas.map((call) => new URL(call.href).pathname)).toEqual([
       apiPath(`/notices/${AVISO_DO_TIME.id}/read`),
@@ -154,7 +160,7 @@ describe("as escritas de aviso endereçam só a caixa de quem chama", () => {
   it("marcar tudo como lido não carrega destinatário nenhum", async () => {
     montaSessaoDoLead(caixaDoServidor([AVISO_DO_TIME], 1));
     renderWithApp(<NoticesPage />);
-    await screen.findByText(AVISO_DO_TIME.title);
+    await screen.findByText(FRASE_DO_AVISO);
     await userEvent.click(screen.getByRole("button", { name: /marcar tod|mark all/i }));
     const escritas = escritasDeAviso().filter((call) => call.href.includes("read-all"));
     expect(escritas).toHaveLength(1);

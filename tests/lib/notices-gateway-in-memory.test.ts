@@ -45,7 +45,7 @@ const techLead: NoticesViewer = {
   memberships: [{ teamId: REAL_TEAM_ID, role: "tech_lead" }],
 };
 const gerente: NoticesViewer = {
-  role: "tech_lead",
+  role: "manager",
   professionalId: null,
   memberships: [{ teamId: REAL_TEAM_ID, role: "manager" }],
 };
@@ -156,8 +156,8 @@ describe("InMemoryNoticesGateway — recorte por destinatário (o mock É o serv
   it("gerente do time recebe o mesmo escopo de time que o tech lead", async () => {
     const gestorPage = await gatewayFor(gerente).notices({ status: "all" });
     const leadPage = await gatewayFor(techLead).notices({ status: "all" });
-    expect(gestorPage.notices.map((item) => item.title)).toEqual(
-      leadPage.notices.map((item) => item.title),
+    expect(gestorPage.notices.map((item) => item.id)).toEqual(
+      leadPage.notices.map((item) => item.id),
     );
   });
 
@@ -237,12 +237,12 @@ describe("InMemoryNoticesGateway — a fixture fala os ids do seed real", () => 
  * `not.toBe` que passa enquanto o dado vaza.
  */
 describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão", () => {
-  const TITULO_ALHEIO = "Avaliação de Fulano do Time Vizinho está parada";
+  const NOME_ALHEIO = "Fulano do Time Vizinho";
 
   const avisoDeOutroTime: Notice = {
     id: "aviso-de-outro-time",
     eventType: "assessment.stalled",
-    title: TITULO_ALHEIO,
+    wording: { subjectName: NOME_ALHEIO },
     link: "/assessments",
     occurredAt: new Date().toISOString(),
     readAt: null,
@@ -253,7 +253,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
   const avisoDoTimeEmDemonstracao: Notice = {
     id: "aviso-do-time-do-lead",
     eventType: "team-transfer.requested",
-    title: "Carla Souza pediu transferência para o time de Dados",
+    wording: { subjectName: "Carla Souza", toTeamName: "Dados" },
     link: "/professionals/demo-carla-souza",
     occurredAt: new Date(Date.now() - 60_000).toISOString(),
     readAt: null,
@@ -284,8 +284,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
     expect(
       page.notices.some((item) => item.eventType === "development-item.deadline-approaching"),
     ).toBe(false);
-    expect(page.notices.some((item) => item.title.includes("Workshop de Clean Core"))).toBe(false);
-    expect(page.notices.some((item) => item.title.includes("PDI"))).toBe(false);
+    expect(JSON.stringify(page.notices)).not.toContain("Workshop de Clean Core");
   });
 
   it("aviso de time que o lead NÃO lidera não vaza — asserção pelo CONTEÚDO", async () => {
@@ -294,9 +293,9 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
       [avisoDeOutroTime, avisoDoTimeEmDemonstracao],
     );
     const page = await gateway.notices({ status: "all" });
-    const titulos = page.notices.map((item) => item.title);
-    expect(titulos).toContain(avisoDoTimeEmDemonstracao.title);
-    expect(titulos).not.toContain(TITULO_ALHEIO);
+    const nomes = page.notices.map((item) => item.wording.subjectName);
+    expect(nomes).toContain("Carla Souza");
+    expect(nomes).not.toContain(NOME_ALHEIO);
     expect(page.unreadCount).toBe(1);
   });
 
@@ -314,7 +313,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
     await gateway.markAllNoticesRead();
     viewer = doTimeVizinho;
     const page = await gateway.notices({ status: "unread" });
-    expect(page.notices.map((item) => item.title)).toContain(TITULO_ALHEIO);
+    expect(page.notices.map((item) => item.wording.subjectName)).toContain(NOME_ALHEIO);
   });
 
   it("o aviso que já traz o uuid real do time alcança o lead daquele time", async () => {
@@ -325,7 +324,7 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
     };
     const gateway = new InMemoryNoticesGateway(() => Promise.resolve(techLead), [avisoComUuidReal]);
     const page = await gateway.notices({ status: "all" });
-    expect(page.notices.map((item) => item.title)).toContain(TITULO_ALHEIO);
+    expect(page.notices.map((item) => item.wording.subjectName)).toContain(NOME_ALHEIO);
   });
 
   it("quem não lidera time nenhum não herda o escopo do time pelo papel", async () => {
@@ -355,13 +354,13 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
  * caixa do vizinho —, nunca de referência.
  */
 describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recorte", () => {
-  const TITULO_ALHEIO = "Avaliação de Fulano do Time Vizinho está parada";
+  const NOME_ALHEIO = "Fulano do Time Vizinho";
   const ID_ALHEIO = "aviso-de-outro-time";
 
   const avisoDeOutroTime: Notice = {
     id: ID_ALHEIO,
     eventType: "assessment.stalled",
-    title: TITULO_ALHEIO,
+    wording: { subjectName: NOME_ALHEIO },
     link: "/assessments",
     occurredAt: new Date().toISOString(),
     readAt: null,
@@ -372,7 +371,7 @@ describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recort
   const avisoDoTimeEmDemonstracao: Notice = {
     id: "aviso-do-time-do-lead",
     eventType: "team-transfer.requested",
-    title: "Carla Souza pediu transferência para o time de Dados",
+    wording: { subjectName: "Carla Souza", toTeamName: "Dados" },
     link: "/professionals/demo-carla-souza",
     occurredAt: new Date(Date.now() - 60_000).toISOString(),
     readAt: null,
@@ -400,7 +399,7 @@ describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recort
     await gateway.markNoticeRead(ID_ALHEIO);
     olharComo(doTimeVizinho);
     const page = await gateway.notices({ status: "unread" });
-    expect(page.notices.map((item) => item.title)).toContain(TITULO_ALHEIO);
+    expect(page.notices.map((item) => item.wording.subjectName)).toContain(NOME_ALHEIO);
   });
 
   it("o member não marca como lido o aviso do time — só alcança os próprios", async () => {
@@ -418,7 +417,7 @@ describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recort
     const { gateway } = comDoisTimes();
     await gateway.markNoticeRead(avisoDoTimeEmDemonstracao.id);
     const page = await gateway.notices({ status: "unread" });
-    expect(page.notices.map((item) => item.title)).not.toContain(avisoDoTimeEmDemonstracao.title);
+    expect(page.notices.map((item) => item.wording.subjectName)).not.toContain("Carla Souza");
   });
 
   it("id que não existe em base nenhuma não derruba nem inventa leitura", async () => {
@@ -426,5 +425,92 @@ describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recort
     await gateway.markNoticeRead("id-que-nao-existe");
     const page = await gateway.notices({ status: "unread" });
     expect(page.unreadCount).toBe(1);
+  });
+});
+
+/**
+ * O ALCANCE DE DOIS CHAPÉUS, QUE A POLÍTICA MATOU (achado da fatia AVISOS).
+ *
+ * `notices.gateway.ts` tinha uma lista de papéis escrita à mão —
+ * `["tech_lead", "manager"]` — e ela decidia de quais times a pessoa vê aviso.
+ * A lista olhava o VÍNCULO e ignorava o PAPEL de quem está lendo, e isso
+ * ressuscitava, só na visibilidade, a conta de dois chapéus que o dono matou
+ * em 2026-09-08 (papéis, adendo, itens 3 e 4: "um time pode ter mais de um
+ * tech lead, mas nunca um tech lead pode estar em mais de um time"; o alcance
+ * de quem lidera são os times do PRÓPRIO papel — `scopeGrantingTeamsOf`).
+ *
+ * O caso concreto: um GERENTE que ficou com um vínculo de tech lead num time
+ * onde não é gerente. A régua diz que ele não alcança aquele time; a lista à
+ * mão o deixava ler os avisos de lá.
+ *
+ * A asserção é de CONTEÚDO — o nome que não pode aparecer —, e não de
+ * referência: na onda 19 o QA pegou exatamente um `not.toBe` que passava
+ * enquanto o dado vazava.
+ */
+describe("InMemoryNoticesGateway — a visibilidade pergunta à política, não a uma lista", () => {
+  const TIME_DO_OUTRO_CHAPEU = "time-onde-ele-e-tech-lead";
+  const NOME_DE_LA = "Pessoa do time do outro chapeu";
+
+  const avisoDeLa: Notice = {
+    id: "aviso-do-outro-chapeu",
+    eventType: "assessment.stalled",
+    wording: { subjectName: NOME_DE_LA },
+    link: "/assessments",
+    occurredAt: new Date().toISOString(),
+    readAt: null,
+    professionalId: "profissional-do-outro-chapeu",
+    teamId: TIME_DO_OUTRO_CHAPEU,
+  };
+
+  /** Gerente de um time, e com um vínculo de TECH LEAD sobrando noutro. */
+  const gerenteComVinculoDeTechLead: NoticesViewer = {
+    role: "manager",
+    professionalId: null,
+    memberships: [
+      { teamId: REAL_TEAM_ID, role: "manager" },
+      { teamId: TIME_DO_OUTRO_CHAPEU, role: "tech_lead" },
+    ],
+  };
+
+  it("o gerente NÃO lê os avisos do time onde o vínculo dele é de tech lead", async () => {
+    const gateway = new InMemoryNoticesGateway(
+      () => Promise.resolve(gerenteComVinculoDeTechLead),
+      [avisoDeLa],
+    );
+
+    const page = await gateway.notices({ status: "all" });
+
+    expect(page.notices.map((item) => item.wording.subjectName)).not.toContain(NOME_DE_LA);
+    expect(page.unreadCount).toBe(0);
+  });
+
+  it("e nem o marca como lido — o alcance é o mesmo nas duas pontas", async () => {
+    let viewer: NoticesViewer = gerenteComVinculoDeTechLead;
+    const gateway = new InMemoryNoticesGateway(() => Promise.resolve(viewer), [avisoDeLa]);
+
+    await gateway.markNoticeRead(avisoDeLa.id);
+    await gateway.markAllNoticesRead();
+
+    viewer = {
+      role: "tech_lead",
+      professionalId: null,
+      memberships: [{ teamId: TIME_DO_OUTRO_CHAPEU, role: "tech_lead" }],
+    };
+    const page = await gateway.notices({ status: "unread" });
+    expect(page.notices.map((item) => item.wording.subjectName)).toContain(NOME_DE_LA);
+  });
+
+  /** O tech lead daquele time continua lendo — o conserto fecha, não abre. */
+  it("o tech lead DAQUELE time continua alcançando o aviso de lá", async () => {
+    const daquele: NoticesViewer = {
+      role: "tech_lead",
+      professionalId: null,
+      memberships: [{ teamId: TIME_DO_OUTRO_CHAPEU, role: "tech_lead" }],
+    };
+    const gateway = new InMemoryNoticesGateway(() => Promise.resolve(daquele), [avisoDeLa]);
+
+    const page = await gateway.notices({ status: "all" });
+
+    expect(page.notices.map((item) => item.wording.subjectName)).toContain(NOME_DE_LA);
   });
 });

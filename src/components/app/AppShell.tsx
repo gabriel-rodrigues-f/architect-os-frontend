@@ -2,7 +2,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
-import { DailyGreetingToast } from "@/components/app/DailyGreetingToast";
+import { WelcomeNoticeToast } from "@/components/app/WelcomeNoticeToast";
 import { useSelectionEmptyState } from "@/components/app/EmptySelection";
 import { NavGroupSection } from "@/components/app/NavGroupSection";
 import { NavLinkItem } from "@/components/app/NavLinkItem";
@@ -443,7 +443,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <DailyGreetingToast />
+          <WelcomeNoticeToast />
 
           <PageFrame
             id={MAIN_CONTENT_ID}

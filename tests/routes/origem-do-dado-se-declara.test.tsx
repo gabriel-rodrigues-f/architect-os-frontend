@@ -85,7 +85,7 @@ const avisosDaOrganizacao = {
     {
       id: "aviso-real",
       eventType: "assessment.stalled",
-      title: "Avaliação real está parada",
+      wording: { subjectName: "Pessoa do servidor" },
       link: "/assessments",
       occurredAt: "2026-08-29T12:00:00.000Z",
       readAt: null,
@@ -95,6 +95,9 @@ const avisosDaOrganizacao = {
   ],
   unreadCount: 1,
 };
+
+/** A frase que a TELA monta com o tipo e as peças (dono, 2026-09-08). */
+const FRASE_DO_SERVIDOR = "Avaliação de Pessoa do servidor segue em rascunho, sem envio";
 
 const calibrationRoute: FetchRoute = (href) =>
   href.includes(apiPath("/calibration")) ? jsonResponse(calibracaoDaOrganizacao) : undefined;
@@ -171,27 +174,27 @@ describe("o sino de avisos declara a origem dos avisos que está mostrando", () 
     registraGatewayDeDemonstracao();
     renderWithApp(<NoticeBell />);
     await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-    await screen.findByText(/Carla Souza pediu transferência/);
+    await screen.findByText(/transferência de Carla Souza/);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 
   it("com o container de produção, o sino não declara nada", async () => {
     renderWithApp(<NoticeBell />);
     await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-    await screen.findByText("Avaliação real está parada");
+    await screen.findByText(FRASE_DO_SERVIDOR);
     expect(screen.queryByText(DECLARACAO)).toBeNull();
   });
 
   it("a central de avisos inteira declara a origem se um mock voltar a serví-la", async () => {
     registraGatewayDeDemonstracao();
     renderWithApp(<NoticesPage />);
-    await screen.findByText(/Carla Souza pediu transferência/);
+    await screen.findByText(/transferência de Carla Souza/);
     expect(screen.getByText(DECLARACAO)).toBeTruthy();
   });
 
   it("com o container de produção, a central de avisos não declara nada", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Avaliação real está parada");
+    await screen.findByText(FRASE_DO_SERVIDOR);
     expect(screen.queryByText(DECLARACAO)).toBeNull();
   });
 });

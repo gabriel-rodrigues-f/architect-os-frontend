@@ -20,7 +20,7 @@ function notice(overrides: Partial<Notice>): Notice {
   return {
     id: "notice-1",
     eventType: "assessment.completed",
-    title: "Avaliação de Ana Martins foi concluída",
+    wording: { subjectName: "Ana Martins" },
     link: "/link-do-servidor",
     occurredAt: "2026-08-28T09:00:00.000Z",
     readAt: null,

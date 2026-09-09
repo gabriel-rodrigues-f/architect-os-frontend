@@ -5,15 +5,17 @@ import {
   CircleAlert,
   FileSearch,
   GraduationCap,
+  HandHeart,
 } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
 
+import { TextLink } from "@/components/app/TextLink";
 import { semanticTone } from "@/components/app/ui-bits";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Notice } from "@/lib/gateways/notices.gateway";
 import { useI18n } from "@/lib/i18n";
 import { defaultNoticeDestination } from "@/lib/notice-destination";
+import { defaultNoticePhrase } from "@/lib/notice-phrase";
 import {
   defaultNoticeRoutingPolicy,
   type NoticeIcon,
@@ -28,6 +30,7 @@ const ICON_BY_KIND: Record<NoticeIcon, typeof Bell> = {
   review: FileSearch,
   completed: CheckCircle2,
   mentoring: GraduationCap,
+  welcome: HandHeart,
   generic: Bell,
 };
 
@@ -56,14 +59,28 @@ class NoticeToneChips {
 /**
  * A LINHA DE UM AVISO, compartilhada pelo sino e pela tela (regra 6).
  *
- * Dono (2026-09-08), duas decisões que moram aqui:
- *   1. o CLIQUE NA LINHA marca como lida — e só isso. Quem quer ir para a
- *      tela do aviso clica no hiperlink "Clique para visualizar", que
- *      NAVEGA E MARCA. Os dois atos são elementos irmãos, nunca aninhados:
- *      botão dentro de botão não existe em HTML, e é assim que a marcação
- *      não dispara duas vezes num clique só;
- *   2. a DATA saiu do cabeçalho de grupo e entrou na linha, ao lado do
- *      título; o "há {tanto tempo}" continua embaixo.
+ * O TEXTO DO AVISO É O LINK (dono, 2026-09-08): *"ao invés de mantermos um
+ * texto 'Clique para visualizar', vamos inserir um hiperlink no próprio texto
+ * descritivo da notificação. Se o usuário clicar na linha, apenas seta como
+ * lido; se clicar no texto, seta como lida e navega."*
+ *
+ * Os dois gestos convivem numa linha só, e a forma é o que os separa:
+ *
+ *   - a LINHA é uma caixa clicável que só marca como lida. Ela deixou de ser
+ *     um `<button>` porque link dentro de botão não existe em HTML — conteúdo
+ *     interativo dentro de conteúdo interativo é DOM inválido, e o navegador
+ *     desmonta a árvore de um jeito imprevisível;
+ *   - o TÍTULO é um `<a>` de verdade: endereço na barra de status, alcançável
+ *     por Tab, abrível em aba nova. O clique dele PARA A PROPAGAÇÃO, senão os
+ *     dois gestos disparariam no mesmo clique e a marcação sairia duas vezes.
+ *
+ * O que o teclado perde e onde ele recupera, dito sem arredondar: marcar como
+ * lida SEM navegar deixou de ter alvo próprio de foco — é gesto de ponteiro.
+ * Quem navega por teclado marca junto ao abrir (o link), ou usa a seleção da
+ * tela de Avisos e o "Marcar todos como lidos", que continuam.
+ *
+ * A DATA fica na linha, ao lado do título (dono, 2026-09-08); o "há {tanto
+ * tempo}" continua embaixo.
  */
 export function NoticeList({
   notices,
@@ -78,7 +95,7 @@ export function NoticeList({
   unreadOf: (notice: Notice) => boolean;
   /** O clique na linha: marcar como lida. */
   onOpen: (notice: Notice) => void;
-  /** O clique no hiperlink: ir para o destino daquele aviso — e marcar. */
+  /** O clique no título: ir para o destino daquele aviso — e marcar. */
   onNavigate: (notice: Notice, destination: string) => void;
   itemWrapper?: (element: ReactElement) => ReactNode;
   /** Com os dois, a linha ganha caixa de seleção; sem eles, não há seleção. */
@@ -96,7 +113,7 @@ export function NoticeList({
               className="ml-2"
               checked={selectedOf(notice)}
               onCheckedChange={() => onToggleSelection(notice)}
-              aria-label={t("notices.select", { titulo: notice.title })}
+              aria-label={t("notices.select", { titulo: defaultNoticePhrase.of(notice, t) })}
             />
           )}
           {itemWrapper(
@@ -104,45 +121,13 @@ export function NoticeList({
               notice={notice}
               unread={unreadOf(notice)}
               onOpen={onOpen}
+              onNavigate={onNavigate}
               className="min-w-0 flex-1"
             />,
           )}
-          {itemWrapper(<NoticeDestinationLink notice={notice} onNavigate={onNavigate} />)}
         </li>
       ))}
     </ul>
-  );
-}
-
-/**
- * O HIPERLINK DA LINHA. É um `<a>` de verdade — endereço visível na barra de
- * status, alcançável por Tab, abrível em aba nova pelo navegador —, e o
- * clique comum é interceptado para navegar dentro da aplicação sem recarregar
- * a página. A tinta vem da variante `link` do `Button`, o único lugar da casa
- * onde o sublinhado no ponteiro mora.
- */
-function NoticeDestinationLink({
-  notice,
-  onNavigate,
-  ...rest
-}: {
-  notice: Notice;
-  onNavigate: (notice: Notice, destination: string) => void;
-} & ComponentPropsWithoutRef<"button">) {
-  const { t } = useI18n();
-  const destination = defaultNoticeDestination.of(notice);
-  return (
-    <Button asChild variant="link" size="sm" {...rest} className={cn("shrink-0", rest.className)}>
-      <a
-        href={destination}
-        onClick={(event) => {
-          event.preventDefault();
-          onNavigate(notice, destination);
-        }}
-      >
-        {t("notices.open")}
-      </a>
-    </Button>
   );
 }
 
@@ -150,27 +135,29 @@ export function NoticeItem({
   notice,
   unread,
   onOpen,
-  ...buttonProps
+  onNavigate,
+  ...rowProps
 }: {
   notice: Notice;
   unread: boolean;
   onOpen: (notice: Notice) => void;
-} & ComponentPropsWithoutRef<"button">) {
+  onNavigate: (notice: Notice, destination: string) => void;
+} & ComponentPropsWithoutRef<"div">) {
   const { t, locale } = useI18n();
   const Icon = ICON_BY_KIND[defaultNoticeRoutingPolicy.iconOf(notice.eventType)];
   const chip = NoticeToneChips.byTone()[defaultNoticeRoutingPolicy.toneOf(notice.eventType)];
   const day = defaultDateFormatter.formatDate(notice.occurredAt, locale);
+  const destination = defaultNoticeDestination.of(notice);
   return (
-    <button
-      type="button"
-      {...buttonProps}
+    <div
+      {...rowProps}
       onClick={(event) => {
-        buttonProps.onClick?.(event);
+        rowProps.onClick?.(event);
         onOpen(notice);
       }}
       className={cn(
-        "flex w-full items-start gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-secondary/60",
-        buttonProps.className,
+        "flex w-full cursor-pointer items-start gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-secondary/60",
+        rowProps.className,
       )}
     >
       <span className={cn("mt-0.5 rounded-md p-1.5", chip)}>
@@ -178,7 +165,16 @@ export function NoticeItem({
       </span>
       <span className="min-w-0 flex-1">
         <span className={cn("block text-sm", unread && "font-medium")}>
-          <span>{notice.title}</span>
+          <TextLink
+            href={destination}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onNavigate(notice, destination);
+            }}
+          >
+            {defaultNoticePhrase.of(notice, t)}
+          </TextLink>
           {day !== null && <span className="text-muted-foreground">{` - ${day}`}</span>}
         </span>
         <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -191,6 +187,6 @@ export function NoticeItem({
           className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"
         />
       )}
-    </button>
+    </div>
   );
 }

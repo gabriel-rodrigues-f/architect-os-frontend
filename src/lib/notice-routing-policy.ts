@@ -1,6 +1,7 @@
 export type NoticeTone = "info" | "warning" | "success";
 
-export type NoticeIcon = "deadline" | "stalled" | "review" | "completed" | "mentoring" | "generic";
+export type NoticeIcon =
+  "deadline" | "stalled" | "review" | "completed" | "mentoring" | "welcome" | "generic";
 
 interface NoticeDecoration {
   tone: NoticeTone;
@@ -17,6 +18,9 @@ const DECORATION_BY_EVENT_TYPE: Record<string, NoticeDecoration> = {
   "team-transfer.requested": { tone: "info", icon: "review" },
   "team-transfer.approved": { tone: "success", icon: "completed" },
   "team-transfer.refused": { tone: "warning", icon: "generic" },
+  // A saudação do primeiro acesso (dono, 2026-09-08): é boa notícia e é única
+  // na vida de cada pessoa — merece o tom de sucesso e um ícone só dela.
+  "welcome.first-access": { tone: "success", icon: "welcome" },
 };
 
 const FALLBACK: NoticeDecoration = { tone: "info", icon: "generic" };

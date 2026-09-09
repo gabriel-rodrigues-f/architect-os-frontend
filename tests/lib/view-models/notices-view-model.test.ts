@@ -18,7 +18,7 @@ function notice(overrides: Partial<Notice>): Notice {
   return {
     id: "notice-1",
     eventType: "development-item.deadline-approaching",
-    title: "Item de PDI vence em 3 dias",
+    wording: { subjectName: "Ana Martins", tally: 3 },
     link: "/development-plans?professionalId=ana",
     occurredAt: "2026-08-28T09:00:00.000Z",
     readAt: null,

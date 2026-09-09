@@ -41,19 +41,36 @@ const fetchMock = vi.fn();
 
 const NoticesPage = NoticesRoute.options.component as () => ReactNode;
 
-const aviso = (id: string, title: string, occurredAt: string) => ({
+const aviso = (id: string, pessoa: string, professionalId: string, occurredAt: string) => ({
   id,
   eventType: "mentoring.recorded",
-  title,
+  wording: { subjectName: pessoa },
   link: "/mentoring",
   occurredAt,
   readAt: null,
-  professionalId: "demo-bruno-almeida",
+  professionalId,
   teamId: "time-do-lead",
 });
 
-const DE_ONTEM = aviso("aviso-de-ontem", "Mentoria de ontem", "2026-08-27T12:00:00.000Z");
-const DE_HOJE = aviso("aviso-de-hoje", "Mentoria de hoje", "2026-08-28T12:00:00.000Z");
+const DE_ONTEM = aviso(
+  "aviso-de-ontem",
+  "Carla Souza",
+  "demo-carla-souza",
+  "2026-08-27T12:00:00.000Z",
+);
+const DE_HOJE = aviso(
+  "aviso-de-hoje",
+  "Bruno Almeida",
+  "demo-bruno-almeida",
+  "2026-08-28T12:00:00.000Z",
+);
+
+/** As frases que a TELA monta a partir do tipo e das peças (dono, 2026-09-08). */
+const FRASE_DE_HOJE = "Mentoria registrada para Bruno Almeida";
+const FRASE_DE_ONTEM = "Mentoria registrada para Carla Souza";
+
+/** A parte da linha que NÃO é o hiperlink — clicar aqui só marca como lida. */
+const DATA_DE_HOJE = "- 28/08/2026";
 
 const caixaDoServidor: FetchRoute = (href, init) =>
   String(href).includes(apiPath("/notices")) && (init?.method ?? "GET").toUpperCase() === "GET"
@@ -90,7 +107,7 @@ async function entrarNaSelecao() {
 describe("a caixa de seleção nasce escondida", () => {
   it("sem clicar em 'Selecionar', nenhuma linha tem caixa — nem a ação de marcar os selecionados", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
+    await screen.findByText(FRASE_DE_HOJE);
 
     expect(screen.queryAllByRole("checkbox")).toEqual([]);
     expect(screen.queryByRole("button", { name: "Marcar selecionados como lidos" })).toBeNull();
@@ -99,11 +116,11 @@ describe("a caixa de seleção nasce escondida", () => {
 
   it("'Selecionar' revela as caixas; sair some com tudo e esquece o que estava marcado", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
+    await screen.findByText(FRASE_DE_HOJE);
 
     await entrarNaSelecao();
     await userEvent.click(
-      screen.getByRole("checkbox", { name: "Selecionar aviso: Mentoria de hoje" }),
+      screen.getByRole("checkbox", { name: `Selecionar aviso: ${FRASE_DE_HOJE}` }),
     );
     expect(screen.getByRole("status").textContent).toBe("1 selecionado(s)");
 
@@ -114,7 +131,7 @@ describe("a caixa de seleção nasce escondida", () => {
     expect(screen.getByRole("status").textContent).toBe("0 selecionado(s)");
     expect(
       screen
-        .getByRole("checkbox", { name: "Selecionar aviso: Mentoria de hoje" })
+        .getByRole("checkbox", { name: `Selecionar aviso: ${FRASE_DE_HOJE}` })
         .getAttribute("data-state"),
     ).toBe("unchecked");
   });
@@ -123,19 +140,19 @@ describe("a caixa de seleção nasce escondida", () => {
 describe("a seleção múltipla marca só os escolhidos", () => {
   it("cada linha tem a própria caixa, nomeada pelo aviso", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
+    await screen.findByText(FRASE_DE_HOJE);
     await entrarNaSelecao();
     expect(
-      screen.getByRole("checkbox", { name: "Selecionar aviso: Mentoria de hoje" }),
+      screen.getByRole("checkbox", { name: `Selecionar aviso: ${FRASE_DE_HOJE}` }),
     ).toBeTruthy();
     expect(
-      screen.getByRole("checkbox", { name: "Selecionar aviso: Mentoria de ontem" }),
+      screen.getByRole("checkbox", { name: `Selecionar aviso: ${FRASE_DE_ONTEM}` }),
     ).toBeTruthy();
   });
 
   it("sem nada selecionado, a ação não age — e a contagem diz zero", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
+    await screen.findByText(FRASE_DE_HOJE);
     await entrarNaSelecao();
     const acao = screen.getByRole("button", { name: "Marcar selecionados como lidos" });
     expect(acao.hasAttribute("disabled")).toBe(true);
@@ -144,10 +161,10 @@ describe("a seleção múltipla marca só os escolhidos", () => {
 
   it("marcar os selecionados escreve SÓ nos escolhidos", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
+    await screen.findByText(FRASE_DE_HOJE);
     await entrarNaSelecao();
     await userEvent.click(
-      screen.getByRole("checkbox", { name: "Selecionar aviso: Mentoria de hoje" }),
+      screen.getByRole("checkbox", { name: `Selecionar aviso: ${FRASE_DE_HOJE}` }),
     );
     expect(screen.getByRole("status").textContent).toBe("1 selecionado(s)");
     await userEvent.click(screen.getByRole("button", { name: "Marcar selecionados como lidos" }));
@@ -156,7 +173,7 @@ describe("a seleção múltipla marca só os escolhidos", () => {
 
   it("a ação de marcar TODOS continua na tela, dentro e fora do modo de seleção", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
+    await screen.findByText(FRASE_DE_HOJE);
     await userEvent.click(screen.getByRole("button", { name: /marcar todos/i }));
     expect(escritasDeLeitura()).toEqual([apiPath("/notices/read-all")]);
 
@@ -166,15 +183,15 @@ describe("a seleção múltipla marca só os escolhidos", () => {
 });
 
 describe("a data entra na linha e some do agrupamento", () => {
-  it("cada linha mostra `título - dd/mm/aaaa`", async () => {
+  it("cada linha mostra `frase - dd/mm/aaaa`", async () => {
     renderWithApp(<NoticesPage />);
-    const linha = await screen.findByRole("button", { name: /Mentoria de hoje/ });
-    expect(linha.textContent).toContain("Mentoria de hoje - 28/08/2026");
+    const link = await screen.findByRole("link", { name: FRASE_DE_HOJE });
+    expect(link.parentElement?.textContent).toBe(`${FRASE_DE_HOJE} ${DATA_DE_HOJE}`);
   });
 
   it("não há mais cabeçalho de data acima de grupo nenhum", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
+    await screen.findByText(FRASE_DE_HOJE);
     for (const cabecalho of screen.queryAllByRole("heading")) {
       expect(cabecalho.textContent ?? "").not.toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
     }
@@ -182,7 +199,7 @@ describe("a data entra na linha e some do agrupamento", () => {
 
   it("o filtro 'Mostrar' continua, e não nasceu filtro de data", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
+    await screen.findByText(FRASE_DE_HOJE);
     expect(screen.getByText("Mostrar")).toBeTruthy();
     expect(screen.queryByLabelText(/data/i)).toBeNull();
   });
@@ -191,22 +208,22 @@ describe("a data entra na linha e some do agrupamento", () => {
 describe("toda linha leva ao destino do aviso", () => {
   it("o hiperlink da linha aponta para a Mentoria filtrada naquela pessoa", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
-    const links = screen.getAllByRole("link", { name: "Clique para visualizar" });
-    expect(links).toHaveLength(2);
+    await screen.findByText(FRASE_DE_HOJE);
+    const links = screen.getAllByRole("link");
+    expect(links.map((link) => link.textContent)).toEqual([FRASE_DE_HOJE, FRASE_DE_ONTEM]);
     expect(links[0]?.getAttribute("href")).toBe("/mentoring?menteeId=demo-bruno-almeida");
   });
 
-  it("clicar na linha marca aquele aviso como lido, por id", async () => {
+  it("clicar na LINHA — fora do texto — marca aquele aviso como lido, por id", async () => {
     renderWithApp(<NoticesPage />);
-    await userEvent.click(await screen.findByText("Mentoria de hoje"));
+    await screen.findByText(FRASE_DE_HOJE);
+    await userEvent.click(screen.getByText(DATA_DE_HOJE));
     expect(escritasDeLeitura()).toEqual([apiPath(`/notices/${DE_HOJE.id}/read`)]);
   });
 
-  it("clicar no hiperlink também marca — uma vez só", async () => {
+  it("clicar no TEXTO também marca — uma vez só", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText("Mentoria de hoje");
-    await userEvent.click(screen.getAllByRole("link", { name: "Clique para visualizar" })[0]!);
+    await userEvent.click(await screen.findByRole("link", { name: FRASE_DE_HOJE }));
     expect(escritasDeLeitura()).toEqual([apiPath(`/notices/${DE_HOJE.id}/read`)]);
   });
 });
