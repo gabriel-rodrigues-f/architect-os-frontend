@@ -9,6 +9,13 @@ export type CareerFileTab = (typeof CAREER_FILE_TABS)[number];
  * A rota-pai da ficha ([FA-08]) lê daqui o que precisa para desenhar o
  * cabeçalho fixo e a negativa de alcance UMA vez, em vez de cada aba montar
  * a mesma composição.
+ *
+ * `isLeadershipTab` MORREU aqui: ela dizia que a pergunta de alcance valia só
+ * para Evolução, Extrato e Roteiro, e a Visão geral abria para qualquer
+ * sessão — segurada apenas pela recusa do servidor nas listagens por pessoa.
+ * Com essas listagens respondendo `200 []` em vez de `403`, a Visão geral
+ * abriria ZERADA sobre quem não se alcança. A pergunta passou a ser uma só,
+ * para as quatro abas, na rota-pai.
  */
 export class CareerFileTabs {
   static readonly ALL = CAREER_FILE_TABS;
@@ -29,15 +36,6 @@ export class CareerFileTabs {
 
   static helpKeyOf(tab: CareerFileTab): CareerFileHelpKey {
     return HELP_KEY[tab];
-  }
-
-  /**
-   * Evolução, Extrato e Roteiro são da própria pessoa e de quem a lidera; a
-   * Visão geral abre para quem lê a ficha — a rota-pai só pergunta o alcance
-   * das abas quando a URL é de uma delas.
-   */
-  static isLeadershipTab(tab: CareerFileTab): boolean {
-    return tab !== "overview";
   }
 }
 

@@ -28,4 +28,9 @@ export * from "./coverage-table-order";
 export * from "./heatmap-row-order";
 export * from "./table-order";
 export * from "./accounts-directory";
-export { ComparisonRadarRows, type ComparisonRadarRow } from "./comparison-radar-rows.js";
+export {
+  RadarRows,
+  type CapabilityMeasure,
+  type ComparisonRadarRow,
+  type CurrentAgainstTargetRow,
+} from "./radar-rows.js";

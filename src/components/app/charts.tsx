@@ -143,31 +143,65 @@ function RadarAxisNotice(props: {
   );
 }
 
+/**
+ * SEM MEDIDA É `null`, NUNCA ZERO — a mesma régua do radar comparativo
+ * (`RadarRows`). Zero é o CENTRO do radar: um eixo sem medida desenhado em
+ * zero afirma "esta pessoa tem zero aqui" e faz a aresta atravessar o
+ * polígono. `null` + `connectNulls` liga os pontos que existem.
+ */
 export interface RadarPoint {
   capability: string;
-  atual: number;
-  alvo: number;
+  atual: number | null;
+  alvo: number | null;
 
   covered?: number;
   total?: number;
 }
 
-const LEVEL_SCALE_MIN = 1;
-const LEVEL_SCALE_MAX = 5;
+/**
+ * A ESCALA DE NÍVEL (1 a 5) E O QUE ELA FAZ COM A AUSÊNCIA.
+ *
+ * Ausência não é zero, e as três perguntas que o radar faz sobre um nível
+ * respondem a essa distinção do mesmo jeito: quem não tem medida não é
+ * espremido para dentro da escala, não é ordenado contra o centro e não vira
+ * um número na tabela de dados.
+ */
+class LevelScale {
+  private static readonly MIN = 1;
+  private static readonly MAX = 5;
+  private static readonly NO_MEASURE = "—";
 
-const clampToLevelScale = (value: number): number =>
-  Math.min(LEVEL_SCALE_MAX, Math.max(LEVEL_SCALE_MIN, value));
+  /** Dentro da escala — e `null` continua `null`. */
+  static clamp(value: number | null): number | null {
+    if (value === null) return null;
+    return Math.min(LevelScale.MAX, Math.max(LevelScale.MIN, value));
+  }
+
+  /**
+   * Quanto o eixo INFORMA, para escolher os que cabem no radar: a distância
+   * entre o que se tem e o que se espera. Eixo com uma medida só é ordenado
+   * pela medida que tem — nunca por uma distância inventada contra o centro.
+   */
+  static distance(point: RadarPoint): number {
+    if (point.atual === null) return point.alvo ?? 0;
+    if (point.alvo === null) return point.atual;
+    return Math.abs(point.alvo - point.atual);
+  }
+
+  /** A célula da tabela de dados: o número, ou o traço de "não há medida". */
+  static cell(value: number | null): string | number {
+    return value ?? LevelScale.NO_MEASURE;
+  }
+}
 
 export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; height?: number }) {
   const { t } = useI18n();
   const [showAll, setShowAll] = useState(false);
-  const visibleData = showAll
-    ? data
-    : topByRelevance(data, (d) => Math.abs(d.alvo - d.atual), MAX_RADAR_AXES);
+  const visibleData = showAll ? data : topByRelevance(data, LevelScale.distance, MAX_RADAR_AXES);
   const plotData = visibleData.map((point) => ({
     ...point,
-    atual: clampToLevelScale(point.atual),
-    alvo: clampToLevelScale(point.alvo),
+    atual: LevelScale.clamp(point.atual),
+    alvo: LevelScale.clamp(point.alvo),
   }));
 
   const atual = t("chart.series.current");
@@ -199,8 +233,13 @@ export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; he
             }
             rows={data.map((d) =>
               withCoverage
-                ? [d.capability, d.atual, d.alvo, `${d.covered ?? 0}/${d.total ?? 0}`]
-                : [d.capability, d.atual, d.alvo],
+                ? [
+                    d.capability,
+                    LevelScale.cell(d.atual),
+                    LevelScale.cell(d.alvo),
+                    `${d.covered ?? 0}/${d.total ?? 0}`,
+                  ]
+                : [d.capability, LevelScale.cell(d.atual), LevelScale.cell(d.alvo)],
             )}
           />
         }

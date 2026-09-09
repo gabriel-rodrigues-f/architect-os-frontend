@@ -137,17 +137,28 @@ describe("guardas de navegação das telas administrativas", () => {
 
 /**
  * Onda 10, T7 — desde o roster fechado (backend `d1edba4`), o perfil fora do
- * escopo NÃO vem no payload de `/state`: a antiga guarda `requireProfessionalReach`
- * nunca mais encontrava o profissional e caía no ramo "não encontrei, libero" —
- * redirect morto, e o teste antigo só ficava verde porque a fixture emitia o
- * payload que o servidor não manda mais. A negação decidida para o mundo
- * recortado é o estado "não encontrado" que a própria tela já tem (fixado em
- * `professional-profile-fora-do-escopo.test.tsx`); aqui se fixa a metade da
- * navegação: a rota RESOLVE, ninguém é jogado para a home.
+ * escopo NÃO vem no payload de `/state`, e a negação decidida para o mundo
+ * recortado era o estado "não encontrado" que a própria tela já tem: a rota
+ * resolvia, ninguém era jogado para a home.
+ *
+ * ISSO MUDOU quando as quatro listagens por pessoa passaram a responder
+ * `200 []` no lugar de `403`. A recusa do servidor era a ÚNICA barreira da
+ * Visão geral, e com lista vazia no lugar dela a ficha abriria ZERADA sobre
+ * alguém que quem olha não alcança — zero não é vazio, é afirmação. A guarda
+ * da ficha (`requireCareerTabsReach`) subiu para a rota-pai e passou a valer
+ * para as QUATRO abas, a Visão geral inclusive.
+ *
+ * O "não encontrado" da tela não morreu: ele é a negativa de quem alcança pelo
+ * PAPEL e não tem a pessoa no estado recortado (`professional-profile-fora-do-
+ * escopo.test.tsx`). O que a guarda barra é quem não alcança nem isso.
  */
 describe("navegação do perfil de profissional no mundo recortado", () => {
-  it("member em perfil fora do escopo permanece na URL — a negação é o 'não encontrado' da tela", async () => {
-    expect(await navegarComoUsuario(fixtureMemberUser, "/professionals/bruno")).toBe(
+  it("member em perfil fora do escopo é devolvido à home — a Visão geral também é guardada", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/professionals/bruno")).toBe("/");
+  });
+
+  it("a conta de liderança abre a ficha de outra pessoa — a guarda é a do papel", async () => {
+    expect(await navegarComoUsuario(fixtureUnassignedTechLeadUser, "/professionals/bruno")).toBe(
       "/professionals/bruno",
     );
   });

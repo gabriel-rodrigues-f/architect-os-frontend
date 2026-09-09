@@ -1,17 +1,31 @@
 import { Link } from "@tanstack/react-router";
 
+import { OutOfReachNote } from "@/components/app/OutOfReachNote";
 import { Bar, Callout, EmptyState, NameList } from "@/components/app/ui-bits";
 import { useI18n } from "@/lib/i18n";
 import type { MissingCompetencyView, RoadmapCoverage } from "@/lib/view-models";
 
+/**
+ * `pathsAreKnown` é a pergunta que faltava. A cobertura é calculada sobre as
+ * trilhas DA PESSOA, uma listagem que passou a responder `200 []` a quem não
+ * a alcança — e, com a lista vazia, TODA competência faltante caía em
+ * "não coberta". A tela então ALERTAVA, em warning, que nenhuma trilha cobre
+ * a pessoa, com a lista inteira de competências dela: uma afirmação forte
+ * construída sobre silêncio. Sem saber as trilhas, não há cobertura a afirmar.
+ */
 export function LearningPathCoverageList({
   coverage,
   professionalId,
+  pathsAreKnown,
 }: {
   coverage: RoadmapCoverage;
   professionalId: string;
+  pathsAreKnown: boolean;
 }) {
   const { t } = useI18n();
+  if (!pathsAreKnown) {
+    return <OutOfReachNote subject="arch.outOfReach.subject.learningPaths" />;
+  }
   if (coverage.paths.length === 0 && coverage.uncovered.length === 0) {
     return <EmptyState title={t("roadmap.coverage.nothingMissing")} />;
   }

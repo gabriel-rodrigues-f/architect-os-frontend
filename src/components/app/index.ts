@@ -29,6 +29,7 @@ export * from "./PasswordInput";
 export * from "./MultiSelectFilter";
 export * from "./NoticeBell";
 export * from "./NoticeList";
+export * from "./OutOfReachNote";
 export * from "./OutOfReachScreen";
 export * from "./PasswordChoiceFields";
 export * from "./CardHelp";

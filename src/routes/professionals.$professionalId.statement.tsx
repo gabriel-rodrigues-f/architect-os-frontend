@@ -20,7 +20,7 @@ import type { EvolutionFilters } from "@/lib/domain";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { requireCareerTabsReach } from "@/lib/route-guards";
+import { defaultCareerFileReach } from "@/lib/person-listing";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { Selection } from "@/lib/selection";
 import { useSelectors, useStore } from "@/lib/store";
@@ -42,7 +42,6 @@ export const Route = createFileRoute("/professionals/$professionalId/statement")
       },
     ],
   }),
-  beforeLoad: requireCareerTabsReach,
   component: StatementOfProfessional,
 });
 
@@ -119,7 +118,25 @@ function StatementOfProfessional() {
     queryFn: () => evolutionApi.professional(professionalId, allTimeFilters),
     enabled: professional !== undefined,
   });
-  const plans = store.plans.filter((plan) => plan.professionalId === professionalId);
+  /*
+   * AS DUAS FONTES QUE VÊM DO ESTADO DO CLIENTE, e não de uma consulta desta
+   * tela: o PDI e a mentoria. As duas são listagens por pessoa, e elas passaram
+   * a responder `200 []` a quem não alcança a pessoa. Vazias, sumiam da linha
+   * do tempo em SILÊNCIO — o `Promise.all([])` do PDI resolve sem erro, então
+   * o aviso de falha parcial nunca disparava, e a mentoria nem consulta tem.
+   * Metade da história virava a história inteira.
+   */
+  const ownPlans = useMemo(
+    () => store.plans.filter((plan) => plan.professionalId === professionalId),
+    [store.plans, professionalId],
+  );
+  const ownMentoring = useMemo(
+    () => store.mentoringSessions.filter((session) => session.menteeId === professionalId),
+    [store.mentoringSessions, professionalId],
+  );
+  const plansListing = defaultCareerFileReach.listingOf(user, professional, ownPlans);
+  const mentoringListing = defaultCareerFileReach.listingOf(user, professional, ownMentoring);
+  const plans = plansListing.items;
   const planEventsQuery = useQuery({
     queryKey: ["statement-plan-events", professionalId, plans.map((plan) => plan.id).join(",")],
     queryFn: () =>
@@ -137,9 +154,7 @@ function StatementOfProfessional() {
         teamTransitions: teamTransitionsQuery.data ?? [],
         competencyEvents: stepsQuery.data?.events ?? [],
         planEvents: planEventsQuery.data ?? [],
-        mentoringSessions: store.mentoringSessions.filter(
-          (session) => session.menteeId === professionalId,
-        ),
+        mentoringSessions: ownMentoring,
       }),
     [
       vm,
@@ -148,7 +163,7 @@ function StatementOfProfessional() {
       teamTransitionsQuery.data,
       stepsQuery.data,
       planEventsQuery.data,
-      store,
+      ownMentoring,
     ],
   );
 
@@ -190,6 +205,11 @@ function StatementOfProfessional() {
   ];
   const pending = sources.some((source) => source.query.isPending);
   const failures = sources.filter((source) => source.query.isError);
+  /** As fontes que a tela não pode garantir — vazias sem que ela saiba por quê. */
+  const unconfirmed = [
+    { listing: plansListing, labelKey: "statement.source.pdiEvents" as const },
+    { listing: mentoringListing, labelKey: "statement.source.mentoring" as const },
+  ].filter((source) => !source.listing.isKnown);
 
   return (
     <>
@@ -242,6 +262,14 @@ function StatementOfProfessional() {
             empty={{ message: t("statement.filters.kinds.empty") }}
           />
         </div>
+
+        {unconfirmed.length > 0 && (
+          <Callout tone="warning" className="mb-3">
+            {t("statement.outOfReach", {
+              fontes: unconfirmed.map((source) => t(source.labelKey)).join(", "),
+            })}
+          </Callout>
+        )}
 
         {failures.map((source) => (
           <Callout key={source.labelKey} tone="warning" className="mb-3">

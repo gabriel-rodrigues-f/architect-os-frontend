@@ -41,7 +41,7 @@
   },
   "src/components/app/charts.tsx": {
     "id-length": {
-      "count": 18
+      "count": 17
     }
   },
   "src/components/app/gap-analysis-shared.tsx": {
@@ -251,7 +251,7 @@
   },
   "src/routes/professionals.$professionalId.index.tsx": {
     "id-length": {
-      "count": 14
+      "count": 13
     }
   },
   "src/routes/settings.tsx": {
