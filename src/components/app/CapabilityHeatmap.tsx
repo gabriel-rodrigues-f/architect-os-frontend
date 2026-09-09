@@ -1,14 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { capHeatmapColumns, HeatmapColumnsNotice } from "@/components/app/gap-analysis-shared";
 import { LevelHeatCell, LevelScaleKey } from "@/components/app/level-encoding";
-import { TruncatedText } from "@/components/app/TruncatedText";
+import { SortableHeader } from "@/components/app/SortableHeader";
 import { useHorizontalOverflow } from "@/hooks";
 import type { Capability } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import type { CapabilityAverage } from "@/lib/selectors";
 import { useSelectors } from "@/lib/store";
+import { HeatmapRowOrder } from "@/lib/view-models";
 
 function useHeatmapColumns(
   capabilities: readonly Capability[],
@@ -19,13 +20,37 @@ function useHeatmapColumns(
   const visibleCapabilities = showAll
     ? [...capabilities]
     : capHeatmapColumns(capabilities, professionals, capabilityAveragesFor);
-  const visibleCapabilityIds = new Set(visibleCapabilities.map((c) => c.id));
+  const visibleCapabilityIds = new Set(visibleCapabilities.map((capability) => capability.id));
   return {
     visibleCapabilities,
     visibleCapabilityIds,
     showAll,
-    toggle: () => setShowAll((v) => !v),
+    toggle: () => setShowAll((shown) => !shown),
   };
+}
+
+/**
+ * A média de cada pessoa em cada capacidade, achável por id — é a chave que a
+ * ordenação por coluna compara. A `capabilityAveragesFor` devolve a LISTA da
+ * pessoa; procurar dentro dela a cada comparação transformaria a ordenação
+ * numa varredura por par.
+ */
+function useLevelsByProfessional(
+  professionals: readonly { id: string }[],
+  capabilityAveragesFor: (professionalId: string) => readonly CapabilityAverage[],
+) {
+  return useMemo(
+    () =>
+      new Map(
+        professionals.map((professional) => [
+          professional.id,
+          new Map(
+            capabilityAveragesFor(professional.id).map((row) => [row.capability.id, row.avg]),
+          ),
+        ]),
+      ),
+    [professionals, capabilityAveragesFor],
+  );
 }
 
 /**
@@ -70,6 +95,19 @@ export function CapabilityHeatmap({
   );
   const { scrollRef, overflowStart, overflowEnd } = useHorizontalOverflow<HTMLDivElement>();
 
+  /*
+   * Dono (2026-09-08): "cada coluna de capacidade ganha uma setinha que
+   * ordena a tabela por aquela coluna, crescente e decrescente". A ordenação
+   * por cabeçalho já existia em "Risco de Concentração" e em "Usuários" —
+   * aqui é o MESMO `SortableHeader` e o mesmo par `TableOrder`; do mapa é só
+   * a comparação, que mora no `HeatmapRowOrder`.
+   */
+  const [order, setOrder] = useState(() => HeatmapRowOrder.none());
+  const levels = useLevelsByProfessional(professionals, capabilityAveragesFor);
+  const rows = order.apply(professionals, (professional, capabilityId) =>
+    levels.get(professional.id)?.get(capabilityId),
+  );
+
   return (
     <>
       <HeatmapColumnsNotice
@@ -95,22 +133,23 @@ export function CapabilityHeatmap({
                 >
                   {t("col.professional")}
                 </th>
-                {visibleCapabilities.map((c) => (
-                  <th
-                    key={c.id}
-                    scope="col"
-                    className="sticky top-0 z-10 bg-card text-center text-meta text-muted-foreground"
-                  >
-                    <TruncatedText text={c.name} className="block max-w-[64px]">
-                      {sel.capabilityShortLabel(c)}
-                    </TruncatedText>
-                  </th>
+                {visibleCapabilities.map((capability) => (
+                  <SortableHeader
+                    key={capability.id}
+                    column={capability.id}
+                    label={capability.name}
+                    short={sel.capabilityShortLabel(capability)}
+                    direction={order.directionOf(capability.id)}
+                    onToggle={(chosen) => setOrder(order.toggled(chosen))}
+                    align="center"
+                    className="sticky top-0 z-10 h-8 bg-card px-1"
+                  />
                 ))}
               </tr>
             </thead>
             <tbody>
-              {professionals.map((a) => (
-                <tr key={a.id}>
+              {rows.map((professional) => (
+                <tr key={professional.id}>
                   {linkToProfile ? (
                     <th
                       scope="row"
@@ -118,10 +157,10 @@ export function CapabilityHeatmap({
                     >
                       <Link
                         to="/professionals/$professionalId"
-                        params={{ professionalId: a.id }}
+                        params={{ professionalId: professional.id }}
                         className="hover:underline"
                       >
-                        {a.name}
+                        {professional.name}
                       </Link>
                     </th>
                   ) : (
@@ -129,15 +168,15 @@ export function CapabilityHeatmap({
                       scope="row"
                       className="sticky left-0 z-10 bg-card text-left text-sm font-medium"
                     >
-                      {a.name}
+                      {professional.name}
                     </th>
                   )}
-                  {capabilityAveragesFor(a.id)
-                    .filter((d) => visibleCapabilityIds.has(d.capability.id))
-                    .map((d) => (
-                      <td key={d.capability.id} className="min-w-[52px]">
+                  {capabilityAveragesFor(professional.id)
+                    .filter((row) => visibleCapabilityIds.has(row.capability.id))
+                    .map((row) => (
+                      <td key={row.capability.id} className="min-w-[52px]">
                         <LevelHeatCell
-                          level={d.avg === undefined ? undefined : Math.round(d.avg)}
+                          level={row.avg === undefined ? undefined : Math.round(row.avg)}
                         />
                       </td>
                     ))}
