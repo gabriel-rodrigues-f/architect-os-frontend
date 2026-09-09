@@ -78,18 +78,6 @@ const ORIGEM_DA_COPIA = "backend/tests/shared/http/message-codes-de-sucesso.fixt
  * mexe em código de mensagem. Por isso o worktree espelho vem primeiro, e a
  * raiz fica como o caso de sempre (os dois repositórios lado a lado).
  */
-const FATIA_EM_WORKTREE = /[/\\]\.worktrees[/\\]([^/\\]+)[/\\]/;
-
-function origensPossiveis(diretorio: string, arquivoDoTeste: string): string[] {
-  const fatia = FATIA_EM_WORKTREE.exec(arquivoDoTeste)?.[1];
-  return fatia
-    ? [
-        join(diretorio, ORIGEM_DA_COPIA.replace("backend/", `backend/.worktrees/${fatia}/`)),
-        join(diretorio, ORIGEM_DA_COPIA),
-      ]
-    : [join(diretorio, ORIGEM_DA_COPIA)];
-}
-
 /**
  * Os códigos que o backend emite e que este locale NÃO traduz hoje. A lista é
  * canário, não permissão: um terceiro nome aqui é dívida nova, e um nome que
@@ -202,9 +190,8 @@ function fixtureOriginal(): string | undefined {
   if (doMesmoCheckout !== undefined) return doMesmoCheckout;
   let diretorio = dirname(fileURLToPath(import.meta.url));
   for (let subida = 0; subida < 8; subida += 1) {
-    for (const alvo of origensPossiveis(diretorio, arquivoDoTeste)) {
-      if (existsSync(alvo)) return alvo;
-    }
+    const alvo = join(diretorio, ORIGEM_DA_COPIA);
+    if (existsSync(alvo)) return alvo;
     const pai = dirname(diretorio);
     if (pai === diretorio) return undefined;
     diretorio = pai;
