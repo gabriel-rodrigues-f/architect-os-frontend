@@ -490,7 +490,9 @@ function PlanItemCard({
         key={item.version}
         value={item.actionPlan}
         canEdit={canEditExecution}
-        onSave={(actionPlan) => viewModel.saveActionPlan(planId, item.id, actionPlan)}
+        onSave={(actionPlan, onConfirmed) =>
+          viewModel.saveActionPlan(planId, item.id, actionPlan, onConfirmed)
+        }
       />
 
       {item.smart && (
@@ -587,17 +589,28 @@ function ActionPlanField({
 }: {
   value: string;
   canEdit: boolean;
-  onSave: (value: string) => void;
+  onSave: (value: string, onConfirmed: () => void) => void;
 }) {
   const { t } = useI18n();
   const { draft, setDraft, changed } = useServerDraft(value);
   const [saved, setSaved] = useState(false);
 
+  /*
+   * O SELO SÓ ACENDE COM A CONFIRMAÇÃO DO SERVIÇO (2026-09-09).
+   *
+   * A régua já estava escrita neste módulo, no `removeItem` do view-model:
+   * *"Otimista: `onConfirmed` roda quando o serviço confirma — o aviso de
+   * sucesso vai lá, não no clique."* Aqui ela não valia: `onSave(draft)` era
+   * `void`, `setSaved(true)` vinha na linha seguinte, e o PATCH recusado
+   * acendia "Salvo" do mesmo jeito. Retorno tátil mentiroso é pior que
+   * silêncio — a recusa continua chegando pelo aviso do `MutationRunner`.
+   */
   const commit = () => {
     if (!changed) return;
-    onSave(draft);
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2000);
+    onSave(draft, () => {
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2000);
+    });
   };
 
   return (

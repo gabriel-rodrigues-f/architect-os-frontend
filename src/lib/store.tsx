@@ -205,8 +205,12 @@ export interface Api extends AppState {
   updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
 
   removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
-  addCycle: (c: DevelopmentCycle) => void;
-  updateCycle: (id: string, patch: Partial<Omit<DevelopmentCycle, "id">>) => void;
+  addCycle: (c: DevelopmentCycle, onConfirmed?: (created: DevelopmentCycle) => void) => void;
+  updateCycle: (
+    id: string,
+    patch: Partial<Omit<DevelopmentCycle, "id">>,
+    onConfirmed?: (updated: DevelopmentCycle) => void,
+  ) => void;
   removeCycle: (id: string) => void;
   openAssessment: (professionalId: string, cycleId: string) => Promise<Assessment>;
   setAssessmentStatus: (id: string, status: Assessment["status"]) => Promise<Assessment>;
@@ -259,7 +263,12 @@ export interface Api extends AppState {
       dedicationHoursPerWeek?: number | null;
     },
   ) => Promise<DevelopmentPlan>;
-  updatePlanItem: (planId: string, itemId: string, patch: Partial<DevelopmentPlanItem>) => void;
+  updatePlanItem: (
+    planId: string,
+    itemId: string,
+    patch: Partial<DevelopmentPlanItem>,
+    onConfirmed?: (updated: DevelopmentPlan) => void,
+  ) => void;
 
   removePlanItem: (planId: string, itemId: string, onConfirmed?: () => void) => void;
 
@@ -758,7 +767,7 @@ export function buildApi(
         }),
       ),
 
-    updatePlanItem: (planId, itemId, patch) => {
+    updatePlanItem: (planId, itemId, patch, onConfirmed) => {
       const knownVersion = state.plans
         .find((p) => p.id === planId)
         ?.items.find((i) => i.id === itemId)?.version;
@@ -779,6 +788,7 @@ export function buildApi(
         }),
         () => api.patchPlanItem(planId, itemId, patch, expectedVersion),
         (updated) => (s) => ({ ...s, plans: s.plans.map((p) => (p.id === planId ? updated : p)) }),
+        onConfirmed,
       );
     },
 
@@ -911,20 +921,24 @@ export function buildApi(
       );
     },
 
-    addCycle: (c) => {
+    addCycle: (c, onConfirmed) => {
       runner.optimistic(
         (s) => ({
           ...s,
           cycles: [...s.cycles, c].sort((x, y) => (x.start < y.start ? -1 : 1)),
         }),
         () => api.createCycle(c),
+        undefined,
+        onConfirmed,
       );
     },
 
-    updateCycle: (id, patch) => {
+    updateCycle: (id, patch, onConfirmed) => {
       runner.optimistic(
         (s) => ({ ...s, cycles: s.cycles.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
         () => api.updateCycle(id, patch),
+        undefined,
+        onConfirmed,
       );
     },
 
