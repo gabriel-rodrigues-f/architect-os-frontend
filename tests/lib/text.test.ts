@@ -59,6 +59,33 @@ describe("NameFormatter", () => {
     });
   });
 
+  /**
+   * NOME + SOBRENOME — a assinatura do comentário da Avaliação (dono,
+   * 2026-09-09: *"a pessoa que assina deve ser reconhecida pelo seu nome +
+   * sobrenome"*).
+   *
+   * A regra mora AQUI, e não na tela, porque a casa já tem um formatador de
+   * nome: uma segunda régua de nome numa `.tsx` seria a divergência que o
+   * `slug` duplicado já custou uma vez.
+   */
+  describe("firstAndLast", () => {
+    it("guarda o primeiro e o último, e descarta os do meio", () => {
+      expect(defaultNameFormatter.firstAndLast("Marina Vasconcelos Prado")).toBe("Marina Prado");
+    });
+
+    it("nome de duas partes fica inteiro", () => {
+      expect(defaultNameFormatter.firstAndLast("Rafael Duarte")).toBe("Rafael Duarte");
+    });
+
+    it("nome de uma parte só continua sendo ele mesmo", () => {
+      expect(defaultNameFormatter.firstAndLast("Madonna")).toBe("Madonna");
+    });
+
+    it("espaço de sobra não vira sobrenome vazio", () => {
+      expect(defaultNameFormatter.firstAndLast("  Ana   Beatriz   Souza  ")).toBe("Ana Souza");
+    });
+  });
+
   describe("truncateNames", () => {
     it("divide em mostrados + restantes a partir do teto", () => {
       const names = ["a", "b", "c", "d", "e", "f"];

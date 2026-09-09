@@ -15,6 +15,24 @@ export class NameFormatter {
     return term === "" || name.toLowerCase().includes(term);
   }
 
+  /**
+   * NOME + SOBRENOME — como uma pessoa é reconhecida ao assinar (dono,
+   * 2026-09-09).
+   *
+   * O nome completo do cadastro pode ter quatro ou cinco partes, e a
+   * assinatura de um comentário não é a certidão de ninguém: o que identifica
+   * é o primeiro nome e o de família. Os do meio saem.
+   *
+   * A régua é da CASA e mora aqui pelo mesmo motivo que `slug`: nome
+   * formatado à mão dentro de uma tela vira a segunda régua, e duas réguas
+   * divergem.
+   */
+  firstAndLast(name: string): string {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) return parts[0] ?? "";
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+  }
+
   truncateNames(names: readonly string[], max = 5): { shown: string[]; remaining: number } {
     if (names.length <= max) return { shown: [...names], remaining: 0 };
     return { shown: names.slice(0, max), remaining: names.length - max };

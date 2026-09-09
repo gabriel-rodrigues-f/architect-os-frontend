@@ -24,26 +24,14 @@ import type {
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useAsyncSubmit, useNarrowViewport, useSuccessToast } from "@/hooks";
-import { useI18n, type I18nApi, type MessageKey } from "@/lib/i18n";
+import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { stateContextCatalog } from "@/lib/state-contexts";
 import { useOperationalSettings, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
+import { defaultCommentSignature } from "@/lib/comment-signature";
 import { cn } from "@/lib/utils";
 import { AssessmentViewModel, type AssessmentCompletionBrief } from "@/lib/view-models";
-
-/**
- * O rótulo de cada assinatura de comentário. É um `Record` sobre o tipo, e não
- * uma escada de ternários, porque a escada tinha um fim: quem não fosse Tech
- * Lead virava "Profissional". Foi assim que o comentário do administrador
- * apareceu com o crachá de outra pessoa. Aqui, autor novo sem rótulo não
- * compila.
- */
-const AUTHOR_LABEL_KEY: Readonly<Record<AssessmentComment["authorRole"], MessageKey>> = {
-  PROFESSIONAL: "comment.author.professional",
-  TECH_LEAD: "comment.author.techLead",
-  ADMIN: "comment.author.admin",
-};
 
 function useAssessmentViewModel(): AssessmentViewModel {
   const store = useStore();
@@ -139,7 +127,10 @@ function CommentSection({
         <ul className="space-y-2">
           {comments.map((comment) => {
             const mine = comment.authorUserId !== null && comment.authorUserId === currentUserId;
-            const authorLabel = mine ? t("comment.you") : t(AUTHOR_LABEL_KEY[comment.authorRole]);
+            // Quem assina é a PESSOA (dono, 2026-09-09) — "Você" para a
+            // própria fala, nome + sobrenome para as outras, e a frase da casa
+            // para o autor que o esquecimento anulou. Nenhum cargo.
+            const authorLabel = defaultCommentSignature.of(comment, mine, t);
             return editing === comment.id ? (
               <li key={comment.id}>
                 <CommentForm
@@ -151,9 +142,13 @@ function CommentSection({
               </li>
             ) : (
               <li key={comment.id} className="rounded-md border border-border bg-card p-3">
-                <p className="text-meta font-medium uppercase tracking-wide text-muted-foreground">
-                  {authorLabel}
-                </p>
+                {/*
+                  Sem `uppercase tracking-wide`: aquele é o idioma de RÓTULO da
+                  casa (cabeçalho de coluna, "Sugestão da IA"), e servia quando
+                  a linha dizia um cargo. Ela agora diz o NOME de uma pessoa, e
+                  nome de gente não se escreve em caixa alta.
+                */}
+                <p className="text-meta font-medium text-muted-foreground">{authorLabel}</p>
                 <p className="mt-0.5 whitespace-pre-wrap text-sm">{comment.text}</p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className="text-meta text-muted-foreground">

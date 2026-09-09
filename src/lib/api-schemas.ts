@@ -428,12 +428,11 @@ const professional = z.object({
   version: z.number(),
 });
 
-const assessmentParticipantRole = z.enum(["PROFESSIONAL", "TECH_LEAD", "ADMIN"]);
-
 const assessmentComment = z.object({
   id: z.string(),
   authorUserId: z.string().nullable(),
-  authorRole: assessmentParticipantRole,
+  /** O nome de quem assinou, resolvido no servidor pela PK (dono, 2026-09-09). */
+  authorName: z.string().nullable(),
   text: z.string(),
   createdAt: z.string(),
   updatedAt: z.string().optional(),

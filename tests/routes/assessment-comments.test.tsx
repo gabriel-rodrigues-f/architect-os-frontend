@@ -19,6 +19,11 @@ import { apiPath } from "@/lib/api-path";
  * Comentário pertence a quem escreveu — não é mais um par profissional+Tech Lead
  * salvo junto (ver AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 5). Só
  * o autor edita ou exclui a própria fala.
+ *
+ * 2026-09-09 — quem assina é a PESSOA, pelo nome + sobrenome, e não o cargo
+ * dela: *"cargo pode mudar"* (dono). O nome chega resolvido do servidor, pela
+ * PK da conta; a tela só escolhe o formato, e escolhe "Você" para o
+ * comentário de quem está lendo — o atalho que ajuda a varrer a lista.
  */
 
 const fetchMock = vi.fn();
@@ -26,7 +31,7 @@ const fetchMock = vi.fn();
 const comentarioDoAdmin: AssessmentComment = {
   id: "cmt-1",
   authorUserId: fixtureAssignedManagerUser.id,
-  authorRole: "TECH_LEAD",
+  authorName: "Gerente Designado da Casa",
   text: "Confirmo, liderou a execução",
   createdAt: "2026-03-05T14:30:00Z",
 };
@@ -34,22 +39,36 @@ const comentarioDoAdmin: AssessmentComment = {
 const comentarioDeOutraPessoa: AssessmentComment = {
   id: "cmt-2",
   authorUserId: "outro-usuario",
-  authorRole: "PROFESSIONAL",
+  authorName: "Marina Vasconcelos Prado",
   text: "Conduzi a migração do cluster",
   createdAt: "2026-03-04T14:00:00Z",
 };
 
 /**
- * 2026-09-09 — o administrador escreve na avaliação de qualquer pessoa (regra
- * 6) e era desenhado como Tech Lead: o backend carimbava por `isLead`, que a
- * guarda de escrita fazia chegar sempre verdadeiro. O crachá agora é dele.
+ * O administrador escreve na avaliação de qualquer pessoa (regra 6) e era
+ * desenhado como "Tech Lead". Hoje ele assina com o próprio nome — que é o
+ * único jeito de a lista dizer QUEM falou quando duas pessoas ocupam o mesmo
+ * cargo.
  */
 const comentarioDoAdministrador: AssessmentComment = {
   id: "cmt-3",
   authorUserId: "conta-administradora",
-  authorRole: "ADMIN",
+  authorName: "Helena Braga",
   text: "Ajustei o portfólio a pedido do gerente",
   createdAt: "2026-03-06T09:00:00Z",
+};
+
+/**
+ * O comentário que sobreviveu ao ESQUECIMENTO da pessoa: a conta foi anulada,
+ * o texto ficou. A assinatura precisa de uma frase para a ausência, e ela não
+ * pode dizer o cargo de volta.
+ */
+const comentarioSemAutor: AssessmentComment = {
+  id: "cmt-4",
+  authorUserId: null,
+  authorName: null,
+  text: "Registro antigo, de quem já saiu",
+  createdAt: "2026-03-03T09:00:00Z",
 };
 
 /**
@@ -71,7 +90,12 @@ const state: AppState = {
             it.competencyId === "cloud-k8s"
               ? {
                   ...it,
-                  comments: [comentarioDeOutraPessoa, comentarioDoAdmin, comentarioDoAdministrador],
+                  comments: [
+                    comentarioDeOutraPessoa,
+                    comentarioDoAdmin,
+                    comentarioDoAdministrador,
+                    comentarioSemAutor,
+                  ],
                 }
               : it,
           ),
@@ -122,10 +146,11 @@ describe("Avaliações — comentários por autor", () => {
                 comentarioDeOutraPessoa,
                 comentarioDoAdmin,
                 comentarioDoAdministrador,
+                comentarioSemAutor,
                 {
                   id: "cmt-novo",
                   authorUserId: fixtureAssignedManagerUser.id,
-                  authorRole: "TECH_LEAD",
+                  authorName: "Gerente Designado da Casa",
                   text: body.text,
                   createdAt: "2026-08-13T09:00:00Z",
                 },
@@ -140,6 +165,7 @@ describe("Avaliações — comentários por autor", () => {
                 comentarioDeOutraPessoa,
                 { ...comentarioDoAdmin, text: body.text, updatedAt: "2026-08-13T10:00:00Z" },
                 comentarioDoAdministrador,
+                comentarioSemAutor,
               ]),
             );
           }
@@ -171,18 +197,38 @@ describe("Avaliações — comentários por autor", () => {
 
     // fixtureAssignedManagerUser é quem está logado — o comentário dele aparece como "Você".
     expect(await screen.findByText("Você")).toBeTruthy();
-    // o outro comentário (autor diferente) aparece com o rótulo do papel.
-    expect(screen.getByText("Profissional")).toBeTruthy();
+    // o outro comentário (autor diferente) é assinado com nome + sobrenome.
+    expect(screen.getByText("Marina Prado")).toBeTruthy();
   });
 
-  it("o comentário do administrador é assinado por ele, e não pelo Tech Lead", async () => {
+  it("assina com nome e sobrenome, sem os nomes do meio", async () => {
+    await abrirNotas();
+
+    const cartao = (await screen.findByText("Conduzi a migração do cluster")).parentElement!;
+
+    expect(within(cartao).getByText("Marina Prado")).toBeTruthy();
+    expect(within(cartao).queryByText("Marina Vasconcelos Prado")).toBeNull();
+  });
+
+  it("o comentário do administrador é assinado com o nome dele, e não com um cargo", async () => {
     await abrirNotas();
 
     const cartao = (await screen.findByText("Ajustei o portfólio a pedido do gerente"))
       .parentElement!;
 
-    expect(within(cartao).getByText("Administrador")).toBeTruthy();
+    expect(within(cartao).getByText("Helena Braga")).toBeTruthy();
+    expect(within(cartao).queryByText("Administrador")).toBeNull();
     expect(within(cartao).queryByText("Tech Lead")).toBeNull();
+  });
+
+  /** Autor anulado pelo esquecimento: a frase da casa para ausência, nunca o cargo. */
+  it("o comentário sem autor é assinado 'alguém'", async () => {
+    await abrirNotas();
+
+    const cartao = (await screen.findByText("Registro antigo, de quem já saiu")).parentElement!;
+
+    expect(within(cartao).getByText("alguém")).toBeTruthy();
+    expect(within(cartao).queryByText("Profissional")).toBeNull();
   });
 
   it("bloqueia salvar sem texto", async () => {
