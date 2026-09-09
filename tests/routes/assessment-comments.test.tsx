@@ -39,6 +39,13 @@ const comentarioDeOutraPessoa: AssessmentComment = {
   createdAt: "2026-03-04T14:00:00Z",
 };
 
+/**
+ * A avaliação de Ana na fixture da casa nasce CONCLUÍDA, e o servidor tranca a
+ * concluída (`AssessmentLockedError`). Estes casos escrevem comentário, então
+ * a base deles precisa de uma avaliação ainda aberta — antes de 2026-09-09 a
+ * tela oferecia a caixa mesmo na trancada, e eram esses testes que sustentavam
+ * o engano.
+ */
 const state: AppState = {
   ...fixtureState,
   assessments: fixtureState.assessments.map((a) =>
@@ -46,6 +53,7 @@ const state: AppState = {
       ? a
       : {
           ...a,
+          status: "In Review" as const,
           items: a.items.map((it) =>
             it.competencyId === "cloud-k8s"
               ? { ...it, comments: [comentarioDeOutraPessoa, comentarioDoAdmin] }
