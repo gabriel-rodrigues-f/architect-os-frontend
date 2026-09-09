@@ -2850,10 +2850,6 @@ export interface paths {
                         topic: string;
                         /** @default  */
                         notes?: string;
-                        /** @default  */
-                        decisions?: string;
-                        /** @default  */
-                        actions?: string;
                     };
                 };
             };
@@ -2897,10 +2893,6 @@ export interface paths {
                         topic: string;
                         /** @default  */
                         notes?: string;
-                        /** @default  */
-                        decisions?: string;
-                        /** @default  */
-                        actions?: string;
                         scriptProvenance: string;
                     };
                 };

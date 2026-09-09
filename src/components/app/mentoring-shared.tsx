@@ -266,16 +266,6 @@ function MentoringTimelineItem({
   selectors: Selectors;
 }) {
   const { t, locale } = useI18n();
-  const notifySuccess = useSuccessToast();
-  const store = useStore();
-  const viewModel = useMemo(() => new MentoringViewModel(store), [store]);
-  const { submitting: sending, run } = useToastSubmit(t("mentor.toPdi.error"));
-
-  const plan = selectors.planFor(session.menteeId);
-  const gaps = selectors.progressionGapsFor(session.menteeId);
-  const eligible = viewModel.eligibleGapForPlan(session, gaps, plan);
-  const decisions = session.decisions?.trim() ?? "";
-  const actions = session.actions?.trim() ?? "";
 
   return (
     <li className="relative">
@@ -292,48 +282,19 @@ function MentoringTimelineItem({
         </div>
       </div>
       {/*
-        Tema e Notas são o registro de hoje (dono, 2026-09-08, item 4); os dois
-        blocos que saíram do formulário só aparecem na sessão que já os tem.
+        Um bloco só, chamado "Notas" (dono, 2026-09-09): *"as únicas coisas que
+        quero ver são Preparação do 1:1, gerado por IA, como já está, regua
+        cronológica de mentorias e um único bloco de anotações chamado
+        'Notas'."* E, sobre os dois blocos que ainda apareciam na sessão
+        antiga: *"deve morrer totalmente, front, back e banco."*
 
-        Os chips de competência embaixo da sessão saíram em 2026-09-09, com o
-        campo que os alimentava: *"ele anotou embaixo os temas que foram
-        abordados. Não acho útil."*
+        Com Decisões e Ações fora, o botão "Criar ação no PDI" foi junto — o
+        mesmo pedido tirou o vínculo com o PDI daqui. O item da linha do tempo
+        voltou a ser leitura pura: não monta ViewModel, não escreve nada.
       */}
-      <div className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
+      <div className="mt-2 grid gap-2 text-sm">
         <Block title={t("mentor.block.notes")} text={session.notes || "—"} />
-        {decisions && <Block title={t("mentor.block.decisions")} text={decisions} />}
-        {actions && <Block title={t("mentor.block.actions")} text={actions} />}
       </div>
-      {actions && eligible?.competency && (
-        <Button
-          variant="secondary"
-          size="sm"
-          className="mt-2"
-          disabled={sending}
-          onClick={() => {
-            const mentee = selectors.professionalById(session.menteeId);
-            const competency = eligible.competency;
-            if (!mentee || !competency) return;
-            void run(() =>
-              viewModel.sendToPlan(session, mentee, {
-                assessmentId: eligible.assessmentId,
-                competencyId: competency.id,
-              }),
-            ).then((result) => {
-              if (result.ok)
-                notifySuccess(
-                  "msg.plan.item.addFromGap.success",
-                  { competencia: competency.name },
-                  result.value,
-                );
-            });
-          }}
-        >
-          {sending
-            ? t("mentor.toPdi.sending")
-            : t("mentor.toPdi.action", { competencia: eligible.competency.name })}
-        </Button>
-      )}
     </li>
   );
 }

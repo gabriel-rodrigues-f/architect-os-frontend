@@ -25,6 +25,12 @@ const MENTORING_CONTEXTS: readonly ContextScopeRequest[] = [
  * O primeiro caso é de caracterização (o que a lista mostra não pode mudar);
  * o segundo é a prova da correção: o custo de índice deixa de crescer com o
  * tamanho da lista.
+ *
+ * O primeiro caso GANHOU um segundo papel em 2026-09-09: ele é a rede do
+ * "Decisões e Ações saíram da 1:1" no que a linha do tempo DESENHA. Para ele
+ * ser rede, a sessão da fixture precisa TER os três campos mortos gravados —
+ * sobre uma sessão que só tem `notes` o bloco restaurado não desenharia nada,
+ * e a asserção ficaria verde diante da regressão que ela diz guardar.
  */
 
 vi.mock("@/lib/store", async (importOriginal) => {
@@ -34,15 +40,28 @@ vi.mock("@/lib/store", async (importOriginal) => {
 
 const fetchMock = vi.fn();
 
-const sessionAt = (index: number): MentoringSession => ({
+/**
+ * A sessão COMO ELA ERA — com os três campos que morreram. Eles não estão em
+ * `MentoringSession` de propósito (é a fatia inteira), e é por isso que a
+ * forma de antes precisa ser dita aqui: o teste só fica vermelho contra a
+ * volta do bloco "Decisões"/"Ações" e dos chips de competência se a sessão
+ * que ele desenha TIVER o que desenhar.
+ */
+type SessaoComOsCamposMortos = MentoringSession & {
+  competencyIds: string[];
+  decisions: string;
+  actions: string;
+};
+
+const sessionAt = (index: number): SessaoComOsCamposMortos => ({
   id: `m-${index}`,
   mentor: "Gabriel Rodrigues",
   menteeId: "bruno",
   date: `2026-08-0${index + 1}`,
   durationMin: 30 + index * 10,
   topic: `Tema ${index}`,
-  competencyIds: ["cloud-k8s"],
   notes: `Notas ${index}`,
+  competencyIds: ["cloud-k8s"],
   decisions: `Decisões ${index}`,
   actions: `Ações ${index}`,
 });
@@ -71,8 +90,16 @@ describe("linha do tempo de mentoria — um índice de selectors por lista (F2)"
     for (const [index, session] of sessions.entries()) {
       expect(await screen.findByText(session.topic)).toBeTruthy();
       expect(screen.getAllByText(`Notas ${index}`).length).toBe(1);
-      expect(screen.getAllByText(`Decisões ${index}`).length).toBe(1);
-      expect(screen.getAllByText(`Ações ${index}`).length).toBe(1);
+    }
+
+    // Um bloco só, chamado "Notas" (dono, 2026-09-09): a sessão desenhada TEM
+    // decisões e ações gravadas, e mesmo assim sai um bloco apenas.
+    expect(screen.getAllByText("Notas")).toHaveLength(sessions.length);
+    expect(screen.queryAllByText("Decisões")).toHaveLength(0);
+    expect(screen.queryAllByText("Ações")).toHaveLength(0);
+    for (const index of sessions.keys()) {
+      expect(screen.queryAllByText(`Decisões ${index}`)).toHaveLength(0);
+      expect(screen.queryAllByText(`Ações ${index}`)).toHaveLength(0);
     }
 
     // "Bruno Almeida · mentor Gabriel Rodrigues · 01/08/2026 · 30 min"

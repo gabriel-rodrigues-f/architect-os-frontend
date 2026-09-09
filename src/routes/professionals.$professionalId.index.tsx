@@ -345,7 +345,15 @@ function ProfessionalWorkspace() {
                     {defaultDateFormatter.formatDate(s.date, locale)} · {s.durationMin} min · mentor{" "}
                     {s.mentor}
                   </p>
-                  <p className="mt-1 text-sm">{s.actions}</p>
+                  {/*
+                   * A linha de conteúdo do cartão era `{s.actions}`, e ela saiu
+                   * com o campo (dono, 2026-09-09). Sem substituição o cartão
+                   * ficaria só com tema e carimbo de data — o que a 1:1 GUARDA
+                   * não apareceria aqui. `notes` toma o lugar porque é o bloco
+                   * único que o dono definiu para a 1:1, na mesma forma visual
+                   * da linha que saiu.
+                   */}
+                  <p className="mt-1 text-sm">{s.notes}</p>
                 </div>
               </li>
             ))}

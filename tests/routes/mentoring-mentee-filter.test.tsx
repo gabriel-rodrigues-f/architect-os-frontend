@@ -53,10 +53,7 @@ const sessaoAna: MentoringSession = {
   date: "2026-08-01",
   durationMin: 30,
   topic: "Sessão com Ana",
-  competencyIds: [],
   notes: "n",
-  decisions: "d",
-  actions: "a",
 };
 
 const sessaoCarla: MentoringSession = {
@@ -67,10 +64,7 @@ const sessaoCarla: MentoringSession = {
   date: "2026-07-01",
   durationMin: 30,
   topic: "Sessão com Carla",
-  competencyIds: [],
   notes: "n",
-  decisions: "d",
-  actions: "a",
 };
 
 const state: AppState = {

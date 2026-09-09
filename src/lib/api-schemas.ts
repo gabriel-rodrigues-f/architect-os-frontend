@@ -566,10 +566,7 @@ const mentoringSession = z.object({
   date: z.string(),
   durationMin: z.number(),
   topic: z.string(),
-  competencyIds: z.array(z.string()),
   notes: z.string(),
-  decisions: z.string(),
-  actions: z.string(),
   nextSession: z.string().optional(),
 });
 

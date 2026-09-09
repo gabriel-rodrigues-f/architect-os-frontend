@@ -1,22 +1,16 @@
-import { UserFacingError } from "../api-errors";
-import type { Professional, DevelopmentPlan, MentoringSession } from "../domain";
-import type { Gap } from "../selectors";
+import type { MentoringSession } from "../domain";
 import type { Api } from "../store";
-import { createPlanItemFromGap } from "./plan-item-from-gap";
 
-export type MentoringService = Pick<
-  Api,
-  "addMentoringSession" | "scheduleMentoringFollowUp" | "createPlanItemFromGap"
->;
+export type MentoringService = Pick<Api, "addMentoringSession" | "scheduleMentoringFollowUp">;
 
 /**
  * O que o formulário de sessão pergunta hoje: MENTORADO, DATA DA MENTORIA,
  * DURAÇÃO, TEMA e NOTAS — os cinco campos que o dono deixou em 2026-09-09.
  *
- * "Decisões" e "Ações" saíram em 2026-09-08 (item 4); "Próxima sessão" e
- * "Competências discutidas" saíram em 2026-09-09. Os quatro param de viajar
- * no pedido — o serviço continua aceitando todos, com padrão vazio lá, e as
- * sessões antigas continuam trazendo o que já registraram.
+ * "Decisões" e "Ações" saíram do formulário em 2026-09-08 (item 4) e do
+ * produto inteiro em 2026-09-09 — *"deve morrer totalmente, front, back e
+ * banco"* —, junto com "Competências discutidas" e com o botão que mandava a
+ * ação da 1:1 para o PDI: *"não quero mais vinculo aqui com PDI."*
  *
  * A PRÓXIMA CONVERSA não some do produto: quem a marca é o "Agendar
  * follow-up" da Linha do Tempo, que escreve a mesma coluna por outro caminho
@@ -70,38 +64,5 @@ export class MentoringViewModel {
 
   scheduleFollowUp(sessionId: string, nextSession: string | null): Promise<MentoringSession> {
     return this.service.scheduleMentoringFollowUp(sessionId, nextSession);
-  }
-
-  eligibleGapForPlan(
-    session: Pick<MentoringSession, "competencyIds">,
-    gaps: readonly Gap[],
-    plan: Pick<DevelopmentPlan, "items"> | undefined,
-  ): Gap | undefined {
-    return (session.competencyIds ?? [])
-      .map((competencyId) => gaps.find((g) => g.item.competencyId === competencyId))
-      .find((g) => g && !plan?.items.some((i) => i.competencyId === g.item.competencyId));
-  }
-
-  async sendToPlan(
-    session: Pick<MentoringSession, "menteeId" | "topic" | "actions" | "nextSession">,
-    mentee: Pick<Professional, "name">,
-    eligible: { assessmentId: string; competencyId: string },
-  ): Promise<DevelopmentPlan> {
-    const targetDate = session.nextSession;
-    if (!targetDate) {
-      throw new UserFacingError(
-        "Agende o próximo encontro desta mentoria antes de mandar a ação para o PDI: sem essa data o item ficaria sem prazo real.",
-      );
-    }
-
-    return createPlanItemFromGap(this.service, session.menteeId, {
-      assessmentId: eligible.assessmentId,
-      competencyId: eligible.competencyId,
-      objective: session.topic,
-      actionType: "Mentor",
-      actionPlan: session.actions ?? "",
-      targetDate,
-      owner: mentee.name,
-    });
   }
 }
