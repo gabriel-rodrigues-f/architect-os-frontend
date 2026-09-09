@@ -118,20 +118,24 @@ export interface CareerLevelTransition {
   professionalVersion: number;
 }
 
-/**
- * QUEM ASSINOU o comentário. `ADMIN` (2026-09-09) fechou uma mentira da trilha
- * de autoria: o backend carimbava por `isLead`, que a guarda de escrita fazia
- * chegar sempre verdadeiro, e o comentário do administrador — que escreve na
- * avaliação de qualquer pessoa (regra 6) — era desenhado como Tech Lead.
- * `PROFESSIONAL` fica porque o comentário ANTIGO a carrega; hoje ninguém
- * escreve na própria avaliação.
- */
-type AssessmentParticipantRole = "PROFESSIONAL" | "TECH_LEAD" | "ADMIN";
-
 export interface AssessmentComment {
   id: string;
   authorUserId: string | null;
-  authorRole: AssessmentParticipantRole;
+  /**
+   * QUEM ASSINOU, pelo nome — resolvido pelo SERVIDOR a partir da PK da conta,
+   * na leitura (dono, 2026-09-09: *"a pessoa que assina deve ser reconhecida
+   * pelo seu nome + sobrenome... não pelo seu cargo atual, até porque cargo
+   * pode mudar"*).
+   *
+   * Aqui não dava para resolver: o autor pode ser um administrador sem ficha
+   * de profissional, ou alguém fora do recorte de quem lê — o `store` não tem
+   * o nome dele. Substituiu o `authorRole`, que rotulava o comentário com o
+   * cargo de quem escreveu e dizia "Tech Lead" para duas pessoas diferentes.
+   *
+   * NULO quando não há a quem perguntar: comentário histórico sem autor, ou
+   * conta apagada pelo esquecimento. A tela põe a frase da ausência.
+   */
+  authorName: string | null;
   text: string;
 
   createdAt: string;
