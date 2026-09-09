@@ -93,7 +93,12 @@ describe("o filtro bloqueado explica o bloqueio num cartão", () => {
     expect(cartao.querySelector("svg")).toBeTruthy();
 
     const botao = screen.getByRole("link", { name: "Cadastrar primeiro ciclo" });
-    expect(botao.getAttribute("href")).toBe("/cycles");
+    /*
+     * "devo ser direcionado ao FORMULÁRIO de cadastro de ciclo" — levar à
+     * tela não basta: o parâmetro que abre o diálogo viaja no link, e quem o
+     * declara é o `Registration`, não este campo.
+     */
+    expect(botao.getAttribute("href")).toBe("/cycles?cadastrar=ciclo");
     expect(botao.className).toContain("w-full");
   });
 

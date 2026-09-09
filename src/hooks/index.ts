@@ -2,6 +2,7 @@ export * from "./use-assistant-run";
 export * from "./use-async-submit";
 export * from "./use-cycle-in-focus";
 export * from "./use-display-preferences";
+export * from "./use-hover-disclosure";
 export * from "./use-media-query";
 export * from "./use-narrow-viewport";
 export * from "./use-option-list-navigation";
