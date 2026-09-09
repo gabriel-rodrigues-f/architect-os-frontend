@@ -9,7 +9,7 @@ import type {
   MentoringSession,
   TeamLevelRule,
 } from "./domain";
-import { ApiError } from "./api-errors";
+import { ApiError, type RefusalWording } from "./api-errors";
 import { ApiFailureReading } from "./api-failure-reading";
 import { apiPath, isApiUrl } from "./api-path";
 
@@ -50,6 +50,12 @@ export interface ApiErrorBody {
   details?: unknown;
   code?: string;
   correlationId?: string;
+  /**
+   * FATIA IDIOMA (dono, 2026-09-08) — as PEÇAS com que a tela compõe a frase
+   * da recusa no idioma de quem lê. Opcionais por contrato: corpo sem elas
+   * continua chegando, e a `RefusalPhrase` sabe compor sem peça nenhuma.
+   */
+  wording?: RefusalWording;
 }
 
 const responseMessageCodes = new WeakMap<object, string>();
@@ -93,6 +99,10 @@ export function apiFailureOf(body: ApiErrorBody | null, status: number): ApiErro
     body?.details,
     body?.code,
     body?.correlationId,
+    // As peças viajam junto do código; quem compõe a frase é a `RefusalPhrase`,
+    // no idioma de quem lê. Acima de 500 e no silêncio não há peça a guardar —
+    // ali nem o código é resposta sobre o que a pessoa fez.
+    reading.silencesTheService ? undefined : { wording: body?.wording },
   );
 }
 

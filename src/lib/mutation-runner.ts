@@ -1,4 +1,4 @@
-import { ApiError, UserFacingError } from "./api-errors";
+import { ApiError } from "./api-errors";
 
 export interface MutationCache<S> {
   update(fn: (s: S) => S): void;
@@ -6,11 +6,19 @@ export interface MutationCache<S> {
   invalidate(): void;
 }
 
+/**
+ * A FRASE de uma recusa, já resolvida no idioma de quem lê (fatia IDIOMA, dono
+ * 2026-09-08). O runner recebe a decisão pronta em vez de tomá-la: ele não tem
+ * `t` em mãos, e a régua de qual frase mostrar é uma só na casa
+ * (`MutationRefusal`).
+ */
+export type RefusalSentence = (failure: unknown) => string;
+
 export class MutationRunner<S> {
   constructor(
     private readonly cache: MutationCache<S>,
     private readonly notifyError: (message: string) => void,
-    private readonly fallbackErrorMessage: string,
+    private readonly sentenceOf: RefusalSentence,
   ) {}
 
   private log(error: unknown): void {
@@ -19,7 +27,7 @@ export class MutationRunner<S> {
   }
 
   private messageOf(error: unknown): string {
-    return error instanceof UserFacingError ? error.message : this.fallbackErrorMessage;
+    return this.sentenceOf(error);
   }
 
   /**

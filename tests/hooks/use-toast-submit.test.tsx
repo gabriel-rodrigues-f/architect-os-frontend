@@ -1,9 +1,11 @@
 import { act, renderHook } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useToastSubmit } from "@/hooks";
 import { ApiError } from "@/lib/api";
+import { I18nProvider } from "@/lib/i18n";
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
@@ -18,13 +20,23 @@ vi.mock("sonner", () => ({
  */
 const FALLBACK_DO_APP = "Não foi possível concluir a operação. Tente de novo em alguns instantes.";
 
+/**
+ * FATIA IDIOMA (dono, 2026-09-08) — o hook passou a compor a frase da recusa
+ * no idioma de quem lê, então ele precisa do dicionário. Na aplicação o
+ * provedor sempre existe (`__root`); aqui ele entra explicitamente, porque um
+ * hook que resolve texto sem dicionário é justamente o que não pode acontecer.
+ */
+function comDicionario({ children }: { children: ReactNode }) {
+  return <I18nProvider>{children}</I18nProvider>;
+}
+
 describe("useToastSubmit", () => {
   beforeEach(() => {
     vi.mocked(toast.error).mockClear();
   });
 
   it("sucesso: devolve { ok: true, value }, sem toast, e submitting volta a false", async () => {
-    const { result } = renderHook(() => useToastSubmit());
+    const { result } = renderHook(() => useToastSubmit(), { wrapper: comDicionario });
     let outcome: unknown;
     await act(async () => {
       outcome = await result.current.run(() => Promise.resolve("valor"));
@@ -35,7 +47,7 @@ describe("useToastSubmit", () => {
   });
 
   it("submitting fica true enquanto a ação está em voo — é o que desabilita o botão", async () => {
-    const { result } = renderHook(() => useToastSubmit());
+    const { result } = renderHook(() => useToastSubmit(), { wrapper: comDicionario });
     let release!: () => void;
     const pending = new Promise<void>((resolve) => {
       release = resolve;
@@ -55,7 +67,7 @@ describe("useToastSubmit", () => {
   });
 
   it("ApiError vira toast.error com a mensagem do servidor; o erro CRU volta no resultado", async () => {
-    const { result } = renderHook(() => useToastSubmit());
+    const { result } = renderHook(() => useToastSubmit(), { wrapper: comDicionario });
     const apiError = new ApiError("VERSION_CONFLICT do servidor", 409);
     let outcome: unknown;
     await act(async () => {
@@ -75,7 +87,7 @@ describe("useToastSubmit", () => {
    * para o console e a telemetria.
    */
   it("erro genérico NÃO mostra a mensagem do próprio Error — ela é de desenvolvedor", async () => {
-    const { result } = renderHook(() => useToastSubmit());
+    const { result } = renderHook(() => useToastSubmit(), { wrapper: comDicionario });
     await act(async () => {
       await result.current.run(() => Promise.reject(new TypeError("Failed to fetch")));
     });
@@ -84,7 +96,7 @@ describe("useToastSubmit", () => {
   });
 
   it("rejeição que não é Error cai no fallback padrão do app", async () => {
-    const { result } = renderHook(() => useToastSubmit());
+    const { result } = renderHook(() => useToastSubmit(), { wrapper: comDicionario });
     await act(async () => {
       await result.current.run(() => Promise.reject("string crua"));
     });
@@ -92,7 +104,7 @@ describe("useToastSubmit", () => {
   });
 
   it("sucesso com Promise<void> ainda é { ok: true } — nunca ambíguo com falha", async () => {
-    const { result } = renderHook(() => useToastSubmit());
+    const { result } = renderHook(() => useToastSubmit(), { wrapper: comDicionario });
     let outcome: { ok: boolean } | undefined;
     await act(async () => {
       outcome = await result.current.run(async () => {});

@@ -4,15 +4,35 @@ import { toast } from "sonner";
 import { ApiError } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import { defaultRefusalPhrase, type RefusalTranslate } from "@/lib/refusal-phrase";
 import { successMessageOf } from "@/lib/success-message";
 
 export type AsyncSubmitResult<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
 export type SubmitErrorFallback = string | ((error: unknown) => string);
 
-function submitErrorMessage(error: unknown, fallback: SubmitErrorFallback): string {
-  if (typeof fallback === "function") return fallback(error);
-  return error instanceof ApiError ? error.message : fallback;
+/**
+ * A FRASE QUE O SUBMIT MOSTRA — e a ordem em que ela é escolhida.
+ *
+ * FATIA IDIOMA (dono, 2026-09-08: *"as notificações não estão sendo traduzidas
+ * para inglês no idioma inglês; aproveite e faça uma varredura do que pode ter
+ * ficado de fora"*). Este era o cano de dentro da aplicação: `error.message` é
+ * a frase que o BACKEND escreveu, e o backend só escreve pt-BR — quem lia o
+ * Synapse em inglês recebia "profissional não encontrado" no toast.
+ *
+ * A ordem é a régua: primeiro a frase NOSSA, composta pela `RefusalPhrase` a
+ * partir do código e das peças, no idioma de quem lê; só depois o que a tela
+ * declarou como reserva. A frase do serviço é a última, e cada código que
+ * ainda cai nela é dívida contada pela catraca
+ * (`tests/architecture/a-recusa-fala-o-idioma-de-quem-le.test.ts`).
+ */
+class SubmitRefusal {
+  static sentenceOf(error: unknown, fallback: SubmitErrorFallback, t: RefusalTranslate): string {
+    const nossa = defaultRefusalPhrase.sentenceOf(error, t);
+    if (nossa !== null) return nossa;
+    if (typeof fallback === "function") return fallback(error);
+    return error instanceof ApiError ? error.message : fallback;
+  }
 }
 
 /**
@@ -22,6 +42,7 @@ function submitErrorMessage(error: unknown, fallback: SubmitErrorFallback): stri
  * mais `rejectLocally()`: a tela mostra a mensagem, a rede do fundo não pisca.
  */
 export function useAsyncSubmit(fallback: SubmitErrorFallback) {
+  const { t } = useI18n();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +52,7 @@ export function useAsyncSubmit(fallback: SubmitErrorFallback) {
     try {
       return { ok: true, value: await action() };
     } catch (e) {
-      setError(submitErrorMessage(e, fallback));
+      setError(SubmitRefusal.sentenceOf(e, fallback, t));
       return { ok: false, error: e };
     } finally {
       setSubmitting(false);
@@ -52,6 +73,7 @@ export function useSuccessToast() {
 }
 
 export function useToastSubmit(fallback: SubmitErrorFallback = authErrorMessage) {
+  const { t } = useI18n();
   const [submitting, setSubmitting] = useState(false);
 
   const run = async <T>(action: () => Promise<T>): Promise<AsyncSubmitResult<T>> => {
@@ -59,7 +81,7 @@ export function useToastSubmit(fallback: SubmitErrorFallback = authErrorMessage)
     try {
       return { ok: true, value: await action() };
     } catch (e) {
-      toast.error(submitErrorMessage(e, fallback));
+      toast.error(SubmitRefusal.sentenceOf(e, fallback, t));
       return { ok: false, error: e };
     } finally {
       setSubmitting(false);

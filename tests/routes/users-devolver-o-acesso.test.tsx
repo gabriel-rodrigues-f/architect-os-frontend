@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import type { SessionUser } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import { Route as UsersRoute } from "@/routes/users";
+import pt from "@/locales/pt.json";
 import {
   fixtureAdminUser,
   fixtureAssignedTechLeadUser,
@@ -179,7 +180,11 @@ describe("o ato existe, e ele pede confirmação antes de sair da tela", () => {
     const usuario = userEvent.setup();
     servidor.recusa = {
       status: 404,
-      corpo: { code: "NOT_FOUND", message: "Conta não encontrada." },
+      corpo: {
+        code: "NOT_FOUND",
+        message: "usuário não encontrado",
+        wording: { entity: "user" },
+      },
     };
     renderAs(fixtureAdminUser);
     await screen.findByText("Ana Martins");
@@ -188,7 +193,16 @@ describe("o ato existe, e ele pede confirmação antes de sair da tela", () => {
     await usuario.click(await screen.findByRole("button", { name: "Devolver o acesso" }));
 
     const aviso = await screen.findByRole("alert");
-    await waitFor(() => expect(aviso.textContent).toBe("Conta não encontrada."));
+    /*
+     * FATIA IDIOMA (dono, 2026-09-08) — a frase é NOSSA, não a do serviço.
+     *
+     * O corpo continua trazendo `message` em português, porque ela é
+     * retaguarda (log, suporte, quem lê a API direto). O que a tela mostra
+     * nasce aqui, do `code` e da peça `entity`, no idioma de quem lê: antes
+     * desta fatia, quem estivesse em inglês lia "usuário não encontrado".
+     */
+    await waitFor(() => expect(aviso.textContent).toBe(pt["refusal.notFound.user"]));
+    expect(aviso.textContent).not.toBe("usuário não encontrado");
     expect(aviso.textContent).not.toMatch(/\b(?:GET|POST)\b|\/api\/|NOT_FOUND/);
   });
 

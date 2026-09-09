@@ -11,9 +11,9 @@ import { AuthAlert } from "@/components/app/AuthAlert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { usePasswordChoice } from "@/hooks";
-import { authErrorMessage, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { PasswordRefusal } from "@/lib/password-safety";
+import { DoorRefusal } from "@/lib/door-refusal";
 import { SynapseSignals } from "@/lib/synapse-network";
 import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
 
@@ -86,10 +86,22 @@ export function FirstAccessScreen() {
       signals.pulseWith("primary");
       toast.success(t("firstAccess.done"));
     } catch (refused) {
-      const refusal = PasswordRefusal.of(refused);
-      const key = refusal.messageKey;
+      /*
+       * FATIA IDIOMA (dono, 2026-09-08) — o último furo da porta.
+       *
+       * As outras três telas sem sessão já escolhiam a frase por CÓDIGO
+       * (`DoorRefusal`, 2026-09-09); esta ainda caía em `authErrorMessage`,
+       * que devolve `error.message` — a frase que o backend escreveu, e o
+       * backend só escreve pt-BR. Quem chegava aqui lendo em inglês recebia
+       * "Senha atual incorreta" em português, na primeira tela do produto.
+       *
+       * A `DoorRefusal` já sabe apontar a exigência da senha pela
+       * `PasswordRefusal`, então a leitura é uma só; o que sobrou aqui é o que
+       * só esta tela faz — marcar o item vermelho da lista.
+       */
+      const refusal = DoorRefusal.of(refused);
       choice.point(refusal.requirement);
-      setError(key === null ? authErrorMessage(refused) : t(key));
+      setError(t(refusal.messageKey));
       const tone = SynapseOutcomeRule.toneOfDoorResult(refused);
       if (tone) signals.pulseWith(tone);
     } finally {

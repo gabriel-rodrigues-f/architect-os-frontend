@@ -1,8 +1,10 @@
 import { renderHook } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAsyncSubmit, useToastSubmit } from "@/hooks";
 import { FrontendContainer } from "@/lib/gateways/container";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * DENTRO DA APLICAÇÃO LOGADA A REDE NÃO PISCA (dono, 2026-09-08: *"vamos
@@ -68,8 +70,14 @@ describe("a aplicação logada não pisca por resultado", () => {
   });
 
   it("a recusa local não tem mais por onde pulsar: os hooks de envio não expõem ponto de anúncio", () => {
-    const semToast = renderHook(() => useAsyncSubmit("fallback"));
-    const comToast = renderHook(() => useToastSubmit());
+    // FATIA IDIOMA: os hooks de envio compõem a frase no idioma de quem lê, e
+    // por isso pedem o dicionário — o que eles continuam NÃO expondo é ponto
+    // de anúncio para a rede piscar.
+    const comDicionario = ({ children }: { children: ReactNode }) => (
+      <I18nProvider>{children}</I18nProvider>
+    );
+    const semToast = renderHook(() => useAsyncSubmit("fallback"), { wrapper: comDicionario });
+    const comToast = renderHook(() => useToastSubmit(), { wrapper: comDicionario });
 
     expect(Object.keys(semToast.result.current)).toEqual([
       "submitting",
