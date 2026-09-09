@@ -170,9 +170,34 @@ describe("DevelopmentPlansViewModel", () => {
     it("saveActionPlan envia só { actionPlan }", () => {
       const service = fakeService();
       new DevelopmentPlansViewModel(service).saveActionPlan("plano-1", "item-1", "Ler o RFC 9110");
-      expect(service.updatePlanItem).toHaveBeenCalledWith("plano-1", "item-1", {
-        actionPlan: "Ler o RFC 9110",
-      });
+      expect(service.updatePlanItem).toHaveBeenCalledWith(
+        "plano-1",
+        "item-1",
+        { actionPlan: "Ler o RFC 9110" },
+        undefined,
+      );
+    });
+
+    /**
+     * A régua do `removeItem` vale aqui: o selo "Salvo" do campo é uma
+     * afirmação à pessoa, e ela só pode sair quando o serviço confirmar. Sem
+     * este repasse, o campo volta a acender no gesto.
+     */
+    it("saveActionPlan repassa o `onConfirmed` para o serviço", () => {
+      const service = fakeService();
+      const onConfirmed = vi.fn();
+      new DevelopmentPlansViewModel(service).saveActionPlan(
+        "plano-1",
+        "item-1",
+        "Ler o RFC 9110",
+        onConfirmed,
+      );
+      expect(service.updatePlanItem).toHaveBeenCalledWith(
+        "plano-1",
+        "item-1",
+        { actionPlan: "Ler o RFC 9110" },
+        onConfirmed,
+      );
     });
 
     it("setItemTargetDate envia só { targetDate } (PATCH genérico, só em Draft)", () => {

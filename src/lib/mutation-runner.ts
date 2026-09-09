@@ -35,18 +35,24 @@ export class MutationRunner<S> {
    * sucesso de uma mutação otimista (inventário 2026-09-08, §5.7): disparado
    * no clique, o toast verde convivia com o `toast.error` da recusa que vinha
    * em seguida; a rede pulsa azul na resposta 2xx, e o aviso acompanha.
+   *
+   * Ele recebe a RESPOSTA (2026-09-09): a frase do aviso da casa vem do
+   * `messageCode` que o serviço publica no envelope, lido por
+   * `successMessageOf` — sem o resultado em mãos, a tela só teria a chave de
+   * reserva e o idioma do serviço voltaria a mandar. Quem não precisa do
+   * corpo continua declarando `() => void`, que é atribuível a este tipo.
    */
   optimistic<T>(
     applyLocal: (s: S) => S,
     call: () => Promise<T>,
     reconcile?: (result: T) => (s: S) => S,
-    onConfirmed?: () => void,
+    onConfirmed?: (result: T) => void,
   ): void {
     this.cache.update(applyLocal);
     void call().then(
       (result) => {
         if (reconcile) this.cache.update(reconcile(result));
-        onConfirmed?.();
+        onConfirmed?.(result);
       },
       (error: unknown) => {
         this.log(error);

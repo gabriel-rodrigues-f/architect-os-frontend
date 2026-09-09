@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DevelopmentCycle } from "@/lib/domain";
+import { useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { useCycleSelection } from "@/lib/context-scope";
@@ -350,6 +351,7 @@ function CycleDialog({
 }) {
   const store = useStore();
   const { t } = useI18n();
+  const notifySuccess = useSuccessToast();
   const isNew = cycle.id === "";
   const parsed = scheme.parseCycleName(cycle.name);
   const [year, setYear] = useState(parsed.year);
@@ -366,20 +368,41 @@ function CycleDialog({
     setEnd(scheme.datesFor(nextYear, nextPeriod).end);
   };
 
+  /**
+   * O DIÁLOGO SÓ FECHA COM A CONFIRMAÇÃO DO SERVIÇO (2026-09-09).
+   *
+   * Fechar é a afirmação: para quem está na frente da tela, o diálogo que some
+   * é o sistema dizendo "gravei". Antes ele sumia no clique — `addCycle` e
+   * `updateCycle` são `void`, dispara e esquece —, e com o servidor recusando
+   * a linha do ciclo ainda aparecia por um instante na lista antes de o
+   * rollback apagá-la. É a mesma régua do `removeItem` do PDI: `onConfirmed`
+   * roda quando o serviço confirma.
+   *
+   * O aviso é o da casa, com o `messageCode` que o serviço já publicava neste
+   * POST/PATCH e que ninguém consumia (`msg.cycle.create.success`,
+   * `msg.cycle.update.success`). A recusa continua vindo do `MutationRunner`,
+   * e agora encontra o diálogo aberto — que é onde a pessoa pode corrigir.
+   */
   const save = () => {
     if (duplicate) return;
     if (isNew) {
-      store.addCycle({
+      const novo: DevelopmentCycle = {
         id: scheme.cycleId(year, period),
         name: scheme.cycleName(year, period),
         start,
         end,
         status: "Planned",
+      };
+      store.addCycle(novo, (created) => {
+        notifySuccess("msg.cycle.create.success", undefined, created);
+        onClose();
       });
-    } else {
-      store.updateCycle(cycle.id, { start, end });
+      return;
     }
-    onClose();
+    store.updateCycle(cycle.id, { start, end }, (updated) => {
+      notifySuccess("msg.cycle.update.success", undefined, updated);
+      onClose();
+    });
   };
 
   return (

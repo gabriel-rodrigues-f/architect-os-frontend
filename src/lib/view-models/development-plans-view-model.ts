@@ -79,8 +79,19 @@ export class DevelopmentPlansViewModel {
     this.service.updatePlanItem(planId, itemId, { status });
   }
 
-  saveActionPlan(planId: string, itemId: string, actionPlan: string): void {
-    this.service.updatePlanItem(planId, itemId, { actionPlan });
+  /**
+   * Otimista, com a MESMA régua do `removeItem`: `onConfirmed` roda quando o
+   * serviço confirma. O selo "Salvo" do campo é uma afirmação à pessoa, e
+   * afirmação sem confirmação é mentira — antes ele acendia no gesto, e o
+   * PATCH recusado não apagava nada.
+   */
+  saveActionPlan(
+    planId: string,
+    itemId: string,
+    actionPlan: string,
+    onConfirmed?: () => void,
+  ): void {
+    this.service.updatePlanItem(planId, itemId, { actionPlan }, onConfirmed);
   }
 
   setItemTargetDate(planId: string, itemId: string, targetDate: string): void {
