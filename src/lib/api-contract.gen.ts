@@ -2857,12 +2857,6 @@ export interface paths {
                         /** @default  */
                         actions?: string;
                         nextSession?: string;
-                        /** @default [] */
-                        proficiencyUpdates?: {
-                            competencyId: string;
-                            observedLevel: 1 | 2 | 3 | 4 | 5;
-                            note?: string;
-                        }[];
                     };
                 };
             };
@@ -2913,12 +2907,6 @@ export interface paths {
                         /** @default  */
                         actions?: string;
                         nextSession?: string;
-                        /** @default [] */
-                        proficiencyUpdates?: {
-                            competencyId: string;
-                            observedLevel: 1 | 2 | 3 | 4 | 5;
-                            note?: string;
-                        }[];
                         scriptProvenance: string;
                     };
                 };
