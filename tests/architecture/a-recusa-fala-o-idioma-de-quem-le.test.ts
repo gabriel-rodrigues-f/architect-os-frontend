@@ -96,7 +96,10 @@ const NA_PORTA: readonly string[] = [
  *    dizem regra de produto por extenso, em prosa escrita para a pessoa. São
  *    tradução de texto, uma a uma, e cabem em fatias por módulo.
  */
-const DIVIDA_DE_HOJE = 95;
+// 95 → 94 (dono, 2026-09-09, ADR-0101): o Começar/Parar/Continuar saiu do
+// produto, e com ele o `AssessmentDevelopmentSummaryVersionConflictError` —
+// o 409 da trava otimista do campo. Desceu porque o produto encolheu.
+const DIVIDA_DE_HOJE = 94;
 
 /** Quantas classes de recusa a política JÁ compõe na tela, nos dois idiomas. */
 const TRADUZIDAS_HOJE = 52;
@@ -272,7 +275,7 @@ describe("do corpo do serviço até a frase da tela, sem passar pelo texto dele"
 
 describe("procedência da cópia do contrato do backend", () => {
   it("a cópia enxerga o contrato inteiro, e não um pedaço dele", () => {
-    expect(Object.keys(CLASSES).length).toBe(193);
+    expect(Object.keys(CLASSES).length).toBe(192);
   });
 
   /**

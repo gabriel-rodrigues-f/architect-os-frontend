@@ -94,9 +94,6 @@ describe("o profissional só vê a si — e só lê (dono, 2026-09-06)", () => {
     expect(screen.queryByLabelText("Profissional")).toBeNull();
     expect(linha.querySelectorAll("select")).toHaveLength(0);
     expect(linha.querySelectorAll("textarea")).toHaveLength(0);
-    // Começar/Parar/Continuar: lê como texto, não escreve.
-    expect(await screen.findByTestId("dev-summary-start-reading")).toBeTruthy();
-    expect(screen.queryByRole("textbox", { name: "Começar a fazer" })).toBeNull();
     semSeletorNemAcao("Profissional");
   });
 

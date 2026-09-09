@@ -27,9 +27,12 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * na seção Começar/Parar/Continuar da Avaliação), e um retorno tátil
  * mentiroso ensina a pessoa a confiar num rótulo que não vale nada.
  *
- * O irmão honesto deste campo é a `DevelopmentSummarySection`
- * (`assessments-shared.tsx`): o rótulo "Salvo" só acende dentro do
- * `result.ok`. Aqui a confirmação chega pelo mesmo seio que o `removeItem` já
+ * O irmão honesto deste campo ERA a `DevelopmentSummarySection`
+ * (`assessments-shared.tsx`): o rótulo "Salvo" só acendia dentro do
+ * `result.ok`. Ela saiu do produto no MESMO dia, algumas horas depois — o
+ * dono mandou remover o Começar/Parar/Continuar inteiro (ADR-0101) —, então
+ * este campo do PDI passou a ser o único guardião da régua.
+ * Aqui a confirmação chega pelo mesmo seio que o `removeItem` já
  * usava — o `onConfirmed` do `MutationRunner`, cujo contrato
  * (`tests/lib/mutation-runner.test.ts`) já garante que ele não roda na recusa.
  */

@@ -67,7 +67,11 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
  * um dia — a escada de níveis do time saiu do produto, e `PUT
  * /teams/:teamId/career-levels` com ela.
  */
-const CODIGOS_ESPERADOS = 65;
+// O COMEÇAR/PARAR/CONTINUAR SAI (dono, 2026-09-09, ADR-0101): 65 − 1 = 64.
+// `assessment.developmentSummary.update.success` durou um dia: nasceu de
+// manhã porque este era o único campo da Avaliação sem retorno ao salvar, e
+// saiu à noite com o campo.
+const CODIGOS_ESPERADOS = 64;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 

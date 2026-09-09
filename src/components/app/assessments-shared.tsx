@@ -1,13 +1,12 @@
-import { useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
-import { Callout, GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
+import { GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { QuerySection } from "@/components/app/QuerySection";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,7 +14,6 @@ import type {
   Professional,
   Assessment,
   AssessmentComment,
-  AssessmentDevelopmentSummary,
   AssessmentItem,
   Capability,
   Competency,
@@ -23,7 +21,7 @@ import type {
 } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import { useAsyncSubmit, useNarrowViewport, useSuccessToast } from "@/hooks";
+import { useAsyncSubmit, useNarrowViewport } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { stateContextCatalog } from "@/lib/state-contexts";
@@ -511,210 +509,6 @@ export function CareerPortfolioSection({
   );
 }
 
-export function DevelopmentSummarySection({
-  assessment,
-  isLead,
-}: {
-  assessment: Assessment;
-  isLead: boolean;
-}) {
-  const { t } = useI18n();
-  const status = assessment.status;
-  // Começar/Parar/Continuar: quem lidera escreve em Rascunho e Em Revisão (dono, 2026-09-06).
-  const canEdit = isLead && status !== "Completed";
-
-  const queryKey: QueryKey = ["assessment-development-summary", assessment.id];
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey,
-    queryFn: () => api.assessmentDevelopmentSummary(assessment.id),
-
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-  });
-
-  return (
-    <QuerySection
-      query={{ data, isPending, isError, refetch }}
-      className="mb-4"
-      title={t("asmt.devSummary.title")}
-      description={t("asmt.devSummary.subtitle")}
-      errorMessage={t("asmt.devSummary.loadError")}
-      skeleton={
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="h-24 animate-pulse rounded-md bg-secondary" />
-          <div className="h-24 animate-pulse rounded-md bg-secondary" />
-          <div className="h-24 animate-pulse rounded-md bg-secondary" />
-        </div>
-      }
-    >
-      {(data) => (
-        <DevelopmentSummaryForm
-          key={data.version}
-          assessmentId={assessment.id}
-          data={data}
-          canEdit={canEdit}
-          queryKey={queryKey}
-          onReload={() => void refetch()}
-        />
-      )}
-    </QuerySection>
-  );
-}
-
-function DevelopmentSummaryForm({
-  assessmentId,
-  data,
-  canEdit,
-  queryKey,
-  onReload,
-}: {
-  assessmentId: string;
-  data: AssessmentDevelopmentSummary;
-  canEdit: boolean;
-  queryKey: QueryKey;
-  onReload: () => void;
-}) {
-  const { t, locale } = useI18n();
-  const queryClient = useQueryClient();
-  const viewModel = useAssessmentViewModel();
-  const notifySuccess = useSuccessToast();
-  const [startDoing, setStartDoing] = useState(data.startDoing);
-  const [stopDoing, setStopDoing] = useState(data.stopDoing);
-  const [continueDoing, setContinueDoing] = useState(data.continueDoing);
-  const [saveState, setSaveState] = useState<"clean" | "dirty" | "saved" | "error">("clean");
-  const [conflict, setConflict] = useState(false);
-  const {
-    submitting: saving,
-    error: errorMessage,
-    clearError: clearErrorMessage,
-    run,
-  } = useAsyncSubmit(t("asmt.devSummary.saveError"));
-
-  const markDirty = () => {
-    setConflict(false);
-    setSaveState((prev) => (saving ? prev : "dirty"));
-  };
-
-  const save = () => {
-    void run(() =>
-      viewModel.updateDevelopmentSummary(
-        assessmentId,
-        { startDoing, stopDoing, continueDoing },
-        data.version,
-      ),
-    ).then((result) => {
-      if (result.ok) {
-        setSaveState("saved");
-        /*
-         * O RETORNO AO SALVAR (dono, 2026-09-09): *"quero ver uma mensagem de
-         * 'Salvo com sucesso'"*. O rótulo "Salvo" ao lado do botão é o estado
-         * do formulário; o aviso é o mecanismo da casa, e a frase vem do
-         * `messageCode` que o serviço já publica neste PUT — por isso
-         * `result.value` viaja como terceiro argumento.
-         */
-        notifySuccess("msg.assessment.developmentSummary.update.success", undefined, result.value);
-        void queryClient.invalidateQueries({ queryKey });
-        return;
-      }
-      setSaveState("error");
-      if (result.error instanceof ApiError && result.error.status === 409) {
-        clearErrorMessage();
-        setConflict(true);
-      }
-    });
-  };
-
-  return (
-    <SectionCard
-      className="mb-4"
-      title={t("asmt.devSummary.title")}
-      description={t("asmt.devSummary.subtitle")}
-    >
-      {conflict && (
-        <Callout tone="warning" className="mb-3">
-          <p>{t("asmt.devSummary.conflict")}</p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2"
-            onClick={() => {
-              setConflict(false);
-              onReload();
-            }}
-          >
-            {t("asmt.devSummary.reload")}
-          </Button>
-        </Callout>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <ReflectionField
-          id="dev-summary-start"
-          label={t("asmt.devSummary.start")}
-          placeholder={t("asmt.devSummary.start.placeholder")}
-          value={startDoing}
-          canEdit={canEdit}
-          onChange={(value) => {
-            setStartDoing(value);
-            markDirty();
-          }}
-        />
-        <ReflectionField
-          id="dev-summary-stop"
-          label={t("asmt.devSummary.stop")}
-          placeholder={t("asmt.devSummary.stop.placeholder")}
-          value={stopDoing}
-          canEdit={canEdit}
-          onChange={(value) => {
-            setStopDoing(value);
-            markDirty();
-          }}
-        />
-        <ReflectionField
-          id="dev-summary-continue"
-          label={t("asmt.devSummary.continue")}
-          placeholder={t("asmt.devSummary.continue.placeholder")}
-          value={continueDoing}
-          canEdit={canEdit}
-          onChange={(value) => {
-            setContinueDoing(value);
-            markDirty();
-          }}
-        />
-      </div>
-
-      {canEdit && (
-        <div className="mt-3 flex items-center gap-3">
-          <Button size="sm" disabled={saving || saveState === "clean"} onClick={save}>
-            {saving ? t("asmt.devSummary.saving") : t("common.save")}
-          </Button>
-          <p className="text-xs" role="status">
-            {saveState === "saved" && (
-              <span className="text-success-fg">{t("asmt.devSummary.saved")}</span>
-            )}
-            {saveState === "dirty" && (
-              <span className="text-muted-foreground">{t("asmt.devSummary.unsaved")}</span>
-            )}
-            {saveState === "error" && !conflict && errorMessage && (
-              <span className="text-destructive" role="alert">
-                {errorMessage}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
-
-      {!canEdit && data.updatedAt && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          {t("asmt.devSummary.lastUpdated", {
-            data: defaultDateFormatter.formatDate(data.updatedAt, locale) ?? "",
-          })}
-        </p>
-      )}
-    </SectionCard>
-  );
-}
-
 function LevelSelect({
   value,
   onChange,
@@ -1155,49 +949,6 @@ function CompetencyStackedCard({
             }
           />
         </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Um campo do Começar / Parar / Continuar. Quem lidera escreve; quem só lê
- * (o profissional, dono 2026-09-07) vê o texto como texto — sem caixa de
- * formulário desabilitada fingindo ser editável.
- */
-function ReflectionField({
-  id,
-  label,
-  placeholder,
-  value,
-  canEdit,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  placeholder: string;
-  value: string | undefined;
-  canEdit: boolean;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div>
-      <Label htmlFor={canEdit ? id : undefined}>{label}</Label>
-      {canEdit ? (
-        <Textarea
-          id={id}
-          className="mt-1"
-          value={value ?? ""}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-        />
-      ) : (
-        <p
-          className="mt-1 whitespace-pre-line text-sm text-foreground"
-          data-testid={`${id}-reading`}
-        >
-          {(value ?? "").trim() === "" ? "—" : value}
-        </p>
       )}
     </div>
   );

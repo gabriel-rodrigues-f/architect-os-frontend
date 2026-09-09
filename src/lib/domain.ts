@@ -176,16 +176,6 @@ export interface Assessment {
   version: number;
 }
 
-export interface AssessmentDevelopmentSummary {
-  assessmentId: string;
-  startDoing: string;
-  stopDoing: string;
-  continueDoing: string;
-  updatedByUserId: string | null;
-  updatedAt: string | null;
-  version: number;
-}
-
 export interface AssessmentCapability {
   id: string;
   assessmentId: string;
