@@ -207,6 +207,11 @@ describe("Mentoria e 1:1 — um cartão de IA só: a Preparação do 1:1", () =>
     expect(screen.queryByText(/Comece perguntando/)).toBeNull();
   });
 
+  /**
+   * Onda "o erro não conta nada" (2026-09-09): a frase de um 5xx é NOSSA. A do
+   * serviço narrava o estado interno da casa — e nesta tela, o guarda que
+   * confere a saída do modelo contra os números apurados.
+   */
   it("erro da API vira frase amigável com 'Tentar novamente', e tentar novamente tenta", async () => {
     let falhar = true;
     monta(MentoringPage, fixtureAssignedManagerUser, [
@@ -219,8 +224,11 @@ describe("Mentoria e 1:1 — um cartão de IA só: a Preparação do 1:1", () =>
     const usuario = userEvent.setup();
 
     await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
-    const recusa = await screen.findByText("Serviço fora do ar");
+    const recusa = await screen.findByText(
+      "Não foi possível gerar a sugestão agora. Tente novamente.",
+    );
     expect(recusa.getAttribute("role")).toBe("alert");
+    expect(screen.queryByText("Serviço fora do ar")).toBeNull();
 
     falhar = false;
     await usuario.click(screen.getByRole("button", { name: /Tentar novamente/ }));

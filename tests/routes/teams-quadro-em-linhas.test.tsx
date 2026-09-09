@@ -93,7 +93,7 @@ const bruno: TeamRosterMember = {
 };
 
 const CAMINHO_DO_QUADRO = apiPath(`/teams/${fixtureTeamId}/memberships`);
-const INDISPONIVEL = /leitura do quadro deste time ainda não está disponível/i;
+const INDISPONIVEL = /quadro deste time ainda não pode ser listado aqui/i;
 const DECLARACAO = /dados de demonstração/i;
 
 const rotaDeTimes: FetchRoute = (href, init) =>

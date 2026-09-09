@@ -241,7 +241,11 @@ describe("o link do convite abre a criação de senha, sem sessão", () => {
     await abrirOLink(`?token=${TOKEN}`);
 
     expect(await screen.findByText("Este link não serve mais")).toBeTruthy();
-    expect(screen.getByText("Este link de acesso venceu.")).toBeTruthy();
+    // A frase é NOSSA, nos dois idiomas — a do serviço só existe em pt-BR.
+    expect(
+      screen.getByText("Peça um link novo e abra sempre o mais recente que você recebeu."),
+    ).toBeTruthy();
+    expect(screen.queryByText("Este link de acesso venceu.")).toBeNull();
     expect(screen.queryByLabelText("Senha nova")).toBeNull();
     expect(screen.getByRole("button", { name: "Pedir um link novo" })).toBeTruthy();
   });
@@ -339,11 +343,12 @@ describe("o link que não serve mais tem uma saída, e não é o formulário", (
   });
 
   /**
-   * Desconhecido, vencido, usado ou substituído chegam todos no mesmo código.
-   * A frase é a DO SERVIÇO: o contrato diz que ela já vem escrita para a
-   * pessoa, e só ele sabe qual dos quatro aconteceu.
+   * Desconhecido, vencido, usado ou substituído chegam todos no mesmo código —
+   * e a distinção entre os quatro não muda o próximo gesto da pessoa, que é
+   * pedir outro link. A frase é NOSSA (dono, 2026-09-09): a do serviço só
+   * existe em pt-BR e esta tela também existe em inglês.
    */
-  it("link recusado mostra a frase do serviço e tira o formulário da frente", async () => {
+  it("link recusado mostra a frase da casa e tira o formulário da frente", async () => {
     const usuario = await abrirOLink(`?token=${TOKEN}`);
     await screen.findByText("Defina sua senha");
     servidor.proximaRecusa = RecusaDoServico.linkRecusado("Este convite já foi usado.");
@@ -352,7 +357,10 @@ describe("o link que não serve mais tem uma saída, e não é o formulário", (
     await salvar(usuario);
 
     expect(await screen.findByText("Este link não serve mais")).toBeTruthy();
-    expect(screen.getByText("Este convite já foi usado.")).toBeTruthy();
+    expect(
+      screen.getByText("Peça um link novo e abra sempre o mais recente que você recebeu."),
+    ).toBeTruthy();
+    expect(screen.queryByText("Este convite já foi usado.")).toBeNull();
     expect(screen.queryByLabelText("Senha nova")).toBeNull();
     expect(screen.getByRole("button", { name: "Pedir um link novo" })).toBeTruthy();
   });

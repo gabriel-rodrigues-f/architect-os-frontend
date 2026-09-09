@@ -50,7 +50,7 @@ describe("Login — credencial recusada é anunciada", () => {
       }
       if (href.endsWith(apiPath("/auth/login")) && init?.method === "POST") {
         return Promise.resolve(
-          jsonResponse({ error: "Unauthorized", message: CREDENCIAL_RECUSADA }, 401),
+          jsonResponse({ code: "INVALID_CREDENTIALS", message: CREDENCIAL_RECUSADA }, 401),
         );
       }
       return Promise.resolve(new Response("{}", { status: 200 }));
@@ -113,7 +113,9 @@ describe("Login — o aviso de erro não some enquanto a nova tentativa está em
         if (soltar) return Promise.reject(new TypeError("Failed to fetch"));
         return new Promise<Response>((resolve) => {
           soltar = () =>
-            resolve(jsonResponse({ error: "Unauthorized", message: CREDENCIAL_RECUSADA }, 401));
+            resolve(
+              jsonResponse({ code: "INVALID_CREDENTIALS", message: CREDENCIAL_RECUSADA }, 401),
+            );
         });
       }
       return Promise.resolve(new Response("{}", { status: 200 }));
@@ -139,7 +141,7 @@ describe("Login — o aviso de erro não some enquanto a nova tentativa está em
 
     // A resposta nova troca o texto — sem nunca ter tirado o bloco da tela.
     expect(
-      (await screen.findByText(/Não foi possível falar com o serviço/)).getAttribute("role"),
+      (await screen.findByText(/Não é possível acessar a aplicação agora/)).getAttribute("role"),
     ).toBe("alert");
   });
 });

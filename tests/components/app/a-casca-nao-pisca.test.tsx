@@ -62,7 +62,7 @@ const fetchMock = vi.fn();
 
 const CARREGANDO = "Carregando dados do time…";
 const ITEM_DO_MENU = "Painel Executivo";
-const FALHA_DE_CONEXAO = "Não foi possível acessar o serviço";
+const FALHA_DE_CONEXAO = "Não é possível acessar a aplicação agora";
 
 /** A fatia de contexto que nunca responde: o `<ContextScope>` da rota fica pendente para sempre. */
 const estadoQueNuncaChega = () =>

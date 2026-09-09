@@ -35,7 +35,10 @@ import {
   TeamCareerLevelsQuery,
 } from "./configuration-queries";
 import { stateContextCatalog, UnrequestedSlice } from "./state-contexts";
+import { ReadingRefusal } from "../components/app/ReadingRefusal";
 import { ServiceOutageScreen } from "../components/app/ServiceOutageScreen";
+import { ApiFailureReading } from "./api-failure-reading";
+import { ServiceOutage } from "./service-outage";
 import {
   EffectiveOperationalSettings,
   type AppSettingValue,
@@ -1051,6 +1054,20 @@ export function LoadingState() {
   );
 }
 
+/**
+ * A LEITURA QUE NÃO VEIO — e o que a tela faz com isso.
+ *
+ * Dono (2026-09-09): *"um 404 de uma rota derrubou três telas de uma vez"*.
+ * Esta peça desenhava a tela de queda, com a corrida de carreira, para
+ * QUALQUER falha de consulta — um 404, um 403, um recurso que ainda não
+ * existe, tudo virava "o serviço caiu" e apagava a aplicação inteira.
+ *
+ * A régua é a da `ServiceOutage`, e ela não é sobre a gravidade da falha: é
+ * sobre a aplicação ter conseguido FALAR com a casa. Sem resposta, ou a casa
+ * dizendo que não consegue responder (5xx), é queda e a tela é a do jogo.
+ * 404, 403 e 409 são RESPOSTAS: a casa falou, a falha fica contida no lugar
+ * dela e o resto da tela continua de pé.
+ */
 export function ConnectionError({
   error,
   onRetry,
@@ -1061,6 +1078,8 @@ export function ConnectionError({
   resource: string;
 }) {
   if (import.meta.env.DEV) console.error(`[store] falha ao carregar ${resource}:`, error);
+
+  if (!ServiceOutage.isOutage(error)) return <ReadingRefused error={error} onRetry={onRetry} />;
 
   // Dono (2026-09-06): a tela de indisponibilidade é UMA, com a corrida de carreira.
   return (
@@ -1076,6 +1095,23 @@ export function ConnectionError({
         ) : undefined
       }
     />
+  );
+}
+
+/**
+ * A casa RESPONDEU e a resposta foi uma recusa. A frase é a da SITUAÇÃO, na
+ * língua de quem lê — nunca a que o serviço escreveu, que só existe em pt-BR
+ * e, num 404 do próprio backend, é o eco do método e da URL.
+ */
+function ReadingRefused({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex min-h-[40vh] flex-col items-center justify-center px-4 text-center">
+      <ReadingRefusal
+        sentence={t(ApiFailureReading.ofFailure(error).messageKey)}
+        onRetry={onRetry}
+      />
+    </div>
   );
 }
 

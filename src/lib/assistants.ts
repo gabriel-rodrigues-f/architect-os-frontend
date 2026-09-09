@@ -1,5 +1,6 @@
 import type { ApiClient } from "./api-client";
 import { ApiError, UserFacingError } from "./api-errors";
+import { ApiFailureReading } from "./api-failure-reading";
 
 export const GENERATION_PROFILE_NAMES = ["empirical", "moderate", "methodical"] as const;
 
@@ -119,8 +120,7 @@ export class AssistantCall {
   }
 }
 
-export type AssistantFailureKey =
-  "ai.failure.timeout" | "ai.failure.offline" | "ai.failure.unknown";
+export type AssistantFailureKey = "ai.failure.timeout" | "ai.failure.unknown" | "error.unavailable";
 
 /**
  * Regra 19 do pedido: *"erro da API tratado"* e *"erro amigável"*.
@@ -133,6 +133,12 @@ export type AssistantFailureKey =
  *
  * Onde o serviço NÃO falou — tempo esgotado, rede caída, falha sem corpo — a
  * frase é nossa, e vem do dicionário, em pt e en.
+ *
+ * A FRONTEIRA DE 2026-09-09 desenhou a linha: "quando o serviço fala" vale na
+ * faixa de NEGÓCIO. Num 5xx quem fala é o estado interno da casa — a família
+ * de 503 dos assistentes narra o guarda que confere a saída do modelo contra
+ * os números apurados, e até o algarismo recusado. Nada ali muda o próximo
+ * gesto de quem apertou o botão: o gesto é tentar de novo, e é essa a frase.
  */
 export class AssistantFailureReading {
   private constructor(
@@ -149,7 +155,12 @@ export class AssistantFailureReading {
   }
 
   private static ofApiFailure(failure: ApiError): AssistantFailureReading {
-    if (failure.status === 0) return new AssistantFailureReading("ai.failure.offline", null);
+    if (failure.status === ApiFailureReading.SEM_RESPOSTA_STATUS) {
+      return new AssistantFailureReading("error.unavailable", null);
+    }
+    if (ApiFailureReading.of(failure.status).silencesTheService) {
+      return new AssistantFailureReading("ai.failure.unknown", null);
+    }
     if (failure.code !== undefined) return new AssistantFailureReading(null, failure.message);
     return new AssistantFailureReading("ai.failure.unknown", null);
   }

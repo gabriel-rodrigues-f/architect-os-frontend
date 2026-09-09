@@ -33,6 +33,9 @@ const OUTRO_MEMBRO: SessionUser = {
 
 const fetchMock = vi.fn();
 
+const FRASE_DA_CASA =
+  "Não é possível acessar a aplicação agora. Entre em contato com um administrador.";
+
 const UsersPage = UsersRoute.options.component as () => ReactNode;
 
 /** Backend que responde 500 em qualquer escrita de conta. */
@@ -78,7 +81,10 @@ describe("Usuários — falha de gravação é anunciada (QA-04)", () => {
     await userEvent.click(within(dialogo).getByRole("button", { name: "Salvar alterações" }));
 
     const alerta = await within(dialogo).findByRole("alert");
-    expect(alerta.textContent).toBe("Falha ao gravar a conta");
+    // A região viva é o que este teste guarda; a FRASE é a nossa desde
+    // 2026-09-09 — num 500, o que o serviço escreveu não vira texto de tela.
+    expect(alerta.textContent).toBe(FRASE_DA_CASA);
+    expect(alerta.textContent).not.toContain("gravar");
   });
 
   it("cadastrar: o erro de admissão entra numa região viva", async () => {
@@ -97,6 +103,9 @@ describe("Usuários — falha de gravação é anunciada (QA-04)", () => {
     await userEvent.click(within(dialogo).getByRole("button", { name: "Cadastrar Profissional" }));
 
     const alerta = await within(dialogo).findByRole("alert");
-    expect(alerta.textContent).toBe("Falha ao gravar a conta");
+    // A região viva é o que este teste guarda; a FRASE é a nossa desde
+    // 2026-09-09 — num 500, o que o serviço escreveu não vira texto de tela.
+    expect(alerta.textContent).toBe(FRASE_DA_CASA);
+    expect(alerta.textContent).not.toContain("gravar");
   });
 });

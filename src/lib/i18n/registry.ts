@@ -8,6 +8,21 @@ export const BASE_LOCALE = "pt";
 
 export const baseMessages = base as MessageBundle & { $label: string };
 
+/**
+ * O DICIONÁRIO NA LÍNGUA BASE, para quem precisa dele fora do provedor.
+ *
+ * O `ApiError` nasce no cliente HTTP, longe do React e do `t` — e mesmo assim
+ * a frase dele é texto de tela, então ela mora no dicionário (a régua de
+ * `nenhum-erro-tecnico-na-tela`: toda frase nasce no dicionário, nunca em TS).
+ * Quem TEM `t` em mãos traduz pela `MessageKey` e mostra na língua da pessoa;
+ * esta porta é o que sobra para quem não tem.
+ */
+export class BaseDictionary {
+  static sentenceOf(key: MessageKey): string {
+    return base[key];
+  }
+}
+
 const loaders = import.meta.glob<{ default: MessageBundle & { $label: string } }>(
   "../../locales/*.json",
 );

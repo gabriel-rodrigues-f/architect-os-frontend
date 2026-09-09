@@ -55,7 +55,7 @@ describe("serviço fora do ar — uma tela só, com a corrida, e o aviso de volt
   it("Usuários sem serviço mostra a MESMA tela das outras: título, corrida e Recarregar — nada de aviso discreto", async () => {
     renderWithApp(<UsersPage />);
     expect(await screen.findByTestId("service-outage")).toBeTruthy();
-    expect(screen.getByText("Não foi possível acessar o serviço")).toBeTruthy();
+    expect(screen.getByText("Não é possível acessar a aplicação agora")).toBeTruthy();
     expect(screen.getByRole("img", { name: /Corrida de carreira/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Recarregar" })).toBeTruthy();
     expect(screen.queryByText("Não foi possível carregar as contas.")).toBeNull();
@@ -71,16 +71,12 @@ describe("serviço fora do ar — uma tela só, com a corrida, e o aviso de volt
   it("quando o serviço volta, a pessoa é avisada e ganha o botão de voltar para a aplicação", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByTestId("service-outage");
-    expect(
-      screen.queryByText("O serviço voltou. Quando quiser, volte para a aplicação."),
-    ).toBeNull();
+    expect(screen.queryByText("A aplicação voltou. Quando quiser, volte para ela.")).toBeNull();
     servicoNoAr = true;
     await waitFor(
       () => expect(screen.getByRole("button", { name: "Voltar para a aplicação" })).toBeTruthy(),
       { timeout: 8000 },
     );
-    expect(
-      screen.getByText("O serviço voltou. Quando quiser, volte para a aplicação."),
-    ).toBeTruthy();
+    expect(screen.getByText("A aplicação voltou. Quando quiser, volte para ela.")).toBeTruthy();
   }, 10000);
 });

@@ -56,16 +56,17 @@ describe("o convite que chega pelo link", () => {
 
 describe("a recusa de criar a senha pelo convite", () => {
   /**
-   * O CONTRATO diz que a frase do 401 já é escrita para a pessoa. Repeti-la
-   * com palavras nossas produziria duas versões do mesmo fato — e a nossa
-   * seria a que não sabe se o link venceu, foi usado ou foi substituído.
+   * A frase do link morto é NOSSA (dono, 2026-09-09). Era a DO SERVIÇO, com o
+   * argumento de que o contrato já a escreve para a pessoa — mas o serviço só
+   * escreve pt-BR e esta tela também existe em inglês. E a distinção entre
+   * desconhecido, vencido, usado e substituído não muda o próximo gesto dela:
+   * em todos os quatro, o gesto é pedir outro link.
    */
-  it("link recusado mostra a frase DO SERVIÇO, não uma nossa", () => {
+  it("link recusado fala pela chave da casa, não pela frase do serviço", () => {
     const recusa = SetPasswordRefusal.of(linkRecusado("Este convite já foi usado."));
 
     expect(recusa.reason).toBe("refusedLink");
-    expect(recusa.serviceSentence).toBe("Este convite já foi usado.");
-    expect(recusa.messageKey).toBeNull();
+    expect(recusa.messageKey).toBe("setPassword.refusedLink.lead");
   });
 
   it("link recusado pede um link novo — não é a senha que está errada", () => {
@@ -83,7 +84,6 @@ describe("a recusa de criar a senha pelo convite", () => {
     expect(recusa.reason).toBe("weakPassword");
     expect(recusa.requirement).toBe("symbol");
     expect(recusa.messageKey).toBe("password.refused.symbol");
-    expect(recusa.serviceSentence).toBeNull();
     expect(recusa.asksForANewLink).toBe(false);
   });
 
@@ -95,20 +95,25 @@ describe("a recusa de criar a senha pelo convite", () => {
   });
 
   /**
-   * Fora dos dois códigos do contrato, a leitura não inventa: devolve tudo
-   * nulo e quem chama cai na frase da SITUAÇÃO (`ApiFailureReading`), que é a
-   * régua da casa contra erro técnico na tela.
+   * Fora dos dois códigos do contrato, a porta CALA: a frase do dono, e nada
+   * do que o serviço tenha escrito. Um 503 traz a frase que anuncia o banco de
+   * dados fora do ar; ela não muda o próximo gesto de ninguém.
    */
-  it("qualquer outra falha não vira frase aqui", () => {
+  it("qualquer outra falha recebe a frase do dono", () => {
     for (const outra of [
-      new ApiError("fora do ar", 503),
+      new ApiError(
+        "Banco de dados temporariamente indisponível.",
+        503,
+        undefined,
+        "DATABASE_UNAVAILABLE",
+      ),
+      new ApiError("Rota POST /api/v1/auth/set-password não existe", 404),
       new TypeError("quebrou no meio do caminho"),
       "nem erro é",
     ]) {
       const recusa = SetPasswordRefusal.of(outra);
       expect(recusa.reason).toBe("other");
-      expect(recusa.serviceSentence).toBeNull();
-      expect(recusa.messageKey).toBeNull();
+      expect(recusa.messageKey).toBe("error.unavailable");
       expect(recusa.asksForANewLink).toBe(false);
     }
   });

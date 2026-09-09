@@ -66,14 +66,29 @@ export function networkUnavailableError(cause: unknown): ApiError {
 }
 
 /**
+ * O CANO, e onde ele foi fechado.
+ *
  * Quando o serviço manda frase, a frase é dele; quando não manda, a frase vem
  * da SITUAÇÃO (`ApiFailureReading`) — nunca de verbo, caminho e status
  * remontados. Por isso não existe mais parâmetro `fallbackMessage`: quem
  * chamava tinha de inventar a frase, e dez chamadas inventaram a técnica.
+ *
+ * A regra ganhou uma FRONTEIRA (dono, 2026-09-09). `body?.message ?? …` valia
+ * em qualquer faixa de status, e a auditoria mostrou o que isso publicava: no
+ * 5xx e no silêncio, quem escrevia a frase da tela era o estado interno da
+ * casa — o banco fora do ar, a proteção contra força bruta fora do ar, o nome
+ * de uma coluna e o UUID de uma linha, o eco do método e da URL. Acima de 500
+ * e no status 0 a frase passa a ser NOSSA, sempre.
+ *
+ * O que NÃO muda: `code`, `details` e `correlationId` continuam no objeto.
+ * Eles é que fazem a sessão morta voltar ao login, a lista de exigências de
+ * senha apontar o item e o portfólio ramificar — apagá-los deixaria a tela
+ * errada, não discreta.
  */
 export function apiFailureOf(body: ApiErrorBody | null, status: number): ApiError {
+  const reading = ApiFailureReading.of(status);
   return new ApiError(
-    body?.message ?? ApiFailureReading.of(status).sentence,
+    reading.silencesTheService ? reading.sentence : (body?.message ?? reading.sentence),
     status,
     body?.details,
     body?.code,

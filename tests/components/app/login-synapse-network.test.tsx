@@ -40,7 +40,10 @@ function servicoQueSegura() {
       return new Promise<Response>((resolve) => {
         soltar = () =>
           resolve(
-            jsonResponse({ error: "Unauthorized", message: "E-mail ou senha inválidos." }, 401),
+            jsonResponse(
+              { code: "INVALID_CREDENTIALS", message: "E-mail ou senha inválidos." },
+              401,
+            ),
           );
       });
     }
@@ -160,7 +163,7 @@ describe("Enter envia o formulário (dono, 2026-09-07)", () => {
       if (href.endsWith(apiPath("/auth/login")) && init?.method === "POST") {
         tentativas += 1;
         return Promise.resolve(
-          jsonResponse({ error: "Unauthorized", message: "E-mail ou senha inválidos." }, 401),
+          jsonResponse({ code: "INVALID_CREDENTIALS", message: "E-mail ou senha inválidos." }, 401),
         );
       }
       return Promise.resolve(jsonResponse({ error: "Unauthorized" }, 401));

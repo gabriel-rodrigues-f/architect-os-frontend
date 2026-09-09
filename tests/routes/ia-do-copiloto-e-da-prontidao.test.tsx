@@ -155,7 +155,11 @@ describe("copiloto de 1:1 — onde a conversa acontece", () => {
 
     await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
 
-    expect(await screen.findByText("Leitura indisponível")).toBeTruthy();
+    // A frase de um 5xx é NOSSA (2026-09-09): a do serviço nomeia a dependência.
+    expect(
+      await screen.findByText("Não foi possível gerar a sugestão agora. Tente novamente."),
+    ).toBeTruthy();
+    expect(screen.queryByText("Leitura indisponível")).toBeNull();
     expect(screen.getByRole("button", { name: /Tentar novamente/ })).toBeTruthy();
     expect(screen.getByText("Linha do Tempo")).toBeTruthy();
   });
@@ -212,7 +216,11 @@ describe("explicação da prontidão — ao lado do veredito determinístico", (
 
     await usuario.click(await screen.findByRole("button", { name: /Explicar a prontidão/ }));
 
-    expect(await screen.findByText("Leitura indisponível")).toBeTruthy();
+    // A frase de um 5xx é NOSSA (2026-09-09): a do serviço nomeia a dependência.
+    expect(
+      await screen.findByText("Não foi possível gerar a sugestão agora. Tente novamente."),
+    ).toBeTruthy();
+    expect(screen.queryByText("Leitura indisponível")).toBeNull();
     expect(screen.getByText("93%")).toBeTruthy();
     expect(screen.getByText("58%")).toBeTruthy();
   });
