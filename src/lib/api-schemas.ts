@@ -313,17 +313,6 @@ const careerLevel = z.object({
 
 export const careerLevelsResponseSchema = z.array(careerLevel);
 
-/**
- * A escada de carreira DE UM TIME (dono, 2026-09-08). `declared` viaja junto
- * porque a tela precisa da diferença entre "este time escolheu os cinco" e
- * "este time não escolheu nada, e o que você vê é o catálogo".
- */
-export const teamCareerLadderResponseSchema = z.object({
-  teamId: z.string(),
-  declared: z.boolean(),
-  levels: z.array(careerLevel),
-});
-
 const bandTone = z.enum(["ok", "low", "high", "critical"]);
 const scoringBand = z.object({
   key: z.string(),

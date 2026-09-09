@@ -45,7 +45,7 @@ import {
 } from "@/lib/person-admission";
 import { requirePeopleAdministrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useTeamCareerLevels } from "@/lib/store";
+import { useCareerLevelsByRank } from "@/lib/store";
 import { TeamChoice } from "@/lib/team-choice";
 import { AccountsDirectory, TableOrder, type AccountsColumn } from "@/lib/view-models";
 
@@ -543,11 +543,10 @@ function AdmitPersonDialog({
   const firstCargo = cargos[0] ?? "member";
   const values = chosen ?? PersonAdmission.empty(firstCargo, preselectedTeamId);
   const admission = new PersonAdmission(values);
-  // Dono (2026-09-08): a senioridade oferecida é a do TIME em que a pessoa
-  // está sendo admitida — admitir um Especialista num time que vai até Pleno
-  // é escrever uma carreira que a organização não desenhou. Sem time
-  // escolhido ainda, o catálogo da organização.
-  const careerLevels = useTeamCareerLevels(values.teamId ?? null);
+  // REGRA 19 (dono, 2026-09-09): todo time tem os cinco níveis, então a
+  // senioridade oferecida na admissão é a do catálogo da organização — não
+  // depende mais do time escolhido.
+  const careerLevels = useCareerLevelsByRank();
   const change = (patch: Partial<PersonAdmissionValues>) => setChosen({ ...values, ...patch });
 
   const blocked = refusal !== null && refusal.stillApplies(values);

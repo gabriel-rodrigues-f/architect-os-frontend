@@ -39,11 +39,11 @@ import {
   type ScoringScale,
 } from "@/lib/scoring-bands";
 import {
+  useCareerLevelsByRank,
   useCurationPolicy,
   useOperationalSettings,
   useScoringRuler,
   useStore,
-  useTeamCareerLevels,
   useTextTemplates,
   useVocabularies,
   useVocabulary,
@@ -221,11 +221,10 @@ function CareerPolicySection() {
       ProgressionPolicyScope.ALL_TEAMS_CHOICE,
     teams,
   );
-  // Dono (2026-09-08): a estrutura de níveis é DO TIME. Com um time escolhido,
-  // as linhas são os degraus DELE, na ordem dele; em "Todos os times", o
-  // catálogo da organização — que é a única leitura possível quando a pergunta
-  // não é sobre um time.
-  const careerLevels = useTeamCareerLevels(scope.team?.id ?? null);
+  // REGRA 19 (dono, 2026-09-09): todo time tem os cinco níveis, então as
+  // linhas são sempre o catálogo da organização — com um time escolhido ou em
+  // "Todos os times", a lista de níveis é a mesma.
+  const careerLevels = useCareerLevelsByRank();
 
   return (
     <SectionCard

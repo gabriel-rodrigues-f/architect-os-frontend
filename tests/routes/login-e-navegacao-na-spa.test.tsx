@@ -108,13 +108,6 @@ class ServidorDaSessao {
       return this.envelope(
         jsonResponse([{ id: fixtureTeamId, name: "Time Plataforma", active: true }]),
       );
-    // Dono (2026-09-08): a escada é DO TIME, e a rota dele também termina em
-    // `/career-levels`. Aqui o time oferece o catálogo inteiro.
-    const escadaDeUmTime = /\/teams\/([^/]+)\/career-levels$/.exec(href);
-    if (escadaDeUmTime)
-      return this.envelope(
-        jsonResponse({ teamId: escadaDeUmTime[1], declared: true, levels: fixtureCareerLevels }),
-      );
     if (href.endsWith(apiPath("/career-levels")))
       return this.envelope(jsonResponse(fixtureCareerLevels));
     if (href.includes("/rules/")) return this.envelope(jsonResponse(REGUA));

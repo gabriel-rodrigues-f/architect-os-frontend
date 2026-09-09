@@ -29,11 +29,7 @@ import type {
   TeamLevelRule,
 } from "./domain";
 import { EffectiveCurationPolicy, type CurationPolicy } from "./curation-policy";
-import {
-  configurationCatalog,
-  RulerConfiguration,
-  TeamCareerLevelsQuery,
-} from "./configuration-queries";
+import { configurationCatalog, RulerConfiguration } from "./configuration-queries";
 import { stateContextCatalog, UnrequestedSlice } from "./state-contexts";
 import { ReadingRefusal } from "../components/app/ReadingRefusal";
 import { ServiceOutageScreen } from "../components/app/ServiceOutageScreen";
@@ -74,26 +70,6 @@ import {
 export function useCareerLevelsByRank(): CareerLevel[] {
   const { data } = useQuery(configurationCatalog.careerLevels.options);
   return [...(data ?? [])].sort((a, b) => a.rank - b.rank);
-}
-
-/**
- * Dono (2026-09-08): a estrutura de níveis é do TIME. Toda tela que perguntava
- * "quais níveis existem?" passa a perguntar "quais níveis ESTE time usa?", e
- * esta é a pergunta.
- *
- * Sem time escolhido, a resposta é o catálogo da organização — é o caso do
- * cadastro que ainda não escolheu time e o da tela que fala da organização
- * inteira. A ordem é a que o time declarou (o degrau), não a do `rank`: quem
- * começa no Pleno tem o Pleno em primeiro.
- */
-export function useTeamCareerLevels(teamId: string | null): CareerLevel[] {
-  const organization = useCareerLevelsByRank();
-  const { data } = useQuery({
-    ...TeamCareerLevelsQuery.optionsOf(teamId ?? ""),
-    enabled: teamId !== null,
-  });
-  if (teamId === null) return organization;
-  return data?.levels ?? [];
 }
 
 export function useScoringRuler(): ScoringRuler {
