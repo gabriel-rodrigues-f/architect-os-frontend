@@ -63,6 +63,15 @@ type ScopedProfessional = Pick<Professional, "id" | "teamId">;
  */
 type AccountLike = { id: string; status: string; role: string };
 
+/**
+ * O que a política precisa saber de quem lê para responder ALCANCE: o papel e
+ * os vínculos, e mais nada. Existe porque a pergunta de alcance também é feita
+ * por quem tem em mãos um recorte da sessão — a caixa de avisos pergunta com
+ * um `NoticesViewer` — e obrigar a `SessionUser` inteira ali empurraria de
+ * volta a lista de papéis escrita à mão que esta fatia veio matar.
+ */
+export type BondedViewer = Pick<SessionUser, "role" | "memberships">;
+
 export class UiAuthorizationPolicy {
   /** LEITURA sobre uma pessoa: ela mesma, quem a lidera por vínculo, o administrador, ou o suporte (em modo de suporte). */
   canReadAbout(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
@@ -332,7 +341,7 @@ export class UiAuthorizationPolicy {
   }
 
   /** Os times em que a pessoa exerce o PRÓPRIO papel — o alcance de quem lidera. */
-  teamsBoundAsOwnRole(user: SessionUser): ReadonlySet<string> {
+  teamsBoundAsOwnRole(user: BondedViewer): ReadonlySet<string> {
     return this.scopeGrantingTeamsOf(user);
   }
 
@@ -447,7 +456,7 @@ export class UiAuthorizationPolicy {
    * o tech lead o time (um só) em que é tech lead. A conta de dois chapéus
    * morreu.
    */
-  private scopeGrantingTeamsOf(user: SessionUser): ReadonlySet<string> {
+  private scopeGrantingTeamsOf(user: BondedViewer): ReadonlySet<string> {
     if (!TeamLeadershipRoles.includes(user.role)) return new Set();
     return this.teamsBoundAs(user, [user.role]);
   }
@@ -465,7 +474,7 @@ export class UiAuthorizationPolicy {
   }
 
   private teamsBoundAs(
-    user: SessionUser,
+    user: BondedViewer,
     roles: readonly TeamLeadershipRole[],
   ): ReadonlySet<string> {
     return new Set(

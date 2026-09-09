@@ -45,7 +45,7 @@ const fetchMock = vi.fn();
 const aviso = (indice: number, dia: string) => ({
   id: `aviso-${String(indice)}`,
   eventType: "mentoring.recorded",
-  title: `Mentoria registrada número ${String(indice)}`,
+  wording: { subjectName: `Pessoa ${String(indice)}` },
   link: "/mentoring",
   occurredAt: `2026-08-${dia}T12:00:00.000Z`,
   readAt: null,
@@ -58,6 +58,9 @@ const PRIMEIRA = [aviso(1, "28"), aviso(2, "27"), aviso(3, "26"), aviso(4, "25")
 const SEGUNDA = Array.from({ length: 10 }, (_, indice) =>
   aviso(indice + 6, String(23 - indice).padStart(2, "0")),
 );
+
+/** A frase que a TELA monta a partir do tipo e das peças (dono, 2026-09-08). */
+const frase = (indice: number) => `Mentoria registrada para Pessoa ${String(indice)}`;
 
 interface Leitura {
   limit: string | null;
@@ -108,16 +111,16 @@ describe("o sino pagina pelo cursor, sem recarregar o que já veio", () => {
   it("a primeira abertura pede cinco avisos, sem cursor", async () => {
     renderWithApp(<NoticeBell />);
     await abreOSino();
-    await screen.findByText("Mentoria registrada número 1");
+    await screen.findByText(frase(1));
     expect(leiturasDeAviso()).toEqual([{ limit: "5", before: null }]);
   });
 
   it("'Ver mais' pede +10 A PARTIR do aviso mais antigo já recebido", async () => {
     renderWithApp(<NoticeBell />);
     await abreOSino();
-    await screen.findByText("Mentoria registrada número 5");
+    await screen.findByText(frase(5));
     await userEvent.click(screen.getByRole("button", { name: "Ver mais" }));
-    await screen.findByText("Mentoria registrada número 6");
+    await screen.findByText(frase(6));
     expect(leiturasDeAviso()).toEqual([
       { limit: "5", before: null },
       { limit: "10", before: PRIMEIRA[4]!.occurredAt },
@@ -127,11 +130,11 @@ describe("o sino pagina pelo cursor, sem recarregar o que já veio", () => {
   it("o que já estava na tela continua lá — a segunda página SOMA, não substitui", async () => {
     renderWithApp(<NoticeBell />);
     await abreOSino();
-    await screen.findByText("Mentoria registrada número 1");
+    await screen.findByText(frase(1));
     await userEvent.click(screen.getByRole("button", { name: "Ver mais" }));
-    await screen.findByText("Mentoria registrada número 15");
-    expect(screen.getByText("Mentoria registrada número 1")).toBeTruthy();
-    expect(screen.getAllByRole("link", { name: "Clique para visualizar" })).toHaveLength(15);
+    await screen.findByText(frase(15));
+    expect(screen.getByText(frase(1))).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: /Mentoria registrada para/ })).toHaveLength(15);
   });
 
   it("página incompleta é o fim da caixa: o 'Ver mais' some", async () => {
@@ -149,7 +152,7 @@ describe("o sino pagina pelo cursor, sem recarregar o que já veio", () => {
     });
     renderWithApp(<NoticeBell />);
     await abreOSino();
-    await screen.findByText("Mentoria registrada número 1");
+    await screen.findByText(frase(1));
     expect(screen.queryByRole("button", { name: "Ver mais" })).toBeNull();
   });
 });
@@ -167,9 +170,7 @@ describe("a caixa do sino cresce até o fim da tela e rola por dentro", () => {
     renderWithApp(<NoticeBell />);
     await abreOSino();
     const caixa = await screen.findByRole("dialog");
-    const rolagem = within(caixa)
-      .getByText("Mentoria registrada número 1")
-      .closest(".overflow-y-auto");
+    const rolagem = within(caixa).getByText(frase(1)).closest(".overflow-y-auto");
     expect(rolagem).toBeTruthy();
     expect(rolagem?.className).toContain("scroll-visible");
   });

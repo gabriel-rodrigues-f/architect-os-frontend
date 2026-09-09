@@ -114,7 +114,7 @@ describe("HttpNoticesGateway — o que volta do servidor", () => {
             {
               id: "aviso-1",
               eventType: "assessment.stalled",
-              title: "Avaliação parada",
+              wording: { subjectName: "Ana Martins" },
               link: "/assessments",
               occurredAt: "2026-08-29T12:00:00.000Z",
               readAt: null,
@@ -134,6 +134,37 @@ describe("HttpNoticesGateway — o que volta do servidor", () => {
   it("payload fora do contrato é recusado — a tela não recebe forma desconhecida", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ data: { notices: [{ id: 1 }] } }));
     await expect(gateway().notices({ status: "all" })).rejects.toThrow();
+  });
+
+  /**
+   * Um servidor ANTERIOR à mudança de contrato (dono, 2026-09-08) manda
+   * `title` e nenhuma peça. Isso não pode derrubar o sino inteiro: o aviso
+   * chega sem peças e a tela o diz pela frase de reserva.
+   */
+  it("aviso de um backend antigo, sem as peças, degrada em vez de derrubar a caixa", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        data: {
+          notices: [
+            {
+              id: "aviso-velho",
+              eventType: "assessment.stalled",
+              title: "Avaliação parada",
+              link: "/assessments",
+              occurredAt: "2026-08-29T12:00:00.000Z",
+              readAt: null,
+              professionalId: "demo-ana-martins",
+              teamId: "time-real",
+            },
+          ],
+          unreadCount: 1,
+        },
+      }),
+    );
+
+    const page = await gateway().notices({ status: "all" });
+
+    expect(page.notices[0]?.wording).toEqual({});
   });
 });
 

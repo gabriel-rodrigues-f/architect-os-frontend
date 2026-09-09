@@ -1,12 +1,19 @@
 import { noticesResponseSchema } from "../api-schemas";
 import type { ApiClient } from "../api-client";
+import type { NoticeWording } from "../notice-phrase";
+import { defaultUiAuthorizationPolicy } from "../scope";
 import type { SessionUser } from "./auth.gateway";
 import type { DataOrigin, OriginatedData } from "./data-origin";
 
+/**
+ * O aviso como ele viaja (dono, 2026-09-08): o TIPO do evento e as PEÇAS da
+ * frase — nunca a frase. Quem a compõe é `NoticePhrase`, no idioma de quem
+ * lê; o servidor não sabe esse idioma e por isso não escreve mais o título.
+ */
 export interface Notice {
   id: string;
   eventType: string;
-  title: string;
+  wording: NoticeWording;
   link: string;
   occurredAt: string;
   readAt: string | null;
@@ -58,8 +65,6 @@ export type NoticesViewer = Pick<SessionUser, "role" | "professionalId" | "membe
 
 export const DEMONSTRATION_TEAM_ID = "time-em-demonstracao";
 
-const LEADING_TEAM_ROLES = ["tech_lead", "manager"];
-
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
@@ -69,12 +74,23 @@ const DAY_MS = 24 * HOUR_MS;
  * transferência de time — tipo de evento que o backend EMITE de verdade — para
  * a lista de demonstração não encolher e continuar exercitando o aviso que
  * aponta para a ficha de uma pessoa.
+ *
+ * Desde 2026-09-08 eles carregam PEÇAS, não títulos: a frase é montada na
+ * tela, e a caixa de demonstração troca de idioma junto com o resto.
+ *
+ * A saudação de primeiro acesso (`welcome.first-access`) NÃO entra aqui de
+ * propósito: ela nasce no login, no servidor, e a demonstração não tem login.
  */
 const fixtureNotices = (now: number): Notice[] => [
   {
     id: "notice-team-transfer-carla-requested",
     eventType: "team-transfer.requested",
-    title: "Carla Souza pediu transferência para o time de Dados",
+    wording: {
+      subjectName: "Carla Souza",
+      actorName: "Helena Prado",
+      fromTeamName: "Plataforma",
+      toTeamName: "Dados",
+    },
     link: "/professionals/demo-carla-souza",
     occurredAt: new Date(now - 2 * HOUR_MS).toISOString(),
     readAt: null,
@@ -84,7 +100,12 @@ const fixtureNotices = (now: number): Notice[] => [
   {
     id: "notice-team-transfer-elisa-approved",
     eventType: "team-transfer.approved",
-    title: "Transferência de Elisa Prado para o time de Plataforma foi aprovada",
+    wording: {
+      subjectName: "Elisa Prado",
+      actorName: "Helena Prado",
+      fromTeamName: "Dados",
+      toTeamName: "Plataforma",
+    },
     link: "/professionals/demo-elisa-prado",
     occurredAt: new Date(now - 6 * HOUR_MS).toISOString(),
     readAt: null,
@@ -94,7 +115,7 @@ const fixtureNotices = (now: number): Notice[] => [
   {
     id: "notice-assessment-diego-stalled",
     eventType: "assessment.stalled",
-    title: "Avaliação de Diego Rocha segue em rascunho, sem envio",
+    wording: { subjectName: "Diego Rocha" },
     link: "/assessments",
     occurredAt: new Date(now - 1 * DAY_MS).toISOString(),
     readAt: null,
@@ -104,7 +125,7 @@ const fixtureNotices = (now: number): Notice[] => [
   {
     id: "notice-assessment-ana-completed",
     eventType: "assessment.completed",
-    title: "Avaliação de Ana Martins foi concluída",
+    wording: { subjectName: "Ana Martins" },
     link: "/assessments",
     occurredAt: new Date(now - 2 * DAY_MS).toISOString(),
     readAt: null,
@@ -114,7 +135,7 @@ const fixtureNotices = (now: number): Notice[] => [
   {
     id: "notice-mentoring-bruno-recorded",
     eventType: "mentoring.recorded",
-    title: "Mentoria registrada para Bruno Almeida: Modelagem do data mart de logística",
+    wording: { subjectName: "Bruno Almeida" },
     link: "/mentoring",
     occurredAt: new Date(now - 3 * DAY_MS).toISOString(),
     readAt: new Date(now - 2 * DAY_MS).toISOString(),
@@ -193,9 +214,22 @@ export class InMemoryNoticesGateway implements NoticesGateway {
     return ledTeamIds[0] ?? notice.teamId;
   }
 
+  /**
+   * O ALCANCE PERGUNTA À POLÍTICA (achado da fatia AVISOS, 2026-09-08).
+   *
+   * Aqui morava uma lista de papéis escrita à mão — tech lead e gerente, os
+   * dois nomes técnicos num vetor — e ela RESSUSCITAVA o alcance de dois
+   * chapéus que a política matou de
+   * propósito (papéis, adendo do dono de 2026-09-08, itens 3 e 4: "a conta de
+   * dois chapéus morreu"). Um gerente com vínculo de tech lead num time via os
+   * avisos daquele time, que a régua diz que ele não alcança.
+   *
+   * Isto é VISIBILIDADE, não ação oferecida: uma lista à mão aqui não some da
+   * tela nem quebra nada, ela só mostra o que não devia. `teamsBoundAsOwnRole`
+   * é a mesma pergunta que o resto da casa faz — os times em que a pessoa
+   * exerce o PRÓPRIO papel.
+   */
   private ledTeamIds(viewer: NoticesViewer): string[] {
-    return (viewer.memberships ?? [])
-      .filter((membership) => LEADING_TEAM_ROLES.includes(membership.role))
-      .map((membership) => membership.teamId);
+    return [...defaultUiAuthorizationPolicy.teamsBoundAsOwnRole(viewer)];
   }
 }

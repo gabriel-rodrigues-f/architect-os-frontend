@@ -122,10 +122,28 @@ export const professionalAdherenceResponseSchema = z.object({
   semRegua: z.literal(true).optional(),
 });
 
+/**
+ * As PEÇAS da frase do aviso (dono, 2026-09-08). Toda peça é opcional: a
+ * pessoa pode ter sido esquecida, o time renomeado e a conta apagada — quem
+ * decide o que dizer sem elas é `NoticePhrase`, no idioma de quem lê.
+ *
+ * O `default({})` é a resposta a um backend ANTIGO, de antes da mudança de
+ * contrato: sem ele, um servidor que ainda mandasse `title` derrubaria o sino
+ * inteiro na validação. Com ele, o aviso cai na frase de reserva — degrada
+ * numa linha, não numa tela em branco.
+ */
+const noticeWording = z.object({
+  subjectName: z.string().optional(),
+  actorName: z.string().optional(),
+  fromTeamName: z.string().optional(),
+  toTeamName: z.string().optional(),
+  tally: z.number().optional(),
+});
+
 const notice = z.object({
   id: z.string(),
   eventType: z.string(),
-  title: z.string(),
+  wording: noticeWording.default({}),
   link: z.string(),
   occurredAt: z.string(),
   readAt: z.string().nullable(),
