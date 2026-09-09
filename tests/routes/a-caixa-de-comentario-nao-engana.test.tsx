@@ -35,8 +35,8 @@ const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 /** A mesma base, com a avaliação de Ana ainda aberta (a da fixture é concluída). */
 const emRevisao: AppState = {
   ...fixtureState,
-  assessments: fixtureState.assessments.map((a) =>
-    a.id === "ana-h2" ? { ...a, status: "In Review" as const } : a,
+  assessments: fixtureState.assessments.map((avaliacao) =>
+    avaliacao.id === "ana-h2" ? { ...avaliacao, status: "In Review" as const } : avaliacao,
   ),
 };
 
