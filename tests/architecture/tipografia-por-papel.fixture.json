@@ -57,6 +57,6 @@
   "src/routes/settings.tsx": 63,
   "src/routes/team-rules.tsx": 9,
   "src/routes/teams.tsx": 30,
-  "src/routes/training-needs.tsx": 5,
+  "src/routes/training-needs.tsx": 3,
   "src/routes/users.tsx": 13
 }

@@ -35,10 +35,16 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * A RÉGUA DO DONO, e é ela que estes testes afirmam: o selo cabe, o nome
  * INTEIRO continua legível — nada de `truncate`, ele já reprovou nome de
  * competência cortado — e nada sai do cartão. Em jsdom não há layout, então
- * o que se afirma é a condição que produz o layout: o nome ENCOLHE
- * (`min-w-0`) e quebra a palavra longa em vez de vazar (`break-words`); o
- * selo NÃO encolhe (`shrink-0`), porque ele é a parte que precisa caber
- * inteira.
+ * o que se afirma é a condição que produz o layout: o selo NÃO encolhe
+ * (`shrink-0`), porque ele é a parte que precisa caber inteira, e o nome
+ * quebra a palavra longa em vez de vazar (`break-words`).
+ *
+ * O ARRANJO mudou na mesma tarde (`o-cartao-da-distancia-se-le-em-linhas`):
+ * pôr os dois lado a lado parou o vazamento mas deixou o nome com as sobras
+ * de uma coluna de 320 px. Agora o selo sai do fluxo para dentro do bloco do
+ * nome. A régua deste arquivo sobreviveu à troca — ela é sobre o que não pode
+ * acontecer, não sobre como o arranjo o evita —, e é por isso que ela continua
+ * aqui: o próximo arranjo também vai ter de passar por ela.
  */
 
 const fetchMock = vi.fn();
@@ -50,7 +56,7 @@ function classesOf(element: Element | null | undefined): string {
   return element?.className ?? "";
 }
 
-/** O cartão é a seção que carrega o título; a linha é o pai do selo. */
+/** A seção carrega o título; a linha é a grade que hospeda o nome e o selo. */
 function rowOfFirstGapBadgeIn(cardTitle: string): {
   row: Element;
   name: Element;
@@ -60,9 +66,9 @@ function rowOfFirstGapBadgeIn(cardTitle: string): {
   if (!card) throw new Error(`cartão "${cardTitle}" não encontrado`);
   const badge = within(card as HTMLElement).getAllByText(/^Distância \d+ · /)[0];
   if (!badge) throw new Error("nenhum selo de distância no cartão");
-  const row = badge.parentElement;
+  const row = badge.parentElement?.parentElement;
   if (!row) throw new Error("selo de distância sem linha");
-  const name = [...row.children].find((child) => child !== badge);
+  const name = [...row.children].find((child) => !child.contains(badge));
   if (!name) throw new Error("linha do selo sem o nome da competência");
   return { row, name, badge };
 }
@@ -103,7 +109,7 @@ describe("o selo de distância cabe no cartão, e o nome inteiro fica legível",
     window.history.pushState({}, "", "/");
   });
 
-  it("PDI > Maiores distâncias: o nome encolhe e quebra, o selo não encolhe", async () => {
+  it("PDI > Maiores distâncias: o nome quebra em vez de vazar, e o selo não encolhe", async () => {
     mockAppFetch(fetchMock, {});
     window.history.pushState({}, "", "?professionalId=bruno");
     renderWithApp(<PlansPage />);
@@ -111,7 +117,6 @@ describe("o selo de distância cabe no cartão, e o nome inteiro fica legível",
 
     const { name, badge } = rowOfFirstGapBadgeIn("Maiores distâncias");
 
-    expect(classesOf(name)).toContain("min-w-0");
     expect(classesOf(name)).toContain("break-words");
     expect(classesOf(name)).not.toContain("truncate");
     expect(classesOf(badge)).toContain("shrink-0");
@@ -136,7 +141,6 @@ describe("o selo de distância cabe no cartão, e o nome inteiro fica legível",
 
     const { name, badge } = rowOfFirstGapBadgeIn("Treinamentos Recomendados para o Time");
 
-    expect(classesOf(name)).toContain("min-w-0");
     expect(classesOf(name)).toContain("break-words");
     expect(classesOf(badge)).toContain("shrink-0");
   });

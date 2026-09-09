@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import {
   CommandWithReasonDialog,
-  CompetencyGapRow,
+  CompetencyGapCard,
   EmptyState,
   EmptyStateCallToAction,
   GapBadge,
@@ -14,6 +14,7 @@ import {
   PageHeader,
   PersonCombobox,
   QuerySection,
+  SectionAction,
   SectionCard,
   SessionScriptAssistant,
 } from "@/components/app";
@@ -203,19 +204,20 @@ function PlansScreen() {
             >
               <ul className="space-y-2">
                 {suggestions.map((g) => (
-                  <li key={g.item.competencyId} className="surface-inset p-3">
-                    <CompetencyGapRow name={g.competency?.name ?? ""} gap={g.gap} />
-                    {workflow.canEditDiagnostic && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="mt-2 px-0"
-                        onClick={() => focusCompetency(g.item.competencyId)}
-                      >
-                        <Sparkles className="mr-1.5 h-3.5 w-3.5" /> {t("pdi.suggestions.add")}
-                      </Button>
-                    )}
-                  </li>
+                  <CompetencyGapCard
+                    key={g.item.competencyId}
+                    name={g.competency?.name ?? ""}
+                    gap={g.gap}
+                    action={
+                      workflow.canEditDiagnostic ? (
+                        <SectionAction
+                          label={t("pdi.suggestions.add")}
+                          icon={Sparkles}
+                          onClick={() => focusCompetency(g.item.competencyId)}
+                        />
+                      ) : undefined
+                    }
+                  />
                 ))}
                 {!suggestions.length && (
                   <p className="text-sm text-muted-foreground">{t("pdi.suggestions.none")}</p>

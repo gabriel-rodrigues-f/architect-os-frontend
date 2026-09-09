@@ -14,6 +14,7 @@ export * from "./Chip";
 export * from "./CapabilityHeatmap";
 export * from "./CommandDialog";
 export * from "./CommandWithReasonDialog";
+export * from "./CompetencyGapCard";
 export * from "./ConfirmDialog";
 export * from "./DataOriginCallout";
 export * from "./DeactivatedPersonNotice";
