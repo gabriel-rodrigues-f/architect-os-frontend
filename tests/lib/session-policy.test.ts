@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiClient } from "@/lib/api-client";
+import { RefusalNumber } from "@/lib/refusal-number";
 import { SESSION_ENDING_CODES as PRODUCTION_CODES, SessionPolicy } from "@/lib/session-policy";
 
 /**
@@ -190,6 +191,40 @@ describe("política de sessão — 403 PASSWORD_CHANGE_REQUIRED leva à troca, n
     );
     await client.request("/state").catch(() => undefined);
     expect(requirePasswordChange).not.toHaveBeenCalled();
+  });
+
+  /**
+   * REGRA 18 (dono, 2026-09-09) — a rede de segurança do primeiro acesso é um
+   * dos DOIS mecanismos do frontend que dependem do número, e ela precisa
+   * continuar de pé. `PasswordChangeRequiredError` é recusa de ATO — fala do
+   * estado da própria sessão de quem pergunta, não conta a existência de
+   * recurso nenhum — e por isso fica em 403.
+   *
+   * Este par é o que a onda 41 não tinha: o teste que denuncia a marca se ela
+   * mudar de número. Com 404 a política para de reconhecê-la, quem está em
+   * primeiro acesso e escapa do `AuthGate` deixa de ser levado à troca de
+   * senha, e fica sem caminho de saída — sem que nada mais fique vermelho.
+   */
+  it("a marca é lida na família do ATO, e a família do ato é o 403", () => {
+    expect(RefusalNumber.ACT).toBe(403);
+    expect(SessionPolicy.PASSWORD_CHANGE_REQUIRED_CODE).toBe("PASSWORD_CHANGE_REQUIRED");
+  });
+
+  it("a mesma marca chegando em 404 NÃO pede troca — a rede desligaria em silêncio", async () => {
+    fetchMock.mockResolvedValue(
+      errorResponse(
+        {
+          code: SessionPolicy.PASSWORD_CHANGE_REQUIRED_CODE,
+          message: "Troque a sua senha para continuar.",
+        },
+        RefusalNumber.OUT_OF_REACH,
+      ),
+    );
+
+    await client.request("/state").catch(() => undefined);
+
+    expect(requirePasswordChange).not.toHaveBeenCalled();
+    expect(endSession).not.toHaveBeenCalled();
   });
 
   it("desregistrar o handler para de pedir a troca", async () => {

@@ -1,4 +1,5 @@
 import { ApiError } from "./api-errors";
+import { RefusalNumber } from "./refusal-number";
 
 /**
  * O MODO DE SUPORTE (revisão de papéis, 2026-09-05, D1): o suporte não lê
@@ -106,9 +107,19 @@ export class SupportAccess {
     this.expiredHandler?.();
   }
 
+  /**
+   * REGRA 18 (dono, 2026-09-09): o passe vencido é recusa de **ATO** e fica em
+   * 403. Ela fala do passe do PRÓPRIO ator — não conta a existência da pessoa
+   * cuja ficha ele abriu. Virar 404 pararia de apagar o passe e de reabrir o
+   * diálogo de motivo: o suporte ficaria olhando uma ficha que não carrega,
+   * sem entender por quê. Casa status **e** código porque o código nomeia
+   * este mecanismo, não a família da recusa.
+   */
   private static isExpiredRefusal(error: unknown): boolean {
     return (
-      error instanceof ApiError && error.status === 403 && error.code === SupportAccess.EXPIRED_CODE
+      RefusalNumber.isAct(error) &&
+      error instanceof ApiError &&
+      error.code === SupportAccess.EXPIRED_CODE
     );
   }
 }

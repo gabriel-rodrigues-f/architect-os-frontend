@@ -504,6 +504,7 @@
   "comment.author.professional": "Profissional",
   "comment.author.techLead": "Tech Lead",
   "comment.savedAt": "Salvo em {data}",
+  "comment.readOnly": "A sua fala nesta competência é registrada na 1:1 com quem lidera você.",
   "comment.editedAt": "editado em {data}",
   "comment.saveChanges": "Salvar alterações",
   "comment.delete.title": "Excluir este comentário?",

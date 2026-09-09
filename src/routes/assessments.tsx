@@ -111,6 +111,7 @@ function AssessmentsScreen() {
     canOpen,
     canEditSelf,
     canEditLeaderFinal,
+    canComment,
     canSubmit,
     canComplete,
     canReopen,
@@ -421,6 +422,7 @@ function AssessmentsScreen() {
               status={status}
               canEditSelf={canEditSelf}
               canEditLeaderFinal={canEditLeaderFinal}
+              canComment={canComment}
               seesAssessmentNumbers={seesAssessmentNumbers}
               openComment={openComment}
               onToggleComment={(id) => setOpenComment((prev) => (prev === id ? null : id))}

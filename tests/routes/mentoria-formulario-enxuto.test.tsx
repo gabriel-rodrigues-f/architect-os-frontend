@@ -194,6 +194,70 @@ describe("'Competências discutidas' é a régua do time da pessoa (item 8)", ()
   });
 });
 
+/**
+ * REGRA 18 (dono, 2026-09-09) — o pior ponto do frontend que ENGOLE recusa.
+ *
+ * A lista abria para o catálogo ativo inteiro sempre que a régua não estivesse
+ * em mãos, e "não estar em mãos" incluía a leitura ter sido RECUSADA. Era o
+ * defeito que o dono mandou consertar em 2026-09-08, item 8, voltando pela
+ * porta dos fundos — e voltando em silêncio: a recusa sumia da tela, o gerente
+ * marcava competências que o time da pessoa nem exige, e nenhum teste ficava
+ * vermelho.
+ *
+ * A régua agora é: a lista só se ABRE com resposta. Ausência de régua (o 404
+ * desta rota, que é exceção nomeada do dono) abre; recusa, não — recusa se lê.
+ */
+describe("uma recusa da régua não vira o catálogo inteiro (regra 18)", () => {
+  const recusaDaRegua =
+    (status: number): FetchRoute =>
+    (href) =>
+      new URL(href, "http://localhost").pathname.includes("/rules/")
+        ? jsonResponse(
+            { code: "FORBIDDEN", message: "A régua de um time só responde ao seu dono." },
+            status,
+          )
+        : undefined;
+
+  it("a recusa é dita na tela, e nenhuma competência de fora da régua é oferecida", async () => {
+    const dialogo = await abrirFormulario([recusaDaRegua(403)]);
+
+    expect(
+      await within(dialogo).findByText("Não foi possível carregar a régua deste time."),
+    ).toBeTruthy();
+    expect(within(dialogo).queryByText(NOME_LONGO)).toBeNull();
+    expect(within(dialogo).queryByText("Serverless")).toBeNull();
+    expect(within(dialogo).queryByText("IAM")).toBeNull();
+  });
+
+  it("a frase do serviço não vaza para o formulário — quem fala é a tela", async () => {
+    const dialogo = await abrirFormulario([recusaDaRegua(403)]);
+
+    await within(dialogo).findByText("Não foi possível carregar a régua deste time.");
+    expect(within(dialogo).queryByText("A régua de um time só responde ao seu dono.")).toBeNull();
+  });
+
+  it("a leitura recusada tem caminho de volta — o convite de tentar de novo", async () => {
+    const dialogo = await abrirFormulario([recusaDaRegua(403)]);
+
+    await within(dialogo).findByText("Não foi possível carregar a régua deste time.");
+    expect(within(dialogo).getByRole("button", { name: "Tentar novamente" })).toBeTruthy();
+  });
+
+  /**
+   * O 404 desta rota continua sendo AUSÊNCIA, e é a única leitura de ausência
+   * que a régua autoriza aqui: o dono deixou a régua do nível fora do lote da
+   * regra 18 justamente porque o 404 dela já tem significado de negócio. O
+   * teste acima e este são o par que registra a fronteira.
+   */
+  it("mas o 404 continua querendo dizer 'régua ainda não definida', e ali a lista abre", async () => {
+    const dialogo = await abrirFormulario([recusaDaRegua(404)]);
+    const lista = within(dialogo).getByRole("group", { name: "Competências discutidas" });
+
+    await waitFor(() => expect(within(lista).queryByText("Serverless")).toBeTruthy());
+    expect(within(dialogo).queryByText("Não foi possível carregar a régua deste time.")).toBeNull();
+  });
+});
+
 describe("o nome longo se lê por inteiro (item 6)", () => {
   it("o ponteiro sobre o nome abre o texto completo", async () => {
     const dialogo = await abrirFormulario();

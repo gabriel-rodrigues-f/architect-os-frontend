@@ -1,4 +1,5 @@
 import { ApiError } from "./api-errors";
+import { RefusalNumber } from "./refusal-number";
 
 const SESSION_ENDING_STATUS = 401;
 
@@ -27,7 +28,17 @@ export class SessionPolicy {
    */
   static readonly PASSWORD_CHANGE_REQUIRED_CODE = "PASSWORD_CHANGE_REQUIRED";
 
-  private static readonly PASSWORD_CHANGE_REQUIRED_STATUS = 403;
+  /**
+   * REGRA 18 (dono, 2026-09-09): esta marca é recusa de **ATO** e fica em
+   * 403. Ela não fala de recurso alheio — fala do estado da PRÓPRIA sessão de
+   * quem pergunta, e não conta a existência de nada. Virar 404 desligaria a
+   * rede de segurança da onda 41: quem está em primeiro acesso e escapa do
+   * `AuthGate` deixaria de ser levado à troca de senha e ficaria sem caminho
+   * de saída. O casamento é status **e** código, e é a única coisa que
+   * distingue esta recusa de uma recusa qualquer — não é o código separando
+   * famílias, é o código nomeando o mecanismo.
+   */
+  private static readonly PASSWORD_CHANGE_REQUIRED_STATUS = RefusalNumber.ACT;
 
   private endSessionHandler: (() => void) | null = null;
 

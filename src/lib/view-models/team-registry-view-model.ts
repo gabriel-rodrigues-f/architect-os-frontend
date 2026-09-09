@@ -3,6 +3,7 @@ import type { Professional } from "../domain";
 import type { SessionUser, TeamMemberRole } from "../gateways/auth.gateway";
 import { TeamMemberRoles, UserRoles } from "../gateways/auth.gateway";
 import type { TeamSummary } from "../gateways/teams.gateway";
+import { RefusalNumber } from "../refusal-number";
 import type { UiAuthorizationPolicy } from "../scope";
 import { defaultNameFormatter } from "../text";
 
@@ -97,9 +98,25 @@ export class TeamRegistryViewModel {
     return teams.find((team) => team.id === teamId)?.name ?? null;
   }
 
+  /**
+   * A frase do serviço quando ele recusa mudar a pessoa de time — o roteiro
+   * *"o Gerente do time atual pede a transferência e o Gerente do time de
+   * destino aprova"*, que é instrução e não erro.
+   *
+   * REGRA 18 (dono, 2026-09-09): as duas recusas que chegam aqui
+   * (`TEAM_TRANSFER_REQUIRES_REQUEST` e `TEAM_ALLOCATION_FORBIDDEN`) são de
+   * **ATO** — a pessoa está na tela, o quadro está desenhado, e o que se
+   * recusa é o gesto. Ficam em 403, com a frase.
+   *
+   * O 404 fica de fora de propósito, e é o outro lado da mesma regra: uma
+   * recusa de ALCANCE viaja com o corpo de "não encontrado", byte a byte
+   * igual ao de recurso inexistente. Repetir essa frase aqui seria colar
+   * "profissional não encontrado" embaixo de um nome que a própria tela
+   * acabou de listar — a tela cai na frase da casa, que não conta nada.
+   */
   allocationRefusalOf(error: unknown): string | null {
     if (!(error instanceof ApiError)) return null;
-    return error.status === 403 || error.status === 409 ? error.message : null;
+    return RefusalNumber.isAct(error) || error.status === 409 ? error.message : null;
   }
 
   linkableAccounts(accounts: readonly SessionUser[]): SessionUser[] {

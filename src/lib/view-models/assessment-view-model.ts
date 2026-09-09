@@ -51,6 +51,13 @@ interface AssessmentPermissions {
   canOpen: boolean;
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
+  /**
+   * QUEM ESCREVE COMENTÁRIO NESTA AVALIAÇÃO. Dono (2026-09-09): a caixa de
+   * texto era oferecida a quem não pode escrever, e a pessoa só descobria no
+   * envio — o mesmo defeito do Plano de Ação, *"um bloco de texto, enganando
+   * o usuário"*. A pergunta passa a ser feita ANTES de desenhar a caixa.
+   */
+  canComment: boolean;
   canSubmit: boolean;
   canComplete: boolean;
   canReopen: boolean;
@@ -87,6 +94,17 @@ export class AssessmentViewModel {
     const canOpen = isLead;
     const canEditSelf = isLead && status === "Draft";
     const canEditLeaderFinal = isLead && status === "In Review";
+    /**
+     * COMENTAR é outra pergunta que pontuar, e por isso tem nome próprio.
+     *
+     * O servidor exige as duas coisas na mesma guarda: `isLeadOf` (quem não
+     * lidera recebe "só quem lidera esta pessoa altera esta avaliação — a
+     * autoavaliação é registrada na 1:1") e avaliação não concluída (a
+     * concluída está trancada). Usar `canEditLeaderFinal` aqui seria apertado
+     * demais — ele só vale em revisão — e usar `isLead` sozinho seria frouxo:
+     * ofereceria a caixa numa avaliação trancada.
+     */
+    const canComment = isLead && !isCompleted;
     const canSubmit = isLead && status === "Draft";
     const canComplete = decides && status === "In Review";
 
@@ -105,6 +123,7 @@ export class AssessmentViewModel {
       canOpen,
       canEditSelf,
       canEditLeaderFinal,
+      canComment,
       canSubmit,
       canComplete,
       canReopen,

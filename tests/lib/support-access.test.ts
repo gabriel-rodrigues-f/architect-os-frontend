@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiClient } from "@/lib/api-client";
 import { ApiError } from "@/lib/api-errors";
+import { RefusalNumber } from "@/lib/refusal-number";
 import { SupportAccess, SupportPass } from "@/lib/support-access";
 
 /**
@@ -104,6 +105,36 @@ describe("SupportAccess — uma instância, com passe por pessoa", () => {
     access.grant("ana", "chamado 4821, conferir cadastro");
 
     access.reviewFailure(new ApiError("não", 403, undefined, "FORBIDDEN"));
+
+    expect(access.grantedFor("ana")).not.toBeNull();
+    expect(expired).not.toHaveBeenCalled();
+  });
+
+  /**
+   * REGRA 18 (dono, 2026-09-09) — o passe vencido é o SEGUNDO dos dois
+   * mecanismos do frontend que dependem do número, e ele também precisa
+   * continuar de pé. `SupportPassExpiredError` é recusa de ATO: fala do passe
+   * do próprio ator, não conta a existência da pessoa cuja ficha ele abriu.
+   * Fica em 403.
+   *
+   * Com 404 o `SupportAccess` para de apagar o passe e de chamar quem reabre
+   * o diálogo de motivo: o suporte fica olhando uma ficha que não carrega,
+   * sem entender por quê — e nenhum outro teste denuncia isso.
+   */
+  it("a marca é lida na família do ATO, e a família do ato é o 403", () => {
+    expect(RefusalNumber.ACT).toBe(403);
+    expect(SupportAccess.EXPIRED_CODE).toBe("SUPPORT_PASS_EXPIRED");
+  });
+
+  it("a mesma marca chegando em 404 NÃO apaga o passe nem reabre o diálogo", () => {
+    const { access } = accessAt(NOW);
+    const expired = vi.fn();
+    access.whenExpired(expired);
+    access.grant("ana", "chamado 4821, conferir cadastro");
+
+    access.reviewFailure(
+      new ApiError("venceu", RefusalNumber.OUT_OF_REACH, undefined, SupportAccess.EXPIRED_CODE),
+    );
 
     expect(access.grantedFor("ana")).not.toBeNull();
     expect(expired).not.toHaveBeenCalled();

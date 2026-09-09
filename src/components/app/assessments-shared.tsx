@@ -94,12 +94,24 @@ function CommentToggleButton({
 function CommentSection({
   comments,
   currentUserId,
+  canWrite,
   onCreate,
   onUpdate,
   onDelete,
 }: {
   comments: readonly AssessmentComment[];
   currentUserId: string;
+  /**
+   * A MESMA régua que governa as notas desta tela, e não uma segunda régua
+   * paralela — é assim que as duas param de se desencontrar.
+   *
+   * Dono, 2026-09-09: a caixa era oferecida a quem não pode escrever, e a
+   * pessoa só descobria no envio, com o texto inteiro digitado. É o mesmo
+   * defeito que ele nomeou no Plano de Ação em 2026-09-08 — "um bloco de
+   * texto, enganando o usuário". Caixa de texto é promessa; oferecê-la a quem
+   * vai ser recusado é mentir e cobrar o preço em trabalho perdido.
+   */
+  canWrite: boolean;
   onCreate: (input: CommentInput) => Promise<unknown>;
   onUpdate: (commentId: string, input: CommentInput) => Promise<unknown>;
   onDelete: (commentId: string) => Promise<unknown>;
@@ -167,7 +179,11 @@ function CommentSection({
         </ul>
       )}
 
-      <CommentForm submitLabel={t("common.save")} onSubmit={onCreate} />
+      {canWrite ? (
+        <CommentForm submitLabel={t("common.save")} onSubmit={onCreate} />
+      ) : (
+        <p className="text-body text-muted-foreground">{t("comment.readOnly")}</p>
+      )}
 
       <ConfirmDialog
         open={confirmDelete !== null}
@@ -814,6 +830,7 @@ export function CapabilityAssessmentCard({
   status,
   canEditSelf,
   canEditLeaderFinal,
+  canComment,
   seesAssessmentNumbers,
   openComment,
   onToggleComment,
@@ -823,6 +840,7 @@ export function CapabilityAssessmentCard({
   status: Assessment["status"] | undefined;
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
+  canComment: boolean;
   seesAssessmentNumbers: boolean;
   openComment: string | null;
   onToggleComment: (competencyId: string) => void;
@@ -869,6 +887,7 @@ export function CapabilityAssessmentCard({
                 assessmentId={assessment.id}
                 canEditSelf={canEditSelf}
                 canEditLeaderFinal={canEditLeaderFinal}
+                canComment={canComment}
                 seesAssessmentNumbers={seesAssessmentNumbers}
                 openComment={openComment}
                 onToggleComment={onToggleComment}
@@ -981,6 +1000,7 @@ export function CapabilityAssessmentCard({
                           <CommentSection
                             comments={item.comments}
                             currentUserId={user.id}
+                            canWrite={canComment}
                             onCreate={(input) => viewModel.addComment(assessment.id, c.id, input)}
                             onUpdate={(commentId, input) =>
                               viewModel.updateComment(assessment.id, c.id, commentId, input)
@@ -1009,6 +1029,7 @@ function CompetencyStackedCard({
   assessmentId,
   canEditSelf,
   canEditLeaderFinal,
+  canComment,
   seesAssessmentNumbers,
   openComment,
   onToggleComment,
@@ -1018,6 +1039,7 @@ function CompetencyStackedCard({
   assessmentId: string;
   canEditSelf: boolean;
   canEditLeaderFinal: boolean;
+  canComment: boolean;
   seesAssessmentNumbers: boolean;
   openComment: string | null;
   onToggleComment: (competencyId: string) => void;
@@ -1110,6 +1132,7 @@ function CompetencyStackedCard({
           <CommentSection
             comments={item.comments}
             currentUserId={user.id}
+            canWrite={canComment}
             onCreate={(input) => viewModel.addComment(assessmentId, competency.id, input)}
             onUpdate={(commentId, input) =>
               viewModel.updateComment(assessmentId, competency.id, commentId, input)

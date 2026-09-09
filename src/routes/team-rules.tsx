@@ -28,6 +28,7 @@ import type { TeamRuleView } from "@/lib/gateways/career.gateway";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
+import { RefusalNumber } from "@/lib/refusal-number";
 import { requireLeadReach } from "@/lib/route-guards";
 import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -181,11 +182,23 @@ function TeamRuleSection({ teamId, level }: { teamId: string; level: CareerLevel
 
   const query = useQuery({
     queryKey: ["team-rule", teamId, level.id],
+    /**
+     * REGRA 18 (dono, 2026-09-09) — a régua do nível é a segunda das duas
+     * exceções nomeadas: nesta rota o 404 quer dizer "régua deste nível ainda
+     * não definida", e o backend já autoriza ANTES de consultar, então ela
+     * não é oráculo hoje. Enquanto for assim, engolir é ler a ausência que a
+     * rota promete.
+     *
+     * Se a rota entrar na troca, este `catch` passa a engolir a RECUSA e a
+     * tela convida quem não é dono do time a *"definir a régua deste nível"*,
+     * para tomar o 403 do PUT logo depois. A assinatura da exceção mora em
+     * `RefusalNumber`: tirar a rota de lá derruba esta chamada.
+     */
     queryFn: async () => {
       try {
         return await api.teamRule(teamId, level.id);
       } catch (error) {
-        if (error instanceof ApiError && error.status === 404) return null;
+        if (RefusalNumber.answersAbsenceOn("regua-do-nivel", error)) return null;
         throw error;
       }
     },
