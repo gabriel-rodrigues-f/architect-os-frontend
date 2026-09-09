@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiClient, API_URL } from "@/lib/api-client";
 import { ApiError } from "@/lib/api-errors";
 import { apiPath } from "@/lib/api-path";
+import { RefusalNumber } from "@/lib/refusal-number";
 import { teamRosterResponseSchema } from "@/lib/api-schemas";
 import {
   HttpTeamRosterGateway,
@@ -92,6 +93,26 @@ describe("HttpTeamRosterGateway — a leitura do quadro", () => {
     expect(roster.reading).toBe("unavailable");
     expect("members" in roster).toBe(false);
     expect(roster.dataOrigin).toBe("organization");
+  });
+
+  /**
+   * REGRA 18 (dono, 2026-09-09) — o quadro do time é UMA das duas exceções
+   * nomeadas que ficaram FORA do lote, e o par de testes acima e abaixo é o
+   * registro escrito dessa decisão.
+   *
+   * O motivo é que o 404 desta rota já tem significado de negócio: "leitura do
+   * quadro indisponível". Se `TEAM_BOARD_FORBIDDEN` virasse 404, o gateway o
+   * engoliria, a consulta passaria a ter SUCESSO e a tela desenharia *"O
+   * quadro deste time ainda não pode ser listado aqui. Os vínculos existem e
+   * continuam valendo."* para alguém que não lidera aquele time — o único
+   * ponto do produto onde o 404 faria a tela AFIRMAR uma coisa falsa em vez
+   * de calar. Por isso a exceção é assinada em `RefusalNumber`, e é a
+   * assinatura, não este mock, que segura a régua: tirar a rota de lá derruba
+   * a chamada do gateway.
+   */
+  it("a leitura de ausência desta rota é a exceção que o dono assinou", () => {
+    expect(RefusalNumber.namedAbsenceRoutes).toContain("quadro-do-time");
+    expect(RefusalNumber.absenceMeaningOf("quadro-do-time")).toContain("/memberships");
   });
 
   it("403 NÃO vira indisponibilidade: a negativa sobe com a mensagem do serviço", async () => {

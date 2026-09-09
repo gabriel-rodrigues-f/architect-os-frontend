@@ -3,6 +3,7 @@ import { AlertCircle, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PageAction } from "@/components/app/PageAction";
+import { ReadingRefusal } from "@/components/app/ReadingRefusal";
 import { PersonCombobox } from "@/components/app/PersonCombobox";
 import { TruncatedText } from "@/components/app/TruncatedText";
 import { FieldLabel, Initials, SectionHeading } from "@/components/app/ui-bits";
@@ -20,12 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import { useSearchParamString, useSuccessToast, useToastSubmit } from "@/hooks";
 import { api } from "@/lib/api";
-import { ApiError } from "@/lib/api-errors";
 import { useCurrentUser } from "@/lib/auth";
 
 import type { Competency, Professional, MentoringSession } from "@/lib/domain";
 import { useI18n } from "@/lib/i18n";
 import { PersonPicker } from "@/lib/person-selection";
+import { RefusalNumber } from "@/lib/refusal-number";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import type { Selectors } from "@/lib/selectors";
 import { useSelectors, useStore } from "@/lib/store";
@@ -379,6 +380,17 @@ export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }
 }
 
 /**
+ * A régua do time da pessoa, do jeito que o formulário precisa dela: a lista
+ * a oferecer, e se a leitura falhou.
+ */
+interface TeamRuleCompetencies {
+  readonly list: Competency[];
+  /** A régua não pôde ser lida — e é por isso que a lista NÃO se abriu. */
+  readonly unreadable: boolean;
+  readonly retry: () => void;
+}
+
+/**
  * As competências que a régua do TIME da pessoa cobra (dono, 2026-09-08,
  * item 8): a lista de "Competências discutidas" era o catálogo inteiro, e
  * oferecia a quem mentora competências que o time da pessoa nem exige.
@@ -387,8 +399,17 @@ export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }
  * ou sem régua definida ali (404), não há recorte nenhum a aplicar e o
  * catálogo ativo continua sendo a lista — restringir para o vazio esconderia
  * a competência sem nenhuma régua a justificar a ausência.
+ *
+ * REGRA 18 (dono, 2026-09-09) — o que mudou aqui, e por quê. A lista se abria
+ * sempre que a régua não estivesse em mãos, e "não estar em mãos" incluía a
+ * leitura ter sido RECUSADA: a recusa era engolida, o defeito do item 8
+ * voltava sozinho e nada aparecia na tela. Agora a lista só se ABRE com
+ * resposta — ausência de régua abre, recusa se lê. A ausência é a do 404
+ * desta rota, que é uma das duas exceções nomeadas do dono, e por isso é
+ * assinada em `RefusalNumber`: se a régua do nível entrar no lote da regra
+ * 18, a assinatura cai e este `catch` cai com ela.
  */
-function useTeamRuleCompetencies(mentee: Professional | undefined): Competency[] {
+function useTeamRuleCompetencies(mentee: Professional | undefined): TeamRuleCompetencies {
   const store = useStore();
   const teamId = mentee?.teamId ?? "";
   const careerLevelId = mentee?.careerLevelId ?? "";
@@ -396,18 +417,21 @@ function useTeamRuleCompetencies(mentee: Professional | undefined): Competency[]
     queryKey: ["team-rule", teamId, careerLevelId],
     queryFn: () =>
       api.teamRule(teamId, careerLevelId).catch((error: unknown) => {
-        if (error instanceof ApiError && error.status === 404) return null;
+        if (RefusalNumber.answersAbsenceOn("regua-do-nivel", error)) return null;
         throw error;
       }),
     enabled: teamId !== "" && careerLevelId !== "",
     retry: false,
   });
 
+  const retry = () => void rule.refetch();
+  if (rule.isError) return { list: [], unreadable: true, retry };
+
   const active = store.competencies.filter((c) => c.active);
   const inRule = rule.data?.competencies;
-  if (!inRule) return active;
+  if (!inRule) return { list: active, unreadable: false, retry };
   const ids = new Set(inRule.map((entry) => entry.competencyId));
-  return active.filter((c) => ids.has(c.id));
+  return { list: active.filter((c) => ids.has(c.id)), unreadable: false, retry };
 }
 
 export function NewMentoringSessionDialog({
@@ -422,8 +446,8 @@ export function NewMentoringSessionDialog({
   const sessionForm = useMentoringSessionForm(menteeOptions, onRegistered);
 
   const [competencyFilter, setCompetencyFilter] = useState("");
-  const ruleCompetencies = useTeamRuleCompetencies(sel.professionalById(sessionForm.form.menteeId));
-  const discussedList = ruleCompetencies.filter((c) =>
+  const teamRule = useTeamRuleCompetencies(sel.professionalById(sessionForm.form.menteeId));
+  const discussedList = teamRule.list.filter((c) =>
     defaultNameFormatter.matchesSearch(c.name, competencyFilter.trim().toLowerCase()),
   );
 
@@ -524,35 +548,41 @@ export function NewMentoringSessionDialog({
             >
               {t("mentor.form.competencies")}
             </FieldLabel>
-            {ruleCompetencies.length > 20 && (
-              <Input
-                aria-label={t("common.searchCompetency")}
-                placeholder={t("common.searchCompetency")}
-                value={competencyFilter}
-                onChange={(e) => setCompetencyFilter(e.target.value)}
-                className="mt-1"
-              />
-            )}
-            <div
-              id="mentor-competencies"
-              role="group"
-              aria-labelledby="mentor-competencies-label"
-              className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
-            >
-              {discussedList.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={sessionForm.competencyIds.includes(c.id)}
-                    onChange={() => sessionForm.toggleCompetency(c.id)}
+            {teamRule.unreadable ? (
+              <ReadingRefusal sentence={t("teamRules.error.load")} onRetry={teamRule.retry} />
+            ) : (
+              <>
+                {teamRule.list.length > 20 && (
+                  <Input
+                    aria-label={t("common.searchCompetency")}
+                    placeholder={t("common.searchCompetency")}
+                    value={competencyFilter}
+                    onChange={(e) => setCompetencyFilter(e.target.value)}
+                    className="mt-1"
                   />
-                  <TruncatedText text={c.name} className="flex-1" />
-                </label>
-              ))}
-              {discussedList.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
-              )}
-            </div>
+                )}
+                <div
+                  id="mentor-competencies"
+                  role="group"
+                  aria-labelledby="mentor-competencies-label"
+                  className="mt-1 max-h-40 overflow-y-auto overflow-x-hidden surface-inset p-2"
+                >
+                  {discussedList.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={sessionForm.competencyIds.includes(c.id)}
+                        onChange={() => sessionForm.toggleCompetency(c.id)}
+                      />
+                      <TruncatedText text={c.name} className="flex-1" />
+                    </label>
+                  ))}
+                  {discussedList.length === 0 && (
+                    <p className="text-sm text-muted-foreground">{t("common.noCompetencyFound")}</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
         {sessionForm.showToast && (

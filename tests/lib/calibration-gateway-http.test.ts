@@ -87,13 +87,38 @@ describe("HttpCalibrationGateway — o caminho de erro", () => {
     expect((failure as ApiError).code).toBe("INTERNAL");
   });
 
-  it("negativa de acesso chega ao interceptador da política de sessão", async () => {
+  /**
+   * REGRA 18 (dono, 2026-09-09): `CalibrationNotVisibleError` é recusa de
+   * ALCANCE — *"é a recusa literal que o dono descreveu: esta rota não existe
+   * pra mim"*. Ela nega a tela inteira por papel, e nada de calibração está na
+   * frente de quem é recusado. Passa a chegar como 404, com o corpo de "não
+   * encontrado", byte a byte igual ao de recurso inexistente.
+   *
+   * Este teste afirmava 403 e continuaria VERDE depois da troca, descrevendo
+   * um produto que não existe mais — é a armadilha que a verificação mediu.
+   * O que ele guarda de verdade não é o número: é que a negativa REJEITA, em
+   * vez de virar distribuição vazia na tela do gerente.
+   */
+  it("negativa de alcance chega ao interceptador da política de sessão", async () => {
     const interceptadas: ApiError[] = [];
-    fetchMock.mockResolvedValue(jsonResponse({ code: "FORBIDDEN", message: "Sem acesso" }, 403));
+    fetchMock.mockResolvedValue(
+      jsonResponse({ code: "NOT_FOUND", message: "calibração não encontrada" }, 404),
+    );
     await gatewayComInterceptador((error) => interceptadas.push(error))
       .calibration("2026-h2")
       .catch(() => undefined);
-    expect(interceptadas.map((error) => error.status)).toEqual([403]);
+    expect(interceptadas.map((error) => error.status)).toEqual([404]);
+  });
+
+  it("a negativa de alcance não vira distribuição vazia — a leitura rejeita", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ code: "NOT_FOUND", message: "calibração não encontrada" }, 404),
+    );
+    const failure = await gateway()
+      .calibration("2026-h2")
+      .catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(ApiError);
+    expect((failure as ApiError).status).toBe(404);
   });
 
   it("payload fora do contrato é recusado — a tela não desenha distribuição desconhecida", async () => {

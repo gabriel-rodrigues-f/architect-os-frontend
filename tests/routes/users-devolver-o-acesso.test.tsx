@@ -161,10 +161,44 @@ describe("o ato existe, e ele pede confirmação antes de sair da tela", () => {
 
   /**
    * A régua da tela espelha a do serviço, mas espelho não é o serviço. Se uma
-   * recusa escapar, ela é dita DENTRO do diálogo, com a frase do serviço — e
-   * não como um erro solto depois que a tela já fechou.
+   * recusa escapar, ela é dita DENTRO do diálogo — e não como um erro solto
+   * depois que a tela já fechou.
+   *
+   * REGRA 18 (dono, 2026-09-09): `AccessRestoreRefusedError` é recusa de
+   * ALCANCE — responde sobre uma CONTA que quem pergunta não alcança —, e
+   * passa a chegar como 404 com o corpo de "não encontrado", byte a byte
+   * igual ao de uma conta que não existe. É exatamente aí que o oráculo
+   * morre: quem tentar descobrir contas pelo par 404/403 lê a mesma coisa nos
+   * dois casos.
+   *
+   * Este teste afirmava 403 e continuaria VERDE depois da troca, guardando um
+   * produto que não existe mais. O que ele guarda de verdade é que a recusa é
+   * DITA, no diálogo, sem jargão.
    */
-  it("uma recusa que escape do espelho é dita ali mesmo, sem jargão", async () => {
+  it("uma recusa de alcance que escape do espelho é dita ali mesmo, sem jargão", async () => {
+    const usuario = userEvent.setup();
+    servidor.recusa = {
+      status: 404,
+      corpo: { code: "NOT_FOUND", message: "Conta não encontrada." },
+    };
+    renderAs(fixtureAdminUser);
+    await screen.findByText("Ana Martins");
+
+    await usuario.click(botaoDe("Ana Martins"));
+    await usuario.click(await screen.findByRole("button", { name: "Devolver o acesso" }));
+
+    const aviso = await screen.findByRole("alert");
+    await waitFor(() => expect(aviso.textContent).toBe("Conta não encontrada."));
+    expect(aviso.textContent).not.toMatch(/\b(?:GET|POST)\b|\/api\/|NOT_FOUND/);
+  });
+
+  /**
+   * A recusa de ATO não saiu do produto: ela continua chegando em 403, com a
+   * frase, porque a frase é o que diz à pessoa o que fazer. O par de testes
+   * registra a fronteira que o dono desenhou — e denuncia quem apagar um dos
+   * dois lados.
+   */
+  it("uma recusa de ato continua chegando com a frase do serviço", async () => {
     const usuario = userEvent.setup();
     servidor.recusa = {
       status: 403,

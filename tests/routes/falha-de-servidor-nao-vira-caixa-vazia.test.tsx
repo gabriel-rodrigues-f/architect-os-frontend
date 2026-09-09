@@ -194,19 +194,37 @@ describe("a Calibração declara a falha em vez de dizer que ninguém deu nota",
   });
 });
 
+/**
+ * REGRA 18 (dono, 2026-09-09): a recusa da calibração é de ALCANCE, e passa a
+ * chegar como 404 — o mesmo número e o mesmo corpo de um ciclo que não
+ * existe, que é justamente o ponto: o número deixa de contar quem existe.
+ *
+ * Para esta tela nada disso muda o que a pessoa lê, e é isso que o teste
+ * guarda: recusa e ausência caem na mesma falha de leitura declarada, nunca
+ * na caixa vazia que diria "nenhuma avaliação com nota" para quem sequer
+ * podia perguntar. O caso do 403 fica ao lado porque a recusa de ATO continua
+ * existindo, e ela também não pode virar caixa vazia.
+ */
 describe("negativa de acesso também é falha declarada, não caixa vazia", () => {
-  beforeEach(() => {
+  const renderComRecusa = (status: number) => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
       state: fixtureState,
-      routes: [rotaQueFalha("/calibration", 403)],
+      routes: [rotaQueFalha("/calibration", status)],
     });
+    renderWithApp(<CalibrationPage />);
+  };
+
+  it("404 na calibração mostra a falha de leitura, não 'nenhuma avaliação com nota'", async () => {
+    renderComRecusa(404);
+    expect(await screen.findByText(FALHA_DE_CALIBRACAO)).toBeTruthy();
+    expect(screen.queryByText(CICLO_SEM_NOTA)).toBeNull();
   });
 
-  it("403 na calibração mostra a falha de leitura, não 'nenhuma avaliação com nota'", async () => {
-    renderWithApp(<CalibrationPage />);
+  it("403 na calibração também é falha de leitura — a recusa de ato não sumiu", async () => {
+    renderComRecusa(403);
     expect(await screen.findByText(FALHA_DE_CALIBRACAO)).toBeTruthy();
     expect(screen.queryByText(CICLO_SEM_NOTA)).toBeNull();
   });

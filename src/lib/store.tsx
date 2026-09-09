@@ -2,7 +2,7 @@ import { useQueries, useQuery, type QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 
-import { api, ApiError, type AppState, type CommentInput } from "./api";
+import { api, type AppState, type CommentInput } from "./api";
 import { apiPath } from "./api-path";
 import type {
   CapabilityFoundationPayload,
@@ -38,6 +38,7 @@ import { stateContextCatalog, UnrequestedSlice } from "./state-contexts";
 import { ReadingRefusal } from "../components/app/ReadingRefusal";
 import { ServiceOutageScreen } from "../components/app/ServiceOutageScreen";
 import { ApiFailureReading } from "./api-failure-reading";
+import { RefusalNumber } from "./refusal-number";
 import { ServiceOutage } from "./service-outage";
 import {
   EffectiveOperationalSettings,
@@ -441,11 +442,20 @@ export function buildApi(
       return summary;
     },
 
+    /**
+     * REGRA 18 (dono, 2026-09-09) — a leitura prévia da régua engole o 404
+     * porque a régua do nível é exceção nomeada e ali ele quer dizer "ainda
+     * não definida": sem régua, o PUT nasce com as listas vazias, que é o
+     * certo. Se a rota entrar na troca, engolir a recusa faria este comando
+     * SOBRESCREVER a régua com `capabilityIds` e `competencies` vazios — a
+     * recusa sumiria da tela e ainda apagaria dado. A assinatura da exceção
+     * mora em `RefusalNumber`.
+     */
     defineTeamRuleMinimum: (teamId, careerLevelId, minimumQualifiedCapabilities) =>
       runner.command(
         async () => {
           const current = await api.teamRule(teamId, careerLevelId).catch((error: unknown) => {
-            if (error instanceof ApiError && error.status === 404) return undefined;
+            if (RefusalNumber.answersAbsenceOn("regua-do-nivel", error)) return undefined;
             throw error;
           });
           return api.defineTeamRule(teamId, careerLevelId, {

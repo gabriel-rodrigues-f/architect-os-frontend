@@ -1,5 +1,6 @@
 import { ApiError } from "./api-errors";
 import { BaseDictionary, type MessageKey } from "./i18n";
+import { RefusalNumber } from "./refusal-number";
 
 /**
  * A frase que a tela mostra quando a falha não é de negócio.
@@ -40,6 +41,15 @@ import { BaseDictionary, type MessageKey } from "./i18n";
  *     frases muda o próximo gesto de quem lê; todas contam como somos por
  *     dentro. Na faixa de negócio (4xx) o serviço continua falando: ali a
  *     frase dele É contrato e diz o que fazer.
+ *
+ * REGRA 18 (dono, 2026-09-09) — o que ela faz com estas duas linhas: a fatia
+ * de erro passou a escolher a frase pela SITUAÇÃO, e com isso publicou NA
+ * TELA o mesmo oráculo que a regra 18 fecha na API: quem digitasse o endereço
+ * de uma pessoa lia "você não tem permissão" se ela existisse e "não
+ * encontramos" se não. Depois da regra, o **403 só carrega recusa de ATO** e
+ * o **404 carrega alcance e inexistente juntos** — as duas voltam a ser uma
+ * frase só, e é o classificador que fecha o oráculo do lado de cá. Por isso
+ * as duas linhas leem `RefusalNumber`, e não o número cru.
  */
 export type ApiFailureSituation =
   | "semResposta"
@@ -115,8 +125,8 @@ export class ApiFailureReading {
   private static situationOf(status: number): ApiFailureSituation {
     if (status === ApiFailureReading.SEM_RESPOSTA_STATUS) return "semResposta";
     if (status === 401) return "sessaoExpirada";
-    if (status === 403) return "semPermissao";
-    if (status === 404 || status === 410) return "naoEncontrado";
+    if (status === RefusalNumber.ACT) return "semPermissao";
+    if (status === RefusalNumber.OUT_OF_REACH || status === 410) return "naoEncontrado";
     if (status === 409 || status === 412 || status === 428) return "conflito";
     if (status >= ApiFailureReading.PRIMEIRO_STATUS_DE_SERVIDOR) return "servicoForaDoAr";
     return "indefinida";
