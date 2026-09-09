@@ -134,7 +134,16 @@ function ProfessionalsComparison() {
           hint={t("compare.empty.noProfessionals")}
           registrations={[Registration.PROFESSIONAL]}
         />
-      ) : professionals.length < 2 ? (
+      ) : professionals.length === 0 ? (
+        /*
+         * Dono (2026-09-09): *"eu quero poder visualizar 1 profissional quando
+         * o selecionar e, ao selecionar o segundo, visualizar ambos"*. A tela
+         * exigia DOIS para desenhar qualquer coisa, então quem escolhia uma
+         * pessoa lia "nenhum profissional selecionado" com uma pessoa marcada
+         * na lista ao lado — a tela negando o que ela própria mostrava. São
+         * duas perguntas: DESENHAR um perfil precisa de um; COMPARAR precisa
+         * de dois. O vazio pertence só à primeira.
+         */
         <EmptyState
           title={EmptySubject.PROFESSIONAL.titleIn(t, "empty.context.selected")}
           hint={t("compare.empty")}
