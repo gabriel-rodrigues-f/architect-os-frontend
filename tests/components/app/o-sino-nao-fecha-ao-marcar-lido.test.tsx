@@ -23,7 +23,12 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { NoticeBell } from "@/components/app/NoticeBell";
 import { apiPath } from "@/lib/api-path";
 import { fixtureAssignedTechLeadUser, fixtureState } from "../../helpers/fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../../helpers/render-app";
+import {
+  jsonResponse,
+  mockAppFetch,
+  renderWithApp,
+  type FetchRoute,
+} from "../../helpers/render-app";
 
 /**
  * Dono, 2026-09-09: *"ao se clicar em uma linha, todo o modal de notificações
