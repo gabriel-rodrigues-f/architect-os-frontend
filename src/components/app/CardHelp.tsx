@@ -1,7 +1,7 @@
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n } from "@/lib/i18n";
 
-import { HelpField, HelpTrigger } from "./PageHelp";
+import { HelpPopover } from "./HelpPopover";
+import { HelpField } from "./PageHelp";
 
 /**
  * O "?" que mora DENTRO de um card ou gráfico do Painel (dono, 2026-09-05:
@@ -12,16 +12,10 @@ import { HelpField, HelpTrigger } from "./PageHelp";
 export function CardHelp({ title, what, how }: { title: string; what: string; how: string }) {
   const { t } = useI18n();
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <HelpTrigger label={t("cardHelp.ariaLabel", { card: title })} />
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)] space-y-3 text-sm">
-        <p className="font-display font-semibold">{title}</p>
-        <HelpField label={t("cardHelp.what")} text={what} />
-        <HelpField label={t("cardHelp.how")} text={how} />
-      </PopoverContent>
-    </Popover>
+    <HelpPopover label={t("cardHelp.ariaLabel", { card: title })} title={title} align="end">
+      <HelpField label={t("cardHelp.what")} text={what} />
+      <HelpField label={t("cardHelp.how")} text={how} />
+    </HelpPopover>
   );
 }
 

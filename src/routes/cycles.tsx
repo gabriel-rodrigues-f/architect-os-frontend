@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { z } from "zod";
 
 import {
   ConfirmDialog,
@@ -36,10 +37,24 @@ import { usePageHelp } from "@/lib/page-help";
 import { PersonPicker } from "@/lib/person-selection";
 import { requireLeadershipReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
+import { initialSearchParam } from "@/lib/search-params";
 import { useOperationalSettings, useSelectors, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 
+/**
+ * O cartão do filtro de ciclo bloqueado e o botão do centro chegam com
+ * `?cadastrar=ciclo` — levar à TELA não basta (dono, 2026-09-08, com a
+ * captura na mão): *"Ao clicar em 'Cadastrar primeiro ciclo', devo ser
+ * direcionado ao formulário de cadastro de ciclo."* É o mesmo parâmetro de
+ * Times, Contas e Acessos e Catálogo, e é a `Registration.CYCLE` que o
+ * escreve no link.
+ */
+const cyclesSearchSchema = z.object({
+  cadastrar: z.literal("ciclo").optional(),
+});
+
 export const Route = createFileRoute("/cycles")({
+  validateSearch: cyclesSearchSchema,
   head: () => ({
     meta: [
       { title: "Ciclos de Avaliação — Synapse" },
@@ -94,11 +109,20 @@ function CycleAdministration() {
   const [professionalId, setProfessionalId] = useState(store.professionals[0]?.id ?? "");
   const { t, locale } = useI18n();
   const help = usePageHelp("cycles");
-  const [editing, setEditing] = useState<DevelopmentCycle | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<DevelopmentCycle | null>(null);
   const [blockedDelete, setBlockedDelete] = useState<DevelopmentCycle | null>(null);
 
   const scheme = CycleCadenceScheme.of(useOperationalSettings().cycleCadence);
+
+  /*
+   * O diálogo já nasce aberto quando se chega pelo convite de cadastro. A
+   * leitura é a da casa (`initialSearchParam`), a mesma de Times e do
+   * Catálogo — ela não exige o roteador montado, e a tela é montada sem ele
+   * em teste.
+   */
+  const [editing, setEditing] = useState<DevelopmentCycle | null>(() =>
+    initialSearchParam("cadastrar") === "ciclo" ? emptyCycle(store.cycles, scheme) : null,
+  );
 
   const cycleInUse = (cycleId: string) =>
     store.assessments.some((a) => a.cycleId === cycleId) ||

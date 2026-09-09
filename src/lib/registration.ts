@@ -27,11 +27,15 @@ import { defaultUiAuthorizationPolicy, UiAuthorizationPolicy } from "./scope";
  *
  * O `search` existe porque levar à TELA não basta (pedido do dono, item 12):
  * o botão do time vazio abre o FORMULÁRIO de cadastro de times, não a lista
- * de times. Quem não tem formulário para abrir — o ciclo — não declara
- * nenhum, e o botão leva à tela e pronto.
+ * de times. E vale para TODO assunto que tem formulário — o ciclo era a
+ * exceção que sobrava, e o dono a nomeou com a captura na mão (2026-09-08):
+ * *"Ao clicar em 'Cadastrar primeiro ciclo', devo ser direcionado ao
+ * formulário de cadastro de ciclo."* Quem de fato não tem formulário próprio
+ * para abrir — a competência, que nasce DENTRO de uma capacidade — continua
+ * sem declarar `search`, e o botão leva à tela e pronto.
  */
 export interface RegistrationSearch {
-  readonly cadastrar: "profissional" | "time" | "capacidade";
+  readonly cadastrar: "profissional" | "time" | "capacidade" | "ciclo";
 }
 
 type ReachQuestion = (policy: UiAuthorizationPolicy, user: SessionUser) => boolean;
@@ -62,12 +66,12 @@ export class Registration {
     (policy, user) => policy.canAdministerPeople(user),
   );
 
-  /** O ciclo nasce em Ciclos de Avaliação — a tela inteira é o cadastro. */
+  /** O ciclo nasce em Ciclos de Avaliação, pelo diálogo de cadastro. */
   static readonly CYCLE = new Registration(
     "cycles",
     EmptySubject.CYCLE,
     "/cycles",
-    undefined,
+    { cadastrar: "ciclo" },
     "cycle.new",
     CalendarRange,
     (policy, user) => policy.isLeadership(user),

@@ -1,4 +1,4 @@
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -203,7 +203,7 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     renderWithApp(<CalibrationPage />);
 
     expect(await screen.findByText("Nenhum ciclo cadastrado")).toBeTruthy();
-    expect(botaoDeCadastro("Cadastrar Ciclo").getAttribute("href")).toBe("/cycles");
+    expect(botaoDeCadastro("Cadastrar Ciclo").getAttribute("href")).toBe("/cycles?cadastrar=ciclo");
     expect(screen.queryByRole("button", { name: "Ciclo" })).toBeNull();
   });
 
@@ -258,6 +258,23 @@ describe("Trilhas, Ciclos e Catálogo: o botão do canto troca de lugar, não se
 
     expect(await screen.findByRole("button", { name: "Cadastrar Ciclo" })).toBeTruthy();
     expect(screen.queryByText("Nenhum ciclo cadastrado")).toBeNull();
+  });
+
+  /**
+   * Dono (2026-09-08, com captura): *"Ao clicar em 'Cadastrar primeiro
+   * ciclo', devo ser direcionado ao FORMULÁRIO de cadastro de ciclo."* Levar
+   * à tela não basta — era o que o botão do ciclo fazia, sozinho entre os
+   * quatro assuntos. O parâmetro é o mesmo de Times, Contas e Catálogo, e
+   * quem o escreve no link é o `Registration`.
+   */
+  it("Ciclos de Avaliação: chegando por `?cadastrar=ciclo`, o formulário já nasce aberto", async () => {
+    window.history.replaceState(null, "", "/cycles?cadastrar=ciclo");
+    comoAdmin();
+    renderWithApp(<CyclesPage />);
+
+    const formulario = await screen.findByRole("dialog");
+    expect(formulario.textContent).toContain("Cadastrar Ciclo");
+    expect(within(formulario).getByLabelText("Início")).toBeTruthy();
   });
 
   it("Catálogo de Competências: sem capacidades, o botão vai para o centro", async () => {
