@@ -33,9 +33,11 @@ import { apiPath } from "@/lib/api-path";
  * fica represado até o teste soltar, senão a resposta chega antes de a escrita
  * otimista virar render e não há corrida nenhuma para observar.
  *
- * O padrão correto já existe na casa (`DevelopmentSummarySection`, em
- * `assessments-shared.tsx`): remontar o formulário por `key={data.version}`
+ * O padrão correto nasceu na `DevelopmentSummarySection` de
+ * `assessments-shared.tsx`: remontar o formulário por `key={data.version}`
  * quando o servidor devolve versão nova, em vez de sincronizar por efeito.
+ * Aquela seção saiu do produto em 2026-09-09 com o Começar/Parar/Continuar
+ * (ADR-0101); o padrão ficou, e mora hoje no `useServerDraft`.
  */
 
 const fetchMock = vi.fn();

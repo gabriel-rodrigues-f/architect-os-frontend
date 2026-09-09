@@ -14,7 +14,10 @@ import { useServerDraft } from "@/hooks";
  *
  * Aqui fica gravado o contrato: o rascunho nasce do valor do servidor e só é
  * semeado de novo por remount — que é como a casa já trata versão nova
- * (`key={data.version}` em `DevelopmentSummarySection`).
+ * (`key={data.version}`). O primeiro lugar a fazer isso foi a
+ * `DevelopmentSummarySection` das Avaliações, que saiu do produto em
+ * 2026-09-09 com o Começar/Parar/Continuar (ADR-0101); o padrão sobreviveu
+ * a ela, e hoje quem o carrega é o Plano de Ação do PDI.
  */
 
 function CampoDeProva({ serverValue }: { serverValue: string }) {

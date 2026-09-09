@@ -479,11 +479,6 @@
       "count": 2
     }
   },
-  "tests/routes/assessment-development-summary.test.tsx": {
-    "id-length": {
-      "count": 3
-    }
-  },
   "tests/routes/assessment-lifecycle.test.tsx": {
     "id-length": {
       "count": 5

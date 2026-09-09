@@ -2,7 +2,6 @@ import type {
   Assessment,
   AssessmentCapability,
   AssessmentComment,
-  AssessmentDevelopmentSummary,
   AssessmentEligibility,
   Level,
 } from "../domain";
@@ -61,12 +60,6 @@ export interface AssessmentGateway {
     capabilityId: string,
   ): Promise<AssessmentCapability>;
   assessmentEligibility(assessmentId: string): Promise<AssessmentEligibility>;
-  assessmentDevelopmentSummary(assessmentId: string): Promise<AssessmentDevelopmentSummary>;
-  updateAssessmentDevelopmentSummary(
-    assessmentId: string,
-    body: Pick<AssessmentDevelopmentSummary, "startDoing" | "stopDoing" | "continueDoing">,
-    expectedVersion: number,
-  ): Promise<AssessmentDevelopmentSummary>;
 }
 
 export class HttpAssessmentGateway implements AssessmentGateway {
@@ -154,19 +147,4 @@ export class HttpAssessmentGateway implements AssessmentGateway {
 
   assessmentEligibility = (assessmentId: string): Promise<AssessmentEligibility> =>
     this.client.request<AssessmentEligibility>(`/assessments/${assessmentId}/eligibility`);
-
-  assessmentDevelopmentSummary = (assessmentId: string): Promise<AssessmentDevelopmentSummary> =>
-    this.client.request<AssessmentDevelopmentSummary>(
-      `/assessments/${assessmentId}/development-summary`,
-    );
-
-  updateAssessmentDevelopmentSummary = (
-    assessmentId: string,
-    body: Pick<AssessmentDevelopmentSummary, "startDoing" | "stopDoing" | "continueDoing">,
-    expectedVersion: number,
-  ): Promise<AssessmentDevelopmentSummary> =>
-    this.client.put<AssessmentDevelopmentSummary>(
-      `/assessments/${assessmentId}/development-summary`,
-      { ...body, expectedVersion },
-    );
 }

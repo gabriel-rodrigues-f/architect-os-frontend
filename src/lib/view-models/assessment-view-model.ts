@@ -3,7 +3,6 @@ import type {
   Professional,
   Assessment,
   AssessmentCapability,
-  AssessmentDevelopmentSummary,
   AssessmentEligibility,
   Capability,
   Competency,
@@ -23,10 +22,7 @@ export type AssessmentItemService = Pick<
 
 export type AssessmentPortfolioService = Pick<
   typeof api,
-  | "addAssessmentCapability"
-  | "removeAssessmentCapability"
-  | "confirmAssessmentCapability"
-  | "updateAssessmentDevelopmentSummary"
+  "addAssessmentCapability" | "removeAssessmentCapability" | "confirmAssessmentCapability"
 >;
 
 export interface AssessmentCompletionBrief {
@@ -207,13 +203,5 @@ export class AssessmentViewModel {
         cap.curation.status === "READY" &&
         !eligibility.capabilities.some((c) => c.capabilityId === cap.id),
     );
-  }
-
-  updateDevelopmentSummary(
-    assessmentId: string,
-    fields: Pick<AssessmentDevelopmentSummary, "startDoing" | "stopDoing" | "continueDoing">,
-    expectedVersion: number,
-  ): Promise<AssessmentDevelopmentSummary> {
-    return this.portfolio.updateAssessmentDevelopmentSummary(assessmentId, fields, expectedVersion);
   }
 }

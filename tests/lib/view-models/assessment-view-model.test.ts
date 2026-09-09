@@ -22,7 +22,7 @@ import {
  * dois serviços falsos (sem montar `useStore()`/React), no mesmo espírito
  * de `team-view-model.test.ts`/`development-plans-view-model.test.ts`: a
  * cobertura de componente (assessment-comments/assessments-portfolio/
- * assessment-development-summary/assessment-lifecycle.test.tsx) já exercita
+ * assessment-lifecycle.test.tsx) já exercita
  * o fim a fim via UI; estes cobrem a classe isolada.
  */
 
@@ -44,13 +44,11 @@ function fakePortfolioService(): AssessmentPortfolioService & {
   addAssessmentCapability: ReturnType<typeof vi.fn>;
   removeAssessmentCapability: ReturnType<typeof vi.fn>;
   confirmAssessmentCapability: ReturnType<typeof vi.fn>;
-  updateAssessmentDevelopmentSummary: ReturnType<typeof vi.fn>;
 } {
   return {
     addAssessmentCapability: vi.fn(async () => ({}) as never),
     removeAssessmentCapability: vi.fn(async () => undefined),
     confirmAssessmentCapability: vi.fn(async () => ({}) as never),
-    updateAssessmentDevelopmentSummary: vi.fn(async () => ({}) as never),
   };
 }
 
@@ -382,35 +380,6 @@ describe("AssessmentViewModel", () => {
         eligibility(["cloud"]),
       );
       expect(result.map((c) => c.id)).toEqual(["data"]);
-    });
-  });
-
-  describe("updateDevelopmentSummary", () => {
-    it("chama updateAssessmentDevelopmentSummary com os três campos e a versão esperada", async () => {
-      const { vm, portfolio } = makeVm();
-      await vm.updateDevelopmentSummary(
-        "asmt-1",
-        { startDoing: "a", stopDoing: "b", continueDoing: "c" },
-        2,
-      );
-      expect(portfolio.updateAssessmentDevelopmentSummary).toHaveBeenCalledWith(
-        "asmt-1",
-        { startDoing: "a", stopDoing: "b", continueDoing: "c" },
-        2,
-      );
-    });
-
-    it("propaga erro (ex.: 409 de versão desatualizada) — quem chama decide o banner de conflito", async () => {
-      const portfolio = fakePortfolioService();
-      portfolio.updateAssessmentDevelopmentSummary.mockRejectedValueOnce(new Error("409"));
-      const { vm } = makeVm(fakeItemService(), portfolio);
-      await expect(
-        vm.updateDevelopmentSummary(
-          "asmt-1",
-          { startDoing: "a", stopDoing: "b", continueDoing: "c" },
-          1,
-        ),
-      ).rejects.toThrow("409");
     });
   });
 });

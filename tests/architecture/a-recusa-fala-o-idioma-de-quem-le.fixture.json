@@ -84,14 +84,6 @@
       "status": 500,
       "mensagens": []
     },
-    "AssessmentDevelopmentSummaryVersionConflictError": {
-      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
-      "code": "DEVELOPMENT_SUMMARY_VERSION_CONFLICT",
-      "status": 409,
-      "mensagens": [
-        "\"Esta análise foi atualizada por outra pessoa. Recarregue a versão mais recente antes de salvar de novo.\""
-      ]
-    },
     "AssessmentFieldWrongStageError": {
       "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
       "code": "ASSESSMENT_FIELD_WRONG_STAGE",

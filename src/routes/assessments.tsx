@@ -11,7 +11,6 @@ import {
   PersonCombobox,
   CareerPortfolioSection,
   ConfirmDialog,
-  DevelopmentSummarySection,
   EmptyStateCallToAction,
   PageHeader,
   SectionCard,
@@ -316,8 +315,6 @@ function AssessmentsScreen() {
       )}
 
       {assessment && <CareerPortfolioSection assessment={assessment} isLead={isLead} />}
-
-      {assessment && <DevelopmentSummarySection assessment={assessment} isLead={isLead} />}
 
       {primeiroQueFalta ? (
         <EmptyStateCallToAction

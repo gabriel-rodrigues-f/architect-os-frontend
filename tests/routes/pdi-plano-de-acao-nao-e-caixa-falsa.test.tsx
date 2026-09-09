@@ -16,6 +16,9 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * A régua é a mesma que o `ReflectionField` das Avaliações já seguia desde
  * 2026-09-07 e que só o Plano de Ação descumpria: **quem pode escrever vê a
  * caixa de escrita; quem não pode não vê caixa nenhuma, nem desabilitada.**
+ * Aquele `ReflectionField` saiu do produto em 2026-09-09, junto com o
+ * Começar/Parar/Continuar (ADR-0101) — a régua ficou, e este teste é agora o
+ * único lugar que a guarda.
  * Sem nada escrito, vale o padrão do Extrato — duas linhas dizendo que
  * avaliação nenhuma foi feita ainda.
  *

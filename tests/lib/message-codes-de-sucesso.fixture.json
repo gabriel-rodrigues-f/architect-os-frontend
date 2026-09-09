@@ -30,11 +30,6 @@
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
       "resposta": "ok"
     },
-    "assessment.developmentSummary.update.success": {
-      "rota": "PUT /assessments/:id/development-summary",
-      "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
-      "resposta": "ok"
-    },
     "assessment.item.update.success": {
       "rota": "PATCH /assessments/:id/items/:competencyId",
       "arquivo": "src/modules/assessment/infrastructure/controllers/assessment.controller.ts",
