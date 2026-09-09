@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { api } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import { InMemoryCompetencyRemoval, type AffectedRecords } from "@/lib/gateways/catalog.gateway";
+import pt from "@/locales/pt.json";
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { fixtureMemberUser, fixtureState, fixtureAdminUser } from "../helpers/fixtures";
 import {
@@ -177,7 +178,18 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
     expect(screen.queryByLabelText("Selecionar Serverless")).toBeNull();
   });
 
-  it("a recusa do serviço aparece com a mensagem dele e nada some da matriz", async () => {
+  /**
+   * FATIA IDIOMA (dono, 2026-09-08) — a frase da recusa deixou de ser a do
+   * serviço.
+   *
+   * O teste afirmava que a mensagem do backend aparecia na tela, e era
+   * verdade: `apiFailureOf` imprimia `body.message` literal em toda a faixa
+   * de negócio. Só que o backend escreve pt-BR, e esta tela também existe em
+   * inglês. Agora a tela compõe a frase pelo CÓDIGO (`VALIDATION_ERROR`), nos
+   * dois idiomas, e o que este teste guarda é o que ele sempre quis guardar:
+   * a recusa é DITA, e nada some da matriz.
+   */
+  it("a recusa do serviço é dita no idioma de quem lê e nada some da matriz", async () => {
     const recusa: FetchRoute = (href, init) =>
       href.endsWith(apiPath("/competencies/bulk-removal")) && init?.method === "POST"
         ? jsonResponse(
@@ -198,9 +210,8 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
       within(await screen.findByRole("dialog")).getByRole("button", { name: "Excluir" }),
     );
 
-    expect(
-      (await screen.findAllByText("A remoção em massa aceita até 200 competências.")).length,
-    ).toBeGreaterThan(0);
+    expect((await screen.findAllByText(pt["refusal.validation"])).length).toBeGreaterThan(0);
+    expect(screen.queryByText("A remoção em massa aceita até 200 competências.")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Expandir tudo" }));
     expect(screen.getByText("Kubernetes")).toBeTruthy();
   });

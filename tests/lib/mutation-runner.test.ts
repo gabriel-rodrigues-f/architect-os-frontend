@@ -13,7 +13,14 @@ import { MutationRunner, type MutationCache } from "@/lib/mutation-runner";
  */
 type State = { items: string[] };
 
+/**
+ * A frase já resolvida — FATIA IDIOMA: o runner deixou de escolher a frase
+ * (ele não tem `t` em mãos) e passou a receber a decisão pronta de quem tem.
+ * `MutationRefusal` é quem toma essa decisão na aplicação; aqui basta o dublê.
+ */
 const FALLBACK = "Não foi possível salvar.";
+const sentenceOf = (failure: unknown): string =>
+  failure instanceof ApiError ? failure.message : FALLBACK;
 
 function makeRunner() {
   let state: State = { items: [] };
@@ -24,7 +31,7 @@ function makeRunner() {
     invalidate: vi.fn(),
   };
   const notifyError = vi.fn();
-  const runner = new MutationRunner<State>(cache, notifyError, FALLBACK);
+  const runner = new MutationRunner<State>(cache, notifyError, sentenceOf);
   return { runner, cache, notifyError, getState: () => state };
 }
 

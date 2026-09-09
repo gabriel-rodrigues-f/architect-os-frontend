@@ -4,22 +4,18 @@ import { toast } from "sonner";
 
 import { api, type AppState } from "./api";
 import { CycleActivation, type CycleSelectionState } from "./cycle-activation";
+import { useI18n } from "./i18n";
 import type { DevelopmentCycle } from "./domain";
 import type { MutationCache } from "./mutation-runner";
 import { MutationRunner } from "./mutation-runner";
+import { MutationRefusal } from "./refusal-phrase";
 import { emptyState } from "./selectors";
 import {
   stateContextCatalog,
   type StateContextName,
   type StateContextRequest,
 } from "./state-contexts";
-import {
-  buildApi,
-  ConnectionError,
-  LoadingState,
-  MUTATION_FALLBACK_ERROR_MESSAGE,
-  StoreApiContext,
-} from "./store";
+import { buildApi, ConnectionError, LoadingState, StoreApiContext } from "./store";
 
 export type ContextScopeRequest = StateContextName | StateContextRequest;
 
@@ -99,6 +95,7 @@ export function ContextScope({
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const requests = contexts.map(ContextScopes.normalize);
   const results = useQueries({
     queries: requests.map((request) => stateContextCatalog.queryOptionsOf(request)),
@@ -123,9 +120,11 @@ export function ContextScope({
     () =>
       state === null
         ? null
-        : buildApi(state, queryClient, new ContextScopeCache(requests, queryClient)),
+        : buildApi(state, queryClient, new ContextScopeCache(requests, queryClient), (failure) =>
+            MutationRefusal.sentenceOf(failure, t),
+          ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `revision`/`contextsKey` resumem `state`/`requests`, cujas identidades mudam a cada render.
-    [revision, contextsKey, pending, queryClient],
+    [revision, contextsKey, pending, queryClient, t],
   );
 
   if (failed && failedRequest)
@@ -180,6 +179,7 @@ class CycleSelectionCache implements MutationCache<CycleSelectionState> {
 
 export function useCycleSelection(): CycleSelection {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const cyclesQuery = useQuery(stateContextCatalog.queryOptionsOf(CYCLES_REQUEST));
   const activeQuery = useQuery(stateContextCatalog.queryOptionsOf(ACTIVE_CYCLE_REQUEST));
 
@@ -188,9 +188,9 @@ export function useCycleSelection(): CycleSelection {
       new MutationRunner<CycleSelectionState>(
         new CycleSelectionCache(queryClient),
         (message) => toast.error(message),
-        MUTATION_FALLBACK_ERROR_MESSAGE,
+        (failure) => MutationRefusal.sentenceOf(failure, t),
       ),
-    [queryClient],
+    [queryClient, t],
   );
 
   return {

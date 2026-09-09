@@ -1,8 +1,10 @@
 import { act, renderHook } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 
 import { useAsyncSubmit } from "@/hooks";
 import { ApiError } from "@/lib/api";
+import { I18nProvider } from "@/lib/i18n";
 
 /**
  * OO3-11/D-6 (reuso final) — contrato do ciclo assíncrono compartilhado
@@ -12,9 +14,19 @@ import { ApiError } from "@/lib/api";
  * devolve `{ ok }` explícito — sucesso é distinguível mesmo quando a ação
  * resolve `void`.
  */
+/**
+ * FATIA IDIOMA (dono, 2026-09-08) — o hook passou a compor a frase da recusa
+ * no idioma de quem lê, então ele precisa do dicionário. Na aplicação o
+ * provedor sempre existe (`__root`); aqui ele entra explicitamente, porque um
+ * hook que resolve texto sem dicionário é justamente o que não pode acontecer.
+ */
+function comDicionario({ children }: { children: ReactNode }) {
+  return <I18nProvider>{children}</I18nProvider>;
+}
+
 describe("useAsyncSubmit", () => {
   it("sucesso: devolve { ok: true, value }, sem erro, e submitting volta a false", async () => {
-    const { result } = renderHook(() => useAsyncSubmit("fallback"));
+    const { result } = renderHook(() => useAsyncSubmit("fallback"), { wrapper: comDicionario });
     let outcome: unknown;
     await act(async () => {
       outcome = await result.current.run(() => Promise.resolve("valor"));
@@ -25,7 +37,7 @@ describe("useAsyncSubmit", () => {
   });
 
   it("sucesso com Promise<void> ainda é { ok: true } — nunca ambíguo com falha", async () => {
-    const { result } = renderHook(() => useAsyncSubmit("fallback"));
+    const { result } = renderHook(() => useAsyncSubmit("fallback"), { wrapper: comDicionario });
     let outcome: { ok: boolean } | undefined;
     await act(async () => {
       outcome = await result.current.run(async () => {});
@@ -34,7 +46,9 @@ describe("useAsyncSubmit", () => {
   });
 
   it("ApiError usa a mensagem do servidor; erro genérico usa o fallback; o erro CRU volta no resultado", async () => {
-    const { result } = renderHook(() => useAsyncSubmit("mensagem de fallback"));
+    const { result } = renderHook(() => useAsyncSubmit("mensagem de fallback"), {
+      wrapper: comDicionario,
+    });
     const apiError = new ApiError("VERSION_CONFLICT do servidor", 409);
     await act(async () => {
       await result.current.run(() => Promise.reject(apiError));
@@ -52,8 +66,9 @@ describe("useAsyncSubmit", () => {
   });
 
   it("fallback como função mapeia o erro (ex.: authErrorMessage)", async () => {
-    const { result } = renderHook(() =>
-      useAsyncSubmit((e) => (e instanceof Error ? `mapeado: ${e.message}` : "outro")),
+    const { result } = renderHook(
+      () => useAsyncSubmit((e) => (e instanceof Error ? `mapeado: ${e.message}` : "outro")),
+      { wrapper: comDicionario },
     );
     await act(async () => {
       await result.current.run(() => Promise.reject(new Error("boom")));
@@ -62,7 +77,7 @@ describe("useAsyncSubmit", () => {
   });
 
   it("run limpa o erro anterior ao começar; clearError limpa sob demanda", async () => {
-    const { result } = renderHook(() => useAsyncSubmit("fallback"));
+    const { result } = renderHook(() => useAsyncSubmit("fallback"), { wrapper: comDicionario });
     await act(async () => {
       await result.current.run(() => Promise.reject(new Error("x")));
     });

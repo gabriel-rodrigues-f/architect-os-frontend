@@ -42,7 +42,7 @@ import {
   type OperationalSettings,
 } from "./operational-settings";
 import { useI18n } from "./i18n";
-import { MutationRunner, type MutationCache } from "./mutation-runner";
+import { MutationRunner, type MutationCache, type RefusalSentence } from "./mutation-runner";
 import { expectedVersionOf, UnknownExpectedVersionError } from "./optimistic-lock";
 import {
   ScoringRuler,
@@ -295,18 +295,25 @@ const Ctx = createContext<Api | null>(null);
 
 export { Ctx as StoreApiContext };
 
-export const MUTATION_FALLBACK_ERROR_MESSAGE =
-  "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.";
-
+/**
+ * FATIA IDIOMA (dono, 2026-09-08) — a reserva do toast de mutação saiu daqui.
+ *
+ * Era `MUTATION_FALLBACK_ERROR_MESSAGE`, um literal em português dentro do
+ * `store.tsx`: quem lia o Synapse em inglês recebia português toda vez que uma
+ * mutação falhava. A frase mora no dicionário, nos dois idiomas, e quem a
+ * escolhe é a `MutationRefusal` — a mesma régua para os dois lugares que
+ * constroem um `MutationRunner`.
+ */
 export function buildApi(
   state: AppState,
   queryClient: QueryClient,
   cache: MutationCache<AppState>,
+  refusalSentence: RefusalSentence,
 ): Api {
   const runner = new MutationRunner<AppState>(
     cache,
     (message) => toast.error(message),
-    MUTATION_FALLBACK_ERROR_MESSAGE,
+    refusalSentence,
   );
 
   const refreshCurationCounts = <T,>(result: T): T => {

@@ -1,0 +1,1562 @@
+{
+  "classes": {
+    "AccessInvitationRefusedError": {
+      "arquivo": "src/modules/auth/domain/errors/access-invitation-errors.ts",
+      "code": "ACCESS_INVITATION_REFUSED",
+      "status": 401,
+      "mensagens": []
+    },
+    "AccessRestoreRefusedError": {
+      "arquivo": "src/modules/auth/application/person-admission-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "AccountAdministrationRefusedError": {
+      "arquivo": "src/modules/auth/application/person-admission-access-errors.ts",
+      "code": "ACCOUNT_ADMINISTRATION_FORBIDDEN",
+      "status": 403,
+      "mensagens": []
+    },
+    "AccountDisabledError": {
+      "arquivo": "src/modules/auth/domain/errors/auth-errors.ts",
+      "code": "ACCOUNT_DISABLED",
+      "status": 401,
+      "mensagens": [
+        "\"Esta conta foi desabilitada. Fale com um administrador.\""
+      ]
+    },
+    "AccountNotInReachError": {
+      "arquivo": "src/modules/auth/application/person-admission-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "AdherenceNotInReachError": {
+      "arquivo": "src/modules/career/application/career-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "AdminRoleReservedError": {
+      "arquivo": "src/modules/auth/application/person-admission-access-errors.ts",
+      "code": "ADMIN_ROLE_RESERVED_TO_ADMIN",
+      "status": 403,
+      "mensagens": [
+        "\"Atribuir ou remover o papel de administrador é ato de outro administrador. Como suporte, você administra os demais papéis.\""
+      ]
+    },
+    "AiNarrationUnavailableError": {
+      "arquivo": "src/shared/ai/ai-narration-errors.ts",
+      "code": "AI_NARRATION_UNAVAILABLE",
+      "status": 503,
+      "mensagens": [
+        "\"O provedor de inteligência artificial está indisponível no momento. O que o sistema calculou continua válido.\""
+      ]
+    },
+    "AnalyticsExplanationUnavailableError": {
+      "arquivo": "src/modules/analytics/domain/errors/analytics-explanation-errors.ts",
+      "code": "ANALYTICS_EXPLANATION_UNAVAILABLE",
+      "status": 503,
+      "mensagens": [
+        "\"A explicação em linguagem natural está indisponível no momento. Os números do período continuam válidos.\""
+      ]
+    },
+    "AssessmentCapabilityNotReadyError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "CAPABILITY_NOT_READY",
+      "status": 400,
+      "mensagens": [
+        "`A capacidade \"${capability.name}\" extrapola o alvo de curadoria (${capability.curation.activeCompetencyCount} competências ativas) — cure o excesso antes de propô-la no portfólio de um assessment.`"
+      ]
+    },
+    "AssessmentCommentNotAuthorError": {
+      "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Só quem escreveu o comentário pode alterá-lo.\""
+      ]
+    },
+    "AssessmentDataIntegrityError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "ASSESSMENT_DATA_INTEGRITY",
+      "status": 500,
+      "mensagens": []
+    },
+    "AssessmentDevelopmentSummaryVersionConflictError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "DEVELOPMENT_SUMMARY_VERSION_CONFLICT",
+      "status": 409,
+      "mensagens": [
+        "\"Esta análise foi atualizada por outra pessoa. Recarregue a versão mais recente antes de salvar de novo.\""
+      ]
+    },
+    "AssessmentFieldWrongStageError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "ASSESSMENT_FIELD_WRONG_STAGE",
+      "status": 409,
+      "mensagens": [
+        "\"Líder e nota final só podem ser ajustados com a avaliação Em Revisão.\""
+      ]
+    },
+    "AssessmentFieldsNotAllowedError": {
+      "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "`${fields.join(\", \")} não é campo desta avaliação.`"
+      ]
+    },
+    "AssessmentInvalidTransitionError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "ASSESSMENT_INVALID_TRANSITION",
+      "status": 409,
+      "mensagens": []
+    },
+    "AssessmentLockedError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "ASSESSMENT_LOCKED",
+      "status": 409,
+      "mensagens": [
+        "\"Esta avaliação já foi concluída e está bloqueada para edição.\""
+      ]
+    },
+    "AssessmentNotDraftError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "ASSESSMENT_NOT_DRAFT",
+      "status": 409,
+      "mensagens": [
+        "\"Só um rascunho pode ser cancelado — envie para revisão ou peça ao Tech Lead.\""
+      ]
+    },
+    "AssessmentNotInReachError": {
+      "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "AssessmentNotOwnerError": {
+      "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": []
+    },
+    "AssessmentNotVisibleError": {
+      "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "AssessmentPortfolioAnsweredItemsError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "PORTFOLIO_HAS_ANSWERED_ITEMS",
+      "status": 409,
+      "mensagens": [
+        "\"Esta capacidade já tem competências respondidas. Confirme a remoção para descartar essas respostas.\""
+      ]
+    },
+    "AssessmentPortfolioBelowMinimumError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "PORTFOLIO_BELOW_MINIMUM",
+      "status": 409,
+      "mensagens": [
+        "\"Selecione pelo menos 3 capacidades para enviar a avaliação para revisão.\""
+      ]
+    },
+    "AssessmentPortfolioConfirmedBelowMinimumError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "PORTFOLIO_CONFIRMED_BELOW_MINIMUM",
+      "status": 409,
+      "mensagens": [
+        "\"É preciso pelo menos 3 capacidades confirmadas pelo Tech Lead para concluir.\""
+      ]
+    },
+    "AssessmentPortfolioNotDraftError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "PORTFOLIO_NOT_DRAFT",
+      "status": 409,
+      "mensagens": []
+    },
+    "AssessmentPortfolioNotInReviewError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "PORTFOLIO_NOT_IN_REVIEW",
+      "status": 409,
+      "mensagens": [
+        "\"O portfólio só pode ser confirmado com a avaliação Em Revisão.\""
+      ]
+    },
+    "AssessmentPortfolioUnconfirmedItemsError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "PORTFOLIO_UNCONFIRMED_ITEMS",
+      "status": 409,
+      "mensagens": [
+        "`Ainda há ${unconfirmed} capacidade(s) do portfólio sem confirmação do Tech Lead.`"
+      ]
+    },
+    "AssessmentReviewIncompleteError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "ASSESSMENT_REVIEW_INCOMPLETE",
+      "status": 400,
+      "mensagens": [
+        "\"Preencha a nota do Tech Lead e a nota final de todas as competências antes de concluir.\""
+      ]
+    },
+    "AssessmentSelfIncompleteError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "ASSESSMENT_SELF_INCOMPLETE",
+      "status": 400,
+      "mensagens": [
+        "\"Preencha a autoavaliação de todas as competências antes de enviar para revisão.\""
+      ]
+    },
+    "AssessmentTransitionNotAllowedError": {
+      "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Quem lidera envia um Rascunho para revisão, conclui uma avaliação Em Revisão ou reabre uma Concluída.\""
+      ]
+    },
+    "AssessmentVersionConflictError": {
+      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
+      "code": "ASSESSMENT_VERSION_CONFLICT",
+      "status": 409,
+      "mensagens": [
+        "\"Esta avaliação foi alterada por outra pessoa. Recarregue a versão mais recente antes de salvar de novo.\""
+      ]
+    },
+    "AssistanceSubjectNotFoundError": {
+      "arquivo": "src/modules/assistants/domain/errors/work-assistance-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Profissional \"${id}\" não encontrado`"
+      ]
+    },
+    "AuditLogQueryNotAdminError": {
+      "arquivo": "src/modules/audit/application/audit-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Somente administradores podem consultar o log de auditoria\""
+      ]
+    },
+    "AuthorizationError": {
+      "arquivo": "src/shared/errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": []
+    },
+    "CalibrationAssistanceNotLeadError": {
+      "arquivo": "src/modules/assistants/application/assistants-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "CalibrationNotVisibleError": {
+      "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Só o Gerente do time ou quem administra o sistema vê a calibração do ciclo.\""
+      ]
+    },
+    "CapabilityCompetenciesInUseError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "CAPABILITY_COMPETENCIES_IN_USE",
+      "status": 409,
+      "mensagens": [
+        "\"Competências desta capacidade passaram a estar em uso durante a exclusão; tente novamente para arquivá-la.\""
+      ]
+    },
+    "CapabilityCompetencyLimitReachedError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "CAPABILITY_COMPETENCY_LIMIT_REACHED",
+      "status": 409,
+      "mensagens": [
+        "`A capacidade \"${capabilityName}\" já está no limite de ${maxActiveCompetencies} competências ativas — arquive uma competência antes de ativar outra.`"
+      ]
+    },
+    "CapabilityDataIntegrityError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "CAPABILITY_DATA_INTEGRITY",
+      "status": 500,
+      "mensagens": []
+    },
+    "CapabilityFoundationCompetencyCountError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "CAPABILITY_FOUNDATION_COMPETENCY_COUNT",
+      "status": 400,
+      "mensagens": [
+        "`A capacidade \"${capabilityName}\" nasce com as competências que a definem: no mínimo ${minimum} e no máximo ${maximum} — o pedido trouxe ${received}.`"
+      ]
+    },
+    "CapabilityNotFoundError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Capacidade \"${id}\" não encontrada`"
+      ]
+    },
+    "CapabilityShortInvalidError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "CAPABILITY_SHORT_INVALID",
+      "status": 400,
+      "mensagens": []
+    },
+    "CapabilityShortTakenError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "CAPABILITY_SHORT_TAKEN",
+      "status": 409,
+      "mensagens": []
+    },
+    "CareerDecisionReservedToManagerError": {
+      "arquivo": "src/modules/people/application/people-access-errors.ts",
+      "code": "CAREER_DECISION_RESERVED_TO_MANAGER",
+      "status": 403,
+      "mensagens": [
+        "\"Mudar o nível de carreira, desativar ou reativar alguém é decisão do Gerente do time dessa pessoa ou do Administrador.\""
+      ]
+    },
+    "CareerHistoryAccessDeniedError": {
+      "arquivo": "src/modules/people/application/people-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "CareerLevelNotFoundError": {
+      "arquivo": "src/modules/career/domain/errors/career-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Nível de carreira \"${id}\" não encontrado`"
+      ]
+    },
+    "CareerStatementNotGeneratedByLeadError": {
+      "arquivo": "src/modules/reports/application/report-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "CatalogImportRefusedError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-import-errors.ts",
+      "code": "CATALOG_IMPORT_REFUSED",
+      "status": 409,
+      "mensagens": [
+        "`A importação não foi aplicada: ${conference.competenciesAlreadyInCatalog.length} competência(s) do arquivo já existem no catálogo. Corrija o arquivo e tente de novo — nenhuma capacidade e nenhuma competência foram criadas.`"
+      ]
+    },
+    "CatalogImportValidationError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "CATALOG_IMPORT_INVALID",
+      "status": 400,
+      "mensagens": []
+    },
+    "CompetenciesNotFoundError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`competências ${missingCompetencyIds.map((id) => `\"${id}\"`).join(\", \")}`",
+        "`Competências não encontradas: ${missingCompetencyIds.join(\", \")}`"
+      ]
+    },
+    "CompetencyDistanceNotFoundError": {
+      "arquivo": "src/modules/assistants/domain/errors/assistants-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": []
+    },
+    "CompetencyNameTakenInAnotherCapabilityError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "COMPETENCY_NAME_TAKEN_IN_ANOTHER_CAPABILITY",
+      "status": 409,
+      "mensagens": [
+        "`A competência \"${name}\" já existe na capacidade \"${capabilityName}\" — o nome de uma competência não se repete entre capacidades.`"
+      ]
+    },
+    "CompetencyNameTakenInCapabilityError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "COMPETENCY_NAME_TAKEN_IN_CAPABILITY",
+      "status": 409,
+      "mensagens": [
+        "`A competência \"${name}\" já existe na capacidade \"${capabilityName}\" — escolha outro nome.`"
+      ]
+    },
+    "CompetencyNotFoundError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Competência \"${id}\" não encontrada`"
+      ]
+    },
+    "CycleAlreadyExistsError": {
+      "arquivo": "src/modules/cycles/domain/errors/cycle-errors.ts",
+      "code": "CYCLE_ALREADY_EXISTS",
+      "status": 409,
+      "mensagens": [
+        "`Já existe um ciclo com o id \"${id}\"`"
+      ]
+    },
+    "CycleInUseError": {
+      "arquivo": "src/modules/cycles/domain/errors/cycle-errors.ts",
+      "code": "CYCLE_IN_USE",
+      "status": 409,
+      "mensagens": [
+        "\"Ciclo tem assessments ou PDIs vinculados\""
+      ]
+    },
+    "CycleNotFoundError": {
+      "arquivo": "src/modules/cycles/domain/errors/cycle-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Ciclo \"${id}\" não encontrado`"
+      ]
+    },
+    "DatabaseDumpFailedError": {
+      "arquivo": "src/shared/persistence/backup/backup-errors.ts",
+      "code": "DATABASE_DUMP_FAILED",
+      "status": 500,
+      "mensagens": [
+        "`Dump do banco falhou: ${detail}`"
+      ]
+    },
+    "DatabaseRestoreFailedError": {
+      "arquivo": "src/shared/persistence/backup/backup-errors.ts",
+      "code": "DATABASE_RESTORE_FAILED",
+      "status": 500,
+      "mensagens": [
+        "`Restauração do dump falhou: ${detail}`"
+      ]
+    },
+    "DatabaseUnavailableError": {
+      "arquivo": "src/shared/errors.ts",
+      "code": "DATABASE_UNAVAILABLE",
+      "status": 503,
+      "mensagens": [
+        "\"Serviço temporariamente indisponível. Tente novamente em instantes.\""
+      ]
+    },
+    "DeactivationHistoryAccessDeniedError": {
+      "arquivo": "src/modules/people/application/people-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "DeclaredQueryParametersRejectedError": {
+      "arquivo": "src/modules/analytics/domain/errors/declared-query-errors.ts",
+      "code": "DECLARED_QUERY_PARAMETERS_REJECTED",
+      "status": 400,
+      "mensagens": [
+        "`Os parâmetros da consulta \"${nome}\" não valem: ${motivos.join(\"; \")}.`"
+      ]
+    },
+    "DevelopmentPlanAssistantNotScopedError": {
+      "arquivo": "src/modules/assistants/application/assistants-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "DevelopmentPlanNotFoundError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": []
+    },
+    "DumpChecksumMismatchError": {
+      "arquivo": "src/shared/persistence/backup/backup-errors.ts",
+      "code": "DUMP_CHECKSUM_MISMATCH",
+      "status": 500,
+      "mensagens": [
+        "`O dump \"${dumpPath}\" não confere com o checksum gravado quando ele foi tirado (${detail}). `",
+        "\"Restaurar um dump corrompido é pior que não restaurar: o banco volta pela metade e ninguém percebe.\""
+      ]
+    },
+    "DumpDestinationNotSupportedError": {
+      "arquivo": "src/shared/persistence/backup/backup-errors.ts",
+      "code": "DUMP_DESTINATION_NOT_SUPPORTED",
+      "status": 500,
+      "mensagens": [
+        "`O destino da cópia do dump \"${destination}\" usa o esquema \"${scheme}\", que esta versão não sabe alcançar — `",
+        "\"hoje existe só `file:` (diretório local, que pode ser um ponto de montagem para fora da máquina). \"",
+        "\"Recusar no boot é a escolha: destino inalcançável aceito em silêncio vira a impressão de cópia onde ela não existe.\""
+      ]
+    },
+    "DumpSyncDestinationIsTheSourceError": {
+      "arquivo": "src/shared/persistence/backup/backup-errors.ts",
+      "code": "DUMP_SYNC_DESTINATION_IS_THE_SOURCE",
+      "status": 500,
+      "mensagens": [
+        "`O destino da cópia (${destination}) é o mesmo diretório onde o dump é gravado. `",
+        "\"Uma cópia que mora no original não é cópia: some junto com ele quando a máquina morrer, \"",
+        "\"que é exatamente o cenário para o qual a segunda cópia existe.\""
+      ]
+    },
+    "DuplicateDeclaredQueryError": {
+      "arquivo": "src/modules/analytics/domain/errors/declared-query-errors.ts",
+      "code": "DUPLICATE_DECLARED_QUERY",
+      "status": 400,
+      "mensagens": [
+        "`O catálogo já tem uma consulta declarada chamada \"${nome}\".`"
+      ]
+    },
+    "DuplicateRecordError": {
+      "arquivo": "src/shared/errors.ts",
+      "code": "UNIQUE_VIOLATION",
+      "status": 409,
+      "mensagens": [
+        "\"Já existe um registro com esse identificador\""
+      ]
+    },
+    "DuplicateVocabularyCodeError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "DUPLICATE_VOCABULARY_CODE",
+      "status": 409,
+      "mensagens": [
+        "`O vocabulário ${vocabulary} já tem o código \"${code}\".`"
+      ]
+    },
+    "EmailAlreadyRegisteredError": {
+      "arquivo": "src/modules/auth/domain/errors/auth-errors.ts",
+      "code": "EMAIL_ALREADY_REGISTERED",
+      "status": 409,
+      "mensagens": [
+        "\"E-mail já cadastrado\""
+      ]
+    },
+    "EntityNotFoundError": {
+      "arquivo": "src/shared/errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`${entity.label} não encontrado`"
+      ]
+    },
+    "EvolutionFilterError": {
+      "arquivo": "src/modules/evolution/domain/errors/evolution-errors.ts",
+      "code": "EVOLUTION_FILTER_INVALID",
+      "status": 400,
+      "mensagens": []
+    },
+    "ExplanationContradictsFiguresError": {
+      "arquivo": "src/shared/ai/ai-narration-errors.ts",
+      "code": "EXPLANATION_CONTRADICTS_FIGURES",
+      "status": 503,
+      "mensagens": [
+        "`A explicação em linguagem natural foi recusada por citar o número ${figure}, que não saiu do cálculo. Os números do período continuam válidos.`"
+      ]
+    },
+    "InactiveVocabularyCodeError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "INACTIVE_VOCABULARY_CODE",
+      "status": 400,
+      "mensagens": [
+        "`O código \"${code}\" de ${vocabulary} está desativado — `",
+        "`aceito só em leitura de histórico, nunca em escrita nova.`"
+      ]
+    },
+    "InvalidAppSettingError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "INVALID_APP_SETTING",
+      "status": 400,
+      "mensagens": []
+    },
+    "InvalidCatalogCurationPolicyError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "INVALID_CATALOG_CURATION_POLICY",
+      "status": 400,
+      "mensagens": []
+    },
+    "InvalidCredentialsError": {
+      "arquivo": "src/modules/auth/domain/errors/auth-errors.ts",
+      "code": "INVALID_CREDENTIALS",
+      "status": 401,
+      "mensagens": [
+        "\"E-mail ou senha inválidos\""
+      ]
+    },
+    "InvalidCurrentPasswordError": {
+      "arquivo": "src/modules/auth/domain/errors/auth-errors.ts",
+      "code": "INVALID_CURRENT_PASSWORD",
+      "status": 401,
+      "mensagens": [
+        "\"Senha atual incorreta\""
+      ]
+    },
+    "InvalidDateRangeError": {
+      "arquivo": "src/shared/domain/date-range.ts",
+      "code": "INVALID_DATE_RANGE",
+      "status": 400,
+      "mensagens": []
+    },
+    "InvalidEmailError": {
+      "arquivo": "src/shared/domain/email.ts",
+      "code": "INVALID_EMAIL",
+      "status": 400,
+      "mensagens": [
+        "`E-mail inválido: \"${value}\".`"
+      ]
+    },
+    "InvalidScoringBandsError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "INVALID_SCORING_BANDS",
+      "status": 400,
+      "mensagens": []
+    },
+    "InvalidStagnationThresholdError": {
+      "arquivo": "src/modules/analytics/domain/errors/stagnation-errors.ts",
+      "code": "INVALID_STAGNATION_THRESHOLD",
+      "status": 400,
+      "mensagens": [
+        "`O aviso de estagnação exige um número inteiro entre 2 e 12: uma única sessão de 1:1 não é tendência, e mais de doze deixa de avisar a tempo (recebido: ${String(value)}).`"
+      ]
+    },
+    "InvalidTextTemplateError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "INVALID_TEXT_TEMPLATE",
+      "status": 400,
+      "mensagens": []
+    },
+    "InvalidValueError": {
+      "arquivo": "src/shared/errors.ts",
+      "code": "CHECK_VIOLATION",
+      "status": 400,
+      "mensagens": [
+        "\"Valor inválido\""
+      ]
+    },
+    "InvalidVocabularyItemError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "INVALID_VOCABULARY_ITEM",
+      "status": 400,
+      "mensagens": []
+    },
+    "LastAdminError": {
+      "arquivo": "src/modules/auth/domain/errors/auth-errors.ts",
+      "code": "LAST_ADMIN",
+      "status": 409,
+      "mensagens": [
+        "\"Não é possível remover o último administrador da instância.\""
+      ]
+    },
+    "LeadHasReportsError": {
+      "arquivo": "src/modules/auth/domain/errors/auth-errors.ts",
+      "code": "LEAD_HAS_REPORTS",
+      "status": 409,
+      "mensagens": [
+        "`Transfira ou remova a liderança de ${reports} pessoa(s) antes de alterar este papel.`"
+      ]
+    },
+    "LearningPathCreationNotLeadError": {
+      "arquivo": "src/modules/learning-paths/application/learning-path-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Só quem lidera um time (gerente ou Tech Lead) ou administrador criam trilhas no catálogo.\""
+      ]
+    },
+    "LearningPathDeletionNotAuthorError": {
+      "arquivo": "src/modules/learning-paths/application/learning-path-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "LearningPathEditNotAuthorError": {
+      "arquivo": "src/modules/learning-paths/application/learning-path-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "LearningPathEnrollmentExpiredError": {
+      "arquivo": "src/modules/learning-paths/domain/errors/learning-path-errors.ts",
+      "code": "LEARNING_PATH_ENROLLMENT_EXPIRED",
+      "status": 409,
+      "mensagens": [
+        "\"O prazo desta trilha venceu e a inscrição terminou. Inscreva-se de novo para continuar de onde parou.\""
+      ]
+    },
+    "LearningPathEnrollmentNotSelfOrLeadError": {
+      "arquivo": "src/modules/learning-paths/application/learning-path-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "LearningPathEnrollmentStillValidError": {
+      "arquivo": "src/modules/learning-paths/domain/errors/learning-path-errors.ts",
+      "code": "LEARNING_PATH_ENROLLMENT_STILL_VALID",
+      "status": 409,
+      "mensagens": [
+        "\"Esta inscrição está em dia — não há prazo vencido para recomeçar.\""
+      ]
+    },
+    "LearningPathNotAssignedError": {
+      "arquivo": "src/modules/learning-paths/application/learning-path-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "LearningPathNotFoundError": {
+      "arquivo": "src/modules/learning-paths/domain/errors/learning-path-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": []
+    },
+    "LearningPathProgressNotOwnError": {
+      "arquivo": "src/modules/learning-paths/application/learning-path-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Só a própria pessoa avança na trilha dela. Quem lidera acompanha, inscreve e administra a trilha — mas não estuda no lugar dela.\""
+      ]
+    },
+    "ManagerMembershipReservedToAdminError": {
+      "arquivo": "src/modules/auth/application/team-membership-access-errors.ts",
+      "code": "MANAGER_MEMBERSHIP_RESERVED_TO_ADMIN",
+      "status": 403,
+      "mensagens": [
+        "\"Definir quem é o gerente de um time é ato do administrador.\""
+      ]
+    },
+    "MentoredProfessionalNotFoundError": {
+      "arquivo": "src/modules/mentoring/domain/errors/mentoring-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": []
+    },
+    "MentoringFollowUpNotMentorError": {
+      "arquivo": "src/modules/mentoring/application/mentoring-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "MentoringSessionNotFoundError": {
+      "arquivo": "src/modules/mentoring/domain/errors/mentoring-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": []
+    },
+    "MentoringSessionNotLeadError": {
+      "arquivo": "src/modules/mentoring/application/mentoring-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "NoticeNotInInboxError": {
+      "arquivo": "src/modules/notices/application/notice-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "OutboxEventParkedError": {
+      "arquivo": "src/modules/outbox/application/outbox-event-parked-error.ts",
+      "code": "OUTBOX_EVENT_PARKED",
+      "status": 500,
+      "mensagens": [
+        "`outbox: evento ${outboxEventId} (${outboxEventType}) parked após ${attempts} tentativas — `",
+        "\"fora da fila de claim até replay manual (RUNBOOK §3.8)\""
+      ]
+    },
+    "OwnAccountAmendmentRefusedError": {
+      "arquivo": "src/modules/auth/application/person-admission-access-errors.ts",
+      "code": "OWN_ACCOUNT_AMENDMENT_FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Você não altera o papel nem o status da própria conta. Peça a outro administrador; a senha você troca na rota de senha.\""
+      ]
+    },
+    "OwnTeamMembershipRefusedError": {
+      "arquivo": "src/modules/auth/application/team-membership-access-errors.ts",
+      "code": "OWN_TEAM_MEMBERSHIP_FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Ninguém escreve o próprio vínculo com um time. Peça a um administrador.\""
+      ]
+    },
+    "PasswordChangeRequiredError": {
+      "arquivo": "src/modules/auth/application/auth-access-errors.ts",
+      "code": "PASSWORD_CHANGE_REQUIRED",
+      "status": 403,
+      "mensagens": [
+        "\"Este é o seu primeiro acesso: troque a senha para continuar. Até lá, a sessão só permite ver a sua conta e definir a nova senha.\""
+      ]
+    },
+    "PeopleImportRefusedError": {
+      "arquivo": "src/modules/people/domain/errors/people-import-errors.ts",
+      "code": "PEOPLE_IMPORT_REFUSED",
+      "status": 400,
+      "mensagens": [
+        "`A planilha não foi importada: ${refusedRows.length} linha(s) recusada(s). Corrija e envie de novo — nenhuma pessoa foi criada ou alterada.`"
+      ]
+    },
+    "PeopleSpreadsheetTemplateError": {
+      "arquivo": "src/modules/people/domain/errors/people-import-errors.ts",
+      "code": "PEOPLE_SPREADSHEET_TEMPLATE_INVALID",
+      "status": 400,
+      "mensagens": []
+    },
+    "PersonAdmissionRefusedError": {
+      "arquivo": "src/modules/auth/application/person-admission-access-errors.ts",
+      "code": "PERSON_ADMISSION_FORBIDDEN",
+      "status": 403,
+      "mensagens": []
+    },
+    "PersonAssistantReservedToLeadershipError": {
+      "arquivo": "src/modules/assistants/application/assistants-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "PlanApprovalNotLeadError": {
+      "arquivo": "src/modules/development/application/plan-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Só o Tech Lead responsável (ou administrador) aprova ou devolve o PDI para ajustes.\""
+      ]
+    },
+    "PlanCapabilityNotConfirmedError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "CAPABILITY_NOT_CONFIRMED",
+      "status": 409,
+      "mensagens": [
+        "\"Esta capacidade ainda não está confirmada no portfólio deste assessment.\""
+      ]
+    },
+    "PlanDataIntegrityError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_DATA_INTEGRITY",
+      "status": 500,
+      "mensagens": []
+    },
+    "PlanGapAlreadyMetError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "GAP_ALREADY_MET",
+      "status": 400,
+      "mensagens": [
+        "\"Esta competência já atende ao alvo — não há gap para gerar uma ação de desenvolvimento automaticamente.\""
+      ]
+    },
+    "PlanGapAssessmentNotOwnedError": {
+      "arquivo": "src/modules/development/application/plan-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "PlanGapMissingFinalError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "GAP_MISSING_FINAL",
+      "status": 400,
+      "mensagens": [
+        "\"Esta competência ainda não tem nota final — não há gap para derivar uma ação de desenvolvimento.\""
+      ]
+    },
+    "PlanGapNotApplicableMasteryError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "GAP_NOT_APPLICABLE_MASTERY",
+      "status": 400,
+      "mensagens": [
+        "\"Este assessment não tem próximo nível (Maestria) — não existe GAP de progressão para derivar um item de PDI automaticamente.\""
+      ]
+    },
+    "PlanInvalidTransitionError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_INVALID_TRANSITION",
+      "status": 409,
+      "mensagens": []
+    },
+    "PlanItemDedicationInvalidError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_ITEM_DEDICATION_INVALID",
+      "status": 400,
+      "mensagens": [
+        "\"A dedicação semanal de um item de PDI não pode ser negativa.\""
+      ]
+    },
+    "PlanItemFieldLockedError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_ITEM_FIELD_LOCKED",
+      "status": 409,
+      "mensagens": [
+        "`PDI já acordado: só status, plano de ação e meta SMART continuam editáveis (campo(s) bloqueado(s): ${fields.join(\", \")}).`"
+      ]
+    },
+    "PlanItemGapSourceRequiredError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_ITEM_GAP_SOURCE_REQUIRED",
+      "status": 400,
+      "mensagens": [
+        "\"Um item de PDI derivado de gap precisa do assessment de origem.\""
+      ]
+    },
+    "PlanItemLockedError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_ITEM_LOCKED",
+      "status": 409,
+      "mensagens": [
+        "\"Este PDI já foi concluído e está bloqueado para edição.\""
+      ]
+    },
+    "PlanItemRescheduleReasonRequiredError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_ITEM_RESCHEDULE_REASON_REQUIRED",
+      "status": 400,
+      "mensagens": [
+        "\"Informe o motivo da reprogramação.\""
+      ]
+    },
+    "PlanLockedError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_LOCKED",
+      "status": 409,
+      "mensagens": [
+        "\"Este PDI já foi acordado ou concluído — itens não podem mais ser adicionados ou removidos.\""
+      ]
+    },
+    "PlanNotCompletableError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_NOT_COMPLETABLE",
+      "status": 409,
+      "mensagens": []
+    },
+    "PlanNotInReachError": {
+      "arquivo": "src/modules/development/application/plan-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "PlanNotOwnerError": {
+      "arquivo": "src/modules/development/application/plan-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Só quem lidera a pessoa (gerente ou Tech Lead do time dela) escreve no PDI dela — o PDI é registrado na 1:1.\""
+      ]
+    },
+    "PlanNotReopenableError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_NOT_REOPENABLE",
+      "status": 409,
+      "mensagens": []
+    },
+    "PlanNotScopedError": {
+      "arquivo": "src/modules/development/application/plan-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": []
+    },
+    "PlanReopenNotLeadError": {
+      "arquivo": "src/modules/development/application/plan-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Só quem lidera esta pessoa (gerente ou Tech Lead do time dela) ou o administrador reabre o PDI dela.\""
+      ]
+    },
+    "PlanSuggestionContradictsFiguresError": {
+      "arquivo": "src/modules/development/domain/errors/development-suggestion-errors.ts",
+      "code": "PLAN_SUGGESTION_CONTRADICTS_FIGURES",
+      "status": 503,
+      "mensagens": [
+        "`A sugestão em linguagem natural foi recusada por citar o número ${figure}, que não saiu do PDI. O PDI continua disponível para leitura e edição.`"
+      ]
+    },
+    "PlanSuggestionUnavailableError": {
+      "arquivo": "src/modules/development/domain/errors/development-suggestion-errors.ts",
+      "code": "PLAN_SUGGESTION_UNAVAILABLE",
+      "status": 503,
+      "mensagens": [
+        "\"A sugestão em linguagem natural está indisponível no momento. O PDI continua disponível para leitura e edição.\""
+      ]
+    },
+    "PlanVersionConflictError": {
+      "arquivo": "src/modules/development/domain/errors/development-errors.ts",
+      "code": "PLAN_VERSION_CONFLICT",
+      "status": 409,
+      "mensagens": [
+        "\"Este PDI foi atualizado por outra pessoa. Recarregue a versão mais recente antes de salvar de novo.\""
+      ]
+    },
+    "ProfessionalAlreadyForgottenError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "PROFESSIONAL_ALREADY_FORGOTTEN",
+      "status": 400,
+      "mensagens": [
+        "\"Esta pessoa já foi esquecida — o nome dela não existe mais para ser removido de novo.\""
+      ]
+    },
+    "ProfessionalAlreadyInTeamError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "PROFESSIONAL_ALREADY_IN_TEAM",
+      "status": 409,
+      "mensagens": [
+        "\"Esta pessoa já está neste time — não há o que alocar.\""
+      ]
+    },
+    "ProfessionalDataIntegrityError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "PROFESSIONAL_DATA_INTEGRITY",
+      "status": 500,
+      "mensagens": []
+    },
+    "ProfessionalDeactivationViaPatchError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "VALIDATION_ERROR",
+      "status": 400,
+      "mensagens": [
+        "\"Ativar e desativar têm rota própria — POST /api/v1/professionals/:id/deactivate (com motivo) e POST /api/v1/professionals/:id/reactivate.\""
+      ]
+    },
+    "ProfessionalEvolutionNotVisibleError": {
+      "arquivo": "src/modules/evolution/application/evolution-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "ProfessionalNotFoundError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Profissional \"${id}\" não encontrado`"
+      ]
+    },
+    "ProfessionalProfileAccessDeniedError": {
+      "arquivo": "src/modules/people/application/people-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "ProfessionalTrajectoryNotVisibleError": {
+      "arquivo": "src/modules/analytics/application/analytics-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Você não tem acesso à trajetória de competências desta pessoa.\""
+      ]
+    },
+    "ProfessionalVersionConflictError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "PROFESSIONAL_VERSION_CONFLICT",
+      "status": 409,
+      "mensagens": [
+        "\"Este cadastro foi alterado por outra pessoa. Recarregue e tente de novo.\""
+      ]
+    },
+    "ProfessionalWithoutSeniorityError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "PROFESSIONAL_WITHOUT_SENIORITY",
+      "status": 409,
+      "mensagens": [
+        "\"Esta pessoa não tem senioridade — nível de carreira é do profissional. Troque o cargo dela antes de mudar de nível.\""
+      ]
+    },
+    "ProfessionalWithoutTeamError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "PROFESSIONAL_WITHOUT_TEAM",
+      "status": 409,
+      "mensagens": [
+        "\"Esta pessoa não está em time nenhum — não há de onde retirá-la.\""
+      ]
+    },
+    "ProfessionalYearsInvalidError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "PROFESSIONAL_YEARS_INVALID",
+      "status": 400,
+      "mensagens": [
+        "`Anos como profissional não pode ser negativo: ${value}.`"
+      ]
+    },
+    "ReferencedRecordMissingError": {
+      "arquivo": "src/shared/errors.ts",
+      "code": "FK_VIOLATION",
+      "status": 400,
+      "mensagens": [
+        "\"Registro referenciado não existe (verifique capacidade, ciclo ou profissional)\""
+      ]
+    },
+    "RegistrationClosedError": {
+      "arquivo": "src/modules/auth/application/auth-access-errors.ts",
+      "code": "REGISTRATION_CLOSED",
+      "status": 403,
+      "mensagens": [
+        "\"Cadastro público está fechado. Peça a um administrador para criar sua conta.\""
+      ]
+    },
+    "RequiredFieldMissingError": {
+      "arquivo": "src/shared/errors.ts",
+      "code": "REQUIRED_FIELD_MISSING",
+      "status": 400,
+      "mensagens": [
+        "\"Campo obrigatório não informado\""
+      ]
+    },
+    "SeniorityNotApplicableToLeadershipError": {
+      "arquivo": "src/modules/auth/domain/errors/person-admission-errors.ts",
+      "code": "SENIORITY_NOT_APPLICABLE_TO_LEADERSHIP",
+      "status": 400,
+      "mensagens": [
+        "`${CargoNames.of(role)} não tem senioridade: nível de carreira é do profissional. Deixe o campo em branco.`"
+      ]
+    },
+    "SeniorityRequiredForMemberError": {
+      "arquivo": "src/modules/auth/domain/errors/person-admission-errors.ts",
+      "code": "SENIORITY_REQUIRED_FOR_MEMBER",
+      "status": 400,
+      "mensagens": [
+        "\"Escolha a senioridade do profissional — o nível de carreira é obrigatório para ele.\""
+      ]
+    },
+    "SessionScriptProvenanceIncompleteError": {
+      "arquivo": "src/modules/mentoring/domain/errors/mentoring-errors.ts",
+      "code": "SESSION_SCRIPT_PROVENANCE_INCOMPLETE",
+      "status": 400,
+      "mensagens": [
+        "\"A procedência do roteiro precisa dizer as duas coisas: quando ele foi gerado e quem pediu a geração.\""
+      ]
+    },
+    "SessionScriptProvenanceUnreadableError": {
+      "arquivo": "src/modules/mentoring/domain/errors/mentoring-errors.ts",
+      "code": "SESSION_SCRIPT_PROVENANCE_UNREADABLE",
+      "status": 400,
+      "mensagens": [
+        "\"Não foi possível confirmar a procedência deste roteiro. Gere o roteiro novamente e salve a partir dele.\""
+      ]
+    },
+    "SpecializationCompetencyInvalidError": {
+      "arquivo": "src/modules/people/domain/errors/people-errors.ts",
+      "code": "SPECIALIZATION_COMPETENCY_INVALID",
+      "status": 400,
+      "mensagens": [
+        "\"Especialização principal precisa apontar para uma competência ativa do catálogo.\""
+      ]
+    },
+    "StagnationAlertJudgesPersonError": {
+      "arquivo": "src/modules/assistants/domain/errors/work-assistance-errors.ts",
+      "code": "STAGNATION_ALERT_JUDGES_PERSON",
+      "status": 503,
+      "mensagens": [
+        "`O aviso em linguagem natural foi recusado por classificar a pessoa (\"${expression}\") em vez de descrever os sinais. Os sinais que o sistema detectou continuam válidos.`"
+      ]
+    },
+    "StagnationAlertNotLeadError": {
+      "arquivo": "src/modules/assistants/application/assistants-access-errors.ts",
+      "code": "STAGNATION_ALERT_NOT_LEAD",
+      "status": 403,
+      "mensagens": [
+        "\"O aviso de estagnação é do Tech Lead designado do time desta pessoa.\""
+      ]
+    },
+    "SupportPassExpiredError": {
+      "arquivo": "src/modules/auth/application/auth-access-errors.ts",
+      "code": "SUPPORT_PASS_EXPIRED",
+      "status": 403,
+      "mensagens": [
+        "\"O passe de suporte venceu: ele vale 15 minutos a partir do motivo declarado. Declare o motivo de novo para continuar.\""
+      ]
+    },
+    "TeamAllocationRefusedError": {
+      "arquivo": "src/modules/people/application/people-access-errors.ts",
+      "code": "TEAM_ALLOCATION_FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Alocar uma pessoa num time, ou retirá-la dele, é ato do administrador ou do gerente desse time.\""
+      ]
+    },
+    "TeamAlreadyHasManagerError": {
+      "arquivo": "src/modules/auth/domain/errors/person-admission-errors.ts",
+      "code": "TEAM_ALREADY_HAS_MANAGER",
+      "status": 409,
+      "mensagens": [
+        "`Este time já tem um gerente: ${managerName}. Um time tem no máximo um gerente — troque o gerente atual antes de indicar outro.`"
+      ]
+    },
+    "TeamBoardReadRefusedError": {
+      "arquivo": "src/modules/auth/application/team-membership-access-errors.ts",
+      "code": "TEAM_BOARD_FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Ler o quadro deste time — quem é gerente, tech lead ou profissional nele — é leitura do administrador e de quem lidera este time.\""
+      ]
+    },
+    "TeamCompositionRefusedError": {
+      "arquivo": "src/modules/auth/application/team-membership-access-errors.ts",
+      "code": "TEAM_COMPOSITION_FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Compor o quadro de um time — vincular, trocar papel ou desvincular — é ato do administrador ou do gerente deste time.\""
+      ]
+    },
+    "TeamEvolutionProfessionalsNotVisibleError": {
+      "arquivo": "src/modules/evolution/application/evolution-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "`Você não tem acesso a: ${professionalIds.join(\", \")}.`"
+      ]
+    },
+    "TeamInactiveError": {
+      "arquivo": "src/modules/people/domain/errors/team-errors.ts",
+      "code": "TEAM_INACTIVE",
+      "status": 409,
+      "mensagens": [
+        "\"Este time está desativado — a organização deixou de reconhecê-lo. Reative-o antes de alocar alguém nele.\""
+      ]
+    },
+    "TeamMembershipAlreadyAssignedError": {
+      "arquivo": "src/modules/auth/domain/errors/team-membership-errors.ts",
+      "code": "TEAM_MEMBERSHIP_ALREADY_ASSIGNED",
+      "status": 409,
+      "mensagens": [
+        "`Esta pessoa já tem o papel \"${role}\" neste time.`"
+      ]
+    },
+    "TeamMembershipNotAssignedError": {
+      "arquivo": "src/modules/auth/domain/errors/team-membership-errors.ts",
+      "code": "TEAM_MEMBERSHIP_NOT_ASSIGNED",
+      "status": 404,
+      "mensagens": [
+        "`Esta pessoa não tem o papel \"${role}\" neste time.`"
+      ]
+    },
+    "TeamNameTakenError": {
+      "arquivo": "src/modules/people/domain/errors/team-errors.ts",
+      "code": "TEAM_NAME_TAKEN",
+      "status": 409,
+      "mensagens": [
+        "`Já existe um time chamado \"${takenName}\". O nome do time é único: a importação de pessoas casa a pessoa com o time pelo nome, e dois homônimos deixariam a planilha sem saber em qual matricular.`"
+      ]
+    },
+    "TeamNotFoundError": {
+      "arquivo": "src/modules/people/domain/errors/team-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Time \"${id}\" não encontrado`"
+      ]
+    },
+    "TeamRuleNotFoundError": {
+      "arquivo": "src/modules/career/domain/errors/career-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`O time \"${teamId}\" não tem régua para o nível \"${careerLevelId}\"`"
+      ]
+    },
+    "TeamStillHasPeopleError": {
+      "arquivo": "src/modules/people/domain/errors/team-errors.ts",
+      "code": "TEAM_STILL_HAS_PEOPLE",
+      "status": 409,
+      "mensagens": [
+        "`Este time ainda tem ${activeProfessionals} pessoa(s) ativa(s). Mova-as para outro time antes de desativá-lo — desativar não move ninguém, e deixaria gente ativa num time que a organização deixou de reconhecer.`"
+      ]
+    },
+    "TeamTransferCancellationReservedToRequesterError": {
+      "arquivo": "src/modules/transfers/application/team-transfer-access-errors.ts",
+      "code": "TEAM_TRANSFER_CANCELLATION_RESERVED_TO_REQUESTER",
+      "status": 403,
+      "mensagens": [
+        "\"Só quem pediu a transferência pode cancelá-la enquanto está pendente.\""
+      ]
+    },
+    "TeamTransferDecisionReservedToDestinationManagerError": {
+      "arquivo": "src/modules/transfers/application/team-transfer-access-errors.ts",
+      "code": "TEAM_TRANSFER_DECISION_RESERVED_TO_DESTINATION_MANAGER",
+      "status": 403,
+      "mensagens": [
+        "\"Aprovar ou recusar uma transferência é decisão do Gerente do time de destino ou do Administrador.\""
+      ]
+    },
+    "TeamTransferOriginOutdatedError": {
+      "arquivo": "src/modules/transfers/domain/errors/team-transfer-errors.ts",
+      "code": "TEAM_TRANSFER_ORIGIN_OUTDATED",
+      "status": 409,
+      "mensagens": [
+        "\"A pessoa já não está no time de origem deste pedido; cancele-o e abra outro.\""
+      ]
+    },
+    "TeamTransferRequestAlreadyDecidedError": {
+      "arquivo": "src/modules/transfers/domain/errors/team-transfer-errors.ts",
+      "code": "TEAM_TRANSFER_REQUEST_ALREADY_DECIDED",
+      "status": 409,
+      "mensagens": [
+        "\"Este pedido de transferência não está mais pendente.\""
+      ]
+    },
+    "TeamTransferRequestNotFoundError": {
+      "arquivo": "src/modules/transfers/domain/errors/team-transfer-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Pedido de transferência ${id} não encontrado`"
+      ]
+    },
+    "TeamTransferRequestNotInReachError": {
+      "arquivo": "src/modules/transfers/application/team-transfer-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "TeamTransferRequestPendingError": {
+      "arquivo": "src/modules/transfers/domain/errors/team-transfer-errors.ts",
+      "code": "TEAM_TRANSFER_REQUEST_PENDING",
+      "status": 409,
+      "mensagens": [
+        "\"Já existe um pedido de transferência pendente para esta pessoa.\""
+      ]
+    },
+    "TeamTransferRequestReservedToOriginManagerError": {
+      "arquivo": "src/modules/transfers/application/team-transfer-access-errors.ts",
+      "code": "OUT_OF_REACH",
+      "status": 404,
+      "mensagens": []
+    },
+    "TeamTransferRequiresRequestError": {
+      "arquivo": "src/modules/people/application/people-access-errors.ts",
+      "code": "TEAM_TRANSFER_REQUIRES_REQUEST",
+      "status": 403,
+      "mensagens": [
+        "\"Mudar alguém de time é uma solicitação: o Gerente do time atual pede a transferência e o Gerente do time de destino aprova. Só o administrador move diretamente, como correção de cadastro.\""
+      ]
+    },
+    "TeamTransferToSameTeamError": {
+      "arquivo": "src/modules/transfers/domain/errors/team-transfer-errors.ts",
+      "code": "TEAM_TRANSFER_TO_SAME_TEAM",
+      "status": 400,
+      "mensagens": [
+        "\"O time de destino precisa ser diferente do time atual da pessoa.\""
+      ]
+    },
+    "TeamTransitionsNotVisibleError": {
+      "arquivo": "src/modules/analytics/application/analytics-access-errors.ts",
+      "code": "FORBIDDEN",
+      "status": 403,
+      "mensagens": [
+        "\"Você não tem acesso às transições de nível deste time.\""
+      ]
+    },
+    "TechLeadAlreadyLeadsATeamError": {
+      "arquivo": "src/modules/auth/domain/errors/person-admission-errors.ts",
+      "code": "TECH_LEAD_ALREADY_LEADS_A_TEAM",
+      "status": 409,
+      "mensagens": [
+        "\"Este tech lead já lidera um time. Um tech lead lidera um time só — desvincule-o do time atual antes de vinculá-lo a outro.\""
+      ]
+    },
+    "UndescribedDeclaredQueryParameterError": {
+      "arquivo": "src/modules/analytics/domain/errors/declared-query-errors.ts",
+      "code": "UNDESCRIBED_DECLARED_QUERY_PARAMETER",
+      "status": 400,
+      "mensagens": [
+        "`O parâmetro \"${parametro}\" da consulta \"${consulta}\" não declara descrição legível: `",
+        "\"sem ela a recusa não teria o que mostrar sobre ele.\""
+      ]
+    },
+    "UnknownAppSettingKeyError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Setting \"${key}\" não é uma key conhecida.`"
+      ]
+    },
+    "UnknownCareerLevelError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "UNKNOWN_CAREER_LEVEL",
+      "status": 400,
+      "mensagens": []
+    },
+    "UnknownDeclaredQueryError": {
+      "arquivo": "src/modules/analytics/domain/errors/declared-query-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Não existe consulta declarada chamada \"${nome}\". As que existem: ${conhecidas.join(\", \")}.`"
+      ]
+    },
+    "UnknownTextTemplateKeyError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`Template \"${key}\" não é uma key conhecida.`"
+      ]
+    },
+    "UnknownVocabularyCodeError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "UNKNOWN_VOCABULARY_CODE",
+      "status": 400,
+      "mensagens": [
+        "`Código desconhecido para ${vocabulary}: \"${code}\". `",
+        "`Cadastre-o em /api/v1/config/vocabularies antes de usá-lo.`"
+      ]
+    },
+    "UserRoleInvalidError": {
+      "arquivo": "src/modules/auth/domain/errors/auth-errors.ts",
+      "code": "VALIDATION_ERROR",
+      "status": 400,
+      "mensagens": [
+        "`Papel de usuário inválido: \"${role}\".`"
+      ]
+    },
+    "VocabularyItemNotFoundError": {
+      "arquivo": "src/modules/config/domain/errors/config-errors.ts",
+      "code": "NOT_FOUND",
+      "status": 404,
+      "mensagens": [
+        "`O vocabulário ${vocabulary} não tem o código \"${code}\".`"
+      ]
+    },
+    "WeakPasswordError": {
+      "arquivo": "src/modules/auth/domain/errors/auth-errors.ts",
+      "code": "WEAK_PASSWORD",
+      "status": 400,
+      "mensagens": []
+    },
+    "WorkAssistanceContradictsFiguresError": {
+      "arquivo": "src/modules/assistants/domain/errors/work-assistance-errors.ts",
+      "code": "WORK_ASSISTANCE_CONTRADICTS_FIGURES",
+      "status": 503,
+      "mensagens": [
+        "`A leitura em linguagem natural foi recusada por citar o número ${figure}, que não saiu da apuração. O que o sistema apurou continua válido.`"
+      ]
+    },
+    "WorkAssistanceUnavailableError": {
+      "arquivo": "src/modules/assistants/domain/errors/work-assistance-errors.ts",
+      "code": "WORK_ASSISTANCE_UNAVAILABLE",
+      "status": 503,
+      "mensagens": [
+        "\"A leitura em linguagem natural está indisponível no momento. O que o sistema apurou continua válido.\""
+      ]
+    }
+  },
+  "codigosSemClasse": {
+    "AUTHENTICATION_REQUIRED": {
+      "status": 401,
+      "origem": "auth.plugin.ts"
+    },
+    "AUTH_IP_RATE_LIMIT_EXCEEDED": {
+      "status": 429,
+      "origem": "auth.controller.ts"
+    },
+    "AUTH_RATE_LIMIT_UNAVAILABLE": {
+      "status": 503,
+      "origem": "auth.controller.ts + FrameworkFailurePresenter"
+    },
+    "CHECK_VIOLATION": {
+      "status": 400,
+      "origem": "DatabaseConstraintTranslator"
+    },
+    "CONTENT_LENGTH_MISMATCH": {
+      "status": 400,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "CONTENT_TYPE_REQUIRED": {
+      "status": 400,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "EMPTY_REQUEST_BODY": {
+      "status": 400,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "FK_VIOLATION": {
+      "status": 400,
+      "origem": "DatabaseConstraintTranslator"
+    },
+    "FORBIDDEN": {
+      "status": 403,
+      "origem": "HttpResponder.forbidden + AuthorizationError"
+    },
+    "GRAFANA_DOOR_CLOSED": {
+      "status": 503,
+      "origem": "grafana-door.ts"
+    },
+    "GRAFANA_SEAT_REQUIRED": {
+      "status": 401,
+      "origem": "grafana-door.ts"
+    },
+    "GRAFANA_TICKET_REFUSED": {
+      "status": 401,
+      "origem": "grafana-door.ts"
+    },
+    "INTERNAL_ERROR": {
+      "status": 500,
+      "origem": "FrameworkFailurePresenter.fallback + HttpErrorPresenter (regra do >= 500, §5)"
+    },
+    "MALFORMED_REQUEST_BODY": {
+      "status": 400,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "MALFORMED_REQUEST_URL": {
+      "status": 400,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "NOT_FOUND": {
+      "status": 404,
+      "origem": "HttpResponder.notFound + EntityNotFoundError"
+    },
+    "RATE_LIMIT_EXCEEDED": {
+      "status": 429,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "REQUEST_BODY_REQUIRED": {
+      "status": 400,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "REQUEST_BODY_TOO_LARGE": {
+      "status": 413,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "REQUEST_ERROR": {
+      "status": 400,
+      "origem": "FrameworkFailurePresenter.fallback — a falha de framework 4xx que nenhum código nomeado reconhece"
+    },
+    "REQUEST_URL_TOO_LONG": {
+      "status": 414,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "REQUIRED_FIELD_MISSING": {
+      "status": 400,
+      "origem": "DatabaseConstraintTranslator"
+    },
+    "RESPONSE_SCHEMA_MISMATCH": {
+      "status": 500,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "ROUTE_NOT_FOUND": {
+      "status": 404,
+      "origem": "HttpErrorBoundary"
+    },
+    "SERVICE_UNAVAILABLE": {
+      "status": 503,
+      "origem": "HttpErrorBoundary — o 503 de dependência na porta anônima (§10)"
+    },
+    "SESSION_INVALID": {
+      "status": 401,
+      "origem": "auth.plugin.ts"
+    },
+    "SESSION_REVOKED": {
+      "status": 401,
+      "origem": "auth.plugin.ts"
+    },
+    "UNAUTHORIZED": {
+      "status": 401,
+      "origem": "metrics.ts"
+    },
+    "UNIQUE_VIOLATION": {
+      "status": 409,
+      "origem": "DatabaseConstraintTranslator"
+    },
+    "UNSUPPORTED_MEDIA_TYPE": {
+      "status": 415,
+      "origem": "FrameworkFailurePresenter"
+    },
+    "VALIDATION_ERROR": {
+      "status": 400,
+      "origem": "FrameworkFailurePresenter + HttpResponder.parse"
+    }
+  }
+}
