@@ -772,6 +772,7 @@
   "pdi.empty.title": "No plan items",
   "pdi.empty.subtitle": "Add suggested competencies from the side panel.",
   "pdi.empty.noProfessionals": "Register the first professional to open a development plan.",
+  "pdi.sideRail.label": "Plan support",
   "pdi.suggestions.title": "Competencies in progress",
   "pdi.suggestions.subtitle": "Competencies in progress not yet in the PDI, greatest distance first.",
   "pdi.suggestions.none": "All competencies in progress are already in the plan.",

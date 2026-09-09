@@ -22,4 +22,18 @@ export class ShellHeader {
 
   /** A área de conteúdo ocupa no mínimo o viewport útil abaixo do cabeçalho. */
   static readonly minContentHeightClass = "min-h-[calc(100dvh-var(--shell-header-h))]";
+
+  /**
+   * Uma COLUNA DE APOIO ao lado do conteúdo (dono, 2026-09-09: *"a tela não
+   * pode rolar para baixo por conta do grupo Maiores Distâncias"*). Em tela
+   * larga ela se solta do esticamento da célula da grade (`self-start` — sem
+   * isso a célula já nasce com a altura da linha e o `sticky` não tem para
+   * onde correr), gruda abaixo do cabeçalho e rola DENTRO DE SI, no máximo o
+   * viewport útil. Em tela estreita as colunas empilham e nada disto vale:
+   * caixa de rolagem dentro de página que já rola é pior que o defeito. Por
+   * isso o variante `xl:` vem COLADO em cada classe — o Tailwind v4 só
+   * compila o que enxerga literal, e `xl:` montado por template morre.
+   */
+  static readonly sideRailClass =
+    "xl:sticky xl:self-start xl:top-(--shell-header-h) xl:max-h-[calc(100dvh-var(--shell-header-h))] xl:overflow-y-auto";
 }
