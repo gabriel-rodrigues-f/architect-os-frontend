@@ -24,13 +24,26 @@ import type {
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { useAsyncSubmit, useNarrowViewport, useSuccessToast } from "@/hooks";
-import { useI18n, type I18nApi } from "@/lib/i18n";
+import { useI18n, type I18nApi, type MessageKey } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { stateContextCatalog } from "@/lib/state-contexts";
 import { useOperationalSettings, useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { AssessmentViewModel, type AssessmentCompletionBrief } from "@/lib/view-models";
+
+/**
+ * O rótulo de cada assinatura de comentário. É um `Record` sobre o tipo, e não
+ * uma escada de ternários, porque a escada tinha um fim: quem não fosse Tech
+ * Lead virava "Profissional". Foi assim que o comentário do administrador
+ * apareceu com o crachá de outra pessoa. Aqui, autor novo sem rótulo não
+ * compila.
+ */
+const AUTHOR_LABEL_KEY: Readonly<Record<AssessmentComment["authorRole"], MessageKey>> = {
+  PROFESSIONAL: "comment.author.professional",
+  TECH_LEAD: "comment.author.techLead",
+  ADMIN: "comment.author.admin",
+};
 
 function useAssessmentViewModel(): AssessmentViewModel {
   const store = useStore();
@@ -126,11 +139,7 @@ function CommentSection({
         <ul className="space-y-2">
           {comments.map((comment) => {
             const mine = comment.authorUserId !== null && comment.authorUserId === currentUserId;
-            const authorLabel = mine
-              ? t("comment.you")
-              : comment.authorRole === "TECH_LEAD"
-                ? t("comment.author.techLead")
-                : t("comment.author.professional");
+            const authorLabel = mine ? t("comment.you") : t(AUTHOR_LABEL_KEY[comment.authorRole]);
             return editing === comment.id ? (
               <li key={comment.id}>
                 <CommentForm

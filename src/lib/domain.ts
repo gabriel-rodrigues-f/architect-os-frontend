@@ -118,7 +118,15 @@ export interface CareerLevelTransition {
   professionalVersion: number;
 }
 
-type AssessmentParticipantRole = "PROFESSIONAL" | "TECH_LEAD";
+/**
+ * QUEM ASSINOU o comentário. `ADMIN` (2026-09-09) fechou uma mentira da trilha
+ * de autoria: o backend carimbava por `isLead`, que a guarda de escrita fazia
+ * chegar sempre verdadeiro, e o comentário do administrador — que escreve na
+ * avaliação de qualquer pessoa (regra 6) — era desenhado como Tech Lead.
+ * `PROFESSIONAL` fica porque o comentário ANTIGO a carrega; hoje ninguém
+ * escreve na própria avaliação.
+ */
+type AssessmentParticipantRole = "PROFESSIONAL" | "TECH_LEAD" | "ADMIN";
 
 export interface AssessmentComment {
   id: string;
