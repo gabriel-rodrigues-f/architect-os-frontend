@@ -104,7 +104,19 @@ function TeamCapabilityCoverage() {
   // do C-Level é "quantas capacidades dependem de uma pessoa só?".
   const concentrated = withRisk.filter((area) => area.risk === "concentrationRisk").length;
 
-  const view: CardsOrTable = viewOverride ?? (withRisk.length > 8 ? "table" : "cards");
+  /**
+   * A TABELA É POR ONDE ESTA TELA COMEÇA (dono, 2026-09-09: *"quero que o tipo
+   * de visualização inicie com linhas ao invés de blocos"*).
+   *
+   * Antes a tela escolhia sozinha pelo tamanho — cartões até oito áreas em
+   * risco, tabela acima disso. A régua parecia razoável e não era: o modo de
+   * leitura mudava debaixo da pessoa conforme o time melhorava ou piorava, e a
+   * mesma tela abria de dois jeitos em dias diferentes sem ninguém ter pedido.
+   * A pergunta desta tela é de comparação — quais capacidades dependem de
+   * poucas pessoas —, e comparar é varrer coluna, não passear por cartão.
+   * Quem preferir os blocos continua a um clique.
+   */
+  const view: CardsOrTable = viewOverride ?? "table";
 
   return (
     <>

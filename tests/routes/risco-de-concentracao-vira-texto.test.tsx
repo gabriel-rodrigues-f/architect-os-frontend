@@ -103,6 +103,10 @@ describe("Risco de Concentração — o que não é clicável não parece clicá
   });
 
   it("nos cartões, o acesso de 'Sem avaliação' também perde o pontilhado", async () => {
+    // A tela passou a nascer na TABELA (dono, 2026-09-09); este caso é sobre
+    // os CARTÕES, então ele pede os cartões em vez de contar com o padrão.
+    await screen.findByText("Cloud Architecture");
+    await userEvent.click(screen.getByRole("button", { name: "Cartões" }));
     const card = (await screen.findByText("Cloud Architecture")).closest("section") as HTMLElement;
 
     const acesso = within(card).getByRole("button", { name: /sem avaliação/i });

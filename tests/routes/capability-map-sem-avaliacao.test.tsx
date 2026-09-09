@@ -100,6 +100,10 @@ describe("De quem o time depende — 'Sem avaliação' abre a avaliação de cad
     });
     renderWithApp(<CapabilityPage />);
 
+    // A tela passou a nascer na TABELA (dono, 2026-09-09); este caso é sobre
+    // os CARTÕES, então ele pede os cartões em vez de contar com o padrão.
+    await screen.findByText("Cloud Architecture");
+    await userEvent.click(screen.getByRole("button", { name: "Cartões" }));
     const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
     const acesso = within(card).getByRole("button", { name: /sem avaliação/i });
     expect(acesso.getAttribute("aria-expanded")).toBe("false");
@@ -152,6 +156,11 @@ describe("De quem o time depende — 'Sem avaliação' abre a avaliação de cad
     renderWithApp(<CapabilityPage />);
     await screen.findByText("Cloud Architecture");
 
+    // Nos CARTÕES, onde o acesso é o próprio valor: sem ninguém para revelar,
+    // não há botão. A tela nasce na tabela desde 2026-09-09, e lá o cabeçalho
+    // "Sem avaliação" é um botão de ORDENAÇÃO — outro botão, outra pergunta —,
+    // por isso este caso pede os cartões antes de afirmar a ausência.
+    await userEvent.click(screen.getByRole("button", { name: "Cartões" }));
     expect(screen.queryByRole("button", { name: /sem avaliação/i })).toBeNull();
 
     await userEvent.click(screen.getByRole("button", { name: "Tabela" }));

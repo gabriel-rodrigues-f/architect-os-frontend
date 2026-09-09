@@ -1,4 +1,5 @@
 import { cleanup, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -154,6 +155,10 @@ describe("Mapa de Capacidades — risco explícito, sem CRUD de domínio", () =>
     };
 
     renderPage(scopedFixtureStateFor(leadUser, state, ["time-de-ana"]), leadUser);
+    // O rótulo de risco é o do CARTÃO, e a tela passou a nascer na tabela
+    // (dono, 2026-09-09) — este caso pede os cartões antes de olhar.
+    await screen.findByText("Cloud Architecture");
+    await userEvent.click(screen.getByRole("button", { name: "Cartões" }));
     const card = (await screen.findByText("Cloud Architecture")).closest("section")!;
     expect(within(card).getByText(/Risco de concentração/)).toBeTruthy();
     expect(within(card).queryByText(/Cobertura distribuída/)).toBeNull();

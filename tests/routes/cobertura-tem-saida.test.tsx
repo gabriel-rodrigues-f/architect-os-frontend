@@ -1,4 +1,5 @@
 import { cleanup, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -62,6 +63,10 @@ describe("De quem o time depende — o diagnóstico termina em caminho", () => {
 
   it("cada pessoa nomeada nas faixas leva ao próprio perfil", async () => {
     renderWithApp(<CapabilityPage />);
+    // A tela nasce na tabela desde 2026-09-09 (dono); estes casos são sobre os
+    // CARTÕES, onde as pessoas aparecem nomeadas dentro de cada faixa.
+    await screen.findByText("Cloud Architecture");
+    await userEvent.click(screen.getByRole("button", { name: "Cartões" }));
     const cartao = (await screen.findByText("Cloud Architecture")).closest("section")!;
 
     const ana = within(cartao).getAllByRole("link", { name: "Ana Martins" });
@@ -76,6 +81,10 @@ describe("De quem o time depende — o diagnóstico termina em caminho", () => {
 
   it("a referência técnica potencial também é alcançável, não só nomeada", async () => {
     renderWithApp(<CapabilityPage />);
+    // A tela nasce na tabela desde 2026-09-09 (dono); estes casos são sobre os
+    // CARTÕES, onde as pessoas aparecem nomeadas dentro de cada faixa.
+    await screen.findByText("Cloud Architecture");
+    await userEvent.click(screen.getByRole("button", { name: "Cartões" }));
     const cartao = (await screen.findByText("Cloud Architecture")).closest("section")!;
 
     const referencias = within(cartao)
