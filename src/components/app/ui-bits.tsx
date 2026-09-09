@@ -7,7 +7,7 @@ import { ChevronDown, CircleAlert, CircleCheck, Info, TriangleAlert } from "luci
 
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/lib/domain";
-import { useGapSeverityRuler, useSelectors } from "@/lib/store";
+import { useSelectors } from "@/lib/store";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { useLabels } from "@/lib/labels";
@@ -17,9 +17,10 @@ import { defaultNameFormatter } from "@/lib/text";
 import { SectionHeading } from "@/components/app/SectionHeading";
 import { SentenceBlock } from "@/components/app/SentenceBlock";
 import { PageHelp, type PageHelpContent } from "@/components/app/PageHelp";
-import { Chip } from "@/components/app/Chip";
+import { Chip, type ChipSize } from "@/components/app/Chip";
 import { KeyFigureCard, type StatTone } from "@/components/app/KeyFigure";
 import { Button } from "@/components/ui/button";
+import { useGapReading } from "@/hooks/use-gap-reading";
 
 export { SectionHeading };
 export { StatTones, statToneStyles, type StatTone } from "@/components/app/KeyFigure";
@@ -99,49 +100,31 @@ export const gapTone: Record<string, string> = {
   critical: "bg-gap-critical text-[var(--gap-critical-fg)]",
 };
 
-export function GapBadge({ gap }: { gap: number | undefined }) {
+/** O selo de uma distância CONHECIDA — separado para o gancho não ficar atrás de um `if`. */
+function KnownGapBadge({ gap, size }: { gap: number; size: ChipSize }) {
+  const reading = useGapReading(gap);
+  return (
+    <Chip size={size} className={gapTone[reading.tone]}>
+      {reading.badge}
+    </Chip>
+  );
+}
+
+/** `size="sm"` é o selo do cartão da distância, onde a coluna é estreita ([F-03]). */
+export function GapBadge({ gap, size = "md" }: { gap: number | undefined; size?: ChipSize }) {
   const { t } = useI18n();
-  const ruler = useGapSeverityRuler();
   if (gap === undefined) {
     return (
-      <Chip tone="neutral" tooltip={EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}>
+      <Chip
+        tone="neutral"
+        size={size}
+        tooltip={EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}
+      >
         —
       </Chip>
     );
   }
-
-  const tone = ruler.severityOf(gap);
-  const label = t(ruler.messageKey[tone]);
-  return (
-    <Chip className={gapTone[tone]}>{t("gap.badge", { n: Math.max(0, gap), rotulo: label })}</Chip>
-  );
-}
-
-/**
- * A LINHA DA COMPETÊNCIA COM A DISTÂNCIA — o nome à esquerda, o selo à
- * direita (dono, 2026-09-09: *"o nível da distância está excedendo o bloco
- * que o comporta"*).
- *
- * Ela existe porque o mesmo par estava escrito à mão em dois cartões — as
- * "Maiores distâncias" do PDI e os "Treinamentos Recomendados para o Time" —,
- * e nos dois com o mesmo defeito: o nome era um `<p>` sem `min-w-0`. Item de
- * flex sem `min-w-0` não encolhe abaixo da própria palavra mais longa, e o
- * selo é um `Chip` (`whitespace-nowrap` + `shrink-0`), cuja largura mínima é
- * o texto inteiro. Os dois se recusavam a encolher, a soma passava da coluna
- * — 320 px no PDI — e o selo vazava para fora do cartão.
- *
- * A régua do dono: o selo cabe, o NOME INTEIRO continua legível e nada sai do
- * cartão. Por isso `min-w-0 break-words` no nome e nunca `truncate`: o nome
- * quebra em mais linhas, que é o que já acontecia, mas agora dentro do
- * cartão. Ele já reprovou nome de competência cortado.
- */
-export function CompetencyGapRow({ name, gap }: { name: string; gap: number | undefined }) {
-  return (
-    <div className="flex items-start justify-between gap-2">
-      <p className="min-w-0 flex-1 break-words text-body font-medium">{name}</p>
-      <GapBadge gap={gap} />
-    </div>
-  );
+  return <KnownGapBadge gap={gap} size={size} />;
 }
 
 const statusTone: Record<"neutral" | "progress" | "done", string> = {

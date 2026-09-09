@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import {
-  CompetencyGapRow,
+  CompetencyGapCard,
   KeyFigureCard,
   OutOfReachScreen,
   PageHeader,
@@ -220,14 +220,17 @@ function TeamTrainingNeeds() {
           />
           <ul className="space-y-3">
             {collective.map((n) => (
-              <li key={n.competency.id} className="surface-inset p-3">
-                <CompetencyGapRow name={n.competency.name} gap={Math.round(n.avgGap)} />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {t("needs.recommended.summary", { n: n.people })}
-                </p>
-                <div className="mt-2">
-                  {interventionExists(n) ? (
-                    <Link to="/learning-paths" className="text-xs text-primary hover:underline">
+              <CompetencyGapCard
+                key={n.competency.id}
+                name={n.competency.name}
+                gap={Math.round(n.avgGap)}
+                description={t("needs.recommended.summary", { n: n.people })}
+                action={
+                  interventionExists(n) ? (
+                    <Link
+                      to="/learning-paths"
+                      className="justify-self-start text-label text-primary hover:underline"
+                    >
                       {t("needs.intervention.view")}
                     </Link>
                   ) : canCreateIntervention ? (
@@ -236,9 +239,9 @@ function TeamTrainingNeeds() {
                       disabled={submitting}
                       onClick={() => createIntervention(n)}
                     />
-                  ) : null}
-                </div>
-              </li>
+                  ) : undefined
+                }
+              />
             ))}
             {!collective.length && (
               <p className="text-sm text-muted-foreground">{t("needs.recommended.none")}</p>
