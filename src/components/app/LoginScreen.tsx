@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
-import { authErrorMessage, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
+import { DoorRefusal } from "@/lib/door-refusal";
 import { FormKeyboard } from "@/lib/form-keyboard";
 import { SessionEndReason, sessionEndMemory } from "@/lib/session-end-reason";
 import { instanceStatusQuery } from "@/lib/session-query";
@@ -37,8 +38,17 @@ import { EntrancePulseCeremony, SynapseOutcomeRule } from "@/lib/synapse-outcome
  * contorno dos campos; só pode ser azul quando o usuário conseguir se logar
  * com sucesso". Por isso o pulso NÃO dispara no envio — dispara com a
  * resposta: aceita → azul (`onAccepted`, antes de a sessão abrir, para a rede
- * ainda estar na tela); recusada → vermelho; serviço fora → nada, porque não
- * é culpa do que foi digitado (`SynapseOutcomeRule.toneOfDoorResult`).
+ * ainda estar na tela); credencial recusada → vermelho; qualquer outra coisa
+ * → nada, porque não é culpa do que foi digitado
+ * (`SynapseOutcomeRule.toneOfDoorResult`).
+ *
+ * A PORTA ESCOLHE POR CÓDIGO (dono, 2026-09-09): *"os erros do frontend
+ * precisam ser o mais genéricos possível. No login, por exemplo, precisamos
+ * mostrar 'Não é possível acessar a aplicação agora. Entre em contato com um
+ * administrador.'"* A `DoorRefusal` é quem decide o que fala e o que cala — a
+ * frase é NOSSA e existe nos dois idiomas, e a do serviço nunca chega aqui.
+ * O pulso vermelho e o `aria-invalid` seguem a mesma partição: só a recusa do
+ * que foi DIGITADO pinta o campo.
  *
  * A ENTRADA ESPERA A PISCADA (dono, 2026-09-08): "ao inserir a senha correta
  * eu quero ver a rede de sinapse piscando em azul […]. Se necessário, atrase
@@ -84,7 +94,11 @@ export function LoginScreen({
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  /** Só uma tentativa recusada marca os campos — o serviço fora do ar não é culpa do que foi digitado. */
+  /**
+   * Só a recusa DO QUE FOI DIGITADO marca os campos. Antes, qualquer falha
+   * marcava — e o leitor de tela dizia que o campo estava errado quando o
+   * problema era da casa (banco fora, balde cheio, rota errada).
+   */
   const [rejected, setRejected] = useState(false);
 
   useEffect(() => {
@@ -92,7 +106,7 @@ export function LoginScreen({
   }, [instance.data]);
   useEffect(() => {
     if (instance.isError)
-      setError(import.meta.env.DEV ? t("login.offline.dev") : t("login.offline"));
+      setError(import.meta.env.DEV ? t("login.offline.dev") : t(DoorRefusal.SILENCE));
   }, [instance.isError, t]);
 
   /**
@@ -123,8 +137,11 @@ export function LoginScreen({
       setError(null);
       setRejected(false);
     } catch (err) {
-      setError(authErrorMessage(err));
-      setRejected(true);
+      // A porta escolhe por CÓDIGO: credencial recusada, conta desabilitada,
+      // balde cheio e senha fraca falam; todo o resto recebe a frase do dono.
+      const refusal = DoorRefusal.of(err);
+      setError(t(refusal.messageKey));
+      setRejected(refusal.blamesWhatWasTyped);
       const tone = SynapseOutcomeRule.toneOfDoorResult(err);
       if (tone) signals.pulseWith(tone);
     } finally {

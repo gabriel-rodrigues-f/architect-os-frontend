@@ -1,5 +1,8 @@
+import { ApiError } from "./api-errors";
+import { BaseDictionary, type MessageKey } from "./i18n";
+
 /**
- * A frase que a tela mostra quando o serviço recusa e NÃO mandou frase própria.
+ * A frase que a tela mostra quando a falha não é de negócio.
  *
  * Ordem do dono (2026-09-03), literal: *"o usuário final não pode ver erros
  * técnicos em nenhuma, absolutamente nenhuma parte da aplicação."* A captura
@@ -20,10 +23,23 @@
  * e a causa seguem no `ApiError`, no `console.error` do `MutationRunner` e na
  * telemetria — mas nunca mais na tela.
  *
- * Quando o SERVIÇO fala, a tela repete o serviço: `apiFailureOf` só cai nesta
- * leitura quando o corpo da resposta não traz `message`. As recusas PT-BR do
- * backend são contrato (mesma régua da `AssistantFailureReading`), e traduzi-las
- * de novo aqui produziria duas frases para o mesmo fato.
+ * ONDA "O ERRO NÃO CONTA NADA" (dono, 2026-09-09), duas mudanças:
+ *
+ *  1. **A frase mora no DICIONÁRIO**, uma chave por situação, nos dois
+ *     idiomas. Ela era literal de TS e só existia em pt-BR: quem escolheu
+ *     inglês lia português toda vez que uma leitura falhava. Como o `ApiError`
+ *     nasce longe do provedor de i18n, a `sentence` resolve na língua base e
+ *     quem tem `t` em mãos traduz pela `messageKey`.
+ *
+ *  2. **Quando a casa não conseguiu falar com o serviço, a frase é NOSSA**
+ *     (`silencesTheService`). Antes, `apiFailureOf` fazia `body?.message ??
+ *     <situação>`: serviço que fala ganhava sempre, e num 5xx quem falava era
+ *     o estado interno da casa — "Banco de dados temporariamente
+ *     indisponível", "Serviço de proteção contra força bruta indisponível",
+ *     "yearsAsProfessional inválido no profissional <uuid>". Nenhuma dessas
+ *     frases muda o próximo gesto de quem lê; todas contam como somos por
+ *     dentro. Na faixa de negócio (4xx) o serviço continua falando: ali a
+ *     frase dele É contrato e diz o que fazer.
  */
 export type ApiFailureSituation =
   | "semResposta"
@@ -40,15 +56,25 @@ export class ApiFailureReading {
 
   private static readonly PRIMEIRO_STATUS_DE_SERVIDOR = 500;
 
-  private static readonly SENTENCA: Readonly<Record<ApiFailureSituation, string>> = {
-    semResposta: "Não foi possível falar com o serviço. Verifique sua conexão e tente novamente.",
-    sessaoExpirada: "Sua sessão expirou. Entre de novo para continuar.",
-    semPermissao:
-      "Você não tem permissão para fazer isso. Peça acesso a quem administra o sistema.",
-    naoEncontrado: "Não encontramos o que você pediu. Atualize a página e tente de novo.",
-    conflito: "Alguém mudou esse registro antes de você. Atualize a página e refaça a alteração.",
-    servicoForaDoAr: "O serviço está fora do ar no momento. Tente de novo em alguns instantes.",
-    indefinida: "Não foi possível concluir essa ação agora. Tente de novo em alguns instantes.",
+  /**
+   * As duas situações em que a aplicação NÃO CONSEGUIU FALAR com a casa: o
+   * silêncio (o `fetch` rejeitou) e a casa dizendo que não consegue responder
+   * (5xx). Para quem lê, as duas são o mesmo fato — e é o fato que o dono
+   * mandou nomear com uma frase só.
+   */
+  private static readonly SEM_CONVERSA: ReadonlySet<ApiFailureSituation> = new Set([
+    "semResposta",
+    "servicoForaDoAr",
+  ]);
+
+  private static readonly CHAVE: Readonly<Record<ApiFailureSituation, MessageKey>> = {
+    semResposta: "error.unavailable",
+    sessaoExpirada: "error.sessionExpired",
+    semPermissao: "error.forbidden",
+    naoEncontrado: "error.notFound",
+    conflito: "error.conflict",
+    servicoForaDoAr: "error.unavailable",
+    indefinida: "error.undefined",
   };
 
   private constructor(readonly situation: ApiFailureSituation) {}
@@ -57,9 +83,33 @@ export class ApiFailureReading {
     return new ApiFailureReading(ApiFailureReading.situationOf(status));
   }
 
-  /** A frase pronta para a tela — nunca carrega verbo, caminho nem número. */
+  /**
+   * A leitura de uma falha qualquer. O que não é `ApiError` não tem status
+   * para ler — e uma exceção do navegador não é resposta de ninguém.
+   */
+  static ofFailure(failure: unknown): ApiFailureReading {
+    return failure instanceof ApiError
+      ? ApiFailureReading.of(failure.status)
+      : new ApiFailureReading("indefinida");
+  }
+
+  /** A chave da frase — para quem tem `t` em mãos e sabe a língua da pessoa. */
+  get messageKey(): MessageKey {
+    return ApiFailureReading.CHAVE[this.situation];
+  }
+
+  /** A frase pronta, na língua base — nunca carrega verbo, caminho nem número. */
   get sentence(): string {
-    return ApiFailureReading.SENTENCA[this.situation];
+    return BaseDictionary.sentenceOf(this.messageKey);
+  }
+
+  /**
+   * A casa cala o serviço: o que o backend escreveu não vira texto de tela.
+   * `code`, `details` e `correlationId` continuam no `ApiError` — o que morre
+   * é a frase, que é a única parte que a pessoa lê.
+   */
+  get silencesTheService(): boolean {
+    return ApiFailureReading.SEM_CONVERSA.has(this.situation);
   }
 
   private static situationOf(status: number): ApiFailureSituation {

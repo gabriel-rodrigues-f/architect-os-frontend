@@ -150,10 +150,15 @@ describe("a explicação por IA acompanha os números do fechamento de lacunas",
     expect(screen.getAllByText("4").length).toBeGreaterThan(0);
   });
 
+  /**
+   * Onda "o erro não conta nada" (2026-09-09): um 500 é a casa dizendo que não
+   * consegue responder, e desde então ele cai na tela de queda — a mesma de
+   * toda a aplicação — em vez de um aviso discreto na seção.
+   */
   it("sem os números não há o que explicar: o botão nem aparece", async () => {
     renderGap([closureQuebrada, explanationRoute]);
 
-    await screen.findByText(/não foi possível carregar a evolução entre ciclos/i);
+    await screen.findByTestId("service-outage");
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: /explicar os números/i })).toBeNull();
     });

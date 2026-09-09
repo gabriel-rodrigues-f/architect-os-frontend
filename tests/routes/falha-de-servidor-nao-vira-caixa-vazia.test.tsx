@@ -74,6 +74,8 @@ const FALHA_DE_CALIBRACAO = "Não foi possível carregar a calibração.";
 const CAIXA_VAZIA = "Nenhum aviso";
 const CICLO_SEM_NOTA = "Nenhuma avaliação com nota neste ciclo";
 const TENTAR_DE_NOVO = "Tentar novamente";
+const RECARREGAR = "Recarregar";
+const TELA_DE_QUEDA = "service-outage";
 
 const rotaQueFalha =
   (caminho: string, status = 500): FetchRoute =>
@@ -120,6 +122,16 @@ describe("o sino de avisos declara a falha em vez de dizer que não há aviso", 
   });
 });
 
+/**
+ * A FORMA DA TELA TAMBÉM CONTAVA (auditoria de 2026-09-09): o 500 ficava de
+ * fora da leitura de queda, então um gateway fora do ar virava o jogo e um
+ * erro interno virava um aviso na seção — duas aparências para a mesma coisa,
+ * legíveis sem abrir o inspetor. Desde então, todo 5xx é a MESMA tela.
+ *
+ * O invariante deste arquivo não mudou e continua sendo o que importa: falha
+ * de leitura mostra FALHA, com saída — nunca a caixa vazia que faz o líder ler
+ * "está tudo em dia" enquanto três PDIs esperam.
+ */
 describe("a Central de avisos declara a falha em vez de dizer que não há aviso", () => {
   beforeEach(() => {
     fetchMock.mockReset();
@@ -131,17 +143,23 @@ describe("a Central de avisos declara a falha em vez de dizer que não há aviso
     });
   });
 
-  it("com a leitura falhando, a Central mostra a falha, não o estado vazio", async () => {
+  it("com a leitura falhando, a Central mostra a queda, não o estado vazio", async () => {
     renderWithApp(<NoticesPage />);
-    expect(await screen.findByText(FALHA_DE_AVISOS)).toBeTruthy();
+    expect(await screen.findByTestId(TELA_DE_QUEDA)).toBeTruthy();
     expect(screen.queryByText(CAIXA_VAZIA)).toBeNull();
   });
 
   it("sem contagem do servidor, marcar todos como lidos fica indisponível", async () => {
     renderWithApp(<NoticesPage />);
-    await screen.findByText(FALHA_DE_AVISOS);
+    await screen.findByTestId(TELA_DE_QUEDA);
     const botao = screen.getByRole("button", { name: "Marcar todos como lidos" });
     expect(botao.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("a queda vem com o convite de recarregar — a pessoa não fica sem saída", async () => {
+    renderWithApp(<NoticesPage />);
+    await screen.findByTestId(TELA_DE_QUEDA);
+    expect(screen.getByRole("button", { name: RECARREGAR })).toBeTruthy();
   });
 });
 
@@ -156,23 +174,23 @@ describe("a Calibração declara a falha em vez de dizer que ninguém deu nota",
     });
   });
 
-  it("com a leitura falhando, a tela mostra a falha, não o ciclo sem notas", async () => {
+  it("com a leitura falhando, a tela mostra a queda, não o ciclo sem notas", async () => {
     renderWithApp(<CalibrationPage />);
-    expect(await screen.findByText(FALHA_DE_CALIBRACAO)).toBeTruthy();
+    expect(await screen.findByTestId(TELA_DE_QUEDA)).toBeTruthy();
     expect(screen.queryByText(CICLO_SEM_NOTA)).toBeNull();
   });
 
   it("a falha não desenha KPI nenhum — média geral inventada seria pior que tela vazia", async () => {
     renderWithApp(<CalibrationPage />);
-    await screen.findByText(FALHA_DE_CALIBRACAO);
+    await screen.findByTestId(TELA_DE_QUEDA);
     expect(screen.queryByText("Média geral")).toBeNull();
     expect(screen.queryByText("Avaliadores")).toBeNull();
   });
 
   it("a falha vem com o convite de tentar de novo", async () => {
     renderWithApp(<CalibrationPage />);
-    await screen.findByText(FALHA_DE_CALIBRACAO);
-    expect(screen.getByRole("button", { name: TENTAR_DE_NOVO })).toBeTruthy();
+    await screen.findByTestId(TELA_DE_QUEDA);
+    expect(screen.getByRole("button", { name: RECARREGAR })).toBeTruthy();
   });
 });
 

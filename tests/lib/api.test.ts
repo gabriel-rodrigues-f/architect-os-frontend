@@ -61,7 +61,7 @@ describe("cliente da API", () => {
     expect(error.status).toBe(500);
     expect(error.message).not.toContain(apiPath("/professionals/ana"));
     expect(error.message).toBe(
-      "O serviço está fora do ar no momento. Tente de novo em alguns instantes.",
+      "Não é possível acessar a aplicação agora. Entre em contato com um administrador.",
     );
   });
 

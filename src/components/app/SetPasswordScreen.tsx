@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { usePasswordChoice } from "@/hooks";
 import { AccessInvitation, SetPasswordRefusal } from "@/lib/access-recovery";
 import { authApi } from "@/lib/api";
-import { authErrorMessage, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { SessionEndReason } from "@/lib/session-end-reason";
 import { useI18n } from "@/lib/i18n";
 import { SynapseSignals } from "@/lib/synapse-network";
@@ -42,9 +42,10 @@ import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
  *
  *  2. **Link que não serve tem UMA saída, e ela não é o formulário.**
  *     Desconhecido, vencido, já usado ou substituído chegam todos como
- *     `ACCESS_INVITATION_REFUSED`, e a frase é a do serviço, que o CONTRATO
- *     diz já vir escrita para a pessoa. Corrigir a senha não resolveria nada,
- *     então o formulário sai da tela e entra o pedido de um link novo.
+ *     `ACCESS_INVITATION_REFUSED`. Corrigir a senha não resolveria nada,
+ *     então o formulário sai da tela e entra o pedido de um link novo. A
+ *     frase é NOSSA desde 2026-09-09 (`DoorRefusal`): a do serviço só existe
+ *     em pt-BR, e esta tela também existe em inglês.
  *
  *  3. **A tela pergunta A QUEM é o convite** (`GET /auth/invitations/:token`,
  *     2026-09-05): com o e-mail na mão, a exigência "não ter o seu e-mail
@@ -115,10 +116,7 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
       const reading = SetPasswordRefusal.of(refused);
       setRefusal(reading);
       choice.point(reading.requirement);
-      setError(
-        reading.serviceSentence ??
-          (reading.messageKey === null ? authErrorMessage(refused) : t(reading.messageKey)),
-      );
+      setError(t(reading.messageKey));
       const tone = SynapseOutcomeRule.toneOfDoorResult(refused);
       if (tone) signals.pulseWith(tone);
     } finally {
@@ -149,7 +147,7 @@ export function SetPasswordScreen({ token }: { token: string | undefined }) {
         <p role="status" className="mt-2 text-sm text-muted-foreground">
           {invitation === null
             ? t("setPassword.missingLink.lead")
-            : (refusal?.serviceSentence ?? t("setPassword.refusedLink.lead"))}
+            : t(refusal?.messageKey ?? "setPassword.refusedLink.lead")}
         </p>
         <Button type="button" className="mt-5 w-full" onClick={() => setAskingForANewLink(true)}>
           {t("setPassword.askForANewLink")}

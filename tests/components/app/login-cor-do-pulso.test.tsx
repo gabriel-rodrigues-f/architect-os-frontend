@@ -89,7 +89,7 @@ describe("LoginScreen — a cor do pulso acompanha o resultado", () => {
   it("o envio em si não pulsa; a recusa (401) pulsa vermelho depois da resposta", async () => {
     const signals = new SynapseSignals();
     const { soltar } = servico(() =>
-      jsonResponse({ error: "Unauthorized", message: "E-mail ou senha inválidos." }, 401),
+      jsonResponse({ code: "INVALID_CREDENTIALS", message: "E-mail ou senha inválidos." }, 401),
     );
     await enviar(signals);
     await screen.findByRole("button", { name: /Entrando/ });

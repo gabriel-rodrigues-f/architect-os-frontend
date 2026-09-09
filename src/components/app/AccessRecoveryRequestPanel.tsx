@@ -46,7 +46,14 @@ export function AccessRecoveryRequestPanel({
   const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [requested, setRequested] = useState(false);
-  const { submitting, error, run } = useAsyncSubmit(t("accessRecovery.request.error"));
+  /*
+   * A FRASE É NOSSA, SEMPRE (dono, 2026-09-09). O contrato desta rota responde
+   * 202 exista a conta ou não, então TODA falha aqui é de infraestrutura — e a
+   * frase que o serviço escreve nessas horas conta o estado interno da casa,
+   * em pt-BR, numa tela que também existe em inglês. Por isso o fallback é uma
+   * função: ela ignora `error.message` em vez de só cobrir o silêncio dele.
+   */
+  const { submitting, error, run } = useAsyncSubmit(() => t("accessRecovery.request.error"));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

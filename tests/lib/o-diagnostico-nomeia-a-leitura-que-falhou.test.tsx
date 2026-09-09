@@ -24,7 +24,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  */
 const fetchMock = vi.fn();
 
-const TELA_DE_FALHA = "Não foi possível acessar o serviço";
+const TELA_DE_FALHA = "Não é possível acessar a aplicação agora";
 
 const rotaQueFalha =
   (caminho: string): FetchRoute =>

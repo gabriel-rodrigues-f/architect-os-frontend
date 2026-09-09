@@ -186,7 +186,13 @@ describe("assistentes do trabalho — a URL e a recusa do serviço", () => {
     expect(urlDaChamada().pathname).toBe("/api/v1/capabilities/quality-review");
   });
 
-  it("a queda do provedor chega como 503 com a mensagem DO SERVIÇO", async () => {
+  /**
+   * A FRONTEIRA DE 2026-09-09: num 5xx a frase do serviço NÃO chega à tela.
+   * A daqui narrava o guarda interno da casa ("recusada por citar o número X,
+   * que não saiu da apuração"). O `status` e o `code` continuam no objeto —
+   * eles é que fazem a tela escolher o que desenhar —, a frase é que morre.
+   */
+  it("a queda do provedor chega como 503 sem a frase do serviço, com status e code intactos", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(
         {
@@ -202,7 +208,10 @@ describe("assistentes do trabalho — a URL e a recusa do serviço", () => {
     expect(falha).toBeInstanceOf(ApiError);
     expect((falha as ApiError).status).toBe(503);
     expect((falha as ApiError).code).toBe("WORK_ASSISTANCE_UNAVAILABLE");
-    expect((falha as ApiError).message).toContain("indisponível");
+    expect((falha as ApiError).message).not.toContain("indisponível");
+    expect((falha as ApiError).message).toBe(
+      "Não é possível acessar a aplicação agora. Entre em contato com um administrador.",
+    );
   });
 });
 

@@ -57,10 +57,12 @@ describe("ApiClient — o fetch rejeita (offline, DNS, timeout)", () => {
     const failure = await client.request("/state").catch((e: unknown) => e);
 
     expect((failure as ApiError).message).toBe(
-      "Não foi possível falar com o serviço. Verifique sua conexão e tente novamente.",
+      "Não é possível acessar a aplicação agora. Entre em contato com um administrador.",
     );
     expect(authErrorMessage(failure)).not.toBe("Failed to fetch");
-    expect(authErrorMessage(failure)).toMatch(/Verifique sua conexão/);
+    // A frase nunca manda a pessoa conferir a PRÓPRIA conexão: a aplicação não
+    // sabe distinguir a rede dela da casa fora do ar, e dizer que sabe é mentir.
+    expect(authErrorMessage(failure)).not.toMatch(/conexão|rede|serviço/i);
   });
 
   it("a exportação de PDF offline também vira ApiError de rede", async () => {

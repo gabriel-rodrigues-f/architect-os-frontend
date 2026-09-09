@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 
+import { ReadingRefusal } from "@/components/app/ReadingRefusal";
 import { ServiceOutageScreen } from "@/components/app/ServiceOutageScreen";
 import { SectionCard } from "@/components/app/ui-bits";
 import { ServiceOutage } from "@/lib/service-outage";
-import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import type { QueryState } from "@/lib/observed-query";
 
@@ -62,16 +62,7 @@ export function QuerySection<T>({
 
   const data = query.data;
   if (query.isError || data === undefined || (isEmpty ? isEmpty(data) : false)) {
-    return wrap(
-      <>
-        <p className="text-sm text-destructive" role="alert">
-          {errorMessage}
-        </p>
-        <Button size="sm" variant="outline" className="mt-2" onClick={() => void query.refetch()}>
-          {t("common.retry")}
-        </Button>
-      </>,
-    );
+    return wrap(<ReadingRefusal sentence={errorMessage} onRetry={() => void query.refetch()} />);
   }
 
   return <>{children(data)}</>;

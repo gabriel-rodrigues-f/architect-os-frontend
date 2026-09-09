@@ -1,4 +1,4 @@
-import { ApiError } from "./api-errors";
+import { DoorRefusal } from "./door-refusal";
 import type { MessageKey } from "./i18n";
 import { PasswordRefusal, type PasswordRequirement } from "./password-safety";
 
@@ -61,44 +61,41 @@ export type SetPasswordRefusalReason = "refusedLink" | "weakPassword" | "other";
  *
  *   **401 `ACCESS_INVITATION_REFUSED`** — o link é desconhecido, venceu, já
  *   foi usado ou foi substituído. Não há nada a corrigir no formulário: a
- *   única saída é pedir outro link. O CONTRATO diz que a frase do corpo já
- *   vem escrita para a pessoa ler, então é a frase DO SERVIÇO que a tela
- *   mostra — inventar outra aqui produziria duas versões do mesmo fato.
+ *   única saída é pedir outro link.
  *
  *   **400 senha fraca** — os mesmos códigos de recusa que a troca de senha já
- *   trata, então quem lê é a `PasswordRefusal` que já existe, e a exigência
- *   volta apontada na lista. A frase é NOSSA porque a lista é nossa e existe
- *   nos dois idiomas (a mesma exceção que a `PasswordRefusal` já declara).
+ *   trata, e a exigência volta apontada na lista.
  *
- * Fora das duas, a leitura devolve tudo nulo e quem chama cai na frase da
- * situação (`authErrorMessage` → `ApiFailureReading`).
+ * Fora das duas, a porta cala e diz a frase do dono.
+ *
+ * QUEM ESCOLHE A FRASE É A `DoorRefusal` (dono, 2026-09-09). Esta tela é uma
+ * das portas, e a régua da porta é uma só — o que ficou aqui é o que só ela
+ * sabe: que um link recusado tira o FORMULÁRIO da tela e põe no lugar o
+ * pedido de um link novo. Mudou junto a frase do link morto: era a DO
+ * SERVIÇO, e o serviço só escreve pt-BR — esta tela também existe em inglês.
  */
 export class SetPasswordRefusal {
-  static readonly REFUSED_LINK_CODE = "ACCESS_INVITATION_REFUSED";
+  static readonly REFUSED_LINK_CODE = DoorRefusal.REFUSED_LINK_CODE;
 
   private constructor(
     readonly reason: SetPasswordRefusalReason,
-    /** A frase do SERVIÇO, quando o contrato diz que ela é para a pessoa ler. */
-    readonly serviceSentence: string | null,
-    /** A frase NOSSA, quando quem sabe explicar é a lista de exigências. */
-    readonly messageKey: MessageKey | null,
+    /** A frase NOSSA, nos dois idiomas — sempre; a do serviço não chega à tela. */
+    readonly messageKey: MessageKey,
     readonly requirement: PasswordRequirement | null,
   ) {}
 
   static of(error: unknown): SetPasswordRefusal {
-    if (error instanceof ApiError && error.code === SetPasswordRefusal.REFUSED_LINK_CODE) {
-      return new SetPasswordRefusal("refusedLink", error.message, null, null);
-    }
-    const password = PasswordRefusal.of(error);
-    if (password.reason === "weak") {
-      return new SetPasswordRefusal(
-        "weakPassword",
-        null,
-        password.messageKey,
-        password.requirement,
-      );
-    }
-    return new SetPasswordRefusal("other", null, null, null);
+    const door = DoorRefusal.of(error);
+    return new SetPasswordRefusal(
+      SetPasswordRefusal.reasonOf(error, door),
+      door.messageKey,
+      door.requirement,
+    );
+  }
+
+  private static reasonOf(error: unknown, door: DoorRefusal): SetPasswordRefusalReason {
+    if (door.asksForANewLink) return "refusedLink";
+    return PasswordRefusal.of(error).reason === "weak" ? "weakPassword" : "other";
   }
 
   /**

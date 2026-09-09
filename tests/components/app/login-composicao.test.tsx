@@ -38,7 +38,7 @@ function servico(recusa = "E-mail ou senha inválidos.") {
       return Promise.resolve(jsonResponse({ data: { hasUsers: true } }));
     }
     if (href.endsWith(apiPath("/auth/login")) && init?.method === "POST") {
-      return Promise.resolve(jsonResponse({ error: "Unauthorized", message: recusa }, 401));
+      return Promise.resolve(jsonResponse({ code: "INVALID_CREDENTIALS", message: recusa }, 401));
     }
     return Promise.resolve(jsonResponse({ error: "Unauthorized" }, 401));
   });

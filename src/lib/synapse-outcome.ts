@@ -1,5 +1,4 @@
-import { ApiError } from "./api-errors";
-import { ApiFailureReading } from "./api-failure-reading";
+import { DoorRefusal } from "./door-refusal";
 import { SynapseNetwork } from "./synapse-network";
 import type { PulseTone, SynapseSignals } from "./synapse-network";
 
@@ -21,19 +20,22 @@ import type { PulseTone, SynapseSignals } from "./synapse-network";
 export class SynapseOutcomeRule {
   /**
    * As PORTAS sabem o resultado do próprio formulário e perguntam aqui.
-   * `null` de erro é sucesso; o 401 do login É a recusa; a recusa local
-   * (senha que não confere) é mensagem vermelha; e o serviço fora do ar
-   * continua não sendo culpa do que foi digitado.
+   * `null` de erro é sucesso.
+   *
+   * A COR SEGUE A MESMA PARTIÇÃO DA FRASE (dono, 2026-09-09). Antes, o pulso
+   * era vermelho para toda recusa que não fosse queda de serviço — e, no dia
+   * em que a frase virou uma só, a cor passaria a contar a diferença que o
+   * texto parou de contar: vermelho = a casa avaliou a credencial, sem pulso =
+   * a casa está fora. Um canal paralelo, visível sem ler nada.
+   *
+   * Agora vermelho quer dizer uma coisa só, e é a mesma que o `aria-invalid`
+   * dos campos quer dizer: **o que você digitou foi recusado**. Conta
+   * desabilitada, balde cheio, link vencido e queda não pulsam — nenhum deles
+   * é culpa do que foi digitado.
    */
   static toneOfDoorResult(error: unknown): PulseTone | null {
     if (error === null || error === undefined) return "primary";
-    if (!(error instanceof ApiError)) return "danger";
-    if (SynapseOutcomeRule.isServiceDown(error.status)) return null;
-    return "danger";
-  }
-
-  private static isServiceDown(status: number): boolean {
-    return status === ApiFailureReading.SEM_RESPOSTA_STATUS || status >= 500;
+    return DoorRefusal.of(error).blamesWhatWasTyped ? "danger" : null;
   }
 }
 

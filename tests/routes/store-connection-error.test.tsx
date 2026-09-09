@@ -59,7 +59,7 @@ describe("Tela de conexão indisponível — sem instrução de desenvolvedor em
     renderWithApp(<TeamPage />);
 
     expect(
-      await screen.findByText("Não foi possível acessar o serviço", {}, { timeout: 5000 }),
+      await screen.findByText("Não é possível acessar a aplicação agora", {}, { timeout: 5000 }),
     ).toBeTruthy();
     expect(screen.queryByText(/docker compose/i)).toBeNull();
     expect(screen.queryByText(/VITE_API_URL/)).toBeNull();
