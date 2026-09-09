@@ -47,6 +47,8 @@ function path(overrides: Partial<LearningPath>): LearningPath {
     description: "",
     competencyIds: [],
     assignedTo: [],
+    enrollments: [],
+    completionDeadlineDays: null,
     items: [],
     progress: [],
     ...overrides,

@@ -138,7 +138,6 @@ function PlansScreen() {
   const workflow = viewModel.workflowFor(plan, {
     actsForProfessional,
     isLeadOfProfessional,
-    isAssignedTechLead: defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, professional),
   });
 
   const suggestions = viewModel.suggestions(gaps, plan);
@@ -367,8 +366,8 @@ function PlanStatusBar({
         {workflow.canComplete && incompleteReason && (
           <p className="w-full text-xs text-muted-foreground">{incompleteReason}</p>
         )}
-        {workflow.ownerSeesLockedMessage && (
-          <p className="w-full text-xs text-muted-foreground">{t("pdi.plan.lockedForOwner")}</p>
+        {workflow.seesCompletedWithoutReopen && (
+          <p className="w-full text-xs text-muted-foreground">{t("pdi.plan.completedLocked")}</p>
         )}
         {planTransition.error && (
           <p className="w-full text-xs text-destructive">{planTransition.error}</p>

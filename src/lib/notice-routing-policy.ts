@@ -9,6 +9,8 @@ interface NoticeDecoration {
 
 const DECORATION_BY_EVENT_TYPE: Record<string, NoticeDecoration> = {
   "pdi.item.dueSoon": { tone: "warning", icon: "deadline" },
+  // Fatia PRAZOS: o aviso de 15 e 5 dias antes do prazo do compromisso do PDI.
+  "development-item.deadline-approaching": { tone: "warning", icon: "deadline" },
   "assessment.stalled": { tone: "warning", icon: "stalled" },
   "evidence.awaitingReview": { tone: "info", icon: "review" },
   "assessment.completed": { tone: "success", icon: "completed" },

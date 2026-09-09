@@ -112,6 +112,13 @@ function TeamTrainingNeeds() {
         description: t("needs.intervention.pathDescription", { n: need.people }),
         competencyIds: [competency.id],
         assignedTo: need.professionalIds,
+        // Fatia PRAZOS: a intervenção nasce SEM prazo — quem cria a trilha
+        // decide o prazo depois, na tela de Trilhas.
+        enrollments: need.professionalIds.map((professionalId) => ({
+          professionalId,
+          enrolledAt: new Date().toISOString(),
+        })),
+        completionDeadlineDays: null,
         items: [],
         progress: [],
         createdBy: user.email,

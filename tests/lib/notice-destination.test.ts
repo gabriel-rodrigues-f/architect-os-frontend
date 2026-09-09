@@ -43,6 +43,25 @@ describe("NoticeDestination — a tabela inteira do dono", () => {
     expect(destino.of(notice({ eventType: "mentoring.recorded" }))).toBe("/mentoring?menteeId=ana");
   });
 
+  /**
+   * FATIA PRAZOS, item 3 — o aviso de prazo do PDI chega à pessoa E a quem a
+   * lidera, e o `link` do servidor é o genérico `/development-plans`. Quem
+   * lidera três pessoas abriria o PDI da primeira da lista.
+   */
+  it("development-item.deadline-approaching leva ao PDI DAQUELA pessoa", () => {
+    expect(destino.of(notice({ eventType: "development-item.deadline-approaching" }))).toBe(
+      "/development-plans?professionalId=ana",
+    );
+  });
+
+  it("sem a pessoa no contexto, o aviso de prazo volta ao link do servidor", () => {
+    expect(
+      destino.of(
+        notice({ eventType: "development-item.deadline-approaching", professionalId: null }),
+      ),
+    ).toBe("/link-do-servidor");
+  });
+
   it("digest.daily leva à própria tela de Avisos", () => {
     expect(destino.of(notice({ eventType: "digest.daily" }))).toBe("/notices");
   });

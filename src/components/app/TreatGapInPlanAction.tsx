@@ -28,7 +28,6 @@ export function TreatGapInPlanAction({
     {
       actsForProfessional: defaultUiAuthorizationPolicy.canActFor(user, professional),
       isLeadOfProfessional: defaultUiAuthorizationPolicy.isLeadOf(user, professional),
-      isAssignedTechLead: defaultUiAuthorizationPolicy.isAssignedTechLeadOf(user, professional),
     },
   );
   const blockedReasonKey = workflow.newActionBlockedReasonKey;

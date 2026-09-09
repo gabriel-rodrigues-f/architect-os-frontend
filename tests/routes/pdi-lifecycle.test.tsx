@@ -289,13 +289,19 @@ describe("PDI — ciclo de vida do plano e ações sem fabricação", () => {
       });
     }
 
-    it("admin não vê o botão Reabrir PDI — só o Tech Lead responsável reabre", async () => {
+    /**
+     * FATIA PRAZOS, item 4 — o GERENTE vinculado passa a ver o botão. A tela
+     * dizia "Somente o Tech Lead responsável pode reabri-lo" e recusava o
+     * gerente numa ação que a régua lhe dá (`papeis-2026-09-06.md` §3): ele faz
+     * tudo o que o tech lead faz sobre a pessoa, e ainda decide carreira.
+     */
+    it("o gerente vinculado reabre o PDI — a régua não deixou isso só com o tech lead", async () => {
       mockFetchAs(fixtureAssignedManagerUser, completedState);
       window.history.pushState({}, "", "?professionalId=ana");
       renderWithApp(<PlansPage />);
       await screen.findByText("Evoluir IAM");
       expect(screen.getByText("Concluído")).toBeTruthy();
-      expect(screen.queryByRole("button", { name: "Reabrir PDI" })).toBeNull();
+      expect(screen.getByRole("button", { name: "Reabrir PDI" })).toBeTruthy();
     });
 
     it("Tech Lead responsável reabre com motivo obrigatório", async () => {

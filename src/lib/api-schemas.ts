@@ -513,12 +513,19 @@ const learningItemProgress = z.object({
   progress: z.number(),
 });
 
+const learningPathEnrollment = z.object({
+  professionalId: z.string(),
+  enrolledAt: z.string(),
+});
+
 const learningPath = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
   competencyIds: z.array(z.string()),
   assignedTo: z.array(z.string()),
+  enrollments: z.array(learningPathEnrollment).default([]),
+  completionDeadlineDays: z.number().nullable().default(null),
   items: z.array(learningPathItem),
   progress: z.array(learningItemProgress),
   createdBy: z.string().nullish(),

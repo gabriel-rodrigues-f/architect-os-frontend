@@ -27,6 +27,11 @@ const state: AppState = {
       description: "",
       competencyIds: [],
       assignedTo: ["ana", "bruno"],
+      enrollments: [
+        { professionalId: "ana", enrolledAt: "2026-01-01T00:00:00.000Z" },
+        { professionalId: "bruno", enrolledAt: "2026-01-01T00:00:00.000Z" },
+      ],
+      completionDeadlineDays: null,
       items: [{ id: "item-1", title: "Curso X", type: "Curso", hours: 4 }],
       progress: [
         { professionalId: "ana", itemId: "item-1", status: "In Progress", progress: 40 },
@@ -116,14 +121,21 @@ describe("Trilhas — progresso é por pessoa, não somente leitura disfarçado"
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "PATCH")).toHaveLength(1);
   });
 
-  it("admin vê as duas linhas editáveis", async () => {
+  /**
+   * FATIA PRAZOS, item 1 — quem lidera via as duas linhas EDITÁVEIS e
+   * escrevia o avanço no lugar da pessoa. Passa a ver as duas em leitura: ele
+   * continua acompanhando, inscrevendo e administrando a trilha; estudar é de
+   * quem estuda.
+   */
+  it("quem lidera vê as duas linhas em leitura — o avanço é de quem aprende", async () => {
     mockSession(fixtureAssignedManagerUser);
     renderWithApp(<LearningPage />);
 
     await screen.findByText("Trilha com duas pessoas");
     fireEvent.click(screen.getByLabelText("Expandir Trilha com duas pessoas"));
     await screen.findByText("Curso X");
-    expect(screen.getAllByRole("slider")).toHaveLength(2);
+    expect(screen.queryAllByRole("slider")).toHaveLength(0);
+    expect(screen.getByText(/40% ·/)).toBeTruthy();
   });
 
   /**

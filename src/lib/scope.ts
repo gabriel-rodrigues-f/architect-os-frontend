@@ -98,10 +98,29 @@ export class UiAuthorizationPolicy {
   }
 
   /**
-   * A única exceção mantida (dono, 2026-09-06): o progresso na PRÓPRIA trilha
-   * de aprendizagem continua sendo do profissional — e de quem o lidera.
+   * A única exceção mantida (dono, 2026-09-06), agora inteira (fatia PRAZOS,
+   * item 1): o AVANÇO na própria trilha é do profissional — e SÓ dele.
+   *
+   * Quem lidera continua vendo o avanço, inscrevendo e administrando a trilha
+   * (`enrollsInLearningPath`, `editsLearningPath`); o que ele perde é escrever
+   * o avanço no lugar de quem estuda. É a mesma pergunta que o backend faz
+   * (`advancesOwnLearningPath`) e a mesma régua que a sessão já publicava:
+   * `own-trail.progress` é concedida ao profissional e a mais ninguém.
    */
-  recordsTrailProgressOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
+  advancesOwnLearningPath(
+    user: SessionUser,
+    professional: ScopedProfessional | undefined,
+  ): boolean {
+    if (!professional) return false;
+    return this.isOwn(user, professional) && this.isSubjectOnly(user);
+  }
+
+  /**
+   * INSCREVER numa trilha — e reinscrever quem estourou o prazo (fatia
+   * PRAZOS, item 2): a própria pessoa, que é quem recebe o convite quando a
+   * inscrição vence, e quem a lidera (ou o administrador).
+   */
+  enrollsInLearningPath(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
     if (!professional) return false;
     if (this.isOwn(user, professional)) return this.isSubjectOnly(user);
     return this.leadsOrDirects(user, professional);

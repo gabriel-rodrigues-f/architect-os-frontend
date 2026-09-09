@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -56,7 +56,7 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
 // ONDA 45: 63 -> 62. `people.create.success` morreu com `POST /professionals`, a
 // porta legada que criava profissional sem conta; a tradução foi junto.
 // 2026-09-06: 63 -> 67 — os quatro atos da solicitação de transferência de time.
-const CODIGOS_ESPERADOS = 67;
+const CODIGOS_ESPERADOS = 68;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
@@ -139,11 +139,38 @@ const chavesDeMensagem = (): string[] =>
 
 const codigoDaChave = (chave: string): string => chave.slice(PREFIXO_DE_MENSAGEM.length);
 
+/**
+ * FATIA PRAZOS — de QUAL backend é a cópia.
+ *
+ * A busca subia até achar `backend/tests/...` e caía sempre no backend da
+ * `main`. Quando a fatia acontece em worktree (`<repo>/.worktrees/<fatia>`),
+ * os dois repositórios andam JUNTOS naquela fatia, e comparar com a `main`
+ * acusa como "cópia defasada" exatamente o trabalho em curso — o gate da
+ * fatia nasceria vermelho por existir. Agora o backend da MESMA fatia é
+ * procurado primeiro; sem worktree, nada muda.
+ */
+function fatiaDoWorktree(caminho: string): string | undefined {
+  const partes = caminho.split(sep);
+  const indice = partes.lastIndexOf(".worktrees");
+  return indice >= 0 ? partes[indice + 1] : undefined;
+}
+
+function origensDaCopia(): string[] {
+  const fatia = fatiaDoWorktree(dirname(fileURLToPath(import.meta.url)));
+  if (fatia === undefined) return [ORIGEM_DA_COPIA];
+  return [
+    join("backend", ".worktrees", fatia, ORIGEM_DA_COPIA.slice("backend/".length)),
+    ORIGEM_DA_COPIA,
+  ];
+}
+
 function fixtureOriginal(): string | undefined {
   let diretorio = dirname(fileURLToPath(import.meta.url));
   for (let subida = 0; subida < 8; subida += 1) {
-    const alvo = join(diretorio, ORIGEM_DA_COPIA);
-    if (existsSync(alvo)) return alvo;
+    for (const origem of origensDaCopia()) {
+      const alvo = join(diretorio, origem);
+      if (existsSync(alvo)) return alvo;
+    }
     const pai = dirname(diretorio);
     if (pai === diretorio) return undefined;
     diretorio = pai;

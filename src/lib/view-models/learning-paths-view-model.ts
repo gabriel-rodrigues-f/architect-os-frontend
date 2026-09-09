@@ -5,6 +5,7 @@ import type {
   LearningPath,
   LearningPathItem,
 } from "../domain";
+import { LearningPathEnrollmentReading } from "../learning-path-enrollment";
 import type { Api } from "../store";
 
 export type LearningPathService = Pick<
@@ -15,7 +16,16 @@ export type LearningPathService = Pick<
   | "addLearningPathItem"
   | "removeLearningPathItem"
   | "updateLearningItemProgress"
+  | "renewLearningPathEnrollment"
 >;
+
+/** O que a tela precisa dizer sobre a inscrição de uma pessoa (fatia PRAZOS). */
+export interface LearningPathDeadlineReading {
+  readonly hasDeadline: boolean;
+  readonly expired: boolean;
+  readonly daysLeft: number | undefined;
+  readonly dueAt: string | undefined;
+}
 
 export class LearningPathsViewModel {
   constructor(private readonly service: LearningPathService) {}
@@ -61,33 +71,58 @@ export class LearningPathsViewModel {
       : 0;
   }
 
+  /**
+   * Fatia PRAZOS — o prazo de UMA pessoa nesta trilha: quanto falta, se
+   * venceu, quando vence. A conta é a mesma do backend
+   * (`LearningPathEnrollment`); a tela pergunta para não oferecer um controle
+   * que o servidor vai negar.
+   */
+  deadlineFor(
+    path: Pick<LearningPath, "enrollments" | "completionDeadlineDays">,
+    professionalId: string,
+    at: Date,
+  ): LearningPathDeadlineReading | undefined {
+    const enrollment = LearningPathEnrollmentReading.of(path, professionalId);
+    if (!enrollment) return undefined;
+    return {
+      hasDeadline: enrollment.hasDeadline,
+      expired: enrollment.expiredAt(at),
+      daysLeft: enrollment.daysLeftAt(at),
+      dueAt: enrollment.dueAt,
+    };
+  }
+
   createPath(
     user: Pick<SessionUser, "email" | "id">,
-    form: { name: string; description: string },
+    form: { name: string; description: string; completionDeadlineDays: number | null },
     competencyIds: string[],
     assignedTo: string[],
   ): Promise<LearningPath> {
+    const enrolledAt = new Date().toISOString();
     return this.service.addLearningPath({
       id: "",
       name: form.name.trim(),
       description: form.description.trim(),
       competencyIds,
       assignedTo,
+      enrollments: assignedTo.map((professionalId) => ({ professionalId, enrolledAt })),
+      completionDeadlineDays: form.completionDeadlineDays,
       items: [],
       progress: [],
       createdBy: user.email,
       createdByUserId: user.id,
-      createdAt: new Date().toISOString(),
+      createdAt: enrolledAt,
     });
   }
 
   updateDetails(
     path: Pick<LearningPath, "id" | "name">,
-    form: { name: string; description: string },
+    form: { name: string; description: string; completionDeadlineDays: number | null },
   ): void {
     this.service.updateLearningPath(path.id, {
       name: form.name.trim() || path.name,
       description: form.description,
+      completionDeadlineDays: form.completionDeadlineDays,
     });
   }
 
@@ -139,5 +174,10 @@ export class LearningPathsViewModel {
 
   recordProgress(pathId: string, professionalId: string, itemId: string, progress: number): void {
     this.service.updateLearningItemProgress(pathId, professionalId, itemId, progress);
+  }
+
+  /** Fatia PRAZOS — inscrever de novo quem estourou o prazo: o relógio recomeça, o estudo fica. */
+  renewEnrollment(pathId: string, professionalId: string): Promise<LearningPath> {
+    return this.service.renewLearningPathEnrollment(pathId, professionalId);
   }
 }

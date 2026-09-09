@@ -383,6 +383,8 @@ export const fixtureState: AppState = {
       description: "",
       competencyIds: ["security-iam"],
       assignedTo: ["ana"],
+      enrollments: [{ professionalId: "ana", enrolledAt: "2026-01-01T00:00:00.000Z" }],
+      completionDeadlineDays: null,
       items: [
         { id: "lp-sec-1", title: "IAM Essentials", type: "Curso", hours: 8 },
         { id: "lp-sec-2", title: "OAuth", type: "Curso", hours: 6 },
