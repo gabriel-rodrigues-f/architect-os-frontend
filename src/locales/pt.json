@@ -772,6 +772,7 @@
   "pdi.empty.title": "Nenhum item de PDI",
   "pdi.empty.subtitle": "Adicione competências sugeridas ao lado.",
   "pdi.empty.noProfessionals": "Cadastre o primeiro profissional para abrir um plano de desenvolvimento.",
+  "pdi.sideRail.label": "Apoio ao plano",
   "pdi.suggestions.title": "Maiores distâncias",
   "pdi.suggestions.subtitle": "Competências em evolução ainda fora do PDI, da mais distante para a mais próxima.",
   "pdi.suggestions.none": "Todas as competências em evolução já estão no plano.",

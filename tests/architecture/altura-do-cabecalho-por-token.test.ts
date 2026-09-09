@@ -30,6 +30,8 @@ describe("a altura do cabeçalho é um token", () => {
       ShellHeader.heightClass,
       ShellHeader.stickyBelowClass,
       ShellHeader.minContentHeightClass,
+      // 2026-09-09: a coluna de apoio do PDI entrou pelo token, como as outras.
+      ShellHeader.sideRailClass,
     ]) {
       expect(classe).toContain("--shell-header-h");
       expect(classe).not.toContain("74");

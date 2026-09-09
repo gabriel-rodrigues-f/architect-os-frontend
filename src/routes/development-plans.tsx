@@ -38,6 +38,7 @@ import {
 } from "@/lib/domain";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { ShellHeader } from "@/lib/design";
 import { useLabels } from "@/lib/labels";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
@@ -50,6 +51,7 @@ import { initialSearchParam, replaceSearchParam } from "@/lib/search-params";
 import type { Gap } from "@/lib/selectors";
 import { useObjectiveFromGap, useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
+import { cn } from "@/lib/utils";
 import { useAsyncSubmit, useSearchParamString, useServerDraft, useSuccessToast } from "@/hooks";
 import { DevelopmentPlansViewModel } from "@/lib/view-models";
 
@@ -197,7 +199,26 @@ function PlansScreen() {
             )}
           </div>
 
-          <div className="space-y-6">
+          {/*
+           * Dono (2026-09-09): "a tela não pode rolar para baixo por conta do
+           * grupo Maiores Distâncias". A coluna de apoio cresce com o número
+           * de competências e, como célula esticada da grade, era ela quem
+           * esticava a LINHA — e com ela o `main` e o documento. Agora ela
+           * rola dentro de si, presa à janela pelo token do cabeçalho
+           * (`ShellHeader.sideRailClass`), e a página só rola pelo plano.
+           * `tabIndex`/`role`/`aria-label`: uma caixa que rola precisa ser
+           * alcançável por teclado mesmo quando não há botão dentro dela
+           * (quem não edita o diagnóstico só lê a lista).
+           */}
+          <div
+            role="region"
+            aria-label={t("pdi.sideRail.label")}
+            tabIndex={0}
+            className={cn(
+              "scroll-visible space-y-6 rounded-lg focus-visible:focus-ring",
+              ShellHeader.sideRailClass,
+            )}
+          >
             <SectionCard
               title={t("pdi.suggestions.title")}
               description={t("pdi.suggestions.subtitle")}
