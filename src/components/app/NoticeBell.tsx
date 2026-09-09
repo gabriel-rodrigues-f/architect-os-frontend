@@ -149,7 +149,23 @@ export function NoticeBell() {
                     unreadOf={(notice) => vm.isUnread(notice)}
                     onOpen={markIfUnread}
                     onNavigate={goToNotice}
-                    itemWrapper={(element) => <PopoverClose asChild>{element}</PopoverClose>}
+                    /**
+                     * Dono, 2026-09-09: *"ao se clicar em uma linha, todo o
+                     * modal é fechado. Isso não pode ocorrer."*
+                     *
+                     * A linha inteira vinha embrulhada num `PopoverClose`, o
+                     * que juntava dois gestos que não têm nada a ver: marcar
+                     * um aviso como lido e sair da caixa. Ler um aviso custava
+                     * perder a lista, e quem tinha quinze reabria quinze
+                     * vezes.
+                     *
+                     * Agora o fechar mora no LINK, dentro da linha: sair da
+                     * caixa é consequência de NAVEGAR, não de ler. Clicar na
+                     * linha marca como lida e a caixa fica; a caixa só fecha
+                     * no clique fora, no sininho, ou quando a pessoa vai
+                     * embora por um link.
+                     */
+                    linkWrapper={(element) => <PopoverClose asChild>{element}</PopoverClose>}
                   />
                 )}
               </>
