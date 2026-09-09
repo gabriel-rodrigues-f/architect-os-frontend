@@ -727,6 +727,14 @@
       "status": 404,
       "mensagens": []
     },
+    "MentoringDateInFutureError": {
+      "arquivo": "src/modules/mentoring/domain/errors/mentoring-errors.ts",
+      "code": "MENTORING_DATE_IN_FUTURE",
+      "status": 400,
+      "mensagens": [
+        "\"A data da 1:1 não pode ser futura: só se registra conversa que já aconteceu.\""
+      ]
+    },
     "MentoringFollowUpNotMentorError": {
       "arquivo": "src/modules/mentoring/application/mentoring-access-errors.ts",
       "code": "OUT_OF_REACH",

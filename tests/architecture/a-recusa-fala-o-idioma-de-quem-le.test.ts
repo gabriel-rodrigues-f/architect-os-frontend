@@ -99,7 +99,7 @@ const NA_PORTA: readonly string[] = [
 const DIVIDA_DE_HOJE = 95;
 
 /** Quantas classes de recusa a política JÁ compõe na tela, nos dois idiomas. */
-const TRADUZIDAS_HOJE = 51;
+const TRADUZIDAS_HOJE = 52;
 
 const ORIGEM_DA_COPIA = "backend/tests/shared/errors/contrato-de-erro.fixture.json";
 
@@ -272,7 +272,7 @@ describe("do corpo do serviço até a frase da tela, sem passar pelo texto dele"
 
 describe("procedência da cópia do contrato do backend", () => {
   it("a cópia enxerga o contrato inteiro, e não um pedaço dele", () => {
-    expect(Object.keys(CLASSES).length).toBe(192);
+    expect(Object.keys(CLASSES).length).toBe(193);
   });
 
   /**

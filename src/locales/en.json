@@ -50,6 +50,7 @@
   "refusal.duplicateRecord": "A record like this already exists. Choose another value and try again.",
   "refusal.requiredFieldMissing": "A required field is missing. Check the form and send it again.",
   "refusal.invalidValue": "One of the values you sent is not accepted. Check the form and send it again.",
+  "refusal.mentoringDateInFuture": "The 1:1 date cannot be in the future: record a conversation that already happened.",
   "mutation.refused": "We could not save this. The screen went back to the last state confirmed by the service.",
   "outage.title": "The application is unavailable right now",
   "outage.lead": "Please contact an administrator. Meanwhile, a career run.",

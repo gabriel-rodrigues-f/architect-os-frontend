@@ -202,6 +202,20 @@ export class RefusalPhrase {
     new FixedRefusalRule("UNIQUE_VIOLATION", "refusal.duplicateRecord"),
     new FixedRefusalRule("REQUIRED_FIELD_MISSING", "refusal.requiredFieldMissing"),
     new FixedRefusalRule("CHECK_VIOLATION", "refusal.invalidValue"),
+
+    /**
+     * A PRIMEIRA RECUSA DE NEGÓCIO com frase nossa, e ela chegou aqui pela
+     * catraca: a fatia da data (`MENTORING_DATE_IN_FUTURE`, 2026-09-09) nasceu
+     * em paralelo a esta e entrou no backend depois que a cópia do contrato
+     * foi tirada. Ao atualizar a cópia, a dívida subiu de 95 para 96 e o teste
+     * ficou vermelho — que é exatamente o que ele existe para fazer.
+     *
+     * Entre subir a linha da catraca e escrever a frase, a frase é mais
+     * barata: um código, uma sentença, dois dicionários. As outras 95 seguem
+     * sendo fatia por módulo, como está escrito no teste — esta não abre
+     * exceção, ela paga o que a fatia vizinha deixou.
+     */
+    new FixedRefusalRule("MENTORING_DATE_IN_FUTURE", "refusal.mentoringDateInFuture"),
   ];
 
   /**
