@@ -87,7 +87,7 @@ export function NoticeList({
   unreadOf,
   onOpen,
   onNavigate,
-  itemWrapper = (element) => element,
+  linkWrapper = (element) => element,
   selectedOf,
   onToggleSelection,
 }: {
@@ -97,7 +97,12 @@ export function NoticeList({
   onOpen: (notice: Notice) => void;
   /** O clique no título: ir para o destino daquele aviso — e marcar. */
   onNavigate: (notice: Notice, destination: string) => void;
-  itemWrapper?: (element: ReactElement) => ReactNode;
+  /**
+   * Embrulha o LINK do título, não a linha (dono, 2026-09-09). O sino usa isto
+   * para fechar a caixa ao NAVEGAR; embrulhar a linha fechava a caixa também
+   * quando a pessoa só marcava como lida, que são gestos diferentes.
+   */
+  linkWrapper?: (element: ReactElement) => ReactNode;
   /** Com os dois, a linha ganha caixa de seleção; sem eles, não há seleção. */
   selectedOf?: (notice: Notice) => boolean;
   onToggleSelection?: (notice: Notice) => void;
@@ -116,15 +121,14 @@ export function NoticeList({
               aria-label={t("notices.select", { titulo: defaultNoticePhrase.of(notice, t) })}
             />
           )}
-          {itemWrapper(
-            <NoticeItem
-              notice={notice}
-              unread={unreadOf(notice)}
-              onOpen={onOpen}
-              onNavigate={onNavigate}
-              className="min-w-0 flex-1"
-            />,
-          )}
+          <NoticeItem
+            notice={notice}
+            unread={unreadOf(notice)}
+            onOpen={onOpen}
+            onNavigate={onNavigate}
+            linkWrapper={linkWrapper}
+            className="min-w-0 flex-1"
+          />
         </li>
       ))}
     </ul>
@@ -136,12 +140,14 @@ export function NoticeItem({
   unread,
   onOpen,
   onNavigate,
+  linkWrapper = (element) => element,
   ...rowProps
 }: {
   notice: Notice;
   unread: boolean;
   onOpen: (notice: Notice) => void;
   onNavigate: (notice: Notice, destination: string) => void;
+  linkWrapper?: (element: ReactElement) => ReactNode;
 } & ComponentPropsWithoutRef<"div">) {
   const { t, locale } = useI18n();
   const Icon = ICON_BY_KIND[defaultNoticeRoutingPolicy.iconOf(notice.eventType)];
@@ -165,16 +171,18 @@ export function NoticeItem({
       </span>
       <span className="min-w-0 flex-1">
         <span className={cn("block text-sm", unread && "font-medium")}>
-          <TextLink
-            href={destination}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onNavigate(notice, destination);
-            }}
-          >
-            {defaultNoticePhrase.of(notice, t)}
-          </TextLink>
+          {linkWrapper(
+            <TextLink
+              href={destination}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onNavigate(notice, destination);
+              }}
+            >
+              {defaultNoticePhrase.of(notice, t)}
+            </TextLink>,
+          )}
           {day !== null && <span className="text-muted-foreground">{` - ${day}`}</span>}
         </span>
         <span className="mt-0.5 block text-xs text-muted-foreground">
