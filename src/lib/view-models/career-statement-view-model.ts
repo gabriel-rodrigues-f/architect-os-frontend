@@ -2,7 +2,6 @@ import type {
   ProfessionalEvolutionResult,
   CareerLevelTransition,
   DevelopmentPlanEvent,
-  Evidence,
   MentoringSession,
 } from "../domain";
 import type { TeamTransitionRecord } from "../gateways/reports.gateway";
@@ -10,7 +9,7 @@ import type { MessageKey } from "../i18n";
 import { defaultDateFormatter } from "../text";
 
 export type StatementEntryKind =
-  "transition" | "teamTransition" | "competencyStep" | "evidence" | "pdi" | "mentoring";
+  "transition" | "teamTransition" | "competencyStep" | "pdi" | "mentoring";
 
 export interface StatementEntry {
   id: string;
@@ -33,7 +32,6 @@ export interface StatementSources {
   transitions: readonly CareerLevelTransition[];
   teamTransitions: readonly TeamTransitionRecord[];
   competencyEvents: readonly StatementCompetencyEvent[];
-  evidences: readonly Evidence[];
   planEvents: readonly DevelopmentPlanEvent[];
   mentoringSessions: readonly MentoringSession[];
 }
@@ -52,13 +50,6 @@ const PLAN_EVENT_TITLE_KEY: Record<DevelopmentPlanEvent["eventType"], MessageKey
   PlanReturnedToDraft: "statement.entry.pdi.returnedToDraft",
   PlanCompleted: "statement.entry.pdi.completed",
   PlanReopened: "statement.entry.pdi.reopened",
-};
-
-const EVIDENCE_STATUS_KEY: Record<Evidence["status"], MessageKey> = {
-  Pending: "evidence.status.pending",
-  Accepted: "evidence.status.accepted",
-  "Needs Improvement": "evidence.status.needsImprovement",
-  Rejected: "evidence.status.rejected",
 };
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
@@ -91,14 +82,6 @@ export class CareerStatementViewModel {
       ...sources.competencyEvents.map((event) =>
         this.competencyStepEntry(event, sources.professionalId),
       ),
-      ...sources.evidences.map((evidence) => ({
-        id: `evidence-${evidence.id}`,
-        kind: "evidence" as const,
-        date: evidence.date,
-        title: this.translate("statement.entry.evidence", { title: evidence.title }),
-        detail: this.translate(EVIDENCE_STATUS_KEY[evidence.status]),
-        link: profileLink,
-      })),
       ...sources.planEvents.map((event) => ({
         id: `pdi-${event.id}`,
         kind: "pdi" as const,

@@ -36,7 +36,6 @@ const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 const nothing: AffectedRecords = {
   assessments: 0,
   planItems: 0,
-  evidences: 0,
   learningItems: 0,
   teamRuleRequirements: 0,
 };
@@ -152,7 +151,7 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
     expect(confirmation.textContent).toContain("Kubernetes");
     expect(confirmation.textContent).toContain("IAM");
     expect(confirmation.textContent).toMatch(
-      /avaliações, itens de PDI, evidências, itens de trilha e exigências de régua/,
+      /avaliações, itens de PDI, itens de trilha e exigências de régua/,
     );
     expect(gateway.removalsMade).toEqual([]);
 

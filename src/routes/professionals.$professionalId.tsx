@@ -28,7 +28,7 @@ import type { SupportPass } from "@/lib/support-access";
  * (`ProfileHeading`). Trocar de aba não remonta o cabeçalho.
  *
  * EM MODO DE SUPORTE (PR 6, RBAC-03) o passe abre só a ficha funcional
- * (`GET /professionals/:id`): avaliações, PDI, mentoria, evidências, extrato,
+ * (`GET /professionals/:id`): avaliações, PDI, mentoria, extrato,
  * evolução e trilhas respondem 403 ao suporte mesmo com passe. A tela não
  * pede o que o serviço recusa — desenha o ramo "indisponível" no lugar das
  * abas (`SupportModeCareerFile`) e a ficha funcional segue.

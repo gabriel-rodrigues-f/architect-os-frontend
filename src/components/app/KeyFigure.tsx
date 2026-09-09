@@ -15,7 +15,7 @@ import { SectionHeading } from "./SectionHeading";
  * "Profissionais: 5".
  *
  *   neutral    contagem que não pede nada (pessoas, competências)
- *   attention  fila que espera alguém (evidências a revisar, PDIs a aprovar)
+ *   attention  fila que espera alguém (avaliações a calibrar, PDIs a aprovar)
  *   critical   o que já passou do limite (distâncias críticas)
  *   good       zero pendência, ou meta batida
  */

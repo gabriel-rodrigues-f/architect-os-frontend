@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ClipboardCheck, FileCheck } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -71,7 +71,6 @@ const PAINEL_CONTEXTS: readonly ContextScopeRequest[] = [
   "plans",
   "learningPaths",
   "mentoringSessions",
-  "evidences",
 ];
 
 /**
@@ -345,7 +344,6 @@ function MemberHome() {
   const plan = sel.planFor(professionalId);
   const itemsByStatus = personal.planItemCounts(professionalId);
   const paths = personal.assignedPaths(professionalId);
-  const evidencePending = personal.pendingEvidenceCount(professionalId);
   // D2 (dono, 2026-09-05): a pessoa vê os PRÓPRIOS números — radar, distâncias, aderência.
   const ownRadar = sel.capabilityAverages(professionalId).map((point) => ({
     capability: point.capability.name,
@@ -362,24 +360,22 @@ function MemberHome() {
         help={help}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <StatCard
-          label={t("dash.member.assessmentStatus")}
-          help={<DashboardCardHelp card="memberAssessment" />}
-          value={
-            assessment ? labels.assessmentStatus[assessment.status] : t("dash.member.noAssessment")
-          }
-          icon={<ClipboardCheck className="h-4 w-4" />}
-          tone={assessment?.status === "Completed" ? "good" : "attention"}
-        />
-        <StatCard
-          label={t("dash.member.pendingEvidence")}
-          help={<DashboardCardHelp card="memberEvidence" />}
-          value={evidencePending}
-          icon={<FileCheck className="h-4 w-4" />}
-          tone={StatTones.byPending(evidencePending)}
-        />
-      </div>
+      {/*
+       * Esta faixa era um par — situação da avaliação e evidências pendentes —
+       * num `sm:grid-cols-2`. Com a evidência fora do produto (dono,
+       * 2026-09-08, regra 17) sobrou um cartão só, e meia largura com um vão
+       * ao lado não é layout: a situação da avaliação passa a ocupar a faixa
+       * inteira, como o único número que abre o Painel da pessoa.
+       */}
+      <StatCard
+        label={t("dash.member.assessmentStatus")}
+        help={<DashboardCardHelp card="memberAssessment" />}
+        value={
+          assessment ? labels.assessmentStatus[assessment.status] : t("dash.member.noAssessment")
+        }
+        icon={<ClipboardCheck className="h-4 w-4" />}
+        tone={assessment?.status === "Completed" ? "good" : "attention"}
+      />
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SectionCard
@@ -671,78 +667,69 @@ function CountItem({ label, count }: { label: string; count: number }) {
   );
 }
 
-/** As três filas que dependem de uma decisão da liderança — o detalhe do bloco "Ações da Liderança". */
+/**
+ * As DUAS filas que dependem de uma decisão da liderança — o detalhe do bloco
+ * "Ações da Liderança". Eram três: a fila do meio era a de evidências a
+ * revisar, que saiu com a evidência (dono, 2026-09-08, regra 17). O grid
+ * acompanhou de três para duas colunas, senão a faixa ficaria com um vão à
+ * direita.
+ */
 function LeadQueues({ queues }: { queues: LeadPendingQueues }) {
-  const sel = useSelectors();
-  const labels = useLabels();
   const { t } = useI18n();
-  const { awaitingCalibration, pendingEvidence, awaitingApproval } = queues;
-  const queueEmpty = <p className="text-sm text-muted-foreground">{t("dash.lead.queueEmpty")}</p>;
+  const { awaitingCalibration, awaitingApproval } = queues;
 
   return (
-    <div className="grid gap-5 sm:grid-cols-3">
-      <div>
-        <SectionHeading as="p" muted>
-          {t("dash.lead.awaitingCalibration")}
-        </SectionHeading>
-        <ul className="mt-2 space-y-2">
-          {awaitingCalibration.map(({ professional }) => (
-            <li key={professional.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
-              <Link
-                to="/assessments"
-                search={{ professionalId: professional.id }}
-                className="text-sm hover:underline"
-              >
-                {professional.name}
-              </Link>
-            </li>
-          ))}
-          {awaitingCalibration.length === 0 && queueEmpty}
-        </ul>
-      </div>
+    <div className="grid gap-5 sm:grid-cols-2">
+      <LeadQueueColumn
+        title={t("dash.lead.awaitingCalibration")}
+        people={awaitingCalibration}
+        to="/assessments"
+      />
+      <LeadQueueColumn
+        title={t("dash.lead.awaitingApproval")}
+        people={awaitingApproval}
+        to="/development-plans"
+      />
+    </div>
+  );
+}
 
-      <div>
-        <SectionHeading as="p" muted>
-          {t("dash.lead.pendingEvidence")}
-        </SectionHeading>
-        <ul className="mt-2 space-y-2">
-          {pendingEvidence.map((evidence) => (
-            <li key={evidence.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
-              <Link
-                to="/professionals/$professionalId"
-                params={{ professionalId: evidence.professionalId }}
-                className="text-sm hover:underline"
-              >
-                {sel.professionalById(evidence.professionalId)?.name} — {evidence.title}
-              </Link>
-              <span className="ml-2 text-xs text-muted-foreground">
-                {labels.evidenceStatus[evidence.status]}
-              </span>
-            </li>
-          ))}
-          {pendingEvidence.length === 0 && queueEmpty}
-        </ul>
-      </div>
-
-      <div>
-        <SectionHeading as="p" muted>
-          {t("dash.lead.awaitingApproval")}
-        </SectionHeading>
-        <ul className="mt-2 space-y-2">
-          {awaitingApproval.map(({ professional }) => (
-            <li key={professional.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
-              <Link
-                to="/development-plans"
-                search={{ professionalId: professional.id }}
-                className="text-sm hover:underline"
-              >
-                {professional.name}
-              </Link>
-            </li>
-          ))}
-          {awaitingApproval.length === 0 && queueEmpty}
-        </ul>
-      </div>
+/**
+ * Uma fila: o título, as pessoas que esperam a decisão — cada nome levando à
+ * tela onde a decisão se toma — e o vazio quando não espera ninguém. As duas
+ * filas têm a mesma forma, então são o mesmo componente.
+ */
+function LeadQueueColumn({
+  title,
+  people,
+  to,
+}: {
+  title: string;
+  people: readonly { professional: { id: string; name: string } }[];
+  to: "/assessments" | "/development-plans";
+}) {
+  const { t } = useI18n();
+  return (
+    <div>
+      <SectionHeading as="p" muted>
+        {title}
+      </SectionHeading>
+      <ul className="mt-2 space-y-2">
+        {people.map(({ professional }) => (
+          <li key={professional.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
+            <Link
+              to={to}
+              search={{ professionalId: professional.id }}
+              className="text-sm hover:underline"
+            >
+              {professional.name}
+            </Link>
+          </li>
+        ))}
+        {people.length === 0 && (
+          <p className="text-sm text-muted-foreground">{t("dash.lead.queueEmpty")}</p>
+        )}
+      </ul>
     </div>
   );
 }

@@ -14,7 +14,6 @@ const {
   configGateway,
   cyclesGateway,
   developmentGateway,
-  evidenceGateway,
   evolutionGateway,
   learningGateway,
   mentoringGateway,
@@ -40,7 +39,6 @@ export const api = {
   ...developmentGateway,
   ...learningGateway,
   ...mentoringGateway,
-  ...evidenceGateway,
   ...teamAllocationGateway,
 };
 

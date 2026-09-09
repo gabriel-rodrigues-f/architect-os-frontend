@@ -49,8 +49,21 @@ function renderAs(user: SessionUser, state: AppState = fixtureState) {
   return renderWithApp(<DashboardPage />);
 }
 
+/**
+ * A fila da liderança precisa ter pelo menos UMA pendência para o bloco
+ * "Ações da Liderança" afirmar um número em vez do "tudo em dia". A da
+ * fixture era a evidência da Ana, que saiu do produto (dono, 2026-09-08,
+ * regra 17); no lugar, o PDI dela em rascunho — que espera aprovação.
+ */
+const comPdiEmRascunho: AppState = {
+  ...fixtureState,
+  plans: fixtureState.plans.map((plan) =>
+    plan.professionalId === "ana" ? { ...plan, status: "Draft" as const } : plan,
+  ),
+};
+
 const renderAsLeader = (user: SessionUser) =>
-  renderAs(user, scopedFixtureStateFor(user, fixtureState, [fixtureTeamId]));
+  renderAs(user, scopedFixtureStateFor(user, comPdiEmRascunho, [fixtureTeamId]));
 
 /** O bloco (a `section` do cartão) que carrega este título. */
 const blocoDe = (titulo: string) => screen.getByText(titulo).closest("section")!;
@@ -112,7 +125,7 @@ describe("Painel Executivo — um bloco, uma ideia, um número-síntese", () => 
     const distancias = blocoDe("Distâncias por severidade").querySelector("[data-key-figure]")!;
     expect(["critical", "good"]).toContain(distancias.getAttribute("data-tone"));
 
-    // "e1" na fixture: evidência Pending de "ana" — uma ação na fila.
+    // O PDI da Ana em rascunho com item — uma ação na fila.
     const acoes = blocoDe("Ações da Liderança");
     expect(acoes.querySelector("[data-key-figure]")?.getAttribute("data-tone")).toBe("attention");
     expect(within(acoes).getAllByText(/Ana Martins/).length).toBeGreaterThan(0);

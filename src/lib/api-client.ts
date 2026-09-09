@@ -5,7 +5,6 @@ import type {
   Competency,
   DevelopmentCycle,
   DevelopmentPlan,
-  Evidence,
   LearningPath,
   MentoringSession,
   TeamLevelRule,
@@ -24,7 +23,6 @@ export interface AppState {
   plans: DevelopmentPlan[];
   learningPaths: LearningPath[];
   mentoringSessions: MentoringSession[];
-  evidences: Evidence[];
   activeCycleId: string;
 }
 

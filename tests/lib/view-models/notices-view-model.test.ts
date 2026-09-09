@@ -85,12 +85,12 @@ describe("NoticesViewModel — a paginação do sino", () => {
 describe("NoticeRoutingPolicy — decoração por eventType", () => {
   const policy = new NoticeRoutingPolicy();
 
-  it("mapeia os 5 eventTypes do contrato", () => {
+  it("mapeia os eventTypes do contrato", () => {
     expect(policy.toneOf("development-item.deadline-approaching")).toBe("warning");
     expect(policy.toneOf("assessment.stalled")).toBe("warning");
-    expect(policy.toneOf("evidence.awaitingReview")).toBe("info");
     expect(policy.toneOf("assessment.completed")).toBe("success");
     expect(policy.toneOf("mentoring.recorded")).toBe("info");
+    expect(policy.toneOf("team-transfer.requested")).toBe("info");
   });
 
   it("eventType desconhecido não quebra a tela — cai no tom neutro (contrato é extensível)", () => {

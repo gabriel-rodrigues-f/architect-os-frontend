@@ -13,7 +13,6 @@ import { HttpCatalogGateway, type CatalogGateway } from "./catalog.gateway";
 import { HttpConfigGateway, type ConfigGateway } from "./config.gateway";
 import { HttpCyclesGateway, type CyclesGateway } from "./cycles.gateway";
 import { HttpDevelopmentGateway, type DevelopmentGateway } from "./development.gateway";
-import { HttpEvidenceGateway, type EvidenceGateway } from "./evidence.gateway";
 import { HttpEvolutionGateway, type EvolutionGateway } from "./evolution.gateway";
 import { HttpLearningGateway, type LearningGateway } from "./learning.gateway";
 import { HttpMentoringGateway, type MentoringGateway } from "./mentoring.gateway";
@@ -67,7 +66,6 @@ export class FrontendContainer {
   readonly configGateway: ConfigGateway;
   readonly cyclesGateway: CyclesGateway;
   readonly developmentGateway: DevelopmentGateway;
-  readonly evidenceGateway: EvidenceGateway;
   readonly evolutionGateway: EvolutionGateway;
   readonly learningGateway: LearningGateway;
   readonly mentoringGateway: MentoringGateway;
@@ -105,7 +103,6 @@ export class FrontendContainer {
     this.configGateway = new HttpConfigGateway(this.apiClient);
     this.cyclesGateway = new HttpCyclesGateway(this.apiClient);
     this.developmentGateway = new HttpDevelopmentGateway(this.apiClient);
-    this.evidenceGateway = new HttpEvidenceGateway(this.apiClient);
     this.evolutionGateway = new HttpEvolutionGateway(this.apiClient);
     this.learningGateway = new HttpLearningGateway(this.apiClient);
     this.mentoringGateway = new HttpMentoringGateway(this.apiClient);

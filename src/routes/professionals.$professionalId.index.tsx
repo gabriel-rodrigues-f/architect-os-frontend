@@ -1,36 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import {
   Bar,
   CapabilityRadar,
-  EvidenceDialog,
-  EvidenceStatusBadge,
   GapBadge,
   Initials,
   LevelBadge,
   ProfileBackLink,
   ProfileHeading,
-  ResubmitEvidenceDialog,
   SectionCard,
   SectionGroup,
   StatCard,
   TreatGapInPlanAction,
 } from "@/components/app";
 import { useLabels } from "@/lib/labels";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { type Evidence } from "@/lib/domain";
-import { useProfessionalProfileViewModel, useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -39,7 +23,7 @@ import { useSeniorityReading } from "@/lib/seniority";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useSelectors, useStore, useVocabulary } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
-import { LearningPathsViewModel } from "@/lib/view-models";
+import { LearningPathsViewModel, professionalProfileViewModel } from "@/lib/view-models";
 
 export const Route = createFileRoute("/professionals/$professionalId/")({
   head: () => ({
@@ -47,8 +31,7 @@ export const Route = createFileRoute("/professionals/$professionalId/")({
       { title: "Professional Profile — Synapse" },
       {
         name: "description",
-        content:
-          "Perfil completo do profissional: competências, gaps, PDI, metas, mentorias e evidências.",
+        content: "Perfil completo do profissional: competências, gaps, PDI, metas e mentorias.",
       },
       { property: "og:title", content: "Professional Profile — Synapse" },
       {
@@ -71,7 +54,6 @@ function ProfessionalWorkspace() {
   const store = useStore();
   const sel = useSelectors();
 
-  const viewModel = useProfessionalProfileViewModel();
   const learningPathsViewModel = useMemo(() => new LearningPathsViewModel(store), [store]);
 
   const personal = useMemo(() => new PersonalDashboardPresenter(store, sel), [store, sel]);
@@ -79,14 +61,13 @@ function ProfessionalWorkspace() {
   const seniority = useSeniorityReading();
 
   const actionTypes = useVocabulary("ACTION_TYPE");
-  const evidenceTypes = useVocabulary("EVIDENCE_TYPE");
   const { t, locale } = useI18n();
   const help = usePageHelp("professionalProfile");
   const user = useCurrentUser();
   const professional = sel.professionalById(professionalId);
 
   const canEditOwn = defaultUiAuthorizationPolicy.canActOnCareerFileOf(user, professional);
-  const canReviewEvidence = defaultUiAuthorizationPolicy.isLeadOf(user, professional);
+  const leadsProfessional = defaultUiAuthorizationPolicy.isLeadOf(user, professional);
 
   if (!professional) {
     return (
@@ -103,17 +84,15 @@ function ProfessionalWorkspace() {
   const capabilityAvgs = sel.capabilityAverages(professional.id);
   const plan = sel.planFor(professional.id);
   const sessions = store.mentoringSessions.filter((m) => m.menteeId === professional.id);
-  const evidences = store.evidences.filter((e) => e.professionalId === professional.id);
   const assessment = sel.assessmentFor(professional.id);
 
-  const nextSteps = viewModel.nextSteps({
+  const nextSteps = professionalProfileViewModel.nextSteps({
     canEditOwn,
-    canReviewEvidence,
+    leadsProfessional,
     itemsNotStartedCount: personal.planItemCounts(professional.id).notStarted,
     gapsNotInPlanCount: gaps.filter(
       (g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId),
     ).length,
-    evidencesPendingCount: personal.pendingEvidenceCount(professional.id),
     assessmentAwaitingCalibration: assessment?.status === "In Review",
   });
 
@@ -157,7 +136,7 @@ function ProfessionalWorkspace() {
         />
       </div>
 
-      {(canEditOwn || canReviewEvidence) && (
+      {(canEditOwn || leadsProfessional) && (
         <SectionCard
           className="mb-6"
           title={t("arch.nextSteps.title")}
@@ -177,28 +156,15 @@ function ProfessionalWorkspace() {
                       t("arch.nextSteps.itemsNotStarted", { n: step.count })}
                     {step.kind === "gapsNotInPlan" &&
                       t("arch.nextSteps.gapsNotInPlan", { n: step.count })}
-                    {step.kind === "evidencesPending" &&
-                      t("arch.nextSteps.evidencesPending", { n: step.count })}
                     {step.kind === "assessmentAwaiting" && t("arch.nextSteps.assessmentAwaiting")}
                   </span>
-                  {step.kind === "evidencesPending" ? (
-                    <a
-                      href="#arch-evidence"
-                      className="whitespace-nowrap text-xs text-primary hover:underline"
-                    >
-                      {t("arch.nextSteps.cta")}
-                    </a>
-                  ) : (
-                    <Link
-                      to={
-                        step.kind === "assessmentAwaiting" ? "/assessments" : "/development-plans"
-                      }
-                      search={{ professionalId: professional.id }}
-                      className="whitespace-nowrap text-xs text-primary hover:underline"
-                    >
-                      {t("arch.nextSteps.cta")}
-                    </Link>
-                  )}
+                  <Link
+                    to={step.kind === "assessmentAwaiting" ? "/assessments" : "/development-plans"}
+                    search={{ professionalId: professional.id }}
+                    className="whitespace-nowrap text-xs text-primary hover:underline"
+                  >
+                    {t("arch.nextSteps.cta")}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -285,35 +251,22 @@ function ProfessionalWorkspace() {
         <div>
           <SectionCard title="PDI" description={t("arch.plan.subtitle")}>
             <ul className="space-y-3">
-              {(plan?.items ?? []).map((i) => {
-                const itemEvidences = sel.evidencesForPlanItem(evidences, i.id);
-                return (
-                  <li key={i.id} className="surface-inset p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium">
-                        {sel.competencyById(i.competencyId)?.name ?? t("pdi.unknownCompetency")}
-                      </p>
-                      <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
-                        {labels.planItemStatus[i.status]}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {actionTypes.label(i.actionType)} · {i.actionPlan} · prazo{" "}
-                      {defaultDateFormatter.formatDate(i.targetDate, locale)}
+              {(plan?.items ?? []).map((i) => (
+                <li key={i.id} className="surface-inset p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">
+                      {sel.competencyById(i.competencyId)?.name ?? t("pdi.unknownCompetency")}
                     </p>
-                    {itemEvidences.length > 0 && (
-                      <ul className="mt-2 flex flex-wrap gap-1.5">
-                        {itemEvidences.map((e) => (
-                          <li key={e.id} className="flex items-center gap-1.5">
-                            <span className="text-xs text-muted-foreground">{e.title}</span>
-                            <EvidenceStatusBadge status={e.status} />
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                );
-              })}
+                    <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">
+                      {labels.planItemStatus[i.status]}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {actionTypes.label(i.actionType)} · {i.actionPlan} · prazo{" "}
+                    {defaultDateFormatter.formatDate(i.targetDate, locale)}
+                  </p>
+                </li>
+              ))}
               {!plan?.items.length && (
                 <p className="text-sm text-muted-foreground">{t("arch.plan.none")}</p>
               )}
@@ -321,7 +274,13 @@ function ProfessionalWorkspace() {
           </SectionCard>
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        {/*
+         * As Trilhas dividiam esta faixa com o cartão de Evidências, que saiu
+         * do produto (dono, 2026-09-08, regra 17). Sozinho num `xl:grid-cols-2`
+         * o cartão ficaria com metade da largura e um vão à direita, então a
+         * faixa volta a ser de uma coluna só, como o PDI logo acima.
+         */}
+        <div className="mt-6">
           <SectionCard title={t("arch.paths.title")} description={t("arch.paths.subtitle")}>
             <ul className="space-y-2">
               {paths.map((p) => {
@@ -335,48 +294,6 @@ function ProfessionalWorkspace() {
               })}
               {!paths.length && (
                 <p className="text-sm text-muted-foreground">{t("arch.paths.none")}</p>
-              )}
-            </ul>
-          </SectionCard>
-
-          <SectionCard
-            id="arch-evidence"
-            title={t("arch.evidence.title")}
-            description={t("arch.evidence.subtitle")}
-            actions={
-              canEditOwn ? (
-                <EvidenceDialog professionalId={professional.id} plan={plan} />
-              ) : undefined
-            }
-          >
-            <ul className="space-y-2">
-              {evidences.map((e) => (
-                <li key={e.id} className="surface-inset p-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium">{e.title}</p>
-                    <EvidenceStatusBadge status={e.status} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {evidenceTypes.label(e.type)}
-                    {e.issuer ? ` · ${e.issuer}` : ""} ·{" "}
-                    {defaultDateFormatter.formatDate(e.date, locale)} · complexidade{" "}
-                    {labels.complexity[e.complexity]}
-                  </p>
-                  {e.leaderComment && (
-                    <p className="mt-1 text-xs text-muted-foreground">"{e.leaderComment}"</p>
-                  )}
-                  {(canReviewEvidence || (canEditOwn && e.status === "Needs Improvement")) && (
-                    <div className="mt-1 flex flex-wrap items-center gap-3">
-                      {canReviewEvidence && <EvidenceReviewDialog evidence={e} />}
-                      {canEditOwn && e.status === "Needs Improvement" && (
-                        <ResubmitEvidenceDialog evidence={e} />
-                      )}
-                    </div>
-                  )}
-                </li>
-              ))}
-              {!evidences.length && (
-                <p className="text-sm text-muted-foreground">{t("arch.evidence.none")}</p>
               )}
             </ul>
           </SectionCard>
@@ -408,87 +325,5 @@ function ProfessionalWorkspace() {
         </SectionCard>
       </SectionGroup>
     </>
-  );
-}
-
-function EvidenceReviewDialog({ evidence }: { evidence: Evidence }) {
-  const { t } = useI18n();
-  const labels = useLabels();
-  const viewModel = useProfessionalProfileViewModel();
-  const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<Exclude<Evidence["status"], "Pending">>(
-    viewModel.preselectedReviewDecisionFor(evidence),
-  );
-  const [comment, setComment] = useState(evidence.leaderComment ?? "");
-
-  const { submitting: saving, run } = useToastSubmit();
-  const notifySuccess = useSuccessToast();
-
-  const salvar = async () => {
-    const result = await run(() => viewModel.review(evidence.id, status, comment));
-    if (!result.ok) return;
-    notifySuccess(
-      "msg.evidence.review.success",
-      { titulo: evidence.title, status: labels.evidenceStatus[status] },
-      result.value,
-    );
-    setOpen(false);
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) {
-          setStatus(viewModel.preselectedReviewDecisionFor(evidence));
-          setComment(evidence.leaderComment ?? "");
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-auto px-0 text-xs">
-          {t("ev.review.action")}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("ev.review.title")}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="ev-review-status">{t("ev.review.status")}</Label>
-            <select
-              id="ev-review-status"
-              className="mt-1 w-full rounded-md border border-input bg-card px-3 py-2 text-sm"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as Exclude<Evidence["status"], "Pending">)}
-            >
-              <option value="Accepted">{labels.evidenceStatus.Accepted}</option>
-              <option value="Needs Improvement">
-                {labels.evidenceStatus["Needs Improvement"]}
-              </option>
-              <option value="Rejected">{labels.evidenceStatus.Rejected}</option>
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="ev-review-comment">{t("ev.review.comment")}</Label>
-            <Textarea
-              id="ev-review-comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
-            Cancelar
-          </Button>
-          <Button onClick={() => void salvar()} disabled={saving}>
-            {saving ? t("ev.review.saving") : t("ev.review.save")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

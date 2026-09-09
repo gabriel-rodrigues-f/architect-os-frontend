@@ -15,7 +15,7 @@ import {
  * (briefing, fatia backend `remocao-em-massa-de-competencias`):
  *   body { competencyIds: string[] (1..200) }
  *   → 200 { data: { outcomes: [{ competencyId, outcome: "removed"|"archived",
- *          affected: { assessments, planItems, evidences, learningItems, teamRuleRequirements } }] },
+ *          affected: { assessments, planItems, learningItems, teamRuleRequirements } }] },
  *          message: { code: "catalog.competency.bulkRemoval.success" } }
  *   → 400 fora de 1..200.
  *
@@ -31,7 +31,6 @@ const competencies: Competency[] = [
 const nothing: AffectedRecords = {
   assessments: 0,
   planItems: 0,
-  evidences: 0,
   learningItems: 0,
   teamRuleRequirements: 0,
 };

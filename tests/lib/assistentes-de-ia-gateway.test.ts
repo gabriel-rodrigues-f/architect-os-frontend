@@ -155,12 +155,6 @@ describe("assistentes da pessoa — a URL de cada operação de negócio", () =>
 describe("assistentes do trabalho — a URL e a recusa do serviço", () => {
   const apuracao = { subject: "assunto", observations: ["apurado"], reading: "leitura" };
 
-  it("a leitura de apoio à revisão é da evidência", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ data: apuracao }));
-    await trabalho().assistEvidenceReview("ev-1");
-    expect(urlDaChamada().pathname).toBe("/api/v1/evidences/ev-1/review-assistance");
-  });
-
   it("a calibração e o aviso de estagnação são da pessoa", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ data: apuracao }));
     await trabalho().assistAssessmentCalibration("ana");

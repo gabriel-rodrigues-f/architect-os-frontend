@@ -36,7 +36,7 @@
   },
   "src/components/app/assessments-shared.tsx": {
     "id-length": {
-      "count": 22
+      "count": 18
     }
   },
   "src/components/app/charts.tsx": {
@@ -146,12 +146,12 @@
   },
   "src/lib/selectors.ts": {
     "id-length": {
-      "count": 19
+      "count": 18
     }
   },
   "src/lib/store.tsx": {
     "id-length": {
-      "count": 110
+      "count": 104
     }
   },
   "src/lib/team-report-pdf.ts": {
@@ -251,7 +251,7 @@
   },
   "src/routes/professionals.$professionalId.index.tsx": {
     "id-length": {
-      "count": 19
+      "count": 14
     }
   },
   "src/routes/settings.tsx": {
@@ -469,11 +469,6 @@
       "count": 1
     }
   },
-  "tests/lib/view-models/professional-profile-view-model.test.ts": {
-    "id-length": {
-      "count": 1
-    }
-  },
   "tests/lib/view-models/scoring-bands-editor.test.ts": {
     "id-length": {
       "count": 4
@@ -481,7 +476,7 @@
   },
   "tests/lib/vocabularies.test.ts": {
     "id-length": {
-      "count": 4
+      "count": 3
     }
   },
   "tests/routes/assessment-comments.test.tsx": {

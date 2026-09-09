@@ -43,7 +43,6 @@ async function snapshotPelasFatias(): Promise<AppState> {
     plans,
     learningPaths,
     mentoringSessions,
-    evidences,
     active,
   ] = await Promise.all([
     stateContextsApi.listCapabilities(),
@@ -55,7 +54,6 @@ async function snapshotPelasFatias(): Promise<AppState> {
     stateContextsApi.listPlans(),
     stateContextsApi.listLearningPaths(),
     stateContextsApi.listMentoringSessions(),
-    stateContextsApi.listEvidences(),
     stateContextsApi.activeCycle(),
   ]);
   return {
@@ -68,7 +66,6 @@ async function snapshotPelasFatias(): Promise<AppState> {
     plans,
     learningPaths,
     mentoringSessions,
-    evidences,
     activeCycleId: active.cycleId,
   };
 }
@@ -107,7 +104,6 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
       "plans",
       "learningPaths",
       "mentoringSessions",
-      "evidences",
     ] as const) {
       expect(Array.isArray(state[key])).toBe(true);
     }

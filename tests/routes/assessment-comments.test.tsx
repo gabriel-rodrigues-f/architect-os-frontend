@@ -77,9 +77,7 @@ async function abrirNotas() {
 
 /** O formulário de criação é a última caixa de texto do painel. */
 function caixaNova() {
-  const caixas = screen.getAllByPlaceholderText(
-    "Evidências, feedback ou contexto sobre esta competência",
-  );
+  const caixas = screen.getAllByPlaceholderText("Feedback ou contexto sobre esta competência");
   return caixas[caixas.length - 1]!;
 }
 

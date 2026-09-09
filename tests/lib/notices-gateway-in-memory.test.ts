@@ -14,8 +14,8 @@ import {
  * contrato: filtro por status, ordenação desc, unreadCount sempre do todo.
  *
  * DESTINATÁRIOS (CONTRATO.md, PRD-02, confirmado pelo dono em 2026-08-29):
- * "tech lead vê os avisos do TIME (PDI vencendo, avaliação parada, evidência
- * esperando revisão); a própria pessoa vê SÓ os dela". O administrador NÃO é
+ * "tech lead vê os avisos do TIME (PDI vencendo, avaliação parada,
+ * transferência pedida); a própria pessoa vê SÓ os dela". O administrador NÃO é
  * destinatário — ele não tem time nem profissional vinculado, e por isso a caixa
  * dele fica vazia até a fila de administrador existir (revisão do PO,
  * 2026-08-30, item "o que está travado no processo").
@@ -68,7 +68,8 @@ describe("InMemoryNoticesGateway", () => {
     const types = new Set(page.notices.map((item) => item.eventType));
     expect(types).toEqual(
       new Set([
-        "evidence.awaitingReview",
+        "team-transfer.requested",
+        "team-transfer.approved",
         "assessment.stalled",
         "assessment.completed",
         "mentoring.recorded",
@@ -251,8 +252,8 @@ describe("InMemoryNoticesGateway — o recorte fala o vínculo REAL da sessão",
 
   const avisoDoTimeEmDemonstracao: Notice = {
     id: "aviso-do-time-do-lead",
-    eventType: "evidence.awaitingReview",
-    title: "Evidência de Carla Souza espera revisão: Desenho do data mart de logística",
+    eventType: "team-transfer.requested",
+    title: "Carla Souza pediu transferência para o time de Dados",
     link: "/professionals/demo-carla-souza",
     occurredAt: new Date(Date.now() - 60_000).toISOString(),
     readAt: null,
@@ -370,8 +371,8 @@ describe("InMemoryNoticesGateway — marcar UM aviso como lido respeita o recort
 
   const avisoDoTimeEmDemonstracao: Notice = {
     id: "aviso-do-time-do-lead",
-    eventType: "evidence.awaitingReview",
-    title: "Evidência de Carla Souza espera revisão: Desenho do data mart de logística",
+    eventType: "team-transfer.requested",
+    title: "Carla Souza pediu transferência para o time de Dados",
     link: "/professionals/demo-carla-souza",
     occurredAt: new Date(Date.now() - 60_000).toISOString(),
     readAt: null,

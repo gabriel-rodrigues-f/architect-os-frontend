@@ -170,7 +170,7 @@ describe("/professionals/$professionalId/statement — extrato de carreira", () 
     renderCareerFile(<StatementPage />, { tab: "statement" });
 
     expect(await screen.findByText("Transição de nível: Júnior → Pleno")).toBeTruthy();
-    expect(screen.getByText("Evidência: ADR-014")).toBeTruthy();
+    expect(screen.getByText("Mudou do time Plataforma para Dados")).toBeTruthy();
     expect(screen.getByText("PDI aprovado")).toBeTruthy();
     expect(screen.getByText("Mentoria: Arquitetura de Eventos")).toBeTruthy();
     expect(screen.getByText("IAM: L2 → L3")).toBeTruthy();
@@ -187,7 +187,7 @@ describe("/professionals/$professionalId/statement — extrato de carreira", () 
     renderCareerFile(<StatementPage />, { tab: "statement" });
 
     expect(await screen.findByText("Transições de nível não carregou.")).toBeTruthy();
-    expect(screen.getByText("Evidência: ADR-014")).toBeTruthy();
+    expect(screen.getByText("Mentoria: Arquitetura de Eventos")).toBeTruthy();
     expect(screen.queryByText(/Transição de nível:/)).toBeNull();
   });
 
@@ -216,7 +216,7 @@ describe("/professionals/$professionalId/statement — extrato de carreira", () 
       routes: statementRoutes(),
     });
     const { unmount: unmountMember } = renderCareerFile(<StatementPage />, { tab: "statement" });
-    expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
+    expect(await screen.findByText("Mentoria: Arquitetura de Eventos")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
     // Na PRÓPRIA ficha não há "Voltar" (dono, 2026-09-06): o menu já leva a cada aba.
@@ -235,7 +235,7 @@ describe("/professionals/$professionalId/statement — extrato de carreira", () 
       routes: statementRoutes(),
     });
     renderCareerFile(<StatementPage />, { tab: "statement" });
-    expect(await screen.findByText("Evidência: ADR-014")).toBeTruthy();
+    expect(await screen.findByText("Mentoria: Arquitetura de Eventos")).toBeTruthy();
     // Dono (2026-09-06): "não precisamos esconder do tech lead" — ele também gera.
     expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Imprimir extrato" })).toBeNull();
@@ -284,7 +284,7 @@ describe("/professionals/$professionalId/statement — extrato de carreira", () 
       routes: statementRoutes(),
     });
     renderCareerFile(<StatementPage />, { tab: "statement" });
-    await screen.findByText("Evidência: ADR-014");
+    await screen.findByText("Mentoria: Arquitetura de Eventos");
     const openButtons = screen.getAllByRole("button", { name: "Ver origem" });
     openButtons[0]?.click();
     expect(careerFileRouter.push).toHaveBeenCalled();

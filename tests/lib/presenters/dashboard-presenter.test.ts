@@ -131,20 +131,6 @@ describe("PersonalDashboardPresenter", () => {
     });
   });
 
-  it("pendingEvidenceCount conta só Pending da própria pessoa", () => {
-    const comRevisada: AppState = {
-      ...fixtureState,
-      evidences: [
-        ...fixtureState.evidences,
-        { ...fixtureState.evidences[0]!, id: "e2", status: "Accepted" as const },
-        { ...fixtureState.evidences[0]!, id: "e3", professionalId: "bruno" },
-      ],
-    };
-    const personal = personalFor(comRevisada);
-    expect(personal.pendingEvidenceCount("ana")).toBe(1);
-    expect(personal.pendingEvidenceCount("bruno")).toBe(1);
-  });
-
   it("assignedPaths devolve só trilhas atribuídas à pessoa", () => {
     const personal = personalFor(fixtureState);
     expect(personal.assignedPaths("ana").map((p) => p.id)).toEqual(["lp-sec"]);
@@ -317,11 +303,11 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
 });
 
 /**
- * R4 (varredura-oo-ddd-2026-08-29, §2c) — as três filas de pendência do
- * líder (`routes/index.tsx:394-397`) eram calculadas inline no `LeadHome`:
- * quem é do meu time, quem espera calibração, qual evidência espera revisão
- * e qual plano espera aprovação. É regra de negócio, e o painel já tinha
- * presenter. Estes casos são o espelho literal daquelas linhas.
+ * R4 (varredura-oo-ddd-2026-08-29, §2c) — as filas de pendência do líder
+ * eram calculadas inline no `LeadHome`: quem é do meu time, quem espera
+ * calibração e qual plano espera aprovação. É regra de negócio, e o painel já
+ * tinha presenter. Estes casos são o espelho literal daquelas linhas. Eram
+ * três filas até a evidência sair do produto (dono, 2026-09-08, regra 17).
  */
 describe("DashboardPresenter — filas de pendência do líder", () => {
   const leadDoTime = fixtureAssignedTechLeadUser;
@@ -367,7 +353,7 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
     });
     const queues = queuesOf(semTime, fixtureUnassignedTechLeadUser);
     expect(queues.people).toEqual([]);
-    expect(queues.pendingEvidence).toEqual([]);
+    expect(queues.awaitingCalibration).toEqual([]);
     expect(queues.totalPending).toBe(0);
   });
 
@@ -380,21 +366,6 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
     expect(queuesOf(fixtureState).awaitingCalibration).toEqual([]);
     expect(queuesOf(emRevisao).awaitingCalibration.map((entry) => entry.professional.id)).toEqual([
       "bruno",
-    ]);
-  });
-
-  it("evidência pendente é só a Pending de gente do time, na ordem em que o estado a entrega", () => {
-    const comOutraPendente = stateWith({
-      evidences: [
-        ...fixtureState.evidences,
-        { ...fixtureState.evidences[0]!, id: "e2", professionalId: "bruno" },
-        { ...fixtureState.evidences[0]!, id: "e3", status: "Accepted" as const },
-        { ...fixtureState.evidences[0]!, id: "e4", professionalId: "de-fora" },
-      ],
-    });
-    expect(queuesOf(comOutraPendente).pendingEvidence.map((evidence) => evidence.id)).toEqual([
-      "e1",
-      "e2",
     ]);
   });
 
@@ -413,7 +384,7 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
     expect(queuesOf(rascunhoVazio).awaitingApproval).toEqual([]);
   });
 
-  it("o total de pendências é a soma das três filas", () => {
+  it("o total de pendências é a soma das duas filas", () => {
     const planoDeAna = fixtureState.plans[0]!;
     const tudoPendente = stateWith({
       assessments: fixtureState.assessments.map((assessment) =>
@@ -423,9 +394,8 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
     });
     const queues = queuesOf(tudoPendente);
     expect(queues.awaitingCalibration).toHaveLength(1);
-    expect(queues.pendingEvidence).toHaveLength(1);
     expect(queues.awaitingApproval).toHaveLength(1);
-    expect(queues.totalPending).toBe(3);
-    expect(queuesOf(fixtureState).totalPending).toBe(1);
+    expect(queues.totalPending).toBe(2);
+    expect(queuesOf(fixtureState).totalPending).toBe(0);
   });
 });

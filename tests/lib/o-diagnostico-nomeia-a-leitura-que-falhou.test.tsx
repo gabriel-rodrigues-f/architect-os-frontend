@@ -66,10 +66,10 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
     expect(diagnosticos.some((linha) => linha.includes("state"))).toBe(false);
   });
 
-  it("falha em evidences nomeia evidences — o rótulo acompanha o que quebrou", async () => {
-    mockAppFetch(fetchMock, { state: fixtureState, routes: [rotaQueFalha("/evidences")] });
+  it("falha em mentoringSessions nomeia mentoringSessions — o rótulo acompanha o que quebrou", async () => {
+    mockAppFetch(fetchMock, { state: fixtureState, routes: [rotaQueFalha("/mentoring-sessions")] });
     renderWithApp(
-      <ContextScope contexts={["evidences"]}>
+      <ContextScope contexts={["mentoringSessions"]}>
         <p>conteúdo</p>
       </ContextScope>,
     );
@@ -77,14 +77,14 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
     const diagnosticos = linhasDeDiagnostico().filter((linha) =>
       linha.includes("falha ao carregar"),
     );
-    expect(diagnosticos.some((linha) => linha.includes("evidences"))).toBe(true);
+    expect(diagnosticos.some((linha) => linha.includes("mentoringSessions"))).toBe(true);
     expect(diagnosticos.some((linha) => linha.includes("plans"))).toBe(false);
   });
 
   it("entre vários contextos, o nomeado é o que falhou, não o primeiro pedido", async () => {
-    mockAppFetch(fetchMock, { state: fixtureState, routes: [rotaQueFalha("/evidences")] });
+    mockAppFetch(fetchMock, { state: fixtureState, routes: [rotaQueFalha("/mentoring-sessions")] });
     renderWithApp(
-      <ContextScope contexts={["professionals", "plans", "evidences"]}>
+      <ContextScope contexts={["professionals", "plans", "mentoringSessions"]}>
         <p>conteúdo</p>
       </ContextScope>,
     );
@@ -92,7 +92,7 @@ describe("a tela de falha diz QUAL leitura falhou, não a rota do blob antigo", 
     const diagnosticos = linhasDeDiagnostico().filter((linha) =>
       linha.includes("falha ao carregar"),
     );
-    expect(diagnosticos.some((linha) => linha.includes("evidences"))).toBe(true);
+    expect(diagnosticos.some((linha) => linha.includes("mentoringSessions"))).toBe(true);
     expect(diagnosticos.some((linha) => linha.includes("professionals"))).toBe(false);
   });
 });

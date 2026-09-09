@@ -7,7 +7,7 @@ import { Catraca, raizDoFrontend } from "../helpers/catraca";
 /**
  * Revisão mestre 2026-09-08, [F-03]: seis famílias de badge com raio, peso e
  * padding diferentes — três "chips" distintos na mesma tabela (nível,
- * distância, status de evidência). Agora existe UM `Chip`
+ * distância, tipo de evento). Agora existe UM `Chip`
  * (`components/app/Chip.tsx`) com tons e tamanhos; as famílias são fábricas
  * de tinta sobre ele.
  *

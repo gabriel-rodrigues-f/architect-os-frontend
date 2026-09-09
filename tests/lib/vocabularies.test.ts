@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ACTION_TYPES, EVIDENCE_TYPES, LEARNING_ITEM_TYPES } from "@/lib/domain";
+import { ACTION_TYPES, LEARNING_ITEM_TYPES } from "@/lib/domain";
 import {
   DEFAULT_VOCABULARIES,
   Vocabulary,
@@ -18,15 +18,13 @@ import {
  */
 describe("vocabularies (CFG-06)", () => {
   it("o default espelha os arrays antigos de domain.ts, na mesma ordem (fonte única)", () => {
-    expect(DEFAULT_VOCABULARIES.EVIDENCE_TYPE.map((i) => i.code)).toEqual([...EVIDENCE_TYPES]);
     expect(DEFAULT_VOCABULARIES.LEARNING_ITEM_TYPE.map((i) => i.code)).toEqual([
       ...LEARNING_ITEM_TYPES,
     ]);
     expect(DEFAULT_VOCABULARIES.ACTION_TYPE.map((i) => i.code)).toEqual([...ACTION_TYPES]);
   });
 
-  it("o default tem os tamanhos do seed (11/10/6), todos ativos, sortOrder = posição", () => {
-    expect(DEFAULT_VOCABULARIES.EVIDENCE_TYPE).toHaveLength(11);
+  it("o default tem os tamanhos do seed (10/6), todos ativos, sortOrder = posição", () => {
     expect(DEFAULT_VOCABULARIES.LEARNING_ITEM_TYPE).toHaveLength(10);
     expect(DEFAULT_VOCABULARIES.ACTION_TYPE).toHaveLength(6);
     for (const name of VOCABULARY_NAMES) {
@@ -53,9 +51,8 @@ describe("vocabularies (CFG-06)", () => {
         active: true,
       },
     ];
-    const effective = VocabularyCatalog.resolve({ ACTION_TYPE: served, EVIDENCE_TYPE: [] });
+    const effective = VocabularyCatalog.resolve({ ACTION_TYPE: served, LEARNING_ITEM_TYPE: [] });
     expect(effective.ACTION_TYPE).toEqual(served);
-    expect(effective.EVIDENCE_TYPE).toEqual(DEFAULT_VOCABULARIES.EVIDENCE_TYPE);
     expect(effective.LEARNING_ITEM_TYPE).toEqual(DEFAULT_VOCABULARIES.LEARNING_ITEM_TYPE);
   });
 

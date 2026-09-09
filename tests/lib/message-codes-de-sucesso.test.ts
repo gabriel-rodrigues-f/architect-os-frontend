@@ -57,22 +57,38 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
 // porta legada que criava profissional sem conta; a tradução foi junto.
 // 2026-09-06: 63 -> 67 — os quatro atos da solicitação de transferência de time.
 /**
- * Duas fatias da mesma noite entraram juntas e cada uma trouxe um código, por
- * isso a catraca sobe 67 → 69: `team.careerLadder.define.success` (a estrutura
- * de níveis do time) e `learningPath.enrollment.renew.success` (a reinscrição
- * de quem estourou o prazo da trilha).
- *
- * Dono (2026-09-08) — `team.careerLadder.define.success`, a estrutura de
- * níveis do time. A cópia foi tirada do backend DA MESMA FATIA; enquanto ela
- * não estiver integrada na main do backend, o aviso oportunista de procedência
- * (o último `it` deste arquivo) acusa a diferença — é exatamente o que ele
- * existe para fazer, e ele silencia sozinho quando os dois repos sobem juntos.
+ * Três fatias da mesma noite: 67 + 2 − 3 = 66. Entraram
+ * `team.careerLadder.define.success` (a estrutura de níveis do time) e
+ * `learningPath.enrollment.renew.success` (a reinscrição de quem estourou o
+ * prazo da trilha); saíram os três da evidência — create, resubmit e review —
+ * com a regra 17.
  */
-const CODIGOS_ESPERADOS = 69;
+const CODIGOS_ESPERADOS = 66;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 
 const ORIGEM_DA_COPIA = "backend/tests/shared/http/message-codes-de-sucesso.fixture.json";
+
+/**
+ * O par da cópia é o backend da MESMA fatia. Quando este repositório está num
+ * worktree (`frontend/.worktrees/<fatia>`), o backend daquela fatia mora no
+ * worktree espelho (`backend/.worktrees/<fatia>`) — e é ELE que diz quais
+ * códigos existem nesta branch. O `backend/` da raiz é a `main`, que ainda não
+ * recebeu a fatia; compará-la com a cópia acusaria defasagem em toda fatia que
+ * mexe em código de mensagem. Por isso o worktree espelho vem primeiro, e a
+ * raiz fica como o caso de sempre (os dois repositórios lado a lado).
+ */
+const FATIA_EM_WORKTREE = /[/\\]\.worktrees[/\\]([^/\\]+)[/\\]/;
+
+function origensPossiveis(diretorio: string, arquivoDoTeste: string): string[] {
+  const fatia = FATIA_EM_WORKTREE.exec(arquivoDoTeste)?.[1];
+  return fatia
+    ? [
+        join(diretorio, ORIGEM_DA_COPIA.replace("backend/", `backend/.worktrees/${fatia}/`)),
+        join(diretorio, ORIGEM_DA_COPIA),
+      ]
+    : [join(diretorio, ORIGEM_DA_COPIA)];
+}
 
 /**
  * Os códigos que o backend emite e que este locale NÃO traduz hoje. A lista é
@@ -186,8 +202,9 @@ function fixtureOriginal(): string | undefined {
   if (doMesmoCheckout !== undefined) return doMesmoCheckout;
   let diretorio = dirname(fileURLToPath(import.meta.url));
   for (let subida = 0; subida < 8; subida += 1) {
-    const alvo = join(diretorio, ORIGEM_DA_COPIA);
-    if (existsSync(alvo)) return alvo;
+    for (const alvo of origensPossiveis(diretorio, arquivoDoTeste)) {
+      if (existsSync(alvo)) return alvo;
+    }
     const pai = dirname(diretorio);
     if (pai === diretorio) return undefined;
     diretorio = pai;

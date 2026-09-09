@@ -88,11 +88,7 @@ export const Route = createFileRoute("/development-plans")({
 
 const STATUSES: PdiStatus[] = ["Not Started", "In Progress", "Blocked", "Completed"];
 
-const PLANS_CONTEXTS: readonly ContextScopeRequest[] = [
-  ...SELECTOR_CONTEXTS,
-  "cycles",
-  "evidences",
-];
+const PLANS_CONTEXTS: readonly ContextScopeRequest[] = [...SELECTOR_CONTEXTS, "cycles"];
 
 function PlansPage() {
   return (

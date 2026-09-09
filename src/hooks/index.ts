@@ -1,6 +1,6 @@
-export * from "./use-professional-profile-view-model";
 export * from "./use-assistant-run";
 export * from "./use-async-submit";
+export * from "./use-cycle-in-focus";
 export * from "./use-display-preferences";
 export * from "./use-media-query";
 export * from "./use-narrow-viewport";

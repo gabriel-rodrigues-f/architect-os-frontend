@@ -26,8 +26,7 @@ export const Route = createFileRoute("/notices")({
       { title: "Avisos — Synapse" },
       {
         name: "description",
-        content:
-          "Avisos: PDIs vencendo, avaliações paradas e evidências esperando revisão, no escopo de quem vê.",
+        content: "Avisos: PDIs vencendo e avaliações paradas, no escopo de quem vê.",
       },
       { property: "og:title", content: "Avisos — Synapse" },
       {

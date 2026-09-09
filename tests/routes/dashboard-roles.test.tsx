@@ -32,8 +32,8 @@ import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers
 /**
  * FASE 2 (quinta rodada) — "homes distintas Member/Lead/Admin": antes, todo
  * mundo via a mesma visão executiva de time, mesmo enxergando só uma fatia
- * dos registros (roster é dado de diretório, sem filtro; assessments/PDIs/
- * evidências, sim). Member vê "Minha Evolução" (agenda pessoal); Lead vê
+ * dos registros (roster é dado de diretório, sem filtro; assessments e PDIs,
+ * sim). Member vê "Minha Evolução" (agenda pessoal); Lead vê
  * "Pendências do Lead" (fila do que depende de uma decisão dele); Admin
  * mantinha a visão executiva original. Ver AUDITORIA-QUINTA-RODADA-360-
  * SYNAPSE-2026-08-19.md, Seção 7 e 33.
@@ -94,12 +94,21 @@ function renderAs(user: SessionUser, state: AppState = fixtureState) {
   return renderWithApp(<DashboardPage />);
 }
 
-/** Ana no time da liderança da sessão, com o recorte que o servidor faria. */
+/**
+ * Ana no time da liderança da sessão, com o recorte que o servidor faria — e
+ * com UMA pendência de verdade na fila: o PDI dela em rascunho, esperando
+ * aprovação. A pendência da fixture era a evidência dela, que saiu do produto
+ * (dono, 2026-09-08, regra 17); sem nenhuma, o bloco "Ações da Liderança"
+ * mostra o "tudo em dia" e o teste deixaria de provar o que promete.
+ */
 function renderAsLeaderOfAna(user: SessionUser) {
   const state: AppState = {
     ...fixtureState,
     professionals: fixtureState.professionals.map((professional) =>
       professional.id === "ana" ? { ...professional, teamId: TIME_DE_ANA } : professional,
+    ),
+    plans: fixtureState.plans.map((plan) =>
+      plan.professionalId === "ana" ? { ...plan, status: "Draft" as const } : plan,
     ),
   };
   return renderAs(user, scopedFixtureStateFor(user, state, [TIME_DE_ANA]));
@@ -124,7 +133,6 @@ describe("Painel — Home por papel", () => {
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
     expect(screen.queryByText("Ações da Liderança")).toBeNull();
     expect(screen.queryByText("Ana Martins")).toBeNull();
-    expect(screen.queryByText(/ADR-014/)).toBeNull();
   });
 
   it("member vê 'Minha Evolução', não a visão de time", async () => {
@@ -170,22 +178,23 @@ describe("Painel — Home por papel", () => {
     renderAsLeaderOfAna(fixtureGestorDeAna);
     await screen.findByText("Ações da Liderança");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect(await screen.findByText(/ADR-014/)).toBeTruthy();
+    // "Ana Martins" só aparece no Painel do líder dentro da fila de pendências.
+    expect(await screen.findByText("Ana Martins")).toBeTruthy();
   });
 
   it("tech lead vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
     renderAsLeaderOfAna(fixtureTechLeadDeAna);
     await screen.findByText("Ações da Liderança");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect(await screen.findByText(/ADR-014/)).toBeTruthy();
+    expect(await screen.findByText("Ana Martins")).toBeTruthy();
   });
 
   it("sessão de liderança SEM vínculo vê o estado vazio mesmo com gente no payload — o alcance é o vínculo (dono, 2026-09-05)", async () => {
     renderAsLeaderOfAna(fixtureLeadOfAna);
     await screen.findByText("Ações da Liderança");
-    // "e1" na fixture: evidência Pending de "ana", título "ADR-014" — o servidor
+    // O PDI em rascunho da Ana é pendência de quem a lidera: o servidor
     // entregou, mas sem membership a fila não é dele.
     expect(await screen.findByText("Nenhum profissional sob sua liderança ainda")).toBeTruthy();
-    expect(screen.queryByText(/ADR-014/)).toBeNull();
+    expect(screen.queryByText("Ana Martins")).toBeNull();
   });
 });

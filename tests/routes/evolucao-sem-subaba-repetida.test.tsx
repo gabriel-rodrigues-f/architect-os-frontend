@@ -18,7 +18,7 @@ import { renderCareerFile } from "../helpers/ficha";
  *
  *   · "Linha do tempo" listava os degraus de competência que a aba VIZINHA
  *     "Extrato de carreira" já lista, e o Extrato é superconjunto (acrescenta
- *     PDIs, evidências e o link de origem);
+ *     PDIs e o link de origem);
  *   · "Capacidades" repetia, célula por célula, o mesmo gráfico "Evolução por
  *     capacidade" já desenhado no "Resumo" — o que ela tinha de próprio era o
  *     seletor de foco por capacidade, não um segundo gráfico.

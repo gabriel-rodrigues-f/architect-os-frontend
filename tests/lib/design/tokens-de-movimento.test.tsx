@@ -107,6 +107,10 @@ describe("superfície interativa — hover em cartão e linha com ação", () =>
     const team = readFileSync(resolve(process.cwd(), "src/components/app/team-shared.tsx"), "utf8");
     const painel = readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8");
     expect(team.match(/surface-interactive/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
-    expect(painel.match(/surface-interactive/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+    // No Painel a utility aparece UMA vez: as filas da liderança eram três
+    // colunas copiadas e viraram um componente só (`LeadQueueColumn`) quando a
+    // fila de evidências saiu (dono, 2026-09-08, regra 17). O que a régua pede
+    // é que a linha com ação use a utility, não que ela seja repetida.
+    expect(painel.match(/surface-interactive/g)?.length ?? 0).toBeGreaterThanOrEqual(1);
   });
 });

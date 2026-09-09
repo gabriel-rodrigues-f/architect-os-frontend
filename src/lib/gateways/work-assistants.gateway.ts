@@ -4,8 +4,8 @@ import { AssistantCall } from "../assistants";
 
 /**
  * ADR-0088 do backend, do lado da tela — os assistentes que apoiam o
- * TRABALHO: a revisão de uma evidência, a calibração de uma avaliação, o
- * aviso de que alguém requer atenção e a curadoria do catálogo.
+ * TRABALHO: a calibração de uma avaliação, o aviso de que alguém requer
+ * atenção e a curadoria do catálogo.
  *
  * Dois campos, e a separação é o produto: `observations` é o que o sistema
  * APUROU por consulta e continua verdadeiro com o provedor no chão; `reading`
@@ -13,10 +13,10 @@ import { AssistantCall } from "../assistants";
  * campo de veredito — nada aqui aprova, rejeita, nota ou classifica.
  *
  * Ao contrário dos assistentes da pessoa, a queda do provedor AQUI é 503 com
- * a mensagem do serviço: as telas destes quatro já desenham o determinístico
- * por conta própria (a evidência, a avaliação, a matriz), então perder a
- * resposta inteira não apaga nada do que o sistema calculou. Quem consome
- * isto mostra a mensagem do serviço e segue operando.
+ * a mensagem do serviço: as telas destes três já desenham o determinístico
+ * por conta própria (a avaliação, a matriz), então perder a resposta inteira
+ * não apaga nada do que o sistema calculou. Quem consome isto mostra a
+ * mensagem do serviço e segue operando.
  */
 export interface WorkAssistance {
   subject: string;
@@ -38,7 +38,6 @@ export interface StagnationAlert {
 }
 
 export interface WorkAssistantsGateway {
-  assistEvidenceReview(evidenceId: string): Promise<WorkAssistance>;
   assistAssessmentCalibration(professionalId: string): Promise<WorkAssistance>;
   alertAboutStagnation(professionalId: string): Promise<StagnationAlert>;
   reviewCatalogQuality(): Promise<WorkAssistance>;
@@ -50,11 +49,6 @@ export class HttpWorkAssistantsGateway implements WorkAssistantsGateway {
   constructor(client: ApiClient, timeoutMs?: number) {
     this.call = new AssistantCall(client, timeoutMs);
   }
-
-  assistEvidenceReview = (evidenceId: string): Promise<WorkAssistance> =>
-    this.call.read(`/evidences/${evidenceId}/review-assistance`, (data) =>
-      workAssistanceResponseSchema.parse(data),
-    );
 
   assistAssessmentCalibration = (professionalId: string): Promise<WorkAssistance> =>
     this.call.read(`/professionals/${professionalId}/calibration-assistance`, (data) =>

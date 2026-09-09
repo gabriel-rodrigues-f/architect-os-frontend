@@ -44,7 +44,7 @@ describe("estrangulamento fase 1 — perfil do profissional vive sem o blob /sta
     renderCareerFile(<ProfilePage />);
 
     expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
-    expect(await screen.findByText("ADR-014")).toBeTruthy();
+    expect(await screen.findByText(/Curso \+ laboratório/)).toBeTruthy();
 
     const requestedPaths = fetchMock.mock.calls.map((call) =>
       call[0] instanceof Request ? call[0].url : String(call[0]),
@@ -54,7 +54,7 @@ describe("estrangulamento fase 1 — perfil do profissional vive sem o blob /sta
       requestedPaths.some((href) => href.endsWith(`${apiPath("/assessments")}?professionalId=ana`)),
     ).toBe(true);
     expect(
-      requestedPaths.some((href) => href.endsWith(`${apiPath("/evidences")}?professionalId=ana`)),
+      requestedPaths.some((href) => href.endsWith(`${apiPath("/plans")}?professionalId=ana`)),
     ).toBe(true);
     expect(
       requestedPaths.some((href) =>

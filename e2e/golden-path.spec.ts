@@ -159,7 +159,7 @@ test("Lead — Pendências do Lead escopadas à própria liderança", async ({ p
   });
   await expect(myPeopleCard).toContainText("2");
 
-  // Sem avaliação/evidência/PDI pendente ainda — estado "tudo em dia".
+  // Sem avaliação nem PDI pendente ainda — estado "tudo em dia".
   await expect(page.getByText("Nada pendente no momento")).toBeVisible();
 
   await page.goto(`/professionals/${professionalId}`);

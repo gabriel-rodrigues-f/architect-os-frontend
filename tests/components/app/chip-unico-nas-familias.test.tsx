@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CareerEventItem, EventTypeBadge } from "@/components/app/CareerEventTimeline";
 import { Chip } from "@/components/app/Chip";
-import { EvidenceStatusBadge } from "@/components/app/evidence-shared";
 import { GapBadge, LevelBadge, StatusBadge } from "@/components/app/ui-bits";
 
 import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
@@ -82,18 +81,17 @@ describe("Chip — um só chip, com tom e tamanho", () => {
 });
 
 describe("as famílias de badge renderizam o Chip", () => {
-  it("nível, distância, status, tipo de evento e status de evidência", async () => {
+  it("nível, distância, status e tipo de evento", async () => {
     const { container } = renderWithApp(
       <>
         <LevelBadge level={3} />
         <GapBadge gap={2} />
         <StatusBadge tone="done" label="Concluída" />
-        <EventTypeBadge kind="evidence" />
-        <EvidenceStatusBadge status="Accepted" />
+        <EventTypeBadge kind="pdi" />
       </>,
     );
     await screen.findByText("L3");
-    expect(chipsDe(container)).toHaveLength(5);
+    expect(chipsDe(container)).toHaveLength(4);
   });
 
   it("o nome do nível é acessível sem showName — e sem title", async () => {

@@ -26,8 +26,9 @@ import {
  *   · "Perfis de Competência por Cargo" — 13 capacidades × 3 cargos, traço em
  *     todas as células, pela mesma causa da Matriz (ADR-0032: o nível exigido
  *     é da régua do time);
- *   · "Taxonomias" — a mesma lista de tipos de ação e de evidência que o bloco
- *     "Vocabulários" mostra ACIMA, na mesma rolagem, e lá em versão editável.
+ *   · "Taxonomias" — a mesma lista de tipos de ação e de item de trilha que o
+ *     bloco "Vocabulários" mostra ACIMA, na mesma rolagem, e lá em versão
+ *     editável.
  *
  * Os testes prendem a ausência dos dois e, no caso das taxonomias, prendem
  * também o que NÃO pode sumir junto: o conteúdo continua legível — em
@@ -39,9 +40,6 @@ const fetchMock = vi.fn();
 const vocabulariesRoute: FetchRoute = (href) =>
   href.endsWith(apiPath("/config/vocabularies"))
     ? jsonResponse({
-        EVIDENCE_TYPE: [
-          { vocabulary: "EVIDENCE_TYPE", code: "ADR", label: "ADR", order: 1, active: true },
-        ],
         LEARNING_ITEM_TYPE: [
           {
             vocabulary: "LEARNING_ITEM_TYPE",
@@ -104,19 +102,19 @@ describe("Política de Progressão — a referência não repete nem finge", () 
     expect(screen.queryByText("Taxonomias")).toBeNull();
     expect(screen.queryByText("Tipos de ação")).toBeNull();
     expect(
-      screen.getAllByText("Tipos de evidência"),
+      screen.getAllByText("Tipos de item de trilha"),
       "o rótulo aparecia duas vezes na mesma rolagem — em Vocabulários e em Taxonomias",
     ).toHaveLength(1);
   });
 
-  it("os tipos de ação e de evidência continuam legíveis em Vocabulários", async () => {
+  it("os tipos de ação e de item de trilha continuam legíveis em Vocabulários", async () => {
     renderWithApp(<SettingsPage />);
     await screen.findByText("Vocabulários");
 
     expect(screen.getByText("Tipos de ação do PDI")).toBeTruthy();
-    expect(screen.getByText("Tipos de evidência")).toBeTruthy();
+    expect(screen.getByText("Tipos de item de trilha")).toBeTruthy();
     expect(screen.getByText("Aprender")).toBeTruthy();
-    expect(screen.getByText("ADR")).toBeTruthy();
+    expect(screen.getByText("Curso")).toBeTruthy();
   });
 });
 
@@ -126,7 +124,7 @@ describe("o texto da Política não anuncia referência que não existe mais", (
   for (const idioma of ["pt", "en"] as const) {
     it(`o subtítulo (${idioma}) não promete perfis por cargo nem taxonomias`, () => {
       const subtitulo = idiomas[idioma]!["ref.subtitle"]!;
-      const promessas = idioma === "pt" ? [/cargos/i, /evid[êe]ncia/i] : [/roles/i, /evidence/i];
+      const promessas = idioma === "pt" ? [/cargos/i, /taxonomias/i] : [/roles/i, /taxonomies/i];
       for (const promessa of promessas) expect(subtitulo).not.toMatch(promessa);
     });
 

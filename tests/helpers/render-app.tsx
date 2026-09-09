@@ -102,7 +102,6 @@ function stateContextResponse(
   if (path.endsWith(apiPath("/settings/active-cycle")))
     return jsonResponse({ cycleId: state.activeCycleId });
   if (path.endsWith(apiPath("/plans"))) return jsonResponse(byProfessional(state.plans));
-  if (path.endsWith(apiPath("/evidences"))) return jsonResponse(byProfessional(state.evidences));
   if (path.endsWith(apiPath("/mentoring-sessions"))) {
     const menteeId = query.get("menteeId");
     return jsonResponse(
@@ -143,7 +142,7 @@ export function configurationRoute(href: string, init?: RequestInit): Response |
   if (href.endsWith(apiPath("/config/curation-policy")))
     return jsonResponse(EffectiveCurationPolicy.defaults);
   if (href.endsWith(apiPath("/config/vocabularies")))
-    return jsonResponse({ EVIDENCE_TYPE: [], LEARNING_ITEM_TYPE: [], ACTION_TYPE: [] });
+    return jsonResponse({ LEARNING_ITEM_TYPE: [], ACTION_TYPE: [] });
   return undefined;
 }
 

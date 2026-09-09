@@ -38,7 +38,7 @@ export const Route = createFileRoute("/professionals/$professionalId/statement")
       {
         name: "description",
         content:
-          "Extrato de carreira: transições de nível e de time, degraus, evidências, PDIs e mentorias em ordem cronológica, gerado pelo líder.",
+          "Extrato de carreira: transições de nível e de time, degraus, PDIs e mentorias em ordem cronológica, gerado pelo líder.",
       },
     ],
   }),
@@ -50,7 +50,6 @@ const STATEMENT_KINDS: readonly StatementEntryKind[] = [
   "transition",
   "teamTransition",
   "competencyStep",
-  "evidence",
   "pdi",
   "mentoring",
 ];
@@ -59,7 +58,6 @@ const KIND_LABEL_KEY: Record<StatementEntryKind, MessageKey> = {
   transition: "statement.kind.transition",
   teamTransition: "statement.kind.teamTransition",
   competencyStep: "statement.kind.competencyStep",
-  evidence: "statement.kind.evidence",
   pdi: "statement.kind.pdi",
   mentoring: "statement.kind.mentoring",
 };
@@ -138,7 +136,6 @@ function StatementOfProfessional() {
         transitions: transitionsQuery.data ?? [],
         teamTransitions: teamTransitionsQuery.data ?? [],
         competencyEvents: stepsQuery.data?.events ?? [],
-        evidences: store.evidences.filter((evidence) => evidence.professionalId === professionalId),
         planEvents: planEventsQuery.data ?? [],
         mentoringSessions: store.mentoringSessions.filter(
           (session) => session.menteeId === professionalId,

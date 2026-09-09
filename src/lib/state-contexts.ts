@@ -13,7 +13,6 @@ const STATE_CONTEXT_NAMES = [
   "plans",
   "learningPaths",
   "mentoringSessions",
-  "evidences",
 ] as const;
 
 export type StateContextName = (typeof STATE_CONTEXT_NAMES)[number];
@@ -90,11 +89,6 @@ const definitions: Record<StateContextName, StateContextDefinition> = {
       mentoringSessions: slice as AppState["mentoringSessions"],
     }),
     sliceOf: (state) => state.mentoringSessions,
-  },
-  evidences: {
-    fetchSlice: (filter) => stateContextsApi.listEvidences(filter),
-    mergeInto: (state, slice) => ({ ...state, evidences: slice as AppState["evidences"] }),
-    sliceOf: (state) => state.evidences,
   },
 };
 

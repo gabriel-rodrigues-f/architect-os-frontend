@@ -5,7 +5,6 @@ import type {
   AssessmentTargetSemantics,
   Competency,
   Capability,
-  Evidence,
   Level,
 } from "./domain";
 import { capabilityShortLabels } from "./domain";
@@ -21,7 +20,6 @@ export const emptyState: AppState = {
   plans: [],
   learningPaths: [],
   mentoringSessions: [],
-  evidences: [],
   activeCycleId: "",
 };
 
@@ -279,9 +277,6 @@ export class DevelopmentSelectors {
 
   planFor = (professionalId: string, cycleId = this.index.activeCycleId) =>
     this.index.planIndex.get(cycleKey(professionalId, cycleId));
-
-  evidencesForPlanItem = (evidences: readonly Evidence[], itemId: string): Evidence[] =>
-    evidences.filter((e) => e.developmentPlanItemId === itemId);
 }
 
 export class CapabilitySelectors {
@@ -414,7 +409,6 @@ export function createSelectors(state: AppState) {
     assessmentFor: assessment.assessmentFor,
     officialAssessmentFor: assessment.officialAssessmentFor,
     planFor: development.planFor,
-    evidencesForPlanItem: development.evidencesForPlanItem,
     gapsFor: assessment.gapsFor,
     progressionGapsFor: assessment.progressionGapsFor,
     masteryOpportunitiesFor: assessment.masteryOpportunitiesFor,

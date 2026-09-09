@@ -37,10 +37,8 @@ export const DASHBOARD_CARDS = [
   "cycleAssessment",
   "severity",
   "memberAssessment",
-  "memberEvidence",
   "leadPeople",
   "leadCalibration",
-  "leadEvidence",
   "leadApproval",
   "leadActions",
 ] as const;

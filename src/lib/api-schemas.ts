@@ -381,7 +381,6 @@ export const vocabularyItemSchema = z.object({
 });
 
 export const vocabulariesResponseSchema = z.object({
-  EVIDENCE_TYPE: z.array(vocabularyItemSchema),
   LEARNING_ITEM_TYPE: z.array(vocabularyItemSchema),
   ACTION_TYPE: z.array(vocabularyItemSchema),
 });
@@ -559,26 +558,6 @@ const mentoringSession = z.object({
   nextSession: z.string().optional(),
 });
 
-const evidence = z.object({
-  id: z.string(),
-  professionalId: z.string(),
-  title: z.string(),
-  description: z.string(),
-
-  type: z.string(),
-  competencyIds: z.array(z.string()),
-  date: z.string(),
-  project: z.string().optional(),
-  url: z.string().optional(),
-  complexity: z.enum(["Low", "Medium", "High"]),
-  leaderComment: z.string().optional(),
-  status: z.enum(["Pending", "Accepted", "Needs Improvement", "Rejected"]),
-  issuer: z.string().optional(),
-  developmentPlanItemId: z.string().nullish(),
-  reviewedByUserId: z.string().nullish(),
-  reviewedAt: z.string().nullish(),
-});
-
 export const professionalsResponseSchema = z.array(professional);
 export const assessmentsResponseSchema = z.array(assessment);
 export const capabilitiesResponseSchema = z.array(capability);
@@ -588,7 +567,6 @@ export const teamLevelRulesResponseSchema = z.array(teamLevelRule);
 export const plansResponseSchema = z.array(developmentPlan);
 export const learningPathsResponseSchema = z.array(learningPath);
 export const mentoringSessionsResponseSchema = z.array(mentoringSession);
-export const evidencesResponseSchema = z.array(evidence);
 export const activeCycleResponseSchema = z.object({ cycleId: z.string() });
 
 const teamTransferRequestStatus = z.enum(["pending", "approved", "refused", "cancelled"]);

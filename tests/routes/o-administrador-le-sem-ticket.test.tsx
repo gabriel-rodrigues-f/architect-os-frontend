@@ -17,7 +17,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { supportAccess, type SessionUser } from "@/lib/api";
+import { supportAccess, type AppState, type SessionUser } from "@/lib/api";
 import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
 import {
   fixtureAdminUser,
@@ -36,8 +36,27 @@ import { renderCareerFile } from "../helpers/ficha";
 
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
 
-/** As ações que a ficha de um liderado oferece a quem o lidera ("+ PDI" só aparece com distância fora do PDI). */
-const ACOES_DA_LIDERANCA = [/^Revisar$/, /^Registrar$/];
+/**
+ * A ação que a ficha de um liderado oferece a quem o lidera: levar a distância
+ * para o PDI ("+ PDI" só aparece com distância fora do plano). Era acompanhada
+ * de "Revisar" e "Registrar" até a evidência sair (dono, 2026-09-08, regra 17).
+ */
+const ACOES_DA_LIDERANCA = [/^\+ PDI$/];
+
+/**
+ * A ficha só oferece "+ PDI" quando existe distância FORA do plano. Na fixture
+ * a única distância aberta da Ana (security-iam) já está no plano dela, então
+ * o estado abaixo tira esse item — é o mundo em que a ação de liderança tem o
+ * que fazer.
+ */
+const comDistanciaForaDoPlano: AppState = {
+  ...fixtureState,
+  plans: fixtureState.plans.map((plan) =>
+    plan.id === "pdi-ana"
+      ? { ...plan, items: plan.items.filter((item) => item.competencyId !== "security-iam") }
+      : plan,
+  ),
+};
 
 /** O passe do suporte abre SÓ a ficha funcional (`GET /professionals/:id`). */
 const ana = fixtureState.professionals.find((professional) => professional.id === "ana");
@@ -49,7 +68,7 @@ const fichaFuncionalRoute: FetchRoute = (href, init) =>
 function renderAs(user: SessionUser) {
   mockAppFetch(fetchMock, {
     user,
-    state: fixtureState,
+    state: comDistanciaForaDoPlano,
     routes: [fichaFuncionalRoute, careerLevelsRoute],
   });
   return renderCareerFile(<ProfilePage />);

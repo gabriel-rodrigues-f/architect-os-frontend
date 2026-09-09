@@ -13,7 +13,6 @@ export const PERSON_DOSSIER_ABSENCES = [
   "assessment",
   "developmentPlan",
   "learningPath",
-  "evidence",
   "mentoring",
   "evolutionHistory",
 ] as const;

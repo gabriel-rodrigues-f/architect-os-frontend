@@ -196,7 +196,6 @@ const PISO_DO_SEM: readonly string[] = [
   "cap.risk.noReference",
   "cap.table.col.notAssessed",
   "config.operational.idleTimeoutImpact",
-  "dash.help.leadEvidence.how",
   "level.scale.none",
   "mentor.followUp.none",
   "roadmap.semRegua.hint",

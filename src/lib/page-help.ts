@@ -13,7 +13,6 @@ export const SECTION_HELP_KEYS = [
   "templates",
   "operational",
   "vocab",
-  "vocab.EVIDENCE_TYPE",
   "vocab.LEARNING_ITEM_TYPE",
   "vocab.ACTION_TYPE",
 ] as const;

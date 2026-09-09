@@ -23,12 +23,15 @@ type ScopedProfessional = Pick<Professional, "id" | "teamId">;
  *  - o GERENTE decide carreira (nível, conclusão da avaliação, desativação),
  *    compõe o time, cadastra tech lead e membro, calibra, administra as
  *    contas dos times dele;
- *  - o TECH LEAD pontua, revisa evidência, rege a régua com o gerente,
- *    mentora, vê o mapa técnico do time — e não cadastra nem conclui;
+ *  - o TECH LEAD pontua, registra o nível observado na 1:1, rege a régua com
+ *    o gerente, mentora, vê o mapa técnico do time — e não cadastra nem
+ *    conclui. (Até 2026-09-08 o ato que mais o distinguia era revisar
+ *    evidência; ela saiu do produto pela regra 17, e o que sobra no lugar é o
+ *    degrau de proficiência acordado na conversa.);
  *  - a PESSOA vê tudo o que é dela: radar, distâncias, aderência, evolução,
- *    extrato — e NÃO age sobre nada (dono, 2026-09-06): a autoavaliação, a
- *    evidência e o PDI dela são registrados por quem a lidera, na 1:1. A
- *    única exceção é o progresso na própria trilha.
+ *    extrato — e NÃO age sobre nada (dono, 2026-09-06): a autoavaliação e o
+ *    PDI dela são registrados por quem a lidera, na 1:1. A única exceção é o
+ *    progresso na própria trilha.
  */
 
 /**
@@ -73,9 +76,8 @@ export class UiAuthorizationPolicy {
    * AÇÃO sobre uma pessoa: quem a lidera por vínculo, ou o administrador (regra
    * 6). O suporte não, e NINGUÉM age sobre si (dono, 2026-09-06):
    * "autoavaliação é um processo de PDI e 1:1 — o líder faz perguntas e
-   * anota a opinião do membro". Quem lidera registra a autoavaliação, a
-   * evidência e o PDI; a pessoa LÊ tudo o que é dela (`canReadAbout`,
-   * `readsOwn`).
+   * anota a opinião do membro". Quem lidera registra a autoavaliação e o PDI;
+   * a pessoa LÊ tudo o que é dela (`canReadAbout`, `readsOwn`).
    */
   canActFor(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
     if (!professional) return false;
@@ -157,9 +159,14 @@ export class UiAuthorizationPolicy {
   }
 
   /**
-   * As AÇÕES da ficha de carreira — registrar evidência, levar distância ao
-   * PDI, reenviar evidência. Na própria ficha não há ação nenhuma: a ficha é
-   * leitura; quem registra evidência faz isso em Avaliações (dono, 2026-09-05).
+   * A AÇÃO da ficha de carreira: levar uma distância para o PDI
+   * (`TreatGapInPlanAction`). Eram três — registrar e reenviar evidência
+   * eram as outras duas —, e a evidência saiu do produto em 2026-09-08 (regra
+   * 17), então hoje o método guarda esse ato e mais nenhum.
+   *
+   * NA PRÓPRIA FICHA, NINGUÉM É LÍDER (dono, 2026-09-05): o `false` da
+   * primeira linha é essa regra, não "a ficha é leitura" — quem abre a ficha
+   * de um liderado continua com o botão.
    */
   canActOnCareerFileOf(user: SessionUser, professional: ScopedProfessional | undefined): boolean {
     if (this.isOwn(user, professional)) return false;
