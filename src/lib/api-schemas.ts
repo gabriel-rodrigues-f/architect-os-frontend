@@ -428,7 +428,7 @@ const professional = z.object({
   version: z.number(),
 });
 
-const assessmentParticipantRole = z.enum(["PROFESSIONAL", "TECH_LEAD"]);
+const assessmentParticipantRole = z.enum(["PROFESSIONAL", "TECH_LEAD", "ADMIN"]);
 
 const assessmentComment = z.object({
   id: z.string(),

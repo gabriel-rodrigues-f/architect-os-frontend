@@ -40,6 +40,19 @@ const comentarioDeOutraPessoa: AssessmentComment = {
 };
 
 /**
+ * 2026-09-09 — o administrador escreve na avaliação de qualquer pessoa (regra
+ * 6) e era desenhado como Tech Lead: o backend carimbava por `isLead`, que a
+ * guarda de escrita fazia chegar sempre verdadeiro. O crachá agora é dele.
+ */
+const comentarioDoAdministrador: AssessmentComment = {
+  id: "cmt-3",
+  authorUserId: "conta-administradora",
+  authorRole: "ADMIN",
+  text: "Ajustei o portfólio a pedido do gerente",
+  createdAt: "2026-03-06T09:00:00Z",
+};
+
+/**
  * A avaliação de Ana na fixture da casa nasce CONCLUÍDA, e o servidor tranca a
  * concluída (`AssessmentLockedError`). Estes casos escrevem comentário, então
  * a base deles precisa de uma avaliação ainda aberta — antes de 2026-09-09 a
@@ -56,7 +69,10 @@ const state: AppState = {
           status: "In Review" as const,
           items: a.items.map((it) =>
             it.competencyId === "cloud-k8s"
-              ? { ...it, comments: [comentarioDeOutraPessoa, comentarioDoAdmin] }
+              ? {
+                  ...it,
+                  comments: [comentarioDeOutraPessoa, comentarioDoAdmin, comentarioDoAdministrador],
+                }
               : it,
           ),
         },
@@ -105,6 +121,7 @@ describe("Avaliações — comentários por autor", () => {
               respostaCom([
                 comentarioDeOutraPessoa,
                 comentarioDoAdmin,
+                comentarioDoAdministrador,
                 {
                   id: "cmt-novo",
                   authorUserId: fixtureAssignedManagerUser.id,
@@ -122,6 +139,7 @@ describe("Avaliações — comentários por autor", () => {
               respostaCom([
                 comentarioDeOutraPessoa,
                 { ...comentarioDoAdmin, text: body.text, updatedAt: "2026-08-13T10:00:00Z" },
+                comentarioDoAdministrador,
               ]),
             );
           }
@@ -155,6 +173,16 @@ describe("Avaliações — comentários por autor", () => {
     expect(await screen.findByText("Você")).toBeTruthy();
     // o outro comentário (autor diferente) aparece com o rótulo do papel.
     expect(screen.getByText("Profissional")).toBeTruthy();
+  });
+
+  it("o comentário do administrador é assinado por ele, e não pelo Tech Lead", async () => {
+    await abrirNotas();
+
+    const cartao = (await screen.findByText("Ajustei o portfólio a pedido do gerente"))
+      .parentElement!;
+
+    expect(within(cartao).getByText("Administrador")).toBeTruthy();
+    expect(within(cartao).queryByText("Tech Lead")).toBeNull();
   });
 
   it("bloqueia salvar sem texto", async () => {
