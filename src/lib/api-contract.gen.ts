@@ -2848,15 +2848,12 @@ export interface paths {
                         date: string;
                         durationMin: number;
                         topic: string;
-                        /** @default [] */
-                        competencyIds?: string[];
                         /** @default  */
                         notes?: string;
                         /** @default  */
                         decisions?: string;
                         /** @default  */
                         actions?: string;
-                        nextSession?: string;
                     };
                 };
             };
@@ -2898,15 +2895,12 @@ export interface paths {
                         date: string;
                         durationMin: number;
                         topic: string;
-                        /** @default [] */
-                        competencyIds?: string[];
                         /** @default  */
                         notes?: string;
                         /** @default  */
                         decisions?: string;
                         /** @default  */
                         actions?: string;
-                        nextSession?: string;
                         scriptProvenance: string;
                     };
                 };
