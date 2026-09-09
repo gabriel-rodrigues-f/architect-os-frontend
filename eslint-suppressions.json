@@ -9,11 +9,6 @@
       "count": 3
     }
   },
-  "src/components/app/CapabilityHeatmap.tsx": {
-    "id-length": {
-      "count": 6
-    }
-  },
   "src/components/app/CommandWithReasonDialog.tsx": {
     "id-length": {
       "count": 1

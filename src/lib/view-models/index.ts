@@ -24,5 +24,6 @@ export * from "./vocabulary-editor";
 export * from "./team-transitions-view-model";
 export * from "./team-transfers-view-model";
 export * from "./coverage-table-order";
+export * from "./heatmap-row-order";
 export * from "./table-order";
 export * from "./accounts-directory";
