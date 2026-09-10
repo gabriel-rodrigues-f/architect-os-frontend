@@ -11,10 +11,12 @@ import {
   PageActions,
   PageHeader,
   QuerySection,
+  ScrollPane,
   SingleSelectFilter,
 } from "@/components/app";
 import { noticesApi } from "@/lib/api";
 import type { Notice, NoticeStatusFilter } from "@/lib/gateways/notices.gateway";
+import { PaneHeight } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { Selection } from "@/lib/selection";
@@ -172,7 +174,11 @@ function NoticesPage() {
             {data.notices.length === 0 ? (
               <EmptyState title={t("notices.empty")} hint={t("notices.emptyHint")} />
             ) : (
-              <div className="surface-card p-2">
+              <ScrollPane
+                label={t("pane.notices.label")}
+                height={PaneHeight.restOfPage()}
+                className="surface-card p-2"
+              >
                 <NoticeList
                   notices={vm.newestFirst(data.notices)}
                   unreadOf={(notice) => vm.isUnread(notice)}
@@ -185,7 +191,7 @@ function NoticesPage() {
                       }
                     : {})}
                 />
-              </div>
+              </ScrollPane>
             )}
           </>
         )}

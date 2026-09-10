@@ -165,7 +165,12 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
     renderWithApp(<TeamRulesPage />);
 
     expect(await screen.findByText("Kubernetes")).toBeTruthy();
-    expect(screen.getByText("Requer curadoria")).toBeTruthy();
+    /*
+     * Dono (2026-09-09): a fileira de chips saiu e o AVISO passou a nomear a
+     * capacidade — o selo "Requer curadoria" repetia o seletor e o aviso
+     * acendia sem dizer sobre quem. Agora o alerta diz o nome.
+     */
+    expect(screen.getByText(/Curadoria pendente em/).textContent).toContain("Cloud Architecture");
 
     await userEvent.click(screen.getByLabelText("Capacidades exigidas"));
     const opcao = screen.getByRole("option", { name: /Cloud Architecture/ });

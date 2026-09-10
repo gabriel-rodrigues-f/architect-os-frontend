@@ -7,12 +7,14 @@ import {
   OutOfReachScreen,
   PageHeader,
   SectionAction,
+  ScrollPane,
   SectionCard,
   TruncationNotice,
 } from "@/components/app";
 import { useSuccessToast, useToastSubmit } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { PaneHeight, PaneRhythm } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { requireTeamAnalysisReach } from "@/lib/route-guards";
@@ -167,7 +169,12 @@ function TeamTrainingNeeds() {
               showTopOnly: "needs.showTopOnly",
             }}
           />
-          <div className="scroll-visible overflow-x-auto">
+          <ScrollPane
+            label={t("pane.needsAggregated.label")}
+            height={PaneHeight.rowsWithColumnHeader(8)}
+            table
+            horizontal
+          >
             <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -196,7 +203,7 @@ function TeamTrainingNeeds() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollPane>
         </SectionCard>
 
         <SectionCard
@@ -218,35 +225,40 @@ function TeamTrainingNeeds() {
               showTopOnly: "needs.showTopOnly",
             }}
           />
-          <ul className="space-y-3">
-            {collective.map((n) => (
-              <CompetencyGapCard
-                key={n.competency.id}
-                name={n.competency.name}
-                gap={Math.round(n.avgGap)}
-                description={t("needs.recommended.summary", { n: n.people })}
-                action={
-                  interventionExists(n) ? (
-                    <Link
-                      to="/learning-paths"
-                      className="justify-self-start text-label text-primary hover:underline"
-                    >
-                      {t("needs.intervention.view")}
-                    </Link>
-                  ) : canCreateIntervention ? (
-                    <SectionAction
-                      label={t("needs.intervention.create")}
-                      disabled={submitting}
-                      onClick={() => createIntervention(n)}
-                    />
-                  ) : undefined
-                }
-              />
-            ))}
-            {!collective.length && (
-              <p className="text-sm text-muted-foreground">{t("needs.recommended.none")}</p>
-            )}
-          </ul>
+          <ScrollPane
+            label={t("pane.needsRecommended.label")}
+            height={PaneHeight.items(4, PaneRhythm.ITEM)}
+          >
+            <ul className="space-y-3">
+              {collective.map((n) => (
+                <CompetencyGapCard
+                  key={n.competency.id}
+                  name={n.competency.name}
+                  gap={Math.round(n.avgGap)}
+                  description={t("needs.recommended.summary", { n: n.people })}
+                  action={
+                    interventionExists(n) ? (
+                      <Link
+                        to="/learning-paths"
+                        className="justify-self-start text-label text-primary hover:underline"
+                      >
+                        {t("needs.intervention.view")}
+                      </Link>
+                    ) : canCreateIntervention ? (
+                      <SectionAction
+                        label={t("needs.intervention.create")}
+                        disabled={submitting}
+                        onClick={() => createIntervention(n)}
+                      />
+                    ) : undefined
+                  }
+                />
+              ))}
+              {!collective.length && (
+                <p className="text-sm text-muted-foreground">{t("needs.recommended.none")}</p>
+              )}
+            </ul>
+          </ScrollPane>
         </SectionCard>
       </div>
     </>

@@ -117,6 +117,17 @@
   /* Altura do cabeçalho do shell ([N-02]) — `ShellHeader` em `src/lib/design/shell.ts`. */
   --shell-header-h: 74px;
   /*
+    O RITMO de um bloco rolável (`PaneRhythm`, `src/lib/design/pane.ts`) —
+    dono, 2026-09-09: *"mantermos os títulos das páginas sempre visíveis"*. A
+    tela pede altura em ITENS ("três itens", "duas linhas") e o número de
+    pixel mora aqui, uma vez. `row` é a linha de tabela da casa (`py-2` sobre
+    o corpo de texto padrão); `item` é o item de lista em bloco.
+  */
+  --pane-row-h: 2.25rem;
+  --pane-item-h: 5.75rem;
+  /* A faixa de título e filtros acima de um bloco de página. */
+  --pane-page-inset-h: 16rem;
+  /*
     Número-síntese (referência FIAP 2026-09-06, §2 itens 1 e 2): o valor de
     um `KeyFigure`, 40–48 px — o C-Level lê o número antes do texto.
   */

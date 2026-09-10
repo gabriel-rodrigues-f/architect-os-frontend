@@ -13,6 +13,7 @@ import {
   StatusBadge,
 } from "@/components/app/ui-bits";
 import type { MultiSelectFilterOption } from "@/components/app/MultiSelectFilter";
+import { ScrollPane } from "@/components/app/ScrollPane";
 import { TruncatedText } from "@/components/app/TruncatedText";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ import { usePendingTeamTransfers, useSuccessToast } from "@/hooks";
 import { teamsApi, teamTransfersApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
+import { PaneHeight } from "@/lib/design";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
@@ -531,83 +533,91 @@ export function TeamRosterView({
     teams.find((team) => team.id === teamId)?.name ?? AUSENCIA;
 
   return view === "cards" ? (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {pageItems.map(({ professional: a, topGaps: top, avg, hasOfficial }) => (
-        <div key={a.id} className="surface-card surface-interactive p-5">
-          <div className="flex items-start gap-3">
-            <Initials name={a.name} />
-            <div className="min-w-0 flex-1">
-              <Link
-                to="/professionals/$professionalId"
-                params={{ professionalId: a.id }}
-                className="font-display text-base font-semibold hover:underline"
-              >
-                {a.name}
-              </Link>
-              <span className="block truncate text-xs text-muted-foreground">
-                {position.labelOf(a)}
-              </span>
-              <TruncatedText text={a.email} className="block text-xs text-muted-foreground" />
-              {pendingTransferBadge(a) && <div className="mt-1.5">{pendingTransferBadge(a)}</div>}
+    <ScrollPane label={t("pane.teamRoster.label")} height={PaneHeight.restOfPage()}>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {pageItems.map(({ professional: a, topGaps: top, avg, hasOfficial }) => (
+          <div key={a.id} className="surface-card surface-interactive p-5">
+            <div className="flex items-start gap-3">
+              <Initials name={a.name} />
+              <div className="min-w-0 flex-1">
+                <Link
+                  to="/professionals/$professionalId"
+                  params={{ professionalId: a.id }}
+                  className="font-display text-base font-semibold hover:underline"
+                >
+                  {a.name}
+                </Link>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {position.labelOf(a)}
+                </span>
+                <TruncatedText text={a.email} className="block text-xs text-muted-foreground" />
+                {pendingTransferBadge(a) && <div className="mt-1.5">{pendingTransferBadge(a)}</div>}
+              </div>
+              {decidesCareerOf(a) && (
+                <div className="flex shrink-0 gap-1">
+                  {a.active ? (
+                    <button
+                      type="button"
+                      onClick={() => onTransition(a)}
+                      aria-label={t("team.transition.action", { nome: a.name })}
+                      title={t("team.transition.action", { nome: a.name })}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <TrendingUp className="h-3.5 w-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onReactivate(a)}
+                      aria-label={`${t("team.reactivate.action")} ${a.name}`}
+                      title={t("team.reactivate.action")}
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-            {decidesCareerOf(a) && (
-              <div className="flex shrink-0 gap-1">
-                {a.active ? (
-                  <button
-                    type="button"
-                    onClick={() => onTransition(a)}
-                    aria-label={t("team.transition.action", { nome: a.name })}
-                    title={t("team.transition.action", { nome: a.name })}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  >
-                    <TrendingUp className="h-3.5 w-3.5" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onReactivate(a)}
-                    aria-label={`${t("team.reactivate.action")} ${a.name}`}
-                    title={t("team.reactivate.action")}
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  >
-                    <UserCheck className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
 
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
-            <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
-          </div>
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
+              <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
+            </div>
 
-          <div className="mt-4 space-y-1.5">
-            <SectionHeading as="p" muted>
-              {t("team.card.topGaps")}
-            </SectionHeading>
-            {top.map((g) => (
-              <div
-                key={g.item.competencyId}
-                className="flex items-center justify-between gap-2 text-sm"
-              >
-                <TruncatedText text={g.competency?.name ?? ""} className="flex-1" />
-                <GapBadge gap={g.gap} />
-              </div>
-            ))}
-            {top.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                {hasOfficial
-                  ? t("team.card.noGaps")
-                  : EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}
-              </p>
-            )}
+            <div className="mt-4 space-y-1.5">
+              <SectionHeading as="p" muted>
+                {t("team.card.topGaps")}
+              </SectionHeading>
+              {top.map((g) => (
+                <div
+                  key={g.item.competencyId}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
+                  <TruncatedText text={g.competency?.name ?? ""} className="flex-1" />
+                  <GapBadge gap={g.gap} />
+                </div>
+              ))}
+              {top.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {hasOfficial
+                    ? t("team.card.noGaps")
+                    : EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </ScrollPane>
   ) : (
-    <div className="scroll-visible surface-card overflow-x-auto">
+    <ScrollPane
+      label={t("pane.teamRoster.label")}
+      height={PaneHeight.restOfPage()}
+      table
+      horizontal
+      className="surface-card"
+    >
       <table className="w-full min-w-[760px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -717,6 +727,6 @@ export function TeamRosterView({
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollPane>
   );
 }

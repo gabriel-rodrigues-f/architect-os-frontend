@@ -10,12 +10,12 @@ import {
   MultiSelectFilter,
   PageHeader,
   QuerySection,
+  ScrollPane,
   SectionCard,
   SingleSelectFilter,
   TeamChoiceField,
 } from "@/components/app";
 import { FilterField } from "@/components/app/FilterField";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAsyncSubmit, useSuccessToast, useTeamRuleEditorViewModel } from "@/hooks";
@@ -25,6 +25,7 @@ import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import type { CareerLevel } from "@/lib/domain";
 import type { TeamRuleView } from "@/lib/gateways/career.gateway";
+import { PaneHeight } from "@/lib/design";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -245,8 +246,10 @@ function TeamRuleEditor({
   const { submitting, error, run } = useAsyncSubmit(t("teamRules.save.error"));
 
   const capabilities = store.capabilities.filter((capability) => capability.active);
-  const chosenCapabilities = capabilities.filter((capability) =>
-    editor.capabilityIds.includes(capability.id),
+  const aguardandoCuradoria = capabilities.filter(
+    (capability) =>
+      editor.capabilityIds.includes(capability.id) &&
+      capability.curation.status === "REQUIRES_CURATION",
   );
   const competencies = store.competencies.filter(
     (competency) => competency.active && editor.capabilityIds.includes(competency.capabilityId),
@@ -352,27 +355,18 @@ function TeamRuleEditor({
           </FilterField>
         </div>
 
-        {chosenCapabilities.length > 0 && (
-          <ul className="mt-4 flex flex-wrap gap-2">
-            {chosenCapabilities.map((capability) => (
-              <li
-                key={capability.id}
-                className="flex items-center gap-1.5 rounded-md bg-secondary px-2.5 py-1.5 text-sm"
-              >
-                <span>{capability.name}</span>
-                {capability.curation.status === "REQUIRES_CURATION" && (
-                  <Badge variant="outline">{t("teamRules.capability.requiresCuration")}</Badge>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {chosenCapabilities.some(
-          (capability) => capability.curation.status === "REQUIRES_CURATION",
-        ) && (
+        {/*
+          Dono (2026-09-09): a fileira de chips saiu — ela não filtrava nada,
+          era a repetição do que o seletor "Capacidades exigidas" já diz. O
+          que ela carregava de único era o selo de curadoria pendente, e isso
+          NÃO se perde: o aviso abaixo passou a NOMEAR as capacidades, que era
+          justamente o que faltava nele.
+        */}
+        {aguardandoCuradoria.length > 0 && (
           <Callout tone="warning" className="mt-3">
-            {t("teamRules.capability.curationNotice")}
+            {t("teamRules.capability.curationNotice", {
+              capacidades: aguardandoCuradoria.map((capability) => capability.name).join(", "),
+            })}
           </Callout>
         )}
       </SectionCard>
@@ -384,7 +378,12 @@ function TeamRuleEditor({
         {competencies.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("teamRules.competencies.empty")}</p>
         ) : (
-          <div className="scroll-visible overflow-x-auto">
+          <ScrollPane
+            label={t("pane.teamRuleCompetencies.label")}
+            height={PaneHeight.rowsWithColumnHeader(8)}
+            table
+            horizontal
+          >
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -467,7 +466,7 @@ function TeamRuleEditor({
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollPane>
         )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">

@@ -11,6 +11,7 @@ import {
   PageAction,
   PageHeader,
   QuerySection,
+  ScrollPane,
   RoleSelect,
   SectionCard,
   SingleSelectFilter,
@@ -18,6 +19,7 @@ import {
   StatusBadge,
   TeamChoiceField,
 } from "@/components/app";
+import { PaneHeight } from "@/lib/design";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -216,7 +218,12 @@ function UsersDirectory() {
                   empty={{ message: EmptySubject.TEAM.title(t) }}
                 />
               </div>
-              <div className="scroll-visible overflow-x-auto">
+              <ScrollPane
+                label={t("pane.usersRegistry.label")}
+                height={PaneHeight.restOfPage()}
+                table
+                horizontal
+              >
                 <table className="w-full min-w-[840px] text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -327,7 +334,7 @@ function UsersDirectory() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollPane>
             </SectionCard>
           )}
         </QuerySection>
