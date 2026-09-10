@@ -9,16 +9,13 @@ import {
   EmptyStateCallToAction,
   EvaluatorDistributionCard,
   PageHeader,
-  PersonCombobox,
   QuerySection,
   ScrollPane,
   SingleSelectFilter,
   StatCard,
-  WorkAssistanceSection,
 } from "@/components/app";
-import { Label } from "@/components/ui/label";
 import { useSelectionEmptyState } from "@/components/app/EmptySelection";
-import { calibrationApi, teamsApi, workAssistantsApi } from "@/lib/api";
+import { calibrationApi, teamsApi } from "@/lib/api";
 import { Registration } from "@/lib/registration";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
@@ -26,7 +23,6 @@ import { PaneHeight } from "@/lib/design";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { PersonPicker } from "@/lib/person-selection";
 import { requireCalibrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
@@ -118,7 +114,6 @@ function CalibrationBoard() {
   const vm = useCalibrationViewModel();
   const store = useStore();
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
-  const [assistedProfessionalId, setAssistedProfessionalId] = useState<string | null>(null);
   /*
    * Bug irmão do banco vazio (dono, 2026-09-08): sem ciclo ativo o servidor
    * responde `activeCycleId: ""`, e o `??` deixava a string VAZIA passar —
@@ -146,8 +141,11 @@ function CalibrationBoard() {
 
       {cycleId === null ? (
         /*
-         * Dono (2026-09-08): os DOIS filtros desta tela ficam bloqueados sem
-         * dado; o cadastro de ciclo vai para o centro do quadro principal.
+         * Dono (2026-09-08): o filtro desta tela fica bloqueado sem dado; o
+         * cadastro de ciclo vai para o centro do quadro principal. Eram DOIS
+         * até 2026-09-10, quando a leitura de apoio à calibração saiu do
+         * produto e levou junto o seletor de pessoa que só existia para
+         * alimentá-la (ADR-0103 do backend). O de ciclo é da tela, e fica.
          */
         <EmptyStateCallToAction
           subject={EmptySubject.CYCLE}
@@ -166,11 +164,6 @@ function CalibrationBoard() {
               empty={cicloVazio}
             />
           </div>
-
-          <CalibrationAssistant
-            selected={assistedProfessionalId}
-            onSelect={setAssistedProfessionalId}
-          />
 
           <QuerySection
             query={query}
@@ -245,87 +238,5 @@ function CalibrationBoard() {
         </>
       )}
     </>
-  );
-}
-
-/**
- * A ponte entre uma tela POR CICLO e uma rota POR PESSOA
- * (`/professionals/:id/calibration-assistance`).
- *
- * O seletor é explícito de propósito: a tela poderia escolher alguém sozinha —
- * o primeiro do roster, o de maior divergência — e escolher a pessoa errada
- * numa tela de calibração é pior do que não sugerir nada. Enquanto ninguém
- * escolhe, não há botão: é a mesma recusa de sempre, a aplicação não desenha
- * quando não sabe.
- *
- * A MESMA recusa governa agora o bloco inteiro. Sem provedor de linguagem
- * natural configurado, "Ler apoio à calibração" só tem um destino, e é o erro
- * — o padrão que o dono já reprovou duas vezes (a caixa de comentário e o
- * bloco do Plano de Ação): oferecer ação que vai ser recusada. A tela
- * PERGUNTA ao servidor, que é quem sabe: a escolha do provedor mora no boot
- * do backend, e ler variável de ambiente no navegador seria mover a decisão
- * para o lado errado da porta.
- *
- * Três estados, e o terceiro é o que importa: enquanto a pergunta não volta,
- * nada é desenhado; respondida NÃO, a tela diz que a leitura não está
- * configurada e o seletor some junto (sem leitura para gerar, ele não serve
- * para nada); e se a PERGUNTA falhar, a tela também não desenha — mas não
- * afirma "não está configurada", porque isso ela não sabe.
- */
-function CalibrationAssistant({
-  selected,
-  onSelect,
-}: {
-  selected: string | null;
-  onSelect: (professionalId: string | null) => void;
-}) {
-  const { t } = useI18n();
-  const store = useStore();
-  const user = useCurrentUser();
-  const availability = useQuery({
-    queryKey: ["assistants", "availability"],
-    queryFn: workAssistantsApi.naturalLanguageReadingAvailability,
-    staleTime: 5 * 60_000,
-  });
-
-  if (availability.data === undefined) return null;
-
-  if (!availability.data.naturalLanguageReading) {
-    return (
-      <div className="mb-6">
-        <Callout tone="info">
-          <strong>{t("ai.calibration.unavailable.title")}</strong>{" "}
-          {t("ai.calibration.unavailable.hint")}
-        </Callout>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mb-6">
-      <div className="mb-4 max-w-xs">
-        <Label htmlFor="calibration-assistance-professional">{t("ai.calibration.person")}</Label>
-        <PersonCombobox
-          id="calibration-assistance-professional"
-          picker={PersonPicker.one(
-            defaultUiAuthorizationPolicy.mentorableBy(user, store.professionals),
-            selected,
-          )}
-          onChange={([id]) => onSelect(id ?? null)}
-          label={t("ai.calibration.person")}
-          placeholder={t("ai.calibration.personNone")}
-          className="mt-1"
-        />
-      </div>
-      {selected !== null && (
-        <WorkAssistanceSection
-          title={t("ai.calibration.title")}
-          description={t("ai.calibration.subtitle")}
-          actionLabel={t("ai.calibration.action")}
-          queryKey={["assistants", "calibration-assistance", selected]}
-          ask={() => workAssistantsApi.assistAssessmentCalibration(selected)}
-        />
-      )}
-    </div>
   );
 }

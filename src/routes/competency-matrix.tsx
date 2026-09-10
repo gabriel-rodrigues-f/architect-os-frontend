@@ -25,7 +25,6 @@ import {
   ScrollPane,
   SectionCard,
   SingleSelectFilter,
-  WorkAssistanceSection,
 } from "@/components/app";
 import { PaneHeight } from "@/lib/design";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { LEVELS, type Competency, type Capability } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { initialSearchParam } from "@/lib/search-params";
-import { workAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { CatalogImportSample } from "@/lib/catalog-import-sample";
@@ -268,17 +266,6 @@ function MatrixScreen() {
           ) : undefined
         }
       />
-
-      {isAdmin && (
-        <WorkAssistanceSection
-          className="mb-6"
-          title={t("ai.catalog.title")}
-          description={t("ai.catalog.subtitle")}
-          actionLabel={t("ai.catalog.action")}
-          queryKey={["assistants", "catalog-quality-review"]}
-          ask={() => workAssistantsApi.reviewCatalogQuality()}
-        />
-      )}
 
       <SectionCard
         title={t("matrix.levels.title")}

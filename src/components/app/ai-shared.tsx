@@ -26,7 +26,7 @@ import {
   type WrittenByPerson,
 } from "@/lib/assistants";
 import type { PersonAdvice } from "@/lib/gateways/person-assistants.gateway";
-import type { StagnationAlert, WorkAssistance } from "@/lib/gateways/work-assistants.gateway";
+import type { StagnationAlert } from "@/lib/gateways/work-assistants.gateway";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -608,82 +608,6 @@ export function ProfiledAdviceSection<T extends PersonAdvice & { outline?: strin
           />
         )}
       </AiRunResult>
-    </SectionCard>
-  );
-}
-
-/**
- * ADR-0088 — o que um assistente do TRABALHO desenha, e a ausência que é o
- * produto: **não há veredito**. Nenhum destes quatro aprova, rejeita, nota ou
- * classifica; quem decide é o humano, pela operação que já existe ao lado.
- *
- * `observations` (o que o sistema apurou por consulta) vem ANTES de `reading`
- * (a interpretação, a única parte que a IA escreve), e é assim que a tela
- * repete a primeira regra da casa sem precisar de uma frase explicando-a.
- */
-export function WorkAssistanceBody({ assistance }: { assistance: WorkAssistance }) {
-  const { t } = useI18n();
-  return (
-    <AiSuggestionFrame>
-      <AdviceFactList
-        label={t("ai.work.observations")}
-        items={assistance.observations}
-        icon={Search}
-      />
-      <AdviceText text={assistance.reading} className="mt-3" />
-      <p className="mt-3 text-xs text-muted-foreground">{t("ai.work.disclosure")}</p>
-    </AiSuggestionFrame>
-  );
-}
-
-export function WorkAssistanceRun({
-  actionLabel,
-  queryKey,
-  ask,
-}: {
-  actionLabel: string;
-  queryKey: readonly unknown[];
-  ask: () => Promise<WorkAssistance>;
-}) {
-  const run = useAssistantRun<true, WorkAssistance>(queryKey, () => ask());
-  return (
-    <>
-      <AiGenerateButton
-        label={actionLabel}
-        running={run.running}
-        onGenerate={() => {
-          run.generate(true);
-        }}
-      />
-      <AiRunResult run={run}>
-        {(assistance) => <WorkAssistanceBody assistance={assistance} />}
-      </AiRunResult>
-    </>
-  );
-}
-
-export function WorkAssistanceSection({
-  title,
-  description,
-  actionLabel,
-  queryKey,
-  ask,
-  className,
-}: {
-  title: string;
-  description: string;
-  actionLabel: string;
-  queryKey: readonly unknown[];
-  ask: () => Promise<WorkAssistance>;
-  className?: string;
-}) {
-  return (
-    <SectionCard
-      title={title}
-      description={description}
-      {...(className === undefined ? {} : { className })}
-    >
-      <WorkAssistanceRun actionLabel={actionLabel} queryKey={queryKey} ask={ask} />
     </SectionCard>
   );
 }

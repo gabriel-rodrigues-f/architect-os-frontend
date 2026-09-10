@@ -283,7 +283,10 @@ describe("procedência da cópia do contrato do backend", () => {
     // `SessionScriptProvenanceIncompleteError` e
     // `SessionScriptProvenanceUnreadableError`, as duas do selo de procedência
     // do roteiro de 1:1. Sem geração não há selo a conferir.
-    expect(Object.keys(CLASSES).length).toBe(190);
+    // AS DUAS LEITURAS DE APOIO SAEM (dono, 2026-09-10): 190 → 189. Saiu
+    // `CalibrationAssistanceNotLeadError`, o 404 de alcance da leitura de
+    // apoio à calibração. A curadoria era de admin e não tinha classe própria.
+    expect(Object.keys(CLASSES).length).toBe(189);
   });
 
   /**

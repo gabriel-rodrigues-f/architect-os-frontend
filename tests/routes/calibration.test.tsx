@@ -90,9 +90,9 @@ const calibrationRoute: FetchRoute = (href) =>
 /**
  * Fatia CALIBRAÇÃO — o cartão nomeia o time em vez de mostrar o
  * identificador, então a tela passou a pedir a listagem mínima de times
- * (`GET /teams`), e a leitura de apoio só é oferecida se houver provedor
- * (`GET /assistants/availability`). As duas são rotas de APOIO: o que estes
- * casos afirmam continua sendo o conteúdo da calibração.
+ * (`GET /teams`). É rota de APOIO: o que estes casos afirmam continua sendo o
+ * conteúdo da calibração. A pergunta de disponibilidade de IA saiu daqui em
+ * 2026-09-10, com a leitura de apoio que ela governava.
  */
 const teamsRoute: FetchRoute = (href, init) =>
   href.endsWith(apiPath("/teams")) && (init?.method ?? "GET") === "GET"

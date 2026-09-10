@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -80,13 +80,6 @@ const teamsRoute: FetchRoute = (href, init) =>
       ])
     : undefined;
 
-const leituraDisponivel =
-  (naturalLanguageReading: boolean): FetchRoute =>
-  (href) =>
-    href.endsWith(apiPath("/assistants/availability"))
-      ? jsonResponse({ naturalLanguageReading })
-      : undefined;
-
 const montarTela = (routes: FetchRoute[]) => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
@@ -112,7 +105,7 @@ afterEach(() => {
 
 describe("a tela diz o que ela é: ela olha quem AVALIA", () => {
   it("o subtítulo separa quem avalia de quem é avaliado", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
     expect(
@@ -122,7 +115,7 @@ describe("a tela diz o que ela é: ela olha quem AVALIA", () => {
   });
 
   it("a ajuda do cabeçalho faz a pergunta que a tela responde", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
     const usuario = userEvent.setup();
 
     await screen.findByText("Marina Lopes");
@@ -134,7 +127,7 @@ describe("a tela diz o que ela é: ela olha quem AVALIA", () => {
 
 describe("os gráficos se explicam", () => {
   it("diz o que o eixo conta e o que é L1…L5 — nenhum dos dois tinha rótulo", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
     const marina = cartaoDe("Marina Lopes");
@@ -143,7 +136,7 @@ describe("os gráficos se explicam", () => {
   });
 
   it("o 'vs geral' nomeia o número contra o qual compara", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
     expect(
@@ -152,7 +145,7 @@ describe("os gráficos se explicam", () => {
   });
 
   it("a linha de notas diz que ela é o PESO do avaliador na média", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
     const linha = within(cartaoDe("Marina Lopes")).getByText(/20 nota/);
@@ -165,14 +158,14 @@ describe("os gráficos se explicam", () => {
    * cartão acender e o vizinho não ficava sem a régua que separa os dois.
    */
   it("o limiar que acende o aviso aparece na tela, e é o número da classe", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
     expect(within(cartaoDe("Marina Lopes")).getByRole("status").textContent).toContain("0.50");
   });
 
   it("quem não passa do limiar não acende — e o cartão explica isso no ?", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
     const usuario = userEvent.setup();
 
     await screen.findByText("Ricardo Nunes");
@@ -186,7 +179,7 @@ describe("os gráficos se explicam", () => {
 
 describe("o aviso é acionável: com quem falar e o que reconferir", () => {
   it("nomeia o avaliador com quem conversar", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
     expect(within(cartaoDe("Marina Lopes")).getByRole("status").textContent).toContain(
@@ -200,7 +193,7 @@ describe("o aviso é acionável: com quem falar e o que reconferir", () => {
    * concentrou 9 das 20 notas em L4 (45% contra 25% do ciclo).
    */
   it("aponta quantas notas reconferir, e em qual nível", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
     const aviso = within(cartaoDe("Marina Lopes")).getByRole("status").textContent ?? "";
@@ -211,63 +204,11 @@ describe("o aviso é acionável: com quem falar e o que reconferir", () => {
 
 describe("DEFEITO: o time aparecia como identificador cru", () => {
   it("mostra o nome cadastrado do time, e nunca o identificador", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
+    montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
     const marina = cartaoDe("Marina Lopes");
     expect(within(marina).getByText("Dados e Inteligência")).toBeTruthy();
     expect(marina.textContent).not.toContain("seed-completo-time-dados");
-  });
-});
-
-describe("DEFEITO: o botão de leitura era oferecido sem provedor de IA", () => {
-  it("com provedor configurado, o seletor e o botão existem — e a pergunta saiu para o servidor", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(true)]);
-    const usuario = userEvent.setup();
-
-    await usuario.click(
-      await screen.findByRole("combobox", { name: /Profissional para a leitura de apoio/ }),
-    );
-    await usuario.click(await screen.findByRole("option", { name: /Bruno Almeida/ }));
-
-    expect(await screen.findByRole("button", { name: /Ler apoio à calibração/ })).toBeTruthy();
-    expect(
-      fetchMock.mock.calls.some((chamada) =>
-        String(chamada[0]).includes(apiPath("/assistants/availability")),
-      ),
-      "a tela precisa PERGUNTAR antes de desenhar o botão",
-    ).toBe(true);
-  });
-
-  it("sem provedor, a tela diz que a leitura não está configurada em vez de oferecer o clique", async () => {
-    montarTela([calibrationRoute, teamsRoute, leituraDisponivel(false)]);
-
-    expect(
-      await screen.findByText(/leitura em linguagem natural não está configurada/i),
-    ).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Ler apoio à calibração/ })).toBeNull();
-    expect(
-      screen.queryByRole("combobox", { name: /Profissional para a leitura de apoio/ }),
-      "sem leitura para gerar, o seletor de pessoa não tem para que servir",
-    ).toBeNull();
-  });
-
-  /**
-   * A tela não desenha quando não sabe — a mesma recusa que já governa o
-   * seletor de pessoa. Se a pergunta falha, não há botão E não há a frase
-   * "não está configurada", que seria uma afirmação que ninguém verificou.
-   */
-  it("se a pergunta falha, a tela não oferece o botão nem afirma o que não sabe", async () => {
-    const perguntaQuebrada: FetchRoute = (href) =>
-      href.endsWith(apiPath("/assistants/availability"))
-        ? jsonResponse({ erro: "sem resposta" }, 503)
-        : undefined;
-    montarTela([calibrationRoute, teamsRoute, perguntaQuebrada]);
-
-    await screen.findByText("Marina Lopes");
-    await waitFor(() =>
-      expect(screen.queryByRole("button", { name: /Ler apoio à calibração/ })).toBeNull(),
-    );
-    expect(screen.queryByText(/não está configurada/i)).toBeNull();
   });
 });

@@ -28,12 +28,14 @@ import pt from "@/locales/pt.json";
  * sendo o INVENTÁRIO de quem tem assistente, e sair dela é o que uma tela sem
  * assistente faz.
  */
-const TELAS_COM_IA = [
-  "professionalRoadmap",
-  "developmentPlans",
-  "calibration",
-  "competencyMatrix",
-] as const;
+/**
+ * AS DUAS LEITURAS DE APOIO SAEM (dono, 2026-09-10, ADR-0103 do backend):
+ * `calibration` e `competencyMatrix` saem da lista pelo mesmo motivo que a
+ * Mentoria e 1:1 saiu — as duas deixaram de ter assistente, e a ajuda delas
+ * deixa de prometer o que a IA faz porque não há IA a explicar. A lista
+ * continua sendo o INVENTÁRIO de quem tem assistente.
+ */
+const TELAS_COM_IA = ["professionalRoadmap", "developmentPlans"] as const;
 
 const PAPEL = { pt: /\bA IA\b/, en: /\bThe AI\b/ };
 const LIMITE = { pt: /não decide/i, en: /does not decide/i };
@@ -85,11 +87,13 @@ describe("a ajuda de toda tela com IA diz o que a IA faz e o que ela NÃO decide
 
   /**
    * O piso desceu de 5 para 4 em 2026-09-09, quando `mentoring` saiu do
-   * inventário com a IA daquela tela. Ele existe contra a catraca que emudece
-   * — uma lista vazia passaria calada —, e por isso acompanha o produto para
-   * baixo em vez de obrigar alguém a inventar uma tela para caber.
+   * inventário com a IA daquela tela, e de 4 para 2 em 2026-09-10, quando
+   * `calibration` e `competencyMatrix` saíram com as duas leituras de apoio.
+   * Ele existe contra a catraca que emudece — uma lista vazia passaria calada
+   * —, e por isso acompanha o produto para baixo em vez de obrigar alguém a
+   * inventar uma tela para caber.
    */
   it("o inventário não está vazio — catraca vazia é catraca decorativa", () => {
-    expect(TELAS_COM_IA.length).toBeGreaterThanOrEqual(4);
+    expect(TELAS_COM_IA.length).toBeGreaterThanOrEqual(2);
   });
 });

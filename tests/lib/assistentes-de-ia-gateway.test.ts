@@ -141,17 +141,10 @@ describe("assistentes da pessoa — a URL de cada operação de negócio", () =>
 });
 
 describe("assistentes do trabalho — a URL e a recusa do serviço", () => {
-  const apuracao = { subject: "assunto", observations: ["apurado"], reading: "leitura" };
-
-  it("a calibração e o aviso de estagnação são da pessoa", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ data: apuracao }));
-    await trabalho().assistAssessmentCalibration("ana");
-    expect(urlDaChamada().pathname).toBe("/api/v1/professionals/ana/calibration-assistance");
-
+  it("o aviso de estagnação é da pessoa", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({ data: { subject: "s", signals: [], requiresAttention: false, alert: null } }),
     );
-    fetchMock.mockClear();
     await trabalho().alertAboutStagnation("ana");
     expect(urlDaChamada().pathname).toBe("/api/v1/professionals/ana/stagnation-alert");
   });
@@ -166,12 +159,6 @@ describe("assistentes do trabalho — a URL e a recusa do serviço", () => {
     expect(lido.requiresAttention).toBe(false);
     expect(lido.alert).toBeNull();
     expect(lido.signals).toEqual(["dois ciclos"]);
-  });
-
-  it("a curadoria do catálogo não fala de pessoa nenhuma", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ data: apuracao }));
-    await trabalho().reviewCatalogQuality();
-    expect(urlDaChamada().pathname).toBe("/api/v1/capabilities/quality-review");
   });
 
   /**
@@ -191,7 +178,7 @@ describe("assistentes do trabalho — a URL e a recusa do serviço", () => {
       ),
     );
     const falha = await trabalho()
-      .reviewCatalogQuality()
+      .alertAboutStagnation("ana")
       .catch((erro: unknown) => erro);
     expect(falha).toBeInstanceOf(ApiError);
     expect((falha as ApiError).status).toBe(503);
@@ -229,7 +216,7 @@ describe("tempo-limite — a única rota da casa que pode demorar minutos", () =
         }),
     );
     const falha = await trabalho(5)
-      .reviewCatalogQuality()
+      .alertAboutStagnation("ana")
       .catch((erro: unknown) => erro);
     expect(falha).toBeInstanceOf(AssistantTimedOutError);
   });
