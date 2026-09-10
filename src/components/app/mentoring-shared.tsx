@@ -1,4 +1,6 @@
 import { AlertCircle, X } from "lucide-react";
+import { PaneHeight } from "@/lib/design/pane";
+import { ScrollPane } from "./ScrollPane";
 import { useMemo, useState } from "react";
 
 import { PageAction } from "@/components/app/PageAction";
@@ -304,20 +306,31 @@ function MentoringTimelineItem({
   );
 }
 
+/**
+ * O bloco 8 da padronização do dono (2026-09-09): *"insira scroll na linha do
+ * tempo da mentoria para que não precisemos scrollar a página"*.
+ *
+ * Chegou depois dos outros treze porque o arquivo estava ocupado pela fatia
+ * que tirou a IA desta tela. Com ele livre, é o mesmo `ScrollPane` das demais
+ * — nenhuma medida nova, nenhuma classe à mão.
+ *
+ * O vazio fica FORA da caixa: uma caixa rolável em volta de uma frase de duas
+ * linhas é moldura sem quadro.
+ */
 export function MentoringTimeline({ sessions }: { sessions: MentoringSession[] }) {
   const { t } = useI18n();
   const selectors = useSelectors();
+  if (sessions.length === 0) {
+    return <p className="text-sm text-muted-foreground">{t("mentor.timeline.empty")}</p>;
+  }
   return (
-    <>
-      {sessions.length === 0 && (
-        <p className="text-sm text-muted-foreground">{t("mentor.timeline.empty")}</p>
-      )}
+    <ScrollPane label={t("pane.mentoringTimeline.label")} height={PaneHeight.restOfPage()}>
       <ol className="relative space-y-6 border-l border-border pl-6">
         {sessions.map((s) => (
           <MentoringTimelineItem key={s.id} session={s} selectors={selectors} />
         ))}
       </ol>
-    </>
+    </ScrollPane>
   );
 }
 

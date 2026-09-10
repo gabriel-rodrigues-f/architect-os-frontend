@@ -2050,6 +2050,7 @@
   "pane.calibrationCharts.label": "Score distribution by evaluator",
   "pane.teamsRegistry.label": "Registered teams",
   "pane.usersRegistry.label": "Registered accounts",
+  "pane.mentoringTimeline.label": "Mentoring timeline",
   "pane.notices.label": "Notice list",
   "path.list.title": "Registered paths",
   "path.list.subtitle": "Each path with team progress, covered competencies and who is enrolled."

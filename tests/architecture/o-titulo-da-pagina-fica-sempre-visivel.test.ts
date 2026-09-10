@@ -22,9 +22,8 @@ import { raizDoFrontend } from "../helpers/catraca";
  * tem de estar DENTRO do componente único. Prova do vermelho no dia:
  * nenhum dos onze arquivos importava `ScrollPane`.
  *
- * O bloco 8 (Mentoria e 1:1 → Linha do Tempo) está FORA desta régua de
- * propósito: outro agente da frota estava dentro do arquivo, e o dono aplica
- * aquele depois.
+ * O bloco 8 (Mentoria e 1:1 → Linha do Tempo) entrou depois, quando o arquivo
+ * ficou livre: a fatia que tirava a IA daquela tela estava dentro dele.
  */
 const fonte = (caminho: string) => readFileSync(join(raizDoFrontend, caminho), "utf8");
 
@@ -64,6 +63,11 @@ const BLOCOS: readonly { pedido: string; arquivo: string; rotulo: string }[] = [
     pedido: "7 — Trilhas de Aprendizagem, a lista de trilhas",
     arquivo: join("src", "routes", "learning-paths.tsx"),
     rotulo: "pane.learningPaths.label",
+  },
+  {
+    pedido: "8 — Mentoria e 1:1, Linha do Tempo",
+    arquivo: join("src", "components", "app", "mentoring-shared.tsx"),
+    rotulo: "pane.mentoringTimeline.label",
   },
   {
     pedido: "9 — Ciclos de Avaliação, Comparação de Competências",

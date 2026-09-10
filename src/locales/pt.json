@@ -2050,6 +2050,7 @@
   "pane.calibrationCharts.label": "Distribuição de notas por avaliador",
   "pane.teamsRegistry.label": "Times cadastrados",
   "pane.usersRegistry.label": "Contas cadastradas",
+  "pane.mentoringTimeline.label": "Linha do tempo da mentoria",
   "pane.notices.label": "Lista de avisos",
   "path.list.title": "Trilhas cadastradas",
   "path.list.subtitle": "Cada trilha com progresso do time, competências cobertas e quem está inscrito."
