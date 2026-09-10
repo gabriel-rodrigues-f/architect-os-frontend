@@ -68,7 +68,7 @@ function renderAs(user: SessionUser, page: ReactNode) {
 const FATIAS_DO_SISTEMA: readonly { nome: string; pagina: () => ReactNode }[] = [
   { nome: "Réguas e limiares", pagina: paginaDe(ScoringRulersRoute) },
   { nome: "Textos", pagina: paginaDe(TextTemplatesRoute) },
-  { nome: "Catálogo", pagina: paginaDe(CatalogPolicyRoute) },
+  { nome: "Curadoria do Catálogo", pagina: paginaDe(CatalogPolicyRoute) },
   { nome: "Vocabulários", pagina: paginaDe(VocabulariesRoute) },
 ];
 

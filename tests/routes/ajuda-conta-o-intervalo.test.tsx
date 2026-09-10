@@ -66,17 +66,17 @@ describe("o ? da Matriz conta como a capacidade nasce e o que a deixa pronta", (
 });
 
 /**
- * Onda do GRUPO (dono, 2026-09-10): os dois grupos viraram TELAS — Catálogo e
+ * Onda do GRUPO (dono, 2026-09-10): os dois grupos viraram TELAS — Curadoria do Catálogo e
  * Elegibilidade —, e o `?` deles subiu para o cabeçalho da página com o mesmo
  * texto. A regra que a ajuda conta não mudou; mudou onde se clica.
  */
 describe("o ? das fatias de configuração conta o intervalo e o piso da régua", () => {
-  it("o Catálogo explica que pronta é do mínimo ao máximo (para o admin)", async () => {
+  it("a Curadoria do Catálogo explica que pronta é do mínimo ao máximo (para o admin)", async () => {
     entrarComo(fixtureAdminUser);
     renderWithApp(<CatalogPolicyPage />);
-    await screen.findByRole("heading", { level: 1, name: "Catálogo" });
+    await screen.findByRole("heading", { level: 1, name: "Curadoria do Catálogo" });
 
-    await userEvent.click(screen.getByRole("button", { name: "Como usar Catálogo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Como usar Curadoria do Catálogo" }));
 
     const ajuda = await screen.findByRole("dialog");
     expect(ajuda.textContent).toMatch(/mínimo/i);
