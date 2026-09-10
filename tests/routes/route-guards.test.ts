@@ -71,12 +71,21 @@ afterEach(() => {
  * do gerente com vínculo.
  */
 describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organização", () => {
-  it.each(["/competency-matrix", "/users", "/teams", "/cycles", "/settings", "/team-rules"])(
-    "SUPPORT alcança %s como o antigo admin",
-    async (href) => {
-      expect(await navegarComoUsuario(fixtureSupportUser, href)).toBe(href);
-    },
-  );
+  it.each([
+    "/competency-matrix",
+    "/users",
+    "/teams",
+    "/cycles",
+    "/scoring-rulers",
+    "/text-templates",
+    "/catalog-policy",
+    "/vocabularies",
+    "/model-reference",
+    "/eligibility",
+    "/team-rules",
+  ])("SUPPORT alcança %s como o antigo admin", async (href) => {
+    expect(await navegarComoUsuario(fixtureSupportUser, href)).toBe(href);
+  });
 
   it("SUPPORT sem vínculo não alcança a análise de time nem a calibração", async () => {
     expect(await navegarComoUsuario(fixtureSupportUser, "/capability-map")).toBe("/");
@@ -88,7 +97,12 @@ describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organi
     "/users",
     "/teams",
     "/cycles",
-    "/settings",
+    "/scoring-rulers",
+    "/text-templates",
+    "/catalog-policy",
+    "/vocabularies",
+    "/model-reference",
+    "/eligibility",
     "/team-rules",
     "/capability-map",
     "/progression",
@@ -346,8 +360,20 @@ describe("o profissional não navega até os próprios números", () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/team")).toBe("/");
   });
 
-  it("nega /settings ao member", async () => {
-    expect(await navegarComoUsuario(fixtureMemberUser, "/settings")).toBe("/");
+  /**
+   * Onda do GRUPO (dono, 2026-09-10): a tela virou seis, e as seis guardas
+   * negam o profissional — as quatro de sistema e a Elegibilidade porque ele
+   * não opera nem rege régua, a Referência porque é leitura de liderança.
+   */
+  it.each([
+    "/eligibility",
+    "/scoring-rulers",
+    "/text-templates",
+    "/catalog-policy",
+    "/vocabularies",
+    "/model-reference",
+  ])("nega %s ao member", async (href) => {
+    expect(await navegarComoUsuario(fixtureMemberUser, href)).toBe("/");
   });
 
   it.each(ABAS_DA_LIDERANCA)(
@@ -364,15 +390,25 @@ describe("o profissional não navega até os próprios números", () => {
     },
   );
 
-  it("mantém /team e /settings para quem lidera, com ou sem vínculo, e para o admin", async () => {
+  it("mantém /team e a leitura do modelo para quem lidera, com ou sem vínculo, e para o admin", async () => {
     for (const user of [
       fixtureAdminUser,
       fixtureAssignedTechLeadUser,
       fixtureUnassignedTechLeadUser,
     ]) {
       expect(await navegarComoUsuario(user, "/team"), user.role).toBe("/team");
-      expect(await navegarComoUsuario(user, "/settings"), user.role).toBe("/settings");
+      expect(await navegarComoUsuario(user, "/model-reference"), user.role).toBe(
+        "/model-reference",
+      );
     }
+  });
+
+  /**
+   * O endereço antigo não guarda alcance nenhum: ele existe para não virar
+   * 404, e quem decide quem entra é a fatia de destino.
+   */
+  it("o endereço antigo não devolve ninguém à home — quem decide é o destino", async () => {
+    expect(await navegarComoUsuario(fixtureMemberUser, "/settings")).toBe("/settings");
   });
 
   it("mantém a ficha de um liderado aberta para o tech lead com vínculo — as rotas não quebram", async () => {

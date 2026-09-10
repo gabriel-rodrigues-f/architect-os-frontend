@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as EligibilityRoute } from "@/routes/eligibility";
 import {
   fixtureAdminUser,
   fixtureAssignedManagerUser,
@@ -48,7 +48,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const EligibilityPage = EligibilityRoute.options.component as () => ReactNode;
 
 const reguaDeIntegracoesJunior = {
   id: "regra-integracoes-i",
@@ -127,7 +127,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const celula = await celulaDoMinimo();
     expect((await seletorDeTime()).textContent).toContain("Todos os times");
@@ -142,7 +142,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     await celulaDoMinimo();
 
     await escolherTime("Integrações");
@@ -160,7 +160,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute, reguasDeIntegracoesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     await celulaDoMinimo();
 
     await escolherTime("Integrações");
@@ -185,7 +185,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute, reguasDeIntegracoesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     await celulaDoMinimo();
 
     await escolherTime("Integrações");
@@ -211,7 +211,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute, reguasDeIntegracoesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     await celulaDoMinimo();
 
     await escolherTime("Integrações");
@@ -233,7 +233,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute, reguasDeIntegracoesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const celula = await celulaDoMinimo();
     expect(celula.textContent).toContain("3");
@@ -251,7 +251,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const celula = await celulaDoMinimo();
     expect(celula.textContent).toContain("3");
@@ -271,7 +271,7 @@ describe("Política de Progressão leva em consideração o time selecionado", (
       state: doisTimesDivergem(),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const seletor = await seletorDeTime();
     expect(seletor.textContent).toContain("Plataforma");

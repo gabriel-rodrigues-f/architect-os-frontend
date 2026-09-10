@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as ScoringRulersRoute } from "@/routes/scoring-rulers";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -32,7 +32,7 @@ import { apiPath } from "@/lib/api-path";
  * recusar.
  */
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const ScoringRulersPage = ScoringRulersRoute.options.component as () => ReactNode;
 
 const RÓTULO = "Tempo máximo sem atividade (minutos)";
 
@@ -94,7 +94,7 @@ describe("Operação — tempo máximo sem atividade (onda 31)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, settingsGetRoute(7)],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await operationalBlock();
     expect(within(block).getByText(RÓTULO)).toBeTruthy();
@@ -108,7 +108,7 @@ describe("Operação — tempo máximo sem atividade (onda 31)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, settingsGetRoute(10)],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await operationalBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
@@ -133,7 +133,7 @@ describe("Operação — tempo máximo sem atividade (onda 31)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, putRoute, settingsGetRoute(10)],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await operationalBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));

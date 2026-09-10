@@ -7,7 +7,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as ScoringRulersRoute } from "@/routes/scoring-rulers";
 import { fixtureUnassignedTechLeadUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
@@ -26,7 +26,7 @@ import { apiPath } from "@/lib/api-path";
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const ScoringRulersPage = ScoringRulersRoute.options.component as () => ReactNode;
 
 /** GET /api/v1/config/bands vazio (a UI completa com o default do seed). */
 const emptyBandsGetRoute: FetchRoute = (href, init) =>
@@ -61,16 +61,19 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
    * Onda 31 — o member deixou de alcançar /settings (o dono tirou a Política
    * de Progressão do profissional); o não-admin que ainda a lê é o tech lead.
    */
-  it("não-admin não vê a seção", async () => {
+  /**
+   * Onda do GRUPO (dono, 2026-09-10): a seção virou ROTA, e quem não a
+   * alcança não vê caixa vazia — ouve a recusa por escrito. É o conserto do
+   * achado (C) do inventário de alcance de 2026-09-05.
+   */
+  it("não-admin recebe a recusa por escrito, e a régua não é desenhada", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureUnassignedTechLeadUser,
       routes: [careerLevelsRoute, emptyBandsGetRoute],
     });
-    renderWithApp(<SettingsPage />);
-    // A tela montou (o glossário read-only aparece)...
-    expect(await screen.findByText("Referência do modelo")).toBeTruthy();
-    // ...mas a seção de réguas não existe para quem não é admin.
-    expect(screen.queryByText("Réguas e limiares")).toBeNull();
+    renderWithApp(<ScoringRulersPage />);
+    expect(await screen.findByText("Esta configuração é de quem opera o sistema.")).toBeTruthy();
+    expect(screen.queryByText("Severidade de distância")).toBeNull();
   });
 
   it("editar um corte envia o PUT com o payload contíguo e invalida a query de bands", async () => {
@@ -85,7 +88,7 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
         emptyBandsGetRoute,
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await gapScaleBlock();
     const getsBefore = countBandsGets();
@@ -134,7 +137,7 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
         emptyBandsGetRoute,
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await gapScaleBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
@@ -149,7 +152,7 @@ describe("Réguas e limiares (CFG-02 admin UI)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, emptyBandsGetRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await gapScaleBlock();
     // Seed: gap 2 cai na faixa "high" → o chip do preview repete "Prioridade

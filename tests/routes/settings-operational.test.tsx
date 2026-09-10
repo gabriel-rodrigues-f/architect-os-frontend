@@ -7,12 +7,8 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
-import {
-  fixtureAdminUser,
-  fixtureAssignedManagerUser,
-  fixtureUnassignedTechLeadUser,
-} from "../helpers/fixtures";
+import { Route as ScoringRulersRoute } from "@/routes/scoring-rulers";
+import { fixtureAdminUser, fixtureUnassignedTechLeadUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -33,7 +29,7 @@ import { apiPath } from "@/lib/api-path";
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const ScoringRulersPage = ScoringRulersRoute.options.component as () => ReactNode;
 
 const settingRecord = (key: string, value: string | number) => ({
   key,
@@ -95,13 +91,18 @@ describe("Operação (CFG-05 admin UI)", () => {
    * Onda 31 — o member deixou de alcançar /settings (o dono tirou a Política
    * de Progressão do profissional); o não-admin que ainda a lê é o tech lead.
    */
-  it("não-admin não vê a seção", async () => {
+  /**
+   * Onda do GRUPO (dono, 2026-09-10): a seção virou ROTA, e quem não a
+   * alcança não vê caixa vazia — ouve a recusa por escrito. É o conserto do
+   * achado (C) do inventário de alcance de 2026-09-05.
+   */
+  it("não-admin recebe a recusa por escrito, e os parâmetros não são desenhados", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureUnassignedTechLeadUser,
       routes: [careerLevelsRoute, settingsGetRoute()],
     });
-    renderWithApp(<SettingsPage />);
-    expect(await screen.findByText("Referência do modelo")).toBeTruthy();
+    renderWithApp(<ScoringRulersPage />);
+    expect(await screen.findByText("Esta configuração é de quem opera o sistema.")).toBeTruthy();
     expect(screen.queryByText("Políticas operacionais")).toBeNull();
   });
 
@@ -110,7 +111,7 @@ describe("Operação (CFG-05 admin UI)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, settingsGetRoute("QUARTERLY", 4, 2)],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await operationalBlock();
     expect(within(block).getByText("Cadência dos ciclos")).toBeTruthy();
@@ -131,7 +132,7 @@ describe("Operação (CFG-05 admin UI)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, settingsGetRoute()],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await operationalBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
@@ -162,7 +163,7 @@ describe("Operação (CFG-05 admin UI)", () => {
         settingsGetRoute(),
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await operationalBlock();
     const settingsGetsBefore = countGets(apiPath("/config/settings"));
@@ -219,7 +220,7 @@ describe("Operação (CFG-05 admin UI)", () => {
         settingsGetRoute(),
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ScoringRulersPage />);
 
     const block = await operationalBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
@@ -233,49 +234,5 @@ describe("Operação (CFG-05 admin UI)", () => {
     expect(alert.textContent).toBe(
       '"career.minimumQualifiedFloor" precisa ser >= 1 (recebido: 7).',
     );
-  });
-
-  /**
-   * Revisão de papéis (dono, 2026-09-05, D1): a régua é editada pelo gerente
-   * COM vínculo no time — o admin só a lê. O piso operacional (4) continua
-   * vindo do GET de settings, mas quem abre a linha é o gerente de Plataforma,
-   * que não vê o bloco Operação.
-   */
-  it("o piso operacional NÃO rege o campo da régua: o piso do modelo é ZERO (dono, 2026-09-08)", async () => {
-    mockAppFetch(fetchMock, {
-      user: fixtureAssignedManagerUser,
-      routes: [careerLevelsRoute, settingsGetRoute("SEMIANNUAL", 4, 3)],
-    });
-    renderWithApp(<SettingsPage />);
-
-    // O h1 da página tem o mesmo texto. O card vive dentro de um `SectionGroup`,
-    // cujo título é o nível 2 — o card, portanto, é o nível 3.
-    const policyTitle = await screen.findByRole("heading", {
-      name: "Critérios de Progressão",
-      level: 3,
-    });
-    const section = policyTitle.closest("section") as HTMLElement;
-    const editButtons = within(section).getAllByRole("button", { name: "Editar" });
-    await userEvent.click(editButtons[0]!);
-
-    const input = section.querySelector('input[type="number"]') as HTMLInputElement;
-    expect(input.min).toBe("0");
-    await userEvent.clear(input);
-    await userEvent.type(input, "1"); // abaixo do piso operacional 4, e ainda assim gravável
-    const saveButton = within(input.closest("tr") as HTMLElement).getByRole("button", {
-      name: "Salvar",
-    }) as HTMLButtonElement;
-    expect(saveButton.disabled).toBe(false);
-
-    // Dono (2026-09-08, regra 12): zero passou a ser valor de negócio — o nível
-    // que não exige capacidade qualificada nenhuma. O que continua fora é o
-    // negativo, que não é régua, é lixo.
-    await userEvent.clear(input);
-    await userEvent.type(input, "0");
-    expect(saveButton.disabled).toBe(false);
-
-    await userEvent.clear(input);
-    await userEvent.type(input, "-1");
-    expect(saveButton.disabled).toBe(true);
   });
 });

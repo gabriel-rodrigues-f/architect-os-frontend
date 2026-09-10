@@ -279,7 +279,7 @@ function OperationsHome() {
                     <Link to="/competency-matrix">{t("nav.competencyMatrix")}</Link>
                   </Button>
                   <Button asChild variant="outline" size="sm">
-                    <Link to="/settings">{t("nav.settings")}</Link>
+                    <Link to="/eligibility">{t("eligibility.title")}</Link>
                   </Button>
                 </div>
               </SectionCard>

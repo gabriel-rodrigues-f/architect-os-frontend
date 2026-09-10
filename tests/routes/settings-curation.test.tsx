@@ -7,7 +7,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as CatalogPolicyRoute } from "@/routes/catalog-policy";
 import { fixtureUnassignedTechLeadUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
@@ -31,7 +31,7 @@ import { apiPath } from "@/lib/api-path";
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const CatalogPolicyPage = CatalogPolicyRoute.options.component as () => ReactNode;
 
 /** GET /api/v1/config/curation-policy com o seed da onda 36: máximo 4. */
 const curationPolicyGetRoute: FetchRoute = (href, init) =>
@@ -69,13 +69,18 @@ describe("Catálogo (CFG-04 admin UI)", () => {
    * Onda 31 — o member deixou de alcançar /settings (o dono tirou a Política
    * de Progressão do profissional); o não-admin que ainda a lê é o tech lead.
    */
-  it("não-admin não vê a seção", async () => {
+  /**
+   * Onda do GRUPO (dono, 2026-09-10): a seção virou ROTA, e quem não a
+   * alcança não vê caixa vazia — ouve a recusa por escrito. É o conserto do
+   * achado (C) do inventário de alcance de 2026-09-05.
+   */
+  it("não-admin recebe a recusa por escrito, e a política não é desenhada", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureUnassignedTechLeadUser,
       routes: [careerLevelsRoute, curationPolicyGetRoute],
     });
-    renderWithApp(<SettingsPage />);
-    expect(await screen.findByText("Referência do modelo")).toBeTruthy();
+    renderWithApp(<CatalogPolicyPage />);
+    expect(await screen.findByText("Esta configuração é de quem opera o sistema.")).toBeTruthy();
     expect(screen.queryByText("Composição por capacidade")).toBeNull();
   });
 
@@ -84,7 +89,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, curationPolicyGetRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<CatalogPolicyPage />);
 
     const block = await policyBlock();
     expect(within(block).getByText("Máximo de competências ativas")).toBeTruthy();
@@ -105,7 +110,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, curationPolicyGetRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<CatalogPolicyPage />);
 
     const block = await policyBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
@@ -133,7 +138,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
         curationPolicyGetRoute,
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<CatalogPolicyPage />);
 
     const block = await policyBlock();
     const policyGetsBefore = countGets(apiPath("/config/curation-policy"));
@@ -182,7 +187,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
         curationPolicyGetRoute,
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<CatalogPolicyPage />);
 
     const block = await policyBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));

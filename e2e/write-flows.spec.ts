@@ -296,8 +296,9 @@ test("Member cria uma ação de PDI a partir do maior gap", async ({ page }) => 
 test("Admin adiciona um código ao vocabulário de tipos de ação do PDI", async ({ page }) => {
   await login(page, ADMIN_EMAIL!, ADMIN_PASSWORD!, "Painel de Capacidades");
 
-  await page.goto("/settings");
-  await expect(page.getByText("Vocabulários", { exact: true })).toBeVisible();
+  // Onda do GRUPO (dono, 2026-09-10): os vocabulários ganharam rota própria.
+  await page.goto("/vocabularies");
+  await expect(page.getByRole("heading", { level: 1, name: "Vocabulários" })).toBeVisible();
 
   const bloco = page
     .locator("div.surface-inset")

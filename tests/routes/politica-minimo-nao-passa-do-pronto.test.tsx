@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { apiPath } from "@/lib/api-path";
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as EligibilityRoute } from "@/routes/eligibility";
 import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import {
   TIME_PLATAFORMA,
@@ -34,7 +34,7 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const EligibilityPage = EligibilityRoute.options.component as () => ReactNode;
 
 const gravacoes: unknown[] = [];
 
@@ -91,7 +91,7 @@ describe("o mínimo qualificado não passa do que existe pronto", () => {
       state: umTimeComMinimoAlcancavel(),
       routes: [niveisDeCarreiraRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     expect(
       await screen.findByRole("columnheader", { name: "Mínimo de competências qualificadas" }),
@@ -105,7 +105,7 @@ describe("o mínimo qualificado não passa do que existe pronto", () => {
       state: umTimeComMinimoAlcancavel(),
       routes: [niveisDeCarreiraRoute, gravaReguaRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const linha = await editarJunior();
     await digitarMinimo(linha, "6");
@@ -129,7 +129,7 @@ describe("o mínimo qualificado não passa do que existe pronto", () => {
       state: umTimeComMinimoAlcancavel(),
       routes: [niveisDeCarreiraRoute, gravaReguaRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const linha = await editarJunior();
     await digitarMinimo(linha, "6");
@@ -147,7 +147,7 @@ describe("o mínimo qualificado não passa do que existe pronto", () => {
       state: umTimeComMinimoInalcancavel(),
       routes: [niveisDeCarreiraRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     await celulaDoMinimo();
     const aviso = within(await linhaDoNivel()).getByRole("alert");

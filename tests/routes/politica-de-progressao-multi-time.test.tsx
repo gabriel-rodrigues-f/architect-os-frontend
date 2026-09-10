@@ -6,7 +6,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as EligibilityRoute } from "@/routes/eligibility";
 import { fixtureAdminUser, fixtureAssignedManagerUser } from "../helpers/fixtures";
 import {
   TIME_INTEGRACOES,
@@ -38,7 +38,7 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const EligibilityPage = EligibilityRoute.options.component as () => ReactNode;
 
 /** O gerente com vínculo nos DOIS times — só o vínculo dá a régua de cada um. */
 const gerenteDosDoisTimes = {
@@ -69,7 +69,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
       ]),
       routes: [niveisDeCarreiraRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const celula = await celulaDoMinimo();
     expect(celula.textContent).toContain("3");
@@ -85,7 +85,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
       ]),
       routes: [niveisDeCarreiraRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const celula = await celulaDoMinimo();
     expect(celula.textContent).toContain("3");
@@ -109,7 +109,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
       ]),
       routes: [niveisDeCarreiraRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const alerta = await within(await linhaDoNivel()).findByRole("alert");
     expect(alerta.textContent).toContain("Faltam 3 competências prontas");
@@ -121,7 +121,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
       state: estadoCom([]),
       routes: [niveisDeCarreiraRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const celula = await celulaDoMinimo();
     expect(celula.textContent).toContain("—");
@@ -142,7 +142,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
       ]),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const linha = await linhaDoNivel();
     expect(within(linha).queryByRole("button", { name: "Editar" })).toBeNull();
@@ -156,7 +156,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
       state: estadoCom([regra("regra-plataforma-i", TIME_PLATAFORMA, 3)]),
       routes: [niveisDeCarreiraRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const linha = await linhaDoNivel();
     expect(within(linha).getByRole("button", { name: "Editar" })).toBeTruthy();
@@ -171,7 +171,7 @@ describe("Política de Progressão com mais de um time no alcance", () => {
       ]),
       routes: [niveisDeCarreiraRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
 
     const celula = await celulaDoMinimo();
     expect(celula.textContent).toContain("3");

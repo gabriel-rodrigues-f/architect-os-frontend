@@ -7,7 +7,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as TextTemplatesRoute } from "@/routes/text-templates";
 import { fixtureUnassignedTechLeadUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
@@ -26,7 +26,7 @@ import { apiPath } from "@/lib/api-path";
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const TextTemplatesPage = TextTemplatesRoute.options.component as () => ReactNode;
 
 /** GET /api/v1/config/templates vazio (a UI completa com o default do seed pt/en). */
 const emptyTemplatesGetRoute: FetchRoute = (href, init) =>
@@ -66,13 +66,18 @@ describe("Textos (CFG-03 admin UI)", () => {
    * Onda 31 — o member deixou de alcançar /settings (o dono tirou a Política
    * de Progressão do profissional); o não-admin que ainda a lê é o tech lead.
    */
-  it("não-admin não vê a seção", async () => {
+  /**
+   * Onda do GRUPO (dono, 2026-09-10): a seção virou ROTA, e quem não a
+   * alcança não vê caixa vazia — ouve a recusa por escrito. É o conserto do
+   * achado (C) do inventário de alcance de 2026-09-05.
+   */
+  it("não-admin recebe a recusa por escrito, e os modelos não são desenhados", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureUnassignedTechLeadUser,
       routes: [careerLevelsRoute, emptyTemplatesGetRoute],
     });
-    renderWithApp(<SettingsPage />);
-    expect(await screen.findByText("Referência do modelo")).toBeTruthy();
+    renderWithApp(<TextTemplatesPage />);
+    expect(await screen.findByText("Esta configuração é de quem opera o sistema.")).toBeTruthy();
     expect(
       screen.queryByText("Objetivo de item de PDI a partir de competência em evolução"),
     ).toBeNull();
@@ -84,7 +89,7 @@ describe("Textos (CFG-03 admin UI)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, emptyTemplatesGetRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<TextTemplatesPage />);
 
     expect(await screen.findByText("{competencia}")).toBeTruthy();
     expect(screen.getByText("{atual}")).toBeTruthy();
@@ -101,7 +106,7 @@ describe("Textos (CFG-03 admin UI)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, emptyTemplatesGetRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<TextTemplatesPage />);
 
     const block = await ptLocaleBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
@@ -131,7 +136,7 @@ describe("Textos (CFG-03 admin UI)", () => {
         emptyTemplatesGetRoute,
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<TextTemplatesPage />);
 
     const block = await ptLocaleBlock();
     const getsBefore = countTemplatesGets();
@@ -178,7 +183,7 @@ describe("Textos (CFG-03 admin UI)", () => {
         emptyTemplatesGetRoute,
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<TextTemplatesPage />);
 
     const block = await ptLocaleBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));

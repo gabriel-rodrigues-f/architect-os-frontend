@@ -143,15 +143,21 @@ describe("AppShell — navegação recortada por papel", () => {
    * A política continua legível para quem lidera; o profissional a conhece
    * pela liderança dele, não pela tela.
    */
-  it("/settings (Política de Progressão) aparece para quem lidera e some para o member", () => {
+  /**
+   * Onda do GRUPO (dono, 2026-09-10): a tela virou grupo, e a fatia que
+   * continua sendo de toda a liderança é a LEITURA do modelo. As cinco de
+   * configuração ganharam dono mais estreito — ver
+   * `nav-criterios-de-progressao.test.ts`.
+   */
+  it("Referência do modelo aparece para quem lidera e some para o member", () => {
     const destinosDe = (role: UserRole) =>
       filterNavGroups(NAV_GROUPS, usuarioDoPapel(role)).flatMap((group) =>
         group.items.map((item) => item.to),
       );
     for (const role of ["tech_lead", "manager", "admin", "support"] as const) {
-      expect(destinosDe(role), role).toContain("/settings");
+      expect(destinosDe(role), role).toContain("/model-reference");
     }
-    expect(destinosDe("member")).not.toContain("/settings");
+    expect(destinosDe("member")).not.toContain("/model-reference");
   });
 
   /**
