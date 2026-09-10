@@ -5,9 +5,10 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
  *
  * `/settings` hospedou "Critérios de Progressão" — 1390 linhas e três
  * alcances numa tela só — até a decisão do dono de 2026-09-10 transformar o
- * menu em GRUPO, com seis fatias. Quem tem link salvo, quem veio de um aviso
- * e quem está com a aba aberta continua chegando aqui, e o endereço leva à
- * primeira fatia: Elegibilidade.
+ * menu em GRUPO. Quem tem link salvo, quem veio de um aviso e quem está com
+ * a aba aberta continua chegando aqui, e o endereço leva à primeira fatia que
+ * sobrou do grupo: Réguas e limiares. A Elegibilidade, que era a primeira,
+ * morreu com o conceito (dono, 2026-09-10).
  *
  * O redirecionamento é do COMPONENTE, não uma guarda de `beforeLoad`, e isso
  * é decisão, não acaso: a guarda de navegação de uma rota é a declaração de
@@ -20,5 +21,5 @@ export const Route = createFileRoute("/settings")({
 });
 
 function LegacyProgressionCriteriaAddress() {
-  return <Navigate to="/eligibility" replace />;
+  return <Navigate to="/scoring-rulers" replace />;
 }

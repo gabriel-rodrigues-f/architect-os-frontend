@@ -1,10 +1,4 @@
-import type {
-  Assessment,
-  AssessmentCapability,
-  AssessmentComment,
-  AssessmentEligibility,
-  Level,
-} from "../domain";
+import type { Assessment, AssessmentCapability, AssessmentComment, Level } from "../domain";
 import type { ApiClient } from "../api-client";
 
 export interface AssessmentItemPatch {
@@ -59,7 +53,6 @@ export interface AssessmentGateway {
     assessmentId: string,
     capabilityId: string,
   ): Promise<AssessmentCapability>;
-  assessmentEligibility(assessmentId: string): Promise<AssessmentEligibility>;
 }
 
 export class HttpAssessmentGateway implements AssessmentGateway {
@@ -144,7 +137,4 @@ export class HttpAssessmentGateway implements AssessmentGateway {
       `/assessments/${assessmentId}/capabilities/${capabilityId}/confirm`,
       {},
     );
-
-  assessmentEligibility = (assessmentId: string): Promise<AssessmentEligibility> =>
-    this.client.request<AssessmentEligibility>(`/assessments/${assessmentId}/eligibility`);
 }

@@ -135,9 +135,6 @@ export function SystemOverview() {
                 <Button asChild variant="outline" size="sm">
                   <Link to="/competency-matrix">{t("nav.competencyMatrix")}</Link>
                 </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/eligibility">{t("eligibility.title")}</Link>
-                </Button>
               </div>
             </SectionCard>
           </RevealBlock>

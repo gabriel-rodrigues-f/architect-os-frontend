@@ -152,11 +152,16 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
  * alcance a enxergava. Agora ela declara o dono como qualquer outra tela, e o
  * Painel de negócio de `/` passa a servir também o administrador.
  */
+/**
+ * A ELEGIBILIDADE SAIU DO PRODUTO (dono, 2026-09-10) — −1 em
+ * `lead-com-vinculo` (2 → 1): `/eligibility` era a tela de quem rege a régua
+ * do time. Sobra `/team-rules` nesse alcance.
+ */
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
   autenticado: 8,
   "opera-o-sistema": 6,
-  "lead-com-vinculo": 2,
+  "lead-com-vinculo": 1,
   calibracao: 1,
   lideranca: 3,
   "analise-de-time": 5,

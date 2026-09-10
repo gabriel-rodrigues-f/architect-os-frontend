@@ -21,13 +21,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import type { SessionUser } from "@/lib/api";
 import { Route as CatalogPolicyRoute } from "@/routes/catalog-policy";
-import { Route as EligibilityRoute } from "@/routes/eligibility";
 import { Route as ScoringRulersRoute } from "@/routes/scoring-rulers";
 import { Route as TextTemplatesRoute } from "@/routes/text-templates";
 import { Route as VocabulariesRoute } from "@/routes/vocabularies";
 import {
   fixtureAdminUser,
-  fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureState,
   fixtureUnassignedTechLeadUser,
@@ -54,7 +52,6 @@ const paginaDe = (route: { options: { component?: unknown } }) =>
   route.options.component as () => ReactNode;
 
 const CONFIGURACAO_E_DE_QUEM_OPERA = "Esta configuração é de quem opera o sistema.";
-const ELEGIBILIDADE_E_DE_QUEM_LIDERA = "A elegibilidade é regida por quem lidera um time.";
 
 function renderAs(user: SessionUser, page: ReactNode) {
   mockAppFetch(fetchMock, {
@@ -113,45 +110,4 @@ describe("as quatro fatias de sistema são de quem opera o sistema", () => {
       expect(screen.queryByText(CONFIGURACAO_E_DE_QUEM_OPERA)).toBeNull();
     },
   );
-});
-
-describe("Elegibilidade é de quem rege a régua do time", () => {
-  beforeEach(() => {
-    fetchMock.mockReset();
-    vi.stubGlobal("fetch", fetchMock);
-  });
-
-  afterEach(() => {
-    cleanup();
-    vi.unstubAllGlobals();
-  });
-
-  const EligibilityPage = paginaDe(EligibilityRoute);
-
-  /**
-   * O conserto que a fatia traz: até aqui o tech lead SEM VÍNCULO entrava na
-   * tela e encontrava a tabela da política inteira desenhada, sem poder mexer
-   * em nada e sem uma frase que dissesse por quê.
-   */
-  it("nega o tech lead sem vínculo por escrito", async () => {
-    renderAs(fixtureUnassignedTechLeadUser, <EligibilityPage />);
-    expect(await screen.findByText(ELEGIBILIDADE_E_DE_QUEM_LIDERA)).toBeTruthy();
-  });
-
-  it("nega o profissional", async () => {
-    renderAs(fixtureMemberUser, <EligibilityPage />);
-    expect(await screen.findByText(ELEGIBILIDADE_E_DE_QUEM_LIDERA)).toBeTruthy();
-  });
-
-  it("a tela negada continua se explicando — o ? está lá", async () => {
-    renderAs(fixtureMemberUser, <EligibilityPage />);
-    await screen.findByText(ELEGIBILIDADE_E_DE_QUEM_LIDERA);
-    expect(screen.getByRole("button", { name: /como usar/i })).toBeTruthy();
-  });
-
-  it("abre para o gerente com vínculo", async () => {
-    renderAs(fixtureAssignedManagerUser, <EligibilityPage />);
-    expect(await screen.findByRole("heading", { level: 1, name: "Elegibilidade" })).toBeTruthy();
-    expect(screen.queryByText(ELEGIBILIDADE_E_DE_QUEM_LIDERA)).toBeNull();
-  });
 });

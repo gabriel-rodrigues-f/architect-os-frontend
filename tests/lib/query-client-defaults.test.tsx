@@ -29,7 +29,7 @@ const settingsRoute: FetchRoute = (href, init) =>
     ? jsonResponse({
         settings: [
           {
-            key: "career.minimumQualifiedFloor",
+            key: "training.collectiveInterventionThreshold",
             value: 4,
             valueType: "int",
             scope: "operational",
@@ -52,7 +52,7 @@ function SemOpcoesProbe() {
 
 function SettingsProbe() {
   const settings = useOperationalSettings();
-  return <p>piso:{settings.careerMinimumQualifiedFloor}</p>;
+  return <p>limiar:{settings.trainingCollectiveInterventionThreshold}</p>;
 }
 
 const renderWith = (client: QueryClient, ui: ReactNode) =>
@@ -114,12 +114,12 @@ describe("defaults do QueryClient do app (F2)", () => {
     const client = createAppQueryClient();
 
     renderWith(client, <SettingsProbe />);
-    await screen.findByText("piso:4");
+    await screen.findByText("limiar:4");
     await waitFor(() => expect(countSettingsFetches()).toBe(1));
 
     cleanup();
     renderWith(client, <SettingsProbe />);
-    await screen.findByText("piso:4");
+    await screen.findByText("limiar:4");
 
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(countSettingsFetches()).toBe(1);

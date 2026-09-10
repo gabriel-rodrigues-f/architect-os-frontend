@@ -8,7 +8,6 @@
   "src/routes/compare.tsx": 1,
   "src/routes/competency-matrix.tsx": 1,
   "src/routes/cycles.tsx": 1,
-  "src/routes/eligibility.tsx": 1,
   "src/routes/professionals.$professionalId.evolution.tsx": 1,
   "src/routes/scoring-rulers.tsx": 1,
   "src/routes/team-rules.tsx": 1,

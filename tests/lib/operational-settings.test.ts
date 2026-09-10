@@ -23,7 +23,6 @@ describe("EffectiveOperationalSettings.resolve", () => {
   it("sem resposta (consulta em voo/falha) devolve o default do seed", () => {
     expect(EffectiveOperationalSettings.resolve(undefined)).toEqual({
       cycleCadence: "SEMIANNUAL",
-      careerMinimumQualifiedFloor: 3,
       trainingCollectiveInterventionThreshold: 3,
       sessionIdleTimeoutMinutes: 10,
     });
@@ -43,7 +42,6 @@ describe("EffectiveOperationalSettings.resolve", () => {
     });
     expect(settings).toEqual({
       cycleCadence: "QUARTERLY",
-      careerMinimumQualifiedFloor: 4,
       trainingCollectiveInterventionThreshold: 2,
       sessionIdleTimeoutMinutes: 15,
     });
@@ -54,12 +52,10 @@ describe("EffectiveOperationalSettings.resolve", () => {
       settings: [
         record("cycle.cadence", "MONTHLY"), // fora do enum
         record("training.collectiveInterventionThreshold", 5),
-        // career.minimumQualifiedFloor ausente (ambiente recém-migrado)
       ],
     });
     expect(settings).toEqual({
       cycleCadence: "SEMIANNUAL",
-      careerMinimumQualifiedFloor: 3,
       trainingCollectiveInterventionThreshold: 5,
       sessionIdleTimeoutMinutes: 10,
     });
@@ -67,12 +63,8 @@ describe("EffectiveOperationalSettings.resolve", () => {
 
   it("inteiro < 1 ou não inteiro não é utilizável — cai no default", () => {
     const settings = EffectiveOperationalSettings.resolve({
-      settings: [
-        record("career.minimumQualifiedFloor", 0),
-        record("training.collectiveInterventionThreshold", 2.5),
-      ],
+      settings: [record("training.collectiveInterventionThreshold", 2.5)],
     });
-    expect(settings.careerMinimumQualifiedFloor).toBe(3);
     expect(settings.trainingCollectiveInterventionThreshold).toBe(3);
   });
 });

@@ -19,7 +19,6 @@
   "src/routes/competency-matrix.tsx": 4,
   "src/routes/cycles.tsx": 2,
   "src/routes/development-plans.tsx": 3,
-  "src/routes/eligibility.tsx": 2,
   "src/routes/learning-paths.tsx": 1,
   "src/routes/professionals.$professionalId.evolution.tsx": 3,
   "src/routes/scoring-rulers.tsx": 1,

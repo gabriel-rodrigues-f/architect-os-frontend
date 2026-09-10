@@ -71,14 +71,6 @@
     "/development-plans": {
       "alcance": "autenticado"
     },
-    "/eligibility": {
-      "alcance": "lead-com-vinculo",
-      "guarda": "requireLeadReach",
-      "sinal": "canConfigure",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
-    },
     "/gap-analysis": {
       "alcance": "analise-de-time",
       "guarda": "requireTeamAnalysisReach",

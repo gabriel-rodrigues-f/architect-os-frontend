@@ -76,16 +76,15 @@ const conselhoBase = {
   narrationUnavailable: null as string | null,
 };
 
+/**
+ * DONO, 2026-09-10 — o campo `readiness` carregava o VEREDITO e morreu com a
+ * elegibilidade. O que a rota entrega são os FATOS medidos, e é sobre eles
+ * que valem as duas garantias de sempre: eles aparecem com a narração e
+ * continuam aparecendo sem ela.
+ */
 const prontidao = {
   ...conselhoBase,
-  narration: "Falta uma capacidade qualificada para o próximo nível.",
-  readiness: {
-    currentCareerLevel: "Pleno",
-    nextCareerLevel: "Sênior",
-    eligible: false,
-    qualifiedCapabilityCount: 2,
-    minimumQualifiedCapabilities: 3,
-  },
+  narration: "Falta uma capacidade para o esperado do próximo nível.",
 };
 
 const rotaDeIa =
@@ -120,7 +119,7 @@ afterEach(() => {
  * para cair.
  */
 
-describe("explicação da prontidão — ao lado do veredito determinístico", () => {
+describe("explicação da prontidão — ao lado dos fatos medidos", () => {
   const montaRoteiro = (routes: FetchRoute[]) => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
@@ -130,19 +129,18 @@ describe("explicação da prontidão — ao lado do veredito determinístico", (
     renderCareerFile(<RoadmapPage />, { tab: "roadmap" });
   };
 
-  it("explica o resultado e publica o veredito que o motor determinístico calculou", async () => {
+  it("explica a distância e não anuncia veredito nenhum", async () => {
     montaRoteiro([rotaDeIa("career-readiness-explanation", () => jsonResponse(prontidao))]);
     const usuario = userEvent.setup();
 
     await usuario.click(await screen.findByRole("button", { name: /Explicar a prontidão/ }));
 
-    expect(await screen.findByText(/Falta uma capacidade qualificada/)).toBeTruthy();
-    expect(screen.getByText(/Pleno → Sênior/)).toBeTruthy();
-    expect(screen.getByText(/Ainda não elegível/)).toBeTruthy();
-    expect(screen.getByText(/2 de 3 capacidades qualificadas/)).toBeTruthy();
+    expect(await screen.findByText(/Falta uma capacidade para o esperado/)).toBeTruthy();
+    expect(screen.queryByText(/Ainda não elegível/)).toBeNull();
+    expect(screen.queryByText(/capacidades qualificadas/)).toBeNull();
   });
 
-  it("sem o parágrafo do provedor, o veredito aparece SOZINHO", async () => {
+  it("sem o parágrafo do provedor, os fatos medidos continuam na tela", async () => {
     montaRoteiro([
       rotaDeIa("career-readiness-explanation", () =>
         jsonResponse({
@@ -157,8 +155,7 @@ describe("explicação da prontidão — ao lado do veredito determinístico", (
     await usuario.click(await screen.findByRole("button", { name: /Explicar a prontidão/ }));
 
     expect(await screen.findByText(/está indisponível no momento/)).toBeTruthy();
-    expect(screen.getByText(/Ainda não elegível/)).toBeTruthy();
-    expect(screen.getByText(/2 de 3 capacidades qualificadas/)).toBeTruthy();
+    expect(screen.queryByText(/Ainda não elegível/)).toBeNull();
   });
 
   it("a IA cair não apaga o Roteiro: as duas aderências continuam na tela", async () => {

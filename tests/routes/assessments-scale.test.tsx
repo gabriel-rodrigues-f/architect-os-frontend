@@ -73,23 +73,27 @@ const manyCapabilitiesState: AppState = {
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 
-function mockFetch(state: AppState, eligibilityCapabilityIds: string[] = []) {
+function mockFetch(state: AppState, portfolioCapabilityIds: string[] = []) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   mockAppFetch(fetchMock, {
     state,
     routes: [
-      (href) =>
-        href.includes("/eligibility")
-          ? jsonResponse({
-              capabilities: eligibilityCapabilityIds.map((capabilityId) => ({
+      // DONO, 2026-09-10: o atalho do portfólio lia a rota da elegibilidade,
+      // que morreu. A fonte passa a ser o portfólio, que tem rota própria.
+      (href, init) =>
+        init?.method === undefined && href.includes("/capabilities")
+          ? jsonResponse(
+              portfolioCapabilityIds.map((capabilityId) => ({
+                id: `portfolio-${capabilityId}`,
+                assessmentId: "asmt",
                 capabilityId,
-                confirmed: true,
-                qualified: true,
+                addedByUserId: "u",
+                addedAt: "2026-08-20T00:00:00Z",
+                confirmedByUserId: "u",
+                confirmedAt: "2026-08-21T00:00:00Z",
               })),
-              qualifiedConfirmedCount: eligibilityCapabilityIds.length,
-              eligible: null,
-            })
+            )
           : undefined,
     ],
   });

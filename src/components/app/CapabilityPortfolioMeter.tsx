@@ -1,8 +1,7 @@
-import { CircleCheck, CircleDashed, Clock, TrendingUp, TriangleAlert } from "lucide-react";
+import { CircleCheck, Clock, TriangleAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Chip, type ChipTone } from "@/components/app/Chip";
-import { KeyFigure, statToneStyles, type StatTone } from "@/components/app/KeyFigure";
 import { useI18n, type I18nApi, type MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -152,16 +151,13 @@ export function PortfolioStageChip({ stage }: { stage: PortfolioStage }) {
  */
 export function CapabilityPortfolioMeter({
   entries,
-  required,
   label,
 }: {
   entries: readonly PortfolioEntry[];
-  required: number;
   label: string;
 }) {
   const { t } = useI18n();
   const preenchidas = entries.map((entry) => PortfolioStage.of(entry));
-  const aSelecionar = Math.max(0, required - entries.length);
   const legendas = PortfolioStage.ALL.filter((stage) => stage.quantas(entries) > 0);
 
   return (
@@ -181,18 +177,6 @@ export function CapabilityPortfolioMeter({
             <stage.Icon className="size-4" aria-hidden />
           </span>
         ))}
-        {Array.from({ length: aSelecionar }, (_, indice) => (
-          <span
-            key={`unselected-${String(indice)}`}
-            data-portfolio-slot="unselected"
-            className={cn(
-              "inline-flex size-8 items-center justify-center rounded-md",
-              SLOT_CLASS.unselected,
-            )}
-          >
-            <CircleDashed className="size-4" aria-hidden />
-          </span>
-        ))}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {legendas.map((stage) => (
@@ -201,67 +185,7 @@ export function CapabilityPortfolioMeter({
             {stage.legenda(stage.quantas(entries), t)}
           </Chip>
         ))}
-        {aSelecionar > 0 && (
-          <Chip>
-            <CircleDashed className="size-3" aria-hidden />
-            {t("asmt.portfolio.legend.remaining", { n: aSelecionar })}
-          </Chip>
-        )}
       </div>
-    </div>
-  );
-}
-
-/**
- * O NÚMERO-SÍNTESE do bloco: quantas capacidades já contam, sobre o mínimo do
- * nível seguinte — e, embaixo, o que falta ou o veredito. O tom pinta o
- * número (régua do `KeyFigure`): verde quando a elegibilidade está de pé,
- * âmbar enquanto falta.
- *
- * A ressalva do veredito não é enfeite de texto: a régua de progressão diz que
- * elegibilidade nunca promove sozinha, e um "Elegível" sozinho prometeria o
- * que o produto não entrega.
- */
-export function CapabilityPortfolioFigure({
-  levelName,
-  qualified,
-  required,
-  eligible,
-}: {
-  levelName: string;
-  qualified: number;
-  required: number;
-  eligible: boolean | null;
-}) {
-  const { t } = useI18n();
-  const faltam = Math.max(0, required - qualified);
-  const tone: StatTone = faltam === 0 ? "good" : "attention";
-  /*
-   * Três frases, três verdades diferentes — e nenhuma promete o que o produto
-   * não entrega. `eligible` é o veredito do contrato; "mínimo atingido" é o
-   * que se pode dizer quando a conta fecha e o veredito ainda não veio (sem
-   * política declarada, `eligible` chega nulo).
-   */
-  const caption =
-    eligible === true
-      ? t("asmt.portfolio.eligible", { nivel: levelName })
-      : faltam === 0
-        ? t("asmt.portfolio.reached")
-        : t(faltam === 1 ? "asmt.portfolio.missing.one" : "asmt.portfolio.missing.many", {
-            n: faltam,
-          });
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <KeyFigure
-        size="sm"
-        label={t("asmt.portfolio.progressTo", { nivel: levelName })}
-        value={t("asmt.portfolio.ratio", { qualified, required })}
-        tone={tone}
-        caption={caption}
-      />
-      <span className={cn("shrink-0 rounded-md p-2", statToneStyles[tone].icon)}>
-        <TrendingUp className="size-4" aria-hidden />
-      </span>
     </div>
   );
 }

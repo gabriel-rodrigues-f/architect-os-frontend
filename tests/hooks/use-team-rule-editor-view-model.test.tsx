@@ -19,8 +19,7 @@ const RULE: TeamRuleView = {
   id: "regra-1",
   teamId: "time-plataforma",
   careerLevelId: "pleno",
-  minimumQualifiedCapabilities: 4,
-  capabilityIds: [],
+  capabilityIds: ["cap-integracao"],
   competencies: [],
 };
 
@@ -28,10 +27,10 @@ function ProvaDaRegua({ rule }: { rule: TeamRuleView | null }) {
   const { editor, setEditor } = useTeamRuleEditorViewModel(rule);
   return (
     <>
-      <p>{`piso ${editor.minimumQualifiedCapabilities}`}</p>
+      <p>{`capacidades ${String(editor.capabilityIds.length)}`}</p>
       <p>{editor.isDirty ? "sujo" : "limpo"}</p>
-      <button type="button" onClick={() => setEditor(editor.withMinimum(9))}>
-        subir piso
+      <button type="button" onClick={() => setEditor(editor.withCapability("cap-btp", true))}>
+        exigir capacidade
       </button>
     </>
   );
@@ -54,21 +53,21 @@ describe("useTeamRuleEditorViewModel", () => {
   it("nasce com a régua que o servidor entregou, e limpo", async () => {
     renderWithApp(<ProvaDaRegua rule={RULE} />, { contexts: SELECTOR_CONTEXTS });
 
-    expect(await screen.findByText("piso 4")).toBeTruthy();
+    expect(await screen.findByText("capacidades 1")).toBeTruthy();
     expect(screen.getByText("limpo")).toBeTruthy();
   });
 
-  it("sem régua, nasce no piso mínimo da organização", async () => {
+  it("sem régua, nasce vazio", async () => {
     renderWithApp(<ProvaDaRegua rule={null} />, { contexts: SELECTOR_CONTEXTS });
 
-    expect(await screen.findByText("piso 3")).toBeTruthy();
+    expect(await screen.findByText("capacidades 0")).toBeTruthy();
   });
 
   it("guarda a edição do líder em vez de voltar ao valor do servidor", async () => {
     renderWithApp(<ProvaDaRegua rule={RULE} />, { contexts: SELECTOR_CONTEXTS });
-    fireEvent.click(await screen.findByRole("button", { name: "subir piso" }));
+    fireEvent.click(await screen.findByRole("button", { name: "exigir capacidade" }));
 
-    expect(screen.getByText("piso 9")).toBeTruthy();
+    expect(screen.getByText("capacidades 2")).toBeTruthy();
     expect(screen.getByText("sujo")).toBeTruthy();
   });
 });

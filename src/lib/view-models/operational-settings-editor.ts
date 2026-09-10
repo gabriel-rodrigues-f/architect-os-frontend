@@ -6,22 +6,24 @@ import {
   type OperationalSettings,
 } from "../operational-settings";
 
-export type OperationalNumberField = "floor" | "threshold" | "idleTimeout";
+/**
+ * O campo `floor` (`career.minimumQualifiedFloor`) saiu com a elegibilidade
+ * (dono, 2026-09-10): era o mínimo PADRÃO de capacidades qualificadas, o
+ * número que a organização sugeria à régua de um time.
+ */
+export type OperationalNumberField = "threshold" | "idleTimeout";
 
 export const OPERATIONAL_NUMBER_FIELDS: readonly OperationalNumberField[] = [
-  "floor",
   "threshold",
   "idleTimeout",
 ];
 
 const FIELD_TO_KEY: Record<OperationalNumberField, AppSettingKey> = {
-  floor: "career.minimumQualifiedFloor",
   threshold: "training.collectiveInterventionThreshold",
   idleTimeout: "session.idleTimeoutMinutes",
 };
 
 export const OPERATIONAL_FIELD_MINIMUM: Record<OperationalNumberField, number> = {
-  floor: 1,
   threshold: 1,
   idleTimeout: EffectiveOperationalSettings.sessionIdleTimeoutMinimumMinutes,
 };
@@ -30,7 +32,6 @@ export type OperationalSettingsErrorKey =
   "config.operational.error.number" | "config.operational.error.idleTimeout";
 
 const FIELD_ERROR_KEY: Record<OperationalNumberField, OperationalSettingsErrorKey> = {
-  floor: "config.operational.error.number",
   threshold: "config.operational.error.number",
   idleTimeout: "config.operational.error.idleTimeout",
 };
@@ -45,7 +46,6 @@ export class OperationalSettingsEditor {
 
   static from(settings: OperationalSettings): OperationalSettingsEditor {
     return new OperationalSettingsEditor(settings, settings.cycleCadence, {
-      floor: String(settings.careerMinimumQualifiedFloor),
       threshold: String(settings.trainingCollectiveInterventionThreshold),
       idleTimeout: String(settings.sessionIdleTimeoutMinutes),
     });
@@ -97,8 +97,6 @@ export class OperationalSettingsEditor {
     if (numbers === null) return null;
     const changes: { key: AppSettingKey; value: AppSettingValue }[] = [];
     if (this.cadenceChanged) changes.push({ key: "cycle.cadence", value: this.cadence });
-    if (numbers.floor !== this.baseline.careerMinimumQualifiedFloor)
-      changes.push({ key: FIELD_TO_KEY.floor, value: numbers.floor });
     if (numbers.threshold !== this.baseline.trainingCollectiveInterventionThreshold)
       changes.push({ key: FIELD_TO_KEY.threshold, value: numbers.threshold });
     if (numbers.idleTimeout !== this.baseline.sessionIdleTimeoutMinutes)

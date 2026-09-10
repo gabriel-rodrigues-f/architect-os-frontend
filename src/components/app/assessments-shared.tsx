@@ -5,7 +5,6 @@ import { Fragment, useMemo, useState } from "react";
 import { EmptyState, GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
-  CapabilityPortfolioFigure,
   CapabilityPortfolioMeter,
   PortfolioStage,
   PortfolioStageChip,
@@ -31,7 +30,7 @@ import { useAsyncSubmit, useNarrowViewport } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { stateContextCatalog } from "@/lib/state-contexts";
-import { useOperationalSettings, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { defaultCommentSignature } from "@/lib/comment-signature";
 import { cn } from "@/lib/utils";
@@ -281,7 +280,6 @@ export function CareerPortfolioSection({
   const queryClient = useQueryClient();
   const viewModel = useAssessmentViewModel();
 
-  const globalFloor = useOperationalSettings().careerMinimumQualifiedFloor;
   const [selectedCapabilityId, setSelectedCapabilityId] = useState("");
   const {
     submitting: busy,
@@ -291,15 +289,22 @@ export function CareerPortfolioSection({
   } = useAsyncSubmit(t("asmt.portfolio.error"));
   const [pendingRemoval, setPendingRemoval] = useState<{ id: string; name: string } | null>(null);
 
-  const queryKey = ["assessment-eligibility", assessment.id];
+  /*
+   * DONO, 2026-09-10 — a fonte deste bloco era `GET /assessments/:id/
+   * eligibility`, que morreu com a elegibilidade. O portfólio em si não
+   * morreu: ele tem rota própria (`/capabilities`), e o ESTÁGIO de cada
+   * capacidade — o comparativo contra o alvo congelado — se calcula aqui,
+   * sobre os itens que a avaliação já traz.
+   */
+  const queryKey = ["assessment-portfolio", assessment.id];
   const {
-    data: eligibility,
+    data: portfolio,
     isPending,
     isError,
     refetch,
   } = useQuery({
     queryKey,
-    queryFn: () => api.assessmentEligibility(assessment.id),
+    queryFn: () => api.assessmentCapabilities(assessment.id),
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
@@ -353,11 +358,18 @@ export function CareerPortfolioSection({
 
   return (
     <QuerySection
-      query={{ data: eligibility, isPending, isError, refetch }}
+      query={{ data: portfolio, isPending, isError, refetch }}
       className="mb-4"
       title={t("asmt.portfolio.title")}
       description={t("asmt.portfolio.subtitle")}
       errorMessage={t("asmt.portfolio.loadError")}
+      /*
+       * O corpo que não é LISTA é ausência, não portfólio vazio de uma linha
+       * só: mesma guarda que a fonte anterior tinha (`!data.capabilities`),
+       * traduzida para a forma nova. Sem ela, um corpo inesperado viraria
+       * `.map` sobre não-array e derrubaria a tela inteira.
+       */
+      isEmpty={(data) => !Array.isArray(data)}
 
       skeleton={
         <div className="space-y-2">
@@ -366,17 +378,14 @@ export function CareerPortfolioSection({
           <div className="h-9 w-2/3 animate-pulse rounded-md bg-secondary" />
         </div>
       }
-
-      isEmpty={(data) => !data.capabilities}
     >
-      {(eligibility) => {
+      {(portfolioRows) => {
+        const entries = viewModel.portfolioStateOf(assessment, portfolioRows, store.competencies);
         const availableToAdd = viewModel.availableCapabilitiesToPropose(
           store.capabilities,
-          eligibility,
+          entries,
         );
-        const portfolioSize = eligibility.capabilities.length;
-
-        const minimumPortfolio = eligibility.policy?.minimumQualifiedCapabilities ?? globalFloor;
+        const portfolioSize = entries.length;
 
         return (
           <SectionCard
@@ -395,38 +404,24 @@ export function CareerPortfolioSection({
               <EmptyState
                 title={EmptySubject.CAPABILITY.titleIn(t, "empty.context.inThePortfolio")}
                 hint={
-                  canPropose
-                    ? t("asmt.portfolio.minimumHint", { min: minimumPortfolio })
-                    : t("asmt.portfolio.empty.readOnly", { min: minimumPortfolio })
+                  canPropose ? t("asmt.portfolio.selectHint") : t("asmt.portfolio.empty.readOnly")
                 }
               />
             ) : (
               <>
                 <div className="mb-4 space-y-4">
-                  {eligibility.nextCareerLevel ? (
-                    <CapabilityPortfolioFigure
-                      levelName={eligibility.nextCareerLevel.name}
-                      qualified={eligibility.qualifiedConfirmedCount}
-                      required={minimumPortfolio}
-                      eligible={eligibility.eligible}
-                    />
-                  ) : (
-                    <p className="text-body text-muted-foreground">
-                      {t("asmt.portfolio.topLevel")}
-                    </p>
-                  )}
                   <CapabilityPortfolioMeter
-                    entries={eligibility.capabilities}
-                    required={minimumPortfolio}
+                    entries={entries}
                     label={t("asmt.portfolio.qualifiedCount", {
-                      qualified: eligibility.qualifiedConfirmedCount,
-                      required: minimumPortfolio,
+                      qualified: entries.filter((entry) => entry.confirmed && entry.qualified)
+                        .length,
+                      total: entries.length,
                     })}
                   />
                 </div>
 
                 <ul className="space-y-1.5">
-                  {eligibility.capabilities.map((entry) => {
+                  {entries.map((entry) => {
                     const capability = store.capabilities.find((c) => c.id === entry.capabilityId);
                     const name = capability?.name ?? entry.capabilityId;
                     return (

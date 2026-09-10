@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { type AppState } from "@/lib/api";
-import type { Assessment, AssessmentEligibility } from "@/lib/domain";
+import type { Assessment, AssessmentCapability } from "@/lib/domain";
 import { fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, hrefOf } from "../helpers/render-app";
 import { apiPath } from "@/lib/api-path";
@@ -18,6 +18,22 @@ import { apiPath } from "@/lib/api-path";
 
 const fetchMock = vi.fn();
 
+const itemDe = (
+  competencyId: string,
+  capabilityId: string,
+  target: 1 | 2 | 3 | 4 | 5,
+  final: 1 | 2 | 3 | 4 | 5,
+): Assessment["items"][number] => ({
+  competencyId,
+  capabilityId,
+  self: null,
+  leader: null,
+  target,
+  final,
+  comments: [],
+  version: 1,
+});
+
 const draftAssessment: Assessment = {
   id: "asmt-ana-draft",
   professionalId: "ana",
@@ -27,7 +43,17 @@ const draftAssessment: Assessment = {
   targetCareerLevelId: "arquiteto-de-solucoes-iii",
   targetSemantics: "NEXT_ROLE",
   version: 1,
-  items: [],
+  /*
+   * DONO, 2026-09-10 — o estágio de cada capacidade deixou de vir pronto da
+   * rota da elegibilidade e passa a ser lido dos ITENS: qualificada é a
+   * capacidade cujas competências avaliadas chegaram ao alvo congelado.
+   * `cloud` chega (3 ≥ 3 e 4 ≥ 3); `security` não (2 < 3).
+   */
+  items: [
+    itemDe("cloud-k8s", "cloud", 3, 3),
+    itemDe("cloud-serverless", "cloud", 3, 4),
+    itemDe("security-iam", "security", 3, 2),
+  ],
 };
 
 /**
@@ -44,14 +70,24 @@ const state: AppState = {
   assessments: [...fixtureState.assessments, draftAssessment],
 };
 
-const eligibilityBase: AssessmentEligibility = {
-  currentCareerLevel: { id: "arquiteto-de-solucoes-ii", name: "Pleno", rank: 2 },
-  nextCareerLevel: { id: "arquiteto-de-solucoes-iii", name: "Sênior", rank: 3 },
-  policy: { careerLevelId: "arquiteto-de-solucoes-iii", minimumQualifiedCapabilities: 3 },
-  capabilities: [],
-  qualifiedConfirmedCount: 0,
-  eligible: false,
-};
+const entradaDoPortfolio = (capabilityId: string, confirmada: boolean): AssessmentCapability => ({
+  id: `portfolio-${capabilityId}`,
+  assessmentId: draftAssessment.id,
+  capabilityId,
+  addedByUserId: "test-lead",
+  addedAt: "2026-08-20T00:00:00Z",
+  confirmedByUserId: confirmada ? "test-lead" : null,
+  confirmedAt: confirmada ? "2026-08-21T00:00:00Z" : null,
+});
+
+/** O portfólio VAZIO — o estado com que a maioria dos casos começa. */
+const portfolioVazio: AssessmentCapability[] = [];
+
+const rotaDoPortfolio = (linhas: AssessmentCapability[]) => (href: string, init?: RequestInit) =>
+  init?.method === undefined &&
+  href.includes(apiPath(`/assessments/${draftAssessment.id}/capabilities`))
+    ? jsonResponse(linhas)
+    : undefined;
 
 /** OO3-11/D-7 — providers compartilhados em `render-app.tsx` (`renderWithApp`). */
 
@@ -91,10 +127,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedTechLeadUser,
       state,
-      routes: [
-        (href) => (href.includes("/eligibility") ? jsonResponse(eligibilityBase) : undefined),
-        addCapabilityRoute,
-      ],
+      routes: [rotaDoPortfolio(portfolioVazio), addCapabilityRoute],
     });
   });
 
@@ -107,7 +140,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     renderPage();
     // `findByLabelText`, não `findByText` do título: o título aparece nos
     // três estados (loading/error/sucesso) — só o combobox confirma que a
-    // consulta de elegibilidade já resolveu.
+    // consulta do portfólio já resolveu.
     const select = (await screen.findByLabelText(
       "Adicionar capacidade ao portfólio",
     )) as HTMLSelectElement;
@@ -140,7 +173,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     await screen.findByLabelText("Adicionar capacidade ao portfólio");
 
     expect(screen.getByText("Nenhuma capacidade no portfólio deste ciclo")).toBeTruthy();
-    expect(screen.getByText(/Selecione pelo menos 3 capacidades/)).toBeTruthy();
+    expect(screen.getByText(/Selecione as capacidades que este ciclo vai avaliar/)).toBeTruthy();
   });
 
   it("loading aparece antes da resposta, e error com Tentar novamente quando a rota falha", async () => {
@@ -156,26 +189,28 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
     // Reaplica o mock genérico para as chamadas seguintes, mas força a
-    // primeira consulta de elegibilidade a falhar.
+    // primeira consulta do portfólio a falhar.
     mockAppFetch(fetchMock, {
       user: fixtureAssignedTechLeadUser,
       state,
       routes: [
-        (href) => (href.includes("/eligibility") ? new Response("{}", { status: 500 }) : undefined),
+        (href, init) =>
+          init?.method === undefined &&
+          href.includes(apiPath(`/assessments/${draftAssessment.id}/capabilities`))
+            ? new Response("{}", { status: 500 })
+            : undefined,
       ],
     });
 
     renderPage();
     await screen.findByText("Portfólio de Capacidades do Ciclo");
     await waitFor(() =>
-      expect(
-        screen.getByText("Não foi possível carregar o portfólio e a elegibilidade."),
-      ).toBeTruthy(),
+      expect(screen.getByText("Não foi possível carregar o portfólio.")).toBeTruthy(),
     );
     expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeTruthy();
   });
 
-  it("adicionar capacidade invalida também o estado principal do app (Assessment/items), não só a elegibilidade", async () => {
+  it("adicionar capacidade invalida também o estado principal do app (Assessment/items), não só o portfólio", async () => {
     // Torna "cloud" READY só para este teste, para exercitar o caminho de
     // adicionar de verdade.
     const readyState: AppState = {
@@ -197,10 +232,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedTechLeadUser,
       state: readyState,
-      routes: [
-        (href) => (href.includes("/eligibility") ? jsonResponse(eligibilityBase) : undefined),
-        addCapabilityRoute,
-      ],
+      routes: [rotaDoPortfolio(portfolioVazio), addCapabilityRoute],
     });
 
     renderPage();
@@ -226,7 +258,7 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     );
 
     // A revalidação depois de adicionar precisa incluir o estado principal
-    // do app (Problema 2), não só a query de elegibilidade.
+    // do app (Problema 2), não só a query do portfólio.
     await waitFor(() => {
       const stateCallsAfter = fetchMock.mock.calls.filter(([u]) =>
         hrefOf(u as string | URL | Request).endsWith(apiPath("/assessments")),
@@ -236,84 +268,69 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
   });
 
   /**
-   * ESTADO PARCIAL — a confusão aqui é OUTRA (o levantamento dos três estados
-   * mostrou): dois selos de mesma forma, "2 selecionada(s) · mínimo 3" e
-   * "1/3 qualificadas", contra o MESMO denominador e com significados
-   * diferentes, mais a barra de 66% que pertencia só ao primeiro. Passa a
-   * haver UM número-síntese (o que conta para a progressão) e UM medidor, com
-   * uma vaga por capacidade e uma vaga tracejada por capacidade que falta
-   * selecionar — os dois "números" viram posições da mesma pista.
+   * ESTADO PARCIAL — a confusão que o dono relatou (2026-09-09) era dois
+   * selos de mesma forma contra o MESMO denominador, com significados
+   * diferentes, mais uma barra de 66%. Sobrou UM medidor, com uma vaga por
+   * capacidade do portfólio, tingida pelo estágio.
+   *
+   * DONO, 2026-09-10 — o número-síntese "1/3" e a vaga tracejada "a
+   * selecionar" morreram com o MÍNIMO de capacidades qualificadas: não existe
+   * mais denominador cravado na pedra. O medidor conta o que ESTÁ no
+   * portfólio, e mais nada.
    */
-  const renderComElegibilidade = (eligibility: AssessmentEligibility) => {
+  const renderComPortfolio = (linhas: AssessmentCapability[]) => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedTechLeadUser,
       state,
-      routes: [(href) => (href.includes("/eligibility") ? jsonResponse(eligibility) : undefined)],
+      routes: [rotaDoPortfolio(linhas)],
     });
     return renderPage();
   };
 
-  const parcial: AssessmentEligibility = {
-    ...eligibilityBase,
-    capabilities: [
-      { capabilityId: "cloud", confirmed: true, qualified: true },
-      { capabilityId: "security", confirmed: true, qualified: false },
-    ],
-    qualifiedConfirmedCount: 1,
-    eligible: false,
-  };
+  const parcial: AssessmentCapability[] = [
+    entradaDoPortfolio("cloud", true),
+    entradaDoPortfolio("security", true),
+  ];
 
-  it("no estado parcial, o número-síntese da progressão é um só", async () => {
-    renderComElegibilidade(parcial);
+  it("no estado parcial, nenhum número sugere um mínimo a atingir", async () => {
+    renderComPortfolio(parcial);
     await screen.findByLabelText("Adicionar capacidade ao portfólio");
 
-    expect(screen.queryByText(/Portfólio do ciclo: 2 capacidade/)).toBeNull();
-    expect(screen.getByText("1/3")).toBeTruthy();
-    expect(screen.getByText(/Faltam 2 capacidade/)).toBeTruthy();
+    expect(screen.queryByText("1/3")).toBeNull();
+    expect(screen.queryByText(/Faltam \d+ capacidade/)).toBeNull();
+    expect(screen.queryByText(/Eleg[íi]vel/)).toBeNull();
   });
 
-  it("no estado parcial, o medidor separa os estágios e mostra a vaga que falta", async () => {
-    renderComElegibilidade(parcial);
+  it("no estado parcial, o medidor separa os estágios — e não inventa vaga a selecionar", async () => {
+    renderComPortfolio(parcial);
     await screen.findByLabelText("Adicionar capacidade ao portfólio");
 
-    const medidor = screen.getByLabelText("1/3 capacidades qualificadas");
+    const medidor = screen.getByLabelText("1 de 2 capacidades no alvo");
     const vagas = medidor.querySelectorAll("[data-portfolio-slot]");
     expect(Array.from(vagas).map((vaga) => vaga.getAttribute("data-portfolio-slot"))).toEqual([
       "qualified",
       "belowBar",
-      "unselected",
     ]);
   });
 
   it("no estado parcial, a legenda conta cada estágio uma vez", async () => {
-    renderComElegibilidade(parcial);
+    renderComPortfolio(parcial);
     await screen.findByLabelText("Adicionar capacidade ao portfólio");
 
     expect(screen.getByText(/^1 qualificada/)).toBeTruthy();
     expect(screen.getByText(/^1 abaixo da régua/)).toBeTruthy();
-    expect(screen.getByText(/^1 a selecionar/)).toBeTruthy();
+    expect(screen.queryByText(/a selecionar/)).toBeNull();
   });
 
   /**
-   * ESTADO COMPLETO — a terceira confusão: com `eligible: true` o bloco não
-   * dizia NADA. O veredito existe no contrato (`eligible`) e nunca chegava à
-   * tela; o selo só trocava de variante, o que ninguém lê. E ele vem com a
-   * ressalva da régua de progressão: elegibilidade não promove sozinha.
+   * A capacidade AINDA NÃO CONFIRMADA continua sendo o terceiro estágio — ela
+   * está no portfólio e não conta, e isso nada tem a ver com o veredito que
+   * morreu.
    */
-  it("no estado completo, o bloco diz o veredito de elegibilidade", async () => {
-    renderComElegibilidade({
-      ...eligibilityBase,
-      policy: { careerLevelId: "arquiteto-de-solucoes-iii", minimumQualifiedCapabilities: 2 },
-      capabilities: [
-        { capabilityId: "cloud", confirmed: true, qualified: true },
-        { capabilityId: "security", confirmed: true, qualified: true },
-      ],
-      qualifiedConfirmedCount: 2,
-      eligible: true,
-    });
+  it("capacidade proposta e não confirmada aparece como aguardando confirmação", async () => {
+    renderComPortfolio([entradaDoPortfolio("cloud", false)]);
     await screen.findByLabelText("Adicionar capacidade ao portfólio");
 
-    expect(screen.getByText(/Elegível para Sênior/)).toBeTruthy();
-    expect(screen.getByText(/decisão de quem gerencia/)).toBeTruthy();
+    expect(screen.getByText(/^1 aguardando confirmação/)).toBeTruthy();
   });
 });

@@ -20,7 +20,6 @@ import {
   Map,
   Milestone,
   Ruler,
-  Scale,
   SlidersHorizontal,
   Tags,
   Target,
@@ -219,7 +218,6 @@ export const NAV_GROUPS: NavGroup[] = [
    * configuração. Aqui cada fatia declara o próprio dono, e a que a pessoa não
    * alcança simplesmente não aparece:
    *
-   *   Elegibilidade      → quem rege a régua do time (`teamRuleReachOnly`)
    *   Réguas e limiares  → quem opera o sistema
    *   Textos             → quem opera o sistema
    *   Catálogo           → quem opera o sistema
@@ -229,12 +227,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     labelKey: "nav.group.progressionCriteria",
     items: [
-      {
-        to: "/eligibility",
-        labelKey: "eligibility.title",
-        icon: Scale,
-        teamRuleReachOnly: true,
-      },
       {
         to: "/scoring-rulers",
         labelKey: "config.bands.title",

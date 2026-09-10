@@ -98,7 +98,6 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     nome: "definição da régua do time",
     enviar: () =>
       api.defineTeamRule("time-plataforma", "senior", {
-        minimumQualifiedCapabilities: 3,
         capabilityIds: [],
         competencies: [],
       }),
@@ -155,11 +154,6 @@ const chamadas: { nome: string; enviar: () => Promise<unknown>; caminho: string 
     nome: "abertura de avaliação",
     enviar: () => api.openAssessment("ana", "2026-h1"),
     caminho: "/api/v1/assessments",
-  },
-  {
-    nome: "elegibilidade da avaliação",
-    enviar: () => api.assessmentEligibility("ana-h1"),
-    caminho: "/api/v1/assessments/ana-h1/eligibility",
   },
   {
     nome: "remoção de capacidade da avaliação",

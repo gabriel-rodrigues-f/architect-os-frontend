@@ -17,7 +17,6 @@ export interface TeamRuleView extends TeamLevelRule {
 }
 
 export interface TeamRuleDefinition {
-  minimumQualifiedCapabilities: number;
   capabilityIds: string[];
   competencies: TeamRuleCompetencyRequirement[];
 }

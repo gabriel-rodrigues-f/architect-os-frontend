@@ -144,9 +144,14 @@ function AssessmentsScreen() {
     setCapabilityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
   const assessmentId = assessment?.id;
-  const { data: eligibility } = useQuery({
-    queryKey: ["assessment-eligibility", assessmentId],
-    queryFn: assessmentId ? () => api.assessmentEligibility(assessmentId) : skipToken,
+  /*
+   * DONO, 2026-09-10 — o atalho "selecionar o portfólio" lia a rota da
+   * ELEGIBILIDADE, que morreu com o conceito. O portfólio em si não morreu:
+   * ele tem rota própria, e é dela que a lista vem.
+   */
+  const { data: portfolio } = useQuery({
+    queryKey: ["assessment-portfolio", assessmentId],
+    queryFn: assessmentId ? () => api.assessmentCapabilities(assessmentId) : skipToken,
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
@@ -206,13 +211,11 @@ function AssessmentsScreen() {
               onSelectAll={setCapabilityIds}
               className="w-56"
             />
-            {eligibility && eligibility.capabilities.length > 0 && (
+            {Array.isArray(portfolio) && portfolio.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setCapabilityIds(eligibility.capabilities.map((c) => c.capabilityId))
-                }
+                onClick={() => setCapabilityIds(portfolio.map((entry) => entry.capabilityId))}
               >
                 {t("asmt.selectPortfolio")}
               </Button>

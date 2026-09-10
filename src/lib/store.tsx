@@ -26,7 +26,6 @@ import type {
   Level,
   MentoringSession,
   RoleName,
-  TeamLevelRule,
 } from "./domain";
 import { EffectiveCurationPolicy, type CurationPolicy } from "./curation-policy";
 import { configurationCatalog, RulerConfiguration } from "./configuration-queries";
@@ -34,7 +33,6 @@ import { stateContextCatalog, UnrequestedSlice } from "./state-contexts";
 import { ReadingRefusal } from "../components/app/ReadingRefusal";
 import { ServiceOutageScreen } from "../components/app/ServiceOutageScreen";
 import { ApiFailureReading } from "./api-failure-reading";
-import { RefusalNumber } from "./refusal-number";
 import { ServiceOutage } from "./service-outage";
 import {
   EffectiveOperationalSettings,
@@ -158,12 +156,6 @@ export interface Api extends AppState {
     reason: string,
   ) => Promise<Professional>;
   releaseProfessionalFromTeam: (professionalId: string) => Promise<Professional>;
-
-  defineTeamRuleMinimum: (
-    teamId: string,
-    careerLevelId: string,
-    minimumQualifiedCapabilities: number,
-  ) => Promise<TeamLevelRule>;
 
   updateScoringBands: (scale: ScoringScale, bands: ScoringBand[]) => Promise<ScoringBand[]>;
 
@@ -443,44 +435,12 @@ export function buildApi(
       return summary;
     },
 
-    /**
-     * REGRA 18 (dono, 2026-09-09) — a leitura prévia da régua engole o 404
-     * porque a régua do nível é exceção nomeada e ali ele quer dizer "ainda
-     * não definida": sem régua, o PUT nasce com as listas vazias, que é o
-     * certo. Se a rota entrar na troca, engolir a recusa faria este comando
-     * SOBRESCREVER a régua com `capabilityIds` e `competencies` vazios — a
-     * recusa sumiria da tela e ainda apagaria dado. A assinatura da exceção
-     * mora em `RefusalNumber`.
+    /*
+     * `defineTeamRuleMinimum` morreu com a elegibilidade (dono, 2026-09-10):
+     * ele existia para a tela de Elegibilidade gravar SÓ o piso de
+     * capacidades qualificadas, relendo a régua antes para não apagar o
+     * resto. Sem piso, não há o que gravar sozinho.
      */
-    defineTeamRuleMinimum: (teamId, careerLevelId, minimumQualifiedCapabilities) =>
-      runner.command(
-        async () => {
-          const current = await api.teamRule(teamId, careerLevelId).catch((error: unknown) => {
-            if (RefusalNumber.answersAbsenceOn("regua-do-nivel", error)) return undefined;
-            throw error;
-          });
-          return api.defineTeamRule(teamId, careerLevelId, {
-            minimumQualifiedCapabilities,
-            capabilityIds: current?.capabilityIds ?? [],
-            competencies: current?.competencies ?? [],
-          });
-        },
-        (updated) => (s) => {
-          const summary: TeamLevelRule = {
-            id: updated.id,
-            teamId: updated.teamId,
-            careerLevelId: updated.careerLevelId,
-            minimumQualifiedCapabilities: updated.minimumQualifiedCapabilities,
-          };
-          const exists = s.teamLevelRules.some((rule) => rule.id === summary.id);
-          return {
-            ...s,
-            teamLevelRules: exists
-              ? s.teamLevelRules.map((rule) => (rule.id === summary.id ? summary : rule))
-              : [...s.teamLevelRules, summary],
-          };
-        },
-      ),
 
     transitionCareerLevel: async (id, toRole, reason) => {
       const expectedVersion = expectedVersionOf(

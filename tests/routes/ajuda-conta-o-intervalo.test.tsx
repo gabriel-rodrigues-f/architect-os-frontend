@@ -9,8 +9,7 @@ vi.mock("@tanstack/react-router", () =>
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
 import { Route as CatalogPolicyRoute } from "@/routes/catalog-policy";
-import { Route as EligibilityRoute } from "@/routes/eligibility";
-import { fixtureAdminUser, fixtureAssignedManagerUser } from "../helpers/fixtures";
+import { fixtureAdminUser } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -37,7 +36,6 @@ import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/rende
 const fetchMock = vi.fn();
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
 const CatalogPolicyPage = CatalogPolicyRoute.options.component as () => ReactNode;
-const EligibilityPage = EligibilityRoute.options.component as () => ReactNode;
 
 /**
  * Revisão de papéis (dono, 2026-09-05, D1): a Matriz e o Catálogo são do
@@ -91,20 +89,5 @@ describe("o ? das fatias de configuração conta o intervalo e o piso da régua"
     const ajuda = await screen.findByRole("dialog");
     expect(ajuda.textContent).toMatch(/mínimo/i);
     expect(ajuda.textContent).not.toMatch(/de 1 até esse máximo/i);
-  });
-
-  it("a Elegibilidade explica ao gerente que o mínimo da régua pode ser zero", async () => {
-    entrarComo(fixtureAssignedManagerUser);
-    renderWithApp(<EligibilityPage />);
-    await screen.findByText("Júnior");
-
-    await userEvent.click(screen.getByRole("button", { name: "Como usar Elegibilidade" }));
-
-    const ajuda = await screen.findByRole("dialog");
-    expect(ajuda.textContent).toMatch(/mínimo da régua é zero/i);
-    // A frase revogada não pode sobreviver em lugar nenhum do balão.
-    expect(ajuda.textContent).not.toMatch(/mínimo da régua é 1/i);
-    // E o zero precisa DIZER o que significa, senão vira número solto.
-    expect(ajuda.textContent).toMatch(/não exige capacidade qualificada/i);
   });
 });

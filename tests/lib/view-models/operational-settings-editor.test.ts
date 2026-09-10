@@ -11,7 +11,6 @@ import type { OperationalSettings } from "@/lib/operational-settings";
 
 const baseline: OperationalSettings = {
   cycleCadence: "SEMIANNUAL",
-  careerMinimumQualifiedFloor: 3,
   trainingCollectiveInterventionThreshold: 3,
   sessionIdleTimeoutMinutes: 10,
 };
@@ -20,7 +19,7 @@ describe("OperationalSettingsEditor", () => {
   it("nasce da baseline efetiva, válido e sem mudanças", () => {
     const editor = OperationalSettingsEditor.from(baseline);
     expect(editor.cadence).toBe("SEMIANNUAL");
-    expect(editor.drafts).toEqual({ floor: "3", threshold: "3", idleTimeout: "10" });
+    expect(editor.drafts).toEqual({ threshold: "3", idleTimeout: "10" });
     expect(editor.isValid).toBe(true);
     expect(editor.cadenceChanged).toBe(false);
     expect(editor.payload()).toEqual([]);
@@ -37,14 +36,15 @@ describe("OperationalSettingsEditor", () => {
     ]);
   });
 
-  it("piso alterado sozinho vira só o PUT do piso", () => {
-    const editor = OperationalSettingsEditor.from(baseline).withField("floor", "4");
-    expect(editor.payload()).toEqual([{ key: "career.minimumQualifiedFloor", value: 4 }]);
-  });
+  /*
+   * O teste do PISO saiu com a elegibilidade (dono, 2026-09-10): o campo
+   * `floor` (`career.minimumQualifiedFloor`) não é mais configuração de
+   * ninguém.
+   */
 
   it("inteiro < 1, não inteiro ou vazio invalida (mesma régua do VO do backend)", () => {
     for (const bad of ["0", "-1", "2.5", "", "abc"]) {
-      const editor = OperationalSettingsEditor.from(baseline).withField("floor", bad);
+      const editor = OperationalSettingsEditor.from(baseline).withField("threshold", bad);
       expect(editor.errorKey).toBe("config.operational.error.number");
       expect(editor.isValid).toBe(false);
       expect(editor.payload()).toBeNull();
@@ -67,7 +67,7 @@ describe("OperationalSettingsEditor", () => {
  */
 describe("OperationalSettingsEditor — tempo máximo sem atividade", () => {
   it("o piso ecoado na tela é 5, e os irmãos continuam em 1", () => {
-    expect(OPERATIONAL_FIELD_MINIMUM).toEqual({ floor: 1, threshold: 1, idleTimeout: 5 });
+    expect(OPERATIONAL_FIELD_MINIMUM).toEqual({ threshold: 1, idleTimeout: 5 });
   });
 
   it("alterar só o tempo vira só o PUT de session.idleTimeoutMinutes", () => {

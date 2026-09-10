@@ -18,10 +18,8 @@ import { AdviceSemiotics, AiProgressEstimate } from "@/lib/advice-semiotics";
 import {
   AdviceAbsences,
   AdviceTranscript,
-  CareerReadinessReading,
   GenerationProfileChoice,
   type AssistantRunState,
-  type CareerReadinessFigures,
   type GenerationProfileName,
   type WrittenByPerson,
 } from "@/lib/assistants";
@@ -453,45 +451,6 @@ export function CopyAdviceButton({ text }: { text: string }) {
     >
       {copied ? t("ai.action.copied") : t("ai.action.copy")}
     </Button>
-  );
-}
-
-/**
- * O veredito determinístico, desenhado ANTES do parágrafo e independente
- * dele: é a exigência literal do dono de que ele *"continua aparecendo
- * SOZINHO quando a IA cai"*. Por isso ele mora aqui e não dentro do bloco de
- * narração — quem edita este arquivo não consegue acoplar os dois sem
- * perceber.
- */
-export function CareerReadinessVerdictLines({ verdict }: { verdict: CareerReadinessFigures }) {
-  const { t } = useI18n();
-  const reading = new CareerReadinessReading(verdict);
-  const transition = reading.transition;
-  const eligibilityKey = reading.eligibilityKey;
-  const qualified = reading.qualified;
-  return (
-    <dl className="mt-2 space-y-1 text-sm">
-      {transition && (
-        <div>
-          <dt className="sr-only">{t("ai.readiness.transition")}</dt>
-          <dd className="font-medium">{`${transition.from} → ${transition.to}`}</dd>
-        </div>
-      )}
-      {eligibilityKey !== null && (
-        <div>
-          <dt className="sr-only">{t("ai.readiness.verdict")}</dt>
-          <dd>{t(eligibilityKey)}</dd>
-        </div>
-      )}
-      {qualified && (
-        <div>
-          <dt className="sr-only">{t("ai.readiness.qualifiedLabel")}</dt>
-          <dd className="text-muted-foreground">
-            {t("ai.readiness.qualified", { n: qualified.count, min: qualified.minimum })}
-          </dd>
-        </div>
-      )}
-    </dl>
   );
 }
 

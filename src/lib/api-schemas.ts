@@ -30,7 +30,6 @@ const teamLevelRule = z.object({
   id: z.string(),
   teamId: z.string(),
   careerLevelId: z.string(),
-  minimumQualifiedCapabilities: z.number(),
 });
 
 export const teamRuleResponseSchema = teamLevelRule.extend({
@@ -283,17 +282,12 @@ export const sessionScriptAdviceResponseSchema = personAdvice.extend({
   outline: z.array(z.string()),
 });
 
-export const careerReadinessAdviceResponseSchema = personAdvice.extend({
-  readiness: z
-    .object({
-      currentCareerLevel: z.string().nullable(),
-      nextCareerLevel: z.string().nullable(),
-      eligible: z.boolean().nullable(),
-      qualifiedCapabilityCount: z.number(),
-      minimumQualifiedCapabilities: z.number().nullable(),
-    })
-    .nullable(),
-});
+/**
+ * A prontidão perdeu o campo `readiness` (dono, 2026-09-10): ele carregava o
+ * veredito da elegibilidade, que saiu do produto. O corpo é o de qualquer
+ * conselho de pessoa — fatos, ausências e narração.
+ */
+export const careerReadinessAdviceResponseSchema = personAdvice;
 
 export const developmentPlanAdviceResponseSchema = personAdvice.extend({
   distance: z.object({

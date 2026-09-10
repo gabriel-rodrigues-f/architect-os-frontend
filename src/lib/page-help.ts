@@ -2,7 +2,6 @@ import type { PageHelpContent, SectionHelpContent } from "@/components/app";
 import { useI18n } from "@/lib/i18n";
 
 export const SECTION_HELP_KEYS = [
-  "policy",
   "scale",
   "cycles",
   "bands",
@@ -42,7 +41,6 @@ type PageHelpRouteKey =
   | "mentoring"
   | "competencyMatrix"
   | "cycles"
-  | "eligibility"
   | "scoringRulers"
   | "textTemplates"
   | "catalogPolicy"

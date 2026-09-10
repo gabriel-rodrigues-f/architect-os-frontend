@@ -84,13 +84,12 @@ describe("schemas de fatia — contrato da Fase 2 (régua por time)", () => {
     });
   });
 
-  it("carrega teamLevelRules (piso por time×nível) no lugar de careerLevelPolicies", () => {
+  it("carrega teamLevelRules (a régua por time×nível) no lugar de careerLevelPolicies", () => {
     const parsed = teamLevelRulesResponseSchema.parse(fixtureState.teamLevelRules);
     expect(parsed).toHaveLength(3);
     expect(parsed[0]).toMatchObject({
       teamId: "time-plataforma",
       careerLevelId: "arquiteto-de-solucoes-i",
-      minimumQualifiedCapabilities: 3,
     });
     expect(fixtureState).not.toHaveProperty("careerLevelPolicies");
   });

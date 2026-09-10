@@ -1,4 +1,3 @@
-import { QualifiedCapabilityMinimum } from "../presenters/progression-policy-presenter";
 import type { Competency, Level } from "../domain";
 import type { TeamRuleDefinition, TeamRuleView } from "../gateways/career.gateway";
 
@@ -8,24 +7,19 @@ export interface TeamRuleCompetencyDraft {
 }
 
 export type TeamRuleErrorKey =
-  | "teamRules.error.minimumBelowFloor"
-  | "teamRules.error.competencyWithoutCapability"
-  | "teamRules.error.levelOutOfRange";
+  "teamRules.error.competencyWithoutCapability" | "teamRules.error.levelOutOfRange";
 
+/**
+ * O MÍNIMO SAIU DO EDITOR (dono, 2026-09-10): o campo `floor` trazia o piso
+ * padrão da organização (`career.minimumQualifiedFloor`) só para sugerir com
+ * que número a régua nova nascia. Sem elegibilidade não há número a sugerir.
+ */
 export interface TeamRuleEditorInput {
-  /**
-   * O mínimo PADRÃO da organização (`career.minimumQualifiedFloor`). Ele
-   * SUGERE o valor com que a régua nova nasce — e só. Dono (2026-09-08, regra
-   * 12): *"Não haverá mais valor mínimo."* Usá-lo como limite era a
-   * organização decidindo a régua do time pela porta dos fundos.
-   */
-  floor: number;
   competencyById: (id: string) => Competency | undefined;
   rule: TeamRuleView | null;
 }
 
 interface TeamRuleDraft {
-  minimumQualifiedCapabilities: number;
   capabilityIds: readonly string[];
   competencies: readonly TeamRuleCompetencyDraft[];
 }
@@ -49,20 +43,15 @@ export class TeamRuleEditorViewModel {
   static from(input: TeamRuleEditorInput): TeamRuleEditorViewModel {
     const baseline: TeamRuleDraft = input.rule
       ? {
-          minimumQualifiedCapabilities: input.rule.minimumQualifiedCapabilities,
           capabilityIds: [...input.rule.capabilityIds],
           competencies: input.rule.competencies.map((competency) => ({ ...competency })),
         }
-      : { minimumQualifiedCapabilities: input.floor, capabilityIds: [], competencies: [] };
+      : { capabilityIds: [], competencies: [] };
     return new TeamRuleEditorViewModel(input, baseline, baseline);
   }
 
   get hasRule(): boolean {
     return this.input.rule !== null;
-  }
-
-  get minimumQualifiedCapabilities(): number {
-    return this.draft.minimumQualifiedCapabilities;
   }
 
   get capabilityIds(): readonly string[] {
@@ -71,10 +60,6 @@ export class TeamRuleEditorViewModel {
 
   get competencies(): readonly TeamRuleCompetencyDraft[] {
     return this.draft.competencies;
-  }
-
-  withMinimum(minimumQualifiedCapabilities: number): TeamRuleEditorViewModel {
-    return this.withDraft({ ...this.draft, minimumQualifiedCapabilities });
   }
 
   withCapability(capabilityId: string, required: boolean): TeamRuleEditorViewModel {
@@ -129,9 +114,6 @@ export class TeamRuleEditorViewModel {
 
   get errorKeys(): readonly TeamRuleErrorKey[] {
     const keys: TeamRuleErrorKey[] = [];
-    if (!QualifiedCapabilityMinimum.admits(this.draft.minimumQualifiedCapabilities)) {
-      keys.push("teamRules.error.minimumBelowFloor");
-    }
     if (
       this.draft.competencies.some(
         (competency) => !this.isWithinRule(this.capabilityOf(competency.competencyId)),
@@ -164,11 +146,7 @@ export class TeamRuleEditorViewModel {
         ? [{ competencyId: competency.competencyId, requiredLevel: competency.requiredLevel }]
         : [],
     );
-    return {
-      minimumQualifiedCapabilities: this.draft.minimumQualifiedCapabilities,
-      capabilityIds: [...this.draft.capabilityIds],
-      competencies,
-    };
+    return { capabilityIds: [...this.draft.capabilityIds], competencies };
   }
 
   private withDraft(draft: TeamRuleDraft): TeamRuleEditorViewModel {
@@ -188,10 +166,6 @@ export class TeamRuleEditorViewModel {
   }
 
   private serialize(draft: TeamRuleDraft): string {
-    return JSON.stringify([
-      draft.minimumQualifiedCapabilities,
-      draft.capabilityIds,
-      draft.competencies,
-    ]);
+    return JSON.stringify([draft.capabilityIds, draft.competencies]);
   }
 }
