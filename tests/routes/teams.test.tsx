@@ -86,6 +86,14 @@ const rotaDoQuadroVazio: FetchRoute = (href, init) =>
     ? jsonResponse([])
     : undefined;
 
+/**
+ * O nome do time passou a aparecer em DOIS lugares desde as Pendências de
+ * configuração (dono, 2026-09-10): na linha da tabela e na legenda do
+ * contador que aponta o time a revisar. Quem pergunta pela LISTA pergunta
+ * dentro da tabela.
+ */
+const naTabela = () => within(screen.getByRole("table", { name: "Times cadastrados" }));
+
 const chamadas = (metodo: string, trecho: string) =>
   fetchMock.mock.calls.filter(
     ([entrada, init]) =>
@@ -150,14 +158,14 @@ describe("/teams — a lista, com ativos e desativados", () => {
   it("admin vê os times ativos por padrão, e os desativados pelo filtro", async () => {
     renderAs(fixtureAdminUser);
     expect(await screen.findByText("Time Plataforma")).toBeTruthy();
-    expect(screen.getByText("Time Dados")).toBeTruthy();
-    expect(screen.queryByText("Time Legado")).toBeNull();
+    expect(naTabela().getByText("Time Dados")).toBeTruthy();
+    expect(naTabela().queryByText("Time Legado")).toBeNull();
 
     await userEvent.click(screen.getByLabelText("Situação"));
     await userEvent.click(screen.getByRole("option", { name: "Desativados" }));
 
-    expect(await screen.findByText("Time Legado")).toBeTruthy();
-    expect(screen.queryByText("Time Plataforma")).toBeNull();
+    expect(await naTabela().findByText("Time Legado")).toBeTruthy();
+    expect(naTabela().queryByText("Time Plataforma")).toBeNull();
   });
 
   it("a linha diz quantas pessoas ativas o time tem — o número que a desativação vai cobrar", async () => {
@@ -197,7 +205,7 @@ describe("/teams — criar, renomear, desativar", () => {
     // REGRA 19 (dono, 2026-09-09): o corpo é só o nome. Todo time tem os cinco
     // níveis, e a régua deles nasce no serviço, na mesma transação do time.
     expect(JSON.parse(String(init.body))).toEqual({ name: "Time Novo" });
-    expect(await screen.findByText("Time Novo")).toBeTruthy();
+    expect(await naTabela().findByText("Time Novo")).toBeTruthy();
   });
 
   it("o cadastro não oferece escolha de níveis — o formulário tem o nome, e mais nada", async () => {
