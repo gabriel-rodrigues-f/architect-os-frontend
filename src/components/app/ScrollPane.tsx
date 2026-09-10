@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
-import { PaneHeight, ScrollPaneStyle } from "@/lib/design";
+import { ScrollPaneStyle, type PaneHeight } from "@/lib/design";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,6 +19,10 @@ import { cn } from "@/lib/utils";
  *   itens cabem e devolve a expressão; o número mora no token da folha de
  *   estilo. A medida entra por `style`, nunca por classe montada por string:
  *   o Tailwind v4 só compila o literal.
+ * - **Ou altura MEDIDA, quando a caixa ocupa o resto da página** — aí não há
+ *   conta nenhuma: ela se anuncia pelo marcador do {@link PageFillingPane} e
+ *   é o filho que estica e encolhe na coluna do quadro. Quem se veste é a
+ *   altura, não a caixa: a caixa só pergunta a ela como ficar.
  * - **Nada em tela estreita** — todo o que monta a caixa vem com `xl:`. Caixa
  *   que rola dentro de página que já rola é pior que o defeito original.
  * - **Alcançável por teclado**, com `role`/`aria-label`, `tabIndex` e o anel
@@ -44,15 +48,18 @@ export function ScrollPane({
   className?: string;
   children: ReactNode;
 }) {
+  const fitting = height.fitting;
   return (
     <div
       role="region"
       aria-label={label}
       tabIndex={0}
-      style={{ [PaneHeight.TOKEN]: height.css } as CSSProperties}
+      {...fitting.attributes}
+      {...(fitting.style ? { style: fitting.style as CSSProperties } : {})}
       className={cn(
         ScrollPaneStyle.reachClass,
-        ScrollPaneStyle.boxClass,
+        ScrollPaneStyle.scrollClass,
+        fitting.className,
         horizontal && ScrollPaneStyle.horizontalClass,
         table && ScrollPaneStyle.pinnedColumnHeaderClass,
         className,

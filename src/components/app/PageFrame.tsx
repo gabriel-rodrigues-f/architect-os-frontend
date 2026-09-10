@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
-import { ShellHeader } from "@/lib/design";
+import { PageFillingPane, ShellHeader } from "@/lib/design";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,6 +23,18 @@ export class StablePageFrame {
   /** A altura mínima da área de conteúdo: o viewport útil, sempre. */
   static get minHeightClass(): string {
     return ShellHeader.minContentHeightClass;
+  }
+
+  /**
+   * Quando a página hospeda uma caixa que ocupa o resto (`PageFillingPane`), o
+   * quadro vira COLUNA de altura cheia e a cadeia até a caixa vira coluna
+   * junto — é assim que a altura da caixa passa a ser medida, e não somada.
+   * Nenhuma tela precisa saber disto: quem se anuncia é a caixa, e o quadro
+   * responde. As classes vêm de `PageFillingPane` porque o mecanismo é um só
+   * — casca, quadro e caixa leem o MESMO marcador.
+   */
+  static get fillingPaneClass(): string {
+    return PageFillingPane.frameClass;
   }
 
   /**
@@ -79,7 +91,12 @@ export function PageFrame({
       id={id}
       tabIndex={-1}
       data-page-frame
-      className={cn(StablePageFrame.minHeightClass, "outline-none", className)}
+      className={cn(
+        StablePageFrame.minHeightClass,
+        StablePageFrame.fillingPaneClass,
+        "outline-none",
+        className,
+      )}
     >
       {children}
     </main>

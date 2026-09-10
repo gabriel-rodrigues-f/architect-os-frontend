@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PaneHeight, ShellHeader } from "@/lib/design";
+import { PageFillingPane, ShellHeader } from "@/lib/design";
 import { Bloco } from "../helpers/folha-de-estilo";
 import { Varredura } from "../helpers/catraca";
 
@@ -10,6 +10,9 @@ import { Varredura } from "../helpers/catraca";
  * token `--shell-header-h`, e o número existe UMA vez, em `ShellHeader`.
  * Prova do vermelho no dia: 3 ocorrências de `74px` em src/ fora da paleta.
  */
+/** O recuo que a caixa somava, e que deixou de existir. */
+const RECUO_SUPOSTO = "--pane-page-inset-h";
+
 describe("a altura do cabeçalho é um token", () => {
   it("styles.css declara o token com o número do ShellHeader", () => {
     expect(Bloco.de(":root {").valorDe(ShellHeader.TOKEN)).toBe(
@@ -39,14 +42,31 @@ describe("a altura do cabeçalho é um token", () => {
   });
 
   /*
-   * 2026-09-09, a padronização das treze telas: a caixa que rola em si mede o
-   * que sobra da janela, e essa medida passa pelo MESMO token. Ela não é
-   * classe — é expressão CSS que entra por `style` —, e por isso a catraca a
-   * cobra aqui, e não na lista acima.
+   * 2026-09-09 a caixa que rola em si media "o resto da janela" somando
+   * `100dvh − var(--shell-header-h) − var(--pane-page-inset-h)`. O segundo
+   * termo era um CHUTE, e em 2026-09-10 o dono o encontrou em Contas e
+   * Acessos: a lista vazava 25px abaixo da dobra em 1440×900.
+   *
+   * A régua não some — ela passa a cobrar do MECANISMO NOVO o que cobrava do
+   * antigo, e mais: agora a caixa não lê altura NENHUMA. Nem o número, nem o
+   * token: quem mede é a coluna do quadro. Um token a menos para adivinhar.
    */
-  it("a medida do resto da página também lê a variável, não o número", () => {
-    const css = PaneHeight.restOfPage().css;
-    expect(css).toContain(`var(${ShellHeader.TOKEN})`);
-    expect(css).not.toContain("74");
+  it("a caixa que ocupa o resto não lê altura nenhuma — nem o token, nem o número", () => {
+    const doMecanismo = [
+      PageFillingPane.paneClass,
+      PageFillingPane.frameClass,
+      PageFillingPane.shellClass,
+    ].join(" ");
+    expect(doMecanismo).not.toContain(String(ShellHeader.HEIGHT_PX));
+    expect(doMecanismo).not.toContain(ShellHeader.TOKEN);
+    expect(doMecanismo).not.toContain("100dvh");
+  });
+
+  it("o token do recuo suposto morreu: ninguém o declara e ninguém o lê", () => {
+    expect(Bloco.de(":root {").valorDe(RECUO_SUPOSTO)).toBeNull();
+    const usos = new Varredura().contagem((arquivo) =>
+      arquivo.ocorrencias(new RegExp(`var\\(${RECUO_SUPOSTO}\\)|^\\s*${RECUO_SUPOSTO}\\s*:`, "gm")),
+    );
+    expect(usos).toEqual({});
   });
 });

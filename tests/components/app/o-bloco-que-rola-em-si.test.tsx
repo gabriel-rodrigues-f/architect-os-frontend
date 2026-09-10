@@ -2,8 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ScrollPane } from "@/components/app/ScrollPane";
-import { PaneHeight, PaneRhythm, ScrollPaneStyle } from "@/lib/design";
-import { ShellHeader } from "@/lib/design";
+import { PageFillingPane, PaneHeight, PaneRhythm, ScrollPaneStyle } from "@/lib/design";
 import { Bloco } from "../../helpers/folha-de-estilo";
 
 /**
@@ -47,14 +46,40 @@ describe("o bloco que rola em si mesmo", () => {
     }
   });
 
-  it("o resto da janela sai do token do cabeçalho, nunca do número", () => {
-    expect(PaneHeight.restOfPage().css).toContain(`var(${ShellHeader.TOKEN})`);
-    expect(PaneHeight.restOfPage().css).not.toContain("74");
+  /*
+   * 2026-09-10, dono: *"Em Contas e Acessos, ainda preciso rolar para baixo
+   * para ver a lista."* A caixa somava `100dvh − cabeçalho − 16rem de faixa
+   * suposta`; os 16rem eram um chute único para sete topos diferentes. Agora
+   * ela não tem TETO: é o filho que ocupa o resto de uma coluna de altura
+   * cheia, e quem mede é o navegador. Prova do vermelho contra o código
+   * antigo: `style` trazia `--pane-max-h: calc(100dvh - var(--shell-header-h)
+   * - var(--pane-page-inset-h));` e não havia marcador nenhum.
+   */
+  it("a caixa que ocupa o resto não declara teto: sem variável, sem conta", () => {
+    render(
+      <ScrollPane label="Bloco" height={PaneHeight.restOfPage()}>
+        conteúdo
+      </ScrollPane>,
+    );
+    expect(caixa().getAttribute("style")).toBeNull();
+    expect(caixa().className).not.toContain("max-h");
+  });
+
+  it("ela se anuncia ao quadro e é o filho que estica e encolhe", () => {
+    render(
+      <ScrollPane label="Bloco" height={PaneHeight.restOfPage()}>
+        conteúdo
+      </ScrollPane>,
+    );
+    expect(caixa().hasAttribute(PageFillingPane.MARKER)).toBe(true);
+    for (const classe of PageFillingPane.paneClass.split(/\s+/)) {
+      expect(caixa().className.split(/\s+/)).toContain(classe);
+    }
   });
 
   it("em tela estreita não sobra caixa nenhuma: tudo que a monta é `xl:`", () => {
     render(
-      <ScrollPane label="Bloco" height={PaneHeight.restOfPage()} table horizontal>
+      <ScrollPane label="Bloco" height={PaneHeight.items(3)} table horizontal>
         conteúdo
       </ScrollPane>,
     );
@@ -66,6 +91,23 @@ describe("o bloco que rola em si mesmo", () => {
     for (const classe of ScrollPaneStyle.pinnedColumnHeaderClass.split(/\s+/)) {
       expect(classe.startsWith("xl:")).toBe(true);
     }
+  });
+
+  /*
+   * A mesma regra vale para o mecanismo NOVO, e ali ela é maior: quem monta a
+   * coluna não é só a caixa — é a casca e o quadro também. Em tela estreita a
+   * página rola, e nenhuma das três pode valer.
+   */
+  it("nem a casca nem o quadro montam coluna em tela estreita", () => {
+    const doMecanismo = [
+      PageFillingPane.paneClass,
+      PageFillingPane.frameClass,
+      PageFillingPane.shellClass,
+    ]
+      .join(" ")
+      .split(/\s+/);
+    expect(doMecanismo.length).toBeGreaterThanOrEqual(6);
+    for (const classe of doMecanismo) expect(classe.startsWith("xl:")).toBe(true);
   });
 
   it("é alcançável por teclado, com a barra e o anel de foco da casa", () => {

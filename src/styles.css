@@ -125,8 +125,14 @@
   */
   --pane-row-h: 2.25rem;
   --pane-item-h: 5.75rem;
-  /* A faixa de título e filtros acima de um bloco de página. */
-  --pane-page-inset-h: 16rem;
+  /*
+    Aqui morava o recuo de página, 16rem — "a faixa de título e filtros
+    acima de um bloco de página". Era um CHUTE: um número para os sete topos
+    diferentes das telas que pediam "o resto da página", e em Contas e Acessos
+    a caixa vazava 25px abaixo da dobra (dono, 2026-09-10). A caixa que ocupa
+    o resto deixou de somar termos e passou a ser MEDIDA — `PageFillingPane`,
+    em `src/lib/design/pane.ts` —, e o token ficou órfão.
+  */
   /*
     Número-síntese (referência FIAP 2026-09-06, §2 itens 1 e 2): o valor de
     um `KeyFigure`, 40–48 px — o C-Level lê o número antes do texto.
