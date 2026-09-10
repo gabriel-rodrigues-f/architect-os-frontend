@@ -26,7 +26,7 @@ import {
   SectionCard,
   SingleSelectFilter,
 } from "@/components/app";
-import { PaneHeight } from "@/lib/design";
+import { PaneHeight, PaneRhythm } from "@/lib/design";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -208,14 +208,44 @@ function MatrixScreen() {
     setEditCapabilityName(capability.name);
   };
 
-  const saveEditingCapability = () => {
-    if (!editingCapability) return;
-    const trimmedName = editCapabilityName.trim();
-    if (!trimmedName) return;
+  /**
+   * O EDITOR SÓ FECHA COM A CONFIRMAÇÃO DO SERVIÇO (2026-09-10).
+   *
+   * Quarto lugar com o mesmo defeito, depois do selo "Salvo" do PDI, do
+   * diálogo de Ciclos (`7b2d816`) e do salvar de Trilhas (`6f030bf`).
+   * `renameCapability` é `void` — gravação otimista, dispara e esquece — e a
+   * tela acendia o aviso verde e fechava o editor na sequência: duas
+   * afirmações de sucesso sem confirmação nenhuma. Com o serviço recusando, a
+   * pessoa lia "atualizada" e via o editor sumir, e só depois o rollback
+   * devolvia o nome antigo à lista.
+   *
+   * A régua é a do `removeItem` do view-model do PDI: `onConfirmed` roda
+   * quando o serviço confirma — o aviso vai lá, não no clique. A frase é a da
+   * casa, com o `messageCode` que este PATCH já publicava
+   * (`catalog.capability.update.success`) e que ninguém lia. A recusa continua
+   * vindo do `MutationRunner`, e agora encontra o editor aberto — que é onde a
+   * pessoa pode corrigir.
+   *
+   * A capacidade em edição é relida do STORE a cada pintura: o instantâneo do
+   * clique não enxergaria a gravação otimista, e é dela que sai a tranca do
+   * segundo envio.
+   */
+  const capabilityBeingEdited = editingCapability
+    ? (store.capabilities.find((capability) => capability.id === editingCapability.id) ??
+      editingCapability)
+    : null;
 
-    viewModel.renameCapability(editingCapability.id, editCapabilityName);
-    notifySuccess("msg.catalog.capability.update.success", { nome: trimmedName });
-    setEditingCapability(null);
+  /** Enquanto o PATCH não volta, a gravação otimista já zerou o que havia por salvar. */
+  const pendingCapabilityRename =
+    capabilityBeingEdited !== null &&
+    viewModel.hasPendingRename(capabilityBeingEdited, editCapabilityName);
+
+  const saveEditingCapability = () => {
+    if (!capabilityBeingEdited || !pendingCapabilityRename) return;
+    viewModel.renameCapability(capabilityBeingEdited.id, editCapabilityName, (updated) => {
+      notifySuccess("msg.catalog.capability.update.success", { nome: updated.name }, updated);
+      setEditingCapability(null);
+    });
   };
 
   const removeCapability = async () => {
@@ -386,7 +416,22 @@ function MatrixScreen() {
         }
 
         return (
-          <ScrollPane label={t("pane.competencyCatalog.label")} height={PaneHeight.restOfPage()}>
+          /*
+           * TRÊS CARTÕES, e o resto rolando (dono, 2026-09-10): *"Vamos
+           * diminuir a caixa de capacidades para mostrar apenas 3
+           * capacidades, o resto somente scrollando. Consequentemente
+           * conseguiremos ver também 'Arquivadas' na tela."*
+           *
+           * Não é caixa nova: é a MESMA, com outra medida. Ela deixa de pedir
+           * "o resto da página" — que agora é das Arquivadas, logo abaixo — e
+           * passa a pedir uma medida de CONTEÚDO, no ritmo do cartão
+           * empilhado (`--pane-item-h`). O número é do dono; o pixel mora no
+           * token.
+           */
+          <ScrollPane
+            label={t("pane.competencyCatalog.label")}
+            height={PaneHeight.items(3, PaneRhythm.ITEM)}
+          >
             <div className="space-y-4">
               {visibleCapabilities.map((cat) => {
                 const comps = store.competencies.filter(
@@ -593,7 +638,9 @@ function MatrixScreen() {
             <Button variant="outline" onClick={() => setEditingCapability(null)}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={saveEditingCapability}>{t("common.save")}</Button>
+            <Button onClick={saveEditingCapability} disabled={!pendingCapabilityRename}>
+              {t("common.save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1000,39 +1047,56 @@ function ArchivedCompetencies({
   );
   if (!archivedCapabilities.length && !archivedCompetencies.length) return null;
 
+  /*
+   * A CAIXA QUE OCUPA O RESTO DA PÁGINA (dono, 2026-09-10): *"Ocupe a tela com
+   * a quantidade necessária de capacidades arquivadas para se enxergar todo o
+   * conteúdo da página em zoom 100%. O restante, somente scrollando esse grupo
+   * de 'Arquivadas'."*
+   *
+   * Quantas cabem NÃO é conta desta tela: é o `PageFillingPane` (`becfd24`) —
+   * a caixa não tem teto, se anuncia pelo marcador e é o filho que estica e
+   * encolhe na coluna do quadro. Quem mede é o navegador. Ela é a ÚNICA da
+   * tela a se anunciar: a de capacidades, acima, tem teto em itens.
+   */
   return (
     <SectionCard
       className="mt-6"
       title={t("matrix.archived.title")}
       description={t("matrix.archived.hint")}
     >
-      <ul className="space-y-2 text-sm">
-        {archivedCapabilities.map((cat) => (
-          <li key={cat.id} className="flex items-center justify-between gap-2">
-            <span>
-              {cat.name}{" "}
-              <span className="text-xs text-muted-foreground">
-                ({t("matrix.archived.capability")})
+      <ScrollPane label={t("pane.archivedCatalog.label")} height={PaneHeight.restOfPage()}>
+        <ul className="space-y-2 text-sm">
+          {archivedCapabilities.map((cat) => (
+            <li key={cat.id} className="flex items-center justify-between gap-2">
+              <span>
+                {cat.name}{" "}
+                <span className="text-xs text-muted-foreground">
+                  ({t("matrix.archived.capability")})
+                </span>
               </span>
-            </span>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => viewModel.restoreCapability(cat.id)}
-            >
-              {t("matrix.restore")}
-            </Button>
-          </li>
-        ))}
-        {archivedCompetencies.map((c) => (
-          <li key={c.id} className="flex items-center justify-between gap-2">
-            <span>{c.name}</span>
-            <Button size="sm" variant="secondary" onClick={() => viewModel.restoreCompetency(c.id)}>
-              {t("matrix.restore")}
-            </Button>
-          </li>
-        ))}
-      </ul>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => viewModel.restoreCapability(cat.id)}
+              >
+                {t("matrix.restore")}
+              </Button>
+            </li>
+          ))}
+          {archivedCompetencies.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-2">
+              <span>{c.name}</span>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => viewModel.restoreCompetency(c.id)}
+              >
+                {t("matrix.restore")}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </ScrollPane>
     </SectionCard>
   );
 }

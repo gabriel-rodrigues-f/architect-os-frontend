@@ -104,6 +104,18 @@ const BLOCOS: readonly { pedido: string; arquivo: string; rotulo: string }[] = [
     arquivo: join("src", "routes", "notices.tsx"),
     rotulo: "pane.notices.label",
   },
+  /*
+   * O bloco 16 entrou em 2026-09-10, pelo mesmo motivo dos quinze: *"Ocupe a
+   * tela com a quantidade necessária de capacidades arquivadas para se
+   * enxergar todo o conteúdo da página em zoom 100%. O restante, somente
+   * scrollando esse grupo de 'Arquivadas'."* É a segunda caixa da mesma tela
+   * do bloco 11 — e a única das duas que ocupa o resto da página.
+   */
+  {
+    pedido: "16 — Catálogo de Competências, Arquivadas",
+    arquivo: join("src", "routes", "competency-matrix.tsx"),
+    rotulo: "pane.archivedCatalog.label",
+  },
 ];
 
 describe("o título da página fica sempre visível — quem rola é o bloco", () => {

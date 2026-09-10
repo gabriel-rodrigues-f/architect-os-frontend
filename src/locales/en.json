@@ -2066,6 +2066,7 @@
   "pane.cycleCompare.label": "Competency comparison",
   "pane.teamRuleCompetencies.label": "Rule competencies",
   "pane.competencyCatalog.label": "Competency catalog",
+  "pane.archivedCatalog.label": "Archived capabilities and competencies",
   "pane.calibrationCharts.label": "Score distribution by evaluator",
   "pane.teamsRegistry.label": "Registered teams",
   "pane.usersRegistry.label": "Registered accounts",
