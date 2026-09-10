@@ -152,19 +152,16 @@ export const fixtureState: AppState = {
       id: "regra-plataforma-i",
       teamId: fixtureTeamId,
       careerLevelId: "arquiteto-de-solucoes-i",
-      minimumQualifiedCapabilities: 3,
     },
     {
       id: "regra-plataforma-ii",
       teamId: fixtureTeamId,
       careerLevelId: "arquiteto-de-solucoes-ii",
-      minimumQualifiedCapabilities: 3,
     },
     {
       id: "regra-plataforma-iii",
       teamId: fixtureTeamId,
       careerLevelId: "arquiteto-de-solucoes-iii",
-      minimumQualifiedCapabilities: 3,
     },
   ],
   competencies: [

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Professional, Assessment, AssessmentEligibility, Capability } from "@/lib/domain";
+import type { Professional, Assessment, Capability, PortfolioCapabilityState } from "@/lib/domain";
 import { UiAuthorizationPolicy } from "@/lib/scope";
 import {
   AssessmentViewModel,
@@ -351,24 +351,14 @@ describe("AssessmentViewModel", () => {
         status: "REQUIRES_CURATION",
       },
     });
-    const eligibility = (ids: string[]): AssessmentEligibility => ({
-      currentCareerLevel: undefined,
-      nextCareerLevel: undefined,
-      policy: undefined,
-      capabilities: ids.map((capabilityId) => ({
-        capabilityId,
-        confirmed: false,
-        qualified: false,
-      })),
-      qualifiedConfirmedCount: 0,
-      eligible: null,
-    });
+    const portfolio = (ids: string[]): PortfolioCapabilityState[] =>
+      ids.map((capabilityId) => ({ capabilityId, confirmed: false, qualified: false }));
 
     it("só oferece capacidade READY", () => {
       const { vm } = makeVm();
       const result = vm.availableCapabilitiesToPropose(
         [readyCap("cloud"), curatingCap("security")],
-        eligibility([]),
+        portfolio([]),
       );
       expect(result.map((c) => c.id)).toEqual(["cloud"]);
     });
@@ -377,7 +367,7 @@ describe("AssessmentViewModel", () => {
       const { vm } = makeVm();
       const result = vm.availableCapabilitiesToPropose(
         [readyCap("cloud"), readyCap("data")],
-        eligibility(["cloud"]),
+        portfolio(["cloud"]),
       );
       expect(result.map((c) => c.id)).toEqual(["data"]);
     });

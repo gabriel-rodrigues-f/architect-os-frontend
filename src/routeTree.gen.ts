@@ -17,7 +17,6 @@ import { Route as CatalogPolicyRouteImport } from './routes/catalog-policy'
 import { Route as CompetencyMatrixRouteImport } from './routes/competency-matrix'
 import { Route as CyclesRouteImport } from './routes/cycles'
 import { Route as DevelopmentPlansRouteImport } from './routes/development-plans'
-import { Route as EligibilityRouteImport } from './routes/eligibility'
 import { Route as GapAnalysisRouteImport } from './routes/gap-analysis'
 import { Route as LearningPathsRouteImport } from './routes/learning-paths'
 import { Route as MentoringRouteImport } from './routes/mentoring'
@@ -79,11 +78,6 @@ const CyclesRoute = CyclesRouteImport.update({
 const DevelopmentPlansRoute = DevelopmentPlansRouteImport.update({
   id: '/development-plans',
   path: '/development-plans',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EligibilityRoute = EligibilityRouteImport.update({
-  id: '/eligibility',
-  path: '/eligibility',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GapAnalysisRoute = GapAnalysisRouteImport.update({
@@ -211,7 +205,6 @@ export interface FileRoutesByFullPath {
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
-  '/eligibility': typeof EligibilityRoute
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
@@ -244,7 +237,6 @@ export interface FileRoutesByTo {
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
-  '/eligibility': typeof EligibilityRoute
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
@@ -277,7 +269,6 @@ export interface FileRoutesById {
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
-  '/eligibility': typeof EligibilityRoute
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
@@ -312,7 +303,6 @@ export interface FileRouteTypes {
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
-    | '/eligibility'
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
@@ -345,7 +335,6 @@ export interface FileRouteTypes {
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
-    | '/eligibility'
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
@@ -377,7 +366,6 @@ export interface FileRouteTypes {
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
-    | '/eligibility'
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
@@ -411,7 +399,6 @@ export interface RootRouteChildren {
   CompetencyMatrixRoute: typeof CompetencyMatrixRoute
   CyclesRoute: typeof CyclesRoute
   DevelopmentPlansRoute: typeof DevelopmentPlansRoute
-  EligibilityRoute: typeof EligibilityRoute
   GapAnalysisRoute: typeof GapAnalysisRoute
   LearningPathsRoute: typeof LearningPathsRoute
   MentoringRoute: typeof MentoringRoute
@@ -488,13 +475,6 @@ declare module '@tanstack/react-router' {
       path: '/development-plans'
       fullPath: '/development-plans'
       preLoaderRoute: typeof DevelopmentPlansRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/eligibility': {
-      id: '/eligibility'
-      path: '/eligibility'
-      fullPath: '/eligibility'
-      preLoaderRoute: typeof EligibilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gap-analysis': {
@@ -687,7 +667,6 @@ const rootRouteChildren: RootRouteChildren = {
   CompetencyMatrixRoute: CompetencyMatrixRoute,
   CyclesRoute: CyclesRoute,
   DevelopmentPlansRoute: DevelopmentPlansRoute,
-  EligibilityRoute: EligibilityRoute,
   GapAnalysisRoute: GapAnalysisRoute,
   LearningPathsRoute: LearningPathsRoute,
   MentoringRoute: MentoringRoute,

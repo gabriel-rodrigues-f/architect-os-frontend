@@ -43,13 +43,12 @@ const settingRecord = (key: string, value: string | number) => ({
 
 /** GET /api/v1/config/settings com valores dados (default: o seed SEMIANNUAL/3/3). */
 const settingsGetRoute =
-  (cadence: string = "SEMIANNUAL", floor = 3, threshold = 3): FetchRoute =>
+  (cadence: string = "SEMIANNUAL", threshold = 3): FetchRoute =>
   (href, init) =>
     href.endsWith(apiPath("/config/settings")) && (init?.method ?? "GET") === "GET"
       ? jsonResponse({
           settings: [
             settingRecord("cycle.cadence", cadence),
-            settingRecord("career.minimumQualifiedFloor", floor),
             settingRecord("training.collectiveInterventionThreshold", threshold),
           ],
         })
@@ -106,10 +105,10 @@ describe("Operação (CFG-05 admin UI)", () => {
     expect(screen.queryByText("Políticas operacionais")).toBeNull();
   });
 
-  it("admin vê cadência, piso e limiar efetivos e o aviso de ciclos futuros", async () => {
+  it("admin vê cadência e limiar efetivos e o aviso de ciclos futuros", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
-      routes: [careerLevelsRoute, settingsGetRoute("QUARTERLY", 4, 2)],
+      routes: [careerLevelsRoute, settingsGetRoute("QUARTERLY", 2)],
     });
     renderWithApp(<ScoringRulersPage />);
 
@@ -118,7 +117,6 @@ describe("Operação (CFG-05 admin UI)", () => {
     await waitFor(() => {
       expect(within(block).getByText("Trimestral")).toBeTruthy();
     });
-    expect(within(block).getByText("4")).toBeTruthy();
     expect(within(block).getByText("2")).toBeTruthy();
     expect(
       within(block).getByText(
@@ -137,9 +135,11 @@ describe("Operação (CFG-05 admin UI)", () => {
     const block = await operationalBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
 
-    const floorInput = within(block).getByLabelText("Piso de capacidades qualificadas");
-    await userEvent.clear(floorInput);
-    await userEvent.type(floorInput, "0");
+    const thresholdInput = within(block).getByLabelText(
+      "Mínimo de profissionais (intervenção coletiva)",
+    );
+    await userEvent.clear(thresholdInput);
+    await userEvent.type(thresholdInput, "0");
 
     const alert = within(block).getByRole("alert");
     expect(alert.textContent).toBe("Informe inteiros maiores ou iguais a 1.");
@@ -190,8 +190,8 @@ describe("Operação (CFG-05 admin UI)", () => {
       expect(thresholdPut).toBeTruthy();
       expect(JSON.parse(String((thresholdPut![1] as RequestInit).body))).toEqual({ value: 2 });
     });
-    // Piso não mudou — nenhum PUT dessa key.
-    expect(findPut(apiPath("/config/settings/career.minimumQualifiedFloor"))).toBeUndefined();
+    // Ociosidade não mudou — nenhum PUT dessa key.
+    expect(findPut(apiPath("/config/settings/session.idleTimeoutMinutes"))).toBeUndefined();
 
     // Invalidação encadeada ao sucesso: a query das settings refaz o GET e,
     // porque a cadência mudou, as fatias de contexto também (a tela de
@@ -212,7 +212,8 @@ describe("Operação (CFG-05 admin UI)", () => {
             ? jsonResponse(
                 {
                   code: "INVALID_APP_SETTING",
-                  message: '"career.minimumQualifiedFloor" precisa ser >= 1 (recebido: 7).',
+                  message:
+                    '"training.collectiveInterventionThreshold" precisa ser >= 1 (recebido: 7).',
                 },
                 400,
               )
@@ -225,14 +226,16 @@ describe("Operação (CFG-05 admin UI)", () => {
     const block = await operationalBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
     // Rascunho client-side válido — o 400 simulado é a autoridade do backend.
-    const floorInput = within(block).getByLabelText("Piso de capacidades qualificadas");
-    await userEvent.clear(floorInput);
-    await userEvent.type(floorInput, "7");
+    const thresholdInput = within(block).getByLabelText(
+      "Mínimo de profissionais (intervenção coletiva)",
+    );
+    await userEvent.clear(thresholdInput);
+    await userEvent.type(thresholdInput, "7");
     await userEvent.click(within(block).getByRole("button", { name: "Salvar" }));
 
     const alert = await within(block).findByRole("alert");
     expect(alert.textContent).toBe(
-      '"career.minimumQualifiedFloor" precisa ser >= 1 (recebido: 7).',
+      '"training.collectiveInterventionThreshold" precisa ser >= 1 (recebido: 7).',
     );
   });
 });

@@ -7,7 +7,6 @@
   "src/routes/catalog-policy.tsx": 1,
   "src/routes/cycles.tsx": 1,
   "src/routes/development-plans.tsx": 7,
-  "src/routes/eligibility.tsx": 1,
   "src/routes/learning-paths.tsx": 2,
   "src/routes/professionals.$professionalId.evolution.tsx": 2,
   "src/routes/scoring-rulers.tsx": 4,

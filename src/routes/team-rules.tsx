@@ -15,9 +15,7 @@ import {
   SingleSelectFilter,
   TeamChoiceField,
 } from "@/components/app";
-import { FilterField } from "@/components/app/FilterField";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAsyncSubmit, useSuccessToast, useTeamRuleEditorViewModel } from "@/hooks";
 import { ApiError, api, teamsApi } from "@/lib/api";
 import { TeamChoice } from "@/lib/team-choice";
@@ -33,8 +31,7 @@ import { RefusalNumber } from "@/lib/refusal-number";
 import { requireLeadReach } from "@/lib/route-guards";
 import { Registration } from "@/lib/registration";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { QualifiedCapabilityMinimum } from "@/lib/presenters";
-import { useCareerLevelsByRank, useOperationalSettings, useStore } from "@/lib/store";
+import { useCareerLevelsByRank, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/team-rules")({
   beforeLoad: requireLeadReach,
@@ -239,7 +236,6 @@ function TeamRuleEditor({
   const store = useStore();
   const queryClient = useQueryClient();
   const notifySuccess = useSuccessToast();
-  const floor = useOperationalSettings().careerMinimumQualifiedFloor;
   const { editor, setEditor } = useTeamRuleEditorViewModel(rule);
   const [drafting, setDrafting] = useState(false);
   const [conflict, setConflict] = useState(false);
@@ -259,7 +255,7 @@ function TeamRuleEditor({
     return (
       <EmptyState
         title={t("teamRules.empty.title", { nivel: level.name })}
-        hint={t("teamRules.empty.hint", { piso: floor })}
+        hint={t("teamRules.empty.hint")}
         action={
           <Button size="sm" className="mt-4" onClick={() => setDrafting(true)}>
             {t("teamRules.empty.action")}
@@ -331,28 +327,12 @@ function TeamRuleEditor({
             noneSummaryLabel={t("teamRules.capabilities.none")}
           />
 
-          <FilterField label={t("teamRules.minimum.label")} htmlFor="team-rule-minimum">
-            <Input
-              id="team-rule-minimum"
-              type="number"
-              min={QualifiedCapabilityMinimum.FLOOR}
-              className="h-9 w-28"
-              value={String(editor.minimumQualifiedCapabilities)}
-              onChange={(event) =>
-                setEditor((current) => current.withMinimum(Number(event.target.value)))
-              }
-            />
-            {/*
-              Dono (2026-09-08): zero é valor válido, e a tela precisa dizer
-              isso SEM parecer erro — com zero não existe alerta de "falta
-              competência", porque não falta.
-            */}
-            <p className="text-xs text-muted-foreground">
-              {QualifiedCapabilityMinimum.demandsNothing(editor.minimumQualifiedCapabilities)
-                ? t("teamRules.minimum.none")
-                : t("teamRules.minimum.hint")}
-            </p>
-          </FilterField>
+          {/*
+            AQUI MORAVA O MÍNIMO DE CAPACIDADES QUALIFICADAS. Dono
+            (2026-09-10): *"não quero mais cravar na pedra 'para ser júnior
+            precisa de 1 capacidade'."* O campo saiu com a elegibilidade; a
+            régua declara o ESPERADO por competência, e mais nada.
+          */}
         </div>
 
         {/*

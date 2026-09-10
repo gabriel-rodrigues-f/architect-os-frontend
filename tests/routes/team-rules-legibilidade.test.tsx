@@ -18,13 +18,13 @@ import {
  * 2026-08-30, na Régua do Time. Só DOIS deles viram teste aqui, e o terceiro
  * está declarado embaixo — teste que não pode morder não entra.
  *
- * V4 — "Capacidades exigidas" e "Piso de capacidades qualificadas" estão
- * desalinhados e um está em negrito e o outro não. Medido no navegador antes
- * do conserto: o primeiro rótulo em y=381 com peso 400, o segundo em y=365
- * com peso 500. A causa não é estilo solto, é DOIS jeitos de rotular campo na
- * mesma linha — um pelo `FilterField` que todos os filtros usam, outro pelo
- * `<Label>` cru. O invariante que fecha isso é "um jeito só", e é ele que
- * está afirmado abaixo; o alinhamento vertical é consequência.
+ * V4 — "Capacidades exigidas" e "Piso de capacidades qualificadas" estavam
+ * desalinhados, um em negrito e o outro não, porque eram DOIS jeitos de
+ * rotular campo na mesma linha. O DONO MATOU O PISO em 2026-09-10, junto com
+ * a elegibilidade: com um campo só na linha, não existe o par que
+ * desalinhava, e o teste do "um jeito só" perdeu o objeto. O que sobra
+ * medido aqui é o resto da captura — a fileira de chips e o respiro da
+ * coluna.
  *
  * V5 — a lista de capacidades escolhidas aparece sem delimitação, uma ao lado
  * da outra. A sugestão veio do próprio dono: fundo cinza em cada capacidade.
@@ -51,7 +51,6 @@ const comRegua: FetchRoute = (href) =>
         id: "regra-plataforma-i",
         teamId: fixtureTeamId,
         careerLevelId: "arquiteto-de-solucoes-i",
-        minimumQualifiedCapabilities: 3,
         capabilityIds: ["cloud"],
         competencies: [{ competencyId: "cloud-k8s", requiredLevel: 4 }],
       })
@@ -71,29 +70,6 @@ const renderPage = () => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
-});
-
-describe("Régua do Time — os dois campos da régua são rotulados do mesmo jeito (V4)", () => {
-  it("o rótulo do piso sai do mesmo componente de campo que o das capacidades", async () => {
-    renderPage();
-    await screen.findByText("Kubernetes");
-
-    const capacidades = document.querySelector<HTMLLabelElement>(
-      'label[for="team-rule-capabilities"]',
-    );
-    const piso = document.querySelector<HTMLLabelElement>('label[for="team-rule-minimum"]');
-
-    expect(capacidades?.className).toBe(piso?.className);
-  });
-
-  it("nenhum dos dois rótulos usa o peso de fonte do outro — não sobra `<Label>` cru na linha", async () => {
-    renderPage();
-    await screen.findByText("Kubernetes");
-
-    const piso = document.querySelector<HTMLLabelElement>('label[for="team-rule-minimum"]');
-
-    expect(piso?.className).not.toContain("font-medium");
-  });
 });
 
 /**

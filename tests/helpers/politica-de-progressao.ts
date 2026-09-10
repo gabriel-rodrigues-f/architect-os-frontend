@@ -40,18 +40,6 @@ export const doisTimesRoute: FetchRoute = (href) =>
       ])
     : undefined;
 
-export const regra = (
-  id: string,
-  teamId: string,
-  minimo: number,
-  careerLevelId: string = NIVEL_JUNIOR,
-): TeamLevelRule => ({
-  id,
-  teamId,
-  careerLevelId,
-  minimumQualifiedCapabilities: minimo,
-});
-
 /** O `/state` que o servidor manda para quem alcança N times, só com as réguas dadas. */
 export const estadoCom = (regras: readonly TeamLevelRule[]): AppState => ({
   ...fixtureState,

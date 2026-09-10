@@ -154,12 +154,16 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
  * `calibracao` some INTEIRO do vocabulário — ele existia para uma tela só, a
  * Calibração de Líderes, e sem ela não há o que ele recorte. `analise-de-time`
  * cai de 5 para 3, com o Plano de Capacitação e os Perfis lado a lado.
+ *
+ * A ELEGIBILIDADE SAIU DO PRODUTO (dono, 2026-09-10) — −1 em
+ * `lead-com-vinculo` (2 → 1): `/eligibility` era a tela de quem rege a régua
+ * do time. Sobra `/team-rules` nesse alcance.
  */
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
   autenticado: 8,
   "opera-o-sistema": 6,
-  "lead-com-vinculo": 2,
+  "lead-com-vinculo": 1,
   lideranca: 3,
   "analise-de-time": 3,
   "ficha-de-carreira": 4,

@@ -7,7 +7,6 @@
   },
   "ausencia": {
     "src/lib/gateways/team-roster.gateway.ts": "quadro-do-time",
-    "src/lib/store.tsx": "regua-do-nivel",
     "src/routes/team-rules.tsx": "regua-do-nivel"
   }
 }

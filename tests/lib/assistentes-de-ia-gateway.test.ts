@@ -115,25 +115,22 @@ describe("assistentes da pessoa — a URL de cada operação de negócio", () =>
     expect(urlDaChamada().searchParams.get("competencyId")).toBe("c1");
   });
 
-  it("a explicação da prontidão devolve o veredito determinístico junto", async () => {
+  /**
+   * DONO, 2026-09-10 — o campo `readiness` carregava o VEREDITO e morreu com
+   * a elegibilidade. A garantia que sobrevive é a mesma, sobre o que ficou:
+   * com a IA fora do ar, os FATOS medidos continuam chegando.
+   */
+  it("a explicação da prontidão devolve os fatos medidos mesmo sem narração", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({
         data: {
           ...conselho,
           narration: null,
           narrationUnavailable: "A sugestão está indisponível.",
-          readiness: {
-            currentCareerLevel: "Pleno",
-            nextCareerLevel: "Sênior",
-            eligible: false,
-            qualifiedCapabilityCount: 2,
-            minimumQualifiedCapabilities: 3,
-          },
         },
       }),
     );
     const lido = await pessoas().explainCareerReadiness("ana");
-    expect(lido.readiness?.eligible).toBe(false);
     expect(lido.narration).toBeNull();
     expect(lido.narrationUnavailable).toBe("A sugestão está indisponível.");
     expect(lido.facts).toEqual(["um fato"]);

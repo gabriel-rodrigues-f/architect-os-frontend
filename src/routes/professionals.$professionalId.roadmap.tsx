@@ -8,7 +8,6 @@ import {
   GapBadge,
   LearningPathCoverageList,
   LevelBadge,
-  CareerReadinessVerdictLines,
   PersonAdviceSection,
   ProfileBackLink,
   ProfileHeading,
@@ -179,11 +178,6 @@ function RoadmapOfProfessional() {
           transcriptHeadline={t("ai.readiness.title")}
           queryKey={["assistants", "career-readiness-explanation", professionalId]}
           ask={() => personAssistantsApi.explainCareerReadiness(professionalId)}
-          beforeNarration={(advice) =>
-            advice.readiness === null ? null : (
-              <CareerReadinessVerdictLines verdict={advice.readiness} />
-            )
-          }
         />
       )}
 

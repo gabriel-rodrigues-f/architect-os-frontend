@@ -3,7 +3,7 @@ import type {
   Professional,
   Assessment,
   AssessmentCapability,
-  AssessmentEligibility,
+  PortfolioCapabilityState,
   Capability,
   Competency,
   Level,
@@ -196,12 +196,47 @@ export class AssessmentViewModel {
 
   availableCapabilitiesToPropose(
     allCapabilities: readonly Capability[],
-    eligibility: AssessmentEligibility,
+    portfolio: readonly PortfolioCapabilityState[],
   ): Capability[] {
     return allCapabilities.filter(
       (cap) =>
         cap.curation.status === "READY" &&
-        !eligibility.capabilities.some((c) => c.capabilityId === cap.id),
+        !portfolio.some((entry) => entry.capabilityId === cap.id),
     );
+  }
+
+  /**
+   * O ESTÁGIO DE CADA CAPACIDADE DO PORTFÓLIO, calculado na tela.
+   *
+   * Dono (2026-09-10): a rota que devolvia isto pronto era a da
+   * ELEGIBILIDADE, e ela morreu com o conceito. O que morreu foi o VEREDITO
+   * ("pode subir?"); o que sobrou é comparativo puro — uma capacidade está
+   * QUALIFICADA quando toda competência avaliada dela chegou ao alvo
+   * congelado do próprio item. Isso se responde com o que a tela já tem em
+   * mãos: os itens da avaliação. Nenhuma rota nova, nenhum piso.
+   *
+   * Capacidade sem NENHUM item avaliado não qualifica — mesma omissão
+   * declarada do backend: ausência de nota não é nota atingida.
+   */
+  portfolioStateOf(
+    assessment: Pick<Assessment, "items">,
+    portfolio: readonly AssessmentCapability[],
+    competencies: readonly Competency[],
+  ): PortfolioCapabilityState[] {
+    const capabilityOfCompetency = new Map(competencies.map((c) => [c.id, c.capabilityId]));
+    const capabilityOfItem = (item: Assessment["items"][number]): string | undefined =>
+      item.capabilityId ?? capabilityOfCompetency.get(item.competencyId);
+    return portfolio.map((entry) => {
+      const assessed = assessment.items.filter(
+        (item) => capabilityOfItem(item) === entry.capabilityId,
+      );
+      return {
+        capabilityId: entry.capabilityId,
+        confirmed: entry.confirmedAt !== null,
+        qualified:
+          assessed.length > 0 &&
+          assessed.every((item) => item.final !== null && item.final >= item.target),
+      };
+    });
   }
 }

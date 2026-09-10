@@ -3,7 +3,6 @@ export type CycleCadence = (typeof CYCLE_CADENCES)[number];
 
 const APP_SETTING_KEYS = [
   "cycle.cadence",
-  "career.minimumQualifiedFloor",
   "training.collectiveInterventionThreshold",
   "session.idleTimeoutMinutes",
 ] as const;
@@ -13,7 +12,6 @@ export type AppSettingValue = string | number;
 
 export interface OperationalSettings {
   cycleCadence: CycleCadence;
-  careerMinimumQualifiedFloor: number;
   trainingCollectiveInterventionThreshold: number;
   sessionIdleTimeoutMinutes: number;
 }
@@ -61,7 +59,6 @@ export class EffectiveOperationalSettings {
 
   static readonly defaults: OperationalSettings = {
     cycleCadence: "SEMIANNUAL",
-    careerMinimumQualifiedFloor: 3,
     trainingCollectiveInterventionThreshold: 3,
     sessionIdleTimeoutMinutes: 10,
   };
@@ -72,10 +69,6 @@ export class EffectiveOperationalSettings {
     const served = ServedAppSettings.in(loaded);
     return {
       cycleCadence: served.cadenceOr(defaults.cycleCadence),
-      careerMinimumQualifiedFloor: served.countOr(
-        "career.minimumQualifiedFloor",
-        defaults.careerMinimumQualifiedFloor,
-      ),
       trainingCollectiveInterventionThreshold: served.countOr(
         "training.collectiveInterventionThreshold",
         defaults.trainingCollectiveInterventionThreshold,

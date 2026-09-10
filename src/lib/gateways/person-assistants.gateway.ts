@@ -48,17 +48,13 @@ export interface SessionScriptAdvice extends PersonAdvice {
   outline: string[];
 }
 
-export interface CareerReadinessVerdict {
-  currentCareerLevel: string | null;
-  nextCareerLevel: string | null;
-  eligible: boolean | null;
-  qualifiedCapabilityCount: number;
-  minimumQualifiedCapabilities: number | null;
-}
-
-export interface CareerReadinessAdvice extends PersonAdvice {
-  readiness: CareerReadinessVerdict | null;
-}
+/**
+ * A PRONTIDÃO PARA PROGRESSÃO perdeu o campo `readiness` (dono, 2026-09-10):
+ * ele carregava o VEREDITO — `eligible`, o piso e a contagem de capacidades
+ * qualificadas — e morreu com a elegibilidade. O que a rota entrega são os
+ * FATOS medidos, iguais aos dos outros conselhos de pessoa.
+ */
+export type CareerReadinessAdvice = PersonAdvice;
 
 export interface SelectedDistance {
   competencyId: string;

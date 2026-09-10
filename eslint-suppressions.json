@@ -151,7 +151,7 @@
   },
   "src/lib/store.tsx": {
     "id-length": {
-      "count": 104
+      "count": 103
     }
   },
   "src/lib/team-report-pdf.ts": {
@@ -196,7 +196,7 @@
   },
   "src/routes/assessments.tsx": {
     "id-length": {
-      "count": 7
+      "count": 6
     }
   },
   "src/routes/capability-map.tsx": {
@@ -270,11 +270,6 @@
     }
   },
   "tests/components/app/gap-analysis-memo.test.tsx": {
-    "id-length": {
-      "count": 2
-    }
-  },
-  "tests/components/app/nav-settings-icon.test.ts": {
     "id-length": {
       "count": 2
     }

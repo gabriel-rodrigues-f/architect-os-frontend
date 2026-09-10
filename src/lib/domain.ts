@@ -20,16 +20,16 @@ export interface CareerLevel {
   rank: number;
 }
 
-interface CareerLevelPolicy {
-  careerLevelId: string;
-  minimumQualifiedCapabilities: number;
-}
-
+/**
+ * A régua de um (time, nível) como o roster a enxerga. O PISO de capacidades
+ * qualificadas saiu dela com a elegibilidade (dono, 2026-09-10): o que a
+ * régua diz agora é o ESPERADO, e a existência dela é o invariante da regra
+ * 19 — todo time tem régua para os cinco níveis.
+ */
 export interface TeamLevelRule {
   id: string;
   teamId: string;
   careerLevelId: string;
-  minimumQualifiedCapabilities: number;
 }
 
 interface CapabilityCuration {
@@ -186,13 +186,18 @@ export interface AssessmentCapability {
   confirmedAt: string | null;
 }
 
-export interface AssessmentEligibility {
-  currentCareerLevel: CareerLevel | undefined;
-  nextCareerLevel: CareerLevel | undefined;
-  policy: CareerLevelPolicy | undefined;
-  capabilities: { capabilityId: string; confirmed: boolean; qualified: boolean }[];
-  qualifiedConfirmedCount: number;
-  eligible: boolean | null;
+/**
+ * O PORTFÓLIO DO CICLO, com o estágio de cada capacidade.
+ *
+ * Dono (2026-09-10): a elegibilidade saiu do produto, e com ela o veredito e
+ * o piso de capacidades qualificadas. Ficou o COMPARATIVO — "esta capacidade
+ * atingiu o alvo congelado dos próprios itens?" —, e ele se calcula na tela
+ * sobre a avaliação que ela já tem em mãos: nenhuma rota devolve mais isso.
+ */
+export interface PortfolioCapabilityState {
+  capabilityId: string;
+  confirmed: boolean;
+  qualified: boolean;
 }
 
 export interface DevelopmentCycle {
@@ -415,7 +420,6 @@ interface ProfessionalStateSnapshot {
   careerLevelIdSnapshot: string | null;
   careerLevelNameSnapshot: string | null;
   targetCareerLevelIdSnapshot: string | null;
-  minimumQualifiedCapabilitiesSnapshot: number | null;
   temporalPrecision: SnapshotTemporalPrecision;
   items: ProfessionalStateSnapshotItem[];
 }

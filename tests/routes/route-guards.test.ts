@@ -80,7 +80,6 @@ describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organi
     "/catalog-policy",
     "/vocabularies",
     "/model-reference",
-    "/eligibility",
     "/team-rules",
   ])("SUPPORT alcança %s como o antigo admin", async (href) => {
     expect(await navegarComoUsuario(fixtureSupportUser, href)).toBe(href);
@@ -100,7 +99,6 @@ describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organi
     "/catalog-policy",
     "/vocabularies",
     "/model-reference",
-    "/eligibility",
     "/team-rules",
     "/capability-map",
     "/progression",
@@ -287,12 +285,12 @@ describe("o profissional não navega até os próprios números", () => {
   });
 
   /**
-   * Onda do GRUPO (dono, 2026-09-10): a tela virou seis, e as seis guardas
-   * negam o profissional — as quatro de sistema e a Elegibilidade porque ele
-   * não opera nem rege régua, a Referência porque é leitura de liderança.
+   * Onda do GRUPO (dono, 2026-09-10): a tela virou seis fatias, e no mesmo
+   * dia a Elegibilidade saiu do produto — sobraram cinco. Todas negam o
+   * profissional: as quatro de sistema porque ele não opera nada, a
+   * Referência porque é leitura de liderança.
    */
   it.each([
-    "/eligibility",
     "/scoring-rulers",
     "/text-templates",
     "/catalog-policy",

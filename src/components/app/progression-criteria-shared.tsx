@@ -20,12 +20,7 @@ import { usePageHelp } from "@/lib/page-help";
  * a pessoa não alcança sumir da coluna em vez de aparecer capada.
  */
 type FatiaDosCriterios =
-  | "eligibility"
-  | "scoringRulers"
-  | "textTemplates"
-  | "catalogPolicy"
-  | "vocabularies"
-  | "modelReference";
+  "scoringRulers" | "textTemplates" | "catalogPolicy" | "vocabularies" | "modelReference";
 
 export function ProgressionCriteriaScreen({
   slice,

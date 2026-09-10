@@ -8,7 +8,6 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as CatalogPolicyRoute } from "@/routes/catalog-policy";
-import { Route as EligibilityRoute } from "@/routes/eligibility";
 import { Route as ModelReferenceRoute } from "@/routes/model-reference";
 import { Route as ScoringRulersRoute } from "@/routes/scoring-rulers";
 import { Route as TextTemplatesRoute } from "@/routes/text-templates";
@@ -31,7 +30,6 @@ const pagina = (route: { options: { component?: unknown } }) =>
   route.options.component as () => ReactNode;
 
 const CatalogPolicyPage = pagina(CatalogPolicyRoute);
-const EligibilityPage = pagina(EligibilityRoute);
 const ModelReferencePage = pagina(ModelReferenceRoute);
 const ScoringRulersPage = pagina(ScoringRulersRoute);
 const TextTemplatesPage = pagina(TextTemplatesRoute);
@@ -62,7 +60,6 @@ const GRUPOS_QUE_VIRARAM_TELA = [
   { tela: "Textos", pagina: TextTemplatesPage },
   { tela: "Vocabulários", pagina: VocabulariesPage },
   { tela: "Réguas e limiares", pagina: ScoringRulersPage },
-  { tela: "Elegibilidade", pagina: EligibilityPage },
 ] as const;
 
 /**
@@ -99,18 +96,6 @@ describe("cada fatia dos Critérios de Progressão se explica", () => {
       expect(await screen.findByRole("button", { name: `Como usar ${tela}` })).toBeTruthy();
     },
   );
-
-  it("o ? da Elegibilidade diz que o mínimo conta grupos prontos e que ela não promove sozinha", async () => {
-    entrarComo(fixtureAssignedManagerUser);
-    renderWithApp(<EligibilityPage />);
-    await screen.findByText("Júnior");
-
-    await userEvent.click(screen.getByRole("button", { name: "Como usar Elegibilidade" }));
-
-    const dialogo = await screen.findByRole("dialog");
-    expect(dialogo.textContent).toMatch(/grupos prontos/i);
-    expect(dialogo.textContent).toMatch(/nunca promove/i);
-  });
 });
 
 describe("cada grupo dentro de uma tela se explica", () => {

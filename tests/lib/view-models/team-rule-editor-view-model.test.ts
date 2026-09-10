@@ -9,19 +9,14 @@ import { TeamRuleEditorViewModel, type TeamRuleErrorKey } from "@/lib/view-model
 /**
  * Fase C, tela 1 (spec-telas-novas-2026-08-29 §1) — o NÚCLEO da régua do
  * time. As três recusas abaixo são decisão de CONTRATO, não preferência de
- * tela: a competência só pesa dentro de uma capacidade que a régua exige, o
+ * tela: a competência só pesa dentro de uma capacidade que a régua exige, e o
  * nível vive em 1..5 (ADR-0032 tirou o nível exigido do catálogo global e o
- * pôs AQUI), e o mínimo é um inteiro não negativo.
+ * pôs AQUI).
  *
- * Dono (2026-09-08, regra 12): *"Não haverá mais valor mínimo."* O `floor`
- * deixou de ser LIMITE e virou SUGESTÃO — é o valor com que a régua nova
- * nasce, e nada mais. Antes desta fatia ele era os dois ao mesmo tempo, e a
- * consequência era esta: com o padrão da organização em 3, um time que quisesse
- * exigir 1 (ou zero, agora) via o botão Salvar apagado sem explicação nenhuma
- * — a organização decidindo a régua do time pela porta dos fundos.
+ * DONO, 2026-09-10 — a TERCEIRA recusa, a do mínimo de capacidades
+ * qualificadas, morreu com a elegibilidade, e com ela o `floor` que o editor
+ * recebia. A régua declara o ESPERADO, e mais nada.
  */
-
-const FLOOR = 3;
 
 const CATALOG: Competency[] = [
   { id: "clean-core", name: "Clean Core", capabilityId: "cap-btp", active: true },
@@ -38,24 +33,22 @@ const RULE: TeamRuleView = {
   id: "regra-1",
   teamId: "time-plataforma",
   careerLevelId: "pleno",
-  minimumQualifiedCapabilities: 4,
   capabilityIds: ["cap-btp"],
   competencies: [{ competencyId: "clean-core", requiredLevel: 3 }],
 };
 
 function editorSemRegua(): TeamRuleEditorViewModel {
-  return TeamRuleEditorViewModel.from({ floor: FLOOR, competencyById, rule: null });
+  return TeamRuleEditorViewModel.from({ competencyById, rule: null });
 }
 
 function editorComRegua(): TeamRuleEditorViewModel {
-  return TeamRuleEditorViewModel.from({ floor: FLOOR, competencyById, rule: RULE });
+  return TeamRuleEditorViewModel.from({ competencyById, rule: RULE });
 }
 
 describe("TeamRuleEditorViewModel — o rascunho da régua", () => {
-  it("sem régua no servidor, o rascunho nasce no piso mínimo e sem nada exigido", () => {
+  it("sem régua no servidor, o rascunho nasce vazio", () => {
     const editor = editorSemRegua();
 
-    expect(editor.minimumQualifiedCapabilities).toBe(FLOOR);
     expect(editor.capabilityIds).toEqual([]);
     expect(editor.competencies).toEqual([]);
     expect(editor.hasRule).toBe(false);
@@ -65,7 +58,6 @@ describe("TeamRuleEditorViewModel — o rascunho da régua", () => {
   it("com régua, o rascunho começa igual ao que o servidor entregou", () => {
     const editor = editorComRegua();
 
-    expect(editor.minimumQualifiedCapabilities).toBe(4);
     expect(editor.capabilityIds).toEqual(["cap-btp"]);
     expect(editor.competencies).toEqual(RULE.competencies);
     expect(editor.hasRule).toBe(true);
@@ -74,28 +66,12 @@ describe("TeamRuleEditorViewModel — o rascunho da régua", () => {
 });
 
 describe("TeamRuleEditorViewModel — recusas de contrato", () => {
-  it("recusa mínimo negativo — não é régua, é lixo", () => {
-    const editor = editorComRegua().withMinimum(-1);
-
-    expect(editor.errorKeys).toContain("teamRules.error.minimumBelowFloor");
-    expect(editor.isValid).toBe(false);
-    expect(editor.definition()).toBeNull();
-  });
-
-  it("aceita ZERO: existe nível que não exige capacidade qualificada nenhuma", () => {
-    const editor = editorComRegua().withMinimum(0);
-
-    expect(editor.errorKeys).toEqual([]);
-    expect(editor.isValid).toBe(true);
-    expect(editor.definition()?.minimumQualifiedCapabilities).toBe(0);
-  });
-
-  it("aceita mínimo ABAIXO do padrão da organização — o padrão sugere, não limita", () => {
-    const editor = editorComRegua().withMinimum(FLOOR - 2);
-
-    expect(editor.errorKeys).toEqual([]);
-    expect(editor.isValid).toBe(true);
-  });
+  /*
+   * As três recusas do MÍNIMO (negativo, zero aceito, abaixo do padrão da
+   * organização) morreram com a elegibilidade (dono, 2026-09-10). Ficam as
+   * duas que sempre foram do ESPERADO: competência fora de capacidade da
+   * régua e nível fora de 1..5.
+   */
 
   it("recusa competência cuja capacidade não está na régua", () => {
     const editor = editorComRegua().withCompetencyInRule("malha", 3);
@@ -135,13 +111,6 @@ describe("TeamRuleEditorViewModel — recusas de contrato", () => {
 });
 
 describe("TeamRuleEditorViewModel — rascunho sujo", () => {
-  it("marca sujo quando o piso muda e limpo quando ele volta ao original", () => {
-    const sujo = editorComRegua().withMinimum(5);
-    expect(sujo.isDirty).toBe(true);
-
-    expect(sujo.withMinimum(4).isDirty).toBe(false);
-  });
-
   it("marca sujo ao ligar capacidade, ao tirar competência da régua e ao mexer no nível", () => {
     expect(editorComRegua().withCapability("cap-integracao", true).isDirty).toBe(true);
     expect(editorComRegua().withoutCompetency("clean-core").isDirty).toBe(true);
@@ -164,7 +133,6 @@ describe("TeamRuleEditorViewModel — o corpo do PUT", () => {
       .withCompetencyInRule("malha", 2);
 
     expect(editor.definition()).toEqual({
-      minimumQualifiedCapabilities: 4,
       capabilityIds: ["cap-btp", "cap-integracao"],
       competencies: [
         { competencyId: "clean-core", requiredLevel: 3 },
@@ -192,7 +160,6 @@ describe("TeamRuleEditorViewModel — toda competência pesa igual (onda 36, ADR
 
 describe("TeamRuleEditorViewModel — as recusas falam PT-BR na tela", () => {
   const chaves: TeamRuleErrorKey[] = [
-    "teamRules.error.minimumBelowFloor",
     "teamRules.error.competencyWithoutCapability",
     "teamRules.error.levelOutOfRange",
   ];

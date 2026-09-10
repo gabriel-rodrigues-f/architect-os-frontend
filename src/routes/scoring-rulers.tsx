@@ -333,7 +333,6 @@ const CADENCE_LABEL_KEY: Record<CycleCadence, MessageKey> = {
 };
 
 const OPERATIONAL_FIELD_LABEL_KEY: Record<OperationalNumberField, MessageKey> = {
-  floor: "config.operational.field.floor",
   threshold: "config.operational.field.threshold",
   idleTimeout: "config.operational.field.idleTimeout",
 };
@@ -369,7 +368,6 @@ function OperationalSettingsEditorCard() {
   };
 
   const effectiveValues: Record<OperationalNumberField, number> = {
-    floor: settings.careerMinimumQualifiedFloor,
     threshold: settings.trainingCollectiveInterventionThreshold,
     idleTimeout: settings.sessionIdleTimeoutMinutes,
   };

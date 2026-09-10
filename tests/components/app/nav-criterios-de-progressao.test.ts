@@ -37,9 +37,9 @@ const itensVisiveisDe = (user: Parameters<typeof filterNavGroups>[1], labelKey: 
   );
 
 describe("Critérios de Progressão é um grupo da coluna, não um menu", () => {
-  it("o grupo existe e traz as seis fatias, na ordem que o dono escreveu", () => {
+  it("o grupo existe e traz as cinco fatias que sobraram, na ordem que o dono escreveu", () => {
+    // A ELEGIBILIDADE SAIU (dono, 2026-09-10): o grupo perdeu a primeira fatia.
     expect(caminhosDe(CRITERIOS)).toEqual([
-      "/eligibility",
       "/scoring-rulers",
       "/text-templates",
       "/catalog-policy",
@@ -52,11 +52,11 @@ describe("Critérios de Progressão é um grupo da coluna, não um menu", () => 
     expect(caminhosDe(MODELO_DE_CARREIRA)).toEqual(["/cycles", "/team-rules"]);
   });
 
-  it("a conta da coluna: com Minha Conta e a Visão do Sistema — 31 itens em 8 grupos", () => {
+  it("a conta da coluna: sem a Elegibilidade — 30 itens em 8 grupos", () => {
     expect({
       grupos: NAV_GROUPS.length,
       itens: NAV_GROUPS.reduce((total, candidato) => total + candidato.items.length, 0),
-    }).toEqual({ grupos: 8, itens: 31 });
+    }).toEqual({ grupos: 8, itens: 30 });
   });
 
   it("o endereço antigo não é mais item de menu — quem o guarda é o redirecionamento", () => {
@@ -80,14 +80,11 @@ describe("cada fatia declara o próprio dono na coluna", () => {
     expect(itensVisiveisDe(fixtureUnassignedTechLeadUser, CRITERIOS)).toEqual(["/model-reference"]);
   });
 
-  it("o gerente com vínculo alcança a elegibilidade e a referência, e nada de administração", () => {
-    expect(itensVisiveisDe(fixtureAssignedManagerUser, CRITERIOS)).toEqual([
-      "/eligibility",
-      "/model-reference",
-    ]);
+  it("o gerente com vínculo alcança só a referência, e nada de administração", () => {
+    expect(itensVisiveisDe(fixtureAssignedManagerUser, CRITERIOS)).toEqual(["/model-reference"]);
   });
 
-  it("quem opera o sistema alcança as seis", () => {
-    expect(itensVisiveisDe(fixtureAdminUser, CRITERIOS)).toHaveLength(6);
+  it("quem opera o sistema alcança as cinco", () => {
+    expect(itensVisiveisDe(fixtureAdminUser, CRITERIOS)).toHaveLength(5);
   });
 });

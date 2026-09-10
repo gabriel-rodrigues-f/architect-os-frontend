@@ -168,7 +168,7 @@ describe("a ajuda abre no hover, sem perder o toque nem o teclado", () => {
   });
 
   it("a régua é do gatilho, não da tela: a ajuda de seção abre no hover", async () => {
-    montar(<SectionHelp section="policy" />);
+    montar(<SectionHelp section="scale" />);
     const user = userEvent.setup();
 
     const gatilho = await screen.findByRole("button", { name: /^Como configurar / });
