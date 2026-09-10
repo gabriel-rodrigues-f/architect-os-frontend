@@ -120,7 +120,6 @@ describe("Matriz — a capacidade nasce fundada com as suas competências", () =
     await waitFor(() => expect(postedFoundation()).toBeTruthy());
     expect(postedFoundation()).toEqual({
       name: "Governança de Dados",
-      active: true,
       competencies: [
         { name: "Qualidade de Dado" },
         { name: "Catálogo de Dados" },

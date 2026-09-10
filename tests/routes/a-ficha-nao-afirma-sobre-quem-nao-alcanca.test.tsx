@@ -85,13 +85,12 @@ const comCapacidadeSemMedida: AppState = {
       id: "dados",
       name: "Arquitetura de Dados",
       short: "Dados",
-      active: true,
-      curation: { activeCompetencyCount: 1, status: "READY" },
+      curation: { competencyCount: 1, status: "READY" },
     },
   ],
   competencies: [
     ...fixtureState.competencies,
-    { id: "dados-modelagem", name: "Modelagem", capabilityId: "dados", active: true },
+    { id: "dados-modelagem", name: "Modelagem", capabilityId: "dados" },
   ],
 };
 

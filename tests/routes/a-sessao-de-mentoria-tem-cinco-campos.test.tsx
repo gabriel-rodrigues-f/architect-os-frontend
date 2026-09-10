@@ -33,9 +33,9 @@ const fetchMock = vi.fn();
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 
 const competencias: Competency[] = [
-  { id: "cloud-k8s", name: "Kubernetes", capabilityId: "cloud", active: true },
-  { id: "cloud-serverless", name: "Serverless", capabilityId: "cloud", active: true },
-  { id: "security-iam", name: "IAM", capabilityId: "security", active: true },
+  { id: "cloud-k8s", name: "Kubernetes", capabilityId: "cloud" },
+  { id: "cloud-serverless", name: "Serverless", capabilityId: "cloud" },
+  { id: "security-iam", name: "IAM", capabilityId: "security" },
 ];
 
 /** Uma sessão ANTIGA, das que gravaram competências antes do pedido do dono. */

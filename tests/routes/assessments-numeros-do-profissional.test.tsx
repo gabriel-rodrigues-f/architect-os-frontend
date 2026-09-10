@@ -52,8 +52,15 @@ function mockSession(user: SessionUser) {
   mockAppFetch(fetchMock, { user, state: fixtureState, routes: [emptyEligibilityRoute] });
 }
 
-function cabecalhos(): string[] {
-  return Array.from(document.querySelectorAll("th")).map((th) => th.textContent?.trim() ?? "");
+/*
+ * A TELA LISTA TODAS AS CAPACIDADES desde 2026-09-10 (dono: *"Todas as
+ * capacidades listadas"*), e cada uma traz a sua tabela. Os cabeçalhos que
+ * interessam são os DA TABELA da linha sob teste — varrer o documento inteiro
+ * devolveria as sete colunas repetidas uma vez por capacidade.
+ */
+function cabecalhosDaTabelaDe(linha: HTMLTableRowElement): string[] {
+  const tabela = linha.closest("table") as HTMLTableElement;
+  return Array.from(tabela.querySelectorAll("th")).map((th) => th.textContent?.trim() ?? "");
 }
 
 async function linhaDe(competencia: string): Promise<HTMLTableRowElement> {
@@ -80,11 +87,11 @@ describe("Avaliações — o profissional vê os próprios números de avaliaç�
     renderWithApp(<AssessmentsPage />);
 
     const serverless = await linhaDe("Serverless");
-    expect(cabecalhos()).toEqual(TODAS_AS_COLUNAS);
+    expect(cabecalhosDaTabelaDe(serverless)).toEqual(TODAS_AS_COLUNAS);
     expect(serverless.querySelectorAll("td")).toHaveLength(TODAS_AS_COLUNAS.length);
     expect(serverless.textContent).toMatch(/3/);
     for (const coluna of COLUNAS_DE_NUMEROS) {
-      expect(screen.getByText(coluna)).toBeTruthy();
+      expect(screen.getAllByText(coluna).length).toBeGreaterThan(0);
     }
   });
 
@@ -133,7 +140,7 @@ describe("Avaliações — o profissional vê os próprios números de avaliaç�
     renderWithApp(<AssessmentsPage />);
 
     const serverless = await linhaDe("Serverless");
-    expect(cabecalhos()).toEqual(TODAS_AS_COLUNAS);
+    expect(cabecalhosDaTabelaDe(serverless)).toEqual(TODAS_AS_COLUNAS);
     expect(serverless.querySelectorAll("td")).toHaveLength(TODAS_AS_COLUNAS.length);
     expect(serverless.textContent).toMatch(/3/);
   });

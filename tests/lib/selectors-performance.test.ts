@@ -20,9 +20,8 @@ function buildLargeState(): AppState {
     id: `capacidade-${i}`,
     name: `Capacidade ${i}`,
     short: `D${i}`,
-    active: true,
     curation: {
-      activeCompetencyCount: COMPETENCIES_PER_CAPABILITY,
+      competencyCount: COMPETENCIES_PER_CAPABILITY,
       restrictiveCompetencyCount: 0,
       nonRestrictiveCompetencyCount: COMPETENCIES_PER_CAPABILITY,
       status: "REQUIRES_CURATION",
@@ -39,7 +38,6 @@ function buildLargeState(): AppState {
         "arquiteto-de-solucoes-ii": 4 as Level,
         "arquiteto-de-solucoes-iii": 5 as Level,
       },
-      active: true,
     })),
   );
 

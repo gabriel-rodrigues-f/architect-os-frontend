@@ -155,7 +155,7 @@ describe("/team-rules — os estados obrigatórios da régua", () => {
           capability.id === "cloud"
             ? {
                 ...capability,
-                curation: { activeCompetencyCount: 2, status: "REQUIRES_CURATION" as const },
+                curation: { competencyCount: 2, status: "REQUIRES_CURATION" as const },
               }
             : capability,
         ),

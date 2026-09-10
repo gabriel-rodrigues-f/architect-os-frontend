@@ -68,8 +68,6 @@ export class CompetencySelection {
   }
 
   private static activeOf(capabilityId: string, competencies: readonly Competency[]): Competency[] {
-    return competencies.filter(
-      (competency) => competency.capabilityId === capabilityId && competency.active,
-    );
+    return competencies.filter((competency) => competency.capabilityId === capabilityId);
   }
 }

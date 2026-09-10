@@ -11,10 +11,9 @@ import { CompetencySelection } from "@/lib/view-models/competency-selection";
  */
 
 const competencies: Competency[] = [
-  { id: "k8s", name: "Kubernetes", capabilityId: "cloud", active: true },
-  { id: "serverless", name: "Serverless", capabilityId: "cloud", active: true },
-  { id: "old", name: "Antiga", capabilityId: "cloud", active: false },
-  { id: "iam", name: "IAM", capabilityId: "security", active: true },
+  { id: "k8s", name: "Kubernetes", capabilityId: "cloud" },
+  { id: "serverless", name: "Serverless", capabilityId: "cloud" },
+  { id: "iam", name: "IAM", capabilityId: "security" },
 ];
 
 describe("CompetencySelection", () => {
@@ -30,10 +29,14 @@ describe("CompetencySelection", () => {
     expect(selection.has("k8s")).toBe(false);
   });
 
-  it("marcar a capacidade inteira marca só as competências ativas dela", () => {
+  /*
+   * "SÓ AS ATIVAS" deixou de ser um recorte (dono, 2026-09-10): a capacidade
+   * marca as competências que ela tem, porque não há mais competência
+   * escondida dentro dela.
+   */
+  it("marcar a capacidade inteira marca as competências dela", () => {
     const selection = CompetencySelection.empty().toggleCapability("cloud", competencies);
     expect(selection.ids).toEqual(["k8s", "serverless"]);
-    expect(selection.has("old")).toBe(false);
     expect(selection.capabilityState("cloud", competencies)).toBe("all");
   });
 
@@ -51,7 +54,7 @@ describe("CompetencySelection", () => {
     expect(partial.toggleCapability("cloud", competencies).ids).toEqual(["k8s", "serverless"]);
   });
 
-  it("capacidade sem competência ativa nunca está 'all'", () => {
+  it("capacidade sem competência nenhuma nunca está 'all'", () => {
     expect(CompetencySelection.empty().capabilityState("empty", competencies)).toBe("none");
   });
 

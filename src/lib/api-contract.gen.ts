@@ -672,8 +672,6 @@ export interface paths {
                     "application/json": {
                         name: string;
                         short?: string;
-                        /** @default true */
-                        active?: boolean;
                         competencies: {
                             name: string;
                         }[];
@@ -742,7 +740,6 @@ export interface paths {
                     "application/json": {
                         name?: string;
                         short?: string;
-                        active?: boolean;
                     };
                 };
             };
@@ -798,8 +795,6 @@ export interface paths {
                     "application/json": {
                         name: string;
                         capabilityId: string;
-                        /** @default true */
-                        active?: boolean;
                     };
                 };
             };
@@ -865,7 +860,6 @@ export interface paths {
                     "application/json": {
                         name?: string;
                         capabilityId?: string;
-                        active?: boolean;
                     };
                 };
             };
@@ -3028,7 +3022,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         /** @enum {string} */
-                        status: "Draft" | "In Review" | "Completed";
+                        status: "Draft" | "Completed";
                         expectedVersion: number;
                     };
                 };

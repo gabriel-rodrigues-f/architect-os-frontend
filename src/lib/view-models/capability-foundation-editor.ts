@@ -68,7 +68,6 @@ export class CapabilityFoundationEditor {
     if (!this.range.admits(competencyNames.length)) return null;
     return {
       name,
-      active: true,
       competencies: competencyNames.map((competencyName) => ({ name: competencyName })),
     };
   }

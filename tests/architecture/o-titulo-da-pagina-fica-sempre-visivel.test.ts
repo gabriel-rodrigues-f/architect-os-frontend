@@ -105,16 +105,20 @@ const BLOCOS: readonly { pedido: string; arquivo: string; rotulo: string }[] = [
     rotulo: "pane.notices.label",
   },
   /*
-   * O bloco 16 entrou em 2026-09-10, pelo mesmo motivo dos quinze: *"Ocupe a
-   * tela com a quantidade necessária de capacidades arquivadas para se
-   * enxergar todo o conteúdo da página em zoom 100%. O restante, somente
-   * scrollando esse grupo de 'Arquivadas'."* É a segunda caixa da mesma tela
-   * do bloco 11 — e a única das duas que ocupa o resto da página.
+   * O bloco 16 — "Catálogo de Competências, Arquivadas" — entrou de manhã em
+   * 2026-09-10 e SAIU à tarde do mesmo dia, com o conceito de arquivado (dono:
+   * *"remova o conceito de arquivado"*). A caixa que ocupava o resto da página
+   * naquela tela não existe mais; quem ocupa o resto lá é a caixa do bloco 11,
+   * que voltou a ser `restOfPage()` porque perdeu a vizinha de baixo.
+   *
+   * O bloco 17 é a AVALIAÇÃO DE DESEMPENHO (dono, 2026-09-10): *"um bloco com
+   * capacidades › competências ocupando a tela em 100%, com folga no rodapé e
+   * rolagem por dentro"*.
    */
   {
-    pedido: "16 — Catálogo de Competências, Arquivadas",
-    arquivo: join("src", "routes", "competency-matrix.tsx"),
-    rotulo: "pane.archivedCatalog.label",
+    pedido: "17 — Avaliação de Desempenho, capacidades › competências",
+    arquivo: join("src", "routes", "assessments.tsx"),
+    rotulo: "asmt.allCapabilities",
   },
 ];
 

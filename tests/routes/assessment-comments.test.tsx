@@ -85,7 +85,7 @@ const state: AppState = {
       ? a
       : {
           ...a,
-          status: "In Review" as const,
+          status: "Draft" as const,
           items: a.items.map((it) =>
             it.competencyId === "cloud-k8s"
               ? {

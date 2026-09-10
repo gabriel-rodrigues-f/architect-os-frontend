@@ -144,7 +144,6 @@ export class AssessmentSelectors {
       id: item.competencyId,
       name: item.competencyName,
       capabilityId: item.capabilityId ?? "",
-      active: false,
     };
   };
 

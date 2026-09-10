@@ -122,7 +122,13 @@ const NA_PORTA: readonly string[] = [
 // `TeamEvolutionProfessionalsNotVisibleError`). Dar código próprio a elas
 // devolveria o oráculo; o conserto delas é virar 404, e está nomeado no
 // veredito (§7 item 6 e passo 5).
-const DIVIDA_DE_HOJE = 82;
+// 82 → 80 (fatia AVALIAÇÃO, 2026-09-10): a etapa "Em revisão" e o conceito de
+// arquivado saíram do produto, e com eles quatro recusas de portfólio
+// (`PORTFOLIO_BELOW_MINIMUM`, `PORTFOLIO_CONFIRMED_BELOW_MINIMUM`,
+// `PORTFOLIO_UNCONFIRMED_ITEMS`, `PORTFOLIO_NOT_IN_REVIEW`); entraram duas
+// (`ASSESSMENT_REOPEN_OUTSIDE_CYCLE`, `COMPETENCY_IN_USE`), as duas ainda em
+// prosa. Desceu porque o produto encolheu, não porque alguém traduziu.
+const DIVIDA_DE_HOJE = 80;
 
 /**
  * Quantas classes de recusa a política JÁ compõe na tela, nos dois idiomas.
@@ -312,7 +318,12 @@ describe("procedência da cópia do contrato do backend", () => {
     // AS DUAS LEITURAS DE APOIO SAEM (dono, 2026-09-10): 190 → 189. Saiu
     // `CalibrationAssistanceNotLeadError`, o 404 de alcance da leitura de
     // apoio à calibração. A curadoria era de admin e não tinha classe própria.
-    expect(Object.keys(CLASSES).length).toBe(189);
+    // A AVALIAÇÃO SIMPLIFICA E O ARQUIVADO MORRE (dono, 2026-09-10): 189 → 187.
+    // Saíram as quatro classes de portfólio que a etapa "Em revisão"
+    // sustentava; entraram `AssessmentReopenOutsideCycleError` (a janela do
+    // mesmo ciclo) e `CompetencyInUseError` (a recusa de excluir o que tem
+    // gente vinculada).
+    expect(Object.keys(CLASSES).length).toBe(187);
   });
 
   /**

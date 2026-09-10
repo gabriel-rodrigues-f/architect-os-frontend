@@ -24,10 +24,10 @@ import { TeamRuleEditorViewModel, type TeamRuleErrorKey } from "@/lib/view-model
 const FLOOR = 3;
 
 const CATALOG: Competency[] = [
-  { id: "clean-core", name: "Clean Core", capabilityId: "cap-btp", active: true },
-  { id: "eventos", name: "Eventos", capabilityId: "cap-btp", active: true },
-  { id: "malha", name: "Malha de integração", capabilityId: "cap-integracao", active: true },
-  { id: "contratos", name: "Contratos de API", capabilityId: "cap-integracao", active: true },
+  { id: "clean-core", name: "Clean Core", capabilityId: "cap-btp" },
+  { id: "eventos", name: "Eventos", capabilityId: "cap-btp" },
+  { id: "malha", name: "Malha de integração", capabilityId: "cap-integracao" },
+  { id: "contratos", name: "Contratos de API", capabilityId: "cap-integracao" },
 ];
 
 function competencyById(id: string): Competency | undefined {

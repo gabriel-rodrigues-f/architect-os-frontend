@@ -11,7 +11,6 @@ import type { CatalogImportPayload, CatalogImportSummary } from "../catalog-impo
  */
 export interface CapabilityFoundationPayload {
   name: string;
-  active: boolean;
   competencies: { name: string }[];
 }
 
@@ -21,10 +20,10 @@ export interface CatalogGateway {
     id: string,
     patch_: Partial<Omit<Capability, "id" | "curation">>,
   ): Promise<Capability>;
-  deleteCapability(id: string): Promise<{ archived: boolean; competenciesRemoved: number }>;
+  deleteCapability(id: string): Promise<{ competenciesRemoved: number }>;
   createCompetency(competency: Omit<Competency, "id">): Promise<Competency>;
   updateCompetency(id: string, patch_: Partial<Omit<Competency, "id">>): Promise<Competency>;
-  deleteCompetency(id: string): Promise<{ archived: boolean } | undefined>;
+  deleteCompetency(id: string): Promise<void>;
   removeCompetencies(competencyIds: string[]): Promise<CompetencyRemovalSummary>;
 
   importCatalog(payload: CatalogImportPayload): Promise<CatalogImportSummary>;
@@ -41,8 +40,8 @@ export class HttpCatalogGateway implements CatalogGateway {
     patch_: Partial<Omit<Capability, "id" | "curation">>,
   ): Promise<Capability> => this.client.patch<Capability>(`/capabilities/${id}`, patch_);
 
-  deleteCapability = (id: string): Promise<{ archived: boolean; competenciesRemoved: number }> =>
-    this.client.del<{ archived: boolean; competenciesRemoved: number }>(`/capabilities/${id}`);
+  deleteCapability = (id: string): Promise<{ competenciesRemoved: number }> =>
+    this.client.del<{ competenciesRemoved: number }>(`/capabilities/${id}`);
 
   createCompetency = (competency: Omit<Competency, "id">): Promise<Competency> =>
     this.client.post<Competency>("/competencies", competency);
@@ -50,8 +49,7 @@ export class HttpCatalogGateway implements CatalogGateway {
   updateCompetency = (id: string, patch_: Partial<Omit<Competency, "id">>): Promise<Competency> =>
     this.client.patch<Competency>(`/competencies/${id}`, patch_);
 
-  deleteCompetency = (id: string): Promise<{ archived: boolean } | undefined> =>
-    this.client.del<{ archived: boolean } | undefined>(`/competencies/${id}`);
+  deleteCompetency = (id: string): Promise<void> => this.client.del<void>(`/competencies/${id}`);
 
   removeCompetencies = (competencyIds: string[]): Promise<CompetencyRemovalSummary> =>
     this.client.post<CompetencyRemovalSummary>("/competencies/bulk-removal", { competencyIds });
@@ -62,7 +60,8 @@ export class HttpCatalogGateway implements CatalogGateway {
       .then((data) => catalogImportSummarySchema.parse(data));
 }
 
-export type CompetencyRemovalOutcomeKind = "removed" | "archived";
+/** Dois desfechos desde 2026-09-10: apaga, ou recusa (dono). */
+export type CompetencyRemovalOutcomeKind = "removed" | "refused";
 
 export interface AffectedRecords {
   assessments: number;
@@ -136,7 +135,7 @@ export class InMemoryCompetencyRemoval implements Pick<CatalogGateway, "removeCo
         const held = affected !== undefined && Object.values(affected).some((count) => count > 0);
         return {
           competencyId,
-          outcome: held ? "archived" : "removed",
+          outcome: held ? "refused" : "removed",
           affected: affected ?? InMemoryCompetencyRemoval.nothing(),
         };
       }),

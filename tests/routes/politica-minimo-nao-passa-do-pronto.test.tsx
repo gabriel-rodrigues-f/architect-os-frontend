@@ -49,8 +49,7 @@ const terceiraCapacidadePronta = {
   id: "integration",
   name: "Integration",
   short: "Integração",
-  active: true,
-  curation: { activeCompetencyCount: 2, status: "READY" as const },
+  curation: { competencyCount: 2, status: "READY" as const },
 };
 
 /** O piso operacional de fábrica é 3; com 3 prontas o mínimo 3 é o alcançável. */

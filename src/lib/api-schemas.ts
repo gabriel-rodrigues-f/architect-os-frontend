@@ -7,7 +7,7 @@ const level = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z
 const roleName = z.string();
 
 const capabilityCuration = z.object({
-  activeCompetencyCount: z.number(),
+  competencyCount: z.number(),
   status: z.enum(["READY", "REQUIRES_CURATION"]),
 });
 
@@ -15,7 +15,6 @@ const capability = z.object({
   id: z.string(),
   name: z.string(),
   short: z.string(),
-  active: z.boolean(),
   curation: capabilityCuration,
 });
 
@@ -23,7 +22,6 @@ const competency = z.object({
   id: z.string(),
   name: z.string(),
   capabilityId: z.string(),
-  active: z.boolean(),
 });
 
 const teamLevelRule = z.object({
@@ -445,7 +443,7 @@ const assessment = z.object({
   id: z.string(),
   professionalId: z.string(),
   cycleId: z.string(),
-  status: z.enum(["Draft", "In Review", "Completed"]),
+  status: z.enum(["Draft", "Completed"]),
   items: z.array(assessmentItem),
   modelVersion: z.union([z.literal(1), z.literal(2)]),
   targetCareerLevelId: z.string().nullable(),

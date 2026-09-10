@@ -75,7 +75,10 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
 // `mentoring.recordFromScript.success` com `POST
 // /mentoring-sessions/from-session-script` — não há mais roteiro gerado para
 // salvar como sessão de 1:1.
-const CODIGOS_ESPERADOS = 63;
+// O ARQUIVADO MORRE (dono, 2026-09-10): 63 − 1 = 62. Saiu
+// `catalog.competency.delete.success`: sem o desfecho "arquivei em vez de
+// apagar", a exclusão de competência é 204 — e 204 não carrega aviso.
+const CODIGOS_ESPERADOS = 62;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 

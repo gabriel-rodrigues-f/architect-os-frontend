@@ -198,7 +198,7 @@ export interface Api extends AppState {
   renameCompetency: (id: string, name: string) => Promise<Competency>;
   updateCompetency: (id: string, patch: Partial<Omit<Competency, "id">>) => void;
 
-  removeCompetency: (id: string) => Promise<{ archived: boolean }>;
+  removeCompetency: (id: string) => Promise<void>;
   removeCompetencies: (competencyIds: string[]) => Promise<CompetencyRemovalSummary>;
 
   foundCapability: (foundation: CapabilityFoundationPayload) => Promise<Capability>;
@@ -209,7 +209,7 @@ export interface Api extends AppState {
     onConfirmed?: (updated: Capability) => void,
   ) => void;
 
-  removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
+  removeCapability: (id: string) => Promise<{ competenciesRemoved: number }>;
   addCycle: (c: DevelopmentCycle, onConfirmed?: (created: DevelopmentCycle) => void) => void;
   updateCycle: (
     id: string,
@@ -565,19 +565,20 @@ export function buildApi(
       );
     },
 
+    /*
+     * APAGA, OU RECUSA (dono, 2026-09-10). O caminho do meio — marcar
+     * `active: false` na lista — sumiu com o conceito: a recusa por vínculo
+     * chega como 409 e o `MutationRunner` a mostra; o sucesso é a linha fora
+     * da lista.
+     */
     removeCompetency: (id) =>
       runner
         .guarded(
-          async () => ({ archived: (await api.deleteCompetency(id))?.archived === true }),
-          ({ archived }) =>
-            (s) => ({
-              ...s,
-              competencies: archived
-                ? s.competencies.map((c) => (c.id === id ? { ...c, active: false } : c))
-                : s.competencies.filter((c) => c.id !== id),
-            }),
+          () => api.deleteCompetency(id),
+          () => (s) => ({ ...s, competencies: s.competencies.filter((c) => c.id !== id) }),
         )
-        .then(refreshCurationCounts),
+        .then(refreshCurationCounts)
+        .then(() => undefined),
 
     removeCompetencies: (competencyIds) =>
       runner
@@ -585,23 +586,18 @@ export function buildApi(
           () => api.removeCompetencies(competencyIds),
           ({ outcomes }) =>
             (state) => {
+              // Apaga, ou recusa (dono, 2026-09-10): a recusada fica na lista
+              // exatamente como estava — não há mais um estado do meio.
               const removed = new Set(
                 outcomes
                   .filter((outcome) => outcome.outcome === "removed")
                   .map((outcome) => outcome.competencyId),
               );
-              const archived = new Set(
-                outcomes
-                  .filter((outcome) => outcome.outcome === "archived")
-                  .map((outcome) => outcome.competencyId),
-              );
               return {
                 ...state,
-                competencies: state.competencies
-                  .filter((competency) => !removed.has(competency.id))
-                  .map((competency) =>
-                    archived.has(competency.id) ? { ...competency, active: false } : competency,
-                  ),
+                competencies: state.competencies.filter(
+                  (competency) => !removed.has(competency.id),
+                ),
                 learningPaths: state.learningPaths.map((learningPath) => ({
                   ...learningPath,
                   competencyIds: learningPath.competencyIds.filter(
@@ -647,18 +643,7 @@ export function buildApi(
       runner
         .guarded(
           () => api.deleteCapability(id),
-          (result) => (s) => {
-            if (result.archived) {
-              return {
-                ...s,
-                capabilities: s.capabilities.map((c) =>
-                  c.id === id ? { ...c, active: false } : c,
-                ),
-                competencies: s.competencies.map((c) =>
-                  c.capabilityId === id ? { ...c, active: false } : c,
-                ),
-              };
-            }
+          () => (s) => {
             const doomed = new Set(
               s.competencies.filter((c) => c.capabilityId === id).map((c) => c.id),
             );

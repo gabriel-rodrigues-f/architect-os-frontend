@@ -146,7 +146,7 @@ describe("createSelectors", () => {
           id: "review-1",
           professionalId: "diego",
           cycleId: "2026-h2",
-          status: "In Review",
+          status: "Draft",
         },
       ],
     });

@@ -33,7 +33,12 @@ export interface TeamLevelRule {
 }
 
 interface CapabilityCuration {
-  activeCompetencyCount: number;
+  /**
+   * Quantas competências a capacidade tem. Contava as ATIVAS até 2026-09-10;
+   * sem o conceito de arquivado (dono: *"remova o conceito de arquivado"*)
+   * conta as que existem — o mesmo número, porque a arquivada foi apagada.
+   */
+  competencyCount: number;
   status: "READY" | "REQUIRES_CURATION";
 }
 
@@ -41,8 +46,6 @@ export interface Capability {
   id: string;
   name: string;
   short: string;
-
-  active: boolean;
   curation: CapabilityCuration;
 }
 
@@ -71,7 +74,6 @@ export interface Competency {
   id: string;
   name: string;
   capabilityId: string;
-  active: boolean;
 }
 
 /**
@@ -167,13 +169,42 @@ export interface Assessment {
   id: string;
   professionalId: string;
   cycleId: string;
-  status: "Draft" | "In Review" | "Completed";
+  status: "Draft" | "Completed";
   items: AssessmentItem[];
   modelVersion: AssessmentModelVersion;
   targetCareerLevelId: string | null;
   targetSemantics: AssessmentTargetSemantics | null;
 
   version: number;
+}
+
+/**
+ * O QUE A AVALIAÇÃO JÁ TEM DENTRO — a pergunta que sobrou quando a etapa "Em
+ * revisão" saiu da máquina de estados (dono, 2026-09-10).
+ *
+ * Três telas perguntavam "esta avaliação está esperando a decisão de quem
+ * conclui?" e as três liam o ESTADO `In Review`. Sem aquele estado, a mesma
+ * pergunta se responde pelo CONTEÚDO: um rascunho cujas notas do líder e
+ * finais já estão todas lá é o que está esperando alguém fechar. Uma
+ * pergunta, um lugar — é a mesma régua que o backend aplica na fila da
+ * liderança do Painel Executivo.
+ */
+export class AssessmentProgress {
+  private constructor(private readonly assessment: Assessment | undefined) {}
+
+  static of(assessment: Assessment | undefined): AssessmentProgress {
+    return new AssessmentProgress(assessment);
+  }
+
+  /** Rascunho com líder e final em TODA competência: só falta concluir. */
+  get awaitsConclusion(): boolean {
+    const items = this.assessment?.items ?? [];
+    return (
+      this.assessment?.status === "Draft" &&
+      items.length > 0 &&
+      items.every((item) => item.leader !== null && item.final !== null)
+    );
+  }
 }
 
 export interface AssessmentCapability {

@@ -92,7 +92,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     renderWithApp(<CatalogPolicyPage />);
 
     const block = await policyBlock();
-    expect(within(block).getByText("Máximo de competências ativas")).toBeTruthy();
+    expect(within(block).getByText("Máximo de competências por capacidade")).toBeTruthy();
     expect(within(block).queryByText("Restritivas exigidas")).toBeNull();
     expect(within(block).queryByText("Não restritivas exigidas")).toBeNull();
     expect(
@@ -115,7 +115,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     const block = await policyBlock();
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
 
-    const max = within(block).getByLabelText("Máximo de competências ativas");
+    const max = within(block).getByLabelText("Máximo de competências por capacidade");
     await userEvent.clear(max);
     await userEvent.type(max, "0");
 
@@ -145,7 +145,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     const stateGetsBefore = countGets(apiPath("/capabilities"));
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
 
-    const input = within(block).getByLabelText("Máximo de competências ativas");
+    const input = within(block).getByLabelText("Máximo de competências por capacidade");
     await userEvent.clear(input);
     await userEvent.type(input, "3");
     await userEvent.click(within(block).getByRole("button", { name: "Salvar" }));
@@ -193,7 +193,7 @@ describe("Catálogo (CFG-04 admin UI)", () => {
     await userEvent.click(within(block).getByRole("button", { name: "Editar" }));
     // Rascunho client-side válido (9 é inteiro positivo) — o teto de 4 é a
     // autoridade do backend, e a mensagem que aparece é a DELE.
-    const input = within(block).getByLabelText("Máximo de competências ativas");
+    const input = within(block).getByLabelText("Máximo de competências por capacidade");
     await userEvent.clear(input);
     await userEvent.type(input, "9");
     await userEvent.click(within(block).getByRole("button", { name: "Salvar" }));

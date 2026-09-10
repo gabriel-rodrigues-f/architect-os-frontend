@@ -152,7 +152,7 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
     expect(confirmation.textContent).toContain("Kubernetes");
     expect(confirmation.textContent).toContain("IAM");
     expect(confirmation.textContent).toMatch(
-      /avaliações, itens de PDI, itens de trilha e exigências de régua/,
+      /avaliação, PDI, nível, retrato de estado ou exigência de régua de time/,
     );
     expect(gateway.removalsMade).toEqual([]);
 
@@ -162,7 +162,7 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
     expect(await within(result).findByText("Resultado da exclusão")).toBeTruthy();
     expect(within(result).getByText("Kubernetes").parentElement?.textContent).toContain("excluída");
     const iam = within(result).getByText("IAM").parentElement?.textContent ?? "";
-    expect(iam).toContain("arquivada");
+    expect(iam).toContain("não excluída");
     expect(iam).toContain("2 avaliações");
     expect(iam).toContain("1 exigência de régua");
     expect(gateway.removalsMade).toEqual([["cloud-k8s", "security-iam"]]);
@@ -171,10 +171,12 @@ describe("Matriz de Competências — selecionar e excluir em massa", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
     await userEvent.click(screen.getByRole("button", { name: "Expandir tudo" }));
+    // A excluída some; a RECUSADA fica na matriz, inteira — não há mais uma
+    // aba "Arquivadas" para onde mandá-la (dono, 2026-09-10).
     expect(screen.queryByText("Kubernetes")).toBeNull();
     expect(screen.getByText("Serverless")).toBeTruthy();
-    const archived = within(screen.getByText("Arquivadas").closest("section") as HTMLElement);
-    expect(archived.getByText("IAM")).toBeTruthy();
+    expect(screen.getByText("IAM")).toBeTruthy();
+    expect(screen.queryByText("Arquivadas")).toBeNull();
     expect(screen.queryByLabelText("Selecionar Serverless")).toBeNull();
   });
 

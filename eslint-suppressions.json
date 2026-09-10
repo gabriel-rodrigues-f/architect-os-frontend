@@ -36,7 +36,7 @@
   },
   "src/components/app/assessments-shared.tsx": {
     "id-length": {
-      "count": 18
+      "count": 16
     }
   },
   "src/components/app/charts.tsx": {
@@ -151,7 +151,7 @@
   },
   "src/lib/store.tsx": {
     "id-length": {
-      "count": 104
+      "count": 101
     }
   },
   "src/lib/team-report-pdf.ts": {
@@ -196,7 +196,7 @@
   },
   "src/routes/assessments.tsx": {
     "id-length": {
-      "count": 7
+      "count": 1
     }
   },
   "src/routes/capability-map.tsx": {
@@ -211,7 +211,7 @@
   },
   "src/routes/competency-matrix.tsx": {
     "id-length": {
-      "count": 18
+      "count": 15
     }
   },
   "src/routes/cycles.tsx": {
@@ -476,12 +476,7 @@
   },
   "tests/routes/assessment-lifecycle.test.tsx": {
     "id-length": {
-      "count": 5
-    }
-  },
-  "tests/routes/assessments-portfolio.test.tsx": {
-    "id-length": {
-      "count": 6
+      "count": 4
     }
   },
   "tests/routes/assessments-responsive.test.tsx": {

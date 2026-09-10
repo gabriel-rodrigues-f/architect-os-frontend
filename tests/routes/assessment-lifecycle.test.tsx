@@ -55,13 +55,11 @@ describe("Avaliações — campos por papel e status", () => {
     ),
   };
 
-  // Mesma avaliação, já enviada para revisão.
-  const inReviewState: AppState = {
-    ...fixtureState,
-    assessments: fixtureState.assessments.map((a) =>
-      a.id === "ana-h2" ? { ...a, status: "In Review" } : a,
-    ),
-  };
+  /*
+   * A ETAPA DO MEIO SAIU (dono, 2026-09-10): não existe mais um estado "em
+   * revisão" para separar quem escreve o quê. Rascunho é a única etapa aberta,
+   * e nela os TRÊS campos são editáveis por quem lidera.
+   */
 
   /**
    * Dono, 2026-09-06: "Autoavaliação é um processo de PDI e 1:1, não um menu
@@ -77,31 +75,31 @@ describe("Avaliações — campos por papel e status", () => {
     // O número dele continua visível — em texto.
     expect(linha.textContent).toContain("4");
 
-    expect(screen.queryByRole("button", { name: "Enviar para revisão" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
   });
 
-  it("quem lidera registra a autoavaliação em Rascunho e envia para revisão; líder e final seguem travados (dono, 2026-09-06)", async () => {
+  it("quem lidera registra os TRÊS campos em Rascunho, na mesma conversa (dono, 2026-09-10)", async () => {
     mockSession(fixtureAssignedTechLeadUser, draftState);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     const selects = linha.querySelectorAll("select");
-    // Só a coluna de autoavaliação é <select>; alvo, líder e final viram texto.
-    expect(selects).toHaveLength(1);
+    // Autoavaliação, líder e final são <select>; só o alvo é texto.
+    expect(selects).toHaveLength(3);
     expect(selects[0]?.value).toBe("4"); // self de "cloud-k8s" em ana-h2, na fixture
 
-    expect(screen.getByRole("button", { name: "Enviar para revisão" })).toBeTruthy();
+    // Quem pontua não conclui: concluir é decisão de quem responde pela pessoa.
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
   });
 
   /**
-   * DOM-002 (AUDITORIA-QUINTA-RODADA-360-SYNAPSE-2026-08-19.md) — item ainda
-   * não avaliado nasce `self: null`, nunca um nível fabricado; o botão de
-   * envio para revisão precisa nascer desabilitado até todos os itens
-   * estarem preenchidos, espelhando a completude que o backend já exige.
+   * DOM-002 — item ainda não avaliado nasce `self: null`, nunca um nível
+   * fabricado; o botão que fecha a avaliação nasce desabilitado até todos os
+   * itens estarem preenchidos, espelhando a completude que o backend exige.
+   * Ele era "Enviar para revisão"; desde 2026-09-10 é "Concluir avaliação" —
+   * a exigência mudou de degrau, não morreu.
    */
-  it("não avaliado mostra '—' e desabilita o envio até todos os itens terem self", async () => {
+  it("não avaliado mostra '—' e desabilita a conclusão até todos os itens terem self", async () => {
     const incompleteDraft: AppState = {
       ...draftState,
       assessments: draftState.assessments.map((a) =>
@@ -115,7 +113,7 @@ describe("Avaliações — campos por papel e status", () => {
           : a,
       ),
     };
-    mockSession(fixtureAssignedTechLeadUser, incompleteDraft);
+    mockSession(fixtureAssignedManagerUser, incompleteDraft);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Serverless")).closest("tr")!;
@@ -123,63 +121,32 @@ describe("Avaliações — campos por papel e status", () => {
     const select = linha.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe("");
 
-    const submit = screen.getByRole("button", { name: "Enviar para revisão" });
-    expect((submit as HTMLButtonElement).disabled).toBe(true);
+    const concluir = screen.getByRole("button", { name: "Concluir avaliação" });
+    expect((concluir as HTMLButtonElement).disabled).toBe(true);
     expect(
-      screen.getByText(
-        "Preencha a autoavaliação de todas as competências antes de enviar para revisão.",
-      ),
+      screen.getByText("Preencha a autoavaliação de todas as competências antes de concluir."),
     ).toBeTruthy();
   });
 
-  // AUDITORIA-RIGIDA-SEGUNDA-REVISAO-SYNAPSE.md, Seção 2 — a autoavaliação
-  // congela assim que sai do Rascunho; a pessoa não pode mais ajustá-la
-  // enquanto o Tech Lead revisa.
-  it("member não edita mais a autoavaliação depois de Em Revisão", async () => {
-    mockSession(fixtureMemberUser, inReviewState);
-    renderWithApp(<AssessmentsPage />);
-
-    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
-    expect(linha.querySelectorAll("select")).toHaveLength(0);
-    expect(screen.queryByRole("button", { name: "Enviar para revisão" })).toBeNull();
-  });
-
-  // Seção 4 — líder/final ainda não abrem enquanto a avaliação está em
-  // Rascunho, mesmo para o gerente que decide a carreira.
-  it("gerente não edita líder nem final enquanto ainda é Rascunho — só a autoavaliação que registra na 1:1", async () => {
+  it("gerente vinculado edita os três campos em Rascunho, e é ele quem conclui (D4)", async () => {
     mockSession(fixtureAssignedManagerUser, draftState);
     renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
-    expect(linha.querySelectorAll("select")).toHaveLength(1);
-    // Seção 3 — nem administrador pode concluir direto do Rascunho.
-    expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
-  });
-
-  it("gerente vinculado vê líder e final editáveis quando Em Revisão, e é ele quem conclui (D4)", async () => {
-    mockSession(fixtureAssignedManagerUser, inReviewState);
-    renderWithApp(<AssessmentsPage />);
-
-    const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
-    const selects = linha.querySelectorAll("select");
-    // Líder e final continuam <select>; autoavaliação e alvo viram texto.
-    expect(selects).toHaveLength(2);
-
+    expect(linha.querySelectorAll("select")).toHaveLength(3);
     expect(screen.getByRole("button", { name: "Concluir avaliação" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Enviar para revisão" })).toBeNull();
   });
 
   /**
-   * D4 (dono, 2026-09-05) — o tech lead vinculado PONTUA (líder e final
-   * editáveis em revisão), mas concluir e reabrir são decisão de carreira,
-   * do gerente designado.
+   * D4 (dono, 2026-09-05) — o tech lead vinculado PONTUA, mas concluir e
+   * reabrir são decisão de carreira, do gerente designado.
    */
-  it("D4 (dono, 2026-09-05) — tech lead vinculado pontua em revisão, mas não conclui nem reabre", async () => {
-    mockSession(fixtureAssignedTechLeadUser, inReviewState);
+  it("D4 (dono, 2026-09-05) — tech lead vinculado pontua, mas não conclui nem reabre", async () => {
+    mockSession(fixtureAssignedTechLeadUser, draftState);
     const { unmount } = renderWithApp(<AssessmentsPage />);
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
-    expect(linha.querySelectorAll("select")).toHaveLength(2);
+    expect(linha.querySelectorAll("select")).toHaveLength(3);
     expect(screen.queryByRole("button", { name: "Concluir avaliação" })).toBeNull();
     unmount();
     cleanup();
@@ -201,8 +168,8 @@ describe("Avaliações — campos por papel e status", () => {
    */
   it("tech lead sem vínculo não alcança a avaliação de profissional sem time — nem líder/final, nem a tabela", async () => {
     mockSession(fixtureUnassignedTechLeadUser, {
-      ...inReviewState,
-      professionals: inReviewState.professionals.map((professional) => ({
+      ...draftState,
+      professionals: draftState.professionals.map((professional) => ({
         ...professional,
         teamId: null,
       })),
@@ -222,12 +189,16 @@ describe("Avaliações — campos por papel e status", () => {
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
     expect(linha.querySelectorAll("select")).toHaveLength(0);
-    expect(await screen.findByText(/somente leitura/)).toBeTruthy();
+    // O selo "somente leitura" saiu com o bloco de situação (dono, 2026-09-10);
+    // o que resta dizendo que está fechada é a ausência de campo editável e a
+    // presença do "Reabrir avaliação".
+    expect(screen.getByRole("button", { name: "Reabrir avaliação" })).toBeTruthy();
   });
 
-  // Correção pedida pelo usuário — depois de concluída, quem decide carreira
-  // (o gerente designado, D4) precisa conseguir reabrir a avaliação
-  // (Completed → In Review) e concluí-la de novo, em vez de ficar travada.
+  // Depois de concluída, quem decide carreira (o gerente designado, D4)
+  // reabre a avaliação (Completed → Rascunho) e a conclui de novo, em vez de
+  // ela ficar travada. Desde 2026-09-10 a reabertura tem JANELA — só o ciclo
+  // vigente —, e quem julga isso é o domínio, no servidor.
   it("gerente reabre avaliação concluída e volta a concluir depois", async () => {
     const completedAssessment = fixtureState.assessments.find((a) => a.id === "ana-h2")!;
 
@@ -252,8 +223,8 @@ describe("Avaliações — campos por papel e status", () => {
     expect(screen.queryByRole("button", { name: "Reabrir avaliação" })).toBeNull();
 
     const linha = (await screen.findByText("Kubernetes")).closest("tr")!;
-    // Reaberta (In Review), líder e final voltam a ser <select> editável.
-    expect(linha.querySelectorAll("select")).toHaveLength(2);
+    // Reaberta (Rascunho), os três campos voltam a ser <select> editável.
+    expect(linha.querySelectorAll("select")).toHaveLength(3);
 
     await userEvent.click(screen.getByRole("button", { name: "Concluir avaliação" }));
     // Onda 33 — concluir pede confirmação explícita antes de fechar o ciclo.

@@ -26,9 +26,8 @@ const fullCapability: Capability = {
   id: "full",
   name: "Full Capability",
   short: "Full",
-  active: true,
   curation: {
-    activeCompetencyCount: 6,
+    competencyCount: 6,
     status: "READY",
   },
 };
@@ -38,9 +37,8 @@ const overCapability: Capability = {
   id: "over",
   name: "Over Capability",
   short: "Over",
-  active: true,
   curation: {
-    activeCompetencyCount: 7,
+    competencyCount: 7,
     status: "REQUIRES_CURATION",
   },
 };
@@ -50,13 +48,11 @@ const fullCompetencies: Competency[] = [1, 2, 3].flatMap((n) => [
     id: `full-r${n}`,
     name: `Competência ${n}A`,
     capabilityId: "full",
-    active: true,
   },
   {
     id: `full-n${n}`,
     name: `Competência ${n}B`,
     capabilityId: "full",
-    active: true,
   },
 ]);
 
