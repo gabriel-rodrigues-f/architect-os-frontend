@@ -11,6 +11,8 @@ import {
   SectionCard,
   SingleSelectFilter,
   StatCard,
+  TabStrip,
+  TabIdentifiers,
 } from "@/components/app";
 import { useToastSubmit } from "@/hooks";
 import { Button } from "@/components/ui/button";
@@ -21,7 +23,6 @@ import { usePageHelp } from "@/lib/page-help";
 import { Selection } from "@/lib/selection";
 import { useSeniorityReading } from "@/lib/seniority";
 import { useSelectors, useStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
 import { defaultDateFormatter } from "@/lib/text";
 import { downloadBlob } from "@/lib/download";
 
@@ -57,6 +58,9 @@ function rangeForPreset(
 }
 
 type EvolutionView = "resumo" | "competencias";
+/** Os identificadores das abas desta tela — a tira e os dois painéis leem o mesmo prefixo. */
+const EVOLUTION_TABS = new TabIdentifiers("evolucao");
+
 const VIEWS: { id: EvolutionView; labelKey: MessageKey }[] = [
   { id: "resumo", labelKey: "evolution.view.summary" },
   { id: "competencias", labelKey: "evolution.view.competencies" },
@@ -322,31 +326,24 @@ function EvolutionOfProfessional() {
       >
         {(data) => (
           <>
-            <div
-              className="mb-4 flex gap-1 border-b border-border"
-              role="tablist"
-              aria-label={t("evolution.view.title")}
-            >
-              {VIEWS.map((v) => (
-                <button
-                  key={v.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={view === v.id}
-                  onClick={() => setView(v.id)}
-                  className={cn(
-                    "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
-                    view === v.id
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {t(v.labelKey)}
-                </button>
-              ))}
-            </div>
+            {/*
+              A tira saiu daqui na fatia de Minha Conta (2026-09-10): as três
+              abas de lá seriam a segunda cópia destas quinze classes e do
+              mesmo par `tab`/`tabpanel`. Duas cópias de uma régua de
+              acessibilidade divergem, e quem paga é quem navega por teclado —
+              o `TabStrip` também amarra o nome do painel à aba que o abre,
+              que era o que faltava aqui.
+            */}
+            <TabStrip
+              label={t("evolution.view.title")}
+              idPrefix={EVOLUTION_TABS.prefix}
+              tabs={VIEWS.map((v) => ({ id: v.id, label: t(v.labelKey) }))}
+              active={view}
+              onChoose={setView}
+              className="mb-4"
+            />
 
-            <div role="tabpanel" hidden={view !== "resumo"}>
+            <div {...EVOLUTION_TABS.panelAttributes("resumo", view)}>
               <div className="mb-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
                 <StatCard
                   label={t("evolution.kpi.initialAverage")}
@@ -459,7 +456,7 @@ function EvolutionOfProfessional() {
               </SectionCard>
             </div>
 
-            <div role="tabpanel" hidden={view !== "competencias"}>
+            <div {...EVOLUTION_TABS.panelAttributes("competencias", view)}>
               <SectionCard title={t("evolution.comparison.title")}>
                 <input
                   type="search"

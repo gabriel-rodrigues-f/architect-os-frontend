@@ -1,5 +1,5 @@
 import { fixtureAdminUser } from "../../helpers/fixtures";
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -122,23 +122,32 @@ describe("AppShell — seletor de Ciclo e de idioma (R3-008)", () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it("o menu de preferências troca o idioma ao escolher 'English' na lista", async () => {
+  /**
+   * A TROCA DE IDIOMA MUDOU DE CASA (fatia Minha Conta, 2026-09-10).
+   *
+   * Ela vivia aqui, no popover da engrenagem do cabeçalho. Com Minha Conta, o
+   * seletor passou para **Minha Conta → Preferências** e a engrenagem virou o
+   * atalho para lá — então este arquivo, que é sobre o CABEÇALHO, deixou de
+   * ser o dono da prova. Ela não foi apagada: mudou junto, para
+   * `tests/routes/preferencias-da-conta-na-escala.test.tsx`, onde o seletor
+   * agora mora. O que ficou aqui é o que continua sendo do cabeçalho: o
+   * seletor de Ciclo, e o atalho que leva a Minha Conta.
+   */
+  it("a engrenagem do cabeçalho anuncia Minha Conta, e o painel de preferências não mora mais aqui", async () => {
     renderShell();
-    const user = userEvent.setup();
-
-    await user.click(await screen.findByRole("button", { name: "Preferências" }));
-    // Mesmo raciocínio do teste de Ciclo: o nome acessível é o rótulo fixo
-    // "Idioma", o idioma atual ("Português") é o texto visível dentro do gatilho.
-    const languageTrigger = await screen.findByRole("button", { name: "Idioma" });
-    expect(languageTrigger.textContent).toContain("Português");
-
-    await user.click(languageTrigger);
-    const englishOption = await screen.findByRole("option", { name: "English" });
-    await user.click(englishOption);
-
-    // Trocar o idioma reflete de imediato num texto já traduzido em outro
-    // ponto da tela (prova que `setLocale` foi chamado com o código certo) —
-    // "Ciclo" (rótulo ao lado do seletor de Ciclo) vira "Cycle".
-    expect(await screen.findByText("Cycle")).toBeTruthy();
+    // O `Link` é substituído por um `<a>` sem `href` neste arquivo (mesmo mock
+    // do topo), então o DESTINO não é conferível aqui — quem o prova é o
+    // typecheck, que valida `to="/account"` contra a árvore de rotas, e o
+    // catálogo do menu. O que se prende aqui é o que é do CABEÇALHO: o atalho
+    // existe, anuncia para onde vai, e o popover antigo não voltou.
+    //
+    // A busca é DENTRO do cabeçalho de propósito: "Minha Conta" também é o
+    // item do menu, na coluna, e uma busca no documento inteiro acharia os
+    // dois e não diria qual deles está sendo prendido aqui.
+    await screen.findByText("Ciclo");
+    const cabecalho = document.querySelector("header");
+    expect(cabecalho).toBeTruthy();
+    expect(within(cabecalho as HTMLElement).getByLabelText("Minha Conta")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Preferências" })).toBeNull();
   });
 });

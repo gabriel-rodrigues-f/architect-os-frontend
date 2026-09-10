@@ -30,25 +30,32 @@ const OS_CINCO_PAPEIS: [string, SessionUser][] = [
 const gruposDe = (user: SessionUser) => filterNavGroups(NAV_GROUPS, user);
 
 describe("Central do Usuário — o grupo novo do fim da coluna", () => {
-  it("é o ÚLTIMO grupo do catálogo, com Avisos como único item", () => {
+  it("é o ÚLTIMO grupo do catálogo, com Avisos e Minha Conta, nessa ordem", () => {
     const ultimo = NAV_GROUPS.at(-1);
     expect(ultimo?.labelKey).toBe("nav.group.userCenter");
-    expect(ultimo?.items.map((item) => item.to)).toEqual(["/notices"]);
-    expect(ultimo?.items.map((item) => item.labelKey)).toEqual(["nav.notices"]);
+    expect(ultimo?.items.map((item) => item.to)).toEqual(["/notices", "/account"]);
+    expect(ultimo?.items.map((item) => item.labelKey)).toEqual(["nav.notices", "nav.account"]);
   });
 
   for (const [papel, user] of OS_CINCO_PAPEIS) {
-    it(`${papel} alcança o grupo e o destino de Avisos`, () => {
+    it(`${papel} alcança o grupo, os Avisos e a Minha Conta`, () => {
       const grupos = gruposDe(user);
       const central = grupos.find((grupo) => grupo.labelKey === "nav.group.userCenter");
       expect(central, papel).toBeTruthy();
-      expect(central?.items.map((item) => item.to)).toEqual(["/notices"]);
+      expect(central?.items.map((item) => item.to)).toEqual(["/notices", "/account"]);
     });
   }
 
-  it("o item não carrega régua de alcance nenhuma — avisos são de todo mundo", () => {
-    const [avisos] = NAV_GROUPS.at(-1)?.items ?? [];
-    expect(Object.keys(avisos ?? {}).sort()).toEqual(["icon", "labelKey", "to"]);
+  /**
+   * Minha Conta é de TODO MUNDO — é a única tela nova da governança que o
+   * profissional alcança (avaliação de 2026-09-09, seção 7: ele vai de 10 para
+   * 11 itens). Nem ela nem os Avisos carregam régua: régua no menu aqui seria
+   * esconder de alguém a própria conta.
+   */
+  it("nenhum dos dois itens carrega régua de alcance", () => {
+    for (const item of NAV_GROUPS.at(-1)?.items ?? []) {
+      expect(Object.keys(item).sort(), item.to).toEqual(["icon", "labelKey", "to"]);
+    }
   });
 
   it("o grupo e o item existem nas duas línguas", () => {

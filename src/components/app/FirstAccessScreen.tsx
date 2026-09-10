@@ -1,21 +1,11 @@
-import { useState, type FormEvent } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 
 import { AuthScreenShell } from "@/components/app/AuthScreenShell";
-import {
-  PasswordChoiceFields,
-  PASSWORD_SUBMIT_BLOCKED_ID,
-} from "@/components/app/PasswordChoiceFields";
-import { PasswordInput } from "@/components/app/PasswordInput";
-import { AuthAlert } from "@/components/app/AuthAlert";
+import { PasswordChangeForm } from "@/components/app/PasswordChangeForm";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { usePasswordChoice } from "@/hooks";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { DoorRefusal } from "@/lib/door-refusal";
 import { SynapseSignals } from "@/lib/synapse-network";
-import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
 
 /**
  * A troca de senha do primeiro acesso — a tela que segura a porta.
@@ -34,9 +24,16 @@ import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
  * A casca e os dois campos da senha nova saíram daqui na fatia da recuperação
  * de acesso (`AuthScreenShell`, `PasswordChoiceFields`, `usePasswordChoice`):
  * a criação de senha pelo link do convite pede exatamente a mesma coisa, e
- * duas cópias das sete exigências divergiriam. O que sobrou nesta tela é o
- * que só ELA tem — a senha temporária, e a saída para quem não quer trocar
- * agora.
+ * duas cópias das sete exigências divergiriam.
+ *
+ * E o FORMULÁRIO INTEIRO saiu daqui na fatia de Minha Conta (2026-09-10):
+ * a aba Segurança pede o mesmo gesto — senha de agora, senha nova conferida
+ * pela lista, `POST /auth/change-password`, recusa lida por código. São duas
+ * ocorrências, e a régua de reuso da casa manda extrair; num gesto de senha
+ * ela pesa mais, porque duas cópias divergem justamente na borda que ninguém
+ * confere à mão. Quem faz isso agora é o `PasswordChangeForm`. O que sobrou
+ * nesta tela é o que só ELA tem: a casca de porta, o texto do primeiro
+ * acesso, o e-mail à vista e a saída de quem não quer trocar agora.
  *
  * Duas escolhas que valem explicação:
  *
@@ -62,52 +59,14 @@ import { SynapseOutcomeRule } from "@/lib/synapse-outcome";
  * trancado pela lista, o formulário não sai para ser recusado aqui.
  */
 export function FirstAccessScreen() {
-  const { user, logout, changePassword } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useI18n();
   const email = user?.email ?? "";
-  const choice = usePasswordChoice(email);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  // A rede ao fundo (dono, 2026-09-08) pulsa com o RESULTADO, nunca com o
+  // envio: recusa do serviço → vermelho; senha trocada → azul; serviço fora →
+  // nada. É das telas de porta, e por isso ela nasce aqui e desce ao
+  // formulário — dentro da aplicação, ninguém pulsa.
   const [signals] = useState(() => new SynapseSignals());
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setError(null);
-    choice.point(null);
-
-    // A lista é a porta: o botão já está desabilitado, e isto fecha o caminho
-    // do teclado. Nenhuma frase aqui — o item vermelho da lista é a frase.
-    if (!choice.ready) return;
-
-    setSubmitting(true);
-    try {
-      await changePassword(currentPassword, choice.newPassword);
-      signals.pulseWith("primary");
-      toast.success(t("firstAccess.done"));
-    } catch (refused) {
-      /*
-       * FATIA IDIOMA (dono, 2026-09-08) — o último furo da porta.
-       *
-       * As outras três telas sem sessão já escolhiam a frase por CÓDIGO
-       * (`DoorRefusal`, 2026-09-09); esta ainda caía em `authErrorMessage`,
-       * que devolve `error.message` — a frase que o backend escreveu, e o
-       * backend só escreve pt-BR. Quem chegava aqui lendo em inglês recebia
-       * "Senha atual incorreta" em português, na primeira tela do produto.
-       *
-       * A `DoorRefusal` já sabe apontar a exigência da senha pela
-       * `PasswordRefusal`, então a leitura é uma só; o que sobrou aqui é o que
-       * só esta tela faz — marcar o item vermelho da lista.
-       */
-      const refusal = DoorRefusal.of(refused);
-      choice.point(refusal.requirement);
-      setError(t(refusal.messageKey));
-      const tone = SynapseOutcomeRule.toneOfDoorResult(refused);
-      if (tone) signals.pulseWith(tone);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <AuthScreenShell signals={signals}>
@@ -115,31 +74,17 @@ export function FirstAccessScreen() {
       <p className="mt-1 text-sm text-muted-foreground">{t("firstAccess.lead")}</p>
       {email !== "" && <p className="mt-1 text-xs font-medium text-foreground">{email}</p>}
 
-      <form className="mt-5 space-y-3" onSubmit={submit}>
-        <div>
-          <Label htmlFor="current-password">{t("firstAccess.currentPassword")}</Label>
-          <PasswordInput
-            id="current-password"
-            autoComplete="current-password"
-            required
-            value={currentPassword}
-            onChange={(event) => setCurrentPassword(event.target.value)}
-          />
-        </div>
-
-        <PasswordChoiceFields choice={choice} />
-
-        {error !== null && <AuthAlert>{error}</AuthAlert>}
-
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={submitting || !choice.ready}
-          aria-describedby={choice.ready ? undefined : PASSWORD_SUBMIT_BLOCKED_ID}
-        >
-          {submitting ? t("firstAccess.submitting") : t("firstAccess.submit")}
-        </Button>
-      </form>
+      <div className="mt-5">
+        <PasswordChangeForm
+          wording={{
+            currentLabel: "firstAccess.currentPassword",
+            submit: "firstAccess.submit",
+            submitting: "firstAccess.submitting",
+            done: "firstAccess.done",
+          }}
+          signals={signals}
+        />
+      </div>
 
       <p className="mt-4 text-center text-xs text-muted-foreground">{t("firstAccess.leaveHint")}</p>
       <Button

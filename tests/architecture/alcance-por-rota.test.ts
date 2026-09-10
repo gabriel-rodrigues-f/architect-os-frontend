@@ -138,10 +138,16 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
  * régua do time e uma de leitura da liderança. `/settings` sobrevive como
  * ENDEREÇO (link salvo, aviso, aba aberta) e por isso desce a `autenticado`:
  * ele não decide alcance nenhum, só redireciona para a primeira fatia.
+ *
+ * FATIA MINHA CONTA (2026-09-10): `/account` entra como `autenticado` — 7 → 8.
+ * É de propósito, e é a régua e não a pressa: Minha Conta é a ÚNICA tela nova
+ * do lote de governança que o profissional alcança (avaliação de 2026-09-09,
+ * seção 7). Guarda de alcance ali seria esconder de alguém a própria conta, e
+ * o recorte do que ela mostra é do servidor — cada pessoa lê a conta dela.
  */
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
-  autenticado: 7,
+  autenticado: 8,
   "opera-o-sistema": 5,
   "lead-com-vinculo": 2,
   calibracao: 1,

@@ -57,7 +57,8 @@ type PageHelpRouteKey =
   | "notices"
   | "platformMetrics"
   | "professionalRoadmap"
-  | "professionalStatement";
+  | "professionalStatement"
+  | "account";
 
 export function usePageHelp(route: PageHelpRouteKey): {
   lead: PageHelpContent;
