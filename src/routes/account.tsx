@@ -5,7 +5,7 @@ import { useState } from "react";
 import { PasswordChangeForm } from "@/components/app/PasswordChangeForm";
 import { TabStrip, TabPanel, type TabChoice } from "@/components/app/TabStrip";
 import { Callout, Initials, PageHeader, SectionCard, SingleSelectFilter } from "@/components/app";
-import { useCurrentUser } from "@/lib/auth";
+import { useAuth, useCurrentUser } from "@/lib/auth";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
 import { useTheme, type Theme } from "@/lib/theme";
@@ -82,7 +82,21 @@ const THEME_OPTIONS: { value: Theme; labelKey: MessageKey; icon: typeof Sun }[] 
   { value: "system", labelKey: "prefs.theme.system", icon: Monitor },
 ];
 
+/**
+ * A ÚNICA tela da casa que pode ficar montada sem sessão — e por desenho.
+ *
+ * Trocar a própria senha encerra a sessão de propósito (dono, 2026-09-06: "a
+ * pessoa volta pela tela de login, nunca entra direto"). Entre o fim da sessão
+ * e o portão desenhar o login existe uma pintura em que esta página ainda está
+ * de pé sem ninguém, e `useCurrentUser` lança ali.
+ *
+ * Sem sessão não há conta a mostrar: a página sai de cena calada e deixa o
+ * portão fazer o trabalho dele. Quem lança é `useCurrentUser`, e ele continua
+ * lançando — a tela é que para de perguntar depois que a resposta já não
+ * existe.
+ */
 function AccountPage() {
+  const { user: sessao } = useAuth();
   const { t } = useI18n();
   const help = usePageHelp("account");
   const [tab, setTab] = useState<AccountTab>("perfil");
@@ -90,6 +104,8 @@ function AccountPage() {
   const tabs: TabChoice<AccountTab>[] = (["perfil", "seguranca", "preferencias"] as const).map(
     (id) => ({ id, label: t(TAB_LABEL[id]) }),
   );
+
+  if (!sessao) return null;
 
   return (
     <>
