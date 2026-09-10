@@ -22,11 +22,12 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { Route as DashboardRoute } from "@/routes/index";
 import type { SessionUser } from "@/lib/api";
 import {
-  fixtureAdminUser,
+  fixtureSupportUser,
   fixtureMemberUser,
   fixtureState,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
+import { executiveBriefingRoute } from "../helpers/executive-briefing";
 import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -54,8 +55,8 @@ const DISTANCIA = /Distância \d/;
 function renderAs(user: SessionUser) {
   mockAppFetch(fetchMock, {
     user,
-    state: user === fixtureAdminUser ? fixtureState : scopedFixtureStateFor(user),
-    routes: [operationsOverviewRoute],
+    state: user === fixtureSupportUser ? fixtureState : scopedFixtureStateFor(user),
+    routes: [executiveBriefingRoute, operationsOverviewRoute],
   });
   return renderWithApp(<DashboardPage />);
 }
@@ -107,7 +108,7 @@ describe("Painel do profissional — sem radar, sem nível, sem distância", () 
   });
 
   it("D1 (dono, 2026-09-05): o Painel do admin é de operação — sem prioridades do time, sem nível, sem distância", async () => {
-    renderAs(fixtureAdminUser);
+    renderAs(fixtureSupportUser);
     await screen.findByText("Visão do Sistema");
 
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();

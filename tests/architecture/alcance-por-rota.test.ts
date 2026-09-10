@@ -139,10 +139,17 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
  * ENDEREÇO (link salvo, aviso, aba aberta) e por isso desce a `autenticado`:
  * ele não decide alcance nenhum, só redireciona para a primeira fatia.
  */
+/**
+ * ONDA 3 DO PAINEL EXECUTIVO — +1 em `opera-o-sistema` (5 → 6): a "Visão do
+ * Sistema" ganhou endereço próprio (`/system-view`). Ela já existia, mas
+ * escondida DENTRO de `/`, escolhida por papel — e por isso nenhuma régua de
+ * alcance a enxergava. Agora ela declara o dono como qualquer outra tela, e o
+ * Painel de negócio de `/` passa a servir também o administrador.
+ */
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
   autenticado: 7,
-  "opera-o-sistema": 5,
+  "opera-o-sistema": 6,
   "lead-com-vinculo": 2,
   calibracao: 1,
   lideranca: 3,

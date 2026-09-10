@@ -23,95 +23,46 @@ import { Route as DashboardRoute } from "@/routes/index";
 import { type AppState, type SessionUser } from "@/lib/api";
 import {
   fixtureAdminUser,
+  fixtureAssignedManagerUser,
   fixtureMemberUser,
   fixtureState,
+  fixtureSupportUser,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
+import { executiveBriefingRoute } from "../helpers/executive-briefing";
 import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers/render-app";
 
 /**
- * FASE 2 (quinta rodada) — "homes distintas Member/Lead/Admin": antes, todo
- * mundo via a mesma visão executiva de time, mesmo enxergando só uma fatia
- * dos registros (roster é dado de diretório, sem filtro; assessments e PDIs,
- * sim). Member vê "Minha Evolução" (agenda pessoal); Lead vê
- * "Pendências do Lead" (fila do que depende de uma decisão dele); Admin
- * mantinha a visão executiva original. Ver AUDITORIA-QUINTA-RODADA-360-
- * SYNAPSE-2026-08-19.md, Seção 7 e 33.
+ * O DESPACHO DE `/` POR PAPEL — e só ele.
  *
- * Revisão de papéis (dono, 2026-09-05, D1): o Painel do admin virou o Painel
- * de OPERAÇÃO — o sistema em números, sem nome ao lado de nota. E o alcance
- * da liderança é o VÍNCULO: sem membership, a fila fica vazia mesmo que o
- * servidor entregue alguém.
+ * FASE 2 (quinta rodada) criou as homes distintas; a ONDA 3 do Painel
+ * Executivo mudou quem recebe qual: o ADMINISTRADOR passou a ler o painel de
+ * NEGÓCIO (era ele quem caía na "Visão do Sistema", que é contagem de
+ * cadastro por desenho), e a operação do sistema ganhou endereço próprio,
+ * `/system-view`, servido também aqui para o SUPORTE — que opera o sistema e
+ * não lê a carreira de ninguém (papéis, 2026-09-08, adendo 2).
+ *
+ * O QUE SAIU DAQUI, e para onde: os casos de ALCANCE da liderança ("sem
+ * vínculo a fila é vazia mesmo com gente no payload"). Eles eram desta suíte
+ * quando a tela BAIXAVA nove coleções e recortava no navegador. Agora o
+ * recorte é do servidor, num pedido só, e a prova mora onde a decisão mora —
+ * `readsTheExecutivePanel` + `visibleProfessionalIds`, na matriz de permissão
+ * e no teste de controller do backend. Prova de tela do painel novo:
+ * `painel-executivo.test.tsx`.
  */
 
 const fetchMock = vi.fn();
-
-const TIME_DE_ANA = "time-de-ana";
-
-const fixtureLeadOfAna: SessionUser = {
-  id: "test-lead-de-ana",
-  email: "lead-de-ana@company.com",
-  name: "Lead de Ana",
-  role: "tech_lead",
-  professionalId: null,
-  status: "active",
-  mustChangePassword: false,
-  createdAt: "2026-01-01T00:00:00Z",
-};
-
-/**
- * ADR-0047 do backend — o `lead` morreu e virou `manager` + `tech_lead`. O
- * ternário do painel não era exaustivo: papel que não fosse `lead` nem
- * `member` caía no `AdminHome` por OMISSÃO, calado. O gerente é o caso que
- * morde na aplicação do dono (`gerente@synapse.com.br`).
- */
-const fixtureGestorDeAna: SessionUser = {
-  id: "test-gerente-de-ana",
-  email: "gerente-de-ana@company.com",
-  name: "Gerente de Ana",
-  role: "manager",
-  professionalId: null,
-  status: "active",
-  mustChangePassword: false,
-  createdAt: "2026-01-01T00:00:00Z",
-  memberships: [{ teamId: TIME_DE_ANA, role: "manager" }],
-};
-
-const fixtureTechLeadDeAna: SessionUser = {
-  ...fixtureGestorDeAna,
-  id: "test-techlead-de-ana",
-  email: "techlead-de-ana@company.com",
-  name: "Tech Lead de Ana",
-  role: "tech_lead",
-  memberships: [{ teamId: TIME_DE_ANA, role: "tech_lead" }],
-};
 
 const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 
 /** OO3-11/D-7 — setup compartilhado em `render-app.tsx`. */
 function renderAs(user: SessionUser, state: AppState = fixtureState) {
-  mockAppFetch(fetchMock, { user, state, routes: [operationsOverviewRoute] });
+  mockAppFetch(fetchMock, {
+    user,
+    state,
+    routes: [executiveBriefingRoute, operationsOverviewRoute],
+  });
   return renderWithApp(<DashboardPage />);
-}
-
-/**
- * Ana no time da liderança da sessão, com o recorte que o servidor faria — e
- * com UMA pendência de verdade na fila: o PDI dela em rascunho, esperando
- * aprovação. A pendência da fixture era a evidência dela, que saiu do produto
- * (dono, 2026-09-08, regra 17); sem nenhuma, o bloco "Ações da Liderança"
- * mostra o "tudo em dia" e o teste deixaria de provar o que promete.
- */
-function renderAsLeaderOfAna(user: SessionUser) {
-  const state: AppState = {
-    ...fixtureState,
-    professionals: fixtureState.professionals.map((professional) =>
-      professional.id === "ana" ? { ...professional, teamId: TIME_DE_ANA } : professional,
-    ),
-    plans: fixtureState.plans.map((plan) =>
-      plan.professionalId === "ana" ? { ...plan, status: "Draft" as const } : plan,
-    ),
-  };
-  return renderAs(user, scopedFixtureStateFor(user, state, [TIME_DE_ANA]));
 }
 
 describe("Painel — Home por papel", () => {
@@ -125,14 +76,25 @@ describe("Painel — Home por papel", () => {
     vi.unstubAllGlobals();
   });
 
-  it("D1 (dono, 2026-09-05): admin vê o Painel de operação — contagens, sem nome de pessoa", async () => {
+  it("administrador vê o Painel Executivo — negócio, não contagem de cadastro", async () => {
     renderAs(fixtureAdminUser);
+    await screen.findByText("Painel Executivo");
+    expect(screen.queryByText("Visão do Sistema")).toBeNull();
+    expect(screen.queryByText("Contas por cargo")).toBeNull();
+  });
+
+  it("suporte vê a Visão do Sistema — contagens, sem nome de pessoa", async () => {
+    renderAs(fixtureSupportUser);
     await screen.findByText("Visão do Sistema");
     expect(await screen.findByText("Profissionais ativos")).toBeTruthy();
     expect(screen.getByText("Contas por cargo")).toBeTruthy();
-    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect(screen.queryByText("Ações da Liderança")).toBeNull();
     expect(screen.queryByText("Ana Martins")).toBeNull();
+  });
+
+  it("gerente com vínculo vê o Painel Executivo, nunca a operação do sistema", async () => {
+    renderAs(fixtureAssignedManagerUser, scopedFixtureStateFor(fixtureAssignedManagerUser));
+    await screen.findByText("Painel Executivo");
+    expect(screen.queryByText("Contas por cargo")).toBeNull();
   });
 
   it("member vê 'Minha Evolução', não a visão de time", async () => {
@@ -165,41 +127,5 @@ describe("Painel — Home por papel", () => {
     expect(
       await screen.findByText("Sua conta ainda não está vinculada a um perfil profissional"),
     ).toBeTruthy();
-  });
-
-  it("lead sem pessoa atribuída vê o estado vazio, não a visão de time", async () => {
-    renderAs(fixtureLeadOfAna, scopedFixtureStateFor(fixtureLeadOfAna));
-    await screen.findByText("Ações da Liderança");
-    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect(await screen.findByText("Nenhum profissional sob sua liderança ainda")).toBeTruthy();
-  });
-
-  it("gerente vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
-    renderAsLeaderOfAna(fixtureGestorDeAna);
-    await screen.findByText("Ações da Liderança");
-    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    /*
-     * "Ana Martins" aparece em MAIS DE UMA lista desde a onda 1 do Painel: a
-     * fila de pendências e os sinais de acompanhamento (1:1 e trilha) terminam
-     * todos em nome, de propósito. O que se afirma aqui é que o nome aparece
-     * para quem lidera, não quantas vezes.
-     */
-    expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
-  });
-
-  it("tech lead vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
-    renderAsLeaderOfAna(fixtureTechLeadDeAna);
-    await screen.findByText("Ações da Liderança");
-    expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
-  });
-
-  it("sessão de liderança SEM vínculo vê o estado vazio mesmo com gente no payload — o alcance é o vínculo (dono, 2026-09-05)", async () => {
-    renderAsLeaderOfAna(fixtureLeadOfAna);
-    await screen.findByText("Ações da Liderança");
-    // O PDI em rascunho da Ana é pendência de quem a lidera: o servidor
-    // entregou, mas sem membership a fila não é dele.
-    expect(await screen.findByText("Nenhum profissional sob sua liderança ainda")).toBeTruthy();
-    expect(screen.queryByText("Ana Martins")).toBeNull();
   });
 });

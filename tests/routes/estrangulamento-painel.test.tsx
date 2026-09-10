@@ -23,12 +23,13 @@ import { Route as DashboardRoute } from "@/routes/index";
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import {
-  fixtureAdminUser,
+  fixtureSupportUser,
   fixtureAssignedManagerUser,
   fixtureState,
   fixtureTeamId,
   scopedFixtureStateFor,
 } from "../helpers/fixtures";
+import { executiveBriefingRoute } from "../helpers/executive-briefing";
 import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -75,12 +76,14 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
       state: scopedFixtureStateFor(fixtureAssignedManagerUser, comPdiEmRascunho, [fixtureTeamId]),
+      routes: [executiveBriefingRoute],
     });
     renderWithApp(<DashboardPage />);
 
-    expect(await screen.findByText("Ações da Liderança")).toBeTruthy();
-    // O PDI da Ana em rascunho é a pendência que põe o nome dela na fila.
-    expect((await screen.findAllByText(/Ana Martins/)).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Painel Executivo")).toBeTruthy();
+    // Onda 3: a fila de nomes vem do endpoint único, e o que esta suíte
+    // afirma é o que ela sempre afirmou — que o blob `/state` não é chamado.
+    expect(await screen.findByText("Decisões na sua mesa")).toBeTruthy();
 
     expect(requestedPaths().some((href) => href.endsWith(apiPath("/state")))).toBe(false);
     expect(requestedPaths().some((href) => href.endsWith(apiPath("/professionals")))).toBe(true);
@@ -88,9 +91,9 @@ describe("estrangulamento fase 1 — o Painel vive sem o blob /state", () => {
 
   it("D1 (dono, 2026-09-05): o Painel de operação do admin lê /operations/overview, sem /state", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureSupportUser,
       state: fixtureState,
-      routes: [operationsOverviewRoute],
+      routes: [executiveBriefingRoute, operationsOverviewRoute],
     });
     renderWithApp(<DashboardPage />);
 

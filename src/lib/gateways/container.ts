@@ -4,6 +4,10 @@ import { SessionPolicy } from "../session-policy";
 import { SupportAccess } from "../support-access";
 import { SynapseSignals } from "../synapse-network";
 import { HttpAnalyticsGateway, type AnalyticsGateway } from "./analytics.gateway";
+import {
+  HttpExecutiveDashboardGateway,
+  type ExecutiveDashboardGateway,
+} from "./executive-dashboard.gateway";
 import { HttpProfessionalsGateway, type ProfessionalsGateway } from "./professionals.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
 import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
@@ -57,6 +61,7 @@ export class FrontendContainer {
   readonly platformMetricsTab: MetricsTab;
   readonly apiClient: ApiClient;
   readonly analyticsGateway: AnalyticsGateway;
+  readonly executiveDashboardGateway: ExecutiveDashboardGateway;
   readonly professionalsGateway: ProfessionalsGateway;
   readonly assessmentGateway: AssessmentGateway;
   readonly authGateway: AuthGateway;
@@ -94,6 +99,7 @@ export class FrontendContainer {
       (resource) => this.supportAccess.headersFor(resource),
     );
     this.analyticsGateway = new HttpAnalyticsGateway(this.apiClient);
+    this.executiveDashboardGateway = new HttpExecutiveDashboardGateway(this.apiClient);
     this.professionalsGateway = new HttpProfessionalsGateway(this.apiClient);
     this.assessmentGateway = new HttpAssessmentGateway(this.apiClient);
     this.authGateway = new HttpAuthGateway(this.apiClient);

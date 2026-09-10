@@ -1,3 +1,4 @@
+import { executiveBriefingRoute } from "../helpers/executive-briefing";
 import { cleanup, screen, within } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -35,33 +36,33 @@ import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers
  *
  * A moldura solta era o CARTÃO parando na altura do próprio conteúdo dentro
  * de uma célula de grade que já se estica: o `h-full` precisa estar no
- * cartão, não no conteúdo. E o quarto cartão era o único sem o "?" que os
- * outros três têm.
+ * cartão, não no conteúdo.
+ *
+ * ONDA 3 — a linha de cartões mudou de conteúdo (o Executive Summary tem
+ * TRÊS: cobertura, decisões e a fila de gente), e a régua continua a mesma:
+ * quem estica é o cartão. O caso do "?" ficou junto porque é a mesma linha —
+ * cada número-síntese se explica.
  */
 const fetchMock = vi.fn();
 
 const DashboardPage = DashboardRoute.options.component as () => ReactNode;
 
-const BLOCOS = [
-  "Avaliação do Ciclo",
-  "Distâncias por severidade",
-  "PDIs do ciclo",
-  "Ações da Liderança",
-];
+const BLOCOS = ["Pessoas avaliadas no ciclo", "Decisões na sua mesa"];
 
 const blocoDe = (titulo: string) => screen.getByText(titulo).closest("section") as HTMLElement;
 
-describe("Painel Executivo — os quatro cartões da linha têm a mesma altura", () => {
+describe("Painel Executivo — os cartões da linha têm a mesma altura", () => {
   beforeEach(async () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     mockAppFetch(fetchMock, {
       user: fixtureAssignedManagerUser,
       state: scopedFixtureStateFor(fixtureAssignedManagerUser, fixtureState, [fixtureTeamId]),
-      routes: [operationsOverviewRoute],
+      routes: [executiveBriefingRoute, operationsOverviewRoute],
     });
     renderWithApp(<DashboardPage />);
-    await screen.findByText("Painel Executivo");
+    // O cabeçalho aparece antes da leitura chegar: espera-se o CARTÃO.
+    await screen.findByText(BLOCOS[0]!);
   });
 
   afterEach(() => {
@@ -75,7 +76,7 @@ describe("Painel Executivo — os quatro cartões da linha têm a mesma altura",
     }
   });
 
-  it("os quatro cartões se explicam: o quarto ganha o '?' que faltava", () => {
+  it("os cartões se explicam: cada número-síntese leva o seu '?'", () => {
     for (const titulo of BLOCOS) {
       expect(
         within(blocoDe(titulo)).getByRole("button", { name: /^Como ler / }),
@@ -84,8 +85,10 @@ describe("Painel Executivo — os quatro cartões da linha têm a mesma altura",
     }
   });
 
-  it("o '?' das Ações da Liderança fala das FILAS, não de outro cartão", () => {
-    const ajuda = within(blocoDe("Ações da Liderança")).getByRole("button", { name: /^Como ler / });
+  it("o '?' das decisões fala das FILAS, não de outro cartão", () => {
+    const ajuda = within(blocoDe("Decisões na sua mesa")).getByRole("button", {
+      name: /^Como ler /,
+    });
 
     expect(ajuda.getAttribute("aria-label")).toBe("Como ler Ações da Liderança");
   });
