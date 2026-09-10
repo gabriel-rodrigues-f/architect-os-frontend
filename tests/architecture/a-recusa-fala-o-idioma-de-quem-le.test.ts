@@ -135,7 +135,9 @@ const NA_PORTA: readonly string[] = [
 // `PORTFOLIO_UNCONFIRMED_ITEMS`, `PORTFOLIO_NOT_IN_REVIEW`); entraram duas
 // (`ASSESSMENT_REOPEN_OUTSIDE_CYCLE`, `COMPETENCY_IN_USE`), as duas ainda em
 // prosa. Desceu porque o produto encolheu, não porque alguém traduziu.
-const DIVIDA_DE_HOJE = 81;
+// AS DUAS FATIAS SOMAM SOBRE A MESMA BASE (integração, 2026-09-10): 82 → 79.
+// Número lido da rodada, não somado de cabeça.
+const DIVIDA_DE_HOJE = 79;
 
 /**
  * Quantas classes de recusa a política JÁ compõe na tela, nos dois idiomas.
@@ -334,7 +336,7 @@ describe("procedência da cópia do contrato do backend", () => {
     // sustentava; entraram `AssessmentReopenOutsideCycleError` (a janela do
     // mesmo ciclo) e `CompetencyInUseError` (a recusa de excluir o que tem
     // gente vinculada).
-    expect(Object.keys(CLASSES).length).toBe(187);
+    expect(Object.keys(CLASSES).length).toBe(185);
   });
 
   /**

@@ -215,6 +215,6 @@ describe("AppShell — navegação recortada por papel", () => {
       "/capability-map",
       "/gap-analysis",
       "/progression",
-      ]);
+    ]);
   });
 });

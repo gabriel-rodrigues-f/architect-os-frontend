@@ -56,7 +56,7 @@ describe("Critérios de Progressão é um grupo da coluna, não um menu", () => 
     expect({
       grupos: NAV_GROUPS.length,
       itens: NAV_GROUPS.reduce((total, candidato) => total + candidato.items.length, 0),
-    }).toEqual({ grupos: 8, itens: 30 });
+    }).toEqual({ grupos: 8, itens: 27 });
   });
 
   it("o endereço antigo não é mais item de menu — quem o guarda é o redirecionamento", () => {

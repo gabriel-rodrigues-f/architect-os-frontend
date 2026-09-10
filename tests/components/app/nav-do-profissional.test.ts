@@ -54,13 +54,7 @@ const MINHA_CARREIRA_DE_ANA = [
 ];
 
 /** As cinco ferramentas de diagnóstico do TIME, medidas sobre a base inteira. */
-const ANALISE_DO_TIME = [
-  "/capability-map",
-  "/gap-analysis",
-  "/progression",
-  "/training-needs",
-  "/compare",
-];
+const ANALISE_DO_TIME = ["/capability-map", "/gap-analysis", "/progression"];
 
 /**
  * Os dois menus que o dono tirou do profissional, nominalmente — e, desde a
