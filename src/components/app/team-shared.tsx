@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { TrendingUp, UserCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
+import { Chip } from "@/components/app/Chip";
+import { ReadinessBar } from "@/components/app/ReadinessBar";
 import {
+  CareerLevelBadge,
   GapBadge,
   Initials,
   LevelBadge,
@@ -27,11 +30,17 @@ import { PaneHeight } from "@/lib/design";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
+import {
+  READINESS_BUCKETS,
+  READINESS_CHIP_KEY,
+  ReadinessReading,
+  type ReadinessBucket,
+} from "@/lib/readiness";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { usePositionReading } from "@/lib/position";
 import { AUSENCIA, SeniorityReading, useSeniorityReading } from "@/lib/seniority";
-import { useCareerLevelsByRank, useSelectors, useStore } from "@/lib/store";
-import { defaultNameFormatter } from "@/lib/text";
+import { useCareerLevelsByRank, useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
+import { defaultDateFormatter, defaultNameFormatter } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { TeamOrLevelChange, TeamViewModel, type ProfessionalFormRole } from "@/lib/view-models";
 
@@ -43,6 +52,14 @@ interface EnrichedProfessional {
   avg: number | undefined;
   hasOfficial: boolean;
   lastMentoring: string | undefined;
+  /** A régua da linha: quanto já está no alvo e qual é a maior distância. */
+  readiness: ReadinessReading;
+}
+
+/** Um atalho de prontidão: a faixa e exatamente quem cai nela. */
+export interface ReadinessShortcut {
+  bucket: ReadinessBucket;
+  ids: string[];
 }
 
 function useTeamViewModel(): TeamViewModel {
@@ -92,12 +109,13 @@ export function useTeamRoster(isAdmin: boolean) {
   const store = useStore();
   const { t } = useI18n();
   const sel = useSelectors();
+  const gapRuler = useGapSeverityRuler();
 
   const [statusFilter, setStatusFilter] = useState<string[]>(["active"]);
 
   const careerLevels = useCareerLevelsByRank();
   const [roleSelection, setRoleSelection] = useState<string[] | null>(null);
-  const roleFilter = roleSelection ?? careerLevels.map((l) => l.name);
+  const roleFilter = roleSelection ?? careerLevels.map((nivel) => nivel.name);
   const [capabilitySelection, setCapabilitySelection] = useState<string[] | null>(null);
   const [nameSelectionChosen, setNameSelectionChosen] = useState<string[] | null>(null);
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "level" | "recent">("name-asc");
@@ -184,14 +202,16 @@ export function useTeamRoster(isAdmin: boolean) {
     [nameSelectionChosen, filterablePeople],
   );
 
-  const filtered = useMemo(() => {
+  /**
+   * A lista SEM o filtro de nomes — é o conjunto sobre o qual os atalhos de
+   * prontidão contam. Tem de ser este e não outro: o atalho ESCREVE o filtro
+   * de nomes, então contar sobre um conjunto que já o inclui faria o chip
+   * dizer 3 e a lista mostrar 4 (dono: isso é defeito).
+   */
+  const withoutNameFilter = useMemo(() => {
     const effectiveStatus = isAdmin ? statusFilter : ["active"];
-
-    const nameFilter = Selection.explicit(nameSelection);
     return store.professionalsIncludingInactive.filter((a) => {
-      if (!nameFilter.contains(a.id)) return false;
       if (!effectiveStatus.includes(a.active ? "active" : "inactive")) return false;
-
       if (roleSelection !== null && !SeniorityReading.withinLevels(a, roleSelection)) return false;
       const competency = a.primarySpecializationCompetencyId
         ? sel.competencyById(a.primarySpecializationCompetencyId)
@@ -206,9 +226,60 @@ export function useTeamRoster(isAdmin: boolean) {
     statusFilter,
     roleSelection,
     capabilityFilter,
-    nameSelection,
     sel,
   ]);
+
+  const filtered = useMemo(() => {
+    const nameFilter = Selection.explicit(nameSelection);
+    return withoutNameFilter.filter((a) => nameFilter.contains(a.id));
+  }, [withoutNameFilter, nameSelection]);
+
+  const readinessOf = useCallback(
+    (professionalId: string) =>
+      ReadinessReading.of(
+        sel.progressionGapsFor(professionalId),
+        sel.officialAssessmentFor(professionalId) !== undefined,
+        gapRuler,
+      ),
+    [sel, gapRuler],
+  );
+
+  const readinessShortcuts: ReadinessShortcut[] = useMemo(() => {
+    const ids: Record<ReadinessBucket, string[]> = {
+      ready: [],
+      attention: [],
+      critical: [],
+      unknown: [],
+    };
+    for (const pessoa of withoutNameFilter) ids[readinessOf(pessoa.id).bucket].push(pessoa.id);
+    return READINESS_BUCKETS.map((bucket) => ({ bucket, ids: ids[bucket] }));
+  }, [withoutNameFilter, readinessOf]);
+
+  /**
+   * Qual atalho está aceso. `null` com seleção nula é "Todos"; uma seleção
+   * que bate exatamente com um balde é aquele balde; qualquer outra seleção
+   * de nomes não acende chip nenhum — ela é do combo de pessoas.
+   */
+  const selectedReadiness: ReadinessBucket | null = useMemo(() => {
+    if (nameSelectionChosen === null) return null;
+    const escolhidos = new Set(nameSelectionChosen);
+    return (
+      readinessShortcuts.find(
+        ({ ids }) =>
+          ids.length > 0 && ids.length === escolhidos.size && ids.every((id) => escolhidos.has(id)),
+      )?.bucket ?? null
+    );
+  }, [nameSelectionChosen, readinessShortcuts]);
+
+  const selectReadiness = (bucket: ReadinessBucket | null) => {
+    if (bucket === null) {
+      setNameSelectionChosen(null);
+      return;
+    }
+    setNameSelectionChosen(
+      readinessShortcuts.find((atalho) => atalho.bucket === bucket)?.ids ?? [],
+    );
+  };
 
   const enrichedSorted = useMemo(() => {
     const withStats = filtered.map((a) => ({
@@ -217,6 +288,7 @@ export function useTeamRoster(isAdmin: boolean) {
       avg: sel.coverageFor(a.id).avg,
       hasOfficial: sel.officialAssessmentFor(a.id) !== undefined,
       lastMentoring: lastMentoringByProfessional.get(a.id),
+      readiness: readinessOf(a.id),
     }));
     switch (sort) {
       case "name-desc":
@@ -240,7 +312,7 @@ export function useTeamRoster(isAdmin: boolean) {
         withStats.sort((x, y) => defaultNameFormatter.byName(x.professional, y.professional));
     }
     return withStats;
-  }, [filtered, sel, lastMentoringByProfessional, sort]);
+  }, [filtered, sel, lastMentoringByProfessional, readinessOf, sort]);
 
   const totalPages = Math.max(1, Math.ceil(enrichedSorted.length / pageSize));
   const clampedPage = Math.min(page, totalPages);
@@ -327,7 +399,68 @@ export function useTeamRoster(isAdmin: boolean) {
     sortOptions,
     activeFilterChips,
     clearFilters,
+    readinessShortcuts,
+    readinessTotal: withoutNameFilter.length,
+    selectedReadiness,
+    selectReadiness,
   };
+}
+
+/**
+ * OS ATALHOS DE PRONTIDÃO (dono, 2026-09-09, com referência visual): "Todos
+ * (13) · Prontos (3) · Em atenção (2) · Sem dados (1) · Críticos (1)".
+ *
+ * Eles NÃO são um filtro novo: cada chip escreve o filtro de PESSOAS que a
+ * tela já tem, com os ids do balde. Por isso a contagem do chip e o tamanho
+ * da lista são o mesmo número por construção — e por isso "Limpar filtros",
+ * que a barra já oferece, também os desfaz. Um chip vazio não clica: ele
+ * levaria a uma lista vazia sem dizer por quê.
+ */
+export function ReadinessShortcuts({
+  shortcuts,
+  total,
+  selected,
+  onSelect,
+}: {
+  shortcuts: readonly ReadinessShortcut[];
+  total: number;
+  selected: ReadinessBucket | null;
+  onSelect: (bucket: ReadinessBucket | null) => void;
+}) {
+  const { t } = useI18n();
+  const chipClass =
+    "transition-fast focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50";
+  return (
+    <div
+      role="group"
+      aria-label={t("team.readiness.shortcuts")}
+      className="mb-3 flex flex-wrap items-center gap-2"
+    >
+      <Chip asChild tone={selected === null ? "primary" : "neutral"}>
+        <button
+          type="button"
+          aria-pressed={selected === null}
+          onClick={() => onSelect(null)}
+          className={chipClass}
+        >
+          {t("team.readiness.chip.all", { n: total })}
+        </button>
+      </Chip>
+      {shortcuts.map(({ bucket, ids }) => (
+        <Chip key={bucket} asChild tone={selected === bucket ? "primary" : "neutral"}>
+          <button
+            type="button"
+            aria-pressed={selected === bucket}
+            disabled={ids.length === 0}
+            onClick={() => onSelect(bucket)}
+            className={chipClass}
+          >
+            {t(READINESS_CHIP_KEY[bucket], { n: ids.length })}
+          </button>
+        </Chip>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -481,18 +614,21 @@ export function TeamOrLevelChangeDialog({
   );
 }
 
-function WorstGapCell({
-  hasOfficial,
-  worstGap,
-}: {
-  hasOfficial: boolean;
-  worstGap: Gap | undefined;
-}) {
-  const { t } = useI18n();
-  if (!hasOfficial) return <span className="text-xs text-muted-foreground">—</span>;
-  if (!worstGap)
-    return <span className="text-xs text-muted-foreground">{t("team.card.noGaps")}</span>;
-  return <GapBadge gap={worstGap.gap} />;
+/**
+ * A ÚLTIMA 1:1 da pessoa — o dado de data que esta tela JÁ carregava e pelo
+ * qual ela já ordenava ("Atualização recente"), sem nunca o mostrar. Sem a
+ * coluna, ordenar por ele mudava a ordem das linhas sem explicar por quê.
+ *
+ * Não confundir com "última atualização do cadastro": esse instante não
+ * existe no contrato desta tela (ver o relatório da fatia).
+ */
+function LastMentoringCell({ date }: { date: string | undefined }) {
+  const { locale } = useI18n();
+  return (
+    <span data-testid="last-mentoring" className="whitespace-nowrap tabular-nums">
+      {defaultDateFormatter.formatDate(date, locale) ?? AUSENCIA}
+    </span>
+  );
 }
 
 export function TeamRosterView({
@@ -535,79 +671,106 @@ export function TeamRosterView({
   return view === "cards" ? (
     <ScrollPane label={t("pane.teamRoster.label")} height={PaneHeight.restOfPage()}>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {pageItems.map(({ professional: a, topGaps: top, avg, hasOfficial }) => (
-          <div key={a.id} className="surface-card surface-interactive p-5">
-            <div className="flex items-start gap-3">
-              <Initials name={a.name} />
-              <div className="min-w-0 flex-1">
-                <Link
-                  to="/professionals/$professionalId"
-                  params={{ professionalId: a.id }}
-                  className="font-display text-base font-semibold hover:underline"
-                >
-                  {a.name}
-                </Link>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {position.labelOf(a)}
-                </span>
-                <TruncatedText text={a.email} className="block text-xs text-muted-foreground" />
-                {pendingTransferBadge(a) && <div className="mt-1.5">{pendingTransferBadge(a)}</div>}
-              </div>
-              {decidesCareerOf(a) && (
-                <div className="flex shrink-0 gap-1">
-                  {a.active ? (
-                    <button
-                      type="button"
-                      onClick={() => onTransition(a)}
-                      aria-label={t("team.transition.action", { nome: a.name })}
-                      title={t("team.transition.action", { nome: a.name })}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    >
-                      <TrendingUp className="h-3.5 w-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => onReactivate(a)}
-                      aria-label={`${t("team.reactivate.action")} ${a.name}`}
-                      title={t("team.reactivate.action")}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    >
-                      <UserCheck className="h-3.5 w-3.5" />
-                    </button>
+        {pageItems.map(
+          ({ professional: a, topGaps: top, avg, hasOfficial, lastMentoring, readiness }) => (
+            <div key={a.id} className="surface-card surface-interactive p-5">
+              <div className="flex items-start gap-3">
+                <Initials name={a.name} />
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to="/professionals/$professionalId"
+                    params={{ professionalId: a.id }}
+                    className="font-display text-base font-semibold hover:underline"
+                  >
+                    {a.name}
+                  </Link>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {position.labelOf(a)}
+                  </span>
+                  <TruncatedText text={a.email} className="block text-xs text-muted-foreground" />
+                  {pendingTransferBadge(a) && (
+                    <div className="mt-1.5">{pendingTransferBadge(a)}</div>
                   )}
                 </div>
-              )}
-            </div>
+                {decidesCareerOf(a) && (
+                  <div className="flex shrink-0 gap-1">
+                    {a.active ? (
+                      <button
+                        type="button"
+                        onClick={() => onTransition(a)}
+                        aria-label={t("team.transition.action", { nome: a.name })}
+                        title={t("team.transition.action", { nome: a.name })}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      >
+                        <TrendingUp className="h-3.5 w-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onReactivate(a)}
+                        aria-label={`${t("team.reactivate.action")} ${a.name}`}
+                        title={t("team.reactivate.action")}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      >
+                        <UserCheck className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
 
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
-              <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
-            </div>
+              <div className="mt-4 flex items-center justify-between text-body">
+                <span className="text-muted-foreground">{t("team.card.careerLevel")}</span>
+                <CareerLevelBadge level={a.role} />
+              </div>
 
-            <div className="mt-4 space-y-1.5">
-              <SectionHeading as="p" muted>
-                {t("team.card.topGaps")}
-              </SectionHeading>
-              {top.map((g) => (
-                <div
-                  key={g.item.competencyId}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <TruncatedText text={g.competency?.name ?? ""} className="flex-1" />
-                  <GapBadge gap={g.gap} />
-                </div>
-              ))}
-              {top.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {hasOfficial
-                    ? t("team.card.noGaps")
-                    : EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}
-                </p>
-              )}
+              <div className="mt-2 flex items-center justify-between text-body">
+                <span className="text-muted-foreground">{t("team.card.avgLevel")}</span>
+                <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} showName />
+              </div>
+
+              <div className="mt-2 flex items-center justify-between text-body">
+                <span className="text-muted-foreground">{t("team.card.lastMentoring")}</span>
+                <span className="text-muted-foreground">
+                  <LastMentoringCell date={lastMentoring} />
+                </span>
+              </div>
+
+              {/*
+              A visão de Cartões NÃO fica para trás da tabela: a régua de
+              prontidão é a mesma peça, com a mesma leitura (dono, 2026-09-09).
+            */}
+              <div className="mt-4">
+                <SectionHeading as="p" muted>
+                  {t("team.card.readiness")}
+                </SectionHeading>
+                <ReadinessBar reading={readiness} className="mt-1.5" />
+              </div>
+
+              <div className="mt-4 space-y-1.5">
+                <SectionHeading as="p" muted>
+                  {t("team.card.topGaps")}
+                </SectionHeading>
+                {top.map((g) => (
+                  <div
+                    key={g.item.competencyId}
+                    className="flex items-center justify-between gap-2 text-sm"
+                  >
+                    <TruncatedText text={g.competency?.name ?? ""} className="flex-1" />
+                    <GapBadge gap={g.gap} />
+                  </div>
+                ))}
+                {top.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {hasOfficial
+                      ? t("team.card.noGaps")
+                      : EmptySubject.ASSESSMENT.titleIn(t, "empty.context.official")}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ),
+        )}
       </div>
     </ScrollPane>
   ) : (
@@ -618,14 +781,17 @@ export function TeamRosterView({
       horizontal
       className="surface-card"
     >
-      <table className="w-full min-w-[760px] text-sm">
+      <table className="w-full min-w-[1040px] text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <tr className="border-b border-border text-left text-meta uppercase tracking-wide text-muted-foreground">
             <th scope="col" className="px-4 py-3">
               {t("team.table.col.name")}
             </th>
             <th scope="col" className="px-4 py-3">
               {t("team.table.col.role")}
+            </th>
+            <th scope="col" className="whitespace-nowrap px-4 py-3">
+              {t("team.table.col.careerLevel")}
             </th>
             {isAdmin && (
               <th scope="col" className="whitespace-nowrap px-4 py-3">
@@ -635,15 +801,25 @@ export function TeamRosterView({
             <th scope="col" className="whitespace-nowrap px-4 py-3 text-center">
               {t("team.table.col.level")}
             </th>
-            <th scope="col" className="px-4 py-3 text-center">
-              {t("team.table.col.gaps")}
+            <th scope="col" className="whitespace-nowrap px-4 py-3">
+              {t("team.table.col.readiness")}
             </th>
-            {showsActions && (
+            <th scope="col" className="whitespace-nowrap px-4 py-3">
+              {t("team.table.col.lastMentoring")}
+            </th>
+            {/*
+              O cabeçalho segue a MESMA condição da célula. Antes desta fatia
+              "Status" abria com `showsActions` e a célula com `isAdmin` (e
+              "Ações" ao contrário): para o admin as duas eram verdadeiras e o
+              defeito não aparecia, mas para o gerente o rótulo "Status"
+              ficava em cima da coluna de ações.
+            */}
+            {isAdmin && (
               <th scope="col" className="px-4 py-3">
                 {t("team.table.col.status")}
               </th>
             )}
-            {isAdmin && (
+            {showsActions && (
               <th scope="col" className="px-4 py-3 text-right">
                 {t("team.table.col.actions")}
               </th>
@@ -651,7 +827,7 @@ export function TeamRosterView({
           </tr>
         </thead>
         <tbody>
-          {pageItems.map(({ professional: a, topGaps: top, avg, hasOfficial }) => {
+          {pageItems.map(({ professional: a, avg, lastMentoring, readiness }) => {
             return (
               <tr
                 key={a.id}
@@ -675,6 +851,9 @@ export function TeamRosterView({
                 >
                   {position.labelOf(a)}
                 </td>
+                <td className="whitespace-nowrap px-4 py-3">
+                  <CareerLevelBadge level={a.role} />
+                </td>
                 {isAdmin && (
                   <td className="max-w-[160px] px-4 py-3 text-muted-foreground">
                     <TruncatedText text={teamNameOf(a.teamId)} className="block" />
@@ -683,14 +862,17 @@ export function TeamRosterView({
                 <td className="px-4 py-3 text-center">
                   <LevelBadge level={avg === undefined ? undefined : Math.round(avg)} />
                 </td>
-                <td className="px-4 py-3 text-center">
-                  <WorstGapCell hasOfficial={hasOfficial} worstGap={top[0]} />
+                <td className="min-w-[220px] px-4 py-3">
+                  <ReadinessBar reading={readiness} />
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  <LastMentoringCell date={lastMentoring} />
                 </td>
                 {isAdmin && (
                   <td className="px-4 py-3">
                     <span
                       className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-meta font-medium",
                         a.active
                           ? "bg-success text-success-fg"
                           : "bg-secondary text-muted-foreground",

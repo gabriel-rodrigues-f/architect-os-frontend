@@ -8,6 +8,7 @@ import {
   OutOfReachScreen,
   PageHeader,
   Pagination,
+  ReadinessShortcuts,
   SingleSelectFilter,
   TeamOrLevelChangeDialog,
   TeamRosterView,
@@ -118,6 +119,19 @@ function TeamRoster() {
         />
       ) : (
         <>
+          {/*
+            Dono (2026-09-09, referência visual): os atalhos em chip com
+            contagem. Eles não são filtro novo — escrevem o filtro de PESSOAS
+            que a barra abaixo já tem, e é por isso que "Limpar filtros" dela
+            também os desfaz.
+          */}
+          <ReadinessShortcuts
+            shortcuts={roster.readinessShortcuts}
+            total={roster.readinessTotal}
+            selected={roster.selectedReadiness}
+            onSelect={roster.selectReadiness}
+          />
+
           <DataViewToolbar
             layout="grid-3"
             resultCount={roster.enrichedSorted.length}
