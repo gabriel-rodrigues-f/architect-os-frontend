@@ -230,11 +230,20 @@ describe("menu do profissional — nada que ele usa é levado junto", () => {
 
   /**
    * Dez desde 2026-09-08: a décima é `/notices`, o item do grupo "Central do
-   * Usuário". Avisos são de todo mundo — até esta fatia a tela estava no ar
+   * Usuário". Avisos são de todo mundo — até aquela fatia a tela estava no ar
    * sem entrada de menu nenhuma, alcançável só pelo sino.
+   *
+   * ONZE desde 2026-09-10: a décima primeira é `/account`, Minha Conta. O
+   * número subir aqui é a DECISÃO, não um descuido — a avaliação da proposta
+   * de governança (2026-09-09, seção 7) escreveu o efeito antes de existir
+   * código: *"o Profissional continua em 10, porque nenhum dos quatro itens
+   * novos o alcança, exceto Minha Conta — ele vai para 11."* É a única tela
+   * do lote de governança que chega até ele, e ela chega porque a conta é
+   * dele.
    */
-  it("o menu dele tem dez itens — a carreira dele, as cinco telas que ele lê, os Avisos; nada de gestão de time", () => {
-    expect(destinos(fixtureMemberUser)).toHaveLength(10);
+  it("o menu dele tem onze itens — a carreira dele, as cinco telas que ele lê, os Avisos e a Minha Conta; nada de gestão de time", () => {
+    expect(destinos(fixtureMemberUser)).toHaveLength(11);
     expect(destinos(fixtureMemberUser)).toContain("/notices");
+    expect(destinos(fixtureMemberUser)).toContain("/account");
   });
 });

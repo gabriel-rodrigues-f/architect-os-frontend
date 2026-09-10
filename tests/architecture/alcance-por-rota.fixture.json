@@ -3,6 +3,9 @@
     "/": {
       "alcance": "autenticado"
     },
+    "/account": {
+      "alcance": "autenticado"
+    },
     "/assessments": {
       "alcance": "autenticado"
     },

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AssessmentsRouteImport } from './routes/assessments'
 import { Route as CalibrationRouteImport } from './routes/calibration'
 import { Route as CapabilityMapRouteImport } from './routes/capability-map'
@@ -45,6 +46,11 @@ import { Route as ProfessionalsProfessionalIdStatementRouteImport } from './rout
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AssessmentsRoute = AssessmentsRouteImport.update({
@@ -210,6 +216,7 @@ const ProfessionalsProfessionalIdStatementRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/assessments': typeof AssessmentsRoute
   '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/assessments': typeof AssessmentsRoute
   '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
@@ -278,6 +286,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/assessments': typeof AssessmentsRoute
   '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/assessments'
     | '/calibration'
     | '/capability-map'
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/assessments'
     | '/calibration'
     | '/capability-map'
@@ -381,6 +392,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/assessments'
     | '/calibration'
     | '/capability-map'
@@ -416,6 +428,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   AssessmentsRoute: typeof AssessmentsRoute
   CalibrationRoute: typeof CalibrationRoute
   CapabilityMapRoute: typeof CapabilityMapRoute
@@ -452,6 +465,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/assessments': {
@@ -700,6 +720,7 @@ const ProfessionalsProfessionalIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   AssessmentsRoute: AssessmentsRoute,
   CalibrationRoute: CalibrationRoute,
   CapabilityMapRoute: CapabilityMapRoute,

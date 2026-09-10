@@ -8,7 +8,7 @@ import { NavGroupSection } from "@/components/app/NavGroupSection";
 import { NavLinkItem } from "@/components/app/NavLinkItem";
 import { NoticeBell } from "@/components/app/NoticeBell";
 import { PageFrame } from "@/components/app/PageFrame";
-import { PreferencesMenu } from "@/components/app/PreferencesMenu";
+import { AccountShortcut } from "@/components/app/AccountShortcut";
 import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
 import { SynapseBackground } from "@/components/app/SynapseBackground";
 import { semanticTone } from "@/components/app/ui-bits";
@@ -446,7 +446,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </p>
                 )}
                 <NoticeBell />
-                <PreferencesMenu />
+                <AccountShortcut />
               </div>
             </div>
           </header>

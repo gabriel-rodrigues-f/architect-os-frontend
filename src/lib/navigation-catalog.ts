@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   Bell,
+  CircleUser,
   BookMarked,
   BookOpen,
   Building2,
@@ -295,7 +296,17 @@ export const NAV_GROUPS: NavGroup[] = [
    */
   {
     labelKey: "nav.group.userCenter",
-    items: [{ to: "/notices", labelKey: "nav.notices", icon: Bell }],
+    items: [
+      { to: "/notices", labelKey: "nav.notices", icon: Bell },
+      /**
+       * MINHA CONTA (dono, 2026-09-09, item 7 da proposta de governança —
+       * segundo da ordem aprovada). Como os Avisos, sem régua de alcance: é a
+       * ÚNICA tela nova do lote de governança que o profissional alcança, e
+       * régua aqui seria esconder de alguém a própria conta. O recorte do que
+       * ela mostra é do servidor — cada pessoa lê a conta dela e mais nada.
+       */
+      { to: "/account", labelKey: "nav.account", icon: CircleUser },
+    ],
   },
 ];
 
