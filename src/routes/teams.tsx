@@ -1,13 +1,15 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Callout,
+  Chip,
   ConfirmDialog,
   DataOriginCallout,
   EmptyState,
+  KeyFigureCard,
   PageAction,
   PageHeader,
   QuerySection,
@@ -16,7 +18,9 @@ import {
   SectionCard,
   Seniority,
   SingleSelectFilter,
+  StatTones,
   StatusBadge,
+  TruncatedText,
 } from "@/components/app";
 import { EmptyFieldInvite } from "@/components/app/EmptySelection";
 import { PaneHeight } from "@/lib/design";
@@ -36,7 +40,12 @@ import { authApi, teamRosterApi, teamsApi, teamTransitionsApi, type SessionUser 
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import type { Professional } from "@/lib/domain";
-import { TeamMemberRoles, type TeamMemberRole } from "@/lib/gateways/auth.gateway";
+import {
+  TeamLeadershipRoles,
+  TeamMemberRoles,
+  type TeamLeadershipRole,
+  type TeamMemberRole,
+} from "@/lib/gateways/auth.gateway";
 import type { TeamRosterMember } from "@/lib/gateways/team-roster.gateway";
 import type {
   CalendarPeriod,
@@ -50,11 +59,15 @@ import { initialSearchParam } from "@/lib/search-params";
 import { usePageHelp } from "@/lib/page-help";
 import { requirePeopleAdministrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useStore } from "@/lib/store";
+import { useCareerLevelsByRank, useStore } from "@/lib/store";
 import {
+  TeamConfiguration,
+  TeamLeadership,
+  TeamLeadershipBoard,
   TeamRegistryViewModel,
   TeamStatusFilters,
   TeamTransitionsViewModel,
+  type TeamPendency,
   type TeamStatusFilter,
 } from "@/lib/view-models";
 
@@ -100,7 +113,46 @@ function useTeamTransitionsViewModel(): TeamTransitionsViewModel {
   return useMemo(() => new TeamTransitionsViewModel(defaultUiAuthorizationPolicy), []);
 }
 
-const TEAMS_CONTEXTS: readonly ContextScopeRequest[] = ["professionals"];
+/**
+ * QUEM LIDERA CADA TIME LISTADO — pelo MESMO caminho que o Quadro desta tela
+ * já usa (`GET /teams/:teamId/memberships`, `registry.rosterQueryKey`), não
+ * por um segundo caminho inventado. A consulta é por time porque o contrato
+ * de `GET /teams` devolve `id`, `name` e `active` e mais nada; o cache do
+ * react-query é o mesmo do Quadro, então abrir um time depois não repete
+ * chamada nenhuma.
+ *
+ * A lista já chega recortada pelo ALCANCE (`reachableTeams`): não se pede o
+ * quadro de time que quem lê não compõe.
+ */
+function useTeamLeadership(
+  teams: readonly TeamSummary[],
+  registry: TeamRegistryViewModel,
+): TeamLeadershipBoard {
+  const rosters = useQueries({
+    queries: teams.map((team) => ({
+      queryKey: registry.rosterQueryKey(team.id),
+      queryFn: () => teamRosterApi.rosterOf(team.id),
+      staleTime: 30_000,
+    })),
+  });
+
+  return TeamLeadershipBoard.from(
+    teams.map((team, index) => {
+      const roster = rosters[index];
+      if (roster === undefined || roster.isPending) return [team.id, TeamLeadership.LOADING];
+      if (roster.isError || roster.data === undefined) {
+        return [team.id, TeamLeadership.UNREADABLE];
+      }
+      return [team.id, TeamLeadership.of(roster.data)];
+    }),
+  );
+}
+
+/**
+ * `teamLevelRules` entrou com a QUARTA pendência: só se pode dizer que um
+ * time está sem régua para todos os níveis lendo a régua (REGRA 19).
+ */
+const TEAMS_CONTEXTS: readonly ContextScopeRequest[] = ["professionals", "teamLevelRules"];
 
 function TeamsPage() {
   const { t } = useI18n();
@@ -165,6 +217,9 @@ function TeamsScreen() {
     queryFn: teamsApi.teams,
     staleTime: 60_000,
   });
+
+  const reachable = registry.reachableTeams(user, teamsQuery.data ?? []);
+  const leadership = useTeamLeadership(reachable, registry);
 
   const reloadTeams = () => queryClient.invalidateQueries({ queryKey: TEAMS_QUERY_KEY });
 
@@ -231,18 +286,25 @@ function TeamsScreen() {
         skeleton={<p className="text-sm text-muted-foreground">{t("teams.loading")}</p>}
       >
         {(teams) => {
-          const reachable = registry.reachableTeams(user, teams);
           const listed = registry.filterByStatus(reachable, status);
           const chosen = reachable.find((team) => team.id === chosenTeamId) ?? null;
           return (
             <div className="space-y-6">
               <TeamTable
                 teams={listed}
+                leadership={leadership}
                 registry={registry}
                 canAdminister={canAdminister}
                 onRoster={(team) => setChosenTeamId(team.id)}
                 onRename={setRenaming}
                 onDeactivate={setDeactivating}
+              />
+              <TeamConfigurationPendencies
+                teams={registry.filterByStatus(reachable, "active")}
+                leadership={leadership}
+                registry={registry}
+                user={user}
+                onRoster={(team) => setChosenTeamId(team.id)}
               />
               {chosen && (
                 <TeamRoster
@@ -304,8 +366,50 @@ function TeamsScreen() {
  */
 const TIMES_VISIVEIS = 2;
 
+/**
+ * A CÉLULA DE LIDERANÇA — o nome de quem lidera, ou a AUSÊNCIA dita com todas
+ * as letras.
+ *
+ * Dono, 2026-09-10: o subtítulo da tela promete *"cada time tem seu gerente,
+ * seu tech lead e suas pessoas"* e a tabela não os mostrava. Ao trazê-los, a
+ * régua da casa vale inteira: **ausência é ausência**. Célula em branco não
+ * diz nada, e o travessão sozinho é mudo — quem lê não sabe se o time não tem
+ * gerente ou se a tela não sabe. Então a falta VIRA TEXTO, no chip de aviso,
+ * com a consequência no balão; e enquanto o quadro não chega, ou quando não
+ * pode ser lido daqui (REGRA 18), a célula diz isso em vez de afirmar falta.
+ *
+ * São duas colunas com o mesmo desenho — por isso um componente, não duas
+ * cópias (regra de reuso).
+ */
+function TeamLeadCell({
+  leadership,
+  role,
+}: {
+  leadership: TeamLeadership;
+  role: TeamLeadershipRole;
+}) {
+  const { t } = useI18n();
+
+  if (leadership.reading === "loading") {
+    return <span className="text-body text-muted-foreground">{t("teams.lead.loading")}</span>;
+  }
+  if (leadership.reading === "unreadable") {
+    return <span className="text-body text-muted-foreground">{t("teams.lead.unreadable")}</span>;
+  }
+
+  const name = leadership.nameOf(role);
+  if (name !== null) return <TruncatedText text={name} className="block max-w-40" />;
+
+  return (
+    <Chip tone="warning" size="sm" tooltip={t(`teams.lead.absent.${role}.hint`)}>
+      {t(`teams.lead.absent.${role}`)}
+    </Chip>
+  );
+}
+
 function TeamTable({
   teams,
+  leadership,
   registry,
   canAdminister,
   onRoster,
@@ -313,6 +417,7 @@ function TeamTable({
   onDeactivate,
 }: {
   teams: readonly TeamSummary[];
+  leadership: TeamLeadershipBoard;
   registry: TeamRegistryViewModel;
   canAdminister: boolean;
   onRoster: (team: TeamSummary) => void;
@@ -338,7 +443,7 @@ function TeamTable({
           table
           horizontal
         >
-          <table className="w-full min-w-[640px] text-sm" aria-label={t("teams.list.title")}>
+          <table className="w-full min-w-[900px] text-sm" aria-label={t("teams.list.title")}>
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th scope="col" className="py-2">
@@ -346,6 +451,12 @@ function TeamTable({
                 </th>
                 <th scope="col" className="py-2">
                   {t("teams.col.status")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("users.role.manager")}
+                </th>
+                <th scope="col" className="py-2">
+                  {t("users.role.tech_lead")}
                 </th>
                 <th scope="col" className="py-2">
                   {t("teams.col.people")}
@@ -363,6 +474,18 @@ function TeamTable({
                     <StatusBadge
                       tone={team.active ? "done" : "neutral"}
                       label={team.active ? t("teams.badge.active") : t("teams.badge.inactive")}
+                    />
+                  </td>
+                  <td className="py-2">
+                    <TeamLeadCell
+                      leadership={leadership.of(team.id)}
+                      role={TeamLeadershipRoles.MANAGER}
+                    />
+                  </td>
+                  <td className="py-2">
+                    <TeamLeadCell
+                      leadership={leadership.of(team.id)}
+                      role={TeamLeadershipRoles.TECH_LEAD}
                     />
                   </td>
                   <td className="py-2 tabular-nums">
@@ -407,6 +530,149 @@ function TeamTable({
         </ScrollPane>
       )}
     </SectionCard>
+  );
+}
+
+/**
+ * PENDÊNCIAS DE CONFIGURAÇÃO — o que falta para cada time funcionar, com o
+ * caminho para revisar (dono, 2026-09-10).
+ *
+ * Três contadores vieram da sugestão de tela; o QUARTO é o que mais pesa e
+ * não estava nela — **time sem régua para todos os níveis de carreira**. Foi
+ * a falta da régua do Trainee que derrubou PDI, Avaliação e 1:1 na manhã de
+ * 2026-09-09, e a REGRA 19 transferiu esse invariante para o cadastro do
+ * time sem deixar nada na tela que mostrasse o furo.
+ *
+ * ALCANCE: a conta é sobre os times ATIVOS ao alcance de quem lê. Contador
+ * que somasse time fora do alcance contaria a existência dele — e a régua
+ * desta casa é que o que não se alcança não se anuncia.
+ */
+function TeamConfigurationPendencies({
+  teams,
+  leadership,
+  registry,
+  user,
+  onRoster,
+}: {
+  teams: readonly TeamSummary[];
+  leadership: TeamLeadershipBoard;
+  registry: TeamRegistryViewModel;
+  user: SessionUser;
+  onRoster: (team: TeamSummary) => void;
+}) {
+  const { t } = useI18n();
+  const store = useStore();
+  const careerLevels = useCareerLevelsByRank();
+  const canReviewRules = defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user);
+
+  const configuration = new TeamConfiguration(
+    teams,
+    leadership,
+    store.professionals,
+    store.teamLevelRules,
+    careerLevels,
+    registry,
+  );
+
+  const body = () => {
+    if (!configuration.readable) {
+      return <p className="text-body text-muted-foreground">{t("teams.pending.loading")}</p>;
+    }
+    // ZERO pendência é um ESTADO BOM, não um vazio — e ele se diz nas duas
+    // linhas da régua da casa, não numa caixa em branco.
+    if (configuration.clear) {
+      return <EmptyState title={t("teams.pending.clear")} hint={t("teams.pending.clear.hint")} />;
+    }
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {configuration.pendencies().map((pendency) => (
+          <KeyFigureCard
+            key={pendency.kind}
+            size="sm"
+            label={t(`teams.pending.${pendency.kind}`)}
+            value={pendency.count}
+            tone={StatTones.byPending(pendency.count)}
+            caption={
+              <TeamPendencyReview
+                pendency={pendency}
+                canReviewRules={canReviewRules}
+                onRoster={onRoster}
+              />
+            }
+          />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <SectionCard
+      title={t("teams.pending.title")}
+      description={t("teams.pending.subtitle")}
+      collapsible
+      storageKey="teams.pending"
+    >
+      {body()}
+    </SectionCard>
+  );
+}
+
+/**
+ * O CAMINHO PARA REVISAR de cada pendência — pelo NOME do time, um por um.
+ * Um contador sem destino é uma acusação sem endereço: com dois times a lista
+ * inteira cabe na legenda, e cada nome é o gesto (abrir o Quadro; ou, na
+ * régua, a tela que a configura).
+ */
+function TeamPendencyReview({
+  pendency,
+  canReviewRules,
+  onRoster,
+}: {
+  pendency: TeamPendency;
+  canReviewRules: boolean;
+  onRoster: (team: TeamSummary) => void;
+}) {
+  const { t } = useI18n();
+
+  if (pendency.count === 0) return <>{t("teams.pending.ok")}</>;
+
+  if (pendency.reviewedInTeamRules) {
+    if (!canReviewRules) {
+      return (
+        <>
+          {pendency.teams.map((team) => team.name).join(", ")} —{" "}
+          {t("teams.pending.rulesOutOfReach")}
+        </>
+      );
+    }
+    return (
+      <span className="flex flex-wrap gap-2">
+        {pendency.teams.map((team) => (
+          <Button key={team.id} variant="link" size="sm" className="h-auto px-0" asChild>
+            <Link to="/team-rules" aria-label={t("teams.pending.reviewRules", { nome: team.name })}>
+              {team.name}
+            </Link>
+          </Button>
+        ))}
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex flex-wrap gap-2">
+      {pendency.teams.map((team) => (
+        <Button
+          key={team.id}
+          variant="link"
+          size="sm"
+          className="h-auto px-0"
+          aria-label={t("teams.pending.reviewRoster", { nome: team.name })}
+          onClick={() => onRoster(team)}
+        >
+          {team.name}
+        </Button>
+      ))}
+    </span>
   );
 }
 
