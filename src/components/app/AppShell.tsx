@@ -18,7 +18,7 @@ import { usePendingTeamTransfers, useReducedMotion } from "@/hooks";
 import { useAuth } from "@/lib/auth";
 import { useCycleSelection } from "@/lib/context-scope";
 import { usePlatformMetricsTab, useSynapseSignals } from "@/lib/dependencies";
-import { ShellHeader } from "@/lib/design";
+import { PageFillingPane, ShellHeader } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import {
   NAV_GROUPS,
@@ -223,7 +223,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
       {/* O canvas é fixo ao viewport e fica atrás de tudo; o `body` pinta o fundo. */}
       {synapseSignals && <SynapseBackground signals={synapseSignals} scene="interior" />}
-      <div className="relative z-10 flex min-h-screen w-full">
+      {/*
+        A CASCA para de crescer com o conteúdo quando a página hospeda uma
+        caixa que ocupa o resto (`PageFillingPane`): sem altura definida aqui
+        não existe "resto" para a caixa ocupar lá embaixo. É `max-h`, não `h`
+        — se o que está acima da caixa não couber, o conteúdo transborda e o
+        documento volta a rolar, em vez de ser cortado. Em tela estreita nada
+        disto vale, e por isso a classe inteira é `xl:`.
+      */}
+      <div className={cn("relative z-10 flex min-h-screen w-full", PageFillingPane.shellClass)}>
         <aside
           style={{ width: collapsed ? SidebarPreferences.RAIL_WIDTH : width }}
           className={cn(

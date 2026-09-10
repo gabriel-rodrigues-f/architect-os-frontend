@@ -21,7 +21,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as TeamRoute } from "@/routes/team";
-import { PaneHeight, ShellHeader } from "@/lib/design";
+import { PageFillingPane } from "@/lib/design";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
 import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
@@ -36,16 +36,24 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  * "Lista de talentos" })` — não havia caixa nenhuma para achar. Quem rolava
  * era o DOCUMENTO, e o título da página saía da janela junto com a lista.
  *
- * O invariante: em tela larga a lista rola DENTRO de si, com teto medido pelo
- * token do cabeçalho; em tela estreita nada disso vale, porque caixa que rola
- * dentro de página que já rola é pior que o defeito original — e por isso toda
- * classe que monta a caixa carrega o `xl:` colado no literal.
+ * O invariante: em tela larga a lista rola DENTRO de si; em tela estreita nada
+ * disso vale, porque caixa que rola dentro de página que já rola é pior que o
+ * defeito original — e por isso toda classe que monta a caixa carrega o `xl:`
+ * colado no literal.
+ *
+ * 2026-09-10: o teto SAIU. A caixa media `janela − cabeçalho − recuo suposto`,
+ * e o recuo era um chute; agora ela é o filho que ocupa o resto da coluna do
+ * quadro (`PageFillingPane`) e a altura é medida. Medido na réplica desta
+ * tela (1440×900): antes a caixa vazava 67px abaixo da dobra e a paginação
+ * ficava 115px fora da janela; agora tudo cabe, com 48px de folga abaixo da
+ * paginação — que é irmã da caixa, e por isso o "resto" a leva em conta
+ * sozinho, coisa que teto fixo nenhum faria.
  */
 const fetchMock = vi.fn();
 const TeamPage = TeamRoute.options.component as () => ReactNode;
 
 /** As classes que, juntas, montam a caixa presa. */
-const DA_CAIXA = /(?:^|:)overflow-y-auto$|(?:^|:)max-h-/;
+const DA_CAIXA = /(?:^|:)overflow-y-auto$|(?:^|:)(?:max-h|min-h|flex-1)/;
 
 describe("a lista de talentos rola em si, nas duas visões", () => {
   beforeEach(() => {
@@ -69,12 +77,12 @@ describe("a lista de talentos rola em si, nas duas visões", () => {
     return lista();
   };
 
-  it("a visão em linhas rola dentro de si, com o teto pelo token do cabeçalho", async () => {
+  it("a visão em linhas rola dentro de si, e ocupa o resto sem teto nenhum", async () => {
     renderWithApp(<TeamPage />);
     const caixa = await emLinhas();
 
-    expect(caixa.style.getPropertyValue(PaneHeight.TOKEN)).toContain(`var(${ShellHeader.TOKEN})`);
-    expect(caixa.style.getPropertyValue(PaneHeight.TOKEN)).not.toContain("74");
+    expect(caixa.getAttribute("style")).toBeNull();
+    expect(caixa.hasAttribute(PageFillingPane.MARKER)).toBe(true);
     expect(caixa.className.split(/\s+/)).toContain("scroll-visible");
     expect(caixa.tabIndex).toBe(0);
   });
@@ -94,7 +102,7 @@ describe("a lista de talentos rola em si, nas duas visões", () => {
 
     expect(caixa.querySelector("table")).toBeNull();
     expect(caixa.className.split(/\s+/)).toContain("scroll-visible");
-    expect(caixa.style.getPropertyValue(PaneHeight.TOKEN)).toContain(`var(${ShellHeader.TOKEN})`);
+    expect(caixa.hasAttribute(PageFillingPane.MARKER)).toBe(true);
   });
 
   it("em tela estreita não sobra caixa de rolagem: tudo que a monta é `xl:`", async () => {
