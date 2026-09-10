@@ -114,17 +114,39 @@
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
-  /* Altura do cabeçalho do shell ([N-02]) — `ShellHeader` em `src/lib/design/shell.ts`. */
-  --shell-header-h: 74px;
+  /*
+    Altura do cabeçalho do shell ([N-02]) — `ShellHeader` em
+    `src/lib/design/shell.ts`. 74px era declaração, não medida. MEDIDO no
+    navegador com o CSS compilado, em 1280/1440/1920 de largura: 59px (a linha
+    de 58 do `py-3` sobre um controle de 34, mais 1 de borda).
+  */
+  --shell-header-h: 59px;
   /*
     O RITMO de um bloco rolável (`PaneRhythm`, `src/lib/design/pane.ts`) —
     dono, 2026-09-09: *"mantermos os títulos das páginas sempre visíveis"*. A
     tela pede altura em ITENS ("três itens", "duas linhas") e o número de
-    pixel mora aqui, uma vez. `row` é a linha de tabela da casa (`py-2` sobre
-    o corpo de texto padrão); `item` é o item de lista em bloco.
+    pixel mora aqui, uma vez.
+
+    Havia UM ritmo de item, `--pane-item-h` (5.75rem, 92px), para três listas
+    diferentes e uma figura, e o número nunca foi medido. Cada valor abaixo é
+    o PASSO medido no navegador com o CSS compilado, em 1440×900 (item mais
+    intervalo, que é o que a caixa gasta por item):
+
+      row            linha de tabela da casa (`py-2` sobre o corpo padrão)
+      card           112px — cartão de capacidade do Catálogo (94,89 + 16)
+      priority       168px — item da lista de prioridades (126 a 166; o maior)
+      distance-card  176px — cartão de competência com distância (160 a 176)
+      figure         320px — a figura de um gráfico, que não é lista de itens
+
+    Onde o item tem altura VARIÁVEL (prioridade, cartão de distância) o valor é
+    o do maior espécime medido, arredondado para a grade de 4px: a promessa da
+    caixa é "cabem n itens", e uma média entregaria n-1 na pior linha.
   */
   --pane-row-h: 2.25rem;
-  --pane-item-h: 5.75rem;
+  --pane-card-h: 112px;
+  --pane-priority-h: 168px;
+  --pane-distance-card-h: 176px;
+  --pane-figure-h: 320px;
   /*
     Aqui morava o recuo de página, 16rem — "a faixa de título e filtros
     acima de um bloco de página". Era um CHUTE: um número para os sete topos

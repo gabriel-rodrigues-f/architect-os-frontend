@@ -8,7 +8,14 @@
  */
 export class ShellHeader {
   static readonly TOKEN = "--shell-header-h";
-  static readonly HEIGHT_PX = 74;
+  /*
+   * MEDIDO, não declarado (2026-09-10). O valor anterior era chute; o
+   * cabeçalho mede 59 — a linha de 58 (`py-3` sobre um controle de 34) mais 1
+   * de borda — em 1280, 1440 e 1920 de largura, lido no navegador com o CSS
+   * compilado. Em 1024 a linha quebra (`flex-wrap`) e ele vai a 87; nessa
+   * faixa o token subestima, como já subestimava antes.
+   */
+  static readonly HEIGHT_PX = 59;
 
   static get cssLine(): string {
     return `  ${ShellHeader.TOKEN}: ${String(ShellHeader.HEIGHT_PX)}px;`;

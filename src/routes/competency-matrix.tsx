@@ -17,10 +17,10 @@ import {
   ConfirmDialog,
   EmptyState,
   EmptyStateCallToAction,
-  LevelBadge,
   PageAction,
   PageActions,
   PageHeader,
+  ProficiencyScaleLegend,
   SectionAction,
   ScrollPane,
   SectionCard,
@@ -39,7 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { LEVELS, type Competency, type Capability } from "@/lib/domain";
+import { type Competency, type Capability } from "@/lib/domain";
 import { useAsyncSubmit, useSuccessToast, useToastSubmit } from "@/hooks";
 import { initialSearchParam } from "@/lib/search-params";
 import { useCurrentUser } from "@/lib/auth";
@@ -50,7 +50,6 @@ import { FileText } from "@/lib/file-text";
 import type { AffectedRecords, CompetencyRemovalOutcome } from "@/lib/gateways/catalog.gateway";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n, type MessageKey } from "@/lib/i18n";
-import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { requireSystemOperatorReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -125,7 +124,6 @@ function MatrixScreen() {
   const [importing, setImporting] = useState(false);
   const { t } = useI18n();
   const notifySuccess = useSuccessToast();
-  const labels = useLabels();
   const help = usePageHelp("competencyMatrix");
   const [confirmDelete, setConfirmDelete] = useState<{
     competency: Competency;
@@ -280,6 +278,7 @@ function MatrixScreen() {
         title={t("matrix.title")}
         description={t("matrix.subtitle")}
         help={help}
+        legend={<ProficiencyScaleLegend />}
         actions={
           isAdmin ? (
             <PageActions>
@@ -296,23 +295,6 @@ function MatrixScreen() {
           ) : undefined
         }
       />
-
-      <SectionCard
-        title={t("matrix.levels.title")}
-        description={t("matrix.levels.subtitle")}
-        className="mb-6"
-      >
-        <div className="grid gap-3 md:grid-cols-5">
-          {LEVELS.map((l) => (
-            <div key={l.level} className="surface-inset p-3">
-              <LevelBadge level={l.level} showName />
-              <p className="mt-2 text-xs text-muted-foreground">
-                {labels.levelDescription[l.level]}
-              </p>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
 
       {semCapacidades && (
         <EmptyStateCallToAction subject={EmptySubject.CAPABILITY} hint={t("matrix.empty.hint")}>
@@ -424,13 +406,15 @@ function MatrixScreen() {
            *
            * Não é caixa nova: é a MESMA, com outra medida. Ela deixa de pedir
            * "o resto da página" — que agora é das Arquivadas, logo abaixo — e
-           * passa a pedir uma medida de CONTEÚDO, no ritmo do cartão
-           * empilhado (`--pane-item-h`). O número é do dono; o pixel mora no
-           * token.
+           * passa a pedir uma medida de CONTEÚDO, no ritmo do cartão de
+           * capacidade (`--pane-card-h`). O número é do dono; o pixel mora no
+           * token, e o token é MEDIDO: o cartão mede 94,89 e o intervalo 16,
+           * logo o passo é 110,89 e o token vale 112. Com o ritmo genérico
+           * antigo (92) esta caixa mostrava dois cartões e meio.
            */
           <ScrollPane
             label={t("pane.competencyCatalog.label")}
-            height={PaneHeight.items(3, PaneRhythm.ITEM)}
+            height={PaneHeight.items(3, PaneRhythm.CARD)}
           >
             <div className="space-y-4">
               {visibleCapabilities.map((cat) => {

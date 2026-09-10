@@ -21,7 +21,17 @@ import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/rende
  * O que mudou e precisa aparecer: a capacidade nasce fundada com as
  * competências que a definem; "Pronta" é do mínimo até o máximo (não mais de
  * 1); o nome de competência é único em toda a aplicação; e a régua do time
- * aceita mínimo 1.
+ * aceita mínimo ZERO.
+ *
+ * O piso da régua (2026-09-10): a regra 12 do dono (`papeis-2026-09-06.md`,
+ * 2026-09-08) tirou o mínimo — *"apenas vamos remover a regra de que 3 é o
+ * mínimo. Não haverá mais valor mínimo."* — e a regra 19 confirmou que o
+ * piso zero continua valendo. O código já obedecia
+ * (`QualifiedCapabilityMinimum.FLOOR === 0`, e o campo nasce com `min={0}`);
+ * quem continuou contando a regra velha foi a AJUDA, que dizia "o menor
+ * mínimo da régua é 1". Uma fatia de layout portou a frase verbatim de
+ * propósito, para não consertar conteúdo fora do escopo dela. Aqui ela é o
+ * escopo: ajuda que ensina a regra revogada é pior que ajuda nenhuma.
  */
 
 const fetchMock = vi.fn();
@@ -83,7 +93,7 @@ describe("o ? das fatias de configuração conta o intervalo e o piso da régua"
     expect(ajuda.textContent).not.toMatch(/de 1 até esse máximo/i);
   });
 
-  it("a Elegibilidade explica ao gerente que o mínimo da régua pode ser 1", async () => {
+  it("a Elegibilidade explica ao gerente que o mínimo da régua pode ser zero", async () => {
     entrarComo(fixtureAssignedManagerUser);
     renderWithApp(<EligibilityPage />);
     await screen.findByText("Júnior");
@@ -91,6 +101,10 @@ describe("o ? das fatias de configuração conta o intervalo e o piso da régua"
     await userEvent.click(screen.getByRole("button", { name: "Como usar Elegibilidade" }));
 
     const ajuda = await screen.findByRole("dialog");
-    expect(ajuda.textContent).toMatch(/mínimo da régua é 1/i);
+    expect(ajuda.textContent).toMatch(/mínimo da régua é zero/i);
+    // A frase revogada não pode sobreviver em lugar nenhum do balão.
+    expect(ajuda.textContent).not.toMatch(/mínimo da régua é 1/i);
+    // E o zero precisa DIZER o que significa, senão vira número solto.
+    expect(ajuda.textContent).toMatch(/não exige capacidade qualificada/i);
   });
 });

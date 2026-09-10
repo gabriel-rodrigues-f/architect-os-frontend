@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react";
 import { lazy, Suspense, useState } from "react";
 
+import { CHART_FIGURE_HEIGHT_PX } from "@/lib/design/pane";
 import { topByRelevance } from "@/lib/collections";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { useI18n } from "@/lib/i18n";
@@ -200,7 +201,13 @@ class LevelScale {
   }
 }
 
-export function CapabilityRadar({ data, height = 320 }: { data: RadarPoint[]; height?: number }) {
+export function CapabilityRadar({
+  data,
+  height = CHART_FIGURE_HEIGHT_PX,
+}: {
+  data: RadarPoint[];
+  height?: number;
+}) {
   const { t } = useI18n();
   const [showAll, setShowAll] = useState(false);
   const visibleData = showAll ? data : topByRelevance(data, LevelScale.distance, MAX_RADAR_AXES);
