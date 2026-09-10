@@ -62,8 +62,17 @@ describe("NoticeDestination — a tabela inteira do dono", () => {
     ).toBe("/link-do-servidor");
   });
 
-  it("digest.daily leva à própria tela de Avisos", () => {
-    expect(destino.of(notice({ eventType: "digest.daily" }))).toBe("/notices");
+  /**
+   * Dono (2026-09-09): *"recebi a notificação 'Resumo do dia: 2 novidades
+   * sobre Débora Quintela'. Todavia, ao clicar, ele me leva para a tela de
+   * notificações, não para a tela em que eu deveria ver as novidades sobre o
+   * profissional."* O resumo é agrupado POR PESSOA (o backend agrupa o dia
+   * por `subject_professional_id`) e junta naturezas diferentes — avaliação,
+   * 1:1, prazo de PDI —, então o destino é a FICHA dela, onde todas cabem, e
+   * não a tela de UMA delas.
+   */
+  it("digest.daily leva à ficha da pessoa de quem o resumo fala", () => {
+    expect(destino.of(notice({ eventType: "digest.daily" }))).toBe("/professionals/ana");
   });
 
   it("support.access-opened leva à ficha da pessoa", () => {
@@ -88,11 +97,12 @@ describe("NoticeDestination — a tabela inteira do dono", () => {
 describe("sem contexto, o link do servidor é a reserva", () => {
   const destino = defaultNoticeDestination;
 
-  it("os três tipos que dependem da pessoa voltam ao link quando professionalId é nulo", () => {
+  it("os tipos que dependem da pessoa voltam ao link quando professionalId é nulo", () => {
     for (const eventType of [
       "assessment.completed",
       "mentoring.recorded",
       "support.access-opened",
+      "digest.daily",
     ]) {
       expect(destino.of(notice({ eventType, professionalId: null })), eventType).toBe(
         "/link-do-servidor",
@@ -100,10 +110,10 @@ describe("sem contexto, o link do servidor é a reserva", () => {
     }
   });
 
-  it("digest.daily não depende de contexto nenhum", () => {
-    expect(destino.of(notice({ eventType: "digest.daily", professionalId: null }))).toBe(
-      "/notices",
-    );
+  it("resumo sem a pessoa no contexto volta ao link do servidor — a caixa de Avisos", () => {
+    expect(
+      destino.of(notice({ eventType: "digest.daily", professionalId: null, link: "/notices" })),
+    ).toBe("/notices");
   });
 
   it("o id da pessoa viaja escapado — não monta querystring por concatenação crua", () => {

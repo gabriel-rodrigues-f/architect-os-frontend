@@ -15,7 +15,7 @@ import type { Notice } from "./gateways/notices.gateway";
  *   assessment.completed  → a avaliação DAQUELA pessoa
  *   development-item.deadline-approaching → o PDI DAQUELA pessoa (fatia PRAZOS)
  *   mentoring.recorded    → Mentoria filtrada NAQUELA pessoa
- *   digest.daily          → a própria tela de Avisos
+ *   digest.daily          → a ficha DAQUELA pessoa (dono, 2026-09-09)
  *   support.access-opened → a ficha da pessoa
  *   team-transfer.*       → as pendências de transferência (o link do servidor)
  *
@@ -38,19 +38,12 @@ abstract class NoticeDestinationRule {
   abstract resolve(notice: NoticeContext): string | null;
 }
 
-/** O destino que não depende de contexto nenhum: a tela é sempre a mesma. */
-class FixedDestinationRule extends NoticeDestinationRule {
-  constructor(
-    eventType: string,
-    private readonly pathname: string,
-  ) {
-    super(eventType);
-  }
-
-  resolve(): string {
-    return this.pathname;
-  }
-}
+/*
+ * O `FixedDestinationRule` — o destino que não dependia de contexto nenhum —
+ * saiu com o seu único uso: o resumo diário, que virou destino de pessoa
+ * (dono, 2026-09-09). Uma tela igual para todo mundo é exatamente o que o
+ * `link` do servidor já faz, e ele é a reserva.
+ */
 
 /**
  * O destino endereçado a UMA pessoa. `param` nulo põe o id no caminho
@@ -79,7 +72,21 @@ export class NoticeDestination {
   private readonly rules: readonly NoticeDestinationRule[] = [
     new PersonDestinationRule("assessment.completed", "/assessments", "professionalId"),
     new PersonDestinationRule("mentoring.recorded", "/mentoring", "menteeId"),
-    new FixedDestinationRule("digest.daily", "/notices"),
+    /*
+     * O RESUMO DO DIA É DE UMA PESSOA. Dono (2026-09-09): *"recebi a
+     * notificação 'Resumo do dia: 2 novidades sobre Débora Quintela'.
+     * Todavia, ao clicar, ele me leva para a tela de notificações, não para a
+     * tela em que eu deveria ver as novidades sobre o profissional."*
+     *
+     * O resumo nasce agrupado por pessoa (`digestOfDay` agrupa o dia por
+     * `subject_professional_id`) e junta naturezas diferentes — uma
+     * avaliação, uma 1:1, um prazo de PDI. O destino certo é a FICHA dela,
+     * que reúne todas — avaliações, PDI, trilhas, 1:1 e distâncias —, e não a
+     * tela de UMA delas, que responderia por parte do que a frase promete. O
+     * `link` do servidor (`/notices`) continua sendo a reserva de quem chega
+     * sem a pessoa no contexto.
+     */
+    new PersonDestinationRule("digest.daily", "/professionals", null),
     new PersonDestinationRule("support.access-opened", "/professionals", null),
     /*
      * Fatia PRAZOS: o aviso de prazo chega à pessoa E a quem a lidera, e o
