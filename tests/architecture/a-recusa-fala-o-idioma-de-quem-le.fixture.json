@@ -72,7 +72,7 @@
     },
     "AssessmentCommentNotAuthorError": {
       "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "ASSESSMENT_COMMENT_RESERVED_TO_AUTHOR",
       "status": 403,
       "mensagens": [
         "\"Só quem escreveu o comentário pode alterá-lo.\""
@@ -94,10 +94,10 @@
     },
     "AssessmentFieldsNotAllowedError": {
       "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "ASSESSMENT_FIELD_NOT_IN_ASSESSMENT",
       "status": 403,
       "mensagens": [
-        "`${fields.join(\", \")} não é campo desta avaliação.`"
+        "\"Este campo não pertence a esta avaliação.\""
       ]
     },
     "AssessmentInvalidTransitionError": {
@@ -130,7 +130,7 @@
     },
     "AssessmentNotOwnerError": {
       "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "ASSESSMENT_WRITING_RESERVED_TO_LEAD",
       "status": 403,
       "mensagens": []
     },
@@ -204,7 +204,7 @@
     },
     "AssessmentTransitionNotAllowedError": {
       "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "ASSESSMENT_TRANSITION_NOT_IN_THIS_STAGE",
       "status": 403,
       "mensagens": [
         "\"Quem lidera envia um Rascunho para revisão, conclui uma avaliação Em Revisão ou reabre uma Concluída.\""
@@ -228,10 +228,10 @@
     },
     "AuditLogQueryNotAdminError": {
       "arquivo": "src/modules/audit/application/audit-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "AUDIT_TRAIL_RESERVED_TO_ADMIN",
       "status": 403,
       "mensagens": [
-        "\"Somente administradores podem consultar o log de auditoria\""
+        "\"Consultar a trilha de auditoria é leitura do administrador.\""
       ]
     },
     "AuthorizationError": {
@@ -242,7 +242,7 @@
     },
     "CalibrationNotVisibleError": {
       "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "CALIBRATION_RESERVED_TO_MANAGER",
       "status": 403,
       "mensagens": [
         "\"Só o Gerente do time ou quem administra o sistema vê a calibração do ciclo.\""
@@ -639,10 +639,10 @@
     },
     "LearningPathCreationNotLeadError": {
       "arquivo": "src/modules/learning-paths/application/learning-path-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "LEARNING_PATH_CREATION_RESERVED_TO_LEAD",
       "status": 403,
       "mensagens": [
-        "\"Só quem lidera um time (gerente ou Tech Lead) ou administrador criam trilhas no catálogo.\""
+        "\"Só quem lidera um time (gerente ou Tech Lead) ou o administrador cria trilhas no catálogo.\""
       ]
     },
     "LearningPathDeletionNotAuthorError": {
@@ -693,10 +693,10 @@
     },
     "LearningPathProgressNotOwnError": {
       "arquivo": "src/modules/learning-paths/application/learning-path-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "LEARNING_PATH_PROGRESS_RESERVED_TO_OWNER",
       "status": 403,
       "mensagens": [
-        "\"Só a própria pessoa avança na trilha dela. Quem lidera acompanha, inscreve e administra a trilha — mas não estuda no lugar dela.\""
+        "\"Só a própria pessoa avança na trilha dela.\""
       ]
     },
     "ManagerMembershipReservedToAdminError": {
@@ -806,7 +806,7 @@
     },
     "PlanApprovalNotLeadError": {
       "arquivo": "src/modules/development/application/plan-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "PLAN_DECISION_RESERVED_TO_LEAD",
       "status": 403,
       "mensagens": [
         "\"Só o Tech Lead responsável (ou administrador) aprova ou devolve o PDI para ajustes.\""
@@ -924,7 +924,7 @@
     },
     "PlanNotOwnerError": {
       "arquivo": "src/modules/development/application/plan-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "PLAN_WRITING_RESERVED_TO_LEAD",
       "status": 403,
       "mensagens": [
         "\"Só quem lidera a pessoa (gerente ou Tech Lead do time dela) escreve no PDI dela — o PDI é registrado na 1:1.\""
@@ -938,13 +938,13 @@
     },
     "PlanNotScopedError": {
       "arquivo": "src/modules/development/application/plan-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "PLAN_CONCLUSION_RESERVED_TO_LEAD",
       "status": 403,
       "mensagens": []
     },
     "PlanReopenNotLeadError": {
       "arquivo": "src/modules/development/application/plan-access-errors.ts",
-      "code": "FORBIDDEN",
+      "code": "PLAN_REOPENING_RESERVED_TO_LEAD",
       "status": 403,
       "mensagens": [
         "\"Só quem lidera esta pessoa (gerente ou Tech Lead do time dela) ou o administrador reabre o PDI dela.\""

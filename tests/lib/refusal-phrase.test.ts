@@ -194,3 +194,48 @@ describe("toda frase que a política pode pedir existe nas duas línguas", () =>
     expect(defaultRefusalPhrase.messageKeys().length).toBeGreaterThan(30);
   });
 });
+
+/**
+ * A METADE DE ATO — o que a fatia RECUSAS veio destravar.
+ *
+ * Enquanto treze atos distintos publicavam o mesmo `FORBIDDEN`, a tela não
+ * tinha escolha nenhuma a fazer: ou inventava uma frase para os treze, ou
+ * imprimia a do servidor. O que muda aqui não é a frase — é a existência de um
+ * código por ato, e é isso que estes testes medem.
+ */
+describe("a recusa de ATO tem frase própria por ato, nas duas línguas", () => {
+  const recusaDeAto = (code: string) => new ApiError("frase do servidor", 403, undefined, code);
+
+  it("dois atos diferentes no MESMO status recebem frases diferentes", () => {
+    const reabrir = defaultRefusalPhrase.sentenceOf(
+      recusaDeAto("PLAN_REOPENING_RESERVED_TO_LEAD"),
+      emPortugues,
+    );
+    const aprovar = defaultRefusalPhrase.sentenceOf(
+      recusaDeAto("PLAN_DECISION_RESERVED_TO_LEAD"),
+      emPortugues,
+    );
+
+    expect(reabrir).not.toBeNull();
+    expect(aprovar).not.toBeNull();
+    expect(reabrir).not.toBe(aprovar);
+  });
+
+  it("a frase do servidor não chega a quem lê em inglês", () => {
+    const escrita = recusaDeAto("ASSESSMENT_WRITING_RESERVED_TO_LEAD");
+
+    const traduzida = defaultRefusalPhrase.sentenceOf(escrita, emIngles);
+
+    expect(traduzida).not.toBe("frase do servidor");
+    expect(traduzida).not.toMatch(/[áâãéêíóôõúç]/);
+  });
+
+  /**
+   * A fronteira da regra 18 dita como teste: recusa de ALCANCE não tem frase
+   * própria. Se um dia alguém der código e frase a uma delas, o oráculo volta —
+   * e volta aqui, em vermelho.
+   */
+  it("o código interno da recusa de alcance não tem frase própria", () => {
+    expect(defaultRefusalPhrase.phrasedCodes()).not.toContain("OUT_OF_REACH");
+  });
+});
