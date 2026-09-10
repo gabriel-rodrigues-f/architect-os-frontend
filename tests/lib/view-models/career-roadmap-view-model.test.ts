@@ -18,15 +18,9 @@ const LEVELS: CareerLevel[] = [
 ];
 
 const CATALOG = new Map<string, Competency>([
-  [
-    "comp-clean-core",
-    { id: "comp-clean-core", name: "Clean Core", capabilityId: "cap-btp", active: true },
-  ],
-  [
-    "comp-eventos",
-    { id: "comp-eventos", name: "Arquitetura de Eventos", capabilityId: "cap-int", active: true },
-  ],
-  ["comp-cds", { id: "comp-cds", name: "Modelagem CDS", capabilityId: "cap-btp", active: true }],
+  ["comp-clean-core", { id: "comp-clean-core", name: "Clean Core", capabilityId: "cap-btp" }],
+  ["comp-eventos", { id: "comp-eventos", name: "Arquitetura de Eventos", capabilityId: "cap-int" }],
+  ["comp-cds", { id: "comp-cds", name: "Modelagem CDS", capabilityId: "cap-btp" }],
 ]);
 
 function adherence(

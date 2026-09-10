@@ -54,7 +54,6 @@ interface AssessmentPermissions {
    * o usuário"*. A pergunta passa a ser feita ANTES de desenhar a caixa.
    */
   canComment: boolean;
-  canSubmit: boolean;
   canComplete: boolean;
   canReopen: boolean;
   incompleteSelf: boolean;
@@ -88,8 +87,14 @@ export class AssessmentViewModel {
     // Abre quem vai preencher: a liderança com vínculo naquela pessoa.
     // Ninguém age sobre si, então o sujeito nunca abre a própria avaliação.
     const canOpen = isLead;
+    /*
+     * OS TRÊS CAMPOS NA MESMA ETAPA (dono, 2026-09-10). A etapa "Em revisão"
+     * separava a autoavaliação das notas do líder; com ela fora, o rascunho é
+     * a única etapa aberta e as três colunas se editam juntas — que é como a
+     * conversa acontece desde a regra 15.
+     */
     const canEditSelf = isLead && status === "Draft";
-    const canEditLeaderFinal = isLead && status === "In Review";
+    const canEditLeaderFinal = isLead && status === "Draft";
     /**
      * COMENTAR é outra pergunta que pontuar, e por isso tem nome próprio.
      *
@@ -101,8 +106,7 @@ export class AssessmentViewModel {
      * ofereceria a caixa numa avaliação trancada.
      */
     const canComment = isLead && !isCompleted;
-    const canSubmit = isLead && status === "Draft";
-    const canComplete = decides && status === "In Review";
+    const canComplete = decides && status === "Draft";
 
     const canReopen = decides && status === "Completed";
     const seesAssessmentNumbers = this.policy.isLeadership(user) || isSubject;
@@ -120,7 +124,6 @@ export class AssessmentViewModel {
       canEditSelf,
       canEditLeaderFinal,
       canComment,
-      canSubmit,
       canComplete,
       canReopen,
       incompleteSelf,

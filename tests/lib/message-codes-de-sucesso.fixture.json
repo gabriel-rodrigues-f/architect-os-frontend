@@ -107,11 +107,6 @@
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
       "resposta": "created"
     },
-    "catalog.competency.delete.success": {
-      "rota": "DELETE /competencies/:id",
-      "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",
-      "resposta": "ok"
-    },
     "catalog.competency.update.success": {
       "rota": "PATCH /competencies/:id",
       "arquivo": "src/modules/catalog/infrastructure/controllers/catalog.controller.ts",

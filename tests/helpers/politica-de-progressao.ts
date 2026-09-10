@@ -56,8 +56,7 @@ export const capacidadesProntas = (quantas: number): AppState["capabilities"] =>
     id: `pronta-${indice + 1}`,
     name: `Capacidade pronta ${indice + 1}`,
     short: `P${indice + 1}`,
-    active: true,
-    curation: { activeCompetencyCount: 2, status: "READY" as const },
+    curation: { competencyCount: 2, status: "READY" as const },
   }));
 
 export async function linhaDoNivel(nivel = "Júnior"): Promise<HTMLTableRowElement> {

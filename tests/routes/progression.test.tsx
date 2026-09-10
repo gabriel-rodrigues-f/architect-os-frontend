@@ -46,7 +46,6 @@ const restrictiveCompetency: Competency = {
   id: "cloud-iac",
   name: "Infra as Code",
   capabilityId: "cloud",
-  active: true,
 };
 
 function withBlockingItem(assessment: Assessment): Assessment {

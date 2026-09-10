@@ -14,7 +14,7 @@ import {
  * Onda 35, achado 16 — contrato de `POST /competencies/bulk-removal`
  * (briefing, fatia backend `remocao-em-massa-de-competencias`):
  *   body { competencyIds: string[] (1..200) }
- *   → 200 { data: { outcomes: [{ competencyId, outcome: "removed"|"archived",
+ *   → 200 { data: { outcomes: [{ competencyId, outcome: "removed"|"refused",
  *          affected: { assessments, planItems, learningItems, teamRuleRequirements } }] },
  *          message: { code: "catalog.competency.bulkRemoval.success" } }
  *   → 400 fora de 1..200.
@@ -24,8 +24,8 @@ import {
  */
 
 const competencies: Competency[] = [
-  { id: "k8s", name: "Kubernetes", capabilityId: "cloud", active: true },
-  { id: "iam", name: "IAM", capabilityId: "security", active: true },
+  { id: "k8s", name: "Kubernetes", capabilityId: "cloud" },
+  { id: "iam", name: "IAM", capabilityId: "security" },
 ];
 
 const nothing: AffectedRecords = {
@@ -56,7 +56,7 @@ describe("HttpCatalogGateway.removeCompetencies — o contrato no fio", () => {
               { competencyId: "k8s", outcome: "removed", affected: nothing },
               {
                 competencyId: "iam",
-                outcome: "archived",
+                outcome: "refused",
                 affected: { ...nothing, assessments: 2, teamRuleRequirements: 1 },
               },
             ],
@@ -76,13 +76,13 @@ describe("HttpCatalogGateway.removeCompetencies — o contrato no fio", () => {
     expect(JSON.parse(String(init.body))).toEqual({ competencyIds: ["k8s", "iam"] });
     expect(summary.outcomes.map((outcome) => [outcome.competencyId, outcome.outcome])).toEqual([
       ["k8s", "removed"],
-      ["iam", "archived"],
+      ["iam", "refused"],
     ]);
   });
 });
 
 describe("InMemoryCompetencyRemoval — o oráculo do contrato", () => {
-  it("competência sem vínculo é removida; com vínculo é arquivada, com a contagem do que a segura", async () => {
+  it("competência sem vínculo é removida; com vínculo é RECUSADA, com a contagem do que a segura", async () => {
     const gateway = new InMemoryCompetencyRemoval(
       competencies,
       new Map([["iam", { ...nothing, assessments: 2, planItems: 1 }]]),
@@ -94,7 +94,7 @@ describe("InMemoryCompetencyRemoval — o oráculo do contrato", () => {
       { competencyId: "k8s", outcome: "removed", affected: nothing },
       {
         competencyId: "iam",
-        outcome: "archived",
+        outcome: "refused",
         affected: { ...nothing, assessments: 2, planItems: 1 },
       },
     ]);

@@ -1,33 +1,28 @@
-import { skipToken, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 
 import {
-  assessmentStatusTone,
-  Callout,
   CapabilityAssessmentCard,
-  CapabilityCombobox,
-  PersonCombobox,
-  CareerPortfolioSection,
   ConfirmDialog,
   EmptyStateCallToAction,
   PageHeader,
+  PersonCombobox,
+  ScrollPane,
   SectionCard,
-  StatusBadge,
   useAssessmentPermissions,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
 import type { Assessment } from "@/lib/domain";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
-import { api, UserFacingError } from "@/lib/api";
+import { UserFacingError } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { PaneHeight } from "@/lib/design";
 import { PersonPicker } from "@/lib/person-selection";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
-import { useLabels } from "@/lib/labels";
 import { Registration } from "@/lib/registration";
 import { useSelectors, useStore } from "@/lib/store";
 import { useCycleInFocus, useSearchParamString } from "@/hooks";
@@ -67,6 +62,30 @@ function AssessmentsPage() {
   );
 }
 
+/**
+ * A TELA SIMPLIFICA — dono (2026-09-10): *"A tela está confusa. Vamos
+ * simplificar ela. A ordem agora é simplificar."*
+ *
+ * O que saiu, e por quê:
+ *
+ * - **O filtro de capacidades.** Escolher o que ver era um passo antes de
+ *   ver: *"Todas as capacidades listadas."* Sem escolha não há paginação de
+ *   capacidade, não há aviso de "muitas selecionadas", não há botão
+ *   "selecionar as do portfólio" e não há estado vazio de "nenhuma capacidade
+ *   selecionada" — quatro blocos que só existiam para administrar a escolha.
+ * - **O bloco de situação.** Ele mostrava o selo do estado e três botões. Com
+ *   dois estados e duas transições, o selo não informa e o que restou de ato
+ *   sobe para o cabeçalho, ao lado do filtro de pessoa.
+ * - **"Enviar para revisão".** *"Não deve haver revisão nessa tela. Quem
+ *   fizer a avaliação já conclui."* Não é um botão escondido: a etapa saiu da
+ *   máquina de estados (backend, `AssessmentStatus`).
+ * - **O Portfólio de Capacidades do Ciclo**, inteiro.
+ *
+ * O que entrou: UM bloco, do título ao pé da página, que rola por dentro
+ * (`ScrollPane` + `PaneHeight.restOfPage()`), com uma capacidade por cartão e
+ * a tabela de competências dentro dela. A altura não é chutada — a caixa é o
+ * filho que ocupa o que sobra da coluna, e o navegador mede.
+ */
 function AssessmentsScreen() {
   const store = useStore();
   const sel = useSelectors();
@@ -89,10 +108,6 @@ function AssessmentsScreen() {
   const viewedCycle = store.cycles.find((c) => c.id === cycleId);
   const { t } = useI18n();
   const help = usePageHelp("assessments");
-  const labels = useLabels();
-  const [capabilityIds, setCapabilityIds] = useState<string[]>(() =>
-    store.capabilities[0] ? [store.capabilities[0].id] : [],
-  );
   const [openComment, setOpenComment] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
@@ -104,14 +119,11 @@ function AssessmentsScreen() {
   const selectedProfessional = sel.professionalById(professionalId);
 
   const {
-    isLead,
     status,
-    isCompleted,
     canOpen,
     canEditSelf,
     canEditLeaderFinal,
     canComment,
-    canSubmit,
     canComplete,
     canReopen,
     incompleteSelf,
@@ -119,8 +131,6 @@ function AssessmentsScreen() {
     seesAssessmentNumbers,
     completion,
   } = useAssessmentPermissions(professionalId, selectedProfessional, assessment);
-
-  const selected = store.capabilities.filter((c) => capabilityIds.includes(c.id));
 
   /*
    * Dono (2026-09-08): com o banco vazio esta tela mostra DOIS botões no
@@ -140,55 +150,23 @@ function AssessmentsScreen() {
    */
   const primeiroQueFalta = cadastrosQueFaltam[0];
 
-  const toggleCapability = (id: string) =>
-    setCapabilityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
-
-  const assessmentId = assessment?.id;
-  /*
-   * DONO, 2026-09-10 — o atalho "selecionar o portfólio" lia a rota da
-   * ELEGIBILIDADE, que morreu com o conceito. O portfólio em si não morreu:
-   * ele tem rota própria, e é dela que a lista vem.
-   */
-  const { data: portfolio } = useQuery({
-    queryKey: ["assessment-portfolio", assessmentId],
-    queryFn: assessmentId ? () => api.assessmentCapabilities(assessmentId) : skipToken,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-  });
-
-  const MANY_CAPABILITIES_THRESHOLD = 10;
-  const manyCapabilitiesSelected = selected.length > MANY_CAPABILITIES_THRESHOLD;
-  const [capabilityPage, setCapabilityPage] = useState(0);
-  const capabilityIdsKey = capabilityIds.join(",");
-  useEffect(() => {
-    setCapabilityPage(0);
-  }, [capabilityIdsKey]);
-  const visibleCapabilities = manyCapabilitiesSelected
-    ? selected.slice(capabilityPage, capabilityPage + 1)
-    : selected;
-
   const transition = (nextStatus: Assessment["status"]) => {
     if (!assessment) return;
     setTransitionError(null);
     setTransitioning(true);
-    const isReopen = status === "Completed" && nextStatus === "In Review";
     store
       .setAssessmentStatus(assessment.id, nextStatus)
       .catch((error: unknown) =>
         setTransitionError(
           error instanceof UserFacingError
             ? error.message
-            : t(
-                isReopen
-                  ? "asmt.reopenError"
-                  : nextStatus === "Completed"
-                    ? "asmt.completeError"
-                    : "asmt.submitError",
-              ),
+            : t(nextStatus === "Completed" ? "asmt.completeError" : "asmt.reopenError"),
         ),
       )
       .finally(() => setTransitioning(false));
   };
+
+  const completionBlocked = incompleteSelf || incompleteLeaderFinal;
 
   return (
     <>
@@ -197,27 +175,31 @@ function AssessmentsScreen() {
         description={t("asmt.subtitle")}
         help={help}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <PersonCombobox
               picker={PersonPicker.oneFor(user, assessable, professionalId)}
               onChange={([id]) => setProfessionalId(id ?? "")}
               label={t("asmt.professional")}
               className="w-56"
             />
-            <CapabilityCombobox
-              capabilities={store.capabilities}
-              selected={selected}
-              onToggle={toggleCapability}
-              onSelectAll={setCapabilityIds}
-              className="w-56"
-            />
-            {Array.isArray(portfolio) && portfolio.length > 0 && (
+            {canComplete && (
               <Button
-                variant="outline"
                 size="sm"
-                onClick={() => setCapabilityIds(portfolio.map((entry) => entry.capabilityId))}
+                disabled={transitioning || completionBlocked}
+                title={incompleteSelf ? t("asmt.incompleteSelf") : undefined}
+                onClick={() => setConfirmingCompletion(true)}
               >
-                {t("asmt.selectPortfolio")}
+                {transitioning ? t("asmt.completing") : t("asmt.complete")}
+              </Button>
+            )}
+            {canReopen && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={transitioning}
+                onClick={() => transition("Draft")}
+              >
+                {transitioning ? t("asmt.reopening") : t("asmt.reopen")}
               </Button>
             )}
           </div>
@@ -230,66 +212,25 @@ function AssessmentsScreen() {
         </p>
       )}
 
-      {assessment && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 surface-inset px-3 py-2 text-sm">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {t("asmt.status")}
-          </span>
-          <StatusBadge
-            tone={assessmentStatusTone[assessment.status]}
-            label={labels.assessmentStatus[assessment.status]}
-          />
-          {isCompleted && <span className="text-xs text-muted-foreground">{t("asmt.locked")}</span>}
-          <div className="ml-auto flex items-center gap-2">
-            {canSubmit && (
-              <Button
-                size="sm"
-                disabled={transitioning || incompleteSelf}
-                title={incompleteSelf ? t("asmt.incompleteSelf") : undefined}
-                onClick={() => transition("In Review")}
-              >
-                {transitioning ? t("asmt.submitting") : t("asmt.submit")}
-              </Button>
-            )}
-            {canComplete && (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={transitioning || incompleteLeaderFinal}
-                onClick={() => setConfirmingCompletion(true)}
-              >
-                {transitioning ? t("asmt.completing") : t("asmt.complete")}
-              </Button>
-            )}
-            {canReopen && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={transitioning}
-                onClick={() => transition("In Review")}
-              >
-                {transitioning ? t("asmt.reopening") : t("asmt.reopen")}
-              </Button>
-            )}
-          </div>
-          {canSubmit && incompleteSelf && (
-            <p className="w-full text-xs text-muted-foreground">{t("asmt.incompleteSelf")}</p>
-          )}
-          {canComplete && incompleteLeaderFinal && (
-            <p className="w-full text-xs text-muted-foreground">
-              {t("asmt.incompleteLeaderFinal.pending", {
-                lista: completion.pendingLeaderFinal
-                  .map((competency) => competency.name)
-                  .join(", "),
-              })}
-            </p>
-          )}
-          {transitionError && (
-            <p className="w-full text-xs text-destructive" role="alert">
-              {transitionError}
-            </p>
-          )}
-        </div>
+      {/*
+       * O QUE FALTA PARA CONCLUIR fica ao lado do que se conclui — sem selo de
+       * estado e sem moldura própria. É a única linha do antigo bloco de
+       * situação que dizia algo que a pessoa não conseguia ver sozinha.
+       */}
+      {canComplete && incompleteSelf && (
+        <p className="mb-3 text-xs text-muted-foreground">{t("asmt.incompleteSelf")}</p>
+      )}
+      {canComplete && !incompleteSelf && incompleteLeaderFinal && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          {t("asmt.incompleteLeaderFinal.pending", {
+            lista: completion.pendingLeaderFinal.map((competency) => competency.name).join(", "),
+          })}
+        </p>
+      )}
+      {transitionError && (
+        <p className="mb-3 text-xs text-destructive" role="alert">
+          {transitionError}
+        </p>
       )}
 
       {assessment && canComplete && (
@@ -316,8 +257,6 @@ function AssessmentsScreen() {
           onCancel={() => setConfirmingCompletion(false)}
         />
       )}
-
-      {assessment && <CareerPortfolioSection assessment={assessment} isLead={isLead} />}
 
       {primeiroQueFalta ? (
         <EmptyStateCallToAction
@@ -369,55 +308,16 @@ function AssessmentsScreen() {
             </>
           )}
         </SectionCard>
-      ) : selected.length === 0 ? (
-        <SectionCard title={t("asmt.noCapability")}>
-          <p className="text-sm text-muted-foreground">{t("asmt.pickCapability")}</p>
-        </SectionCard>
       ) : (
-        <div className="space-y-4">
-          {manyCapabilitiesSelected && (
-            <Callout tone="warning" className="flex flex-wrap items-center justify-between gap-3">
-              <p>{t("asmt.manyCapabilities.warning", { n: selected.length })}</p>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={capabilityPage === 0}
-                  onClick={() => setCapabilityPage((p) => p - 1)}
-                >
-                  {t("asmt.manyCapabilities.prev")}
-                </Button>
-                <select
-                  aria-label={t("asmt.manyCapabilities.jump")}
-                  className="rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-                  value={capabilityPage}
-                  onChange={(e) => setCapabilityPage(Number(e.target.value))}
-                >
-                  {selected.map((cat, index) => (
-                    <option key={cat.id} value={index}>
-                      {t("asmt.manyCapabilities.position", {
-                        current: index + 1,
-                        total: selected.length,
-                      })}{" "}
-                      — {cat.name}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={capabilityPage >= selected.length - 1}
-                  onClick={() => setCapabilityPage((p) => p + 1)}
-                >
-                  {t("asmt.manyCapabilities.next")}
-                </Button>
-              </div>
-            </Callout>
-          )}
-          {visibleCapabilities.map((cat) => (
+        <ScrollPane
+          label={t("asmt.allCapabilities")}
+          height={PaneHeight.restOfPage()}
+          className="space-y-4"
+        >
+          {store.capabilities.map((capability) => (
             <CapabilityAssessmentCard
-              key={cat.id}
-              capability={cat}
+              key={capability.id}
+              capability={capability}
               assessment={assessment}
               status={status}
               canEditSelf={canEditSelf}
@@ -428,7 +328,7 @@ function AssessmentsScreen() {
               onToggleComment={(id) => setOpenComment((prev) => (prev === id ? null : id))}
             />
           ))}
-        </div>
+        </ScrollPane>
       )}
     </>
   );

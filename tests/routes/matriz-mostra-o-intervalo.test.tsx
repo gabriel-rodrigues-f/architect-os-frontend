@@ -35,7 +35,7 @@ const curationPolicyMax4: FetchRoute = (href, init) =>
     : undefined;
 
 const limitRefusal =
-  'A capacidade "Full Capability" já está no limite de 4 competências ativas — arquive uma competência antes de ativar outra.';
+  'A capacidade "Full Capability" já está no limite de 4 competências — arquive uma competência antes de ativar outra.';
 
 const refuseCompetencyCreation: FetchRoute = (href, init) =>
   href.endsWith(apiPath("/competencies")) && init?.method === "POST"
@@ -53,16 +53,14 @@ const belowMinimum: Capability = {
   id: "below",
   name: "Data Platforms",
   short: "Data",
-  active: true,
-  curation: { activeCompetencyCount: 1, status: "REQUIRES_CURATION" },
+  curation: { competencyCount: 1, status: "REQUIRES_CURATION" },
 };
 
 const atMaximum: Capability = {
   id: "full",
   name: "Full Capability",
   short: "Full",
-  active: true,
-  curation: { activeCompetencyCount: 4, status: "READY" },
+  curation: { competencyCount: 4, status: "READY" },
 };
 
 const state: AppState = {

@@ -241,14 +241,14 @@ function TeamRuleEditor({
   const [conflict, setConflict] = useState(false);
   const { submitting, error, run } = useAsyncSubmit(t("teamRules.save.error"));
 
-  const capabilities = store.capabilities.filter((capability) => capability.active);
+  const capabilities = store.capabilities;
   const aguardandoCuradoria = capabilities.filter(
     (capability) =>
       editor.capabilityIds.includes(capability.id) &&
       capability.curation.status === "REQUIRES_CURATION",
   );
-  const competencies = store.competencies.filter(
-    (competency) => competency.active && editor.capabilityIds.includes(competency.capabilityId),
+  const competencies = store.competencies.filter((competency) =>
+    editor.capabilityIds.includes(competency.capabilityId),
   );
 
   if (!editor.hasRule && !drafting) {

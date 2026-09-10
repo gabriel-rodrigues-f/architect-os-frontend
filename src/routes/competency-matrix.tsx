@@ -26,7 +26,7 @@ import {
   SectionCard,
   SingleSelectFilter,
 } from "@/components/app";
-import { PaneHeight, PaneRhythm } from "@/lib/design";
+import { PaneHeight } from "@/lib/design";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -181,7 +181,7 @@ function MatrixScreen() {
       "matrix.bulkRemoval.toast",
       {
         removidas: outcomes.filter((outcome) => outcome.outcome === "removed").length,
-        arquivadas: outcomes.filter((outcome) => outcome.outcome === "archived").length,
+        recusadas: outcomes.filter((outcome) => outcome.outcome === "refused").length,
       },
       result.value,
     );
@@ -193,12 +193,10 @@ function MatrixScreen() {
     const { competency } = confirmDelete;
     const result = await runRemoval(() => viewModel.removeCompetency(competency.id));
     setConfirmDelete(null);
+    // A recusa por vínculo vem do serviço (409 COMPETENCY_IN_USE) e já é
+    // mostrada pelo `MutationRunner` — aqui só se anuncia o que de fato saiu.
     if (!result.ok) return;
-    toast.success(
-      result.value.archived
-        ? t("matrix.archive.toast", { nome: competency.name })
-        : t("matrix.delete.toast", { nome: competency.name }),
-    );
+    toast.success(t("matrix.delete.toast", { nome: competency.name }));
   };
 
   const startEditingCapability = (capability: Capability) => {
@@ -252,11 +250,7 @@ function MatrixScreen() {
     const result = await runRemoval(() => viewModel.removeCapability(capability.id));
     setConfirmDeleteCapability(null);
     if (!result.ok) return;
-    toast.success(
-      result.value.archived
-        ? t("cap.archive.toast", { nome: capability.name })
-        : t("cap.delete.toast", { nome: capability.name }),
-    );
+    toast.success(t("cap.delete.toast", { nome: capability.name }));
   };
 
   const capabilityCompetencyCount = (capabilityId: string) =>
@@ -365,17 +359,17 @@ function MatrixScreen() {
 
       {(() => {
         const term = search.trim().toLowerCase();
-        const activeCapabilities = store.capabilities.filter((cat) => cat.active);
+        // O catálogo é o que existe (dono, 2026-09-10) — não há mais recorte
+        // de "ativas" antes da busca.
         const bySearch = term
-          ? activeCapabilities.filter(
+          ? store.capabilities.filter(
               (cat) =>
                 cat.name.toLowerCase().includes(term) ||
                 store.competencies.some(
-                  (c) =>
-                    c.capabilityId === cat.id && c.active && c.name.toLowerCase().includes(term),
+                  (c) => c.capabilityId === cat.id && c.name.toLowerCase().includes(term),
                 ),
             )
-          : activeCapabilities;
+          : store.capabilities;
         const visibleCapabilities =
           curationFilter === "all"
             ? bySearch
@@ -399,28 +393,24 @@ function MatrixScreen() {
 
         return (
           /*
-           * TRÊS CARTÕES, e o resto rolando (dono, 2026-09-10): *"Vamos
-           * diminuir a caixa de capacidades para mostrar apenas 3
-           * capacidades, o resto somente scrollando. Consequentemente
-           * conseguiremos ver também 'Arquivadas' na tela."*
+           * A CAIXA VOLTA A OCUPAR O RESTO DA PÁGINA (dono, 2026-09-10, mais
+           * tarde no mesmo dia).
            *
-           * Não é caixa nova: é a MESMA, com outra medida. Ela deixa de pedir
-           * "o resto da página" — que agora é das Arquivadas, logo abaixo — e
-           * passa a pedir uma medida de CONTEÚDO, no ritmo do cartão de
-           * capacidade (`--pane-card-h`). O número é do dono; o pixel mora no
-           * token, e o token é MEDIDO: o cartão mede 94,89 e o intervalo 16,
-           * logo o passo é 110,89 e o token vale 112. Com o ritmo genérico
-           * antigo (92) esta caixa mostrava dois cartões e meio.
+           * De manhã ele pediu TRÊS cartões: *"Vamos diminuir a caixa de
+           * capacidades para mostrar apenas 3 capacidades, o resto somente
+           * scrollando. Consequentemente conseguiremos ver também 'Arquivadas'
+           * na tela."* O teto de três existia POR CAUSA das Arquivadas — era
+           * preciso abrir espaço embaixo para elas.
+           *
+           * À tarde ele mandou remover o conceito de arquivado, e a segunda
+           * caixa saiu da tela. O teto perdeu a razão de ser: mantê-lo deixaria
+           * três cartões no alto e a página vazia embaixo. A caixa volta a ser
+           * a que ocupa o resto — que é o que ela era antes do pedido da manhã.
            */
-          <ScrollPane
-            label={t("pane.competencyCatalog.label")}
-            height={PaneHeight.items(3, PaneRhythm.CARD)}
-          >
+          <ScrollPane label={t("pane.competencyCatalog.label")} height={PaneHeight.restOfPage()}>
             <div className="space-y-4">
               {visibleCapabilities.map((cat) => {
-                const comps = store.competencies.filter(
-                  (c) => c.capabilityId === cat.id && c.active,
-                );
+                const comps = store.competencies.filter((c) => c.capabilityId === cat.id);
 
                 const isExpanded = expandedIds.has(cat.id) || term.length > 0;
                 return (
@@ -428,7 +418,7 @@ function MatrixScreen() {
                     key={cat.id}
                     title={cat.name}
                     description={t("matrix.competencyCount", {
-                      n: cat.curation.activeCompetencyCount,
+                      n: cat.curation.competencyCount,
                       min: viewModel.limits.min,
                       max: viewModel.limits.max,
                     })}
@@ -645,10 +635,6 @@ function MatrixScreen() {
         onConfirm={removeCapability}
       />
 
-      {isAdmin && (
-        <ArchivedCompetencies capabilities={store.capabilities} competencies={store.competencies} />
-      )}
-
       {editing && <CompetencyEditDialog competency={editing} onClose={() => setEditing(null)} />}
       {creatingIn && (
         <CompetencyCreateDialog capability={creatingIn} onClose={() => setCreatingIn(null)} />
@@ -750,7 +736,7 @@ function BulkRemovalResultDialog({
                 <span className="text-xs text-muted-foreground">
                   {outcome.outcome === "removed"
                     ? t("matrix.bulkRemoval.result.removed")
-                    : t("matrix.bulkRemoval.result.archived")}
+                    : t("matrix.bulkRemoval.result.refused")}
                   {affected ? ` (${affected})` : ""}
                 </span>
               </li>
@@ -1016,74 +1002,13 @@ function CapabilityFoundationDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ArchivedCompetencies({
-  capabilities,
-  competencies,
-}: {
-  capabilities: Capability[];
-  competencies: Competency[];
-}) {
-  const viewModel = useCompetencyMatrixViewModel();
-  const { t } = useI18n();
-  const archivedCapabilities = capabilities.filter((c) => !c.active);
-  const archivedCompetencies = competencies.filter(
-    (c) => !c.active && archivedCapabilities.every((cat) => cat.id !== c.capabilityId),
-  );
-  if (!archivedCapabilities.length && !archivedCompetencies.length) return null;
-
-  /*
-   * A CAIXA QUE OCUPA O RESTO DA PÁGINA (dono, 2026-09-10): *"Ocupe a tela com
-   * a quantidade necessária de capacidades arquivadas para se enxergar todo o
-   * conteúdo da página em zoom 100%. O restante, somente scrollando esse grupo
-   * de 'Arquivadas'."*
-   *
-   * Quantas cabem NÃO é conta desta tela: é o `PageFillingPane` (`becfd24`) —
-   * a caixa não tem teto, se anuncia pelo marcador e é o filho que estica e
-   * encolhe na coluna do quadro. Quem mede é o navegador. Ela é a ÚNICA da
-   * tela a se anunciar: a de capacidades, acima, tem teto em itens.
-   */
-  return (
-    <SectionCard
-      className="mt-6"
-      title={t("matrix.archived.title")}
-      description={t("matrix.archived.hint")}
-    >
-      <ScrollPane label={t("pane.archivedCatalog.label")} height={PaneHeight.restOfPage()}>
-        <ul className="space-y-2 text-sm">
-          {archivedCapabilities.map((cat) => (
-            <li key={cat.id} className="flex items-center justify-between gap-2">
-              <span>
-                {cat.name}{" "}
-                <span className="text-xs text-muted-foreground">
-                  ({t("matrix.archived.capability")})
-                </span>
-              </span>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => viewModel.restoreCapability(cat.id)}
-              >
-                {t("matrix.restore")}
-              </Button>
-            </li>
-          ))}
-          {archivedCompetencies.map((c) => (
-            <li key={c.id} className="flex items-center justify-between gap-2">
-              <span>{c.name}</span>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => viewModel.restoreCompetency(c.id)}
-              >
-                {t("matrix.restore")}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </ScrollPane>
-    </SectionCard>
-  );
-}
+/*
+ * A ABA "ARQUIVADAS" NÃO EXISTE MAIS — dono (2026-09-10): *"Em Catálogo de
+ * Competências > Arquivadas, remova o conceito de arquivado."* O bloco
+ * `ArchivedCompetencies` morava aqui, com a caixa que ocupava o resto da
+ * página e os dois botões de "Restaurar". Nada disso tem sentido quando o que
+ * sai do catálogo é APAGADO: não há o que listar, e não há o que restaurar.
+ */
 
 function CompetencyCreateDialog({
   capability,

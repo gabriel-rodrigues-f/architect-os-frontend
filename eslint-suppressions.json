@@ -36,7 +36,7 @@
   },
   "src/components/app/assessments-shared.tsx": {
     "id-length": {
-      "count": 18
+      "count": 16
     }
   },
   "src/components/app/charts.tsx": {
@@ -146,12 +146,12 @@
   },
   "src/lib/selectors.ts": {
     "id-length": {
-      "count": 15
+      "count": 18
     }
   },
   "src/lib/store.tsx": {
     "id-length": {
-      "count": 103
+      "count": 101
     }
   },
   "src/lib/team-report-pdf.ts": {
@@ -196,7 +196,7 @@
   },
   "src/routes/assessments.tsx": {
     "id-length": {
-      "count": 6
+      "count": 1
     }
   },
   "src/routes/capability-map.tsx": {
@@ -204,9 +204,14 @@
       "count": 2
     }
   },
+  "src/routes/compare.tsx": {
+    "id-length": {
+      "count": 5
+    }
+  },
   "src/routes/competency-matrix.tsx": {
     "id-length": {
-      "count": 18
+      "count": 15
     }
   },
   "src/routes/cycles.tsx": {
@@ -249,6 +254,11 @@
       "count": 1
     }
   },
+  "src/routes/training-needs.tsx": {
+    "id-length": {
+      "count": 6
+    }
+  },
   "src/routes/users.tsx": {
     "id-length": {
       "count": 2
@@ -270,6 +280,11 @@
     }
   },
   "tests/components/app/gap-analysis-memo.test.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "tests/components/app/nav-settings-icon.test.ts": {
     "id-length": {
       "count": 2
     }
@@ -391,7 +406,7 @@
   },
   "tests/lib/selectors.test.ts": {
     "id-length": {
-      "count": 18
+      "count": 24
     }
   },
   "tests/lib/store-version-reconcile.test.tsx": {
@@ -402,6 +417,11 @@
   "tests/lib/text.test.ts": {
     "id-length": {
       "count": 2
+    }
+  },
+  "tests/lib/training-needs-orphan-competency.test.ts": {
+    "id-length": {
+      "count": 1
     }
   },
   "tests/lib/view-models/assessment-view-model.test.ts": {
@@ -456,12 +476,7 @@
   },
   "tests/routes/assessment-lifecycle.test.tsx": {
     "id-length": {
-      "count": 5
-    }
-  },
-  "tests/routes/assessments-portfolio.test.tsx": {
-    "id-length": {
-      "count": 6
+      "count": 4
     }
   },
   "tests/routes/assessments-responsive.test.tsx": {
@@ -517,6 +532,11 @@
   "tests/routes/team-roles-from-career-levels.test.tsx": {
     "id-length": {
       "count": 1
+    }
+  },
+  "tests/routes/training-needs-scale.test.tsx": {
+    "id-length": {
+      "count": 2
     }
   }
 }

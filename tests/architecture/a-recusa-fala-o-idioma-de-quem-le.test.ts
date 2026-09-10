@@ -128,6 +128,13 @@ const NA_PORTA: readonly string[] = [
 // dívida — a das transições por time. A da Calibração de Líderes NÃO estava
 // nesta conta: ela tinha código próprio (`CALIBRATION_RESERVED_TO_MANAGER`) e
 // frase composta, e saiu do lado TRADUZIDO (68 → 67).
+// veredito (§7 item 6 e passo 5).
+// 82 → 80 (fatia AVALIAÇÃO, 2026-09-10): a etapa "Em revisão" e o conceito de
+// arquivado saíram do produto, e com eles quatro recusas de portfólio
+// (`PORTFOLIO_BELOW_MINIMUM`, `PORTFOLIO_CONFIRMED_BELOW_MINIMUM`,
+// `PORTFOLIO_UNCONFIRMED_ITEMS`, `PORTFOLIO_NOT_IN_REVIEW`); entraram duas
+// (`ASSESSMENT_REOPEN_OUTSIDE_CYCLE`, `COMPETENCY_IN_USE`), as duas ainda em
+// prosa. Desceu porque o produto encolheu, não porque alguém traduziu.
 const DIVIDA_DE_HOJE = 81;
 
 /**
@@ -322,6 +329,11 @@ describe("procedência da cópia do contrato do backend", () => {
     // `CalibrationNotVisibleError` (a tela de Calibração de Líderes) e
     // `TeamTransitionsNotVisibleError` (o relatório agregado de transições
     // por time), com as duas rotas que as lançavam.
+    // A AVALIAÇÃO SIMPLIFICA E O ARQUIVADO MORRE (dono, 2026-09-10): 189 → 187.
+    // Saíram as quatro classes de portfólio que a etapa "Em revisão"
+    // sustentava; entraram `AssessmentReopenOutsideCycleError` (a janela do
+    // mesmo ciclo) e `CompetencyInUseError` (a recusa de excluir o que tem
+    // gente vinculada).
     expect(Object.keys(CLASSES).length).toBe(187);
   });
 

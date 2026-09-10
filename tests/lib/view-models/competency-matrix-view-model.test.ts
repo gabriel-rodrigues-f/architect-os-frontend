@@ -38,11 +38,10 @@ function fakeService(): CatalogService & {
     removeCapability: vi.fn(async () => ({ archived: false, competenciesRemoved: 0 })),
     addCompetency: vi.fn(async (input) => ({ ...input, id: "nova-competencia" }) as Competency),
     renameCompetency: vi.fn(
-      async (id: string, name: string) =>
-        ({ id, name, capabilityId: "cloud", active: true }) as Competency,
+      async (id: string, name: string) => ({ id, name, capabilityId: "cloud" }) as Competency,
     ),
     updateCompetency: vi.fn(),
-    removeCompetency: vi.fn(async () => ({ archived: false })),
+    removeCompetency: vi.fn(async () => undefined),
     removeCompetencies: vi.fn(async () => ({ outcomes: [] })),
   };
 }
@@ -56,9 +55,8 @@ function capability(overrides: Partial<Capability> = {}): Capability {
     id: "cloud",
     name: "Cloud Architecture",
     short: "Cloud",
-    active: true,
     curation: {
-      activeCompetencyCount: 2,
+      competencyCount: 2,
       status: "REQUIRES_CURATION",
     },
     ...overrides,
@@ -79,7 +77,6 @@ describe("CompetencyMatrixViewModel", () => {
       const { vm, service } = makeVm();
       const foundation = {
         name: "Cloud Architecture",
-        active: true,
         competencies: [{ name: "Kubernetes" }, { name: "Serverless" }, { name: "IAM" }],
       };
       await vm.foundCapability(foundation);
@@ -109,17 +106,11 @@ describe("CompetencyMatrixViewModel", () => {
     });
   });
 
-  describe("removeCapability / restoreCapability", () => {
+  describe("removeCapability", () => {
     it("removeCapability delega 1:1 para o serviço", async () => {
       const { vm, service } = makeVm();
       await vm.removeCapability("cloud");
       expect(service.removeCapability).toHaveBeenCalledWith("cloud");
-    });
-
-    it("restoreCapability reativa via updateCapability(id, { active: true })", () => {
-      const { vm, service } = makeVm();
-      vm.restoreCapability("cloud");
-      expect(service.updateCapability).toHaveBeenCalledWith("cloud", { active: true });
     });
   });
 
@@ -128,25 +119,24 @@ describe("CompetencyMatrixViewModel", () => {
       const { vm } = makeVm();
       expect(
         vm.isCapabilityAtCapacity(
-          capability({ curation: { ...capability().curation, activeCompetencyCount: 5 } }),
+          capability({ curation: { ...capability().curation, competencyCount: 5 } }),
         ),
       ).toBe(false);
       expect(
         vm.isCapabilityAtCapacity(
-          capability({ curation: { ...capability().curation, activeCompetencyCount: 6 } }),
+          capability({ curation: { ...capability().curation, competencyCount: 6 } }),
         ),
       ).toBe(true);
     });
   });
 
   describe("createCompetency", () => {
-    it("monta o payload SÓ com nome cortado, capacidade e active:true — sem requirementType/expected (contrato Fase 2)", async () => {
+    it("monta o payload SÓ com nome cortado e capacidade — sem `active` nem requirementType/expected", async () => {
       const { vm, service } = makeVm();
       await vm.createCompetency("cloud", "  Kubernetes  ");
       expect(service.addCompetency).toHaveBeenCalledWith({
         name: "Kubernetes",
         capabilityId: "cloud",
-        active: true,
       });
     });
   });
@@ -177,12 +167,6 @@ describe("CompetencyMatrixViewModel", () => {
       await vm.removeCompetency("cloud-k8s");
       expect(service.removeCompetency).toHaveBeenCalledWith("cloud-k8s");
     });
-
-    it("restoreCompetency reativa via updateCompetency(id, { active: true })", () => {
-      const { vm, service } = makeVm();
-      vm.restoreCompetency("cloud-k8s");
-      expect(service.updateCompetency).toHaveBeenCalledWith("cloud-k8s", { active: true });
-    });
   });
 
   /**
@@ -200,7 +184,7 @@ describe("CompetencyMatrixViewModel", () => {
     it("isCapabilityAtCapacity respeita maxActiveCompetencies=3", () => {
       const at = (n: number) =>
         vmMax3.isCapabilityAtCapacity(
-          capability({ curation: { ...capability().curation, activeCompetencyCount: n } }),
+          capability({ curation: { ...capability().curation, competencyCount: n } }),
         );
       expect(at(2)).toBe(false);
       expect(at(3)).toBe(true);

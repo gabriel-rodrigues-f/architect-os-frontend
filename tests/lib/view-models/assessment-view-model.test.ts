@@ -86,18 +86,17 @@ function makeVm(item = fakeItemService(), portfolio = fakePortfolioService()) {
 
 describe("AssessmentViewModel", () => {
   describe("permissionsFor", () => {
-    it("o profissional em Draft é SUJEITO, não agente (dono, 2026-09-06): lê, e nem registra a autoavaliação nem envia para revisão", () => {
+    it("o profissional em Draft é SUJEITO, não agente (dono, 2026-09-06): lê, e não registra a autoavaliação", () => {
       const { vm } = makeVm();
       const result = vm.permissionsFor(fixtureMemberUser, "ana", anaProfessional, baseAssessment);
       expect(result.isSubject).toBe(true);
       expect(result.isLead).toBe(false);
       expect(result.canEditSelf).toBe(false);
-      expect(result.canSubmit).toBe(false);
       expect(result.canEditLeaderFinal).toBe(false);
       expect(result.seesAssessmentNumbers).toBe(true);
     });
 
-    it("quem lidera registra a autoavaliação em Draft e envia para revisão (dono, 2026-09-06)", () => {
+    it("quem lidera registra a autoavaliação em Draft (dono, 2026-09-06)", () => {
       const { vm } = makeVm();
       const result = vm.permissionsFor(
         fixtureAssignedTechLeadUser,
@@ -108,8 +107,8 @@ describe("AssessmentViewModel", () => {
       expect(result.isSubject).toBe(false);
       expect(result.isLead).toBe(true);
       expect(result.canEditSelf).toBe(true);
-      expect(result.canSubmit).toBe(true);
-      expect(result.canEditLeaderFinal).toBe(false);
+      // Os três campos na MESMA etapa desde 2026-09-10.
+      expect(result.canEditLeaderFinal).toBe(true);
     });
 
     it("tech lead com ficha própria NÃO é dono da própria avaliação nem líder de si — nada a fazer (dono, 2026-09-06)", () => {
@@ -119,13 +118,12 @@ describe("AssessmentViewModel", () => {
       expect(result.isSubject).toBe(true);
       expect(result.isLead).toBe(false);
       expect(result.canEditSelf).toBe(false);
-      expect(result.canSubmit).toBe(false);
       expect(result.canEditLeaderFinal).toBe(false);
     });
 
     it("Tech Lead com vínculo em In Review: pontua (canEditLeaderFinal), mas quem CONCLUI é o gerente (D4, 2026-09-05)", () => {
       const { vm } = makeVm();
-      const assessment = { ...baseAssessment, status: "In Review" as const };
+      const assessment = { ...baseAssessment, status: "Draft" as const };
       const result = vm.permissionsFor(
         fixtureAssignedTechLeadUser,
         "ana",
@@ -136,7 +134,7 @@ describe("AssessmentViewModel", () => {
       expect(result.isLead).toBe(true);
       expect(result.canEditLeaderFinal).toBe(true);
       expect(result.canComplete).toBe(false);
-      expect(result.canEditSelf).toBe(false);
+      expect(result.canEditSelf).toBe(true);
 
       const doGerente = vm.permissionsFor(
         fixtureAssignedManagerUser,
@@ -151,7 +149,7 @@ describe("AssessmentViewModel", () => {
     it("lead sobre profissional SEM TIME não ganha canEditLeaderFinal — UX-001 pós-Fase 2 (vínculo é o time; lead de outro time nem recebe a pessoa no recorte do servidor)", () => {
       const { vm } = makeVm();
       const teamlessAna = { ...anaProfessional, teamId: null };
-      const assessment = { ...baseAssessment, status: "In Review" as const };
+      const assessment = { ...baseAssessment, status: "Draft" as const };
       const result = vm.permissionsFor(
         fixtureUnassignedTechLeadUser,
         "ana",
@@ -164,7 +162,7 @@ describe("AssessmentViewModel", () => {
 
     it("o administrador (ADMIN) lidera qualquer pessoa: pontua e conclui (regra 6, 2026-09-08)", () => {
       const { vm } = makeVm();
-      const assessment = { ...baseAssessment, status: "In Review" as const };
+      const assessment = { ...baseAssessment, status: "Draft" as const };
       const result = vm.permissionsFor(fixtureAdminUser, "ana", anaProfessional, assessment);
       expect(result.isSubject).toBe(false);
       expect(result.isLead).toBe(true);
@@ -174,7 +172,7 @@ describe("AssessmentViewModel", () => {
 
     it("o suporte não é lead nem dono: não pontua nem conclui (D1/D3)", () => {
       const { vm } = makeVm();
-      const assessment = { ...baseAssessment, status: "In Review" as const };
+      const assessment = { ...baseAssessment, status: "Draft" as const };
       const result = vm.permissionsFor(fixtureSupportUser, "ana", anaProfessional, assessment);
       expect(result.isSubject).toBe(false);
       expect(result.isLead).toBe(false);
@@ -256,7 +254,6 @@ describe("AssessmentViewModel", () => {
       expect(result.status).toBeUndefined();
       expect(result.incompleteSelf).toBe(false);
       expect(result.incompleteLeaderFinal).toBe(false);
-      expect(result.canSubmit).toBe(false);
     });
   });
 
@@ -335,9 +332,8 @@ describe("AssessmentViewModel", () => {
       id,
       name: id,
       short: id,
-      active: true,
       curation: {
-        activeCompetencyCount: 6,
+        competencyCount: 6,
         status: "READY",
       },
     });
@@ -345,9 +341,8 @@ describe("AssessmentViewModel", () => {
       id,
       name: id,
       short: id,
-      active: true,
       curation: {
-        activeCompetencyCount: 2,
+        competencyCount: 2,
         status: "REQUIRES_CURATION",
       },
     });

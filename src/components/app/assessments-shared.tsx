@@ -1,17 +1,9 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
-import { EmptyState, GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
+import { GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
-import {
-  CapabilityPortfolioMeter,
-  PortfolioStage,
-  PortfolioStageChip,
-} from "@/components/app/CapabilityPortfolioMeter";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
-import { QuerySection } from "@/components/app/QuerySection";
-import { TruncatedText } from "@/components/app/TruncatedText";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type {
@@ -23,13 +15,11 @@ import type {
   Competency,
   Level,
 } from "@/lib/domain";
-import { api, ApiError, type CommentInput } from "@/lib/api";
+import { api, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import { EmptySubject } from "@/lib/empty-subject";
 import { useAsyncSubmit, useNarrowViewport } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { stateContextCatalog } from "@/lib/state-contexts";
 import { useStore } from "@/lib/store";
 import { defaultDateFormatter } from "@/lib/text";
 import { defaultCommentSignature } from "@/lib/comment-signature";
@@ -262,254 +252,10 @@ function CommentForm({
   );
 }
 
-export const assessmentStatusTone: Record<Assessment["status"], "neutral" | "progress" | "done"> = {
+export const assessmentStatusTone: Record<Assessment["status"], "neutral" | "done"> = {
   Draft: "neutral",
-  "In Review": "progress",
   Completed: "done",
 };
-
-export function CareerPortfolioSection({
-  assessment,
-  isLead,
-}: {
-  assessment: Assessment;
-  isLead: boolean;
-}) {
-  const store = useStore();
-  const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const viewModel = useAssessmentViewModel();
-
-  const [selectedCapabilityId, setSelectedCapabilityId] = useState("");
-  const {
-    submitting: busy,
-    error: actionError,
-    clearError: clearActionError,
-    run,
-  } = useAsyncSubmit(t("asmt.portfolio.error"));
-  const [pendingRemoval, setPendingRemoval] = useState<{ id: string; name: string } | null>(null);
-
-  /*
-   * DONO, 2026-09-10 — a fonte deste bloco era `GET /assessments/:id/
-   * eligibility`, que morreu com a elegibilidade. O portfólio em si não
-   * morreu: ele tem rota própria (`/capabilities`), e o ESTÁGIO de cada
-   * capacidade — o comparativo contra o alvo congelado — se calcula aqui,
-   * sobre os itens que a avaliação já traz.
-   */
-  const queryKey = ["assessment-portfolio", assessment.id];
-  const {
-    data: portfolio,
-    isPending,
-    isError,
-    refetch,
-  } = useQuery({
-    queryKey,
-    queryFn: () => api.assessmentCapabilities(assessment.id),
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-  });
-
-  const invalidateAll = () => {
-    void queryClient.invalidateQueries({ queryKey });
-
-    void stateContextCatalog.invalidateAll(queryClient);
-  };
-
-  // Quem lidera propõe o portfólio em Rascunho e confirma Em Revisão (dono, 2026-09-06).
-  const canPropose = isLead && assessment.status === "Draft";
-  const canConfirm = isLead && assessment.status === "In Review";
-
-  const addCapability = () => {
-    if (!selectedCapabilityId) return;
-    void run(() => viewModel.proposeCapability(assessment.id, selectedCapabilityId)).then(
-      (result) => {
-        if (!result.ok) return;
-        setSelectedCapabilityId("");
-        invalidateAll();
-      },
-    );
-  };
-
-  const attemptRemove = (capabilityId: string, capabilityName: string, force = false) => {
-    void run(() => viewModel.removeCapability(assessment.id, capabilityId, force)).then(
-      (result) => {
-        if (result.ok) {
-          invalidateAll();
-          setPendingRemoval(null);
-          return;
-        }
-        if (
-          !force &&
-          result.error instanceof ApiError &&
-          result.error.code === "PORTFOLIO_HAS_ANSWERED_ITEMS"
-        ) {
-          clearActionError();
-          setPendingRemoval({ id: capabilityId, name: capabilityName });
-        }
-      },
-    );
-  };
-
-  const confirmCapability = (capabilityId: string) => {
-    void run(() => viewModel.confirmCapability(assessment.id, capabilityId)).then((result) => {
-      if (result.ok) invalidateAll();
-    });
-  };
-
-  return (
-    <QuerySection
-      query={{ data: portfolio, isPending, isError, refetch }}
-      className="mb-4"
-      title={t("asmt.portfolio.title")}
-      description={t("asmt.portfolio.subtitle")}
-      errorMessage={t("asmt.portfolio.loadError")}
-      /*
-       * O corpo que não é LISTA é ausência, não portfólio vazio de uma linha
-       * só: mesma guarda que a fonte anterior tinha (`!data.capabilities`),
-       * traduzida para a forma nova. Sem ela, um corpo inesperado viraria
-       * `.map` sobre não-array e derrubaria a tela inteira.
-       */
-      isEmpty={(data) => !Array.isArray(data)}
-
-      skeleton={
-        <div className="space-y-2">
-          <div className="h-9 animate-pulse rounded-md bg-secondary" />
-          <div className="h-9 animate-pulse rounded-md bg-secondary" />
-          <div className="h-9 w-2/3 animate-pulse rounded-md bg-secondary" />
-        </div>
-      }
-    >
-      {(portfolioRows) => {
-        const entries = viewModel.portfolioStateOf(assessment, portfolioRows, store.competencies);
-        const availableToAdd = viewModel.availableCapabilitiesToPropose(
-          store.capabilities,
-          entries,
-        );
-        const portfolioSize = entries.length;
-
-        return (
-          <SectionCard
-            className="mb-4"
-            title={t("asmt.portfolio.title")}
-            description={t("asmt.portfolio.subtitle")}
-          >
-            {portfolioSize === 0 ? (
-              /*
-               * A FALTA SE DIZ UMA VEZ. Dono (2026-09-09): o bloco vazio
-               * repetia "você não selecionou nada" cinco vezes. Sobra o estado
-               * vazio de duas linhas da casa — a linha 1 vem do assunto, a
-               * linha 2 é a regra DESTE ciclo, e ela muda com quem lê: para
-               * quem propõe é o que fazer; para quem só acompanha é quem faz.
-               */
-              <EmptyState
-                title={EmptySubject.CAPABILITY.titleIn(t, "empty.context.inThePortfolio")}
-                hint={
-                  canPropose ? t("asmt.portfolio.selectHint") : t("asmt.portfolio.empty.readOnly")
-                }
-              />
-            ) : (
-              <>
-                <div className="mb-4 space-y-4">
-                  <CapabilityPortfolioMeter
-                    entries={entries}
-                    label={t("asmt.portfolio.qualifiedCount", {
-                      qualified: entries.filter((entry) => entry.confirmed && entry.qualified)
-                        .length,
-                      total: entries.length,
-                    })}
-                  />
-                </div>
-
-                <ul className="space-y-1.5">
-                  {entries.map((entry) => {
-                    const capability = store.capabilities.find((c) => c.id === entry.capabilityId);
-                    const name = capability?.name ?? entry.capabilityId;
-                    return (
-                      <li
-                        key={entry.capabilityId}
-                        className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-body"
-                      >
-                        <TruncatedText text={name} />
-                        <div className="flex shrink-0 items-center gap-2">
-                          <PortfolioStageChip stage={PortfolioStage.of(entry)} />
-                          {canConfirm && !entry.confirmed && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              disabled={busy}
-                              onClick={() => confirmCapability(entry.capabilityId)}
-                            >
-                              {t("asmt.portfolio.confirm")}
-                            </Button>
-                          )}
-                          {canPropose && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => attemptRemove(entry.capabilityId, name)}
-                            >
-                              {t("common.remove")}
-                            </Button>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </>
-            )}
-
-            {canPropose && (
-              <div className="mt-3 flex gap-2">
-                <select
-                  aria-label={t("asmt.portfolio.addLabel")}
-                  className="flex-1 rounded-md border border-input bg-card px-3 py-2 text-sm"
-                  value={selectedCapabilityId}
-                  disabled={busy}
-                  onChange={(e) => setSelectedCapabilityId(e.target.value)}
-                >
-                  <option value="">{t("asmt.portfolio.addPlaceholder")}</option>
-                  {availableToAdd.map((cap) => (
-                    <option key={cap.id} value={cap.id}>
-                      {cap.name}
-                    </option>
-                  ))}
-                </select>
-                <Button size="sm" disabled={!selectedCapabilityId || busy} onClick={addCapability}>
-                  {t("asmt.portfolio.add")}
-                </Button>
-              </div>
-            )}
-            {canPropose && availableToAdd.length === 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">{t("asmt.portfolio.noneReady")}</p>
-            )}
-
-            {actionError && (
-              <p className="mt-2 text-xs text-destructive" role="alert">
-                {actionError}
-              </p>
-            )}
-
-            <ConfirmDialog
-              open={pendingRemoval !== null}
-              title={t("asmt.portfolio.removeConfirm.title")}
-              description={t("asmt.portfolio.removeConfirm.description", {
-                nome: pendingRemoval?.name ?? "",
-              })}
-              confirmLabel={t("asmt.portfolio.removeConfirm.confirm")}
-              cancelLabel={t("pdi.newItem.cancel")}
-              onConfirm={() =>
-                pendingRemoval && attemptRemove(pendingRemoval.id, pendingRemoval.name, true)
-              }
-              onCancel={() => setPendingRemoval(null)}
-            />
-          </SectionCard>
-        );
-      }}
-    </QuerySection>
-  );
-}
 
 function LevelSelect({
   value,

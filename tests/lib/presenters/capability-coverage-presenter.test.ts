@@ -11,13 +11,12 @@ import type { CapabilityAverage } from "@/lib/selectors";
  * eram provados pela DOM (`capability-map-risk.test.tsx`) viram unitários
  * baratos aqui, mais as fronteiras de faixa que a DOM nunca cobriu.
  */
-const capability = (id: string, active = true): Capability => ({
+const capability = (id: string): Capability => ({
   id,
   name: id,
   short: id,
-  active,
   curation: {
-    activeCompetencyCount: 0,
+    competencyCount: 0,
     status: "REQUIRES_CURATION",
   },
 });
@@ -104,9 +103,13 @@ describe("CapabilityCoveragePresenter.areas", () => {
     );
   });
 
-  it("capacidade inativa não vira área", () => {
-    const inativa = capability("legacy", false);
-    const presenter = new CapabilityCoveragePresenter([inativa], () => []);
+  /*
+   * "CAPACIDADE INATIVA NÃO VIRA ÁREA" deixou de ser um caso (dono,
+   * 2026-09-10): não há capacidade inativa. O que sobra é o outro lado — o
+   * catálogo vazio não inventa área nenhuma.
+   */
+  it("catálogo vazio não vira área", () => {
+    const presenter = new CapabilityCoveragePresenter([], () => []);
     expect(presenter.areas([professional("ana")])).toEqual([]);
   });
 });

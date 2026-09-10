@@ -26,6 +26,7 @@ export type CatalogService = Pick<
 
 export interface CurationBrief {
   status: Capability["curation"]["status"];
+  /** Quantas competências a capacidade tem. Contava ATIVAS até 2026-09-10. */
   active: number;
   min: number;
   max: number;
@@ -86,17 +87,18 @@ export class CompetencyMatrixViewModel {
     return trimmed.length > 0 && trimmed !== capability.name;
   }
 
-  removeCapability(id: string): Promise<{ archived: boolean; competenciesRemoved: number }> {
+  /**
+   * APAGA, OU RECUSA — dono (2026-09-10). Não há mais `{ archived }` na
+   * resposta, nem `restoreCapability`: o que é apagado não volta, e o que tem
+   * vínculo nunca sai.
+   */
+  removeCapability(id: string): Promise<{ competenciesRemoved: number }> {
     return this.service.removeCapability(id);
-  }
-
-  restoreCapability(id: string): void {
-    this.service.updateCapability(id, { active: true });
   }
 
   curationBriefFor(capability: Pick<Capability, "curation">): CurationBrief {
     const range = this.limits;
-    const active = capability.curation.activeCompetencyCount;
+    const active = capability.curation.competencyCount;
     return {
       status: capability.curation.status,
       active,
@@ -109,15 +111,11 @@ export class CompetencyMatrixViewModel {
   }
 
   isCapabilityAtCapacity(capability: Pick<Capability, "curation">): boolean {
-    return this.limits.atCapacity(capability.curation.activeCompetencyCount);
+    return this.limits.atCapacity(capability.curation.competencyCount);
   }
 
   createCompetency(capabilityId: string, name: string): Promise<Competency> {
-    return this.service.addCompetency({
-      name: name.trim(),
-      capabilityId,
-      active: true,
-    });
+    return this.service.addCompetency({ name: name.trim(), capabilityId });
   }
 
   canCreateCompetency(name: string): boolean {
@@ -128,15 +126,11 @@ export class CompetencyMatrixViewModel {
     return this.service.renameCompetency(id, name.trim());
   }
 
-  removeCompetency(id: string): Promise<{ archived: boolean }> {
+  removeCompetency(id: string): Promise<void> {
     return this.service.removeCompetency(id);
   }
 
   removeCompetencies(competencyIds: string[]): Promise<CompetencyRemovalSummary> {
     return this.service.removeCompetencies(competencyIds);
-  }
-
-  restoreCompetency(id: string): void {
-    this.service.updateCompetency(id, { active: true });
   }
 }

@@ -36,7 +36,7 @@ const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 const emRevisao: AppState = {
   ...fixtureState,
   assessments: fixtureState.assessments.map((avaliacao) =>
-    avaliacao.id === "ana-h2" ? { ...avaliacao, status: "In Review" as const } : avaliacao,
+    avaliacao.id === "ana-h2" ? { ...avaliacao, status: "Draft" as const } : avaliacao,
   ),
 };
 

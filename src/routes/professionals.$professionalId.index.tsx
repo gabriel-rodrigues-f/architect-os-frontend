@@ -15,6 +15,7 @@ import {
   StatCard,
   TreatGapInPlanAction,
 } from "@/components/app";
+import { AssessmentProgress } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { useCurrentUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -106,7 +107,7 @@ function ProfessionalWorkspace() {
     gapsNotInPlanCount: gaps.filter(
       (g) => !plan?.items.some((i) => i.competencyId === g.item.competencyId),
     ).length,
-    assessmentAwaitingCalibration: assessment?.status === "In Review",
+    assessmentAwaitingCalibration: AssessmentProgress.of(assessment).awaitsConclusion,
   });
 
   const assessmentHistory = store.assessments

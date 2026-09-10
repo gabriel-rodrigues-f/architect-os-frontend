@@ -80,7 +80,6 @@ describe("schemas de fatia — contrato da Fase 2 (régua por time)", () => {
       id: "cloud-k8s",
       name: "Kubernetes",
       capabilityId: "cloud",
-      active: true,
     });
   });
 
@@ -97,7 +96,7 @@ describe("schemas de fatia — contrato da Fase 2 (régua por time)", () => {
   it("aceita curadoria sem contagem por tipo e profissional com teamId", () => {
     const capabilities = capabilitiesResponseSchema.parse(fixtureState.capabilities);
     expect(capabilities[0]?.curation).toEqual({
-      activeCompetencyCount: 2,
+      competencyCount: 2,
       status: "READY",
     });
     const professionals = professionalsResponseSchema.parse(fixtureState.professionals);

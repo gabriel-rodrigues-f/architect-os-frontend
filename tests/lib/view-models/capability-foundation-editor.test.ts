@@ -52,7 +52,7 @@ describe("CapabilityFoundationEditor", () => {
     expect(editor.removeCompetency(0).competencyNames).toHaveLength(4);
   });
 
-  it("o pedido sai com os nomes aparados e a capacidade ativa", () => {
+  it("o pedido sai com os nomes aparados — e sem `active`, que morreu com o arquivado", () => {
     const editor = CapabilityFoundationEditor.begin(range)
       .withName("  Governança de Dados  ")
       .withCompetencyName(0, "  Qualidade de Dado ")
@@ -61,7 +61,6 @@ describe("CapabilityFoundationEditor", () => {
 
     expect(editor.payload()).toEqual({
       name: "Governança de Dados",
-      active: true,
       competencies: [{ name: "Qualidade de Dado" }, { name: "Catálogo" }, { name: "Linhagem" }],
     });
   });

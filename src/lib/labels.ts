@@ -46,7 +46,6 @@ const cycleStatusKey: Record<DevelopmentCycle["status"], MessageKey> = {
 
 const assessmentStatusKey: Record<Assessment["status"], MessageKey> = {
   Draft: "status.draft",
-  "In Review": "status.inReview",
   Completed: "status.assessment.completed",
 };
 

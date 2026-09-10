@@ -72,15 +72,13 @@ const ativas: Capability[] = [1, 2, 3, 4, 5].map((numero) => ({
   id: `ativa-${String(numero)}`,
   name: `Capacidade Ativa ${String(numero)}`,
   short: `A${String(numero)}`,
-  active: true,
-  curation: { activeCompetencyCount: 3, status: "READY" },
+  curation: { competencyCount: 3, status: "READY" },
 }));
 const arquivadas: Capability[] = [1, 2, 3, 4, 5, 6].map((numero) => ({
   id: `arquivada-${String(numero)}`,
   name: `Capacidade Arquivada ${String(numero)}`,
   short: `X${String(numero)}`,
-  active: false,
-  curation: { activeCompetencyCount: 0, status: "READY" },
+  curation: { competencyCount: 0, status: "READY" },
 }));
 
 const state: AppState = { ...fixtureState, capabilities: [...ativas, ...arquivadas] };

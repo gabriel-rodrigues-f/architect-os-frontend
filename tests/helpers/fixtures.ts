@@ -130,9 +130,8 @@ export const fixtureState: AppState = {
       id: "cloud",
       name: "Cloud Architecture",
       short: "Cloud",
-      active: true,
       curation: {
-        activeCompetencyCount: 2,
+        competencyCount: 2,
         status: "READY",
       },
     },
@@ -140,9 +139,8 @@ export const fixtureState: AppState = {
       id: "security",
       name: "Security",
       short: "Security",
-      active: true,
       curation: {
-        activeCompetencyCount: 1,
+        competencyCount: 1,
         status: "READY",
       },
     },
@@ -169,19 +167,16 @@ export const fixtureState: AppState = {
       id: "cloud-k8s",
       name: "Kubernetes",
       capabilityId: "cloud",
-      active: true,
     },
     {
       id: "cloud-serverless",
       name: "Serverless",
       capabilityId: "cloud",
-      active: true,
     },
     {
       id: "security-iam",
       name: "IAM",
       capabilityId: "security",
-      active: true,
     },
   ],
   professionals: [

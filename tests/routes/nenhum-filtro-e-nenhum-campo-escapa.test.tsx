@@ -26,7 +26,6 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { Route as AssessmentsRoute } from "@/routes/assessments";
 import { Route as LearningPathsRoute } from "@/routes/learning-paths";
 import type { AppState } from "@/lib/api";
 import { fixtureAdminUser, fixtureState } from "../helpers/fixtures";
@@ -53,7 +52,6 @@ import {
  */
 const fetchMock = vi.fn();
 
-const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
 const LearningPathsPage = LearningPathsRoute.options.component as () => ReactNode;
 
 const bancoVazio: AppState = {
@@ -90,49 +88,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Avaliação de Desempenho: o filtro de capacidades fica bloqueado como o de pessoas", () => {
-  it("sem capacidade cadastrada, o gatilho diz a frase do assunto e não abre nada", async () => {
-    comBanco(bancoVazio);
-    renderWithApp(<AssessmentsPage />);
-
-    const capacidades = await screen.findByRole("button", { name: "Capacidades" });
-    expect(capacidades.textContent).toContain("Nenhuma capacidade cadastrada");
-    expect(capacidades.getAttribute("aria-disabled")).toBe("true");
-
-    await userEvent.click(capacidades);
-    // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
-    expect(screen.queryByRole("listbox")).toBeNull();
-    expect(screen.queryByRole("option")).toBeNull();
-    expect(screen.queryByText("Selecionar todas")).toBeNull();
-  });
-
-  it("é exatamente o que o filtro de profissionais já fazia — os dois bloqueados", async () => {
-    comBanco(bancoVazio);
-    renderWithApp(<AssessmentsPage />);
-
-    const profissional = await screen.findByRole("button", { name: "Profissional" });
-    const capacidades = screen.getByRole("button", { name: "Capacidades" });
-    expect(profissional.getAttribute("aria-disabled")).toBe("true");
-    expect(capacidades.getAttribute("aria-disabled")).toBe("true");
-  });
-
-  it("com capacidades cadastradas, o filtro é o de sempre e abre a lista", async () => {
-    comBanco({ ...bancoVazio, capabilities: fixtureState.capabilities });
-    renderWithApp(<AssessmentsPage />);
-
-    /*
-     * Com opções, o gatilho é uma COMBOBOX (`role="combobox"`); bloqueado, é
-     * um `button` desabilitado. A diferença de papel é a prova de que o
-     * bloqueio não é cosmético: não há lista a abrir.
-     */
-    const capacidades = await screen.findByRole("combobox", { name: "Capacidades" });
-    expect(capacidades.hasAttribute("aria-disabled")).toBe(false);
-    expect(screen.queryByRole("button", { name: "Capacidades" })).toBeNull();
-
-    await userEvent.click(capacidades);
-    expect(await screen.findByText("Selecionar todas")).toBeTruthy();
-  });
-});
+/*
+ * O FILTRO DE CAPACIDADES SAIU DA AVALIAÇÃO — dono (2026-09-10): *"Filtros:
+ * fica só o nome."* Com ele fora, não há gatilho para bloquear nem frase de
+ * assunto para dizer quando o catálogo está vazio: a tela lista TODAS as
+ * capacidades, e o vazio do catálogo já é dito pelo estado vazio da casa
+ * (`EmptyStateCallToAction`, testemunhado em `a-avaliacao-simplifica`).
+ *
+ * A régua que este bloco guardava — filtro sem opção nasce bloqueado, com a
+ * frase do assunto — continua viva no filtro de PESSOAS e nos outros filtros
+ * da casa, e continua testemunhada aqui embaixo.
+ */
 
 describe("Cadastrar Trilha: o campo Competências convida como o campo Atribuída a", () => {
   const abrirDialogo = async () => {

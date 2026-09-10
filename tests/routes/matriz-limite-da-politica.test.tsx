@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Toaster } from "@/components/ui/sonner";
 import { type AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import type { Capability, Competency } from "@/lib/domain";
@@ -43,15 +42,13 @@ const emptyCapability: Capability = {
   id: "vazia",
   name: "Data Platforms",
   short: "Data",
-  active: true,
-  curation: { activeCompetencyCount: 0, status: "REQUIRES_CURATION" },
+  curation: { competencyCount: 0, status: "REQUIRES_CURATION" },
 };
 
 const archivedCompetency: Competency = {
   id: "arquivada-1",
   name: "Chaos Engineering",
   capabilityId: "cloud",
-  active: false,
 };
 
 const state: AppState = {
@@ -104,7 +101,7 @@ describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => 
     );
 
     const explanation = await screen.findByRole("dialog");
-    expect(explanation.textContent).toContain("0 de 3 competências ativas");
+    expect(explanation.textContent).toContain("0 de 3 competências");
     expect(explanation.textContent).toMatch(/cadastre/i);
     expect(explanation.textContent).not.toContain("acima do teto");
   });
@@ -114,8 +111,7 @@ describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => 
       id: "over",
       name: "Over Capability",
       short: "Over",
-      active: true,
-      curation: { activeCompetencyCount: 5, status: "REQUIRES_CURATION" },
+      curation: { competencyCount: 5, status: "REQUIRES_CURATION" },
     };
     mockAppFetch(fetchMock, {
       user: fixtureAdminUser,
@@ -130,7 +126,7 @@ describe("Matriz — o teto vem da política, e 4 é máximo, não meta", () => 
     );
 
     const explanation = await screen.findByRole("dialog");
-    expect(explanation.textContent).toContain("5 de 3 competências ativas");
+    expect(explanation.textContent).toContain("5 de 3 competências");
     expect(explanation.textContent).toContain("2 acima do máximo");
   });
 });
@@ -151,7 +147,7 @@ describe("Matriz — o contador cai depois de desvincular (item 2 do dono)", () 
                 capability.id === "cloud"
                   ? {
                       ...capability,
-                      curation: { activeCompetencyCount: 1, status: "READY" as const },
+                      curation: { competencyCount: 1, status: "READY" as const },
                     }
                   : capability,
               ),
@@ -178,47 +174,9 @@ describe("Matriz — o contador cai depois de desvincular (item 2 do dono)", () 
   });
 });
 
-describe("Matriz — arquivada só se restaura, e a recusa do serviço aparece", () => {
-  it("a seção de arquivadas não oferece exclusão definitiva", async () => {
-    mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
-      state,
-      routes: [careerLevelsRoute, curationPolicyMax3],
-    });
-    renderWithApp(<MatrixPage />);
-    await screen.findByText("Arquivadas");
-
-    const archived = screen.getByText("Chaos Engineering").closest("li") as HTMLElement;
-    const actions = within(archived).getAllByRole("button");
-    expect(actions.map((button) => button.textContent)).toEqual(["Restaurar"]);
-  });
-
-  it("restaurar recusado pelo serviço (limite de ativas) mostra a mensagem do serviço", async () => {
-    const refusal =
-      'A capacidade "Cloud Architecture" já está no limite de 3 competências ativas — arquive uma competência antes de ativar outra.';
-    const refuseRestore: FetchRoute = (href, init) =>
-      href.endsWith(apiPath("/competencies/arquivada-1")) && init?.method === "PATCH"
-        ? jsonResponse(
-            { code: "CAPABILITY_COMPETENCY_LIMIT_REACHED", message: refusal, correlationId: "x" },
-            409,
-          )
-        : undefined;
-    mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
-      state,
-      routes: [refuseRestore, careerLevelsRoute, curationPolicyMax3],
-    });
-    renderWithApp(
-      <>
-        <MatrixPage />
-        <Toaster theme="light" position="bottom-right" duration={3000} />
-      </>,
-    );
-    await screen.findByText("Arquivadas");
-
-    const archived = screen.getByText("Chaos Engineering").closest("li") as HTMLElement;
-    await userEvent.click(within(archived).getByRole("button", { name: "Restaurar" }));
-
-    expect(await screen.findByText(refusal)).toBeTruthy();
-  });
-});
+/*
+ * "ARQUIVADA SÓ SE RESTAURA" NÃO EXISTE MAIS — dono (2026-09-10): *"remova o
+ * conceito de arquivado"*. A seção "Arquivadas", os botões de "Restaurar" e a
+ * recusa do serviço por limite de ativas na reativação morreram juntos: o que
+ * sai do catálogo é apagado, e o que tem gente vinculada nunca sai.
+ */

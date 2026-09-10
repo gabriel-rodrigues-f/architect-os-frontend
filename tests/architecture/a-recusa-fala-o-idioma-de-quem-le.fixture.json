@@ -67,7 +67,7 @@
       "code": "CAPABILITY_NOT_READY",
       "status": 400,
       "mensagens": [
-        "`A capacidade \"${capability.name}\" extrapola o alvo de curadoria (${capability.curation.activeCompetencyCount} competências ativas) — cure o excesso antes de propô-la no portfólio de um assessment.`"
+        "`A capacidade \"${capability.name}\" extrapola o alvo de curadoria (${capability.curation.competencyCount} competências) — cure o excesso antes de propô-la no portfólio de um assessment.`"
       ]
     },
     "AssessmentCommentNotAuthorError": {
@@ -89,7 +89,7 @@
       "code": "ASSESSMENT_FIELD_WRONG_STAGE",
       "status": 409,
       "mensagens": [
-        "\"Líder e nota final só podem ser ajustados com a avaliação Em Revisão.\""
+        "\"Autoavaliação, nota do líder e nota final só podem ser ajustadas em Rascunho.\""
       ]
     },
     "AssessmentFieldsNotAllowedError": {
@@ -119,7 +119,7 @@
       "code": "ASSESSMENT_NOT_DRAFT",
       "status": 409,
       "mensagens": [
-        "\"Só um rascunho pode ser cancelado — envie para revisão ou peça ao Tech Lead.\""
+        "\"Só um rascunho pode ser cancelado — a avaliação concluída se reabre, não se cancela.\""
       ]
     },
     "AssessmentNotInReachError": {
@@ -148,42 +148,18 @@
         "\"Esta capacidade já tem competências respondidas. Confirme a remoção para descartar essas respostas.\""
       ]
     },
-    "AssessmentPortfolioBelowMinimumError": {
-      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
-      "code": "PORTFOLIO_BELOW_MINIMUM",
-      "status": 409,
-      "mensagens": [
-        "\"Selecione pelo menos 3 capacidades para enviar a avaliação para revisão.\""
-      ]
-    },
-    "AssessmentPortfolioConfirmedBelowMinimumError": {
-      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
-      "code": "PORTFOLIO_CONFIRMED_BELOW_MINIMUM",
-      "status": 409,
-      "mensagens": [
-        "\"É preciso pelo menos 3 capacidades confirmadas pelo Tech Lead para concluir.\""
-      ]
-    },
     "AssessmentPortfolioNotDraftError": {
       "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
       "code": "PORTFOLIO_NOT_DRAFT",
       "status": 409,
       "mensagens": []
     },
-    "AssessmentPortfolioNotInReviewError": {
+    "AssessmentReopenOutsideCycleError": {
       "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
-      "code": "PORTFOLIO_NOT_IN_REVIEW",
+      "code": "ASSESSMENT_REOPEN_OUTSIDE_CYCLE",
       "status": 409,
       "mensagens": [
-        "\"O portfólio só pode ser confirmado com a avaliação Em Revisão.\""
-      ]
-    },
-    "AssessmentPortfolioUnconfirmedItemsError": {
-      "arquivo": "src/modules/assessment/domain/errors/assessment-errors.ts",
-      "code": "PORTFOLIO_UNCONFIRMED_ITEMS",
-      "status": 409,
-      "mensagens": [
-        "`Ainda há ${unconfirmed} capacidade(s) do portfólio sem confirmação do Tech Lead.`"
+        "\"Só a avaliação do ciclo vigente pode ser reaberta.\""
       ]
     },
     "AssessmentReviewIncompleteError": {
@@ -199,7 +175,7 @@
       "code": "ASSESSMENT_SELF_INCOMPLETE",
       "status": 400,
       "mensagens": [
-        "\"Preencha a autoavaliação de todas as competências antes de enviar para revisão.\""
+        "\"Preencha a autoavaliação de todas as competências antes de concluir.\""
       ]
     },
     "AssessmentTransitionNotAllowedError": {
@@ -245,7 +221,7 @@
       "code": "CAPABILITY_COMPETENCIES_IN_USE",
       "status": 409,
       "mensagens": [
-        "\"Competências desta capacidade passaram a estar em uso durante a exclusão; tente novamente para arquivá-la.\""
+        "\"Esta capacidade não pode ser excluída: competências dela estão vinculadas a avaliações, planos, níveis ou réguas de time.\""
       ]
     },
     "CapabilityCompetencyLimitReachedError": {
@@ -253,7 +229,7 @@
       "code": "CAPABILITY_COMPETENCY_LIMIT_REACHED",
       "status": 409,
       "mensagens": [
-        "`A capacidade \"${capabilityName}\" já está no limite de ${maxActiveCompetencies} competências ativas — arquive uma competência antes de ativar outra.`"
+        "`A capacidade \"${capabilityName}\" já está no limite de ${maxActiveCompetencies} competências — exclua uma competência antes de criar outra.`"
       ]
     },
     "CapabilityDataIntegrityError": {
@@ -346,6 +322,14 @@
       "code": "NOT_FOUND",
       "status": 404,
       "mensagens": []
+    },
+    "CompetencyInUseError": {
+      "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
+      "code": "COMPETENCY_IN_USE",
+      "status": 409,
+      "mensagens": [
+        "`A competência \"${competencyId}\" não pode ser excluída: ela está vinculada a avaliações, planos, níveis ou réguas de time.`"
+      ]
     },
     "CompetencyNameTakenInAnotherCapabilityError": {
       "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",

@@ -82,7 +82,9 @@ describe("R2-RESP-07 — Avaliações: empilhado por competência abaixo de md",
     renderWithApp(<AssessmentsPage />);
 
     await screen.findByText("Kubernetes");
-    expect(screen.getByRole("table")).toBeTruthy();
+    // A tela lista TODAS as capacidades (dono, 2026-09-10): uma tabela por
+    // capacidade. O que este caso guarda é que a forma é TABELA, não cartão.
+    expect(screen.getAllByRole("table").length).toBeGreaterThan(0);
     expect(screen.queryByTestId("competency-stacked-card")).toBeNull();
 
     restoreMatchMedia();

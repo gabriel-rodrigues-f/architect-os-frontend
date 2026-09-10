@@ -168,9 +168,8 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
       id: "cap",
       name: "Capacidade",
       short: "Cap",
-      active: true,
       curation: {
-        activeCompetencyCount: COMPETENCIES,
+        competencyCount: COMPETENCIES,
         status: "REQUIRES_CURATION",
       },
     };
@@ -184,7 +183,6 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
         "arquiteto-de-solucoes-ii": 4 as Level,
         "arquiteto-de-solucoes-iii": 5 as Level,
       },
-      active: true,
     }));
 
     const professionals: Professional[] = Array.from({ length: PROFESSIONALS }, (_, i) => ({
@@ -325,7 +323,7 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
   it("espera calibração é a avaliação do ciclo ativo em In Review", () => {
     const emRevisao = stateWith({
       assessments: fixtureState.assessments.map((assessment) =>
-        assessment.id === "bruno-h2" ? { ...assessment, status: "In Review" as const } : assessment,
+        assessment.id === "bruno-h2" ? { ...assessment, status: "Draft" as const } : assessment,
       ),
     });
     expect(queuesOf(fixtureState).awaitingCalibration).toEqual([]);
@@ -353,7 +351,7 @@ describe("DashboardPresenter — filas de pendência do líder", () => {
     const planoDeAna = fixtureState.plans[0]!;
     const tudoPendente = stateWith({
       assessments: fixtureState.assessments.map((assessment) =>
-        assessment.id === "bruno-h2" ? { ...assessment, status: "In Review" as const } : assessment,
+        assessment.id === "bruno-h2" ? { ...assessment, status: "Draft" as const } : assessment,
       ),
       plans: [{ ...planoDeAna, status: "Draft" as const }],
     });

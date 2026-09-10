@@ -6,6 +6,7 @@ import type {
   LearningPath,
   MentoringSession,
 } from "../domain";
+import { AssessmentProgress } from "../domain";
 import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "../scope";
 import { defaultGapSeverityRuler, type BandTone, type GapSeverityRuler } from "../scoring-bands";
 import type { Gap, Selectors } from "../selectors";
@@ -101,7 +102,7 @@ export class DashboardPresenter {
         professional,
         assessment: this.sel.assessmentFor(professional.id),
       }))
-      .filter((entry) => entry.assessment?.status === "In Review");
+      .filter((entry) => AssessmentProgress.of(entry.assessment).awaitsConclusion);
 
     const awaitingApproval = people
       .map((professional) => ({ professional, plan: this.sel.planFor(professional.id) }))
@@ -289,10 +290,10 @@ export class DashboardPresenter {
   assessmentCoverage(population: readonly Professional[]): AssessmentCoverage {
     return population.reduce(
       (acc, a) => {
-        const status = this.sel.assessmentFor(a.id)?.status;
-        if (status === "Completed") acc.completed += 1;
-        else if (status === "In Review") acc.inReview += 1;
-        else if (status === "Draft") acc.draft += 1;
+        const assessment = this.sel.assessmentFor(a.id);
+        if (assessment?.status === "Completed") acc.completed += 1;
+        else if (AssessmentProgress.of(assessment).awaitsConclusion) acc.inReview += 1;
+        else if (assessment?.status === "Draft") acc.draft += 1;
         else acc.notStarted += 1;
         return acc;
       },

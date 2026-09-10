@@ -27,15 +27,13 @@ const overCapability: Capability = {
   id: "over",
   name: "Over Capability",
   short: "Over",
-  active: true,
-  curation: { activeCompetencyCount: 7, status: "REQUIRES_CURATION" },
+  curation: { competencyCount: 7, status: "REQUIRES_CURATION" },
 };
 
 const overCompetencies: Competency[] = [1, 2, 3, 4, 5, 6, 7].map((index) => ({
   id: `over-${index}`,
   name: `Competência ${index}`,
   capabilityId: "over",
-  active: true,
 }));
 
 const state: AppState = {
@@ -85,7 +83,7 @@ describe("Matriz de Competências — o status de curadoria é um controle, não
     await userEvent.click(cardOf("Cloud Architecture").getByRole("button", { name: /Pronta/ }));
 
     const explanation = await screen.findByRole("dialog");
-    expect(explanation.textContent).toContain("2 de 6 competências ativas");
+    expect(explanation.textContent).toContain("2 de 6 competências");
     expect(explanation.textContent).toContain("até 6");
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "PATCH")).toBe(false);
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
@@ -100,8 +98,8 @@ describe("Matriz de Competências — o status de curadoria é um controle, não
     );
 
     const explanation = await screen.findByRole("dialog");
-    expect(explanation.textContent).toContain("7 de 6 competências ativas");
+    expect(explanation.textContent).toContain("7 de 6 competências");
     expect(explanation.textContent).toContain("1 acima do máximo");
-    expect(explanation.textContent).toMatch(/arquive ou exclua/i);
+    expect(explanation.textContent).toMatch(/exclua competências/i);
   });
 });

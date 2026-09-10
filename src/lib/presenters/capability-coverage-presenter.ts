@@ -58,37 +58,37 @@ export class CapabilityCoveragePresenter {
   }
 
   areas(population: readonly Professional[]): CapabilityCoverageArea[] {
-    return this.capabilities
-      .filter((cat) => cat.active)
-      .map((cat) => {
-        const people = population.map((a) => ({
-          professional: a,
-          level: this.capabilityAveragesFor(a.id).find((d) => d.capability.id === cat.id)?.avg,
-        }));
-        const assessed = people.filter(
-          (p): p is { professional: Professional; level: number } => p.level !== undefined,
-        );
-        const unassessed = people
-          .filter((person) => person.level === undefined)
-          .map((person) => person.professional);
-        const notAssessed = unassessed.length;
-        const bands = this.bands.map((band) => ({
-          ...band,
-          people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
-        }));
-        const experts = bands.find((b) => b.key === "experts")?.people ?? [];
-        const advanced = bands.find((b) => b.key === "advanced")?.people ?? [];
-        const references = [...experts, ...advanced];
-        const risk = this.classifyRisk(assessed.length, references.length);
-        return {
-          cat,
-          bands,
-          assessedCount: assessed.length,
-          notAssessed,
-          unassessed,
-          references,
-          risk,
-        };
-      });
+    // O catálogo é o que existe (dono, 2026-09-10): não há mais capacidade
+    // viva-e-escondida para filtrar.
+    return this.capabilities.map((cat) => {
+      const people = population.map((a) => ({
+        professional: a,
+        level: this.capabilityAveragesFor(a.id).find((d) => d.capability.id === cat.id)?.avg,
+      }));
+      const assessed = people.filter(
+        (p): p is { professional: Professional; level: number } => p.level !== undefined,
+      );
+      const unassessed = people
+        .filter((person) => person.level === undefined)
+        .map((person) => person.professional);
+      const notAssessed = unassessed.length;
+      const bands = this.bands.map((band) => ({
+        ...band,
+        people: assessed.filter((p) => p.level >= band.min && p.level < band.max),
+      }));
+      const experts = bands.find((b) => b.key === "experts")?.people ?? [];
+      const advanced = bands.find((b) => b.key === "advanced")?.people ?? [];
+      const references = [...experts, ...advanced];
+      const risk = this.classifyRisk(assessed.length, references.length);
+      return {
+        cat,
+        bands,
+        assessedCount: assessed.length,
+        notAssessed,
+        unassessed,
+        references,
+        risk,
+      };
+    });
   }
 }

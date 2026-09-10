@@ -35,7 +35,7 @@ const inReview = (mutate: (assessment: FixtureAssessment) => FixtureAssessment) 
   ({
     ...fixtureState,
     assessments: fixtureState.assessments.map((assessment) =>
-      assessment.id === "ana-h2" ? mutate({ ...assessment, status: "In Review" }) : assessment,
+      assessment.id === "ana-h2" ? mutate({ ...assessment, status: "Draft" }) : assessment,
     ),
   }) satisfies AppState;
 

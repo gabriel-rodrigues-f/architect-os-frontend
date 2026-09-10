@@ -116,24 +116,14 @@ describe("AppShell — navegação recortada por papel", () => {
   });
 
   /**
-   * Tela 3 (spec §3, CONTRATO PRD-03) — a calibração é de gerente + admin. Com
-   * os quatro papéis (backend ADR-0047) o contrato ficou dizível: o destino
-   * aparece para quem calibra e some para quem não calibra. Enquanto só
-   * existia `lead`, abrir a navegação teria entregado a leitura ao tech lead
-   * junto — por isso a rota nasceu admin-only.
+   * A CALIBRAÇÃO SAIU DO PRODUTO em 2026-09-10 ("remova a calibração entre
+   * líderes, é inútil"), e com ela os dois casos que viviam aqui.
+   *
+   * Ficam como lápide porque a régua que eles guardavam era boa e vale para a
+   * próxima tela de alcance restrito: item de menu que só um papel alcança se
+   * prova pelos DOIS lados — quem vê e quem não vê —, senão um `filterNavGroups`
+   * que devolvesse tudo passaria no teste de presença.
    */
-  it("o gerente vê o destino de Calibração — é dele a leitura que o contrato reserva", () => {
-    const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel("manager"));
-    const paths = groups.flatMap((group) => group.items.map((item) => item.to));
-  });
-
-  it("member e tech lead não veem o destino de Calibração", () => {
-    for (const role of ["member", "tech_lead"] as const) {
-      const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel(role));
-      const paths = groups.flatMap((group) => group.items.map((item) => item.to));
-      expect(paths, role).not.toContain("/calibration");
-    }
-  });
 
   /**
    * Onda 31 — o dono reverteu o B-15 para o profissional (2026-09-01): "o
