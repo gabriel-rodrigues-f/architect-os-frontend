@@ -7,6 +7,6 @@
   "src/routes/cycles.tsx": 1,
   "src/routes/development-plans.tsx": 3,
   "src/routes/learning-paths.tsx": 2,
-  "src/routes/settings.tsx": 1,
+  "src/routes/scoring-rulers.tsx": 1,
   "src/routes/users.tsx": 2
 }

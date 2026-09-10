@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { apiPath } from "@/lib/api-path";
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as EligibilityRoute } from "@/routes/eligibility";
 import { fixtureAssignedManagerUser } from "../helpers/fixtures";
 import {
   NIVEL_JUNIOR,
@@ -18,7 +18,7 @@ import {
   niveisDeCarreiraRoute,
   regra,
 } from "../helpers/politica-de-progressao";
-import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app";
+import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
  * Dono (2026-09-08, regra 12), literal: *"vamos manter a configuração de
@@ -41,7 +41,27 @@ import { jsonResponse, mockAppFetch, renderWithApp } from "../helpers/render-app
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const EligibilityPage = EligibilityRoute.options.component as () => ReactNode;
+
+/** GET /config/settings com PISO OPERACIONAL 4 — o valor sugerido, não o limite. */
+const pisoOperacionalDe =
+  (piso: number): FetchRoute =>
+  (href, init) =>
+    href.endsWith(apiPath("/config/settings")) && (init?.method ?? "GET") === "GET"
+      ? jsonResponse({
+          settings: [
+            {
+              key: "career.minimumQualifiedFloor",
+              value: piso,
+              valueType: "int",
+              scope: "operational",
+              description: null,
+              updatedAt: "2026-08-26T00:00:00Z",
+              updatedBy: null,
+            },
+          ],
+        })
+      : undefined;
 
 const gravacoes: unknown[] = [];
 
@@ -83,7 +103,7 @@ afterEach(() => {
 
 describe("Política de Progressão — o mínimo de capacidades qualificadas acabou", () => {
   it("o campo declara ZERO como menor valor, não o piso operacional", async () => {
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     const linha = await linhaDoNivel();
     await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
 
@@ -91,7 +111,7 @@ describe("Política de Progressão — o mínimo de capacidades qualificadas aca
   });
 
   it("digitar 1 mantém 'Salvar' aceso e grava o mínimo 1", async () => {
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     const linha = await linhaDoNivel();
     await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
 
@@ -111,7 +131,7 @@ describe("Política de Progressão — o mínimo de capacidades qualificadas aca
   });
 
   it("digitar ZERO mantém 'Salvar' aceso e grava zero — não é régua faltando, é régua que não exige capacidade", async () => {
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     const linha = await linhaDoNivel();
     await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
 
@@ -131,7 +151,7 @@ describe("Política de Progressão — o mínimo de capacidades qualificadas aca
   });
 
   it("negativo continua recusado — zero é ausência de exigência, -1 é lixo", async () => {
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     const linha = await linhaDoNivel();
     await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
 
@@ -141,5 +161,30 @@ describe("Política de Progressão — o mínimo de capacidades qualificadas aca
 
     expect(within(linha).getByRole("button", { name: "Salvar" })).toHaveProperty("disabled", true);
     expect(screen.queryByText("Salvando…")).toBeNull();
+  });
+
+  /**
+   * Vinha de `settings-operational.test.tsx`, e mudou de casa junto com a
+   * tela: desde a fatia do GRUPO (dono, 2026-09-10) o piso operacional mora em
+   * "Réguas e limiares" e a régua do time em "Elegibilidade" — duas rotas,
+   * dois donos. O que este caso guarda é justamente que uma não manda na
+   * outra: o piso é o valor SUGERIDO, nunca o menor valor gravável.
+   */
+  it("o piso operacional NÃO rege o campo da régua: o piso do modelo continua ZERO", async () => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedManagerUser,
+      state: estadoCom([regra("regra-plataforma-i", TIME_PLATAFORMA, 2)]),
+      routes: [reguaRoute, niveisDeCarreiraRoute, pisoOperacionalDe(4)],
+    });
+    renderWithApp(<EligibilityPage />);
+    const linha = await linhaDoNivel();
+    await userEvent.click(within(linha).getByRole("button", { name: "Editar" }));
+
+    const campo = within(linha).getByRole("spinbutton");
+    expect(campo.getAttribute("min")).toBe("0");
+
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "1");
+    expect(within(linha).getByRole("button", { name: "Salvar" })).toHaveProperty("disabled", false);
   });
 });

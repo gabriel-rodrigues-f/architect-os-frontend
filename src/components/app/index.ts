@@ -39,6 +39,7 @@ export * from "./CareerFileHeading";
 export * from "./PageAction";
 export * from "./PageHelp";
 export * from "./ProfileHeader";
+export * from "./progression-criteria-shared";
 export * from "./QuerySection";
 export * from "./RevealBlock";
 export * from "./RoleSelect";

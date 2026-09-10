@@ -13,23 +13,29 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssessmentsRouteImport } from './routes/assessments'
 import { Route as CalibrationRouteImport } from './routes/calibration'
 import { Route as CapabilityMapRouteImport } from './routes/capability-map'
+import { Route as CatalogPolicyRouteImport } from './routes/catalog-policy'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as CompetencyMatrixRouteImport } from './routes/competency-matrix'
 import { Route as CyclesRouteImport } from './routes/cycles'
 import { Route as DevelopmentPlansRouteImport } from './routes/development-plans'
+import { Route as EligibilityRouteImport } from './routes/eligibility'
 import { Route as GapAnalysisRouteImport } from './routes/gap-analysis'
 import { Route as LearningPathsRouteImport } from './routes/learning-paths'
 import { Route as MentoringRouteImport } from './routes/mentoring'
+import { Route as ModelReferenceRouteImport } from './routes/model-reference'
 import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as PlatformMetricsRouteImport } from './routes/platform-metrics'
 import { Route as ProgressionRouteImport } from './routes/progression'
+import { Route as ScoringRulersRouteImport } from './routes/scoring-rulers'
 import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TeamRulesRouteImport } from './routes/team-rules'
 import { Route as TeamsRouteImport } from './routes/teams'
+import { Route as TextTemplatesRouteImport } from './routes/text-templates'
 import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as VocabulariesRouteImport } from './routes/vocabularies'
 import { Route as ProfessionalsProfessionalIdRouteImport } from './routes/professionals.$professionalId'
 import { Route as ProfessionalsProfessionalIdIndexRouteImport } from './routes/professionals.$professionalId.index'
 import { Route as ProfessionalsProfessionalIdEvolutionRouteImport } from './routes/professionals.$professionalId.evolution'
@@ -56,6 +62,11 @@ const CapabilityMapRoute = CapabilityMapRouteImport.update({
   path: '/capability-map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogPolicyRoute = CatalogPolicyRouteImport.update({
+  id: '/catalog-policy',
+  path: '/catalog-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
@@ -76,6 +87,11 @@ const DevelopmentPlansRoute = DevelopmentPlansRouteImport.update({
   path: '/development-plans',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EligibilityRoute = EligibilityRouteImport.update({
+  id: '/eligibility',
+  path: '/eligibility',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GapAnalysisRoute = GapAnalysisRouteImport.update({
   id: '/gap-analysis',
   path: '/gap-analysis',
@@ -91,6 +107,11 @@ const MentoringRoute = MentoringRouteImport.update({
   path: '/mentoring',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModelReferenceRoute = ModelReferenceRouteImport.update({
+  id: '/model-reference',
+  path: '/model-reference',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NoticesRoute = NoticesRouteImport.update({
   id: '/notices',
   path: '/notices',
@@ -104,6 +125,11 @@ const PlatformMetricsRoute = PlatformMetricsRouteImport.update({
 const ProgressionRoute = ProgressionRouteImport.update({
   id: '/progression',
   path: '/progression',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScoringRulersRoute = ScoringRulersRouteImport.update({
+  id: '/scoring-rulers',
+  path: '/scoring-rulers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetPasswordRoute = SetPasswordRouteImport.update({
@@ -131,6 +157,11 @@ const TeamsRoute = TeamsRouteImport.update({
   path: '/teams',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TextTemplatesRoute = TextTemplatesRouteImport.update({
+  id: '/text-templates',
+  path: '/text-templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrainingNeedsRoute = TrainingNeedsRouteImport.update({
   id: '/training-needs',
   path: '/training-needs',
@@ -139,6 +170,11 @@ const TrainingNeedsRoute = TrainingNeedsRouteImport.update({
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VocabulariesRoute = VocabulariesRouteImport.update({
+  id: '/vocabularies',
+  path: '/vocabularies',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfessionalsProfessionalIdRoute =
@@ -177,23 +213,29 @@ export interface FileRoutesByFullPath {
   '/assessments': typeof AssessmentsRoute
   '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
+  '/catalog-policy': typeof CatalogPolicyRoute
   '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
+  '/eligibility': typeof EligibilityRoute
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/model-reference': typeof ModelReferenceRoute
   '/notices': typeof NoticesRoute
   '/platform-metrics': typeof PlatformMetricsRoute
   '/progression': typeof ProgressionRoute
+  '/scoring-rulers': typeof ScoringRulersRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
+  '/text-templates': typeof TextTemplatesRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
+  '/vocabularies': typeof VocabulariesRoute
   '/professionals/$professionalId': typeof ProfessionalsProfessionalIdRouteWithChildren
   '/professionals/$professionalId/evolution': typeof ProfessionalsProfessionalIdEvolutionRoute
   '/professionals/$professionalId/roadmap': typeof ProfessionalsProfessionalIdRoadmapRoute
@@ -205,23 +247,29 @@ export interface FileRoutesByTo {
   '/assessments': typeof AssessmentsRoute
   '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
+  '/catalog-policy': typeof CatalogPolicyRoute
   '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
+  '/eligibility': typeof EligibilityRoute
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/model-reference': typeof ModelReferenceRoute
   '/notices': typeof NoticesRoute
   '/platform-metrics': typeof PlatformMetricsRoute
   '/progression': typeof ProgressionRoute
+  '/scoring-rulers': typeof ScoringRulersRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
+  '/text-templates': typeof TextTemplatesRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
+  '/vocabularies': typeof VocabulariesRoute
   '/professionals/$professionalId/evolution': typeof ProfessionalsProfessionalIdEvolutionRoute
   '/professionals/$professionalId/roadmap': typeof ProfessionalsProfessionalIdRoadmapRoute
   '/professionals/$professionalId/statement': typeof ProfessionalsProfessionalIdStatementRoute
@@ -233,23 +281,29 @@ export interface FileRoutesById {
   '/assessments': typeof AssessmentsRoute
   '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
+  '/catalog-policy': typeof CatalogPolicyRoute
   '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
+  '/eligibility': typeof EligibilityRoute
   '/gap-analysis': typeof GapAnalysisRoute
   '/learning-paths': typeof LearningPathsRoute
   '/mentoring': typeof MentoringRoute
+  '/model-reference': typeof ModelReferenceRoute
   '/notices': typeof NoticesRoute
   '/platform-metrics': typeof PlatformMetricsRoute
   '/progression': typeof ProgressionRoute
+  '/scoring-rulers': typeof ScoringRulersRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
+  '/text-templates': typeof TextTemplatesRoute
   '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
+  '/vocabularies': typeof VocabulariesRoute
   '/professionals/$professionalId': typeof ProfessionalsProfessionalIdRouteWithChildren
   '/professionals/$professionalId/evolution': typeof ProfessionalsProfessionalIdEvolutionRoute
   '/professionals/$professionalId/roadmap': typeof ProfessionalsProfessionalIdRoadmapRoute
@@ -263,23 +317,29 @@ export interface FileRouteTypes {
     | '/assessments'
     | '/calibration'
     | '/capability-map'
+    | '/catalog-policy'
     | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
+    | '/eligibility'
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/model-reference'
     | '/notices'
     | '/platform-metrics'
     | '/progression'
+    | '/scoring-rulers'
     | '/set-password'
     | '/settings'
     | '/team'
     | '/team-rules'
     | '/teams'
+    | '/text-templates'
     | '/training-needs'
     | '/users'
+    | '/vocabularies'
     | '/professionals/$professionalId'
     | '/professionals/$professionalId/evolution'
     | '/professionals/$professionalId/roadmap'
@@ -291,23 +351,29 @@ export interface FileRouteTypes {
     | '/assessments'
     | '/calibration'
     | '/capability-map'
+    | '/catalog-policy'
     | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
+    | '/eligibility'
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/model-reference'
     | '/notices'
     | '/platform-metrics'
     | '/progression'
+    | '/scoring-rulers'
     | '/set-password'
     | '/settings'
     | '/team'
     | '/team-rules'
     | '/teams'
+    | '/text-templates'
     | '/training-needs'
     | '/users'
+    | '/vocabularies'
     | '/professionals/$professionalId/evolution'
     | '/professionals/$professionalId/roadmap'
     | '/professionals/$professionalId/statement'
@@ -318,23 +384,29 @@ export interface FileRouteTypes {
     | '/assessments'
     | '/calibration'
     | '/capability-map'
+    | '/catalog-policy'
     | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
+    | '/eligibility'
     | '/gap-analysis'
     | '/learning-paths'
     | '/mentoring'
+    | '/model-reference'
     | '/notices'
     | '/platform-metrics'
     | '/progression'
+    | '/scoring-rulers'
     | '/set-password'
     | '/settings'
     | '/team'
     | '/team-rules'
     | '/teams'
+    | '/text-templates'
     | '/training-needs'
     | '/users'
+    | '/vocabularies'
     | '/professionals/$professionalId'
     | '/professionals/$professionalId/evolution'
     | '/professionals/$professionalId/roadmap'
@@ -347,23 +419,29 @@ export interface RootRouteChildren {
   AssessmentsRoute: typeof AssessmentsRoute
   CalibrationRoute: typeof CalibrationRoute
   CapabilityMapRoute: typeof CapabilityMapRoute
+  CatalogPolicyRoute: typeof CatalogPolicyRoute
   CompareRoute: typeof CompareRoute
   CompetencyMatrixRoute: typeof CompetencyMatrixRoute
   CyclesRoute: typeof CyclesRoute
   DevelopmentPlansRoute: typeof DevelopmentPlansRoute
+  EligibilityRoute: typeof EligibilityRoute
   GapAnalysisRoute: typeof GapAnalysisRoute
   LearningPathsRoute: typeof LearningPathsRoute
   MentoringRoute: typeof MentoringRoute
+  ModelReferenceRoute: typeof ModelReferenceRoute
   NoticesRoute: typeof NoticesRoute
   PlatformMetricsRoute: typeof PlatformMetricsRoute
   ProgressionRoute: typeof ProgressionRoute
+  ScoringRulersRoute: typeof ScoringRulersRoute
   SetPasswordRoute: typeof SetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   TeamRoute: typeof TeamRoute
   TeamRulesRoute: typeof TeamRulesRoute
   TeamsRoute: typeof TeamsRoute
+  TextTemplatesRoute: typeof TextTemplatesRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
   UsersRoute: typeof UsersRoute
+  VocabulariesRoute: typeof VocabulariesRoute
   ProfessionalsProfessionalIdRoute: typeof ProfessionalsProfessionalIdRouteWithChildren
 }
 
@@ -397,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CapabilityMapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalog-policy': {
+      id: '/catalog-policy'
+      path: '/catalog-policy'
+      fullPath: '/catalog-policy'
+      preLoaderRoute: typeof CatalogPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compare': {
       id: '/compare'
       path: '/compare'
@@ -425,6 +510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevelopmentPlansRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/eligibility': {
+      id: '/eligibility'
+      path: '/eligibility'
+      fullPath: '/eligibility'
+      preLoaderRoute: typeof EligibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gap-analysis': {
       id: '/gap-analysis'
       path: '/gap-analysis'
@@ -446,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MentoringRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/model-reference': {
+      id: '/model-reference'
+      path: '/model-reference'
+      fullPath: '/model-reference'
+      preLoaderRoute: typeof ModelReferenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notices': {
       id: '/notices'
       path: '/notices'
@@ -465,6 +564,13 @@ declare module '@tanstack/react-router' {
       path: '/progression'
       fullPath: '/progression'
       preLoaderRoute: typeof ProgressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scoring-rulers': {
+      id: '/scoring-rulers'
+      path: '/scoring-rulers'
+      fullPath: '/scoring-rulers'
+      preLoaderRoute: typeof ScoringRulersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/set-password': {
@@ -502,6 +608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeamsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/text-templates': {
+      id: '/text-templates'
+      path: '/text-templates'
+      fullPath: '/text-templates'
+      preLoaderRoute: typeof TextTemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/training-needs': {
       id: '/training-needs'
       path: '/training-needs'
@@ -514,6 +627,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vocabularies': {
+      id: '/vocabularies'
+      path: '/vocabularies'
+      fullPath: '/vocabularies'
+      preLoaderRoute: typeof VocabulariesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/professionals/$professionalId': {
@@ -583,23 +703,29 @@ const rootRouteChildren: RootRouteChildren = {
   AssessmentsRoute: AssessmentsRoute,
   CalibrationRoute: CalibrationRoute,
   CapabilityMapRoute: CapabilityMapRoute,
+  CatalogPolicyRoute: CatalogPolicyRoute,
   CompareRoute: CompareRoute,
   CompetencyMatrixRoute: CompetencyMatrixRoute,
   CyclesRoute: CyclesRoute,
   DevelopmentPlansRoute: DevelopmentPlansRoute,
+  EligibilityRoute: EligibilityRoute,
   GapAnalysisRoute: GapAnalysisRoute,
   LearningPathsRoute: LearningPathsRoute,
   MentoringRoute: MentoringRoute,
+  ModelReferenceRoute: ModelReferenceRoute,
   NoticesRoute: NoticesRoute,
   PlatformMetricsRoute: PlatformMetricsRoute,
   ProgressionRoute: ProgressionRoute,
+  ScoringRulersRoute: ScoringRulersRoute,
   SetPasswordRoute: SetPasswordRoute,
   SettingsRoute: SettingsRoute,
   TeamRoute: TeamRoute,
   TeamRulesRoute: TeamRulesRoute,
   TeamsRoute: TeamsRoute,
+  TextTemplatesRoute: TextTemplatesRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
   UsersRoute: UsersRoute,
+  VocabulariesRoute: VocabulariesRoute,
   ProfessionalsProfessionalIdRoute:
     ProfessionalsProfessionalIdRouteWithChildren,
 }

@@ -8,7 +8,8 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as MatrixRoute } from "@/routes/competency-matrix";
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as CatalogPolicyRoute } from "@/routes/catalog-policy";
+import { Route as EligibilityRoute } from "@/routes/eligibility";
 import { fixtureAdminUser, fixtureAssignedManagerUser } from "../helpers/fixtures";
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
@@ -25,7 +26,8 @@ import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/rende
 
 const fetchMock = vi.fn();
 const MatrixPage = MatrixRoute.options.component as () => ReactNode;
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const CatalogPolicyPage = CatalogPolicyRoute.options.component as () => ReactNode;
+const EligibilityPage = EligibilityRoute.options.component as () => ReactNode;
 
 /**
  * Revisão de papéis (dono, 2026-09-05, D1): a Matriz e o Catálogo são do
@@ -63,27 +65,30 @@ describe("o ? da Matriz conta como a capacidade nasce e o que a deixa pronta", (
   });
 });
 
-describe("o ? das Configurações conta o intervalo e o piso da régua", () => {
+/**
+ * Onda do GRUPO (dono, 2026-09-10): os dois grupos viraram TELAS — Catálogo e
+ * Elegibilidade —, e o `?` deles subiu para o cabeçalho da página com o mesmo
+ * texto. A regra que a ajuda conta não mudou; mudou onde se clica.
+ */
+describe("o ? das fatias de configuração conta o intervalo e o piso da régua", () => {
   it("o Catálogo explica que pronta é do mínimo ao máximo (para o admin)", async () => {
     entrarComo(fixtureAdminUser);
-    renderWithApp(<SettingsPage />);
-    await screen.findByText("Vocabulários");
+    renderWithApp(<CatalogPolicyPage />);
+    await screen.findByRole("heading", { level: 1, name: "Catálogo" });
 
-    await userEvent.click(screen.getByRole("button", { name: "Como configurar Catálogo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Como usar Catálogo" }));
 
     const ajuda = await screen.findByRole("dialog");
     expect(ajuda.textContent).toMatch(/mínimo/i);
     expect(ajuda.textContent).not.toMatch(/de 1 até esse máximo/i);
   });
 
-  it("a Política de Progressão explica ao gerente que o mínimo da régua pode ser 1", async () => {
+  it("a Elegibilidade explica ao gerente que o mínimo da régua pode ser 1", async () => {
     entrarComo(fixtureAssignedManagerUser);
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
     await screen.findByText("Júnior");
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Como configurar Critérios de Progressão" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Como usar Elegibilidade" }));
 
     const ajuda = await screen.findByRole("dialog");
     expect(ajuda.textContent).toMatch(/mínimo da régua é 1/i);

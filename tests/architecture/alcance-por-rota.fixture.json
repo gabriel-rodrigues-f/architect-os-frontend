@@ -3,44 +3,6 @@
     "/": {
       "alcance": "autenticado"
     },
-    "/professionals/$professionalId": {
-      "alcance": "ficha-de-carreira",
-      "guarda": "requireCareerTabsReach",
-      "sinal": "canOpenCareerTabs",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/a-visao-geral-tem-guarda.test.tsx",
-      "catalogosGlobais": [
-        {
-          "hook": "useVocabulary",
-          "justificativa": "GET /config/vocabularies é o vocabulário GLOBAL da organização (os rótulos de tipo de ação do PDI), sem recorte de time nem de pessoa: ele não diz nada sobre a pessoa da URL, e é o mesmo dicionário para toda conta logada. O hook não aceita `enabled`, e a Visão geral o chama antes do ramo de negação da rota-pai — declarar é a saída honesta, porque a consulta não vaza dado de ninguém."
-        }
-      ]
-    },
-    "/professionals/$professionalId/evolution": {
-      "alcance": "ficha-de-carreira",
-      "guarda": "requireCareerTabsReach",
-      "sinal": "canOpenCareerTabs",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
-    },
-    "/professionals/$professionalId/roadmap": {
-      "alcance": "ficha-de-carreira",
-      "guarda": "requireCareerTabsReach",
-      "sinal": "canOpenCareerTabs",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
-    },
-    "/professionals/$professionalId/statement": {
-      "alcance": "ficha-de-carreira",
-      "guarda": "requireCareerTabsReach",
-      "sinal": "canOpenCareerTabs",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
-    },
     "/assessments": {
       "alcance": "autenticado"
     },
@@ -59,6 +21,14 @@
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
+    },
+    "/catalog-policy": {
+      "alcance": "opera-o-sistema",
+      "guarda": "requireSystemOperatorReach",
+      "sinal": "isAdmin",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
     },
     "/compare": {
       "alcance": "analise-de-time",
@@ -98,6 +68,14 @@
     "/development-plans": {
       "alcance": "autenticado"
     },
+    "/eligibility": {
+      "alcance": "lead-com-vinculo",
+      "guarda": "requireLeadReach",
+      "sinal": "canConfigure",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
+    },
     "/gap-analysis": {
       "alcance": "analise-de-time",
       "guarda": "requireTeamAnalysisReach",
@@ -112,6 +90,14 @@
     "/mentoring": {
       "alcance": "autenticado"
     },
+    "/model-reference": {
+      "alcance": "lideranca",
+      "guarda": "requireLeadershipReach",
+      "sinal": "isLeadership",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/lideranca-nega-o-profissional.test.tsx"
+    },
     "/notices": {
       "alcance": "autenticado"
     },
@@ -123,6 +109,44 @@
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/platform-metrics.test.tsx"
     },
+    "/professionals/$professionalId": {
+      "alcance": "ficha-de-carreira",
+      "guarda": "requireCareerTabsReach",
+      "sinal": "canOpenCareerTabs",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/a-visao-geral-tem-guarda.test.tsx",
+      "catalogosGlobais": [
+        {
+          "hook": "useVocabulary",
+          "justificativa": "GET /config/vocabularies é o vocabulário GLOBAL da organização (os rótulos de tipo de ação do PDI), sem recorte de time nem de pessoa: ele não diz nada sobre a pessoa da URL, e é o mesmo dicionário para toda conta logada. O hook não aceita `enabled`, e a Visão geral o chama antes do ramo de negação da rota-pai — declarar é a saída honesta, porque a consulta não vaza dado de ninguém."
+        }
+      ]
+    },
+    "/professionals/$professionalId/evolution": {
+      "alcance": "ficha-de-carreira",
+      "guarda": "requireCareerTabsReach",
+      "sinal": "canOpenCareerTabs",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
+    },
+    "/professionals/$professionalId/roadmap": {
+      "alcance": "ficha-de-carreira",
+      "guarda": "requireCareerTabsReach",
+      "sinal": "canOpenCareerTabs",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
+    },
+    "/professionals/$professionalId/statement": {
+      "alcance": "ficha-de-carreira",
+      "guarda": "requireCareerTabsReach",
+      "sinal": "canOpenCareerTabs",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/ficha-de-carreira-abas-da-lideranca.test.tsx"
+    },
     "/progression": {
       "alcance": "analise-de-time",
       "guarda": "requireTeamAnalysisReach",
@@ -131,16 +155,19 @@
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
+    "/scoring-rulers": {
+      "alcance": "opera-o-sistema",
+      "guarda": "requireSystemOperatorReach",
+      "sinal": "isAdmin",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
+    },
     "/set-password": {
       "alcance": "publica"
     },
     "/settings": {
-      "alcance": "lideranca",
-      "guarda": "requireLeadershipReach",
-      "sinal": "isLeadership",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/lideranca-nega-o-profissional.test.tsx"
+      "alcance": "autenticado"
     },
     "/team": {
       "alcance": "lideranca",
@@ -172,6 +199,14 @@
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/gestao-de-pessoas-nega-quem-nao-administra.test.tsx"
     },
+    "/text-templates": {
+      "alcance": "opera-o-sistema",
+      "guarda": "requireSystemOperatorReach",
+      "sinal": "isAdmin",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
+    },
     "/training-needs": {
       "alcance": "analise-de-time",
       "guarda": "requireTeamAnalysisReach",
@@ -187,6 +222,14 @@
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/gestao-de-pessoas-nega-quem-nao-administra.test.tsx"
+    },
+    "/vocabularies": {
+      "alcance": "opera-o-sistema",
+      "guarda": "requireSystemOperatorReach",
+      "sinal": "isAdmin",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
     }
   }
 }

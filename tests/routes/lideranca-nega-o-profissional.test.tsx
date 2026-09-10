@@ -22,7 +22,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 import { apiPath } from "@/lib/api-path";
 import type { SessionUser } from "@/lib/api";
 import { Route as CyclesRoute } from "@/routes/cycles";
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as ModelReferenceRoute } from "@/routes/model-reference";
 import { Route as TeamRoute } from "@/routes/team";
 import {
   fixtureAdminUser,
@@ -34,7 +34,7 @@ import {
 import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
- * O gêmeo de tela de `/team` e `/settings` — a metade que a guarda de
+ * O gêmeo de tela de `/team` e `/model-reference` — a metade que a guarda de
  * navegação não cobre.
  *
  * Pedido literal do dono (2026-09-01): "o profissional não pode ver os menus
@@ -50,7 +50,7 @@ import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/rende
 const fetchMock = vi.fn();
 
 const TeamPage = TeamRoute.options.component as () => ReactNode;
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const ModelReferencePage = ModelReferenceRoute.options.component as () => ReactNode;
 const CyclesPage = CyclesRoute.options.component as () => ReactNode;
 
 const TIME_VISAO_DE_LIDERANCA = "Talentos do Time é uma visão de liderança.";
@@ -103,7 +103,13 @@ describe("/team nega o profissional — a tela é a última barreira", () => {
   });
 });
 
-describe("/settings nega o profissional — a tela é a última barreira", () => {
+/**
+ * Onda do GRUPO (dono, 2026-09-10): a tela única de Critérios de Progressão
+ * virou seis fatias, e a que continua sendo de LIDERANÇA é a leitura —
+ * Referência do modelo. As outras cinco ganharam dono mais estreito e são
+ * provadas em `cada-fatia-tem-um-dono.test.tsx`.
+ */
+describe("/model-reference nega o profissional — a tela é a última barreira", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -114,22 +120,22 @@ describe("/settings nega o profissional — a tela é a última barreira", () =>
     vi.unstubAllGlobals();
   });
 
-  /**
-   * As RÉGUAS (níveis, faixas, parâmetros, curadoria) são carregadas pelo
-   * `StoreProvider` para toda tela — são catálogo global, não consulta desta
-   * tela. O que é desta tela são os enfeites editáveis, e eles não saem.
-   */
-  it("member recebe a negativa, e nenhuma consulta própria da tela sai do navegador", async () => {
-    renderAs(fixtureMemberUser, <SettingsPage />);
+  it("member recebe a negativa, e a consulta de ciclos não sai do navegador", async () => {
+    renderAs(fixtureMemberUser, <ModelReferencePage />);
     expect(await screen.findByText(POLITICA_LEITURA_DE_LIDERANCA)).toBeTruthy();
-    expect(pediu("/config/text-templates")).toBe(false);
-    expect(pediu("/config/vocabularies")).toBe(false);
+    expect(screen.queryByText("Escala de proficiência")).toBeNull();
   });
 
-  it("o tech lead alcança a política — para os outros papéis nada muda", async () => {
-    renderAs(fixtureAssignedTechLeadUser, <SettingsPage />);
+  it("a tela negada continua se explicando — o ? está lá", async () => {
+    renderAs(fixtureMemberUser, <ModelReferencePage />);
+    await screen.findByText(POLITICA_LEITURA_DE_LIDERANCA);
+    expect(screen.getByRole("button", { name: /como usar/i })).toBeTruthy();
+  });
+
+  it("o tech lead alcança a leitura do modelo — para os outros papéis nada muda", async () => {
+    renderAs(fixtureAssignedTechLeadUser, <ModelReferencePage />);
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Critérios de Progressão" }),
+      await screen.findByRole("heading", { level: 1, name: "Referência do modelo" }),
     ).toBeTruthy();
     expect(screen.queryByText(POLITICA_LEITURA_DE_LIDERANCA)).toBeNull();
   });

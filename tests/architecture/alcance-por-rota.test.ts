@@ -131,11 +131,19 @@ const TAMANHO_MINIMO_DA_JUSTIFICATIVA = 60;
 /** Guarda de navegação é nomeada: `beforeLoad: requireAdminReach`, nunca uma seta anônima. */
 const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
+/**
+ * Onda do GRUPO (dono, 2026-09-10): "Critérios de Progressão" deixou de ser
+ * uma tela de 1390 linhas com TRÊS alcances dentro e virou seis rotas, cada
+ * uma com o próprio dono — quatro de quem opera o sistema, uma de quem rege a
+ * régua do time e uma de leitura da liderança. `/settings` sobrevive como
+ * ENDEREÇO (link salvo, aviso, aba aberta) e por isso desce a `autenticado`:
+ * ele não decide alcance nenhum, só redireciona para a primeira fatia.
+ */
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
-  autenticado: 6,
-  "opera-o-sistema": 1,
-  "lead-com-vinculo": 1,
+  autenticado: 7,
+  "opera-o-sistema": 5,
+  "lead-com-vinculo": 2,
   calibracao: 1,
   lideranca: 3,
   "analise-de-time": 5,

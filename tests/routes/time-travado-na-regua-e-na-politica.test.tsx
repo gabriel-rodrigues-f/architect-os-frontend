@@ -8,7 +8,7 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import type { SessionUser } from "@/lib/api";
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as EligibilityRoute } from "@/routes/eligibility";
 import { Route as TeamRulesRoute } from "@/routes/team-rules";
 import {
   fixtureAssignedManagerUser,
@@ -38,7 +38,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * time em Cadastrar pessoa desenha o travamento nas três telas.
  */
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const EligibilityPage = EligibilityRoute.options.component as () => ReactNode;
 const TeamRulesPage = TeamRulesRoute.options.component as () => ReactNode;
 
 const gerenteDosDoisTimes: SessionUser = {
@@ -118,7 +118,7 @@ describe("Política de Progressão — o time fica travado para quem lidera um s
       ]),
       routes: [niveisDeCarreiraRoute, doisTimesRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<EligibilityPage />);
   };
 
   it.each([

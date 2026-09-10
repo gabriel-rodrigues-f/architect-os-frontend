@@ -7,7 +7,7 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as VocabulariesRoute } from "@/routes/vocabularies";
 import { fixtureUnassignedTechLeadUser, fixtureAdminUser } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
@@ -27,7 +27,7 @@ import { apiPath } from "@/lib/api-path";
  */
 
 const fetchMock = vi.fn();
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const VocabulariesPage = VocabulariesRoute.options.component as () => ReactNode;
 
 const vocabItem = (
   vocabulary: string,
@@ -82,7 +82,7 @@ describe("Vocabulários falam a língua de quem configura", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, vocabulariesGetRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<VocabulariesPage />);
 
     await vocabularySection();
     expect(screen.queryByText("LEARNING_ITEM_TYPE")).toBeNull();
@@ -96,7 +96,7 @@ describe("Vocabulários falam a língua de quem configura", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, vocabulariesGetRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<VocabulariesPage />);
 
     const block = await vocabularySection();
     await waitFor(() => {
@@ -115,14 +115,19 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
    * Onda 31 — o member deixou de alcançar /settings (o dono tirou a Política
    * de Progressão do profissional); o não-admin que ainda a lê é o tech lead.
    */
-  it("não-admin não vê a seção", async () => {
+  /**
+   * Onda do GRUPO (dono, 2026-09-10): a seção virou ROTA, e quem não a
+   * alcança não vê caixa vazia — ouve a recusa por escrito. É o conserto do
+   * achado (C) do inventário de alcance de 2026-09-05.
+   */
+  it("não-admin recebe a recusa por escrito, e os códigos não são desenhados", async () => {
     mockAppFetch(fetchMock, {
       user: fixtureUnassignedTechLeadUser,
       routes: [careerLevelsRoute, vocabulariesGetRoute],
     });
-    renderWithApp(<SettingsPage />);
-    expect(await screen.findByText("Referência do modelo")).toBeTruthy();
-    expect(screen.queryByText("Vocabulários")).toBeNull();
+    renderWithApp(<VocabulariesPage />);
+    expect(await screen.findByText("Esta configuração é de quem opera o sistema.")).toBeTruthy();
+    expect(screen.queryByText("Tipos de item de trilha")).toBeNull();
   });
 
   it("admin vê os itens servidos, com o desativado marcado e SEM botão de excluir", async () => {
@@ -130,7 +135,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
       user: fixtureAdminUser,
       routes: [careerLevelsRoute, vocabulariesGetRoute],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<VocabulariesPage />);
 
     const block = await vocabularySection();
     await waitFor(() => {
@@ -156,7 +161,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
         vocabulariesGetRoute,
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<VocabulariesPage />);
 
     const block = await vocabularySection();
     await waitFor(() => {
@@ -197,7 +202,7 @@ describe("Vocabulários (CFG-06 admin UI)", () => {
         vocabulariesGetRoute,
       ],
     });
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<VocabulariesPage />);
 
     const block = await vocabularySection();
     await userEvent.click(within(block).getByRole("button", { name: "Novo código" }));

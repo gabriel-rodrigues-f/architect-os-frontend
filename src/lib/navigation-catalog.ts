@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   Bell,
+  BookMarked,
   BookOpen,
   Building2,
   CalendarRange,
@@ -13,13 +14,17 @@ import {
   Grid3x3,
   LayoutDashboard,
   Layers,
+  LibraryBig,
   ListOrdered,
   Map,
   Milestone,
   Ruler,
   Scale,
+  SlidersHorizontal,
+  Tags,
   Target,
   TrendingUp,
+  Type,
   UserCog,
   Users,
 } from "lucide-react";
@@ -192,7 +197,66 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Ruler,
         teamRuleReachOnly: true,
       },
-      { to: "/settings", labelKey: "nav.settings", icon: Scale, leadershipOnly: true },
+    ],
+  },
+  /**
+   * CRITÉRIOS DE PROGRESSÃO É UM GRUPO (dono, 2026-09-10): *"deixa de ser um
+   * menu e torna-se um grupo… organizamos o que antes seriam abas em menus do
+   * grupo Critérios de Progressão. Assim resolvemos o problema de rolar e
+   * também o de enxergar o que tem lá."*
+   *
+   * O que o grupo dá e a aba não daria: a coluna JÁ esconde item por alcance.
+   * A tela única tinha TRÊS alcances convivendo dentro dela, e quem não
+   * alcançava um pedaço via caixa vazia sem saber se faltava permissão ou
+   * configuração. Aqui cada fatia declara o próprio dono, e a que a pessoa não
+   * alcança simplesmente não aparece:
+   *
+   *   Elegibilidade      → quem rege a régua do time (`teamRuleReachOnly`)
+   *   Réguas e limiares  → quem opera o sistema
+   *   Textos             → quem opera o sistema
+   *   Catálogo           → quem opera o sistema
+   *   Vocabulários       → quem opera o sistema
+   *   Referência…        → toda a liderança, porque é LEITURA (`leadershipOnly`)
+   */
+  {
+    labelKey: "nav.group.progressionCriteria",
+    items: [
+      {
+        to: "/eligibility",
+        labelKey: "eligibility.title",
+        icon: Scale,
+        teamRuleReachOnly: true,
+      },
+      {
+        to: "/scoring-rulers",
+        labelKey: "config.bands.title",
+        icon: SlidersHorizontal,
+        systemOperationOnly: true,
+      },
+      {
+        to: "/text-templates",
+        labelKey: "config.templates.title",
+        icon: Type,
+        systemOperationOnly: true,
+      },
+      {
+        to: "/catalog-policy",
+        labelKey: "config.curation.title",
+        icon: LibraryBig,
+        systemOperationOnly: true,
+      },
+      {
+        to: "/vocabularies",
+        labelKey: "config.vocab.title",
+        icon: Tags,
+        systemOperationOnly: true,
+      },
+      {
+        to: "/model-reference",
+        labelKey: "ref.referenceSectionTitle",
+        icon: BookMarked,
+        leadershipOnly: true,
+      },
     ],
   },
   {

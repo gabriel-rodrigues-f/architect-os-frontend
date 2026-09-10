@@ -68,7 +68,8 @@ const ANALISE_DO_TIME = [
  * ao profissional "Nível final por ciclo: L4 → L5" competência a
  * competência, o número que a decisão do dono manda esconder.
  */
-const MENUS_DA_LIDERANCA = ["/team", "/settings", "/cycles"];
+/** Onda do GRUPO (2026-09-10): `/settings` virou endereço antigo; a leitura do modelo é `/model-reference`. */
+const MENUS_DA_LIDERANCA = ["/team", "/model-reference", "/cycles"];
 
 describe("menu do profissional — a carreira dele em leitura, e nada do time", () => {
   /**

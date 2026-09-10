@@ -10,7 +10,8 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/react-router-mock").then((mod) => mod.reactRouterWithPlainLinks()),
 );
 
-import { Route as SettingsRoute } from "@/routes/settings";
+import { Route as ModelReferenceRoute } from "@/routes/model-reference";
+import { Route as VocabulariesRoute } from "@/routes/vocabularies";
 import {
   careerLevelsRoute,
   jsonResponse,
@@ -33,6 +34,10 @@ import {
  * Os testes prendem a ausência dos dois e, no caso das taxonomias, prendem
  * também o que NÃO pode sumir junto: o conteúdo continua legível — em
  * Vocabulários, que é superconjunto.
+ *
+ * Onda do GRUPO (dono, 2026-09-10): a tela virou seis rotas. A referência
+ * mora agora em `/model-reference` e os vocabulários em `/vocabularies`; a
+ * ausência é cobrada em cada uma, no lugar onde o bloco reapareceria.
  */
 
 const fetchMock = vi.fn();
@@ -55,9 +60,10 @@ const vocabulariesRoute: FetchRoute = (href) =>
       })
     : undefined;
 
-const SettingsPage = SettingsRoute.options.component as () => ReactNode;
+const ModelReferencePage = ModelReferenceRoute.options.component as () => ReactNode;
+const VocabulariesPage = VocabulariesRoute.options.component as () => ReactNode;
 
-describe("Política de Progressão — a referência não repete nem finge", () => {
+describe("Referência do modelo — a referência não repete nem finge", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -78,7 +84,7 @@ describe("Política de Progressão — a referência não repete nem finge", () 
    * medido, foi o primeiro estado deste teste.
    */
   it("nenhuma célula da referência exibe traço no lugar do nível por cargo", async () => {
-    const { container } = renderWithApp(<SettingsPage />);
+    const { container } = renderWithApp(<ModelReferencePage />);
     await screen.findByText("Escala de proficiência");
 
     const celulasVazias = [...container.querySelectorAll("td")].filter(
@@ -88,7 +94,7 @@ describe("Política de Progressão — a referência não repete nem finge", () 
   });
 
   it("não há bloco de perfis de competência por cargo", async () => {
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ModelReferencePage />);
     await screen.findByText("Escala de proficiência");
 
     expect(screen.queryByText("Perfis de Competência por Cargo")).toBeNull();
@@ -96,40 +102,61 @@ describe("Política de Progressão — a referência não repete nem finge", () 
   });
 
   it("não há bloco Taxonomias — Vocabulários já mostra a mesma lista, e editável", async () => {
-    renderWithApp(<SettingsPage />);
+    renderWithApp(<ModelReferencePage />);
     await screen.findByText("Escala de proficiência");
 
     expect(screen.queryByText("Taxonomias")).toBeNull();
     expect(screen.queryByText("Tipos de ação")).toBeNull();
+    expect(screen.queryByText("Tipos de item de trilha")).toBeNull();
+  });
+});
+
+describe("Vocabulários — o que NÃO pode sumir junto com o bloco repetido", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    mockAppFetch(fetchMock, {
+      user: fixtureAdminUser,
+      routes: [careerLevelsRoute, vocabulariesRoute],
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("os tipos de ação e de item de trilha continuam legíveis, e o rótulo aparece uma vez só", async () => {
+    renderWithApp(<VocabulariesPage />);
+    await screen.findByRole("heading", { level: 1, name: "Vocabulários" });
+
+    expect(screen.getByText("Tipos de ação do PDI")).toBeTruthy();
     expect(
       screen.getAllByText("Tipos de item de trilha"),
       "o rótulo aparecia duas vezes na mesma rolagem — em Vocabulários e em Taxonomias",
     ).toHaveLength(1);
-  });
-
-  it("os tipos de ação e de item de trilha continuam legíveis em Vocabulários", async () => {
-    renderWithApp(<SettingsPage />);
-    await screen.findByText("Vocabulários");
-
-    expect(screen.getByText("Tipos de ação do PDI")).toBeTruthy();
-    expect(screen.getByText("Tipos de item de trilha")).toBeTruthy();
     expect(screen.getByText("Aprender")).toBeTruthy();
     expect(screen.getByText("Curso")).toBeTruthy();
   });
 });
 
-describe("o texto da Política não anuncia referência que não existe mais", () => {
+/**
+ * Onda do GRUPO (dono, 2026-09-10): a referência virou tela própria, e as
+ * duas chaves que estas asserções guardavam mudaram de nome junto — o
+ * subtítulo é o da tela Referência do modelo, e a ajuda é a dela.
+ */
+describe("o texto da referência não anuncia bloco que não existe mais", () => {
   const idiomas = { pt, en } as Record<string, Record<string, string>>;
 
   for (const idioma of ["pt", "en"] as const) {
     it(`o subtítulo (${idioma}) não promete perfis por cargo nem taxonomias`, () => {
-      const subtitulo = idiomas[idioma]!["ref.subtitle"]!;
+      const subtitulo = idiomas[idioma]!["ref.reference.subtitle"]!;
       const promessas = idioma === "pt" ? [/cargos/i, /taxonomias/i] : [/roles/i, /taxonomies/i];
       for (const promessa of promessas) expect(subtitulo).not.toMatch(promessa);
     });
 
-    it(`a ajuda da Política (${idioma}) não promete taxonomias`, () => {
-      const oQueE = idiomas[idioma]!["help.settings.lead.what"]!;
+    it(`a ajuda da Referência (${idioma}) não promete taxonomias`, () => {
+      const oQueE = idiomas[idioma]!["help.modelReference.lead.what"]!;
       expect(oQueE).not.toMatch(idioma === "pt" ? /taxonomias/i : /taxonomies/i);
     });
   }

@@ -75,6 +75,7 @@ export type DeclaredReach =
   | "publica"
   | "autenticado"
   | "admin"
+  | "opera-o-sistema"
   | "lead-com-vinculo"
   | "calibracao"
   | "lideranca"

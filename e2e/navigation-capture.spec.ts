@@ -131,7 +131,16 @@ const NEGATIVA_NA_TELA: Readonly<Record<string, string>> = {
   "/cycles": "cycle.leadershipOnly",
   "/gap-analysis": "cap.teamAnalysisOnly",
   "/progression": "cap.teamAnalysisOnly",
-  "/settings": "ref.leadershipOnly",
+  // As seis fatias do grupo Critérios de Progressão (dono, 2026-09-10): cada
+  // uma nega com a frase do PRÓPRIO dono, e não mais com uma só para a tela
+  // inteira. `/settings` sai da lista porque virou endereço antigo — ele
+  // redireciona, não nega.
+  "/eligibility": "eligibility.leadOnly",
+  "/scoring-rulers": "config.systemOnly",
+  "/text-templates": "config.systemOnly",
+  "/catalog-policy": "config.systemOnly",
+  "/vocabularies": "config.systemOnly",
+  "/model-reference": "ref.leadershipOnly",
   "/team": "team.leadershipOnly",
   "/team-rules": "teamRules.leadOnly",
   "/teams": "teams.restricted",
@@ -178,6 +187,12 @@ const VISITAS: Record<string, (ctx: VisitContext) => string | null> = {
   // explicação do link incompleto em vez de quebrar ou cair no login.
   "/set-password": () => "/set-password",
   "/settings": () => "/settings",
+  "/eligibility": () => "/eligibility",
+  "/scoring-rulers": () => "/scoring-rulers",
+  "/text-templates": () => "/text-templates",
+  "/catalog-policy": () => "/catalog-policy",
+  "/vocabularies": () => "/vocabularies",
+  "/model-reference": () => "/model-reference",
   "/team": () => "/team",
   "/team-rules": () => "/team-rules",
   "/teams": () => "/teams",
