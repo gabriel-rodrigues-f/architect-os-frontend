@@ -7,6 +7,7 @@ import { ChevronDown, CircleAlert, CircleCheck, Info, TriangleAlert } from "luci
 
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/lib/domain";
+import type { BandTone } from "@/lib/scoring-bands";
 import { useSelectors } from "@/lib/store";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
@@ -256,14 +257,65 @@ export function StatCard({
   );
 }
 
-export function Bar({ value, className }: { value: number; className?: string }) {
+/**
+ * A tinta da barra quando ela lê uma FAIXA — literal, nunca montada por
+ * string (Tailwind v4 não compila classe dinâmica). Sem `tone` a barra
+ * continua no primário, que é o caso da Aderência.
+ */
+const barFill: Record<BandTone, string> = {
+  ok: "bg-gap-ok",
+  low: "bg-gap-low",
+  high: "bg-gap-high",
+  critical: "bg-gap-critical",
+};
+
+export function Bar({
+  value,
+  tone,
+  label,
+  className,
+}: {
+  value: number;
+  /** A faixa que a barra lê — pinta o preenchimento com a paleta de distância. */
+  tone?: BandTone;
+  /** O que a barra diz, para quem não a vê. Sem rótulo ela é decoração. */
+  label?: string;
+  className?: string;
+}) {
   return (
-    <div className={cn("h-2 w-full overflow-hidden rounded-full bg-secondary", className)}>
+    <div
+      className={cn("h-2 w-full overflow-hidden rounded-full bg-secondary", className)}
+      {...(label === undefined ? {} : { role: "img", "aria-label": label })}
+    >
       <div
-        className="h-full rounded-full bg-primary transition-[width] duration-(--motion-base) ease-standard"
+        className={cn(
+          "h-full rounded-full transition-[width] duration-(--motion-base) ease-standard",
+          tone === undefined ? "bg-primary" : barFill[tone],
+        )}
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       />
     </div>
+  );
+}
+
+/**
+ * O NÍVEL DE CARREIRA da pessoa, pelo NOME (dono, 2026-09-09, com referência
+ * visual: coluna "Nível atual").
+ *
+ * Não confundir com `LevelBadge`, que é outra escala: aquele é o nível de
+ * PROFICIÊNCIA de 1 a 5 numa competência; este é o degrau de carreira —
+ * Trainee, Júnior, Pleno, Sênior, Especialista (regra 19 do dono).
+ *
+ * Quem não tem senioridade (gerente, tech lead, conta sem nível) recebe o
+ * travessão, que é o símbolo único da ausência nesta casa — e o que ele
+ * significa vai no balão, nunca só no desenho.
+ */
+export function CareerLevelBadge({ level }: { level: RoleName | null | undefined }) {
+  const seniority = useSeniorityReading();
+  return (
+    <Chip data-testid="career-level" tone="neutral" tooltip={seniority.titleOf(level)}>
+      {seniority.labelOf(level)}
+    </Chip>
   );
 }
 
