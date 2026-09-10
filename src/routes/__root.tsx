@@ -24,6 +24,7 @@ import { StoreProvider } from "../lib/store";
 import { AppShell } from "../components/app/AppShell";
 import { AuthGate } from "../components/app/AuthGate";
 import { CareerRunCanvas } from "../components/app/CareerRunCanvas";
+import { FailureCard } from "../components/app/FailureCard";
 import { Toaster } from "../components/ui/sonner";
 
 const errorTrackingDsn = import.meta.env["VITE_SENTRY_DSN"];
@@ -77,20 +78,27 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   captureClientError(error);
   const router = useRouter();
 
+  /*
+   * O QUADRO TAMBÉM AQUI (dono, 2026-09-09): "comporte a mensagem de erro em
+   * um quadro". É o mesmo `FailureCard` da recusa de leitura — o que serve a
+   * 2 lugares vira componente, não se copia o cartão em cada tela.
+   *
+   * A CASCA NÃO FICA DE PÉ NESTA, e não é escolha de layout: o
+   * `errorComponent` da raiz SUBSTITUI o `RootComponent`, que é justamente
+   * quem monta `DependencyProvider`, `I18nProvider`, `AuthProvider` e
+   * `AppShell`. Desenhar a coluna e o cabeçalho aqui seria montá-los sem os
+   * provedores de que eles vivem — e a casca cairia dentro do próprio
+   * tratamento de queda. Por isso o texto é literal: não há dicionário nesta
+   * árvore. A recusa de leitura, essa sim, mora dentro da casca e a mantém.
+   */
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-2xl text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Esta página não carregou
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Algo deu errado do nosso lado. Você pode atualizar a página ou voltar ao início.
-        </p>
-        {/* O "dinossauro" do Synapse (dono, 2026-09-06): a espera vira uma corrida de carreira. */}
-        <div className="mt-6">
-          <CareerRunCanvas />
-        </div>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+      <div className="w-full max-w-2xl">
+        <FailureCard
+          title="Esta página não carregou"
+          sentence="Algo deu errado do nosso lado. Você pode atualizar a página ou voltar ao início."
+          className="max-w-2xl"
+        >
           <button
             onClick={() => {
               router.invalidate();
@@ -106,6 +114,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             Ir para o início
           </a>
+        </FailureCard>
+        {/* O "dinossauro" do Synapse (dono, 2026-09-06): a espera vira uma corrida de carreira. */}
+        <div className="mt-6">
+          <CareerRunCanvas />
         </div>
       </div>
     </div>

@@ -63,7 +63,8 @@ describe("QuerySection", () => {
       </QuerySection>,
     );
 
-    expect(screen.getByRole("alert").textContent).toBe("Não foi possível carregar");
+    // O alerta é o QUADRO inteiro (dono, 2026-09-09): título, frase e botão dentro dele.
+    expect(screen.getByRole("alert").textContent).toContain("Não foi possível carregar");
     await userEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(refetch).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("conteúdo")).toBeNull();
@@ -82,7 +83,7 @@ describe("QuerySection", () => {
       </QuerySection>,
     );
 
-    expect(screen.getByRole("alert").textContent).toBe("Formato inesperado");
+    expect(screen.getByRole("alert").textContent).toContain("Formato inesperado");
   });
 
   it("sucesso: renderiza children(data) verbatim, sem SectionCard extra por fora", () => {

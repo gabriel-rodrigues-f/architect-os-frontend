@@ -51,6 +51,7 @@
   "refusal.requiredFieldMissing": "Falta preencher um campo obrigatório. Confira o formulário e envie de novo.",
   "refusal.invalidValue": "Um dos valores enviados não é aceito. Confira o formulário e envie de novo.",
   "refusal.mentoringDateInFuture": "A data da 1:1 não pode ser futura: registre uma conversa que já aconteceu.",
+  "failure.title": "Algo não saiu como esperado",
   "mutation.refused": "Não foi possível salvar. A tela voltou ao último estado confirmado pelo servidor.",
   "outage.title": "Não é possível acessar a aplicação agora",
   "outage.lead": "Entre em contato com um administrador. Enquanto isso, uma corrida de carreira.",
